@@ -1,42 +1,57 @@
 // Кому преподаватель отдаёт ответ своей рамки на request-snapshot.
 //
 // Снимок рамки просят двое: «Внимание» (поток уходит всему классу) и ученик,
-// вошедший посреди показа (catch-up, спека live-lesson-server-state §5.2), —
+// вошедший посреди показа (catch-up, спека live-lesson-server-state §4.3), —
 // ему поток уходит адресно. Рамка не говорит, на какой запрос отвечает, поэтому
-// запрос один на всех ждущих, а «Внимание» перекрывает адресные просьбы: ждущие
-// получат снимок общим каналом.
+// в полёте не больше одного запроса: просьбы, пришедшие до ответа, ждут его же.
+// «Внимание» перекрывает адресные просьбы — ждущие получат снимок общим каналом.
+// Ответ, которого никто не ждёт (второй подряд, запоздалый), выбрасывается: без
+// адресата он ушёл бы всему классу и повторил поток на уже пройденных страницах.
 //
-// Просьбы одного ученика чаще раза в `cooldownMs` не обслуживаются: ответ —
-// весь поток рамки, и ученик на рвущейся связи гонял бы его по кругу. Часы
-// подставляются (`now`) — отсечку проверяют тесты, а не секундомер.
+// Запрос в полёте и «Внимание» истекают через `timeoutMs` без ответа: рамка
+// могла грузиться и потерять запрос, и без истечения очередь молчала бы до
+// конца урока. Просьбы про одну пару (ученик, материал) чаще раза в `cooldownMs`
+// не обслуживаются: ответ — весь поток рамки, и ученик на рвущейся связи гонял
+// бы его по кругу. Часы подставляются (`now`) — сроки проверяют тесты, а не
+// секундомер.
 
-const EMPTY = () => ({ everyone: false, students: new Set(), askedAt: null })
-
-export function createSnapshotQueue({ cooldownMs, now = () => Date.now() }) {
+export function createSnapshotQueue({ cooldownMs, timeoutMs, now = () => Date.now() }) {
   const lastAsked = new Map()
-  let waiting = EMPTY()
+  let waiting = new Set()
+  // Когда ушёл запрос, ответа на который ещё нет, и когда его просили для
+  // всего класса. null — нет.
+  let requestedAt = null
+  let forClassAt = null
+  const fresh = (at) => at != null && now() - at < timeoutMs
+  const reset = () => {
+    waiting = new Set()
+    requestedAt = forClassAt = null
+  }
+
   return {
-    /** Ученик просит догнать класс. true — пора спросить рамку. */
-    ask(studentId) {
+    /** Ученик просит догнать класс на материале. true — пора спросить рамку. */
+    ask(studentId, materialId) {
       const t = now()
-      const last = lastAsked.get(studentId)
+      const pair = `${studentId}:${materialId}`
+      const last = lastAsked.get(pair)
       if (last != null && t - last < cooldownMs) return false
-      lastAsked.set(studentId, t)
-      waiting.students.add(studentId)
-      if (waiting.everyone) return false
-      if (waiting.askedAt != null && t - waiting.askedAt < cooldownMs) return false
-      waiting.askedAt = t
+      lastAsked.set(pair, t)
+      waiting.add(studentId)
+      if (fresh(requestedAt)) return false
+      requestedAt = t
       return true
     },
-    /** «Внимание»: ответ рамки уходит всему классу. */
+    /** «Внимание»: запрос в рамку уже ушёл, ответ — всему классу. */
     askEveryone() {
-      waiting.everyone = true
+      requestedAt = forClassAt = now()
     },
     /** Ответ рамки пришёл — кому его отдать; очередь пустеет. */
     take() {
-      const done = waiting
-      waiting = EMPTY()
-      return { everyone: done.everyone, students: [...done.students] }
+      const answer = { everyone: fresh(forClassAt), students: [...waiting] }
+      reset()
+      return answer
     },
+    /** Класс отпустили или материал сменился — ответ старой страницы ничей. */
+    reset,
   }
 }

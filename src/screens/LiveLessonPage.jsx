@@ -47,9 +47,10 @@ const MESSAGE_POLL_MS = 5000
 // приходит состоянием занятия сразу, ждать опроса ему не нужно (спека
 // live-lesson-server-state §2 п.6).
 const LESSON_POLL_MS = 30000
-// Просьбы одного ученика догнать класс чаще раза в 3 с не обслуживаются
-// (snapshotQueue.js).
+// Просьбы одного ученика про один материал чаще раза в 3 с не обслуживаются, а
+// запрос снимка без ответа рамки истекает через 5 с (snapshotQueue.js).
 const CATCH_UP_COOLDOWN_MS = 3000
+const SNAPSHOT_TIMEOUT_MS = 5000
 // Стадии класса нет или ученик за классом не идёт.
 const NO_CLASS_STAGE = { materialId: null, index: null }
 
@@ -136,9 +137,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const followRef = useRef({ following: false, focusSeq: null })
   // Стадия файлового урока, на которую рамку ведёт класс, — пока ученик следует.
   const [classStage, setClassStage] = useState(NO_CLASS_STAGE)
-  // Ученик вошёл (или переподключился) посреди показа и должен попросить у
-  // преподавателя снимок его рамки — как только у него откроется та же рамка.
-  // Объект, а не id: повторный вход на том же материале — новая просьба.
+  // Долг догоняющего снимка: ученик вошёл (или переподключился, или включил
+  // следование) посреди показа и должен попросить у преподавателя снимок его
+  // рамки — как только у него откроется свежая страница следования того же
+  // материала (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
   const [catchUp, setCatchUp] = useState(null)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
@@ -185,7 +187,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const pendingPresentRef = useRef([])
   // Преподаватель: кому отдать ответ рамки на request-snapshot — всему классу
   // после «Внимания» или ученикам, попросившим догнать класс.
-  const [snapshotQueue] = useState(() => createSnapshotQueue({ cooldownMs: CATCH_UP_COOLDOWN_MS }))
+  const [snapshotQueue] = useState(() => createSnapshotQueue({ cooldownMs: CATCH_UP_COOLDOWN_MS, timeoutMs: SNAPSHOT_TIMEOUT_MS }))
   // Focus can name a catalog step before that lesson's JSON has loaded; catalog
   // resolve used to always reset to steps[0] and wipe the teacher's target.
   const pendingFocusStepRef = useRef(null)
@@ -291,6 +293,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // вошедший ученик шёл бы к позиции, от которой преподаватель ушёл.
       if (presenting) sendRelease()
       setPresenting(false)
+      snapshotQueue.reset()
     }
   }
 
@@ -777,9 +780,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const { following, focusSeq, go } = nextFollow(local, prev, next)
     followRef.current = { following, focusSeq }
     setClassStage(following ? classStageOf(next) : NO_CLASS_STAGE)
-    // Класс ушёл с материала, к доске или его отпустили — догонять больше
-    // нечего. Функцией, а не по замыканию: просьба могла появиться в этом же тике.
-    setCatchUp((pending) => (pending && wantsCatchUp(next) && next.materialId === pending.materialId ? pending : null))
+    // Долг снимается, когда ученик не следует, класс ушёл с материала, к доске
+    // или его отпустили, — и при явной указке: она сама перезагружает рамку, а
+    // её снимок преподаватель раздаёт всему классу, второй повторил бы поток.
+    // Функцией, а не по замыканию: долг мог появиться в этом же тике.
+    const keepsDebt = following && !explicit && wantsCatchUp(next)
+    setCatchUp((pending) => (pending && keepsDebt && next.materialId === pending.materialId ? pending : null))
     if (go) goToClass(next, explicit)
   }
 
@@ -828,8 +834,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       restoreClassPosition(next)
       return
     }
-    if (prev.leading && !next.leading) setPresenting(false)
-    else if (!prev.leading && next.leading) setPresenting(true)
+    if (prev.leading && !next.leading) {
+      setPresenting(false)
+      snapshotQueue.reset()
+    } else if (!prev.leading && next.leading) {
+      setPresenting(true)
+    }
     // Указка из другой вкладки двигает бегунок «Т» и здесь.
     if (next.focusSeq > prev.focusSeq && next.focusView !== 'BOARD' && next.sectionId != null) {
       setTeacherStepId(next.stepId ?? next.sectionId)
@@ -852,11 +862,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // Снимок состояния — точка «только что вошёл или переподключился». Если класс
-  // ведут, ученик просит у преподавателя снимок его рамки: сервер хранит, где
-  // класс, но не прокрутку и не открытые карточки внутри рамки (§10).
+  // ведут и ученик за ним следует, он просит у преподавателя снимок его рамки:
+  // сервер хранит, где класс, но не прокрутку и не открытые карточки внутри
+  // рамки (§10). Ушедшему самому снимок не нужен — он смотрит своё.
   function handleLiveSnapshot(live) {
-    if (isStaff || !wantsCatchUp(live)) return
-    setCatchUp({ materialId: live.materialId })
+    if (isStaff || !wantsCatchUp(live) || !followRef.current.following) return
+    oweCatchUp(live.materialId)
+  }
+
+  // Мост проигрывает снимок потоком кликов, и на странице, где действия уже
+  // применены, они повторились бы (переключатели, «далее», play). Поэтому долг
+  // заводится вместе с перезагрузкой рамки: погасить его можно только на
+  // странице материала класса, открытой уже после этого, — свежей.
+  function oweCatchUp(materialId) {
+    setCatchUp({ materialId })
+    setReloadToken((n) => n + 1)
   }
 
   // Ученик переключает «Идти за преподавателем» — тот же «ушёл сам» (§4.3 п.5),
@@ -876,7 +896,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       goToClass(liveState, false)
       // Пока ученик не следовал, поток показа шёл мимо него — просим снимок
       // рамки, как на входе.
-      if (wantsCatchUp(liveState)) setCatchUp({ materialId: liveState.materialId })
+      if (wantsCatchUp(liveState)) oweCatchUp(liveState.materialId)
     }
   }
 
@@ -1367,19 +1387,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   function handleCatchUpRequest(evt) {
     if (!isStaff || !presenting || evt.studentId == null) return
     if (evt.materialId == null || evt.materialId !== activeMaterial?.materialId) return
-    if (snapshotQueue.ask(evt.studentId)) materialFrameRef.current?.requestSnapshot?.()
+    if (snapshotQueue.ask(evt.studentId, evt.materialId)) materialFrameRef.current?.requestSnapshot?.()
   }
 
   // Ответ рамки на request-snapshot: после «Внимания» — всему классу, на
-  // просьбы догнать — адресно, только просившим.
+  // просьбы догнать — адресно, каждому ждущему. Ничей ответ выбрасывается.
   function handleBridgeSnapshot(events) {
     if (!activeMaterial) return
     const { everyone, students } = snapshotQueue.take()
-    if (!everyone && students.length) {
-      students.forEach((studentId) => sendPresent(activeMaterial.materialId, events, studentId))
+    if (everyone) {
+      sendPresent(activeMaterial.materialId, events)
       return
     }
-    sendPresent(activeMaterial.materialId, events)
+    students.forEach((studentId) => sendPresent(activeMaterial.materialId, events, studentId))
   }
 
   function handleFocusClick() {
@@ -1418,6 +1438,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     }, 500)
     return () => clearTimeout(handle)
   }, [reloadToken, isStaff, snapshotQueue])
+
+  // Сменился материал — запрос в рамку ушёл вместе со старой страницей, а её
+  // снимок ждавшим про старый материал не нужен.
+  useEffect(() => {
+    if (isStaff) snapshotQueue.reset()
+  }, [isStaff, snapshotQueue, activeMaterialKey])
 
   // Flush present events buffered while the follow iframe was mounting.
   useEffect(() => {
@@ -1566,17 +1592,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     denied: catalogDenied,
   })
 
-  // Просьба догнать класс уходит, когда у ученика открыта та же рамка, что у
-  // класса: на шагах разбора снимка рамки нет, а рамке другого материала он
-  // чужой. Отправленная просьба помечается, а не стирается — стирать через
-  // setState в эффекте значит каскад рендеров.
+  // Долг гасится одной просьбой, когда на экране рамка материала класса и это
+  // страница следования: на шагах разбора снимка рамки нет, на доске рамки нет
+  // вовсе, а рамке другого материала он чужой. Свежая она по построению — долг
+  // заведён вместе с её перезагрузкой (oweCatchUp); ответ ляжет в буфер показа
+  // и проиграется, когда она загрузится. Отправленная просьба помечается, а не
+  // стирается — стирать через setState в эффекте значит каскад рендеров.
+  const frameOnScreen = state === 'ready' && lesson != null && lessonOpen && tab === 'lesson' && view === 'file'
   const catchUpSentRef = useRef(null)
   useEffect(() => {
     if (!catchUp || catchUpSentRef.current === catchUp) return
-    if (activeMaterialKey !== catchUp.materialId || view !== 'file') return
+    if (!frameOnScreen || !followMode || activeMaterialKey !== catchUp.materialId) return
     catchUpSentRef.current = catchUp
     sendCatchUp(catchUp.materialId)
-  }, [catchUp, activeMaterialKey, view, sendCatchUp])
+  }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
 
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,

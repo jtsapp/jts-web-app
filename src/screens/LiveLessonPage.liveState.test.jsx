@@ -26,6 +26,12 @@ const SECTIONS = [
   { id: 3, title: 'Разминка', materials: [{ materialId: 11, title: 'A0 · Урок 05', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L05.html' }] },
   { id: 4, title: 'Практика', materials: [{ materialId: 12, title: 'A0 · Урок 06', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L06.html' }] },
 ]
+// Во «Разминке» второй материал — между ними переключают вкладками.
+const TWO_MATERIALS = [
+  { ...SECTIONS[0], materials: [...SECTIONS[0].materials, { materialId: 13, title: 'A0 · Урок 05b', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L05b.html' }] },
+  SECTIONS[1],
+]
+let sections = SECTIONS
 
 vi.mock('../api.js', () => ({
   getLessonById: vi.fn(async () => ({
@@ -41,14 +47,16 @@ vi.mock('../api.js', () => ({
     participants: [{ studentId: 7, studentName: 'Ученик', status: 'SCHEDULED' }],
   })),
   getLiveState: vi.fn(async () => snapshot),
-  getLessonSections: vi.fn(async () => SECTIONS),
+  getLessonSections: vi.fn(async () => sections),
   getLessonMessages: vi.fn(async () => []),
   sendLessonMessage: vi.fn(async () => ({})),
   setLessonMeetingUrl: vi.fn(async () => ({})),
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
   getLessonViewStages: vi.fn(async () => []),
-  lessonMaterialRenderUrl: (lessonId, materialId) => `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render`,
+  // Страница следования (follow) и перезагрузка (_r) видны в адресе рамки.
+  lessonMaterialRenderUrl: (lessonId, materialId, token, { follow, forceReload } = {}) =>
+    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render?follow=${follow ? 1 : 0}&_r=${forceReload ?? 0}`,
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
@@ -136,6 +144,9 @@ function frameMaterial(container) {
   return Number(src.match(/materials\/(\d+)\//)?.[1] ?? NaN)
 }
 
+/** Рамка на экране (или null — её нет: доска, шаги разбора). */
+const frameOf = (container) => container.querySelector('iframe.lw-material-iframe')
+
 /** Рамка загрузилась и осела — теперь ей можно писать. */
 async function loadFrame(container) {
   const iframe = container.querySelector('iframe.lw-material-iframe')
@@ -167,9 +178,10 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(NOW)
   snapshot = null
+  sections = SECTIONS
   socketHandlers = {}
   socketConnected = true
-  sendCatchUp.mockClear()
+  sendCatchUp.mockReset()
   sendRelease.mockClear()
   sendPresent.mockClear()
   sendStage.mockClear()
@@ -487,6 +499,77 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     expect(frameMaterial(container)).toBe(12)
     expect(sendCatchUp).not.toHaveBeenCalled()
   })
+
+  // Мост проигрывает снимок как поток кликов: на странице, где действия уже
+  // применены, они повторились бы. Поэтому просьба уходит только с чистой
+  // страницы следования, а ответ ждёт её загрузки.
+  it('после переподключения на том же материале рамка перезагружается чистой, и только потом уходит просьба', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    const oldFrame = frameOf(container)
+    const oldPost = await loadFrame(container)
+    let frameAtRequest = null
+    sendCatchUp.mockClear()
+    sendCatchUp.mockImplementation(() => { frameAtRequest = frameOf(container) })
+
+    await connectWith(leadingAt(3, 11))
+
+    expect(sendCatchUp).toHaveBeenCalledTimes(1)
+    expect(sendCatchUp).toHaveBeenCalledWith(11)
+    expect(frameAtRequest).not.toBe(oldFrame)
+    expect(frameAtRequest.getAttribute('src')).toContain('follow=1')
+
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events }) })
+    expect(oldPost).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+    const post = await loadFrame(container)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+  })
+
+  // На доске рамки нет: погасить долг нечем. Он ждёт вкладки урока, где рамка
+  // монтируется заново — чистой.
+  it('на доске не просит — просит, вернувшись к уроку', async () => {
+    await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    sendCatchUp.mockClear()
+
+    await connectWith(leadingAt(3, 11))
+    expect(sendCatchUp).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Урок' }))
+    await flush()
+    expect(sendCatchUp).toHaveBeenCalledTimes(1)
+    expect(sendCatchUp).toHaveBeenCalledWith(11)
+  })
+
+  // Явная указка сама перезагружает рамку, а преподаватель раздаёт её снимок
+  // всему классу — второй, адресный, повторил бы тот же поток.
+  it('явная указка снимает долг', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    sendCatchUp.mockClear()
+    await connectWith(leadingAt(3, 11))
+
+    await push(leadingAt(3, 11, { version: 2, focusSeq: 2 }))
+
+    expect(frameMaterial(container)).toBe(11)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  it('выключил следование — после переподключения не просит', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(container.querySelector('.ls-follow'))
+    sendCatchUp.mockClear()
+
+    await connectWith(leadingAt(3, 11))
+
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
 })
 
 describe('LiveLessonPage — преподаватель', () => {
@@ -708,5 +791,105 @@ describe('LiveLessonPage — преподаватель', () => {
     await act(async () => { socketHandlers.onCatchUp({ studentId: 8, materialId: 12 }) })
 
     expect(post).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'request-snapshot' }, '*')
+  })
+
+  // Очередь ответов (спека §4.3): в полёте один запрос, ответ — ждущим; ответ,
+  // которого никто не ждёт, выбрасывается, а не уходит всему классу.
+  describe('очередь ответов на снимок', () => {
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+    const snapshotFromFrame = () => bridge({ source: 'jts-bridge', type: 'snapshot', events })
+    const askCatchUp = (studentId, materialId = 11) =>
+      act(async () => { socketHandlers.onCatchUp({ studentId, materialId }) })
+    const requestsIn = (post) => post.mock.calls.filter(([m]) => m.type === 'request-snapshot').length
+
+    it('два ответа рамки подряд — второй никому', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      await loadFrame(container)
+      await askCatchUp(7)
+
+      await snapshotFromFrame()
+      await snapshotFromFrame()
+
+      expect(sendPresent).toHaveBeenCalledTimes(1)
+      expect(sendPresent).toHaveBeenCalledWith(11, events, 7)
+    })
+
+    it('ничейный ответ рамки выбрасывается', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      await loadFrame(container)
+
+      await snapshotFromFrame()
+
+      expect(sendPresent).not.toHaveBeenCalled()
+    })
+
+    // Ответ рамки потерялся (она грузилась) — без истечения очередь молчала бы
+    // до конца урока.
+    it('ответ потерян — через 5 с очередь снова спрашивает рамку, ответ всем ждущим', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      const post = await loadFrame(container)
+
+      await askCatchUp(7)
+      await act(async () => { vi.advanceTimersByTime(4_000) })
+      await askCatchUp(8)
+      expect(requestsIn(post)).toBe(1)
+
+      await act(async () => { vi.advanceTimersByTime(1_000) })
+      await askCatchUp(9)
+      expect(requestsIn(post)).toBe(2)
+
+      await snapshotFromFrame()
+      expect(sendPresent.mock.calls).toEqual([[11, events, 7], [11, events, 8], [11, events, 9]])
+    })
+
+    // Потерянный ответ «Внимания» не должен навсегда глушить просьбы учеников.
+    it('«Внимание» без ответа — через 5 с просьба ученика обслуживается адресно', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+      fireEvent.click(container.querySelector('.lw-focus-btn'))
+      await flush()
+      const post = await loadFrame(container)
+      await act(async () => { vi.advanceTimersByTime(500) })
+      expect(requestsIn(post)).toBe(1)
+
+      await act(async () => { vi.advanceTimersByTime(5_000) })
+      await askCatchUp(7)
+      expect(requestsIn(post)).toBe(2)
+
+      await snapshotFromFrame()
+      expect(sendPresent.mock.calls).toEqual([[11, events, 7]])
+    })
+
+    // Ответ новой страницы другого материала ждавшему про старый не нужен.
+    it('смена материала — ждущие сброшены', async () => {
+      sections = TWO_MATERIALS
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      await loadFrame(container)
+      await askCatchUp(7)
+
+      fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05b' }))
+      await flush()
+      expect(frameMaterial(container)).toBe(13)
+      await snapshotFromFrame()
+
+      expect(sendPresent).not.toHaveBeenCalled()
+    })
+
+    it('класс отпустили — ждущие сброшены', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      await loadFrame(container)
+      await askCatchUp(7)
+
+      await push(liveState({ version: 2, focusSeq: 1, sectionId: 3, materialId: 11 }))
+      await push(leadingAt(3, 11, { version: 3, focusSeq: 2 }))
+      await snapshotFromFrame()
+
+      expect(sendPresent).not.toHaveBeenCalled()
+    })
   })
 })
