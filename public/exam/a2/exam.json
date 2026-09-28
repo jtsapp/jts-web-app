@@ -1,0 +1,828 @@
+{
+  "level": "a2",
+  "version": "3e2b85cd",
+  "total": 50,
+  "pass": 35,
+  "sections": [
+    {
+      "key": "grammar",
+      "dialogue": {
+        "intro": "Two old friends run into each other after a long time. Complete their conversation — choose the best option for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "Hey! I haven't seen you in ages — ",
+              {
+                "gap": 0
+              },
+              " have you been up to lately?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Oh, so much has changed! I ",
+              {
+                "gap": 1
+              },
+              " hate my job, but now I love it."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Really? What happened?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Well, I ",
+              {
+                "gap": 2
+              },
+              " jobs — I've been at a new company since March."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Nice! And right now, ",
+              {
+                "gap": 3
+              },
+              " on anything exciting?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, actually — I'm working on a big project. If it goes well, ",
+              {
+                "gap": 4
+              },
+              " promoted."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              {
+                "gap": 5
+              },
+              " you speak French before you moved there?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "A little, yes — but I'm much better now."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              {
+                "gap": 6
+              },
+              " meet up for coffee soon?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Definitely! I ",
+              {
+                "gap": 7
+              },
+              " be free next Friday, but I'm not 100% sure yet."
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "gd1",
+            "options": [
+              "What",
+              "How",
+              "Why"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd2",
+            "options": [
+              "used to",
+              "use to",
+              "was used to"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd3",
+            "options": [
+              "changed",
+              "have changed",
+              "was changing"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd4",
+            "options": [
+              "do you work",
+              "are you working",
+              "did you work"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd5",
+            "options": [
+              "I get",
+              "I'll get",
+              "I would get"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd6",
+            "options": [
+              "Could",
+              "Can",
+              "Should"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd7",
+            "options": [
+              "Are we going to",
+              "Do we",
+              "Did we"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd8",
+            "options": [
+              "will",
+              "might",
+              "don't"
+            ],
+            "answer": 1
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "g5",
+          "prompt": "A vet is someone ___ looks after animals.",
+          "options": [
+            "who",
+            "which",
+            "where"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g7",
+          "prompt": "She ___ (fall) off her bike yesterday.",
+          "options": [
+            "falled",
+            "fell",
+            "fallen"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g10",
+          "prompt": "I've decided ___ (start) a new hobby.",
+          "options": [
+            "starting",
+            "to start",
+            "start"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g13",
+          "prompt": "I need ___ umbrella — it's raining.",
+          "options": [
+            "a",
+            "an",
+            "the"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g14",
+          "prompt": "There isn't ___ milk left in the fridge.",
+          "options": [
+            "many",
+            "much",
+            "a few"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g16",
+          "prompt": "This is ___ film I've ever seen.",
+          "options": [
+            "the most boring",
+            "more boring",
+            "boringer"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g17",
+          "prompt": "I ___ (see) that film already — let's watch something else.",
+          "options": [
+            "saw",
+            "have seen",
+            "see"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g18",
+          "prompt": "I've ___ finished my homework — do you want to see it?",
+          "options": [
+            "yet",
+            "just",
+            "ever"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g20",
+          "prompt": "There's ___ at the door — can you check?",
+          "options": [
+            "somebody",
+            "anybody",
+            "nobody"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g23",
+          "prompt": "You ___ smoke here — it's forbidden.",
+          "options": [
+            "mustn't",
+            "don't have to",
+            "shouldn't"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g29",
+          "prompt": "This bridge ___ (build) in 1889.",
+          "options": [
+            "built",
+            "was built",
+            "has built"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g31",
+          "prompt": "If I ___ (be) you, I would apologise.",
+          "options": [
+            "am",
+            "was",
+            "were"
+          ],
+          "answer": 2
+        }
+      ]
+    },
+    {
+      "key": "vocabulary",
+      "dialogue": {
+        "intro": "A friend is helping with a job application. Complete their conversation — choose the best word for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "I saw a job ",
+              {
+                "gap": 0
+              },
+              " online and I'd like to apply."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Great! Have you got an up-to-date CV? Make sure you attach your ",
+              {
+                "gap": 1
+              },
+              "."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Yes, I've also written a covering letter. I start with “I am writing to ",
+              {
+                "gap": 2
+              },
+              " for the position.”"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Perfect. And don't forget — the interviewer might ask about your strengths and ",
+              {
+                "gap": 3
+              },
+              "."
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "vd1",
+            "options": [
+              "vacancy",
+              "qualification",
+              "promotion"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd2",
+            "options": [
+              "references",
+              "candidates",
+              "recruits"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd3",
+            "options": [
+              "apply",
+              "attach",
+              "recruit"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd4",
+            "options": [
+              "weaknesses",
+              "responsibilities",
+              "qualifications"
+            ],
+            "answer": 0
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "v1",
+          "prompt": "A person who studies human behaviour and the mind is a ___.",
+          "options": [
+            "psychologist",
+            "journalist",
+            "accountant"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v2",
+          "prompt": "If a road is very busy and full of people, it's ___.",
+          "options": [
+            "crowded",
+            "narrow",
+            "quiet"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v3",
+          "prompt": "A place where you keep your clothes is a ___.",
+          "options": [
+            "wardrobe",
+            "dustpan",
+            "duvet"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v4",
+          "prompt": "When you're really tired after a long day, you feel ___.",
+          "options": [
+            "exhausted",
+            "confused",
+            "embarrassed"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v5",
+          "prompt": "A person who has never been married is ___.",
+          "options": [
+            "single",
+            "divorced",
+            "engaged"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v10",
+          "prompt": "Food with a strong, hot taste is ___.",
+          "options": [
+            "spicy",
+            "bitter",
+            "plain"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "key": "reading",
+      "passages": [
+        {
+          "id": "r1",
+          "title": "Text A",
+          "text": [
+            "My name is Elif, and I've worked as a nurse since 2015.",
+            "I used to work in a small clinic in my hometown, but three years ago I moved to a bigger hospital in Istanbul, where I've been ever since.",
+            "The job I do now is completely different from the one I used to have — back then, I mostly saw patients with minor problems, but now I work in the emergency department, which is much more stressful but also more rewarding.",
+            "If I hadn't moved cities, I probably wouldn't have met my husband, who is a doctor at the same hospital.",
+            "We met on my very first day, when I got completely lost in the building and he showed me the way to the right department.",
+            "Since then, a lot has changed in our lives: we got married last year, and we've just bought a small flat near the hospital.",
+            "The flat was built in the 1960s, so it needed a lot of work before we could move in — the kitchen, for example, had to be completely rebuilt.",
+            "My colleague, who has been a nurse for over twenty years, always says that the best thing about this job is the people you meet, not the money.",
+            "I completely agree with her.",
+            "If I were braver, I'd probably apply for a senior position next year, but for now, I'm happy just learning as much as I can from the more experienced staff around me."
+          ],
+          "questions": [
+            {
+              "id": "r1q1",
+              "prompt": "Elif has worked as a nurse since 2015.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q2",
+              "prompt": "She still works in the small clinic in her hometown.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q3",
+              "prompt": "Elif met her husband on her first day at the new hospital.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q4",
+              "prompt": "The flat they bought didn't need any work.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q5",
+              "prompt": "Why hasn't Elif applied for a senior position yet?",
+              "options": [
+                "She doesn't like her job",
+                "She wants to learn more from experienced staff first",
+                "She isn't allowed to"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "title": "Text B",
+          "text": [
+            "Last summer, my friend Tomasz and I decided to cycle from Warsaw to the Baltic coast, something neither of us had ever done before.",
+            "We'd been planning the trip for months, and we were both really excited when the day finally came.",
+            "The first two days went smoothly — the roads were quieter than we'd expected, and the weather was much better than the forecast had predicted.",
+            "On the third day, though, everything went wrong.",
+            "We were cycling through a forest when it suddenly started raining heavily, and within minutes we were both soaked.",
+            "While we were looking for somewhere to shelter, Tomasz's bike got a flat tyre, and neither of us had brought the right tools to fix it.",
+            "We had to push our bikes for almost five kilometres until we found a small village, where a very kind man let us stay in his garage for the night.",
+            "The next morning, he even helped us repair the tyre before we left.",
+            "If that hadn't happened, I don't think we would have finished the trip at all — we were both ready to give up.",
+            "In the end, we reached the coast four days later than planned, but it didn't matter.",
+            "I've never felt as proud of anything as I did standing on that beach, completely exhausted but happy.",
+            "We've already started talking about our next trip, although this time we've agreed to check the weather forecast a bit more carefully, and to bring some proper tools with us."
+          ],
+          "questions": [
+            {
+              "id": "r2q1",
+              "prompt": "Tomasz and the narrator had cycled this route before.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q2",
+              "prompt": "The weather was worse than the forecast had predicted at the start of the trip.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q3",
+              "prompt": "A stranger let them stay in his garage.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r2q4",
+              "prompt": "They finished the trip exactly on the day they had planned.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q5",
+              "prompt": "What have they agreed to do differently next time?",
+              "options": [
+                "Travel by car instead",
+                "Check the weather forecast more carefully and bring proper tools",
+                "Never cycle again"
+              ],
+              "answer": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "listening",
+      "passages": [
+        {
+          "id": "l1",
+          "audio": "377966be5671.mp3",
+          "lines": [
+            {
+              "sp": "A",
+              "t": "Hi, I'm calling about the MovNat training course in November."
+            },
+            {
+              "sp": "B",
+              "t": "OK, great. Are you interested in coming on the course?"
+            },
+            {
+              "sp": "A",
+              "t": "Yes, I am, but I've just got a few questions I'd like to ask. Do you need to have a good level of fitness?"
+            },
+            {
+              "sp": "B",
+              "t": "No, no. The course is for anybody. It doesn't matter how fit you are. When you arrive, the instructor will check your fitness level."
+            },
+            {
+              "sp": "A",
+              "t": "Right. And what will happen if it rains or snows? Will you cancel it, or will it be indoors?"
+            },
+            {
+              "sp": "B",
+              "t": "No. The course will take place outside, whatever the weather."
+            },
+            {
+              "sp": "A",
+              "t": "OK. So is it necessary to book a place, or would it be alright to just turn up?"
+            },
+            {
+              "sp": "B",
+              "t": "No, you'll definitely need to reserve a place before you come. There are only two or three places left in November."
+            },
+            {
+              "sp": "A",
+              "t": "I just need to check I can make those dates. Then I'll call and book."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l1q1",
+              "prompt": "Does the caller need to be very fit to join the course?",
+              "options": [
+                "Yes, extremely fit",
+                "No, the course is for anybody",
+                "Only in the intermediate group"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l1q2",
+              "prompt": "What happens to the course if it rains or snows?",
+              "options": [
+                "It's cancelled",
+                "It moves indoors",
+                "It still takes place outside"
+              ],
+              "answer": 2
+            },
+            {
+              "id": "l1q3",
+              "prompt": "Why does the caller decide not to book immediately?",
+              "options": [
+                "The course is too expensive",
+                "She needs to check her dates first",
+                "She doesn't want to go anymore"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l2",
+          "audio": "9b1e41e4fcb0.mp3",
+          "lines": [
+            {
+              "sp": "Narrator",
+              "t": "So this is a Sacher Torte. It's probably the most famous food from Austria. It's a kind of chocolate cake. On the top and sides it's covered with dark chocolate which has a nice, bitter taste."
+            },
+            {
+              "sp": "Narrator",
+              "t": "OK, so this is a tagine. It's a kind of stew. This one is made with pieces of lamb cooked in a thick sauce with onions and spices. The tagine has some honey in it, so it tastes quite sweet."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l2q1",
+              "prompt": "What is the Sacher Torte covered with?",
+              "options": [
+                "Whipped cream",
+                "Dark chocolate",
+                "Icing sugar"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l2q2",
+              "prompt": "What does the tagine in the recording contain?",
+              "options": [
+                "Chicken and rice",
+                "Lamb, onions and spices",
+                "Fish and vegetables"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l3",
+          "audio": "3bc64e63aed6.mp3",
+          "lines": [
+            {
+              "sp": "P",
+              "t": "So would you take a smart pill?"
+            },
+            {
+              "sp": "M",
+              "t": "I would take a smart pill if I knew it was safe. Of course, that's a big 'if'! My worry, though, is the cost."
+            },
+            {
+              "sp": "P",
+              "t": "Good point. So your score for a smart pill?"
+            },
+            {
+              "sp": "M",
+              "t": "Erm, 7 out of 10."
+            },
+            {
+              "sp": "P",
+              "t": "OK. So let's move onto the second idea — that everybody should dance salsa every day."
+            },
+            {
+              "sp": "M",
+              "t": "Well, I liked the idea that dancing can make you fit and happy. The only problem for me is that it would take a lot of effort to do it every single day. But, still, I like the idea. I'd give it 8 out of 10."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l3q1",
+              "prompt": "Would the guest take a smart pill?",
+              "options": [
+                "No, never",
+                "Only if she knew it was safe",
+                "Yes, immediately, no matter the cost"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l3q2",
+              "prompt": "What score out of 10 does she give the smart-pill idea?",
+              "options": [
+                "5",
+                "7",
+                "10"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l3q3",
+              "prompt": "What's her only worry about the dancing idea?",
+              "options": [
+                "It's boring",
+                "It would take a lot of effort every day",
+                "It's too expensive"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l4",
+          "audio": "d433930b173f.mp3",
+          "lines": [
+            {
+              "sp": "P",
+              "t": "I've been a newspaper journalist since 2001. I enjoy my job mostly, but I really don't like the office where I work. I've worked here for five years."
+            },
+            {
+              "sp": "J",
+              "t": "Scientists say that nobody can understand two people talking at the same time. If somebody else is speaking, then we can't listen to that voice in our head. Research has shown that the noise in open-plan offices can reduce productivity by 66%."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l4q1",
+              "prompt": "How long has the speaker worked in this particular office?",
+              "options": [
+                "Since 2001",
+                "For five years",
+                "For 66 years"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l4q2",
+              "prompt": "According to the sound expert, what can noise in open-plan offices do?",
+              "options": [
+                "Increase productivity",
+                "Reduce productivity by 66%",
+                "Have no effect on work"
+              ],
+              "answer": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tips": {
+    "grammar": {
+      "en": "Go back through the grammar stage of Lessons 1–36 — focus especially on Present Perfect vs Past Simple, the two conditionals, the passive, and used to.",
+      "ru": "Вернитесь к грамматике уроков 1–36 — особенно Present Perfect и Past Simple, два типа условных предложений, пассив и used to.",
+      "kk": "1–36-сабақтардың грамматикасына оралыңыз — әсіресе Present Perfect пен Past Simple, шартты сөйлемдердің екі түрі, ырықсыз етіс және used to."
+    },
+    "vocabulary": {
+      "en": "Revisit the flashcards across units — character, money, food and job-application vocabulary come up again and again.",
+      "ru": "Повторите карточки по всем юнитам — характер, деньги, еда и лексика для устройства на работу встречаются снова и снова.",
+      "kk": "Барлық юниттердегі карточкаларды қайталаңыз — мінез, ақша, тағам және жұмысқа орналасу лексикасы қайта-қайта кездеседі."
+    },
+    "reading": {
+      "en": "Re-read the reading-led lessons (they're written specially for this course, not from the coursebook), and practise picking out the key fact rather than every word.",
+      "ru": "Перечитайте уроки с упором на чтение (тексты написаны специально для курса, в учебнике их нет) и тренируйтесь находить главный факт, а не переводить каждое слово.",
+      "kk": "Оқылымға арналған сабақтарды қайта оқыңыз (мәтіндер осы курсқа арнайы жазылған, оқулықта жоқ) және әр сөзді емес, негізгі фактіні табуға жаттығыңыз."
+    },
+    "listening": {
+      "en": "Replay the Listening tracks around Units 9–12 (bookings, food description, opinions, present perfect at work) — listen for the answer, not for every word.",
+      "ru": "Переслушайте записи юнитов 9–12 (бронирование, описание еды, мнения, present perfect на работе) — слушайте ответ, а не каждое слово.",
+      "kk": "9–12-юниттердің жазбаларын қайта тыңдаңыз (брондау, тағамды сипаттау, пікірлер, жұмыстағы present perfect) — әр сөзді емес, жауапты тыңдаңыз."
+    }
+  }
+}
