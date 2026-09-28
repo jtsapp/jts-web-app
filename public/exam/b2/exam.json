@@ -1,0 +1,780 @@
+{
+  "level": "b2",
+  "version": "6847dd9f",
+  "total": 50,
+  "pass": 35,
+  "sections": [
+    {
+      "key": "grammar",
+      "dialogue": {
+        "intro": "Two colleagues are discussing a strange mix-up at work. Complete their conversation — choose the best option for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "Hey, ",
+              {
+                "gap": 0
+              },
+              " working on this project for long?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "About three months now. Actually, something strange happened yesterday — some files went missing from the shared drive."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Really? ",
+              {
+                "gap": 1
+              },
+              " have deleted them by accident."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Maybe, but he's usually really careful. He ",
+              {
+                "gap": 2
+              },
+              " leave the office without locking his computer — it's a company rule."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "True. Anyway, the files ",
+              {
+                "gap": 3
+              },
+              " by IT this morning, so it's not a big problem now."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Good. By the way, ",
+              {
+                "gap": 4
+              },
+              " meet the new manager next week?"
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Yes, I am. She's the person ",
+              {
+                "gap": 5
+              },
+              " used to work at our Berlin office."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Oh, I didn't know that."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "She told me she ",
+              {
+                "gap": 6
+              },
+              " really looking forward to it."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Nice. If I ",
+              {
+                "gap": 7
+              },
+              " in her position, I'd probably feel nervous too."
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "gd1",
+            "options": [
+              "have you been",
+              "are you",
+              "did you"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd2",
+            "options": [
+              "He might",
+              "He does",
+              "He is"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd3",
+            "options": [
+              "mustn't",
+              "doesn't have to",
+              "isn't able to"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd4",
+            "options": [
+              "recovered",
+              "were recovered",
+              "have recover"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd5",
+            "options": [
+              "are you going to",
+              "do you",
+              "did you"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd6",
+            "options": [
+              "who",
+              "which",
+              "whose"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd7",
+            "options": [
+              "is",
+              "was",
+              "were"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd8",
+            "options": [
+              "am",
+              "was",
+              "were"
+            ],
+            "answer": 2
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "g1",
+          "prompt": "Could you tell me ___?",
+          "options": [
+            "where is the station",
+            "where the station is",
+            "where is the station located"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g9",
+          "prompt": "He ___ (leave) his comfort zone and moved abroad.",
+          "options": [
+            "leave",
+            "left",
+            "has left"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g10",
+          "prompt": "By the time we arrived, the film ___ already started.",
+          "options": [
+            "already started",
+            "had already started",
+            "has already started"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g13",
+          "prompt": "He plays ___ guitar every evening.",
+          "options": [
+            "a",
+            "an",
+            "the"
+          ],
+          "answer": 2
+        },
+        {
+          "id": "g21",
+          "prompt": "She sings ___.",
+          "options": [
+            "beautiful",
+            "beautifully",
+            "beauty"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g22",
+          "prompt": "When I was a child, I ___ spend hours reading comics.",
+          "options": [
+            "would",
+            "was used to",
+            "use"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g26",
+          "prompt": "I need to ___ my car repaired before the trip.",
+          "options": [
+            "have",
+            "do",
+            "make"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g30",
+          "prompt": "___ tired after the long flight, she went straight to bed.",
+          "options": [
+            "Feeling",
+            "Felt",
+            "Feel"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g33",
+          "prompt": "I can't help ___ about it.",
+          "options": [
+            "think",
+            "to think",
+            "thinking"
+          ],
+          "answer": 2
+        },
+        {
+          "id": "g41",
+          "prompt": "She bought a ___ dress.",
+          "options": [
+            "beautiful long red",
+            "long red beautiful",
+            "red long beautiful"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g42",
+          "prompt": "You can borrow my car ___ you bring it back before 6.",
+          "options": [
+            "unless",
+            "as long as",
+            "although"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g46",
+          "prompt": "I wish I ___ the answer.",
+          "options": [
+            "know",
+            "knew",
+            "known"
+          ],
+          "answer": 1
+        }
+      ]
+    },
+    {
+      "key": "vocabulary",
+      "dialogue": {
+        "intro": "A quick phone call between two colleagues gets cut off. Complete their conversation — choose the best word for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "I'm sorry, could you ",
+              {
+                "gap": 0
+              },
+              " me later? I think we got cut off."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Sure. Actually, can you ",
+              {
+                "gap": 1
+              },
+              " me into that email thread so I can see the full report?"
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Will do. By the way, the manager ",
+              {
+                "gap": 2
+              },
+              " that the deadline has been moved to Friday."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Good, that gives us more time. I was starting to feel a bit ",
+              {
+                "gap": 3
+              },
+              " about finishing on time."
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "vd1",
+            "options": [
+              "call back",
+              "call in",
+              "call up"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd2",
+            "options": [
+              "copy",
+              "attach",
+              "delete"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd3",
+            "options": [
+              "claimed",
+              "confirmed",
+              "denied"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "vd4",
+            "options": [
+              "anxious",
+              "confidential",
+              "entertaining"
+            ],
+            "answer": 0
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "v1",
+          "prompt": "Regular exercise ___ better mental health.",
+          "options": [
+            "contributes to",
+            "consists of",
+            "adapts to"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v2",
+          "prompt": "That word is spelled with the prefix meaning 'two' — like in '___lingual'.",
+          "options": [
+            "bi",
+            "semi",
+            "mono"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v3",
+          "prompt": "I always ___ my keys somewhere in the house!",
+          "options": [
+            "lose",
+            "loose",
+            "loss"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v4",
+          "prompt": "She strongly ___ that she had ever seen the document before.",
+          "options": [
+            "admitted",
+            "denied",
+            "insisted"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "v5",
+          "prompt": "He finally ___ a solution to the problem after weeks of thinking.",
+          "options": [
+            "came up with",
+            "carried out",
+            "turned up"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v10",
+          "prompt": "I ___ something moving in the bushes.",
+          "options": [
+            "saw",
+            "looked",
+            "watched"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "key": "reading",
+      "passages": [
+        {
+          "id": "r1",
+          "title": "Text A",
+          "text": [
+            "Looking back, I sometimes wonder how different my life would have been if I hadn't moved to this city twenty years ago.",
+            "I'd grown up in a small coastal town, the kind of place where everyone knew everyone else, and I'd never imagined living anywhere else until a job offer arrived that I simply couldn't turn down.",
+            "The company that hired me was based downtown, in an old building that had been converted from a factory into offices.",
+            "I remember feeling terrified on my first day, wishing I'd asked more questions before accepting the position.",
+            "My manager, a woman who had worked there for over fifteen years, told me later that she'd noticed how nervous I was, and that she'd deliberately given me an easy first assignment to help me settle in.",
+            "Looking back, I'm grateful she did.",
+            "Over the following months, I made friends I still have today, including my closest friend, whose desk happened to be right next to mine.",
+            "We were both assigned to the same project, having been picked more or less at random by a manager who probably didn't realise how well we'd get on.",
+            "If I hadn't been placed on that project, we might never have spoken to each other at all.",
+            "These days, whenever a new employee joins the team looking just as terrified as I once did, I try to remember what it felt like, and I make a point of being the person who makes them feel welcome.",
+            "It's a small thing, but I think it matters more than people realise.",
+            "Sometimes the biggest turning points in our lives come from the smallest, most ordinary decisions — a job offer, a desk assignment, a single conversation that could easily never have happened."
+          ],
+          "questions": [
+            {
+              "id": "r1q1",
+              "prompt": "The narrator grew up in a big city.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q2",
+              "prompt": "The narrator's manager gave them an easy first task on purpose.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q3",
+              "prompt": "The narrator and their closest friend were placed on the same project by chance.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q4",
+              "prompt": "The narrator has forgotten what it felt like to be a nervous new employee.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q5",
+              "prompt": "What does the narrator believe about big turning points in life?",
+              "options": [
+                "They always come from major decisions",
+                "They often come from small, ordinary decisions",
+                "They can't be predicted or explained"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "title": "Text B",
+          "text": [
+            "When Marcus arrived at the office on Monday morning, something felt wrong immediately.",
+            "His desk, which was usually covered in notes and half-finished sketches, had been completely cleared.",
+            "His computer, still logged in from Friday, showed a folder that hadn't been there before, containing files he didn't recognise.",
+            "He couldn't have left it there himself — he was certain of that.",
+            "Someone else must have used his computer over the weekend, although he couldn't work out who, since the office had been locked the entire time, according to the security log.",
+            "He asked around, but nobody admitted to knowing anything about it.",
+            "His colleague Priya, who had been promoted to team leader the previous month, suggested it might have been the new smart-device system installed the week before — a system designed to automatically back up and reorganise shared files overnight.",
+            "Feeling both curious and slightly unsettled, Marcus contacted IT support, who confirmed that the system had, in fact, been running a scheduled reorganisation that weekend, exactly as Priya had guessed.",
+            "The files hadn't been touched by a person at all — they'd been sorted automatically, based on project tags that Marcus hadn't even known existed.",
+            "He felt relieved, but also a little uneasy about how much control the new system already had over his work.",
+            "That evening, he mentioned the incident to his partner, who simply laughed and said that Marcus, being famously disorganised, had probably needed the help more than he wanted to admit.",
+            "Marcus wasn't entirely convinced, but he had to agree that his desk had never looked so tidy."
+          ],
+          "questions": [
+            {
+              "id": "r2q1",
+              "prompt": "Marcus's desk was messier than usual on Monday morning.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q2",
+              "prompt": "Marcus was sure he hadn't created the new folder himself.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r2q3",
+              "prompt": "It turned out that a person had secretly reorganised his files.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q4",
+              "prompt": "Priya correctly guessed what had caused the change.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r2q5",
+              "prompt": "How does Marcus's partner explain the situation?",
+              "options": [
+                "She blames the new software entirely",
+                "She jokes that Marcus needed the help since he's disorganised",
+                "She thinks Marcus is imagining things"
+              ],
+              "answer": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "listening",
+      "passages": [
+        {
+          "id": "l1",
+          "audio": "d088852ec3d5.mp3",
+          "lines": [
+            {
+              "sp": "Speaker",
+              "t": "It's not something that I usually do because I really do need my sleep. However, I do find it difficult to sleep on aeroplanes. It was a thirteen-hour flight, and I really tried to get some sleep — I put in the earplugs and I put on the eye mask. But I just can't sleep sitting upright. I closed my eyes, but I didn't sleep at all. Not one bit. I was exhausted when we arrived."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l1q1",
+              "prompt": "How long was the flight?",
+              "options": [
+                "Three hours",
+                "Thirteen hours",
+                "Thirty hours"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l1q2",
+              "prompt": "Did the speaker manage to sleep at all?",
+              "options": [
+                "Yes, for a few hours",
+                "No, not at all",
+                "Only during take-off"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l2",
+          "audio": "d2d88b8ce553.mp3",
+          "lines": [
+            {
+              "sp": "Narrator",
+              "t": "For thousands of years, people divided the taste of food into four types: sweet, sour, bitter and salty. However, in 1908, a Japanese chemist, Kikunae Ikeda, sensed that his seaweed soup had a flavour that wasn't one of the classic four. He identified it as glutamic acid, but named it umami, meaning 'delicious' in Japanese."
+            },
+            {
+              "sp": "Narrator",
+              "t": "According to Professor Spence at Oxford University, tomato juice tastes better on aeroplanes because the umami flavour is one of the only tastes strong enough to be noticed over the sound of the engines. His research also found that diners believed food tasted bitter when listening to low-pitched brass music, while high-pitched piano music made food taste sweeter."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l2q1",
+              "prompt": "Who first identified umami as a separate taste?",
+              "options": [
+                "A Greek philosopher",
+                "A Japanese chemist",
+                "An Oxford professor"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l2q2",
+              "prompt": "According to Professor Spence's research, what happens when diners listen to high-pitched piano music?",
+              "options": [
+                "Food tastes more bitter",
+                "Food tastes sweeter",
+                "Food tastes saltier"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l2q3",
+              "prompt": "Why do many people choose tomato juice on aeroplanes?",
+              "options": [
+                "It's the cheapest drink available",
+                "Its umami flavour is noticeable over engine noise",
+                "Airlines only serve tomato juice"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l3",
+          "audio": "8f9412429238.mp3",
+          "lines": [
+            {
+              "sp": "Narrator",
+              "t": "In Norway, two teenagers found cash worth $81,500 in a bag on a train and handed it in to the police. The money belonged to an elderly man who had left the bag on the seat. The teenagers immediately called the police to inform them that they had found the money. Police have praised the teenagers for being honest, but the teens denied acting heroically, pointing out that the cash wasn't actually theirs and it hadn't occurred to them to keep it. The police were unable to confirm whether the teenagers had received a reward for their honesty."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l3q1",
+              "prompt": "What did the two teenagers find on a train?",
+              "options": [
+                "A passport only",
+                "Cash worth $81,500",
+                "A stolen bag"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l3q2",
+              "prompt": "What did the teenagers say when the police praised them?",
+              "options": [
+                "They asked for a reward",
+                "They denied acting heroically",
+                "They refused to talk to police"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l3q3",
+              "prompt": "Could police confirm whether the teenagers received a reward?",
+              "options": [
+                "Yes, they received a large reward",
+                "No, this couldn't be confirmed",
+                "They refused any reward"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l4",
+          "audio": "aaf5b3f191c0.mp3",
+          "lines": [
+            {
+              "sp": "Speaker 1",
+              "t": "I believe one child is ideal. I also know that if I'd had more children, I'd have been less happy, as I'd have had to give up too much in my life."
+            },
+            {
+              "sp": "Speaker 3",
+              "t": "I feel no couple should have more than two children. I read the other day that if every couple in a rich country had one less child, they would save 9,441 tonnes of carbon dioxide over their lifetime."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l4q1",
+              "prompt": "According to Speaker 1, what would have happened if she'd had more children?",
+              "options": [
+                "She would have been happier",
+                "She would have been less happy",
+                "She wouldn't have noticed a difference"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l4q2",
+              "prompt": "According to Speaker 3, what would happen if every couple in a rich country had one fewer child?",
+              "options": [
+                "They would save thousands of tonnes of CO2 over a lifetime",
+                "Nothing would change",
+                "Population would increase"
+              ],
+              "answer": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tips": {
+    "grammar": {
+      "en": "Go back through the grammar stage of Lessons 1–48 — focus especially on the passive, reported speech, relative/participle clauses, and the unreal conditionals.",
+      "ru": "Вернитесь к грамматике уроков 1–48 — особенно пассив, косвенная речь, относительные и причастные обороты, нереальные условные предложения.",
+      "kk": "1–48-сабақтардың грамматикасына оралыңыз — әсіресе ырықсыз етіс, төлеу сөз, қатыстық және есімшелі оралымдар, шындыққа жанаспайтын шартты сөйлемдер."
+    },
+    "vocabulary": {
+      "en": "Revisit the flashcards across units — verb+preposition combinations, reporting verbs, and easily confused word pairs come up again and again.",
+      "ru": "Повторите карточки по всем юнитам — глаголы с предлогами, глаголы передачи речи и легко путаемые пары слов встречаются снова и снова.",
+      "kk": "Барлық юниттердегі карточкаларды қайталаңыз — verb + preposition тіркестері, сөзді жеткізу етістіктері (reporting verbs) және оңай шатастырылатын сөз жұптары қайта-қайта кездеседі."
+    },
+    "reading": {
+      "en": "Re-read the reading-led lessons (they're written specially for this course, not from the coursebook), and practise picking out the key fact rather than every word.",
+      "ru": "Перечитайте уроки с упором на чтение (тексты написаны специально для курса, в учебнике их нет) и тренируйтесь находить главный факт, а не переводить каждое слово.",
+      "kk": "Оқылымға арналған сабақтарды қайта оқыңыз (мәтіндер осы курсқа арнайы жазылған, оқулықта жоқ) және әр сөзді емес, негізгі фактіні табуға жаттығыңыз."
+    },
+    "listening": {
+      "en": "Replay the Listening tracks around Units 9–12 (sleep habits, taste and umami, reported news stories, family-size opinions) — listen for the answer, not for every word.",
+      "ru": "Переслушайте записи юнитов 9–12 (привычки сна, вкус и умами, пересказ новостей, мнения о размере семьи) — слушайте ответ, а не каждое слово.",
+      "kk": "9–12-юниттердің жазбаларын қайта тыңдаңыз (ұйқы әдеттері, дәм және умами, жаңалықтарды баяндау, отбасы көлемі туралы пікірлер) — әр сөзді емес, жауапты тыңдаңыз."
+    }
+  }
+}

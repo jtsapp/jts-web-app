@@ -22,10 +22,13 @@ import {
   buildSystemPrompt,
   buildTurns,
   classifyStart,
+  createReportFilter,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { REPORTED_STREAM_MARKER } from '@/lib/assistant/report.js'
+import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 
 export const runtime = 'nodejs'
 
@@ -132,18 +135,48 @@ export async function POST(request) {
     return json(502, { error: 'model_empty' })
   }
 
+  const filter = createReportFilter()
+  const first = filter.push(head) + (finished ? filter.flush() : '')
+  const saveReport = async () => {
+    if (filter.report() == null) return false
+    const lastUser = [...parsed.messages].reverse().find((m) => m.role === 'user')
+    try {
+      return await saveAssistantErrorReport({
+        profileId: key,
+        userId: auth.user.userId,
+        lang: parsed.lang,
+        screenId: parsed.screen.id,
+        pageUrl: parsed.pageUrl,
+        userAgent: parsed.userAgent,
+        userMessage: lastUser?.content || '',
+        assistantSummary: filter.report() || filter.visible(),
+        screenText: parsed.screen.text,
+        clientErrors: parsed.errors,
+      })
+    } catch {
+      return false
+    }
+  }
+
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      controller.enqueue(encoder.encode(head))
+      if (first) controller.enqueue(encoder.encode(first))
       if (finished) {
+        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
         controller.close()
         return
       }
       try {
         for await (const ev of gen) {
-          if (ev.type === 'text' && ev.text) controller.enqueue(encoder.encode(ev.text))
+          if (ev.type === 'text' && ev.text) {
+            const out = filter.push(ev.text)
+            if (out) controller.enqueue(encoder.encode(out))
+          }
         }
+        const tail = filter.flush()
+        if (tail) controller.enqueue(encoder.encode(tail))
+        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
         controller.close()
       } catch (err) {
         console.error('[assistant] stream failed:', err?.message || err)

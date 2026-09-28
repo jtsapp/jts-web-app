@@ -2,6 +2,7 @@
 // текста — общая (src/lib/answer-match.js), чтобы «do not» и «don't» здесь
 // значили то же, что в «Обучении» и в движке курса.
 import { answerMatches, normAnswer } from '../../lib/answer-match.js'
+import { tidyLessonText } from './tidyLessonText.js'
 
 export const norm = normAnswer
 
@@ -58,8 +59,8 @@ export function gradeQuestion(question, answer) {
     // записана только изменяемая часть, а ученик пишет фразу целиком. Без cue
     // расширение выключено (answer-match.js: `if (!cue) return false`), и на
     // экране он видел красный крест там, где сервер засчитывал ответ верным.
-    const cue = `${question.gapBefore || ''} ${question.gapAfter || ''}`
-    return { correct: answerMatches(answer, question.answers, cue) }
+    const cue = `${tidyLessonText(question.gapBefore || '')} ${tidyLessonText(question.gapAfter || '')}`
+    return { correct: answerMatches(answer, (question.answers || []).map(tidyLessonText), cue) }
   }
   if (question.type === 'match') {
     const pairs = question.pairs || []

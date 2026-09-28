@@ -32,6 +32,15 @@ vi.mock('@/lib/assistant/studentContext.js', () => ({
 }))
 const { loadStudentContext } = await import('@/lib/assistant/studentContext.js')
 
+const { saveCalls } = vi.hoisted(() => ({ saveCalls: [] }))
+vi.mock('@/lib/db/assistantErrorReports.js', () => ({
+  saveAssistantErrorReport: vi.fn(async (row) => {
+    saveCalls.push(row)
+    return true
+  }),
+}))
+const { saveAssistantErrorReport } = await import('@/lib/db/assistantErrorReports.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -59,6 +68,8 @@ describe('POST /api/assistant/chat', () => {
     studentContextResult = null
     studentContextThrows = false
     loadStudentContext.mockClear()
+    saveCalls.length = 0
+    saveAssistantErrorReport.mockClear()
     streamImpl = async function* () {
       yield { type: 'text', text: 'Опечатка: ' }
       yield { type: 'text', text: '«Cleare» → «Clare».' }
@@ -240,5 +251,43 @@ describe('POST /api/assistant/chat', () => {
       yield { type: 'done', stopReason: 'end_turn' }
     }
     expect((await post(question(207))).status).toBe(502)
+  })
+
+  it('поломка сайта: ученику без метки, отчёт в БД с местом и сбоями', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Похоже, урок не открывается. Обновите страницу. Если не поможет — передам команде.\n' }
+      yield { type: 'text', text: '[[REPORT_BUG]]\nРаздел: Урок\nАдрес: https://app.example/lesson/12\nЧто: белый экран после «Начать»\nСбои: ChunkLoadError' }
+    }
+    const body = {
+      ...question(301),
+      messages: [{ role: 'user', content: 'урок не открывается, белый экран' }],
+      pageUrl: 'https://app.example/lesson/12',
+      userAgent: 'Mozilla/5.0 JTS',
+      errors: [{ at: 1, message: 'ChunkLoadError', source: 'app.js:4' }],
+    }
+    const res = await post(body)
+    const text = await res.text()
+    expect(text).toContain('Похоже, урок не открывается')
+    expect(text).not.toContain('[[REPORT_BUG]]')
+    expect(text).toContain('[[ASST_REPORTED]]')
+    expect(text).not.toContain('ChunkLoadError')
+    expect(saveAssistantErrorReport).toHaveBeenCalledTimes(1)
+    expect(saveCalls[0]).toMatchObject({
+      profileId: 'user-301',
+      userId: 301,
+      lang: 'ru',
+      screenId: 'lesson-workspace',
+      pageUrl: 'https://app.example/lesson/12',
+      userAgent: 'Mozilla/5.0 JTS',
+      userMessage: 'урок не открывается, белый экран',
+    })
+    expect(saveCalls[0].assistantSummary).toContain('Раздел: Урок')
+    expect(saveCalls[0].assistantSummary).toContain('белый экран')
+    expect(saveCalls[0].clientErrors[0].message).toBe('ChunkLoadError')
+  })
+
+  it('обычный ответ про опечатку в БД не пишет', async () => {
+    await (await post(question(302))).text()
+    expect(saveAssistantErrorReport).not.toHaveBeenCalled()
   })
 })

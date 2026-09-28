@@ -17,10 +17,14 @@ const levelCache = new Map() // code -> Promise<{lessons:{}}>
  * и экран, и ключи ответов совпадали с тем, что печатает ученик.
  */
 export function decodeUnicodeEscapes(value) {
-  if (typeof value !== 'string' || !value.includes('\\u')) return value
-  return value.replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) =>
-    String.fromCharCode(parseInt(hex, 16)),
-  )
+  if (typeof value !== 'string') return value
+  let s = value
+  if (s.includes('\\u')) {
+    s = s.replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16)),
+    )
+  }
+  return s.replace(/([A-Za-z])u00e9(?![0-9a-fA-F])/gi, (_, letter) => `${letter}é`)
 }
 
 export function deepDecodeUnicodeEscapes(value) {

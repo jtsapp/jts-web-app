@@ -992,9 +992,13 @@
 /* Аудио-элементы LiveKit не должны влиять на ширину/раскладку */
 .t-voice__audio {
   position: absolute;
-  width: 0;
-  height: 0;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
   overflow: hidden;
+  pointer-events: none;
 }
 .t-voice__card {
   position: relative;
@@ -2640,6 +2644,7 @@
   background: transparent;
   padding: 0;
   cursor: pointer;
+  min-width: 0;
 }
 /* 150px, а не 199: карточек в панели теперь семь, и при старой высоте четыре
    ряда не помещались в экран даже со скроллом внутри панели. */
@@ -2672,6 +2677,8 @@
   font-weight: 700;
   color: var(--t-purple);
   text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ------------------- План уроков (полный) ------------------------ */
@@ -3479,6 +3486,7 @@
 .t-scen__card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .t-scen__img {
   position: relative;
@@ -3515,6 +3523,8 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--t-purple);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .t-scen__desc {
   margin-top: 6px;
@@ -4042,10 +4052,19 @@
     width: 100%;
   }
 
-  /* --- Сценарии (страница): десктопные 4 колонки → 2 --- */
+  /* --- Сценарии (страница): десктопные 4 колонки → одна, иначе длинные
+     названия обрезаются с двух сторон в узкой сетке. --- */
   .t-scen__grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px 12px;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .t-scenarios {
+    grid-template-columns: 1fr;
+  }
+
+  .t-scenario__img {
+    height: 140px;
   }
 
   /* --- Результат практики: маскот сверху, панель с кнопками под ним --- */

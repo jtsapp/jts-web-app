@@ -1,3 +1,5 @@
+import { tidyLessonText } from './tidyLessonText.js'
+
 // Живой урок → шаги CourseStepPlayer.
 //
 // Онлайн-урок в макете (Figma «pitch JTS» → Уроки → Онлайн-уроки) — это та же
@@ -26,8 +28,8 @@
 // и сам склеивает через `___` (см. gapSentence). Для `chips` пропуск нужен
 // прямо в тексте вопроса — там вариант выбирается кнопкой, а не печатается.
 function gapPrompt(question) {
-  const before = String(question?.gapBefore || '').trim()
-  const after = String(question?.gapAfter || '').trim()
+  const before = tidyLessonText(question?.gapBefore || '').trim()
+  const after = tidyLessonText(question?.gapAfter || '').trim()
   return `${before} ___ ${after}`.replace(/\s+/g, ' ').trim()
 }
 
@@ -98,7 +100,7 @@ function questionStep(question, block, stage) {
       return { ...base, type: 'choice', prompt: gapPrompt(question), options: question.bank || [], answer: question.answer }
 
     case 'gap':
-      return { ...base, type: 'gap', before: question.gapBefore || '', after: question.gapAfter || '', answers: question.answers || [] }
+      return { ...base, type: 'gap', before: tidyLessonText(question.gapBefore || ''), after: tidyLessonText(question.gapAfter || ''), answers: (question.answers || []).map(tidyLessonText) }
 
     // Живой пример разговора (Figma, Speaking → 4065:28707). Одна реплика
     // собеседника = один экран: в макете следующий ход диалога нарисован

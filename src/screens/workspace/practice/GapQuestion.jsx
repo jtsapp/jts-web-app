@@ -37,7 +37,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
     <div className="lw-q lw-q--gap">
       <QuestionMedia question={question} onWord={onWord} />
       <p className="lw-q__sentence">
-        <TapText text={question.gapBefore} onWord={onWord} />
+        <TapText text={tidyLessonText(question.gapBefore)} onWord={onWord} />
         <span className="lw-gap-input-wrap">
           <input
             type="text"
@@ -72,7 +72,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
       )}
       {showAnswerKey && checked && !userCorrect && !isOpen && (
         <p className="lw-q__answer" aria-live="polite">
-          {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
+          {t('lesson.answerWas')}: {(question.answers || []).map(tidyLessonText).join(' / ')}
         </p>
       )}
       {showAnswerKey && checked && !userCorrect && !isOpen && question.why && (
