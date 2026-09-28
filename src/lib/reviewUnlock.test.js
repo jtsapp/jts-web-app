@@ -173,4 +173,22 @@ describe('фронтир каталога — до материала в зан�
   it('без фронтира урок не режется — решает юнит', () => {
     expect(isReviewLessonUnlocked(2, 4, {})).toBe(true)
   })
+
+  it('три режима одного файла — это один материал: L03 1-to-1 открывает слот 3, не восьмой', () => {
+    const file = (id, mode) => ({ id, fileUrl: `https://files/L0${Math.ceil(id / 3)}.html?mode=${mode}` })
+    const mixed = course({
+      code: 'B2',
+      units: [{
+        lessons: [
+          file(1, 'self'), file(2, 'solo'), file(3, 'group'),
+          file(4, 'self'), file(5, 'solo'), file(6, 'group'),
+          file(7, 'self'), file(8, 'solo'), file(9, 'group'),
+          file(10, 'self'), file(11, 'solo'), file(12, 'group'),
+        ],
+      }],
+    })
+    expect(catalogFrontier(mixed, [2, 5, 8])).toEqual({ unit: 1, lesson: 3 })
+    expect(catalogUnitsDone(mixed, [2, 5, 8])).toEqual([false])
+    expect(catalogUnitsDone(mixed, [2, 5, 8, 11])).toEqual([true])
+  })
 })
