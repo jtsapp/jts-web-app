@@ -250,16 +250,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Урок разблокирован, если: модуль не закрыт админом целиком; индекс не
   // упирается в квоту "сколько уроков этого модуля можно пройти" (см. ниже);
   // ЮНИТ и урок внутри него открыты по lib/reviewUnlock.js: уровень ниже
-  // CEFR ученика — целиком; свой уровень — до самой дальней точки каталога
-  // (материал занятия юнит 2 / урок 3 открывает всё до неё). Внутри уже
-  // открытого отрезка — первый урок юнита или предыдущий урок ТОГО ЖЕ юнита
-  // пройден (крест-накрест между юнитами не тянется).
+  // CEFR ученика — целиком, без каталога, квоты и порядка «сначала предыдущий»;
+  // свой уровень — до самой дальней точки каталога (материал занятия юнит 2 /
+  // урок 3 открывает всё до неё). Внутри уже открытого отрезка своего уровня —
+  // первый урок юнита или предыдущий урок ТОГО ЖЕ юнита пройден (крест-накрест
+  // между юнитами не тянется).
   //
   // Квота: раньше проверялась только В МОМЕНТ завершения урока (403 от
   // бэкенда) — тропа при этом всё равно рисовала следующие уроки открытыми для
   // клика, и студент мог их пройти вплоть до конца, просто без начисления
   // награды. Теперь узлы сверх квоты не открываются вовсе, как и просил
-  // менеджер.
+  // менеджер. На уровне НИЖЕ своего CEFR квота не режет: это повторение уже
+  // пройденного, а не продвижение по текущему модулю.
   //
   // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done:
   // квота на модуль появилась позже прогресса учеников (до неё в базе не было
@@ -276,14 +278,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const isUnlocked = useCallback(
     (i) => {
       if (moduleLocked) return false
-      if (moduleQuota != null && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))) return false
-      if (unlockAll) return true
-      const meta = unitByLessonIndex.get(i)
-      const catalogOpts = {
-        fullyOpen: isReviewLevelFullyOpen(level, userLevel),
-        frontier,
-        unitsDone: catalogDone,
+      const fullyOpen = isReviewLevelFullyOpen(level, userLevel)
+      if (
+        !fullyOpen
+        && moduleQuota != null
+        && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))
+      ) {
+        return false
       }
+      if (unlockAll || fullyOpen) return true
+      const meta = unitByLessonIndex.get(i)
+      const catalogOpts = { fullyOpen, frontier, unitsDone: catalogDone }
       if (
         !meta
         || !isReviewUnitUnlocked(catalogDone, meta.unit, catalogOpts)
@@ -431,6 +436,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           // исключение просто гасилось внутри markDone, урок падал в localStorage
           // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
           if (e instanceof ContentRestrictedError) {
+            // Повторение уровня ниже своего CEFR: урок можно пройти по тропе,
+            // даже если квота модуля на сервере уже исчерпана. Награду сервер
+            // не дал — локально узел всё равно отмечаем, иначе B1 не сможет
+            // дойти по A2 дальше трёх уроков демо-лимита.
+            if (isReviewLevelFullyOpen(level, userLevel)) {
+              setDone((d) => new Set(d).add(code))
+              return
+            }
             // Отметку, выставленную в ожидании ответа, снимаем: урок не
             // засчитан. Пройденный раньше урок при этом не трогаем.
             if (!wasDone) {
@@ -454,7 +467,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setSaving(false)
       }
     },
-    [level, token, moduleId, modulesUnavailable, done],
+    [level, token, moduleId, modulesUnavailable, done, userLevel],
   )
 
   const onDone = useCallback(
