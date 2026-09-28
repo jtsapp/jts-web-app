@@ -1,0 +1,906 @@
+{
+  "level": "a1",
+  "version": "5abe9299",
+  "total": 50,
+  "pass": 35,
+  "sections": [
+    {
+      "key": "grammar",
+      "dialogue": {
+        "intro": "Two friends are catching up after a trip. Complete their conversation — choose the best option for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "Hey! Where ",
+              {
+                "gap": 0
+              },
+              " you last weekend?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "I was in Spain — it was amazing!"
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Nice! ",
+              {
+                "gap": 1
+              },
+              " you go sightseeing every day?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, we did, but we also relaxed on the beach."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "By the way, ",
+              {
+                "gap": 2
+              },
+              " your sister still work in Madrid?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, she does. She loves it there."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              {
+                "gap": 3
+              },
+              " you swim in the sea?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Of course I can — I love swimming."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "What are your plans now — ",
+              {
+                "gap": 4
+              },
+              " go anywhere else this year?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, I'm going to visit Italy in the autumn."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Sounds fun! ",
+              {
+                "gap": 5
+              },
+              " a good time to visit in autumn?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, there is — the weather is usually mild."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Great — and right now, what ",
+              {
+                "gap": 6
+              },
+              " at the moment?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "I'm just relaxing at home."
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              {
+                "gap": 7
+              },
+              " have a coffee together this weekend?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "I'd love to!"
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "gd1",
+            "options": [
+              "was",
+              "were",
+              "are"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd2",
+            "options": [
+              "Do",
+              "Did",
+              "Were"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd3",
+            "options": [
+              "Do",
+              "Does",
+              "Is"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd4",
+            "options": [
+              "Do",
+              "Are",
+              "Can"
+            ],
+            "answer": 2
+          },
+          {
+            "id": "gd5",
+            "options": [
+              "do you",
+              "are you going to",
+              "did you"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd6",
+            "options": [
+              "Is there",
+              "Are there",
+              "Has there"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "gd7",
+            "options": [
+              "do you do",
+              "are you doing",
+              "did you do"
+            ],
+            "answer": 1
+          },
+          {
+            "id": "gd8",
+            "options": [
+              "Would you like to",
+              "Do you like to",
+              "Are you like to"
+            ],
+            "answer": 0
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "g6",
+          "prompt": "This is my sister ___ flat — she lives here alone.",
+          "options": [
+            "her",
+            "she's",
+            "hers"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g7",
+          "prompt": "She usually ___ (start) work at nine.",
+          "options": [
+            "start",
+            "starts",
+            "starting"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g10",
+          "prompt": "\"___ your brother work in an office?\" \"Yes, he does.\"",
+          "options": [
+            "Do",
+            "Does",
+            "Is"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g14",
+          "prompt": "There's a bathroom, but there isn't ___ balcony.",
+          "options": [
+            "a",
+            "an",
+            "the"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g15",
+          "prompt": "Go straight on, then turn left at the ___ traffic lights.",
+          "options": [
+            "between",
+            "opposite",
+            "next to"
+          ],
+          "answer": 2
+        },
+        {
+          "id": "g21",
+          "prompt": "Is there ___ milk left in the fridge?",
+          "options": [
+            "any",
+            "many",
+            "much"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "g22",
+          "prompt": "\"How ___ sugar do you take?\" \"Just a little.\"",
+          "options": [
+            "many",
+            "much",
+            "few"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g25",
+          "prompt": "Cairo's population is ___ Sydney's.",
+          "options": [
+            "big than",
+            "more big than",
+            "bigger than"
+          ],
+          "answer": 2
+        },
+        {
+          "id": "g26",
+          "prompt": "Everest is ___ mountain in the world.",
+          "options": [
+            "higher",
+            "the highest",
+            "most high"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g27",
+          "prompt": "I'd ___ stay home tonight — I'm really tired.",
+          "options": [
+            "prefer",
+            "rather",
+            "better"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g28",
+          "prompt": "You ___ show your passport at the airport — it's the law.",
+          "options": [
+            "should",
+            "have to",
+            "could"
+          ],
+          "answer": 1
+        },
+        {
+          "id": "g31",
+          "prompt": "\"Have you ___ been to Japan?\" \"No, never.\"",
+          "options": [
+            "ever",
+            "already",
+            "yet"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "key": "vocabulary",
+      "dialogue": {
+        "intro": "Two friends are planning their afternoon. Complete their conversation — choose the best word for each gap.",
+        "lines": [
+          {
+            "sp": "A",
+            "parts": [
+              "It's quite cold outside — you should wear a warm ",
+              {
+                "gap": 0
+              },
+              "."
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Good idea. After the walk, let's cook something — can you ",
+              {
+                "gap": 1
+              },
+              " the rice while I chop the vegetables?"
+            ]
+          },
+          {
+            "sp": "A",
+            "parts": [
+              "Sure! Do we have a ",
+              {
+                "gap": 2
+              },
+              " to cook it in?"
+            ]
+          },
+          {
+            "sp": "B",
+            "parts": [
+              "Yes, it's in the cupboard. After lunch, let's go for a walk — go straight on and turn left at the ",
+              {
+                "gap": 3
+              },
+              "."
+            ]
+          }
+        ],
+        "gaps": [
+          {
+            "id": "vd1",
+            "options": [
+              "jacket",
+              "plate",
+              "kettle"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd2",
+            "options": [
+              "boil",
+              "cross",
+              "press"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd3",
+            "options": [
+              "saucepan",
+              "sofa",
+              "curtains"
+            ],
+            "answer": 0
+          },
+          {
+            "id": "vd4",
+            "options": [
+              "corner",
+              "ingredient",
+              "discount"
+            ],
+            "answer": 0
+          }
+        ]
+      },
+      "questions": [
+        {
+          "id": "v1",
+          "prompt": "My brother's son is my ___.",
+          "options": [
+            "nephew",
+            "cousin",
+            "uncle"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v2",
+          "prompt": "A person who takes care of your teeth is a ___.",
+          "options": [
+            "dentist",
+            "mechanic",
+            "chef"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v3",
+          "prompt": "\"What time is it?\" \"It's 6:15 — ___.\"",
+          "options": [
+            "quarter past six",
+            "half past six",
+            "quarter to six"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v4",
+          "prompt": "When you can't see far because of thick white air, it's ___.",
+          "options": [
+            "foggy",
+            "sunny",
+            "windy"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v5",
+          "prompt": "When you go camping, you sleep in a ___.",
+          "options": [
+            "tent",
+            "kettle",
+            "saucepan"
+          ],
+          "answer": 0
+        },
+        {
+          "id": "v10",
+          "prompt": "\"___ visited a place that changed the way you think?\"",
+          "options": [
+            "Have you ever",
+            "Did you ever",
+            "Do you ever"
+          ],
+          "answer": 0
+        }
+      ]
+    },
+    {
+      "key": "reading",
+      "passages": [
+        {
+          "id": "r1",
+          "title": "Text A",
+          "text": [
+            "My name is Sofia. I was born in Lisbon in 1990, but when I was seven, my family moved to Manchester, so I grew up in the UK.",
+            "Now I'm a hairdresser, and I work in a small salon in the city centre.",
+            "I usually start work at nine and finish at six, but on Saturdays I finish earlier, at three.",
+            "My husband is a mechanic, and he works for a big company just outside the city.",
+            "We've got two children — a son, who is ten, and a daughter, who is six.",
+            "Our daughter can already swim really well, better than most children her age!",
+            "Every evening, we have dinner together, and then the children usually watch a cartoon before bed.",
+            "Last month, we went to Portugal to visit my parents.",
+            "It was wonderful to see them again, and the weather there was much warmer than in Manchester.",
+            "We've never had a proper family holiday before, so it felt very special."
+          ],
+          "questions": [
+            {
+              "id": "r1q1",
+              "prompt": "Sofia grew up in Portugal.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q2",
+              "prompt": "She works as a hairdresser.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q3",
+              "prompt": "Her daughter can swim better than most children her age.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r1q4",
+              "prompt": "The family often goes on holiday together.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r1q5",
+              "prompt": "Why did the family go to Portugal last month?",
+              "options": [
+                "To find a new job",
+                "To visit Sofia's parents",
+                "To buy a house"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "title": "Text B",
+          "text": [
+            "Hi, I'm Marek. I've lived in Warsaw all my life, and I work as a photographer for a small magazine.",
+            "I don't have a typical nine-to-five job — some days I start very early, and other days I don't work until the evening.",
+            "I love my job because every day is different, and I've met a lot of interesting people through my work.",
+            "Last year, I travelled to Iceland to take photos of the mountains and the sea.",
+            "It was colder than I expected, but the views were more beautiful than anything I'd seen before.",
+            "I've never been somewhere so quiet.",
+            "This year, I'm going to visit Japan in the autumn, because I'd like to photograph the autumn colours there.",
+            "Before the trip, I need to save some money, so at the moment I'm working extra hours at the weekend.",
+            "My friends think I should relax more, but I really enjoy staying busy.",
+            "Have you ever visited a place that changed the way you see the world? Iceland did that for me."
+          ],
+          "questions": [
+            {
+              "id": "r2q1",
+              "prompt": "Marek has a typical nine-to-five job.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q2",
+              "prompt": "He travelled to Iceland last year.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 0,
+              "tf": true
+            },
+            {
+              "id": "r2q3",
+              "prompt": "Iceland was warmer than Marek expected.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q4",
+              "prompt": "Marek is going to visit Japan next year.",
+              "options": [
+                "True",
+                "False"
+              ],
+              "answer": 1,
+              "tf": true
+            },
+            {
+              "id": "r2q5",
+              "prompt": "Why is Marek working extra hours at the weekend?",
+              "options": [
+                "He needs to save money for his trip",
+                "He wants a promotion",
+                "He doesn't like weekends"
+              ],
+              "answer": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "listening",
+      "passages": [
+        {
+          "id": "l1",
+          "audio": "0e7b41bfb856.mp3",
+          "lines": [
+            {
+              "sp": "L",
+              "t": "Wow! Look at all this different food!"
+            },
+            {
+              "sp": "C",
+              "t": "I know. I can't decide what I want."
+            },
+            {
+              "sp": "L",
+              "t": "Well there's some pizza over there."
+            },
+            {
+              "sp": "C",
+              "t": "No! We can have pizza any day. Let's try something different."
+            },
+            {
+              "sp": "M",
+              "t": "It's Kung Pao chicken."
+            },
+            {
+              "sp": "C",
+              "t": "It smells so good! What does it come with?"
+            },
+            {
+              "sp": "M",
+              "t": "It comes with some noodles."
+            },
+            {
+              "sp": "C",
+              "t": "I don't really like noodles. Is there any bread?"
+            },
+            {
+              "sp": "M",
+              "t": "No, we don't have any bread, sorry. But we have some rice."
+            },
+            {
+              "sp": "C",
+              "t": "Great. So could I have a small Kung Pao chicken with some rice, please?"
+            },
+            {
+              "sp": "L",
+              "t": "And the same for me, but I'd like some noodles, please."
+            },
+            {
+              "sp": "M",
+              "t": "OK, and would you like any drinks?"
+            },
+            {
+              "sp": "L",
+              "t": "Can I have a bottle of lemonade?"
+            },
+            {
+              "sp": "M",
+              "t": "We don't have any bottles of lemonade, I'm afraid. We have Coke or water."
+            },
+            {
+              "sp": "L",
+              "t": "OK. Well, just a Coke, please."
+            },
+            {
+              "sp": "C",
+              "t": "And for me, too."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l1q1",
+              "prompt": "What does C decide to order?",
+              "options": [
+                "Pizza",
+                "Kung Pao chicken with rice",
+                "Noodles with beef"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l1q2",
+              "prompt": "Is there any bread at the food stall?",
+              "options": [
+                "Yes, plenty",
+                "No, there isn't",
+                "Only white bread"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l1q3",
+              "prompt": "What drink do they finally order?",
+              "options": [
+                "Lemonade",
+                "Coke",
+                "Water"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l2",
+          "audio": "411b45c9642a.mp3",
+          "lines": [
+            {
+              "sp": "A",
+              "t": "Which city is drier, Dublin or Paris?"
+            },
+            {
+              "sp": "B",
+              "t": "It's close: both cities have a lot of rain, but Dublin's wetter."
+            },
+            {
+              "sp": "A",
+              "t": "Which is bigger, the population of Sydney or Cairo?"
+            },
+            {
+              "sp": "B",
+              "t": "Well, Cairo's population is bigger than Sydney's. Cairo has a population of over nine million, but Sydney's is smaller at just over four and a half million."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l2q1",
+              "prompt": "Which city is wetter, Dublin or Paris?",
+              "options": [
+                "Paris",
+                "Dublin",
+                "They're exactly the same"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l2q2",
+              "prompt": "Which city has the bigger population, Sydney or Cairo?",
+              "options": [
+                "Sydney",
+                "Cairo",
+                "They're the same size"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l3",
+          "audio": "b86fedbd206d.mp3",
+          "lines": [
+            {
+              "sp": "I",
+              "t": "So, how are the plans for this year's Mandela Day?"
+            },
+            {
+              "sp": "O",
+              "t": "Great, thanks! We're getting emails from people all around the world telling us how they're going to celebrate the day."
+            },
+            {
+              "sp": "I",
+              "t": "That's good to hear. So what is everyone going to do?"
+            },
+            {
+              "sp": "O",
+              "t": "Oh, all sorts of things. A lot of people are going to make soup and sandwiches and give them to homeless people. I had an email from a man yesterday — he isn't going to eat for 24 hours and he's going to collect money for his local hospital."
+            },
+            {
+              "sp": "I",
+              "t": "Are you going to have time to do something yourself?"
+            },
+            {
+              "sp": "O",
+              "t": "No, I'm afraid I'm not going to have much time at all. But we are going to have a big party here at the office and everyone needs to buy a ticket to come."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l3q1",
+              "prompt": "What are a lot of people going to do for Mandela Day?",
+              "options": [
+                "Make soup and sandwiches for homeless people",
+                "Go on holiday",
+                "Clean the streets"
+              ],
+              "answer": 0
+            },
+            {
+              "id": "l3q2",
+              "prompt": "What is the man in the email going to do?",
+              "options": [
+                "Run a marathon",
+                "Not eat for 24 hours and collect money for a hospital",
+                "Give away his car"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l3q3",
+              "prompt": "Is the speaker going to have much free time on Mandela Day?",
+              "options": [
+                "Yes, a lot",
+                "No, not much",
+                "She isn't sure yet"
+              ],
+              "answer": 1
+            }
+          ]
+        },
+        {
+          "id": "l4",
+          "audio": "601af165e9e7.mp3",
+          "lines": [
+            {
+              "sp": "Narrator",
+              "t": "Nobuyuki Tsujii was born blind, but he started playing on a toy piano at the age of just two."
+            },
+            {
+              "sp": "Narrator",
+              "t": "He began learning the piano two years later, and he gave his first big concert in Tokyo when he was twelve years old."
+            },
+            {
+              "sp": "Narrator",
+              "t": "He's in his twenties now, but he has given concerts all over the world, and he has won many prizes and international competitions."
+            },
+            {
+              "sp": "Narrator",
+              "t": "He hasn't seen the written music, but he has learnt to play some of the most difficult pieces of music in the world only through sound."
+            }
+          ],
+          "questions": [
+            {
+              "id": "l4q1",
+              "prompt": "When did Nobuyuki give his first big concert?",
+              "options": [
+                "When he was two",
+                "When he was twelve",
+                "When he was twenty"
+              ],
+              "answer": 1
+            },
+            {
+              "id": "l4q2",
+              "prompt": "Has he seen the written music for the pieces he plays?",
+              "options": [
+                "Yes, always",
+                "No, never",
+                "Only sometimes"
+              ],
+              "answer": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tips": {
+    "grammar": {
+      "en": "Go back through the grammar stage of Lessons 1–31 — focus especially on Past Simple vs Present Perfect, comparatives/superlatives, and should/have to.",
+      "ru": "Вернитесь к грамматике уроков 1–31 — особенно Past Simple и Present Perfect, сравнительная и превосходная степень, should/have to.",
+      "kk": "1–31-сабақтардың грамматикасына оралыңыз — әсіресе Past Simple мен Present Perfect, салыстырмалы және күшейтпелі шырай, should/have to."
+    },
+    "vocabulary": {
+      "en": "Revisit the flashcards across units — family, jobs, clothes, kitchen items and directions vocabulary come up again and again.",
+      "ru": "Повторите карточки по всем юнитам — семья, профессии, одежда, кухонные предметы и направления встречаются снова и снова.",
+      "kk": "Барлық юниттердегі карточкаларды қайталаңыз — отбасы, мамандықтар, киім, ас үй заттары мен бағыт сөздері қайта-қайта кездеседі."
+    },
+    "reading": {
+      "en": "Re-read the reading-led lessons (they're written specially for this course, not from the coursebook), and practise picking out the key fact rather than every word.",
+      "ru": "Перечитайте уроки с упором на чтение (тексты написаны специально для курса, в учебнике их нет) и тренируйтесь находить главный факт, а не переводить каждое слово.",
+      "kk": "Оқылымға арналған сабақтарды қайта оқыңыз (мәтіндер осы курсқа арнайы жазылған, оқулықта жоқ) және әр сөзді емес, негізгі фактіні табуға жаттығыңыз."
+    },
+    "listening": {
+      "en": "Replay the Listening tracks around Units 9–12 (food/quantities, comparatives, future plans, present perfect) — listen for the answer, not for every word.",
+      "ru": "Переслушайте записи юнитов 9–12 (еда и количество, сравнения, планы на будущее, present perfect) — слушайте ответ, а не каждое слово.",
+      "kk": "9–12-юниттердің жазбаларын қайта тыңдаңыз (тағам және мөлшер, салыстыру, болашақ жоспарлар, present perfect) — әр сөзді емес, жауапты тыңдаңыз."
+    }
+  }
+}

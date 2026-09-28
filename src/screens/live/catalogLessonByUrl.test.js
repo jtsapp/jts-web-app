@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
+import { findCatalogLessonId, shouldResolveCatalogLesson, matchesCatalogLessonIndex } from './catalogLessonByUrl.js'
 import { LESSON_EXTRACTOR, engineOf } from './lessonExtractor.js'
 
 const CATALOG = [
@@ -61,8 +61,45 @@ describe('findCatalogLessonId', () => {
   })
 })
 
-// Решает движок занятия (spec-lesson-engine-coexistence §2): STEPS — шаги, как на проде
-// до выката, FILE — файл во фрейме. Пустое поле — STEPS; рубильник — STEPS для всех.
+const LEVEL_FILE = [
+  {
+    id: 1,
+    code: 'A1',
+    units: [{
+      id: 10,
+      lessons: [
+        { id: 201, code: 'L01', fileUrl: 'https://files/a1/course.html?mode=solo' },
+        { id: 205, code: 'L05', fileUrl: 'https://files/a1/course.html?mode=solo' },
+        { id: 208, code: 'L08', fileUrl: 'https://files/a1/course.html?mode=solo' },
+      ],
+    }],
+  },
+]
+
+describe('findCatalogLessonId — указка занятия в общем файле уровня', () => {
+  it('по focusLessonNo берёт L05, а не первый урок файла', () => {
+    expect(findCatalogLessonId(LEVEL_FILE, 'https://files/a1/course.html?mode=solo', 5)).toBe(205)
+  })
+
+  it('без указки остаётся первый совпавший — как раньше', () => {
+    expect(findCatalogLessonId(LEVEL_FILE, 'https://files/a1/course.html?mode=solo')).toBe(201)
+  })
+
+  it('уникальный файл не подменяется чужим L-номером', () => {
+    expect(findCatalogLessonId(CATALOG, 'https://files/a2/lessons/L01.html?mode=solo', 8)).toBe(101)
+  })
+})
+
+describe('matchesCatalogLessonIndex', () => {
+  it('узнаёт L05 в коде и в имени файла', () => {
+    expect(matchesCatalogLessonIndex({ code: 'L05' }, 5)).toBe(true)
+    expect(matchesCatalogLessonIndex({ fileUrl: 'https://files/a1/lessons/L05.html' }, 5)).toBe(true)
+    expect(matchesCatalogLessonIndex({ code: 'L01' }, 5)).toBe(false)
+  })
+})
+
+// Разбор ищем у любого занятия, кроме standalone: на FILE по умолчанию как раз
+// ставят урок каталога, и без поиска ученик видел файл и «Section 1».
 describe('shouldResolveCatalogLesson — шаги или файл', () => {
   const КАТАЛОГ = 'https://files/development/course-catalog/a0/lessons/L05.html'
   const STANDALONE = 'https://files/development/course-catalog/standalone/a0-l5.html'
@@ -71,29 +108,21 @@ describe('shouldResolveCatalogLesson — шаги или файл', () => {
     expect(LESSON_EXTRACTOR.enabled).toBe(false)
   })
 
-  it('FILE-занятие открывается файлом', () => {
-    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(false)
+  it('урок каталога ищется и на FILE-занятии — как у преподавателя', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'STEPS' })).toBe(true)
   })
 
-  it('STEPS-занятие ищет разбор; standalone — никогда; пустая ссылка — нет', () => {
-    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'STEPS' })).toBe(true)
+  it('standalone — никогда; пустая ссылка — нет', () => {
     expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'STEPS' })).toBe(false)
+    expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'FILE' })).toBe(false)
     expect(shouldResolveCatalogLesson('', { engine: 'STEPS' })).toBe(false)
   })
 
-  it('поля нет (старый бэкенд) или занятия нет — STEPS, как на проде', () => {
+  it('поля нет или занятия нет — всё равно ищем разбор', () => {
     expect(shouldResolveCatalogLesson(КАТАЛОГ, {})).toBe(true)
     expect(shouldResolveCatalogLesson(КАТАЛОГ, null)).toBe(true)
     expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
-  })
-
-  it('рубильник LESSON_EXTRACTOR.enabled возвращает разбор и FILE-занятию', () => {
-    LESSON_EXTRACTOR.enabled = true
-    try {
-      expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
-    } finally {
-      LESSON_EXTRACTOR.enabled = false
-    }
   })
 })
 

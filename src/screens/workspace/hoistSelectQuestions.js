@@ -20,7 +20,10 @@ function promptFromSelect(select) {
   const row = select.closest('.row, .line, li, p, .body') || select.parentElement
   if (!row) return ''
   const clone = row.cloneNode(true)
-  clone.querySelectorAll('select, option, .num, .why, .rev').forEach((el) => el.remove())
+  clone.querySelectorAll('option, .num, .why, .rev').forEach((el) => el.remove())
+  clone.querySelectorAll('select').forEach((el) => {
+    el.replaceWith(clone.ownerDocument.createTextNode(' ___ '))
+  })
   return tidyLessonText((clone.textContent || '').replace(/\s+/g, ' ').trim())
 }
 

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
+import { stompConnectHeaders } from '../../lib/stompAuth.js'
+
+const PRESENCE_REJOIN_MS = 15000
 
 // Живая координация урока помимо доски: состояние занятия (state — где класс,
 // ведёт ли преподаватель, стадия, таймер, статус), зеркалирование действий
@@ -27,6 +30,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
   // вызывающему приходится ждать связи, чтобы отправить состояние (см.
   // «преподаватель смотрит экран» в LiveLessonPage).
   const [connected, setConnected] = useState(false)
+  const [roster, setRoster] = useState([])
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
   // onVocabSaved здесь не было вовсе: подписка на канал слова вызывала
@@ -37,16 +41,34 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
+    let rejoin = null
+    const announce = () => {
+      if (!client.connected) return
+      client.publish({ destination: `/app/lesson/${lessonId}/presence/join`, body: '{}' })
+    }
     const client = new Client({
       brokerURL: wsBase(),
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 3000,
+      heartbeatIncoming: 25000,
+      heartbeatOutgoing: 0,
+      beforeConnect: () => {
+        client.connectHeaders = stompConnectHeaders(token)
+      },
       // Обрыв и ошибку STOMP отмечаем так же, как в useLessonPresence: клиент
       // переподключится сам, но до этого публиковать некуда.
-      onWebSocketClose: () => setConnected(false),
+      onWebSocketClose: () => {
+        if (rejoin) { clearInterval(rejoin); rejoin = null }
+        setConnected(false)
+      },
       onStompError: () => setConnected(false),
       onConnect: () => {
         setConnected(true)
+        client.subscribe(`/topic/lesson/${lessonId}/presence`, (m) => {
+          try { setRoster(normalizeRoster(JSON.parse(m.body))) } catch { /* ignore malformed frame */ }
+        })
+        announce()
+        rejoin = setInterval(announce, PRESENCE_REJOIN_MS)
         // Состояние занятия сервер рассылает целиком, и своё изменение
         // преподаватель получает тем же каналом — по нему он узнаёт, что ведёт
         // класс. Поэтому эхо здесь не глушится.
@@ -137,7 +159,13 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
     })
     client.activate()
     clientRef.current = client
-    return () => { client.deactivate(); clientRef.current = null; setConnected(false) }
+    return () => {
+      if (rejoin) clearInterval(rejoin)
+      client.deactivate()
+      clientRef.current = null
+      setConnected(false)
+      setRoster([])
+    }
   }, [lessonId, token, selfUserId, isStaff])
 
   const publish = useCallback((action, body) => {
@@ -189,9 +217,16 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
   // у того, от кого преподаватель уже ушёл.
   const sendWatch = useCallback((studentId, watching) => publish('watch', { studentId, watching }), [publish])
 
-  return { connected, sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
+  return { connected, roster, sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
 }
 
 function parse(body) {
   try { return JSON.parse(body) } catch { return null }
+}
+
+function normalizeRoster(payload) {
+  const ids = Array.isArray(payload?.onlineUserIds)
+    ? payload.onlineUserIds
+    : (Array.isArray(payload) ? payload : [])
+  return ids.map((v) => ({ userId: Number(v) })).filter((p) => Number.isFinite(p.userId))
 }

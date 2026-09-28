@@ -116,8 +116,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const role = roleFromToken(token)
   const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
-  const { roster, connected } = useLessonPresence(lessonId, token)
-  const onlineUserIds = useMemo(() => new Set(roster.map((p) => p.userId)), [roster])
+  const { roster: presenceRoster, connected: presenceConnected } = useLessonPresence(lessonId, token)
 
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
@@ -359,9 +358,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Шаги или файл решает движок занятия — в одном месте, shouldResolveCatalogLesson,
-    // чтобы страница и тесты сходились.
-    Promise.resolve(shouldResolveCatalogLesson(url, lesson) ? catalogLessonIdFor(url, token) : null)
+    // Шаги или файл — shouldResolveCatalogLesson (каталог, не standalone).
+    // Движок занятия больше не режет разбор: FILE + урок каталога у преподавателя
+    // уже шаги, ученик должен видеть то же.
+    Promise.resolve(shouldResolveCatalogLesson(url, lesson) ? catalogLessonIdFor(url, token, activeMaterial?.focusLessonNo) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -422,7 +422,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // возвращает тот же объект, пока занятие то же самое, — так что лишних
     // перезапусков эффекта это не добавляет.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [materialFileUrl, token, lesson?.id, lesson?.engine])
+  }, [materialFileUrl, token, lesson?.id, lesson?.engine, activeMaterial?.focusLessonNo])
 
   // Стадии файлового урока — третий источник «Тем» (после шагов разбора и
   // разделов занятия). У FILE-занятия (per-lesson engine, не глобальный
@@ -995,7 +995,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // должен звучать как его старт.
   const { remaining: timerLeft, expired: timerExpired } = useLessonTimer(liveState ? (liveState.timer ?? null) : undefined, liveOffset)
 
-  const { connected: liveConnected, sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
+  const { connected: liveConnected, roster: liveRoster = [], sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onConnect: syncLiveState,
     onState: acceptLiveState,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
@@ -1211,6 +1211,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       playCue('word')
     },
   })
+
+  const onlineUserIds = useMemo(() => {
+    const ids = new Set()
+    for (const p of presenceRoster || []) ids.add(p.userId)
+    for (const p of liveRoster || []) ids.add(p.userId)
+    return ids
+  }, [presenceRoster, liveRoster])
+  const connected = presenceConnected || liveConnected
 
   // Метка о слове гаснет сама, в отличие от вызова к доске: там преподаватель
   // ждёт ответа, а здесь ученику просто сообщили — держать плашку до клика

@@ -24,6 +24,7 @@ describe('useLessonLiveSocket', () => {
     expect(lastClient.cfg.brokerURL).toMatch(/^wss?:\/\/.+\/ws$/)
     expect(lastClient.cfg.connectHeaders.Authorization).toBe('Bearer TOK')
     expect(Object.keys(lastClient.subs)).toEqual(expect.arrayContaining([
+      '/topic/lesson/7/presence',
       '/topic/lesson/7/state',
       '/topic/lesson/7/material-mirror',
       '/topic/lesson/7/present',
@@ -391,12 +392,13 @@ describe('useLessonLiveSocket', () => {
     act(() => { result.current.sendCall(141) })
     act(() => { result.current.sendWatch(141, true) })
 
-    expect(lastClient.published.map((f) => f.destination)).toEqual([
+    const sent = lastClient.published.filter((f) => !String(f.destination).endsWith('/presence/join'))
+    expect(sent.map((f) => f.destination)).toEqual([
       '/app/lesson/7/call',
       '/app/lesson/7/watch',
     ])
-    expect(JSON.parse(lastClient.published[0].body)).toEqual({ studentId: 141 })
-    expect(JSON.parse(lastClient.published[1].body)).toEqual({ studentId: 141, watching: true })
+    expect(JSON.parse(sent[0].body)).toEqual({ studentId: 141 })
+    expect(JSON.parse(sent[1].body)).toEqual({ studentId: 141, watching: true })
   })
 
   // Трансляция преподавателя ("Транслировать классу") — лесson-wide /topic/lesson/7/audio,

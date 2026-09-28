@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage } from './lessonStages.js'
+import { stageSteps, stageStatusById, parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage } from './lessonStages.js'
 
 // Эталон снят с файла A0 · Урок 05 (ответ ручки …/lesson-view/stages).
 const STAGES = [
@@ -55,5 +55,12 @@ describe('lessonStages — стадии файла в «Темах» учени�
 
   it('gotoStageMessage — сообщение рабочей области, которое ждёт скрипт в файле', () => {
     expect(gotoStageMessage(4)).toEqual({ source: 'jts-workspace', type: 'goto-stage', index: 4 })
+  })
+
+  it('gotoLessonMessage открывает урок файла, который вели в этот день', () => {
+    expect(gotoLessonMessage(5)).toEqual({
+      source: 'jts-workspace', type: 'goto-lesson', index: 5, review: false,
+    })
+    expect(gotoLessonMessage(2, true).review).toBe(true)
   })
 })

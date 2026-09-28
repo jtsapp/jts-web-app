@@ -6,6 +6,10 @@ describe('decodeUnicodeEscapes', () => {
     expect(decodeUnicodeEscapes('caf\\u00e9')).toBe('café')
   })
 
+  it('восстанавливает é, если слэш съели', () => {
+    expect(decodeUnicodeEscapes('cafu00e9')).toBe('café')
+  })
+
   it('превращает литеральный \\u2192 в стрелку', () => {
     expect(decodeUnicodeEscapes('say \\u2192 said')).toBe('say → said')
   })

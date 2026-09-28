@@ -13,9 +13,10 @@ import {
   answersMatch,
   writeTranslationOk,
   buildChoiceOptions,
+  pickPracticeWords,
 } from './lessonReview.js'
 import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
-import { recordVocabLearned, vocabKey } from './vocabLearned.js'
+import { recordVocabLearned, vocabKey, learnedKeys } from './vocabLearned.js'
 import { saveStudentVocab } from '../../api.js'
 import {
   IconSpeaker,
@@ -212,7 +213,13 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   const words = useMemo(() => uniqueByKey((cards || []).map(toWord).filter((w) => w.word)), [cards])
   const byKey = useMemo(() => Object.fromEntries(words.map((w) => [w.key, w])), [words])
   const [phase, setPhase] = useState('intro')
-  const [tasks] = useState(() => fitTasks(planCycle(words, 1, null), byKey, lang))
+  const [tasks, setTasks] = useState([])
+  const [pool, setPool] = useState('new')
+  const [limit, setLimit] = useState(10)
+  const [fmt, setFmt] = useState({ choice: true, match: true, spell: true })
+  const [studyFirst, setStudyFirst] = useState(true)
+  const [studyWords, setStudyWords] = useState([])
+  const [studyIdx, setStudyIdx] = useState(0)
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState([])
   const [toast, setToast] = useState('')
@@ -268,6 +275,31 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     else setIdx(idx + 1)
   }
 
+  const begin = () => {
+    const learned = learnedKeys(token, scopeId)
+    const picked = pickPracticeWords(words, { pool, limit, learned })
+    if (!picked.length) return
+    const types = []
+    if (fmt.choice) types.push('choice')
+    if (fmt.match) types.push('match')
+    if (fmt.spell) {
+      types.push('dictation')
+      types.push('write')
+    }
+    const planned = fitTasks(
+      planCycle(picked, 1, null, Math.random, null, types.length ? types : undefined),
+      byKey,
+      lang,
+    )
+    setTasks(planned)
+    setStudyWords(picked)
+    setStudyIdx(0)
+    setIdx(0)
+    setAnswers([])
+    recordedRef.current = false
+    setPhase(studyFirst ? 'study' : 'run')
+  }
+
   if (!words.length) {
     return (
       <div className="vp-prac">
@@ -278,6 +310,10 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   }
 
   if (phase === 'intro') {
+    const chip = (on, label, active, key) => (
+      <button type="button" key={key} className={`vp-setup__chip${active ? ' is-on' : ''}`} onClick={on}>{label}</button>
+    )
+    const toggleFmt = (key) => setFmt((prev) => ({ ...prev, [key]: !prev[key] }))
     return (
       <div className="vp-prac">
         <div className="vp-prac-top">
@@ -289,9 +325,81 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
           <span className="vp-badge">{t('vocab.prac.check')}</span>
           <div className="big">{t('vocab.home.words', { n: words.length })}</div>
           <h2>{t('vocab.prac.introTitle')}</h2>
-          <p>{t('vocab.prac.introLead')}</p>
-          <button type="button" className="vp-btn wide" onClick={() => setPhase('run')}>
+          <p>{t('vocab.prac.setupLead')}</p>
+          <div className="vp-setup">
+            <div>
+              <div className="vp-setup__lbl">{t('vocab.prac.pool')}</div>
+              <div className="vp-setup__row">
+                {chip(() => setPool('new'), t('vocab.prac.poolNew'), pool === 'new', 'new')}
+                {chip(() => setPool('review'), t('vocab.prac.poolReview'), pool === 'review', 'review')}
+                {chip(() => setPool('all'), t('vocab.prac.poolAll'), pool === 'all', 'all')}
+              </div>
+            </div>
+            <div>
+              <div className="vp-setup__lbl">{t('vocab.prac.howMany')}</div>
+              <div className="vp-setup__row">
+                {[5, 10, 20, 0].map((n) => chip(
+                  () => setLimit(n),
+                  n === 0 ? t('vocab.prac.countAll') : String(n),
+                  limit === n,
+                  `n-${n}`,
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="vp-setup__lbl">{t('vocab.prac.formats')}</div>
+              <div className="vp-setup__row">
+                {chip(() => toggleFmt('choice'), t('vocab.prac.fmtChoice'), fmt.choice, 'choice')}
+                {chip(() => toggleFmt('match'), t('vocab.prac.fmtMatch'), fmt.match, 'match')}
+                {chip(() => toggleFmt('spell'), t('vocab.prac.fmtSpell'), fmt.spell, 'spell')}
+              </div>
+            </div>
+            <label className="vp-setup__check">
+              <input type="checkbox" checked={studyFirst} onChange={(e) => setStudyFirst(e.target.checked)} />
+              {t('vocab.prac.studyFirst')}
+            </label>
+          </div>
+          <button type="button" className="vp-btn wide" onClick={begin}>
             {t('vocab.prac.start')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'study') {
+    const card = studyWords[studyIdx] || {}
+    const last = studyIdx + 1 >= studyWords.length
+    const tr = translationOf(card, lang) || meaningOf(card, lang)
+    return (
+      <div className="vp-prac">
+        <div className="vp-prac-top">
+          <button type="button" className="vp-exit" onClick={onExit}>
+            <IconX /> <span className="vp-exit-lbl">{t('vocab.prac.exit')}</span>
+          </button>
+        </div>
+        <div className="vp-intro">
+          <span className="vp-badge">{t('vocab.prac.studyBadge', { n: studyIdx + 1, total: studyWords.length })}</span>
+          <p>{t('vocab.prac.studyLead')}</p>
+          <div className="vp-study">
+            <div className="vp-study__word">{card.word}</div>
+            {card.ipa ? <div className="vp-study__ipa">/{String(card.ipa).replace(/^\/|\/$/g, '')}/</div> : null}
+            <div className="vp-study__tr">{tr}</div>
+            {speak && card.word ? (
+              <button type="button" className="vp-spk" onClick={() => speak(card.word)} aria-label={t('vocab.lesson.listen')}>
+                <IconSpeaker />
+              </button>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="vp-btn wide"
+            onClick={() => {
+              if (last) setPhase('run')
+              else setStudyIdx((n) => n + 1)
+            }}
+          >
+            {last ? t('vocab.prac.studyStart') : t('vocab.prac.studyNext')}
           </button>
         </div>
       </div>
@@ -394,6 +502,15 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   }
 
   const qLabel = t('vocab.prac.questionOf', { n: Math.min(answeredQ + 1, totalQ), total: totalQ })
+
+  if (!curTask) {
+    return (
+      <div className="vp-prac">
+        <p className="vp-state">{t('vocab.lesson.empty')}</p>
+        <button type="button" className="vp-btn ghost" onClick={onExit}>{t('vocab.back')}</button>
+      </div>
+    )
+  }
 
   return (
     <div className="vp-prac">

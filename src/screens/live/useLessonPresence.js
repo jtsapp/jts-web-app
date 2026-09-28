@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
+import { stompConnectHeaders } from '../../lib/stompAuth.js'
+
+const PRESENCE_REJOIN_MS = 15000
 
 // Live roster of who is actually connected to this lesson, driven by the server's
 // presence broadcast. Auth rides the STOMP CONNECT frame (connectHeaders), not the
@@ -11,22 +14,41 @@ export function useLessonPresence(lessonId, token) {
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
+    let rejoin = null
+    const announce = (client) => {
+      if (!client?.connected) return
+      client.publish({ destination: `/app/lesson/${lessonId}/presence/join`, body: '{}' })
+    }
     const client = new Client({
       brokerURL: wsBase(),
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 3000,
+      heartbeatIncoming: 25000,
+      heartbeatOutgoing: 0,
+      beforeConnect: () => {
+        client.connectHeaders = stompConnectHeaders(token)
+      },
       onConnect: () => {
         setConnected(true)
         client.subscribe(`/topic/lesson/${lessonId}/presence`, (m) => {
           try { setRoster(normalizeRoster(JSON.parse(m.body))) } catch { /* ignore malformed frame */ }
         })
-        client.publish({ destination: `/app/lesson/${lessonId}/presence/join`, body: '{}' })
+        announce(client)
+        rejoin = setInterval(() => announce(client), PRESENCE_REJOIN_MS)
       },
-      onWebSocketClose: () => setConnected(false),
+      onWebSocketClose: () => {
+        if (rejoin) { clearInterval(rejoin); rejoin = null }
+        setConnected(false)
+      },
       onStompError: () => setConnected(false),
     })
     client.activate()
-    return () => { client.deactivate(); setConnected(false); setRoster([]) }
+    return () => {
+      if (rejoin) clearInterval(rejoin)
+      client.deactivate()
+      setConnected(false)
+      setRoster([])
+    }
   }, [lessonId, token])
 
   return { roster, connected }

@@ -33,7 +33,7 @@ export function shouldOfferCycle4(cycle3Results) {
  * words — массив { key, word } (key = lower(word)).
  * prevResults — итог предыдущего цикла; для цикла 1 не нужен.
  */
-export function planCycle(words, cycle, prevResults, rng = Math.random, learnedKeys = null) {
+export function planCycle(words, cycle, prevResults, rng = Math.random, learnedKeys = null, types = TYPES) {
   const list = uniqueByKey((words || []).filter((w) => w && w.key))
   if (!list.length) return []
   const byKey = Object.fromEntries(list.map((w) => [w.key, w]))
@@ -69,7 +69,24 @@ export function planCycle(words, cycle, prevResults, rng = Math.random, learnedK
     targets = shuffle(targets, rng)
   }
 
-  return packTasks(targets)
+  return packTasks(targets, types)
+}
+
+/** Набор слов для практики: новые / повтор / все, с лимитом. */
+export function pickPracticeWords(words, { pool = 'new', limit = 0, learned = null, rng = Math.random } = {}) {
+  const list = uniqueByKey((words || []).filter((w) => w && w.key))
+  const known = learned instanceof Set ? learned : new Set()
+  let chosen = list
+  if (pool === 'new') {
+    const fresh = list.filter((w) => !known.has(w.key))
+    chosen = fresh.length ? fresh : list
+  } else if (pool === 'review') {
+    const old = list.filter((w) => known.has(w.key))
+    chosen = old.length ? old : list
+  }
+  const shuffled = shuffle(chosen, rng)
+  if (limit > 0 && shuffled.length > limit) return shuffled.slice(0, limit)
+  return shuffled
 }
 
 function expandKeys(keys, count, rng) {
@@ -85,12 +102,13 @@ function expandKeys(keys, count, rng) {
   return out
 }
 
-function packTasks(keys) {
+function packTasks(keys, types = TYPES) {
   const leftover = keys.slice()
   const tasks = []
+  const cycle = types?.length ? types : TYPES
   let typeIdx = 0
   while (leftover.length) {
-    const type = TYPES[typeIdx % TYPES.length]
+    const type = cycle[typeIdx % cycle.length]
     typeIdx++
     if (type === 'match') {
       const unique = []

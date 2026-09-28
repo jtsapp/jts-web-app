@@ -8,6 +8,9 @@
 // последнем сообщении ученика и кэш не ломает.
 
 import { knowledgeText } from './knowledge.js'
+import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
+
+export { REPORT_BUG_MARKER, createReportFilter, splitReport }
 
 // Ограничения запроса. Длинный разговор помощнику не нужен — это не тьютор, а
 // справка, — а каждый лишний ход оплачивается на каждом следующем вопросе.
@@ -62,6 +65,7 @@ const RULES = `Ты — помощник на сайте онлайн-школы
 2. Помогаешь с сайтом: где что находится и как что сделать — только по базе знаний ниже и по снимку экрана.
 3. Коротко отвечаешь на вопросы об английском, связанные с учёбой.
 4. Если в контексте есть профиль ученика (домашка, расписание, навыки, минуты) и он просит план на день/неделю или совет, чем заняться, — даёшь конкретный план по этим данным: что сделать, в каком разделе, сколько времени примерно и почему.
+5. Если на сайте что-то сломалось — сначала пытаешься помочь сам. Если это поломка платформы, которую ты починить не можешь, передаёшь ошибку команде (метка в разделе «Поломки сайта»).
 
 Как разбирать задание:
 - Смотри снимок экрана: там задание, что ввёл ученик («ученик ввёл «…»») и что показал сайт после проверки.
@@ -85,6 +89,15 @@ const RULES = `Ты — помощник на сайте онлайн-школы
 - Если ответа нет, так и скажи и подскажи, к кому обратиться (менеджер или преподаватель).
 - Ты не можешь ничего менять в аккаунте, тарифе, расписании или оценках и не делаешь вид, что сделал.
 
+Поломки сайта:
+- Помогай, если ученик пишет «ошибка», «баг», «сломалось», «не грузится», «кнопка не работает», «белый экран», «зависло», «аудио обрывается», или нажал чип «На сайте ошибка» / «The site has an error» / «Сайтта қате бар», или в контексте есть блок «Технические сбои».
+- Если ученик только сказал, что что-то сломалось, но ещё не описал что именно (чип без подробностей) — одним коротким сообщением спроси: что не работает, на каком шаге, что пытался сделать. Метку [[REPORT_BUG]] пока НЕ ставь.
+- Как только в разговоре есть конкретное описание поломки (что сломалось и где: шаг урока, упражнение, кнопка, аудио, белый экран) — СРАЗУ передай команде в ЭТОМ ЖЕ ответе. Не жди фраз «передай команде», «ты сам передашь?», «отправь ошибку». Не откладывай метку на следующий ход и не проси «напишите ещё раз, если не поможет — передам». Кратко предложить F5/интернет можно, но метку всё равно ставь сейчас.
+- Если это «как сделать» или ошибка в английском — обычный ответ, метку не ставь.
+- Когда передаёшь: ответь ученику 2–5 предложениями: что ты понял, что можно попробовать, и что ошибку УЖЕ передал команде. ПОСЛЕДНЕЙ отдельной строкой поставь ровно [[REPORT_BUG]]. Следом, уже не для ученика, 4–8 строк: раздел, адрес страницы, что произошло, что уже заметил сайт, слова ученика с момента «ошибка» (все его реплики, не только последняя). Без метки ошибка в базу не попадёт.
+- Ту же поломку повторно не передавай, если ученик просто уточняет или спрашивает, дошло ли.
+- Метку не ставь на опечатки, неверные ответы, грамматику и вопросы «где кнопка», если ответ есть в базе.
+
 Как отвечать:
 - Язык ответа — язык вопроса ученика (русский, казахский или английский). Если по вопросу непонятно — язык интерфейса ученика.
 - Обращайся на «вы», пока ученик сам не перешёл на «ты».
@@ -92,7 +105,7 @@ const RULES = `Ты — помощник на сайте онлайн-школы
 - Английские слова и примеры пиши как есть, в кавычках «…».
 
 Вопросы не по теме:
-- По теме — всё про английский язык (грамматика, слова, произношение, перевод фразы, как учить) и всё про сайт JTS и учёбу в школе. Приветствие, «спасибо» и уточнение к прошлому ответу — тоже по теме.
+- По теме — всё про английский язык (грамматика, слова, произношение, перевод фразы, как учить), всё про сайт JTS и учёбу в школе, и сообщения что сайт сломался. Приветствие, «спасибо» и уточнение к прошлому ответу — тоже по теме.
 - Не по теме — другие школьные предметы, программирование, новости, политика, медицина, отношения, болтовня «просто поговорить», просьбы написать текст не для изучения английского.
 - На вопрос не по теме ответь ровно строкой [[OFFTOPIC]] — без объяснений и без другого текста. Отказ ученику покажет сам сайт.
 - Если сомневаешься, считай вопрос вопросом по теме.
@@ -125,6 +138,19 @@ export function classifyStart(text) {
   return 'normal'
 }
 
+const MAX_CLIENT_ERRORS = 8
+
+function parseClientErrors(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw.slice(0, MAX_CLIENT_ERRORS).map((e) => ({
+    at: Number(e?.at) || 0,
+    message: clipText(e?.message, 400),
+    source: clipText(e?.source, 200),
+    url: clipText(e?.url, 400),
+    stack: clipText(e?.stack, 1200),
+  })).filter((e) => e.message)
+}
+
 /** Системный промпт: правила + база знаний. Одинаков для всех — кэшируется. */
 export function buildSystemPrompt() {
   return `${RULES}\n\n## База знаний о сайте\n\n${knowledgeText()}`
@@ -140,7 +166,10 @@ const clipText = (s, n) => {
  * длинное подрезает: помощник должен ответить, а не упасть на лишнем абзаце.
  *
  * @returns {{ messages: {role: 'user'|'assistant', content: string}[],
- *             screen: {id: string|null, text: string}, lang: string }}
+ *             screen: {id: string|null, text: string}, lang: string,
+ *             pageUrl: string, userAgent: string,
+ *             errors: {at: number, message: string, source: string, url: string, stack: string}[],
+ *             bugReported: boolean }}
  */
 export function parseChatRequest(body) {
   if (!body || typeof body !== 'object') throw new AssistantRequestError('Пустой запрос')
@@ -162,8 +191,12 @@ export function parseChatRequest(body) {
   const screenId = typeof body.screen?.id === 'string' ? body.screen.id.slice(0, 64) : null
   const screenText = typeof body.screen?.text === 'string' ? clipText(body.screen.text, MAX_SCREEN_CHARS) : ''
   const lang = LANG_NAMES[body.lang] ? body.lang : 'ru'
+  const pageUrl = typeof body.pageUrl === 'string' ? clipText(body.pageUrl, 500) : ''
+  const userAgent = typeof body.userAgent === 'string' ? clipText(body.userAgent, 400) : ''
+  const errors = parseClientErrors(body.errors)
+  const bugReported = Boolean(body.bugReported)
 
-  return { messages, screen: { id: screenId, text: screenText }, lang }
+  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported }
 }
 
 /**
@@ -171,7 +204,7 @@ export function parseChatRequest(body) {
  * последнем сообщении ученика — то есть модель видит только СВЕЖИЙ экран, а
  * снимки прошлых ходов в историю не копятся (и не раздувают каждый запрос).
  */
-export function buildContextBlock({ user, screen, lang, studentContext }) {
+export function buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl }) {
   const lines = []
   const name = clipText(user?.name, 60)
   if (name) lines.push(`Имя ученика: ${name}`)
@@ -179,8 +212,18 @@ export function buildContextBlock({ user, screen, lang, studentContext }) {
   lines.push(`Язык интерфейса: ${LANG_NAMES[lang] || LANG_NAMES.ru}`)
   const screenName = screen?.id ? SCREEN_NAMES[screen.id] || screen.id : null
   if (screenName) lines.push(`Открытый раздел: ${screenName}`)
+  if (pageUrl) lines.push(`Адрес страницы: ${clipText(pageUrl, 500)}`)
   lines.push('Снимок экрана (что ученик видит сейчас):')
   lines.push(screen?.text ? screen.text : '(пусто — экран не удалось прочитать)')
+  if (errors?.length) {
+    lines.push('Технические сбои, которые сайт уже заметил (это не слова ученика):')
+    for (const e of errors) {
+      const when = e.at ? new Date(e.at).toISOString() : ''
+      const where = [e.source, e.url].filter(Boolean).join(' · ')
+      lines.push(`- ${when} ${e.message}${where ? ` @ ${where}` : ''}`)
+      if (e.stack) lines.push(e.stack.split('\n').slice(0, 4).join('\n'))
+    }
+  }
   // Профиль ученика — только если удалось собрать (studentContext.js, сам
   // модуль отказоустойчив и кэширует). Нужен для плана «на неделю»; для
   // разбора задания хватает снимка экрана, поэтому его отсутствие не критично.
@@ -192,9 +235,9 @@ export function buildContextBlock({ user, screen, lang, studentContext }) {
 }
 
 /** Разговор для модели: к последнему вопросу ученика приклеен контекст. */
-export function buildTurns({ messages, user, screen, lang, studentContext }) {
+export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
-  last.content = `${buildContextBlock({ user, screen, lang, studentContext })}\n\nВопрос ученика: ${last.content}`
+  last.content = `${buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl })}\n\nВопрос ученика: ${last.content}`
   return turns
 }

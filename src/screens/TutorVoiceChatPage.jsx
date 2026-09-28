@@ -441,7 +441,9 @@ function CallStage({
   const transcriptions = useTranscriptions()
 
   const connected = state === ConnectionState.Connected
-  const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
+  const agentPresent = va.state !== 'disconnected' && (
+    Boolean(va.agent) || Boolean(va.audioTrack) || va.state === 'listening' || va.state === 'thinking'
+  )
   const speaking = va.state === 'speaking'
 
   // Учётная сессия: минуты идут с появления тьютора в комнате и держатся

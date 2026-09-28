@@ -11,9 +11,9 @@ const MODE = 'self'
 
 /** Литеральные `\u00e9` / `\u2192` из HTML-источника → настоящие символы. */
 function decodeUnicodeEscapes(s) {
-  return String(s).replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) =>
-    String.fromCharCode(parseInt(hex, 16)),
-  )
+  return String(s)
+    .replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/([A-Za-z])u00e9(?![0-9a-fA-F])/gi, (_, letter) => `${letter}é`)
 }
 
 function pruneToMode(root) {
