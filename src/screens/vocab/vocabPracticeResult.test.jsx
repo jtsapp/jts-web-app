@@ -29,6 +29,8 @@ describe('VocabPractice: итог и «хуже всего запомненны�
 
     mount([{ id: top.key, en: top.word, ru: top.ru }])
     fireEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    // «Сначала изучи» (studyFirst=true по умолчанию) — одно слово, один экран.
+    fireEvent.click(screen.getByRole('button', { name: 'К практике' }))
     fireEvent.click(screen.getByRole('button', { name: 'отец' }))
     fireEvent.click(screen.getByRole('button', { name: /Продолжить/ }))
 
@@ -39,6 +41,7 @@ describe('VocabPractice: итог и «хуже всего запомненны�
   it('ошибка по-прежнему попадает в список', () => {
     mount([{ id: 'apple', en: 'apple', ru: 'яблоко' }])
     fireEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    fireEvent.click(screen.getByRole('button', { name: 'К практике' }))
     const wrong = [...document.querySelectorAll('.vp-opt')].find((b) => b.textContent.trim() !== 'яблоко')
     fireEvent.click(wrong)
     fireEvent.click(screen.getByRole('button', { name: /Продолжить/ }))

@@ -99,8 +99,15 @@ function questionStep(question, block, stage) {
     case 'chips':
       return { ...base, type: 'choice', prompt: gapPrompt(question), options: question.bank || [], answer: question.answer }
 
-    case 'gap':
-      return { ...base, type: 'gap', before: tidyLessonText(question.gapBefore || ''), after: tidyLessonText(question.gapAfter || ''), answers: (question.answers || []).map(tidyLessonText) }
+    case 'gap': {
+      // tidyLessonText рубит ЛЮБОЙ хвостовой пробел — а у gapBefore он не мусор:
+      // это пробел перед самим пропуском («Alina ___»), и без него слово с полем
+      // ввода слипаются на экране. Возвращаем ровно один, если tidy его снял.
+      const rawBefore = question.gapBefore || ''
+      let before = tidyLessonText(rawBefore)
+      if (/\s$/.test(rawBefore) && !/\s$/.test(before)) before += ' '
+      return { ...base, type: 'gap', before, after: tidyLessonText(question.gapAfter || ''), answers: (question.answers || []).map(tidyLessonText) }
+    }
 
     // Живой пример разговора (Figma, Speaking → 4065:28707). Одна реплика
     // собеседника = один экран: в макете следующий ход диалога нарисован
