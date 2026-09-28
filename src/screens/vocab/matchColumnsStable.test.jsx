@@ -36,6 +36,11 @@ function view(cards) {
 // до «соедините».
 function goToMatch() {
   fireEvent.click(byClass('button').find((b) => b.textContent === 'Начать'))
+  // «Сначала изучи» (studyFirst=true по умолчанию) — экран на каждое слово
+  // перед практикой; проходим все, прежде чем появятся варианты выбора.
+  while (document.querySelector('.vp-study')) {
+    fireEvent.click(document.querySelector('.vp-btn.wide'))
+  }
   fireEvent.click(byClass('.vp-opt')[0])
   fireEvent.click(byClass('.vp-btn')[0])
 }

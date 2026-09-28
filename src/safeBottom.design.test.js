@@ -15,9 +15,13 @@ import { fileURLToPath } from 'node:url'
 // Тест читает CSS как текст: предмет проверки — сами отступы, а не то, как
 // jsdom их посчитает (env() он не умеет вовсе).
 
+// Комментарии срезаны сразу: тест ищет правила по lastIndexOf(селектор), и
+// комментарий, упоминающий тот же селектор ПОСЛЕ настоящего правила («Как у
+// .cp-foot: …»), иначе перетягивает поиск на себя и подсовывает чужой блок.
+const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 const here = dirname(fileURLToPath(import.meta.url))
-const styles = readFileSync(join(here, 'styles.css'), 'utf8')
-const course = readFileSync(join(here, 'course.css'), 'utf8')
+const styles = stripComments(readFileSync(join(here, 'styles.css'), 'utf8'))
+const course = stripComments(readFileSync(join(here, 'course.css'), 'utf8'))
 
 /** Значение переменной из блока токенов styles.css. */
 function token(name) {
