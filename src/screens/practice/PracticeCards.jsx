@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { VolumeIcon } from '../../components/icons.jsx'
+import { MicIcon, VolumeIcon } from '../../components/icons.jsx'
 import { plural } from '../../lib/plural.js'
 import { stripTags } from '../../practice/grammar/grammarData.js'
 import { PRACTICE_LEVELS } from '../../practice/practiceLevel.js'
 import { PkChevron, PkArrowCircle, PkEye, PkClock } from './PracticeIcons.jsx'
+import { SawArt, TreeArt } from '../arcade/ArcadeScene.jsx'
 
 // Карточки и блоки экрана «Практика» по макету Figma «Макеты» (5316:1548).
 // Размеры и цвета сняты с узлов макета; стили — .pk-* в styles.css. Шрифт в
@@ -152,6 +153,53 @@ export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
         <PkChevron size={18} />
       </button>
     </section>
+  )
+}
+
+// Карточка «Аркады» во вкладке «Говорение»: объясняет игру до входа в неё —
+// что за игра, три шага и что понадобится микрофон, — и ведёт на экран игры.
+// Геометрия и кнопка — от широкого промо-баннера, персонажи — из самой игры.
+export function ArcadeCard({ onStart }) {
+  const { t } = useI18n()
+  const steps = ['practice.arcade.step1', 'practice.arcade.step2', 'practice.arcade.step3']
+  return (
+    <div className="pk-arcade">
+      <div className="pk-arcade__text">
+        <h3 className="pk-arcade__title">
+          {t('practice.arcade.title')}
+          <span className="ar-beta ar-beta--light">{t('arcade.beta')}</span>
+        </h3>
+        <p className="pk-arcade__tagline">{t('practice.arcade.tagline')}</p>
+        <p className="pk-arcade__desc">{t('practice.arcade.desc')}</p>
+        <ol className="pk-arcade__steps">
+          {steps.map((key, i) => (
+            <li key={key}>
+              <b aria-hidden="true">{i + 1}</b>
+              {t(key)}
+            </li>
+          ))}
+        </ol>
+        <div className="pk-arcade__foot">
+          <button type="button" className="pk-banner__cta" onClick={onStart}>
+            {t('practice.arcade.cta')}
+            <PkChevron size={18} />
+          </button>
+          <span className="pk-arcade__mic">
+            <MicIcon size={14} />
+            {t('practice.arcade.mic')}
+          </span>
+        </div>
+      </div>
+      <div className="pk-arcade__art" aria-hidden="true">
+        <span className="pk-arcade__hill" />
+        <span className="pk-arcade__saw">
+          <SawArt />
+        </span>
+        <span className="pk-arcade__tree">
+          <TreeArt />
+        </span>
+      </div>
+    </div>
   )
 }
 
