@@ -365,7 +365,7 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     expect([...container.querySelectorAll('.kt-step')].every((b) => b.disabled)).toBe(true)
   })
 
-  it('B1-ученик в A2 без каталога — юниты открыты: уровни ниже своего не ждут занятие', async () => {
+  it('B1-ученик в A2 без каталога — весь уровень открыт: ниже своего не ждут занятие и порядок шагов', async () => {
     getCourseCatalog.mockResolvedValue([
       { code: 'A2', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
     ])
@@ -376,10 +376,23 @@ describe('KingdomInteriorPage — юниты открываются по кат�
       kingdom: { ...kingdom, level: 'A2' },
     })
     await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
-    const buttons = [...container.querySelectorAll('.kt-step')]
+    expect([...container.querySelectorAll('.kt-step')].every((b) => !b.disabled)).toBe(true)
+  })
 
-    expect(buttons[0].disabled).toBe(false)
-    expect(buttons[2].disabled).toBe(false)
+  it('квота модуля не запирает уровень ниже своего CEFR — B1 повторяет A2 целиком', async () => {
+    getLessonModules.mockResolvedValueOnce([{ id: 'mod-a2', level: 'A2', orderIndex: 0, locked: false }])
+    getContentQuota.mockResolvedValueOnce(3)
+    getCourseCatalog.mockResolvedValue([
+      { code: 'A2', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+    ])
+    getCatalogProgress.mockResolvedValue(progress([]))
+
+    const { container } = renderPage({
+      userLevel: 'B1',
+      kingdom: { ...kingdom, level: 'A2' },
+    })
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    expect([...container.querySelectorAll('.kt-step')].every((b) => !b.disabled)).toBe(true)
   })
 
   it('материал занятия — юнит 2 урок 1: открыто всё до этой точки, дальше каталог', async () => {
