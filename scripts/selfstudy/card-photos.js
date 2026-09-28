@@ -136,7 +136,20 @@ const sameMeaning = (translation, origin) => {
 // глазами по картинке (28.09.2026); «have an early night» ← «early» — нет:
 // на снимке раннее утро.
 const ALIASES = {
+  a0: {
+    'You, too.': 'too',
+    "I don't understand.": 'understand',
+    'Slowly, please.': 'slowly',
+    // бейдж «NAME / FIRST NAME / LAST NAME»
+    'first name': 'name',
+    'last name': 'name',
+    'go to the cinema': 'Go to cinema / theatre',
+  },
   a1: {
+    'on the corner': 'on the corner of',
+    'foggy — cloudy': 'fog → foggy',
+    'instead of': 'instead',
+    'move — moved': 'move house',
     'work full-time': 'full-time',
     'work freelance': 'freelance',
     'half past': 'half',
