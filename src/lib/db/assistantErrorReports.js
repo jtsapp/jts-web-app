@@ -1,11 +1,14 @@
 // Запись поломки сайта из чата помощника.
 //
-// Вызывает /api/assistant/chat после ответа модели с меткой [[REPORT_BUG]].
+// Вызывает /api/assistant/chat, когда модель ставит [[REPORT_BUG]] или ученик
+// после чипа «На сайте ошибка» уже описал, что сломалось. В user_message —
+// чат с этого чипа, не только последняя реплика.
 // getSql() === null (dev без БД) — тихий отказ: ученик всё равно получил ответ,
 // просто строка не сохранится. Падение INSERT тоже не роняет чат.
 
 import { getSql } from './sql.js'
 import { SCREEN_NAMES } from '../assistant/prompt.js'
+import { USER_THREAD_MAX } from '../assistant/report.js'
 
 export const LIST_PAGE = 30
 export const LIST_PAGE_MAX = 100
@@ -110,27 +113,59 @@ const clip = (s, n) => {
  *   assistantSummary?: string,
  *   screenText?: string,
  *   clientErrors?: unknown,
+ *   updateLatest?: boolean,
  * }} row
  * @returns {Promise<boolean>} записалось ли
  */
 export async function saveAssistantErrorReport(row, sql = getSql()) {
   if (!sql || !row?.profileId || !row?.userMessage) return false
+  const profileId = clip(row.profileId, 80)
+  const userMessage = clip(row.userMessage, USER_THREAD_MAX)
+  const assistantSummary = clip(row.assistantSummary || '', 4000) || null
+  const screenId = clip(row.screenId || '', 64) || null
+  const pageUrl = clip(row.pageUrl || '', 500) || null
+  const userAgent = clip(row.userAgent || '', 400) || null
+  const screenText = clip(row.screenText || '', 8000) || null
+  const clientErrors = sql.json(Array.isArray(row.clientErrors) ? row.clientErrors : [])
   try {
+    // Тот же чат уже записан — дописываем карточку (ученик уточнил «обрывается
+    // через 2 секунды»), а не плодим вторую с хвостом «ты сам передашь?».
+    if (row.updateLatest) {
+      const updated = await sql`
+        update assistant_error_reports set
+          user_message = ${userMessage},
+          assistant_summary = ${assistantSummary},
+          screen_text = ${screenText},
+          screen_id = ${screenId},
+          page_url = ${pageUrl},
+          user_agent = ${userAgent},
+          client_errors = ${clientErrors}::jsonb
+        where id = (
+          select id from assistant_error_reports
+          where profile_id = ${profileId}
+            and created_at > now() - interval '2 hours'
+          order by created_at desc, id desc
+          limit 1
+        )
+        returning id
+      `
+      if (updated?.length) return true
+    }
     await sql`
       insert into assistant_error_reports (
         profile_id, user_id, lang, screen_id, page_url, user_agent,
         user_message, assistant_summary, screen_text, client_errors
       ) values (
-        ${clip(row.profileId, 80)},
+        ${profileId},
         ${row.userId ?? null},
         ${clip(row.lang || '', 8) || null},
-        ${clip(row.screenId || '', 64) || null},
-        ${clip(row.pageUrl || '', 500) || null},
-        ${clip(row.userAgent || '', 400) || null},
-        ${clip(row.userMessage, 2000)},
-        ${clip(row.assistantSummary || '', 4000) || null},
-        ${clip(row.screenText || '', 8000) || null},
-        ${sql.json(Array.isArray(row.clientErrors) ? row.clientErrors : [])}::jsonb
+        ${screenId},
+        ${pageUrl},
+        ${userAgent},
+        ${userMessage},
+        ${assistantSummary},
+        ${screenText},
+        ${clientErrors}::jsonb
       )
     `
     return true

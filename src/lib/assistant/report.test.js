@@ -5,6 +5,9 @@ import {
   splitReport,
   createReportFilter,
   createReportedFlagFilter,
+  errorThreadFromMessages,
+  shouldAutoReportBug,
+  fallbackBugSummary,
 } from './report.js'
 
 describe('splitReport', () => {
@@ -49,5 +52,60 @@ describe('createReportedFlagFilter', () => {
     const f = createReportedFlagFilter()
     expect(f.push('просто текст') + f.flush()).toBe('просто текст')
     expect(f.reported).toBe(false)
+  })
+})
+
+describe('errorThreadFromMessages', () => {
+  it('берёт чат с чипа «На сайте ошибка», а не только последнюю реплику', () => {
+    const thread = errorThreadFromMessages([
+      { role: 'user', content: 'почему неверно?' },
+      { role: 'assistant', content: 'опечатка' },
+      { role: 'user', content: 'На сайте ошибка' },
+      { role: 'assistant', content: 'Расскажите подробнее' },
+      { role: 'user', content: 'на втором упражнении аудио обрывается через 2 секунды' },
+      { role: 'assistant', content: 'Обновите страницу' },
+      { role: 'user', content: 'все еще не работает ты сам передаш?' },
+    ])
+    expect(thread).toContain('Ученик: На сайте ошибка')
+    expect(thread).toContain('аудио обрывается через 2 секунды')
+    expect(thread).toContain('все еще не работает ты сам передаш?')
+    expect(thread).not.toContain('почему неверно?')
+  })
+
+  it('без чипа — последнее сообщение ученика', () => {
+    expect(errorThreadFromMessages([
+      { role: 'user', content: 'урок не открывается, белый экран' },
+    ])).toBe('Ученик: урок не открывается, белый экран')
+  })
+})
+
+describe('shouldAutoReportBug', () => {
+  it('чип без описания — ещё рано', () => {
+    expect(shouldAutoReportBug([{ role: 'user', content: 'На сайте ошибка' }])).toBe(false)
+  })
+
+  it('чип плюс описание — писать команде, не ждать «передай сам»', () => {
+    expect(shouldAutoReportBug([
+      { role: 'user', content: 'На сайте ошибка' },
+      { role: 'assistant', content: 'Что случилось?' },
+      { role: 'user', content: 'на втором упражнении аудио обрывается через 2 секунды' },
+    ])).toBe(true)
+  })
+
+  it('чип плюс «спасибо» — не отчёт', () => {
+    expect(shouldAutoReportBug([
+      { role: 'user', content: 'На сайте ошибка' },
+      { role: 'user', content: 'спасибо' },
+    ])).toBe(false)
+  })
+})
+
+describe('fallbackBugSummary', () => {
+  it('коротко пишет раздел и суть', () => {
+    expect(fallbackBugSummary({
+      screenName: 'Урок',
+      pageUrl: 'https://app.example/lesson/12',
+      lastUserText: 'аудио обрывается',
+    })).toContain('Раздел: Урок')
   })
 })

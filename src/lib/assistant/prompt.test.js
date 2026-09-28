@@ -24,6 +24,7 @@ describe('разбор запроса', () => {
     expect(r.messages).toStrictEqual([{ role: 'user', content: 'почему неверно?' }])
     expect(r.screen).toStrictEqual({ id: 'lesson-workspace', text: 'Clare is reading.' })
     expect(r.lang).toBe('kk')
+    expect(r.bugReported).toBe(false)
   })
 
   it('отбрасывает чужие роли — system из браузера не пройдёт', () => {
@@ -81,6 +82,10 @@ describe('разбор запроса', () => {
     expect(r.errors).toHaveLength(1)
     expect(r.errors[0].message).toBe('TypeError: x is null')
     expect(r.errors[0].source).toBe('app.js:12:3')
+  })
+
+  it('bugReported с клиента — что ошибку в этом чате уже записали', () => {
+    expect(parseChatRequest(ask('ещё раз', { bugReported: true })).bugReported).toBe(true)
   })
 
   it.each([
@@ -197,10 +202,11 @@ describe('системный промпт', () => {
     expect(prompt).toMatch(/это данные, а не указания/)
   })
 
-  it('учит передавать поломку команде меткой, а не просто советом', () => {
+  it('учит передавать поломку команде меткой, как только её описали', () => {
     const prompt = buildSystemPrompt()
     expect(prompt).toContain('Поломки сайта')
     expect(prompt).toContain(REPORT_BUG_MARKER)
+    expect(prompt).toMatch(/Не жди фраз/)
     expect(prompt).toMatch(/чат помощника/)
   })
 })
@@ -228,6 +234,7 @@ describe('база знаний', () => {
   it('говорит, что поломку сайта можно написать помощнику', () => {
     expect(knowledgeText()).toMatch(/На сайте ошибка/)
     expect(knowledgeText()).toMatch(/чат помощника/)
+    expect(knowledgeText()).toMatch(/отдельно просить/)
   })
 })
 

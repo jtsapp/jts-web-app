@@ -136,6 +136,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         errors: recentErrors(),
         pageUrl: typeof location !== 'undefined' ? location.href : '',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        bugReported: history.some((m) => m.reported),
         signal: controller.signal,
         onDelta: (chunk) =>
           setMessages((prev) => {

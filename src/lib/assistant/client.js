@@ -15,19 +15,19 @@ export class AssistantError extends Error {
  * @param {{ token: string, messages: {role: string, content: string}[],
  *           screen: {id: string|null, text: string}, lang: string,
  *           errors?: {at?: number, message?: string, source?: string, url?: string, stack?: string}[],
- *           pageUrl?: string, userAgent?: string,
+ *           pageUrl?: string, userAgent?: string, bugReported?: boolean,
  *           onDelta: (text: string) => void, signal?: AbortSignal }} args
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean }>}
  *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
  *   reported — поломку записали в БД (хвост стрима, ученику не показывается)
  */
-export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, onDelta, signal }) {
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, onDelta, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ messages, screen, lang, errors, pageUrl, userAgent }),
+      body: JSON.stringify({ messages, screen, lang, errors, pageUrl, userAgent, bugReported: Boolean(bugReported) }),
       signal,
     })
   } catch (err) {
