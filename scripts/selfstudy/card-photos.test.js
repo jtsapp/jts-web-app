@@ -32,6 +32,8 @@ describe('card-photos — свой уровень', () => {
   it('пара на карточке берёт фото половины', () => {
     expect(find({ 'log on': '/l' }, 'log on / log out')).toBe('/l')
     expect(find({ 'Husband, wife': '/hw', wife: '/w' }, 'husband — wife')).toBe('/hw')
+    expect(find({ 'go → went': '/g' }, 'go — went')).toBe('/g')
+    expect(find({ 'quiet ↔ noisy': '/q' }, 'noisy — quiet')).toBe('/q')
   })
 
   // Групповой постер старого A0 («Black, blue, brown, green») на карточке

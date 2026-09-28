@@ -75,11 +75,12 @@ function variants(part, { light = false } = {}) {
   return [...out]
 }
 
-// Карточка делит пары слэшем и тире («log on / log out», «husband — wife»);
+// Карточка делит пары слэшем, тире и стрелкой («log on / log out», «husband —
+// wife»; старый A1 писал пары стрелками: «go → went», «quiet ↔ noisy»);
 // запятая на карточке — часть фразы («Sorry, I can't.»), её не режем.
 const cardParts = (word) =>
   String(word || '')
-    .split(/\s*(?:\/|—|–)\s*/)
+    .split(/\s*(?:\/|—|–|→|↔)\s*/)
     .map((p) => variants(p, { light: true }))
     .filter((v) => v.length)
 
@@ -87,7 +88,7 @@ const cardParts = (word) =>
 // Диапазон в скобках («Days (Mon–Sun)») режется раньше, чем по тире.
 const photoParts = (key) =>
   String(key || '')
-    .split(/\s*(?:\/|—|–|,)\s*(?![^(]*\))/)
+    .split(/\s*(?:\/|—|–|→|↔|,)\s*(?![^(]*\))/)
     .map((p) => variants(p))
     .filter((v) => v.length)
 
@@ -183,14 +184,20 @@ function loadPhotoSources(publicDir, level) {
     const raw = readJson(path.join(publicDir, 'course', l, 'img-index.json'), {})
     const index = Object.fromEntries(Object.entries(raw).filter(([, url]) => fs.existsSync(path.join(publicDir, url))))
     if (l === level) return { level: l, index }
-    // Перевод снимка — с карточки, где он стоит на своём уровне.
+    // Перевод снимка — с карточки, к которой он встаёт на своём уровне. Ищем
+    // заново по словам его шагов, а не читаем их img: сохранённые шаги могут
+    // быть собраны до того, как в индекс доложили картинки (так и было с
+    // A1), и тогда итог зависел бы от порядка пересборки уровней.
+    const own = photoFinder([{ level: l, index }])
     const meaning = new Map()
     const dir = path.join(publicDir, 'course', l)
-    for (const f of fs.readdirSync(dir).filter((n) => /^steps-.*\.json$/.test(n))) {
+    const files = fs.readdirSync(dir).filter((n) => /^steps-.*\.json$/.test(n)).sort()
+    for (const f of files) {
       for (const s of readJson(path.join(dir, f), {}).steps || []) {
         if (s.type !== 'cards') continue
         for (const w of s.words || []) {
-          if (w.img && w.img.startsWith(`/course/${l}/img/`) && w.ru && !meaning.has(w.img)) meaning.set(w.img, w.ru)
+          const url = w.ru && own(w.en)
+          if (url && !meaning.has(url)) meaning.set(url, w.ru)
         }
       }
     }
