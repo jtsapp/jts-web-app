@@ -72,6 +72,32 @@ vi.mock('../learning/courseData.js', () => ({
   loadCourseSteps: vi.fn(async () => null),
 }))
 
+// Экзамена у уровня по умолчанию нет — старые тесты считают узлы тропы и о нём
+// не знают. Тесты экзамена включают его сами (mockResolvedValueOnce).
+vi.mock('../learning/levelExam.js', async () => {
+  const actual = await vi.importActual('../learning/levelExam.js')
+  return { ...actual, loadLevelExam: vi.fn(async () => null) }
+})
+
+// Экран экзамена заменён кнопками: здесь проверяется тропа — узел, замок,
+// зачёт и выход, а сам экзамен покрыт в LevelExam.test.jsx.
+vi.mock('../learning/LevelExam.jsx', () => ({
+  default: ({ onPassed, onExit }) => (
+    <div>
+      <button type="button" onClick={() => onPassed(420)}>
+        сдать экзамен
+      </button>
+      <button type="button" onClick={() => onExit(true)}>
+        к тропе
+      </button>
+      <button type="button" onClick={() => onExit(false)}>
+        выйти посреди
+      </button>
+    </div>
+  ),
+}))
+
+import { loadLevelExam } from '../learning/levelExam.js'
 import { markDone, loadDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import { getContentQuota, getCourseCatalog, getCatalogProgress, getLessonModules } from '../api.js'
 import { getLevelLessons } from '../learning/lessonData.js'
@@ -395,5 +421,97 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     await waitFor(() => expect(container.querySelector('.li-empty__title')).toBeTruthy())
     expect(container.querySelector('.li-empty__title').textContent).toContain('Доступ к этому модулю закрыт')
     expect(container.querySelectorAll('.kt-step')).toHaveLength(0)
+  })
+})
+
+describe('KingdomInteriorPage — финальный экзамен уровня', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Блоки выше переставляют моки насовсем (mockResolvedValue: другая тропа,
+    // закрытый модуль) — clearAllMocks их не откатывает. Возвращаем исходные.
+    getLevelLessons.mockResolvedValue(TRAIL)
+    loadDone.mockResolvedValue(new Set(DONE_CODES))
+    markDone.mockResolvedValue(new Set(DONE_CODES))
+    getLessonModules.mockResolvedValue([{ id: 'mod-1', level: 'B1', orderIndex: 0, locked: false }])
+    getContentQuota.mockResolvedValue(null)
+    getCourseCatalog.mockResolvedValue([{ code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }] }] }])
+    getCatalogProgress.mockResolvedValue({ completedLessonIds: [1] })
+    loadLevelExam.mockResolvedValue(null)
+  })
+
+  const EXAM ={ level: 'b1', version: 'x', total: 50, pass: 35, sections: [], tips: {} }
+  const lastNode = (container) => [...container.querySelectorAll('.kt-step')].pop()
+
+  // Квоты модуля в этом блоке нет (см. beforeEach): демо-лимит 3 запер бы
+  // последний узел, а проверяется правило самого экзамена.
+  async function renderWithExam(props) {
+    loadLevelExam.mockResolvedValueOnce(EXAM)
+    const view = renderPage(props)
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step')).toHaveLength(TRAIL.length + 1))
+    return view
+  }
+
+  it('у уровня без экзамена узла «Финальный экзамен» нет', async () => {
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(TRAIL.length))
+    expect(screen.queryByText('Финальный экзамен')).toBe(null)
+  })
+
+  it('экзамен — последний узел своей группой; сдача засчитывает EXAM без итогов урока', async () => {
+    markDone.mockResolvedValueOnce(new Set([...DONE_CODES, 'EXAM']))
+    const { container } = await renderWithExam()
+    const units = container.querySelectorAll('.kt-unit')
+    expect(units[units.length - 1].querySelector('.kt-unit__title').textContent).toBe('Финальный экзамен')
+    const node = lastNode(container)
+    // Курс уровня в каталоге пройден целиком (мок: один юнит, урок 1 отмечен).
+    expect(node.disabled).toBe(false)
+    expect(node.getAttribute('aria-label')).toBe('Финальный экзамен')
+
+    fireEvent.click(node)
+    fireEvent.click(await screen.findByText('сдать экзамен'))
+    await waitFor(() => expect(markDone).toHaveBeenCalledWith('B1', 'tok-1', 'mod-1', 'EXAM', 420))
+    // Итоги экзамен рисует сам — экран итогов урока поверх него не нужен.
+    expect(container.querySelector('.le-over')).toBe(null)
+
+    fireEvent.click(screen.getByText('к тропе'))
+    await waitFor(() => expect(lastNode(container)?.className).toContain('is-complete'))
+  })
+
+  it('курс уровня в каталоге не пройден — экзамен заперт и говорит почему', async () => {
+    getCourseCatalog.mockResolvedValueOnce([
+      { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+    ])
+    const { container } = await renderWithExam()
+    const node = lastNode(container)
+    expect(node.disabled).toBe(true)
+    expect(node.title).toBe('Откроется, когда весь курс уровня будет пройден в «Уроках»')
+  })
+
+  it('после последнего урока «Следующий урок» при запертом экзамене ведёт на тропу, а не в «лимит»', async () => {
+    getCourseCatalog.mockResolvedValue([
+      { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+    ])
+    const view = await renderWithExam({ isDemoAccount: true })
+    const nodes = view.container.querySelectorAll('.kt-step')
+    // Последний урок (l20) открыт: l19 пройден, юнит 1 открыт каталогом.
+    fireEvent.click(nodes[TRAIL.length - 1])
+    fireEvent.click(await screen.findByText('сдать урок'))
+    const next = await screen.findByText('Перейти на следующий урок')
+    await waitFor(() => expect(next.disabled).toBe(false))
+    fireEvent.click(next)
+    await waitFor(() => expect(view.container.querySelector('.le-over')).toBe(null))
+    expect(view.container.querySelector('.le-restricted')).toBe(null)
+    expect(screen.queryByText(PAYWALL)).toBe(null)
+    expect(view.container.querySelectorAll('.kt-step')).toHaveLength(TRAIL.length + 1)
+  })
+
+  it('выход посреди экзамена переспрашивает: ответы сохранятся', async () => {
+    const { container } = await renderWithExam()
+    fireEvent.click(lastNode(container))
+    fireEvent.click(await screen.findByText('выйти посреди'))
+    expect(screen.getByText('Ответы сохранятся — продолжите с того же места')).toBeTruthy()
+    fireEvent.click(screen.getByText('Выйти из экзамена'))
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(TRAIL.length + 1))
+    expect(markDone).not.toHaveBeenCalled()
   })
 })
