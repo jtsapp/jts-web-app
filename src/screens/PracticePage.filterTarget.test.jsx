@@ -54,6 +54,21 @@ describe('PracticePage — фильтр из перехода', () => {
     expect(container.querySelector('#sec-situations')).toBeTruthy()
   })
 
+  it('«Говорение» заканчивается «Аркадой» перед сказками, и карточка ведёт в игру', async () => {
+    const onNav = vi.fn()
+    const { container, getByRole } = render(
+      <I18nProvider>
+        <PracticePage userLevel="A1" userName="Тест" token="T" openTarget={{ skill: 'speaking' }} onNav={onNav} onProfile={() => {}} />
+      </I18nProvider>,
+    )
+    await waitFor(() => expect(activeSkill(container)).toMatch(/говорение/i))
+    const ids = [...container.querySelectorAll('.pk > section[id]')].map((s) => s.id)
+    expect(ids.slice(-2)).toEqual(['sec-arcade', 'sec-tales'])
+    expect(container.querySelector('#sec-arcade .pk-sec__title')?.textContent).toBe('Аркада')
+    fireEvent.click(getByRole('button', { name: /играть/i }))
+    expect(onNav).toHaveBeenCalledWith('arcade')
+  })
+
   it('незнакомый фильтр игнорируется', async () => {
     const { container } = renderWith({ filter: 'nope' })
     await waitFor(() => expect(activeSkill(container)).toMatch(/аудирование/i))
@@ -95,6 +110,7 @@ describe('PracticePage — навыки и уровень', () => {
   it('карточка навыка считает тренажёры с правильным окончанием', () => {
     const { container } = renderWith(null)
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
-    expect(counts).toEqual(['7 тренажеров', '4 тренажера', '4 тренажера', '4 тренажера'])
+    // У «Говорения» пятый — «Аркада».
+    expect(counts).toEqual(['7 тренажеров', '4 тренажера', '4 тренажера', '5 тренажеров'])
   })
 })

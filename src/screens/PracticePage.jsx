@@ -47,6 +47,7 @@ import {
   GrammarTile,
   WorkbookTile,
   SituationCard,
+  ArcadeCard,
 } from './practice/PracticeCards.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -990,6 +991,16 @@ export default function PracticePage({
                 <WorkbookTile key={l.code} level={l} index={i} onOpen={openWorkbookLevel} />
               ))}
             </Rail>
+          </section>
+        )
+
+      case 'arcade':
+        // Игра одна и без уровней, поэтому ни «Посмотреть все», ни фильтра
+        // по уровню у секции нет.
+        return (
+          <section key={sec.id} id="sec-arcade" className="pk-sec">
+            {head(sec, t('practice.chip.arcade'))}
+            <ArcadeCard onStart={() => onNav?.('arcade')} />
           </section>
         )
 
