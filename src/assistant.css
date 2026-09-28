@@ -120,6 +120,14 @@
   font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer; text-align: left;
 }
 .asst__chip:hover { border-color: var(--asst-accent); color: var(--asst-accent); }
+.asst__chip--bug { border-color: #e8c9a8; background: #fff8f0; }
+.asst__chip--bug:hover { border-color: #c47a3a; color: #9a4f12; }
+
+.asst__reported {
+  margin-top: 8px !important;
+  font-size: 12px;
+  color: var(--asst-muted);
+}
 
 .asst__err {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

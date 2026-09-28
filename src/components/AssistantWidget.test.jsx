@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import AssistantWidget from './AssistantWidget.jsx'
 import AskAssistantButton from './AskAssistantButton.jsx'
+import { recordError, resetErrorLog } from '../lib/assistant/errorLog.js'
 
 // Ответ сервера кусками — как настоящий стрим.
 function streamResponse(chunks, { status = 200, headers = {} } = {}) {
@@ -37,11 +38,13 @@ const renderApp = ({ enabled = true, token = 'tok' } = {}) =>
 // тот же флак уже ронял CI на LiveLessonPage. Запас не замедляет зелёный тест:
 // ожидание кончается, как только элемент появился.
 const WAIT = { timeout: 5000 }
+const PLACEHOLDER = 'Спросите о сайте, задании или напишите, если что-то сломалось…'
 
 describe('помощник по сайту', () => {
   let fetchMock
   beforeEach(() => {
     localStorage.setItem('lang', 'ru')
+    resetErrorLog()
     fetchMock = vi.fn(async () => streamResponse(['Опечатка: ', '«Cleare» → «Clare».']))
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -57,12 +60,15 @@ describe('помощник по сайту', () => {
     expect(screen.getByRole('dialog', { name: 'Помощник JTS' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Почему мой ответ неверный?' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Дай план на неделю' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'На сайте ошибка' })).toBeTruthy()
+    expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeTruthy()
+    expect(screen.getByText(/напишите, если что-то сломалось/)).toBeTruthy()
   })
 
   it('отправляет вопрос со снимком экрана и стримит ответ', async () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    fireEvent.change(screen.getByPlaceholderText('Спросите о сайте или задании…'), {
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), {
       target: { value: 'почему неверно?' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }))
@@ -80,6 +86,9 @@ describe('помощник по сайту', () => {
     expect(body.screen.text).toContain('ученик ввёл «Is Cleare reading?» (отмечено как неверное)')
     // Свой текст виджет в снимок не кладёт.
     expect(body.screen.text).not.toContain('Помощник JTS')
+    expect(body.pageUrl).toBeTruthy()
+    expect(Array.isArray(body.errors)).toBe(true)
+    expect(body.userAgent).toBeTruthy()
   })
 
   it('второй вопрос несёт историю разговора', async () => {
@@ -87,8 +96,8 @@ describe('помощник по сайту', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
     fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
     await screen.findByText('Опечатка: «Cleare» → «Clare».', {}, WAIT)
-    fireEvent.change(screen.getByPlaceholderText('Спросите о сайте или задании…'), { target: { value: 'а правило?' } })
-    fireEvent.keyDown(screen.getByPlaceholderText('Спросите о сайте или задании…'), { key: 'Enter' })
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'а правило?' } })
+    fireEvent.keyDown(screen.getByPlaceholderText(PLACEHOLDER), { key: 'Enter' })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), WAIT)
     const body = JSON.parse(fetchMock.mock.calls[1][1].body)
     expect(body.messages.map((m) => m.role)).toStrictEqual(['user', 'assistant', 'user'])
@@ -148,7 +157,7 @@ describe('помощник по сайту', () => {
     fetchMock.mockImplementationOnce(async () => streamResponse([REFUSAL], { headers: { 'x-assistant-offtopic': '1' } }))
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    const box = screen.getByPlaceholderText('Спросите о сайте или задании…')
+    const box = screen.getByPlaceholderText(PLACEHOLDER)
     fireEvent.change(box, { target: { value: 'напиши сочинение по истории' } })
     fireEvent.keyDown(box, { key: 'Enter' })
     await screen.findByText(REFUSAL, {}, WAIT)
@@ -202,5 +211,29 @@ describe('помощник по сайту', () => {
       </I18nProvider>,
     )
     await waitFor(() => expect(screen.queryByText('Опечатка: «Cleare» → «Clare».')).toBeNull(), WAIT)
+  })
+
+  it('чип «На сайте ошибка» шлёт вопрос и кладёт сбои вкладки в запрос', async () => {
+    recordError({ message: 'ChunkLoadError', source: 'app.js:4', url: 'http://localhost/lesson' })
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    fireEvent.click(screen.getByRole('button', { name: 'На сайте ошибка' }))
+    await screen.findByText('Опечатка: «Cleare» → «Clare».', {}, WAIT)
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.messages[0].content).toBe('На сайте ошибка')
+    expect(body.errors[0].message).toBe('ChunkLoadError')
+    expect(body.errors[0].source).toBe('app.js:4')
+  })
+
+  it('хвост «отчёт записан» не виден, под ответом — что команда увидит', async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      streamResponse(['Страница зависла. Обновите. Если не поможет — передам команде.', '[[ASST_REPORTED]]']),
+    )
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    fireEvent.click(screen.getByRole('button', { name: 'На сайте ошибка' }))
+    expect(await screen.findByText(/Страница зависла/, {}, WAIT)).toBeTruthy()
+    expect(screen.getByText('Ошибку записали — команда её увидит.')).toBeTruthy()
+    expect(screen.queryByText(/ASST_REPORTED/)).toBeNull()
   })
 })

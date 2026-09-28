@@ -1,5 +1,7 @@
 // Клиент помощника: один вопрос → потоковый ответ кусками через onDelta.
 
+import { createReportedFlagFilter } from './report.js'
+
 export class AssistantError extends Error {
   /** @param {'auth'|'rate'|'cooldown'|'unavailable'|'network'} kind */
   constructor(kind, { retryAfterSec } = {}) {
@@ -12,17 +14,20 @@ export class AssistantError extends Error {
 /**
  * @param {{ token: string, messages: {role: string, content: string}[],
  *           screen: {id: string|null, text: string}, lang: string,
+ *           errors?: {at?: number, message?: string, source?: string, url?: string, stack?: string}[],
+ *           pageUrl?: string, userAgent?: string,
  *           onDelta: (text: string) => void, signal?: AbortSignal }} args
- * @returns {Promise<{ text: string, offtopic: boolean }>} весь ответ; offtopic —
- *   сервер ответил стандартным отказом на вопрос не по теме
+ * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean }>}
+ *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
+ *   reported — поломку записали в БД (хвост стрима, ученику не показывается)
  */
-export async function askAssistant({ token, messages, screen, lang, onDelta, signal }) {
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, onDelta, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ messages, screen, lang }),
+      body: JSON.stringify({ messages, screen, lang, errors, pageUrl, userAgent }),
       signal,
     })
   } catch (err) {
@@ -39,28 +44,36 @@ export async function askAssistant({ token, messages, screen, lang, onDelta, sig
   }
   if (!res.ok || !res.body) throw new AssistantError('unavailable')
   const offtopic = res.headers.get('x-assistant-offtopic') === '1'
+  const reportedHeader = res.headers.get('x-assistant-reported') === '1'
+  const flag = createReportedFlagFilter()
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let full = ''
+  const emit = (chunk) => {
+    const out = flag.push(chunk)
+    if (out) {
+      full += out
+      onDelta?.(out)
+    }
+  }
   try {
     for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       const chunk = decoder.decode(value, { stream: true })
-      if (chunk) {
-        full += chunk
-        onDelta?.(chunk)
-      }
+      if (chunk) emit(chunk)
     }
   } catch (err) {
     if (err?.name === 'AbortError') throw err
     throw new AssistantError('network')
   }
-  const tail = decoder.decode()
+  const rest = decoder.decode()
+  if (rest) emit(rest)
+  const tail = flag.flush()
   if (tail) {
     full += tail
     onDelta?.(tail)
   }
-  return { text: full, offtopic }
+  return { text: full, offtopic, reported: reportedHeader || flag.reported }
 }
