@@ -279,7 +279,7 @@ describe('POST /api/assistant/chat', () => {
       screenId: 'lesson-workspace',
       pageUrl: 'https://app.example/lesson/12',
       userAgent: 'Mozilla/5.0 JTS',
-      userMessage: 'урок не открывается, белый экран',
+      userMessage: 'Ученик: урок не открывается, белый экран',
     })
     expect(saveCalls[0].assistantSummary).toContain('Раздел: Урок')
     expect(saveCalls[0].assistantSummary).toContain('белый экран')
@@ -289,5 +289,46 @@ describe('POST /api/assistant/chat', () => {
   it('обычный ответ про опечатку в БД не пишет', async () => {
     await (await post(question(302))).text()
     expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+  })
+
+  it('чип «ошибка» + описание — отчёт даже без метки модели, чат с начала', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Понял: аудио обрывается. Обновите страницу. Ошибку уже передал команде.\n' }
+    }
+    const res = await post({
+      ...question(303),
+      messages: [
+        { role: 'user', content: 'На сайте ошибка' },
+        { role: 'assistant', content: 'Расскажите подробнее' },
+        { role: 'user', content: 'на втором упражнении аудио обрывается через 2 секунды' },
+      ],
+      pageUrl: 'https://dev-tutor.justtostudy.kz/',
+    })
+    const text = await res.text()
+    expect(text).toContain('аудио обрывается')
+    expect(text).toContain('[[ASST_REPORTED]]')
+    expect(saveCalls[0].userMessage).toContain('Ученик: На сайте ошибка')
+    expect(saveCalls[0].userMessage).toContain('аудио обрывается через 2 секунды')
+    expect(saveCalls[0].assistantSummary).toMatch(/Автоматически/)
+  })
+
+  it('повтор в том же чате дописывает карточку, ученику метку не дублирует', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Уже передал.\n[[REPORT_BUG]]\nповтор' }
+    }
+    const text = await (await post({
+      ...question(304),
+      bugReported: true,
+      messages: [
+        { role: 'user', content: 'На сайте ошибка' },
+        { role: 'assistant', content: 'ок' },
+        { role: 'user', content: 'аудио всё ещё обрывается через 2 секунды' },
+      ],
+    })).text()
+    expect(text).toContain('Уже передал')
+    expect(text).not.toContain('[[ASST_REPORTED]]')
+    expect(saveCalls[0].updateLatest).toBe(true)
+    expect(saveCalls[0].userMessage).toContain('На сайте ошибка')
+    expect(saveCalls[0].userMessage).toContain('аудио всё ещё обрывается')
   })
 })

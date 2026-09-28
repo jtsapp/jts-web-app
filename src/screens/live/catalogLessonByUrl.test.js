@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
+import { findCatalogLessonId, shouldResolveCatalogLesson, matchesCatalogLessonIndex } from './catalogLessonByUrl.js'
 import { LESSON_EXTRACTOR, engineOf } from './lessonExtractor.js'
 
 const CATALOG = [
@@ -58,6 +58,43 @@ describe('findCatalogLessonId', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/uploads/my-homework.pdf')).toBeNull()
     expect(findCatalogLessonId(CATALOG, '')).toBeNull()
     expect(findCatalogLessonId([], 'https://files/a2/lessons/L01.html')).toBeNull()
+  })
+})
+
+const LEVEL_FILE = [
+  {
+    id: 1,
+    code: 'A1',
+    units: [{
+      id: 10,
+      lessons: [
+        { id: 201, code: 'L01', fileUrl: 'https://files/a1/course.html?mode=solo' },
+        { id: 205, code: 'L05', fileUrl: 'https://files/a1/course.html?mode=solo' },
+        { id: 208, code: 'L08', fileUrl: 'https://files/a1/course.html?mode=solo' },
+      ],
+    }],
+  },
+]
+
+describe('findCatalogLessonId — указка занятия в общем файле уровня', () => {
+  it('по focusLessonNo берёт L05, а не первый урок файла', () => {
+    expect(findCatalogLessonId(LEVEL_FILE, 'https://files/a1/course.html?mode=solo', 5)).toBe(205)
+  })
+
+  it('без указки остаётся первый совпавший — как раньше', () => {
+    expect(findCatalogLessonId(LEVEL_FILE, 'https://files/a1/course.html?mode=solo')).toBe(201)
+  })
+
+  it('уникальный файл не подменяется чужим L-номером', () => {
+    expect(findCatalogLessonId(CATALOG, 'https://files/a2/lessons/L01.html?mode=solo', 8)).toBe(101)
+  })
+})
+
+describe('matchesCatalogLessonIndex', () => {
+  it('узнаёт L05 в коде и в имени файла', () => {
+    expect(matchesCatalogLessonIndex({ code: 'L05' }, 5)).toBe(true)
+    expect(matchesCatalogLessonIndex({ fileUrl: 'https://files/a1/lessons/L05.html' }, 5)).toBe(true)
+    expect(matchesCatalogLessonIndex({ code: 'L01' }, 5)).toBe(false)
   })
 })
 

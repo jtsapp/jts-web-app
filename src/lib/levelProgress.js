@@ -63,18 +63,18 @@ export function nextLevel(level) {
  * от процента по средней отдаче занятия, потому что курса в этих числах не
  * было. Теперь есть: `remaining` — сколько материалов уровня ещё не пройдено.
  *
- * Уровень карточки тоже берём у сервера, когда он ответил: ученик мог купить
- * курс выше своего, и тогда проходит он именно его. Считать полосу по одному
- * уровню, а подписывать карточку другим нельзя — вышло бы «ВАШ УРОВЕНЬ A1» с
- * дорожкой, ведущей к B2. Уровень в профиле и в сайдбаре при этом остаётся
- * прежним: владеть языком на B1 и купить курс B1 — разные вещи.
+ * Уровень карточки — CEFR из профиля (тест и ручная правка менеджера).
+ * Полоса прогресса берётся у сервера отдельно: ученик мог купить курс выше
+ * своего, и дорожка тогда считает другой уровень, но подпись «ВАШ УРОВЕНЬ»
+ * должна остаться профилем. Пустой профиль не подменяем A1 здесь — это делает
+ * карточка «тест не пройден».
  */
 export function levelSummary(userLevel, stats, progress = null) {
   const ranked = rankSkills(stats)
-  const level = String(progress?.level || userLevel || 'A1').toUpperCase()
+  const level = String(userLevel || progress?.level || 'A1').toUpperCase()
   // Именно `progress.next`, а не пересчёт от уровня: на C2 сервер присылает
   // null, и подставлять туда своё значение — значит спорить с ним о потолке.
-  const next = progress ? (progress.next || null) : nextLevel(userLevel)
+  const next = progress ? (progress.next || null) : nextLevel(userLevel || progress?.level)
   const percent = typeof progress?.percent === 'number' ? progress.percent : null
   return {
     level,

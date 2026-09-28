@@ -2677,8 +2677,7 @@
   font-weight: 700;
   color: var(--t-purple);
   text-align: left;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ------------------- План уроков (полный) ------------------------ */
@@ -3523,8 +3522,7 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--t-purple);
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .t-scen__desc {
   margin-top: 6px;

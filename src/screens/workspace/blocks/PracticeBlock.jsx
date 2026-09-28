@@ -90,6 +90,10 @@ export default function PracticeBlock({
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
   useEffect(() => {
+    syncBwChips(htmlRef.current, questions, answers)
+  }, [answers, questions, tappableHtml])
+
+  useEffect(() => {
     if (!checked) {
       setWbScore(null)
       return
@@ -125,6 +129,10 @@ export default function PracticeBlock({
       if (readOnly || checked) return
       const chip = e.target?.closest?.('.bw')
       if (!chip) return
+      // Слово банка, не перевод: глушим и когда чип уже использован.
+      e.stopImmediatePropagation()
+      e.preventDefault()
+      if (chip.classList.contains('used')) return
       const word = (chip.textContent || '').trim()
       if (!word) return
       const gaps = questions.filter((q) => q.type === 'gap')
@@ -133,8 +141,6 @@ export default function PracticeBlock({
         ?? gaps.find((q) => !String(answers?.[q.id] ?? '').trim())
       // Класть некуда — молча ничего не делаем, но и перевод не открываем:
       // иначе одно и то же нажатие вело бы то в ответ, то в словарь.
-      e.stopImmediatePropagation()
-      e.preventDefault()
       if (!target) return
       onAnswer(target.id, word)
       setActiveGapId(null)
@@ -276,4 +282,22 @@ export default function PracticeBlock({
       )}
     </div>
   )
+}
+
+/** Чипы `.bw` гаснут, когда слово уже лежит в пропуске — иначе «сөздер қалып кеткен». */
+function syncBwChips(root, questions, answers) {
+  if (!root) return
+  const placed = (questions || [])
+    .filter((q) => q?.type === 'gap')
+    .map((q) => String(answers?.[q.id] ?? '').trim().toLowerCase())
+    .filter(Boolean)
+  const used = new Map()
+  root.querySelectorAll('.bw').forEach((chip) => {
+    const word = (chip.textContent || '').trim().toLowerCase()
+    const n = used.get(word) || 0
+    const need = placed.filter((p) => p === word).length
+    const on = n < need
+    chip.classList.toggle('used', on)
+    if (on) used.set(word, n + 1)
+  })
 }

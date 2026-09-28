@@ -89,6 +89,7 @@ import { flushSkillStats } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
+import { resolveHomeLevel } from './lib/homeLevel.js'
 import { placementSummary } from './lib/placement.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
@@ -276,7 +277,6 @@ export default function App() {
           hydratePractice(session.token)
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
-          if (session.languageLevel) setUserLevel(session.languageLevel)
         }
         // Демо-статус нужен ДО выбора первого экрана (ниже): демо-ученику мы
         // открываем «Главную» с его сроком и тарифами, а не карту королевств.
@@ -292,6 +292,25 @@ export default function App() {
         // навигация «Тьютор» уже знает, вести на dashboard или на welcome.
         const profile = await loadTutorProfile(session?.token)
         if (cancelled) return
+        let backendLevel = null
+        if (session?.token) {
+          try {
+            backendLevel = await getLanguageLevel(session.token)
+          } catch {
+            backendLevel = session.languageLevel || null
+          }
+        }
+        // Профиль на бэкенде важнее теста: менеджер мог поменять A1→A2.
+        // Пустой профиль — тогда результат теста из Neon, иначе «нужен тест».
+        const displayLevel = resolveHomeLevel(backendLevel, profile?.level)
+        if (displayLevel) {
+          setUserLevel(displayLevel)
+          syncProfileLevel(session?.token, backendLevel || displayLevel)
+        }
+        if (session?.token) setNeedsLevelTest(!displayLevel)
+        if (!backendLevel && profile?.level && session?.token) {
+          persistPlacementLevel(session.token, profile.level).catch(() => {})
+        }
         if (profile) {
           if (profile.tutor) {
             setTutorKey(profile.tutor)
@@ -627,8 +646,8 @@ export default function App() {
           role: data.role || null,
         })
       }
-      // Уровень берём из профиля на backend. Если его там нет — аккаунт новый
-      // (или тест пропускали), и после success покажем CEFR-тест.
+      // Уровень: профиль на бэкенде главнее теста. Если в карточке пусто —
+      // берём результат онбординга из профиля приложения.
       let lvl = null
       let lvlKnown = false
       if (tok) {
@@ -672,7 +691,12 @@ export default function App() {
             // профилем — но бэкенд о его уровне не знает (аноним туда не
             // писал). Дописываем: иначе аккаунт снова попросят пройти тест, а
             // пройти его уже нельзя — он проходится один раз.
-            if (profile.level && !lvl) saveTestLevel(profile.level)
+            const display = resolveHomeLevel(lvl, profile.level)
+            if (display) {
+              setUserLevel(display)
+              if (!lvl) persistPlacementLevel(tok, display).catch(() => {})
+              setNeedsLevelTest(false)
+            }
             if (profile.tutor) {
               setTutorKey(profile.tutor)
               setTemper(temperFor(profile.tutor, profile.tutorTemper))
@@ -739,11 +763,12 @@ export default function App() {
         email: data.email || (isEmailIdentifier(identifier) ? identifier : null),
         role: data.role || null,
       })
+      let lvl = null
       try {
         // null = уровня в профиле нет (тест не пройден или его результат не
         // сохранился) — предлагаем тест снова. Исключение = «не знаю»: тестом
         // не пристаём, чтобы сетевая осечка не гоняла студента по кругу.
-        const lvl = await getLanguageLevel(tok)
+        lvl = await getLanguageLevel(tok)
         if (lvl) setUserLevel(lvl)
         syncProfileLevel(tok, lvl)
         setNeedsLevelTest(!lvl)
@@ -751,13 +776,17 @@ export default function App() {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
       applyDemoAccess(tok)
-      // Логином и паролем входит и пришедший на пробный урок: аккаунт класса
-      // общий и служебный, ему после входа положен урок, а не кабинет.
       applyBoothAccount(tok)
       mergeAnonymousProgress(tok)
         .then(() => loadTutorProfile(tok))
         .then((profile) => {
           if (!profile) return
+          const display = resolveHomeLevel(lvl, profile.level)
+          if (display) {
+            setUserLevel(display)
+            if (!lvl) persistPlacementLevel(tok, display).catch(() => {})
+            setNeedsLevelTest(false)
+          }
           if (profile.tutor) {
             setTutorKey(profile.tutor)
             setTemper(temperFor(profile.tutor, profile.tutorTemper))
@@ -780,8 +809,9 @@ export default function App() {
   }
 
   async function finishGoogleSession(tok) {
+    let lvl = null
     try {
-      const lvl = await getLanguageLevel(tok)
+      lvl = await getLanguageLevel(tok)
       if (lvl) setUserLevel(lvl)
       syncProfileLevel(tok, lvl)
       setNeedsLevelTest(!lvl)
@@ -794,6 +824,12 @@ export default function App() {
       .then(() => loadTutorProfile(tok))
       .then((profile) => {
         if (!profile) return
+        const display = resolveHomeLevel(lvl, profile.level)
+        if (display) {
+          setUserLevel(display)
+          if (!lvl) persistPlacementLevel(tok, display).catch(() => {})
+          setNeedsLevelTest(false)
+        }
         if (profile.tutor) {
           setTutorKey(profile.tutor)
           setTemper(temperFor(profile.tutor, profile.tutorTemper))

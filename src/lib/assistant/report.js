@@ -102,3 +102,94 @@ export function createReportedFlagFilter() {
     },
   }
 }
+
+/** Чип «На сайте ошибка» на языках интерфейса. С него начинается чат для команды. */
+export const BUG_CHIP_TEXTS = [
+  'На сайте ошибка',
+  'The site has an error',
+  'Сайтта қате бар',
+]
+
+/** Сколько чата с момента чипа кладём в user_message. */
+export const USER_THREAD_MAX = 8000
+
+function normChip(s) {
+  return String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+const CHIP_SET = new Set(BUG_CHIP_TEXTS.map(normChip))
+
+export function isBugChipText(content) {
+  return CHIP_SET.has(normChip(content))
+}
+
+function lastIndexWhere(list, pred) {
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    if (pred(list[i], i)) return i
+  }
+  return -1
+}
+
+function formatErrorThread(msgs, maxChars) {
+  const line = (m, assistantLimit) => {
+    const who = m.role === 'user' ? 'Ученик' : 'Помощник'
+    let body = String(m.content || '').trim()
+    if (m.role === 'assistant' && body.length > assistantLimit) {
+      body = `${body.slice(0, assistantLimit)}…`
+    }
+    return `${who}: ${body}`
+  }
+  let assistantLimit = 400
+  let out = msgs.map((m) => line(m, assistantLimit)).join('\n\n')
+  while (out.length > maxChars && assistantLimit > 80) {
+    assistantLimit = Math.max(80, Math.floor(assistantLimit / 2))
+    const next = msgs.map((m) => line(m, assistantLimit)).join('\n\n')
+    if (next.length >= out.length) break
+    out = next
+  }
+  if (out.length > maxChars) out = `${out.slice(0, maxChars - 1)}…`
+  return out
+}
+
+/**
+ * Чат для вкладки админки: с последнего чипа «На сайте ошибка», а не только
+ * последняя реплика («ты сам передашь?»). Чипа нет — последнее сообщение ученика.
+ */
+export function errorThreadFromMessages(messages, maxChars = USER_THREAD_MAX) {
+  const list = (Array.isArray(messages) ? messages : []).filter(
+    (m) => m && (m.role === 'user' || m.role === 'assistant') && String(m.content || '').trim(),
+  )
+  if (!list.length) return ''
+  const chipAt = lastIndexWhere(list, (m) => m.role === 'user' && isBugChipText(m.content))
+  const start = chipAt >= 0 ? chipAt : lastIndexWhere(list, (m) => m.role === 'user')
+  if (start < 0) return ''
+  return formatErrorThread(list.slice(start), maxChars)
+}
+
+const THANKS_RE = /^(спасибо|рахмет|рақмет|ок+|ok|хорошо|ладно|понял[а]?|thanks|thank you)[.!?…]*$/i
+
+/**
+ * Чип «ошибка» плюс хотя бы одно следующее сообщение ученика с описанием —
+ * этого достаточно, чтобы записать отчёт, даже если модель не поставила метку.
+ * Просить «передай команде» ученику больше не нужно.
+ */
+export function shouldAutoReportBug(messages) {
+  const list = (Array.isArray(messages) ? messages : []).filter(
+    (m) => m && (m.role === 'user' || m.role === 'assistant') && String(m.content || '').trim(),
+  )
+  const chipAt = lastIndexWhere(list, (m) => m.role === 'user' && isBugChipText(m.content))
+  if (chipAt < 0) return false
+  return list.slice(chipAt + 1).some((m) => {
+    if (m.role !== 'user') return false
+    const t = String(m.content).trim()
+    return t.length >= 16 && !isBugChipText(t) && !THANKS_RE.test(t)
+  })
+}
+
+export function fallbackBugSummary({ screenName, pageUrl, lastUserText } = {}) {
+  const lines = ['Автоматически: ученик описал поломку.']
+  if (screenName) lines.push(`Раздел: ${screenName}`)
+  if (pageUrl) lines.push(`Адрес: ${pageUrl}`)
+  if (lastUserText) lines.push(`Что произошло: ${lastUserText}`)
+  return lines.join('\n')
+}

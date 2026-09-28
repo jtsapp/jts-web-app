@@ -19,6 +19,7 @@ import { chatStreamRich, hasAnthropicKey } from '@/lib/anthropic.js'
 import {
   AssistantRequestError,
   OFFTOPIC_REPLY,
+  SCREEN_NAMES,
   buildSystemPrompt,
   buildTurns,
   classifyStart,
@@ -27,7 +28,12 @@ import {
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { loadStudentContext } from '@/lib/assistant/studentContext.js'
-import { REPORTED_STREAM_MARKER } from '@/lib/assistant/report.js'
+import {
+  REPORTED_STREAM_MARKER,
+  errorThreadFromMessages,
+  fallbackBugSummary,
+  shouldAutoReportBug,
+} from '@/lib/assistant/report.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 
 export const runtime = 'nodejs'
@@ -138,21 +144,34 @@ export async function POST(request) {
   const filter = createReportFilter()
   const first = filter.push(head) + (finished ? filter.flush() : '')
   const saveReport = async () => {
-    if (filter.report() == null) return false
+    const modelReport = filter.report()
+    const auto = shouldAutoReportBug(parsed.messages)
+    if (modelReport == null && !auto) return false
     const lastUser = [...parsed.messages].reverse().find((m) => m.role === 'user')
+    const thread = errorThreadFromMessages(parsed.messages)
+    const screenName = parsed.screen.id ? (SCREEN_NAMES[parsed.screen.id] || parsed.screen.id) : ''
     try {
-      return await saveAssistantErrorReport({
+      const saved = await saveAssistantErrorReport({
         profileId: key,
         userId: auth.user.userId,
         lang: parsed.lang,
         screenId: parsed.screen.id,
         pageUrl: parsed.pageUrl,
         userAgent: parsed.userAgent,
-        userMessage: lastUser?.content || '',
-        assistantSummary: filter.report() || filter.visible(),
+        userMessage: thread || lastUser?.content || '',
+        assistantSummary:
+          modelReport
+          || fallbackBugSummary({
+            screenName,
+            pageUrl: parsed.pageUrl,
+            lastUserText: lastUser?.content || '',
+          }),
         screenText: parsed.screen.text,
         clientErrors: parsed.errors,
+        updateLatest: parsed.bugReported,
       })
+      // Повтор в том же чате дописывает карточку, ученику «ошибку записали» не дублируем.
+      return saved && !parsed.bugReported
     } catch {
       return false
     }

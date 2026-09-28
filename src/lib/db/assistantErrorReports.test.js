@@ -54,6 +54,25 @@ describe('saveAssistantErrorReport', () => {
     ])
   })
 
+  it('updateLatest при свежей строке — UPDATE, не вторая карточка', async () => {
+    const calls = []
+    const sql = (strings, ...values) => {
+      calls.push({ q: strings.join('?'), values })
+      if (strings.join('?').includes('update assistant_error_reports')) {
+        return Promise.resolve([{ id: 9 }])
+      }
+      return Promise.resolve()
+    }
+    sql.json = (v) => ({ json: v })
+    expect(await saveAssistantErrorReport({
+      ...row,
+      updateLatest: true,
+      userMessage: 'Ученик: На сайте ошибка\n\nУченик: аудио обрывается',
+    }, sql)).toBe(true)
+    expect(calls[0].q).toMatch(/update assistant_error_reports/)
+    expect(calls.some((c) => c.q.includes('insert into assistant_error_reports'))).toBe(false)
+  })
+
   it('падение INSERT — false, без исключения наружу', async () => {
     const sql = () => Promise.reject(new Error('db down'))
     sql.json = (v) => v

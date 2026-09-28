@@ -223,6 +223,7 @@ describe('помощник по сайту', () => {
     expect(body.messages[0].content).toBe('На сайте ошибка')
     expect(body.errors[0].message).toBe('ChunkLoadError')
     expect(body.errors[0].source).toBe('app.js:4')
+    expect(body.bugReported).toBe(false)
   })
 
   it('хвост «отчёт записан» не виден, под ответом — что команда увидит', async () => {
@@ -235,5 +236,26 @@ describe('помощник по сайту', () => {
     expect(await screen.findByText(/Страница зависла/, {}, WAIT)).toBeTruthy()
     expect(screen.getByText('Ошибку записали — команда её увидит.')).toBeTruthy()
     expect(screen.queryByText(/ASST_REPORTED/)).toBeNull()
+  })
+
+  it('после записи ошибки следующий вопрос помечает, что уже передали', async () => {
+    fetchMock
+      .mockImplementationOnce(async () =>
+        streamResponse(['Понял. Передал команде.', '[[ASST_REPORTED]]']),
+      )
+      .mockImplementationOnce(async () => streamResponse(['Хорошо.']))
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    fireEvent.click(screen.getByRole('button', { name: 'На сайте ошибка' }))
+    expect(await screen.findByText(/Понял/, {}, WAIT)).toBeTruthy()
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), {
+      target: { value: 'аудио обрывается через 2 секунды' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }))
+    expect(await screen.findByText('Хорошо.', {}, WAIT)).toBeTruthy()
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body)
+    expect(body.bugReported).toBe(true)
+    expect(body.messages[0].content).toBe('На сайте ошибка')
+    expect(body.messages.at(-1).content).toBe('аудио обрывается через 2 секунды')
   })
 })

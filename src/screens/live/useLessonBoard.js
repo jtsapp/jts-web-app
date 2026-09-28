@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
+import { stompConnectHeaders } from '../../lib/stompAuth.js'
 
 // Live whiteboard transport for one lesson. Deliberately mirrors web-admin's
 // LessonBoardSocketService (same topics, same payload shapes) so a teacher drawing in
@@ -19,8 +20,13 @@ export function useLessonBoard(lessonId, token, selfUserId, handlers) {
     if (!lessonId || !token) return undefined
     const client = new Client({
       brokerURL: wsBase(),
-      connectHeaders: { Authorization: `Bearer ${token}` },
+      connectHeaders: stompConnectHeaders(token),
       reconnectDelay: 3000,
+      heartbeatIncoming: 25000,
+      heartbeatOutgoing: 0,
+      beforeConnect: () => {
+        client.connectHeaders = stompConnectHeaders(token)
+      },
       onConnect: () => {
         setConnected(true)
         client.subscribe(`/topic/lesson/${lessonId}/board`, (m) => {

@@ -10,6 +10,7 @@ import { createRef } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
+import { GOTO_LESSON_MS } from './lessonStages.js'
 
 const MATERIAL = { id: 1, materialId: 11, title: 'A0 · Урок 05', materialType: 'INTERACTIVE_HTML', fileUrl: 'https://files/L05.html' }
 
@@ -142,6 +143,23 @@ describe('SectionMaterialFrame — скрытие вживую', () => {
     })
     expect(post).toHaveBeenCalledWith(
       { source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['t1'] },
+      '*'
+    )
+  })
+})
+
+describe('SectionMaterialFrame — урок файла этого занятия', () => {
+  it('после загрузки шлёт goto-lesson с focusLessonNo — не сегодняшний из самоподготовки', () => {
+    const { iframe } = renderFrame({
+      material: { ...MATERIAL, focusLessonNo: 5 },
+    })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => {
+      iframe.dispatchEvent(new Event('load'))
+      vi.advanceTimersByTime(GOTO_LESSON_MS)
+    })
+    expect(post).toHaveBeenCalledWith(
+      { source: 'jts-workspace', type: 'goto-lesson', index: 5, review: false },
       '*'
     )
   })
