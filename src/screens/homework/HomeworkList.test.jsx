@@ -54,3 +54,35 @@ describe('HomeworkList — снимок задания на карточке', (
     expect(screen.getAllByRole('button')).toHaveLength(1)
   })
 })
+
+// Одна домашка на занятие (spec §5.5, §9): «N частей» подтверждает на карточке
+// списка, что несколько выдач с занятия правда собраны в одну работу.
+describe('HomeworkList — счётчик частей работы', () => {
+  it('несколько частей — виден компактный счётчик', () => {
+    const hw = {
+      id: 7, title: 'Домашнее задание из урока 28.09', status: 'ASSIGNED',
+      exercises: [{ id: 1, batchId: 'b1', addedAt: '2026-09-28T10:00:00', question: { id: 'q1' } }],
+      materialParts: [{ id: 5, createdAt: '2026-09-28T10:05:00' }],
+    }
+    const { container } = показать([hw])
+
+    expect(container.querySelector('.hw-card__parts').textContent).toBe('2 частей')
+  })
+
+  it('одна часть — счётчик не рисуется, это не новость', () => {
+    const hw = {
+      id: 7, title: 'Обычная домашка', status: 'ASSIGNED',
+      exercises: [{ id: 1, batchId: 'b1', addedAt: '2026-09-28T10:00:00', question: { id: 'q1' } }],
+    }
+    const { container } = показать([hw])
+
+    expect(container.querySelector('.hw-card__parts')).toBeNull()
+  })
+
+  // Карточка материала (непривязанная выдача) свой собственный счётчик не
+  // считает — она и есть одна часть, отдельно посчитанная выше не нужна.
+  it('карточка материала счётчик не показывает', () => {
+    const { container } = показать([МАТЕРИАЛ])
+    expect(container.querySelector('.hw-card__parts')).toBeNull()
+  })
+})

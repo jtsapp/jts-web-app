@@ -4,8 +4,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
 
-vi.mock('../../api.js', () => ({ saveHomeworkAnswer: vi.fn(() => Promise.resolve({})) }))
-import { saveHomeworkAnswer } from '../../api.js'
+vi.mock('../../api.js', () => ({
+  saveHomeworkAnswer: vi.fn(() => Promise.resolve({})),
+  uploadMedia: vi.fn(),
+  attachMaterialAnswer: vi.fn(),
+  removeMaterialAnswer: vi.fn(),
+  startMaterialAssignment: vi.fn(() => Promise.resolve({ id: 1 })),
+  materialAssignmentRenderUrl: vi.fn((materialId, assignmentId) =>
+    `https://api.example/student/materials/${materialId}/render?assignmentId=${assignmentId}`),
+}))
+import { attachMaterialAnswer, saveHomeworkAnswer, uploadMedia } from '../../api.js'
 
 const question = (id, type, extra = {}) => ({ id, type, prompt: `Вопрос ${id}`, ...extra })
 
@@ -376,6 +384,87 @@ describe('HomeworkExercises — звук и текст задания', () => {
 
     expect(container.querySelector('.hw-context')).toBeNull()
     expect(container.querySelectorAll('.hw-exercise')).toHaveLength(1)
+  })
+})
+
+// Одна домашка на занятие (spec §5, §9): части-материалы этой работы (hw.materialParts)
+// теперь встают в ту же ленту, что и пачки вопросов, по факту «когда это было выдано».
+describe('HomeworkExercises — части-материалы в общей ленте', () => {
+  const МАТЕРИАЛ = {
+    id: 30, materialId: 14, materialTitle: 'Present Perfect · practice test',
+    materialType: 'INTERACTIVE_HTML', isGraded: true, fileUrl: 'https://files.example/m.html',
+    createdAt: '2026-09-02T10:00:00', status: 'ASSIGNED', isOverdue: false, files: [],
+  }
+
+  it('часть-материал встаёт между пачками по своему createdAt, а не после всех пачек', () => {
+    const { container } = show({
+      id: 50,
+      exercises: [
+        { id: 1, batchId: 'b1', addedAt: '2026-09-01T10:00:00', lessonTitle: 'Урок 2', question: question('q1', 'choice', { options: ['a'], answer: 'a' }) },
+        { id: 2, batchId: 'b2', addedAt: '2026-09-03T10:00:00', lessonTitle: 'Урок 3', question: question('q2', 'choice', { options: ['a'], answer: 'a' }) },
+      ],
+      materialParts: [МАТЕРИАЛ],
+    })
+
+    // Порядок заголовков секций в DOM — ровно порядок выдачи: Урок 2 (01.09),
+    // материал (02.09), Урок 3 (03.09).
+    const заголовки = [...container.querySelectorAll('.hw-block__title')].map((el) => el.textContent)
+    expect(заголовки).toEqual(['Урок 2', 'Present Perfect · practice test', 'Урок 3'])
+  })
+
+  it('часть-материал рисуется тем же компонентом, что и отдельная выдача — заголовок, статус, «Открыть задание»', () => {
+    const { container } = show({ id: 51, exercises: [], materialParts: [МАТЕРИАЛ] })
+
+    expect(container.querySelector('.hw-badge--assigned')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Открыть задание' })).toBeTruthy()
+    // Своей кнопки «Сдать» у части нет — сдаёт всю работу HomeworkPage снаружи.
+    expect(screen.queryByRole('button', { name: /сдать/i })).toBeNull()
+  })
+
+  // Работа уже закрыта (сдана/проверена) — действий с частью нет, только
+  // «Открыть». editable здесь вычисляет сам HomeworkExercises (canAttach(hw)).
+  it('работа сдана — часть только открывается, без файловых действий', () => {
+    const КАРТОЧКА = { ...МАТЕРИАЛ, materialType: 'LINK', cardId: 'cad401560', catalogLessonId: 314, files: [] }
+    const { container } = show({ id: 52, status: 'SUBMITTED', exercises: [], materialParts: [КАРТОЧКА] })
+
+    expect(screen.queryByText('Мой ответ')).toBeNull()
+    expect(container.querySelector('.hw-upload__input')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Открыть задание' })).toBeTruthy()
+  })
+
+  it('ответ сервера на файл части сливается в materialParts работы и уходит через onSaved', async () => {
+    uploadMedia.mockResolvedValue({ url: 'https://files.example/answer.jpg' })
+    attachMaterialAnswer.mockResolvedValue({ ...МАТЕРИАЛ, files: [{ id: 9, fileName: 'answer.jpg', url: 'u' }] })
+    const КАРТОЧКА = { ...МАТЕРИАЛ, materialType: 'LINK', cardId: 'cad401560', catalogLessonId: 314, files: [] }
+    const onSaved = vi.fn()
+    const hw = { id: 53, status: 'ASSIGNED', exercises: [], materialParts: [КАРТОЧКА] }
+    const { container } = render(<I18nProvider><HomeworkExercises hw={hw} token="jwt" onSaved={onSaved} /></I18nProvider>)
+
+    fireEvent.change(container.querySelector('.hw-upload__input'), {
+      target: { files: [new File(['x'], 'answer.jpg', { type: 'image/jpeg' })] },
+    })
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+    const работа = onSaved.mock.calls[0][0]
+    expect(работа.id).toBe(53)
+    expect(работа.materialParts[0].files).toEqual([{ id: 9, fileName: 'answer.jpg', url: 'u' }])
+  })
+
+  it('карточка живого урока внутри ленты зовёт onOpenCard, а не открывает файл', () => {
+    const КАРТОЧКА = { ...МАТЕРИАЛ, materialType: 'LINK', cardId: 'cad401560', catalogLessonId: 314, cardTitle: 'Итог урока', files: [] }
+    const onOpenCard = vi.fn()
+    render(<I18nProvider><HomeworkExercises hw={{ id: 54, exercises: [], materialParts: [КАРТОЧКА] }} token="jwt" onOpenCard={onOpenCard} /></I18nProvider>)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть задание' }))
+
+    expect(onOpenCard).toHaveBeenCalledWith({ catalogLessonId: 314, cardId: 'cad401560' })
+  })
+
+  it('без частей-материалов ничего не меняется — только пачки, как раньше', () => {
+    const { container } = show({ id: 55, exercises: [
+      { id: 1, question: question('q1', 'choice', { options: ['a'], answer: 'a' }) },
+    ] })
+    expect(container.querySelector('.hw-block--material')).toBeNull()
   })
 })
 

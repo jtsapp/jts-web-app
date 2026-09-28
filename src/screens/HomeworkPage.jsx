@@ -50,7 +50,13 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
       .then(([list, assignments]) => {
         if (cancelled) return
         const rows = Array.isArray(list) ? list : []
-        const cards = (Array.isArray(assignments) ? assignments : []).map(materialCard)
+        // Выдача с homeworkAssignmentId — теперь часть чьей-то домашней работы
+        // (одна домашка на занятие), не отдельная карточка списка: она всплывает
+        // сама внутри своей HomeworkAssignment (hw.materialParts), которую
+        // getMyHomework уже прислал целиком. Показать её ЕЩЁ и здесь значило бы
+        // задвоить одну и ту же выдачу на экране.
+        const unattached = (Array.isArray(assignments) ? assignments : []).filter((a) => !a.homeworkAssignmentId)
+        const cards = unattached.map(materialCard)
         setItems(rows)
         setMaterials(cards)
         const first = [...rows, ...cards].sort((a, b) => studentOrder(a) - studentOrder(b))[0]
@@ -116,6 +122,12 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   }, [token, replace])
 
   const selected = combined.find((hw) => hw.id === selectedId) || null
+
+  // Карточка урока (её задают одну, без остального материала) открывается сам
+  // урок в кабинете, а не файл в новой вкладке — общий переход что у
+  // непривязанной выдачи (MaterialAssignmentDetail), что у части-материала
+  // внутри чьей-то домашней работы (HomeworkDetail → HomeworkExercises).
+  const onOpenCard = (target) => onNav?.('lesson-workspace', target)
 
   // Тур ждёт загруженный список: до него на экране одна строчка «Загрузка…»,
   // тур пропустил бы все шаги подряд и закрылся. Ключ передаём только в
@@ -247,7 +259,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   key={selected.id}
                   card={selected}
                   token={token}
-                  onOpenCard={(target) => onNav?.('lesson-workspace', target)}
+                  onOpenCard={onOpenCard}
                   onSaved={replaceMaterial}
                 />
               ) : (
@@ -265,6 +277,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSaved={replace}
                   onAnswered={setDraft}
                   onOpenPractice={(target) => onNav?.(target.key, target.payload)}
+                  onOpenCard={onOpenCard}
                   draftAnswered={draftAnswered}
                 />
               )}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { answersKey, batchFullyAnswered, dedupeTail, exerciseBatches, exerciseBlock, isAnswered, isUnitTestType, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
+import { answersKey, batchFullyAnswered, dedupeTail, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -103,6 +103,62 @@ describe('отправки', () => {
     ] }
 
     expect(exerciseBatches(hw)[0].catalogLessonId).toBe(314)
+  })
+})
+
+// Одна домашка на занятие (spec §5, §9): выданные с занятия материалы теперь
+// часть работы (homework.materialParts), а не отдельная карточка списка, и
+// внутри работы должны идти вперемешку с пачками вопросов — по факту «когда
+// это было выдано», а не «сначала все пачки, потом все материалы».
+describe('homeworkTimeline — пачки и части-материалы одной лентой', () => {
+  const q = (id) => ({ id, type: 'choice', prompt: id, options: ['a'], answer: 'a' })
+
+  it('часть-материал встаёт МЕЖДУ пачками по своему createdAt, а не после всех пачек', () => {
+    const hw = {
+      exercises: [
+        { id: 1, batchId: 'b1', addedAt: '2026-09-01T10:00:00', lessonTitle: 'Урок 2', question: q('q1') },
+        { id: 2, batchId: 'b2', addedAt: '2026-09-03T10:00:00', lessonTitle: 'Каталог: словарь', question: q('q2') },
+      ],
+      materialParts: [
+        { id: 5, createdAt: '2026-08-30T09:00:00', materialTitle: 'Урок 1 целиком' },
+        { id: 6, createdAt: '2026-09-02T09:00:00', materialTitle: 'Практика · Present Perfect' },
+      ],
+    }
+
+    const timeline = homeworkTimeline(hw)
+
+    expect(timeline.map((i) => i.kind)).toEqual(['material', 'exercises', 'material', 'exercises'])
+    expect(timeline[0].part.id).toBe(5)
+    expect(timeline[1].batch.key).toBe('b1')
+    expect(timeline[2].part.id).toBe(6)
+    expect(timeline[3].batch.key).toBe('b2')
+  })
+
+  it('без частей-материалов — как раньше, только пачки', () => {
+    const hw = { exercises: [{ id: 1, batchId: 'b1', addedAt: '2026-09-01', question: q('q1') }] }
+    expect(homeworkTimeline(hw).map((i) => i.kind)).toEqual(['exercises'])
+  })
+
+  it('без пачек — только части-материалы, по своему createdAt', () => {
+    const hw = { materialParts: [
+      { id: 2, createdAt: '2026-09-02', materialTitle: 'B' },
+      { id: 1, createdAt: '2026-09-01', materialTitle: 'A' },
+    ] }
+    expect(homeworkTimeline(hw).map((i) => i.part.id)).toEqual([1, 2])
+  })
+
+  it('пустая или отсутствующая работа — пустая лента, а не падение', () => {
+    expect(homeworkTimeline(null)).toEqual([])
+    expect(homeworkTimeline({})).toEqual([])
+    expect(homeworkTimeline({ materialParts: [] })).toEqual([])
+  })
+
+  it('ключ у каждой позиции уникален и стабилен — по нему React не путает части при обновлении', () => {
+    const hw = {
+      exercises: [{ id: 1, batchId: 'b1', addedAt: '2026-09-01', question: q('q1') }],
+      materialParts: [{ id: 9, createdAt: '2026-09-02', materialTitle: 'M' }],
+    }
+    expect(homeworkTimeline(hw).map((i) => i.key)).toEqual(['ex-b1', 'mat-9'])
   })
 })
 

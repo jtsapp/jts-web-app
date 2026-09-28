@@ -3,10 +3,11 @@ import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalogLesson, saveHomeworkAnswer } from '../../api.js'
-import { batchFullyAnswered, exerciseBatches, exerciseBlock, isAnswered, isUnitTestType, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { batchFullyAnswered, exerciseBatches, exerciseBlock, homeworkTimeline, isAnswered, isUnitTestType, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
 import { groupByContext } from './exerciseContext.js'
 import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
 import { canAttach } from './homeworkFormat.js'
+import HomeworkMaterialPart from './HomeworkMaterialPart.jsx'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -32,9 +33,14 @@ function ExerciseContext({ context }) {
   )
 }
 
-export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
+export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOpenCard }) {
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
+  // Одна домашка на занятие (spec §5, §9): части-материалы этой работы встают
+  // в ту же ленту, что и пачки вопросов, по факту «когда это было выдано» —
+  // не отдельным блоком после всех пачек (homeworkTimeline — общий принцип
+  // сортировки с админкой, см. её javadoc).
+  const timeline = useMemo(() => homeworkTimeline(hw), [hw])
   // Работа, которую ученик уже не правит (сдана, взята в проверку, проверена),
   // закрыта целиком — не только для файлов. Раньше секция заданий оставалась
   // живой в любом статусе: ученик переписывал ответы, пока преподаватель
@@ -201,12 +207,26 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
     })
   }
 
+  // Ответ сервера на действие с частью-материалом (файл ответа, старт сессии) —
+  // это сама часть, а не работа целиком. Работа (materialParts) собирается
+  // здесь и уходит наверх тем же onSaved, что и у ответа на упражнение: extra
+  // канала для одной части заводить незачем — HomeworkPage чинит список по id
+  // работы одинаково для обоих случаев.
+  const onMaterialPartSaved = (updatedPart) => {
+    if (!updatedPart?.id) return
+    onSaved?.({
+      ...hw,
+      materialParts: (hw.materialParts || []).map((p) => (p.id === updatedPart.id ? updatedPart : p)),
+    })
+  }
+
   // Задания были, но их отозвали — говорим об этом. Молча спрятать секцию значит
-  // оставить ученика гадать, куда делось вчерашнее задание.
-  if (!batches.length && revokedEverything(hw)) {
+  // оставить ученика гадать, куда делось вчерашнее задание. Части-материалы
+  // отзыв вопросов не касается — если они есть, лента всё равно не пуста.
+  if (!timeline.length && revokedEverything(hw)) {
     return <p className="hw__hint hw__hint--revoked">{t('homework.revokedAll')}</p>
   }
-  if (!batches.length) return null
+  if (!timeline.length) return null
 
   const solvedIn = (list) => list.filter((e) => gradeQuestion(e.question, shown[e.question.id]).correct).length
   const dateOf = (iso) => {
@@ -217,7 +237,23 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
 
   return (
     <>
-      {batches.map((batch) => {
+      {/* Отзыв мог забрать все вопросы, а часть-материал — остаться: лента ниже
+          тогда не пуста, и хинт про отзыв стоит НАД ней, а не вместо неё. */}
+      {revokedEverything(hw) && <p className="hw__hint hw__hint--revoked">{t('homework.revokedAll')}</p>}
+      {timeline.map((item) => {
+        if (item.kind === 'material') {
+          return (
+            <HomeworkMaterialPart
+              key={item.key}
+              part={item.part}
+              token={token}
+              editable={editable}
+              onOpenCard={onOpenCard}
+              onSaved={onMaterialPartSaved}
+            />
+          )
+        }
+        const batch = item.batch
         const solved = solvedIn(batch.exercises)
         const total = batch.exercises.length
         const unitTest = isUnitTestType(lessonTypes[batch.catalogLessonId])
@@ -228,7 +264,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
         const answeredInBatch = batch.exercises.filter((e) => isAnswered(shown[e.question.id])).length
         const canFinishTest = editable && !submitted && answeredInBatch === total && total > 0
         return (
-          <section className="hw-block hw-block--exercises" key={batch.key}>
+          <section className="hw-block hw-block--exercises" key={item.key}>
             <div className="hw-block__head">
               <div className="hw-batch__title">
                 <h3 className="hw-block__title">{batch.lessonTitle || t('homework.exercises')}</h3>
