@@ -1,14 +1,18 @@
-"""Ассерты для новой сборки промпта Speaking Buddy на стенде KZ TEST. pytest в
+"""Ассерты для сборки промпта Speaking Buddy v3 на стенде KZ TEST. pytest в
 проекте нет — файл запускается напрямую:
     agent/venv/Scripts/python.exe agent/test_buddy_prompt.py
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
 
-Решение 25.09.2026: характер тьютора — целиком из его md, методичка —
-справочник «что учить», обвязка — только функции (ученик, память, тулы, язык,
-голос, эмоции, механика хода). Тон в обвязке спорил с характером и смывал его.
-Обкатываем на KZ TEST: на время теста это новый Декстер с голосом Декстера.
+Решение 25.09.2026: характер и методика — из клиентских md, обвязка — только
+функции (ученик, память, тулы, голос). 28.09.2026 клиент прислал пакет v3
+(agent/buddy-v3/: ядро, профили уровня, персоны), в тот же день — v3.1; на нём
+и собираем, с
+правками владельца: Декстер открыт всем и матерится без вопроса о согласии,
+сарказм Спарка — всем, C1/C2 — по профилю B2, за казахским — к Айзере,
+«только английский» — тумблер ученика, пол — из того, как ученик говорит о себе.
 """
 import io
+import json
 import os
 import sys
 
@@ -17,6 +21,9 @@ os.environ["VOICE_STACK"] = "cascade"
 os.environ.pop("KZ_TEST_PROMPT", None)
 
 from agent import (  # noqa: E402
+    BUDDY_CORE,
+    BUDDY_LEVEL_PROFILES,
+    BUDDY_PERSONAS,
     BUDDY_VOICE_TUTOR,
     STANDALONE_PROMPT_PERSONAS,
     LearnerProfile,
@@ -27,13 +34,13 @@ from agent import (  # noqa: E402
     _tts_provider_for,
     build_buddy_greeting,
     build_buddy_instructions,
-    build_mood_block,
+    build_buddy_session_context,
     buddy_test_on,
     buddy_voice_profile,
     persona_key,
 )
 
-CHARACTER_HEADER = "==== CHARACTER"
+PERSONA_HEADER = "==== PERSONA"
 
 
 def profile(**kw) -> LearnerProfile:
@@ -48,17 +55,27 @@ def profile(**kw) -> LearnerProfile:
     return LearnerProfile(**base)
 
 
+def context_of(text: str) -> dict:
+    """SESSION_CONTEXT из собранного промпта — ровно то, что увидит модель."""
+    body = text.split("==== SESSION_CONTEXT (trusted, from the application) ====\n", 1)[1]
+    return json.loads(body.split("\n\n==== PERSONA", 1)[0])
+
+
 p = profile()
 text = build_buddy_instructions(p)
-wrapper, _, character = text.partition(CHARACTER_HEADER)
-# Платформенная часть — до методички. Методичку (пакет уровня клиента) на тон не
-# проверяем словарём: в ней ролевые примеры вроде «I'm your friend» — это
-# содержание сценки, а не тон тьютора. Её тон проверяется отдельно ниже.
-platform = wrapper.split("\n==== LEVEL PACK")[0].split("\n==== REFERENCE")[0]
+wrapper, _, persona = text.partition(PERSONA_HEADER)
+
+# ── Файлы пакета на месте ────────────────────────────────────────────────────
+assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.1")
+assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
+assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
+# Заметки о правках (HTML-комментарии) в промпт не попадают.
+for block in [BUDDY_CORE, *BUDDY_LEVEL_PROFILES.values(), *BUDDY_PERSONAS.values()]:
+    assert "<!--" not in block and "Правки JTS" not in block
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(p)
-assert buddy_test_on(profile(temper="harsh")), "тумблера 18+ больше нет: оба нрава — новый Декстер"
+assert buddy_test_on(profile(temper="harsh")), "тумблера 18+ нет: оба нрава — Декстер v3"
 for other in ("gentle", "bro", "hype", "aizere"):
     assert not buddy_test_on(profile(tutor=other)), other
 # В сценарии характер выключен — там своя сборка, стенд туда не лезет.
@@ -69,18 +86,68 @@ os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert not buddy_test_on(p)
 assert persona_key("jarvis", "") in STANDALONE_PROMPT_PERSONAS  # старый путь цел
 os.environ.pop("KZ_TEST_PROMPT")
+# Вне каскада тег эмоции некому снять — стенд остаётся на прежней персоне.
+os.environ["VOICE_STACK"] = "gemini-live"
+assert not buddy_test_on(p)
+os.environ["VOICE_STACK"] = "cascade"
 
-# ── Характер — последним блоком, из md, целиком ──────────────────────────────
-assert character, "нет блока CHARACTER"
-assert "# DEXTER — CHARACTER" in character
-assert "Swearing — the gate" in character
-assert "Your way of correcting" in character
-# Служебные HTML-комментарии md в промпт не попадают.
-assert "<!--" not in text and "Источник — клиентский" not in text
+# ── Порядок: ядро → уровень → обвязка → SESSION_CONTEXT → персона ────────────
+order = [
+    "==== SHARED CORE", "==== LEVEL PROFILE — A2", "==== LEARNER", "==== MEMORY",
+    "MEMORY-WRITE TOOLS", "==== VOICE FORMAT", "==== PLATFORM RULES",
+    "==== SESSION_CONTEXT", PERSONA_HEADER,
+]
+idx = [text.index(h) for h in order]
+assert idx == sorted(idx), list(zip(order, idx))
+assert "# DEXTER — PERSONA v3.1" in persona
+assert "# LEVEL_PROFILE — A2 v3.1" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
+
+# ── Решения владельца 28.09 — в файлах пакета ────────────────────────────────
+# Декстер открыт всем, мат без вопроса о согласии и по просьбе не отключается.
+assert "adult_only: false" in persona
+assert "adults only" not in text and "adult_access_confirmed" not in text
+assert "consent question" in text  # «needs no consent question» / «with no consent question»
+assert "profanity_consent" not in text and "pending_consent_question" not in text
+assert "damn mess" in persona, "без примера с матом модель по чистым примерам мат не включает"
+assert "adult_access_confirmed" not in text and "consent_question_count" not in text
+assert "Got it. I'll drop the edge." not in persona, "на «грубо» Декстер не смягчается — решение владельца"
+# Сарказм и злость Декстера — на всех уровнях (решение владельца 28.09): в
+# оригинале они жили только на B1–B2, а злость ещё и при comfort=firm, которого
+# приложение не шлёт. Злость по-прежнему не за ошибку (ядро §8, §13).
+assert "express strictness, sarcasm and anger with plain words" in persona
+assert "only at B1–B2" not in persona and "At B1–B2 with comfort=firm" not in persona
+assert "It never marks wrong English" in persona
+assert "tutor selection screen" in persona  # на «слишком грубо» — к другому тьютору
+# Сарказм Спарка — всем.
+spark = BUDDY_PERSONAS["spark"]
+assert "Do not use with children or at A0–A1" not in spark
+assert "open to every learner and every level" in spark
+# За казахским — к Айзере, за русским у Айзере — к остальным.
+assert "Aizere speaks Kazakh" in BUDDY_CORE and "Luna, Dexter or Spark" in BUDDY_CORE
+# Память обвязки — доверенный контекст; пол — из того, как ученик говорит о себе.
+assert "MEMORY is the learner's real history" in BUDDY_CORE
+assert "я устала" in BUDDY_CORE
+assert "C1 and C2 learners are served with the B2 profile" in BUDDY_CORE
+
+# ── Функции обвязки на месте ─────────────────────────────────────────────────
+assert "Айгерим" in wrapper
+assert "works as a nurse" in wrapper and "weekend plans" in wrapper
+assert "I go yesterday -> I went yesterday" in wrapper and "schedule" in wrapper
+for tool in ("log_mistake", "log_topic", "log_fact", "log_resolved", "log_review", "raise_safety_alert"):
+    assert tool in wrapper, tool
+# Наш формат тега ([mood:x:n]) в промпт v3 не идёт: ядро задаёт свой ([happy]),
+# парсер переводит его (MOOD_ALIASES). Два формата в одном промпте — развилка.
+assert "==== MOOD TAG" not in text and "[mood:" not in text
+assert "emotion tag from core section 13" in wrapper
+# Без строки порядка Haiku на v3 в 18 ходах из 80 сначала молча звал тул —
+# лишний круг модели до первого звука; со строкой — 0 из 80 (замер 28.09.2026,
+# тулов не меньше: 59 ответов с тулом против 51). На v3.1 мягкая формулировка
+# снова пропускала немой круг у C1 (9 из 30), усиленная — 1 из 20.
+assert "Speak first" in wrapper and "never a tool call before you speak" in wrapper
 
 # ── В обвязке нет тона ───────────────────────────────────────────────────────
-# Всё, что говорит «как звучать», — только в характере. Слова ищем в обвязке,
-# а не во всём промпте: у Декстера «take your time» стоит в списке запретов.
+# Тон — только в персоне. Обвязка — это текст между уровнем и персоной.
+platform = wrapper.split("==== LEARNER", 1)[1]
 TONE_WORDS = (
     "warm", "friend", "cozy", "encourag", "supportive", "gentle", "gently",
     "you're doing great", "you've got this", "take your time", "no worries",
@@ -90,64 +157,65 @@ low = platform.lower()
 for w in TONE_WORDS:
     assert w not in low, f"тон в обвязке: {w!r}"
 
-# ── Честность: ИИ, не человек ────────────────────────────────────────────────
-assert "you are an AI" in wrapper
-assert "Never claim to be human" in wrapper
+# ── SESSION_CONTEXT: только статичная часть ─────────────────────────────────
+ctx = context_of(text)
+assert ctx["learner"]["name"] == "Айгерим" and ctx["learner"]["level"] == "A2"
+assert ctx["learner"]["age_group"] == "unknown" and ctx["learner"]["gender"] is None
+assert ctx["selection"] == {"persona_id": "dexter", "practice_mode": "free_chat"}
+assert ctx["language"] == {"english_only": False, "support_language": "ru", "english_variant": "en-GB"}
+assert ctx["task"] is None and ctx["capabilities"]["logging_available"] is True
+# Меняющееся каждый ход в системный промпт не кладём — ломало бы кэш.
+for key in ("latest_input", "retry_counts", "correction_focuses", "processed_turn_ids", "event"):
+    assert key not in json.dumps(ctx), key
+# v3.1 молчит без learner_state (core §3); в звонке он всегда ready.
+assert ctx["session"] == {"learner_state": "ready"}
+assert "IS the latest_input for that turn" in wrapper, "реплика ученика = latest_input, иначе ядро вправе молчать"
+# «Только английский» — тумблер ученика, по умолчанию выключен.
+assert LearnerProfile().english_only is False
+eo = context_of(build_buddy_instructions(profile(english_only=True)))
+assert eo["language"]["english_only"] is True and eo["language"]["support_language"] == "en"
+# Язык объяснений чинится под персону: у Декстера казахского нет → русский.
+assert context_of(build_buddy_instructions(profile(explanation_lang="kz")))["language"]["support_language"] == "ru"
+assert context_of(build_buddy_instructions(profile(explanation_lang="en")))["language"]["support_language"] == "en"
+# У Айзере наоборот: русского нет → казахский.
+aiz = build_buddy_session_context(profile(explanation_lang="ru"), "aizere")
+assert aiz["language"]["support_language"] == "kk"
+assert build_buddy_session_context(profile(explanation_lang="kz"), "aizere")["language"]["support_language"] == "kk"
+# Пол приходит из метаданных, если приложение его пришлёт.
+assert build_buddy_session_context(profile(gender="female"))["learner"]["gender"] == "female"
+from agent import parse_metadata  # noqa: E402
 
-# ── Функции обвязки на месте ─────────────────────────────────────────────────
-assert "Айгерим" in wrapper
-assert "A2" in wrapper
-assert "works as a nurse" in wrapper and "weekend plans" in wrapper
-assert "I go yesterday -> I went yesterday" in wrapper and "schedule" in wrapper
-for tool in ("log_mistake", "log_topic", "log_fact", "log_resolved", "log_review", "raise_safety_alert"):
-    assert tool in wrapper, tool
-assert "==== MOOD TAG" in wrapper
-assert "anger" in wrapper and "gloat" in wrapper
-assert "One question per turn" in wrapper
-assert "Never answer your own question" in wrapper
-assert "is NOT an answer" in wrapper  # тишина и каша распознавания
+assert parse_metadata(json.dumps({"gender": "Female"})).gender == "female"
+assert parse_metadata(json.dumps({"gender": "robot"})).gender == ""
+assert parse_metadata(json.dumps({})).gender == ""
 
-# ── Методичка уровня: пакет клиента (A0–B2), у C1–C2 — справочник ────────────
-assert "==== LEVEL PACK — the JTS course methodology for A2" in wrapper
-assert "# A2 LEVEL PACK" in wrapper and "# B1 LEVEL PACK" not in wrapper
-assert "Street life" in wrapper, "карта уроков нашего курса A2"
-assert "CORRECTION ENGINE" in wrapper and "LEVEL GOVERNANCE" in wrapper
-assert "NOT sent in this call" in wrapper, "таблица соответствия пустых полей"
-# Из пакета вырезано то, что решает характер или чего нет у платформы.
-for cut in ("## 1. IDENTITY", "NATURALNESS ENGINE", "PROGRESS EVIDENCE", "That's fantastic",
-            "do not speak Russian or Kazakh", "{{", "move on warmly"):
-    assert cut not in wrapper, f"в пакете осталось: {cut!r}"
-assert "L1 use: follow the LANGUAGES section" in wrapper
-assert "==== REFERENCE" not in wrapper, "при пакете справочник не дублируется"
+# ── Уровни: A0–B2 свои профили, C1/C2 — B2 ──────────────────────────────────
+for lvl, prof in (("A0", "A0"), ("PRE-A1", "A0"), ("A1", "A1"), ("B1", "B1"), ("B2", "B2"),
+                  ("C1", "B2"), ("C2", "B2"), ("", "B1")):
+    t = build_buddy_instructions(profile(level=lvl))
+    assert f"# LEVEL_PROFILE — {prof} v3.1" in t, (lvl, prof)
 c1 = build_buddy_instructions(profile(level="C1"))
-assert "==== REFERENCE" in c1 and "==== LEVEL PACK" not in c1, "у C1 пакета нет — справочник"
-assert "C1 Level" in c1 and "B2 Level" not in c1, "справочник урезан до уровня ученика"
-a0 = build_buddy_instructions(profile(level="A0"))
-assert "# A0 LEVEL PACK" in a0 and "<your name>" in a0
+assert "the learner is C1; C1–C2 use the B2 profile" in c1
+assert context_of(c1)["learner"]["level"] == "C1", "хранимый уровень не подменяем"
 
-# ── Язык: русский и английский, за казахским — к Айзере ──────────────────────
-assert "Aizere" in wrapper and "Spark" not in wrapper
-assert "Russian" in wrapper
-# «Только английский» перебивает всё языковое.
-eo = build_buddy_instructions(profile(english_only=True, lang="en", explanation_lang="en"))
-assert "==== ENGLISH ONLY" in eo
-# Казахский интерфейс не делает Декстера казахским: объяснения по-русски.
-kz = build_buddy_instructions(profile(lang="kz", explanation_lang="kz"))
-assert "EXPLANATION LANGUAGE for this learner: Russian" in kz.partition(CHARACTER_HEADER)[0]
-
-# ── Порядок блоков: функции → справочник → характер ──────────────────────────
-assert text.index("==== LEARNER") < text.index("==== MEMORY") < text.index("==== LEVEL PACK") < text.index(CHARACTER_HEADER)
+# ── Все четыре персоны собираются ────────────────────────────────────────────
+for pid, head in (("luna", "# LUNA"), ("spark", "# SPARK"), ("aizere", "# AIZERE")):
+    t = build_buddy_instructions(p, pid)
+    assert head in t.partition(PERSONA_HEADER)[2], pid
+    assert context_of(t)["selection"]["persona_id"] == pid
 
 # ── Без памяти промпт не врёт про прошлое ────────────────────────────────────
 fresh = build_buddy_instructions(LearnerProfile(tutor="jarvis", level="B1", lang="ru"))
 assert "First call with this learner" in fresh
-assert "# B1 LEVEL PACK" in fresh and "# A2 LEVEL PACK" not in fresh
+assert context_of(fresh)["learner"]["name"] == ""
 
-# ── Эмоции: набор Декстера без «подбодрить», блок без тона злого Декстера ────
-assert TUTOR_MOODS["jarvis"] and "encourage" not in TUTOR_MOODS["jarvis"]
-mood = build_mood_block("jarvis")
-assert "anger" in mood and "encourage" not in mood
-assert "мат у тебя в каждой реплике" not in mood, "строка тона злого Декстера — не для нового"
+# ── Эмоции: набор Декстера пакета весь ложится на разрешённые стенду ─────────
+from agent import MOOD_ALIASES  # noqa: E402
+
+allowed = TUTOR_MOODS["jarvis"]
+for name in ("default", "happy", "surprised", "sarcastic", "sympathy", "confused", "angry"):
+    mood = MOOD_ALIASES.get(name, (name, 2))[0]
+    assert mood == "" or mood in allowed, (name, mood)
 
 # ── Голос, распознавание, мозг — Декстера ────────────────────────────────────
 vp = buddy_voice_profile(p)
@@ -159,13 +227,12 @@ assert _eleven_session_voice(buddy_voice_profile(profile(eleven_voice_id="xxx"))
     "голос стенда не должен протечь в тест"
 assert not _stt_kazakh_session(vp), "Декстер казахского не знает — казахская добавка распознаванию не нужна"
 assert _pronunciation_lang(vp) == "", "казахский словарь произношения не для русской речи"
-# Для остальных профиль не меняется.
 luna = profile(tutor="gentle")
 assert buddy_voice_profile(luna) is luna
 
-# ── Приветствие ──────────────────────────────────────────────────────────────
+# ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)
-assert "CHARACTER" in g and "wait" in g
+assert "SESSION_START" in g and "wait" in g and "emotion tag" in g
 for w in ("warm", "Great to see you"):
     assert w not in g, w
 

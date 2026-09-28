@@ -12,8 +12,11 @@ assert parse_mood_tag("[MOOD:Gloat:2]ага") == ("gloat", 2, "ага")
 # Тега нет — текст обязан вернуться нетронутым.
 assert parse_mood_tag("Ты чё тупишь") == ("", 0, "Ты чё тупишь")
 
+# Тег без силы — не битый: у пакета Speaking Buddy v3 сила не пишется вовсе,
+# берётся 2 («заметно»).
+assert parse_mood_tag("[mood:anger]нет силы") == ("anger", 2, "нет силы")
+
 # Битый тег не должен ничего съесть.
-assert parse_mood_tag("[mood:anger]нет силы") == ("", 0, "[mood:anger]нет силы")
 assert parse_mood_tag("[mood:anger:9]сила вне шкалы") == ("", 0, "[mood:anger:9]сила вне шкалы")
 assert parse_mood_tag("[mood::2]нет имени") == ("", 0, "[mood::2]нет имени")
 
@@ -151,8 +154,11 @@ assert parse_mood_tag("[correcting:1]Почти") == ("correcting", 1, "Почт
 
 # Ни одно имя не должно быть префиксом другого: в регексе имена стоят
 # альтернативами, и более короткое перехватило бы совпадение у длинного.
-for a in MOOD_NAMES:
-    for b in MOOD_NAMES:
+# Алиасы пакета v3 стоят в той же альтернативе — проверяем вместе с ними.
+from agent import MOOD_ALIASES, _MOOD_TAG_NAMES  # noqa: E402
+
+for a in _MOOD_TAG_NAMES:
+    for b in _MOOD_TAG_NAMES:
         assert a == b or not b.startswith(a), (a, b)
 
 # У каждого имени есть подсказка — иначе build_mood_block упадёт по KeyError.
@@ -210,5 +216,47 @@ assert "anger" in TUTOR_MOODS["bro"]
 assert "ошибся" in MOOD_HINTS["anger"]
 # Но имя описывает ПОВОД, а не манеру речи персонажа.
 assert "по характеру персонажа" not in MOOD_HINTS["anger"]
+
+# --- теги пакета Speaking Buddy v3: [happy] текст ----------------------------
+# Ядро v3 требует тег в начале КАЖДОЙ реплики, имена — из макета аватара и без
+# силы. Незнакомое парсеру имя ушло бы в озвучку: TTS прочитал бы «happy».
+assert parse_mood_tag("[happy] Me too.") == ("joy", 2, "Me too.")
+assert parse_mood_tag("[angry]Stop.") == ("anger", 2, "Stop.")
+assert parse_mood_tag("[sarcastic] Plot twist.") == ("gloat", 2, "Plot twist.")
+assert parse_mood_tag("[sympathy] I'm sorry.") == ("sadness", 2, "I'm sorry.")
+assert parse_mood_tag("[sympathetic] That's hard.") == ("sadness", 2, "That's hard.")
+assert parse_mood_tag("[excited] Yes!") == ("celebrate", 2, "Yes!")
+assert parse_mood_tag("[furious] No.") == ("anger", 3, "No.")
+assert parse_mood_tag("[surprised] Really?") == ("surprised", 2, "Really?")
+assert parse_mood_tag("[Confused] Sorry?") == ("confused", 2, "Sorry?")
+# Сила, если модель её всё же поставила, сохраняется.
+assert parse_mood_tag("[happy:3] Wow.") == ("joy", 3, "Wow.")
+# Ровная реплика: тег снят, эмоции нет.
+assert parse_mood_tag("[default] Say: I like tea.") == ("", 0, "Say: I like tea.")
+assert parse_mood_tag("[bored] Ok.") == ("", 0, "Ok.")
+# Алиас переводит только на наши имена — фронт других не знает.
+for mood, _ in MOOD_ALIASES.values():
+    assert mood == "" or mood in MOOD_NAMES, mood
+
+# Стример: [default] снимается и не выставляет эмоцию.
+s = _MoodStripper(TUTOR_MOODS["jarvis"])
+assert s.feed("[default] That's a claim. Give me one example.") == "That's a claim. Give me one example."
+assert s.mood == ""
+# Разрыв тега v3 между чанками собирается.
+s = _MoodStripper(TUTOR_MOODS["jarvis"])
+assert s.feed("[sar") == ""
+assert s.feed("castic] Great plan.") == "Great plan."
+assert (s.mood, s.intensity) == ("gloat", 2)
+s = _MoodStripper(TUTOR_MOODS["jarvis"])
+assert s.feed("[defa") == ""
+assert s.feed("ult] Hi.") == "Hi."
+assert s.mood == ""
+# Эмоция не выдана тьютору — тег всё равно снят.
+s = _MoodStripper(TUTOR_MOODS["gentle"])
+assert s.feed("[sarcastic] Sure.") == "Sure."
+assert s.mood == ""
+assert _could_be_tag("[hap") is True and _could_be_tag("[default]") is True
+# Обычная речь в скобках по-прежнему не тег.
+assert parse_mood_tag("[happiness] is") == ("", 0, "[happiness] is")
 
 print("mood-парсер: все ассерты прошли")
