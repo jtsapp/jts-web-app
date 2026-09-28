@@ -296,6 +296,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       ) {
         return false
       }
+      // Уже разобранное на занятии не заставляем проходить по порядку в
+      // «Повторении»: три «Пройдено» в юните 1 открывают три печеньки, а не одну.
+      if (
+        frontier
+        && (meta.unit < frontier.unit
+          || (meta.unit === frontier.unit && meta.lessonInUnit <= frontier.lesson))
+      ) {
+        return true
+      }
       return meta.isFirstInUnit || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
     },
     [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone, frontier, level, userLevel],

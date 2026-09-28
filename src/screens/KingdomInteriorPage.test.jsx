@@ -411,6 +411,28 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     expect(buttons[3].title).toBe('Сначала пройдите этот материал в «Уроках»')
   })
 
+  it('три пройденных материала юнита 1 открывают три печеньки, четвёртая ещё за каталогом', async () => {
+    getLevelLessons.mockResolvedValue([
+      { code: 'm0', order: 0, title: '1', unit: 1 },
+      { code: 'm1', order: 1, title: '2', unit: 1 },
+      { code: 'm2', order: 2, title: '3', unit: 1 },
+      { code: 'm3', order: 3, title: '4', unit: 1 },
+    ])
+    getCourseCatalog.mockResolvedValue([
+      { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }] }] },
+    ])
+    getCatalogProgress.mockResolvedValue(progress([1, 2, 3]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(4))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false)
+    expect(buttons[1].disabled).toBe(false)
+    expect(buttons[2].disabled).toBe(false)
+    expect(buttons[3].disabled).toBe(true)
+  })
+
   it('unlockAll (?unlock=1, только dev) снимает и замок по каталогу — тропу можно посмотреть целиком', async () => {
     getCourseCatalog.mockResolvedValue(generalCourse())
     getCatalogProgress.mockResolvedValue(progress([]))
