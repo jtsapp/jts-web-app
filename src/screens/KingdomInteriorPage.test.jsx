@@ -290,7 +290,7 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     getContentQuota.mockResolvedValue(null) // без лимита модуля — квота тут не при чём
   })
 
-  it('новый ученик (в каталоге ничего не пройдено) — заперты оба юнита целиком', async () => {
+  it('новый ученик на своём уровне (каталог пуст) — заперты оба юнита целиком', async () => {
     getCourseCatalog.mockResolvedValue(generalCourse())
     getCatalogProgress.mockResolvedValue(progress([]))
 
@@ -337,6 +337,39 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
     expect([...container.querySelectorAll('.kt-step')].every((b) => b.disabled)).toBe(true)
+  })
+
+  it('B1-ученик в A2 без каталога — юниты открыты: уровни ниже своего не ждут занятие', async () => {
+    getCourseCatalog.mockResolvedValue([
+      { code: 'A2', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+    ])
+    getCatalogProgress.mockResolvedValue(progress([]))
+
+    const { container } = renderPage({
+      userLevel: 'B1',
+      kingdom: { ...kingdom, level: 'A2' },
+    })
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false)
+    expect(buttons[2].disabled).toBe(false)
+  })
+
+  it('материал занятия — юнит 2 урок 1: открыто всё до этой точки, дальше каталог', async () => {
+    getCourseCatalog.mockResolvedValue([
+      { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }, { id: 10 }] }, { lessons: [{ id: 2 }, { id: 20 }] }] },
+    ])
+    getCatalogProgress.mockResolvedValue(progress([2]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false) // юнит 1 до фронтира
+    expect(buttons[2].disabled).toBe(false) // юнит 2, урок 1 — сам материал
+    expect(buttons[3].disabled).toBe(true) // юнит 2, урок 2 — дальше точки
+    expect(buttons[3].title).toBe('Сначала пройдите этот материал в «Уроках»')
   })
 
   it('unlockAll (?unlock=1, только dev) снимает и замок по каталогу — тропу можно посмотреть целиком', async () => {

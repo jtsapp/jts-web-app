@@ -9,7 +9,14 @@ import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuo
 import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
-import { catalogUnitsDone, isReviewUnitUnlocked, pickGeneralCourse } from '../lib/reviewUnlock.js'
+import {
+  catalogFrontier,
+  catalogUnitsDone,
+  isReviewLessonUnlocked,
+  isReviewLevelFullyOpen,
+  isReviewUnitUnlocked,
+  pickGeneralCourse,
+} from '../lib/reviewUnlock.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
@@ -95,10 +102,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // такого каталога продолжают работать по-старому.
   const [course, setCourse] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
-  // Юниты общего курса каталога этого уровня, пройденные целиком (живым уроком
-  // или самостоятельно) — источник для открытия юнитов «Повторения», см.
-  // lib/reviewUnlock.js. Индекс — позиция юнита в курсе, boolean[].
+  // Юниты общего курса, пройденные целиком, и самая дальняя точка в каталоге
+  // — источник замка своего уровня. Уровень ниже CEFR ученика каталог не ждёт
+  // (isReviewLevelFullyOpen). См. lib/reviewUnlock.js.
   const [catalogDone, setCatalogDone] = useState([])
+  const [frontier, setFrontier] = useState(null)
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
   const [moduleLocked, setModuleLocked] = useState(false)
@@ -179,7 +187,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         if (!alive) return
         setModuleQuota(quota)
         setDone(new Set(d))
-        setCatalogDone(catalogUnitsDone(pickGeneralCourse(catalog, level), catalogProgress?.completedLessonIds))
+        const general = pickGeneralCourse(catalog, level)
+        const completed = catalogProgress?.completedLessonIds
+        setCatalogDone(catalogUnitsDone(general, completed))
+        setFrontier(catalogFrontier(general, completed))
         setState({ loading: false, error: trail.length ? null : 'empty' })
       } catch (e) {
         if (alive) setState({ loading: false, error: e.message || 'error' })
@@ -216,18 +227,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const unitByLessonIndex = useMemo(() => {
     const map = new Map()
     for (const g of units) {
-      g.items.forEach(({ gi }, j) => map.set(gi, { unit: g.unit, isFirstInUnit: j === 0 }))
+      g.items.forEach(({ gi }, j) => map.set(gi, { unit: g.unit, lessonInUnit: j + 1, isFirstInUnit: j === 0 }))
     }
     return map
   }, [units])
 
   // Урок разблокирован, если: модуль не закрыт админом целиком; индекс не
   // упирается в квоту "сколько уроков этого модуля можно пройти" (см. ниже);
-  // ЮНИТ, которому принадлежит урок, открыт по каталогу (см. lib/reviewUnlock.js
-  // — живой урок или «Самостоятельно», позиционно: юнит N каталога пройден →
-  // юнит N «Повторения» открыт); и внутри уже открытого юнита — это первый его
-  // урок или предыдущий урок ТОГО ЖЕ юнита пройден (прежний порядок раздела
-  // сохранён внутри юнита, крест-накрест между юнитами больше не тянется).
+  // ЮНИТ и урок внутри него открыты по lib/reviewUnlock.js: уровень ниже
+  // CEFR ученика — целиком; свой уровень — до самой дальней точки каталога
+  // (материал занятия юнит 2 / урок 3 открывает всё до неё). Внутри уже
+  // открытого отрезка — первый урок юнита или предыдущий урок ТОГО ЖЕ юнита
+  // пройден (крест-накрест между юнитами не тянется).
   //
   // Квота: раньше проверялась только В МОМЕНТ завершения урока (403 от
   // бэкенда) — тропа при этом всё равно рисовала следующие уроки открытыми для
@@ -253,10 +264,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       if (moduleQuota != null && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))) return false
       if (unlockAll) return true
       const meta = unitByLessonIndex.get(i)
-      if (!meta || !isReviewUnitUnlocked(catalogDone, meta.unit)) return false
+      const catalogOpts = {
+        fullyOpen: isReviewLevelFullyOpen(level, userLevel),
+        frontier,
+        unitsDone: catalogDone,
+      }
+      if (
+        !meta
+        || !isReviewUnitUnlocked(catalogDone, meta.unit, catalogOpts)
+        || !isReviewLessonUnlocked(meta.unit, meta.lessonInUnit, catalogOpts)
+      ) {
+        return false
+      }
       return meta.isFirstInUnit || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
     },
-    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone],
+    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone, frontier, level, userLevel],
   )
 
   const openLesson = useCallback(
@@ -534,7 +556,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                       // соответствующий материал ещё не пройден в «Уроках», либо
                       // (для уже открытого юнита) обычный порядок «сначала
                       // предыдущий узел».
-                      const unitLockedByCatalog = !isReviewUnitUnlocked(catalogDone, g.unit)
+                      const catalogOpts = {
+                        fullyOpen: isReviewLevelFullyOpen(level, userLevel),
+                        frontier,
+                        unitsDone: catalogDone,
+                      }
+                      const unitLockedByCatalog = !isReviewUnitUnlocked(catalogDone, g.unit, catalogOpts)
                       return g.items.map(({ l, gi }, j) => {
                         const isDone = done.has(l.code)
                         const unlocked = isUnlocked(gi)
@@ -543,7 +570,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         const isLast = j === g.items.length - 1
                         const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
                         const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
-                        const lockedTitle = t(unitLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
+                        const lessonLockedByCatalog = unitLockedByCatalog
+                          || !isReviewLessonUnlocked(g.unit, j + 1, catalogOpts)
+                        const lockedTitle = t(lessonLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
                         return (
                           <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
                             <button

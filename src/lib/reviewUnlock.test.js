@@ -2,7 +2,14 @@
 // открытие юнита по факту пройденного в каталоге, общий курс против
 // специализированного, финальный экзамен, отсутствие источника.
 import { describe, it, expect } from 'vitest'
-import { catalogUnitsDone, isReviewUnitUnlocked, pickGeneralCourse } from './reviewUnlock.js'
+import {
+  catalogFrontier,
+  catalogUnitsDone,
+  isReviewLessonUnlocked,
+  isReviewLevelFullyOpen,
+  isReviewUnitUnlocked,
+  pickGeneralCourse,
+} from './reviewUnlock.js'
 
 const lesson = (id) => ({ id })
 const course = ({ code, separateAccess = false, units }) => ({ code, separateAccess, units })
@@ -103,5 +110,67 @@ describe('открытие юнита «Повторения»', () => {
 
   it('номер меньше единицы (кроме 0-экзамена) не бывает открытым', () => {
     expect(isReviewUnitUnlocked([true, true], -1)).toBe(false)
+  })
+
+  it('уровень ниже CEFR ученика открыт целиком, даже без каталога', () => {
+    expect(isReviewUnitUnlocked([], 1, { fullyOpen: true })).toBe(true)
+    expect(isReviewUnitUnlocked([], 3, { fullyOpen: true })).toBe(true)
+    expect(isReviewUnitUnlocked([], 0, { fullyOpen: true })).toBe(true)
+  })
+
+  it('на своём уровне фронтир открывает юниты до точки включительно', () => {
+    const frontier = { unit: 2, lesson: 3 }
+    expect(isReviewUnitUnlocked([false, false, false], 1, { frontier })).toBe(true)
+    expect(isReviewUnitUnlocked([false, false, false], 2, { frontier })).toBe(true)
+    expect(isReviewUnitUnlocked([false, false, false], 3, { frontier })).toBe(false)
+    expect(isReviewUnitUnlocked([false, false, false], 0, { frontier })).toBe(false)
+  })
+})
+
+describe('уровень ниже своего CEFR', () => {
+  it('A2 для B1 — открыт; B1 для B1 — нет; B2 для B1 — нет', () => {
+    expect(isReviewLevelFullyOpen('A2', 'B1')).toBe(true)
+    expect(isReviewLevelFullyOpen('A0', 'B1')).toBe(true)
+    expect(isReviewLevelFullyOpen('B1', 'B1')).toBe(false)
+    expect(isReviewLevelFullyOpen('B2', 'B1')).toBe(false)
+  })
+})
+
+describe('фронтир каталога — до материала в занятии', () => {
+  const c = course({
+    code: 'B1',
+    units: [
+      { lessons: [lesson(1), lesson(2)] },
+      { lessons: [lesson(3), lesson(4), lesson(5)] },
+    ],
+  })
+
+  it('ничего не пройдено — фронтира нет', () => {
+    expect(catalogFrontier(c, [])).toBeNull()
+  })
+
+  it('юнит 2 урок 3 — точка (2, 3), даже если юнит 1 не отмечен', () => {
+    expect(catalogFrontier(c, [5])).toEqual({ unit: 2, lesson: 3 })
+  })
+
+  it('берёт самую дальнюю из нескольких отметок', () => {
+    expect(catalogFrontier(c, [1, 4])).toEqual({ unit: 2, lesson: 2 })
+  })
+
+  it('внутри юнита 2 открыты уроки только до фронтира', () => {
+    const opts = { frontier: { unit: 2, lesson: 3 }, unitsDone: [false, false] }
+    expect(isReviewLessonUnlocked(2, 1, opts)).toBe(true)
+    expect(isReviewLessonUnlocked(2, 3, opts)).toBe(true)
+    expect(isReviewLessonUnlocked(2, 4, opts)).toBe(false)
+    expect(isReviewLessonUnlocked(1, 9, opts)).toBe(true)
+    expect(isReviewLessonUnlocked(3, 1, opts)).toBe(false)
+  })
+
+  it('юнит каталога пройден целиком — тропа юнита не режется по числу материалов', () => {
+    expect(isReviewLessonUnlocked(1, 20, { frontier: { unit: 1, lesson: 1 }, unitsDone: [true] })).toBe(true)
+  })
+
+  it('без фронтира урок не режется — решает юнит', () => {
+    expect(isReviewLessonUnlocked(2, 4, {})).toBe(true)
   })
 })
