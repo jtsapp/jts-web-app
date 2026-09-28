@@ -2947,8 +2947,11 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # больше, чем самого характера. Поэтому любой жёсткий характер сползал в
 # вежливость — отсюда TONE LOCK и срез slim_prompt_for_persona выше.
 #
-# 28.09.2026 клиент прислал пакет v3 (agent/buddy-v3/), он заменил v2 (пакеты
-# уровня из Part 20 и урезанный dexter.md). Три слоя: общее ядро — ход, языки,
+# 28.09.2026 клиент прислал пакет v3 (agent/buddy-v3/), в тот же день — v3.1; он
+# заменил v2 (пакеты уровня из Part 20 и урезанный dexter.md). v3.1 строже
+# решает, когда вообще можно говорить (core §3: нужен latest_input и
+# learner_state=ready) — наша схема хода отображена на это в _BUDDY_HEAD и
+# SESSION_CONTEXT, иначе модель вправе промолчать. Три слоя: общее ядро — ход, языки,
 # исправления, события, формат ответа; профиль уровня — бюджеты реплики и
 # правок, форма задания; персона — только голос и эмоции. В файлах правки
 # владельца поверх клиентских — список в HTML-комментарии в шапке файла (в промпт
@@ -3097,6 +3100,11 @@ def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PER
             "english_variant": "en-GB",
         },
         "task": None,
+        # Ядро v3.1 молчит, если состояние ученика неизвестно (core §3). В
+        # звонке оно всегда ready: пока ученик говорит, модель не зовут вовсе —
+        # ход отдаёт детектор конца речи. Остальные поля session (id событий,
+        # счётчики) меняются каждый ход и в системный промпт не идут.
+        "session": {"learner_state": "ready"},
         "capabilities": {
             "input_modality": "transcript",
             "has_audio": False,
@@ -3117,9 +3125,13 @@ _BUDDY_HEAD = (
     "is read aloud by a speech engine.\n"
     "This prompt is the JTS Speaking Buddy pack — shared core, level profile, persona "
     "— with the platform sections between them: learner profile, MEMORY, tools, voice "
-    "format and SESSION_CONTEXT. All of it is trusted application context. Learner "
-    "turns arrive as ordinary messages (final speech-recognition transcripts); "
-    "session events arrive as instructions from the application.\n"
+    "format and SESSION_CONTEXT. All of it is trusted application context.\n"
+    "How the core's turn rules map onto this call: every learner message you receive "
+    "IS the latest_input for that turn — a final speech-recognition transcript, a new "
+    "unprocessed turn, with learner_state ready — so it is eligible for a reply. If it "
+    "is unclear or garbled, clarify rather than stay silent. Session events such as "
+    "SESSION_START arrive as instructions from the application, with no learner "
+    "message.\n"
 )
 
 _BUDDY_VOICE_FORMAT = (
@@ -3131,9 +3143,9 @@ _BUDDY_VOICE_FORMAT = (
     "- The only markup you ever write is the emotion tag from core section 13 — once, "
     "at the very start of every reply, a language switch included. Never say aloud "
     "section names, JSON, SESSION_CONTEXT, tool names or the word 'log'.\n"
-    "- Speak first: a reply to the learner starts with its spoken text. If you also "
-    "call a tool, the call comes after that text, in the same response — never a tool "
-    "call on its own.\n"
+    "- Speak first: every response starts with the emotion tag and your spoken reply, "
+    "even when you also log something. Tool calls come after that text, in the same "
+    "response — never a tool call on its own, never a tool call before you speak.\n"
 )
 
 _BUDDY_PLATFORM_RULES = (

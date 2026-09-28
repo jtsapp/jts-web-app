@@ -5,7 +5,8 @@
 
 Решение 25.09.2026: характер и методика — из клиентских md, обвязка — только
 функции (ученик, память, тулы, голос). 28.09.2026 клиент прислал пакет v3
-(agent/buddy-v3/: ядро, профили уровня, персоны) — на нём и собираем, с
+(agent/buddy-v3/: ядро, профили уровня, персоны), в тот же день — v3.1; на нём
+и собираем, с
 правками владельца: Декстер открыт всем и матерится без вопроса о согласии,
 сарказм Спарка — всем, C1/C2 — по профилю B2, за казахским — к Айзере,
 «только английский» — тумблер ученика, пол — из того, как ученик говорит о себе.
@@ -65,7 +66,7 @@ text = build_buddy_instructions(p)
 wrapper, _, persona = text.partition(PERSONA_HEADER)
 
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
-assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.0")
+assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.1")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
 assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
@@ -98,8 +99,8 @@ order = [
 ]
 idx = [text.index(h) for h in order]
 assert idx == sorted(idx), list(zip(order, idx))
-assert "# DEXTER — PERSONA v3.0" in persona
-assert "# LEVEL_PROFILE — A2 v3.0" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
+assert "# DEXTER — PERSONA v3.1" in persona
+assert "# LEVEL_PROFILE — A2 v3.1" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
 
 # ── Решения владельца 28.09 — в файлах пакета ────────────────────────────────
 # Декстер открыт всем, мат без вопроса о согласии и по просьбе не отключается.
@@ -107,7 +108,9 @@ assert "adult_only: false" in persona
 assert "adults only" not in text and "adult_access_confirmed" not in text
 assert "consent question" in text  # «needs no consent question» / «with no consent question»
 assert "profanity_consent" not in text and "pending_consent_question" not in text
-assert "Shit" in persona, "без примера с матом модель по чистым примерам мат не включает"
+assert "damn mess" in persona, "без примера с матом модель по чистым примерам мат не включает"
+assert "adult_access_confirmed" not in text and "consent_question_count" not in text
+assert "Got it. I'll drop the edge." not in persona, "на «грубо» Декстер не смягчается — решение владельца"
 assert "tutor selection screen" in persona  # на «слишком грубо» — к другому тьютору
 # Сарказм Спарка — всем.
 spark = BUDDY_PERSONAS["spark"]
@@ -132,8 +135,9 @@ assert "==== MOOD TAG" not in text and "[mood:" not in text
 assert "emotion tag from core section 13" in wrapper
 # Без строки порядка Haiku на v3 в 18 ходах из 80 сначала молча звал тул —
 # лишний круг модели до первого звука; со строкой — 0 из 80 (замер 28.09.2026,
-# тулов не меньше: 59 ответов с тулом против 51).
-assert "Speak first" in wrapper and "never a tool call on its own" in wrapper
+# тулов не меньше: 59 ответов с тулом против 51). На v3.1 мягкая формулировка
+# снова пропускала немой круг у C1 (9 из 30), усиленная — 1 из 20.
+assert "Speak first" in wrapper and "never a tool call before you speak" in wrapper
 
 # ── В обвязке нет тона ───────────────────────────────────────────────────────
 # Тон — только в персоне. Обвязка — это текст между уровнем и персоной.
@@ -155,8 +159,11 @@ assert ctx["selection"] == {"persona_id": "dexter", "practice_mode": "free_chat"
 assert ctx["language"] == {"english_only": False, "support_language": "ru", "english_variant": "en-GB"}
 assert ctx["task"] is None and ctx["capabilities"]["logging_available"] is True
 # Меняющееся каждый ход в системный промпт не кладём — ломало бы кэш.
-for key in ("latest_input", "session", "retry_counts", "correction_focuses"):
+for key in ("latest_input", "retry_counts", "correction_focuses", "processed_turn_ids", "event"):
     assert key not in json.dumps(ctx), key
+# v3.1 молчит без learner_state (core §3); в звонке он всегда ready.
+assert ctx["session"] == {"learner_state": "ready"}
+assert "IS the latest_input for that turn" in wrapper, "реплика ученика = latest_input, иначе ядро вправе молчать"
 # «Только английский» — тумблер ученика, по умолчанию выключен.
 assert LearnerProfile().english_only is False
 eo = context_of(build_buddy_instructions(profile(english_only=True)))
@@ -180,7 +187,7 @@ assert parse_metadata(json.dumps({})).gender == ""
 for lvl, prof in (("A0", "A0"), ("PRE-A1", "A0"), ("A1", "A1"), ("B1", "B1"), ("B2", "B2"),
                   ("C1", "B2"), ("C2", "B2"), ("", "B1")):
     t = build_buddy_instructions(profile(level=lvl))
-    assert f"# LEVEL_PROFILE — {prof} v3.0" in t, (lvl, prof)
+    assert f"# LEVEL_PROFILE — {prof} v3.1" in t, (lvl, prof)
 c1 = build_buddy_instructions(profile(level="C1"))
 assert "the learner is C1; C1–C2 use the B2 profile" in c1
 assert context_of(c1)["learner"]["level"] == "C1", "хранимый уровень не подменяем"
