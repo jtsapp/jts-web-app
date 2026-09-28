@@ -111,6 +111,12 @@ assert "profanity_consent" not in text and "pending_consent_question" not in tex
 assert "damn mess" in persona, "без примера с матом модель по чистым примерам мат не включает"
 assert "adult_access_confirmed" not in text and "consent_question_count" not in text
 assert "Got it. I'll drop the edge." not in persona, "на «грубо» Декстер не смягчается — решение владельца"
+# Сарказм и злость Декстера — на всех уровнях (решение владельца 28.09): в
+# оригинале они жили только на B1–B2, а злость ещё и при comfort=firm, которого
+# приложение не шлёт. Злость по-прежнему не за ошибку (ядро §8, §13).
+assert "express strictness, sarcasm and anger with plain words" in persona
+assert "only at B1–B2" not in persona and "At B1–B2 with comfort=firm" not in persona
+assert "It never marks wrong English" in persona
 assert "tutor selection screen" in persona  # на «слишком грубо» — к другому тьютору
 # Сарказм Спарка — всем.
 spark = BUDDY_PERSONAS["spark"]

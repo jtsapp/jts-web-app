@@ -1639,6 +1639,10 @@ MOOD_ALIASES: dict[str, tuple[str, int]] = {
     "furious": ("anger", 3),
     "sarcastic": ("gloat", 2),
     "sympathy": ("sadness", 2),
+    # Не из списка пакета, но Haiku пишет его вместо sympathy (3 из 10 на
+    # ходе «автобус не пришёл, ждал час», 28.09.2026) — без алиаса слово ушло бы
+    # в озвучку.
+    "sympathetic": ("sadness", 2),
     "excited": ("celebrate", 2),
     "default": ("", 0),
     "bored": ("", 0),
