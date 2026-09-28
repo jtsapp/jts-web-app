@@ -275,6 +275,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         iframeRef.current?.contentWindow?.postMessage(gotoLessonMessage(lessonNo), '*')
       }, GOTO_LESSON_MS)
     }
+    // Урок занятия файл открывает goto-lesson'ом уже после загрузки и
+    // переписывает разметку: осадка — после него, иначе реплей показа, стадия
+    // класса и доводка достались бы уроку, который сейчас сменится.
+    const settleMs = lessonNo != null ? GOTO_LESSON_MS + LOAD_SETTLE_MS : LOAD_SETTLE_MS
     clearTimeout(settleTimerRef.current)
     settleTimerRef.current = setTimeout(() => {
       settledRef.current = true
@@ -298,7 +302,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         snapshotRequestedRef.current = false
         post({ type: 'request-snapshot' })
       }
-    }, LOAD_SETTLE_MS)
+    }, settleMs)
   }
 
   useEffect(() => {

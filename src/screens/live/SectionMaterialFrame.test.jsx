@@ -8,6 +8,7 @@ import { createRef, useLayoutEffect } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
+import { GOTO_LESSON_MS } from './lessonStages.js'
 
 const MATERIAL = { id: 1, materialId: 11, title: 'A0 · Урок 05', materialType: 'INTERACTIVE_HTML', fileUrl: 'https://files/L05.html' }
 
@@ -450,3 +451,28 @@ describe('SectionMaterialFrame — новый документ в рамке', (
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
   })
 })
+
+// Материал занятия с номером урока (focusLessonNo): файл открывает этот урок
+// goto-lesson'ом уже после загрузки и переписывает разметку. Реплей показа,
+// стадия класса и доводка, ушедшие раньше, достались бы уроку, который сейчас
+// сменится, и пропали бы вместе с ним.
+describe('SectionMaterialFrame — урок файла открывается после загрузки', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('реплей и стадия класса уходят после goto-lesson', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 5 }, follow: true, stage: 3 })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+    act(() => { ref.current.replay(events) })
+
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+    expect(post).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+
+    await act(async () => { vi.advanceTimersByTime(GOTO_LESSON_MS) })
+    const types = post.mock.calls.map(([m]) => m.type)
+    expect(types).toEqual(['goto-lesson', 'present', 'goto-stage'])
+  })
+})
+
