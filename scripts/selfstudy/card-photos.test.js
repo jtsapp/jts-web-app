@@ -42,6 +42,7 @@ describe('card-photos — свой уровень', () => {
   it('групповой снимок не ставится на карточку одного слова', () => {
     expect(find({ 'Black, blue, brown, green': '/c' }, 'black')).toBeNull()
     expect(find({ 'Children / child': '/c' }, 'child')).toBeNull()
+    expect(find({ 'Months (Jan–Dec)': '/m' }, 'next week / month / year')).toBeNull()
   })
 
   // Лёгкий глагол отбрасывается только у карточки: снимок «make room» —
@@ -60,6 +61,16 @@ describe('card-photos — свой уровень', () => {
   // Запятая на карточке — часть фразы, а не список слов.
   it('фраза с запятой не берёт снимок одного своего слова', () => {
     expect(find({ sorry: '/s' }, "Sorry, I can't.")).toBeNull()
+  })
+})
+
+describe('card-photos — сверенные пары', () => {
+  it('карточка берёт снимок из списка ALIASES своего уровня', () => {
+    const a1 = photoFinder([{ level: 'a1', index: { 'full-time': '/ft', half: '/h' } }])
+    expect(a1('work full-time')).toBe('/ft')
+    expect(a1('half past')).toBe('/h')
+    // на другом уровне та же пара не действует
+    expect(photoFinder([{ level: 'a2', index: { half: '/h' } }])('half past')).toBeNull()
   })
 })
 

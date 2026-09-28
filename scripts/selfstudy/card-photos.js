@@ -60,10 +60,14 @@ function squash(s) {
 }
 
 // Скобки — необязательная часть: «bear with (me)» = «bear with»,
-// «get on well with (someone)» = «get on well with someone».
+// «get on well with (someone)» = «get on well with someone». Кроме
+// диапазона: «Months (Jan–Dec)» — постер со всеми месяцами, а не «month»,
+// и на карточке «next week / month / year» ему не место.
+const RANGE = /\([^)]*[–-][^)]*\)/
 function variants(part, { light = false } = {}) {
   const out = new Set()
-  for (const text of [part.replace(/[()]/g, ' '), part.replace(/\(.*?\)/g, ' ')]) {
+  const texts = RANGE.test(part) ? [part.replace(/[()]/g, ' ')] : [part.replace(/[()]/g, ' '), part.replace(/\(.*?\)/g, ' ')]
+  for (const text of texts) {
     const base = words(text)
     if (!base) continue
     out.add(squash(base))
@@ -126,6 +130,30 @@ const sameMeaning = (translation, origin) => {
   return [...stems(origin.split(',')[0])].some((s) => left.has(s))
 }
 
+// Карточка → ключ снимка своего уровня там, где правилами не поймать, а по
+// смыслу снимок её: старый курс учил «full-time», новый — «work full-time»;
+// «half» стоит в уроке про время рядом с «half past». Каждая пара сверена
+// глазами по картинке (28.09.2026); «have an early night» ← «early» — нет:
+// на снимке раннее утро.
+const ALIASES = {
+  a1: {
+    'work full-time': 'full-time',
+    'work freelance': 'freelance',
+    'half past': 'half',
+    'quarter past': 'quarter',
+    'quarter to': 'quarter',
+    windy: 'wind → windy',
+    'listen to music': 'listen',
+    'watch a film': 'watch',
+    'Can you tell her to call me back?': 'call back',
+    'next week / month / year': 'next year',
+    'take the second right': 'turn right',
+  },
+  a2: {
+    'go to bed late': 'late',
+  },
+}
+
 /**
  * Поиск фото по индексам уровней.
  * @param {Array<{level: string, index: Record<string,string>, meaning?: Map<string,string>}>} sources
@@ -134,12 +162,14 @@ const sameMeaning = (translation, origin) => {
  * @returns {(word: string, translation?: string) => string | null}
  */
 function photoFinder(sources) {
-  const exact = new Map(Object.entries(sources[0]?.index || {}).map(([k, url]) => [legacyKey(k), url]))
+  const own = sources[0] || {}
+  const exact = new Map(Object.entries(own.index || {}).map(([k, url]) => [legacyKey(k), url]))
+  const alias = ALIASES[own.level] || {}
   const entries = sources.flatMap(({ index, meaning }, rank) =>
     Object.entries(index || {}).map(([key, url]) => ({ url, rank, meaning, parts: photoParts(key) })),
   )
   return (word, translation) => {
-    const hit = exact.get(legacyKey(word))
+    const hit = exact.get(legacyKey(word)) || (alias[word] && own.index[alias[word]])
     if (hit) return hit
     const card = cardParts(word)
     let best = null
@@ -201,6 +231,11 @@ function loadPhotoSources(publicDir, level) {
         }
       }
     }
+    // Снимок, которому на своём уровне нет карточки (в новом курсе слово
+    // выпало), — перевод из строки словаря файла, откуда он пришёл
+    // (import-course-images.js). Перевод с карточки главнее.
+    const fromFile = readJson(path.join(path.dirname(publicDir), 'data/course-photos', `${l}.json`), {})
+    for (const [key, ru] of Object.entries(fromFile)) if (index[key] && !meaning.has(index[key])) meaning.set(index[key], ru)
     return { level: l, index, meaning }
   })
 }

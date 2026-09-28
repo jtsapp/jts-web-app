@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { readImageMaps, imageSlug, dataImage } = require('./import-course-images.js')
+const { readImageMaps, readVocabRows, imageSlug, dataImage } = require('./import-course-images.js')
 
 describe('import-course-images', () => {
   // A0 пишет ключ в кавычках, A1–B1 — без; скобка внутри строки карту не рвёт.
@@ -15,6 +15,16 @@ describe('import-course-images', () => {
   // Код движка тоже содержит «IMG:{» — это не карта урока.
   it('не-JSON после IMG пропускается', () => {
     expect(readImageMaps('if(L.IMG){ IMGX[w]=L.IMG[w] } IMG:{"a": "b"}')).toEqual([{ a: 'b' }])
+  })
+
+  // Перевод снимка берётся из строки словаря того же файла: A0 пишет её с
+  // пробелами, A1 — без, в строке бывают экранированные кавычки.
+  it('строки словаря: слово → перевод', () => {
+    const html = `VOCAB:[["parents","","родители","ата-ана",""], ["slowly", "", "медленно", "баяу", "not fast"], ["say \\"hi\\"","","сказать «привет»","",""]]`
+    const rows = readVocabRows(html)
+    expect(rows.get('parents')).toBe('родители')
+    expect(rows.get('slowly')).toBe('медленно')
+    expect(rows.get('say "hi"')).toBe('сказать «привет»')
   })
 
   it('имя файла по слову', () => {
