@@ -141,4 +141,29 @@ describe('Конвейер сам по себе', () => {
   it('урок без шагов проходит насквозь', () => {
     expect(applyLessonHoists({ steps: [] }, BASE).steps).toEqual([])
   })
+
+  it('Listen to three speakers — верхний плеер без конца первого отрывка', () => {
+    const урок = applyLessonHoists(
+      {
+        steps: [
+          {
+            id: 's-homes',
+            title: 'Listening',
+            blocks: [
+              {
+                type: 'practice',
+                instruction: 'Listen to the three speakers. What does each one miss from home?',
+                audio: { src: 'audio/Track_2.6.mp3#t=3.5,28.2' },
+                questions: [],
+              },
+            ],
+          },
+        ],
+      },
+      BASE,
+    )
+    const src = урок.steps[0].blocks[0].audio?.src || ''
+    expect(src).toContain('Track_2.6.mp3#t=3.5')
+    expect(src).not.toContain(',28.2')
+  })
 })

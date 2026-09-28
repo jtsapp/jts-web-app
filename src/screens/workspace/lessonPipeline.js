@@ -4,6 +4,7 @@ import { hoistOrderQuestions } from './hoistOrderQuestions.js'
 import { hoistChoiceOptions } from './hoistChoiceOptions.js'
 import { foldOrphanAudioSteps } from './foldOrphanAudioSteps.js'
 import { hoistStepLeads } from './hoistStepLead.js'
+import { openMultiSpeakerAudio } from './openMultiSpeakerAudio.js'
 
 /**
  * Что происходит с уроком каталога между сервером и экраном.
@@ -35,7 +36,7 @@ export function applyLessonHoists(content, fileUrl) {
   )
   // Хвостовой «Audio» из старой конвертации — в Practice/Listening, не отдельным шагом.
   if (Array.isArray(lesson?.steps)) {
-    lesson.steps = hoistStepLeads(foldOrphanAudioSteps(lesson.steps))
+    lesson.steps = openMultiSpeakerAudio(hoistStepLeads(foldOrphanAudioSteps(lesson.steps)))
   }
   return lesson
 }
