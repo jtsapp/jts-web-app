@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { bindAudioClips, parseAudioClip } from './audioClip.js'
+import { bindAudioClips, dropAudioClipEnd, isMultiSpeakerListenText, parseAudioClip } from './audioClip.js'
 
 /**
  * Жалоба: «там несколько дорожек, хоть каждый начинается с правильного момента,
@@ -97,5 +97,59 @@ describe('bindAudioClips', () => {
     audio.dispatchEvent(new Event('timeupdate'))
 
     expect(audio.pause).not.toHaveBeenCalled()
+  })
+
+  it('верхний плеер «three speakers» не обрывает запись на первом', () => {
+    const root = document.createElement('div')
+    bindAudioClips(root)
+    const card = document.createElement('div')
+    card.className = 'lw-practice'
+    card.appendChild(document.createTextNode('Listen to the three speakers. What does each one miss from home?'))
+    const audio = audioIn(card, 'Track_2.6.mp3#t=3.5,28.2')
+    root.appendChild(card)
+
+    audio.currentTime = 28.5
+    audio.dispatchEvent(new Event('timeupdate'))
+
+    expect(audio.pause).not.toHaveBeenCalled()
+    expect(audio.currentTime).toBe(28.5)
+  })
+
+  it('кнопки отрывков 2 и 3 на той же карточке по-прежнему режут своих', () => {
+    const root = document.createElement('div')
+    bindAudioClips(root)
+    const card = document.createElement('div')
+    card.className = 'lw-practice'
+    card.appendChild(document.createTextNode('Listen to three speakers.'))
+    audioIn(card, 'Track_2.6.mp3#t=3.5,90')
+    const clip2 = audioIn(card, 'Track_2.6.mp3#t=30,45')
+    root.appendChild(card)
+
+    clip2.currentTime = 45.1
+    clip2.dispatchEvent(new Event('timeupdate'))
+
+    expect(clip2.pause).toHaveBeenCalledTimes(1)
+    expect(clip2.currentTime).toBe(30)
+  })
+})
+
+describe('dropAudioClipEnd', () => {
+  it('снимает конец, начало оставляет', () => {
+    expect(dropAudioClipEnd('Track_2.6.mp3#t=3.5,28.2')).toBe('Track_2.6.mp3#t=3.5')
+  })
+
+  it('без конца не трогает', () => {
+    expect(dropAudioClipEnd('Track_2.6.mp3#t=3.5')).toBe('Track_2.6.mp3#t=3.5')
+    expect(dropAudioClipEnd('Track_2.6.mp3')).toBe('Track_2.6.mp3')
+  })
+})
+
+describe('isMultiSpeakerListenText', () => {
+  it('узнаёт задание про трёх спикеров', () => {
+    expect(isMultiSpeakerListenText('Listen to the three speakers. What does each one miss from home?')).toBe(true)
+  })
+
+  it('обычное аудирование — нет', () => {
+    expect(isMultiSpeakerListenText('Listen to the sentence. Which linker do you hear?')).toBe(false)
   })
 })

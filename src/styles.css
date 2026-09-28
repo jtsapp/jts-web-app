@@ -7625,6 +7625,10 @@ textarea {
 .hw-card__title { font-size: 16px; font-weight: 700; color: var(--ink); }
 .hw-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .hw-card__due { font-size: 13px; color: var(--muted); }
+/* «N частей» — одна домашка на занятие (spec §5.5, §9) может нести и пачки
+   вопросов, и части-материалы; подпись подтверждает, что это правда одна
+   работа. Тот же нейтральный тон, что у срока — это не статус и не тревога. */
+.hw-card__parts { font-size: 13px; color: var(--muted); }
 .hw-card__grade {
   margin-left: auto;
   min-width: 26px;
@@ -8061,6 +8065,21 @@ textarea {
   border-radius: 16px;
   background: #f7f4ff;
 }
+
+/* Часть-материал внутри той же ленты (HomeworkMaterialPart, одна домашка на
+   занятие — spec §5, §9): части идут вперемешку по времени выдачи, поэтому
+   несут один визуальный язык с пачкой вопросов — тот же приём карточки, что и
+   у .hw-block--exercises, а не «упражнения на фиолетовом, материалы на белом». */
+.hw-block--material {
+  margin-top: 20px;
+  padding: 16px;
+  border-top: 0;
+  border-radius: 16px;
+  background: #f7f4ff;
+}
+/* «Мой ответ» у карточки урока внутри части — свой отступ от рамки/кнопки
+   открытия над ним, без чужой границы: это ещё та же карточка части. */
+.hw-material-part__answer { margin-top: 14px; }
 
 .hw-exercises {
   display: flex;

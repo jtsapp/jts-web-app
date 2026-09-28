@@ -26,15 +26,10 @@ COPY persona-jarvis.md ./persona-jarvis.md
 # промолчит про ошибку только в логе, а злой Джарвис выйдет в звонок вообще
 # без характера.
 COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
-# Speaking Buddy на стенде KZ TEST: характер и справочник «что учить». Без этих
-# строк образ соберётся, а стенд молча останется на старой персоне — buddy_test_on
-# требует оба файла. См. build_buddy_instructions.
-COPY persona-buddy-dexter.md ./persona-buddy-dexter.md
-COPY methodology-reference.md ./methodology-reference.md
-# Пакеты уровня A0–B2 (Part 20 методичек Speaking Buddy, режет
-# scripts/extract-buddy-level-packs.js). Без них KZ TEST на любом уровне молча
-# останется на справочнике — в логе будет «level pack … missing».
-COPY level-packs/ ./level-packs/
+# Speaking Buddy v3 на стенде KZ TEST: ядро, профили уровня, персоны. Без этой
+# строки образ соберётся, а стенд молча останется на старой персоне —
+# buddy_test_on требует ядро и персону. См. build_buddy_instructions.
+COPY buddy-v3/ ./buddy-v3/
 # Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv

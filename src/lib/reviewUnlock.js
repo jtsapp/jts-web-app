@@ -49,6 +49,43 @@ function completedSet(completedLessonIds) {
 }
 
 /**
+ * Один материал курса — три урока каталога (self / 1-to-1 / group) с одним файлом.
+ * Фронтир и «юнит пройден» считаем по материалу, иначе L03 1-to-1 оказывается
+ * восьмой строкой юнита, а в «Повторении» четвёртая печенька так и не откроется.
+ */
+function materialKey(lesson) {
+  const raw = String(lesson?.fileUrl || lesson?.file_url || '').trim()
+  if (raw) {
+    const file = raw.split('?')[0].split('#')[0].toLowerCase()
+    if (file) return `file:${file}`
+  }
+  const id = Number(lesson?.id)
+  return Number.isFinite(id) ? `id:${id}` : null
+}
+
+function uniqueMaterials(unit) {
+  const slots = []
+  const index = new Map()
+  for (const lesson of unit?.lessons || []) {
+    const key = materialKey(lesson)
+    if (!key) continue
+    let slot = index.get(key)
+    if (!slot) {
+      slot = { ids: [] }
+      index.set(key, slot)
+      slots.push(slot)
+    }
+    const id = Number(lesson.id)
+    if (Number.isFinite(id)) slot.ids.push(id)
+  }
+  return slots
+}
+
+function slotDone(slot, done) {
+  return slot.ids.some((id) => done.has(id))
+}
+
+/**
  * Юниты общего курса, пройденные целиком — по порядку курса.
  * Нужны экзамену уровня: он открывается, когда пройден весь курс, а не
  * когда ученик дошёл до середины последнего юнита.
@@ -62,8 +99,8 @@ function completedSet(completedLessonIds) {
 export function catalogUnitsDone(course, completedLessonIds) {
   const done = completedSet(completedLessonIds)
   return (course?.units || []).map((unit) => {
-    const lessons = unit.lessons || []
-    return lessons.length === 0 || lessons.every((l) => done.has(Number(l.id)))
+    const slots = uniqueMaterials(unit)
+    return slots.length === 0 || slots.every((slot) => slotDone(slot, done))
   })
 }
 
@@ -80,8 +117,8 @@ export function catalogFrontier(course, completedLessonIds) {
   const done = completedSet(completedLessonIds)
   let frontier = null
   ;(course?.units || []).forEach((unit, ui) => {
-    ;(unit.lessons || []).forEach((lesson, li) => {
-      if (!done.has(Number(lesson.id))) return
+    uniqueMaterials(unit).forEach((slot, li) => {
+      if (!slotDone(slot, done)) return
       const pos = { unit: ui + 1, lesson: li + 1 }
       if (
         !frontier

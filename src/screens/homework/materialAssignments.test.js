@@ -67,6 +67,19 @@ describe('materialCard', () => {
     // Старая выдача без снимка — null, а не undefined: карточка плоская, поле есть всегда.
     expect(materialCard(assignment()).stageTitlesSnapshot).toBeNull()
   })
+
+  // Регрессия из разведки: materialCard не копировала closedWithoutSubmission,
+  // и закрытая без сдачи выдача читалась homeworkStateKey как обычное
+  // «Проверено» — зелёная плашка на работе, которую преподаватель не открывал.
+  it('прокидывает closedWithoutSubmission — без него homeworkStateKey не отличит закрытую выдачу от проверенной', () => {
+    const закрытаБезСдачи = materialCard(assignment({ status: 'COMPLETED', closedWithoutSubmission: true }))
+    expect(закрытаБезСдачи.closedWithoutSubmission).toBe(true)
+    expect(homeworkStateKey(закрытаБезСдачи)).toBe('closedNoSubmission')
+
+    const проверена = materialCard(assignment({ status: 'COMPLETED', closedWithoutSubmission: false, teacherScore: 5 }))
+    expect(проверена.closedWithoutSubmission).toBe(false)
+    expect(homeworkStateKey(проверена)).toBe('completed')
+  })
 })
 
 describe('isMaterialGraded / isInteractiveMaterial', () => {

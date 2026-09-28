@@ -143,3 +143,47 @@ describe('HomeworkDetail: два вида работы разведены', () =
     expect(container.querySelector('.hw-block--exercises .hw-file')).toBeNull()
   })
 })
+
+// Одна домашка на занятие (spec §5, §9): части-материалы (hw.materialParts)
+// теперь тоже рисуются внутри ленты работы — между файлами учителя и
+// «Практикой», в порядке фактической выдачи вместе с пачками вопросов.
+describe('HomeworkDetail: части-материалы одной домашки', () => {
+  const hw = (over = {}) => ({
+    id: 7, title: 'Домашнее задание из урока 28.09', status: 'ASSIGNED',
+    materials: [], submissions: [],
+    exercises: [
+      { id: 1, batchId: 'b1', addedAt: '2026-09-28T09:00:00', lessonTitle: 'Урок 2', question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a'], answer: 'a' } },
+    ],
+    materialParts: [
+      { id: 40, materialId: 14, materialTitle: 'Урок 1 целиком', materialType: 'INTERACTIVE_HTML', isGraded: true, createdAt: '2026-09-28T08:00:00', status: 'ASSIGNED', isOverdue: false, files: [] },
+    ],
+    ...over,
+  })
+
+  it('часть-материал видна в ленте, раньше выданное — выше', () => {
+    const { container } = render(<I18nProvider><HomeworkDetail hw={hw()} /></I18nProvider>)
+
+    // Заголовки именно ленты (пачки + части-материалы) — не «Задание файлом»
+    // и не «Мой ответ», это отдельные блоки вокруг ленты, а не внутри неё.
+    const заголовки = [...container.querySelectorAll('.hw-block--exercises .hw-block__title, .hw-block--material .hw-block__title')]
+      .map((el) => el.textContent)
+    // Часть-материал (08:00) выдана раньше пачки вопросов (09:00) — стоит выше.
+    expect(заголовки).toEqual(['Урок 1 целиком', 'Урок 2'])
+    expect(screen.getByRole('button', { name: 'Открыть задание' })).toBeTruthy()
+  })
+
+  it('у части-материала нет собственной кнопки «Сдать» — только у всей работы', () => {
+    render(<I18nProvider><HomeworkDetail hw={hw()} onSubmit={() => {}} /></I18nProvider>)
+
+    // Единственная «Сдать»-подобная кнопка на экране — общая «Отправить на
+    // проверку» всей работы (класс .hw-submit без --batch у части не рисуется).
+    const кнопки = screen.getAllByRole('button').map((b) => b.textContent)
+    expect(кнопки.filter((t) => /сдать/i.test(t))).toEqual([])
+    expect(кнопки).toContain('Отправить на проверку')
+  })
+
+  it('без частей-материалов лента остаётся прежней — их просто нет', () => {
+    const { container } = render(<I18nProvider><HomeworkDetail hw={hw({ materialParts: [] })} /></I18nProvider>)
+    expect(container.querySelector('.hw-block--material')).toBeNull()
+  })
+})

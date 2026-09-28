@@ -1,5 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import { homeworkStateKey } from './homeworkFormat.js'
+import { homeworkTimeline } from './homeworkExercises.js'
 
 /** История домашних работ: новые сверху, как их отдаёт бэкенд. */
 export default function HomeworkList({ items, selectedId, onSelect }) {
@@ -15,6 +16,12 @@ export default function HomeworkList({ items, selectedId, onSelect }) {
         const due = hw.dueDate
           ? new Date(hw.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long' })
           : null
+        // Одна домашка на занятие (spec §5.5, §9): пачки вопросов и части-
+        // материалы теперь внутри одной работы — «N частей» на карточке
+        // списка подтверждает, что это правда одна работа, а не потерянные
+        // где-то ещё выдачи. Показываем только когда частей больше одной:
+        // для обычной домашки с одной пачкой вопросов это не новость.
+        const partsCount = hw.kind === 'material' ? 0 : homeworkTimeline(hw).length
         return (
           <li key={hw.id}>
             <button
@@ -34,6 +41,7 @@ export default function HomeworkList({ items, selectedId, onSelect }) {
                 {/* Задание с живого урока (назначенный материал) помечается отдельно:
                     у него другой сценарий — решать в самом материале, без файлов ответа. */}
                 {hw.kind === 'material' && <span className="hw-card__lesson">{t('homework.lessonTask')}</span>}
+                {partsCount > 1 && <span className="hw-card__parts">{t('homework.partsCount', { n: String(partsCount) })}</span>}
                 {due && <span className="hw-card__due">{t('homework.dueShort', { date: due })}</span>}
                 {hw.grade != null && <span className="hw-card__grade">{hw.grade}</span>}
               </span>

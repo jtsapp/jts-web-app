@@ -66,6 +66,11 @@ export function materialCard(a) {
     isOverdue: a.isOverdue,
     dueDate: a.dueDate ?? null,
     grade: a.teacherScore ?? null,
+    // Преподаватель закрыл выдачу без сдачи (та же отметка, что у домашней
+    // работы, spec §5.7) — без неё homeworkStateKey не отличал такую выдачу от
+    // настоящей проверки, и список показывал зелёное «Проверено» тому, чей
+    // ответ преподаватель не открывал.
+    closedWithoutSubmission: a.closedWithoutSubmission,
     assignment: a,
   }
 }
