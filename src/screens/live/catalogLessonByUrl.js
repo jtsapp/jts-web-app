@@ -1,4 +1,3 @@
-import { engineOf } from './lessonExtractor.js'
 import { getCourseCatalog } from '../../api.js'
 
 // Материал раздела ссылается на файл урока каталога, а не на сам урок: раздел
@@ -26,14 +25,16 @@ export function isStandaloneLessonUrl(url) {
 }
 
 /**
- * Искать ли материал в каталоге, чтобы открыть его шагами. Одна точка решения
- * «шаги или файл» на стороне ученика: решает движок ЗАНЯТИЯ (engineOf) — STEPS
- * ищет разбор, как на проде до выката, FILE открывает файл во фрейме;
- * standalone-файл в каталоге не ищется никогда — его там нет по определению, а
- * поход за деревом задерживал бы показ на старте занятия.
+ * Искать ли материал в каталоге, чтобы открыть его шагами.
+ *
+ * Раньше решал движок занятия: FILE сразу шёл во фрейм. Преподаватель с 23.09
+ * ищет разбор всегда — на FILE по умолчанию ставят обычный урок каталога, и
+ * без разбора ученик видел сырой файл и одну «Section 1», а преподаватель —
+ * темы. Стороны обязаны открывать одно и то же. Нашёлся урок или нет, решает
+ * {@link catalogLessonIdFor}; standalone в каталоге не ищем никогда.
  */
-export function shouldResolveCatalogLesson(url, lesson) {
-  return Boolean(url) && engineOf(lesson) === 'STEPS' && !isStandaloneLessonUrl(url)
+export function shouldResolveCatalogLesson(url, _lesson) {
+  return Boolean(url) && !isStandaloneLessonUrl(url)
 }
 
 /** Ссылка без якоря. */

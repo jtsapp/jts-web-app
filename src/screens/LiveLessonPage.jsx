@@ -282,8 +282,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Шаги или файл решает движок занятия — в одном месте, shouldResolveCatalogLesson,
-    // чтобы страница и тесты сходились.
+    // Шаги или файл — shouldResolveCatalogLesson (каталог, не standalone).
+    // Движок занятия больше не режет разбор: FILE + урок каталога у преподавателя
+    // уже шаги, ученик должен видеть то же.
     Promise.resolve(shouldResolveCatalogLesson(url, lesson) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
