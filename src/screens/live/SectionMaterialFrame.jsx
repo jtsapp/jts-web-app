@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
-import { parseStageMessage, parseStageListMessage, gotoStageMessage } from './lessonStages.js'
+import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -139,6 +139,12 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   function handleLoad() {
     loadedRef.current = true
+    const lessonNo = material?.focusLessonNo
+    if (lessonNo != null) {
+      setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage(gotoLessonMessage(lessonNo), '*')
+      }, GOTO_LESSON_MS)
+    }
     setTimeout(() => {
       settledRef.current = true
       if (pendingRef.current.length) {

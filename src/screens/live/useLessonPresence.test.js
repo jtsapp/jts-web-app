@@ -5,8 +5,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 let lastClient
 vi.mock('@stomp/stompjs', () => {
   class Client {
-    constructor(cfg) { this.cfg = cfg; this.subs = {}; this.published = []; lastClient = this }
-    activate() { this.cfg.onConnect && this.cfg.onConnect() }
+    constructor(cfg) { this.cfg = cfg; this.subs = {}; this.published = []; this.connected = false; lastClient = this }
+    activate() { this.connected = true; this.cfg.onConnect && this.cfg.onConnect() }
     subscribe(dest, cb) { this.subs[dest] = cb; return { unsubscribe() {} } }
     publish(frame) { this.published.push(frame) }
     deactivate() { this.deactivated = true }

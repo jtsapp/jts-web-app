@@ -124,17 +124,12 @@ describe('Главная демо-аккаунта', () => {
     expect(await screen.findByText('Материалы уровня пройдены — впереди B2')).toBeTruthy()
   })
 
-  it('купленный курс выше своего ведёт карточку целиком', async () => {
-    // Ученик A1 купил A2 — проходит он A2, и полоса считается по нему. Оставить
-    // в заголовке A1 значило бы подписать карточку одним уровнем, а мерить
-    // другим: вышло бы «ВАШ УРОВЕНЬ A1» с дорожкой, ведущей к B1.
+  it('профиль важнее купленного курса: на карточке CEFR из профиля', async () => {
+    // Ученик A1 купил A2 — полоса ведёт к B1 (курс), заголовок остаётся A1.
     levelProgress.value = { level: 'A2', next: 'B1', percent: 20, done: 4, total: 20, remaining: 16 }
     renderHome({ userLevel: 'A1', token: 'T' })
 
-    // A2 у школы называется Pre-Intermediate — как курс и как в панели
-    // преподавателя. Раньше здесь стояло «Elementary», и это закрепляло
-    // сдвиг подписей на ступень вниз (см. cefrNames.test.js).
-    expect(await screen.findByText('A2 · Pre-Intermediate')).toBeTruthy()
+    expect(await screen.findByText('A1 · Elementary')).toBeTruthy()
     expect(screen.getByText('Цель — B1')).toBeTruthy()
   })
 
