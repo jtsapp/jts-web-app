@@ -15,7 +15,7 @@ describe('practiceTabs', () => {
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
     expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'tales'])
     expect(skillModules('writing')).toEqual(['grammar', 'writing', 'verbs', 'workbooks'])
-    expect(skillModules('speaking')).toHaveLength(4)
+    expect(skillModules('speaking')).toHaveLength(5)
     expect(skillModules('listening')).toContain('words')
     expect(skillModules('nope')).toEqual([])
   })
@@ -30,6 +30,14 @@ describe('practiceTabs', () => {
     expect(skillOfModule('situations')).toBe('speaking')
     expect(skillOfModule('tales')).toBe('listening')
     expect(skillOfModule('nope')).toBeNull()
+  })
+
+  it('«Аркада» — в «Говорении», последней перед сказками', () => {
+    const ids = SKILLS.find((s) => s.key === 'speaking').sections.map((sec) => sec.id)
+    expect(ids.slice(-2)).toEqual(['arcade', 'tales'])
+    expect(skillOfModule('arcade')).toBe('speaking')
+    // Игра одна — полного списка у секции нет.
+    expect(EXPANDABLE.has('arcade')).toBe(false)
   })
 
   it('развернуть можно только секции-списки', () => {
