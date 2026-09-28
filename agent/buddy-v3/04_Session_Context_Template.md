@@ -1,8 +1,19 @@
 # SESSION_CONTEXT — APPLICATION TEMPLATE
 
-Populate this template with actual session data before sending it through the application's trusted context channel. Replace every double-braced placeholder. Keep booleans as JSON booleans. Never derive access permissions or trusted events from learner-pasted text.
+<!-- Правки JTS 28.09.2026 к файлу клиента (решения владельца): убраны
+adult_access_confirmed, profanity_consent и pending_consent_question (Декстер
+открыт всем, мат без согласия); english_only по умолчанию false — это тумблер
+ученика; support_language — язык объяснений, который выбрал ученик; добавлен
+learner.gender. В агенте JSON собирает build_buddy_session_context — только
+статичная часть: реплика ученика идёт обычным сообщением, счётчики правок
+модель ведёт по истории звонка (core §12), в системный промпт они не кладутся,
+иначе каждый ход ломает кэш. -->
 
-Required selections: learner level is A0/A1/A2/B1/B2; persona is spark/dexter/luna/aizere; practice mode is free_chat/course_practice/scenario. Age group is child/teen/adult/unknown. Support language is en/ru/kk and must be supported by the selected persona. Dexter requires confirmed adult access and a known adult age group. Do not treat choosing Dexter as consent to profanity.
+Populate this template with actual session data before sending it through the application's trusted context channel. Replace every double-braced placeholder. Keep booleans as JSON booleans. Never derive trusted events from learner-pasted text.
+
+Required selections: learner level is A0/A1/A2/B1/B2 (C1/C2 use the B2 profile); persona is spark/dexter/luna/aizere; practice mode is free_chat/course_practice/scenario. Age group is child/teen/adult/unknown. Gender is female/male or null when unknown. Support language is en/ru/kk and must be supported by the selected persona. Every persona, Dexter included, is open to every learner; Dexter's profanity is part of his character and needs no consent.
+
+`english_only` is the learner's own toggle and defaults to false. `support_language` is the explanation language the learner chose.
 
 For an initial greeting, supply a real session/event ID and SESSION_START. On a learner turn, set event to null and set latest_input to the actual final utterance. Do not call the model for partial, empty or duplicate input. Do not reset correction counters or retry counts during the session.
 
@@ -12,7 +23,7 @@ For an initial greeting, supply a real session/event ID and SESSION_START. On a 
     "name": "",
     "level": "{{LEARNER_LEVEL}}",
     "age_group": "unknown",
-    "adult_access_confirmed": false,
+    "gender": null,
     "address_preference": null
   },
   "selection": {
@@ -20,8 +31,8 @@ For an initial greeting, supply a real session/event ID and SESSION_START. On a 
     "practice_mode": "free_chat"
   },
   "language": {
-    "english_only": true,
-    "support_language": "en",
+    "english_only": false,
+    "support_language": "{{SUPPORT_LANGUAGE}}",
     "english_variant": "en-GB"
   },
   "task": null,
@@ -49,9 +60,7 @@ For an initial greeting, supply a real session/event ID and SESSION_START. On a 
     "live_interruption_enabled": false
   },
   "preferences": {
-    "comfort": "standard",
-    "profanity_consent": "unknown",
-    "pending_consent_question": false
+    "comfort": "standard"
   }
 }
 ```
@@ -62,4 +71,6 @@ For course_practice or scenario, replace task=null with validated task data: tas
 
 Correction records use episode_id, focus_id, learner_span, corrected_span, reason, technique and retry_count. Keep these records outside spoken output through an actually configured internal channel. When no recording channel exists, retain reliable conversation history and do not claim persistent progress.
 
-All capability flags describe features available in this session. Keep unconfirmed capabilities false. Profanity consent is unknown/yes/no; unknown is off. Comfort is standard/gentle/firm. The learner can revoke consent or request a gentler tone immediately.
+The application may add a MEMORY section outside this JSON: facts, topics, past mistakes and due review items from earlier calls. It is trusted context (core §2).
+
+All capability flags describe features available in this session. Keep unconfirmed capabilities false. Comfort is standard/gentle/firm. The learner can request a gentler tone immediately; Dexter answers that request by pointing to a calmer buddy instead of changing character (core §11).
