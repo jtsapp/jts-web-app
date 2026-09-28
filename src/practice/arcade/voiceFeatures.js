@@ -127,7 +127,9 @@ export const MIN_STEADY = 0.2
 const semitones = (hz) => 12 * Math.log2(hz)
 const decibels = (rms) => 20 * Math.log10(Math.max(rms, 1e-9))
 
-const pitched = (f) => f.clarity >= STEADY.clarity && f.pitch > 0
+// Кадр с явной высотой — гласная, а не шум; по таким же кадрам порог голоса
+// (voiceActivity.js) меряет, насколько громко говорит ученик.
+export const pitched = (f) => f.clarity >= STEADY.clarity && f.pitch > 0
 const begin = (f, t) => ({
   start: t,
   last: t,

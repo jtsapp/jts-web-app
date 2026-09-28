@@ -8,6 +8,7 @@ import { MIN_WORDS, fetchReviewBudget } from '../../practice/arcade/reviewClient
 import TranscriptDialog from './TranscriptDialog.jsx'
 import { useArcadeReview } from './useArcadeReview.js'
 import { createVoiceActivity } from '../../practice/arcade/voiceActivity.js'
+import { pitched } from '../../practice/arcade/voiceFeatures.js'
 import { nextTopic, topicText, topicTranslated, TOPICS } from '../../practice/arcade/topics.js'
 import ArcadeScene from './ArcadeScene.jsx'
 import ArcadeResults from './ArcadeResults.jsx'
@@ -168,7 +169,7 @@ export default function ArcadeGame({ token = null }) {
           return
         }
         const features = mic.features()
-        const voiced = detectVoice(features.volume, now)
+        const voiced = detectVoice(features.volume, now, pitched(features))
         // Пилу отгоняют только распознанные слова; «э-э-э» и звук без слов —
         // та же тишина.
         const speaking = speech ? speech.sample(voiced, now, features) : voiced
