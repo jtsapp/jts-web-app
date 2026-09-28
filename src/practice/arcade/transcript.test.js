@@ -26,13 +26,16 @@ const talking = () => ({
 })
 
 // Подставной распознаватель: пишет вызовы и даёт тесту стрелять его событиями.
-function recogniser() {
+// Как Chrome, сразу сообщает о старте; `silent` — как Opera GX: start()
+// принимает, а дальше ни события, ни ошибки.
+function recogniser({ silent = false } = {}) {
   const calls = []
   const instances = []
   class FakeRecognition {
     continuous = false
     interimResults = false
     lang = ''
+    onstart = null
     onresult = null
     onerror = null
     onend = null
@@ -41,6 +44,7 @@ function recogniser() {
     }
     start() {
       calls.push('start')
+      if (!silent) this.onstart?.()
     }
     stop() {
       calls.push('stop')
@@ -60,8 +64,8 @@ function install(name, value) {
 afterEach(() => install(null, undefined))
 
 // Сессия на поддельных часах; `at` — один кадр порога громкости.
-function session(onChange = () => {}) {
-  const r = recogniser()
+function session(onChange = () => {}, options) {
+  const r = recogniser(options)
   install('SpeechRecognition', r.FakeRecognition)
   let clock = 0
   const notes = []
@@ -195,6 +199,45 @@ describe('arcade transcript', () => {
     expect(s.notes()).toEqual(['blocked'])
     // Слова, услышанные до отказа, сохраняются.
     expect(latest.utterances.map((u) => u.text)).toEqual(['maybe'])
+  })
+
+  it('распознаватель молчит совсем (Opera GX): 2 с без старта — дальше решает порог громкости', () => {
+    const s = session(() => {}, { silent: true })
+    for (let ms = 0; ms < 2000; ms += 20) s.at(ms, true, talking())
+    expect(s.notes()).toEqual([])
+    for (let ms = 2000; ms <= 2100; ms += 20) s.at(ms, true, talking())
+    expect(s.notes()).toEqual(['silent'])
+    expect(s.calls).toEqual(['start', 'abort'])
+    // Стартовая фора давно кончилась, а голос всё равно засчитан — по громкости.
+    expect(s.at(3000, true, talking())).toBe(true)
+    expect(s.at(3100, false)).toBe(false)
+  })
+
+  it('старт есть, а слов нет (пустые результаты): после 4 с голоса — порог громкости', () => {
+    const s = session()
+    for (let ms = 0; ms < 4000; ms += 20) {
+      s.at(ms, true, talking())
+      if (ms === 1000) s.rec.onresult(event(0, ['', true]))
+    }
+    expect(s.notes()).toEqual([])
+    for (let ms = 4000; ms <= 4100; ms += 20) s.at(ms, true, talking())
+    expect(s.notes()).toEqual(['silent'])
+    expect(s.at(4200, true, talking())).toBe(true)
+  })
+
+  it('мычание без слов сторожа не будит: «э-э-э» не включает счёт по громкости', () => {
+    const s = session()
+    for (let ms = 0; ms < 10000; ms += 20) s.at(ms, true, held())
+    expect(s.notes()).toEqual([])
+    expect(s.at(10000, true, held())).toBe(false)
+  })
+
+  it('слова пришли хоть раз — сторож больше не вмешивается', () => {
+    const s = session()
+    s.tick(700)
+    s.rec.onresult(event(0, ['Well', false]))
+    for (let ms = 0; ms < 10000; ms += 20) s.at(ms, true, talking())
+    expect(s.notes()).toEqual([])
   })
 
   it('уход со страницы обрывает распознавание и бросает неподтверждённое', () => {

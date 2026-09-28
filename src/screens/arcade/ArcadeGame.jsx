@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { DIFFICULTIES, ROUND_SECONDS, advance, initialState, isLost, isOver } from '../../practice/arcade/engine.js'
 import { openMicrophone } from '../../practice/arcade/microphone.js'
-import { startTranscript } from '../../practice/arcade/transcript.js'
+import { SILENT, startTranscript } from '../../practice/arcade/transcript.js'
 import { emptyTranscript, summarise } from '../../practice/arcade/speechSegments.js'
 import { MIN_WORDS, fetchReviewBudget } from '../../practice/arcade/reviewClient.js'
 import TranscriptDialog from './TranscriptDialog.jsx'
@@ -61,6 +61,10 @@ export default function ArcadeGame({ token = null }) {
   // Поколение раунда: любой запоздалый колбэк прошлого раунда (разрешение
   // микрофона пришло после «Отмены») сверяет его и молча отваливается.
   const generation = useRef(0)
+  // Распознаватель этого браузера уже оказался немым (transcript.js, SILENT):
+  // следующие раунды сразу играют по громкости, а не теряют секунды на
+  // ожидание слов, которых не будет.
+  const recognitionSilent = useRef(false)
   const panel = useRef(null)
   const fullscreen = useArcadeFullscreen(panel)
 
@@ -124,14 +128,17 @@ export default function ArcadeGame({ token = null }) {
         return
       }
       // Распознавание слушает рядом с порогом громкости уже после калибровки.
-      const speech = startTranscript(
-        (next) => {
-          if (id === generation.current) setTranscript(next)
-        },
-        (code) => {
-          if (id === generation.current) setTranscriptNote(code)
-        },
-      )
+      const speech = recognitionSilent.current
+        ? null
+        : startTranscript(
+            (next) => {
+              if (id === generation.current) setTranscript(next)
+            },
+            (code) => {
+              if (code === SILENT) recognitionSilent.current = true
+              if (id === generation.current) setTranscriptNote(code)
+            },
+          )
       if (!speech) setNoRecognition(true)
       let current = initialState()
       let previous = performance.now()

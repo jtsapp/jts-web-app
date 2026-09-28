@@ -5,8 +5,9 @@
 //
 // Распознаёт браузер (Web Speech API). Звук мы не записываем и никуда не шлём;
 // стенограмма живёт в памяти и уходит на сервер, только если ученик сам нажал
-// «ИИ-разбор». В Safari и Firefox распознавателя нет — тогда `startTranscript`
-// возвращает null, и игра держится на одном пороге громкости.
+// «ИИ-разбор». В Firefox распознавателя нет — тогда `startTranscript`
+// возвращает null, и игра держится на одном пороге громкости. В Safari он
+// есть (через Siri), а в Opera GX есть, но немой — см. START_TIMEOUT.
 
 import { buildTranscript, chunks, hasWords, LATENCY } from './speechSegments.js'
 import { createSteadinessTracker, STEADY } from './voiceFeatures.js'
@@ -21,6 +22,17 @@ export const WORD_HOLD = 1.2
 export const ONSET_GRACE = 0.8
 export const START_GRACE = 2
 
+// Распознаватель, который есть, но не работает. Opera GX отдаёт
+// webkitSpeechRecognition, принимает start() — и дальше тишина: ни старта, ни
+// слов, ни ошибки; Edge на стенде стартовал, но слал пустые результаты. Без
+// ошибки игра ждала слов вечно и считала весь раунд тишиной. Поэтому не верим
+// наличию объекта, а проверяем поведение: нет события start за START_TIMEOUT
+// после start() — или раунд ни разу не дал слов за SILENT_VOICE секунд голоса
+// (без «э-э-э», иначе мычанием включался бы счёт по громкости), — значит,
+// распознавания нет, и дальше решает порог громкости, как в Firefox.
+export const START_TIMEOUT = 2
+export const SILENT_VOICE = 4
+
 // Причины отказа распознавателя → код для словаря (arcade.note.*).
 const REASONS = {
   'not-allowed': 'blocked',
@@ -28,6 +40,8 @@ const REASONS = {
   network: 'network',
   'audio-capture': 'audio',
 }
+// Код «распознаватель молчит» — для словаря (arcade.note.silent).
+export const SILENT = 'silent'
 
 /**
  * Слушает до stop()/abort() и отдаёт стенограмму после каждого изменения.
@@ -57,6 +71,13 @@ export function startTranscript(onChange, onUnavailable = () => {}, clock = () =
   let failedAt = null
   let endedAt = null
   let listening = true
+  // Сторож немого распознавателя: когда звали start(), пришёл ли старт, были
+  // ли слова в раунде и сколько голоса накопилось без них.
+  let startedAt = seconds(clock())
+  let alive = false
+  let anyWords = false
+  let voiceWithoutWords = 0
+  let lastSample = null
   // Одна сессия распознавателя: когда впервые пришло каждое накопленное слово,
   // и результаты, ещё не ставшие окончательными.
   let arrivals = []
@@ -86,6 +107,8 @@ export function startTranscript(onChange, onUnavailable = () => {}, clock = () =
     onUnavailable(code)
   }
   const begin = () => {
+    startedAt = seconds(clock())
+    alive = false
     try {
       recognizer.start()
     } catch {
@@ -94,9 +117,13 @@ export function startTranscript(onChange, onUnavailable = () => {}, clock = () =
   }
   // Слово может прийти сразу после того, как его отрезок голоса закрылся.
   const heardWords = (now) => {
+    anyWords = true
     lastWordAt = now
     if (open) spanHadWords = true
     else if (now - lastClosedAt <= LATENCY) trustNextSpan = true
+  }
+  recognizer.onstart = () => {
+    alive = true
   }
   recognizer.onresult = (event) => {
     const now = seconds(clock())
@@ -173,6 +200,16 @@ export function startTranscript(onChange, onUnavailable = () => {}, clock = () =
       if (isHesitating) {
         hesitatedAt = t
         graceUntil = -Infinity
+      }
+      if (voiced && !isHesitating && !anyWords && lastSample !== null) voiceWithoutWords += t - lastSample
+      lastSample = t
+      if (failedAt === null && listening && ((!alive && t - startedAt > START_TIMEOUT) || voiceWithoutWords > SILENT_VOICE)) {
+        fail(SILENT)
+        try {
+          recognizer.abort()
+        } catch {
+          /* уже остановлен */
+        }
       }
       // Без распознавателя остаётся только порог громкости.
       if (failedAt !== null) return voiced

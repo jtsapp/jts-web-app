@@ -14,6 +14,7 @@ vi.mock('../../practice/arcade/microphone.js', () => ({ openMicrophone: (...args
 // По умолчанию распознавателя нет — решает порог громкости, как в Safari;
 // тест со стенограммой подставляет свою сессию через hw.speech.
 vi.mock('../../practice/arcade/transcript.js', () => ({
+  SILENT: 'silent',
   startTranscript: (onChange, onUnavailable) => (hw.speech ? hw.speech(onChange, onUnavailable) : null),
 }))
 
@@ -138,6 +139,33 @@ describe('ArcadeGame', () => {
     expect(results).toContain('Speaking time0.9s')
     expect(results).toContain('9.0:1')
     expect(results).toContain('Your words led the way')
+  })
+
+  it('«немой» распознаватель: игра пишет, почему считает голос, и со второго раунда его не ждёт', async () => {
+    let sessions = 0
+    hw.speech = (onChange, onUnavailable) => {
+      sessions++
+      return {
+        sample: (voiced) => {
+          onUnavailable('silent')
+          return voiced
+        },
+        hesitating: () => false,
+        stop: () => {},
+        abort: () => {},
+      }
+    }
+    hw.open = async () => fakeMic()
+    renderIn('ru')
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /старт/i })))
+    volume = 0.1
+    play(500)
+    expect(screen.getByText(/откройте игру в Google Chrome/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /завершить раунд/i }))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /ещё раунд/i })))
+    play(500)
+    expect(sessions).toBe(1)
+    expect(screen.getByText(/откройте игру в Google Chrome/)).toBeTruthy()
   })
 
   // Раунд со стенограммой: говорим секунду и завершаем кнопкой.
