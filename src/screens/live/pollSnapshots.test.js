@@ -49,4 +49,14 @@ describe('sameLessonSnapshot', () => {
     const cancelled = { ...lesson, participants: [{ studentId: 1, studentName: 'Sam', status: 'CANCELLED_FREE' }] }
     expect(sameLessonSnapshot(lesson, cancelled)).toBe(false)
   })
+
+  // Движок решает «шаги или файл» (shouldResolveCatalogLesson). Не сравнивай это
+  // поле — и первый ответ без engine (старый снимок), а следом настоящий с
+  // engine с опроса тихо отбрасывался бы: shouldResolveCatalogLesson навсегда
+  // остался бы при устаревшем значении по умолчанию (spec-lesson-engine-coexistence §6.2).
+  it('замечает появление и смену движка занятия', () => {
+    expect(sameLessonSnapshot({ ...lesson, engine: undefined }, { ...lesson, engine: 'STEPS' })).toBe(false)
+    expect(sameLessonSnapshot({ ...lesson, engine: 'STEPS' }, { ...lesson, engine: 'FILE' })).toBe(false)
+    expect(sameLessonSnapshot({ ...lesson, engine: undefined }, { ...lesson, engine: undefined })).toBe(true)
+  })
 })

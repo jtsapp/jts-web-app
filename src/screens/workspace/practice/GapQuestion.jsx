@@ -5,6 +5,7 @@ import TapText from '../TapText.jsx'
 import { tidyLessonText } from '../tidyLessonText.js'
 import { inlineBold } from '../inlineBold.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
+import AskAssistantButton from '../../../components/AskAssistantButton.jsx'
 
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
@@ -77,6 +78,9 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
       {showAnswerKey && checked && !userCorrect && !isOpen && question.why && (
         <p className="lw-q__why">{inlineBold(question.why)}</p>
       )}
+      {/* Только вместе с эталоном: на живом уроке ученик его не видит, и
+          разбирать ошибку там — дело преподавателя, а не помощника. */}
+      {showAnswerKey && checked && attempted && !userCorrect && !isOpen && <AskAssistantButton />}
     </div>
   )
 }

@@ -16,6 +16,9 @@ import { I18nProvider } from '../i18n.jsx'
 let СТАТУС = 'IN_PROGRESS'
 
 vi.mock('../api.js', () => ({
+  // «Темы урока» страница спрашивает при открытии файлового урока (пришло из
+  // develop). Пустой список — у этих спек урок без стадий, они про другое.
+  getLessonViewStages: vi.fn(async () => []),
   getLessonById: vi.fn(async () => ({
     id: 5,
     status: СТАТУС,
@@ -50,6 +53,10 @@ vi.mock('../api.js', () => ({
 vi.mock('./live/catalogLessonByUrl.js', () => ({
   catalogLessonIdFor: vi.fn(async () => 55),
   isStandaloneLessonUrl: () => false,
+  // Страница спрашивает модуль, идти ли вообще за уроком каталога (разбор
+  // выключаем флагом, standalone там не ищется никогда). В моке отвечаем «да»:
+  // эти спеки как раз про урок, который в каталоге есть.
+  shouldResolveCatalogLesson: () => true,
 }))
 
 vi.mock('./workspace/loadCatalogLesson.js', () => ({

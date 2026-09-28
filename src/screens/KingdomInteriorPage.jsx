@@ -5,10 +5,11 @@ import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
+import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota, getCourseCatalog, getCatalogProgress } from '../api.js'
 import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
+import { catalogUnitsDone, isReviewUnitUnlocked, pickGeneralCourse } from '../lib/reviewUnlock.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
@@ -94,6 +95,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // такого каталога продолжают работать по-старому.
   const [course, setCourse] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
+  // Юниты общего курса каталога этого уровня, пройденные целиком (живым уроком
+  // или самостоятельно) — источник для открытия юнитов «Повторения», см.
+  // lib/reviewUnlock.js. Индекс — позиция юнита в курсе, boolean[].
+  const [catalogDone, setCatalogDone] = useState([])
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
   const [moduleLocked, setModuleLocked] = useState(false)
@@ -161,13 +166,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         // тяжёлым <level>.json, чтобы первый клик по уроку не ждал ~700KB.
         // С курсом этот файл не нужен вовсе: урок приходит своим steps-<n>.
         if (!courseIndex && isStepLevel(level)) loadLevel(level).catch(() => null)
-        const [quota, d] = await Promise.all([
+        // Юниты «Повторения» открываются по каталогу (живой урок ИЛИ
+        // «Самостоятельно» — один источник, completedLessonIds), не по
+        // локальному done: не ответил каталог — юниты просто не откроются,
+        // тропа не падает (см. lib/reviewUnlock.js).
+        const [quota, d, catalog, catalogProgress] = await Promise.all([
           mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
           loadDone(level, authToken, mid),
+          getCourseCatalog(authToken).catch(() => []),
+          getCatalogProgress(authToken).catch(() => null),
         ])
         if (!alive) return
         setModuleQuota(quota)
         setDone(new Set(d))
+        setCatalogDone(catalogUnitsDone(pickGeneralCourse(catalog, level), catalogProgress?.completedLessonIds))
         setState({ loading: false, error: trail.length ? null : 'empty' })
       } catch (e) {
         if (alive) setState({ loading: false, error: e.message || 'error' })
@@ -197,13 +209,31 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return out
   }, [lessons])
 
-  // Урок разблокирован, если это первый или предыдущий пройден, модуль не
-  // закрыт админом целиком, и индекс урока не упирается в квоту "сколько
-  // уроков этого модуля можно пройти" (moduleQuota=null — без лимита). Раньше
-  // квота проверялась только В МОМЕНТ завершения урока (403 от бэкенда) — тропа
-  // при этом всё равно рисовала следующие уроки открытыми для клика, и студент
-  // мог их пройти вплоть до конца, просто без начисления награды. Теперь узлы
-  // сверх квоты не открываются вовсе, как и просил менеджер.
+  // Юнит и позиция внутри него по глобальному индексу урока — обратная
+  // раскладка units, нужна isUnlocked: блокировка теперь по ЮНИТУ (каталог), а
+  // не по всей тропе подряд, и первый урок открытого юнита не должен ждать
+  // соседа из чужого юнита.
+  const unitByLessonIndex = useMemo(() => {
+    const map = new Map()
+    for (const g of units) {
+      g.items.forEach(({ gi }, j) => map.set(gi, { unit: g.unit, isFirstInUnit: j === 0 }))
+    }
+    return map
+  }, [units])
+
+  // Урок разблокирован, если: модуль не закрыт админом целиком; индекс не
+  // упирается в квоту "сколько уроков этого модуля можно пройти" (см. ниже);
+  // ЮНИТ, которому принадлежит урок, открыт по каталогу (см. lib/reviewUnlock.js
+  // — живой урок или «Самостоятельно», позиционно: юнит N каталога пройден →
+  // юнит N «Повторения» открыт); и внутри уже открытого юнита — это первый его
+  // урок или предыдущий урок ТОГО ЖЕ юнита пройден (прежний порядок раздела
+  // сохранён внутри юнита, крест-накрест между юнитами больше не тянется).
+  //
+  // Квота: раньше проверялась только В МОМЕНТ завершения урока (403 от
+  // бэкенда) — тропа при этом всё равно рисовала следующие уроки открытыми для
+  // клика, и студент мог их пройти вплоть до конца, просто без начисления
+  // награды. Теперь узлы сверх квоты не открываются вовсе, как и просил
+  // менеджер.
   //
   // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done:
   // квота на модуль появилась позже прогресса учеников (до неё в базе не было
@@ -213,15 +243,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // не ограничение. Квота обязана закрывать только НОВЫЕ, ещё не пройденные
   // узлы, а не откатывать уже сделанное.
   //
-  // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ
-  // ограничения админа: блокировку модуля и квоту не обходит даже просмотр
-  // контента.
+  // unlockAll (?unlock=1, только dev) снимает и внутриюнитовую
+  // последовательность, и замок по каталогу — тот же принцип, что раньше был
+  // только у последовательности уроков: устройство тропы можно посмотреть
+  // целиком, а блокировку админа и квоту — по-прежнему нет.
   const isUnlocked = useCallback(
-    (i) =>
-      !moduleLocked &&
-      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
-      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
-    [lessons, done, moduleLocked, moduleQuota, unlockAll],
+    (i) => {
+      if (moduleLocked) return false
+      if (moduleQuota != null && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))) return false
+      if (unlockAll) return true
+      const meta = unitByLessonIndex.get(i)
+      if (!meta || !isReviewUnitUnlocked(catalogDone, meta.unit)) return false
+      return meta.isFirstInUnit || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
+    },
+    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone],
   )
 
   const openLesson = useCallback(
@@ -494,26 +529,34 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   </div>
 
                   <ol className="kt-list" style={{ height: `${g.items.length * 100}px` }}>
-                    {g.items.map(({ l, gi }, j) => {
-                      const isDone = done.has(l.code)
-                      const unlocked = isUnlocked(gi)
-                      // «Кубок» — последний узел юнита (у курса это юнит-тест),
-                      // у него в макете своя, золотая печенька.
-                      const isLast = j === g.items.length - 1
-                      const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
-                      const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
-                      return (
-                        <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
-                          <button
-                            className={cls}
-                            disabled={!unlocked || busy}
-                            onClick={() => openLesson(l.code)}
-                            title={!unlocked ? t('lesson.locked') : l.title || l.code}
-                            aria-label={l.title || l.code}
-                          />
-                        </li>
-                      )
-                    })}
+                    {(() => {
+                      // Причина замка на весь юнит — одна на все его узлы: либо
+                      // соответствующий материал ещё не пройден в «Уроках», либо
+                      // (для уже открытого юнита) обычный порядок «сначала
+                      // предыдущий узел».
+                      const unitLockedByCatalog = !isReviewUnitUnlocked(catalogDone, g.unit)
+                      return g.items.map(({ l, gi }, j) => {
+                        const isDone = done.has(l.code)
+                        const unlocked = isUnlocked(gi)
+                        // «Кубок» — последний узел юнита (у курса это юнит-тест),
+                        // у него в макете своя, золотая печенька.
+                        const isLast = j === g.items.length - 1
+                        const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
+                        const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
+                        const lockedTitle = t(unitLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
+                        return (
+                          <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
+                            <button
+                              className={cls}
+                              disabled={!unlocked || busy}
+                              onClick={() => openLesson(l.code)}
+                              title={!unlocked ? lockedTitle : l.title || l.code}
+                              aria-label={l.title || l.code}
+                            />
+                          </li>
+                        )
+                      })
+                    })()}
                   </ol>
                 </section>
               )

@@ -77,7 +77,8 @@ assert stream.feed(long_word) != "" or stream.flush() != ""
 # --- язык произношения ------------------------------------------------------
 # Казахскоязычные говорят по-казахски при ЛЮБОМ интерфейсе, включая английский:
 # язык озвучки — свойство персоны, а не выбранного языка приложения.
-assert KZ_SPEAKING_TUTORS == frozenset({"hype", "jarvis"})
+# Айзере (24.09.2026) — третья: учит на казахском, как Спарк.
+assert KZ_SPEAKING_TUTORS == frozenset({"hype", "jarvis", "aizere"})
 for tutor in KZ_SPEAKING_TUTORS:
     for lang in ("en", "ru", "kz"):
         assert _tts_speech_lang(tutor, lang) == "kz", (tutor, lang)

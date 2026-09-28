@@ -22,9 +22,16 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from agent import (  # noqa: E402
+    LearnerProfile,
+    _ElevenConvertTTS,
+    _eleven_convert_url,
+    _eleven_engine_kwargs,
+    _eleven_http_payload,
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
+    _eleven_session_voice,
+    _eleven_voice_for,
 )
 
 
@@ -53,12 +60,29 @@ _clear("ELEVENLABS_API_KEY")
 assert _eleven_key_for("bro") == "", "ключа нет вовсе — пусто, и вызывающий скажет об этом вслух"
 assert _eleven_key_for("jarvis") == "kz-stand", "а у стенда свой остаётся"
 
+# --- голос ------------------------------------------------------------------
+
+_clear("ELEVEN_VOICE_ID_JARVIS", "ELEVEN_VOICE_ID_BRO")
+assert _eleven_voice_for("jarvis") == "2ZqnRUaCU5IaXJ45uakV", "KZ-стенд — зашитый клон"
+os.environ["ELEVEN_VOICE_ID_JARVIS"] = "override-kz"
+assert _eleven_voice_for("jarvis") == "override-kz", "env важнее таблицы"
+assert _eleven_voice_for("bro") != "override-kz", "чужой голос Декстера не касается"
+_clear("ELEVEN_VOICE_ID_JARVIS", "ELEVEN_VOICE_ID_BRO")
+
+os.environ["ELEVENLABS_VOICE_ID"] = "ExpLt85FtBvm8QN4m6rB"
+assert _eleven_session_voice(LearnerProfile(tutor="jarvis")) == "2ZqnRUaCU5IaXJ45uakV", (
+    "глобальный ELEVENLABS_VOICE_ID не должен перебивать клон стенда"
+)
+assert _eleven_session_voice(LearnerProfile(tutor="bro")) == "rHWSYoq8UlV0YIBKMryp"
+_clear("ELEVENLABS_VOICE_ID")
+
 # --- модель -----------------------------------------------------------------
 
 _clear("ELEVENLABS_MODEL", "ELEVENLABS_MODEL_JARVIS", "ELEVENLABS_MODEL_BRO")
 
 assert _eleven_model_for("bro") == "eleven_flash_v2_5", "дефолт — Flash: он выбран за скорость"
 assert _eleven_model_for("") == "eleven_flash_v2_5"
+assert _eleven_model_for("jarvis") == "eleven_v3", "казахский стенд по умолчанию на v3"
 
 os.environ["ELEVENLABS_MODEL_JARVIS"] = "eleven_v3"
 assert _eleven_model_for("jarvis") == "eleven_v3", "казахскому стенду нужна v3"
@@ -93,8 +117,39 @@ assert _eleven_http_only("eleven_v3")
 os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = ""
 _clear("ELEVENLABS_HTTP_ONLY_MODELS")
 
-# Настройки голоса намеренно НЕ трогаем и здесь их не проверяем: обрезать поля
-# по догадке уже вышло боком — конструктор VoiceSettings требует
-# similarity_boost, и сессия падала ещё до синтеза. Отказ был про транспорт.
+v3 = _eleven_engine_kwargs("eleven_v3", "k", "2ZqnRUaCU5IaXJ45uakV", "jarvis", True)
+assert "voice_settings" not in v3, "v3: speaker boost/style в теле дают 400"
+assert v3["encoding"] == "mp3_44100_128", "v3: тот же формат, что в кабинете"
+assert v3["model"] == "eleven_v3"
+flash = _eleven_engine_kwargs("eleven_flash_v2_5", "k", "rHWSYoq8UlV0YIBKMryp", "bro", False)
+assert "voice_settings" in flash
+assert flash.get("auto_mode") is True
+assert "encoding" not in flash
+# Субтитры — из выравнивания ElevenLabs: «normalized» вынес бы на экран «25»
+# как «twenty five».
+assert flash.get("preferred_alignment") == "original"
+
+# /stream, а не convert: convert отдаёт первый байт только когда готов весь файл
+# (замер 24.09.2026 на клоне: короткая фраза 2.0–2.7 с против 0.9 с у /stream).
+# 400, из-за которого с /stream уходили, давали поля ПЛАГИНА
+# (apply_text_normalization, voice_settings: null) — тело здесь голое.
+_clear("ELEVENLABS_V3_STREAM")
+url = _eleven_convert_url("2ZqnRUaCU5IaXJ45uakV")
+assert url.startswith("https://api.elevenlabs.io/v1/text-to-speech/2ZqnRUaCU5IaXJ45uakV/stream?"), url
+assert url.endswith("?output_format=mp3_44100_128")
+assert _eleven_http_payload("Сәлем.", "eleven_v3") == {"text": "Сәлем.", "model_id": "eleven_v3"}, (
+    "никаких apply_text_normalization / voice_settings — на них v3 и отвечал 400"
+)
+# Откат на convert — переменной, без деплоя кода.
+os.environ["ELEVENLABS_V3_STREAM"] = "0"
+url = _eleven_convert_url("2ZqnRUaCU5IaXJ45uakV")
+assert "/stream" not in url and url.endswith("?output_format=mp3_44100_128"), url
+_clear("ELEVENLABS_V3_STREAM")
+convert = _ElevenConvertTTS(
+    model="eleven_v3", api_key="k", voice_id="2ZqnRUaCU5IaXJ45uakV"
+)
+assert convert.model == "eleven_v3"
+assert convert.sample_rate == 44100
+assert convert.provider == "ElevenLabs"
 
 print("ElevenLabs: аккаунт, модель и транспорт — ок")

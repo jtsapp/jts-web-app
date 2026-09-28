@@ -80,6 +80,10 @@ export function boardStateKey(hw, now = new Date()) {
   return homeworkStateKey(hw, now)}
 
 export function isOverdue(hw, now = new Date()) {
+  // Просрочку по выданному материалу считает сервер (MaterialAssignmentService.isOverdue)
+  // — своё мнение о ней у клиента лишнее: часы у него свои. У обычной домашки поля нет,
+  // и она считается здесь, как и раньше.
+  if (typeof hw?.isOverdue === 'boolean') return hw.isOverdue
   if (!hw?.dueDate || hw.status !== 'ASSIGNED') return false
   // dueDate — дата без времени: работа просрочена со следующего дня, а не в
   // полночь того же дня, до конца которого её ещё можно сдать.

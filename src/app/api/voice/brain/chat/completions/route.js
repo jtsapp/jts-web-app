@@ -11,6 +11,20 @@ import { chatStreamRich, hasAnthropicKey } from '@/lib/anthropic.js'
 
 export const runtime = 'nodejs'
 
+// Модель мозга по тьютору. Выбирает АГЕНТ (TUTOR_BRAIN_MODEL в agent/agent.py) и
+// шлёт её OpenAI-полем `model`; всё вне списка — прежний дефолт роута
+// (VOICE_BRAIN_MODEL, Haiku). Зачем: Айзере учит по-казахски, а Haiku ломает
+// казахскую морфологию и роняет в речь иероглифы (замер 24.09.2026, судья
+// вслепую: естественность 2.45 → 4.2 из 5 на Sonnet 5). Список закрытый, чтобы
+// общий секрет агента не открывал любую, в том числе самую дорогую, модель.
+// Старый роут поле `model` игнорирует — агент с новой таблицей на нём просто
+// останется на Haiku, поэтому порядок выкатки роута и агента не важен.
+const BRAIN_MODELS = new Set(['claude-haiku-4-5', 'claude-haiku-4-5-20251001', 'claude-sonnet-5'])
+
+function brainModel(requested) {
+  return typeof requested === 'string' && BRAIN_MODELS.has(requested) ? requested : undefined
+}
+
 // Только доверенный сервер-к-серверу вызов (голосовой агент LiveKit). Агент
 // шлёт общий секрет как `Authorization: Bearer <INTERNAL_API_KEY>` (это api_key
 // у livekit-plugins-openai). Раньше проверки НЕ было вообще — роут был открытым
@@ -118,6 +132,7 @@ export async function POST(request) {
     lastUserTurn !== undefined && !/[\p{L}\p{N}]/u.test(lastUserTurn.content)
 
   const model = body.model || 'jts-voice-router'
+  const anthropicModel = brainModel(body.model)
   const created = Math.floor(Date.now() / 1000)
   const id = `chatcmpl-${created}-${Math.random().toString(36).slice(2, 10)}`
   const temperature = typeof body.temperature === 'number' ? body.temperature : undefined
@@ -164,7 +179,7 @@ export async function POST(request) {
           let anyText = false
           let toolCount = 0
           let stopReason = null
-          for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
+          for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature, model: anthropicModel })) {
             if (ev.type === 'text') {
               if (!ev.text) continue
               if (!tFirst) tFirst = Date.now()
@@ -272,7 +287,10 @@ export async function POST(request) {
         console.log(
           `[brain] ttft=${((tFirst || done) - t0) / 1000}s own=${(tParsed - t0) / 1000}s ` +
             `total=${(done - t0) / 1000}s prompt=${promptChars}ch turns=${turns.length}` +
-            (retried ? ' retried=1' : ''),
+            (retried ? ' retried=1' : '') +
+            // Модель — только когда агент выбрал не дефолт: иначе строка та же,
+            // что раньше, и грепы по логам стенда не ломаются.
+            (anthropicModel ? ` model=${anthropicModel}` : ''),
         )
         controller.close()
       }

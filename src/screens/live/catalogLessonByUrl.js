@@ -24,6 +24,19 @@ export function isStandaloneLessonUrl(url) {
   return /\/course-catalog\/standalone\//i.test(String(url || ''))
 }
 
+/**
+ * Искать ли материал в каталоге, чтобы открыть его шагами.
+ *
+ * Раньше решал движок занятия: FILE сразу шёл во фрейм. Преподаватель с 23.09
+ * ищет разбор всегда — на FILE по умолчанию ставят обычный урок каталога, и
+ * без разбора ученик видел сырой файл и одну «Section 1», а преподаватель —
+ * темы. Стороны обязаны открывать одно и то же. Нашёлся урок или нет, решает
+ * {@link catalogLessonIdFor}; standalone в каталоге не ищем никогда.
+ */
+export function shouldResolveCatalogLesson(url, _lesson) {
+  return Boolean(url) && !isStandaloneLessonUrl(url)
+}
+
 /** Ссылка без якоря. */
 function normalize(url) {
   if (!url) return ''

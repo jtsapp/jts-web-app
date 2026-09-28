@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
+import AskAssistantButton from '../components/AskAssistantButton.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
@@ -188,6 +189,7 @@ function LessonTask({ task, graded, onGraded, onContinue, t, onWord }) {
             {!feedback.ok && feedback.answer && (
               <span className="kl-fb__ans">{t('lesson.answerWas')}: {feedback.answer}</span>
             )}
+            {!feedback.ok && <AskAssistantButton />}
           </div>
           {feedback.ok && (
             <span className="kl-reward">

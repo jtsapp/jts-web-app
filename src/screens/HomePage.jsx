@@ -7,6 +7,7 @@ import { plural } from '../lib/plural.js'
 import { levelSummary, nextLevel, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress } from '../api.js'
+import { pickRecommendation } from '../lib/assistant/recommend.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
 
@@ -284,6 +285,9 @@ export default function HomePage({
           {/* Практика, расписание и домашка — кабинет оплаченного ученика.
               У демо на их месте пусто по макету: там разговор про доступ, а не
               про сегодняшние занятия, которых у него ещё нет. */}
+          {!isDemoAccount && (
+            <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
+          )}
           {!isDemoAccount && <PracticeToday t={t} onNav={onNav} />}
           </div>
 
@@ -551,6 +555,36 @@ function HomeworkCard({ t, lang, items, onNav }) {
  * рекомендацию. Пока это ярлыки в разделы Практики — они экономят два клика и
  * не обещают того, чего система не знает.
  */
+/**
+ * Одна карточка «что сделать сегодня» — по данным, которые экран и так уже
+ * загрузил (levelSummary, домашка, расписание). Ничего не запрашивает и не
+ * зовёт помощника: pickRecommendation — чистая функция (lib/assistant/recommend.js),
+ * поэтому у карточки нет ни задержки, ни цены, ни риска упереться в лимит
+ * вопросов помощнику — при желании больше узнать про свой прогресс ведёт в чат
+ * с ним (см. AssistantWidget), а не сама вызывает модель.
+ */
+function RecommendCard({ t, summary, homework, occurrences, onNav }) {
+  const rec = useMemo(
+    () => pickRecommendation({ summary, homework, occurrences }),
+    [summary, homework, occurrences],
+  )
+  if (!rec) return null
+  const reason = t(rec.reasonKey, rec.reasonVars ? { skill: t(`profile.skills.${rec.reasonVars.skill}`) } : undefined)
+  return (
+    <section className="hm-card hm-recommend">
+      <h2 className="hm-card__title">{t('home.recommend.title')}</h2>
+      <button
+        type="button"
+        className="hm-recommend__cta"
+        onClick={() => (rec.nav.payload ? onNav?.(rec.nav.to, rec.nav.payload) : onNav?.(rec.nav.to))}
+      >
+        <span className="hm-recommend__reason">{reason}</span>
+        <span className="hm-recommend__go">{t(rec.ctaKey)}</span>
+      </button>
+    </section>
+  )
+}
+
 function PracticeToday({ t, onNav }) {
   // Плитка ведёт в свой раздел, а не в общую ленту: раньше «Книги» и
   // «Аудирование» открывали «Практику» целиком, и нажавший на книги искал их

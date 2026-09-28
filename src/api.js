@@ -267,6 +267,12 @@ export function startMaterialAssignment(token, assignmentId) {
   return authPost(`/student/assignments/${assignmentId}/start`, token)
 }
 
+// «Я сделал» по выданной работе. Что считается сделанным и можно ли сдавать —
+// решает сервер (проверенные задания или приложенный файл), здесь только кнопка.
+export function submitMaterialAssignment(token, assignmentId) {
+  return authPost(`/student/assignments/${assignmentId}/submit`, token)
+}
+
 // Рендер интерактивного материала открывается навигацией браузера (новая
 // вкладка), а не fetch'ем — токен уезжает в query: JwtAuthenticationFilter
 // принимает ?access_token= ровно для этого пути (тот же приём, что в
@@ -794,6 +800,14 @@ export function getLessonMaterialProgress(token, lessonId, materialId, studentId
 
 export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson, options) {
   return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson }, options)
+}
+
+// Стадии файлового урока (`section.stage` в самом файле, сняты сервером при
+// импорте ключей) — из них собираются «Темы», когда разбор на шаги выключен.
+// Материал не-файла или без ключей отдаёт пустой список. Доступ — как у /render:
+// ученик занятия и его преподаватель (assertLessonAccess).
+export function getLessonViewStages(token, lessonId, materialId) {
+  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/lesson-view/stages`, token)
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по

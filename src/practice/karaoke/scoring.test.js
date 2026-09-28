@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   referenceMask,
+  markSpan,
   rhythmScore,
   coverageScore,
   normalizeWords,
@@ -31,6 +32,37 @@ describe('маски', () => {
     expect(m[39]).toBe(1) // 1.95 с — ещё первая строка
     expect(m[40]).toBe(0) // 2.0 с — уже пауза
     expect(m[60]).toBe(1) // 3.0 с — вторая строка
+  })
+
+  it('на ускоренном треке маска не дырявится', () => {
+    // 1,25×: между замерами VAD позиция уходит на 62 мс, то есть индекс
+    // прыгает через клетку. Без заливки отрезка каждая вторая оставалась бы
+    // нулевой у того, кто пел не замолкая.
+    const m = new Uint8Array(8)
+    let prev = -1
+    for (const idx of [0, 1, 3, 4, 6, 7]) {
+      markSpan(m, prev, idx)
+      prev = idx
+    }
+    expect([...m]).toEqual([1, 1, 1, 1, 1, 1, 1, 1])
+  })
+
+  it('разрыв от перемотки не закрашивается как спетый', () => {
+    const m = new Uint8Array(40)
+    markSpan(m, 2, 30) // +1.4 с вперёд: между ними музыка не играла
+    expect(m[3]).toBe(0)
+    expect(m[29]).toBe(0)
+    expect(m[30]).toBe(1)
+    // Назад — тем более: прошлая клетка больше текущей.
+    markSpan(m, 30, 5)
+    expect(m[5]).toBe(1)
+    expect(m[6]).toBe(0)
+  })
+
+  it('за пределы маски markSpan не пишет', () => {
+    const m = new Uint8Array(4)
+    expect(() => markSpan(m, -1, 4)).not.toThrow()
+    expect([...m]).toEqual([0, 0, 0, 0])
   })
 
   it('ритм: полное совпадение — 100, полный промах — 0', () => {

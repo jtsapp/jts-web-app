@@ -64,12 +64,10 @@ const TUNING = {
   // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
   // Диапазон [0.7–1.3], берём заметно медленнее середины.
   spark: { speed: 0.85 },
-  // KZ-стенд (Soniox, голос Daniel). Здесь тоже крутится только темп: 0.95 —
-  // разговорнее спарковских 0.85, но ещё не тараторка.
-  // latency остался для пути Fish (клон), instructions — для пути OpenAI
-  // (src/tutor/openaiTtsStyle.js); оба пути живые, переключаются
-  // TTS_PROVIDER_JARVIS, и визитка озвучивается офлайн, спешить некуда.
-  jarvis: { speed: 0.95, latency: 'balanced' },
+  // KZ-стенд (ElevenLabs v3, клон). Style 0: v3 и так эмоциональна.
+  // latency остался для пути Fish, speed — для Soniox; оба пути живые,
+  // переключаются TTS_PROVIDER_JARVIS.
+  jarvis: { speed: 0.95, latency: 'balanced', stability: 0.5, style: 0 },
 }
 
 // Тексты живут в src/tutor/tutors.js и берутся оттуда, а не дублируются здесь:
@@ -184,26 +182,34 @@ async function googleAccessToken(creds) {
   return (await res.json()).access_token
 }
 
-async function ttsEleven(text) {
-  const key = process.env.ELEVENLABS_API_KEY
-  if (!key) throw new Error('ELEVENLABS_API_KEY не задан')
-  // Тот же voice id и те же настройки, что у живого Декстера: низкая
-  // stability + высокий style, иначе сленг звучит как диктор новостей.
-  const voice = process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
+async function ttsEleven(text, _lang, key) {
+  const base = String(key || 'dexter').replace(/-harsh$/, '')
+  const isJarvis = base === 'jarvis'
+  const apiKey = isJarvis
+    ? process.env.ELEVENLABS_API_KEY_JARVIS || process.env.ELEVENLABS_API_KEY
+    : process.env.ELEVENLABS_API_KEY
+  if (!apiKey) throw new Error('ELEVENLABS_API_KEY не задан')
+  const voice = isJarvis
+    ? process.env.ELEVEN_VOICE_ID_JARVIS || '2ZqnRUaCU5IaXJ45uakV'
+    : process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
+  const model = isJarvis
+    ? process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3'
+    : process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
+  const tune = TUNING[base] || TUNING.dexter
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_128`,
     {
       method: 'POST',
-      headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
+      headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text,
-        model_id: process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
+        model_id: model,
         voice_settings: {
-          stability: TUNING.dexter.stability,
+          stability: tune.stability,
           similarity_boost: 0.75,
-          style: TUNING.dexter.style,
+          style: tune.style,
           use_speaker_boost: true,
-          speed: TUNING.dexter.speed,
+          speed: tune.speed ?? 1,
         },
       }),
     },
@@ -294,15 +300,14 @@ async function ttsOpenai(text, lang, key) {
 // Ключи с суффиксом -harsh — визитки жёсткого нрава (кнопка 18+ на карточке).
 // Провайдер и тембр у них те же: нрав меняет характер, а не голос.
 const SAMPLE_PROVIDER_JARVIS =
-  { fish: ttsFish, openai: ttsOpenai }[process.env.TTS_PROVIDER_JARVIS] || ttsSoniox
+  { fish: ttsFish, openai: ttsOpenai, soniox: ttsSoniox }[process.env.TTS_PROVIDER_JARVIS] || ttsEleven
 
 const PROVIDER = {
   luna: ttsGemini,
   dexter: ttsEleven,
   spark: ttsSoniox,
-  // TTS_PROVIDER_JARVIS=fish|openai — то же имя переменной, что у агента
-  // (_tts_provider_for): вернуть клон Fish или пресет OpenAI можно без правки
-  // кода, и оба пути остаются живыми, а не мёртвыми функциями под удаление.
+  // TTS_PROVIDER_JARVIS=fish|openai|soniox — то же имя, что у агента.
+  // Дефолт — ElevenLabs v3, тот же клон, что в живом разговоре.
   jarvis: SAMPLE_PROVIDER_JARVIS,
   'dexter-harsh': ttsEleven,
   'spark-harsh': ttsSoniox,

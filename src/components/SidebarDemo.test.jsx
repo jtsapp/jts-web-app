@@ -50,7 +50,7 @@ describe('Sidebar — демо-аккаунт', () => {
     await waitFor(() => expect(screen.getByText('Главная')).toBeTruthy())
     const items = [...container.querySelectorAll('.sb__item')].map((el) => el.textContent)
     expect(items[0]).toBe('Главная')
-    expect(items).toContain('Обучение')
+    expect(items).toContain('Повторение')
   })
 
   // Стрик и монеты у демо-ученика всё равно пустые — на их месте важнее скидка.

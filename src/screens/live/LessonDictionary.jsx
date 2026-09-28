@@ -1,7 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchDictionary, getSavedWords, saveWord } from '../../api.js'
 import { translateWord } from '../../lib/wordTranslate.js'
+import { initVoices, speak } from '../../practice/vocab/audio.js'
 import { useI18n } from '../../i18n.jsx'
+
+function SpeakButton({ word, label }) {
+  if (!word) return null
+  return (
+    <button
+      type="button"
+      className="lw-dict__speak"
+      aria-label={label}
+      onClick={() => speak(word)}
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4zm11.5 3a4.5 4.5 0 0 0-2.2-3.9v7.8A4.5 4.5 0 0 0 15.5 12z" />
+      </svg>
+    </button>
+  )
+}
 
 /**
  * Словарь школы прямо в уроке.
@@ -22,7 +39,7 @@ import { useI18n } from '../../i18n.jsx'
  * (`defaultOpen`) — наоборот, раскрыт: там кроме словаря ничего нет, и лишний
  * клик по заголовку означал бы пустой экран в ответ на «Ваш словарь».
  */
-export default function LessonDictionary({ token, defaultOpen = false }) {
+export default function LessonDictionary({ token, defaultOpen = false, incoming = null }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(defaultOpen)
   const [tab, setTab] = useState('mine')
@@ -41,6 +58,8 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
   // и медленный ответ по старому запросу перетирал бы свежий список.
   const seqRef = useRef(0)
 
+  useEffect(() => { initVoices() }, [])
+
   // Личный словарь: один запрос на раскрытие панели, без поиска по серверу —
   // своих слов у ученика десятки, а не тысячи, и фильтровать их можно на месте.
   useEffect(() => {
@@ -49,6 +68,33 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
       .then((rows) => setMine(Array.isArray(rows) ? rows : []))
       .catch(() => setMine([]))
   }, [open, token])
+
+  useEffect(() => {
+    const word = String(incoming?.word || '').trim()
+    if (!word) return
+    const translation = String(incoming.translation || word)
+    setMine((prev) => (
+      prev.some((row) => String(row.word || '').toLowerCase() === word.toLowerCase())
+        ? prev
+        : [{ word, translation }, ...prev]
+    ))
+  }, [incoming?.word, incoming?.translation, incoming?.n])
+
+  useEffect(() => {
+    function onVocab(event) {
+      const data = event.data
+      if (!data || data.source !== 'jts-lesson' || data.type !== 'vocab-add' || !data.word) return
+      const word = String(data.word)
+      const translation = String(data.translation || data.translationRu || data.translationKz || word)
+      setMine((prev) => (
+        prev.some((row) => String(row.word || '').toLowerCase() === word.toLowerCase())
+          ? prev
+          : [{ word, translation }, ...prev]
+      ))
+    }
+    window.addEventListener('message', onVocab)
+    return () => window.removeEventListener('message', onVocab)
+  }, [])
 
   const mineFiltered = (() => {
     const q = query.trim().toLowerCase()
@@ -180,7 +226,10 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
               <ul className="lw-dict__list">
                 {mineFiltered.map((w) => (
                   <li className="lw-dict__row" key={w.id ?? `${w.word}-${w.translation}`}>
-                    <span className="lw-dict__word">{w.word}</span>
+                    <span className="lw-dict__word">
+                      {w.word}
+                      <SpeakButton word={w.word} label={t('vocab.listenWord')} />
+                    </span>
                     <span className="lw-dict__tr">{w.translation}</span>
                   </li>
                 ))}
@@ -196,7 +245,10 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
                 <ul className="lw-dict__list">
                   {items.map((d) => (
                     <li className="lw-dict__row" key={d.id ?? `${d.word}-${d.translatedWord}`}>
-                      <span className="lw-dict__word">{d.word}</span>
+                      <span className="lw-dict__word">
+                        {d.word}
+                        <SpeakButton word={d.word} label={t('vocab.listenWord')} />
+                      </span>
                       <span className="lw-dict__tr">{d.translatedWord}</span>
                     </li>
                   ))}
@@ -212,7 +264,10 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
               тот самый поиск дальше своего списка. */}
           {fallback && (
             <div className="lw-dict__fallback">
-              <span className="lw-dict__word">{fallback.word}</span>
+              <span className="lw-dict__word">
+                {fallback.word}
+                <SpeakButton word={fallback.word} label={t('vocab.listenWord')} />
+              </span>
               <span className="lw-dict__tr">{fallback.translation}</span>
               {fallback.alternates.length > 0 && (
                 <span className="lw-dict__alt">{fallback.alternates.join(' · ')}</span>

@@ -8,7 +8,7 @@ export const DEFAULT_LANG = 'ru'
 export const DICT = {
   ru: {
     // Общее / навигация / оболочка
-    'nav.learn': 'Обучение',
+    'nav.learn': 'Повторение',
     'nav.practice': 'Практика',
     'nav.tutor': 'Тьютор',
     'nav.lessons': 'Уроки',
@@ -35,11 +35,10 @@ export const DICT = {
     // Выбор тьютора
     'choose.title': 'Выбери подходящего тьютора',
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
-    // голоса (comingSoon в tutors.js, сейчас Айзере на dev-стенде).
+    // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
-    // Айзере — место под новую тьюторшу, только на dev-стенде (AIZERE_ENABLED).
-    // Черты — с макета; описания и кнопок у неё пока нет: экран выбора их не
-    // рисует, а в «Управлении тьютором» её нет.
+    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета;
+    // описания и кнопок у неё нет: экран выбора их не рисует.
     'tutor.aizere.trait1': 'Мудрая',
     'tutor.aizere.trait2': 'Заботливая',
     'tutor.luna.trait1': 'Русскоязычная',
@@ -421,7 +420,7 @@ export const DICT = {
   },
 
   kz: {
-    'nav.learn': 'Оқыту',
+    'nav.learn': 'Қайталау',
     'nav.practice': 'Практика',
     'nav.tutor': 'Тьютор',
     'nav.lessons': 'Сабақтар',
@@ -796,7 +795,7 @@ export const DICT = {
   },
 
   en: {
-    'nav.learn': 'Learning',
+    'nav.learn': 'Review',
     'nav.practice': 'Practice',
     'nav.tutor': 'Tutor',
     'nav.lessons': 'Lessons',

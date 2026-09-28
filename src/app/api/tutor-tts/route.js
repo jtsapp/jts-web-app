@@ -8,12 +8,15 @@
 //            Developer API с ai.google.dev).
 //   Dexter → ElevenLabs, ELEVENLABS_API_KEY + ELEVEN_VOICE_ID_DEXTER.
 //   Spark  → Soniox TTS (голос Owen), SONIOX_API_KEY. Soniox держит один тембр
-//            на kk и en. По-казахски говорят двое — он и Джарвис.
-//   Jarvis → ВРЕМЕННО OpenAI TTS (gpt-4o-mini-tts, голос ash), OPENAI_API_KEY.
-//            Тьютор dev-only (JARVIS_ENABLED в src/config.js) — на нём и
-//            перебираем голоса; путь Fish Audio (FISH_AUDIO_API_KEY +
-//            reference_id клона) остался рабочим, возврат — строкой в
-//            TUTOR_PROVIDER. Роут общий: на проде Джарвиса некому позвать.
+//            на kk и en.
+//   Jarvis → ElevenLabs, клон 2ZqnRUaCU5IaXJ45uakV, модель eleven_v3 (казахский
+//            есть только у неё). Свой ключ — ELEVENLABS_API_KEY_JARVIS, если
+//            клон живёт в другом кабинете. Пути soniox/openai/fish рабочие:
+//            вернуть — TTS_PROVIDER_JARVIS. Тьютор dev-only (JARVIS_ENABLED).
+//   Aizere → ElevenLabs, ТОТ ЖЕ клон, что у Jarvis (стенд обкатывал её
+//            голос), но модель eleven_v3_conversational — казахский есть, вдвое
+//            дешевле v3. Свой ключ — ELEVENLABS_API_KEY_AIZERE, иначе общий.
+//            Пока dev-only (AIZERE_ENABLED).
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
 // Azure тут нет: аккаунта Azure Speech у проекта нет (см. TUTOR_TTS_PROVIDER).
@@ -47,6 +50,8 @@ const SONIOX_VOICE = {
   'spark-harsh': 'Owen',
   jarvis: 'Daniel',
   'jarvis-harsh': 'Daniel',
+  // Айзере — только откат: женский голос, иначе дефолтный Owen сделал бы из неё Спарка.
+  aizere: 'Maya',
 }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
@@ -62,20 +67,38 @@ const TUTOR_PROVIDER = {
   luna: 'gemini',
   dexter: 'eleven',
   spark: 'soniox',
-  jarvis: 'soniox', // KZ-стенд: Soniox реально произносит казахский, ash — нет
+  jarvis: 'eleven', // KZ-стенд: клон ElevenLabs, казахский только на v3
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
-  'jarvis-harsh': 'soniox',
+  'jarvis-harsh': 'eleven',
+  aizere: 'eleven', // клон KZ-стенда, разговорная v3
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
 
-// ElevenLabs per tutor key (только Декстер) — mirror agent ELEVEN_VOICE /
-// _eleven_voice_for. Voice id живёт в env, чтобы менять тембр без деплоя;
-// фолбэк — тот же id, что зашит в agent.py.
+// ElevenLabs per tutor key — mirror agent ELEVEN_VOICE / _eleven_voice_for.
+// Voice id живёт в env, чтобы менять тембр без деплоя; фолбэк — тот же id,
+// что зашит в agent.py.
 const DEXTER_VOICE_ID = process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
-const ELEVEN_VOICE = { dexter: DEXTER_VOICE_ID, 'dexter-harsh': DEXTER_VOICE_ID }
-const ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
+const JARVIS_VOICE_ID = process.env.ELEVEN_VOICE_ID_JARVIS || '2ZqnRUaCU5IaXJ45uakV'
+// Зеркало ELEVEN_VOICE["aizere"] в agent.py: тот же клон, что у стенда.
+const AIZERE_VOICE_ID = process.env.ELEVEN_VOICE_ID_AIZERE || '2ZqnRUaCU5IaXJ45uakV'
+const ELEVEN_VOICE = {
+  dexter: DEXTER_VOICE_ID,
+  'dexter-harsh': DEXTER_VOICE_ID,
+  jarvis: JARVIS_VOICE_ID,
+  'jarvis-harsh': JARVIS_VOICE_ID,
+  aizere: AIZERE_VOICE_ID,
+}
+const ELEVEN_MODEL = {
+  dexter: process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
+  'dexter-harsh': process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
+  jarvis: process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
+  'jarvis-harsh': process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
+  // Разговорная v3 — зеркало ELEVEN_MODEL["aizere"] в agent.py.
+  aizere: process.env.ELEVENLABS_MODEL_AIZERE || 'eleven_v3_conversational',
+}
+const DEFAULT_ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
 // Совпадает с PERSONA_VOICE_SETTINGS["bro"] в agent.py: низкая stability +
 // высокий style — иначе сленг звучит как диктор новостей.
 const DEXTER_ELEVEN_SETTINGS = {
@@ -85,9 +108,29 @@ const DEXTER_ELEVEN_SETTINGS = {
   use_speaker_boost: true,
   speed: 1.04,
 }
+const JARVIS_ELEVEN_SETTINGS = {
+  stability: 0.5,
+  similarity_boost: 0.75,
+  style: 0,
+  use_speaker_boost: true,
+  speed: 1,
+}
 const ELEVEN_SETTINGS = {
   dexter: DEXTER_ELEVEN_SETTINGS,
   'dexter-harsh': DEXTER_ELEVEN_SETTINGS,
+  jarvis: JARVIS_ELEVEN_SETTINGS,
+  'jarvis-harsh': JARVIS_ELEVEN_SETTINGS,
+}
+
+function elevenKey(tutor) {
+  const base = String(tutor || '').replace(/-harsh$/, '')
+  if (base === 'jarvis') {
+    return process.env.ELEVENLABS_API_KEY_JARVIS || process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
+  }
+  if (base === 'aizere') {
+    return process.env.ELEVENLABS_API_KEY_AIZERE || process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
+  }
+  return process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
 }
 
 // Fish Audio (только Джарвис) — mirror agent FISH_TTS_VOICE. Голос задаётся
@@ -230,7 +273,7 @@ async function geminiTts(text, voice) {
 }
 
 async function elevenTts(text, tutor) {
-  const key = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
+  const key = elevenKey(tutor)
   const voiceId = ELEVEN_VOICE[tutor]
   // Нет ключа или нет голоса для этого тьютора → 503, вызывающий уйдёт в откат.
   if (!key || !voiceId) return { status: 503 }
@@ -241,7 +284,7 @@ async function elevenTts(text, tutor) {
       headers: { 'content-type': 'application/json', 'xi-api-key': key },
       body: JSON.stringify({
         text,
-        model_id: ELEVEN_MODEL,
+        model_id: ELEVEN_MODEL[tutor] || DEFAULT_ELEVEN_MODEL,
         voice_settings: ELEVEN_SETTINGS[tutor],
       }),
     },

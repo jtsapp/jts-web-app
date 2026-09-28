@@ -87,4 +87,21 @@ describe('BookDetail — книга из админки', () => {
     await waitFor(() => expect(screen.getByText('Начать чтение')).toBeTruthy())
     expect(screen.getAllByText(/глав/).length).toBeGreaterThan(0)
   })
+
+  // Загруженный PDF больше не открывается просмотрщиком: кнопка и оглавление
+  // те же, что у остальных книжек, главы приезжают текстом с бэкенда.
+  it('книга с файлом PDF читается главами, а не кнопкой «Читать книгу»', async () => {
+    getAudiobook.mockResolvedValue({
+      id: 47,
+      tracks: [
+        { trackIndex: 1, title: 'The Otis Family', text: 'When Mr. Otis bought the Chase.' },
+        { trackIndex: 2, title: 'The Ghost Appears', text: 'The ghost walked the corridor.' },
+      ],
+    })
+    render(<BookDetail book={{ ...book(47), bookFileUrl: 'https://files.example/book.pdf' }} token="t" onBack={() => {}} />)
+
+    await waitFor(() => expect(screen.getByText('The Otis Family')).toBeTruthy())
+    expect(screen.getByText('Начать чтение')).toBeTruthy()
+    expect(screen.queryByText('Читать книгу')).toBeNull()
+  })
 })

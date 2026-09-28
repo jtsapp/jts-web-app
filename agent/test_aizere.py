@@ -1,0 +1,185 @@
+"""Ассерты для Айзере — второго казахскоязычного тьютора. pytest в проекте нет —
+файл запускается напрямую:
+    agent/venv/Scripts/python.exe agent/test_aizere.py
+Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
+
+Айзере учит на казахском и английском, как Спарк, и языковые ветки промпта у
+них общие (KZ_TEACHING_TUTORS). Раньше ветки сравнивали id со Спарком строкой,
+и новый тьютор молча получил бы русские инструкции Луны. Голос — клон
+ElevenLabs на разговорной v3: у Flash казахского нет, а откат обязан быть женским.
+"""
+import io
+import os
+import sys
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
+from agent import (  # noqa: E402
+    KZ_SPEAKING_TUTORS,
+    KZ_TEACHING_TUTORS,
+    LearnerProfile,
+    PERSONA_OPENER,
+    PERSONA_OVERRIDE,
+    POST_CALL_MEMORY_TOOLS,
+    SONIOX_TTS_VOICE,
+    TUTOR_MOODS,
+    TutorAgent,
+    OPENAI_BRAIN_FALLBACK,
+    _brain_model_for,
+    _is_openai_brain,
+    _eleven_http_only,
+    _eleven_model_for,
+    _eleven_session_voice,
+    _mirror_language_rules,
+    _tts_provider_for,
+    _tts_speech_lang,
+    build_greeting_hint,
+    build_instructions,
+    drop_post_call_memory_tools,
+    explanation_language_block,
+    language_mode_block,
+    persona_key,
+    slim_prompt_for_persona,
+    tutor_session_lang,
+)
+
+AIZERE = "aizere"
+
+
+def _aizere(**kw):
+    return LearnerProfile(tutor=AIZERE, **kw)
+
+
+for name in (
+    "ELEVEN_VOICE_ID_AIZERE", "ELEVENLABS_MODEL_AIZERE", "ELEVENLABS_MODEL",
+    "TTS_PROVIDER_AIZERE", "ELEVENLABS_VOICE_ID", "BRAIN_MODEL_AIZERE", "BRAIN_MODEL_HYPE",
+):
+    os.environ.pop(name, None)
+
+# --- языки: те же ветки, что у Спарка ---------------------------------------
+assert AIZERE in KZ_TEACHING_TUTORS and "hype" in KZ_TEACHING_TUTORS
+assert "jarvis" not in KZ_TEACHING_TUTORS, "у KZ-стенда свой файл персоны, ветки ему не нужны"
+assert AIZERE in KZ_SPEAKING_TUTORS
+
+assert tutor_session_lang(AIZERE, "ru") == "kz", "русский интерфейс не делает её русскоязычной"
+assert tutor_session_lang(AIZERE, "en") == "en"
+assert _tts_speech_lang(AIZERE, "en") == "kz", "произносит по-казахски при любом интерфейсе"
+
+mirror = _mirror_language_rules(AIZERE)
+assert "RUSSIAN IS NOT YOUR LANGUAGE" in mirror
+assert "KAZAKH IS NOT YOUR LANGUAGE" not in mirror
+
+assert "EXPLANATION LANGUAGE: KAZAKH" in explanation_language_block("ru", AIZERE)
+assert "EXPLANATION LANGUAGE: RUSSIAN" not in explanation_language_block("ru", AIZERE)
+assert "ENGLISH ONLY" in explanation_language_block("ru", AIZERE, english_only=True)
+
+mixed = language_mode_block("A1", "ru", interview=False, tutor=AIZERE)
+assert "Kazakh" in mixed and "Russian" not in mixed
+
+greet = build_greeting_hint(_aizere(lang="ru"))
+assert "БІРІНШІ" in greet and "СНАЧАЛА" not in greet
+
+prompt_ru = build_instructions(_aizere(lang="ru"))
+assert "SPEAK RUSSIAN TO THEM" not in prompt_ru
+assert "RUSSIAN IS NOT YOUR LANGUAGE" in prompt_ru
+assert "Persona 'Aizere'" in prompt_ru, "черновая персона дошла до промпта"
+prompt_en = build_instructions(_aizere(lang="en"))
+assert "ANSWER IN KAZAKH" in prompt_en
+
+# Луна при этом осталась русскоязычной — ветки не поехали у соседей.
+assert "SPEAK RUSSIAN TO THEM" in build_instructions(LearnerProfile(tutor="gentle", lang="ru"))
+
+# --- характер ---------------------------------------------------------------
+persona = PERSONA_OVERRIDE[AIZERE]
+assert "KAZAKH AND ENGLISH, NOTHING ELSE" in persona
+# Инструкции персоны по-английски: русские слова в тексте тянут модель
+# заговорить по-русски (урок злого Спарка). Казахские примеры реплик — можно.
+for ru_word in ("ученик", "объясни", "Спокойн", "Мудрая"):
+    assert ru_word not in persona, ru_word
+# Правила письма: текст уходит в синтез, и написание решает, как это прозвучит.
+# На скриншоте 24.09.2026 было «англис тілін», «прошлое время» и «練習».
+assert "Latin letters" in persona, "английское — латиницей"
+assert "ағылшын тілі" in persona, "язык по-казахски называется так, а не «англис»"
+assert "Never Chinese" in persona, "никаких других алфавитов"
+assert "өткен шақ" in persona, "казахские названия времён вместо русских"
+assert "retell them in Kazakh" in persona, "заметки памяти по-русски пересказывать, а не цитировать"
+# 27.09.2026: «Но мы бара аламыз…», «русский тілі» — русский тёк на ходе, где
+# ученик просит по-русски: казахского слова для языка и связок в персоне не было.
+assert "«орыс тілі»" in persona and "«орысша»" in persona, "русский язык называть по-казахски"
+assert "«бірақ»" in persona and "(not «но»)" in persona, "казахские связки вместо русских"
+assert "Learner: 'можешь говорить по-русски?'" in persona, "образец ответа на просьбу о русском"
+assert "Орысша керек болса" in persona
+# Правила Спарка, которых у черновой персоны не было: запрет слов-паразитов и
+# «ни слова по-русски даже из вежливости».
+spark = PERSONA_OVERRIDE["hype"]
+for rule in ("'давай', 'ну', 'короче', 'молодец'", "not a word of filler", "Zero exceptions"):
+    assert rule in spark, f"у Спарка правило поменялось: {rule}"
+    assert rule in persona, f"у Айзере нет правила Спарка: {rule}"
+assert AIZERE in PERSONA_OPENER
+assert "Сәлем" in PERSONA_OPENER[AIZERE]
+assert persona_key(AIZERE, "harsh") == AIZERE, "нрава 18+ у неё нет — остаётся базовая персона"
+assert TUTOR_MOODS[AIZERE], "эмоции аватара разрешены"
+
+# --- мозг -------------------------------------------------------------------
+# Haiku ломает казахскую морфологию и роняет иероглифы; Sonnet 5 — чистый
+# казахский (замер 24.09.2026), GPT-6 Sol — ещё чище (27.09.2026). Только ей:
+# Спарку и остальным — дефолт роута.
+assert _brain_model_for(AIZERE) == "gpt-6-sol"
+assert _is_openai_brain(_brain_model_for(AIZERE)), "GPT агент зовёт напрямую, шим его не знает"
+assert not _is_openai_brain("claude-sonnet-5") and not _is_openai_brain("jts-voice-router")
+assert not _is_openai_brain(OPENAI_BRAIN_FALLBACK), "откат без ключа OpenAI должен уйти в шим"
+assert _brain_model_for("hype") == "jts-voice-router", "Спарк остаётся на дефолте роута"
+assert _brain_model_for("") == "jts-voice-router"
+os.environ["BRAIN_MODEL_AIZERE"] = "claude-haiku-4-5"
+assert _brain_model_for(AIZERE) == "claude-haiku-4-5", "откат без деплоя кода"
+os.environ.pop("BRAIN_MODEL_AIZERE", None)
+
+# --- тулы памяти у мозга на GPT ----------------------------------------------
+# GPT зовёт тул и говорит в РАЗНЫХ ответах — сначала немой круг, потом речь.
+# Темы и факты пишет выжимка звонка, поэтому log_topic/log_fact он не получает
+# ни в промпте, ни в списке тулов; ошибки и повторение остаются живыми.
+assert POST_CALL_MEMORY_TOOLS == {"log_topic", "log_fact"}
+full = slim_prompt_for_persona(build_instructions(_aizere(lang="kz", level="A2")), persona_key(AIZERE))
+assert "log_topic" in full and "log_fact" in full, "блок тулов на месте у всех, режем только GPT"
+cut = drop_post_call_memory_tools(full)
+assert cut != full, "разметка MEMORY_TOOLS_BLOCK поменялась — поправь drop_post_call_memory_tools"
+assert "log_topic" not in cut and "log_fact" not in cut
+assert "You have four tools" in cut and " - log_mistake(" in cut and " - log_resolved(" in cut
+assert " - log_review(" in cut and " - raise_safety_alert(" in cut
+assert drop_post_call_memory_tools("no tools block here") == "no tools block here"
+
+
+def _tool_names(agent):
+    return {t.info.name for t in agent.tools}
+
+
+kept = _tool_names(TutorAgent(instructions="x", device_id="d", api_url="https://e.invalid", tutor=AIZERE))
+assert {"log_topic", "log_fact", "log_mistake"} <= kept, "по умолчанию сессия получает все тулы"
+cut_tools = _tool_names(TutorAgent(
+    instructions="x", device_id="d", api_url="https://e.invalid", tutor=AIZERE,
+    skip_tools=POST_CALL_MEMORY_TOOLS,
+))
+assert not (cut_tools & POST_CALL_MEMORY_TOOLS)
+assert cut_tools == kept - POST_CALL_MEMORY_TOOLS, "режем ровно два тула, остальные на месте"
+
+# --- голос ------------------------------------------------------------------
+p = _aizere(lang="kz")
+assert _tts_provider_for(p) == "eleven"
+assert _eleven_session_voice(p) == "2ZqnRUaCU5IaXJ45uakV", "клон, зашитый в таблицу"
+assert _eleven_model_for(AIZERE) == "eleven_v3_conversational", (
+    "разговорная v3: казахский есть, вдвое дешевле v3 и первый звук ~0.3 с"
+)
+assert _eleven_http_only("eleven_v3_conversational"), "сокета у неё нет (1006) — только HTTP /stream"
+assert _eleven_http_only("eleven_v3"), "у обычной v3 тоже"
+# Глобальный голос IELTS не перебивает клон, как и у KZ-стенда.
+os.environ["ELEVENLABS_VOICE_ID"] = "ExpLt85FtBvm8QN4m6rB"
+assert _eleven_session_voice(p) == "2ZqnRUaCU5IaXJ45uakV"
+os.environ.pop("ELEVENLABS_VOICE_ID", None)
+# Глобальная модель Декстера её не утаскивает на Flash.
+os.environ["ELEVENLABS_MODEL"] = "eleven_flash_v2_5"
+assert _eleven_model_for(AIZERE) == "eleven_v3_conversational"
+os.environ.pop("ELEVENLABS_MODEL", None)
+# Откат на Soniox — женский голос, а не дефолтный Owen Спарка.
+assert SONIOX_TTS_VOICE[AIZERE] not in ("Owen", "Daniel", "Noah")
+
+print("test_aizere: ok")

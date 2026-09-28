@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { findCatalogLessonId } from './catalogLessonByUrl.js'
+import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
+import { LESSON_EXTRACTOR, engineOf } from './lessonExtractor.js'
 
 const CATALOG = [
   {
@@ -57,5 +58,43 @@ describe('findCatalogLessonId', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/uploads/my-homework.pdf')).toBeNull()
     expect(findCatalogLessonId(CATALOG, '')).toBeNull()
     expect(findCatalogLessonId([], 'https://files/a2/lessons/L01.html')).toBeNull()
+  })
+})
+
+// Разбор ищем у любого занятия, кроме standalone: на FILE по умолчанию как раз
+// ставят урок каталога, и без поиска ученик видел файл и «Section 1».
+describe('shouldResolveCatalogLesson — шаги или файл', () => {
+  const КАТАЛОГ = 'https://files/development/course-catalog/a0/lessons/L05.html'
+  const STANDALONE = 'https://files/development/course-catalog/standalone/a0-l5.html'
+
+  it('по умолчанию рубильник выключен', () => {
+    expect(LESSON_EXTRACTOR.enabled).toBe(false)
+  })
+
+  it('урок каталога ищется и на FILE-занятии — как у преподавателя', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'STEPS' })).toBe(true)
+  })
+
+  it('standalone — никогда; пустая ссылка — нет', () => {
+    expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'STEPS' })).toBe(false)
+    expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'FILE' })).toBe(false)
+    expect(shouldResolveCatalogLesson('', { engine: 'STEPS' })).toBe(false)
+  })
+
+  it('поля нет или занятия нет — всё равно ищем разбор', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, {})).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, null)).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
+  })
+})
+
+describe('engineOf', () => {
+  it('читает поле, пусто — STEPS', () => {
+    expect(engineOf({ engine: 'FILE' })).toBe('FILE')
+    expect(engineOf({ engine: 'STEPS' })).toBe('STEPS')
+    expect(engineOf({})).toBe('STEPS')
+    expect(engineOf(null)).toBe('STEPS')
+    expect(engineOf(undefined)).toBe('STEPS')
   })
 })

@@ -26,12 +26,24 @@ COPY persona-jarvis.md ./persona-jarvis.md
 # промолчит про ошибку только в логе, а злой Джарвис выйдет в звонок вообще
 # без характера.
 COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
+# Speaking Buddy на стенде KZ TEST: характер и справочник «что учить». Без этих
+# строк образ соберётся, а стенд молча останется на старой персоне — buddy_test_on
+# требует оба файла. См. build_buddy_instructions.
+COPY persona-buddy-dexter.md ./persona-buddy-dexter.md
+COPY methodology-reference.md ./methodology-reference.md
+# Пакеты уровня A0–B2 (Part 20 методичек Speaking Buddy, режет
+# scripts/extract-buddy-level-packs.js). Без них KZ TEST на любом уровне молча
+# останется на справочнике — в логе будет «level pack … missing».
+COPY level-packs/ ./level-packs/
 # Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
 # Словарь распознавания (data/stt-terms.txt в дев-режиме) — подсказка Soniox по редким словам:
 # имена тьюторов, грамматические термины, города.
 COPY stt-terms.txt ./stt-terms.txt
+# Казахская добавка к нему — только сессиям казахоязычных тьюторов: вежливые
+# формы на «сіз», у которых Soniox срезал суффиксы. См. _stt_kazakh_session.
+COPY stt-terms-kk.txt ./stt-terms-kk.txt
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/

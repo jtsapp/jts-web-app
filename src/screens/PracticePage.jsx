@@ -58,7 +58,7 @@ import {
   visibleComics,
 } from '../practice/comics/comicsData.js'
 import { loadKaraokeIndex, trackProgress as karaokeProgress } from '../practice/karaoke/karaokeData.js'
-import { PRACTICE_LEVELS, practiceLevelFor, matchesLevel, nearestLevelCode, cefrOf } from '../practice/practiceLevel.js'
+import { PRACTICE_LEVELS, matchesLevel, nearestLevelCode, cefrOf } from '../practice/practiceLevel.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { canOpenSeen, markSeen } from '../practice/overlaySeen.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
@@ -233,9 +233,10 @@ export default function PracticePage({
   // рендера, и запомнить стартовое «A1» значило бы застрять на нём.
   const [pickedLevel, setPickedLevel] = useState(() => {
     const saved = readSession(LEVEL_KEY)
-    return PRACTICE_LEVELS.includes(saved) ? saved : null
+    if (saved === 'all') return 'all'
+    return PRACTICE_LEVELS.includes(saved) ? saved : 'all'
   })
-  const level = pickedLevel || practiceLevelFor(userLevel)
+  const level = pickedLevel === 'all' ? null : pickedLevel
 
   const pickTab = (key) => {
     setTab(key)
@@ -539,7 +540,7 @@ export default function PracticePage({
   // Пройденное меняется только на экране раздела, а возврат оттуда
   // перемонтирует Практику — перечитывать по уровню достаточно.
   const situDone = useMemo(() => new Set(situLevel ? readDoneItems(situLevel) : []), [situLevel])
-  const levelSituativki = situativkiAll.filter((s) => !s.locked && cefrOf(s.level) === level)
+  const levelSituativki = situativkiAll.filter((s) => !s.locked && (level == null || cefrOf(s.level) === level))
 
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в
   // мобильной шапке (в углу десктопа её на этом экране нет — там по макету
@@ -1043,7 +1044,7 @@ export default function PracticePage({
       <div className="pk pp--enter">
         <header className="pk-head">
           <h1 className="pk-head__title">{t('practice.title')}</h1>
-          <LevelSwitch value={level} onChange={pickLevel} />
+          <LevelSwitch value={pickedLevel} onChange={pickLevel} />
         </header>
 
         <div className="pk-skills" role="tablist">

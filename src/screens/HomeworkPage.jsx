@@ -240,7 +240,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                 <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />
               </div>
               {selected?.kind === 'material' ? (
+                /* key по выдаче: выбрали в списке другую — рамка с материалом
+                   прежней должна уйти вместе с ней, а не остаться на экране
+                   задания, которое ученик уже не выбирал. */
                 <MaterialAssignmentDetail
+                  key={selected.id}
                   card={selected}
                   token={token}
                   onOpenCard={(target) => onNav?.('lesson-workspace', target)}

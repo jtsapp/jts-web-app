@@ -6,6 +6,7 @@ import {
   uploadMedia,
   attachMaterialAnswer,
   removeMaterialAnswer,
+  submitMaterialAssignment,
 } from '../../api.js'
 import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkFormat.js'
 import { isInteractiveMaterial, isLessonCard, isWholeCatalogLesson, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
@@ -17,11 +18,17 @@ const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 /**
  * Задание с живого урока, открытое в «Домашней работе».
  *
- * Кнопки «Отправить на проверку» здесь нет: у назначенного материала нет
- * статусной машины домашки — ни сдачи, ни возврата на доработку. Интерактив
- * шлёт ответы сам через bridge-скрипт, а балл ставит преподаватель в админке.
+ * Цикл тот же, что у обычной домашки, и считает его СЕРВЕР: ASSIGNED → SUBMITTED →
+ * (IN_REVIEW) → COMPLETED, а с доработкой — обратно в NEEDS_REVISION и снова на сдачу.
+ * Ответы по заданиям уходят сами, мостом из рамки урока; «Сдать» — это отдельное слово
+ * ученика «я закончил», без него работа висела бы заданной навсегда.
  *
- * А вот ВЛОЖЕНИЕ есть, и только у выданной карточки урока (needsAnswerFile):
+ * <p>Возвращённая работа открывается там же, где ученик её бросил: ответы прошлой
+ * попытки не стираются, он видит свои ошибки и правит их (прежний счёт у преподавателя
+ * лежит снимком попытки). «Сдана» и «взята в проверку» для ученика — одно и то же
+ * «работа у преподавателя»: делать ему нечего, и разделять их незачем.
+ *
+ * А ВЛОЖЕНИЕ есть только у выданной карточки урока (needsAnswerFile):
  * закрыть её иначе нечем — проверяемых заданий в теории нет, сессии она не
  * заводит, и со сроком по умолчанию такая работа краснела бы просроченной
  * навсегда. Приложенный файл и есть «я сделал».
@@ -32,6 +39,12 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
   const a = card.assignment
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Адрес встроенной рамки — null, пока ученик не открыл задание. Держим именно
+  // адрес, а не флаг: у материала с проверкой в него входит id стартованной
+  // сессии, и пересобрать его из пропсов потом нечем. При выборе другой выдачи
+  // состояние не сбрасывается здесь — экран монтирует компонент с key по её id
+  // (см. HomeworkPage.jsx), и рамка уходит вместе с прежней карточкой.
+  const [frameSrc, setFrameSrc] = useState(null)
 
   const stateKey = homeworkStateKey(card)
   const due = card.dueDate
@@ -67,22 +80,32 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
     // Урок каталога целиком — туда же, с начала урока. Файлом он открывался
     // мёртвым: скрипта заданий в файле курса нет, и ученик слышал запись, но
     // не мог нажать ни одного варианта (см. isWholeCatalogLesson).
+    //
+    // Проверка стоит ВЫШЕ интерактива намеренно: у обоих путей приметы похожи
+    // (ссылка на файл каталога), но урок целиком ученику нужен разобранным на
+    // шаги, а выданный из него блок — самим файлом с мостом и автоуказкой.
+    // Разводит их сам isWholeCatalogLesson: адресная выдача — не «целиком».
     if (wholeLesson && lessonId != null) {
       onOpenCard?.({ catalogLessonId: lessonId, cardId: null })
       return
     }
-    // Обычный файл (PDF/видео/ссылка) открывается как есть. Интерактив идёт
-    // через render-эндпоинт: там в страницу внедряется bridge-скрипт, а для
-    // материала с проверкой сначала стартует сессия — иначе ответы ученика
-    // не дойдут до преподавателя. Повторный старт возвращает ту же сессию.
+    // Обычный файл (PDF/видео/ссылка) открывается как есть: встроить чужую
+    // ссылку нельзя — X-Frame-Options чужого сайта отдаст пустую рамку.
     if (!isInteractiveMaterial(a)) {
       if (a.fileUrl) window.open(a.fileUrl, '_blank', 'noopener')
       return
     }
+    // Интерактив — ПРЯМО ЗДЕСЬ, рамкой на этой же странице, а не новой вкладкой:
+    // домашнюю работу ученик должен делать в своём кабинете. Render-эндпоинт под
+    // это и сделан (см. его javadoc: «for display inside an iframe», и токен там
+    // принимается запросом именно потому, что обычный GET рамки заголовков не
+    // несёт), а мост внутри уже умеет и сохранять ответы, и показывать выданный
+    // блок. Для материала с проверкой сначала стартует сессия — иначе ответы не
+    // дойдут до преподавателя; повторный старт возвращает ту же.
     setBusy(true)
     try {
       const session = a.isGraded ? await startMaterialAssignment(token, a.id) : null
-      window.open(materialAssignmentRenderUrl(a.materialId, a.id, token, session?.id), '_blank', 'noopener')
+      setFrameSrc(materialAssignmentRenderUrl(a.materialId, a.id, token, session?.id))
     } catch {
       setError(t('homework.openFailed'))
     } finally {
@@ -123,6 +146,28 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
     }
   }
 
+  /**
+   * «Сдать работу» — ученик говорит, что закончил.
+   *
+   * <p>Можно ли сдавать (решено ли хоть что-то из заданного), решает сервер: здесь
+   * нельзя даже узнать, какие задания ему выдали и что он в них натыкал — ответы
+   * живут в рамке урока, а не на этом экране.
+   */
+  const submit = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      onSaved?.(await submitMaterialAssignment(token, a.id))
+    } catch (e) {
+      // 400 у этой ручки один: сдавать нечего. Текст сюда не доезжает (authPost
+      // тело отказа не разбирает), поэтому подписываем по коду — решает по-прежнему
+      // сервер, здесь только перевод его «нет» на человеческий.
+      setError(t(e?.status === 400 ? 'homework.submitNothingDone' : 'homework.submitWorkFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const removeFile = async (file) => {
     setError(null)
     setBusy(true)
@@ -148,9 +193,35 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.task')}</h3>
-        <button type="button" className="hw-submit" disabled={busy || lookingUp} onClick={open}>
-          {t('homework.open')}
-        </button>
+        {/* Что именно задали. Без этой строки на экране одна кнопка: заголовок —
+            название материала ЦЕЛИКОМ, а задают из него обычно один блок или одну
+            стадию, и ученику неоткуда узнать какой, пока он не откроет и не
+            пролистает урок. Ту же строку видит преподаватель в форме оценки. */}
+        {a.stageTitlesSnapshot && <p className="hw-assigned">{a.stageTitlesSnapshot}</p>}
+        {frameSrc ? (
+          <div className="hw-frame">
+            {/* allow="autoplay" — по той же причине, что и у рамки живого урока:
+                разрешение выдаётся документу, а материал живёт в своём iframe;
+                у заданий на слух без этого молчала бы запись. */}
+            <iframe
+              src={frameSrc}
+              title={card.title}
+              className="hw-frame__iframe"
+              allow="autoplay"
+            />
+            {/* Урок — страница со своими стадиями, и в колонке кабинета ему тесно.
+                Кому нужно во всю ширину — прежний путь никуда не делся. */}
+            <a className="hw-frame__full" href={frameSrc} target="_blank" rel="noopener noreferrer">
+              {t('homework.openFullScreen')}
+            </a>
+          </div>
+        ) : (
+          // lookingUp — пока ищем урок каталога по ссылке (см. эффект выше):
+          // нажатие до ответа увело бы ученика открывать файл, а не урок.
+          <button type="button" className="hw-submit" disabled={busy || lookingUp} onClick={open}>
+            {busy ? t('homework.opening') : t('homework.open')}
+          </button>
+        )}
         {error && <p className="hw__error">{error}</p>}
       </section>
 
@@ -186,7 +257,39 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
         </section>
       )}
 
-      {(card.grade != null || a.teacherFeedback) && (
+      {/* Работу вернули: что именно исправить — первое, что ученик должен увидеть,
+          поэтому отдельной рамкой и ВЫШЕ кнопки, а не в общем «Отзыве» внизу, где
+          она читается как оценка уже закрытой работы. */}
+      {a.status === 'NEEDS_REVISION' && (
+        <section className="hw-block hw-returned">
+          <h3 className="hw-block__title">{t('homework.returnedTitle')}</h3>
+          {a.teacherFeedback && <p className="hw-comment">{a.teacherFeedback}</p>}
+          <p className="hw__hint">{t('homework.returnedHint')}</p>
+        </section>
+      )}
+
+      {/* Сдача. Показываем, пока работа у ученика: и в первый раз, и после
+          возврата — иначе доработка ни к чему не ведёт. У преподавателя
+          (сдана / взята в проверку) и у проверенной сдавать нечего. */}
+      {(a.status === 'ASSIGNED' || a.status === 'NEEDS_REVISION') && (
+        <section className="hw-block">
+          <button type="button" className="hw-submit" disabled={busy} onClick={submit}>
+            {busy ? t('homework.submitting')
+              : t(a.status === 'NEEDS_REVISION' ? 'homework.resubmitWork' : 'homework.submitWork')}
+          </button>
+          <p className="hw__hint">{t('homework.submitHint')}</p>
+        </section>
+      )}
+      {/* Взята в проверку — для ученика то же самое «работа у преподавателя»:
+          делать ему нечего, и разделять эти два состояния незачем. */}
+      {(a.status === 'SUBMITTED' || a.status === 'IN_REVIEW') && (
+        <p className="hw__hint">{t('homework.submittedWaiting')}</p>
+      )}
+
+      {/* Отзыв проверенной работы. Возвращённую сюда НЕ пускаем: её комментарий —
+          это «что исправить», он уже стоит рамкой выше, и вторым разом внизу
+          читался бы как оценка закрытой работы. */}
+      {a.status !== 'NEEDS_REVISION' && (card.grade != null || a.teacherFeedback) && (
         <section className="hw-block hw-block--review">
           <h3 className="hw-block__title">{t(card.grade != null ? 'homework.review' : 'homework.feedback')}</h3>
           {card.grade != null && (

@@ -45,10 +45,16 @@ const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || '')
   .trim()
   .replace(/\/+$/, '')
 
-// Ключи UI → id персон в agent.py. У Джарвиса имя совпадает, и строка тут
-// формально лишняя (ниже стоит `|| p.tutor`), но без неё таблица врёт: она
+// Ключи UI → id персон в agent.py. У Джарвиса и Айзере имя совпадает, и строки
+// тут формально лишние (ниже стоит `|| p.tutor`), но без них таблица врёт: она
 // читается как полный список тьюторов, которых знает агент.
-const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype', jarvis: 'jarvis' }
+const TUTOR_KEY_TO_PERSONA = {
+  dexter: 'bro',
+  luna: 'gentle',
+  spark: 'hype',
+  jarvis: 'jarvis',
+  aizere: 'aizere',
+}
 
 const MAX_LEN = 120
 function trimStr(s, max = MAX_LEN) {

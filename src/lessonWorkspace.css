@@ -3877,7 +3877,29 @@ button.lw-tap-pop__save.is-on:disabled {
   .lw-dict__row { grid-template-columns: minmax(0, 1fr); }
 }
 
-.lw-dict__word { font-weight: 700; color: #15131a; overflow-wrap: break-word; }
+.lw-dict__word {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #15131a;
+  overflow-wrap: break-word;
+}
+.lw-dict__speak {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(122, 77, 255, .14);
+  color: #7a4dff;
+  cursor: pointer;
+}
+.lw-dict__speak:hover { background: rgba(122, 77, 255, .24); }
 .lw-dict__tr { color: #898787; overflow-wrap: break-word; }
 
 /* Перевод вместо «ничего не найдено»: отличаем от карточек школьного банка
@@ -4604,6 +4626,12 @@ button.lw-tap-pop__save.is-on:disabled {
 .lv .lw-dict__fallback {
   background: rgba(122, 77, 255, .16);
 }
+
+.lv .lw-dict__speak {
+  background: rgba(167, 139, 250, .18);
+  color: #d7c8ff;
+}
+.lv .lw-dict__speak:hover { background: rgba(167, 139, 250, .32); }
 
 .lv .lw-dict__fallback .lw-dict__word {
   color: #fff;
