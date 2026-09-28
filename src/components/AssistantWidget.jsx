@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { OPEN_EVENT, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
+import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 
 // Помощник по сайту: плавающая кнопка и окно чата поверх любого экрана
@@ -95,6 +96,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
 
   useEffect(() => {
     setAssistantAvailable(enabled)
+    if (enabled) installErrorLog()
   }, [enabled])
 
   useEffect(() => () => setAssistantAvailable(false), [])
@@ -131,6 +133,10 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         messages: toSend,
         screen: { id: cur.screen || null, text: snapshotScreen(root) },
         lang: cur.lang,
+        errors: recentErrors(),
+        pageUrl: typeof location !== 'undefined' ? location.href : '',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        bugReported: history.some((m) => m.reported),
         signal: controller.signal,
         onDelta: (chunk) =>
           setMessages((prev) => {
@@ -145,6 +151,13 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
           const next = prev.slice()
           next[next.length - 2] = { ...next[next.length - 2], offtopic: true }
           next[next.length - 1] = { ...next[next.length - 1], offtopic: true }
+          return next
+        })
+      }
+      if (reply.reported) {
+        setMessages((prev) => {
+          const next = prev.slice()
+          next[next.length - 1] = { ...next[next.length - 1], reported: true }
           return next
         })
       }
@@ -206,10 +219,11 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   }
 
   const suggestions = [
-    t('assistant.suggest.plan'),
-    t('assistant.suggest.whyWrong'),
-    t('assistant.suggest.rule'),
-    t('assistant.suggest.page'),
+    { text: t('assistant.suggest.plan') },
+    { text: t('assistant.suggest.whyWrong') },
+    { text: t('assistant.suggest.rule') },
+    { text: t('assistant.suggest.page') },
+    { text: t('assistant.suggest.bug'), bug: true },
   ]
   const last = messages[messages.length - 1]
   const waitingFirstChunk = busy && last?.role === 'assistant' && !last.content
@@ -249,8 +263,13 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                 </div>
                 <div className="asst__chips">
                   {suggestions.map((s) => (
-                    <button key={s} type="button" className="asst__chip" onClick={() => send(s)}>
-                      {s}
+                    <button
+                      key={s.text}
+                      type="button"
+                      className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
+                      onClick={() => send(s.text)}
+                    >
+                      {s.text}
                     </button>
                   ))}
                 </div>
@@ -260,6 +279,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
               m.role === 'assistant' && !m.content ? null : (
                 <div key={i} className={`asst__msg asst__msg--${m.role === 'user' ? 'me' : 'bot'}`}>
                   {m.role === 'user' ? <p>{m.content}</p> : <RichText text={m.content} />}
+                  {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
                 </div>
               ),
             )}

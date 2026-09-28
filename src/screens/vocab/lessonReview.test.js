@@ -10,6 +10,7 @@ import {
   uniqueByKey,
   meaningOf,
   fitTasks,
+  pickPracticeWords,
 } from './lessonReview.js'
 
 const words = (n) =>
@@ -241,6 +242,17 @@ describe('lesson vocab cycles', () => {
     const keys = tasks.flatMap((t) => t.wordKeys)
     expect(keys).toEqual(['work'])
     expect(tasks.some((t) => t.type === 'match')).toBe(false)
+  })
+
+  it('planCycle с одним типом не чередует форматы', () => {
+    const tasks = planCycle(words(4), 1, null, rng(), null, ['choice'])
+    expect(tasks.every((t) => t.type === 'choice')).toBe(true)
+  })
+
+  it('pickPracticeWords по умолчанию берёт только новые и режет до лимита', () => {
+    const picked = pickPracticeWords(words(8), { pool: 'new', limit: 3, learned: new Set(['w1', 'w2', 'w3']), rng: rng() })
+    expect(picked).toHaveLength(3)
+    expect(picked.every((w) => !['w1', 'w2', 'w3'].includes(w.key))).toBe(true)
   })
 })
 

@@ -31,6 +31,45 @@ export function parseAudioClip(src) {
 }
 
 /**
+ * Задание слушать НЕСКОЛЬКИХ говорящих, а не один отрывок.
+ *
+ * Конвертер иногда кладёт на верхний плеер границы первой кнопки — тогда
+ * bindAudioClips обрывает запись после первого спикера, хотя в задании
+ * «Listen to the three speakers». По тексту карточки отличаем этот случай от
+ * обычного «послушай этот кусок дорожки».
+ */
+export function isMultiSpeakerListenText(text) {
+  const s = String(text || '')
+  if (/\b(?:two|three|four|five|six|\d+)\s+speakers?\b/i.test(s)) return true
+  if (/(?:троих|тр[её]х|двух|двоих)\s+(?:спикер|говор)/i.test(s)) return true
+  return /\bspeaker\s*1\b/i.test(s) && /\bspeaker\s*2\b/i.test(s)
+}
+
+/**
+ * Убрать конец отрывка, начало оставить: запись доигрывает до конца файла.
+ *
+ * `#t=3.5,28` → `#t=3.5`. Без конца bindAudioClips больше не останавливает.
+ */
+export function dropAudioClipEnd(src) {
+  const s = String(src ?? '')
+  const hashAt = s.indexOf('#')
+  if (hashAt < 0) return s
+  const clip = parseAudioClip(s)
+  if (!clip || clip.end === null) return s
+  const base = s.slice(0, hashAt)
+  return clip.start > 0 ? `${base}#t=${clip.start}` : base
+}
+
+const LISTEN_CARD = '.lw-practice, .csr-practice, .lw-info__item, .csr-info, .lw-card'
+
+function playsWholeMultiSpeaker(audio) {
+  if (!audio || audio.tagName !== 'AUDIO' || typeof audio.closest !== 'function') return false
+  const card = audio.closest(LISTEN_CARD)
+  if (!card || !isMultiSpeakerListenText(card.textContent)) return false
+  return card.querySelector('audio') === audio
+}
+
+/**
  * Держать воспроизведение в границах отрывка.
  *
  * Слушатели вешаются в фазе перехвата на общий контейнер: медиа-события не
@@ -49,6 +88,7 @@ export function bindAudioClips(root) {
 
   const onTimeUpdate = (event) => {
     const audio = event.target
+    if (playsWholeMultiSpeaker(audio)) return
     const clip = clipOf(audio)
     if (!clip || clip.end === null) return
     if (audio.currentTime >= clip.end) {
@@ -61,6 +101,7 @@ export function bindAudioClips(root) {
 
   const onPlay = (event) => {
     const audio = event.target
+    if (playsWholeMultiSpeaker(audio)) return
     const clip = clipOf(audio)
     if (!clip || clip.end === null) return
     // Нажали «играть», стоя вне отрывка — начинаем с его начала: играть чужой

@@ -135,4 +135,12 @@ describe('PracticeBlock — банк слов кладётся в пропуск
 
     expect(onAnswer).not.toHaveBeenCalled()
   })
+
+  it('слово из пропуска гасит чип в банке — иначе «сөздер қалып кеткен»', () => {
+    const { container } = renderBlock({ answers: { g1: 'communication' } })
+    const used = [...container.querySelectorAll('.bw')].find((e) => e.textContent.trim() === 'communication')
+    const free = [...container.querySelectorAll('.bw')].find((e) => e.textContent.trim() === 'meet')
+    expect(used?.classList.contains('used')).toBe(true)
+    expect(free?.classList.contains('used')).toBe(false)
+  })
 })

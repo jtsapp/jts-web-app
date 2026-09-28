@@ -47,7 +47,7 @@ describe('nextLevel', () => {
 })
 
 describe('levelSummary', () => {
-  it('уровень карточки — серверный, и A0 остаётся A0', () => {
+  it('уровень карточки — из профиля, A0 остаётся A0', () => {
     const s = levelSummary('A0', null, { level: 'A0', next: 'A1', percent: 20, done: 10, total: 50, remaining: 40 })
     expect(s.level).toBe('A0')
     expect(s.next).toBe('A1')
@@ -99,12 +99,22 @@ describe('levelSummary', () => {
     expect(levelSummary('C2', null).next).toBe(null)
   })
 
-  it('купленный курс выше своего ведёт карточку целиком', () => {
-    // Ученик A1 купил A2 — проходит он A2. Считать полосу по A2, а подписывать
-    // карточку «A1» нельзя: вышло бы «ВАШ УРОВЕНЬ A1» с дорожкой до B1.
+  it('профиль важнее курса: админ поставил A2 после теста A1 — на карточке A2', () => {
+    const s = levelSummary('A2', null, { level: 'A1', next: 'A2', percent: 10, done: 1, total: 10, remaining: 9 })
+    expect(s.level).toBe('A2')
+    expect(s.next).toBe('A2')
+  })
+
+  it('пустой профиль — берём уровень теста/прогресса, а не молчим A1 зря', () => {
+    const s = levelSummary(null, null, { level: 'A2', next: 'B1', percent: 5, done: 1, total: 20, remaining: 19 })
+    expect(s.level).toBe('A2')
+  })
+
+  it('купленный курс выше своего не переписывает CEFR на карточке', () => {
+    // Ученик A1 купил A2 — полоса и цель считаются по курсу, подпись — профиль.
     const s = levelSummary('A1', null, { level: 'A2', next: 'B1', percent: 20, done: 4, total: 20, remaining: 16 })
 
-    expect(s.level).toBe('A2')
+    expect(s.level).toBe('A1')
     expect(s.next).toBe('B1')
   })
 

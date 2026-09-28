@@ -1,4 +1,3 @@
-import { engineOf } from './lessonExtractor.js'
 import { getCourseCatalog } from '../../api.js'
 
 // Материал раздела ссылается на файл урока каталога, а не на сам урок: раздел
@@ -26,14 +25,16 @@ export function isStandaloneLessonUrl(url) {
 }
 
 /**
- * Искать ли материал в каталоге, чтобы открыть его шагами. Одна точка решения
- * «шаги или файл» на стороне ученика: решает движок ЗАНЯТИЯ (engineOf) — STEPS
- * ищет разбор, как на проде до выката, FILE открывает файл во фрейме;
- * standalone-файл в каталоге не ищется никогда — его там нет по определению, а
- * поход за деревом задерживал бы показ на старте занятия.
+ * Искать ли материал в каталоге, чтобы открыть его шагами.
+ *
+ * Раньше решал движок занятия: FILE сразу шёл во фрейм. Преподаватель с 23.09
+ * ищет разбор всегда — на FILE по умолчанию ставят обычный урок каталога, и
+ * без разбора ученик видел сырой файл и одну «Section 1», а преподаватель —
+ * темы. Стороны обязаны открывать одно и то же. Нашёлся урок или нет, решает
+ * {@link catalogLessonIdFor}; standalone в каталоге не ищем никогда.
  */
-export function shouldResolveCatalogLesson(url, lesson) {
-  return Boolean(url) && engineOf(lesson) === 'STEPS' && !isStandaloneLessonUrl(url)
+export function shouldResolveCatalogLesson(url, _lesson) {
+  return Boolean(url) && !isStandaloneLessonUrl(url)
 }
 
 /** Ссылка без якоря. */
@@ -76,21 +77,52 @@ function flatten(levels) {
 }
 
 /**
+ * Индекс урока каталога (L05 → 5) — тот же разбор, что у бэкенда
+ * (`LessonSectionService.parseCatalogLessonIndex`). Нужен, когда один HTML
+ * держит весь уровень: без номера рамка открывает последний урок из
+ * самоподготовки («сегодняшний») вместо того, что вели 21-го.
+ */
+export function matchesCatalogLessonIndex(lesson, focusLessonNo) {
+  const n = Number(focusLessonNo)
+  if (!Number.isInteger(n) || n < 1) return false
+  const re = new RegExp(`(?:^|[/._-]|\\b)L0*${n}(?:\\b|\\.|$)`, 'i')
+  return re.test(String(lesson?.code || '')) || re.test(String(lesson?.fileUrl || ''))
+}
+
+function pickByFocus(list, focusLessonNo) {
+  if (focusLessonNo == null || !list.length) return null
+  return list.find((l) => matchesCatalogLessonIndex(l, focusLessonNo)) || null
+}
+
+/**
  * id урока каталога по ссылке на его файл, или null — если такого урока в
  * каталоге нет (материал загружен преподавателем сам, а не выбран из каталога).
+ *
+ * @param {number|null|undefined} focusLessonNo указка занятия (L05 → 5). Когда
+ *   один файл — весь уровень, без неё берётся первый совпавший урок.
  */
-export function findCatalogLessonId(levels, fileUrl) {
+export function findCatalogLessonId(levels, fileUrl, focusLessonNo) {
   const target = normalize(fileUrl)
   if (!target) return null
 
   const lessons = flatten(levels)
   const exact = lessons.find((l) => normalize(l.fileUrl) === target)
-  if (exact) return exact.id
 
   const want = catalogFileKey(target)
-  if (!want.path) return null
+  const sameFile = want.path
+    ? lessons.filter((l) => catalogFileKey(l.fileUrl).path === want.path)
+    : []
 
-  const sameFile = lessons.filter((l) => catalogFileKey(l.fileUrl).path === want.path)
+  // Общий файл уровня: номер занятия важнее «первого совпадения по пути».
+  if (sameFile.length > 1) {
+    const pool = want.mode
+      ? sameFile.filter((l) => catalogFileKey(l.fileUrl).mode === want.mode)
+      : sameFile
+    const focused = pickByFocus(pool.length ? pool : sameFile, focusLessonNo)
+    if (focused) return focused.id
+  }
+
+  if (exact) return exact.id
   if (!sameFile.length) return null
 
   if (want.mode) {
@@ -103,11 +135,11 @@ export function findCatalogLessonId(levels, fileUrl) {
 }
 
 /** То же, но с походом за каталогом. Каталог кэшируется на уровне api.js. */
-export async function catalogLessonIdFor(fileUrl, token) {
+export async function catalogLessonIdFor(fileUrl, token, focusLessonNo) {
   if (!fileUrl || !token) return null
   try {
     const levels = await getCourseCatalog(token)
-    return findCatalogLessonId(levels, fileUrl)
+    return findCatalogLessonId(levels, fileUrl, focusLessonNo)
   } catch {
     return null
   }

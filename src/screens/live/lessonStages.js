@@ -63,3 +63,14 @@ export function parseStageMessage(data) {
 export function gotoStageMessage(index) {
   return { source: WORKSPACE_SOURCE, type: 'goto-stage', index }
 }
+
+/**
+ * Просьба рамке открыть конкретный урок файла (L05 → index 5).
+ * Тот же кадр, что шлёт web-admin после загрузки iframe: без него файл
+ * вспоминает последний урок самоподготовки — «сегодняшний» вместо 21-го.
+ */
+export const GOTO_LESSON_MS = 600
+
+export function gotoLessonMessage(index, review = false) {
+  return { source: WORKSPACE_SOURCE, type: 'goto-lesson', index, review: Boolean(review) }
+}

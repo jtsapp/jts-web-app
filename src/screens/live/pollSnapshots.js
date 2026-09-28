@@ -12,8 +12,8 @@ export function sameLessonSnapshot(prev, next) {
   if (!prev || !next) return false
   if (prev.id !== next.id) return false
   if (prev.status !== next.status) return false
-  // Движок занятия не меняется после создания, но снимок обязан его нести —
-  // от него зависит решение «шаги или файл» (shouldResolveCatalogLesson).
+  // Движок занятия не меняется после создания, но снимок обязан его нести:
+  // эффект разбора на странице всё ещё слушает lesson.engine.
   if ((prev.engine || null) !== (next.engine || null)) return false
   if ((prev.meetingUrl || null) !== (next.meetingUrl || null)) return false
   if (prev.teacherId !== next.teacherId) return false

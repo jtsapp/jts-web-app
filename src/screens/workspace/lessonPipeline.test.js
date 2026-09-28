@@ -107,7 +107,7 @@ export const ОЖИДАЕМОЕ = {
   // Блок с дорожкой лидом шага больше не уходит: подзаголовок — строка, запись
   // в неё не помещается, и раньше она пропадала вместе с блоком.
   "audio с относительным src": ["s1/info:c26f6a316"],
-  "select в info": ["talk/info:cda9178b3", "talk/practice:ca6b5ff31"],  // select поднялся в отдельную практику
+  "select в info": ["talk/info:cda9178b3", "talk/practice:c5c3ee8b8"],  // select поднялся в практику; пропуск в prompt — `___`
   // Хвостовой шаг по-прежнему склеивается с первым, но принесённая им карточка
   // с записью теперь остаётся блоком, а не растворяется в подзаголовке.
   "хвостовой шаг Audio": ["s2/info:ca31f1f15"],
@@ -140,5 +140,30 @@ describe('Конвейер сам по себе', () => {
 
   it('урок без шагов проходит насквозь', () => {
     expect(applyLessonHoists({ steps: [] }, BASE).steps).toEqual([])
+  })
+
+  it('Listen to three speakers — верхний плеер без конца первого отрывка', () => {
+    const урок = applyLessonHoists(
+      {
+        steps: [
+          {
+            id: 's-homes',
+            title: 'Listening',
+            blocks: [
+              {
+                type: 'practice',
+                instruction: 'Listen to the three speakers. What does each one miss from home?',
+                audio: { src: 'audio/Track_2.6.mp3#t=3.5,28.2' },
+                questions: [],
+              },
+            ],
+          },
+        ],
+      },
+      BASE,
+    )
+    const src = урок.steps[0].blocks[0].audio?.src || ''
+    expect(src).toContain('Track_2.6.mp3#t=3.5')
+    expect(src).not.toContain(',28.2')
   })
 })

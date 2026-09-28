@@ -47,8 +47,8 @@ function findAudioTargetStepIndex(steps) {
  *
  * Дамп приходит подписанным именем файла (`<b>Track_1.3.mp3</b>`), а задание,
  * ради которого дорожка записана, почти всегда называет её номер в тексте
- * («Listen to Track 1.3»). По этому номеру и ставим плеер сразу после нужного
- * блока. Это и есть жалоба «в некоторых заданиях аудио не там, где само
+ * («Listen to Track 1.3»). По этому номеру и ставим плеер сразу перед нужным
+ * блоком. Это и есть жалоба «в некоторых заданиях аудио не там, где само
  * упражнение»: раньше все дорожки шага складывались под последний блок, и до
  * своего задания ученик доскроллить их не мог.
  *
@@ -60,7 +60,7 @@ function placeAudioBlocks(target, audioBlocks) {
   for (const audio of audioBlocks) {
     const at = findReferenceBlockIndex(blocks, trackNeedles(audio))
     if (at < 0) blocks.push(audio)
-    else blocks.splice(at + 1, 0, audio)
+    else blocks.splice(at, 0, audio)
   }
   return { ...target, blocks }
 }
@@ -80,7 +80,7 @@ function findReferenceBlockIndex(blocks, needles) {
     if (!text) continue
     // Уже поставленный плеер той же дорожки не считаем ссылкой на неё — иначе
     // вторая дорожка прицепилась бы к первой.
-    if (/<audio/i.test(blocks[i].html || '')) continue
+    if (/<audio\b/i.test(blocks[i].html || '')) continue
     if (needles.some((n) => text.includes(n))) return i
   }
   return -1
