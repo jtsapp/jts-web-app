@@ -9,6 +9,7 @@ import { render, act, fireEvent, screen } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import * as api from '../api.js'
 import { LOAD_SETTLE_MS } from './live/SectionMaterialFrame.jsx'
+import { GOTO_LESSON_MS } from './live/lessonStages.js'
 
 const NOW = 1790000000000
 let socketHandlers = {}
@@ -946,6 +947,32 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(post).toHaveBeenCalledWith(...gotoStage(2))
     await frameStage(2)
 
+    expect(sendStage).toHaveBeenCalledWith(11, 2)
+  })
+
+  // Файл уровня открывает урок занятия (focusLessonNo) goto-lesson'ом после
+  // загрузки. Переход, выбранный раньше, должен уйти уже в этот урок, и классу —
+  // его стадия, а не отчёт урока по умолчанию.
+  it('переход из «Тем» до урока занятия уходит после него, классу — его стадия', async () => {
+    sections = [{ ...SECTIONS[0], materials: [{ ...SECTIONS[0].materials[0], focusLessonNo: 5 }] }, SECTIONS[1]]
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11))
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] } }))
+    })
+    const iframe = frameOf(container)
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
+    await frameStage(0)
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    expect(post).not.toHaveBeenCalledWith(...gotoStage(2))
+
+    await act(async () => { vi.advanceTimersByTime(GOTO_LESSON_MS + LOAD_SETTLE_MS) })
+    expect(post).toHaveBeenLastCalledWith(...gotoStage(2))
+    await frameStage(2)
+
+    expect(sendStage).toHaveBeenCalledTimes(1)
     expect(sendStage).toHaveBeenCalledWith(11, 2)
   })
 

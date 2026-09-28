@@ -474,5 +474,80 @@ describe('SectionMaterialFrame — урок файла открывается п
     const types = post.mock.calls.map(([m]) => m.type)
     expect(types).toEqual(['goto-lesson', 'present', 'goto-stage'])
   })
+
+  const LESSON_MATERIAL = { ...MATERIAL, focusLessonNo: 5 }
+  const load = (iframe) => act(async () => { iframe.dispatchEvent(new Event('load')) })
+  const wait = (ms) => act(async () => { vi.advanceTimersByTime(ms) })
+  const types = (post) => post.mock.calls.map(([m]) => m.type)
+
+  // Живой показ или ответ на «догоните», пришедший в загруженную рамку до
+  // goto-lesson, достался бы уроку по умолчанию.
+  it('показ, пришедший после загрузки, но до урока занятия, ждёт его', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame({ material: LESSON_MATERIAL, follow: true })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+
+    await load(iframe)
+    await wait(100)
+    act(() => { ref.current.replay(events) })
+    expect(post).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+
+    await wait(GOTO_LESSON_MS + LOAD_SETTLE_MS)
+    expect(types(post)).toEqual(['goto-lesson', 'present'])
+  })
+
+  // Отчёт о стадии урока по умолчанию — ещё не готовность: свой переход ушёл
+  // бы не в тот урок, а признак «своё» отдал бы классу чужую стадию.
+  it('свой переход, выбранный до урока занятия, уходит после него и считается своим', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { ref, iframe } = renderFrame({ material: LESSON_MATERIAL, isStaff: true, reviewStudentId: 7, onStage })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => { ref.current.gotoStage(4) })
+
+    await message({ source: 'jts-lesson', type: 'stage', index: 0, total: 7 })
+    await load(iframe)
+    expect(types(post)).toEqual([])
+
+    await wait(GOTO_LESSON_MS + LOAD_SETTLE_MS)
+    expect(types(post)).toEqual(['goto-lesson', 'goto-stage'])
+    expect(post).toHaveBeenLastCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
+    await message({ source: 'jts-lesson', type: 'stage', index: 4, total: 7 })
+
+    expect(onStage.mock.calls.map(([, { own }]) => own)).toEqual([false, true])
+  })
+
+  it('доводка и запрос снимка ждут урока занятия', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame({ material: LESSON_MATERIAL, isStaff: true, presenting: true, reviewStudentId: 7 })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await load(iframe)
+    await wait(LOAD_SETTLE_MS)
+
+    act(() => {
+      ref.current.restoreStage(3)
+      ref.current.requestSnapshot()
+    })
+    expect(types(post)).toEqual([])
+
+    await wait(GOTO_LESSON_MS)
+    expect(types(post)).toEqual(['goto-lesson', 'goto-stage', 'request-snapshot'])
+  })
+
+  // Таймер goto-lesson прошлой страницы, сработав после смены документа, открыл
+  // бы урок в ещё не загруженной новой.
+  it('goto-lesson прошлой страницы в новую не уходит', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender } = renderFrame({ material: LESSON_MATERIAL, follow: true })
+    await load(container.querySelector('iframe'))
+
+    rerender(frame({ ref, material: LESSON_MATERIAL, follow: true, reloadToken: 1 }))
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
+    await wait(GOTO_LESSON_MS)
+
+    expect(types(post)).toEqual([])
+  })
 })
 

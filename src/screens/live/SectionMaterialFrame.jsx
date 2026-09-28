@@ -105,6 +105,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // важнее: если ждут оба, уходит он, а доводка отменяется.
   const pendingRestoreRef = useRef(null)
   const settleTimerRef = useRef(null)
+  const lessonTimerRef = useRef(null)
+  // Номер урока занятия (focusLessonNo): файл уровня открывает его goto-lesson'ом
+  // после загрузки и переписывает разметку. Пока документ такого материала не
+  // осел (осадка — после goto-lesson), на экране урок по умолчанию: показ ему не
+  // отдаётся, а его отчёт о стадии — не готовность для своего перехода. Ref, а
+  // не пропс: методы рамки и слушатель сообщений живут дольше рендера.
+  const lessonNoRef = useRef(null)
   // Какой документ открыт в рамке. Адрес зависит не только от материала и
   // перезагрузки: у ученика — от страницы следования, у преподавателя — от
   // ученика, чей экран он смотрит (studentId в адресе). Сменилось любое из них —
@@ -120,6 +127,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     !isStaff && follow ? 'follow' : 'own',
     isStaff ? (reviewStudentId ?? '') : '',
   ].join(':')
+
+  // Стоит ДО сброса ниже: новый документ сразу знает, ждёт ли он урока занятия.
+  useLayoutEffect(() => {
+    lessonNoRef.current = material?.focusLessonNo ?? null
+  }, [material?.focusLessonNo])
 
   useLayoutEffect(() => {
     loadedRef.current = false
@@ -141,8 +153,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // баг, который чинит этот ref, просто с другим триггером потери.
     //
     // Осадка прошлой страницы, сработав после смены, отметила бы новую
-    // осевшей до её загрузки.
-    return () => clearTimeout(settleTimerRef.current)
+    // осевшей до её загрузки, а её goto-lesson открыл бы урок в незагруженной.
+    return () => {
+      clearTimeout(settleTimerRef.current)
+      clearTimeout(lessonTimerRef.current)
+    }
   }, [documentKey])
 
   // Стоит ПОСЛЕ сброса выше: сменились и стадия, и рамка в одном рендере —
@@ -155,7 +170,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   useImperativeHandle(ref, () => ({
     replay(events) {
       if (!events?.length) return
-      if (loadedRef.current) {
+      if (loadedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         post({ type: 'present', events })
       } else {
         pendingRef.current.push(...events)
@@ -174,7 +189,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // dropped events aren't queued: a mirror event describes the student's CURRENT
     // position, and applying a stale one after a reload would be wrong, not late.
     mirror(event) {
-      if (!loadedRef.current) return
+      if (!loadedRef.current || (lessonNoRef.current != null && !settledRef.current)) return
       post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
     },
     // Переход на стадию файлового урока — свой, из «Тем»: признак «моя
@@ -183,7 +198,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // бы, а признак засчитал бы своей стадию открытия страницы, — переход ждёт
     // первой стадии и уходит тогда всегда, без сверки с ней.
     gotoStage(index) {
-      if (stageReportedRef.current) {
+      if (stageReportedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         sendGoto(index, true)
       } else {
         pendingOwnGotoRef.current = index
@@ -269,9 +284,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   function handleLoad() {
     loadedRef.current = true
-    const lessonNo = material?.focusLessonNo
+    const lessonNo = lessonNoRef.current
+    clearTimeout(lessonTimerRef.current)
     if (lessonNo != null) {
-      setTimeout(() => {
+      lessonTimerRef.current = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage(gotoLessonMessage(lessonNo), '*')
       }, GOTO_LESSON_MS)
     }
@@ -298,6 +314,14 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       const pendingRestore = pendingRestoreRef.current
       pendingRestoreRef.current = null
       if (pendingRestore != null && pendingOwnGotoRef.current == null) sendGoto(pendingRestore, false)
+      // Урок занятия открыт — рамка готова для своего перехода, даже если урок
+      // не сообщил стадию. Ждавший переход уходит всегда, без сверки.
+      if (lessonNo != null) {
+        stageReportedRef.current = true
+        const pendingOwnGoto = pendingOwnGotoRef.current
+        pendingOwnGotoRef.current = null
+        if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
+      }
       if (snapshotRequestedRef.current) {
         snapshotRequestedRef.current = false
         post({ type: 'request-snapshot' })
@@ -321,6 +345,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         ownStageAtRef.current = null
         onStage?.(stage, { own: armedAt != null && Date.now() - armedAt <= OWN_STAGE_MS })
         stageReportedRef.current = true
+        // Отчёт урока по умолчанию до goto-lesson — ещё не готовность: переход
+        // ждёт осадки (handleLoad).
+        if (lessonNoRef.current != null && !settledRef.current) return
         const pendingOwnGoto = pendingOwnGotoRef.current
         pendingOwnGotoRef.current = null
         if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
