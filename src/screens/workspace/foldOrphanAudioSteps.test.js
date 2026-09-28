@@ -56,11 +56,11 @@ describe('foldOrphanAudioSteps — дорожка встаёт к своему �
     ])
 
     const html = steps[0].blocks.map((b) => b.html)
-    expect(html[0]).toContain('Track 1.3 and answer')
-    expect(html[1]).toContain('<audio')
-    expect(html[1]).toContain('Track_1.3.mp3')
-    expect(html[2]).toContain('Track 1.4 and compare')
-    expect(html[3]).toContain('Track_1.4.mp3')
+    expect(html[0]).toContain('<audio')
+    expect(html[0]).toContain('Track_1.3.mp3')
+    expect(html[1]).toContain('Track 1.3 and answer')
+    expect(html[2]).toContain('Track_1.4.mp3')
+    expect(html[3]).toContain('Track 1.4 and compare')
     expect(html[4]).toContain('Discuss in pairs')
   })
 
@@ -78,7 +78,8 @@ describe('foldOrphanAudioSteps — дорожка встаёт к своему �
       { id: 's-audio', order: 2, title: 'Audio', blocks: [audioBlock('Track_7_2.mp3')] },
     ])
 
-    expect(steps[0].blocks[1].html).toContain('Track_7_2.mp3')
+    expect(steps[0].blocks[0].html).toContain('Track_7_2.mp3')
+    expect(steps[0].blocks[1].html).toContain('Track 7.2 — listen.')
     expect(steps[0].blocks[2].html).toContain('Homework')
   })
 

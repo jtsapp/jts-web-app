@@ -188,4 +188,41 @@ describe('hoistSelectQuestions', () => {
     }
     expect(hoistSelectQuestions(lesson).steps[0].blocks).toEqual([])
   })
+
+  it('в предложении с двумя select оба пропуска остаются в формулировке', () => {
+    const lesson = {
+      steps: [
+        {
+          id: 'journey',
+          blocks: [
+            {
+              type: 'info',
+              html: `<div class="row">I
+                <select data-answer="was having">
+                  <option value="">—</option>
+                  <option>was having</option>
+                  <option>neither of these</option>
+                  <option>had</option>
+                </select>
+                lunch with a friend when a man
+                <select data-answer="came">
+                  <option value="">—</option>
+                  <option>came</option>
+                  <option>was coming</option>
+                  <option>neither of these</option>
+                </select>
+                over</div>`,
+            },
+          ],
+        },
+      ],
+    }
+    const questions = hoistSelectQuestions(lesson).steps[0].blocks
+      .flatMap((b) => b.questions || [])
+    expect(questions).toHaveLength(2)
+    expect(questions[0].prompt).toMatch(/I\s+___+\s+lunch/i)
+    expect(questions[0].prompt).toMatch(/man\s+___+\s+over/i)
+    expect(questions[0].answer).toBe('was having')
+    expect(questions[1].answer).toBe('came')
+  })
 })
