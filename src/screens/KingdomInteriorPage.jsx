@@ -22,6 +22,8 @@ import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
 import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
+import LevelExam from '../learning/LevelExam.jsx'
+import { EXAM_CODE, loadLevelExam } from '../learning/levelExam.js'
 import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -101,6 +103,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // сам урок берутся оттуда, а не из public/learning/<level>.json. Уровни без
   // такого каталога продолжают работать по-старому.
   const [course, setCourse] = useState(null)
+  // Финальный экзамен уровня (public/exam/<level>/exam.json) или null — у
+  // уровня без исходника экзамена (B1, C1) узла на тропе нет.
+  const [exam, setExam] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
   // Юниты общего курса, пройденные целиком, и самая дальняя точка в каталоге
   // — источник замка своего уровня. Уровень ниже CEFR ученика каталог не ждёт
@@ -153,18 +158,28 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         // Отказ списка модулей не роняет экран (тропа читается из статики), но
         // и не притворяется пустым списком — см. modulesUnavailable.
         let modsFailed = false
-        const [mods, oldTrail, courseIndex] = await Promise.all([
+        const [mods, oldTrail, courseIndex, levelExam] = await Promise.all([
           getLessonModules(authToken).catch(() => {
             modsFailed = true
             return []
           }),
           getLevelLessons(level).catch(() => []),
           getCourseIndex(level),
+          loadLevelExam(level),
         ])
         if (!alive) return
         setModulesUnavailable(modsFailed)
-        const trail = courseIndex ? courseTrail(courseIndex) : oldTrail
+        const lessonsTrail = courseIndex ? courseTrail(courseIndex) : oldTrail
+        // Экзамен — последним узлом, юнитом 0: под него в коде уже есть и
+        // подпись группы («Финальный экзамен»), и правило замка — открыт, когда
+        // пройден весь курс уровня в каталоге (lib/reviewUnlock.js).
+        // Без уроков (курс не загрузился) экзамен один на тропе не нужен —
+        // пусть экран честно скажет «пусто».
+        const trail = levelExam && lessonsTrail.length
+          ? [...lessonsTrail, { code: EXAM_CODE, kind: 'exam', unit: 0, order: lessonsTrail.length, title: '' }]
+          : lessonsTrail
         setCourse(courseIndex)
+        setExam(levelExam)
         const mod = pickLevelModule(mods, level)
         const mid = mod ? mod.id : null
         setModuleId(mid)
@@ -291,6 +306,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       if (moduleLocked) return
       const i = lessons.findIndex((l) => l.code === code)
       if (i >= 0 && !isUnlocked(i)) return
+      // Экзамен уже загружен вместе с тропой — это свой экран, не шаги плеера.
+      if (code === EXAM_CODE) {
+        if (!exam) return
+        setEnd(null)
+        setRestricted(false)
+        setOpen({ code, attempt: 0, exam })
+        return
+      }
       setBusy(true)
       setEnd(null)
       setRestricted(false)
@@ -329,7 +352,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setBusy(false)
       }
     },
-    [level, moduleLocked, lessons, isUnlocked, course, lang],
+    [level, moduleLocked, lessons, isUnlocked, course, lang, exam],
   )
 
   const retry = () => {
@@ -346,6 +369,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     // остаёмся на экране итогов, переключая на тот же "🔒 квота" вид, что и
     // при отказе бэкенда на завершении (см. onDone/ContentRestrictedError).
     if (next && !isUnlocked(i + 1)) {
+      // Экзамен заперт своим правилом (весь курс уровня в каталоге), а не
+      // квотой: «урок не засчитан, лимит» после засчитанного последнего урока
+      // было бы неправдой, а демо-ученику ещё и продавало подписку. На тропу.
+      if (next.code === EXAM_CODE) {
+        setEnd(null)
+        setOpen(null)
+        return
+      }
       setRestricted(true)
       return
     }
@@ -354,13 +385,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     else setOpen(null) // последний урок — назад на тропу
   }
 
-  const onDone = useCallback(
-    async (stats) => {
-      setEnd(stats)
+  // Засчитать узел тропы: урок, тест юнита или финальный экзамен. Отдельно от
+  // onDone, потому что экзамен рисует итоги сам — экран итогов урока (end) ему
+  // не нужен, а путь до бэкенда тот же, с теми же квотой и досылкой.
+  const saveDone = useCallback(
+    async (code, points) => {
       setRestricted(false)
-      if (stats.outcome !== 'success' || !open) return
       setSaving(true)
-      const code = open.code
       const wasDone = done.has(code)
       // У fetch нет своего таймаута: на «зависшей» мобильной сети ответ идёт и
       // минуту, и всё это время «Следующий урок» стояла бы неактивной — для
@@ -394,7 +425,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
         let next
         try {
-          next = await markDone(level, token, mid, open.code, stats.points)
+          next = await markDone(level, token, mid, code, points)
         } catch (e) {
           // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
           // исключение просто гасилось внутри markDone, урок падал в localStorage
@@ -415,15 +446,25 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           throw e
         }
         setDone(new Set(next))
-        if (mid == null && token && stats.points > 0) {
-          completeLessonModule(token, stats.points).catch(() => {})
+        if (mid == null && token && points > 0) {
+          completeLessonModule(token, points).catch(() => {})
         }
       } finally {
         clearTimeout(giveUp)
         setSaving(false)
       }
     },
-    [open, level, token, moduleId, modulesUnavailable, done],
+    [level, token, moduleId, modulesUnavailable, done],
+  )
+
+  const onDone = useCallback(
+    async (stats) => {
+      setEnd(stats)
+      setRestricted(false)
+      if (stats.outcome !== 'success' || !open) return
+      await saveDone(open.code, stats.points)
+    },
+    [open, saveDone],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
@@ -572,15 +613,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
                         const lessonLockedByCatalog = unitLockedByCatalog
                           || !isReviewLessonUnlocked(g.unit, j + 1, catalogOpts)
-                        const lockedTitle = t(lessonLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
+                        const isExam = l.kind === 'exam'
+                        // Подпись замка — по его причине: экзамен ждёт весь курс
+                        // в каталоге, остальное (квота) — общий текст.
+                        const lockedTitle = isExam && unitLockedByCatalog
+                          ? t('exam.locked')
+                          : t(lessonLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
+                        const label = isExam ? t('lesson.examUnit') : l.title || l.code
                         return (
                           <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
                             <button
                               className={cls}
                               disabled={!unlocked || busy}
                               onClick={() => openLesson(l.code)}
-                              title={!unlocked ? lockedTitle : l.title || l.code}
-                              aria-label={l.title || l.code}
+                              title={!unlocked ? lockedTitle : label}
+                              aria-label={label}
                             />
                           </li>
                         )
@@ -606,7 +653,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           {/* key — тот же, что у плеера: новый урок или новая попытка
               начинают с чистого листа, а не с экрана падения. */}
           <LessonErrorBoundary key={`${open.code}-${open.attempt}`} onExit={handleBack}>
-          {open.steps ? (
+          {open.exam ? (
+            // Итоги экзамен рисует сам (разбивка по навыкам, разбор), поэтому
+            // end здесь не ставится — только зачёт узла через saveDone.
+            <LevelExam
+              exam={open.exam}
+              level={level}
+              token={token}
+              restricted={restricted}
+              onExit={(finished) => (finished ? exitLesson() : setConfirmExit(true))}
+              onPassed={(points) => saveDone(EXAM_CODE, points)}
+            />
+          ) : open.steps ? (
             <CourseStepPlayer
               key={`${open.code}-${open.attempt}`}
               level={level}
@@ -748,7 +806,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {/* Подтверждение выхода из незаконченного урока — общий диалог всех
           уроков (раньше та же карточка была выписана здесь ещё раз). */}
       {confirmExit && (
-        <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={exitLesson} />
+        // У экзамена ответы сохраняются на устройстве — «урок не будет
+        // завершён» здесь неправда, говорим как есть.
+        <LessonExitConfirm
+          onStay={() => setConfirmExit(false)}
+          onLeave={exitLesson}
+          {...(open?.exam ? { subKey: 'exam.exitSub', leaveKey: 'exam.exitLeave' } : {})}
+        />
       )}
     </LearningLayout>
   )
