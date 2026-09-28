@@ -78,6 +78,22 @@ export function exerciseBatches(hw) {
   return [...groups.values()].sort((a, b) => String(a.addedAt || '').localeCompare(String(b.addedAt || '')))
 }
 
+/**
+ * Единая лента работы: пачки вопросов и части-материалы (`homework.materialParts`,
+ * выдачи, привязанные к этой работе — spec §5) в порядке фактической выдачи,
+ * раньше — выше (spec §5.5, Т3). Пачка сортируется по `addedAt`, часть-материал —
+ * по `createdAt`: то же правило одной строкой, что и в exerciseBatches выше,
+ * не «сначала все пачки, потом все материалы».
+ *
+ * «Практика» сюда не входит — она свой отдельный поток с самого начала
+ * (HomeworkPracticeList) и в общую ленту не встраивается.
+ */
+export function homeworkTimeline(hw) {
+  const batches = exerciseBatches(hw).map((batch) => ({ kind: 'exercises', at: batch.addedAt, key: `ex-${batch.key}`, batch }))
+  const materials = (hw?.materialParts || []).map((part) => ({ kind: 'material', at: part.createdAt, key: `mat-${part.id}`, part }))
+  return [...batches, ...materials].sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')))
+}
+
 /** Ответы, уже сохранённые на сервере, — по ним экран открывается после перезахода. */
 export function serverAnswers(hw) {
   const out = {}

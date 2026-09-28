@@ -524,7 +524,14 @@ function HomeworkCard({ t, lang, items, onNav }) {
       ) : (
         <ul className="hm-hw__list">
           {open.map((h) => {
-            const count = h.exerciseCount ?? h.exercises?.length ?? null
+            // Части-материалы (одна домашка на занятие, spec §5, §9) — тоже
+            // задания работы, просто не через exercises: без них счёт занижен
+            // ровно на то, что раньше было отдельными карточками материалов.
+            // И то, и другое у /admin/homework/my — всегда массив (пустой,
+            // если пусто); null остаётся только когда карточка синтетическая
+            // и обоих полей нет вовсе — тогда строку «N заданий» не рисуем.
+            const hasCounts = h.exercises != null || h.materialParts != null
+            const count = h.exerciseCount ?? (hasCounts ? (h.exercises?.length ?? 0) + (h.materialParts?.length ?? 0) : null)
             return (
               <li key={h.id}>
                 <button type="button" className="hm-hw__item" onClick={() => onNav?.('homework')}>

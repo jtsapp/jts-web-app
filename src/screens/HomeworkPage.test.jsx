@@ -273,6 +273,39 @@ describe('HomeworkPage', () => {
     expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
   })
 
+  // Одна домашка на занятие (spec §5, §9): выдача с homeworkAssignmentId — уже
+  // часть чьей-то домашней работы, а не отдельная карточка списка. Показать
+  // её ЕЩЁ и здесь значило бы задвоить одну и ту же выдачу на экране.
+  describe('привязанные материалы не всплывают отдельными карточками', () => {
+    const ПРИВЯЗАННЫЙ = { ...MATERIAL, id: 6, materialTitle: 'Урок 1 целиком', homeworkAssignmentId: 7 }
+
+    it('материал с homeworkAssignmentId не рисуется отдельной карточкой списка', async () => {
+      api.getMyMaterialAssignments.mockResolvedValueOnce([ПРИВЯЗАННЫЙ])
+      const { container } = renderPage()
+
+      await waitFor(() => expect(container.querySelector('.hw-card')).not.toBeNull())
+      expect(screen.queryByText('Урок 1 целиком')).toBeNull()
+      // Обычная домашка — единственная карточка на экране.
+      expect(screen.getAllByRole('button', { name: /Unit 3 · Present Perfect/ })).toHaveLength(1)
+    })
+
+    it('рядом с ним непривязанный материал по-прежнему своя карточка', async () => {
+      api.getMyMaterialAssignments.mockResolvedValueOnce([ПРИВЯЗАННЫЙ, MATERIAL])
+      renderPage()
+
+      await waitFor(() => expect(screen.getByText('Present Perfect · practice test')).toBeTruthy())
+      expect(screen.queryByText('Урок 1 целиком')).toBeNull()
+    })
+
+    // null — то же самое, что поля нет вовсе: старые выдачи до выката (spec §5.13).
+    it('homeworkAssignmentId: null читается как «не привязан» — карточка остаётся', async () => {
+      api.getMyMaterialAssignments.mockResolvedValueOnce([{ ...MATERIAL, homeworkAssignmentId: null }])
+      renderPage()
+
+      expect(await screen.findByText('Present Perfect · practice test')).toBeTruthy()
+    })
+  })
+
   // Регрессия: без токена экран навсегда оставался в стартовом 'loading' —
   // «Загрузка домашних работ…» крутилась вечно, потому что запроса не было и
   // состояние никто не менял. Так открывался диплинк ?screen=homework у гостя.
