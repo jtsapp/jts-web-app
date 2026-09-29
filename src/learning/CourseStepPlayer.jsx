@@ -32,7 +32,7 @@ import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
 // терял всё пройденное вместо того, чтобы доучить тему.
 
 const REWARD = 10
-const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
+const GRADED = new Set(['choice', 'listen', 'gap', 'order', 'multi'])
 
 // Проверяется шаг или нет. У listen ответ есть не всегда: экстрактор вынимает
 // кнопку плеера из строки урока ОТДЕЛЬНЫМ блоком, поэтому часть таких шагов —
@@ -153,6 +153,9 @@ const STAGE_KEY = {
   Практика: 'practice',
   Listening: 'listening',
   Аудирование: 'listening',
+  Reading: 'reading',
+  Чтение: 'reading',
+  Оқылым: 'reading',
   Speaking: 'speaking',
   Говорение: 'speaking',
   Wrap: 'wrap',
@@ -590,6 +593,13 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
     // Разбор по колонкам: экран — одно упражнение, верно только если каждая
     // карточка легла в свою колонку.
     if (step.type === 'cols') return (step.items || []).every((it, i) => fills[i] === it.col)
+    // «Отметьте все верные»: засчитывается только полный набор — лишний
+    // вариант так же неверен, как пропущенный.
+    if (step.type === 'multi') {
+      const chosen = options.filter((_, i) => picks[i])
+      const want = step.answers || []
+      return chosen.length === want.length && chosen.every((o) => want.includes(o))
+    }
     return picked !== null && options[picked] === step.answer
   }
   const isRight = checked && verdict()
@@ -609,7 +619,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
             ? (step.items || []).every((_, i) => fills[i] !== undefined)
             : step.type === 'cloze'
               ? (step.answers || []).every((_, i) => String(fills[i] || '').trim() !== '')
-              : step.type === 'mistake'
+              : step.type === 'mistake' || step.type === 'multi'
                 ? Object.values(picks).some(Boolean)
                 : picked !== null
     : step.type === 'write'
@@ -862,6 +872,20 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
     // Выбор без правильного ответа: отмечаем сколько угодно карточек.
     case 'pick':
       return <PickCards options={step.options} single={step.single} picks={picks} setPicks={setPicks} />
+
+    // Несколько верных ответов (чтение из оригинального курса: «Which four
+    // sentences belong in a summary?»). Текст — над вариантами, как у choice.
+    case 'multi':
+      return (
+        <>
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
+          <MultiChoices options={options} picks={picks} setPicks={setPicks} checked={checked} answers={step.answers || []} />
+        </>
+      )
 
     // Слова урока: карточка переворачивается на перевод по клику.
     case 'cards':
@@ -1405,6 +1429,28 @@ function Choices({ options, icons, picked, setPicked, checked, answer, grid = fa
             ) : (
               o
             )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Несколько верных: после проверки выбранные красятся верно/неверно, а
+// пропущенный верный вариант обводится — иначе студент не узнает, чего не
+// хватило, и полный набор так и останется загадкой.
+function MultiChoices({ options, picks, setPicks, checked, answers }) {
+  return (
+    <div className="cp-choices">
+      {options.map((o, i) => {
+        let cls = 'cp-choice'
+        if (checked) {
+          if (picks[i]) cls += answers.includes(o) ? ' is-right' : ' is-wrong'
+          else if (answers.includes(o)) cls += ' is-missed'
+        } else if (picks[i]) cls += ' is-sel'
+        return (
+          <button key={i} className={cls} disabled={checked} aria-pressed={!!picks[i]} onClick={() => setPicks((s) => ({ ...s, [i]: !s[i] }))}>
+            {o}
           </button>
         )
       })}
