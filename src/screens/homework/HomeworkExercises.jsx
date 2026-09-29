@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
@@ -33,7 +33,7 @@ function ExerciseContext({ context }) {
   )
 }
 
-export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOpenCard }) {
+export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOpenCard, onPartTouched }) {
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
   // Одна домашка на занятие (spec §5, §9): части-материалы этой работы встают
@@ -120,6 +120,13 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
   useEffect(() => {
     onAnswered?.({ homeworkId: hw?.id, answered: answeredNow })
   }, [onAnswered, hw?.id, answeredNow])
+
+  // Ученик начал работать в рамке части — сдача оживает так же, как от черновика
+  // ответов выше, и с тем же id работы: касание не должно оживить соседнюю.
+  const onTouched = useCallback(
+    (partId) => onPartTouched?.({ homeworkId: hw?.id, partId }),
+    [onPartTouched, hw?.id],
+  )
 
   const onAnswer = (questionId, value) => {
     if (!editable) return
@@ -250,6 +257,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered, onOp
               editable={editable}
               onOpenCard={onOpenCard}
               onSaved={onMaterialPartSaved}
+              onTouched={onTouched}
             />
           )
         }

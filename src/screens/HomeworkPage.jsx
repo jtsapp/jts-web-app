@@ -9,7 +9,7 @@ import {
 import HomeworkList from './homework/HomeworkList.jsx'
 import HomeworkDetail from './homework/HomeworkDetail.jsx'
 import MaterialAssignmentDetail from './homework/MaterialAssignmentDetail.jsx'
-import { isAllowedFile, studentOrder } from './homework/homeworkFormat.js'
+import { isAllowedFile, keepMaterialParts, studentOrder } from './homework/homeworkFormat.js'
 import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
@@ -83,10 +83,13 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   )
 
   // Ответ сервера на каждое действие — это уже свежая карточка задания,
-  // поэтому список чинится на месте, без перезагрузки всего экрана.
+  // поэтому список чинится на месте, без перезагрузки всего экрана. Части-
+  // материалы сервер в такие ответы не кладёт (materialParts: null — «не
+  // спрашивали»), и без keepMaterialParts они пропадали с экрана после первого же
+  // прикреплённого файла.
   const replace = useCallback((updated) => {
     if (!updated) return
-    setItems((list) => list.map((hw) => (hw.id === updated.id ? updated : hw)))
+    setItems((list) => list.map((hw) => (hw.id === updated.id ? keepMaterialParts(hw, updated) : hw)))
   }, [])
 
   // То же для назначенного материала: он живёт в своём состоянии, и общий
@@ -196,6 +199,21 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   const [draft, setDraft] = useState({ homeworkId: null, answered: 0 })
   const draftAnswered = selected && draft.homeworkId === selected.id ? draft.answered : 0
 
+  // Части, в рамке которых ученик уже действовал, — по id работы. Сам ход мост
+  // рамки сохраняет на сервер, а здесь только то, чего список с сервера до
+  // перезагрузки не знает. Словарь, а не один слот, как у черновика: касание
+  // соседней работы не должно стирать это — вернувшись к сделанному уроку, ученик
+  // снова упёрся бы в серую кнопку.
+  const [touched, setTouched] = useState(() => new Map())
+  const touchedPartIds = selected ? touched.get(selected.id) : undefined
+  const markPartTouched = useCallback(({ homeworkId, partId }) => {
+    setTouched((prev) => {
+      const partIds = prev.get(homeworkId)
+      if (partIds?.has(partId)) return prev
+      return new Map(prev).set(homeworkId, new Set(partIds).add(partId))
+    })
+  },[setTouched])
+
   const handleSubmit = async () => {
     if (!selected) return
     setError(null)
@@ -218,7 +236,12 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
       // Статус не двигаем: работа, сданная без ответов, выглядит проверяемой,
       // а проверять в ней нечего.
       if (!cancelled(e, selected.id)) {
-        setError(t('homework.submitFailed'))
+        // Отказ по правилу (4xx) сервер объясняет сам — «Работа пустая: …»,
+        // «Работа уже на проверке…»: ученик узнаёт, ЧТО не так, а не жмёт ещё
+        // раз. У сбоя (5xx) текст служебный («An unexpected error occurred») —
+        // там своя подпись честнее.
+        const reason = e?.status >= 400 && e?.status < 500 ? e.serverMessage : null
+        setError(reason || t('homework.submitFailed'))
         await refresh(selected.id)
       }
     } finally {
@@ -276,9 +299,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSubmit={handleSubmit}
                   onSaved={replace}
                   onAnswered={setDraft}
+                  onPartTouched={markPartTouched}
                   onOpenPractice={(target) => onNav?.(target.key, target.payload)}
                   onOpenCard={onOpenCard}
                   draftAnswered={draftAnswered}
+                  touchedPartIds={touchedPartIds}
                 />
               )}
             </div>

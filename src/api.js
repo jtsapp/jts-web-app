@@ -115,9 +115,31 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
     err.status = res.status
+    // Текст отказа — отдельным полем, а не в message: вызывающие, что
+    // показывают свою подпись, его не заметят, а сдача домашки (HomeworkPage)
+    // покажет ученику слова сервера вместо общего «не удалось».
+    err.serverMessage = await rejectionText(res)
     throw err
   }
   return res.json().catch(() => null)
+}
+
+/**
+ * Первая строка отказа из тела ответа или null.
+ *
+ * GlobalExceptionHandler бэкенда отдаёт GeneralResponse `{ messages: [...] }`;
+ * `message` — запасной вид того же. `error` не берём: у Spring это фраза кода
+ * («Bad Request»), ученику она ничего не скажет.
+ */
+async function rejectionText(res) {
+  let body = null
+  try {
+    body = await res.json()
+  } catch {
+    // Тела нет или оно не JSON (прокси, обрыв) — отказ остаётся с одним кодом.
+  }
+  const text = (Array.isArray(body?.messages) ? body.messages[0] : null) ?? body?.message
+  return typeof text === 'string' && text.trim() ? text.trim() : null
 }
 
 async function authPost(path, token, body) {

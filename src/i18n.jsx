@@ -631,6 +631,12 @@ const dict = {
     'homework.opening': 'Открываем…',
     'homework.openFullScreen': 'Открыть во весь экран',
     'homework.openFailed': 'Не удалось открыть задание. Попробуйте ещё раз',
+    // Что задано из материала, когда своей подписи сервер не дал
+    // (materialAssignments.js → assignmentScope). Тексты те же, что у
+    // преподавателя в админке: выданное обе стороны называют одинаково.
+    'homework.scope.fragment': 'Фрагмент урока',
+    'homework.scope.tasks': 'Задания урока',
+    'homework.scope.stages': 'Часть урока',
     'schedule.title': 'Мой график',
     'schedule.today': 'Сегодня',
     'schedule.tomorrow': 'Завтра',
@@ -2939,6 +2945,9 @@ const dict = {
     'homework.opening': 'Opening…',
     'homework.openFullScreen': 'Open full screen',
     'homework.openFailed': 'Could not open the task. Please try again',
+    'homework.scope.fragment': 'Lesson excerpt',
+    'homework.scope.tasks': 'Lesson tasks',
+    'homework.scope.stages': 'Part of the lesson',
     'schedule.title': 'My schedule',
     'schedule.today': 'Today',
     'schedule.tomorrow': 'Tomorrow',
@@ -5225,6 +5234,9 @@ const dict = {
     'homework.opening': 'Ашылуда…',
     'homework.openFullScreen': 'Толық экранда ашу',
     'homework.openFailed': 'Тапсырманы ашу мүмкін болмады. Қайталап көріңіз',
+    'homework.scope.fragment': 'Сабақтың үзіндісі',
+    'homework.scope.tasks': 'Сабақ тапсырмалары',
+    'homework.scope.stages': 'Сабақтың бөлігі',
     'schedule.title': 'Менің кестем',
     'schedule.today': 'Бүгін',
     'schedule.tomorrow': 'Ертең',

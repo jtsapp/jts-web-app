@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import HomeworkList from './HomeworkList.jsx'
+import { materialCard } from './materialAssignments.js'
 
 /**
  * Снимок «что задано» — единственное, что отличает в списке две выдачи по одному
@@ -10,16 +11,19 @@ import HomeworkList from './HomeworkList.jsx'
  */
 const ОБЫЧНАЯ = { id: 7, title: 'Unit 3 · Present Perfect', status: 'ASSIGNED', dueDate: null }
 
-const МАТЕРИАЛ = {
-  id: 'm-24',
-  kind: 'material',
-  title: 'A0 · Урок 5 — Coffee — yes',
+// Карточка — та же, что строит экран (materialCard): что задано, строка
+// выводит из самой выдачи (card.assignment), а не из плоской копии снимка.
+const ВЫДАЧА = {
+  id: 24,
+  materialTitle: 'A0 · Урок 5 — Coffee — yes',
   status: 'ASSIGNED',
   isOverdue: false,
   dueDate: '2026-09-29',
-  grade: null,
+  teacherScore: null,
+  taskTids: ['lis-tick', 'pr-2'],
   stageTitlesSnapshot: 'Practice · Задание 1, Listening · Задание 2',
 }
+const МАТЕРИАЛ = materialCard(ВЫДАЧА)
 
 function показать(items) {
   return render(
@@ -43,8 +47,15 @@ describe('HomeworkList — снимок задания на карточке', (
   })
 
   it('старая выдача без снимка остаётся без строки', () => {
-    const { container } = показать([{ ...МАТЕРИАЛ, stageTitlesSnapshot: null }])
+    const { container } = показать([materialCard({ ...ВЫДАЧА, taskTids: null, stageTitlesSnapshot: null })])
     expect(container.querySelector('.hw-assigned')).toBeNull()
+  })
+
+  // Жалоба владельца 29.09: у выданного блока снимок — сырой текст самого блока.
+  it('выданный блок подписан «Фрагмент урока», а не сырым текстом блока', () => {
+    показать([materialCard({ ...ВЫДАЧА, taskTids: null, blockKeys: ['block@4:2'], stageTitlesSnapshot: '🛏 bedroom👍👎🍳 kitchen👍👎' })])
+    expect(screen.getByText('Фрагмент урока').classList.contains('hw-assigned')).toBe(true)
+    expect(screen.queryByText(/bedroom/)).toBeNull()
   })
 
   it('карточка остаётся одной кнопкой, а имя кнопки содержит заголовок и снимок', () => {

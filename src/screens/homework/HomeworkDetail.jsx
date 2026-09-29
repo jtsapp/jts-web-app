@@ -2,7 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import HomeworkFileList from './HomeworkFileList.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
 import HomeworkPracticeList from './HomeworkPracticeList.jsx'
-import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey } from './homeworkFormat.js'
+import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey, showsTaskFiles } from './homeworkFormat.js'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 
@@ -17,8 +17,12 @@ function formatDate(value, locale) {
  * Проверенную работу трогать уже нельзя — файлы после оценки не досылаются
  * (это же правило стоит и на бэкенде), поэтому у COMPLETED тут нет ни загрузки,
  * ни удаления, ни кнопки отправки.
+ *
+ * `touchedPartIds` — части этой работы, в рамке которых ученик уже действовал в
+ * этом сеансе (приходят от HomeworkMaterialPart через `onPartTouched`); держит их
+ * экран рядом с черновиком ответов — `draftAnswered`.
  */
-export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit, onSaved, onAnswered, onOpenPractice, onOpenCard, draftAnswered = 0 }) {
+export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit, onSaved, onAnswered, onPartTouched, onOpenPractice, onOpenCard, draftAnswered = 0, touchedPartIds }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
 
@@ -26,7 +30,7 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
 
   const stateKey = homeworkStateKey(hw)
   const attachable = canAttach(hw)
-  const submittable = canSubmit(hw, draftAnswered)
+  const submittable = canSubmit(hw, draftAnswered, touchedPartIds)
   const due = formatDate(hw.dueDate, locale)
 
   const pickFiles = (event) => {
@@ -50,20 +54,32 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
 
       {/* Файлы от преподавателя и задания с урока — разная работа: одно скачивают
           и присылают ответом, другое решают прямо здесь. Поэтому у них разные
-          заголовки и разный фон, а не один общий список. */}
-      <section className="hw-block hw-block--files">
-        <div className="hw-block__head">
-          <h3 className="hw-block__title">{t('homework.taskFiles')}</h3>
-          {hw.materials?.length > 0 && <span className="hw-block__count">{hw.materials.length}</span>}
-        </div>
-        <HomeworkFileList files={hw.materials} emptyLabel={t('homework.taskEmpty')} />
-      </section>
+          заголовки и разный фон, а не один общий список. Пустой блок — только
+          когда больше показывать нечего (showsTaskFiles): над частями урока и
+          вопросами «не прикрепил файлов» читалось как «задания нет». */}
+      {showsTaskFiles(hw) && (
+        <section className="hw-block hw-block--files">
+          <div className="hw-block__head">
+            <h3 className="hw-block__title">{t('homework.taskFiles')}</h3>
+            {hw.materials?.length > 0 && <span className="hw-block__count">{hw.materials.length}</span>}
+          </div>
+          <HomeworkFileList files={hw.materials} emptyLabel={t('homework.taskEmpty')} />
+        </section>
+      )}
 
       {/* Задания, добавленные преподавателем прямо с живого урока, и части-
           материалы этой работы (одна домашка на занятие, spec §5, §9) — одной
           лентой в порядке выдачи. Секции нет, когда лента пуста: домашка
           бывает и просто файлом. */}
-      <HomeworkExercises key={hw.id} hw={hw} token={token} onSaved={onSaved} onAnswered={onAnswered} onOpenCard={onOpenCard} />
+      <HomeworkExercises
+        key={hw.id}
+        hw={hw}
+        token={token}
+        onSaved={onSaved}
+        onAnswered={onAnswered}
+        onPartTouched={onPartTouched}
+        onOpenCard={onOpenCard}
+      />
       <HomeworkPracticeList hw={hw} onOpen={onOpenPractice} />
 
       <section className="hw-block">
