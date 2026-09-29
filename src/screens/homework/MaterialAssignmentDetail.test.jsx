@@ -89,6 +89,18 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(открытыеВкладки).toEqual([])
   })
 
+  // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
+  // рендера, что у рамки, — с токеном ученика в строке запроса.
+  it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {
+    const { container } = показать()
+
+    кнопкаОткрыть().click()
+
+    await waitFor(() => expect(container.querySelector('.hw-frame__iframe')).not.toBeNull())
+    expect(screen.queryByText(/во весь экран/i)).toBeNull()
+    expect(container.querySelector('a[href*="/render"]')).toBeNull()
+  })
+
   /* Заданиям на слух нужен autoplay: разрешение выдаётся документу, а материал
      живёт в своей рамке — та же причина, что у рамки живого урока. */
   it('рамка пускает звук', async () => {
