@@ -199,19 +199,20 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   const [draft, setDraft] = useState({ homeworkId: null, answered: 0 })
   const draftAnswered = selected && draft.homeworkId === selected.id ? draft.answered : 0
 
-  // Части, в рамке которых ученик уже действовал, — тем же приёмом, что черновик:
-  // вместе с id работы. Выбрали другую работу — её касаний нет, и первое же
-  // касание там начинает набор заново. Сам ход мост рамки сохраняет на сервер, а
-  // здесь только то, чего список с сервера до перезагрузки не знает.
-  const [touched, setTouched] = useState({ homeworkId: null, partIds: new Set() })
-  const touchedPartIds = selected && touched.homeworkId === selected.id ? touched.partIds : undefined
+  // Части, в рамке которых ученик уже действовал, — по id работы. Сам ход мост
+  // рамки сохраняет на сервер, а здесь только то, чего список с сервера до
+  // перезагрузки не знает. Словарь, а не один слот, как у черновика: касание
+  // соседней работы не должно стирать это — вернувшись к сделанному уроку, ученик
+  // снова упёрся бы в серую кнопку.
+  const [touched, setTouched] = useState(() => new Map())
+  const touchedPartIds = selected ? touched.get(selected.id) : undefined
   const markPartTouched = useCallback(({ homeworkId, partId }) => {
     setTouched((prev) => {
-      const partIds = prev.homeworkId === homeworkId ? prev.partIds : new Set()
-      if (partIds.has(partId)) return prev
-      return { homeworkId, partIds: new Set(partIds).add(partId) }
+      const partIds = prev.get(homeworkId)
+      if (partIds?.has(partId)) return prev
+      return new Map(prev).set(homeworkId, new Set(partIds).add(partId))
     })
-  }, [])
+  },[setTouched])
 
   const handleSubmit = async () => {
     if (!selected) return

@@ -484,6 +484,30 @@ describe('HomeworkPage: работа из части-материала', () => 
     expect(кнопкаСдачи().disabled).toBe(true)
   })
 
+  // Ход работы в части уже на сервере, а список с сервера об этом до перезагрузки
+  // не знает: забудь экран касание при уходе на соседнюю работу — вернувшись,
+  // ученик снова упёрся бы в серую кнопку у сделанного урока.
+  it('вернулся к работе после соседней — её касание помнится', async () => {
+    api.getMyHomework.mockResolvedValueOnce([работа(7, [часть(40)]), работа(8, [часть(41, { homeworkAssignmentId: 8 })])])
+    const { container } = renderPage()
+
+    const frame = await открытьЧасть(container)
+    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
+    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+
+    // На соседней работе ученик тоже поработал в части — касаний теперь два.
+    fireEvent.click(screen.getByRole('button', { name: /Работа 8/ }))
+    await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 8'))
+    const frame8 = await открытьЧасть(container)
+    fireEvent(window, new MessageEvent('message', { source: frame8.contentWindow, data: mirror }))
+    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+
+    fireEvent.click(screen.getByRole('button', { name: /Работа 7/ }))
+    await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 7'))
+
+    expect(кнопкаСдачи().disabled).toBe(false)
+  })
+
   // Ответ на действие бэкенд собирает без частей (materialParts: null — «не
   // спрашивали»). Замена карточки целиком стирала часть с экрана до перезагрузки.
   it('после прикрепления файла часть остаётся на экране', async () => {
