@@ -4105,6 +4105,123 @@ textarea {
    широкого баннера «Чтения». */
 .pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
 
+/* «Аркада» во вкладке «Говорение». В макете её нет — геометрия и кнопка от
+   широкого баннера (поля 24, r20, белая пилюля), градиент — фиолетовый баннеров
+   Практики, уходящий в сумеречное небо самой игры. Справа — дерево и пила из
+   игры (их анимации и классы .ar-* — в arcade.css). */
+.pk-arcade {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  min-height: 240px;
+  padding: 24px;
+  overflow: hidden;
+  border-radius: 20px;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 88% 18%, rgba(255, 215, 154, 0.35) 0, transparent 34%),
+    linear-gradient(99.4deg, #9047ff 17%, #3a1a86 95.5%);
+}
+.pk-arcade__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.pk-arcade__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 33px;
+}
+.pk-arcade__tagline {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+}
+.pk-arcade__desc {
+  max-width: 56ch;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.pk-arcade__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.pk-arcade__steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.pk-arcade__steps b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: #9047ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.pk-arcade__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: auto;
+}
+.pk-arcade__mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+.pk-arcade__mic svg { flex: none; }
+.pk-arcade__art { position: relative; min-height: 190px; }
+/* Холм уходит под поля карточки до её краёв — их режет overflow. */
+.pk-arcade__hill {
+  position: absolute;
+  right: -24px;
+  bottom: -24px;
+  left: -24px;
+  height: 72px;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: #2a1b5e;
+  opacity: 0.6;
+}
+.pk-arcade__tree {
+  position: absolute;
+  right: 12px;
+  bottom: 4px;
+  width: 140px;
+}
+.pk-arcade__saw {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  width: 118px;
+  filter: drop-shadow(0 4px 3px rgba(10, 5, 30, 0.4));
+}
+
 /* Скелетоны загрузки — в габаритах карточек макета. */
 .pk-skel__item {
   display: flex;
@@ -4169,6 +4286,17 @@ textarea {
   }
   .pk-banner { padding: 20px; }
   .pk-banner__title { font-size: 21px; line-height: 29px; }
+  /* Арт «Аркады» — полосой над текстом, а не колонкой справа. */
+  .pk-arcade {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 20px;
+  }
+  .pk-arcade__art { order: -1; min-height: 130px; }
+  .pk-arcade__hill { top: auto; right: -20px; left: -20px; bottom: 0; height: 48px; }
+  .pk-arcade__tree { right: 8px; bottom: 0; width: 100px; }
+  .pk-arcade__saw { bottom: 12px; width: 90px; }
+  .pk-arcade__title { font-size: 21px; line-height: 29px; }
   .pk-sec__title { font-size: 22px; line-height: 24px; }
   .pk-sec__title--sm { font-size: 18px; line-height: 20px; }
   .pk-rail {

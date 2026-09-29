@@ -53,6 +53,10 @@ export const SKILLS = [
       { id: 'shadowing', all: 'link' },
       { id: 'situations', all: 'pill', small: true },
       { id: 'karaoke', all: 'pill', small: true },
+      // «Аркада» (Speak or Die) — карточка-объяснение и вход в игру. В макете
+      // её нет; стоит последней перед сказками, чтобы правило «сказки —
+      // последняя секция» (см. выше) не нарушать.
+      { id: 'arcade' },
       { id: 'tales', all: 'link' },
     ],
   },
