@@ -43,6 +43,13 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
   // Сид сессии — на открытие сцены: пересборка компонента не должна
   // перетасовать раунды под руками у человека.
   const [seed, setSeed] = useState(() => Date.now())
+  // Нарезка на раунды — по ориентации на момент старта, как buildSession
+  // прототипа. Поворот экрана посреди игры только переставляет картинки
+  // (раскладка в WordsScene следит за живой ориентацией), а раунды не
+  // перекраивает: иначе под игроком менялся состав раунда, счётчик вопроса
+  // указывал уже в новую очередь, и одно слово пропускалось, а плашка
+  // «найдено» показывала чужое.
+  const [roundsPortrait, setRoundsPortrait] = useState(false)
   const [wordLang, setWordLang] = useState(DEFAULT_WORD_LANG)
 
   // Язык подписи: сохранённый выбор человека сильнее языка интерфейса. При
@@ -123,8 +130,8 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
   const session = useMemo(() => {
     if (!scene || !sceneWords.length || view.name !== 'play') return null
     const owner = Object.values(data).find((d) => (d.scenes || []).some((s) => s.id === scene.id))
-    return buildSession(scene, owner.words, { seed, portrait, confusable: owner.confusable || [] })
-  }, [scene, sceneWords.length, view.name, data, seed, portrait])
+    return buildSession(scene, owner.words, { seed, portrait: roundsPortrait, confusable: owner.confusable || [] })
+  }, [scene, sceneWords.length, view.name, data, seed, roundsPortrait])
 
   const openScene = useCallback((sceneId) => {
     voice.stop()
@@ -179,6 +186,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
           voice={voice}
           onStart={() => {
             setSeed(Date.now())
+            setRoundsPortrait(portrait)
             setView({ name: 'play', sceneId: scene.id })
           }}
         />
@@ -215,6 +223,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
         voice={voice}
         onAgain={() => {
           setSeed(Date.now())
+          setRoundsPortrait(portrait)
           setView({ name: 'play', sceneId: scene.id })
         }}
         onCatalog={goCatalog}
