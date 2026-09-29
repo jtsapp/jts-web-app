@@ -25,18 +25,30 @@ function stepsOf(level) {
   return out
 }
 
-// Как плеер: слова банка выкладываются в порядке эталона, собранная строка
-// сверяется с ответом (см. verdict() для order в CourseStepPlayer).
+// Как плеер: фишки банка выкладываются в порядке эталона, собранная строка
+// сверяется с ответом (см. verdict() для order в CourseStepPlayer). Фишка —
+// слово или целая фраза: в чтении из оригинального курса по порядку
+// расставляют события статьи, и фишка там — предложение.
 function buildInAnswerOrder(step) {
-  const pool = (step.words || []).map((w) => ({ w, used: false }))
+  const pool = (step.words || []).map((w) => ({ w, n: normAnswer(w), used: false }))
+  const leftovers = () => pool.filter((p) => !p.used).map((p) => p.w)
   const built = []
-  for (const token of String(step.answer || '').split(/\s+/).filter(Boolean)) {
-    const hit = pool.find((p) => !p.used && normAnswer(p.w) === normAnswer(token))
-    if (!hit) return { built: null, leftovers: pool.filter((p) => !p.used).map((p) => p.w) }
+  let rest = normAnswer(step.answer)
+  while (rest) {
+    // Длинная фишка раньше короткой: «the» не должна съесть начало «the pairs…».
+    const hit = pool
+      .filter((p) => !p.used && p.n)
+      .sort((a, b) => b.n.length - a.n.length)
+      .find((p) => rest === p.n || rest.startsWith(`${p.n} `))
+    if (!hit) return { built: null, leftovers: leftovers() }
     hit.used = true
     built.push(hit.w)
+    rest = rest.slice(hit.n.length).trim()
   }
-  return { built: built.join(' '), leftovers: pool.filter((p) => !p.used).map((p) => p.w) }
+  // Фишка-знак («?») после нормализации пустая: на сверку она не влияет, и
+  // плеер засчитает её в любом месте строки.
+  for (const p of pool) if (!p.used && !p.n) p.used = true
+  return { built: built.join(' '), leftovers: leftovers() }
 }
 
 describe.each(LEVELS)('ключи ответов курса %s', (level) => {

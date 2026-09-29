@@ -26,6 +26,21 @@ const crypto = require('node:crypto')
 const { readSelfStudyCourse } = require('./selfstudy/read-course')
 const { lessonSteps, plain } = require('./selfstudy/steps')
 const { photoFinder, loadPhotoSources } = require('./selfstudy/card-photos')
+const { readingSteps } = require('./selfstudy/reading-steps')
+const { STAGE_NAMES, line } = require('./selfstudy/steps')
+
+/**
+ * Чтение урока из оригинального курса (data/course-reading/<level>.json,
+ * выгружает scripts/import-course-reading.js). Нет файла или урока в нём —
+ * урок остаётся с чтением self-study редакции.
+ */
+function readingSource(level, lang = 'ru') {
+  const file = path.join(ROOT, 'data/course-reading', `${level}.json`)
+  if (!fs.existsSync(file)) return () => null
+  const { lessons } = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const stage = line(STAGE_NAMES.read, lang)
+  return (no) => (lessons[String(no)] ? readingSteps(lessons[String(no)].html, { stage }) : null)
+}
 const { clipFixer, clipFixFiles, FIX_ROOT } = require('./selfstudy/clip-fixes')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
@@ -88,6 +103,7 @@ function build(file) {
   }
   const { byKey, written } = writeAudio(course, outDir)
   const photo = photoFinder(loadPhotoSources(path.join(ROOT, 'public'), course.level))
+  const reading = readingSource(course.level)
   const wordAudio = wordAudioLookup(course.level)
 
   // Ключ клипа у A0/A2 живёт внутри урока, у A1 — общий на уровень: пробуем
@@ -134,7 +150,7 @@ function build(file) {
   const lessons = []
   let stepCount = 0
   for (const lesson of course.lessons) {
-    const steps = lessonSteps(lesson, course.perItem, makeCtx(lesson))
+    const steps = lessonSteps(lesson, course.perItem, { ...makeCtx(lesson), reading: reading(lesson.no) })
     stepCount += steps.length
     const name = `steps-${lesson.no}.json`
     // Подпись урока у A0 в меню курса трёхъязычная, у A1/A2 — строкой. Плеер
