@@ -208,8 +208,12 @@ function optionIcons(ctx, names) {
   return icons.every(Boolean) ? { optionIcons: icons } : {}
 }
 
+// Фото карточки. Перевод нужен поиску: снимок с чужого уровня подходит,
+// только если там он стоит к слову с тем же переводом (selfstudy/card-photos.js).
+const cardImg = (ctx, it) => ctx.img(it.w, [it.ru, it.kk].filter(Boolean).join(' '))
+
 function cardIcon(ctx, it) {
-  if (!ctx.icon || !it.icon || ctx.img(it.w)) return {}
+  if (!ctx.icon || !it.icon || cardImg(ctx, it)) return {}
   const icon = ctx.icon(it.icon)
   return icon ? { icon } : {}
 }
@@ -242,7 +246,7 @@ function recordFields(ctx, texts) {
 /**
  * Экран курса → шаг плеера.
  * @param {object} sc экран (после flattenGroups)
- * @param {object} ctx { lang, clip(key), img(word), wordAudio(word), seedBase }
+ * @param {object} ctx { lang, clip(key), img(word, translation), wordAudio(word), seedBase }
  * @returns {object|null} шаг или null, если экран не переносится
  */
 function screenToStep(sc, ctx) {
@@ -312,7 +316,7 @@ function screenToStep(sc, ctx) {
           ru: it.ru || '',
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
-          img: ctx.img(it.w),
+          img: cardImg(ctx, it),
           // Фото есть у малой части слов (A0 — 51 из 266), а иконка курса —
           // у каждого: движок курса рисует её на карточке. Нет фото — иконка.
           ...cardIcon(ctx, it),
