@@ -98,6 +98,19 @@ describe('HomeworkMaterialPart — «Открыть задание», та же 
     expect(открытыеВкладки).toEqual([])
   })
 
+  // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
+  // рендера, что у рамки, — с токеном ученика в строке запроса, и новая вкладка уносила
+  // его в адресную строку и историю браузера.
+  it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {
+    const { container } = показать()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть задание' }))
+
+    await waitFor(() => expect(container.querySelector('.hw-frame__iframe')).not.toBeNull())
+    expect(screen.queryByText(/во весь экран/i)).toBeNull()
+    expect(container.querySelector('a[href*="/render"]')).toBeNull()
+  })
+
   it('карточка живого урока открывается сам урок в кабинете, а не файл', () => {
     const onOpenCard = vi.fn()
     показать({ part: { ...ЧАСТЬ, cardId: 'cad401560', catalogLessonId: 314, cardTitle: 'Итог урока' }, onOpenCard })

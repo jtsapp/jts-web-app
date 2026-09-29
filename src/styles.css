@@ -7780,7 +7780,6 @@ textarea {
   border-radius: 14px;
   background: #fff;
 }
-.hw-frame__full { align-self: flex-start; color: var(--purple); font-size: 14px; text-decoration: underline; }
 
 @media (max-width: 900px) {
   /* В одну колонку рамке достаётся вся высота экрана минус шапка со списком. */

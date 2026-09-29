@@ -123,9 +123,6 @@ export default function HomeworkMaterialPart({ part, token, editable, onOpenCard
           {/* allow="autoplay" — разрешение выдаётся документу, а материал живёт
               в своём iframe; у заданий на слух без этого молчала бы запись. */}
           <iframe ref={frameRef} src={frameSrc} title={card.title} className="hw-frame__iframe" allow="autoplay" />
-          <a className="hw-frame__full" href={frameSrc} target="_blank" rel="noopener noreferrer">
-            {t('homework.openFullScreen')}
-          </a>
         </div>
       ) : (
         <button type="button" className="hw-submit hw-submit--batch" disabled={opening || lookingUp} onClick={open}>

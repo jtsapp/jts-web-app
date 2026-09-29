@@ -629,7 +629,6 @@ const dict = {
     'homework.submitNothingDone': 'Сначала выполните хотя бы одно задание или приложите файл',
     'homework.submitWorkFailed': 'Не удалось сдать работу. Попробуйте ещё раз',
     'homework.opening': 'Открываем…',
-    'homework.openFullScreen': 'Открыть во весь экран',
     'homework.openFailed': 'Не удалось открыть задание. Попробуйте ещё раз',
     // Что задано из материала, когда своей подписи сервер не дал
     // (materialAssignments.js → assignmentScope). Тексты те же, что у
@@ -2943,7 +2942,6 @@ const dict = {
     'homework.submitNothingDone': 'Do at least one task or attach a file first',
     'homework.submitWorkFailed': 'Could not hand in the work. Please try again',
     'homework.opening': 'Opening…',
-    'homework.openFullScreen': 'Open full screen',
     'homework.openFailed': 'Could not open the task. Please try again',
     'homework.scope.fragment': 'Lesson excerpt',
     'homework.scope.tasks': 'Lesson tasks',
@@ -5232,7 +5230,6 @@ const dict = {
     'homework.submitNothingDone': 'Алдымен кемінде бір тапсырманы орындаңыз немесе файл тіркеңіз',
     'homework.submitWorkFailed': 'Жұмысты тапсыру мүмкін болмады. Қайталап көріңіз',
     'homework.opening': 'Ашылуда…',
-    'homework.openFullScreen': 'Толық экранда ашу',
     'homework.openFailed': 'Тапсырманы ашу мүмкін болмады. Қайталап көріңіз',
     'homework.scope.fragment': 'Сабақтың үзіндісі',
     'homework.scope.tasks': 'Сабақ тапсырмалары',

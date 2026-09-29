@@ -147,11 +147,6 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
               className="hw-frame__iframe"
               allow="autoplay"
             />
-            {/* Урок — страница со своими стадиями, и в колонке кабинета ему тесно.
-                Кому нужно во всю ширину — прежний путь никуда не делся. */}
-            <a className="hw-frame__full" href={frameSrc} target="_blank" rel="noopener noreferrer">
-              {t('homework.openFullScreen')}
-            </a>
           </div>
         ) : (
           // lookingUp — пока ищем урок каталога по ссылке (см. useMaterialOpen):
