@@ -64,6 +64,14 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(кнопкаОткрыть()).toBeTruthy()
   })
 
+  // Жалоба владельца 29.09: у выданного блока снимок — сырой текст самого блока
+  // («🛏 bedroom👍👎🍳 kitchen👍👎…»), и он стоял строкой «что задано».
+  it('выданный блок подписан «Фрагмент урока», а не сырым текстом блока', () => {
+    показать(карточка({ blockKeys: ['block@4:2'], stageTitlesSnapshot: '🛏 bedroom👍👎🍳 kitchen👍👎' }))
+    expect(screen.getByText('Фрагмент урока')).toBeTruthy()
+    expect(screen.queryByText(/bedroom/)).toBeNull()
+  })
+
   it('урок каталога открывается рамкой на этой же странице, а не новой вкладкой', async () => {
     const { container } = показать()
 

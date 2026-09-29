@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { answeredExercises, boardStateKey, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
+import { answeredExercises, boardStateKey, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, keepMaterialParts, pendingCount, reviewOrder, showsTaskFiles, studentOrder } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
 
@@ -223,6 +223,99 @@ describe('canSubmit — есть ли что сдавать', () => {
   })
 })
 
+// Регрессия со стенда 29.09: ученик сделал часть-урок прямо в рамке (Speaking +
+// «Mark as done»), а «Отправить на проверку» осталась серой, и сдать работу было
+// нечем. canSubmit не смотрел ни на части-материалы, ни на пройденную «Практику»,
+// хотя сервер (assertHasSomethingToReview) их считает.
+describe('canSubmit — части-материалы и «Практика»', () => {
+  const open = (extra) => ({ status: 'ASSIGNED', submissions: [], exercises: [], materialParts: [], ...extra })
+  const часть = (over = {}) => ({ id: 40, status: 'ASSIGNED', ...over })
+
+  it('часть с работой на сервере (hasWork) даёт сдать; старый бэкенд без поля — нет', () => {
+    expect(canSubmit(open({ materialParts: [часть(), часть({ id: 41, hasWork: true })] }))).toBe(true)
+    // Поле пришло не true — работы нет: ни отсутствие, ни null не значат «сделано».
+    expect(canSubmit(open({ materialParts: [часть()] }))).toBe(false)
+    expect(canSubmit(open({ materialParts: [часть({ hasWork: null })] }))).toBe(false)
+    expect(canSubmit(open({ materialParts: [часть({ hasWork: false })] }))).toBe(false)
+  })
+
+  it('часть, в которой ученик действовал в этом сеансе, даёт сдать без перезагрузки', () => {
+    expect(canSubmit(open({ materialParts: [часть()] }), 0, new Set([40]))).toBe(true)
+    // Тронутая часть другой работы эту не оживляет.
+    expect(canSubmit(open({ materialParts: [часть()] }), 0, new Set([41]))).toBe(false)
+  })
+
+  it('пройденный юнит «Практики» даёт сдать; отозванный и не пройденный — нет', () => {
+    const юнит = (over = {}) => ({ id: 3, practiceArea: 'grammar', practiceUnitId: 5, practiceDoneAt: '2026-09-29T10:00:00', ...over })
+    expect(canSubmit(open({ exercises: [юнит()] }))).toBe(true)
+    expect(canSubmit(open({ exercises: [юнит({ revoked: true })] }))).toBe(false)
+    expect(canSubmit(open({ exercises: [юнит({ practiceDoneAt: null })] }))).toBe(false)
+  })
+
+  it('ничего не сделано ни в одной части — сдавать нечего, пока ученик не тронет часть', () => {
+    const работа = open({
+      materialParts: [часть({ hasWork: false })],
+      exercises: [{ id: 3, practiceArea: 'grammar', practiceUnitId: 5, practiceDoneAt: null }],
+    })
+    expect(canSubmit(работа, 0, new Set())).toBe(false)
+    expect(canSubmit(работа, 0, new Set([40]))).toBe(true)
+  })
+
+  it('сданную работу не оживляют ни hasWork, ни касание, ни «Практика»', () => {
+    const сделанная = open({
+      materialParts: [часть({ hasWork: true })],
+      exercises: [{ id: 3, practiceArea: 'grammar', practiceUnitId: 5, practiceDoneAt: '2026-09-29T10:00:00' }],
+    })
+    expect(canSubmit(сделанная, 0, new Set([40]))).toBe(true)
+    expect(canSubmit({ ...сделанная, status: 'SUBMITTED' }, 0, new Set([40]))).toBe(false)
+  })
+})
+
+// «Преподаватель не прикрепил файлов» на работе, собранной из частей урока и
+// вопросов, — строчка о пустоте над настоящим содержимым: ученик читает её
+// первой и решает, что задания нет.
+describe('showsTaskFiles — блок «Задание файлом»', () => {
+  it('пустой блок прячется, когда в работе есть вопросы, части или «Практика»', () => {
+    expect(showsTaskFiles({ materials: [], materialParts: [{ id: 40 }] })).toBe(false)
+    expect(showsTaskFiles({ materials: [], exercises: [{ id: 1, question: { id: 'q1' } }] })).toBe(false)
+    expect(showsTaskFiles({ materials: [], exercises: [{ id: 2, practiceArea: 'grammar', practiceUnitId: 5 }] })).toBe(false)
+    // Файлы есть — блок на месте при любом соседстве.
+    expect(showsTaskFiles({ materials: [{ id: 1 }], materialParts: [{ id: 40 }] })).toBe(true)
+  })
+
+  it('когда больше показывать нечего — пустой блок остаётся и объясняет пустоту', () => {
+    expect(showsTaskFiles({ materials: [] })).toBe(true)
+    expect(showsTaskFiles({})).toBe(true)
+    // Все вопросы отозваны — показывать их нечего, блок остаётся.
+    expect(showsTaskFiles({ materials: [], exercises: [{ id: 1, question: { id: 'q1' }, revoked: true }] })).toBe(true)
+  })
+})
+
+// Ответы на действия с работой (файл, ответ на задание, сдача) бэкенд собирает
+// без частей: materialParts в них null — «не спрашивали», а не «частей нет»
+// (javadoc HomeworkAssignmentResponse.materialParts). Замена карточки целиком
+// стирала части с экрана до перезагрузки.
+describe('keepMaterialParts — части не пропадают после действия', () => {
+  const части = [{ id: 40, materialTitle: 'Урок 1' }]
+  const прежняя = { id: 7, status: 'ASSIGNED', submissions: [], materialParts: части }
+
+  it('ответ без частей (null или поля нет) — части прежней карточки остаются', () => {
+    const сФайлом = { id: 7, status: 'ASSIGNED', submissions: [{ id: 9 }], materialParts: null }
+    expect(keepMaterialParts(прежняя, сФайлом)).toEqual({ ...сФайлом, materialParts: части })
+    const безПоля = { id: 7, status: 'SUBMITTED', submissions: [{ id: 9 }] }
+    expect(keepMaterialParts(прежняя, безПоля)).toEqual({ ...безПоля, materialParts: части })
+  })
+
+  it('ответ со своими частями — верим ему, даже пустому списку', () => {
+    const свежие = [{ id: 40, materialTitle: 'Урок 1', hasWork: true }]
+    expect(keepMaterialParts(прежняя, { id: 7, materialParts: свежие }).materialParts).toBe(свежие)
+    expect(keepMaterialParts(прежняя, { id: 7, materialParts: [] }).materialParts).toEqual([])
+    // У прежней частей не было — дописывать нечего, ответ как есть.
+    const ответ = { id: 7, materialParts: null }
+    expect(keepMaterialParts({ id: 7 }, ответ)).toBe(ответ)
+  })
+})
+
 describe('счётчик «ждут тебя» и отзыв', () => {
   const задание = (over = {}) => ({ id: 1, question: { type: 'gap', answers: ['a'] }, ...over })
 
@@ -346,5 +439,13 @@ describe('бейдж «Взята в проверку»', () => {
 
   it('подпись на нём читается: WCAG AA при 12px/700', () => {
     expect(contrast(inReview.fg, inReview.bg)).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
+// Строка «что задано» у части — вторым планом, но читаемая: var(--muted) на
+// сиреневой карточке части давал 3.1:1, ниже AA для 13px.
+describe('подпись «что задано» у части-материала', () => {
+  it('читается на фоне карточки части: WCAG AA при 13px', () => {
+    expect(contrast(css('.hw-part__scope', 'color'), css('.hw-block--material', 'background'))).toBeGreaterThanOrEqual(4.5)
   })
 })

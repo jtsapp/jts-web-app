@@ -67,6 +67,14 @@ describe('HomeworkMaterialPart — заголовок, статус, что за
     expect(container.querySelector('.hw-badge--assigned')).not.toBeNull()
   })
 
+  // Жалоба владельца 29.09: под заголовком выданного блока стоял сырой текст
+  // самого блока — «🛏 bedroom👍👎🍳 kitchen👍👎…».
+  it('у выданного блока — «Фрагмент урока», а не сырой текст блока', () => {
+    показать({ part: { ...ЧАСТЬ, blockKeys: ['block@4:2'], stageTitlesSnapshot: '🛏 bedroom👍👎🍳 kitchen👍👎' } })
+    expect(screen.getByText('Фрагмент урока')).toBeTruthy()
+    expect(screen.queryByText(/bedroom/)).toBeNull()
+  })
+
   it('своей кнопки «Сдать» у части нет — сдаётся вся работа снаружи', () => {
     показать()
     expect(screen.queryByRole('button', { name: /сдать/i })).toBeNull()
@@ -143,6 +151,61 @@ describe('HomeworkMaterialPart — «Мой ответ» у карточки у�
     expect(screen.getByText('answer.pdf')).toBeTruthy()
     expect(container.querySelector('.hw-upload__input')).toBeNull()
     expect(container.querySelector('.hw-file__remove')).toBeNull()
+  })
+})
+
+/**
+ * Ученик действует в рамке части — это и есть работа (решение владельца 29.09).
+ *
+ * Мост в рамке (MaterialBridgeScriptInjector, режим live) на каждый настоящий
+ * клик/ввод шлёт родителю `mirror` и тем же обработчиком откладывает сохранение
+ * хода на сервер. Раньше экран этого не слышал вовсе: ученик сделал Speaking и
+ * «Mark as done», а «Отправить на проверку» оставалась серой до перезагрузки.
+ */
+describe('HomeworkMaterialPart — действие в рамке оживляет сдачу', () => {
+  async function открытьРамку() {
+    const onTouched = vi.fn()
+    const { container } = показать({ onTouched })
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть задание' }))
+    const frame = await waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+    return { frame, onTouched }
+  }
+  const прислать = (source, data) => fireEvent(window, new MessageEvent('message', { source, data }))
+  const клик = { source: 'jts-bridge', type: 'mirror', selector: '[data-tid="sp-1"]', eventType: 'click', value: null }
+
+  it('mirror из своей рамки — onTouched с id части, один раз на часть', async () => {
+    const { frame, onTouched } = await открытьРамку()
+
+    прислать(frame.contentWindow, клик)
+    прислать(frame.contentWindow, { ...клик, eventType: 'input', value: 'I like' })
+
+    expect(onTouched).toHaveBeenCalledTimes(1)
+    expect(onTouched).toHaveBeenCalledWith(24)
+  })
+
+  it('чужое не в счёт: другая рамка, сама страница, чужой источник, другой тип, прокрутка', async () => {
+    const { frame, onTouched } = await открытьРамку()
+    const чужаяРамка = document.createElement('iframe')
+    document.body.appendChild(чужаяРамка)
+
+    прислать(чужаяРамка.contentWindow, клик)
+    прислать(window, клик)
+    прислать(frame.contentWindow, { ...клик, source: 'other-widget' })
+    прислать(frame.contentWindow, { source: 'jts-bridge', type: 'snapshot', events: [] })
+    // Прокрутку мост шлёт тем же mirror, но хода не сохраняет — сервер её не
+    // засчитает, и живая кнопка упёрлась бы в «Работа пустая».
+    прислать(frame.contentWindow, { ...клик, selector: 'window', eventType: 'scroll', value: '320' })
+    прислать(frame.contentWindow, 'jts-bridge')
+    expect(onTouched).not.toHaveBeenCalled()
+
+    // Контроль: настоящее действие в той же рамке слышно — отказы выше не пустые.
+    прислать(frame.contentWindow, клик)
+    expect(onTouched).toHaveBeenCalledTimes(1)
+    чужаяРамка.remove()
   })
 })
 

@@ -7,7 +7,7 @@ import {
   submitMaterialAssignment,
 } from '../../api.js'
 import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkFormat.js'
-import { needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
+import { assignmentScope, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
 import useMaterialOpen from './useMaterialOpen.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
 
@@ -45,6 +45,7 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
   const { frameSrc, opening, openError, open, lookingUp } = useMaterialOpen(a, token, onOpenCard)
 
   const stateKey = homeworkStateKey(card)
+  const scope = assignmentScope(a)
   const due = card.dueDate
     ? new Date(card.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -132,8 +133,9 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
         {/* Что именно задали. Без этой строки на экране одна кнопка: заголовок —
             название материала ЦЕЛИКОМ, а задают из него обычно один блок или одну
             стадию, и ученику неоткуда узнать какой, пока он не откроет и не
-            пролистает урок. Ту же строку видит преподаватель в форме оценки. */}
-        {a.stageTitlesSnapshot && <p className="hw-assigned">{a.stageTitlesSnapshot}</p>}
+            пролистает урок. Правило строки общее с преподавателем (assignmentScope):
+            сырой текст выданного блока не показывается никогда. */}
+        {scope && <p className="hw-assigned">{scope.key ? t(scope.key) : scope.text}</p>}
         {frameSrc ? (
           <div className="hw-frame">
             {/* allow="autoplay" — по той же причине, что и у рамки живого урока:

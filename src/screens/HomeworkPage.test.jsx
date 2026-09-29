@@ -418,3 +418,118 @@ describe('HomeworkPage: отменённая работа', () => {
     expect(screen.getAllByText(ASSIGNMENT.title).length).toBeGreaterThan(0)
   })
 })
+
+/**
+ * Работа из одной части-урока — случай со стенда 29.09. Ученик сделал урок в рамке
+ * (Speaking + «Mark as done»), а «Отправить на проверку» осталась серой: canSubmit
+ * части не видел, и сдать работу было нечем. Действие в рамке — уже работа
+ * (решение владельца), кнопка обязана ожить сразу, без перезагрузки.
+ */
+describe('HomeworkPage: работа из части-материала', () => {
+  const часть = (id, over = {}) => ({
+    id, materialId: 14, materialTitle: `Урок ${id}`, materialType: 'INTERACTIVE_HTML', isGraded: true,
+    fileUrl: 'https://files.example/m.html', createdAt: '2026-09-28T08:00:00', status: 'ASSIGNED',
+    isOverdue: false, homeworkAssignmentId: 7, files: [], ...over,
+  })
+  const работа = (id, parts) => ({
+    id, title: `Работа ${id}`, status: 'ASSIGNED', dueDate: '2026-12-31',
+    materials: [], submissions: [], exercises: [], materialParts: parts,
+  })
+  const кнопкаСдачи = () => screen.getByRole('button', { name: /отправить на проверку/i })
+  const mirror = { source: 'jts-bridge', type: 'mirror', selector: '#mark-done', eventType: 'click', value: null }
+
+  async function открытьЧасть(container) {
+    fireEvent.click(await screen.findByRole('button', { name: 'Открыть задание' }))
+    return waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    api.getMyMaterialAssignments.mockResolvedValue([])
+    api.getBalance.mockResolvedValue({ coins: 0, streak: 0, streakActiveToday: false })
+  })
+
+  it('действие в рамке оживляет сдачу без перезагрузки, и работа уходит', async () => {
+    api.getMyHomework.mockResolvedValueOnce([работа(7, [часть(40)])])
+    api.submitHomework.mockResolvedValueOnce({ ...работа(7, null), status: 'SUBMITTED' })
+    const { container } = renderPage()
+
+    const frame = await открытьЧасть(container)
+    expect(кнопкаСдачи().disabled).toBe(true)
+
+    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
+
+    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+    fireEvent.click(кнопкаСдачи())
+    await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7))
+  })
+
+  // Касание помнится вместе с id работы — тот же приём, что у черновика ответов:
+  // соседняя работа от него не оживает.
+  it('касание части одной работы не оживляет сдачу другой', async () => {
+    api.getMyHomework.mockResolvedValueOnce([работа(7, [часть(40)]), работа(8, [часть(41, { homeworkAssignmentId: 8 })])])
+    const { container } = renderPage()
+
+    const frame = await открытьЧасть(container)
+    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
+    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+
+    fireEvent.click(screen.getByRole('button', { name: /Работа 8/ }))
+    await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 8'))
+    expect(кнопкаСдачи().disabled).toBe(true)
+  })
+
+  // Ответ на действие бэкенд собирает без частей (materialParts: null — «не
+  // спрашивали»). Замена карточки целиком стирала часть с экрана до перезагрузки.
+  it('после прикрепления файла часть остаётся на экране', async () => {
+    api.getMyHomework.mockResolvedValueOnce([работа(7, [часть(40)])])
+    api.attachHomeworkAnswer.mockResolvedValueOnce({
+      ...работа(7, null), submissions: [{ id: 9, fileName: 'answer.jpg', url: 'https://files.example/answer.jpg' }],
+    })
+    const { container } = renderPage()
+    await screen.findByRole('button', { name: 'Открыть задание' })
+
+    pickFile(container, file('answer.jpg', 'image/jpeg'))
+
+    await waitFor(() => expect(screen.getByText('answer.jpg')).toBeTruthy())
+    expect(screen.getByText('Урок 40')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Открыть задание' })).toBeTruthy()
+  })
+})
+
+/**
+ * Отказ сервера в сдаче объясняет сам себя («Работа пустая: прикрепите файл или
+ * решите хотя бы одно задание»). Экран показывал вместо него общее «Не удалось
+ * отправить» — ученик не узнавал, ЧТО не так, и жал ещё раз.
+ */
+describe('HomeworkPage: причина отказа в сдаче', () => {
+  const отказ = (status, serverMessage) =>
+    Object.assign(new Error(`request failed: ${status}`), { status, serverMessage })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    api.getMyMaterialAssignments.mockResolvedValue([])
+  })
+
+  it('отказ по правилу (4xx) — словами сервера; сбой (5xx) — своими', async () => {
+    api.getMyHomework.mockResolvedValueOnce([withAnswer])
+    api.submitHomework.mockRejectedValueOnce(отказ(400, 'Работа пустая: прикрепите файл или решите хотя бы одно задание'))
+    const первый = renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /отправить на проверку/i }))
+    expect(await screen.findByText('Работа пустая: прикрепите файл или решите хотя бы одно задание')).toBeTruthy()
+    первый.unmount()
+
+    // Служебное «An unexpected error occurred» ученику ничего не скажет.
+    api.getMyHomework.mockResolvedValueOnce([withAnswer])
+    api.submitHomework.mockRejectedValueOnce(отказ(500, 'An unexpected error occurred'))
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /отправить на проверку/i }))
+    expect(await screen.findByText('Не удалось отправить работу на проверку')).toBeTruthy()
+    expect(screen.queryByText('An unexpected error occurred')).toBeNull()
+  })
+})

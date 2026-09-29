@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { uploadMedia, attachMaterialAnswer, removeMaterialAnswer } from '../../api.js'
 import { ALLOWED_EXTENSIONS, homeworkStateKey, isAllowedFile } from './homeworkFormat.js'
-import { isMaterialGraded, materialCard, needsAnswerFile } from './materialAssignments.js'
+import { assignmentScope, isMaterialGraded, materialCard, needsAnswerFile } from './materialAssignments.js'
 import useMaterialOpen from './useMaterialOpen.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
 
@@ -21,15 +21,46 @@ const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
  * HomeworkExercises): работа сдана — действий с частью больше нет вовсе,
  * остаётся только открыть и посмотреть (рамка уходит в режим только для
  * чтения тем же механизмом, что и у обычной выдачи материала).
+ *
+ * `onTouched(part.id)` — ученик начал работать в рамке части. Любое его действие
+ * там — уже работа (решение владельца 29.09), и «Отправить на проверку» обязана
+ * ожить сразу. Сам ход мост рамки сохраняет на сервер, но список работ с сервера
+ * об этом не знает до перезагрузки — раньше кнопка так и стояла серой, и сдать
+ * сделанный урок было нечем.
  */
-export default function HomeworkMaterialPart({ part, token, editable, onOpenCard, onSaved }) {
+export default function HomeworkMaterialPart({ part, token, editable, onOpenCard, onSaved, onTouched }) {
   const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const { frameSrc, opening, openError, open, lookingUp } = useMaterialOpen(part, token, onOpenCard)
+  const frameRef = useRef(null)
+  const reportedRef = useRef(false)
+
+  // Мост в рамке (MaterialBridgeScriptInjector, режим live) на каждый настоящий
+  // клик, ввод и выбор шлёт родителю `mirror` и тем же обработчиком откладывает
+  // сохранение хода на сервер — это и есть сигнал «ученик работает». Верим только
+  // своей рамке: на странице бывают рамки других частей и чужие виджеты, а
+  // postMessage может прислать кто угодно. Прокрутку мост шлёт тем же `mirror`,
+  // но хода не сохраняет: сервер её не засчитает, и ожившая по ней кнопка
+  // упиралась бы в отказ «Работа пустая».
+  useEffect(() => {
+    if (!frameSrc) return undefined
+    const onMessage = (event) => {
+      const frame = frameRef.current
+      if (!frame || event.source !== frame.contentWindow) return
+      const data = event.data
+      if (data?.source !== 'jts-bridge' || data?.type !== 'mirror' || data.eventType === 'scroll') return
+      if (reportedRef.current) return
+      reportedRef.current = true
+      onTouched?.(part.id)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [frameSrc, onTouched, part.id])
 
   const card = materialCard(part)
   const stateKey = homeworkStateKey(card)
+  const scope = assignmentScope(part)
   const attachable = editable && needsAnswerFile(part) && !isMaterialGraded(part) && !busy && !opening
 
   const pickFiles = async (event) => {
@@ -74,20 +105,24 @@ export default function HomeworkMaterialPart({ part, token, editable, onOpenCard
 
   return (
     <section className="hw-block hw-block--material">
+      {/* Шапка — как у пачки вопросов в той же ленте: название, под ним
+          приглушённая строка, статус справа. Что именно задано — вторым планом:
+          заголовок называет материал целиком, а задают из него обычно блок,
+          задания или стадию (assignmentScope — то же правило, что в HomeworkList
+          и MaterialAssignmentDetail). */}
       <div className="hw-block__head">
-        <h3 className="hw-block__title">{card.title}</h3>
+        <div className="hw-part__head">
+          <h3 className="hw-block__title">{card.title}</h3>
+          {scope && <span className="hw-part__scope">{scope.key ? t(scope.key) : scope.text}</span>}
+        </div>
         <span className={`hw-badge hw-badge--${stateKey}`}>{t(`homework.status.${stateKey}`)}</span>
       </div>
-      {/* Что именно задано — снимок подписей с сервера: заголовок сам по себе
-          называет материал целиком, а задают из него обычно один блок или одну
-          стадию (тот же приём, что в HomeworkList и MaterialAssignmentDetail). */}
-      {card.stageTitlesSnapshot && <p className="hw-assigned">{card.stageTitlesSnapshot}</p>}
 
       {frameSrc ? (
         <div className="hw-frame">
           {/* allow="autoplay" — разрешение выдаётся документу, а материал живёт
               в своём iframe; у заданий на слух без этого молчала бы запись. */}
-          <iframe src={frameSrc} title={card.title} className="hw-frame__iframe" allow="autoplay" />
+          <iframe ref={frameRef} src={frameSrc} title={card.title} className="hw-frame__iframe" allow="autoplay" />
           <a className="hw-frame__full" href={frameSrc} target="_blank" rel="noopener noreferrer">
             {t('homework.openFullScreen')}
           </a>

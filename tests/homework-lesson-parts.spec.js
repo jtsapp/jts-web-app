@@ -35,16 +35,16 @@ const РАБОТА = {
   materialParts: [ЧАСТЬ],
 }
 
-async function openHomework(page) {
+async function openHomework(page, работа = РАБОТА) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B1' } })))
-  await page.route('**/admin/homework/my', (r) => r.fulfill(json([РАБОТА])))
+  await page.route('**/admin/homework/my', (r) => r.fulfill(json([работа])))
   // Часть привязана (homeworkAssignmentId=7) — /student/assignments её тоже
   // отдаёт (совместимость со старым кабинетом, spec §7.1), но новый список её
   // прячет: она всплывает только внутри своей домашней работы.
   await page.route('**/student/assignments', (r) => r.fulfill(json([ЧАСТЬ])))
   await page.goto('/?screen=homework')
-  await expect(page.locator('.hw-detail__title')).toHaveText('Домашнее задание из урока 28.09')
+  await expect(page.locator('.hw-detail__title')).toHaveText(работа.title)
 }
 
 test('привязанная часть не своя карточка списка — одна карточка на всю домашку', async ({ page }) => {
@@ -102,4 +102,47 @@ test('одна «Отправить на проверку» сдаёт всю р
   await page.getByRole('button', { name: 'Отправить на проверку' }).click()
 
   await expect(page.getByText('Работа у преподавателя — ждём проверки')).toBeVisible()
+})
+
+/**
+ * Случай со стенда 29.09: работа ТОЛЬКО из части-урока. Ученик сделал урок в рамке
+ * (Speaking + «Mark as done»), а «Отправить на проверку» осталась серой — сдать
+ * было нечем. Действие в рамке — уже работа (решение владельца): кнопка оживает
+ * от сообщения моста `mirror` сразу, без перезагрузки.
+ *
+ * Прежний тест сдачи выше зелёный только потому, что в его работе есть вопрос с
+ * ответом; здесь вопросов, файлов и «Практики» нет вовсе.
+ */
+const ТОЛЬКО_ЧАСТЬ = {
+  ...РАБОТА, id: 8, title: 'Урок 5 на дом', exercises: [],
+  materialParts: [{ ...ЧАСТЬ, id: 50, materialId: 15, homeworkAssignmentId: 8 }],
+}
+
+// Вместо файла урока — страница, которая делает то же, что мост в режиме live на
+// настоящий клик: шлёт родителю `mirror`.
+const РАМКА_С_МОСТОМ = `<!doctype html><html><body>
+<button id="done" onclick="parent.postMessage({ source: 'jts-bridge', type: 'mirror', selector: '#done', eventType: 'click', value: null }, '*')">Mark as done</button>
+</body></html>`
+
+test('работа из одной части: действие в рамке оживляет сдачу, и работа уходит', async ({ page }) => {
+  await openHomework(page, ТОЛЬКО_ЧАСТЬ)
+  await page.route('**/student/assignments/50/start', (r) => r.fulfill(json({ id: 99 })))
+  await page.route((url) => url.pathname.endsWith('/student/materials/15/render'),
+    (r) => r.fulfill({ status: 200, contentType: 'text/html', body: РАМКА_С_МОСТОМ }))
+  await page.route('**/admin/homework/8/submit', (r) =>
+    r.fulfill(json({ ...ТОЛЬКО_ЧАСТЬ, status: 'SUBMITTED', materialParts: null })))
+
+  const сдать = page.getByRole('button', { name: 'Отправить на проверку' })
+  await expect(сдать).toBeDisabled()
+
+  await page.getByRole('button', { name: 'Открыть задание' }).click()
+  await page.frameLocator('.hw-frame__iframe').getByRole('button', { name: 'Mark as done' }).click()
+
+  await expect(сдать).toBeEnabled()
+  const сдача = page.waitForRequest((r) => r.method() === 'PUT' && r.url().endsWith('/admin/homework/8/submit'))
+  await сдать.click()
+  await сдача
+  await expect(page.getByText('Работа у преподавателя — ждём проверки')).toBeVisible()
+  // Ответ сдачи пришёл без частей (materialParts: null) — часть на экране осталась.
+  await expect(page.locator('.hw-block--material .hw-block__title')).toHaveText('Present Perfect · practice test')
 })
