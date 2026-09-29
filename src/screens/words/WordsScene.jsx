@@ -19,7 +19,8 @@ import { makeRng, shuffle } from '../../practice/words/session.js'
 import { placeRound, stageAR } from '../../practice/words/layout.js'
 import { sceneBgUrl, spriteUrl } from '../../practice/words/assets.js'
 import { translate } from '../../practice/words/loc.js'
-import { IconSound } from './WordsIcons.jsx'
+import { IconCheck, IconSound } from './WordsIcons.jsx'
+import { playSuccessTick } from './successTick.js'
 
 // Пауза после верного тапа: столько показываем найденное слово с переводом,
 // прежде чем спросить следующее. В прототипе — 1500 мс.
@@ -29,6 +30,19 @@ const ROUND_PAUSE = 1500
 // Задержка перед произнесением следующего слова: без неё оно накладывается на
 // звук успеха.
 const ANNOUNCE_DELAY = 150
+
+// Искры верного ответа — восемь точек веером, как sparkle() прототипа.
+// Разброс посчитан один раз на модуль, а не в рендере: Math.random там
+// нарушает чистоту рендера, а одинаковый веер у каждого слова глазу не виден.
+const SPARK_COLORS = ['#874BF8', '#0AAFFF', '#00D441', '#FFAD00', '#FF631E', '#fff']
+const SPARKS = (() => {
+  const rng = makeRng(20260929)
+  return Array.from({ length: 8 }, (_, i) => {
+    const ang = (Math.PI * 2 * i) / 8 + rng() * 0.6
+    const r = 60 + rng() * 50
+    return { dx: Math.cos(ang) * r, dy: Math.sin(ang) * r - 20, color: SPARK_COLORS[i % SPARK_COLORS.length] }
+  })
+})()
 
 export default function WordsScene({ scene, session, section, seed, portrait, wordLang, voice, voiceFailedAt, onFound, onFinish }) {
   const [round, setRound] = useState(0)
@@ -146,6 +160,7 @@ function WordsRound({
       setLock(true)
       setWrong(null)
       voice.stop()
+      playSuccessTick()
       setFound((prev) => new Set(prev).add(word.id))
       onFound?.(word.id)
       timer.current = setTimeout(() => {
@@ -198,6 +213,9 @@ function WordsRound({
         <div className={`wd-fb${justFound ? ' wd-fb--show' : ''}`} aria-live="polite">
           {justFound && (
             <>
+              <i className="wd-fb__ok" aria-hidden="true">
+                <IconCheck />
+              </i>
               <b>{justFound.word}</b>
               {translate(justFound, wordLang) && <em>{translate(justFound, wordLang)}</em>}
             </>
@@ -215,6 +233,8 @@ function WordsRound({
         >
           {placed.map((p) => {
             const isFound = found.has(p.word.id)
+            // Вспышка — только у слова, найденного вот сейчас, на время паузы.
+            const burst = justFound && justFound.id === p.word.id
             return (
               <button
                 key={p.word.id}
@@ -222,6 +242,7 @@ function WordsRound({
                 className={[
                   'wd-sprite',
                   isFound ? 'wd-sprite--found' : '',
+                  burst ? 'wd-sprite--pop' : '',
                   wrong && wrong.id === p.word.id ? 'wd-sprite--no' : '',
                 ]
                   .filter(Boolean)
@@ -236,6 +257,27 @@ function WordsRound({
                     пережаты офлайн (WebP 640px) и лежат в public: оптимизатор
                     next/image здесь только добавил бы прокси на 562 файла. */}
                 <img src={spriteUrl(p.word.id)} alt="" draggable="false" decoding="async" />
+                {/* Галочка остаётся на найденном до конца раунда — как в
+                    прототипе: по ней видно, что уже отвечено, без серой
+                    заливки картинки. */}
+                {isFound && (
+                  <span className="wd-sprite__badge" aria-hidden="true">
+                    <IconCheck />
+                  </span>
+                )}
+                {burst && (
+                  <>
+                    <span className="wd-glow" aria-hidden="true" />
+                    {SPARKS.map((s, i) => (
+                      <i
+                        key={i}
+                        className="wd-spark"
+                        aria-hidden="true"
+                        style={{ '--dx': `${s.dx}px`, '--dy': `${s.dy}px`, background: s.color }}
+                      />
+                    ))}
+                  </>
+                )}
               </button>
             )
           })}

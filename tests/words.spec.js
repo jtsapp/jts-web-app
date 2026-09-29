@@ -136,6 +136,68 @@ test.describe('игра', () => {
     await expect(page.locator('.wd-fb--show b')).toBeVisible()
   })
 
+  // Отклик верного ответа — как в прототипе: звон и галочка. Звон — синтез
+  // Web Audio (два тона), не запись, поэтому считаем созданные генераторы:
+  // звука в headless нет, а вызовы есть. Промахи по пути заодно проверяют,
+  // что неверный тап молчит.
+  test('верный тап звенит и ставит галочку на картинку, промах молчит', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__tones = 0
+      const AC = window.AudioContext || window.webkitAudioContext
+      const orig = AC.prototype.createOscillator
+      AC.prototype.createOscillator = function createOscillator(...args) {
+        window.__tones++
+        return orig.apply(this, args)
+      }
+    })
+    await openScene(page)
+    await page.locator('.wd-preview__text .wd-btn').click()
+    await expect(page.locator('.wd-sprite').first()).toBeVisible()
+
+    const sprites = page.locator('.wd-sprite:not([disabled])')
+    const n = await sprites.count()
+    for (let i = 0; i < n; i++) {
+      await sprites.nth(i).click()
+      if ((await page.locator('.wd-dots i.on').count()) > 0) break
+    }
+    await expect(page.locator('.wd-dots i.on')).toHaveCount(1)
+    expect(await page.evaluate(() => window.__tones)).toBe(2)
+
+    // Галочка — ровно на найденной картинке, и в плашке слова тоже.
+    await expect(page.locator('.wd-sprite__badge')).toHaveCount(1)
+    await expect(page.locator('.wd-sprite--found .wd-sprite__badge')).toBeVisible()
+    await expect(page.locator('.wd-fb--show .wd-fb__ok')).toBeVisible()
+
+    // Плашка уходит после паузы, а галочка на картинке остаётся до конца раунда.
+    await page.waitForTimeout(1800)
+    await expect(page.locator('.wd-fb--show')).toHaveCount(0)
+    await expect(page.locator('.wd-sprite--found .wd-sprite__badge')).toBeVisible()
+  })
+
+  // Поворот экрана посреди раунда только переставляет картинки — как relayout
+  // прототипа. Раньше он перекраивал раунды (в портрете они короче), и под
+  // игроком менялся состав раунда: счётчик вопроса указывал уже в новую
+  // очередь, одно слово пропускалось, а плашка «найдено» показывала чужое.
+  test('поворот экрана посреди раунда не меняет его слова', async ({ page }) => {
+    await openScene(page)
+    await page.locator('.wd-preview__text .wd-btn').click()
+    await expect(page.locator('.wd-sprite').first()).toBeVisible()
+    const ids = () =>
+      page.$$eval('.wd-sprite img', (imgs) => imgs.map((i) => i.getAttribute('src')).sort())
+    const before = await ids()
+    const dots = await page.locator('.wd-dots i').count()
+
+    const size = page.viewportSize()
+    const flipped = size.width > 720 ? { width: 390, height: 844 } : { width: 1440, height: 900 }
+    await page.setViewportSize(flipped)
+    await page.waitForTimeout(400)
+    expect(await ids()).toEqual(before)
+    await page.setViewportSize(size)
+    await page.waitForTimeout(400)
+    expect(await ids()).toEqual(before)
+    await expect(page.locator('.wd-dots i')).toHaveCount(dots)
+  })
+
   test('промах не засчитывается и подсказывает переслушать', async ({ page }) => {
     await openScene(page)
     await page.locator('.wd-preview__text .wd-btn').click()
