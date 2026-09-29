@@ -25,38 +25,119 @@ describe('useLessonLiveSocket', () => {
     expect(lastClient.cfg.connectHeaders.Authorization).toBe('Bearer TOK')
     expect(Object.keys(lastClient.subs)).toEqual(expect.arrayContaining([
       '/topic/lesson/7/presence',
-      '/topic/lesson/7/focus',
+      '/topic/lesson/7/state',
       '/topic/lesson/7/material-mirror',
       '/topic/lesson/7/present',
       '/topic/lesson/7/sections-changed',
       '/topic/lesson/7/step-progress',
       '/topic/lesson/7/audio',
-      '/topic/lesson/7/timer',
     ]))
   })
 
-  /* Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
-     когда время видят обе стороны. Своё эхо глушим, как у focus/present, —
-     у преподавателя таймер уже тикает локально с момента нажатия, и повторный
-     запуск сбросил бы ему секунды. */
-  it('таймер преподавателя доходит до ученика, своё эхо глушится', () => {
-    const onTimer = vi.fn()
-    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onTimer }))
+  /* Указку и таймер заменило состояние занятия (спека §7): сервер строит его из
+     focus/timer любой админки, в том числе старой. Старые каналы сервер ещё
+     рассылает — подпишись на них новый клиент, указка применялась бы дважды. */
+  it('на старые каналы focus и timer не подписывается', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/focus')
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/timer')
+  })
 
-    act(() => {
-      lastClient.subs['/topic/lesson/7/timer']({
-        body: JSON.stringify({ senderUserId: 5, action: 'start', durationSeconds: 120 }),
-      })
-    })
-    expect(onTimer).toHaveBeenCalledWith({ senderUserId: 5, action: 'start', durationSeconds: 120 })
+  /* Состояние рассылает сервер целиком, и своё изменение преподаватель получает
+     тем же каналом: по нему он узнаёт, что ведёт класс. Эхо здесь не глушится. */
+  it('состояние занятия доходит до всех, включая того, кто его изменил', () => {
+    const onState = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onState }))
 
-    onTimer.mockClear()
+    const state = { lessonId: 7, version: 3, leading: true, focusSeq: 2 }
+    act(() => { lastClient.subs['/topic/lesson/7/state']({ body: JSON.stringify(state) }) })
+
+    expect(onState).toHaveBeenCalledWith(state)
+  })
+
+  /* Снимок состояния берут сразу после подключения — и после каждого
+     переподключения. Подписка на state обязана стоять раньше: иначе изменение,
+     случившееся между ответом снимка и подпиской, не дошло бы вовсе. */
+  it('onConnect зовётся после подписки на state — при входе и при переподключении', () => {
+    const seen = []
+    const onConnect = vi.fn(() => { seen.push(Object.keys(lastClient.subs).includes('/topic/lesson/7/state')) })
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onConnect }))
+    expect(onConnect).toHaveBeenCalledTimes(1)
+
+    act(() => { lastClient.cfg.onWebSocketClose(); lastClient.cfg.onConnect() })
+
+    expect(onConnect).toHaveBeenCalledTimes(2)
+    expect(seen).toEqual([true, true])
+  })
+
+  /* Догоняющий снимок преподаватель отвечает адресно (спека §5.2): ученик
+     подписан на свой present/{id} и кладёт его туда же, куда общий показ. */
+  it('адресный показ ученик получает тем же обработчиком, что общий', () => {
+    const onPresent = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onPresent }))
+    expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/present/9')
+
+    const evt = { senderUserId: 1, materialId: 912, events: [{ selector: '#a', eventType: 'click', value: null }] }
+    act(() => { lastClient.subs['/topic/lesson/7/present/9']({ body: JSON.stringify(evt) }) })
+    expect(onPresent).toHaveBeenCalledWith(evt)
+  })
+
+  it('на адресный показ преподаватель не подписан', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/present/1')
+  })
+
+  /* Просьбы учеников догнать класс адресованы преподавателю; ученику чужие
+     просьбы ни к чему (и сервер его на этот канал не пустит). */
+  it('на просьбы догнать класс подписан только преподаватель', () => {
+    const onCatchUp = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onCatchUp }))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/catch-up/staff')
+
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onCatchUp, isStaff: true }))
     act(() => {
-      lastClient.subs['/topic/lesson/7/timer']({
-        body: JSON.stringify({ senderUserId: 1, action: 'stop' }),
-      })
+      lastClient.subs['/topic/lesson/7/catch-up/staff']({ body: JSON.stringify({ studentId: 77, materialId: 912 }) })
     })
-    expect(onTimer).not.toHaveBeenCalled()
+    expect(onCatchUp).toHaveBeenCalledWith({ studentId: 77, materialId: 912 })
+  })
+
+  it('sendRelease шлёт release без тела, sendCatchUp — materialId', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendRelease() })
+    expect(lastClient.published.at(-1)).toEqual({ destination: '/app/lesson/7/release', body: '' })
+
+    act(() => { result.current.sendCatchUp(912) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/catch-up', body: JSON.stringify({ materialId: 912 }),
+    })
+  })
+
+  // Стадию своей рамки шлёт ведущий преподаватель; сервер пишет её, только если
+  // материал совпадает с материалом класса.
+  it('sendStage шлёт materialId и stageIndex', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendStage(912, 3) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/stage', body: JSON.stringify({ materialId: 912, stageIndex: 3 }),
+    })
+  })
+
+  // Без адресата показ уходит всему классу, как раньше: поле в теле появляется,
+  // только когда ответ адресован одному ученику.
+  it('sendPresent с адресатом кладёт targetStudentId в тело', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+    act(() => { result.current.sendPresent(912, events, 77) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/present',
+      body: JSON.stringify({ materialId: 912, events, targetStudentId: 77 }),
+    })
   })
 
   // Работа ученика идёт не в общий топик урока: иначе в групповом занятии
@@ -119,25 +200,19 @@ describe('useLessonLiveSocket', () => {
     })
   })
 
-  it('drops focus/present echoes from itself but delivers events from others', () => {
-    const onFocus = vi.fn()
+  it('drops present echoes from itself but delivers events from others', () => {
     const onPresent = vi.fn()
-    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onFocus, onPresent }))
-
-    act(() => {
-      lastClient.subs['/topic/lesson/7/focus']({ body: JSON.stringify({ sectionId: 2, materialId: 5, senderUserId: 1 }) })
-    })
-    expect(onFocus).not.toHaveBeenCalled()
-
-    act(() => {
-      lastClient.subs['/topic/lesson/7/focus']({ body: JSON.stringify({ sectionId: 2, materialId: 5, senderUserId: 9 }) })
-    })
-    expect(onFocus).toHaveBeenCalledWith({ sectionId: 2, materialId: 5, senderUserId: 9 })
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onPresent }))
 
     act(() => {
       lastClient.subs['/topic/lesson/7/present']({ body: JSON.stringify({ materialId: 5, events: [], senderUserId: 1 }) })
     })
     expect(onPresent).not.toHaveBeenCalled()
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/present']({ body: JSON.stringify({ materialId: 5, events: [], senderUserId: 9 }) })
+    })
+    expect(onPresent).toHaveBeenCalledWith({ materialId: 5, events: [], senderUserId: 9 })
   })
 
   it('passes mirror events through unconditionally and fires onSectionsChanged', () => {
@@ -328,7 +403,7 @@ describe('useLessonLiveSocket', () => {
 
   // Трансляция преподавателя ("Транслировать классу") — лесson-wide /topic/lesson/7/audio,
   // тот же канал, что несёт позицию учителя в step-progress. Своё эхо глушится тем же
-  // приёмом, что у focus/present.
+  // приёмом, что у present.
   it('доставляет трансляцию учителя, но глушит собственное эхо', () => {
     const onAudioBroadcast = vi.fn()
     renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onAudioBroadcast }))

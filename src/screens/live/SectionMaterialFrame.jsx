@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
 import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
@@ -11,6 +11,18 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // константой (см. LiveLessonPage.hiddenBlocks.test.jsx и
 // SectionMaterialFrame.hiddenBlocks.test.jsx).
 export const LOAD_SETTLE_MS = 350
+
+// Действия, которые мост пересылает только доверенными (isTrusted). Прокрутку
+// isTrusted от программной не отличает — её роняют и переходы, проигранные
+// мостом, — поэтому действием преподавателя она не считается.
+const OWN_ACTIONS = new Set(['click', 'input', 'change'])
+// Своя стадия — только сразу за своим действием: отчёт движка о переходе
+// приходит следом за кликом, а всё, что позже, — уже проигрывание или зеркало.
+const OWN_STAGE_MS = 500
+// Отголосок goto-stage (мост передаёт синтетический клик по рельсу наверх тем
+// же present-event, что и настоящий) приходит сразу за ним; позже — уже
+// настоящий клик.
+const GOTO_ECHO_MS = 1000
 
 // Встраивает активный материал раздела прямо в страницу (никогда в новую
 // вкладку) — как web-admin. INTERACTIVE_HTML идёт через рендер-эндпоинт с
@@ -31,8 +43,27 @@ export const LOAD_SETTLE_MS = 350
 // скрипт в файле сообщает 'jts-lesson'/'stage' на каждом переходе (→ onStage),
 // а gotoStage просит его перейти на стадию от имени 'jts-workspace'. Ходит
 // мимо BRIDGE_HOST намеренно: это разговор с движком урока, а не с мостом.
+//
+// `stage` — стадия класса, за которой идёт следующий ученик (состояние занятия,
+// спека live-lesson-server-state §7). Уходит тем же goto-stage, но только в
+// загруженную и осевшую рамку: пока она грузится, сообщение потерялось бы
+// молча. Поэтому стадия отправляется после каждой загрузки заново — явная
+// указка перезагружает рамку, и новая страница о стадии ничего не знает.
+//
+// Стадию в рамке преподавателя двигает не только он: страница сама сообщает,
+// где открылась, мост проигрывает сохранённую работу просматриваемого ученика
+// и зеркалит его клики, а restoreStage доводит рамку до нужной стадии. onStage
+// получает вторым аргументом { own } — это переход самого преподавателя:
+// разовый признак взводят его доверенный клик или ввод и свой gotoStage, гасит
+// первый же отчёт о стадии, и через OWN_STAGE_MS он истекает (правило S).
+// Только такую стадию ведущему можно отдавать классу: иначе F5, «Внимание»,
+// смена ученика для просмотра или его клики по рельсу двигали бы весь класс.
+//
+// Снимок рамки преподавателя (ответ на request-snapshot) уходит в onSnapshot,
+// отдельно от живых действий (onPresentEvent): кому его отдать — классу после
+// «Внимания» или одному догоняющему ученику — решает страница.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, onStageList, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, stage = null, onMirror, onPresentEvent, onSnapshot, onStage, onStageList, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -48,34 +79,109 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // hiddenStepIds || []), а null здесь однозначно читается как «нечего
   // накатывать при следующей загрузке».
   const pendingHiddenKeysRef = useRef(null)
+  // Запрос снимка, пришедший до осадки: слушателя на той стороне ещё нет, и
+  // сообщение пропало бы молча, а очередь ответов ждала бы его до истечения.
+  // Флаг, а не очередь — ответ один на любое число просьб. В сброс по смене
+  // документа не входит: ответ — поток, дошедший до рамки сейчас, и новая
+  // страница ответит на него так же, как ответила бы прежняя.
+  const snapshotRequestedRef = useRef(false)
+  // Последняя стадия класса — для отправки после осадки, которая наступает уже
+  // вне рендера (таймер в handleLoad).
+  const stageRef = useRef(stage)
+  // Когда взведён признак «моя стадия» (null — не взведён). Сбрасывается
+  // вместе с документом, а не в onLoad: мост шлёт начальную стадию, как только
+  // в разметке появились стадии, — это может случиться раньше события load.
+  const ownStageAtRef = useRef(null)
+  // До какого момента первый клик — отголосок нашего goto-stage.
+  const gotoEchoUntilRef = useRef(0)
+  // Движок файла этого документа уже сообщил стадию — значит, его слушатель
+  // goto-stage стоит (осадка для своего перехода, как в web-admin).
+  const stageReportedRef = useRef(false)
+  // Свой переход, ждущий первой стадии документа. Он для страницы, на которой
+  // его выбрали, и сбрасывается вместе с ней.
+  const pendingOwnGotoRef = useRef(null)
+  // Доводка, ждущая осадки. Как и запрос снимка, в сброс по смене документа не
+  // входит: страница просит довести рамку, которая откроется. Свой переход
+  // важнее: если ждут оба, уходит он, а доводка отменяется.
+  const pendingRestoreRef = useRef(null)
+  const settleTimerRef = useRef(null)
+  const lessonTimerRef = useRef(null)
+  // Номер урока занятия (focusLessonNo): файл уровня открывает его goto-lesson'ом
+  // после загрузки и переписывает разметку. Пока документ такого материала не
+  // осел (осадка — после goto-lesson), на экране урок по умолчанию: показ ему не
+  // отдаётся, а его отчёт о стадии — не готовность для своего перехода. Ref, а
+  // не пропс: методы рамки и слушатель сообщений живут дольше рендера.
+  const lessonNoRef = useRef(null)
+  // Какой документ открыт в рамке. Адрес зависит не только от материала и
+  // перезагрузки: у ученика — от страницы следования, у преподавателя — от
+  // ученика, чей экран он смотрит (studentId в адресе). Сменилось любое из них —
+  // браузер грузит новую страницу, и отметки загрузки прошлой к ней не
+  // относятся: иначе действие преподавателя на прошлой странице засчитывалось бы
+  // новой, а реплей ушёл бы в перезагружающуюся страницу. Поэтому тот же ключ и
+  // у iframe, и у сброса ниже. Сброс — в эффекте раскладки: load новой страницы
+  // может прийти раньше обычных эффектов, и сброс после него снял бы её же
+  // таймер осадки.
+  const documentKey = [
+    material?.id,
+    reloadToken || 0,
+    !isStaff && follow ? 'follow' : 'own',
+    isStaff ? (reviewStudentId ?? '') : '',
+  ].join(':')
 
-  useEffect(() => {
+  // Стоит ДО сброса ниже: новый документ сразу знает, ждёт ли он урока занятия.
+  useLayoutEffect(() => {
+    lessonNoRef.current = material?.focusLessonNo ?? null
+  }, [material?.focusLessonNo])
+
+  useLayoutEffect(() => {
     loadedRef.current = false
     settledRef.current = false
+    ownStageAtRef.current = null
+    gotoEchoUntilRef.current = 0
+    stageReportedRef.current = false
+    pendingOwnGotoRef.current = null
     pendingRef.current = []
     // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
     // рамка уже не досмотрит до конца), а тут — последнее известное состояние
     // «что сейчас скрыто», не привязанное к конкретному циклу загрузки. Если
-    // material/reloadToken сменились раньше, чем успел сработать onLoad
-    // предыдущей рамки, значение всё ещё правда и должно докатиться в
+    // документ сменился раньше, чем успел сработать onLoad предыдущего,
+    // значение всё ещё правда и должно докатиться в
     // СЛЕДУЮЩУЮ — родитель не обязан звать setHiddenKeys повторно только
     // потому что рамка перезагрузилась (эффект в LiveLessonPage.jsx висит на
     // hiddenStepIds, а не на reloadToken). Стереть его здесь — вернуть тот же
     // баг, который чинит этот ref, просто с другим триггером потери.
-  }, [material?.id, reloadToken])
+    //
+    // Осадка прошлой страницы, сработав после смены, отметила бы новую
+    // осевшей до её загрузки, а её goto-lesson открыл бы урок в незагруженной.
+    return () => {
+      clearTimeout(settleTimerRef.current)
+      clearTimeout(lessonTimerRef.current)
+    }
+  }, [documentKey])
+
+  // Стоит ПОСЛЕ сброса выше: сменились и стадия, и рамка в одном рендере —
+  // сброс уже отметил рамку незагруженной, и стадия дождётся её загрузки.
+  useEffect(() => {
+    stageRef.current = stage
+    if (stage != null && settledRef.current) postStage(stage)
+  }, [stage])
 
   useImperativeHandle(ref, () => ({
     replay(events) {
       if (!events?.length) return
-      if (loadedRef.current) {
+      if (loadedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         post({ type: 'present', events })
       } else {
         pendingRef.current.push(...events)
       }
     },
     requestSnapshot() {
-      post({ type: 'request-snapshot' })
+      if (settledRef.current) {
+        post({ type: 'request-snapshot' })
+      } else {
+        snapshotRequestedRef.current = true
+      }
     },
     // Teacher watching a student review page: one live action (click/input/change/
     // scroll) arrived over the socket — replay it here so the teacher's own iframe
@@ -83,14 +189,30 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // dropped events aren't queued: a mirror event describes the student's CURRENT
     // position, and applying a stale one after a reload would be wrong, not late.
     mirror(event) {
-      if (!loadedRef.current) return
+      if (!loadedRef.current || (lessonNoRef.current != null && !settledRef.current)) return
       post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
     },
-    // Переход на стадию файлового урока. Скрипт в файле кликает рельс стадий, и
-    // этот клик уходит собеседнику тем же мостом, что и настоящие, — класс идёт
-    // следом сам, здесь ничего досылать не нужно.
+    // Переход на стадию файлового урока — свой, из «Тем»: признак «моя
+    // стадия» взводится в момент отправки, и стадию классу отдаёт отчёт движка
+    // о переходе. Пока движок документа не сообщил стадию, goto-stage пропал
+    // бы, а признак засчитал бы своей стадию открытия страницы, — переход ждёт
+    // первой стадии и уходит тогда всегда, без сверки с ней.
     gotoStage(index) {
-      iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+      if (stageReportedRef.current && (lessonNoRef.current == null || settledRef.current)) {
+        sendGoto(index, true)
+      } else {
+        pendingOwnGotoRef.current = index
+      }
+    },
+    // Довести рамку до стадии (класса после F5, своей после «Внимания») — не
+    // действие преподавателя. Ждёт осадки; уступает своему переходу.
+    restoreStage(index) {
+      if (pendingOwnGotoRef.current != null) return
+      if (settledRef.current) {
+        sendGoto(index, false)
+      } else {
+        pendingRestoreRef.current = index
+      }
     },
     // Скрытие вживую: преподаватель прячет задание/блок PATCH'ом .../visibility,
     // но CSS для этого вшивается только при рендере файла на сервере — уже
@@ -137,15 +259,44 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     iframeRef.current?.contentWindow?.postMessage({ source: BRIDGE_HOST, ...payload }, '*')
   }
 
+  function postStage(index) {
+    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+  }
+
+  // Наш goto-stage: мост ответит на него синтетическим кликом по рельсу, и этот
+  // отголосок не должен сойти за действие преподавателя. Свой переход ещё и
+  // взводит признак «моя стадия» и отменяет ждущую доводку.
+  function sendGoto(index, own) {
+    if (own) {
+      pendingRestoreRef.current = null
+      ownStageAtRef.current = Date.now()
+    }
+    gotoEchoUntilRef.current = Date.now() + GOTO_ECHO_MS
+    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+  }
+
+  /** Отголосок goto-stage — первый клик в окне после него. */
+  function takeGotoEcho(eventType) {
+    if (eventType !== 'click' || Date.now() >= gotoEchoUntilRef.current) return false
+    gotoEchoUntilRef.current = 0
+    return true
+  }
+
   function handleLoad() {
     loadedRef.current = true
-    const lessonNo = material?.focusLessonNo
+    const lessonNo = lessonNoRef.current
+    clearTimeout(lessonTimerRef.current)
     if (lessonNo != null) {
-      setTimeout(() => {
+      lessonTimerRef.current = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage(gotoLessonMessage(lessonNo), '*')
       }, GOTO_LESSON_MS)
     }
-    setTimeout(() => {
+    // Урок занятия файл открывает goto-lesson'ом уже после загрузки и
+    // переписывает разметку: осадка — после него, иначе реплей показа, стадия
+    // класса и доводка достались бы уроку, который сейчас сменится.
+    const settleMs = lessonNo != null ? GOTO_LESSON_MS + LOAD_SETTLE_MS : LOAD_SETTLE_MS
+    clearTimeout(settleTimerRef.current)
+    settleTimerRef.current = setTimeout(() => {
       settledRef.current = true
       if (pendingRef.current.length) {
         post({ type: 'present', events: pendingRef.current })
@@ -159,7 +310,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         post({ type: 'hidden-blocks', keys: pendingHiddenKeysRef.current })
         pendingHiddenKeysRef.current = null
       }
-    }, LOAD_SETTLE_MS)
+      if (stageRef.current != null) postStage(stageRef.current)
+      const pendingRestore = pendingRestoreRef.current
+      pendingRestoreRef.current = null
+      if (pendingRestore != null && pendingOwnGotoRef.current == null) sendGoto(pendingRestore, false)
+      // Урок занятия открыт — рамка готова для своего перехода, даже если урок
+      // не сообщил стадию. Ждавший переход уходит всегда, без сверки.
+      if (lessonNo != null) {
+        stageReportedRef.current = true
+        const pendingOwnGoto = pendingOwnGotoRef.current
+        pendingOwnGotoRef.current = null
+        if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
+      }
+      if (snapshotRequestedRef.current) {
+        snapshotRequestedRef.current = false
+        post({ type: 'request-snapshot' })
+      }
+    }, settleMs)
   }
 
   useEffect(() => {
@@ -174,7 +341,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       }
       const stage = parseStageMessage(data)
       if (stage) {
-        onStage?.(stage)
+        const armedAt = ownStageAtRef.current
+        ownStageAtRef.current = null
+        onStage?.(stage, { own: armedAt != null && Date.now() - armedAt <= OWN_STAGE_MS })
+        stageReportedRef.current = true
+        // Отчёт урока по умолчанию до goto-lesson — ещё не готовность: переход
+        // ждёт осадки (handleLoad).
+        if (lessonNoRef.current != null && !settledRef.current) return
+        const pendingOwnGoto = pendingOwnGotoRef.current
+        pendingOwnGotoRef.current = null
+        if (pendingOwnGoto != null) sendGoto(pendingOwnGoto, true)
         return
       }
       if (!data || data.source !== BRIDGE) return
@@ -184,10 +360,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         }
         return
       }
+      if (data.type === 'present-event') {
+        // Отголосок нашего goto-stage классу не пересылается: стадию класс
+        // получает состоянием занятия.
+        if (takeGotoEcho(data.eventType)) return
+        if (OWN_ACTIONS.has(data.eventType)) ownStageAtRef.current = Date.now()
+      }
       if (!presenting) return
-      // Catch-up batch after «Внимание на упражнение» (reply to request-snapshot).
+      // Ответ на request-snapshot: весь поток, дошедший до рамки преподавателя.
       if (data.type === 'snapshot' && Array.isArray(data.events)) {
-        onPresentEvent?.(data.events)
+        onSnapshot?.(data.events)
         return
       }
       if (data.type === 'present-event') {
@@ -196,7 +378,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isStaff, presenting, onMirror, onPresentEvent, onStage, onStageList])
+  }, [isStaff, presenting, onMirror, onPresentEvent, onSnapshot, onStage, onStageList])
 
   if (!material) {
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>
@@ -243,7 +425,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           ничего. */}
       <iframe
         ref={iframeRef}
-        key={`${material.id}-${reloadToken || 0}`}
+        key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"

@@ -136,10 +136,14 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   })
 
   // Переход идёт через рамку, а не через своё состояние: скрипт кликает рельс
-  // стадий в файле, и этот же клик зеркалом уходит преподавателю.
-  it('клик по стадии шлёт рамке goto-stage', async () => {
+  // стадий в файле, и этот же клик зеркалом уходит преподавателю. Движок файла
+  // должен быть готов — он сообщает об этом первой стадией документа.
+  it('клик по стадии шлёт готовой рамке goto-stage', async () => {
     const { container, getByRole } = await renderAsStudent()
     const iframe = container.querySelector('iframe.lw-material-iframe')
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage', index: 0, total: 6 } }))
+    })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     fireEvent.click(getByRole('button', { name: 'Listening' }))
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
@@ -151,7 +155,12 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   it('метка преподавателя не путает раздел занятия со стадией файла', async () => {
     const { container } = await renderAsStudent()
     await act(async () => {
-      socketHandlers.onFocus?.({ senderUserId: 6, senderRole: 'TEACHER', sectionId: 3, materialId: 11 })
+      socketHandlers.onState?.({
+        lessonId: 14, version: 1, status: 'IN_PROGRESS', pausedUntilMs: null,
+        leading: true, focusSeq: 1, focusView: 'LESSON',
+        sectionId: 3, materialId: 11, stepId: null, questionId: null, stageIndex: null,
+        timer: null, serverNowMs: Date.now(),
+      })
     })
     expect(container.querySelector('.lv-topics__teacher')).toBeNull()
   })

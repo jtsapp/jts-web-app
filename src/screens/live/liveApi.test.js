@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings } from '../../api.js'
+import { getLessonById, getLiveState, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings } from '../../api.js'
 
 beforeEach(() => {
   global.fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 14, status: 'IN_PROGRESS' }) }))
@@ -10,6 +10,16 @@ describe('live lesson api', () => {
     await getLessonById('TOK', 14)
     const [url, opts] = global.fetch.mock.calls[0]
     expect(String(url)).toContain('/admin/lessons/14')
+    expect(opts.headers.Authorization).toBe('Bearer TOK')
+  })
+  // Снимок состояния занятия берётся при каждом (пере)подключении и обязан быть
+  // свежим: ответ из кэша вернул бы ученика к позиции класса минутной давности.
+  it('getLiveState GETs /admin/lessons/{id}/live-state with Bearer, без кэша', async () => {
+    await getLiveState('TOK', 14)
+    await getLiveState('TOK', 14)
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    const [url, opts] = global.fetch.mock.calls[0]
+    expect(String(url)).toMatch(/\/admin\/lessons\/14\/live-state$/)
     expect(opts.headers.Authorization).toBe('Bearer TOK')
   })
   it('startLiveLesson PUTs /start', async () => {
