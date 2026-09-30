@@ -33,7 +33,9 @@ describe('PlacementTestPage — тест уже пройден', () => {
 
     await waitFor(() => expect(screen.getByText('Уровень уже определён')).toBeTruthy())
     expect(screen.getByText('A2')).toBeTruthy()
-    expect(screen.getByText(/проходится один раз/)).toBeTruthy()
+    // Уровня в аккаунте нет, а прогон закончен: сохраняем его результат, а
+    // пройти ещё раз для проверки отправляем в профиль.
+    expect(screen.getByText(/сохраним этот результат/)).toBeTruthy()
     // Выбора варианта теста нет — начать заново нечем.
     expect(screen.queryByText('Выберите вариант теста')).toBeNull()
 
@@ -55,5 +57,20 @@ describe('PlacementTestPage — тест уже пройден', () => {
     )
 
     await waitFor(() => expect(screen.getByText('Выберите вариант теста')).toBeTruthy())
+  })
+
+  // Пересдача из профиля нужна как раз тем, у кого уровень уже есть: законченный
+  // прогон её не останавливает, и спрашивать о нём сервер незачем.
+  it('пересдача не спрашивает «уже проходил» и предупреждает, что уровень не изменится', async () => {
+    render(
+      <I18nProvider>
+        <PlacementTestPage lang="ru" retake currentLevel="B1" onDone={() => {}} onLevel={() => {}} />
+      </I18nProvider>
+    )
+
+    await waitFor(() => expect(screen.getByText('Выберите вариант теста')).toBeTruthy())
+    expect(screen.getByText(/уровень в аккаунте \(B1\) не изменится/)).toBeTruthy()
+    expect(screen.queryByText('Уровень уже определён')).toBeNull()
+    expect(global.fetch).not.toHaveBeenCalled()
   })
 })

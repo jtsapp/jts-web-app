@@ -67,6 +67,10 @@ export default function ProfilePage({
   onNav,
   onLogout,
   onUpdateName,
+  // Уровня в аккаунте нет (тест не пройден или его результат не сохранился).
+  // userLevel тогда — стартовый 'A1' из стейта App, а не измерение.
+  levelUnknown = false,
+  onLevelTest,
 }) {
   const { t, lang, setLang } = useI18n()
   const fileRef = useRef(null)
@@ -291,6 +295,21 @@ export default function ProfilePage({
 
   const langLabel = LANGS.find((l) => l.code === lang)?.label || 'Русский'
 
+  // Тест на уровень живёт и здесь, а не только сразу после регистрации: часть
+  // учеников его после входа не увидела (пришли по ссылке, нажали «позже»,
+  // закрыли вкладку), и пройти его потом было неоткуда, кроме карточки на
+  // «Главной». Без уровня тест его ставит; с уровнем — пробный прогон, уровень
+  // в аккаунте не меняется (см. PlacementTestPage, retake).
+  const levelRows = [
+    {
+      key: 'level-test',
+      icon: <PfTestIcon />,
+      title: t('profile.levelTest'),
+      trailing: levelUnknown ? t('profile.levelTestNone') : (userLevel || '').toUpperCase(),
+      onClick: () => onLevelTest?.(),
+    },
+  ]
+
   const personalization = [
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
@@ -347,7 +366,9 @@ export default function ProfilePage({
                 <span>{t('profile.rankPrefix')}</span>
                 <b>{t('role.' + role.key)}</b>
               </div>
-              <span className="pf-rank__cefr">{(userLevel || 'A1').toUpperCase()}</span>
+              {/* Без уровня чип показывал бы стартовый «A1» из стейта, и строка
+                  «Тест на уровень — Не пройден» ниже спорила бы с ним. */}
+              {!levelUnknown && <span className="pf-rank__cefr">{(userLevel || 'A1').toUpperCase()}</span>}
             </div>
 
             <div className="pf-progress">
@@ -381,6 +402,17 @@ export default function ProfilePage({
         </section>
 
         <SkillRatings stats={skillStats} loading={skillStats === null} />
+
+        {onLevelTest && (
+          <>
+            <div className="pf-label">{t('profile.sectionLevel')}</div>
+            <div className="pf-card">
+              {levelRows.map((it, i) => (
+                <SettingRow key={it.key} item={it} chip last={i === levelRows.length - 1} />
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="pf-label">{t('profile.sectionPersonalization')}</div>
         <div className="pf-card">
@@ -642,6 +674,15 @@ function PfDocIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
       <path d="M6 3h8l4 4v14H6z" />
       <path d="M14 3v4h4M9 12h6M9 16h6" />
+    </svg>
+  )
+}
+function PfTestIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
+      <path d="M9 4h6v3H9z" />
+      <path d="M9 5.5H6V21h12V5.5h-3" />
+      <path d="m9 14 2 2 4-4" />
     </svg>
   )
 }
