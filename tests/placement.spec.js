@@ -172,49 +172,39 @@ test.describe('placement — A0-мост', () => {
 })
 
 // ─── словарь: формат движка — выбор значения, а не тумблер «знаю» ──────────
-// Тексты правильных ответов всех mcq-заданий реального банка (correctOptionTexts):
-// щёлкая их, проход не проваливает разминку и не уезжает на A0-мост.
 test.describe('placement — словарь', () => {
   test('вопрос словаря даёт варианты значений и «Не знаю»', async ({ page }) => {
-    test.setTimeout(180000)
-    const correct = await correctOptionTexts(page, keysPath())
+    // Раньше до словаря шёл обходчик по живому банку: пять разделов с
+    // аудированием, 90 шагов наугад, три минуты — и то и дело застревал
+    // (задание «расставь по порядку» щёлкалось туда-обратно). На крошечном
+    // банке разделы до словаря пустые, и после моста сразу идёт он; сам
+    // словарь — настоящий, из bank.json.
+    const real = await (await page.request.get('/practice/placement/bank.json')).json()
+    await routeFakeBank(page, { vocab: real.vocab })
     await page.goto('/?screen=test')
     await expect(page.locator('.plc-card')).toBeVisible({ timeout: 20000 })
-    await page.locator('.plc-opt').first().click()
-    await page.locator('.plc-opt').nth(2).click()
+    await page.locator('.plc-opt').first().click() // экспресс
+    await page.locator('.plc-opt').nth(2).click() // самооценка
+    await page.locator('.plc-primary').click() // старт разминки
 
-    // Идём по разделам, отвечая правильно где знаем ответ, пока не словарь.
-    for (let step = 0; step < 90; step++) {
-      // Экран словаря узнаём по крупному спрашиваемому слову — заголовки
-      // разделов совпадают на интро и на вопросах, по ним стопориться ненадёжно.
-      if (await page.locator('.plc-stem--word').count()) break
-      for (const row of await page.locator('.plc-tf').all()) await row.locator('.plc-tf__btn').first().click()
-      for (let g = 0; g < 14; g++) {
-        const tile = page.locator('.plc-bank .plc-tile:not([disabled])').first()
-        if (!(await tile.count())) break
-        await tile.click()
-      }
-      for (const list of await page.locator('.plc-list').all()) {
-        const btns = await list.locator('.plc-opt').all()
-        if (!btns.length) continue
-        let clicked = false
-        for (const b of btns) {
-          const txt = (await b.innerText()).trim()
-          if (correct.has(txt)) { await b.click().catch(() => {}); clicked = true; break }
-        }
-        if (!clicked) await btns[0].click().catch(() => {})
-      }
-      for (const inp of await page.locator('.plc-input').all()) await inp.fill('the')
-      let go = page.locator('.plc-primary:not([disabled])')
-      if (!(await go.count())) {
-        // «Порядок событий» в аудировании требует выбрать все пункты — добираем
-        // оставшиеся не-выбранные варианты и пробуем ещё раз.
-        for (const b of await page.locator('.plc-opt:not(.on)').all()) await b.click().catch(() => {})
-        go = page.locator('.plc-primary:not([disabled])')
-      }
-      if (await go.count()) await go.click()
-      await page.waitForTimeout(120)
+    // Разминка на фикстуре всегда уводит на мост (см. routeFakeBank), а
+    // пройденный мост возвращает в основной тест.
+    const n = Number((await page.locator('.plc-count').innerText()).split('/')[1])
+    for (let i = 1; i <= n; i++) {
+      await expect(page.locator('.plc-count')).toHaveText(`${i} / ${n}`)
+      await page.locator('.plc-opt', { hasText: 'CORRECT' }).click()
+      await page.locator('.plc-primary:not([disabled])').click()
     }
+    await expect(page.locator('.plc-h1')).toHaveText('Стартовый блок')
+    await page.locator('.plc-primary').click()
+    for (let i = 1; i <= 2; i++) {
+      await expect(page.locator('.plc-count')).toHaveText(`${i} / 2`)
+      await page.locator('.plc-input').fill('ok')
+      await page.locator('.plc-primary:not([disabled])').click()
+    }
+    // Интро следующего раздела; «Начать» проваливается сквозь пустые разделы.
+    await expect(page.locator('.plc-h1')).not.toHaveText('Стартовый блок')
+    await page.locator('.plc-primary').click()
 
     // Спрашиваемое слово крупно, 4 значения + «Не знаю» — контракт vocabScore.
     await expect(page.locator('.plc-stem--word')).toBeVisible()
