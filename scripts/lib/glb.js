@@ -58,7 +58,12 @@ function keepAnimation(glb, index, name) {
   return glb
 }
 
-function addAnimation(target, source, index, name) {
+// `aliases` — «имя кости в источнике → имя в базе». Meshy на каждом риге одной
+// и той же модели называет кость между Spine и Head по-своему (`Head1` или
+// `Spine1`, 01.10.2026): место в цепочке и поза покоя те же, имя — нет.
+// Сопоставление явное, а не «по месту в дереве»: при другом риге склейка
+// должна упасть, а не тихо перенести клип на чужой сустав.
+function addAnimation(target, source, index, name, aliases = {}) {
   const anim = source.json.animations?.[index]
   if (!anim) throw new Error(`glb: нет анимации #${index}`)
   const t = target.json
@@ -96,7 +101,7 @@ function addAnimation(target, source, index, name) {
     .filter((c) => c.target.node !== undefined)
     .map((c) => {
       const bone = source.json.nodes[c.target.node]?.name
-      const node = byName.get(bone)
+      const node = byName.get(aliases[bone] ?? bone)
       // Кости нет — риг другой, и клип дёргал бы не те суставы.
       if (node === undefined) throw new Error(`glb: кости «${bone}» нет в базовой модели — скелеты разные`)
       return { ...c, target: { ...c.target, node } }

@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const { readGlb, writeGlb, keepAnimation, addAnimation } = require('./glb.js')
-const { parseRef } = require('../merge-runner-clips.js')
+const { parseRef, parseAliases } = require('../merge-runner-clips.js')
 
 // Крошечный GLB: узлы-кости и одна анимация вращения последней кости.
 function makeGlb(nodes, values, name = 'Armature|clip') {
@@ -79,9 +79,23 @@ describe('glb', () => {
     expect(() => addAnimation(base, other, 0, 'jump')).toThrow(/скелеты разные/)
   })
 
+  it('кость под другим именем — по сопоставлению из aliases', () => {
+    const base = makeGlb(['Spine', 'Head1'], [0, 0, 0, 1, 0, 0, 0, 1])
+    const jump = makeGlb(['Spine', 'Spine1'], [0, 0, 0, 1, 0, 0, 0, 1])
+    addAnimation(base, jump, 0, 'jump', { Spine1: 'Head1' })
+    expect(base.json.animations[1].channels[0].target.node).toBe(1)
+  })
+
   it('нет анимации с таким номером — ошибка', () => {
     const glb = makeGlb(['Hips'], [0, 0, 0, 1, 0, 0, 0, 1])
     expect(() => keepAnimation(glb, 3, 'run')).toThrow(/#3/)
+  })
+})
+
+describe('parseAliases', () => {
+  it('пары «было=стало» через запятую', () => {
+    expect(parseAliases(['Spine1=Head1', 'A=B,C=D'])).toEqual({ Spine1: 'Head1', A: 'B', C: 'D' })
+    expect(parseAliases([])).toEqual({})
   })
 })
 
