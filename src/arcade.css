@@ -582,19 +582,33 @@
 .ar-run-score b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .ar-run-score em { display: block; margin-top: 2px; font-size: 12px; font-style: normal; font-weight: 800; color: #ffd79a; }
 
-.ar-run-prompt {
+/* Вопрос и варианты — одним блоком по центру сверху. */
+.ar-run-ask {
   position: absolute; top: 14px; left: 50%;
-  max-width: calc(100% - 200px);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: min(600px, calc(100% - 200px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ar-run-prompt {
+  max-width: 100%;
   padding: 8px 22px 12px;
   border: 1px solid rgba(183, 139, 255, 0.45);
   border-radius: 18px;
   background: rgba(22, 9, 58, 0.78);
   text-align: center;
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 .ar-run-prompt small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: #cdbdff; }
 .ar-run-prompt b { display: block; font-size: clamp(22px, 3.4vw, 34px); font-weight: 800; line-height: 1.15; overflow-wrap: break-word; }
+.ar-run-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.ar-run-options li {
+  display: grid; place-items: center; min-height: 44px; padding: 6px 10px;
+  border: 1px solid rgba(183, 139, 255, 0.35); border-radius: 14px;
+  background: rgba(22, 9, 58, 0.78);
+  font-size: 18px; font-weight: 800; line-height: 1.2; text-align: center; overflow-wrap: break-word;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ar-run-options li.is-here { border-color: #fff; background: rgba(144, 71, 255, 0.9); }
 
 .ar-run-toast {
   position: absolute; top: 40%; left: 50%;
@@ -670,7 +684,18 @@
 /* Телефон: жизни и счёт сверху по краям, слово — строкой под ними. */
 @media (max-width: 560px) {
   .ar-run-stage { height: min(72vh, 600px); }
-  .ar-run-prompt { top: 58px; max-width: calc(100% - 32px); padding: 6px 16px 10px; }
+  .ar-run-ask { top: 58px; width: calc(100% - 24px); }
+  .ar-run-prompt { padding: 6px 16px 10px; }
+  .ar-run-options li { min-height: 40px; padding: 5px 6px; font-size: 15px; }
+  /* Узкое поле: подсказку переносим, а не режем многоточием — иначе
+     «продолжительность = durat…» прячет как раз ответ. */
+  .ar-run-toast {
+    right: 12px; left: 12px; width: fit-content; max-width: none; margin-inline: auto;
+    padding: 8px 16px; border-radius: 18px; font-size: 16px;
+    white-space: normal; text-align: center; overflow-wrap: break-word;
+    /* left: 50% ужал бы перенос до половины поля — центруем полями. */
+    transform: translateY(-50%); animation: none;
+  }
   .ar-run-score b { font-size: 28px; }
   .ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ar-run-mistakes small { flex-basis: 100%; margin-left: 0; }
