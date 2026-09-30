@@ -35,9 +35,31 @@ export async function latestPlacementSession(profileId) {
   }
 }
 
+/** Последний незаконченный прогон профиля — его подхватывает пересдача. */
+export async function latestOpenPlacementSession(profileId) {
+  const sql = getSql()
+  if (!sql || !profileId) return null
+  const rows = await sql`
+    select token, finished, level
+    from placement_session
+    where profile_id = ${profileId} and finished = false
+    order by created_at desc
+    limit 1
+  `
+  if (rows.length === 0) return null
+  return { token: rows[0].token, finished: false, level: rows[0].level }
+}
+
 /**
  * Открывает прогон для профиля. Уровень определяется один раз (при
  * регистрации), поэтому законченный прогон новый не заводит.
+ *
+ * Исключение — пересдача из профиля (`retake`): она уровень не меняет (клиент
+ * не зовёт /api/placement/complete, прогон так и остаётся открытым), но
+ * проверять ответы без прогона нельзя. Поэтому законченный прогон её не
+ * блокирует: берём последний открытый прогон профиля или заводим новый.
+ * Законченный при этом не трогаем — он по-прежнему отвечает на вопрос «какой
+ * уровень определил тест» (GET /api/placement/session).
  *
  * Незаконченный прогон переиспользуется, но с чистым журналом: клиент каждую
  * попытку начинает с нуля, с новым сидом и в основном с другими заданиями.
@@ -47,11 +69,13 @@ export async function latestPlacementSession(profileId) {
  * брошенной попытки топили удачную.
  * @returns {{token: string|null, blocked?: boolean, level?: string|null, restarted?: boolean}}
  */
-export async function openPlacementSession({ profileId = null, variant = null } = {}) {
+export async function openPlacementSession({ profileId = null, variant = null, retake = false } = {}) {
   const sql = getSql()
   if (!sql) return { token: null }
 
-  const decision = decideRun(await latestPlacementSession(profileId))
+  const decision = decideRun(
+    retake ? await latestOpenPlacementSession(profileId) : await latestPlacementSession(profileId),
+  )
   if (decision.action === 'blocked') return { token: null, blocked: true, level: decision.level }
   if (decision.action === 'restart') {
     await sql`

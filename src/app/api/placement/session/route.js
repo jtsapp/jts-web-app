@@ -5,6 +5,12 @@
 // уровнем. Незаконченный начинается заново с чистым журналом (закрыл вкладку на
 // середине — вернулся и прошёл с начала).
 //
+// Пересдача из профиля (`retake: true`) законченным прогоном не блокируется:
+// она уровень не меняет — клиент показывает результат и не зовёт
+// /api/placement/complete, — но проверять ответы без прогона нельзя. Ей
+// заводится (или переиспользуется) свой открытый прогон, законченный остаётся
+// как был.
+//
 // Прогон нужен, чтобы проверка ответов не была оракулом (см.
 // lib/placementSessionLogic.js) и чтобы итоговый уровень считался по тому, что
 // помнит сервер, а не по журналу от клиента. Без базы (dev, preview) токен не
@@ -69,7 +75,7 @@ export async function POST(request) {
   }
 
   try {
-    const run = await openPlacementSession({ profileId, variant })
+    const run = await openPlacementSession({ profileId, variant, retake: body.retake === true })
     if (run.blocked) {
       return Response.json(
         { configured: true, token: null, error: 'already_completed', level: run.level },

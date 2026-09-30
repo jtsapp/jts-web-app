@@ -402,6 +402,12 @@ export default function App() {
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
+  // Тест уровня открывается не только после входа, но и из профиля. Куда
+  // вернуть человека после теста или «Пройду позже» (null — как раньше, в
+  // королевство) и пересдача ли это (уровень в аккаунте уже есть, и прогон его
+  // не меняет — см. PlacementTestPage).
+  const [testReturn, setTestReturn] = useState(null)
+  const [testRetake, setTestRetake] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
@@ -924,9 +930,33 @@ export default function App() {
     }
   }
 
+  // Куда уходить с теста уровня: туда, откуда в него пришли (профиль, ссылка,
+  // по которой человек логинился), иначе — как было, в королевство. Функция, а
+  // не константа: tutorHome объявлен ниже по телу компонента.
+  function testExit() {
+    return testReturn || (TUTOR_ONLY ? tutorHome : 'kingdom')
+  }
+
   async function handleTestDone(res) {
     await saveTestLevel(res?.level)
-    setScreen(TUTOR_ONLY ? tutorHome : 'kingdom')
+    setTestReturn(null)
+    setScreen(testExit())
+  }
+
+  // Тест из профиля. Уровня в аккаунте нет — обычный тест, он уровень и
+  // поставит (ровно то, чего не хватало тем, кто пропустил его после
+  // регистрации). Уровень есть — пересдача: результат покажем, уровень в
+  // аккаунте не тронем (решение владельца, 30.09.2026).
+  function openLevelTestFrom(returnTo) {
+    setTestReturn(returnTo)
+    setTestRetake(!needsLevelTest)
+    setScreen(needsLevelTest ? 'test-intro' : 'test')
+  }
+
+  function leaveRetake() {
+    setTestRetake(false)
+    setTestReturn(null)
+    setScreen(testExit())
   }
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
@@ -966,12 +996,23 @@ export default function App() {
     // Аккаунт класса важнее любой ссылки: кабинет ему закрыт весь, кроме
     // класса и урока (BOOTH_SCREENS выше), и страж всё равно увёл бы его назад.
     if (boothAccount) return home
-    return pendingScreenAfterLogin(pending, {
+    const target = pendingScreenAfterLogin(pending, {
       persists: persistsInUrl,
       // Урок с карточкой открывается не по имени экрана, а по прочитанному из
       // ссылки адресу — см. pendingScreenAfterLogin.
       hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
-    }) ?? home
+    })
+    // Уровня нет — сначала тест, и только потом ссылка. Раньше ссылка
+    // перебивала тест: пришедший по ней (в том числе обновивший вкладку на
+    // разделе, открытом гостем) регистрировался и попадал сразу в раздел, а
+    // тест так и не видел — жалоба «после регистрации теста не было». Ссылку
+    // не теряем: «Пройду позже» и конец теста ведут туда, куда он шёл.
+    if (home === 'test-intro') {
+      setTestReturn(target)
+      setTestRetake(false)
+      return home
+    }
+    return target ?? home
   }
 
   function handleLogout() {
@@ -1021,6 +1062,8 @@ export default function App() {
     setInterestIds([])
     setProfession('')
     setNeedsLevelTest(false)
+    setTestReturn(null)
+    setTestRetake(false)
     setScreen('welcome')
   }
 
@@ -1458,11 +1501,13 @@ export default function App() {
     case 'test-intro':
       return (
         <LevelTestIntroPage
-          // Сюда попадают уже залогиненными — «назад» ведёт в королевство,
-          // как и «позже», а не на экран входа.
-          onBack={() => setScreen('kingdom')}
-          onStart={() => setScreen('test')}
-          onLater={() => setScreen('kingdom')}
+          // Сюда попадают уже залогиненными — «назад» и «позже» ведут не на
+          // экран входа, а туда, откуда пришли (профиль, ссылка), иначе в
+          // королевство.
+          onBack={() => setScreen(testExit())}
+          // Интро — только у обычного теста: у пересдачи его нет.
+          onStart={() => { setTestRetake(false); setScreen('test') }}
+          onLater={() => setScreen(testExit())}
         />
       )
     case 'test':
@@ -1481,7 +1526,11 @@ export default function App() {
           // качества, по которым видно, насколько оценке можно верить.
           onLevel={(level, result, session, sessionToken) =>
             saveTestLevel(level, placementSummary(result), session, sessionToken)}
-          onDone={(level) => handleTestDone({ level })}
+          // Пересдача из профиля: уровень не пишется, «назад» есть.
+          retake={testRetake}
+          currentLevel={testRetake ? userLevel : null}
+          onExit={testRetake ? leaveRetake : undefined}
+          onDone={(level) => (testRetake ? leaveRetake() : handleTestDone({ level }))}
         />
       )
     case 'home':
@@ -1495,7 +1544,7 @@ export default function App() {
           // Тот же признак, по которому вход ведёт на 'test-intro': без уровня
           // «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
-          onStartLevelTest={() => setScreen('test-intro')}
+          onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}
@@ -1545,6 +1594,10 @@ export default function App() {
           onNav={handleNav}
           onLogout={handleLogout}
           onUpdateName={setName}
+          // Гостю тест из профиля не предлагаем: уровня у него нет по
+          // определению, а прогон без аккаунта ляжет на устройство.
+          levelUnknown={needsLevelTest}
+          onLevelTest={token ? () => openLevelTestFrom('profile') : undefined}
         />
       )
     case 'practice':
