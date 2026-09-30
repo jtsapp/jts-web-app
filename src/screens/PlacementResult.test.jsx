@@ -121,3 +121,36 @@ describe('PlacementResult — сохранение уровня', () => {
     expect(screen.getByText('Сохраняем уровень…')).toBeTruthy()
   })
 })
+
+// Пересдача из профиля уровень в аккаунте не меняет (решение владельца,
+// 30.09.2026): уровень открывает контент, а у оплативших его ставит тариф.
+// Экран обязан сказать это прямо — иначе ученик решит, что «сдал на B1».
+describe('PlacementResult — пересдача', () => {
+  it('говорит, что уровень в аккаунте остаётся прежним', () => {
+    renderResult({ retake: true, currentLevel: 'A2' })
+
+    expect(document.querySelector('.plc-level').textContent).toBe('B1')
+    expect(screen.getByText(/в аккаунте остаётся A2/)).toBeTruthy()
+  })
+
+  it('не показывает ни сохранения, ни ошибки сохранения', () => {
+    renderResult({ retake: true, currentLevel: 'A2', saveState: 'error' })
+
+    expect(screen.queryByText(/не сохранился/)).toBeNull()
+    expect(screen.queryByText('Сохраняем уровень…')).toBeNull()
+  })
+
+  it('на A0 не обещает «начнём с A1»: в профиль ничего не уезжает', () => {
+    renderResult({ result: { ...result, level: 'A0' }, retake: true, currentLevel: 'B1' })
+
+    expect(screen.queryByText(/Начнём с A1/)).toBeNull()
+  })
+
+  it('кнопка ведёт обратно в профиль', () => {
+    const onDone = vi.fn()
+    renderResult({ retake: true, currentLevel: 'A2', onDone })
+
+    fireEvent.click(screen.getByText('Вернуться в профиль'))
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+})
