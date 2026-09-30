@@ -247,11 +247,15 @@ export default function RunnerGame({ onExit }) {
     go('starting')
     try {
       const lists = await Promise.all(d.levels.map((l) => loadLevelWords(l)))
+      // Пока грузились слова, с экрана могли уйти: сцена уже освобождена,
+      // забег запускать некуда.
+      if (!scene.current) return
       if (lists.some((list) => !list || !list.length)) throw new Error('words')
       game.current = { state: createRun(d.lead), deck: createDeck(lists.flat(), { lang }), countdown: COUNTDOWN, level }
-      scene.current?.reset()
+      scene.current.reset()
       go('countdown')
     } catch {
+      if (!scene.current) return
       setError('words')
       go('ready')
     }

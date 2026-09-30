@@ -434,6 +434,8 @@ export function createRunnerScene(canvas, assets) {
         m.dispose()
       }
     })
+    // Материалы домов — отдельно: тот, что сейчас не выпал ни одному дому,
+    // обход сцены не найдёт. Повторный dispose у уже найденных безвреден.
     houseMats.forEach((m) => {
       m.emissiveMap?.dispose()
       m.dispose()
