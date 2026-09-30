@@ -35,6 +35,7 @@ const IDLE_SPEED = 5
 const TOAST_SECONDS = 1.5
 const BEST_KEY = 'jts_arcade_runner_best'
 const ACTIVE = ['countdown', 'playing']
+const LANE_KEYS = ['left', 'center', 'right']
 
 function readBest() {
   try {
@@ -435,11 +436,30 @@ export default function RunnerGame({ onExit }) {
               </div>
             </div>
           )}
-          {/* На паузе слово прячется: иначе над ответом можно думать сколько угодно. */}
+          {/* На паузе слово и варианты прячутся: иначе над ответом можно думать сколько угодно. */}
           {hud.prompt && status !== 'paused' && (
-            <div className="ar-run-prompt" aria-live="polite">
-              <small>{t('arcade.run.translate')}</small>
-              <b lang={lang === 'kk' ? 'kk' : 'ru'}>{hud.prompt}</b>
+            <div className="ar-run-ask">
+              <div className="ar-run-prompt" aria-live="polite">
+                <small>{t('arcade.run.translate')}</small>
+                <b lang={lang === 'kk' ? 'kk' : 'ru'}>{hud.prompt}</b>
+              </div>
+              {/* Варианты ряда — крупно и сразу: на воротах вдали три таблички
+                  стоят в ~20 px друг от друга, и прочесть их можно было только
+                  впритык. Порядок — по дорожкам, дорожка бегуна подсвечена. */}
+              {hud.options && (
+                <ul className="ar-run-options">
+                  {hud.options.map((word, i) => (
+                    <li
+                      key={i}
+                      lang="en"
+                      className={i === hud.lane ? 'is-here' : ''}
+                      aria-label={t(`arcade.run.lane.${LANE_KEYS[i]}`, { word })}
+                    >
+                      {word}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
           {hud.toast && (
