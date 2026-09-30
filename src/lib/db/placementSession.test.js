@@ -13,7 +13,8 @@ function fakeSql(strings, ...vals) {
   queries.push(q)
   if (q.startsWith('select token, finished, level')) {
     const [profileId] = vals
-    const found = [...rows.values()].filter((r) => r.profile_id === profileId)
+    let found = [...rows.values()].filter((r) => r.profile_id === profileId)
+    if (q.includes('and finished = false')) found = found.filter((r) => !r.finished)
     found.sort((a, b) => Number(b.finished) - Number(a.finished))
     return Promise.resolve(found.slice(0, 1))
   }
@@ -63,5 +64,46 @@ describe('openPlacementSession — повторная попытка', () => {
     const again = await openPlacementSession({ profileId: 'user-2', variant: 'full' })
 
     expect(again).toEqual({ token: null, blocked: true, level: 'B1' })
+  })
+})
+
+// Пересдача из профиля. Первый законченный прогон по-прежнему решает, какой
+// уровень у профиля, — пересдача его не трогает и уровень не пишет (это
+// делает клиент: он просто не зовёт /api/placement/complete). Но проверять
+// ответы без прогона нельзя, поэтому ей нужен свой, открытый прогон.
+describe('openPlacementSession — пересдача', () => {
+  it('при законченном прогоне заводит новый, а законченный не трогает', async () => {
+    const first = await openPlacementSession({ profileId: 'user-3', variant: 'full' })
+    Object.assign(rows.get(first.token), { finished: true, level: 'B1', answers: [{ id: 'q1', correct: 1 }] })
+
+    const retake = await openPlacementSession({ profileId: 'user-3', variant: 'express', retake: true })
+
+    expect(retake.token).toBeTruthy()
+    expect(retake.token).not.toBe(first.token)
+    expect(retake.blocked).toBeUndefined()
+    expect(rows.get(first.token)).toMatchObject({ finished: true, level: 'B1', answers: [{ id: 'q1', correct: 1 }] })
+  })
+
+  it('брошенная пересдача начинается заново в той же строке', async () => {
+    const first = await openPlacementSession({ profileId: 'user-4', variant: 'full' })
+    Object.assign(rows.get(first.token), { finished: true, level: 'A2' })
+    const retake = await openPlacementSession({ profileId: 'user-4', variant: 'full', retake: true })
+    rows.get(retake.token).answers = [{ id: 'q1', correct: 0 }]
+
+    const again = await openPlacementSession({ profileId: 'user-4', variant: 'express', retake: true })
+
+    expect(again.token).toBe(retake.token)
+    expect(rows.size).toBe(2)
+    expect(rows.get(retake.token).answers).toEqual([])
+  })
+
+  it('без флага пересдачи законченный прогон всё так же закрывает тему', async () => {
+    const first = await openPlacementSession({ profileId: 'user-5', variant: 'full' })
+    Object.assign(rows.get(first.token), { finished: true, level: 'C1' })
+    await openPlacementSession({ profileId: 'user-5', variant: 'full', retake: true })
+
+    const plain = await openPlacementSession({ profileId: 'user-5', variant: 'full' })
+
+    expect(plain).toEqual({ token: null, blocked: true, level: 'C1' })
   })
 })

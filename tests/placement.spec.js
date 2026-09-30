@@ -1,9 +1,16 @@
 import { test, expect } from '@playwright/test'
+import path from 'node:path'
+import { routeFakeBank, correctOptionTexts } from './helpers/placement-bank.js'
 
 // Тест на определение уровня — нативный экран приложения (PlacementTestPage)
 // поверх перенесённого движка школы. Совпадение расчётов с бандлом проверяет
 // placementParity.test.js; здесь — что экран собирается из данных банка и
 // доводит студента от выбора варианта до заданий.
+
+// Ключ ответов живёт на сервере, а не в публичном bank.json (bankSplit.js):
+// «правильно ответить» тест может, только прочитав его с диска.
+const keysPath = () =>
+  path.join(test.info().project.testDir, '..', 'src', 'practice', 'placement', 'keys.generated.json')
 
 const open = async (page) => {
   await page.goto('/?screen=test')
@@ -64,21 +71,17 @@ test.describe('placement — экран теста', () => {
     await page.locator('.plc-primary').click()
     await expect(page.locator('.plc-count')).toHaveText('2 / 6')
     // Назад — ответы раздела можно менять до его завершения.
-    await page.locator('.plc-ghost').click()
+    // Рядом с «Назад» теперь и «Не знаю» того же класса — берём по тексту.
+    await page.locator('.plc-ghost', { hasText: 'Назад' }).click()
     await expect(page.locator('.plc-count')).toHaveText('1 / 6')
     await expect(page.locator('.plc-opt.on')).toHaveCount(1)
   })
 
   test('раздел завершается и ведёт к следующему', async ({ page }) => {
-    // Отвечаем правильно (тексты верных ответов берём из банка): случайные
+    // Отвечаем правильно (тексты верных ответов — по серверному ключу): случайные
     // клики честно проваливают разминку и уводят на A0-мост, а этот тест —
     // про обычный переход между разделами.
-    const bank = await (await page.request.get('/practice/placement/bank.json')).json()
-    const correct = new Set(
-      bank.bank.items
-        .filter((it) => it.options?.length && it.key != null)
-        .map((it) => it.options[it.key].t),
-    )
+    const correct = await correctOptionTexts(page, keysPath())
     await open(page)
     await page.locator('.plc-opt').first().click()
     await page.locator('.plc-opt').nth(2).click()
@@ -96,51 +99,11 @@ test.describe('placement — экран теста', () => {
   })
 })
 
-
 // ─── A0-мост и контракт экрана с движком ────────────────────────────────────
-// Крошечный детерминированный банк: routing с fixedOrder и известным верным
-// вариантом, два задания моста, по одному заданию чтения/грамматики/письма.
-// Он подменяет реальный bank.json через route — так сценарий «новичок ушёл на
-// мост» воспроизводится точно, а не вероятностно.
-const FAKE_BANK = {
-  bank: {
-    version: 'e2e',
-    // buildUoeBatch читает blocks.formatMix/itemsPerSession — без них клик по
-    // «Начать» в грамматике падал бы внутри движка.
-    blocks: { itemsPerSession: 8, formatMix: { cloze_open: 4, wform: 3, transform: 3 } },
-    readingTexts: [{ id: 't1', level: 'A2', text: 'Anna has a small cat.' }],
-    items: [
-      ...Array.from({ length: 6 }, (_, i) => ({
-        id: `rt-${i}`, block: 'routing', level: 'A2', format: 'mcq4', fixedOrder: true,
-        stem: `Routing ${i + 1}`, key: 0,
-        options: [{ t: 'CORRECT' }, { t: 'WRONG-1' }, { t: 'WRONG-2' }, { t: 'WRONG-3' }],
-      })),
-      { id: 'br-1', block: 'a0_bridge', level: 'A1', format: 'cloze_open', stem: 'Bridge one ___', answer: ['ok'] },
-      { id: 'br-2', block: 'a0_bridge', level: 'A1', format: 'cloze_open', stem: 'Bridge two ___', answer: ['ok'] },
-      {
-        id: 'r-1', block: 'reading', level: 'A2', format: 'mcq4', fixedOrder: true, source: 't1',
-        stem: 'Who has a cat?', key: 0,
-        options: [{ t: 'Anna' }, { t: 'Nick' }, { t: 'Dana' }, { t: 'Aigerim' }],
-      },
-      { id: 'u-1', block: 'uoe', level: 'A1', format: 'cloze_open', constructFamily: 'tense_aspect', stem: 'She ___ happy.', answer: ['is'] },
-      { id: 'w-1', block: 'writing', level: 'A1', stem: 'Write about your day.' },
-    ],
-  },
-  bank2: {
-    minpairs: [],
-    clips: { sources: [], items: [] },
-    listening2: { sources: [], items: [] },
-    interactive: { order: [], bankfill: [], match: [] },
-  },
-  manifest: { sources: [] },
-  vocab: {},
-  appliedPatches: [],
-}
-
+// Банк подменяется крошечным детерминированным (tests/helpers/placement-bank.js):
+// так сценарий «новичок ушёл на мост» воспроизводится точно, а не вероятностно.
 const openFake = async (page) => {
-  await page.route('**/practice/placement/bank.json', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(FAKE_BANK) }),
-  )
+  await routeFakeBank(page)
   await page.goto('/?screen=test')
   await expect(page.locator('.plc-card')).toBeVisible({ timeout: 20000 })
   await page.locator('.plc-opt').first().click() // экспресс
@@ -209,58 +172,39 @@ test.describe('placement — A0-мост', () => {
 })
 
 // ─── словарь: формат движка — выбор значения, а не тумблер «знаю» ──────────
-// Тексты правильных ответов всех mcq-заданий реального банка: щёлкая их,
-// проход не проваливает разминку и не уезжает на A0-мост.
-async function loadCorrectTexts(page) {
-  const bank = await (await page.request.get('/practice/placement/bank.json')).json()
-  const set = new Set()
-  for (const it of bank.bank.items) {
-    if (it.options?.length && it.key != null && it.options[it.key]) set.add(it.options[it.key].t)
-  }
-  return set
-}
-
 test.describe('placement — словарь', () => {
   test('вопрос словаря даёт варианты значений и «Не знаю»', async ({ page }) => {
-    test.setTimeout(180000)
-    const correct = await loadCorrectTexts(page)
+    // Раньше до словаря шёл обходчик по живому банку: пять разделов с
+    // аудированием, 90 шагов наугад, три минуты — и то и дело застревал
+    // (задание «расставь по порядку» щёлкалось туда-обратно). На крошечном
+    // банке разделы до словаря пустые, и после моста сразу идёт он; сам
+    // словарь — настоящий, из bank.json.
+    const real = await (await page.request.get('/practice/placement/bank.json')).json()
+    await routeFakeBank(page, { vocab: real.vocab })
     await page.goto('/?screen=test')
     await expect(page.locator('.plc-card')).toBeVisible({ timeout: 20000 })
-    await page.locator('.plc-opt').first().click()
-    await page.locator('.plc-opt').nth(2).click()
+    await page.locator('.plc-opt').first().click() // экспресс
+    await page.locator('.plc-opt').nth(2).click() // самооценка
+    await page.locator('.plc-primary').click() // старт разминки
 
-    // Идём по разделам, отвечая правильно где знаем ответ, пока не словарь.
-    for (let step = 0; step < 90; step++) {
-      // Экран словаря узнаём по крупному спрашиваемому слову — заголовки
-      // разделов совпадают на интро и на вопросах, по ним стопориться ненадёжно.
-      if (await page.locator('.plc-stem--word').count()) break
-      for (const row of await page.locator('.plc-tf').all()) await row.locator('.plc-tf__btn').first().click()
-      for (let g = 0; g < 14; g++) {
-        const tile = page.locator('.plc-bank .plc-tile:not([disabled])').first()
-        if (!(await tile.count())) break
-        await tile.click()
-      }
-      for (const list of await page.locator('.plc-list').all()) {
-        const btns = await list.locator('.plc-opt').all()
-        if (!btns.length) continue
-        let clicked = false
-        for (const b of btns) {
-          const txt = (await b.innerText()).trim()
-          if (correct.has(txt)) { await b.click().catch(() => {}); clicked = true; break }
-        }
-        if (!clicked) await btns[0].click().catch(() => {})
-      }
-      for (const inp of await page.locator('.plc-input').all()) await inp.fill('the')
-      let go = page.locator('.plc-primary:not([disabled])')
-      if (!(await go.count())) {
-        // «Порядок событий» в аудировании требует выбрать все пункты — добираем
-        // оставшиеся не-выбранные варианты и пробуем ещё раз.
-        for (const b of await page.locator('.plc-opt:not(.on)').all()) await b.click().catch(() => {})
-        go = page.locator('.plc-primary:not([disabled])')
-      }
-      if (await go.count()) await go.click()
-      await page.waitForTimeout(120)
+    // Разминка на фикстуре всегда уводит на мост (см. routeFakeBank), а
+    // пройденный мост возвращает в основной тест.
+    const n = Number((await page.locator('.plc-count').innerText()).split('/')[1])
+    for (let i = 1; i <= n; i++) {
+      await expect(page.locator('.plc-count')).toHaveText(`${i} / ${n}`)
+      await page.locator('.plc-opt', { hasText: 'CORRECT' }).click()
+      await page.locator('.plc-primary:not([disabled])').click()
     }
+    await expect(page.locator('.plc-h1')).toHaveText('Стартовый блок')
+    await page.locator('.plc-primary').click()
+    for (let i = 1; i <= 2; i++) {
+      await expect(page.locator('.plc-count')).toHaveText(`${i} / 2`)
+      await page.locator('.plc-input').fill('ok')
+      await page.locator('.plc-primary:not([disabled])').click()
+    }
+    // Интро следующего раздела; «Начать» проваливается сквозь пустые разделы.
+    await expect(page.locator('.plc-h1')).not.toHaveText('Стартовый блок')
+    await page.locator('.plc-primary').click()
 
     // Спрашиваемое слово крупно, 4 значения + «Не знаю» — контракт vocabScore.
     await expect(page.locator('.plc-stem--word')).toBeVisible()

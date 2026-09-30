@@ -34,8 +34,16 @@ const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 // позицию; у остальных заданий id уникален в банке.
 const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
 
+// retake — пересдача из профиля: уровень в аккаунте уже есть, и прогон его НЕ
+// меняет (решение владельца, 30.09.2026: уровень открывает контент, а у
+// оплативших его ставит тариф — пересдачей ученик открыл бы себе чужой
+// уровень). Поэтому onLevel не зовётся, «уже проходил» не проверяется, а
+// экран результата говорит, какой уровень остаётся в аккаунте (currentLevel).
+// onExit — стрелка «назад» в шапке. Пересдачу человек начал сам и вправе
+// бросить на середине; тесту после регистрации её не даём, как и раньше.
 export default function PlacementTestPage({
   lang = 'ru', token = null, onLevel, onDone, saveState = 'idle', onRetrySave,
+  retake = false, currentLevel = null, onExit,
 }) {
   const t = useCallback((k) => placementText(lang, k), [lang])
   // Строки самого теста сняты из бандла (strings.js), а сообщения приложения —
@@ -70,12 +78,15 @@ export default function PlacementTestPage({
     // прогон при этом не заводится.
     // Прогон принадлежит профилю: залогиненному — по токену, анониму — по
     // deviceId. Без этого «один раз» не работало бы: каждый прогон был бы ничей.
-    const alreadyDone = fetch(
-      `/api/placement/session?deviceId=${encodeURIComponent(getDeviceId())}`,
-      { headers: authHeaders(token) },
-    )
-      .then((r) => r.json())
-      .catch(() => null)
+    // Пересдаче спрашивать нечего: она и нужна тем, у кого уровень уже есть.
+    const alreadyDone = retake
+      ? Promise.resolve(null)
+      : fetch(
+        `/api/placement/session?deviceId=${encodeURIComponent(getDeviceId())}`,
+        { headers: authHeaders(token) },
+      )
+        .then((r) => r.json())
+        .catch(() => null)
 
     Promise.all([loadPlacementBank(), alreadyDone]).then(([d, done]) => {
       if (!alive) return
@@ -121,7 +132,9 @@ export default function PlacementTestPage({
       const res = await fetch('/api/placement/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-        body: JSON.stringify({ variant, deviceId: getDeviceId() }),
+        // retake: законченный прогон пересдачу не блокирует — ей заводится
+        // свой (см. /api/placement/session).
+        body: JSON.stringify({ variant, deviceId: getDeviceId(), ...(retake ? { retake: true } : {}) }),
       })
       const data = await res.json().catch(() => null)
       if (res.status === 409 && data?.error === 'already_completed') {
@@ -346,14 +359,15 @@ export default function PlacementTestPage({
     // которое уезжает в профиль студента и определяет весь его контент.
     // Вместе с ним отдаём журнал прохождения — по нему сервер пересчитает
     // уровень сам, не полагаясь на клиентский подсчёт.
+    // Пересдача уровень не пишет никуда — ни в бэкенд, ни в профиль тьютора.
     const level = placementLevel(r)
-    if (level) onLevel?.(level, r, sess.current.exportJson(), runToken.current)
+    if (level && !retake) onLevel?.(level, r, sess.current.exportJson(), runToken.current)
   }
 
   // ─── служебные экраны ───────────────────────────────────────────────────
   if (phase === 'loading' || phase === 'error') {
     return (
-      <Shell>
+      <Shell onBack={onExit}>
         <div className="plc">
           <div className="plc-card plc-card--center">
             {phase === 'loading' ? (
@@ -372,10 +386,14 @@ export default function PlacementTestPage({
 
   if (phase === 'variant') {
     return (
-      <Shell>
+      <Shell onBack={onExit}>
         <div className="plc">
           <div className="plc-card">
             <h1 className="plc-h1">{t('variantChoose')}</h1>
+            {/* Сказать ДО 15–45 минут теста, а не только на результате. */}
+            {retake && currentLevel && (
+              <p className="plc-note">{appT('placement.retakeNote', { level: currentLevel })}</p>
+            )}
             <div className="plc-list">
               {['express', 'full'].map((v) => (
                 <button key={v} type="button" className="plc-opt plc-opt--wide" onClick={() => startVariant(v)}>
@@ -395,7 +413,7 @@ export default function PlacementTestPage({
 
   if (phase === 'cando') {
     return (
-      <Shell>
+      <Shell onBack={onExit}>
         <div className="plc">
           <div className="plc-card">
             <h1 className="plc-h1">{t('cando')}</h1>
@@ -416,7 +434,7 @@ export default function PlacementTestPage({
   if (phase === 'intro') {
     const sec = bridgeMode ? { title: t('a0Title'), hint: t('a0Note') } : plan[secIdx]
     return (
-      <Shell>
+      <Shell onBack={onExit}>
         <div className="plc">
           <div className="plc-card plc-card--center">
             {!bridgeMode && <div className="plc-step">{secIdx + 1} / {plan.length}</div>}
@@ -438,13 +456,14 @@ export default function PlacementTestPage({
         items={screens.map((sc) => sc.item)}
         lang={lang}
         onDone={finish}
+        onExit={onExit}
       />
     )
   }
 
   if (phase === 'blocked') {
     return (
-      <Shell>
+      <Shell onBack={onExit}>
         <div className="plc">
           <div className="plc-card plc-card--center">
             <h1 className="plc-h1">{appT('placement.alreadyTitle')}</h1>
@@ -466,6 +485,8 @@ export default function PlacementTestPage({
         lang={lang}
         saveState={saveState}
         onRetrySave={onRetrySave}
+        retake={retake}
+        currentLevel={currentLevel}
         onDone={() => onDone?.(placementLevel(result), result)}
       />
     )
@@ -490,7 +511,7 @@ export default function PlacementTestPage({
   }
 
   return (
-    <Shell>
+    <Shell onBack={onExit}>
       <div className="plc">
         <div className="plc-card">
           <div className="plc-top">
@@ -620,7 +641,7 @@ function createRecorderRig(stream, { onElapsed, onHardStop }) {
   return rig
 }
 
-function SpeakingSection({ session, items, lang, onDone }) {
+function SpeakingSection({ session, items, lang, onDone, onExit }) {
   const [step, setStep] = useState('gate') // gate | rec | done
   const [idx, setIdx] = useState(0)
   const [elapsed, setElapsed] = useState(0)
@@ -685,7 +706,7 @@ function SpeakingSection({ session, items, lang, onDone }) {
   const item = items[idx]
 
   return (
-    <Shell>
+    <Shell onBack={onExit}>
       <div className="plc">
         <div className="plc-card plc-card--center">
           {step === 'gate' && (
@@ -722,7 +743,9 @@ function SpeakingSection({ session, items, lang, onDone }) {
 // ─── результат ────────────────────────────────────────────────────────────
 // Экспортируется ради теста на баннер «уровень не сохранился»: дойти до этого
 // экрана через полный прогон теста в тесте — 30 заданий и сеть.
-export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave, onDone }) {
+export function PlacementResult({
+  result, lang, saveState = 'idle', onRetrySave, onDone, retake = false, currentLevel = null,
+}) {
   const t = (k) => T(lang, k)
   // Строки самого теста сняты из бандла школы (strings.js правится только
   // прогоном скрипта), поэтому сообщение о сохранении берём из словаря
@@ -789,8 +812,15 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
             <p className="plc-note plc-note--warn">{appT('placement.unresolved')}</p>
           )}
           {/* A0 — измеренная полоса, но в профиль уезжает A1: в приложениях A0
-              значит «тест не пройден» и запирает карту. */}
-          {result.level === 'A0' && <p className="plc-note">{appT('placement.startsAtA1')}</p>}
+              значит «тест не пройден» и запирает карту. У пересдачи в профиль
+              не уезжает ничего, и обещать «начнём с A1» ей нечестно. */}
+          {result.level === 'A0' && !retake && <p className="plc-note">{appT('placement.startsAtA1')}</p>}
+          {/* Пересдача уровень в аккаунте не меняет: он открывает контент, а у
+              оплативших его ставит тариф. Без этой строки «B1» крупно на экране
+              читается как «теперь у меня B1». */}
+          {retake && currentLevel && (
+            <p className="plc-note plc-note--warn">{appT('placement.retakeResult', { level: currentLevel })}</p>
+          )}
 
           {rows.length > 0 && (
             <div className="plc-rows">
@@ -815,7 +845,7 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
             </div>
           )}
 
-          {saveState === 'error' && (
+          {!retake && saveState === 'error' && (
             <div className="plc-save-error">
               <p className="form-error">{appT('level.saveFailed')}</p>
               <button className="plc-ghost" type="button" onClick={onRetrySave}>
@@ -823,9 +853,11 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
               </button>
             </div>
           )}
-          {saveState === 'saving' && <p className="plc-hint">{appT('level.saving')}</p>}
+          {!retake && saveState === 'saving' && <p className="plc-hint">{appT('level.saving')}</p>}
 
-          <button className="plc-primary" onClick={onDone}>Let&apos;s go 🚀</button>
+          <button className="plc-primary" onClick={onDone}>
+            {retake ? appT('placement.retakeDone') : <>Let&apos;s go 🚀</>}
+          </button>
         </div>
       </div>
     </Shell>
