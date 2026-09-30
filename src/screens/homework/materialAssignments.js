@@ -7,7 +7,6 @@
 // одно и то же. Ни сети, ни React — под юнит-тесты.
 
 import { isStandaloneLessonUrl } from '../live/catalogLessonByUrl.js'
-import { engineOf } from '../live/lessonExtractor.js'
 
 /** Оценено ли назначение преподавателем (у него нет статусной машины ДЗ). */
 export function isMaterialGraded(a) {
@@ -149,15 +148,11 @@ export function isWholeCatalogLesson(a) {
   // автоуказка на выданное место, а разобранный на шаги урок всего этого не
   // знает и открылся бы с начала — ровно та жалоба, с которой всё начиналось.
   if (isAddressedPart(a)) return false
-  // Домашка наследует движок занятия (spec §2): у FILE-занятия «целиком» — это файл во
-  // фрейме (isInteractiveMaterial → рамка), а плеер разбора остаётся STEPS-занятиям.
-  // Через engineOf, а не сырое сравнение с 'FILE': аварийный рубильник LESSON_EXTRACTOR
-  // (lessonExtractor.js) обязан возвращать к разбору ВСЁ одной строкой, а сырое
-  // сравнение его не видит вовсе — если рубильник дёрнут, потому что FILE сломался в
-  // проде, именно эта домашка осталась бы сломанной единственной (расхождение,
-  // пойманное финальным ревью ветки: та же спека §9 обещает рубильнику вернуть
-  // разбор всем занятиям, а не всем-кроме-этой-домашки).
-  if (engineOf({ engine: a.lessonEngine }) === 'FILE') return false
+  // На main уроки идут по старому формату (разбор на шаги), поэтому «урок каталога
+  // целиком» открывается плеером разбора и у занятия с движком FILE: файл курса в
+  // рамке — мёртвый (скрипта заданий в нём нет, варианты не нажимаются). Движок
+  // занятия здесь намеренно НЕ смотрим; в develop, где живёт формат FILE, это условие
+  // остаётся прежним (lessonEngine === 'FILE' → рамка) — при слиянии не терять.
   if (a.catalogLessonId != null) return true
   const url = String(a.fileUrl || '')
   return a.materialType === 'LINK' && CATALOG_LESSON_FILE.test(url) && !isStandaloneLessonUrl(url)
