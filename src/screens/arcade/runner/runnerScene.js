@@ -6,14 +6,17 @@
 // ряд, исход прохода, скорость — и сцена его только рисует. Правила живут в
 // src/practice/arcade/runner/engine.js и проверяются тестами без WebGL.
 //
-// Бегун — модель Higgsfield (Meshy image→3D с авто-ригом и клипом бега),
-// ворота и город строятся кодом: неоновая трубка светится без постобработки
-// и перекрашивается одним color.setHex, а дома — одинаковые боксы с окнами,
-// которые переезжают вперёд, когда уходят за камеру.
+// Бегун — модель Higgsfield (Meshy image→3D с авто-ригом): бег, прыжок,
+// подкат и спотыкание — клипы одного рига, склеенные в runner-v2.glb
+// (scripts/merge-runner-clips.js). Препятствия — тоже модели, вписанные в
+// размер из правил. Ворота и город строятся кодом: неоновая трубка светится
+// без постобработки и перекрашивается одним color.setHex, а дома — одинаковые
+// боксы с окнами, которые переезжают вперёд, когда уходят за камеру.
 
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { LANES, SPAWN } from '../../../practice/arcade/runner/engine.js'
+import { INVULN, JUMP_TIME, LANES, SLIDE_TIME, SPAWN } from '../../../practice/arcade/runner/engine.js'
+import { KINDS } from '../../../practice/arcade/runner/obstacles.js'
 
 const BASE = '/arcade/runner'
 const LANE_W = 2.4
@@ -29,22 +32,47 @@ const WINDOW_TILE = 12
 const GATE_W = LANE_W - 0.35
 const GATE_H = 3.3
 const RUNNER_HEIGHT = 1.8
-const STUMBLE = 0.6
+// Подскок на промахе мимо ворот — кодом, как было; удар о препятствие играет
+// свой клип (stumble).
+const MISS_HOP = 0.6
+// Дуга прыжка поверх клипа: Jump_Run подпрыгивает невысоко, а барьер должен
+// читаться перепрыгнутым, а не пройденным насквозь. Подбирается живым прогоном.
+const JUMP_ARC = 0.7
+const FADE = 0.1
+// Размер препятствия на сцене — из правил: барьер ниже дуги прыжка, под
+// перекладиной шлагбаума проходит подкат, автобус выше всего. Длина вдоль
+// дороги — из движка (KINDS), иначе удар случался бы «в воздухе».
+const OBSTACLE_SIZE = {
+  barrier: { w: LANE_W - 0.5, h: 0.9 },
+  boom: { w: LANE_W - 0.2, h: 1.7 },
+  bus: { w: LANE_W - 0.3, h: 2.9 },
+}
+// На дороге разом — подход к текущему ряду и хвост прошлого: до четырёх
+// одного вида. Не хватит экземпляра — препятствие стало бы невидимым, а удар
+// о невидимое нечестен.
+const POOL = 4
+const POSES = ['run', 'jump', 'slide', 'stumble']
 const SKY = 0x1c0d45
 const FOG = 0x2d1570
 const TONE = { idle: 0xb78bff, hit: 0x33e08a, miss: 0xff4d6d }
 const hex = (n) => `#${n.toString(16).padStart(6, '0')}`
 
 export async function loadRunnerAssets() {
-  const [runner, skyline] = await Promise.all([
-    new GLTFLoader().loadAsync(`${BASE}/runner.glb`),
+  const loader = new GLTFLoader()
+  const [runner, barrier, boom, bus, skyline] = await Promise.all([
+    loader.loadAsync(`${BASE}/runner-v2.glb`),
+    // Препятствия обязательны, как и бегун: без модели препятствие невидимо,
+    // а удар о невидимое нечестен — лучше честно не стартовать.
+    loader.loadAsync(`${BASE}/barrier.glb`),
+    loader.loadAsync(`${BASE}/boom.glb`),
+    loader.loadAsync(`${BASE}/bus.glb`),
     // Панорама — украшение: без неё остаётся небо цветом, игра не ломается.
     new THREE.TextureLoader().loadAsync(`${BASE}/skyline.webp`).catch(() => null),
     // Надписи рисуются шрифтом страницы на canvas — без ожидания первые
     // таблички выходили бы системным шрифтом.
     document.fonts?.load('800 64px Manrope').catch(() => null),
   ])
-  return { runner, skyline }
+  return { runner, skyline, obstacles: { barrier, boom, bus } }
 }
 
 function canvasTexture(width, height, draw) {
@@ -218,6 +246,83 @@ function paint(gate, text, tone) {
   gate.texture.needsUpdate = true
 }
 
+// Какой кусок клипа Meshy играть в позе и что делать с высотой бёдер. Клипы
+// длиннее позы и сняты не под неё (разобрано по ключам бёдер 01.10.2026):
+// - Jump_Run (2.1 с) начинается уже в воздухе, в 0.1–0.3 с — присед
+//   приземления, дальше обычный бег. Берём присед и выход из него, а бёдра
+//   держим на высоте бега: присед читается поджатыми в полёте ногами, высоту
+//   даёт дуга JUMP_ARC.
+// - slide_light (1.57 с) — весь подкат: опускание, скольжение, подъём.
+// - sliding_stumble (11.4 с) — бег, падение с 3.4 с, лёжа, подъём. Берём
+//   только начало падения; бёдра в этом клипе почему-то на 45 см выше бега —
+//   опускаем их к высоте бега.
+const CUTS = {
+  jump: { from: 0.08, to: 0.6, hips: 'pin' },
+  slide: { from: 0.03, to: 1.5, hips: 'keep' },
+  stumble: { from: 3.4, to: 4.25, hips: 'keep' },
+}
+
+// Кусок клипа [from, to] в секундах, время с нуля. Дорожка без ключей в
+// куске (постоянная) сохраняет своё первое значение.
+function segment(clip, from, to) {
+  const tracks = clip.tracks.map((track) => {
+    const size = track.getValueSize()
+    const times = []
+    const values = []
+    track.times.forEach((t, i) => {
+      if (t < from || t > to) return
+      times.push(t - from)
+      for (let k = 0; k < size; k++) values.push(track.values[i * size + k])
+    })
+    if (!times.length) {
+      times.push(0)
+      values.push(...track.values.slice(0, size))
+    }
+    return new track.constructor(track.name, times, values)
+  })
+  return new THREE.AnimationClip(clip.name, to - from, tracks)
+}
+
+// Бёдра клипов Meshy уезжают вперёд (подкат — на 6.5 м) и вбок — бегун
+// «уезжал» бы с дорожки: гасим горизонталь к первому кадру. Высоту ставим к
+// высоте бега `baseY`: 'pin' — держим ровно на ней, 'keep' — сдвигаем, сохраняя
+// движение (опускание в подкате). Ищем именно Hips: дорожка `.position` есть
+// у каждой кости, и первая попавшаяся — не корень.
+function anchorHips(clip, baseY, hips) {
+  const track = clip.tracks.find((t) => t.name === 'Hips.position')
+  if (!track) return clip
+  const v = track.values
+  const [x0, y0, z0] = [v[0], v[1], v[2]]
+  for (let i = 0; i < v.length; i += 3) {
+    v[i] = x0
+    v[i + 1] = hips === 'pin' ? baseY : v[i + 1] - y0 + baseY
+    v[i + 2] = z0
+  }
+  return clip
+}
+
+// Модель из image→3D стоит как получилось: разворачиваем длинной стороной
+// куда надо (автобус — вдоль дороги, барьер и шлагбаум — поперёк) и вписываем
+// в размер из правил, стоящей на земле и по центру своего отрезка дороги.
+function fitObstacle(gltf, kind) {
+  const model = gltf.scene
+  const box = new THREE.Box3().setFromObject(model)
+  const size = box.getSize(new THREE.Vector3())
+  if ((kind === 'bus') !== size.z > size.x) {
+    model.rotation.y = Math.PI / 2
+    model.updateMatrixWorld(true)
+    box.setFromObject(model)
+    box.getSize(size)
+  }
+  const center = box.getCenter(new THREE.Vector3())
+  model.position.set(-center.x, -box.min.y, -center.z)
+  const holder = new THREE.Group()
+  holder.add(model)
+  const { w, h } = OBSTACLE_SIZE[kind]
+  holder.scale.set(w / (size.x || 1), h / (size.y || 1), KINDS[kind].len / (size.z || 1))
+  return holder
+}
+
 function makeRunner(gltf) {
   const model = gltf.scene
   // Скиннинг двигает вершины уже после проверки видимости: без этого бегун
@@ -238,14 +343,29 @@ function makeRunner(gltf) {
   hero.rotation.y = Math.PI
   // Клип RunFast у Meshy — бег на месте (бёдра качаются на пару сантиметров,
   // вперёд не уезжают; проверено по ключам), поэтому корень не трогаем: едет
-  // мир, а не бегун.
-  let mixer = null
-  const clip = gltf.animations[0]
-  if (clip) {
-    mixer = new THREE.AnimationMixer(model)
-    mixer.clipAction(clip).play()
+  // мир, а не бегун. Клипы названы по позам при склейке; одноклиповый файл
+  // без имён — это бег: так сцена переживёт и модель без клипов поз (правила
+  // от них не зависят).
+  const clips = Object.fromEntries(gltf.animations.map((c) => [c.name, c]))
+  if (!clips.run && gltf.animations[0]) clips.run = gltf.animations[0]
+  const runHips = clips.run?.tracks.find((t) => t.name === 'Hips.position')
+  const baseY = runHips ? runHips.values[1] : 0
+  const mixer = new THREE.AnimationMixer(model)
+  const actions = {}
+  for (const name of POSES) {
+    let clip = clips[name]
+    if (!clip) continue
+    const cut = CUTS[name]
+    if (cut) clip = anchorHips(segment(clip, cut.from, Math.min(cut.to, clip.duration)), baseY, cut.hips)
+    const action = mixer.clipAction(clip)
+    if (name !== 'run') {
+      action.setLoop(THREE.LoopOnce, 1)
+      action.clampWhenFinished = true
+    }
+    actions[name] = action
   }
-  return { hero, mixer }
+  actions.run?.play()
+  return { hero, mixer, actions }
 }
 
 export function createRunnerScene(canvas, assets) {
@@ -348,7 +468,20 @@ export function createRunnerScene(canvas, assets) {
   rowGroup.visible = false
   scene.add(rowGroup)
 
-  const { hero, mixer } = makeRunner(assets.runner)
+  // Препятствия — по пулу экземпляров на вид: меши не создаются посреди
+  // забега, клоны делят геометрию и материалы шаблона.
+  const pools = {}
+  for (const kind of Object.keys(OBSTACLE_SIZE)) {
+    const template = fitObstacle(assets.obstacles[kind], kind)
+    pools[kind] = Array.from({ length: POOL }, () => {
+      const item = template.clone()
+      item.visible = false
+      scene.add(item)
+      return item
+    })
+  }
+
+  const { hero, mixer, actions } = makeRunner(assets.runner)
   scene.add(hero)
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(0.55, 24),
@@ -361,14 +494,40 @@ export function createRunnerScene(canvas, assets) {
   let rowKey = null
   let lastSeq = 0
   let runnerX = laneX(1)
-  let stumble = 0
+  let hop = 0
+  // Клип, который играет бегун, и поза движка в прошлом кадре: клип
+  // запускается на смене, а не каждый кадр.
+  let shown = 'run'
+  let poseKey = 'run'
+  let hitKey = 0
+  let stumbleLeft = 0
+
+  // Новый клип стартует с начала, старый гаснет за FADE. `seconds` подгоняет
+  // длину клипа под позу движка: клип Meshy длится сколько длится, а прыжок в
+  // правилах — 0.7 с.
+  function play(name, seconds) {
+    const to = actions[name]
+    if (!to) return
+    const from = actions[shown]
+    to.reset()
+    if (seconds) to.timeScale = to.getClip().duration / seconds
+    to.play()
+    if (from && from !== to) from.crossFadeTo(to, FADE, false)
+    shown = name
+  }
 
   function reset() {
     rowKey = null
     lastSeq = 0
     runnerX = laneX(1)
-    stumble = 0
+    hop = 0
+    poseKey = 'run'
+    hitKey = 0
+    stumbleLeft = 0
+    if (shown !== 'run') play('run')
+    hero.visible = true
     rowGroup.visible = false
+    for (const kind in pools) for (const item of pools[kind]) item.visible = false
   }
 
   function resize() {
@@ -420,25 +579,68 @@ export function createRunnerScene(canvas, assets) {
       paint(gates[last.correct], gates[last.correct].text, TONE.hit)
       if (!last.hit) {
         paint(gates[last.lane], gates[last.lane].text, TONE.miss)
-        stumble = STUMBLE
+        hop = MISS_HOP
       }
+    }
+
+    // Препятствия: экземпляры из пула по видам, лишние спрятаны.
+    const used = { barrier: 0, boom: 0, bus: 0 }
+    for (const o of snap.obstacles || []) {
+      // Дальше точки появления ворот не рисуем: препятствие выезжает из тумана
+      // там же, где ряд, а не висит пятном цвета тумана на фоне неба.
+      if (o.z > SPAWN) continue
+      const item = pools[o.kind]?.[used[o.kind]++]
+      if (!item) continue
+      item.position.set(laneX(o.lane), 0, -(o.z + o.len / 2))
+    }
+    for (const kind in pools) {
+      pools[kind].forEach((item, i) => {
+        item.visible = i < used[kind]
+      })
+    }
+
+    // Клипы. Удар важнее позы: спотыкание начинается в кадре удара, хотя
+    // движок в том же кадре вернул позу в бег.
+    if (snap.lastHit && snap.lastHit.n !== hitKey) {
+      hitKey = snap.lastHit.n
+      stumbleLeft = INVULN
+      play('stumble', INVULN)
+    }
+    const pose = snap.pose || 'run'
+    if (pose !== poseKey) {
+      poseKey = pose
+      if (pose === 'jump') play('jump', JUMP_TIME)
+      else if (pose === 'slide') play('slide', SLIDE_TIME)
+      else if (stumbleLeft <= 0) play('run')
+    }
+    if (stumbleLeft > 0 && snap.moving) {
+      stumbleLeft -= dt
+      if (stumbleLeft <= 0 && poseKey === 'run') play('run')
     }
 
     const dx = laneX(snap.lane) - runnerX
     runnerX += dx * (1 - Math.exp(-dt * 14))
     hero.position.x = runnerX
     hero.rotation.z = THREE.MathUtils.clamp(dx * 0.12, -0.3, 0.3)
-    if (stumble > 0) {
-      stumble = Math.max(0, stumble - dt)
-      const k = Math.sin((1 - stumble / STUMBLE) * Math.PI)
-      hero.position.y = k * 0.35
+    let hopY = 0
+    if (hop > 0) {
+      hop = Math.max(0, hop - dt)
+      const k = Math.sin((1 - hop / MISS_HOP) * Math.PI)
+      hopY = k * 0.35
       hero.rotation.x = k * 0.25
     } else {
-      hero.position.y = 0
       hero.rotation.x = 0
     }
+    const arc = poseKey === 'jump' ? Math.sin(Math.PI * Math.min(1, snap.posePhase || 0)) * JUMP_ARC : 0
+    hero.position.y = hopY + arc
+    // Неуязвимость видна миганием, как в аркадах: сквозь препятствия бегун
+    // проходит, и без мигания это выглядело бы багом.
+    hero.visible = !(snap.invuln > 0) || Math.floor(snap.invuln * 10) % 2 === 0
     shadow.position.x = runnerX
-    mixer?.update(snap.moving ? dt * (0.75 + 0.35 * (snap.speedMul || 1)) : 0)
+    shadow.scale.setScalar(1 - Math.min(0.5, arc * 0.6))
+    // Темп бега — от скорости забега; клипы поз идут своим темпом из play().
+    if (actions.run) actions.run.timeScale = 0.75 + 0.35 * (snap.speedMul || 1)
+    mixer.update(snap.moving ? dt : 0)
     camera.position.x = runnerX * 0.35
     renderer.render(scene, camera)
   }
@@ -446,7 +648,7 @@ export function createRunnerScene(canvas, assets) {
   // Без явного освобождения каждый заход на экран оставлял бы в памяти
   // видеокарты текстуры и буферы прошлого — телефон начинал тормозить.
   function dispose() {
-    mixer?.stopAllAction()
+    mixer.stopAllAction()
     scene.traverse((o) => {
       o.geometry?.dispose()
       const materials = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []
