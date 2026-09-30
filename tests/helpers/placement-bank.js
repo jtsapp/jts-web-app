@@ -57,10 +57,19 @@ export function gradeFakeBank(answers) {
   })
 }
 
-/** Подменяет банк и его проверку на странице. */
-export async function routeFakeBank(page) {
+/**
+ * Подменяет банк и его проверку на странице. [vocab] — словарь LexTALE (у
+ * фикстуры он пуст, и раздел проскакивается): с ним после моста сразу идёт
+ * словарь, ведь остальные разделы до него в фикстуре пустые.
+ *
+ * Разминка на фикстуре проваливается всегда: движок берёт 2×A2, 2×B1, B2 и
+ * C1, а у фикстуры все шесть заданий A2 — попадают два, остальные четыре
+ * считаются «без ответа». Дальше в основной тест ведёт только пройденный мост.
+ */
+export async function routeFakeBank(page, { vocab } = {}) {
+  const bank = vocab ? { ...FAKE_BANK, vocab } : FAKE_BANK
   await page.route('**/practice/placement/bank.json', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(FAKE_BANK) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(bank) }),
   )
   await page.route('**/api/placement/grade', (route) => {
     const { answers = [] } = route.request().postDataJSON() || {}
