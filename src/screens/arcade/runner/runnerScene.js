@@ -113,31 +113,51 @@ function houseGeometry(width, height, depth) {
   return geo
 }
 
-// Табличка над воротами: тёмная плашка с неоновой рамкой, слово ужимается
-// по ширине — у C1 бывают `environmentally friendly`.
+const SIGN_W = 512
+const SIGN_H = 220
+const signFont = (px) => `800 ${px}px Manrope, system-ui, sans-serif`
+
+// Кегль таблички: одной строкой, пока буквы крупные; фраза, не влезшая
+// крупно, — двумя строками по пробелу ближе к середине; иначе одна строка
+// мельче. Ширину таблички растить нельзя — соседние налезут друг на друга,
+// поэтому читаемость берём высотой букв.
+function layoutSign(ctx, text, maxW) {
+  const fits = (lines, px) => {
+    ctx.font = signFont(px)
+    return lines.every((l) => ctx.measureText(l).width <= maxW)
+  }
+  for (let px = 128; px >= 76; px -= 4) if (fits([text], px)) return { lines: [text], px }
+  const spaces = [...text.matchAll(/ /g)].map((m) => m.index)
+  if (spaces.length) {
+    const mid = text.length / 2
+    const cut = spaces.reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a))
+    const lines = [text.slice(0, cut), text.slice(cut + 1)]
+    for (let px = 96; px >= 40; px -= 4) if (fits(lines, px)) return { lines, px }
+  }
+  for (let px = 72; px > 28; px -= 4) if (fits([text], px)) return { lines: [text], px }
+  return { lines: [text], px: 28 }
+}
+
+// Табличка над воротами: тёмная плашка с неоновой рамкой.
 function drawSign(canvas, text, tone) {
   const ctx = canvas.getContext('2d')
   const { width: w, height: h } = canvas
   ctx.clearRect(0, 0, w, h)
   ctx.beginPath()
-  if (ctx.roundRect) ctx.roundRect(8, 8, w - 16, h - 16, 30)
+  if (ctx.roundRect) ctx.roundRect(8, 8, w - 16, h - 16, 34)
   else ctx.rect(8, 8, w - 16, h - 16)
-  ctx.fillStyle = 'rgba(20, 8, 52, 0.92)'
+  ctx.fillStyle = 'rgba(20, 8, 52, 0.94)'
   ctx.fill()
-  ctx.lineWidth = 8
+  ctx.lineWidth = 9
   ctx.strokeStyle = tone
   ctx.stroke()
-  let size = 84
-  const font = (px) => `800 ${px}px Manrope, system-ui, sans-serif`
-  ctx.font = font(size)
-  while (ctx.measureText(text).width > w - 60 && size > 26) {
-    size -= 4
-    ctx.font = font(size)
-  }
+  const { lines, px } = layoutSign(ctx, text, w - 56)
+  ctx.font = signFont(px)
   ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, w / 2, h / 2 + 4)
+  const step = px * 1.05
+  lines.forEach((line, i) => ctx.fillText(line, w / 2, h / 2 + 4 + (i - (lines.length - 1) / 2) * step))
 }
 
 // Портал из одной трубки — прямоугольная арка со скруглёнными углами, как на
@@ -155,6 +175,7 @@ function portalCurve(width, height, radius) {
 }
 
 function makeGate(anisotropy) {
+  const signHeight = (LANE_W - 0.2) * (SIGN_H / SIGN_W)
   const group = new THREE.Group()
   const curve = portalCurve(GATE_W, GATE_H, 0.45)
   const core = new THREE.Mesh(
@@ -173,18 +194,18 @@ function makeGate(anisotropy) {
     }),
   )
   const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 150
+  canvas.width = SIGN_W
+  canvas.height = SIGN_H
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = anisotropy
   // Надпись без тумана: слово читается, пока сами ворота ещё в дымке, —
   // на Very Hard иначе не хватало бы времени прочесть.
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(LANE_W - 0.2, (LANE_W - 0.2) * (150 / 512)),
+    new THREE.PlaneGeometry(LANE_W - 0.2, signHeight),
     new THREE.MeshBasicMaterial({ map: texture, transparent: true, fog: false }),
   )
-  sign.position.y = GATE_H + 0.55
+  sign.position.y = GATE_H + 0.25 + signHeight / 2
   group.add(core, glow, sign)
   return { group, core, glow, canvas, texture, text: '' }
 }

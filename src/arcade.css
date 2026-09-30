@@ -687,6 +687,15 @@
   .ar-run-ask { top: 58px; width: calc(100% - 24px); }
   .ar-run-prompt { padding: 6px 16px 10px; }
   .ar-run-options li { min-height: 40px; padding: 5px 6px; font-size: 15px; }
+  /* Узкое поле: подсказку переносим, а не режем многоточием — иначе
+     «продолжительность = durat…» прячет как раз ответ. */
+  .ar-run-toast {
+    right: 12px; left: 12px; width: fit-content; max-width: none; margin-inline: auto;
+    padding: 8px 16px; border-radius: 18px; font-size: 16px;
+    white-space: normal; text-align: center; overflow-wrap: break-word;
+    /* left: 50% ужал бы перенос до половины поля — центруем полями. */
+    transform: translateY(-50%); animation: none;
+  }
   .ar-run-score b { font-size: 28px; }
   .ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ar-run-mistakes small { flex-basis: 100%; margin-left: 0; }
