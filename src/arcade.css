@@ -557,8 +557,9 @@
   position: relative;
   height: clamp(420px, 62vh, 600px);
   overflow: hidden;
-  /* Горизонтальный свайп — сдвиг на дорожку, вертикальный — прокрутка. */
-  touch-action: pan-y;
+  /* Все свайпы — игра: влево/вправо — дорожка, вверх/вниз — прыжок и подкат.
+     С pan-y вертикальный свайп прокручивал бы страницу вместо прыжка. */
+  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -581,6 +582,10 @@
 .ar-run-score small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #cdbdff; }
 .ar-run-score b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .ar-run-score em { display: block; margin-top: 2px; font-size: 12px; font-style: normal; font-weight: 800; color: #ffd79a; }
+.ar-run-mult {
+  display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px;
+  background: #ffd79a; color: #3a1a86; font-size: 14px; font-weight: 800; vertical-align: 6px;
+}
 
 /* Вопрос и варианты — одним блоком по центру сверху. */
 .ar-run-ask {
@@ -620,6 +625,8 @@
   animation: ar-run-toast 0.25s ease-out;
   pointer-events: none;
 }
+/* Удар — ниже подсказки ошибки и другим цветом: оба могут всплыть разом. */
+.ar-run-toast--hit { top: 58%; background: #ff8a1e; box-shadow: 0 10px 24px -8px rgba(255, 138, 30, 0.6); }
 .ar-run-count {
   position: absolute; inset: 0; display: grid; place-items: center;
   font-size: clamp(88px, 14vw, 150px); font-weight: 800; color: #fff;
@@ -649,8 +656,9 @@
 /* Итоги — на светлом фоне страницы, поэтому кнопки фиолетовые. */
 .ar-run-results .ar-run-btn { background: var(--ar-violet); color: #fff; }
 .ar-run-results .ar-run-btn--ghost { background: var(--ar-soft); color: var(--ar-violet); box-shadow: none; }
-.ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ar-run-results__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ar-stat--score { --st-bg: #edf9f2; --st-ink: #168049; }
+.ar-stat--hits { --st-bg: #fff1e6; --st-ink: #b54708; }
 .ar-stat--best { --st-bg: #fff8dc; --st-ink: #7a5c00; }
 .ar-stat--streak { --st-bg: #faf6ff; --st-ink: #7a2ef0; }
 .ar-run-record {
@@ -697,6 +705,6 @@
     transform: translateY(-50%); animation: none;
   }
   .ar-run-score b { font-size: 28px; }
-  .ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ar-run-results__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ar-run-mistakes small { flex-basis: 100%; margin-left: 0; }
 }
