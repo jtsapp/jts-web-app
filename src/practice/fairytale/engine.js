@@ -7354,7 +7354,7 @@ function vwInit(){
   .vw{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:4px;transition:background .12s,box-shadow .12s;}
   @media (hover:hover){ .vw:hover{background:rgba(139,92,246,.22);box-shadow:0 0 0 2px rgba(139,92,246,.18);} }
   .vw:active{background:rgba(229,57,155,.30);}
-  .vpop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;
+  .vpop{position:fixed;inset:0;height:100dvh;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;
     background:rgba(6,10,23,.55);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s ease;
     padding:0 12px calc(14px + env(safe-area-inset-bottom));}
   .vpop.show{opacity:1;pointer-events:auto;}
