@@ -82,14 +82,18 @@ function Card({ text, state, onOpen }) {
   const { t } = useI18n()
   const g = genreOf(text.genre)
   const sc = progressOf(text, state)
-  const done = !!(state.texts[text.id] && state.texts[text.id].done)
-  const label = sc.pct === 0 ? t('reading.start') : done || sc.pct === 100 ? t('reading.again') : t('reading.cont')
+  // Надпись и «Готово» — от процента, а не от флага done: тот ставится, едва
+  // ученик открыл экран результата, и при 61% карточка с «Готово» и «Читать
+  // снова» выглядела пройденной (жалоба с видео клиента, 29.09.2026). Пока не
+  // всё верно — зовём дорешать, при 100% — предлагаем повторить.
+  const complete = sc.pct === 100
+  const label = sc.pct === 0 ? t('reading.start') : complete ? t('reading.redoAsk') : t('reading.finishAsk')
 
   return (
     <article className={`rd-card rd-g-${text.genre}`}>
       <div className="rd-card__cover">
         <span className="rd-card__lvl">{text.level}</span>
-        {done && <span className="rd-card__done">✓ {t('reading.done')}</span>}
+        {complete && <span className="rd-card__done">✓ {t('reading.done')}</span>}
         <span className="rd-card__emoji" aria-hidden="true">{text.cover.emoji}</span>
       </div>
       <div className="rd-card__body">

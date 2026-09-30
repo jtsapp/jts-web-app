@@ -27,7 +27,7 @@ const openText = async (page) => {
   await openLibrary(page)
   const card = page.locator('.rd-card', { hasText: TITLE })
   await expect(card).toBeVisible()
-  await card.getByRole('button', { name: /Начать чтение|Продолжить|Читать снова/ }).click()
+  await card.getByRole('button', { name: /Начать чтение|Завершить\?|Выполнено, повторить\?/ }).click()
   await expect(page.locator('.rd-texthero h1')).toHaveText(TITLE)
 }
 
@@ -249,7 +249,10 @@ test.describe('результат', () => {
 
     await page.getByRole('button', { name: /В библиотеку/ }).click()
     await expect(page.locator('.rd-hero h1')).toHaveText('Библиотека')
-    // «Дочитал» — метка на карточке каталога.
-    await expect(page.locator('.rd-card', { hasText: TITLE }).locator('.rd-card__done')).toBeVisible()
+    // Дойти до результата ещё не значит пройти: «Готово» на карточке — только
+    // при 100%, а ничего не решив, ученик видит приглашение начать заново.
+    const card = page.locator('.rd-card', { hasText: TITLE })
+    await expect(card.locator('.rd-card__done')).toHaveCount(0)
+    await expect(card.getByRole('button', { name: /Начать чтение/ })).toBeVisible()
   })
 })
