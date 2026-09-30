@@ -24,6 +24,8 @@ const ROAD_TILE = 8
 const BLOCK = 10
 const BLOCKS = 16
 const RECYCLE_Z = 16
+// Плитка окон на фасаде — 12 единиц мира, то есть окно полтора на полтора.
+const WINDOW_TILE = 12
 const GATE_W = LANE_W - 0.35
 const GATE_H = 3.3
 const RUNNER_HEIGHT = 1.8
@@ -72,21 +74,43 @@ function roadTexture() {
   return texture
 }
 
+// Плитка фасада 8×8 окон. Тёплый свет в основном, изредка сиреневый и
+// голубой: пёстрые окна на всю стену превращали город в конфетти.
 function windowsTexture(seed) {
   let a = seed
   const rnd = () => (a = (a * 16807) % 2147483647) / 2147483647
-  const lit = ['#ffd79a', '#ffb0e6', '#8fe9ff', '#ffd79a']
-  return canvasTexture(64, 128, (ctx, w, h) => {
+  const lit = ['#ffd79a', '#ffd79a', '#ffc98a', '#d7c4ff', '#9fe8ff']
+  const texture = canvasTexture(256, 256, (ctx, w, h) => {
     ctx.fillStyle = '#140a33'
     ctx.fillRect(0, 0, w, h)
-    for (let y = 6; y < h - 6; y += 10) {
-      for (let x = 6; x < w - 6; x += 12) {
-        if (rnd() < 0.45) continue
-        ctx.fillStyle = lit[Math.floor(rnd() * lit.length)]
-        ctx.fillRect(x, y, 6, 5)
+    const cell = w / 8
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        ctx.fillStyle = rnd() < 0.38 ? lit[Math.floor(rnd() * lit.length)] : '#231650'
+        ctx.fillRect(x * cell + 9, y * cell + 8, cell - 18, cell - 14)
       }
     }
   })
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+  return texture
+}
+
+// Коробка дома с развёрткой в мировых единицах: окна одного размера на любой
+// высоте. Общая коробка 1×1×1 со scale растягивала плитку по стене — у
+// высоких домов окна выходили вытянутыми, у низких сплющенными.
+function houseGeometry(width, height, depth) {
+  const geo = new THREE.BoxGeometry(width, height, depth)
+  const uv = geo.attributes.uv
+  // Грани BoxGeometry по порядку: ±x, ±y, ±z — по четыре вершины.
+  const faces = [
+    [depth, height], [depth, height],
+    [width, depth], [width, depth],
+    [width, height], [width, height],
+  ]
+  faces.forEach(([u, v], face) => {
+    for (let i = face * 4; i < face * 4 + 4; i++) uv.setXY(i, (uv.getX(i) * u) / WINDOW_TILE, (uv.getY(i) * v) / WINDOW_TILE)
+  })
+  return geo
 }
 
 // Табличка над воротами: тёмная плашка с неоновой рамкой, слово ужимается
@@ -239,21 +263,20 @@ export function createRunnerScene(canvas, assets) {
   scene.add(road)
   const walkMat = new THREE.MeshStandardMaterial({ color: 0x3b2a66, roughness: 0.9 })
   for (const side of [-1, 1]) {
-    const walk = new THREE.Mesh(new THREE.PlaneGeometry(3, ROAD_LEN), walkMat)
+    const walk = new THREE.Mesh(new THREE.PlaneGeometry(4.6, ROAD_LEN), walkMat)
     walk.rotation.x = -Math.PI / 2
-    walk.position.set(side * (ROAD_W / 2 + 1.5), 0.02, -ROAD_LEN / 2 + 12)
+    walk.position.set(side * (ROAD_W / 2 + 2.3), 0.02, -ROAD_LEN / 2 + 12)
     scene.add(walk)
   }
 
   // Город: боксы с окнами по обе стороны, переезжают вперёд за камерой.
-  const boxGeo = new THREE.BoxGeometry(1, 1, 1)
   const houseMats = [11, 23, 37].map(
     (seed) =>
       new THREE.MeshStandardMaterial({
         color: 0x2a1858,
         emissive: 0xffffff,
         emissiveMap: windowsTexture(seed),
-        emissiveIntensity: 0.85,
+        emissiveIntensity: 0.9,
         roughness: 0.8,
       }),
   )
@@ -264,15 +287,16 @@ export function createRunnerScene(canvas, assets) {
   const props = []
   const reroll = (house) => {
     const width = 4 + Math.random() * 3
-    const height = 6 + Math.random() * 14
-    house.scale.set(width, height, 7)
+    const height = 7 + Math.random() * 16
+    house.geometry.dispose()
+    house.geometry = houseGeometry(width, height, 8)
     house.position.y = height / 2
-    house.position.x = Math.sign(house.position.x) * (ROAD_W / 2 + 3.2 + width / 2)
+    house.position.x = Math.sign(house.position.x) * (ROAD_W / 2 + 4.2 + width / 2)
     house.material = houseMats[Math.floor(Math.random() * houseMats.length)]
   }
   for (const side of [-1, 1]) {
     for (let i = 0; i < BLOCKS; i++) {
-      const house = new THREE.Mesh(boxGeo, houseMats[0])
+      const house = new THREE.Mesh(new THREE.BufferGeometry(), houseMats[0])
       house.position.set(side, 0, -i * BLOCK)
       house.userData.reroll = () => reroll(house)
       reroll(house)
@@ -334,13 +358,14 @@ export function createRunnerScene(canvas, assets) {
     // На узком экране (телефон стоя) крайние ворота не влезают в обычный
     // угол обзора: камера отъезжает и расширяет угол ровно настолько, чтобы
     // три дорожки были видны у ног бегуна.
-    const dist = aspect < 1 ? 8.5 : 6.5
+    const dist = aspect < 1 ? 7.5 : 5.4
     const halfW = LANE_W + 1.2
     const vHalf = Math.max(Math.tan(THREE.MathUtils.degToRad(29)), halfW / (dist * aspect))
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(vHalf))
     camera.aspect = aspect
-    camera.position.set(0, aspect < 1 ? 4.4 : 3.6, dist)
-    camera.lookAt(0, 1.3, -14)
+    camera.position.set(0, aspect < 1 ? 3.6 : 2.8, dist)
+    // Стоя взгляд выше: иначе нижняя треть кадра — пустой асфальт под бегуном.
+    camera.lookAt(0, aspect < 1 ? 3 : 1.5, -12)
     camera.updateProjectionMatrix()
   }
 
