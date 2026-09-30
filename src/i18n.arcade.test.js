@@ -37,5 +37,6 @@ describe('словари «Аркады»', () => {
       expect(ru.has(`arcade.results.${stat}`)).toBe(true)
       expect(ru.has(`arcade.results.${stat}Hint`)).toBe(true)
     }
+    for (const stat of ['score', 'best', 'streak']) expect(ru.has(`arcade.run.results.${stat}`)).toBe(true)
   })
 })

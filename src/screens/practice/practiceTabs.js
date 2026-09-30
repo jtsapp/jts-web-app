@@ -36,6 +36,9 @@ export const SKILLS = [
       { id: 'reading' },
       { id: 'books', all: 'pill' },
       { id: 'comics', all: 'pill' },
+      // «Аркада» и здесь: вторая её игра (Word Rush) — на слова, а не на
+      // говорение. Перед сказками — по правилу «сказки последние».
+      { id: 'arcade' },
       { id: 'tales', all: 'pill' },
     ],
   },
@@ -53,9 +56,9 @@ export const SKILLS = [
       { id: 'shadowing', all: 'link' },
       { id: 'situations', all: 'pill', small: true },
       { id: 'karaoke', all: 'pill', small: true },
-      // «Аркада» (Speak or Die) — карточка-объяснение и вход в игру. В макете
-      // её нет; стоит последней перед сказками, чтобы правило «сказки —
-      // последняя секция» (см. выше) не нарушать.
+      // «Аркада» — зал мини-игр (Speak or Die, Word Rush). В макете её нет;
+      // стоит последней перед сказками, чтобы правило «сказки — последняя
+      // секция» (см. выше) не нарушать.
       { id: 'arcade' },
       { id: 'tales', all: 'link' },
     ],

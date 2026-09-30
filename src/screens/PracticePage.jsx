@@ -995,12 +995,13 @@ export default function PracticePage({
         )
 
       case 'arcade':
-        // Игра одна и без уровней, поэтому ни «Посмотреть все», ни фильтра
-        // по уровню у секции нет.
+        // Игр две и без уровней, поэтому ни «Посмотреть все», ни фильтра по
+        // уровню у секции нет. Вкладка едет с переходом: «Назад» из зала
+        // возвращает туда, откуда пришли (секция есть в двух вкладках).
         return (
           <section key={sec.id} id="sec-arcade" className="pk-sec">
             {head(sec, t('practice.chip.arcade'))}
-            <ArcadeCard onStart={() => onNav?.('arcade')} />
+            <ArcadeCard onOpen={(game) => onNav?.('arcade', { game, skill: tab })} />
           </section>
         )
 

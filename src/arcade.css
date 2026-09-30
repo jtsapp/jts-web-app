@@ -515,3 +515,163 @@
   text-transform: uppercase; vertical-align: middle;
 }
 .ar-beta--light { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+/* ── зал «Аркады»: карточки игр ── */
+.ar-hub { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.ar-hub__card {
+  display: flex; flex-direction: column; padding: 0; overflow: hidden;
+  border: 0; border-radius: 24px; background: #fff; color: var(--ar-ink); text-align: left;
+  box-shadow: 0 0 0 1px var(--ar-line), 0 18px 36px -20px rgba(43, 20, 102, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ar-hub__card:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--ar-focus), 0 22px 40px -20px rgba(43, 20, 102, 0.45); }
+.ar-hub__art {
+  position: relative; display: block; height: 210px; overflow: hidden;
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(168, 110, 255, 0.45) 0, transparent 55%),
+    linear-gradient(180deg, #3a1a86 0%, #1c0d45 100%);
+}
+.ar-hub__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ar-hub__saw { position: absolute; bottom: 22px; left: 10%; width: 150px; }
+.ar-hub__tree { position: absolute; right: 12%; bottom: 8px; width: 118px; }
+.ar-hub__saw svg, .ar-hub__tree svg { display: block; width: 100%; height: auto; }
+.ar-hub__body { display: flex; flex: 1; flex-direction: column; gap: 8px; padding: 18px 20px 20px; }
+.ar-hub__title { font-size: 22px; font-weight: 800; line-height: 1.2; }
+.ar-hub__desc { font-size: 15px; font-weight: 500; line-height: 1.5; color: var(--ar-muted); }
+.ar-hub__meta { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ar-violet); }
+.ar-hub__cta {
+  display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin-top: auto;
+  padding: 10px 18px; border-radius: 999px; background: var(--ar-violet); color: #fff; font-size: 14px; font-weight: 800;
+}
+@media (max-width: 760px) {
+  .ar-hub { grid-template-columns: minmax(0, 1fr); }
+  .ar-hub__art { height: 180px; }
+}
+
+/* ============================================================
+   «Word Rush» — вторая игра «Аркады» (arcade/runner/). Поле — та же
+   .ar-panel, внутри canvas three.js и HTML-шапка поверх него. Классы .ar-run-.
+   ============================================================ */
+.ar-run-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.ar-run-stage {
+  position: relative;
+  height: clamp(420px, 62vh, 600px);
+  overflow: hidden;
+  /* Горизонтальный свайп — сдвиг на дорожку, вертикальный — прокрутка. */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ar-panel.is-full .ar-run-stage { flex: 1; height: auto; min-height: 0; }
+.ar-run-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+
+.ar-run-hud {
+  position: absolute; top: 14px; right: 18px; left: 18px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(20, 8, 50, 0.6);
+}
+/* Подложка: за счётом и жизнями то и дело проходят фонари и окна сцены. */
+.ar-run-lives,
+.ar-run-score { padding: 6px 10px; border-radius: 14px; background: rgba(22, 9, 58, 0.55); }
+.ar-run-lives { display: flex; gap: 2px; font-size: 24px; line-height: 1; }
+.ar-run-lives span { color: rgba(255, 255, 255, 0.22); transition: color 0.2s; }
+.ar-run-lives span.is-on { color: #ff5c7a; }
+.ar-run-score { text-align: right; line-height: 1.05; }
+.ar-run-score small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #cdbdff; }
+.ar-run-score b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ar-run-score em { display: block; margin-top: 2px; font-size: 12px; font-style: normal; font-weight: 800; color: #ffd79a; }
+
+.ar-run-prompt {
+  position: absolute; top: 14px; left: 50%;
+  max-width: calc(100% - 200px);
+  padding: 8px 22px 12px;
+  border: 1px solid rgba(183, 139, 255, 0.45);
+  border-radius: 18px;
+  background: rgba(22, 9, 58, 0.78);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ar-run-prompt small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: #cdbdff; }
+.ar-run-prompt b { display: block; font-size: clamp(22px, 3.4vw, 34px); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+
+.ar-run-toast {
+  position: absolute; top: 40%; left: 50%;
+  max-width: 92%; padding: 10px 20px; overflow: hidden;
+  border-radius: 999px; background: #e8324f; color: #fff;
+  font-size: 18px; font-weight: 800; white-space: nowrap; text-overflow: ellipsis;
+  box-shadow: 0 10px 24px -8px rgba(232, 50, 79, 0.6);
+  transform: translate(-50%, -50%);
+  animation: ar-run-toast 0.25s ease-out;
+  pointer-events: none;
+}
+.ar-run-count {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: clamp(88px, 14vw, 150px); font-weight: 800; color: #fff;
+  text-shadow: 0 6px 30px rgba(144, 71, 255, 0.8);
+  animation: ar-run-count 0.9s ease-out both;
+  pointer-events: none;
+}
+.ar-run-over {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 24px; text-align: center;
+  background: linear-gradient(180deg, rgba(28, 13, 69, 0.45), rgba(28, 13, 69, 0.82));
+}
+.ar-run-over h3 { font-size: clamp(36px, 5.5vw, 56px); font-weight: 800; line-height: 1.05; letter-spacing: -1px; }
+.ar-run-over p { max-width: 42ch; font-size: 16px; font-weight: 500; color: #ddd2ff; }
+.ar-run-over .ar-rules { margin-top: 4px; }
+.ar-run-over .ar-run-error { font-weight: 700; color: #ffb3c0; }
+.ar-run-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 26px; border: 0; border-radius: 999px;
+  background: #fff; color: #3a1a86; font-size: 16px; font-weight: 800;
+  box-shadow: 0 10px 24px -10px rgba(10, 5, 30, 0.6);
+}
+.ar-run-btn:hover { filter: brightness(0.97); }
+.ar-run-keys { position: relative; z-index: 1; padding: 10px 24px 14px; font-size: 12px; font-weight: 600; text-align: center; color: #cdbdff; }
+
+/* Итоги — на светлом фоне страницы, поэтому кнопки фиолетовые. */
+.ar-run-results .ar-run-btn { background: var(--ar-violet); color: #fff; }
+.ar-run-results .ar-run-btn--ghost { background: var(--ar-soft); color: var(--ar-violet); box-shadow: none; }
+.ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ar-stat--score { --st-bg: #edf9f2; --st-ink: #168049; }
+.ar-stat--best { --st-bg: #fff8dc; --st-ink: #7a5c00; }
+.ar-stat--streak { --st-bg: #faf6ff; --st-ink: #7a2ef0; }
+.ar-run-record {
+  display: inline-block; margin-bottom: 14px; padding: 6px 14px; border-radius: 999px;
+  background: #fff8dc; color: #7a5c00; font-size: 14px; font-weight: 800;
+}
+.ar-run-results__sub { margin-top: 22px; font-size: 16px; font-weight: 800; }
+.ar-run-mistakes { display: grid; gap: 8px; margin-top: 10px; padding: 0; list-style: none; }
+.ar-run-mistakes li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  padding: 10px 14px; border-radius: 14px; background: #f7f4fd; font-size: 15px;
+}
+.ar-run-mistakes li > span[aria-hidden] { color: var(--ar-muted); }
+.ar-run-mistakes__answer { font-weight: 800; color: #168049; }
+.ar-run-mistakes small { margin-left: auto; font-size: 13px; color: var(--ar-muted); }
+.ar-run-results__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+
+@keyframes ar-run-toast {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes ar-run-count {
+  0% { opacity: 0; transform: scale(1.6); }
+  25% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ar-run-toast, .ar-run-count { animation: none; }
+}
+
+/* Телефон: жизни и счёт сверху по краям, слово — строкой под ними. */
+@media (max-width: 560px) {
+  .ar-run-stage { height: min(72vh, 600px); }
+  .ar-run-prompt { top: 58px; max-width: calc(100% - 32px); padding: 6px 16px 10px; }
+  .ar-run-score b { font-size: 28px; }
+  .ar-run-results__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ar-run-mistakes small { flex-basis: 100%; margin-left: 0; }
+}

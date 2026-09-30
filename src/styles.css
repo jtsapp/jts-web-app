@@ -4105,10 +4105,10 @@ textarea {
    широкого баннера «Чтения». */
 .pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
 
-/* «Аркада» во вкладке «Говорение». В макете её нет — геометрия и кнопка от
-   широкого баннера (поля 24, r20, белая пилюля), градиент — фиолетовый баннеров
-   Практики, уходящий в сумеречное небо самой игры. Справа — дерево и пила из
-   игры (их анимации и классы .ar-* — в arcade.css). */
+/* «Аркада» во вкладках «Говорение» и «Чтение» — зал из двух игр. В макете её
+   нет — геометрия и кнопка от широкого баннера (поля 24, r20, белая пилюля),
+   градиент — фиолетовый баннеров Практики, уходящий в сумеречное небо игр.
+   Справа — картинка Word Rush, под текстом — по кнопке на каждую игру. */
 .pk-arcade {
   position: relative;
   display: grid;
@@ -4150,36 +4150,42 @@ textarea {
   line-height: 19px;
   color: rgba(255, 255, 255, 0.75);
 }
-.pk-arcade__steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.pk-arcade__games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
   margin: 8px 0 16px;
-  padding: 0;
-  list-style: none;
 }
-.pk-arcade__steps li {
+.pk-arcade__game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 10px 12px 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pk-arcade__game:hover { background: rgba(255, 255, 255, 0.22); }
+.pk-arcade__game:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.pk-arcade__game b { font-size: 15px; font-weight: 800; line-height: 20px; }
+.pk-arcade__game span {
+  grid-column: 1;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 18px;
-}
-.pk-arcade__steps b {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  color: #9047ff;
+  gap: 5px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.8);
 }
+.pk-arcade__game > svg { grid-column: 2; grid-row: 1 / span 2; }
 .pk-arcade__foot {
   display: flex;
   flex-wrap: wrap;
@@ -4187,40 +4193,8 @@ textarea {
   gap: 12px 16px;
   margin-top: auto;
 }
-.pk-arcade__mic {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-}
-.pk-arcade__mic svg { flex: none; }
-.pk-arcade__art { position: relative; min-height: 190px; }
-/* Холм уходит под поля карточки до её краёв — их режет overflow. */
-.pk-arcade__hill {
-  position: absolute;
-  right: -24px;
-  bottom: -24px;
-  left: -24px;
-  height: 72px;
-  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-  background: #2a1b5e;
-  opacity: 0.6;
-}
-.pk-arcade__tree {
-  position: absolute;
-  right: 12px;
-  bottom: 4px;
-  width: 140px;
-}
-.pk-arcade__saw {
-  position: absolute;
-  bottom: 18px;
-  left: 0;
-  width: 118px;
-  filter: drop-shadow(0 4px 3px rgba(10, 5, 30, 0.4));
-}
+.pk-arcade__art { position: relative; min-height: 190px; overflow: hidden; border-radius: 16px; }
+.pk-arcade__cover { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* Скелетоны загрузки — в габаритах карточек макета. */
 .pk-skel__item {
@@ -4292,10 +4266,8 @@ textarea {
     gap: 12px;
     padding: 20px;
   }
-  .pk-arcade__art { order: -1; min-height: 130px; }
-  .pk-arcade__hill { top: auto; right: -20px; left: -20px; bottom: 0; height: 48px; }
-  .pk-arcade__tree { right: 8px; bottom: 0; width: 100px; }
-  .pk-arcade__saw { bottom: 12px; width: 90px; }
+  .pk-arcade__art { order: -1; min-height: 150px; }
+  .pk-arcade__games { grid-template-columns: minmax(0, 1fr); }
   .pk-arcade__title { font-size: 21px; line-height: 29px; }
   .pk-sec__title { font-size: 22px; line-height: 24px; }
   .pk-sec__title--sm { font-size: 18px; line-height: 20px; }

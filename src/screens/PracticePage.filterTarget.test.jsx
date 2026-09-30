@@ -54,7 +54,7 @@ describe('PracticePage — фильтр из перехода', () => {
     expect(container.querySelector('#sec-situations')).toBeTruthy()
   })
 
-  it('«Говорение» заканчивается «Аркадой» перед сказками, и карточка ведёт в игру', async () => {
+  it('«Говорение» заканчивается «Аркадой» перед сказками, и карточка ведёт в игру и в зал', async () => {
     const onNav = vi.fn()
     const { container, getByRole } = render(
       <I18nProvider>
@@ -65,8 +65,12 @@ describe('PracticePage — фильтр из перехода', () => {
     const ids = [...container.querySelectorAll('.pk > section[id]')].map((s) => s.id)
     expect(ids.slice(-2)).toEqual(['sec-arcade', 'sec-tales'])
     expect(container.querySelector('#sec-arcade .pk-sec__title')?.textContent).toBe('Аркада')
-    fireEvent.click(getByRole('button', { name: /играть/i }))
-    expect(onNav).toHaveBeenCalledWith('arcade')
+    // Кнопка игры открывает её сразу, «Все игры» — зал; вкладка едет с
+    // переходом, чтобы «Назад» вернул сюда же.
+    fireEvent.click(getByRole('button', { name: /word rush/i }))
+    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: 'runner', skill: 'speaking' })
+    fireEvent.click(getByRole('button', { name: /все игры/i }))
+    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: null, skill: 'speaking' })
   })
 
   it('незнакомый фильтр игнорируется', async () => {
@@ -110,7 +114,7 @@ describe('PracticePage — навыки и уровень', () => {
   it('карточка навыка считает тренажёры с правильным окончанием', () => {
     const { container } = renderWith(null)
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
-    // У «Говорения» пятый — «Аркада».
-    expect(counts).toEqual(['7 тренажеров', '4 тренажера', '4 тренажера', '5 тренажеров'])
+    // «Аркада» — пятая у «Говорения» и у «Чтения».
+    expect(counts).toEqual(['7 тренажеров', '5 тренажеров', '4 тренажера', '5 тренажеров'])
   })
 })
