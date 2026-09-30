@@ -469,7 +469,10 @@ describe('забег', () => {
     expect(s.last).toMatchObject({ hit: true, picked: 'cat', correct: 1, lane: 1, seq: 1 })
     expect(s.gap).toBe(ROW_GAP)
     expect(needsRow(s)).toBe(false)
-    expect(needsRow(advance(s, ROW_GAP))).toBe(true)
+    // Кадрами: один длинный кадр режется до MAX_DT и паузу не промотает.
+    let later = s
+    for (let i = 0; i < 8; i++) later = advance(later, 0.1)
+    expect(needsRow(later)).toBe(true)
   })
 
   it('неверные ворота: минус жизнь, серия с нуля, ошибка записана', () => {
