@@ -246,6 +246,12 @@ export default function App() {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
     }
+    // ?screen=arcade&game=runner — сразу в игру «Аркады», минуя зал: без
+    // этого проверить Word Rush по ссылке можно было бы только кликом.
+    if (deepLink === 'arcade') {
+      const game = searchParams.get('game')
+      if (game) setArcadeTarget({ game })
+    }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
     // ровно его. До этого попасть в юнит по адресу можно было только из
@@ -517,6 +523,9 @@ export default function App() {
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
+  // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
+  // вернуться): { game: 'speak'|'runner'|null, skill }.
+  const [arcadeTarget, setArcadeTarget] = useState(null)
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1227,7 +1236,7 @@ export default function App() {
     // Уровень приносит карточка Практики — она же и списала квоту.
     else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
-    else if (key === 'arcade') setScreen('arcade')
+    else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1272,7 +1281,7 @@ export default function App() {
     else if (key === 'words') setScreen('words')
     else if (key === 'verbs') setScreen('verbs')
     else if (key === 'listenchoose') setScreen('listenchoose')
-    else if (key === 'arcade') setScreen('arcade')
+    else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1708,6 +1717,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
+          initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}
           token={token}

@@ -13,7 +13,7 @@ describe('practiceTabs', () => {
   })
 
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
-    expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'tales'])
+    expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'arcade', 'tales'])
     expect(skillModules('writing')).toEqual(['grammar', 'writing', 'verbs', 'workbooks'])
     expect(skillModules('speaking')).toHaveLength(5)
     expect(skillModules('listening')).toContain('words')
@@ -32,11 +32,13 @@ describe('practiceTabs', () => {
     expect(skillOfModule('nope')).toBeNull()
   })
 
-  it('«Аркада» — в «Говорении», последней перед сказками', () => {
-    const ids = SKILLS.find((s) => s.key === 'speaking').sections.map((sec) => sec.id)
-    expect(ids.slice(-2)).toEqual(['arcade', 'tales'])
-    expect(skillOfModule('arcade')).toBe('speaking')
-    // Игра одна — полного списка у секции нет.
+  it('«Аркада» — в «Говорении» и «Чтении», последней перед сказками', () => {
+    for (const key of ['speaking', 'reading']) {
+      const ids = SKILLS.find((s) => s.key === key).sections.map((sec) => sec.id)
+      expect(ids.slice(-2), key).toEqual(['arcade', 'tales'])
+    }
+    expect(skillOfModule('arcade')).toBeTruthy()
+    // Игр две, без уровней — полного списка у секции нет.
     expect(EXPANDABLE.has('arcade')).toBe(false)
   })
 

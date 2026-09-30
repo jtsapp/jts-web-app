@@ -11,6 +11,12 @@ function loadJson(file) {
     cache[file] = fetch(`/practice/vocab/${file}`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((data) => {
+        // Неудачу не кэшируем: иначе «Повторить» после обрыва сети получал бы
+        // тот же null до перезагрузки страницы.
+        if (!data) delete cache[file]
+        return data
+      })
   }
   return cache[file]
 }

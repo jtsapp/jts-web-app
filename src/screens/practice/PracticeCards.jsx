@@ -5,7 +5,6 @@ import { plural } from '../../lib/plural.js'
 import { stripTags } from '../../practice/grammar/grammarData.js'
 import { PRACTICE_LEVELS } from '../../practice/practiceLevel.js'
 import { PkChevron, PkArrowCircle, PkEye, PkClock } from './PracticeIcons.jsx'
-import { SawArt, TreeArt } from '../arcade/ArcadeScene.jsx'
 
 // Карточки и блоки экрана «Практика» по макету Figma «Макеты» (5316:1548).
 // Размеры и цвета сняты с узлов макета; стили — .pk-* в styles.css. Шрифт в
@@ -156,12 +155,15 @@ export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
   )
 }
 
-// Карточка «Аркады» во вкладке «Говорение»: объясняет игру до входа в неё —
-// что за игра, три шага и что понадобится микрофон, — и ведёт на экран игры.
-// Геометрия и кнопка — от широкого промо-баннера, персонажи — из самой игры.
-export function ArcadeCard({ onStart }) {
+// Карточка «Аркады» (вкладки «Говорение» и «Чтение»): зал мини-игр. Каждая
+// игра открывается своей кнопкой прямо из Практики, «Все игры» ведёт в зал.
+// Геометрия и кнопка — от широкого промо-баннера, картинка — Word Rush.
+export function ArcadeCard({ onOpen }) {
   const { t } = useI18n()
-  const steps = ['practice.arcade.step1', 'practice.arcade.step2', 'practice.arcade.step3']
+  const games = [
+    { key: 'speak', title: 'practice.arcade.speak.title', text: 'practice.arcade.speak.text', mic: true },
+    { key: 'runner', title: 'practice.arcade.runner.title', text: 'practice.arcade.runner.text' },
+  ]
   return (
     <div className="pk-arcade">
       <div className="pk-arcade__text">
@@ -171,33 +173,27 @@ export function ArcadeCard({ onStart }) {
         </h3>
         <p className="pk-arcade__tagline">{t('practice.arcade.tagline')}</p>
         <p className="pk-arcade__desc">{t('practice.arcade.desc')}</p>
-        <ol className="pk-arcade__steps">
-          {steps.map((key, i) => (
-            <li key={key}>
-              <b aria-hidden="true">{i + 1}</b>
-              {t(key)}
-            </li>
+        <div className="pk-arcade__games">
+          {games.map((g) => (
+            <button key={g.key} type="button" className="pk-arcade__game" onClick={() => onOpen(g.key)}>
+              <b>{t(g.title)}</b>
+              <span>
+                {g.mic && <MicIcon size={13} />}
+                {t(g.text)}
+              </span>
+              <PkChevron size={16} />
+            </button>
           ))}
-        </ol>
+        </div>
         <div className="pk-arcade__foot">
-          <button type="button" className="pk-banner__cta" onClick={onStart}>
+          <button type="button" className="pk-banner__cta" onClick={() => onOpen(null)}>
             {t('practice.arcade.cta')}
             <PkChevron size={18} />
           </button>
-          <span className="pk-arcade__mic">
-            <MicIcon size={14} />
-            {t('practice.arcade.mic')}
-          </span>
         </div>
       </div>
       <div className="pk-arcade__art" aria-hidden="true">
-        <span className="pk-arcade__hill" />
-        <span className="pk-arcade__saw">
-          <SawArt />
-        </span>
-        <span className="pk-arcade__tree">
-          <TreeArt />
-        </span>
+        <img className="pk-arcade__cover" src="/arcade/runner/card.webp" alt="" loading="lazy" />
       </div>
     </div>
   )
