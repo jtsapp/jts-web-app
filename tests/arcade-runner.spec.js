@@ -7,6 +7,9 @@ import { test, expect } from '@playwright/test'
 // SwiftShader, а с Chrome 137 его надо разрешать флагом явно — иначе игра
 // честно показывает «браузер не тянет 3D» и тест проверял бы не то.
 test.use({ launchOptions: { args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] } })
+// По одному: 3D в SwiftShader рисует процессор, и три забега разом душат
+// машину — кадры встают, ряд проезжает раньше, чем тест успевает повернуть.
+test.describe.configure({ mode: 'serial' })
 
 const stage = (page) => page.locator('.ar-run-stage')
 
@@ -21,9 +24,11 @@ async function startAt(page, levelName) {
   await page.getByRole('button', { name: /Старт/ }).click()
 }
 
-// Ждёт ряд ворот и возвращает номер верной дорожки.
+// Ждёт ряд ворот и возвращает номер верной дорожки. Запас щедрый: перед
+// первым рядом грузится словарь уровня (C1 — 630 КБ), а dev-сервер под
+// параллельными тестами отдаёт его, пока компилирует чужие экраны.
 async function nextRow(page) {
-  await expect(stage(page)).not.toHaveAttribute('data-options', '', { timeout: 15000 })
+  await expect(stage(page)).not.toHaveAttribute('data-options', '', { timeout: 30000 })
   return Number(await stage(page).getAttribute('data-correct'))
 }
 

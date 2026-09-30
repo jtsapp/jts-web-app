@@ -594,7 +594,7 @@
   pointer-events: none;
 }
 .ar-run-prompt small { display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: #cdbdff; }
-.ar-run-prompt b { display: block; font-size: clamp(22px, 3.4vw, 34px); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.ar-run-prompt b { display: block; font-size: clamp(22px, 3.4vw, 34px); font-weight: 800; line-height: 1.15; overflow-wrap: break-word; }
 
 .ar-run-toast {
   position: absolute; top: 40%; left: 50%;
