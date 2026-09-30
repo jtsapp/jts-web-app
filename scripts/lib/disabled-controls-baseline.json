@@ -26,7 +26,7 @@
     "src/screens/reading/tasks/OrderTask.jsx <button>",
     "src/screens/vocab/VocabPractice.jsx <button> .vp-bookmark.vp-spk",
     "src/screens/vocab/lessonTasks.jsx <button> .v-choice",
-    "src/screens/words/WordsScene.jsx <button> .wd-sprite.wd-sprite--found.wd-sprite--no",
+    "src/screens/words/WordsScene.jsx <button> .wd-sprite.wd-sprite--found.wd-sprite--no.wd-sprite--pop",
     "src/screens/workbook/acts/TapActs.jsx <button> .is-.wb-fixw",
     "src/screens/workbook/acts/TapActs.jsx <button> .is-no.is-ok.is-rev.wb-ew",
     "src/screens/workbook/acts/TapActs.jsx <button> .is-no.is-ok.is-rev.wb-seqrow",
