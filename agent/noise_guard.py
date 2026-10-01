@@ -118,7 +118,15 @@ SPEAKER_LOCK_OUTLIER_FLOOR = 0.5
 # переносит в новый поток уровень ученика; говорящий тише PRIOR_BG этого
 # уровня — фон. Порог консервативный: уровень ученика между потоками гулял
 # 5907 → 2422, и тихий ученик не должен оказаться «фоном».
-SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.35
+#
+# v4: память — уровень ученика по ВСЕМУ звонку (верхняя квартиль его слов из
+# всех потоков), а не по последнему потоку. Живой лог 01.10.2026: уровень по
+# одному потоку гулял (у одиночного потока ученика 3100 при ~4300 по звонку),
+# и фраза новостей (1781) против него была 0.57 — порог не разделял.
+# По звонку: новости ~0.41, самый тихий поток ученика ~0.72. Проигрыш того
+# же живого лога: 0.45 и 0.55 — ученик 59/59, фон 5/21; 0.65 — ученик 50/59.
+# Берём середину безопасного диапазона.
+SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.5
 
 _OFF = ("off", "0", "false", "no")
 
@@ -231,6 +239,11 @@ def turn_watchdog_sec(tutor: str) -> float:
 # ── Замок на ученика ─────────────────────────────────────────────────────────
 
 
+def quantile(values: Any, q: float) -> float:
+    """Квантиль с линейной интерполяцией (как numpy по умолчанию)."""
+    return float(np.quantile(np.fromiter(values, dtype=np.float64), q))
+
+
 def _is_end_token(token: dict[str, Any]) -> bool:
     # Служебные токены Soniox: конец фразы и ответ на finalize. Говорящего у
     # них нет, и выкидывать их нельзя — по <end> плагин закрывает реплику.
@@ -299,6 +312,17 @@ class SpeakerLock:
     HISTORY = 60
     # Меньше слов — уровню новичка не верим, микрофон у основного не забираем.
     MIN_SWITCH_WORDS = 3
+    # Уровень — верхняя квартиль громкости слов, а не медиана (v4). Живой лог
+    # 01.10.2026: безударные слова ученика тихие («than» 217, «because» 388), и
+    # медиана проседала до 2331 — новости (~1450) проходили как «свой»
+    # говорящий (0.63 при пороге 0.6). По квартили: ученик ~4500, новости
+    # ~1900, отношение ~0.42.
+    LEVEL_QUANTILE = 0.75
+    # Первого основного выбираем среди почти одинаково громких (не тише этой
+    # доли самого громкого) — того, кто говорит больше. Шумодав в начале
+    # звонка ещё не «прогрет»: в живом звонке новости в первом ходе пришли
+    # громче ученика (6942 против 5197), и v3 сделал основным телевизор.
+    CANDIDATE_FRACTION = 0.6
 
     def __init__(
         self,
@@ -309,7 +333,7 @@ class SpeakerLock:
         outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
         prior: Callable[[], float | None] | None = None,
         prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
-        on_level: Callable[[float], None] | None = None,
+        on_primary_words: Callable[[list[float]], None] | None = None,
         on_segment: Callable[[str], None] | None = None,
         on_switch: Callable[[str | None, str, float, float], None] | None = None,
     ) -> None:
@@ -317,11 +341,11 @@ class SpeakerLock:
         self._keep = keep
         self._same = same
         self._outlier = outlier
-        # Память об ученике из прошлых потоков: prior() — его уровень или None;
-        # on_level(уровень) — сообщить уровень основного наружу.
+        # Память об ученике по звонку: prior() — его уровень или None;
+        # on_primary_words(громкости) — слова основного этой фразы наружу.
         self._prior = prior
         self._prior_bg = prior_bg
-        self._on_level = on_level
+        self._on_primary_words = on_primary_words
         self._on_segment = on_segment
         self._on_switch = on_switch
         self.reset()
@@ -377,9 +401,9 @@ class SpeakerLock:
 
     # -- слова --------------------------------------------------------------
     def level(self, speaker: str) -> float | None:
-        """Уровень говорящего — медиана громкости его последних слов."""
+        """Уровень говорящего — верхняя квартиль громкости его последних слов."""
         hist = self._history.get(speaker)
-        return float(median(hist)) if hist else None
+        return quantile(hist, self.LEVEL_QUANTILE) if hist else None
 
     def _word_info(self, word: list[dict[str, Any]]) -> tuple[str | None, float | None]:
         """(говорящий слова по большинству его кусков, громкость слова)."""
@@ -402,18 +426,19 @@ class SpeakerLock:
         levels = {spk: lvl for spk, lvl in levels.items() if lvl is not None}
         if not levels:
             return
-        best = max(levels, key=levels.get)
         if self.primary is None or self.primary not in levels:
             eligible = [spk for spk in levels if len(self._history[spk]) >= self.MIN_SWITCH_WORDS]
             if len(eligible) < 2:
                 return
-            best = max(eligible, key=levels.get)
+            top = max(levels[spk] for spk in eligible)
+            candidates = [spk for spk in eligible if levels[spk] >= top * self.CANDIDATE_FRACTION]
+            best = max(candidates, key=lambda spk: (len(self._history[spk]), levels[spk]))
             self.primary = best
             if self._on_switch:
                 self._on_switch(None, best, levels[best], 0.0)
-            if self._on_level:
-                self._on_level(levels[best])
+            self._report(infos)
             return
+        best = max(levels, key=levels.get)
         current = levels[self.primary]
         if (
             best != self.primary
@@ -424,8 +449,13 @@ class SpeakerLock:
             self.primary = best
             if self._on_switch:
                 self._on_switch(old, best, levels[best], current)
-        if self._on_level and self.primary is not None:
-            self._on_level(levels[self.primary])
+        self._report(infos)
+
+    def _report(self, infos: list[tuple[str | None, float | None]]) -> None:
+        if self._on_primary_words and self.primary is not None:
+            words = [loud for spk, loud in infos if spk == self.primary and loud is not None]
+            if words:
+                self._on_primary_words(words)
 
     def _prior_level(self) -> float | None:
         return self._prior() if self._prior else None
@@ -457,12 +487,15 @@ class SpeakerLock:
         if self._same > 0 and speaker_level is not None and speaker_level >= primary_level * self._same:
             return True
         # Слово, слишком громкое для своего говорящего, — скорее всего ученик,
-        # которого разметка записала на фон.
+        # которого разметка записала на фон. Сравниваем с МЕДИАНОЙ говорящего:
+        # несколько таких слов поднимают его квартиль, а медиану — нет.
+        hist = self._history.get(speaker)
+        speaker_median = float(median(hist)) if hist else None
         if (
             self._outlier > 0
             and loud is not None
-            and speaker_level
-            and loud >= speaker_level * self._outlier
+            and speaker_median
+            and loud >= speaker_median * self._outlier
             and loud >= primary_level * SPEAKER_LOCK_OUTLIER_FLOOR
         ):
             return True
@@ -622,9 +655,9 @@ if aiohttp is not None and soniox is not None:
                     keep=stt._keep,
                     same=stt._same,
                     outlier=stt._outlier,
-                    prior=(lambda: stt._learner_level) if stt._memory else None,
+                    prior=stt._prior_level if stt._memory else None,
                     prior_bg=stt._prior_bg,
-                    on_level=stt._remember_level,
+                    on_primary_words=stt._learner_words.extend,
                     on_segment=self._log_segment if stt._debug else None,
                     on_switch=self._log_switch,
                 )
@@ -760,8 +793,9 @@ if aiohttp is not None and soniox is not None:
             self._memory = memory
             self._prior_bg = prior_bg
             self._debug = debug
-            # Уровень ученика по последнему потоку сессии (см. MEMORY).
-            self._learner_level: float | None = None
+            # Громкость слов ученика по всему звонку (см. MEMORY): в рации поток
+            # распознавания новый на каждый ход, а ученик тот же.
+            self._learner_words: deque = deque(maxlen=300)
             self._finalize = finalize
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
@@ -776,8 +810,10 @@ if aiohttp is not None and soniox is not None:
             self._streams.add(s)
             return s
 
-        def _remember_level(self, level: float) -> None:
-            self._learner_level = level
+        def _prior_level(self) -> float | None:
+            if len(self._learner_words) < 5:
+                return None
+            return quantile(self._learner_words, SpeakerLock.LEVEL_QUANTILE)
 
         def finalize_now(self) -> int:
             """Рация: кнопку отпустили — ученик договорил. Взводит finalize у

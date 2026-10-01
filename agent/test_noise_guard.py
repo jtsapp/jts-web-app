@@ -83,7 +83,7 @@ _env(SPEAKER_LOCK_SAME="2", SPEAKER_LOCK_OUTLIER="x")
 assert G.speaker_lock_same() == 0.6 and G.speaker_lock_outlier() == 1.6
 _env(SPEAKER_LOCK_SAME=None, SPEAKER_LOCK_OUTLIER=None)
 assert G.speaker_lock_memory() is False and G.speaker_lock_debug() is False
-assert G.speaker_lock_prior_bg() == 0.35
+assert G.speaker_lock_prior_bg() == 0.5
 _env(SPEAKER_LOCK_MEMORY="on", SPEAKER_LOCK_DEBUG="on", SPEAKER_LOCK_PRIOR_BG="0.4")
 assert G.speaker_lock_memory() is True and G.speaker_lock_debug() is True
 assert G.speaker_lock_prior_bg() == 0.4
@@ -265,15 +265,16 @@ assert dropped == "tonight heavy rain expected", dropped
 # начинает с нуля. Уровень ученика из прошлого потока делает фоном говорящего,
 # который намного тише, даже если он в новом потоке пока один.
 remembered = []
-first = G.SpeakerLock(on_level=remembered.append)
+first = G.SpeakerLock(on_primary_words=remembered.extend)
 _feed(first, (1.0, 9000), (1.0, 1500))
 first.process(
     [_tok(" I", 100, 300, "1"), _tok(" like", 300, 600, "1"), _tok(" it", 600, 900, "1"),
      _tok(" rain", 1100, 1400, "2"), _tok(" is", 1400, 1700, "2"), _tok(" here", 1700, 1900, "2"), END]
 )
-assert remembered and abs(remembered[-1] - 9000 / 2 ** 0.5) < 50, remembered
+# Наружу уходят слова основного — по ним STT держит уровень ученика по звонку.
+assert len(remembered) == 3 and all(abs(x - 9000 / 2 ** 0.5) < 50 for x in remembered), remembered
 lines = []
-second = G.SpeakerLock(prior=lambda: remembered[-1], prior_bg=0.35, on_segment=lines.append)
+second = G.SpeakerLock(prior=lambda: G.quantile(remembered, 0.75), prior_bg=0.35, on_segment=lines.append)
 _feed(second, (1.0, 1500), (1.0, 8000))
 out, dropped = second.process(
     [_tok(" good", 100, 400, "1"), _tok(" evening", 400, 700, "1"), _tok(" news", 700, 900, "1"), END]
