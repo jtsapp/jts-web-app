@@ -373,4 +373,127 @@ async def _attach_case():
 
 asyncio.run(_attach_case())
 
+
+# --- рация: «закончить сейчас» (finalize) ---------------------------------------------
+_env(SONIOX_FINALIZE=None)
+assert G.soniox_finalize_enabled() is True
+for off in ("off", "0", "false"):
+    _env(SONIOX_FINALIZE=off)
+    assert G.soniox_finalize_enabled() is False, off
+_env(SONIOX_FINALIZE=None)
+
+
+class _FinalizeWS:
+    """Сокет Soniox, который отвечает ТОЛЬКО на finalize: слова фразы и <fin>.
+    Пока команды нет — молчит, как молчал бы Soniox, ожидая конца фразы."""
+
+    def __init__(self, words=True):
+        self.words = words
+        self.bytes_sent = 0
+        self.bytes_at_finalize = None
+        self.texts = []
+        self._finalized = asyncio.Event()
+        self.closed = False
+
+    async def send_bytes(self, data):
+        self.bytes_sent += len(data)
+
+    async def send_str(self, data):
+        self.texts.append(data)
+        if json.loads(data).get("type") == "finalize":
+            self.bytes_at_finalize = self.bytes_sent
+            self._finalized.set()
+
+    async def close(self):
+        self.closed = True
+
+    def __aiter__(self):
+        return self._gen()
+
+    async def _gen(self):
+        await self._finalized.wait()
+        words = [_tok("I", 100, 300, None), _tok(" agree", 300, 700, None)] if self.words else []
+        msg = {"tokens": words + [{"text": "<fin>", "is_final": True}]}
+        for t in msg["tokens"]:
+            t.pop("speaker", None)
+        yield aiohttp.WSMessage(aiohttp.WSMsgType.TEXT, json.dumps(msg), None)
+        await asyncio.sleep(3600)
+
+
+async def _finalize_case(finalize: bool, words: bool = True):
+    ws = _FinalizeWS(words)
+    real_connect = soniox_stt.SpeechStream._connect_ws
+
+    async def fake_connect(self):
+        self.audio_queue = asyncio.Queue()
+        return ws
+
+    soniox_stt.SpeechStream._connect_ws = fake_connect
+    try:
+        engine = G.GuardedSonioxSTT(
+            api_key="test", params=soniox.STTOptions(), lock=False, finalize=finalize
+        )
+        stream = engine.stream()
+        audio = _pcm(1.0, 6000)
+        for i in range(0, len(audio), 320):
+            stream.push_frame(rtc.AudioFrame(audio[i : i + 320], SR, 1, 160))
+        sent = engine.finalize_now()
+        finals = []
+
+        async def _collect():
+            async for ev in stream:
+                if ev.type == lk_stt.SpeechEventType.FINAL_TRANSCRIPT:
+                    finals.append(ev.alternatives[0].text)
+                    # Пустой FINAL — ответ на finalize, после него ждать нечего.
+                    if ev.alternatives[0].text == "":
+                        return
+
+        t0 = asyncio.get_running_loop().time()
+        try:
+            await asyncio.wait_for(_collect(), timeout=1.5)
+        except asyncio.TimeoutError:
+            pass
+        took = asyncio.get_running_loop().time() - t0
+        await stream.aclose()
+        return engine, ws, sent, finals, took
+    finally:
+        soniox_stt.SpeechStream._connect_ws = real_connect
+
+
+engine, ws, sent, finals, took = asyncio.run(_finalize_case(True))
+# Без замка обёртка не включает разметку и не фильтрует — только finalize.
+assert engine._params.enable_speaker_diarization is False
+assert engine.capabilities.diarization is False
+assert sent == 1, sent
+# Команда ушла ПОСЛЕ всего аудио: хвост фразы не отрезан.
+assert ws.bytes_at_finalize == len(_pcm(1.0, 6000)), (ws.bytes_at_finalize, ws.bytes_sent)
+# Сначала сама фраза, следом пустой FINAL — он только снимает ожидание commit.
+assert finals == ["I agree", ""], finals
+assert took < 1.0, took
+
+# Фраза уже ушла раньше (Soniox закрыл её на паузе): на finalize он отвечает
+# пустым <fin>, и без пустого FINAL commit ждал бы новый финал до 2 с.
+engine, ws, sent, finals, took = asyncio.run(_finalize_case(True, words=False))
+assert finals == [""], finals
+assert took < 1.0, took
+
+# Рубильник: finalize выключен — команды нет, и Soniox молчит до своего конца фразы.
+engine, ws, sent, finals, took = asyncio.run(_finalize_case(False))
+assert sent == 0
+assert not any(json.loads(t).get("type") == "finalize" for t in ws.texts)
+assert finals == []
+
+# --- замок решает по настоящему тьютору ------------------------------------------------
+import agent as A  # noqa: E402
+
+_env(SONIOX_API_KEY="test", NOISE_GUARD_TUTORS="jarvis", SPEAKER_LOCK=None)
+# Speaking Buddy: сессия собирается на профиле Декстера, а звонок — Джарвиса.
+stt_buddy = A._cascade_stt_soniox(A.LearnerProfile(tutor="bro"), guard_tutor="jarvis")
+assert isinstance(stt_buddy, G.GuardedSonioxSTT) and stt_buddy._lock_on is True
+# Боевой Декстер под канарейку не попадает, но finalize для рации у него есть.
+stt_bro = A._cascade_stt_soniox(A.LearnerProfile(tutor="bro"))
+assert isinstance(stt_bro, G.GuardedSonioxSTT) and stt_bro._lock_on is False
+assert stt_bro._finalize is True
+_env(NOISE_GUARD_TUTORS=None, SONIOX_API_KEY=None)
+
 print("noise guard: ok")
