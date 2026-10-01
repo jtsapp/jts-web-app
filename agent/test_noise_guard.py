@@ -144,7 +144,7 @@ kept, dropped = lock4.filter_tokens([_tok(" x", 600, 900, "2", final=False)])
 assert kept == [] and dropped == ""
 
 # Слово, которое разметка отдала фону, но громкое как речь ученика, остаётся:
-# это ученик, сказавший его поверх фона (замер: «than», «past», «space»).
+# это ученик, сказавший его поверх фона.
 lock6 = G.SpeakerLock()
 lock6.push_pcm(_pcm(1.0, 6000), SR)  # ученик
 lock6.push_pcm(_pcm(1.0, 5000), SR)  # ученик поверх фона: смесь не тише
