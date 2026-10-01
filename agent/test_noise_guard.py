@@ -48,6 +48,17 @@ assert G.turn_watchdog_sec("gentle") == 0.0
 _env(NOISE_GUARD_TUTORS=None)
 
 assert G.turn_watchdog_sec("bro") == 1.2
+
+# Своя канарейка замка и сторожа главнее общей: замок обкатывается на одном
+# тьюторе, а finalize рации остаётся у всех из общего списка.
+_env(NOISE_GUARD_TUTORS="bro,gentle,hype,jarvis,aizere", SPEAKER_LOCK_TUTORS="jarvis",
+     TURN_WATCHDOG_TUTORS="hype")
+assert G.speaker_lock_enabled("jarvis") is True
+assert G.speaker_lock_enabled("bro") is False
+assert G.soniox_finalize_enabled("bro") is True
+assert G.turn_watchdog_sec("hype") == 1.2
+assert G.turn_watchdog_sec("jarvis") == 0.0
+_env(NOISE_GUARD_TUTORS=None, SPEAKER_LOCK_TUTORS=None, TURN_WATCHDOG_TUTORS=None)
 _env(TURN_WATCHDOG_SEC="2.5")
 assert G.turn_watchdog_sec("bro") == 2.5
 for off in ("0", "-1", "abc", "nan"):
@@ -87,88 +98,119 @@ def _tok(text, start, end, speaker, final=True):
     return {"text": text, "start_ms": start, "end_ms": end, "speaker": speaker, "is_final": final}
 
 
+END = {"text": "<end>", "is_final": True}
+
+
+def _texts(tokens):
+    return [t["text"] for t in tokens]
+
+
+def _feed(lock, *parts):
+    """Аудио кусками по 10 мс, как приходят кадры из комнаты."""
+    for seconds, amp in parts:
+        buf = _pcm(seconds, amp)
+        for i in range(0, len(buf), 320):
+            lock.push_pcm(buf[i : i + 320], SR)
+
+
 lock = G.SpeakerLock()
-# 0–1 с громко (ученик у микрофона), 1–2 с тихо (телевизор), кусками по 10 мс,
-# как приходят кадры из комнаты.
-loud, quiet = _pcm(1.0, 9000), _pcm(1.0, 1500)
-for buf in (loud, quiet):
-    for i in range(0, len(buf), 320):
-        lock.push_pcm(buf[i : i + 320], SR)
+# 0–1 с громко (ученик у микрофона), 1–2 с тихо (телевизор).
+_feed(lock, (1.0, 9000), (1.0, 1500))
 assert len(lock._windows) == 20
 
-kept, dropped = lock.filter_tokens(
+# Пока фраза идёт, финальные куски придержаны и уходят плагину черновыми — фон
+# уже отфильтрован по текущему основному.
+out, dropped = lock.process(
     [
         _tok(" I", 100, 300, "1"),
         _tok(" like", 300, 600, "1"),
         _tok(" breaking", 1100, 1400, "2"),
         _tok(" news", 1400, 1800, "2"),
-        {"text": "<end>", "is_final": True},
     ]
 )
-assert [t["text"] for t in kept] == [" I", " like", "<end>"], kept
+assert _texts(out) == [" I", " like"], out
+assert all(t["is_final"] is False for t in out)
+assert dropped == ""
+# Конец фразы: решение разом, финальные куски — перед самим <end>.
+out, dropped = lock.process([END])
+assert _texts(out) == [" I", " like", "<end>"], out
+assert out[0]["is_final"] is True and out[1]["is_final"] is True
 assert dropped == "breaking news", dropped
 assert lock.primary == "1"
 assert (lock.kept_words, lock.dropped_words) == (2, 2)
+assert lock._held == []
 
 # Слова без говорящего (разметка выключена) и служебные — всегда проходят.
-kept, _ = lock.filter_tokens([{"text": " hi", "is_final": True}, {"text": "<fin>", "is_final": True}])
-assert len(kept) == 2
+out, _ = lock.process([{"text": " hi", "is_final": True}, {"text": "<fin>", "is_final": True}])
+assert _texts(out) == [" hi", "<fin>"], out
 
-# Громче основного в 1.3 раза и больше — забирает микрофон.
+# Новости ДО ученика в той же фразе: фон успел стать основным, но к концу
+# фразы громче ученик — и фон вырезается целиком, а не проходит, как в v1.
 switches = []
-lock2 = G.SpeakerLock(on_switch=lambda old, new, a, b: switches.append((old, new)))
-lock2.push_pcm(_pcm(1.0, 1500), SR)  # тихий первый
-lock2.push_pcm(_pcm(1.0, 9000), SR)  # громкий второй
-kept, dropped = lock2.filter_tokens([_tok(" tv", 100, 900, "1"), _tok(" me", 1100, 1900, "2")])
-assert [t["text"] for t in kept] == [" tv", " me"], kept  # первый был основным, пока не появился второй
-assert lock2.primary == "2" and switches == [(None, "1"), ("1", "2")], switches
-kept, dropped = lock2.filter_tokens([_tok(" tv", 200, 800, "1")])
-assert kept == [] and dropped == "tv"
+tv_first = G.SpeakerLock(on_switch=lambda old, new, a, b: switches.append((old, new)))
+_feed(tv_first, (1.0, 1500), (1.0, 9000))
+out, _ = tv_first.process([_tok(" good", 100, 400, "1"), _tok(" evening", 400, 900, "1")])
+assert _texts(out) == [" good", " evening"]  # пока фон один — черновик его показывает
+out, dropped = tv_first.process([_tok(" I", 1100, 1300, "2"), _tok(" agree", 1300, 1900, "2"), END])
+assert _texts(out) == [" I", " agree", "<end>"], out
+assert dropped == "good evening", dropped
+assert switches == [(None, "1"), ("1", "2")], switches
+
+# Разметка прыгает внутри слова — слово решается целиком по большинству
+# кусков: не «esterdched», а «Yesterday».
+word = G.SpeakerLock(keep=0)
+_feed(word, (1.0, 9000), (1.0, 1500))
+word.process([_tok(" I", 100, 200, "1")])  # ученик — основной
+out, dropped = word.process(
+    [
+        _tok(" Yes", 200, 300, "1"),
+        _tok("ter", 300, 400, "2"),
+        _tok("day", 400, 500, "1"),
+        _tok(",", 500, 520, "1"),
+        _tok(" rain", 1100, 1300, "2"),
+        _tok("ing", 1300, 1400, "1"),
+        END,
+    ]
+)
+assert "".join(_texts(out)) == " I Yesterday,<end>", out
+assert dropped == "raining", dropped
 
 # Чуть громче — не повод: без запаса микрофон метался бы на каждом слове.
 lock3 = G.SpeakerLock()
-lock3.push_pcm(_pcm(1.0, 6000), SR)
-lock3.push_pcm(_pcm(1.0, 7000), SR)
-lock3.filter_tokens([_tok(" a", 100, 900, "1"), _tok(" b", 1100, 1900, "2")])
+_feed(lock3, (1.0, 6000), (1.0, 7000))
+lock3.process([_tok(" a", 100, 900, "1"), _tok(" b", 1100, 1900, "2")])
 assert lock3.primary == "1"
 
-# Черновые слова громкость не двигают и до первого финального не режутся.
+# Черновые куски громкость не двигают: основного по ним не выбрать.
 lock4 = G.SpeakerLock()
-lock4.push_pcm(_pcm(0.5, 6000), SR)
-lock4.push_pcm(_pcm(0.5, 1500), SR)
-kept, _ = lock4.filter_tokens([_tok(" draft", 100, 400, "2", final=False)])
-assert len(kept) == 1 and lock4.primary is None
-# Черновое слово не основного говорящего — выкидывается, но в лог не идёт.
-lock4.filter_tokens([_tok(" ok", 100, 400, "1")])
-kept, dropped = lock4.filter_tokens([_tok(" x", 600, 900, "2", final=False)])
-assert kept == [] and dropped == ""
+_feed(lock4, (1.0, 3000))
+out, _ = lock4.process([_tok(" draft", 100, 400, "2", final=False)])
+assert _texts(out) == [" draft"] and lock4.primary is None
 
 # Слово, которое разметка отдала фону, но громкое как речь ученика, остаётся:
 # это ученик, сказавший его поверх фона.
 lock6 = G.SpeakerLock()
-lock6.push_pcm(_pcm(1.0, 6000), SR)  # ученик
-lock6.push_pcm(_pcm(1.0, 5000), SR)  # ученик поверх фона: смесь не тише
-lock6.push_pcm(_pcm(1.0, 2000), SR)  # фон в паузе ученика
-kept, dropped = lock6.filter_tokens(
-    [_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2"), _tok(" rain", 2100, 2900, "2")]
+_feed(lock6, (1.0, 6000), (1.0, 5000), (1.0, 2000))
+out, dropped = lock6.process(
+    [_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2"), _tok(" rain", 2100, 2900, "2"), END]
 )
-assert [t["text"] for t in kept] == [" I", " than"], kept
+assert _texts(out) == [" I", " than", "<end>"], out
 assert dropped == "rain", dropped
 # keep=0 выключает поправку — остаётся чистая разметка.
 lock7 = G.SpeakerLock(keep=0)
-lock7.push_pcm(_pcm(1.0, 6000), SR)
-lock7.push_pcm(_pcm(1.0, 5000), SR)
-kept, _ = lock7.filter_tokens([_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2")])
-assert [t["text"] for t in kept] == [" I"], kept
+_feed(lock7, (1.0, 6000), (1.0, 5000))
+out, _ = lock7.process([_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2"), END])
+assert _texts(out) == [" I", "<end>"], out
 
 # Слово, для которого аудио ещё не пришло, громкость не портит.
 lock5 = G.SpeakerLock()
-lock5.filter_tokens([_tok(" early", 5000, 5300, "1")])
+lock5.process([_tok(" early", 5000, 5300, "1")])
 assert lock5.primary is None
 
-# Новый сокет — номера говорящих и время с нуля.
-lock.reset()
-assert lock.primary is None and lock._windows == [] and lock.kept_words == 0
+# Новый сокет — номера говорящих, время и придержанная фраза с нуля.
+tv_first.process([_tok(" x", 100, 200, "1")])
+tv_first.reset()
+assert tv_first.primary is None and tv_first._windows == [] and tv_first._held == []
 
 
 # --- сквозной: настоящий плагин Soniox + наш сокет ----------------------------------
