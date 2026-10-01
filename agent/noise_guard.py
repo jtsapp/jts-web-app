@@ -36,6 +36,7 @@ import math
 import os
 import time
 import weakref
+from collections import deque
 from statistics import median
 from typing import Any, Callable
 
@@ -66,11 +67,27 @@ logger = logging.getLogger("jts-agent")
 #
 # SPEAKER_LOCK=on|off — фильтр говорящих.
 # TURN_WATCHDOG_SEC=<сек> — сторож конца хода; 0 или пусто — выключен.
-# NOISE_GUARD_TUTORS=bro,hype — сузить оба слоя до персон (канарейка).
+# NOISE_GUARD_TUTORS=bro,hype — сузить все слои до персон (канарейка).
+# SPEAKER_LOCK_TUTORS / TURN_WATCHDOG_TUTORS — своя канарейка у замка и у
+#   сторожа; если задана, она главнее общей. Нужна, чтобы обкатывать замок на
+#   одном тьюторе, не отбирая finalize рации у остальных. Список — ТОЛЬКО
+#   файлом (`lk agent update-secrets --secrets-file`): в --secrets запятая
+#   делит пары KEY=VALUE.
 # SPEAKER_LOCK_RATIO — во сколько раз новый говорящий должен быть громче
 #   основного, чтобы забрать у него микрофон.
 # SPEAKER_LOCK_KEEP — доля громкости ученика, начиная с которой слово
 #   «чужого» говорящего всё-таки оставляем; 0 — только разметка Soniox.
+# SPEAKER_LOCK_SAME — доля уровня ученика, с которой говорящий считается своим
+#   (ученик, расщеплённый разметкой надвое); 0 — выключить.
+# SPEAKER_LOCK_OUTLIER — во сколько раз слово громче медианы своего говорящего,
+#   чтобы считать его словом ученика, записанным на фон; 0 — выключить.
+# SPEAKER_LOCK_MEMORY=on — помнить уровень ученика между потоками
+#   распознавания (в рации поток новый на каждый ход). Выключено по умолчанию.
+# SPEAKER_LOCK_PRIOR_BG — с памятью: говорящий тише этой доли уровня ученика —
+#   фон, даже если в новом потоке он пока один.
+# SPEAKER_LOCK_DEBUG=on — на конце каждой фразы строка в лог: уровни и каждое
+#   слово с говорящим, громкостью и решением. Только для канарейки: это текст
+#   речи ученика в логах.
 SPEAKER_LOCK_DEFAULT = "on"
 TURN_WATCHDOG_DEFAULT_SEC = 1.2
 SPEAKER_LOCK_RATIO_DEFAULT = 1.3
@@ -81,16 +98,34 @@ SPEAKER_LOCK_RATIO_DEFAULT = 1.3
 # слова ученика из 12 потерянных («lessons», «can») ценой ничьей по фону.
 # Безударные «than», «past» тихие сами по себе — их громкостью не вернуть.
 SPEAKER_LOCK_KEEP_DEFAULT = 0.75
+# Говорящий с уровнем не ниже этой доли от уровня основного — тоже «свой».
+# Soniox расщепляет ОДНОГО ученика на двух говорящих (запись 01.10.2026:
+# «I want to improve» — говорящий 2, «my English… London next summer» —
+# говорящий 3; уровни 5889 и 3585, новости — 2162), и без этого замок резал
+# слова самого ученика: 57/73 на громком фоне тем же мужским голосом.
+SPEAKER_LOCK_SAME_DEFAULT = 0.6
+# И обратная ошибка разметки: слова ученика, записанные на говорящего-фон.
+# Для «своего» говорящего они слишком громкие — в записи 01.10.2026 у фона
+# медиана 964, его собственные слова не громче 1.5 медианы, а «Than lessons
+# in a classroom» ученика — 1662–3044. Слово не ниже OUTLIER своих медиан и
+# не ниже OUTLIER_FLOOR уровня ученика оставляем. 1.6 подобран по 24 записям:
+# вернул 3 слова ученика ценой 3 слов фона.
+SPEAKER_LOCK_OUTLIER_DEFAULT = 1.6
+SPEAKER_LOCK_OUTLIER_FLOOR = 0.5
+# Живой звонок 01.10.2026 (v3, новости −6 дБ): в рации поток распознавания
+# новый на каждый ход, Soniox в нём заново нумерует говорящих, и замок каждый
+# раз начинал с нуля — фраза одного фона в начале хода проходила. Память
+# переносит в новый поток уровень ученика; говорящий тише PRIOR_BG этого
+# уровня — фон. Порог консервативный: уровень ученика между потоками гулял
+# 5907 → 2422, и тихий ученик не должен оказаться «фоном».
+SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.35
 
 _OFF = ("off", "0", "false", "no")
 
 
-def _tutor_allowed(tutor: str) -> bool:
-    only = [
-        x.strip().lower()
-        for x in (os.getenv("NOISE_GUARD_TUTORS") or "").split(",")
-        if x.strip()
-    ]
+def _tutor_allowed(tutor: str, own_env: str = "") -> bool:
+    raw = (os.getenv(own_env) if own_env else "") or os.getenv("NOISE_GUARD_TUTORS") or ""
+    only = [x.strip().lower() for x in raw.split(",") if x.strip()]
     return not only or (tutor or "").strip().lower() in only
 
 
@@ -99,12 +134,17 @@ def speaker_lock_enabled(tutor: str) -> bool:
     raw = (os.getenv("SPEAKER_LOCK") or SPEAKER_LOCK_DEFAULT).strip().lower()
     if raw in _OFF:
         return False
-    return _tutor_allowed(tutor)
+    return _tutor_allowed(tutor, "SPEAKER_LOCK_TUTORS")
 
 
-def soniox_finalize_enabled() -> bool:
-    """SONIOX_FINALIZE=off — откат «закончить сейчас» для рации секретом."""
-    return (os.getenv("SONIOX_FINALIZE") or "").strip().lower() not in _OFF
+def soniox_finalize_enabled(tutor: str | None = None) -> bool:
+    """SONIOX_FINALIZE=off — откат «закончить сейчас» для рации секретом.
+    С тьютором подчиняется и канарейке NOISE_GUARD_TUTORS: первый вариант
+    (мгновенный finalize) съедал последнее слово, и новый включается сперва
+    одному тьютору."""
+    if (os.getenv("SONIOX_FINALIZE") or "").strip().lower() in _OFF:
+        return False
+    return tutor is None or _tutor_allowed(tutor)
 
 
 def speaker_lock_ratio() -> float:
@@ -138,6 +178,41 @@ def speaker_lock_keep() -> float:
     return value
 
 
+def _env_fraction(name: str, default: float, lo: float, hi: float) -> float:
+    raw = (os.getenv(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("%s=%r не число — беру %s", name, raw, default)
+        return default
+    if not lo <= value <= hi:
+        logger.warning("%s=%r вне [%s, %s] — беру %s", name, raw, lo, hi, default)
+        return default
+    return value
+
+
+def speaker_lock_memory() -> bool:
+    return (os.getenv("SPEAKER_LOCK_MEMORY") or "").strip().lower() in ("on", "1", "true", "yes")
+
+
+def speaker_lock_debug() -> bool:
+    return (os.getenv("SPEAKER_LOCK_DEBUG") or "").strip().lower() in ("on", "1", "true", "yes")
+
+
+def speaker_lock_prior_bg() -> float:
+    return _env_fraction("SPEAKER_LOCK_PRIOR_BG", SPEAKER_LOCK_PRIOR_BG_DEFAULT, 0.0, 1.0)
+
+
+def speaker_lock_same() -> float:
+    return _env_fraction("SPEAKER_LOCK_SAME", SPEAKER_LOCK_SAME_DEFAULT, 0.0, 1.0)
+
+
+def speaker_lock_outlier() -> float:
+    return _env_fraction("SPEAKER_LOCK_OUTLIER", SPEAKER_LOCK_OUTLIER_DEFAULT, 0.0, 10.0)
+
+
 def turn_watchdog_sec(tutor: str) -> float:
     """Порог сторожа в секундах; 0 — сторож выключен."""
     raw = (os.getenv("TURN_WATCHDOG_SEC") or "").strip()
@@ -150,7 +225,7 @@ def turn_watchdog_sec(tutor: str) -> float:
             return 0.0
     if value <= 0 or math.isnan(value):
         return 0.0
-    return value if _tutor_allowed(tutor) else 0.0
+    return value if _tutor_allowed(tutor, "TURN_WATCHDOG_TUTORS") else 0.0
 
 
 # ── Замок на ученика ─────────────────────────────────────────────────────────
@@ -162,35 +237,92 @@ def _is_end_token(token: dict[str, Any]) -> bool:
     return token.get("text") in ("<end>", "<fin>")
 
 
+def _words(tokens: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Токены Soniox → слова. Soniox режет слово на куски («Y|ester|day»), новое
+    слово начинается с пробела; знаки препинания без пробела прилипают к
+    предыдущему слову."""
+    words: list[list[dict[str, Any]]] = []
+    for t in tokens:
+        text = str(t.get("text", ""))
+        if not words or text.startswith(" "):
+            words.append([t])
+        else:
+            words[-1].append(t)
+    return words
+
+
 class SpeakerLock:
-    """Решает по каждому слову Soniox, оставить его или выкинуть.
+    """Решает по каждому СЛОВУ фразы Soniox, оставить его или выкинуть.
+
+    v2 (01.10.2026). Первая версия решала по кускам слов и на лету, и живой
+    звонок с Krisp BVC показал две беды: разметка говорящих прыгает ВНУТРИ слова
+    на стыке ученика и фона — выходило «esterdched» вместо «Yesterday I
+    watched»; а новости, звучавшие до первого слова ученика, проходили: фон был
+    единственным говорящим и успевал стать основным. Поэтому теперь:
+
+    * решение по целому слову — по большинству его кусков;
+    * финальные слова фразы придерживаются до её конца (<end>/<fin>) и
+      решаются разом, когда уже известно, кто громче. Задержки это не
+      добавляет: плагин и так отдаёт FINAL только на конце фразы. Пока фраза
+      идёт, придержанные слова уходят плагину черновыми — подпись и порог
+      перебивания их видят.
 
     Громкость считаем сами по аудио, которое ушло в Soniox: у слова есть
     start_ms/end_ms от начала сокета, и мы берём медиану RMS по окнам 100 мс,
-    попавшим в этот отрезок. По громкости каждого говорящего держим
-    сглаженное среднее, обновляем его только на ФИНАЛЬНЫХ словах (черновые
-    Soniox присылает повторно, они перевесили бы).
+    попавшим в его отрезок.
 
-    Основной говорящий — первый, у кого появилась громкость. Сменить его может
-    только тот, кто громче в `ratio` раз: без запаса микрофон метался бы между
-    учеником и телевизором на каждом слове.
+    Основной говорящий — самый громкий по УРОВНЮ: медиане громкости его
+    последних HISTORY слов (v3). В v2 уровень был скользящим средним по кускам
+    слов, и живой звонок с громкими новостями (−6 дБ) показал, что основной
+    скачет: «1 → 2 (4033 против 1812)», через фразу «2 → 1 (1880 против
+    1203)» — тихие окончания и куски, которые разметка ошибочно отдала ученику,
+    тянули его среднее вниз, и телевизор забирал микрофон. Замок за звонок
+    выкинул 3 слова из ~40 слов фона. Медиана таким выбросам не поддаётся.
+    Уровни обновляются на конце фразы её же словами и сразу решают эту фразу;
+    сменить основного может только тот, у кого не меньше MIN_SWITCH_WORDS слов
+    и уровень в `ratio` раз выше — иначе микрофон метался бы между учеником и
+    телевизором.
+
+    Основного НЕ назначаем, пока не с кем сравнить: нужны двое говорящих по
+    MIN_SWITCH_WORDS слов. Офлайн-замер v3 (фон тем же мужским голосом, −6 дБ)
+    показал, почему: Soniox закрывает фразу на паузе в новостях ещё до ученика,
+    фон оказывался единственным говорящим, становился основным — и устойчивый
+    уровень уже не отдавал микрофон ученику (слова ученика 57/73). Пока
+    говорящий один, замок ничего не выкидывает: в тихой комнате он не мешает
+    вовсе.
     """
 
     WINDOW_SEC = 0.1
     # Час аудио на сокет — с запасом больше дневного лимита звонка.
     MAX_WINDOWS = 36000
+    # Сколько последних слов говорящего держим для его уровня.
+    HISTORY = 60
+    # Меньше слов — уровню новичка не верим, микрофон у основного не забираем.
+    MIN_SWITCH_WORDS = 3
 
     def __init__(
         self,
         *,
         ratio: float = SPEAKER_LOCK_RATIO_DEFAULT,
         keep: float = SPEAKER_LOCK_KEEP_DEFAULT,
-        smoothing: float = 0.5,
+        same: float = SPEAKER_LOCK_SAME_DEFAULT,
+        outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
+        prior: Callable[[], float | None] | None = None,
+        prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+        on_level: Callable[[float], None] | None = None,
+        on_segment: Callable[[str], None] | None = None,
         on_switch: Callable[[str | None, str, float, float], None] | None = None,
     ) -> None:
         self._ratio = ratio
         self._keep = keep
-        self._smoothing = smoothing
+        self._same = same
+        self._outlier = outlier
+        # Память об ученике из прошлых потоков: prior() — его уровень или None;
+        # on_level(уровень) — сообщить уровень основного наружу.
+        self._prior = prior
+        self._prior_bg = prior_bg
+        self._on_level = on_level
+        self._on_segment = on_segment
         self._on_switch = on_switch
         self.reset()
 
@@ -201,8 +333,10 @@ class SpeakerLock:
         self._acc_sq = 0.0
         self._acc_n = 0
         self._window_len = 0
-        self._loudness: dict[str, float] = {}
+        self._history: dict[str, deque] = {}
         self.primary: str | None = None
+        # Финальные куски текущей фразы — ждут её конца.
+        self._held: list[dict[str, Any]] = []
         self.kept_words = 0
         self.dropped_words = 0
 
@@ -230,8 +364,7 @@ class SpeakerLock:
             del self._windows[:cut]
             self._base += cut
 
-    def _token_loudness(self, token: dict[str, Any]) -> float | None:
-        start, end = token.get("start_ms"), token.get("end_ms")
+    def _span_loudness(self, start: Any, end: Any) -> float | None:
         if start is None or end is None:
             return None
         i0 = int(float(start) / 1000 / self.WINDOW_SEC) - self._base
@@ -243,58 +376,167 @@ class SpeakerLock:
         return float(median(self._windows[i0:i1]))
 
     # -- слова --------------------------------------------------------------
-    def _observe(self, speaker: str, token: dict[str, Any]) -> None:
-        loud = self._token_loudness(token)
-        if loud is None:
-            return
-        prev = self._loudness.get(speaker)
-        self._loudness[speaker] = (
-            loud if prev is None else prev * self._smoothing + loud * (1 - self._smoothing)
-        )
-        if self.primary is None:
-            self.primary = speaker
-            if self._on_switch:
-                self._on_switch(None, speaker, self._loudness[speaker], 0.0)
-            return
-        if speaker == self.primary:
-            return
-        primary_loud = self._loudness.get(self.primary, 0.0)
-        if self._loudness[speaker] > primary_loud * self._ratio:
-            old = self.primary
-            self.primary = speaker
-            if self._on_switch:
-                self._on_switch(old, speaker, self._loudness[speaker], primary_loud)
+    def level(self, speaker: str) -> float | None:
+        """Уровень говорящего — медиана громкости его последних слов."""
+        hist = self._history.get(speaker)
+        return float(median(hist)) if hist else None
 
-    def _loud_as_primary(self, token: dict[str, Any]) -> bool:
-        if self._keep <= 0 or self.primary is None:
-            return False
-        primary_loud = self._loudness.get(self.primary)
-        loud = self._token_loudness(token)
-        return bool(primary_loud) and loud is not None and loud >= primary_loud * self._keep
-
-    def filter_tokens(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
-        """Оставить слова основного говорящего. Возвращает (оставленные,
-        текст выкинутых ФИНАЛЬНЫХ слов) — второе только для лога."""
-        kept: list[dict[str, Any]] = []
-        dropped_final: list[str] = []
-        for token in tokens:
-            raw_speaker = token.get("speaker")
-            if raw_speaker is None or _is_end_token(token):
-                kept.append(token)
+    def _word_info(self, word: list[dict[str, Any]]) -> tuple[str | None, float | None]:
+        """(говорящий слова по большинству его кусков, громкость слова)."""
+        votes: dict[str, int] = {}
+        for t in word:
+            if t.get("speaker") is None:
                 continue
-            speaker = str(raw_speaker)
+            spk = str(t["speaker"])
+            votes[spk] = votes.get(spk, 0) + max(1, len(str(t.get("text", "")).strip()))
+        speaker = max(votes, key=votes.get) if votes else None
+        return speaker, self._span_loudness(word[0].get("start_ms"), word[-1].get("end_ms"))
+
+    def _learn(self, infos: list[tuple[str | None, float | None]]) -> None:
+        """Слова законченной фразы → уровни говорящих → основной."""
+        for speaker, loud in infos:
+            if speaker is None or loud is None:
+                continue
+            self._history.setdefault(speaker, deque(maxlen=self.HISTORY)).append(loud)
+        levels = {spk: self.level(spk) for spk in self._history}
+        levels = {spk: lvl for spk, lvl in levels.items() if lvl is not None}
+        if not levels:
+            return
+        best = max(levels, key=levels.get)
+        if self.primary is None or self.primary not in levels:
+            eligible = [spk for spk in levels if len(self._history[spk]) >= self.MIN_SWITCH_WORDS]
+            if len(eligible) < 2:
+                return
+            best = max(eligible, key=levels.get)
+            self.primary = best
+            if self._on_switch:
+                self._on_switch(None, best, levels[best], 0.0)
+            if self._on_level:
+                self._on_level(levels[best])
+            return
+        current = levels[self.primary]
+        if (
+            best != self.primary
+            and len(self._history[best]) >= self.MIN_SWITCH_WORDS
+            and levels[best] > current * self._ratio
+        ):
+            old = self.primary
+            self.primary = best
+            if self._on_switch:
+                self._on_switch(old, best, levels[best], current)
+        if self._on_level and self.primary is not None:
+            self._on_level(levels[self.primary])
+
+    def _prior_level(self) -> float | None:
+        return self._prior() if self._prior else None
+
+    def _keep_word(self, speaker: str | None, loud: float | None) -> bool:
+        """Оставить ли слово целиком."""
+        if speaker is None or speaker == self.primary:
+            return True
+        if self.primary is None:
+            # Основного в этом потоке ещё нет. С памятью об ученике говорящий
+            # намного тише его уровня — фон, даже если он тут пока один (фраза
+            # новостей в начале хода рацией). Без памяти пропускаем всё: лучше
+            # лишнее слово, чем глухой тьютор.
+            prior = self._prior_level()
+            speaker_level = self.level(speaker)
+            if prior and self._prior_bg > 0 and speaker_level is not None:
+                if speaker_level < prior * self._prior_bg and not (
+                    loud is not None and loud >= prior * self._keep
+                ):
+                    return False
+            return True
+        primary_level = self.level(self.primary)
+        if not primary_level:
+            return True
+        # Говорящий почти так же громок, как основной, — это тот же ученик,
+        # которого Soniox расщепил надвое (или второй человек у самого
+        # микрофона: его слова тьютору тоже адресованы).
+        speaker_level = self.level(speaker)
+        if self._same > 0 and speaker_level is not None and speaker_level >= primary_level * self._same:
+            return True
+        # Слово, слишком громкое для своего говорящего, — скорее всего ученик,
+        # которого разметка записала на фон.
+        if (
+            self._outlier > 0
+            and loud is not None
+            and speaker_level
+            and loud >= speaker_level * self._outlier
+            and loud >= primary_level * SPEAKER_LOCK_OUTLIER_FLOOR
+        ):
+            return True
+        # Слово «чужого» говорящего, но громкое как речь ученика, — это ученик,
+        # сказавший его поверх фона (громкость смеси не ниже его голоса).
+        return bool(self._keep > 0 and loud is not None and loud >= primary_level * self._keep)
+
+    def _decide(
+        self, words: list[list[dict[str, Any]]], infos: list[tuple[str | None, float | None]]
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        kept: list[dict[str, Any]] = []
+        dropped: list[str] = []
+        for word, (speaker, loud) in zip(words, infos):
+            if self._keep_word(speaker, loud):
+                kept.extend(word)
+            else:
+                dropped.append("".join(str(t.get("text", "")) for t in word).strip())
+        return kept, dropped
+
+    def _describe(
+        self, words: list[list[dict[str, Any]]], infos: list[tuple[str | None, float | None]]
+    ) -> str:
+        """Строка отладки: уровни говорящих, память и каждое слово фразы."""
+        levels = " ".join(
+            f"{spk}={round(self.level(spk) or 0)}/{len(h)}" for spk, h in sorted(self._history.items())
+        )
+        prior = self._prior_level()
+        parts = []
+        for word, (spk, loud) in list(zip(words, infos))[:40]:
+            text = "".join(str(t.get("text", "")) for t in word).strip()
+            mark = "+" if self._keep_word(spk, loud) else "x"
+            parts.append(f"{text}:{spk}:{round(loud) if loud is not None else '-'}{mark}")
+        return (
+            f"основной={self.primary} уровни[{levels}] память={round(prior) if prior else '-'} | "
+            + " ".join(parts)
+        )
+
+    def process(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+        """Токены одного ответа Soniox → токены для плагина.
+
+        Финальные куски придерживаются; на конце фразы уходят отфильтрованные
+        пословно и разом, перед самим <end>/<fin>. Пока фраза идёт, плагину
+        уходит черновой вид: придержанные куски плюс черновые, отфильтрованные
+        по текущему основному и помеченные is_final=False (накопитель черновых
+        у плагина новый на каждый ответ, так что повтор безопасен).
+        Возвращает (токены, текст выкинутых слов фразы) — второе для лога."""
+        out: list[dict[str, Any]] = []
+        drafts: list[dict[str, Any]] = []
+        dropped_all: list[str] = []
+        for token in tokens:
+            if _is_end_token(token):
+                words = _words(self._held)
+                infos = [self._word_info(w) for w in words]
+                # Сперва уровни — этой же фразой: фон, начавший её раньше
+                # ученика, решается уже против уровня ученика.
+                self._learn(infos)
+                kept, dropped = self._decide(words, infos)
+                if self._on_segment and words:
+                    self._on_segment(self._describe(words, infos))
+                self.kept_words += len(_words(kept))
+                self.dropped_words += len(dropped)
+                dropped_all.extend(dropped)
+                out.extend(kept)
+                out.append(token)
+                self._held = []
+                continue
             if token.get("is_final"):
-                self._observe(speaker, token)
-            # Пока основного нет (ни у кого ещё не посчитана громкость),
-            # пропускаем всё: лучше лишнее слово, чем глухой тьютор.
-            if self.primary is None or speaker == self.primary or self._loud_as_primary(token):
-                kept.append(token)
-                if token.get("is_final"):
-                    self.kept_words += 1
-            elif token.get("is_final"):
-                self.dropped_words += 1
-                dropped_final.append(str(token.get("text", "")))
-        return kept, "".join(dropped_final).strip()
+                self._held.append(token)
+            else:
+                drafts.append(token)
+        words = _words(self._held + drafts)
+        view, _ = self._decide(words, [self._word_info(w) for w in words])
+        out.extend({**t, "is_final": False} for t in view)
+        return out, " ".join(w for w in dropped_all if w)
 
 
 # Ручное закрытие фразы в протоколе Soniox: сервер дорасшифровывает всё, что
@@ -302,6 +544,19 @@ class SpeakerLock:
 # сразу отдаёт FINAL. Без него конец фразы решает сам Soniox, и это до
 # max_endpoint_delay_ms (2 с по умолчанию) после последнего слова.
 FINALIZE_MESSAGE = json.dumps({"type": "finalize"})
+# Когда слать finalize. НЕ сразу по отпусканию: живой звонок 01.10.2026
+# (агент aZ5pJhsWSuto) показал, что мгновенный finalize съедает последнее слово —
+# «too.» вместо «too tired.», «class.» вместо «classroom» в 3 ходах из 4: Soniox
+# закрывает фразу, не дослушав хвост, если после него нет тишины. Тишину
+# commit_user_turn досылает сам (2 с нулей пачкой, тем же каналом, что и звук),
+# поэтому отпускание только взводит команду, а уходит она, когда за последним
+# словом в поток прошло FINALIZE_AFTER_SILENCE_SEC чистых нулей. Нули пачкой
+# идут мгновенно — к задержке это не добавляет.
+FINALIZE_AFTER_SILENCE_SEC = 0.5
+# Сколько ждать этой тишины. commit досылает её сразу; если её нет (финал
+# пришёл меньше чем за 0.5 с до отпускания — тогда commit не ждёт и не досылает),
+# взвод гаснет и не сработает на тишине уже следующего хода.
+FINALIZE_ARM_SEC = 3.0
 
 
 if aiohttp is not None and soniox is not None:
@@ -351,12 +606,10 @@ if aiohttp is not None and soniox is not None:
             fin = any(t.get("text") == "<fin>" for t in tokens)
             if self._lock is None:
                 return msg, fin
-            kept, dropped = self._lock.filter_tokens(tokens)
+            out, dropped = self._lock.process(tokens)
             if dropped:
                 self._log_drop(dropped)
-            if len(kept) == len(tokens):
-                return msg, fin
-            content["tokens"] = kept
+            content["tokens"] = out
             return msg._replace(data=json.dumps(content, ensure_ascii=False)), fin
 
     class _GuardedSpeechStream(soniox_stt.SpeechStream):
@@ -364,11 +617,50 @@ if aiohttp is not None and soniox is not None:
             super().__init__(stt=stt, conn_options=conn_options)
             self._guard: GuardedSonioxSTT = stt
             self._lock = (
-                SpeakerLock(ratio=stt._ratio, keep=stt._keep, on_switch=self._log_switch)
+                SpeakerLock(
+                    ratio=stt._ratio,
+                    keep=stt._keep,
+                    same=stt._same,
+                    outlier=stt._outlier,
+                    prior=(lambda: stt._learner_level) if stt._memory else None,
+                    prior_bg=stt._prior_bg,
+                    on_level=stt._remember_level,
+                    on_segment=self._log_segment if stt._debug else None,
+                    on_switch=self._log_switch,
+                )
                 if stt._lock_on
                 else None
             )
             self._drop_buf: list[str] = []
+            self._fin_deadline = 0.0
+            self._fin_zero = 0.0
+
+        def arm_finalize(self) -> None:
+            self._fin_deadline = time.monotonic() + FINALIZE_ARM_SEC
+            self._fin_zero = 0.0
+
+        def push_frame(self, frame: Any) -> None:
+            super().push_frame(frame)
+            if not self._fin_deadline:
+                return
+            if time.monotonic() > self._fin_deadline:
+                self._fin_deadline = 0.0
+                return
+            if np.frombuffer(frame.data.tobytes(), dtype=np.int16).any():
+                # Хвост речи ещё идёт (кадры, отправленные до отпускания).
+                self._fin_zero = 0.0
+                return
+            self._fin_zero += frame.duration
+            if self._fin_zero >= FINALIZE_AFTER_SILENCE_SEC:
+                self._fin_deadline = 0.0
+                try:
+                    self.flush()
+                except RuntimeError:
+                    # Поток уже закрыт — закрывать нечего.
+                    pass
+
+        def _log_segment(self, line: str) -> None:
+            logger.info("LOCK seg: %s", line[:900])
 
         def _log_switch(self, old: str | None, new: str, loud: float, old_loud: float) -> None:
             if old is None:
@@ -447,6 +739,11 @@ if aiohttp is not None and soniox is not None:
             lock: bool = True,
             ratio: float = SPEAKER_LOCK_RATIO_DEFAULT,
             keep: float = SPEAKER_LOCK_KEEP_DEFAULT,
+            same: float = SPEAKER_LOCK_SAME_DEFAULT,
+            outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
+            memory: bool = False,
+            prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+            debug: bool = False,
             finalize: bool = True,
             **kwargs: Any,
         ) -> None:
@@ -458,6 +755,13 @@ if aiohttp is not None and soniox is not None:
             self._lock_on = lock
             self._ratio = ratio
             self._keep = keep
+            self._same = same
+            self._outlier = outlier
+            self._memory = memory
+            self._prior_bg = prior_bg
+            self._debug = debug
+            # Уровень ученика по последнему потоку сессии (см. MEMORY).
+            self._learner_level: float | None = None
             self._finalize = finalize
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
@@ -472,21 +776,20 @@ if aiohttp is not None and soniox is not None:
             self._streams.add(s)
             return s
 
+        def _remember_level(self, level: float) -> None:
+            self._learner_level = level
+
         def finalize_now(self) -> int:
-            """Закрыть текущую фразу у Soniox прямо сейчас (рация: кнопку
-            отпустили — значит, ученик договорил). Возвращает число потоков,
-            которым ушла команда."""
+            """Рация: кнопку отпустили — ученик договорил. Взводит finalize у
+            живых потоков; сама команда уходит после тишины за последним словом
+            (см. FINALIZE_AFTER_SILENCE_SEC). Возвращает число взведённых."""
             if not self._finalize:
                 return 0
-            sent = 0
+            armed = 0
             for s in list(self._streams):
-                try:
-                    s.flush()
-                    sent += 1
-                except RuntimeError:
-                    # Поток уже закрыт или вход завершён — закрывать нечего.
-                    continue
-            return sent
+                s.arm_finalize()
+                armed += 1
+            return armed
 
 else:  # pragma: no cover
     GuardedSonioxSTT = None  # type: ignore[assignment,misc]

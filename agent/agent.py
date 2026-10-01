@@ -5624,7 +5624,7 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     )
     tutor = guard_tutor or profile.tutor
     lock = noise_guard.speaker_lock_enabled(tutor)
-    finalize = noise_guard.soniox_finalize_enabled()
+    finalize = noise_guard.soniox_finalize_enabled(tutor)
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
@@ -5638,7 +5638,19 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     # Soniox сразу по отпусканию кнопки (finalize_now). Без замка она ничего не
     # фильтрует и разметку говорящих не включает.
     return noise_guard.GuardedSonioxSTT(
-        api_key=key, params=params, lock=lock, ratio=ratio, keep=keep, finalize=finalize
+        api_key=key,
+        params=params,
+        lock=lock,
+        ratio=ratio,
+        keep=keep,
+        same=noise_guard.speaker_lock_same(),
+        outlier=noise_guard.speaker_lock_outlier(),
+        memory=noise_guard.speaker_lock_memory(),
+        prior_bg=noise_guard.speaker_lock_prior_bg(),
+        # Отладочная строка — это текст речи ученика в логах: только там, где
+        # замок вообще включён (канарейка), и только по явному секрету.
+        debug=lock and noise_guard.speaker_lock_debug(),
+        finalize=finalize,
     )
 
 
