@@ -523,8 +523,11 @@
   }
 
   /* Код из СМС: четыре плитки 90×120 в один ряд */
+  /* width: 100% обязателен: авто-поля во флекс-колонке .form-card иначе
+     сжимают ряд до содержимого, и плитки выходили по 54 px */
   .otp-row {
     gap: 4px;
+    width: 100%;
     max-width: 372px;
     margin: 0 auto;
   }
@@ -575,5 +578,50 @@
     font-size: 32px;
     line-height: 38px;
     letter-spacing: 0;
+  }
+}
+
+/* ---------- Вход по СМС: «в точности как макет» (решение владельца 02.10) ---------- */
+@media (max-width: 560px) {
+  /* В поле — флаг, «+7» и маска: шеврона выбора страны в кадре нет (страну
+     по-прежнему меняет нажатие на флаг). */
+  .phone-field {
+    gap: 4px;
+  }
+  /* Обёртка флексом: inline-кнопка сидела на базовой линии и добавляла полю
+     пиксель (69 вместо 68) */
+  .phone-country {
+    display: flex;
+  }
+  .phone-country__btn {
+    gap: 12px;
+  }
+  .phone-country__flag {
+    font-size: 20px;
+    line-height: 20px;
+  }
+  .phone-country__btn,
+  .phone-country__dial {
+    line-height: 20px;
+  }
+  .phone-country__chev {
+    display: none;
+  }
+  /* Переключателя «Войти по email» в кадре нет. Почта на телефоне остаётся
+     через «Войти» на приветствии (вход по паролю). */
+  .form-card:has(.phone-field, .email-field) .form-note--center {
+    display: none;
+  }
+  /* Подпись под кнопкой — целиком серая и подчёркнутая, как в кадре */
+  .form-card:has(.phone-field) .form-note {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .form-card:has(.phone-field) .form-note a {
+    color: inherit;
+  }
+  .otp-box::placeholder {
+    color: #afafaf;
+    opacity: 1;
   }
 }

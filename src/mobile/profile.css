@@ -363,3 +363,10 @@
     background-size: 24px 24px;
   }
 }
+
+@media (max-width: 560px) {
+  /* Двоеточие после «Ваш уровень» — только для строки десктопа */
+  .pf-rank__text > span::after {
+    content: none;
+  }
+}

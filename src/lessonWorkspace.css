@@ -4555,6 +4555,28 @@ button.lw-tap-pop__save.is-on:disabled {
   background: #fff;
 }
 
+/* Шапка листа «Темы урока» (макет 4676:4312): заголовок и «N из M»; место
+   справа держим под крестик листа. */
+.lv-topics__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 44px;
+}
+.lv-topics__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 27px;
+  color: #fff;
+}
+.lv-topics__count {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 /* --- таймер урока в шапке -------------------------------------------- */
 
 /* Время окончания хранит сервер в состоянии занятия (useLessonTimer), и в

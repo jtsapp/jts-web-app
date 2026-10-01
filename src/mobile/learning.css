@@ -834,3 +834,44 @@
     color: #9047ff;
   }
 }
+
+/* «Что вы слышите?» со словами (решение владельца 02.10: «по дизайну макета»).
+   Та же плитка 128×96, что у вариантов-картинок выше, но с подписью 18/700:
+   эмодзи к словам в данных курса нет, поэтому слово стоит по центру плитки. */
+@media (max-width: 560px) {
+  .cp-choices.is-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+  }
+  .cp-choices.is-tiles .cp-choice {
+    display: grid;
+    place-items: center;
+    min-height: 96px;
+    padding: 16px 12px;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #181818;
+    overflow-wrap: anywhere;
+  }
+  .cp-choices.is-tiles .cp-choice.is-sel {
+    border-color: #9047ff;
+    background: #fff;
+    color: #9047ff;
+  }
+  .cp-choices.is-tiles .cp-choice.is-right {
+    border-color: #19c119;
+    background: #fff;
+    color: #19c119;
+  }
+  .cp-choices.is-tiles .cp-choice.is-wrong {
+    border-color: #ff4646;
+    background: #fff;
+    color: #ff4646;
+  }
+}

@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
 import Multiline from '../components/Multiline.jsx'
 import { useI18n } from '../i18n.jsx'
+import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 
 const LENGTH = 4
 
 export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, error }) {
   const { t } = useI18n()
+  // Мобильный макет: серые нули в пустых полях и таймер «3:21» в подписи.
+  const narrow = useMediaQuery(MOBILE_QUERY)
   const [digits, setDigits] = useState(Array(LENGTH).fill(''))
   const [seconds, setSeconds] = useState(60)
   const inputs = useRef([])
@@ -93,6 +96,7 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
               key={i}
               ref={(el) => (inputs.current[i] = el)}
               className={`otp-box ${d ? 'otp-box--filled' : ''}`}
+              placeholder={narrow ? '0' : undefined}
               type="text"
               inputMode="numeric"
               maxLength={1}
@@ -112,7 +116,9 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
 
         <p className="form-note form-note--center">
           {seconds > 0 ? (
-            t('otp.resendIn', { sec: seconds })
+            narrow
+              ? t('otp.resendInClock', { time: `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` })
+              : t('otp.resendIn', { sec: seconds })
           ) : (
             <a href="#" onClick={(e) => { e.preventDefault(); resend() }}>
               {t('otp.resend')}

@@ -20,7 +20,7 @@ import {
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
-import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
+import { isStepLevel, tasksToSteps, stripStageTail, groupBinary } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 import LevelExam from '../learning/LevelExam.jsx'
 import { EXAM_CODE, loadLevelExam } from '../learning/levelExam.js'
@@ -347,7 +347,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           //
           // Файлы шагов лежат рядом с уроком: steps-<n>, steps-T<u>, steps-X<id>.
           const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : m[1].toUpperCase() + m[2])
-          if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
+          // True/False курс хранит вопросом на экран; к одному тексту их по
+          // пять-шесть подряд, и в макете это одна таблица утверждений с общей
+          // «Проверить» (шаг rows), а не пять одинаковых экранов.
+          if (data) {
+            const steps = groupBinary(data.steps || [], { withMaterial: true })
+            setOpen({ code, attempt: 0, steps: { ...data, steps, title: stripStageTail(data.title, steps) } })
+          }
           return
         }
         const data = await loadLesson(level, code)
@@ -833,7 +839,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         <LessonExitConfirm
           onStay={() => setConfirmExit(false)}
           onLeave={exitLesson}
-          {...(open?.exam ? { subKey: 'exam.exitSub', leaveKey: 'exam.exitLeave' } : {})}
+          // Подписи выхода из урока «Обучения» — по его кадру (4109:6805):
+          // «Продолжить обучение» / «Выйти в меню». У экзамена свои.
+          {...(open?.exam
+            ? { subKey: 'exam.exitSub', leaveKey: 'exam.exitLeave' }
+            : { subKey: 'lesson.exitLearnSub', leaveKey: 'lesson.exitLearnLeave', stayKey: 'lesson.exitLearnStay' })}
         />
       )}
     </LearningLayout>

@@ -21,6 +21,7 @@ import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonSidePanel from './live/LessonSidePanel.jsx'
+import LessonTopics from './live/LessonTopics.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
@@ -2205,26 +2206,31 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             </svg>
           </button>
           {sheet === 'topics' ? (
-            <LessonSidePanel
-              steps={routeSteps}
-              activeStepId={routeActiveId}
-              statusById={routeStatusById}
-              onSelect={(id) => {
-                selectRouteStep(id)
-                setSheet(null)
-              }}
-              hiddenIds={routeHiddenIds}
-              teacherStepId={routeTeacherStepId}
-              teacherId={lesson?.teacherId}
-              teacherName={lesson?.teacherName}
-              participants={activeParticipants}
-              onlineUserIds={onlineUserIds}
-              selfUserId={selfUserId}
-              isStaff={isStaff}
-              reviewStudentId={reviewStudentId}
-              onWatch={watchStudent}
-              onCall={sendCall}
-            />
+            // Лист «Темы урока» (макет 4676:4312): заголовок со счётчиком и сразу
+            // строки — без вкладок «Темы / Группа». Участники остаются в панели
+            // под материалом на самой странице урока.
+            <div className="lw-card lv-side lv-side--sheet">
+              <div className="lv-topics__head">
+                <h2 className="lv-topics__title">{t('live.topicsSheetTitle')}</h2>
+                <span className="lv-topics__count">
+                  {t('live.topicsProgress', {
+                    n: Math.max(1, routeSteps.findIndex((s) => String(s.id) === String(routeActiveId)) + 1),
+                    total: routeSteps.length,
+                  })}
+                </span>
+              </div>
+              <LessonTopics
+                steps={routeSteps}
+                activeStepId={routeActiveId}
+                statusById={routeStatusById}
+                onSelect={(id) => {
+                  selectRouteStep(id)
+                  setSheet(null)
+                }}
+                hiddenIds={routeHiddenIds}
+                teacherStepId={routeTeacherStepId}
+              />
+            </div>
           ) : sheet === 'vocab' ? (
             <LessonDictionary token={token} defaultOpen incoming={savedWord ? { ...savedWord, n: savedWordNonce } : null} />
           ) : (

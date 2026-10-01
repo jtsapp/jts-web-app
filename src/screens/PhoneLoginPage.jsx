@@ -6,9 +6,14 @@ import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import Multiline from '../components/Multiline.jsx'
 import { COUNTRY_OPTIONS, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 import { isEmailIdentifier } from '../api.js'
+import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 
 export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
   const { t, lang } = useI18n()
+  // В мобильном макете подсказка в поле — маска «(___) ___ - __ - __» после
+  // «+7», а не пример номера. Маска верна только для +7 (у других стран своя
+  // длина и раскладка), поэтому для них остаётся прежняя подсказка.
+  const narrow = useMediaQuery(MOBILE_QUERY)
   // 'phone' — прежняя форма со страной/маской; 'email' — простое поле почты.
   // Одна и та же onSubmit(identifier) обслуживает оба режима — App.jsx/api.js
   // сами определяют, что пришло, и шлют { phone } или { email } на бэкенд.
@@ -140,7 +145,13 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
                 type="tel"
                 inputMode="numeric"
                 autoFocus
-                placeholder={country.dial ? t('phone.placeholder') : t('phone.placeholderAnyCountry')}
+                placeholder={
+                  !country.dial
+                    ? t('phone.placeholderAnyCountry')
+                    : narrow && country.dial === '7'
+                      ? t('phone.placeholderMask')
+                      : t('phone.placeholder')
+                }
                 value={formatNational(country, digits)}
                 onChange={onChange}
               />
