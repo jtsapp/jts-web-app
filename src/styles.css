@@ -9262,3 +9262,608 @@ textarea {
   padding: 14px 16px;
   background: var(--warn-bg, #fff8e8);
 }
+
+/* PT Root UI — шрифт мобильного макета Figma. Свой хостинг, а не сторонний CDN:
+   шрифт нужен на первом экране, и лишний чужой хост — это и задержка, и риск. */
+@font-face {
+  font-family: 'PT Root UI';
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/PTRootUI-Regular.woff) format('woff');
+}
+@font-face {
+  font-family: 'PT Root UI';
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/PTRootUI-Medium.woff) format('woff');
+}
+@font-face {
+  font-family: 'PT Root UI';
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/PTRootUI-Bold.woff) format('woff');
+}
+
+/* ======================================================================
+   Мобильная адаптация «Регистрации» (Figma «Web Адаптивка» → «Регистрация»,
+   фреймы 440×955). Десктоп (≥561px) не трогаем: всё внутри одного медиа-блока.
+   Размеры — в px макета на 440px, ниже 440 экран просто сужается по ширине.
+   PT Root UI — шрифт макета; на десктопе остаётся Manrope.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .screen {
+    font-family: 'PT Root UI', Manrope, -apple-system, sans-serif;
+  }
+
+  /* Пилюля языка: 152×44, r40, без тени; шеврон — экспорт из Figma */
+  .hero-header .lang-selector,
+  .reg-header .lang-selector {
+    gap: 10px;
+    box-sizing: border-box;
+    width: 152px;
+    height: 44px;
+    padding: 10px 14px 10px 20px;
+    border-radius: 40px;
+    box-shadow: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.03em;
+    color: #000;
+  }
+  .hero-header .lang-selector:hover,
+  .reg-header .lang-selector:hover {
+    transform: none;
+  }
+  .hero-header .lang-selector > svg,
+  .reg-header .lang-selector > svg {
+    flex: none;
+    width: 16px;
+    height: auto;
+  }
+  .hero-header .lang-selector .chev,
+  .reg-header .lang-selector .chev {
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    background: url(/assets/reg/chev.svg) center / 24px 24px no-repeat;
+  }
+  .hero-header .lang-selector .chev svg,
+  .reg-header .lang-selector .chev svg {
+    display: none;
+  }
+
+  /* ---------- Экран 1: Welcome ---------- */
+  .hero-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0;
+    padding: 18px 20px 0;
+  }
+  /* Логотип — векторный экспорт макета вместо текста (150×29) */
+  .hero-header .logo {
+    width: 150px;
+    height: 29px;
+    font-size: 0;
+    background: url(/assets/reg/logo-white.svg) left top / contain no-repeat;
+  }
+  /* Справа колонкой: язык сверху, три круглые соцкнопки под ним */
+  .hero-header__right {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .socials {
+    gap: 6px;
+  }
+  .social-pill,
+  .social-round {
+    width: 36px;
+    height: 36px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+    background-color: #fff;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 24px 24px;
+  }
+  .social-pill svg,
+  .social-round svg,
+  .social-pill span {
+    display: none;
+  }
+  .social-pill {
+    background-image: url(/assets/reg/ig.svg);
+  }
+  .social-round {
+    background-image: url(/assets/reg/tg.svg);
+  }
+  .social-round--wa {
+    background-image: url(/assets/reg/wa.svg);
+  }
+
+  /* Фон героя — кроп макета 440×955 (inline backgroundImage перебиваем) */
+  .hero {
+    background-image: url(/assets/reg/hero.jpg) !important;
+    background-size: cover;
+    background-position: center top;
+  }
+  .hero::before {
+    display: none;
+  }
+  .hero__content {
+    width: 100%;
+    max-width: none;
+    padding: 116px 20px 0;
+    text-align: left;
+  }
+  .hero__title {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-shadow: none;
+  }
+  .hero__subtitle {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-shadow: none;
+  }
+  .cta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 17px;
+    padding: 14px 13px;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+  .cta .btn {
+    width: 100%;
+    height: 60px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1.1;
+    box-shadow: none;
+  }
+  .cta .btn:hover {
+    transform: none;
+  }
+  .cta .btn--secondary {
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+}
+
+/* ---------- Экраны 2–5: регистрация-чат с Декстером ---------- */
+@media (max-width: 560px) {
+  .card--plain {
+    background: #f8f8f8;
+  }
+  .reg-header {
+    padding: 16px 20px;
+  }
+  .reg-header__left {
+    gap: 24px;
+  }
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    background: #b7f0ff url(/assets/reg/back.svg) center / 28px 28px no-repeat;
+  }
+  .back-btn:hover {
+    transform: none;
+    background-color: #b7f0ff;
+  }
+  .back-btn svg {
+    display: none;
+  }
+  .reg-header .logo {
+    width: 114px;
+    height: 22px;
+    font-size: 0;
+    background: url(/assets/reg/logo-purple.svg) left center / contain no-repeat;
+  }
+
+  .reg-body {
+    padding: 0;
+  }
+  .reg-inner {
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .reg-title {
+    margin: 4px 0 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    text-align: center;
+    color: #181818;
+  }
+  .reg-subtitle {
+    width: 213px;
+    max-width: 100%;
+    margin: 8px auto 19px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-align: center;
+    color: #181818;
+  }
+
+  /* Белая панель диалога на всю ширину и до низа экрана */
+  .chat {
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .chat__scroll {
+    display: flex;
+    flex-direction: column;
+    max-height: none;
+    padding: 24px 20px 0;
+  }
+  .chat__author {
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  /* Аватар — готовый экспорт макета (круг 56 с фоном и маскотом) */
+  .chat__avatar {
+    width: 56px;
+    height: 56px;
+    background: none;
+    content: url(/assets/reg/dexter-avatar.png);
+  }
+  .chat__author > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .chat__name {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #181818;
+  }
+  .chat__role {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: #181818;
+  }
+  .chat__messages {
+    gap: 8px;
+  }
+  .bubble {
+    max-width: 327px;
+    padding: 10px 16px;
+    border-radius: 18px;
+    font-size: 16px;
+    line-height: 19px;
+  }
+  .bubble--dexter {
+    background: #9047ff;
+    border-bottom-left-radius: 6px;
+  }
+  .bubble--me {
+    background: #ff7300;
+    border-bottom-right-radius: 6px;
+    box-shadow: none;
+  }
+
+  /* Поле ввода: серая пилюля r20 и фиолетовая «Отправить» r18 */
+  .chat__input {
+    gap: 3px;
+    margin: 0 20px 25px;
+    padding: 16px 16px 16px 20px;
+    border-radius: 20px;
+    background: #f6f6f6;
+  }
+  .chat__input input {
+    min-width: 0;
+    font-size: 18px;
+    font-weight: 500;
+    color: #181818;
+  }
+  .chat__input input::placeholder {
+    color: #afafaf;
+    opacity: 1;
+  }
+  .send-btn {
+    flex: none;
+    gap: 10px;
+    height: 36px;
+    padding: 8px 16px;
+    border-radius: 18px;
+    background: #9047ff;
+    box-shadow: none;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .send-btn svg {
+    display: none;
+  }
+  .send-btn::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: url(/assets/reg/send.svg) center / 14px 14px no-repeat;
+  }
+
+  /* Варианты входа прижаты к низу панели */
+  .auth {
+    margin-top: auto;
+    gap: 8px;
+    padding: 16px 0 34px;
+  }
+  .auth-primary {
+    gap: 12px;
+    height: 64px;
+    padding: 0 20px;
+    border-radius: 60px;
+    background: #ff7300;
+    box-shadow: none;
+    font-size: 14px;
+    line-height: 1.1;
+  }
+  .auth-primary:hover {
+    transform: none;
+    filter: none;
+  }
+  .auth-primary svg {
+    display: none;
+  }
+  .auth-primary::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: url(/assets/reg/phone.svg) center / 20px 20px no-repeat;
+  }
+  .auth-row {
+    gap: 8px;
+  }
+}
+
+/* Мобильная шторка выбора языка (макет, фрейм 9): на десктопе это обычное
+   выпадающее меню, оверлей и заголовок там не нужны. */
+.lang-menu__title,
+.lang-overlay {
+  display: none;
+}
+
+/* ---------- Экраны 6–9: телефон, код, успех, выбор языка ---------- */
+@media (max-width: 560px) {
+  .card--plain:has(.form-inner) {
+    background: #fff;
+  }
+
+  .lang-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 2, 2, 0.67);
+  }
+  .lang-menu {
+    position: fixed;
+    inset: 0 0 auto 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 32px 20px 40px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+  .lang-menu__title {
+    display: block;
+    order: -2;
+    margin: 0 0 18px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #181818;
+  }
+  /* В макете порядок «Қазақша · Русский · English» */
+  .lang-menu li[data-lang='kk'] {
+    order: -1;
+  }
+  .lang-option {
+    gap: 12px;
+    height: 56px;
+    padding: 0 20px;
+    border: 1px solid #e6e6e6;
+    border-radius: 60px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    color: #181818;
+  }
+  .lang-option:hover {
+    background: transparent;
+  }
+  .lang-option > svg {
+    flex: none;
+    width: 16px;
+    height: auto;
+  }
+  .lang-option--active,
+  .lang-option--active:hover {
+    background: #9047ff;
+    color: #fff;
+  }
+
+  .form-inner {
+    max-width: none;
+    padding: 28px 20px 0;
+  }
+  .form-title {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    color: #181818;
+  }
+  /* Заголовки в словаре разбиты через 
+ под десктоп; в макете они идут одной
+     строкой и переносятся сами по ширине, поэтому <br> гасим, а пробел вместо
+     него возвращаем. */
+  .form-title br {
+    display: none;
+  }
+  .form-title span + span::before {
+    content: ' ';
+  }
+  .form-sub {
+    max-width: 290px;
+    margin: 12px auto 24px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #181818;
+  }
+  .form-card:has(.otp-row) .form-sub {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .phone-field {
+    gap: 12px;
+    padding: 24px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #f6f6f6;
+  }
+  .phone-country__btn {
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    border-right: 0;
+  }
+  .phone-country__dial,
+  .phone-field input {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .phone-field input {
+    padding: 0;
+    line-height: 20px;
+  }
+  .phone-field input::placeholder {
+    color: #afafaf;
+    font-weight: 500;
+  }
+  .email-field {
+    padding: 24px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #f6f6f6;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .form-primary {
+    height: 56px;
+    margin-top: 16px;
+    padding: 0;
+    border-radius: 60px;
+    font-size: 18px;
+    line-height: 1.1;
+    box-shadow: none;
+  }
+  .form-primary:hover:not(:disabled) {
+    transform: none;
+    filter: none;
+  }
+  /* В макете кнопка всегда насыщенная; недоступность и так гарантирует
+     проверка в submit(), поэтому не гасим её прозрачностью. */
+  .form-primary:disabled {
+    opacity: 1;
+  }
+  .form-note {
+    margin-top: 24px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 17px;
+    color: #afafaf;
+  }
+  .form-note--center {
+    margin-top: 16px;
+  }
+  .form-card:has(.otp-row) .form-note--center {
+    margin-top: 20px;
+  }
+  .form-note a {
+    text-decoration-thickness: 1px;
+  }
+
+  /* Код из СМС: четыре плитки 90×120 в один ряд */
+  .otp-row {
+    gap: 4px;
+    max-width: 372px;
+    margin: 0 auto;
+  }
+  /* 90×120 на макетных 440px; на уже экране плитки сжимаются поровну */
+  .otp-box,
+  .otp-box:focus {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 90px;
+    height: 120px;
+    border: 0;
+    border-radius: 20px;
+    background: #f6f6f6;
+    font-size: 56px;
+    font-weight: 500;
+    color: #181818;
+    box-shadow: none;
+  }
+  .otp-box:focus {
+    outline: 2px solid #9047ff;
+    outline-offset: -2px;
+  }
+  .form-card:has(.otp-row) .form-primary {
+    margin: 12px 15px 0;
+  }
+
+  /* Успех: бейдж 56 (r21) и заголовок 32 в колонку шириной 203 */
+  .form-inner:has(.success-center) {
+    padding-top: 92px;
+  }
+  .success-center {
+    width: 203px;
+    min-height: 0;
+    margin: 0 auto;
+  }
+  .success-badge--sm {
+    width: 56px;
+    height: 56px;
+    margin: 0 0 12px;
+    border-radius: 21px;
+    box-shadow: none;
+  }
+  .success-badge--sm svg {
+    width: 24px;
+    height: 24px;
+  }
+  .success-center .form-title {
+    font-size: 32px;
+    line-height: 38px;
+    letter-spacing: 0;
+  }
+}

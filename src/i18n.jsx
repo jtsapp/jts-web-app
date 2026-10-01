@@ -20,6 +20,7 @@ const dict = {
     'common.login': 'Войти',
     'common.send': 'Отправить',
     'common.back': 'Назад',
+    'lang.sheetTitle': 'Выбор языка приложения',
     'common.close': 'Закрыть',
     // Общий CTA для демо-ограничений (лимит контента/уроков/IELTS/ситуативок) —
     // ведёт на WhatsApp поддержки, см. src/lib/support.js.
@@ -2561,6 +2562,7 @@ const dict = {
     'common.login': 'Sign in',
     'common.send': 'Send',
     'common.back': 'Back',
+    'lang.sheetTitle': 'App language',
     'common.close': 'Close',
     'demo.cta': 'click here',
     'demo.paywall.title': 'This feature is available with a subscription',
@@ -5064,6 +5066,7 @@ const dict = {
     'common.login': 'Кіру',
     'common.send': 'Жіберу',
     'common.back': 'Артқа',
+    'lang.sheetTitle': 'Қолданба тілін таңдау',
     'common.close': 'Жабу',
     'demo.cta': 'осында басыңыз',
     'demo.paywall.title': 'Бұл мүмкіндік жазылым бойынша қолжетімді',
