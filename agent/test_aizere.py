@@ -165,19 +165,22 @@ assert cut_tools == kept - POST_CALL_MEMORY_TOOLS, "режем ровно два
 # --- голос ------------------------------------------------------------------
 p = _aizere(lang="kz")
 assert _tts_provider_for(p) == "eleven"
-assert _eleven_session_voice(p) == "2ZqnRUaCU5IaXJ45uakV", "клон, зашитый в таблицу"
-assert _eleven_model_for(AIZERE) == "eleven_v3_conversational", (
-    "разговорная v3: казахский есть, вдвое дешевле v3 и первый звук ~0.3 с"
+assert _eleven_session_voice(p) == "o8Njj7tTSGK0GTiDKKes", "свой клон «zere», зашитый в таблицу"
+assert _eleven_model_for(AIZERE) == "eleven_v4_turbo", (
+    "v4 Turbo: казахский есть, вдвое дешевле v4, выбор владельца на слух"
 )
-assert _eleven_http_only("eleven_v3_conversational"), "сокета у неё нет (1006) — только HTTP /stream"
+# Без этого агент пошлёт её в сокет плагина → 400 unsupported_model → немота.
+assert _eleven_http_only("eleven_v4_turbo"), "сокета TTS у v4 нет (400) — только HTTP /stream"
+assert _eleven_http_only("eleven_v4")
+assert _eleven_http_only("eleven_v3_conversational"), "у разговорной v3 тоже (1006)"
 assert _eleven_http_only("eleven_v3"), "у обычной v3 тоже"
 # Глобальный голос IELTS не перебивает клон, как и у KZ-стенда.
 os.environ["ELEVENLABS_VOICE_ID"] = "ExpLt85FtBvm8QN4m6rB"
-assert _eleven_session_voice(p) == "2ZqnRUaCU5IaXJ45uakV"
+assert _eleven_session_voice(p) == "o8Njj7tTSGK0GTiDKKes"
 os.environ.pop("ELEVENLABS_VOICE_ID", None)
 # Глобальная модель Декстера её не утаскивает на Flash.
 os.environ["ELEVENLABS_MODEL"] = "eleven_flash_v2_5"
-assert _eleven_model_for(AIZERE) == "eleven_v3_conversational"
+assert _eleven_model_for(AIZERE) == "eleven_v4_turbo"
 os.environ.pop("ELEVENLABS_MODEL", None)
 # Откат на Soniox — женский голос, а не дефолтный Owen Спарка.
 assert SONIOX_TTS_VOICE[AIZERE] not in ("Owen", "Daniel", "Noah")

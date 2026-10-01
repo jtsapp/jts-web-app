@@ -4086,12 +4086,13 @@ ELEVEN_VOICE = {
     "velvet": "Xb7hH8MSUJpSbSDYk0k2",
     # KZ-стенд. Клон из кабинета ElevenLabs; env ELEVEN_VOICE_ID_JARVIS важнее.
     "jarvis": "2ZqnRUaCU5IaXJ45uakV",
-    # Айзере. Это ТОТ ЖЕ клон, что у KZ-стенда: стенд обкатывал её голос раньше,
-    # чем появилась она сама. Id зашит, а не только в env: в .env.local он
-    # записан как ELEVEN_VOICE_ID_Aizere, а _eleven_voice_for ищет
-    # ELEVEN_VOICE_ID_AIZERE — на Windows регистр не важен, на Linux-воркере env
-    # молча не нашёлся бы, и Айзере заговорила бы голосом Декстера.
-    "aizere": "2ZqnRUaCU5IaXJ45uakV",
+    # Айзере. Свой клон «zere» (01.10.2026) — до него она говорила клоном
+    # KZ-стенда, который обкатывал её голос раньше, чем появилась она сама.
+    # Id зашит, а не только в env: в .env.local голос записывали как
+    # ELEVEN_VOICE_ID_Aizere, а _eleven_voice_for ищет ELEVEN_VOICE_ID_AIZERE —
+    # на Windows регистр не важен, на Linux-воркере env молча не нашёлся бы, и
+    # Айзере заговорила бы голосом Декстера.
+    "aizere": "o8Njj7tTSGK0GTiDKKes",
 }
 DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
 
@@ -4290,7 +4291,15 @@ def _cascade_tts_gemini(profile: LearnerProfile):
 # _eleven_convert_url), а StreamAdapter режет реплику по предложениям — как
 # OpenAI TTS.
 # Разговорная v3 — туда же: stream-input на ней закрывается 1006 сразу.
-ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3", "eleven_v3_conversational"})
+# v4 и v4 Turbo — тоже: сокет TTS (stream-input и multi-stream-input) отвечает
+# 400 unsupported_model «use the text-to-dialogue websocket» (проверено
+# 01.10.2026). Без этой строки смена модели одной переменной уронила бы персону
+# в немоту. Сокет диалогов (text-to-dialogue) им подходит и быстрее (/stream
+# 0.75–0.9 с до первого звука, сокет 0.33–0.68 с), но это другой протокол —
+# плагин его не умеет.
+ELEVEN_HTTP_ONLY_MODELS = frozenset({
+    "eleven_v3", "eleven_v3_conversational", "eleven_v4", "eleven_v4_turbo",
+})
 ELEVEN_CONVERT_ENCODING = "mp3_44100_128"
 
 def _eleven_http_only(model: str) -> bool:
@@ -4324,15 +4333,16 @@ def _eleven_key_for(tutor: str) -> str:
     return (os.getenv("ELEVENLABS_API_KEY") or "").strip()
 
 
-# Модель по персоне. Казахский есть только у v3 — без этой строки стенд
+# Модель по персоне. Казахский есть только у v3 и v4 — без этой строки стенд
 # молча уехал бы на глобальный Flash и заговорил бы не тем языком.
 ELEVEN_MODEL = {
     "jarvis": "eleven_v3",
-    # Айзере учит по-казахски — та же причина, но на РАЗГОВОРНОЙ v3. Казахский
-    # у неё есть (74 языка, как у v3), цена ×0.5 против ×1 у v3, первый звук через
-    # /stream 0.27–0.29 с против 0.9–1.25 с у v3 (замер 24.09.2026, её же клон);
-    # на слух владелец выбрал её — звучит даже лучше. Сокета, как и у v3, нет.
-    "aizere": "eleven_v3_conversational",
+    # Айзере учит по-казахски — та же причина, но на v4 Turbo (с 01.10.2026,
+    # до того — разговорная v3). Казахский у неё есть, цена ×0.5 — как у
+    # разговорной v3, первый звук через /stream тот же (~0.8 с), а реплику
+    # договаривает быстрее (1.8 с против 2.2–2.6 с на 10 с речи; замер на её
+    # клоне «zere»). Выбрал владелец на слух. Сокета TTS у v4 нет — HTTP, как у v3.
+    "aizere": "eleven_v4_turbo",
 }
 DEFAULT_ELEVEN_MODEL = "eleven_flash_v2_5"
 
@@ -4951,7 +4961,7 @@ TUTOR_TTS_PROVIDER = {
     # KZ-стенд — клон ElevenLabs (v3, иначе казахского в модели нет).
     # Пути "soniox" / "openai" / "fish" рабочие: вернуть — TTS_PROVIDER_JARVIS.
     "jarvis": "eleven",
-    "aizere": "eleven",  # Айзере — тот же клон, что у KZ-стенда, но разговорная v3
+    "aizere": "eleven",  # Айзере — свой клон «zere» на v4 Turbo
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
