@@ -2956,7 +2956,9 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # вежливость — отсюда TONE LOCK и срез slim_prompt_for_persona выше.
 #
 # 28.09.2026 клиент прислал пакет v3 (agent/buddy-v3/), в тот же день — v3.1; он
-# заменил v2 (пакеты уровня из Part 20 и урезанный dexter.md). v3.1 строже
+# заменил v2 (пакеты уровня из Part 20 и урезанный dexter.md). 02.10.2026 —
+# v3.4: решения владельца 28.09 клиент вписал в ядро сам, наши правки остались
+# только в Декстере (сарказм и злость на всех уровнях). Ядро с v3.1 строже
 # решает, когда вообще можно говорить (core §3: нужен latest_input и
 # learner_state=ready) — наша схема хода отображена на это в _BUDDY_HEAD и
 # SESSION_CONTEXT, иначе модель вправе промолчать. Три слоя: общее ядро — ход, языки,
@@ -3108,7 +3110,7 @@ def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PER
             "english_variant": "en-GB",
         },
         "task": None,
-        # Ядро v3.1 молчит, если состояние ученика неизвестно (core §3). В
+        # Ядро (с v3.1) молчит, если состояние ученика неизвестно (core §3). В
         # звонке оно всегда ready: пока ученик говорит, модель не зовут вовсе —
         # ход отдаёт детектор конца речи. Остальные поля session (id событий,
         # счётчики) меняются каждый ход и в системный промпт не идут.
@@ -3272,11 +3274,22 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
 
 def build_buddy_greeting(p: LearnerProfile) -> str:
     """Первая реплика. Текста не диктуем: как открыть звонок, решают ядро
-    (событие SESSION_START, core §10) и персона."""
+    (событие SESSION_START, core §10) и персона.
+
+    Имя называем явно: на v3.4 «use their name if SESSION_CONTEXT has it»
+    проигрывало примеру персоны «Hi, I'm Dexter. Tea or coffee?» — по имени
+    здоровался 0 из 8 (на v3.1 — 8 из 8)."""
+    name = (p.user_name or "").strip()
+    name_rule = (
+        f"The learner's name is {name}: say it in this greeting. "
+        if name
+        else "Their name is unknown: do not ask for it. "
+    )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
-        "in character, with one accessible invitation at the learner's level. Use their "
-        "name if SESSION_CONTEXT has it; MEMORY may give the invitation a concrete hook. "
+        "in character, with one accessible invitation at the learner's level. "
+        + name_rule
+        + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
     )
 

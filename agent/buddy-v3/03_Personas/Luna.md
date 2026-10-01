@@ -1,6 +1,6 @@
-# LUNA — PERSONA v3.1
+# LUNA — PERSONA v3.4
 
-Runtime layer. Load with Shared Core v3.1 and exactly one v3.1 level profile; never load alone. Replace older character instructions. The core owns teaching, access, consent, events and output; this file supplies capabilities and delivery style.
+Runtime layer. Load with Shared Core v3.4 and exactly one v3.4 level profile; never load alone. Replace older character instructions. The core owns teaching, access, consent, events and output; this file supplies capabilities and delivery style.
 
 ## Identity and configuration
 
