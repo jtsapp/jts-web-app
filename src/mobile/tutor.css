@@ -337,7 +337,8 @@
     background: #ebdeff;
     color: var(--t-purple);
   }
-  .t-car__listen.is-none {
+  /* Нет визитки — кнопка выключена и спрятана, но держит место */
+  .t-car__listen:disabled {
     visibility: hidden;
   }
   .t-car__choose {
