@@ -3,16 +3,22 @@ import { useI18n } from '../../../i18n.jsx'
 import { loadLevelWords } from '../../../practice/vocab/vocabData.js'
 import { createDeck } from '../../../practice/arcade/runner/deck.js'
 import {
+  JUMP_TIME,
   LIVES,
   RUN_DIFFICULTIES,
+  SLIDE_TIME,
   advance,
   createRun,
   isOver,
+  jump,
   move,
+  multOf,
   needsRow,
+  slide,
   spawnRow,
   speedOf,
 } from '../../../practice/arcade/runner/engine.js'
+import { layoutObstacles } from '../../../practice/arcade/runner/obstacles.js'
 import { useArcadeFullscreen } from '../useArcadeFullscreen.js'
 import { formatNumber } from '../format.js'
 import RunnerResults from './RunnerResults.jsx'
@@ -33,7 +39,9 @@ const COUNTDOWN = 3
 // Скорость «витрины» до старта: город едет, бегун бежит, ворот нет.
 const IDLE_SPEED = 5
 const TOAST_SECONDS = 1.5
-const BEST_KEY = 'jts_arcade_runner_best'
+// Очки с 01.10.2026 — от скорости и серии, а не число ворот: старый рекорд
+// «в воротах» сравнивать не с чем, поэтому ключ новый (старый не читаем).
+const BEST_KEY = 'jts_arcade_runner_best_v2'
 const ACTIVE = ['countdown', 'playing']
 const LANE_KEYS = ['left', 'center', 'right']
 
@@ -70,11 +78,32 @@ function hudOf(s, status, countdown) {
     lives: s?.lives ?? LIVES,
     score: s?.score ?? 0,
     streak: s?.streak ?? 0,
+    mult: multOf(s?.streak ?? 0),
+    hits: s?.hits ?? 0,
+    pose: s?.pose ?? 'run',
+    // Препятствия впереди, ближние первыми, — для e2e: тест знает, в какую
+    // дорожку шагнуть. Строка меняется только на появлении и проезде, а не
+    // каждый кадр, иначе шапка перерисовывалась бы 60 раз в секунду.
+    obstacles: s
+      ? s.obstacles
+          .filter((o) => !o.hit && o.z + o.len > 0)
+          .sort((a, b) => a.z - b.z)
+          .map((o) => `${o.lane}:${o.kind}`)
+          .join('|')
+      : '',
+    crash: s?.lastHit && s.elapsed - s.lastHit.at < TOAST_SECONDS ? s.lastHit.n : 0,
     toast:
       s?.last && !s.last.hit && s.elapsed - s.last.at < TOAST_SECONDS
         ? { prompt: s.last.prompt, answer: s.last.answer }
         : null,
   }
+}
+
+// Доля позы 0…1 — сцене, чтобы дуга прыжка шла в такт движку.
+function posePhase(s) {
+  if (s.pose === 'jump') return 1 - s.poseLeft / JUMP_TIME
+  if (s.pose === 'slide') return 1 - s.poseLeft / SLIDE_TIME
+  return 0
 }
 
 function PauseGlyph() {
@@ -141,7 +170,15 @@ export default function RunnerGame({ onExit }) {
         g.countdown -= dt
         if (g.countdown <= 0) go('playing')
       } else if (st === 'playing' && s) {
-        if (needsRow(s)) s = spawnRow(s, g.deck.next())
+        if (needsRow(s)) {
+          // Раскладка — подхода к СЛЕДУЮЩЕМУ ряду: кладётся за воротами этого.
+          const layout = layoutObstacles({
+            difficulty: RUN_DIFFICULTIES[g.level].key,
+            rowIndex: s.seq + 1,
+            speed: speedOf(s),
+          })
+          s = spawnRow(s, g.deck.next(), layout)
+        }
         const before = s.seq
         s = advance(s, dt)
         if (s.seq !== before && !s.last.hit) g.deck.miss(s.last)
@@ -157,6 +194,11 @@ export default function RunnerGame({ onExit }) {
           speed: running ? speedOf(s) : IDLE_SPEED,
           speedMul: s?.speedMul ?? 1,
           moving: st === 'ready' || st === 'starting' || ACTIVE.includes(st),
+          pose: running ? s.pose : 'run',
+          posePhase: running ? posePhase(s) : 0,
+          invuln: running ? s.invuln : 0,
+          obstacles: running ? s.obstacles : null,
+          lastHit: running ? s.lastHit : null,
         },
         dt,
       )
@@ -201,9 +243,19 @@ export default function RunnerGame({ onExit }) {
     }
   }, [])
 
-  function steer(dir) {
+  function act(fn) {
     const g = game.current
-    if (g.state && ACTIVE.includes(statusRef.current)) g.state = move(g.state, dir)
+    if (g.state && ACTIVE.includes(statusRef.current)) g.state = fn(g.state)
+  }
+
+  function steer(dir) {
+    act((s) => move(s, dir))
+  }
+
+  // Прыжок и подкат — только в забеге: на отсчёте движок стоит, и поза
+  // провисела бы до старта.
+  function leap(up) {
+    if (statusRef.current === 'playing') act(up ? jump : slide)
   }
 
   function togglePause() {
@@ -217,9 +269,16 @@ export default function RunnerGame({ onExit }) {
       if (e.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
       const st = statusRef.current
       const dir = e.code === 'ArrowLeft' || e.code === 'KeyA' ? -1 : e.code === 'ArrowRight' || e.code === 'KeyD' ? 1 : 0
+      const up = e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space'
+      const down = e.code === 'ArrowDown' || e.code === 'KeyS'
       if (dir && ACTIVE.includes(st)) {
         e.preventDefault()
         steer(dir)
+      } else if ((up || down) && ACTIVE.includes(st)) {
+        // Пробел без preventDefault заодно нажал бы кнопку в фокусе (пауза)
+        // и прокрутил страницу; стрелки вверх/вниз — тоже прокрутка.
+        e.preventDefault()
+        leap(up)
       } else if ((e.code === 'Escape' || e.code === 'KeyP') && (st === 'playing' || st === 'paused')) {
         e.preventDefault()
         togglePause()
@@ -274,9 +333,9 @@ export default function RunnerGame({ onExit }) {
     touch.current = { x: e.clientX, y: e.clientY }
   }
 
-  // Свайп — сдвиг на дорожку в его сторону; тап — к той половине поля, где
-  // коснулись. Кнопки оверлеев тоже внутри поля, но их нажатия приходят не
-  // во время забега и сюда не доходят.
+  // Свайп влево/вправо — сдвиг на дорожку, вверх/вниз — прыжок и подкат; тап —
+  // к той половине поля, где коснулись. Кнопки оверлеев тоже внутри поля, но
+  // их нажатия приходят не во время забега и сюда не доходят.
   function onPointerUp(e) {
     const from = touch.current
     touch.current = null
@@ -284,6 +343,7 @@ export default function RunnerGame({ onExit }) {
     const dx = e.clientX - from.x
     const dy = e.clientY - from.y
     if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) steer(Math.sign(dx))
+    else if (Math.abs(dy) > 30 && Math.abs(dy) > Math.abs(dx)) leap(dy < 0)
     else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
       const r = e.currentTarget.getBoundingClientRect()
       steer(e.clientX < r.left + r.width / 2 ? -1 : 1)
@@ -319,6 +379,8 @@ export default function RunnerGame({ onExit }) {
         <ul className="ar-rules">
           <li>{t('arcade.run.rule.lives')}</li>
           <li>{t('arcade.run.rule.speed')}</li>
+          <li>{t('arcade.run.rule.moves')}</li>
+          <li>{t('arcade.run.rule.hits')}</li>
           <li>{t('arcade.run.rule.controls')}</li>
         </ul>
         {error === 'words' && (
@@ -418,6 +480,9 @@ export default function RunnerGame({ onExit }) {
           data-lane={hud.lane}
           data-lives={hud.lives}
           data-score={hud.score}
+          data-pose={hud.pose}
+          data-hits={hud.hits}
+          data-obstacles={hud.obstacles}
         >
           <canvas ref={canvas} className="ar-run-canvas" aria-hidden="true" />
           {status !== 'loading' && !error && (
@@ -432,6 +497,11 @@ export default function RunnerGame({ onExit }) {
               <div className="ar-run-score">
                 <small>{t('arcade.run.score')}</small>
                 <b>{hud.score}</b>
+                {hud.mult >= 2 && (
+                  <span className="ar-run-mult" role="img" aria-label={t('arcade.run.mult', { n: hud.mult })}>
+                    ×{hud.mult}
+                  </span>
+                )}
                 {hud.streak >= 3 && <em>{t('arcade.run.streak', { n: hud.streak })}</em>}
               </div>
             </div>
@@ -465,6 +535,11 @@ export default function RunnerGame({ onExit }) {
           {hud.toast && (
             <p className="ar-run-toast" role="status">
               {t('arcade.run.miss', { prompt: hud.toast.prompt, answer: hud.toast.answer })}
+            </p>
+          )}
+          {hud.crash > 0 && (
+            <p key={hud.crash} className="ar-run-toast ar-run-toast--hit" role="status">
+              {t('arcade.run.hit')}
             </p>
           )}
           {status === 'countdown' && (

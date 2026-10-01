@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DIFFICULTIES } from '../engine.js'
 import {
+  HIT_SLOW,
+  INVULN,
   LIVES,
   MAX_DT,
   ROW_GAP,
@@ -11,8 +13,11 @@ import {
   advance,
   createRun,
   isOver,
+  jump,
   move,
+  multOf,
   needsRow,
+  slide,
   spawnRow,
   speedOf,
 } from './engine.js'
@@ -54,9 +59,9 @@ describe('забег', () => {
     expect(s.row).toBeNull()
   })
 
-  it('верные ворота: очко, серия, скорость растёт, жизни на месте', () => {
+  it('верные ворота: очки, серия, скорость растёт, жизни на месте', () => {
     const s = hit(createRun(6))
-    expect(s.score).toBe(1)
+    expect(s.score).toBe(10)
     expect(s.streak).toBe(1)
     expect(s.lives).toBe(LIVES)
     expect(s.speedMul).toBeCloseTo(SPEED_STEP)
@@ -123,5 +128,148 @@ describe('забег', () => {
     expect(s.last.at).toBeCloseTo(6, 5)
     s = spawnRow(advance(s, ROW_GAP), ROW)
     expect(s.row.n).toBe(1)
+  })
+})
+
+// Длины как в obstacles.js — движок их не знает, их приносит раскладка.
+const LEN = { barrier: 0.6, boom: 0.4, bus: 8 }
+// Препятствие в двух единицах перед бегуном (скорость на старте 10 ед./с).
+const ahead = (kind, extra = {}) => ({
+  ...createRun(6),
+  obstacles: [{ id: 0, lane: 1, kind, len: LEN[kind], z: 2, hit: false }],
+  ...extra,
+})
+function run(s, seconds, every = 0.1) {
+  for (let t = 0; t < seconds - 1e-9; t += every) s = advance(s, every)
+  return s
+}
+
+describe('позы', () => {
+  it('прыжок длится 0.7 с, потом бег', () => {
+    let s = jump(createRun(6))
+    expect(s.pose).toBe('jump')
+    s = run(s, 0.6)
+    expect(s.pose).toBe('jump')
+    s = advance(s, 0.1)
+    expect(s.pose).toBe('run')
+  })
+
+  it('повторный прыжок в прыжке ничего не делает', () => {
+    const s = advance(jump(createRun(6)), 0.3)
+    expect(jump(s)).toBe(s)
+  })
+
+  it('«вниз» в прыжке — сразу подкат, «вверх» в подкате — сразу прыжок', () => {
+    const s = slide(advance(jump(createRun(6)), 0.2))
+    expect(s.pose).toBe('slide')
+    expect(jump(s).pose).toBe('jump')
+  })
+
+  it('дорожку можно менять в прыжке', () => {
+    expect(move(jump(createRun(6)), 1).lane).toBe(2)
+  })
+
+  it('после конца забега позы не меняются', () => {
+    const over = { ...createRun(6), lives: 0 }
+    expect(jump(over)).toBe(over)
+    expect(slide(over)).toBe(over)
+  })
+})
+
+describe('препятствия', () => {
+  it('барьер: в беге — удар, прыжок проходит, подкат не спасает', () => {
+    expect(run(ahead('barrier'), 0.6).hits).toBe(1)
+    expect(run(jump(ahead('barrier')), 0.6).hits).toBe(0)
+    expect(run(slide(ahead('barrier')), 0.6).hits).toBe(1)
+  })
+
+  it('шлагбаум: проходит только подкат', () => {
+    expect(run(slide(ahead('boom')), 0.6).hits).toBe(0)
+    expect(run(jump(ahead('boom')), 0.6).hits).toBe(1)
+    expect(run(ahead('boom'), 0.6).hits).toBe(1)
+  })
+
+  it('автобус бьёт в любой позе', () => {
+    expect(run(jump(ahead('bus')), 0.6).hits).toBe(1)
+    expect(run(slide(ahead('bus')), 0.6).hits).toBe(1)
+  })
+
+  it('другая дорожка — мимо', () => {
+    expect(run(ahead('bus', { lane: 0 }), 1.5).hits).toBe(0)
+  })
+
+  it('перестроение в полосу автобуса посреди корпуса — удар', () => {
+    let s = { ...createRun(6), obstacles: [{ id: 0, lane: 0, kind: 'bus', len: 8, z: -3, hit: false }] }
+    s = advance(s, 0.1)
+    expect(s.hits).toBe(0)
+    s = advance(move(s, -1), 0.1)
+    expect(s.hits).toBe(1)
+  })
+
+  it('удар: скорость ×0.75, серия с нуля, жизни целы, lastHit для сцены', () => {
+    const s = run(ahead('bus', { speedMul: 1.4, streak: 7 }), 0.4)
+    expect(s.speedMul).toBeCloseTo(1.4 * HIT_SLOW)
+    expect(s.streak).toBe(0)
+    expect(s.lives).toBe(LIVES)
+    expect(s.hits).toBe(1)
+    expect(s.lastHit).toMatchObject({ n: 1, kind: 'bus', lane: 1 })
+    expect(s.invuln).toBeGreaterThan(0)
+  })
+
+  it('удар не опускает скорость ниже стартовой', () => {
+    expect(run(ahead('bus', { speedMul: 1.1 }), 0.4).speedMul).toBe(1)
+  })
+
+  it('удар сбрасывает позу в бег', () => {
+    expect(run(jump(ahead('bus')), 0.4).pose).toBe('run')
+  })
+
+  it('неуязвимость: второй удар не засчитан, пока она идёт; после — засчитан', () => {
+    const at = (z, id) => ({ id, lane: 1, kind: 'barrier', len: 0.6, z, hit: false })
+    let s = { ...createRun(6), obstacles: [at(2, 0), at(6, 1), at(16, 2)] }
+    s = run(s, 1)
+    expect(s.hits).toBe(1)
+    s = run(s, 1)
+    expect(s.hits).toBe(2)
+    expect(INVULN).toBeLessThan(1.4)
+  })
+
+  it('длинный кадр не проскакивает барьер', () => {
+    const s = advance(ahead('barrier', { obstacles: [{ id: 0, lane: 1, kind: 'barrier', len: 0.6, z: 1, hit: false }] }), 10)
+    expect(s.hits).toBe(1)
+  })
+
+  it('препятствия едут и без ряда, проехавшие выбрасываются', () => {
+    let s = ahead('barrier', { lane: 0 })
+    s = advance(s, 0.1)
+    expect(s.row).toBeNull()
+    expect(s.obstacles[0].z).toBeCloseTo(1)
+    s = run(s, 1)
+    expect(s.obstacles).toEqual([])
+  })
+
+  it('spawnRow кладёт раскладку за ворота ряда', () => {
+    const s = spawnRow(createRun(6), ROW, [{ lane: 2, kind: 'barrier', len: 0.6, d: 15 }])
+    expect(s.row.z).toBe(SPAWN)
+    expect(s.obstacles).toEqual([{ id: 0, lane: 2, kind: 'barrier', len: 0.6, z: SPAWN + 15, hit: false }])
+    expect(s.obstacleSeq).toBe(1)
+  })
+})
+
+describe('очки', () => {
+  it('множитель: ×1 до пятых подряд, ×2 с пятых, потолок ×5', () => {
+    expect([0, 1, 4, 5, 9, 10, 19, 20, 100].map(multOf)).toEqual([1, 1, 1, 2, 2, 3, 4, 5, 5])
+  })
+
+  it('верные ворота: 10 × скорость до прироста × множитель после', () => {
+    const s = hit({ ...createRun(6), speedMul: 1.5, streak: 4 })
+    expect(s.last.points).toBe(30)
+    expect(s.score).toBe(30)
+  })
+
+  it('неверные ворота очков не дают', () => {
+    const s = miss(createRun(6))
+    expect(s.last.points).toBe(0)
+    expect(s.score).toBe(0)
   })
 })

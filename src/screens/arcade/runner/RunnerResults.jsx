@@ -2,9 +2,9 @@ import { useI18n } from '../../../i18n.jsx'
 import { RUN_DIFFICULTIES } from '../../../practice/arcade/runner/engine.js'
 import { PkChevron } from '../../practice/PracticeIcons.jsx'
 
-// Итоги забега: счёт, рекорд этой сложности (localStorage этого браузера),
-// лучшая серия и список ошибок — ради него игра и учебная: слово, его
-// перевод и что выбрал ученик.
+// Итоги забега: очки, рекорд этой сложности (localStorage этого браузера),
+// лучшая серия, удары о препятствия и список ошибок — ради него игра и
+// учебная: слово, его перевод и что выбрал ученик.
 export default function RunnerResults({ result, onAgain, onExit }) {
   const { t } = useI18n()
   const key = RUN_DIFFICULTIES[result.level].key
@@ -12,6 +12,7 @@ export default function RunnerResults({ result, onAgain, onExit }) {
     { key: 'score', value: result.score },
     { key: 'best', value: result.best },
     { key: 'streak', value: result.bestStreak },
+    { key: 'hits', value: result.hits },
   ]
   return (
     <section className="ar-results ar-run-results" aria-labelledby="ar-run-results-title">

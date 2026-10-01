@@ -39,12 +39,20 @@ async function goToLane(page, lane) {
   await expect(stage(page)).toHaveAttribute('data-lane', String(lane))
 }
 
-test('верные ворота дают очко, неверные — отнимают жизнь и показывают перевод', async ({ page }) => {
+// Проходит ряд верными воротами и ждёт, пока счёт вырастет.
+async function passRow(page) {
+  const correct = await nextRow(page)
+  const before = await stage(page).getAttribute('data-score')
+  await goToLane(page, correct)
+  await expect(stage(page)).not.toHaveAttribute('data-score', before, { timeout: 15000 })
+}
+
+test('верные ворота дают очки, неверные — отнимают жизнь и показывают перевод', async ({ page }) => {
   test.setTimeout(90_000)
   await openRunner(page)
   await startAt(page, 'Лёгкий')
   await goToLane(page, await nextRow(page))
-  await expect(stage(page)).toHaveAttribute('data-score', '1', { timeout: 15000 })
+  await expect(stage(page)).toHaveAttribute('data-score', '10', { timeout: 15000 })
   await expect(stage(page)).toHaveAttribute('data-lives', '3')
 
   const correct = await nextRow(page)
@@ -64,6 +72,32 @@ test('три ошибки — конец забега и список ошибо
   }
   await expect(page.getByRole('heading', { name: 'Забег окончен' })).toBeVisible()
   await expect(page.locator('.ar-run-mistakes li')).toHaveCount(3)
+})
+
+test('↑ — прыжок, ↓ — подкат, поза сама возвращается в бег', async ({ page }) => {
+  test.setTimeout(90_000)
+  await openRunner(page)
+  await startAt(page, 'Лёгкий')
+  await nextRow(page)
+  await page.keyboard.press('ArrowUp')
+  await expect(stage(page)).toHaveAttribute('data-pose', 'jump')
+  await expect(stage(page)).toHaveAttribute('data-pose', 'run', { timeout: 5000 })
+  await page.keyboard.press('ArrowDown')
+  await expect(stage(page)).toHaveAttribute('data-pose', 'slide')
+})
+
+test('после разминки на дороге препятствия; удар стоит серии, а не жизни', async ({ page }) => {
+  test.setTimeout(150_000)
+  await openRunner(page)
+  // Средний: на подход ровно одно препятствие (Лёгкий иногда кладёт ноль).
+  await startAt(page, 'Средний')
+  for (let i = 0; i < 3; i++) await passRow(page)
+  const layout = await stage(page).getAttribute('data-obstacles')
+  expect(layout).not.toBe('')
+  // Ближнее — первое; в беге его не проходит ни одно препятствие.
+  await goToLane(page, Number(layout.split('|')[0].split(':')[0]))
+  await expect(stage(page)).toHaveAttribute('data-hits', '1', { timeout: 15000 })
+  await expect(stage(page)).toHaveAttribute('data-lives', '3')
 })
 
 test('зал открывает обе игры и возвращает назад', async ({ page }) => {
