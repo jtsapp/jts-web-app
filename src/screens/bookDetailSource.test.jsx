@@ -77,7 +77,9 @@ describe('BookDetail — книга из админки', () => {
 
     await waitFor(() => expect(screen.getByText('Track one')).toBeTruthy())
     expect(screen.getByText('5:30')).toBeTruthy()
-    expect(screen.getByText('🎧 Аудио')).toBeTruthy()
+    // Эмодзи кнопки — отдельный aria-hidden span (на телефоне вместо него
+    // иконка макета), поэтому ищем кнопку по доступному имени.
+    expect(screen.getByRole('button', { name: /Аудио/ })).toBeTruthy()
   })
 
   it('сбой сети не роняет экран — книга открывается без глав', async () => {
