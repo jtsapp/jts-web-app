@@ -21,6 +21,15 @@ import '../course.css'
 import '../trial.css'
 import '../demo.css'
 import '../assistant.css'
+// Мобильный слой по макету «Web Адаптивка» — строго после всех файлов разделов
+import '../mobile/base.css'
+import '../mobile/registration.css'
+import '../mobile/profile.css'
+import '../mobile/lessons.css'
+import '../mobile/tutor.css'
+import '../mobile/learning.css'
+import '../mobile/practice.css'
+import '../mobile/practice-grammar.css'
 import Providers from './providers.jsx'
 
 // Тот же дефолт, что в src/api.js (BASE) — держать в синхроне.

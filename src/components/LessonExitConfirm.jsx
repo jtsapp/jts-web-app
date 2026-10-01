@@ -23,6 +23,7 @@ export default function LessonExitConfirm({
   titleKey = 'lesson.exitAsk',
   subKey = 'lesson.exitAskSub',
   leaveKey = 'lesson.exitLeave',
+  stayKey = 'lesson.exitStay',
 }) {
   const { t } = useI18n()
   const cancelRef = useRef(null)
@@ -67,7 +68,7 @@ export default function LessonExitConfirm({
             {t(leaveKey)}
           </button>
           <button type="button" className="lx-continue" ref={cancelRef} onClick={onStay}>
-            {t('lesson.exitStay')}
+            {t(stayKey)}
           </button>
         </div>
       </div>

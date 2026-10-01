@@ -4,3 +4,7 @@
 // в международном формате без «+» и без пробелов.
 export const SUPPORT_WHATSAPP_NUMBER = '77471634118'
 export const SUPPORT_WHATSAPP_URL = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`
+
+// Политика конфиденциальности: ссылка в профиле, подвал экранов входа и
+// согласие под кнопкой на шагах регистрации.
+export const PRIVACY_URL = 'https://justtostudy.kz/privacy'

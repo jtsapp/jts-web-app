@@ -863,7 +863,18 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
 
     // Список утверждений с общей парой кнопок: один экран вместо пяти.
     case 'rows':
-      return <RowsBoard step={step} answers={fills} setAnswers={setFills} checked={checked} />
+      return (
+        <>
+          {/* У True/False курса утверждения — к тексту (диалог, абзац): он
+              стоит над таблицей, как у одиночного вопроса (см. choice). */}
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
+          <RowsBoard step={step} answers={fills} setAnswers={setFills} checked={checked} />
+        </>
+      )
 
     // Соединение пар: слева пункты задания, справа банк вариантов.
     case 'match':
@@ -951,7 +962,7 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
           {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
               неоцениваемый шаг всё равно пропустил бы любой выбор. */}
           {listenSrc(step, level) && (
-            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} tiles={asWordTiles(options)} />
           )}
         </>
       )
@@ -1403,16 +1414,23 @@ function ExampleCarousel({ items, onWord }) {
 // последний оставался один в ряду: сетка выглядела сломанной, а не короткой.
 const inTwoColumns = (options) => (options || []).length % 2 === 0
 
+// «Что вы слышите?» в мобильном макете — сетка плиток по три в ряд (4108:4504).
+// Плитка рассчитана на одно-два слова: варианты-фразы («In Canada» ещё да,
+// предложение — нет) остаются строками. Класс — только метка, раскладку
+// плиткой включает мобильный слой (src/mobile/learning.css).
+const asWordTiles = (options) =>
+  (options || []).length >= 3 && options.every((o) => String(o).length <= 14)
+
 // «Послушайте. Выберите картинку.»: варианты — иконки курса (optionIcons,
 // тот же порядок, что и options), и подписи под ними нет, как в самом курсе:
 // слово под картинкой превратило бы задание в «найди услышанное слово».
 // Ответ по-прежнему сверяется по options.
 const hasPics = (icons, options) => Array.isArray(icons) && icons.length === options.length && icons.every(Boolean)
 
-function Choices({ options, icons, picked, setPicked, checked, answer, grid = false }) {
+function Choices({ options, icons, picked, setPicked, checked, answer, grid = false, tiles = false }) {
   const pics = hasPics(icons, options)
   return (
-    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}`}>
+    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}${!pics && tiles ? ' is-tiles' : ''}`}>
       {options.map((o, i) => {
         // Подсвечиваем только выбранный вариант: в макете после неверного
         // ответа правильный не раскрывается — остальные кнопки остаются белыми.

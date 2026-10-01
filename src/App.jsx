@@ -1460,6 +1460,9 @@ export default function App() {
       return (
         <OtpPage
           phone={mode === 'register' ? email : phone}
+          // Куда ушёл код, видно по самому адресату: регистрация шлёт его на
+          // почту, вход по коду — туда, что ввели (номер или почту).
+          channel={isEmailIdentifier(mode === 'register' ? email : phone) ? 'email' : 'sms'}
           onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-birth' : 'phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}

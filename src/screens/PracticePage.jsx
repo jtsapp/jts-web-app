@@ -26,6 +26,7 @@ import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
+import { normLevel as listeningLevel } from './ListeningPage.jsx'
 import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
@@ -756,6 +757,7 @@ export default function PracticePage({
               desc={t('practice.listening.desc')}
               cta={t('practice.listening.cta')}
               onStart={() => onNav?.('listening')}
+              badge={{ caption: t('practice.listening.byLevel'), level: listeningLevel(userLevel).toUpperCase() }}
             />
             <Banner
               id="sec-listenchoose"

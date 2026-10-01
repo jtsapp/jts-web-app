@@ -507,7 +507,15 @@ const ROWS_PER_SCREEN = 5
 // двухкнопочные задания курса, и им этот экран подходит ровно так же.
 const isBinary = (s) => s.type === 'choice' && (s.options || []).length === 2 && !!s.prompt && !s.say
 
-function groupBinary(steps) {
+// Курс нового поколения (public/course) хранит те же True/False по вопросу на
+// экран, но каждый вопрос несёт ещё и материал: текст (`html`) и запись. В одну
+// таблицу склеиваются только вопросы к ОДНОМУ материалу — иначе утверждение про
+// Дану оказалось бы под текстом про Тома.
+const sameMaterial = (a, b) =>
+  a.title === b.title && (a.html || '') === (b.html || '') && trackOf(a) === trackOf(b)
+const trackOf = (s) => s.audio || s.src || s.track || ''
+
+export function groupBinary(steps, { withMaterial = false } = {}) {
   const out = []
   for (let i = 0; i < steps.length; i++) {
     const s = steps[i]
@@ -516,8 +524,10 @@ function groupBinary(steps) {
       continue
     }
     const bank = JSON.stringify(s.options)
+    const same = (x) =>
+      isBinary(x) && x.stage === s.stage && JSON.stringify(x.options) === bank && (!withMaterial || sameMaterial(x, s))
     let end = i + 1
-    while (end < steps.length && isBinary(steps[end]) && steps[end].stage === s.stage && JSON.stringify(steps[end].options) === bank) end++
+    while (end < steps.length && same(steps[end])) end++
     if (end - i < 2) {
       out.push(s)
       continue
@@ -525,14 +535,19 @@ function groupBinary(steps) {
     // Заголовок серии — инструкция стадии, она досталась первому вопросу из
     // предыдущего info-блока; у остальных он подстановочный и на экране не нужен.
     for (const chunk of splitEvenly(steps.slice(i, end), ROWS_PER_SCREEN)) {
-      out.push({
+      const row = {
         stage: s.stage,
         type: 'rows',
         title: s.title,
         sub: s.sub || '',
         options: s.options,
         items: chunk.map((x) => ({ q: x.prompt, answer: x.answer })),
-      })
+      }
+      if (withMaterial) {
+        if (s.html) row.html = s.html
+        for (const k of ['audio', 'src', 'track']) if (s[k]) row[k] = s[k]
+      }
+      out.push(row)
     }
     i = end - 1
   }

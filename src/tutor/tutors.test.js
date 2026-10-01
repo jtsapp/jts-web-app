@@ -46,6 +46,25 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     expect(getTutor('aizere')).toBe(DEFAULT_TUTOR)
   })
 
+  // Мобильная карусель (кадр 4338:1568): Декстер в центре, Луна слева, Спарк
+  // справа; в круге те же тьюторы, что в ряду, ни один не потерян.
+  it('карусель: Луна → Декстер → Спарк, состав как у ряда', async () => {
+    for (const dev of [false, true]) {
+      const { CAROUSEL_TUTORS, PICK_TUTORS } = await load(dev)
+      expect(CAROUSEL_TUTORS.slice(0, 3).map((t) => t.key)).toEqual(['luna', 'dexter', 'spark'])
+      expect(CAROUSEL_TUTORS.map((t) => t.key).sort()).toEqual(PICK_TUTORS.map((t) => t.key).sort())
+    }
+  })
+
+  // Кнопка «Выбрать <имя>» в карусели — у каждого тьютора экрана выбора.
+  it('у каждого тьютора есть «Выбрать» во всех языках', async () => {
+    const { PICK_TUTORS } = await load(true)
+    const { DICT, LANGS } = await import('../i18n/dict.js')
+    for (const lang of LANGS) {
+      for (const t of PICK_TUTORS) expect(DICT[lang][`tutor.${t.key}.choose`], `${lang} ${t.key}`).toBeTruthy()
+    }
+  })
+
   // Чипы выбранной карточки рисуются по traitColors, подпись — из словаря по
   // номеру. Цвет без подписи вылез бы сырым ключом tutor.x.traitN.
   it('на каждый цвет черты есть подпись во всех языках', async () => {

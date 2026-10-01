@@ -20,8 +20,9 @@ test.describe('welcome / панель входа — мобилка', () => {
     const cta = page.locator('.cta')
     await expect(cta).toBeVisible({ timeout: 20_000 })
 
-    // Не пилюля (999px), а умеренное скругление карточки.
-    await expect(cta).toHaveCSS('border-radius', '30px')
+    // Не пилюля (999px), а умеренное скругление карточки — 20, как в макете
+    // «Web Адаптивка» (кадр 4095:39600).
+    await expect(cta).toHaveCSS('border-radius', '20px')
     await expect(cta).toHaveCSS('flex-direction', 'column')
 
     // Обе кнопки лежат внутри карточки по горизонтали (никакого overflow).
@@ -52,10 +53,11 @@ test.describe('welcome / панель входа — мобилка', () => {
 test.describe('welcome / панель входа — десктоп', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) <= 720, 'только широкий вьюпорт')
 
-  test('.cta — пилюля, футер виден (десктоп не тронут)', async ({ page }) => {
+  // Пилюля 503×92 с r90 — десктопный кадр «Регистрации» 1433:4892
+  test('.cta — пилюля, футер виден', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('.cta')).toBeVisible({ timeout: 20_000 })
-    await expect(page.locator('.cta')).toHaveCSS('border-radius', '999px')
+    await expect(page.locator('.cta')).toHaveCSS('border-radius', '90px')
     await expect(page.locator('.footer')).toBeVisible()
   })
 })

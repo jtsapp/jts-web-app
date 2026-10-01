@@ -37,10 +37,12 @@ export const DICT = {
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
     // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
-    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета;
-    // описания и кнопок у неё нет: экран выбора их не рисует.
+    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета.
+    // Описания и визитки голоса у неё нет — мобильная карусель их пропускает,
+    // а «Выбрать» ей нужна.
     'tutor.aizere.trait1': 'Мудрая',
     'tutor.aizere.trait2': 'Заботливая',
+    'tutor.aizere.choose': 'Выбрать Айзере',
     'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
     'tutor.luna.trait3': 'Спокойная',
@@ -451,6 +453,7 @@ export const DICT = {
     'choose.soon': 'Жақында',
     'tutor.aizere.trait1': 'Дана',
     'tutor.aizere.trait2': 'Қамқор',
+    'tutor.aizere.choose': 'Айзере таңдау',
     'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
     'tutor.luna.trait3': 'Байсалды',
@@ -831,6 +834,7 @@ export const DICT = {
     'choose.soon': 'Coming soon',
     'tutor.aizere.trait1': 'Wise',
     'tutor.aizere.trait2': 'Caring',
+    'tutor.aizere.choose': 'Choose Aizere',
     'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
     'tutor.luna.trait3': 'Calm',

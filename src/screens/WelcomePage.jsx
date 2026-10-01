@@ -37,10 +37,11 @@ export default function WelcomePage({ onRegister, onLogin }) {
           </div>
         </header>
 
-        {/* Герой */}
+        {/* Герой. Фон — экспорт кадра макета 1440×980 (при 2×); на телефоне
+            mobile/registration.css ставит свой кроп 440×955. */}
         <section
           className="hero"
-          style={{ backgroundImage: 'url(/assets/hero-london.jpg)' }}
+          style={{ backgroundImage: 'url(/assets/reg/hero-desktop.webp)' }}
         >
           <div className="hero__content">
             <h1 className="hero__title">
