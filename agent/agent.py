@@ -5624,7 +5624,7 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     )
     tutor = guard_tutor or profile.tutor
     lock = noise_guard.speaker_lock_enabled(tutor)
-    finalize = noise_guard.soniox_finalize_enabled()
+    finalize = noise_guard.soniox_finalize_enabled(tutor)
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()

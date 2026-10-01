@@ -380,7 +380,16 @@ assert G.soniox_finalize_enabled() is True
 for off in ("off", "0", "false"):
     _env(SONIOX_FINALIZE=off)
     assert G.soniox_finalize_enabled() is False, off
+    assert G.soniox_finalize_enabled("jarvis") is False, off
+_env(SONIOX_FINALIZE="on")
+assert G.soniox_finalize_enabled() is True
 _env(SONIOX_FINALIZE=None)
+# Канарейка: с тьютором finalize слушается NOISE_GUARD_TUTORS.
+_env(NOISE_GUARD_TUTORS="jarvis")
+assert G.soniox_finalize_enabled("jarvis") is True
+assert G.soniox_finalize_enabled("bro") is False
+_env(NOISE_GUARD_TUTORS=None)
+assert G.soniox_finalize_enabled("bro") is True
 
 
 class _FinalizeWS:
@@ -420,7 +429,7 @@ class _FinalizeWS:
         await asyncio.sleep(3600)
 
 
-async def _finalize_case(finalize: bool, words: bool = True):
+async def _finalize_case(finalize: bool, words: bool = True, silence_sec: float = 2.0):
     ws = _FinalizeWS(words)
     real_connect = soniox_stt.SpeechStream._connect_ws
 
@@ -438,6 +447,10 @@ async def _finalize_case(finalize: bool, words: bool = True):
         for i in range(0, len(audio), 320):
             stream.push_frame(rtc.AudioFrame(audio[i : i + 320], SR, 1, 160))
         sent = engine.finalize_now()
+        # Как commit_user_turn при отцепленном входе: тишина пачкой по 0.2 с.
+        zero = rtc.AudioFrame(b"\x00\x00" * 3200, SR, 1, 3200)
+        for _ in range(int(round(silence_sec / 0.2))):
+            stream.push_frame(zero)
         finals = []
 
         async def _collect():
@@ -465,8 +478,13 @@ engine, ws, sent, finals, took = asyncio.run(_finalize_case(True))
 assert engine._params.enable_speaker_diarization is False
 assert engine.capabilities.diarization is False
 assert sent == 1, sent
-# Команда ушла ПОСЛЕ всего аудио: хвост фразы не отрезан.
-assert ws.bytes_at_finalize == len(_pcm(1.0, 6000)), (ws.bytes_at_finalize, ws.bytes_sent)
+# Команда ушла ПОСЛЕ всей речи и ровно полсекунды тишины: без тишины за
+# хвостом Soniox съедал последнее слово (живой звонок 01.10.2026).
+speech = len(_pcm(1.0, 6000))
+# Тишина приходит кусками по 0.2 с — команда уходит после первого куска, на
+# котором набралось FINALIZE_AFTER_SILENCE_SEC.
+chunks = -(-int(G.FINALIZE_AFTER_SILENCE_SEC * 10) // 2)  # ceil(0.5 / 0.2) = 3
+assert ws.bytes_at_finalize == speech + chunks * 3200 * 2, (ws.bytes_at_finalize, speech)
 # Сначала сама фраза, следом пустой FINAL — он только снимает ожидание commit.
 assert finals == ["I agree", ""], finals
 assert took < 1.0, took
@@ -476,6 +494,12 @@ assert took < 1.0, took
 engine, ws, sent, finals, took = asyncio.run(_finalize_case(True, words=False))
 assert finals == [""], finals
 assert took < 1.0, took
+
+# Тишины нет (commit не досылает её, когда финал пришёл только что) — команды нет,
+# и взвод не переживает до тишины следующего хода.
+engine, ws, sent, finals, took = asyncio.run(_finalize_case(True, silence_sec=0))
+assert sent == 1
+assert not any(json.loads(t).get("type") == "finalize" for t in ws.texts)
 
 # Рубильник: finalize выключен — команды нет, и Soniox молчит до своего конца фразы.
 engine, ws, sent, finals, took = asyncio.run(_finalize_case(False))
@@ -490,10 +514,12 @@ _env(SONIOX_API_KEY="test", NOISE_GUARD_TUTORS="jarvis", SPEAKER_LOCK=None)
 # Speaking Buddy: сессия собирается на профиле Декстера, а звонок — Джарвиса.
 stt_buddy = A._cascade_stt_soniox(A.LearnerProfile(tutor="bro"), guard_tutor="jarvis")
 assert isinstance(stt_buddy, G.GuardedSonioxSTT) and stt_buddy._lock_on is True
-# Боевой Декстер под канарейку не попадает, но finalize для рации у него есть.
+# Боевой Декстер под канарейку не попадает.
 stt_bro = A._cascade_stt_soniox(A.LearnerProfile(tutor="bro"))
 assert isinstance(stt_bro, G.GuardedSonioxSTT) and stt_bro._lock_on is False
-assert stt_bro._finalize is True
+# Канарейка сужает и finalize: боевой Декстер его не получает.
+assert stt_bro._finalize is False
+assert stt_buddy._finalize is True
 _env(NOISE_GUARD_TUTORS=None, SONIOX_API_KEY=None)
 
 print("noise guard: ok")
