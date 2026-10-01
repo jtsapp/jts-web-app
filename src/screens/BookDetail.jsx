@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord, getAudiobook } from '../api.js'
 import { userIdFromToken } from '../lib/jwt.js'
@@ -6,6 +7,7 @@ import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
 import { Dots } from './practice/PracticeCards.jsx'
+import { chapterProgress, splitSubtitles, subtitleAt, subtitleTextFor } from '../practice/books/readAlong.js'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // У читалки два источника глав, в порядке приоритета:
@@ -89,8 +91,16 @@ async function loadStaticContent(title, token) {
 export async function loadBookContent(book, token) {
   const fromStatic = await loadStaticContent(book?.title, token)
   if (fromStatic?.chapters?.length) return fromStatic
+  if (book?.id == null) return fromStatic
+  return loadApiContent(book, token)
+}
+
+// Главы книги из админки. Отдельно от loadBookContent ради субтитров аудио:
+// у книги, найденной в статике, читалка бэкенд не спрашивает, а текст трека
+// (он и есть субтитры) живёт только там. Кэш общий — повторно в сеть не ходим.
+export function loadApiContent(book, token) {
   const id = book?.id
-  if (id == null) return fromStatic
+  if (id == null) return Promise.resolve(null)
   // Тот же принцип, что и у каталога сайта: превью книг админки режет бэкенд
   // по демо-статусу ученика, поэтому ответ нельзя переиспользовать между
   // аккаунтами.
@@ -191,6 +201,19 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 
   const total = chapters.length || 1
   const lockedCount = chapters.filter((c) => c.locked).length
+
+  // Треки detail-эндпоинта — источник субтитров аудио (см. subtitleTextFor).
+  // Спрашиваем только в режиме аудио: книге, которую читают глазами, лишний
+  // запрос ни к чему; у книги из админки ответ уже лежит в кэше.
+  const [apiTracks, setApiTracks] = useState(null)
+  useEffect(() => {
+    if (mode !== 'audio') return
+    let alive = true
+    loadApiContent(book, token).then((c) => alive && setApiTracks(c?.book?.tracks || null))
+    return () => {
+      alive = false
+    }
+  }, [mode, book, token])
 
   const openChapter = (i, m = 'read') => {
     // Закрытая глава не открывается: текста в ней всё равно нет — сервер его
@@ -322,11 +345,15 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
   }
 
   // ── Аудио ───────────────────────────────────────────────────────────────
+  // Главы статики — только если книга пришла оттуда (у книги из админки
+  // content.book — ответ detail, его треки уже в apiTracks).
+  const staticChapters = content && !content.book?.tracks ? content.chapters : null
   return (
     <BookAudio
       book={book}
       tracks={tracks}
       ch={ch}
+      subtitles={subtitleTextFor(tracks[ch], ch, { apiTracks, staticChapters, trackCount: tracks.length })}
       onPick={(i) => openChapter(i, 'audio')}
       onBack={() => setMode('overview')}
     />
@@ -354,6 +381,9 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
   const [popPos, setPopPos] = useState(null)
   const hostRef = useRef(null)
   const popRef = useRef(null)
+  // Начало главы и конец её текста — по ним полоса считает прогресс.
+  const articleRef = useRef(null)
+  const endRef = useRef(null)
   // Отсекает ответы перевода/сохранения от уже закрытого или сменённого попапа.
   const seqRef = useRef(0)
 
@@ -473,7 +503,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       <div className="bk-read" ref={hostRef}>
         {/* key={ch} ремоунтит статью при смене главы — CSS-анимация входа
             проигрывается заново (и отключена при prefers-reduced-motion). */}
-        <article key={ch} className="bk-read__text" onClick={() => setPop(null)}>
+        <article key={ch} ref={articleRef} className="bk-read__text" onClick={() => setPop(null)}>
           {/* Название главы в кадре стоит над текстом крупной строкой — раньше
               его можно было увидеть только в шапке и в списке глав. */}
           <h1 className="bk-read__title">{chapter.title || `Глава ${ch + 1}`}</h1>
@@ -517,6 +547,9 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
               )}
             </div>
           )}
+          {/* Метка конца текста: прогресс главы не должен включать кнопку
+              «следующая глава» и поля под ней. Пустой блок места не занимает. */}
+          {text && <div ref={endRef} aria-hidden="true" />}
           {ch < chapters.length - 1 && (
             <button className="bk-btn bk-btn--primary bk-read__next" onClick={onNext}>
               Перейти к следующей главе
@@ -569,12 +602,94 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           </div>
         )}
       </div>
+
+      {text && <ReadProgress articleRef={articleRef} endRef={endRef} chKey={ch} label={t('books.readProgress')} />}
     </div>
   )
 }
 
+// ── Полоса прогресса главы (кадр 4302:16980) ────────────────────────────────
+// Плавающая пилюля внизу экрана, только на телефоне: на десктопе её прячет
+// src/mobile/practice.css, там рядом с текстом и так колонка глав.
+//
+// Отдельный компонент со своим состоянием: прокрутка обновляет только его, а
+// не всю статью — в главе тысячи спанов-слов, и перерисовывать их на каждый
+// кадр прокрутки значило бы дёргать скролл. Замер — раз в кадр (rAF), слушатель
+// passive, а состояние — целый процент: пока он не сменился, React не
+// перерисовывает и полосу.
+//
+// Через портал в body: у .bk есть анимация входа с transform, а transform
+// предка делает position: fixed относительным ему — пилюля первые доли секунды
+// стояла бы внизу всей главы, а не экрана (та же грабля у OnboardingTour).
+function ReadProgress({ articleRef, endRef, chKey, label }) {
+  const barRef = useRef(null)
+  const [pct, setPct] = useState(0)
+  // Режим чтения открывается только кликом, то есть уже в браузере; проверка —
+  // на случай серверного рендера.
+  const host = typeof document === 'undefined' ? null : document.body
+
+  useEffect(() => {
+    let raf = 0
+    const measure = () => {
+      raf = 0
+      const art = articleRef.current
+      const end = endRef.current
+      const bar = barRef.current
+      // display: none (десктоп) — мерить незачем.
+      if (!art || !end || !bar || !bar.getClientRects().length) return
+      const se = document.scrollingElement || document.documentElement
+      const p = chapterProgress({
+        top: art.getBoundingClientRect().top,
+        bottom: end.getBoundingClientRect().top,
+        viewTop: 0,
+        // Текст под пилюлей не прочитан: видимая часть кончается над ней.
+        viewBottom: bar.getBoundingClientRect().top,
+        atPageEnd: se.scrollTop + se.clientHeight >= se.scrollHeight - 2,
+      })
+      setPct(Math.round(p * 100))
+    }
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(measure)
+    }
+    schedule()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule, { passive: true })
+    // Высота главы меняется и без прокрутки: догрузился шрифт, повернули экран.
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null
+    if (ro && articleRef.current) ro.observe(articleRef.current)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      ro?.disconnect()
+    }
+  }, [articleRef, endRef, chKey])
+
+  if (!host) return null
+  // Дочитал — пилюля уходит (кадр 4302:17015): в конце главы её место под
+  // кнопкой «следующая глава», и она бы её закрыла. Прячем прозрачностью, а не
+  // сдвигом: позиция пилюли — граница видимого текста в замере.
+  return createPortal(
+    <div
+      ref={barRef}
+      className={`bk-readbar${pct >= 100 ? ' is-done' : ''}`}
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+    >
+      <span className="bk-readbar__track">
+        <span className="bk-readbar__fill" style={{ width: `${pct}%` }} />
+      </span>
+      <span className="bk-readbar__pct">{pct}%</span>
+    </div>,
+    host,
+  )
+}
+
 // ── Аудио-плеер ─────────────────────────────────────────────────────────────
-function BookAudio({ book, tracks, ch, onPick, onBack }) {
+function BookAudio({ book, tracks, ch, subtitles, onPick, onBack }) {
   const { t } = useI18n()
   const track = tracks[ch] || {}
   // Оглавление на телефоне — лист по кнопке в шапке, как в режиме чтения.
@@ -583,6 +698,9 @@ function BookAudio({ book, tracks, ch, onPick, onBack }) {
   const [playing, setPlaying] = useState(false)
   const [cur, setCur] = useState(0)
   const [dur, setDur] = useState(0)
+  const subs = useMemo(() => splitSubtitles(subtitles), [subtitles])
+  // Место в субтитрах — пропорцией времени, без таймкодов (см. readAlong.js).
+  const at = subtitleAt(subs, cur, dur)
 
   useEffect(() => {
     setCur(0)
@@ -651,6 +769,10 @@ function BookAudio({ book, tracks, ch, onPick, onBack }) {
             </button>
             <button className="bk-audio__skip" onClick={() => seek(15)} aria-label="Вперёд 15с">15 ⟳</button>
           </div>
+
+          {subs.sentences.length > 0 && (
+            <BookSubtitles key={ch} subs={subs} index={at.index} frac={at.frac} title={t('books.subtitles')} />
+          )}
         </div>
 
         <aside className={`bk-read__side${toc ? ' is-open' : ''}`}>
@@ -675,5 +797,75 @@ function BookAudio({ book, tracks, ch, onPick, onBack }) {
         </aside>
       </div>
     </div>
+  )
+}
+
+// ── Субтитры аудиокниги (кадры 4295:16276, 4295:16324) ──────────────────────
+// Карточка с текстом главы: прозвучавшее — жирным тёмным, впереди — серым, окно
+// на шесть строк само едет за голосом. Место — ПРИБЛИЖЕНИЕ по пропорции
+// времени, по целым предложениям (почему не по словам — в readAlong.js).
+//
+// Предложения рисуются заново только при смене текущего: время приходит
+// четыре раза в секунду, а в главе сотни предложений.
+function BookSubtitles({ subs, index, frac, title }) {
+  const viewRef = useRef(null)
+  const sentRefs = useRef([])
+
+  const body = useMemo(
+    () =>
+      subs.paras.map((ids, pi) => (
+        <p key={pi} className="bk-subs__p">
+          {ids.map((i) => (
+            <span
+              key={i}
+              ref={(el) => {
+                sentRefs.current[i] = el
+              }}
+              className={i <= index ? 'is-said' : undefined}
+            >
+              {subs.sentences[i].text}{' '}
+            </span>
+          ))}
+        </p>
+      )),
+    [subs, index],
+  )
+
+  // Текущее предложение держим третьей строкой окна — две строки над ним
+  // оставляют контекст, как в кадре. Длинное, не влезающее в остаток окна,
+  // докручиваем по доле внутри него, иначе хвост так и остался бы за краем.
+  // Жирное начертание шире обычного и переносит строки — поэтому замер после
+  // отрисовки (layout effect), а не по расчётной высоте.
+  useLayoutEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    const el = index >= 0 ? sentRefs.current[index] : null
+    let target = 0
+    if (el) {
+      const line = parseFloat(getComputedStyle(view).lineHeight) || 22
+      const v = view.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      const top = r.top - v.top + view.scrollTop
+      const lead = 2 * line
+      const room = view.clientHeight - lead
+      // По сетке строк: иначе доля внутри предложения срезала бы верхнюю
+      // строку окна пополам.
+      target = Math.round((top - lead + Math.max(0, r.height - room) * frac) / line) * line
+    }
+    target = Math.round(Math.min(Math.max(target, 0), view.scrollHeight - view.clientHeight))
+    if (Math.abs(view.scrollTop - target) <= 1) return
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    view.scrollTo({ top: target, behavior: still ? 'auto' : 'smooth' })
+  }, [index, frac, body])
+
+  return (
+    <section className="bk-subs" aria-label={title}>
+      <h2 className="bk-subs__title">{title}</h2>
+      {/* Окно не прокручивается пальцем: его ведёт голос, а весь текст главы
+          открыт в режиме чтения. */}
+      <div ref={viewRef} className="bk-subs__view">
+        {body}
+      </div>
+    </section>
   )
 }

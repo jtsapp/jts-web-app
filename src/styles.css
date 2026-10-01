@@ -5523,6 +5523,11 @@ textarea {
   font-size: 14px;
   color: var(--muted);
 }
+/* Подпись звания в словаре без двоеточия (на телефоне она отдельной строкой,
+   как в макете); здесь подпись и звание в одной строке — разделяем сами. */
+.pf-rank__text > span::after {
+  content: ':\00a0';
+}
 .pf-rank__text b {
   color: var(--ink);
   font-weight: 700;
@@ -6379,6 +6384,22 @@ textarea {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 22px rgba(144, 71, 255, 0.4);
 }
+/* Субтитры аудиокниги — текст главы под плеером; окно в шесть строк ведёт
+   голос (BookSubtitles в BookDetail.jsx, место — приближение по времени).
+   Прозвучавшее тёмным, впереди серым; начертание одно, чтобы строки не
+   переносились заново на каждом предложении. */
+.bk-subs {
+  align-self: stretch; margin-top: 24px; padding: 14px 16px 16px;
+  border: 1px solid #efeef4; border-radius: 14px; background: #faf9ff; text-align: left;
+}
+.bk-subs__title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+  color: #a6a5b2; margin: 0 0 8px;
+}
+.bk-subs__view { height: 144px; overflow: hidden; font-size: 15px; line-height: 24px; }
+.bk-subs__p { margin: 0; }
+.bk-subs__view span { color: #a6a5b2; transition: color 0.2s ease; }
+.bk-subs__view .is-said { color: var(--ink); }
 
 @media (max-width: 900px) {
   .bk-ov, .bk-read { grid-template-columns: 1fr; }

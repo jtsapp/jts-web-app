@@ -12,12 +12,13 @@
 
 /* Элементы, которых нет в десктопной вёрстке: звезда уровня на баннере
    Аудирования, глава в шапке книги, кнопка и крестик оглавления-листа,
-   название сценария в шапке «Ситуаций». */
+   полоса прогресса главы, название сценария в шапке «Ситуаций». */
 .pk-banner__badge,
 .bk-head__chapter,
 .bk-head__toc,
 .bk-read__close,
 .bk-ov__diff,
+.bk-readbar,
 .sit-top__title {
   display: none;
 }
@@ -586,6 +587,62 @@
     line-height: 17px;
   }
 
+  /* Полоса прогресса главы: белая пилюля 340×36 (поля 8/10, r20, тень
+     0 4 20 12%) по центру в 24 от низа, дорожка 16 r30 на 19% фиолетового и
+     процент 14/500 через 18. Ширина — от полей 50, как в кадре, чтобы на 360
+     пилюля сужалась, а не вылезала. На 100% уходит (кадр 4302:17015 — там на
+     её месте кнопка следующей главы); пустая дорожка начинается точкой, как
+     прогресс книги на обзоре. */
+  .bk-readbar {
+    position: fixed;
+    left: 50px;
+    right: 50px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    max-width: 340px;
+    height: 36px;
+    margin: 0 auto;
+    padding: 8px 10px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+  .bk-readbar.is-done {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .bk-readbar__track {
+    flex: 1;
+    min-width: 0;
+    height: 16px;
+    border-radius: 30px;
+    background: rgba(144, 71, 255, 0.19);
+    overflow: hidden;
+  }
+  .bk-readbar__fill {
+    display: block;
+    min-width: 16px;
+    max-width: 100%;
+    height: 100%;
+    border-radius: 30px;
+    background: #9047ff;
+    transition: width 0.15s ease-out;
+  }
+  .bk-readbar__pct {
+    flex: none;
+    min-width: 26px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #9047ff;
+  }
+
   /* Перевод слова (кадр 4302:16980): белая плашка 274 с тенью, слово серым,
      перевод тёмным, справа закладка вместо кнопки «Сохранить в словарь».
      Подпись кнопки остаётся её доступным именем, на экране — только значок:
@@ -741,6 +798,41 @@
   }
   .bk-audio__play {
     box-shadow: none;
+  }
+
+  /* Субтитры (кадр 4295:16276): белая карточка r20 через 16 под кнопками,
+     поля 16/16/28/16; «Субтитры» 20/700 серым, через 13 окно на шесть строк
+     16/22 — прозвучавшее 700 тёмным, впереди 400 серым. Колонка текста в
+     кадре 338 из 376 — правое поле 54 повторяем: от него зависят переносы. */
+  .bk-subs {
+    order: 4;
+    margin: 16px 0 0;
+    padding: 16px 54px 28px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .bk-subs__title {
+    margin: 0 0 13px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #afafaf;
+  }
+  .bk-subs__view {
+    height: 132px;
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .bk-subs__view span {
+    font-weight: 400;
+    color: #afafaf;
+  }
+  .bk-subs__view .is-said {
+    font-weight: 700;
+    color: #181818;
   }
 }
 
