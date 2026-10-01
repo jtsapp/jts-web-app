@@ -6,8 +6,7 @@ import {
   requestElementFullscreen,
 } from '../../lib/elementFullscreen.js'
 
-// Полный экран для игрового поля (порт javaTest src/hooks/useFullscreen.ts на
-// общем lib/elementFullscreen.js). Где браузер не дал настоящий полный экран
+// Полный экран для игрового поля. Где браузер не дал настоящий полный экран
 // (iPhone Safari, встроенные вебвью), поле растягивается на окно своим CSS.
 // `active` следит за реальным состоянием: из режима выходят и мимо кнопки —
 // Esc, F11, системным жестом.

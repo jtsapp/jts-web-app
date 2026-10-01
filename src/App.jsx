@@ -39,6 +39,16 @@ import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
 import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
 import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
 import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
+import IeltsReadingRunPage from './screens/IeltsReadingRunPage.jsx'
+import IeltsReadingReviewPage from './screens/IeltsReadingReviewPage.jsx'
+import IeltsListeningRunPage from './screens/IeltsListeningRunPage.jsx'
+import IeltsDictationPage from './screens/IeltsDictationPage.jsx'
+import IeltsWritingRunPage from './screens/IeltsWritingRunPage.jsx'
+import IeltsSpeakingRunPage from './screens/IeltsSpeakingRunPage.jsx'
+import IeltsOnboardingPage from './screens/IeltsOnboardingPage.jsx'
+import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
+import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
+import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
@@ -116,6 +126,9 @@ function phoneErrorKey(e) {
 const PERSISTABLE_SCREENS = new Set([
   'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
+  // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
+  'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
+  'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -256,6 +269,22 @@ export default function App() {
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
     // ровно его. До этого попасть в юнит по адресу можно было только из
     // домашней работы ученика, то есть только из ученического аккаунта.
+    // ?screen=ielts-reading-run&ieltsRun=<id>&ieltsMode=exam — прохождение теста IELTS Reading;
+    // ?screen=ielts-reading-review&ieltsAttempt=<id> — разбор сданной попытки.
+    // ?screen=ielts-listening-run&ieltsRun=<id>&ieltsMode=… и ?screen=ielts-dictation&ieltsRun=<id> — то же для Listening.
+    if (deepLink === 'ielts-reading-run' || deepLink === 'ielts-listening-run' || deepLink === 'ielts-dictation' || deepLink === 'ielts-writing-run' || deepLink === 'ielts-speaking-run') {
+      const id = searchParams.get('ieltsRun')
+      if (id) setIeltsRunTarget({ testId: id, mode: searchParams.get('ieltsMode') || null })
+    }
+    // ?screen=ielts-diagnostic-result&ieltsAttempt=<id> — итог диагностики; без id — последняя
+    if (deepLink === 'ielts-diagnostic-result') {
+      const id = searchParams.get('ieltsAttempt')
+      if (id) setIeltsReviewTarget({ attemptId: id })
+    }
+    if (deepLink === 'ielts-reading-review') {
+      const id = searchParams.get('ieltsAttempt')
+      if (id) setIeltsReviewTarget({ attemptId: id })
+    }
     if (deepLink === 'practice') {
       const unitTarget = practiceUnitTarget(searchParams)
       if (unitTarget) setPracticeTarget(unitTarget)
@@ -526,6 +555,10 @@ export default function App() {
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
   const [arcadeTarget, setArcadeTarget] = useState(null)
+  // IELTS: куда открыть хаб (вкладка/экран «Обучения»), какой тест проходить и какую попытку разбирать
+  const [ieltsTarget, setIeltsTarget] = useState(null)
+  const [ieltsRunTarget, setIeltsRunTarget] = useState(null)
+  const [ieltsReviewTarget, setIeltsReviewTarget] = useState(null)
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1259,7 +1292,13 @@ export default function App() {
         setScreen('lesson-workspace')
       }
     }
-    else if (key === 'ielts') setScreen('ielts')
+    // payload: { tab, view, testId } — вернуться в нужное место хаба (выход из прохождения или разбора)
+    else if (key === 'ielts') { setIeltsTarget(payload || null); setScreen('ielts') }
+    else if (key === 'ielts-reading-run') { if (payload?.testId) { setIeltsRunTarget(payload); setScreen('ielts-reading-run') } }
+    else if (key === 'ielts-listening-run' || key === 'ielts-dictation' || key === 'ielts-writing-run' || key === 'ielts-speaking-run') { if (payload?.testId) { setIeltsRunTarget(payload); setScreen(key) } }
+    else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
+    else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
+    else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     else if (key === 'vocab') setScreen('vocab')
   }
 
@@ -1777,7 +1816,76 @@ export default function App() {
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
-      return <IeltsPage {...ieltsProps} />
+      return <IeltsPage {...ieltsProps} target={ieltsTarget} />
+    // Прохождение и разбор — без меню платформы (режим фокуса, Figma «6 · Reading — экзамен»).
+    // «Назад» ведёт туда, откуда пришли: back несёт вкладку и экран хаба.
+    case 'ielts-reading-run':
+      return (
+        <IeltsReadingRunPage
+          token={token}
+          target={ieltsRunTarget}
+          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onReview={(attemptId) => handleNav('ielts-reading-review', { attemptId, back: ieltsRunTarget?.back })}
+        />
+      )
+    case 'ielts-listening-run':
+      return (
+        <IeltsListeningRunPage
+          token={token}
+          target={ieltsRunTarget}
+          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onReview={(attemptId) => handleNav('ielts-reading-review', { attemptId, back: ieltsRunTarget?.back })}
+        />
+      )
+    // Редактор Writing (Figma 9). Сданная работа открывается в хабе («Мои работы», Figma 10) и сразу уходит на ИИ-проверку.
+    // Прохождение Speaking (Figma 11). Оценённый ответ открывается в хабе — как работа Writing.
+    // Онбординг и диагностика (Figma 1.1–1.6) — режим фокуса без меню; итог (Figma 2.1) и маршрут (Figma 3) — в меню.
+    case 'ielts-onboarding':
+      return <IeltsOnboardingPage token={token} onExit={() => handleNav('ielts', { tab: 'today' })} onDiagnostic={() => handleNav('ielts-diagnostic')} />
+    case 'ielts-diagnostic':
+      return (
+        <IeltsDiagnosticPage
+          token={token}
+          target={ieltsRunTarget}
+          onExit={() => handleNav('ielts', { tab: 'today' })}
+          onDone={(attemptId) => handleNav('ielts-diagnostic-result', { attemptId: String(attemptId) })}
+        />
+      )
+    case 'ielts-diagnostic-result':
+      return <IeltsDiagnosticResultPage {...ieltsProps} target={ieltsReviewTarget} onRoute={() => handleNav('ielts-route')} />
+    case 'ielts-route':
+      return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} onPricing={() => handleNav('pricing')} />
+    case 'ielts-speaking-run':
+      return (
+        <IeltsSpeakingRunPage
+          token={token}
+          target={ieltsRunTarget}
+          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onDone={(attemptId) => handleNav('ielts', { tab: 'learn', view: 'speaking-work', attemptId: String(attemptId) })}
+        />
+      )
+    case 'ielts-writing-run':
+      return (
+        <IeltsWritingRunPage
+          token={token}
+          target={ieltsRunTarget}
+          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onDone={(attemptId) => handleNav('ielts', { tab: 'learn', view: 'writing-work', attemptId: String(attemptId), autoGrade: true })}
+        />
+      )
+    case 'ielts-dictation':
+      return <IeltsDictationPage token={token} target={ieltsRunTarget} onExit={() => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn' })} />
+    case 'ielts-reading-review':
+      return (
+        <IeltsReadingReviewPage
+          token={token}
+          target={ieltsReviewTarget}
+          onExit={(testId) => handleNav('ielts', ieltsReviewTarget?.back || { tab: 'learn', testId })}
+          onRetry={(testId) => handleNav('ielts', { ...(ieltsReviewTarget?.back || { tab: 'learn' }), testId })}
+          onToday={() => handleNav('ielts', { tab: 'today' })}
+          onTrainType={() => handleNav('ielts', { tab: 'learn', view: 'types' })}
+        />
+      )
     case 'ielts-writing':
       return <IeltsWritingPage {...ieltsProps} />
     case 'ielts-listening':

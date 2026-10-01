@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildTranscript, summarise, tokenize } from './speechSegments.js'
 
-// Порт javaTest tests/speechSegments.test.ts.
+// Сборка стенограммы раунда.
 
 const shape = (t) => t.segments.map((s) => [s.kind, s.start, s.end, s.text])
 const voice = (start, end, voicing = 1) => ({ start, end, voicing })

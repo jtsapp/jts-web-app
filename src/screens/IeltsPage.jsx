@@ -1,202 +1,289 @@
+import { useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
-import { useIeltsEntitlement } from '../practice/usePracticeEntitlement.js'
-import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
-import { sectionConsumesQuota } from '../lib/ielts/paidSections.js'
-import {
-  HeadphonesIcon,
-  BookOpenIcon,
-  PenLineIcon,
-  MicIcon,
-} from '../components/ieltsIcons.jsx'
+import IeltsHeader from '../ielts/IeltsHeader.jsx'
+import Tabs from '../ielts/ui/Tabs.jsx'
+import TodayTab from '../ielts/today/TodayTab.jsx'
+import LearnTab from '../ielts/tabs/LearnTab.jsx'
+import MockTestsTab from '../ielts/tabs/MockTestsTab.jsx'
+import ProgressTab from '../ielts/tabs/ProgressTab.jsx'
+import ComingSoonTab from '../ielts/tabs/ComingSoonTab.jsx'
+import ReadingListView from '../ielts/reading/ReadingListView.jsx'
+import ReadingTaskView from '../ielts/reading/ReadingTaskView.jsx'
+import ListeningListView from '../ielts/listening/ListeningListView.jsx'
+import WritingListView from '../ielts/writing/WritingListView.jsx'
+import WritingTaskView from '../ielts/writing/WritingTaskView.jsx'
+import WritingWorkView from '../ielts/writing/WritingWorkView.jsx'
+import WritingWorksView from '../ielts/writing/WritingWorksView.jsx'
+import WritingGuideView from '../ielts/writing/WritingGuideView.jsx'
+import SpeakingListView from '../ielts/speaking/SpeakingListView.jsx'
+import SpeakingTaskView from '../ielts/speaking/SpeakingTaskView.jsx'
+import SpeakingWorkView from '../ielts/speaking/SpeakingWorkView.jsx'
+import SpeakingGuideView from '../ielts/speaking/SpeakingGuideView.jsx'
+import ShadowingView from '../ielts/speaking/ShadowingView.jsx'
+import { TranslateIcon, DescriptionIcon } from '../ielts/icons.jsx'
+import { useIeltsDashboard, starterPlan } from '../ielts/model/useIeltsDashboard.js'
+import { useReadingCatalog, useListeningCatalog, useIeltsCatalog, useIeltsTrack } from '../ielts/reading/useReadingCatalog.js'
 
-// IELTS-style level check (mock exam). Landing screen — the four modules, the
-// 9-band scale, and the start CTA. Ported from felix components/jts/IeltsScreen.
-//
-// Sections whose key is absent from LIVE_TARGETS render as a «Скоро» stub.
-const LIVE_TARGETS = {
-  writing: 'ielts-writing',
-  listening: 'ielts-listening',
-  reading: 'ielts-reading',
-  speaking: 'ielts-speaking',
+// Хаб раздела IELTS (?screen=ielts): шапка с серией и XP, вкладки и их содержимое. Макет — Figma «JTS-clone»
+// (Screen MS, «Обучение», «Пробные тесты», «5 · Reading — задание»).
+// Внутри «Обучения» свои экраны Reading: список (типы / дриллы / тексты) и задание; само прохождение и разбор —
+// отдельные экраны App без меню (IeltsReadingRunPage, IeltsReadingReviewPage).
+export const IELTS_TABS = ['today', 'learn', 'mocks', 'progress', 'vocab', 'info']
+const READING_LISTS = ['types', 'drills', 'texts']
+// Списки Listening в адресе с префиксом: «types»/«drills» есть у обеих секций.
+const LISTENING_LISTS = ['listening-tasks', 'listening-dictation', 'listening-spelling']
+const isListeningView = (view) => LISTENING_LISTS.includes(view)
+// Writing: списки Task 1 / Task 2, «Мои работы», «Как писать» и работа (её id — ?ieltsWork=)
+const WRITING_VIEWS = ['writing-task1', 'writing-task2', 'writing-works', 'writing-guide', 'writing-work']
+const isWritingView = (view) => WRITING_VIEWS.includes(view)
+// Speaking: списки Part 1–3 и Shadowing, стратегия, «Мои ответы» и оценка (её id — тот же ?ieltsWork=)
+const SPEAKING_VIEWS = ['speaking-part1', 'speaking-part2', 'speaking-part3', 'speaking-shadowing', 'speaking-guide', 'speaking-works', 'speaking-work']
+const isSpeakingView = (view) => SPEAKING_VIEWS.includes(view)
+
+// Состояние хаба живёт в адресе, чтобы F5 и ссылка возвращали туда же: ?ieltsTab=learn&ieltsView=texts&ieltsTest=…
+// Свои имена параметров, а не `tab`: ?screen= пишет App, и общий параметр путал бы другие экраны.
+function readHubUrl() {
+  try {
+    const q = new URLSearchParams(window.location.search)
+    const tab = q.get('ieltsTab')
+    const view = q.get('ieltsView')
+    return {
+      tab: IELTS_TABS.includes(tab) ? tab : null,
+      view: READING_LISTS.includes(view) || isListeningView(view) || isWritingView(view) || isSpeakingView(view) ? view : null,
+      testId: q.get('ieltsTest') || null,
+      attemptId: q.get('ieltsWork') || null,
+    }
+  } catch {
+    return {}
+  }
 }
 
-const MODULES = [
-  {
-    key: 'listening',
-    Icon: HeadphonesIcon,
-    title: 'Listening',
-    desc: 'Записи с вопросами на понимание речи на слух',
-    meta: '2 части · 6 вопросов',
-    color: '#9047ff',
-    bg: '#f1ecfb',
-  },
-  {
-    key: 'reading',
-    Icon: BookOpenIcon,
-    title: 'Reading',
-    desc: 'Текст с вопросами True/False/Not Given и на заполнение',
-    meta: '1 текст · 4 вопроса',
-    color: '#00a876',
-    bg: '#e5f6ef',
-  },
-  {
-    key: 'writing',
-    Icon: PenLineIcon,
-    title: 'Writing',
-    desc: 'Task 1 (описание) + Task 2 (эссе), оценка ИИ',
-    meta: '≈40 мин · 2 задания',
-    color: '#e8892b',
-    bg: '#fdf0e2',
-  },
-  {
-    key: 'speaking',
-    Icon: MicIcon,
-    title: 'Speaking',
-    desc: 'Устное интервью: 2 вопроса + монолог по карточке',
-    meta: 'Part 1 + Part 2 · голос',
-    color: '#e0364b',
-    bg: '#fce8ea',
-  },
-]
+function writeHubUrl({ tab, view, testId, attemptId }) {
+  try {
+    const url = new URL(window.location.href)
+    const set = (k, v) => (v ? url.searchParams.set(k, v) : url.searchParams.delete(k))
+    set('ieltsTab', tab && tab !== 'today' ? tab : null)
+    set('ieltsView', tab === 'learn' ? view : null)
+    set('ieltsTest', tab === 'learn' ? testId : null)
+    set('ieltsWork', tab === 'learn' && (view === 'writing-work' || view === 'speaking-work') ? attemptId : null)
+    window.history.replaceState(window.history.state, '', url)
+  } catch {
+    /* без истории (тест, превью) состояние просто не запоминается */
+  }
+}
 
-// 0–9 band scale, IELTS-style. Shown as reference chips.
-const BANDS = [
-  { band: '4.0', cefr: 'A2' },
-  { band: '5.0', cefr: 'B1' },
-  { band: '6.0', cefr: 'B2' },
-  { band: '7.0', cefr: 'C1' },
-  { band: '8.0+', cefr: 'C2' },
-]
-
-export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo, isDemoAccount }) {
-  // Месячный лимит попыток спрашиваем ЗАРАНЕЕ: раньше студент проходил секцию
-  // целиком и упирался в отказ только на сдаче (а Reading/Listening вообще
-  // молча не сохраняли результат).
+export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo, target }) {
   const { t } = useI18n()
-  const { allowed, limit, used, loading, source, sourceName } = useIeltsEntitlement(token)
-  // outOfAttempts - это "квота на платные секции исчерпана", а не "весь IELTS
-  // закрыт": с бэкенда (src/lib/ielts/quota.js) её тратят только Speaking и
-  // Writing, Reading/Listening проверяются локально и бесплатны. Поэтому
-  // замок на конкретный модуль ставим через sectionConsumesQuota(key) ниже,
-  // а не голым outOfAttempts - иначе демо-ученик терял бы доступ и к
-  // бесплатным секциям тоже.
-  const outOfAttempts = !loading && !allowed
-  // CTA ведёт прямо в Writing - секцию, которая тратит квоту, поэтому явно
-  // спрашиваем sectionConsumesQuota, а не полагаемся на то, что 'writing'
-  // всегда останется платной секцией.
-  const writingBlocked = outOfAttempts && sectionConsumesQuota('writing')
+  const [hub, setHub] = useState({ tab: 'today', view: null, testId: null, attemptId: null })
+  const { data, reload } = useIeltsDashboard(token)
+  const catalog = useReadingCatalog(token)
+  const listeningCatalog = useListeningCatalog(token)
+  const writingCatalog = useIeltsCatalog(token, 'writing')
+  const speakingCatalog = useIeltsCatalog(token, 'speaking')
+  const [track, setTrack] = useIeltsTrack()
 
-  const limitMessage = (() => {
-    const params = { used: String(used), limit: String(limit ?? 0), name: sourceName || '' }
-    if (source === 'PLAN') return t('ielts.limitReachedPlan', params)
-    if (source === 'SUBSCRIPTION') return t('ielts.limitReachedSub', params)
-    if (source === 'DEMO' || isDemoAccount) {
-      return (
-        <>
-          {t('ielts.limitReachedDemo', params)}{' '}
-          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            {t('demo.cta')}
-          </a>
-        </>
-      )
+  // Состояние из адреса или из перехода App (выход из прохождения/разбора) — после гидратации, как ?screen=.
+  useEffect(() => {
+    const fromUrl = readHubUrl()
+    const next = target?.tab ? target : fromUrl
+    if (next.tab) {
+      setHub({ tab: next.tab, view: next.view || null, testId: next.testId || null, attemptId: next.attemptId || null, autoGrade: !!next.autoGrade })
+      // переход из App (сдали работу, вышли из теста) — в адрес, иначе F5 вернул бы на «Сегодня»
+      if (target?.tab) writeHubUrl(next)
     }
-    return t('ielts.limitReached', params)
-  })()
+    // Ушли из раздела — параметры раздела не должны висеть в адресе чужого экрана. Чистим, только когда ?screen
+    // уже сменился (его пишет эффект App после коммита — отсюда setTimeout): в StrictMode эффект снимается и
+    // ставится заново, и немедленная чистка стёрла бы вкладку раньше, чем её прочитали второй раз.
+    return () =>
+      setTimeout(() => {
+        if (new URLSearchParams(window.location.search).get('screen') !== 'ielts') writeHubUrl({ tab: 'today' })
+      }, 0)
+  }, [target])
+
+  const go = (next) => {
+    const merged = { view: null, testId: null, attemptId: null, autoGrade: false, ...next }
+    setHub(merged)
+    writeHubUrl(merged)
+  }
+
+  const plan = useMemo(() => data.plan || starterPlan(t), [data.plan, t])
+
+  // Цели задач и быстрых действий: экраны IELTS — App (onGo), разделы приложения — сайдбарная навигация (onNav).
+  const goTarget = (dest) => {
+    if (dest === 'vocab' || dest === 'lessons') onNav?.(dest)
+    else if (dest === 'ielts-reading') go({ tab: 'learn', view: 'texts' })
+    else onGo?.(dest)
+  }
+  const onQuickAction = (key) => {
+    if (key === 'mock') go({ tab: 'mocks' })
+    else if (key === 'weak') go({ tab: 'progress' })
+    else if (key === 'vocab') onNav?.('vocab')
+    else if (key === 'spelling') onGo?.('ielts-listening')
+  }
+
+  // Экран прохождения — по секции теста: у Listening свой плеер и фазы экзамена, у диктовки — свой тренажёр.
+  const startRun = (testId, mode, kind) => {
+    const listening = isListeningView(hub.view) || listeningCatalog.items?.some((x) => x.id === testId)
+    const writing = isWritingView(hub.view) || writingCatalog.items?.some((x) => x.id === testId)
+    const speaking = isSpeakingView(hub.view) || speakingCatalog.items?.some((x) => x.id === testId)
+    const screen = speaking ? 'ielts-speaking-run' : writing ? 'ielts-writing-run' : kind === 'dictation' || kind === 'spelling' ? 'ielts-dictation' : listening ? 'ielts-listening-run' : 'ielts-reading-run'
+    onNav?.(screen, { testId, mode, back: { tab: hub.tab, view: hub.view, testId: screen === 'ielts-dictation' ? null : testId } })
+  }
+  const openReview = (attemptId) => onNav?.('ielts-reading-review', { attemptId, back: { tab: hub.tab, view: hub.view, testId: hub.testId } })
+  const openTest = (testId) => go({ tab: 'learn', view: hub.tab === 'learn' ? hub.view : null, testId })
+
+  const tabs = IELTS_TABS.map((key) => ({ key, label: t(`ieltsHub.tab.${key}`) }))
+
+  let panel
+  if (hub.tab === 'today') {
+    panel = (
+      <TodayTab
+        data={data}
+        plan={plan}
+        onStartTask={(task) => goTarget(task.target)}
+        onRebuild={reload}
+        onQuickAction={onQuickAction}
+        onLessonReport={() => onNav?.('lessons')}
+        onStartStep={(step) => onNav?.(step === 'onboarding' ? 'ielts-onboarding' : step === 'diagnostic' ? 'ielts-diagnostic' : 'ielts-route')}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.view === 'speaking-work' && hub.attemptId) {
+    panel = (
+      <SpeakingWorkView
+        token={token}
+        attemptId={hub.attemptId}
+        onBackToLearn={() => go({ tab: 'learn' })}
+        onWorks={() => go({ tab: 'learn', view: 'speaking-works' })}
+        onRetry={(testId) => go({ tab: 'learn', view: 'speaking-works', testId })}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.testId && hub.view === 'speaking-shadowing') {
+    panel = <ShadowingView token={token} testId={hub.testId} onBack={() => go({ tab: 'learn' })} onBackToList={() => go({ tab: 'learn', view: 'speaking-shadowing' })} />
+  } else if (hub.tab === 'learn' && hub.testId && isSpeakingView(hub.view)) {
+    panel = (
+      <SpeakingTaskView
+        token={token}
+        testId={hub.testId}
+        listLabel={hub.view === 'speaking-works' ? t('ieltsSpeaking.works') : t(`ieltsLearn.speaking.p${hub.view.slice(-1)}`)}
+        onBackToLearn={() => go({ tab: 'learn' })}
+        onBackToList={() => go({ tab: 'learn', view: hub.view })}
+        onStart={(testId, mode) => startRun(testId, mode)}
+        onOpenWork={(attemptId) => go({ tab: 'learn', view: 'speaking-work', attemptId })}
+        onGuide={() => go({ tab: 'learn', view: 'speaking-guide' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && ['speaking-part1', 'speaking-part2', 'speaking-part3', 'speaking-shadowing'].includes(hub.view)) {
+    panel = (
+      <SpeakingListView
+        kind={hub.view.slice(9)}
+        catalog={speakingCatalog}
+        onOpenTest={(x) => go({ tab: 'learn', view: hub.view, testId: x.id })}
+        onBack={() => go({ tab: 'learn' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.view === 'speaking-works') {
+    panel = <WritingWorksView token={token} skill="speaking" onOpenWork={(attemptId) => go({ tab: 'learn', view: 'speaking-work', attemptId })} onBack={() => go({ tab: 'learn' })} />
+  } else if (hub.tab === 'learn' && hub.view === 'speaking-guide') {
+    panel = <SpeakingGuideView token={token} onBack={() => go({ tab: 'learn' })} />
+  } else if (hub.tab === 'learn' && hub.view === 'writing-work' && hub.attemptId) {
+    panel = (
+      <WritingWorkView
+        token={token}
+        attemptId={hub.attemptId}
+        autoGrade={hub.autoGrade}
+        onBackToLearn={() => go({ tab: 'learn' })}
+        onWorks={() => go({ tab: 'learn', view: 'writing-works' })}
+        onRetry={(testId) => go({ tab: 'learn', view: 'writing-works', testId })}
+        onGuide={() => go({ tab: 'learn', view: 'writing-guide' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.testId && isWritingView(hub.view)) {
+    panel = (
+      <WritingTaskView
+        token={token}
+        testId={hub.testId}
+        listLabel={hub.view === 'writing-works' ? t('ieltsLearn.writing.works') : t(`ieltsLearn.writing.${hub.view === 'writing-task2' ? 'task2' : 'task1'}`)}
+        onBackToLearn={() => go({ tab: 'learn' })}
+        onBackToList={() => go({ tab: 'learn', view: hub.view })}
+        onStart={(testId, mode) => startRun(testId, mode)}
+        onOpenWork={(attemptId) => go({ tab: 'learn', view: 'writing-work', attemptId })}
+        onGuide={() => go({ tab: 'learn', view: 'writing-guide' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && (hub.view === 'writing-task1' || hub.view === 'writing-task2')) {
+    panel = (
+      <WritingListView
+        kind={hub.view === 'writing-task2' ? 'task2' : 'task1'}
+        catalog={writingCatalog}
+        track={track}
+        onTrack={setTrack}
+        onOpenTest={(x) => go({ tab: 'learn', view: hub.view, testId: x.id })}
+        onBack={() => go({ tab: 'learn' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.view === 'writing-works') {
+    panel = <WritingWorksView token={token} onOpenWork={(attemptId) => go({ tab: 'learn', view: 'writing-work', attemptId })} onBack={() => go({ tab: 'learn' })} />
+  } else if (hub.tab === 'learn' && hub.view === 'writing-guide') {
+    panel = <WritingGuideView token={token} track={track} onBack={() => go({ tab: 'learn' })} />
+  } else if (hub.tab === 'learn' && hub.testId) {
+    const listening = isListeningView(hub.view) || listeningCatalog.items?.some((x) => x.id === hub.testId)
+    const listLabel = !hub.view ? null : isListeningView(hub.view) ? t(`ieltsLearn.listening.${hub.view.slice(10)}`) : t(`ieltsLearn.reading.${hub.view}`)
+    panel = (
+      <ReadingTaskView
+        skill={listening ? 'listening' : 'reading'}
+        token={token}
+        testId={hub.testId}
+        listLabel={listLabel}
+        onBackToLearn={() => go({ tab: 'learn' })}
+        onBackToList={() => go({ tab: 'learn', view: hub.view })}
+        onStart={startRun}
+        onReview={openReview}
+      />
+    )
+  } else if (hub.tab === 'learn' && isListeningView(hub.view)) {
+    panel = (
+      <ListeningListView
+        list={hub.view.slice(10)}
+        catalog={listeningCatalog}
+        onOpenTest={(x) => (x.kind === 'dictation' || x.kind === 'spelling' ? startRun(x.id, 'practice', x.kind) : go({ tab: 'learn', view: hub.view, testId: x.id }))}
+        onBack={() => go({ tab: 'learn' })}
+      />
+    )
+  } else if (hub.tab === 'learn' && hub.view) {
+    panel = (
+      <ReadingListView
+        list={hub.view}
+        catalog={catalog}
+        track={track}
+        onTrack={setTrack}
+        onOpenTest={(id) => go({ tab: 'learn', view: hub.view, testId: id })}
+        onBack={() => go({ tab: 'learn' })}
+      />
+    )
+  } else if (hub.tab === 'learn') {
+    panel = <LearnTab token={token} catalog={catalog} track={track} listeningCatalog={listeningCatalog} writingCatalog={writingCatalog} speakingCatalog={speakingCatalog} onOpenReading={(view) => go({ tab: 'learn', view })} onGo={onGo} />
+  } else if (hub.tab === 'mocks') {
+    panel = <MockTestsTab catalog={catalog} track={track} onTrack={setTrack} onStart={startRun} onOpenTest={openTest} />
+  } else if (hub.tab === 'progress') {
+    panel = <ProgressTab data={data} onGo={onGo} />
+  } else if (hub.tab === 'vocab') {
+    panel = (
+      <ComingSoonTab
+        tabKey="vocab"
+        icon={<TranslateIcon size={28} />}
+        action={{ label: t('ieltsHub.soon.vocab.cta'), onClick: () => onNav?.('vocab') }}
+      />
+    )
+  } else panel = <ComingSoonTab tabKey="info" icon={<DescriptionIcon size={28} />} />
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="ie">
-        <header className="ie__head">
-          <div>
-            <h1 className="ie__title">IELTS-тест уровня</h1>
-            <p className="ie__sub">
-              Полноценная проверка по 4 навыкам с оценкой по 9-балльной шкале
-            </p>
-          </div>
-          <span className="ie-badge ie-badge--wip">В разработке</span>
-        </header>
-
-        {outOfAttempts && (
-          <div className="ie-limit" role="status">
-            🔒 {limitMessage}
-          </div>
-        )}
-
-        <div className="ie-scale">
-          <span className="ie-scale__label">Шкала band 0–9</span>
-          <div className="ie-scale__chips">
-            {BANDS.map((b) => (
-              <span key={b.band} className="ie-scale__chip">
-                <b>{b.band}</b>
-                <span>· {b.cefr}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="ie-mods">
-          {MODULES.map(({ key, Icon, title, desc, meta, color, bg }) => {
-            const target = LIVE_TARGETS[key]
-            const live = target !== undefined
-            // Замок только на секциях, которые реально тратят демо-квоту
-            // (Speaking/Writing) - Reading/Listening остаются кликабельными
-            // даже при outOfAttempts.
-            const moduleBlocked = outOfAttempts && sectionConsumesQuota(key)
-            const inner = (
-              <>
-                <span className="ie-mod__ic" style={{ background: bg }}>
-                  <Icon size={22} />
-                </span>
-                <span className="ie-mod__body">
-                  <span className="ie-mod__top">
-                    <span className="ie-mod__title">{title}</span>
-                    <span className={`ie-badge ${live ? 'ie-badge--live' : 'ie-badge--soon'}`}>
-                      {live ? 'Доступно' : 'Скоро'}
-                    </span>
-                  </span>
-                  <span className="ie-mod__desc">{desc}</span>
-                  <span className="ie-mod__meta" style={{ color }}>
-                    {meta}
-                  </span>
-                </span>
-              </>
-            )
-
-            return live && !moduleBlocked ? (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onGo?.(target)}
-                className="ie-mod ie-mod--live"
-                style={{ '--ie-mod-color': color }}
-              >
-                {inner}
-              </button>
-            ) : (
-              <div key={key} className="ie-mod" style={{ '--ie-mod-color': color }}>
-                {inner}
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="ie-cta">
-          <button
-            type="button"
-            className="ie-btn"
-            disabled={writingBlocked}
-            onClick={() => !writingBlocked && onGo?.('ielts-writing')}
-          >
-            Начать Writing
-          </button>
-          <button
-            type="button"
-            className="ie-btn ie-btn--ghost"
-            onClick={() => onGo?.('ielts-progress')}
-          >
-            Мой прогресс
-          </button>
+      <div className="ih">
+        <IeltsHeader streakDays={data.streakDays} xp={data.xp} level={data.level} />
+        <Tabs items={tabs} value={hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
+        <div role="tabpanel" id={`ih-panel-${hub.tab}`} aria-labelledby={`ih-tab-${hub.tab}`} className="ih__panel">
+          {panel}
         </div>
       </div>
     </LearningLayout>

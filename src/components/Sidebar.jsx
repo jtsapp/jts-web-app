@@ -14,6 +14,7 @@ import {
   TutorIcon,
   LessonsIcon,
   HomeworkIcon,
+  IeltsIcon,
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -33,7 +34,9 @@ const NAV_FULL = [
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
   { key: 'homework', label: 'nav.homework', Icon: HomeworkIcon },
-  // IELTS временно скрыт из меню (экран остаётся по диплинку ?screen=ielts).
+  // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
+  // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
+  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из

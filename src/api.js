@@ -1248,6 +1248,121 @@ export function getKaraokeTrack(token, id) {
   return authGet(`/mobile/karaoke/${encodeURIComponent(id)}`, token)
 }
 
+// IELTS (бэкенд, /mobile/ielts). Тест приходит без ключей,
+// проверяет только сервер: по одному вопросу (/check — «Тренировка» и «Разбор»)
+// или целиком при сдаче (/attempts). Кэша нет намеренно: последняя попытка на
+// карточке должна меняться сразу после сдачи.
+export function getIeltsTests(token, skill = 'reading') {
+  return authGet(`/mobile/ielts/tests?skill=${encodeURIComponent(skill)}`, token)
+}
+
+export function getIeltsTest(token, id) {
+  return authGet(`/mobile/ielts/tests/${encodeURIComponent(id)}`, token)
+}
+
+export function checkIeltsAnswer(token, testId, itemId, given) {
+  return authPost(`/mobile/ielts/tests/${encodeURIComponent(testId)}/check`, token, { itemId, given })
+}
+
+export function submitIeltsAttempt(token, testId, body) {
+  return authPost(`/mobile/ielts/tests/${encodeURIComponent(testId)}/attempts`, token, body)
+}
+
+export function getIeltsAttempt(token, attemptId) {
+  return authGet(`/mobile/ielts/attempts/${encodeURIComponent(attemptId)}`, token)
+}
+
+// Транскрипт частей Listening: «Тренировка» — по кнопке, «Разбор» — всегда; в тест без ключей он не входит.
+export function getIeltsTranscript(token, id) {
+  return authGet(`/mobile/ielts/tests/${encodeURIComponent(id)}/transcript`, token)
+}
+
+// Writing: модельный ответ — отдельной ручкой (в задании его нет, антифрод §14.3); работа сдаётся без оценки
+// (pending_ai), оценивает её наш серверный роут /api/ielts/writing/assess — у бэкенда ключа модели нет.
+export function getIeltsWritingModel(token, id) {
+  return authGet(`/mobile/ielts/tests/${encodeURIComponent(id)}/model`, token)
+}
+
+// Профиль IELTS (онбординг, маршрут) и диагностика. Диагностику проверяет бэкенд: ключей у экрана нет, поэтому и
+// адаптивный клип Listening он спрашивает (…/diagnostic/path) по ответам на предыдущие слоты.
+export function getIeltsProfile(token) {
+  return authGet('/mobile/ielts/profile', token)
+}
+
+export function saveIeltsProfile(token, body) {
+  return authPut('/mobile/ielts/profile', token, body)
+}
+
+export function setIeltsRoute(token, route) {
+  return authPut('/mobile/ielts/profile/route', token, { route })
+}
+
+export function startIeltsDiagnostic(token, { level, module } = {}) {
+  const q = new URLSearchParams()
+  if (level) q.set('level', level)
+  if (module) q.set('module', module)
+  return authGet(`/mobile/ielts/diagnostic${q.toString() ? `?${q}` : ''}`, token)
+}
+
+export function getIeltsDiagnosticPath(token, body) {
+  return authPost('/mobile/ielts/diagnostic/path', token, body)
+}
+
+export function submitIeltsDiagnostic(token, body) {
+  return authPost('/mobile/ielts/diagnostic', token, body)
+}
+
+export function getIeltsLastDiagnostic(token) {
+  return authGet('/mobile/ielts/diagnostic/last', token)
+}
+
+export function getIeltsSpeakingWorks(token) {
+  return authGet('/mobile/ielts/speaking/works', token)
+}
+
+// Записи ответов Speaking — сразу нашему серверному роуту (распознавание, произношение и модель — там); бэкенд
+// получает только стенограммы и баллы. answers: [{ itemId, durationSec, wav: Blob }].
+export async function assessIeltsSpeaking(token, { testId, mode, uiLang, answers }) {
+  const form = new FormData()
+  form.append('testId', testId)
+  form.append('mode', mode)
+  form.append('uiLang', uiLang)
+  form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
+  answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
+  const res = await fetch('/api/ielts/speaking/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) throw Object.assign(new Error(body?.error || `HTTP ${res.status}`), { status: res.status, code: body?.error })
+  return body
+}
+
+export function getIeltsWritingWorks(token) {
+  return authGet('/mobile/ielts/writing/works', token)
+}
+
+export function saveIeltsSelfCheck(token, attemptId, selfCheck) {
+  return authPut(`/mobile/ielts/attempts/${encodeURIComponent(attemptId)}/selfcheck`, token, selfCheck)
+}
+
+// Оценка — наш серверный роут (ключ модели и служебный ключ бэкенда живут только там). Отвечает попыткой с band.
+export async function assessIeltsWriting(token, attemptId, uiLang) {
+  const res = await fetch('/api/ielts/writing/assess', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ attemptId, uiLang }),
+  })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) throw Object.assign(new Error(body?.error || `HTTP ${res.status}`), { status: res.status, code: body?.error })
+  return body
+}
+
+export function submitIeltsWriting(token, id, body) {
+  return authPost(`/mobile/ielts/tests/${encodeURIComponent(id)}/writing`, token, body)
+}
+
+export function getIeltsStats(token, skill = 'reading') {
+  return authGet(`/mobile/ielts/stats?skill=${encodeURIComponent(skill)}`, token)
+}
+
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
 export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''

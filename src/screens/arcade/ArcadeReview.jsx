@@ -2,7 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { MIN_WORDS } from '../../practice/arcade/reviewClient.js'
 import { formatOneDecimal } from './format.js'
 
-// ИИ-разбор раунда в окне стенограммы (порт javaTest SpeakingAnalysisPanel).
+// ИИ-разбор раунда в окне стенограммы.
 // Стенограмма под ним разбором не меняется; цитаты здесь скопированы из неё.
 // Ничего не уходит на сервер, пока ученик сам не нажал «ИИ-разбор».
 

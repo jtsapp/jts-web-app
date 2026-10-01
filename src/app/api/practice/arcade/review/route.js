@@ -1,5 +1,5 @@
 // ИИ-разбор раунда «Аркады» (Speak or Die): стенограмма раунда → Sonnet →
-// тренировочный разбор по трём критериям IELTS Speaking. Порт бэкенда javaTest
+// тренировочный разбор по трём критериям IELTS Speaking.
 // (SpeakingAnalysisService); промпт, схема и проверка ответа — в общем
 // контракте src/practice/arcade/reviewContract.js.
 //

@@ -705,6 +705,67 @@ WebGL рисует SwiftShader на процессоре, параллельны
 вовсе. Шапка поля держит `data-options`/`data-correct`/`data-lane`/`data-pose`/
 `data-hits`/`data-obstacles` — для теста.
 
+**Хаб IELTS (`?screen=ielts`) — макет Figma «JTS-clone», Screen MS.** Экран
+`src/screens/IeltsPage.jsx` — шапка (серия, XP), вкладки (`?ieltsTab=today|learn|
+mocks|progress|vocab|info`) и их содержимое; всё остальное — в `src/ielts/`:
+`ui/` (Chip, PillButton, ProgressRing, Card, Tabs, EmptyState — общие для
+будущих экранов раздела), `today/` (карточки «Сегодня»), `tabs/`, `model/`.
+Прежний экран проверки уровня стал вкладкой «Пробные тесты»
+(`tabs/MockTestsTab.jsx`, замок квоты тот же). Счёт (округление band §17.3, XP,
+фазы roadmap) — чистый `model/dashboard.js` под тестами; данные —
+`model/useIeltsDashboard.js`: сейчас оттуда приходит только серия (общий
+баланс), остальные поля null, и экран показывает их отсутствие, а не нули.
+Эндпоинт раздела подключается в `fetchIeltsDashboard` там же, форма ответа
+описана в шапке файла. `?ieltsSample=1` — данные макета для проверки вида.
+Источник требований — ТЗ раздела v1.3 §11.
+
+**IELTS Reading — тесты на JTS-бэкенде, не в репозитории.** Тесты лежат в `ielts_tests` бэкенда (документ jsonb с ключами,
+формат — `backend/docs/ielts/TEST_FORMAT.md`), заводятся JSON-импортом в web-admin («Практика и тесты» → IELTS);
+ученик получает их через `/mobile/ielts/**` (`src/api.js`, функции `*Ielts*`). Ключей у клиента нет: вопрос проверяет
+`/check` (режимы «Тренировка»/«Разбор»), сдачу — `/attempts`. Экраны: вкладки хаба `src/ielts/tabs/` и `src/ielts/reading/`
+(список, задание), прохождение `src/screens/IeltsReadingRunPage.jsx` и разбор `IeltsReadingReviewPage.jsx` — отдельные
+экраны App без меню (`?screen=ielts-reading-run&ieltsRun=<id>&ieltsMode=exam`, `?screen=ielts-reading-review&ieltsAttempt=<id>`).
+Черновик попытки — на устройстве (`run.js`), часы экзамена стоят, пока тест закрыт (`pausedLeftSec`). Прежние
+felix-экраны секций (`ielts-listening/-reading/-writing/-speaking`) ещё в коде, но из «Обучения» на них ссылок нет.
+
+**Старт IELTS — онбординг, диагностика, маршрут.** Онбординг (`?screen=ielts-onboarding`, Figma 1.1–1.6) пишет цель в
+профиль бэкенда (`/mobile/ielts/profile`); по знакомству с форматом дальше идут инструкция, квиз или сразу диагностика
+(`?screen=ielts-diagnostic`). Ключей у диагностики на экране нет, поэтому и адаптивный клип Listening экран спрашивает у
+сервера (`…/diagnostic/path`) — тем же расчётом, что и итог. Итог (`?screen=ielts-diagnostic-result`, Figma 2.1) — band
+L/R и предварительный overall, W/S ждут ИИ; маршрут (`?screen=ielts-route`, Figma 3) считает `src/ielts/onboarding/
+onboarding.js`: 160 часов на балл, 6 занятий в неделю, правила рекомендации §11.4. «Сегодня» берёт цель и баллы из профиля
+и показывает следующий шаг старта (`today/StartBanner.jsx`).
+
+Что в IELTS ещё не сделано: полные mock-тесты Listening (нет записей), «Отправить преподавателю» и «Переписать» у Writing,
+живая акустика под записью Speaking (Figma 11), режимы Drill и Full mock, ИИ-оценка Writing/Speaking из диагностики,
+интерактивные демо в инструкции о формате (сейчас текстом).
+
+**IELTS Listening (часть 2) — тот же банк, свой плеер.** Списки хаба — `?ieltsView=listening-tasks|-dictation|-spelling`
+(префикс: `types`/`drills` есть у обеих секций), экран задания — общий `ReadingTaskView skill="listening"`. Прохождение —
+`?screen=ielts-listening-run` (`src/screens/IeltsListeningRunPage.jsx`, плеер `src/ielts/listening/useAudioPlayer.js`),
+диктовка и правописание — `?screen=ielts-dictation` (проверка пословная на сервере, `IeltsWordsChecker`). Разбор — тот
+же `IeltsReadingReviewPage`. Экзамен Listening не продолжается с середины: запись уже прозвучала. Записи — в хранилище
+бэкенда (`audio.src` — имя по хэшу, ссылку `url` подставляет сервер); у части без записи `tts: true` — звучит транскрипт
+через `/api/tts`. Транскрипт до сдачи — только ручкой `/transcript` («Тренировка»/«Изучение»), в экзамене его нет.
+
+**IELTS Writing (часть 3) — задания в банке, оценка у нас, band у бэкенда.** Задания Task 1/Task 2, «Как писать»
+(`WR-GUIDE`) и самопроверка (`WR-SELFCHECK`) — документы `ielts_tests` (формат — `backend/docs/ielts/TEST_FORMAT.md` §7).
+Экраны: хаб `?ieltsView=writing-task1|writing-task2|writing-guide|writing-works|writing-work&ieltsWork=<id>`
+(`src/ielts/writing/`), редактор — `?screen=ielts-writing-run` (`src/screens/IeltsWritingRunPage.jsx`). Сданная работа
+ждёт оценки (`pending_ai`); оценивает `src/app/api/ielts/writing/assess/route.js`: текст и задание берёт у бэкенда
+(claim), модели отдаёт график ДАННЫМИ (`describeChart`, тот же источник, что рисует экран), результат пишет обратно со
+служебным ключом `IELTS_GRADER_KEY` (= `ielts.grader.key` бэкенда; без него оценка выключена — 503). Ключ только серверный:
+иначе ученик поставил бы себе band. Квота IELTS тратится только на оценку, вход в задания не заперт.
+
+**IELTS Speaking (часть 4) — записи не хранятся нигде.** Задания Part 1/2/3, стратегия (`SP-GUIDE`) и Shadowing —
+документы банка (`TEST_FORMAT.md` §8). Экраны: хаб `?ieltsView=speaking-part1|…|speaking-shadowing|speaking-guide|
+speaking-works|speaking-work&ieltsWork=<id>` (`src/ielts/speaking/`), прохождение `?screen=ielts-speaking-run`
+(`src/screens/IeltsSpeakingRunPage.jsx`, запись — `useRecorder`: WAV 16 кГц, микрофон один на визит экрана). Записи идут
+только в `src/app/api/ielts/speaking/assess/route.js` (тот же конвейер, что у «Ситуаций»: текст и произношение Azure
+параллельно, кусками; затем Sonnet) — бэкенд получает стенограммы и баллы, работу создаёт сам роут со служебным
+ключом. Без Azure/Soniox (локально в `.env.local` ключи пустые) роут честно отвечает `no_speech` и попытку помечает failed.
+Квоту тратит только оценка; вкладка «Обучение» ничего не запирает (замок квоты из неё убран вместе с `lockedRow`).
+
 **Экосистема минут (Roadmap) — своей таблицы у сводки нет.** Недельная сводка
 `GET /api/profile/ecosystem` (`src/lib/db/ecosystem.js`) берёт каждое время там,
 где его уже пишут: тьютор — `voice_usage`, шэдоуинг — `shadowing_assess` (оценка

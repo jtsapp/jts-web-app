@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MIN_HESITATION, analyseFrame, createSteadinessTracker } from './voiceFeatures.js'
 
-// Порт javaTest tests/voiceFeatures.test.ts: синтетический гласный звук вместо
+// Синтетический гласный звук вместо
 // записи — детектор проверяется на известной высоте и форманте.
 
 const RATE = 48000
