@@ -5638,7 +5638,14 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     # Soniox сразу по отпусканию кнопки (finalize_now). Без замка она ничего не
     # фильтрует и разметку говорящих не включает.
     return noise_guard.GuardedSonioxSTT(
-        api_key=key, params=params, lock=lock, ratio=ratio, keep=keep, finalize=finalize
+        api_key=key,
+        params=params,
+        lock=lock,
+        ratio=ratio,
+        keep=keep,
+        same=noise_guard.speaker_lock_same(),
+        outlier=noise_guard.speaker_lock_outlier(),
+        finalize=finalize,
     )
 
 

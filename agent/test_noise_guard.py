@@ -76,6 +76,12 @@ for bad in ("0.8", "x"):
 _env(SPEAKER_LOCK_RATIO=None)
 
 assert G.speaker_lock_keep() == 0.75
+assert G.speaker_lock_same() == 0.6 and G.speaker_lock_outlier() == 1.6
+_env(SPEAKER_LOCK_SAME="0.7", SPEAKER_LOCK_OUTLIER="0")
+assert G.speaker_lock_same() == 0.7 and G.speaker_lock_outlier() == 0.0
+_env(SPEAKER_LOCK_SAME="2", SPEAKER_LOCK_OUTLIER="x")
+assert G.speaker_lock_same() == 0.6 and G.speaker_lock_outlier() == 1.6
+_env(SPEAKER_LOCK_SAME=None, SPEAKER_LOCK_OUTLIER=None)
 _env(SPEAKER_LOCK_KEEP="0")
 assert G.speaker_lock_keep() == 0.0
 for bad in ("1.5", "-0.1", "x"):
@@ -118,26 +124,38 @@ lock = G.SpeakerLock()
 _feed(lock, (1.0, 9000), (1.0, 1500))
 assert len(lock._windows) == 20
 
-# Пока фраза идёт, финальные куски придержаны и уходят плагину черновыми — фон
-# уже отфильтрован по текущему основному.
+# Пока фраза идёт, финальные куски придержаны и уходят плагину черновыми. До
+# конца первой фразы основного ещё нет — черновик показывает всё.
 out, dropped = lock.process(
     [
         _tok(" I", 100, 300, "1"),
         _tok(" like", 300, 600, "1"),
+        _tok(" it", 600, 800, "1"),
         _tok(" breaking", 1100, 1400, "2"),
-        _tok(" news", 1400, 1800, "2"),
+        _tok(" news", 1400, 1700, "2"),
+        _tok(" tonight", 1700, 1900, "2"),
     ]
 )
-assert _texts(out) == [" I", " like"], out
+assert _texts(out) == [" I", " like", " it", " breaking", " news", " tonight"], out
 assert all(t["is_final"] is False for t in out)
 assert dropped == ""
 # Конец фразы: решение разом, финальные куски — перед самим <end>.
 out, dropped = lock.process([END])
-assert _texts(out) == [" I", " like", "<end>"], out
+assert _texts(out) == [" I", " like", " it", "<end>"], out
 assert out[0]["is_final"] is True and out[1]["is_final"] is True
-assert dropped == "breaking news", dropped
+assert dropped == "breaking news tonight", dropped
 assert lock.primary == "1"
-assert (lock.kept_words, lock.dropped_words) == (2, 2)
+assert (lock.kept_words, lock.dropped_words) == (3, 3)
+
+# Говорящий один — сравнивать не с кем, основного нет и ничего не выкидываем
+# (тихая комната; или фраза одного фона, закрытая Soniox до ученика).
+solo = G.SpeakerLock()
+_feed(solo, (1.0, 1500))
+out, dropped = solo.process(
+    [_tok(" good", 100, 300, "1"), _tok(" evening", 300, 600, "1"), _tok(" and", 600, 900, "1"), END]
+)
+assert solo.primary is None and dropped == ""
+assert _texts(out) == [" good", " evening", " and", "<end>"]
 assert lock._held == []
 
 # Слова без говорящего (разметка выключена) и служебные — всегда проходят.
@@ -149,37 +167,93 @@ assert _texts(out) == [" hi", "<fin>"], out
 switches = []
 tv_first = G.SpeakerLock(on_switch=lambda old, new, a, b: switches.append((old, new)))
 _feed(tv_first, (1.0, 1500), (1.0, 9000))
-out, _ = tv_first.process([_tok(" good", 100, 400, "1"), _tok(" evening", 400, 900, "1")])
-assert _texts(out) == [" good", " evening"]  # пока фон один — черновик его показывает
-out, dropped = tv_first.process([_tok(" I", 1100, 1300, "2"), _tok(" agree", 1300, 1900, "2"), END])
-assert _texts(out) == [" I", " agree", "<end>"], out
-assert dropped == "good evening", dropped
-assert switches == [(None, "1"), ("1", "2")], switches
+out, _ = tv_first.process(
+    [_tok(" good", 100, 300, "1"), _tok(" evening", 300, 600, "1"), _tok(" news", 600, 900, "1")]
+)
+assert _texts(out) == [" good", " evening", " news"]  # пока фон один — черновик его показывает
+out, dropped = tv_first.process(
+    [_tok(" I", 1100, 1300, "2"), _tok(" fully", 1300, 1600, "2"), _tok(" agree", 1600, 1900, "2"), END]
+)
+assert _texts(out) == [" I", " fully", " agree", "<end>"], out
+assert dropped == "good evening news", dropped
+# Уровни считаются на конце фразы её же словами — ученик сразу основной.
+assert switches == [(None, "2")], switches
 
 # Разметка прыгает внутри слова — слово решается целиком по большинству
 # кусков: не «esterdched», а «Yesterday».
 word = G.SpeakerLock(keep=0)
 _feed(word, (1.0, 9000), (1.0, 1500))
-word.process([_tok(" I", 100, 200, "1")])  # ученик — основной
+word.process([_tok(" I", 100, 200, "1")])
 out, dropped = word.process(
     [
         _tok(" Yes", 200, 300, "1"),
         _tok("ter", 300, 400, "2"),
         _tok("day", 400, 500, "1"),
         _tok(",", 500, 520, "1"),
+        _tok(" we", 520, 700, "1"),
         _tok(" rain", 1100, 1300, "2"),
         _tok("ing", 1300, 1400, "1"),
+        _tok(" heavy", 1400, 1600, "2"),
+        _tok(" now", 1600, 1800, "2"),
         END,
     ]
 )
-assert "".join(_texts(out)) == " I Yesterday,<end>", out
-assert dropped == "raining", dropped
+assert "".join(_texts(out)) == " I Yesterday, we<end>", out
+assert dropped == "raining heavy now", dropped
 
 # Чуть громче — не повод: без запаса микрофон метался бы на каждом слове.
 lock3 = G.SpeakerLock()
-_feed(lock3, (1.0, 6000), (1.0, 7000))
-lock3.process([_tok(" a", 100, 900, "1"), _tok(" b", 1100, 1900, "2")])
+_feed(lock3, (1.0, 7000), (1.0, 6000), (1.0, 7500))
+lock3.process(
+    [_tok(" a", 100, 300, "1"), _tok(" b", 300, 600, "1"), _tok(" c", 600, 900, "1"),
+     _tok(" x", 1100, 1300, "2"), _tok(" y", 1300, 1600, "2"), _tok(" z", 1600, 1900, "2"), END]
+)
 assert lock3.primary == "1"
+lock3.process([_tok(" p", 2100, 2300, "2"), _tok(" q", 2300, 2600, "2"), _tok(" r", 2600, 2900, "2"), END])
+assert lock3.primary == "1"
+
+# Тот самый сбой живого звонка с громкими новостями: ученик основной, потом
+# фраза, где разметка отдала ученику тихие куски (окончания, ошибки), и фраза
+# одного фона. В v2 среднее ученика проседало, и фон забирал микрофон.
+stable = G.SpeakerLock()
+_feed(stable, (2.0, 9000), (1.0, 900), (2.0, 2500))
+learner_words = [_tok(f" w{i}", 100 + i * 300, 350 + i * 300, "1") for i in range(6)]
+stable.process(learner_words + [END])
+assert stable.primary is None  # говорящий пока один
+# Тихие куски «ученика» (на самом деле шум) — его медиану не сдвигают.
+stable.process([_tok(" uh", 2100, 2300, "1"), _tok(" mm", 2400, 2600, "1"), END])
+# Фраза одного фона — фон громче этих кусков, но не уровня ученика.
+out, dropped = stable.process(
+    [_tok(" tonight", 3100, 3500, "2"), _tok(" heavy", 3600, 4000, "2"), _tok(" rain", 4100, 4500, "2"),
+     _tok(" expected", 4500, 4900, "2"), END]
+)
+assert stable.primary == "1", stable.primary
+assert dropped == "tonight heavy rain expected", dropped
+
+# Soniox расщепил ученика надвое: второй «говорящий» почти так же громок, как
+# основной, — его слова свои. Фон заметно тише — режется.
+split = G.SpeakerLock(keep=0, outlier=0)
+_feed(split, (1.0, 9000), (1.0, 6500), (1.0, 2500))
+out, dropped = split.process(
+    [_tok(" I", 100, 300, "2"), _tok(" want", 300, 600, "2"), _tok(" to", 600, 900, "2"),
+     _tok(" my", 1100, 1400, "3"), _tok(" English", 1400, 1700, "3"), _tok(" now", 1700, 1900, "3"),
+     _tok(" heavy", 2100, 2400, "1"), _tok(" rain", 2400, 2700, "1"), _tok(" again", 2700, 2900, "1"), END]
+)
+assert "".join(_texts(out)) == " I want to my English now<end>", out
+assert dropped == "heavy rain again", dropped
+
+# Обратная ошибка: слова ученика записаны на говорящего-фон. Для фона они
+# слишком громкие (≥ OUTLIER его медиан) — остаются; его собственные — нет.
+mis = G.SpeakerLock(keep=0, same=0)
+_feed(mis, (1.0, 9000), (2.0, 1200), (1.0, 5000))
+out, dropped = mis.process(
+    [_tok(" I", 100, 300, "2"), _tok(" think", 300, 600, "2"), _tok(" so", 600, 900, "2"),
+     _tok(" tonight", 1100, 1500, "1"), _tok(" heavy", 1500, 2000, "1"), _tok(" rain", 2000, 2500, "1"),
+     _tok(" expected", 2500, 2900, "1"),
+     _tok(" than", 3100, 3400, "1"), _tok(" class", 3400, 3900, "1"), END]
+)
+assert "".join(_texts(out)) == " I think so than class<end>", out
+assert dropped == "tonight heavy rain expected", dropped
 
 # Черновые куски громкость не двигают: основного по ним не выбрать.
 lock4 = G.SpeakerLock()
@@ -191,16 +265,19 @@ assert _texts(out) == [" draft"] and lock4.primary is None
 # это ученик, сказавший его поверх фона.
 lock6 = G.SpeakerLock()
 _feed(lock6, (1.0, 6000), (1.0, 5000), (1.0, 2000))
+ME = [_tok(" I", 100, 300, "1"), _tok(" think", 300, 600, "1"), _tok(" so", 600, 900, "1")]
 out, dropped = lock6.process(
-    [_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2"), _tok(" rain", 2100, 2900, "2"), END]
+    ME + [_tok(" than", 1100, 1900, "2"), _tok(" rain", 2100, 2500, "2"), _tok(" falls", 2500, 2900, "2"), END]
 )
-assert _texts(out) == [" I", " than", "<end>"], out
-assert dropped == "rain", dropped
-# keep=0 выключает поправку — остаётся чистая разметка.
-lock7 = G.SpeakerLock(keep=0)
-_feed(lock7, (1.0, 6000), (1.0, 5000))
-out, _ = lock7.process([_tok(" I", 100, 900, "1"), _tok(" than", 1100, 1900, "2"), END])
-assert _texts(out) == [" I", "<end>"], out
+assert _texts(out) == [" I", " think", " so", " than", "<end>"], out
+assert dropped == "rain falls", dropped
+# keep=0 и outlier=0 выключают поправки — остаётся чистая разметка.
+lock7 = G.SpeakerLock(keep=0, outlier=0)
+_feed(lock7, (1.0, 6000), (1.0, 5000), (1.0, 2000))
+out, _ = lock7.process(
+    ME + [_tok(" than", 1100, 1900, "2"), _tok(" rain", 2100, 2500, "2"), _tok(" falls", 2500, 2900, "2"), END]
+)
+assert _texts(out) == [" I", " think", " so", "<end>"], out
 
 # Слово, для которого аудио ещё не пришло, громкость не портит.
 lock5 = G.SpeakerLock()
@@ -249,7 +326,8 @@ async def _run_plugin(guarded: bool):
         # Ученик (громко), фон (тихо) и снова ученик — ОДНА реплика без <end>
         # посередине: так и выглядит непрерывный фон.
         {"tokens": [_tok("I", 100, 300, "1"), _tok(" like", 300, 600, "1")]},
-        {"tokens": [_tok(" breaking", 1100, 1400, "2"), _tok(" news", 1400, 1800, "2")]},
+        {"tokens": [_tok(" breaking", 1100, 1300, "2"), _tok(" news", 1300, 1600, "2"),
+                    _tok(" tonight", 1600, 1900, "2")]},
         {"tokens": [_tok(" apples", 2100, 2700, "1"), {"text": "<end>", "is_final": True}]},
     ]
     real_connect = soniox_stt.SpeechStream._connect_ws
@@ -292,7 +370,7 @@ async def _run_plugin(guarded: bool):
 
 # Без замка плагин склеивает всё в одну реплику — вместе с фоном.
 plain = asyncio.run(_run_plugin(guarded=False))
-assert plain[0].text == "I like breaking news apples", plain[0].text
+assert plain[0].text == "I like breaking news tonight apples", plain[0].text
 # С замком фон вырезан до склейки.
 guarded = asyncio.run(_run_plugin(guarded=True))
 assert guarded[0].text == "I like apples", guarded[0].text
