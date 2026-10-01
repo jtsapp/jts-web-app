@@ -5,11 +5,13 @@
 
 Решение 25.09.2026: характер и методика — из клиентских md, обвязка — только
 функции (ученик, память, тулы, голос). 28.09.2026 клиент прислал пакет v3
-(agent/buddy-v3/: ядро, профили уровня, персоны), в тот же день — v3.1; на нём
-и собираем, с
-правками владельца: Декстер открыт всем и матерится без вопроса о согласии,
-сарказм Спарка — всем, C1/C2 — по профилю B2, за казахским — к Айзере,
-«только английский» — тумблер ученика, пол — из того, как ученик говорит о себе.
+(agent/buddy-v3/: ядро, профили уровня, персоны), в тот же день — v3.1,
+02.10.2026 — v3.4. В v3.4 клиент сам вписал решения владельца 28.09: Декстер
+открыт всем и матерится без вопроса о согласии, сарказм Спарка — всем, C1/C2 —
+по профилю B2, за казахским — к Айзере, «только английский» — тумблер ученика,
+пол — из того, как ученик говорит о себе. Наши правки остались только в
+Декстере: сарказм и злость на всех уровнях, злость на ситуацию ученика, «Weak»
+без аудио, «не матерись» не выключает мат.
 """
 import io
 import json
@@ -66,7 +68,7 @@ text = build_buddy_instructions(p)
 wrapper, _, persona = text.partition(PERSONA_HEADER)
 
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
-assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.1")
+assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.4")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
 assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
@@ -99,8 +101,8 @@ order = [
 ]
 idx = [text.index(h) for h in order]
 assert idx == sorted(idx), list(zip(order, idx))
-assert "# DEXTER — PERSONA v3.1" in persona
-assert "# LEVEL_PROFILE — A2 v3.1" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
+assert "# DEXTER — PERSONA v3.4" in persona
+assert "# LEVEL_PROFILE — A2 v3.4" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
 
 # ── Решения владельца 28.09 — в файлах пакета ────────────────────────────────
 # Декстер открыт всем, мат без вопроса о согласии и по просьбе не отключается.
@@ -111,17 +113,27 @@ assert "profanity_consent" not in text and "pending_consent_question" not in tex
 assert "damn mess" in persona, "без примера с матом модель по чистым примерам мат не включает"
 assert "adult_access_confirmed" not in text and "consent_question_count" not in text
 assert "Got it. I'll drop the edge." not in persona, "на «грубо» Декстер не смягчается — решение владельца"
-# Сарказм и злость Декстера — на всех уровнях (решение владельца 28.09): в
-# оригинале они жили только на B1–B2, а злость ещё и при comfort=firm, которого
-# приложение не шлёт. Злость по-прежнему не за ошибку (ядро §8, §13).
-assert "express strictness, sarcasm and anger with plain words" in persona
-assert "only at B1–B2" not in persona and "At B1–B2 with comfort=firm" not in persona
-assert "It never marks wrong English" in persona
-assert "tutor selection screen" in persona  # на «слишком грубо» — к другому тьютору
+# Сарказм и злость Декстера — на всех уровнях (решение владельца 28.09, цель
+# 02.10: сарказм на нелепой истории ≥3–4 из 8, злость на досадной ≥7 из 8). В
+# v3.4 сарказм A0–A1 был «только если смысл очевиден», злость — без ситуации
+# ученика, и на замере выходило 0–2 из 8. Злость по-прежнему не за ошибку.
+assert "Sarcasm is a regular part of your voice at every level" in persona
+assert "Sarcasm requires an already obvious meaning; otherwise be literal" not in persona
+assert "anger at the situation, on their side" in persona
+assert "Ordinary annoyance at a delay" in persona, "досада — злость, не сочувствие"
+assert "Do not use it because someone made a language error" in persona
+assert "corrections stay [default]" in persona
+assert "never reuse a verdict from the examples" in persona, "иначе «Very healthy» на каждый ответ"
+# «Weak» судит только произнесённый дубль: аудио у модели нет.
+assert "has_audio=false" in persona and "never a take they have not given yet" in persona
+# «Не матерись» мат не выключает — к Луне/Айзере (Спарк теперь саркастичный).
+assert "do not promise to stop or to keep it clean" in persona
+assert "Luna and Aizere don't swear" in persona
+assert "tutor screen" in persona
 # Сарказм Спарка — всем.
 spark = BUDDY_PERSONAS["spark"]
 assert "Do not use with children or at A0–A1" not in spark
-assert "open to every learner and every level" in spark
+assert "Available at every level and age" in spark
 # За казахским — к Айзере, за русским у Айзере — к остальным.
 assert "Aizere speaks Kazakh" in BUDDY_CORE and "Luna, Dexter or Spark" in BUDDY_CORE
 # Память обвязки — доверенный контекст; пол — из того, как ученик говорит о себе.
@@ -193,7 +205,7 @@ assert parse_metadata(json.dumps({})).gender == ""
 for lvl, prof in (("A0", "A0"), ("PRE-A1", "A0"), ("A1", "A1"), ("B1", "B1"), ("B2", "B2"),
                   ("C1", "B2"), ("C2", "B2"), ("", "B1")):
     t = build_buddy_instructions(profile(level=lvl))
-    assert f"# LEVEL_PROFILE — {prof} v3.1" in t, (lvl, prof)
+    assert f"# LEVEL_PROFILE — {prof} v3.4" in t, (lvl, prof)
 c1 = build_buddy_instructions(profile(level="C1"))
 assert "the learner is C1; C1–C2 use the B2 profile" in c1
 assert context_of(c1)["learner"]["level"] == "C1", "хранимый уровень не подменяем"
@@ -233,6 +245,10 @@ assert buddy_voice_profile(luna) is luna
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)
 assert "SESSION_START" in g and "wait" in g and "emotion tag" in g
+# Имя — явно: пример персоны «Hi, I'm Dexter» перебивал (0 из 8 по имени).
+assert "The learner's name is Айгерим: say it in this greeting" in g
+anon = build_buddy_greeting(profile(user_name=""))
+assert "unknown" in anon and "Айгерим" not in anon
 for w in ("warm", "Great to see you"):
     assert w not in g, w
 
