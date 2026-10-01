@@ -586,6 +586,30 @@
   display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px;
   background: #ffd79a; color: #3a1a86; font-size: 14px; font-weight: 800; vertical-align: 6px;
 }
+/* Монеты — строкой под счётом, кружок того же золота, что монеты на дороге. */
+.ar-run-coins {
+  display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 4px;
+  font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: #ffd36a;
+}
+.ar-run-coins i {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff3b0, #ffc21a 55%, #c98a00);
+  box-shadow: 0 0 6px rgba(255, 194, 26, 0.7);
+}
+/* Турбо — плашка с убывающей полосой у нижнего края поля: сверху и так
+   слово, варианты и счёт. */
+.ar-run-boost {
+  position: absolute; bottom: 16px; left: 50%;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px; border-radius: 999px;
+  background: rgba(22, 9, 58, 0.72); border: 1px solid #5ff2ff;
+  box-shadow: 0 0 18px rgba(95, 242, 255, 0.45);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ar-run-boost b { font-size: 13px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: #5ff2ff; }
+.ar-run-boost span { width: 110px; height: 6px; border-radius: 999px; background: rgba(95, 242, 255, 0.2); overflow: hidden; }
+.ar-run-boost i { display: block; height: 100%; background: #5ff2ff; transform-origin: left; transition: transform 0.1s linear; }
 
 /* Вопрос и варианты — одним блоком по центру сверху. */
 .ar-run-ask {
@@ -656,7 +680,8 @@
 /* Итоги — на светлом фоне страницы, поэтому кнопки фиолетовые. */
 .ar-run-results .ar-run-btn { background: var(--ar-violet); color: #fff; }
 .ar-run-results .ar-run-btn--ghost { background: var(--ar-soft); color: var(--ar-violet); box-shadow: none; }
-.ar-run-results__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ar-run-results__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.ar-stat--coins { --st-bg: #fff6d6; --st-ink: #946200; }
 .ar-stat--score { --st-bg: #edf9f2; --st-ink: #168049; }
 .ar-stat--hits { --st-bg: #fff1e6; --st-ink: #b54708; }
 .ar-stat--best { --st-bg: #fff8dc; --st-ink: #7a5c00; }

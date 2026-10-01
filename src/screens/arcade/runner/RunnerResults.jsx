@@ -12,6 +12,7 @@ export default function RunnerResults({ result, onAgain, onExit }) {
     { key: 'score', value: result.score },
     { key: 'best', value: result.best },
     { key: 'streak', value: result.bestStreak },
+    { key: 'coins', value: result.coins },
     { key: 'hits', value: result.hits },
   ]
   return (

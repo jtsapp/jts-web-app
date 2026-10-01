@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { DIFFICULTIES } from '../engine.js'
 import {
+  BOOST_MUL,
+  BOOST_TIME,
+  COIN_POINTS,
   HIT_SLOW,
   INVULN,
+  JUMP_TIME,
   LIVES,
   MAX_DT,
   ROW_GAP,
@@ -145,10 +149,11 @@ function run(s, seconds, every = 0.1) {
 }
 
 describe('позы', () => {
-  it('прыжок длится 0.7 с, потом бег', () => {
+  it('прыжок длится 0.9 с, потом бег', () => {
+    expect(JUMP_TIME).toBe(0.9)
     let s = jump(createRun(6))
     expect(s.pose).toBe('jump')
-    s = run(s, 0.6)
+    s = run(s, 0.8)
     expect(s.pose).toBe('jump')
     s = advance(s, 0.1)
     expect(s.pose).toBe('run')
@@ -183,10 +188,16 @@ describe('препятствия', () => {
     expect(run(slide(ahead('barrier')), 0.6).hits).toBe(1)
   })
 
-  it('шлагбаум: проходит только подкат', () => {
+  it('шлагбаум: проходят и подкат, и прыжок; в беге — удар', () => {
     expect(run(slide(ahead('boom')), 0.6).hits).toBe(0)
-    expect(run(jump(ahead('boom')), 0.6).hits).toBe(1)
+    expect(run(jump(ahead('boom')), 0.6).hits).toBe(0)
     expect(run(ahead('boom'), 0.6).hits).toBe(1)
+  })
+
+  it('стена из трёх: прыжок проходит, перестроение не спасает', () => {
+    const wall = ['barrier', 'boom', 'barrier'].map((kind, lane) => ({ id: lane, lane, kind, len: LEN[kind], z: 2, hit: false }))
+    expect(run(jump({ ...createRun(6), obstacles: wall }), 0.6).hits).toBe(0)
+    expect(run(move({ ...createRun(6), obstacles: wall }, -1), 0.6).hits).toBe(1)
   })
 
   it('автобус бьёт в любой позе', () => {
@@ -256,6 +267,60 @@ describe('препятствия', () => {
   })
 })
 
+// Предмет в двух единицах перед бегуном.
+const item = (kind, extra = {}, run0 = {}) => ({
+  ...createRun(6),
+  pickups: [{ id: 0, lane: 1, kind, high: false, z: 2, taken: false, ...extra }],
+  ...run0,
+})
+
+describe('предметы', () => {
+  it('монета: очки и счётчик, берётся один раз', () => {
+    const s = run(item('coin'), 0.3)
+    expect(s.coins).toBe(1)
+    expect(s.score).toBe(COIN_POINTS)
+    expect(s.pickups[0].taken).toBe(true)
+    expect(run(s, 0.1).coins).toBe(1)
+  })
+
+  it('монета на другой дорожке — мимо', () => {
+    expect(run(item('coin', { lane: 0 }), 0.6).coins).toBe(0)
+  })
+
+  it('монета над барьером — только в прыжке', () => {
+    expect(run(item('coin', { high: true }), 0.6).coins).toBe(0)
+    expect(run(jump(item('coin', { high: true })), 0.6).coins).toBe(1)
+  })
+
+  it('турбо: скорость ×1.5 на BOOST_TIME, потом прежняя', () => {
+    let s = run(item('boost'), 0.3)
+    expect(s.boosts).toBe(1)
+    expect(s.boost).toBeGreaterThan(BOOST_TIME - 0.3)
+    expect(speedOf(s)).toBeCloseTo((SPAWN / 6) * BOOST_MUL)
+    s = run(s, BOOST_TIME)
+    expect(s.boost).toBe(0)
+    expect(speedOf(s)).toBeCloseTo(SPAWN / 6)
+  })
+
+  it('в турбо препятствие сносится без удара', () => {
+    const s = run(ahead('bus', { boost: 2, speedMul: 1.4, streak: 3 }), 0.4)
+    expect(s.hits).toBe(0)
+    expect(s.speedMul).toBe(1.4)
+    expect(s.streak).toBe(3)
+    expect(s.obstacles[0]).toMatchObject({ hit: true, smashed: true })
+  })
+
+  it('проехавшие предметы выбрасываются', () => {
+    expect(run(item('coin', { lane: 0 }), 1).pickups).toEqual([])
+  })
+
+  it('spawnRow кладёт предметы за ворота ряда', () => {
+    const s = spawnRow(createRun(6), ROW, [], [{ kind: 'coin', lane: 0, d: 12, high: true }])
+    expect(s.pickups).toEqual([{ id: 0, lane: 0, kind: 'coin', high: true, z: SPAWN + 12, taken: false }])
+    expect(s.pickupSeq).toBe(1)
+  })
+})
+
 describe('очки', () => {
   it('множитель: ×1 до пятых подряд, ×2 с пятых, потолок ×5', () => {
     expect([0, 1, 4, 5, 9, 10, 19, 20, 100].map(multOf)).toEqual([1, 1, 1, 2, 2, 3, 4, 5, 5])
@@ -265,6 +330,11 @@ describe('очки', () => {
     const s = hit({ ...createRun(6), speedMul: 1.5, streak: 4 })
     expect(s.last.points).toBe(30)
     expect(s.score).toBe(30)
+  })
+
+  it('верные ворота в турбо дороже в BOOST_MUL раз', () => {
+    const s = hit({ ...createRun(6), speedMul: 1.5, streak: 4, boost: BOOST_TIME * 10 })
+    expect(s.last.points).toBe(Math.round(30 * BOOST_MUL))
   })
 
   it('неверные ворота очков не дают', () => {

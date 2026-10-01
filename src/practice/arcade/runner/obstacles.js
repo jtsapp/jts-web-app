@@ -16,24 +16,30 @@ export const KINDS = {
   boom: { len: 0.4 },
   bus: { len: 8 },
 }
-// Первые подходы пустые: сначала освоиться со словами, потом уворачиваться.
-export const WARMUP_ROWS = 3
+// Первый подход пустой: освоиться со словами, потом уворачиваться. Было три —
+// начало забега выходило пустой пробежкой (жалоба владельца 01.10.2026).
+export const WARMUP_ROWS = 2
 // Последняя треть пути перед воротами чистая: там перестраиваются на ответ.
 export const CLEAR_FROM = (SPAWN * 2) / 3
 // Секунда после ворот — заметить препятствие, на какой бы дорожке ни вышел.
-const REACT = 1
+export const REACT = 1
 // Между препятствиями по длине — время приземлиться и сделать новое движение.
 const SPACING = 0.6
 const MIN_SPACING = 6
 
 const ALL = ['barrier', 'boom', 'bus']
-// easy — без автобуса: его не перепрыгнуть и не проехать, только обежать,
-// а на A1 внимание нужно словам. veryHard — одно: на ряд всего 2.5 с.
+// Стена на всю ширину — только из проходимых: барьер и шлагбаум берутся
+// прыжком, автобус — ничем, и стена с ним была бы неизбежным ударом.
+const PASSABLE = ['barrier', 'boom']
+// `counts` — сколько заходов на подходе; заход — одно препятствие, пара на
+// соседних дорожках (`pair`) или стена во все три (`wall`). easy — без
+// автобуса: его не перепрыгнуть и не проехать, только обежать, а на A1
+// внимание нужно словам. veryHard — реже: на ряд всего 2.5 с.
 const PLAN = {
-  easy: { counts: [0, 1], kinds: ['barrier', 'boom'], pair: 0 },
-  medium: { counts: [1], kinds: ALL, pair: 0 },
-  hard: { counts: [1, 2], kinds: ALL, pair: 0.5 },
-  veryHard: { counts: [1], kinds: ALL, pair: 0 },
+  easy: { counts: [1, 2], kinds: PASSABLE, pair: 0.2, wall: 0.15 },
+  medium: { counts: [2, 3], kinds: ALL, pair: 0.3, wall: 0.25 },
+  hard: { counts: [2, 3], kinds: ALL, pair: 0.4, wall: 0.3 },
+  veryHard: { counts: [1, 2], kinds: ALL, pair: 0.25, wall: 0.25 },
 }
 
 const pick = (list, rng) => list[Math.floor(rng() * list.length)]
@@ -45,25 +51,33 @@ export function layoutObstacles({ difficulty, rowIndex, speed, rng = Math.random
   const gap = Math.max(SPACING * speed, MIN_SPACING)
   // Вид влезает, если стоит целиком до чистой трети. Не влезает — не ставим:
   // у потолка скорости veryHard вмещает барьер или шлагбаум, но не автобус.
-  const fitting = (at) => plan.kinds.filter((k) => at + KINDS[k].len <= CLEAR_FROM)
+  const fitting = (at, kinds = plan.kinds) => kinds.filter((k) => at + KINDS[k].len <= CLEAR_FROM)
   const out = []
   let from = REACT * speed
-  while (out.length < count) {
+  for (let left = count; left > 0; left--) {
     const kinds = fitting(from)
     if (!kinds.length) break
-    const kind = pick(kinds, rng)
+    const roll = rng()
+    const wall = roll < plan.wall && fitting(from, PASSABLE).length > 0
+    const kind = wall ? pick(fitting(from, PASSABLE), rng) : pick(kinds, rng)
     const len = KINDS[kind].len
-    const d = from + rng() * (CLEAR_FROM - len - from)
+    // Место под оставшиеся заходы держим заранее: случайный первый, упавший
+    // к концу отрезка, съедал бы место у остальных, и подход выходил реже
+    // обещанного.
+    const room = CLEAR_FROM - from - len - (left - 1) * (gap + KINDS.boom.len)
+    const d = from + rng() * Math.max(0, room)
     const lane = Math.floor(rng() * LANES)
-    out.push({ lane, kind, len, d })
-    let end = d + len
-    // Пара на одном расстоянии — две дорожки из трёх: третья всегда пустая,
-    // неизбежного удара не бывает.
-    if (out.length < count && rng() < plan.pair) {
-      const kind2 = pick(fitting(d), rng)
-      const lanes = [0, 1, 2].filter((l) => l !== lane)
-      out.push({ lane: pick(lanes, rng), kind: kind2, len: KINDS[kind2].len, d })
-      end = Math.max(end, d + KINDS[kind2].len)
+    let lanes = [lane]
+    if (wall) lanes = [0, 1, 2]
+    else if (roll < plan.wall + plan.pair) lanes = [lane, pick([0, 1, 2].filter((l) => l !== lane), rng)]
+    let end = d
+    for (const l of lanes) {
+      // Первое препятствие захода — уже выбранного вида; остальные из тех,
+      // что влезают на это расстояние (у стены — только проходимые). Пара
+      // занимает две дорожки из трёх: третья пустая, неизбежного удара нет.
+      const k = l === lane ? kind : pick(fitting(d, wall ? PASSABLE : plan.kinds), rng)
+      out.push({ lane: l, kind: k, len: KINDS[k].len, d })
+      end = Math.max(end, d + KINDS[k].len)
     }
     from = end + gap
   }
