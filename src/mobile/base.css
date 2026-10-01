@@ -37,3 +37,13 @@
     font-family: 'PT Root UI', Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
+
+/* Сайдбар-drawer за левым краем отбрасывал тень (blur 40px) обратно в экран:
+   серая полоса у левого края на каждой странице с мобильной шапкой. Тень
+   нужна только выдвинутой панели. Брейкпоинт — оболочки (760), а не макета:
+   полоса видна на любом узком экране. */
+@media (max-width: 760px) {
+  .sb:not(.is-open) {
+    box-shadow: none;
+  }
+}

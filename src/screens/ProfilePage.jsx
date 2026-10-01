@@ -572,7 +572,7 @@ function Modal({ title, children, onClose }) {
 function SettingRow({ item, chip = false, last = false }) {
   return (
     <>
-      <button className={`pf-row ${chip ? 'pf-row--chip' : 'pf-row--flat'}`} onClick={item.onClick}>
+      <button className={`pf-row ${chip ? 'pf-row--chip' : 'pf-row--flat'}`} data-key={item.key} onClick={item.onClick}>
         <span className={`pf-row__ic ${chip ? 'pf-row__ic--chip' : ''}`}>{item.icon}</span>
         <span className="pf-row__title">{item.title}</span>
         {item.trailing && <span className="pf-row__trailing">{item.trailing}</span>}
