@@ -3,6 +3,7 @@ import { useI18n } from '../../../i18n.jsx'
 import { loadLevelWords } from '../../../practice/vocab/vocabData.js'
 import { createDeck } from '../../../practice/arcade/runner/deck.js'
 import {
+  BOOST_TIME,
   JUMP_TIME,
   LIVES,
   RUN_DIFFICULTIES,
@@ -19,6 +20,7 @@ import {
   speedOf,
 } from '../../../practice/arcade/runner/engine.js'
 import { layoutObstacles } from '../../../practice/arcade/runner/obstacles.js'
+import { layoutPickups } from '../../../practice/arcade/runner/pickups.js'
 import { useArcadeFullscreen } from '../useArcadeFullscreen.js'
 import { formatNumber } from '../format.js'
 import RunnerResults from './RunnerResults.jsx'
@@ -80,6 +82,10 @@ function hudOf(s, status, countdown) {
     streak: s?.streak ?? 0,
     mult: multOf(s?.streak ?? 0),
     hits: s?.hits ?? 0,
+    coins: s?.coins ?? 0,
+    // Турбо в шапке — десятыми долями: полоса убывает плавно, а шапка не
+    // перерисовывается каждый кадр.
+    boost: s?.boost > 0 ? Math.ceil((s.boost / BOOST_TIME) * 10) / 10 : 0,
     pose: s?.pose ?? 'run',
     // Препятствия впереди, ближние первыми, — для e2e: тест знает, в какую
     // дорожку шагнуть. Строка меняется только на появлении и проезде, а не
@@ -89,6 +95,15 @@ function hudOf(s, status, countdown) {
           .filter((o) => !o.hit && o.z + o.len > 0)
           .sort((a, b) => a.z - b.z)
           .map((o) => `${o.lane}:${o.kind}`)
+          .join('|')
+      : '',
+    // Предметы впереди так же, `^` — монета над препятствием (берётся
+    // прыжком). Строка меняется на каждой взятой монете — это редко.
+    pickups: s
+      ? s.pickups
+          .filter((p) => !p.taken && p.z > 0)
+          .sort((a, b) => a.z - b.z)
+          .map((p) => `${p.lane}:${p.kind}${p.high ? '^' : ''}`)
           .join('|')
       : '',
     crash: s?.lastHit && s.elapsed - s.lastHit.at < TOAST_SECONDS ? s.lastHit.n : 0,
@@ -172,12 +187,14 @@ export default function RunnerGame({ onExit }) {
       } else if (st === 'playing' && s) {
         if (needsRow(s)) {
           // Раскладка — подхода к СЛЕДУЮЩЕМУ ряду: кладётся за воротами этого.
-          const layout = layoutObstacles({
-            difficulty: RUN_DIFFICULTIES[g.level].key,
-            rowIndex: s.seq + 1,
-            speed: speedOf(s),
-          })
-          s = spawnRow(s, g.deck.next(), layout)
+          // Предметы — поверх препятствий того же подхода: обходят автобус и
+          // встают дугой над барьером. Скорость — без турбо: он кончится
+          // раньше, чем бегун доедет до этой раскладки.
+          const difficulty = RUN_DIFFICULTIES[g.level].key
+          const speed = s.baseSpeed * s.speedMul
+          const layout = layoutObstacles({ difficulty, rowIndex: s.seq + 1, speed })
+          const pickups = layoutPickups({ difficulty, speed, obstacles: layout })
+          s = spawnRow(s, g.deck.next(), layout, pickups)
         }
         const before = s.seq
         s = advance(s, dt)
@@ -198,6 +215,8 @@ export default function RunnerGame({ onExit }) {
           posePhase: running ? posePhase(s) : 0,
           invuln: running ? s.invuln : 0,
           obstacles: running ? s.obstacles : null,
+          pickups: running ? s.pickups : null,
+          boost: running ? s.boost : 0,
           lastHit: running ? s.lastHit : null,
         },
         dt,
@@ -380,6 +399,7 @@ export default function RunnerGame({ onExit }) {
           <li>{t('arcade.run.rule.lives')}</li>
           <li>{t('arcade.run.rule.speed')}</li>
           <li>{t('arcade.run.rule.moves')}</li>
+          <li>{t('arcade.run.rule.pickups')}</li>
           <li>{t('arcade.run.rule.hits')}</li>
           <li>{t('arcade.run.rule.controls')}</li>
         </ul>
@@ -482,7 +502,10 @@ export default function RunnerGame({ onExit }) {
           data-score={hud.score}
           data-pose={hud.pose}
           data-hits={hud.hits}
+          data-coins={hud.coins}
+          data-boost={hud.boost > 0 ? 1 : 0}
           data-obstacles={hud.obstacles}
+          data-pickups={hud.pickups}
         >
           <canvas ref={canvas} className="ar-run-canvas" aria-hidden="true" />
           {status !== 'loading' && !error && (
@@ -503,6 +526,10 @@ export default function RunnerGame({ onExit }) {
                   </span>
                 )}
                 {hud.streak >= 3 && <em>{t('arcade.run.streak', { n: hud.streak })}</em>}
+                <span className="ar-run-coins" role="img" aria-label={t('arcade.run.coins', { n: hud.coins })}>
+                  <i aria-hidden="true" />
+                  {hud.coins}
+                </span>
               </div>
             </div>
           )}
@@ -536,6 +563,14 @@ export default function RunnerGame({ onExit }) {
             <p className="ar-run-toast" role="status">
               {t('arcade.run.miss', { prompt: hud.toast.prompt, answer: hud.toast.answer })}
             </p>
+          )}
+          {hud.boost > 0 && (
+            <div className="ar-run-boost" role="status">
+              <b>{t('arcade.run.boost')}</b>
+              <span aria-hidden="true">
+                <i style={{ transform: `scaleX(${hud.boost})` }} />
+              </span>
+            </div>
           )}
           {hud.crash > 0 && (
             <p key={hud.crash} className="ar-run-toast ar-run-toast--hit" role="status">

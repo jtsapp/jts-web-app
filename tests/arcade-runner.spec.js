@@ -39,12 +39,13 @@ async function goToLane(page, lane) {
   await expect(stage(page)).toHaveAttribute('data-lane', String(lane))
 }
 
-// Проходит ряд верными воротами и ждёт, пока счёт вырастет.
+// Проходит ряд верными воротами и ждёт, пока ряд уедет. Ждать роста счёта
+// нельзя: счёт растёт и от монеты по дороге к воротам.
 async function passRow(page) {
   const correct = await nextRow(page)
-  const before = await stage(page).getAttribute('data-score')
+  const options = await stage(page).getAttribute('data-options')
   await goToLane(page, correct)
-  await expect(stage(page)).not.toHaveAttribute('data-score', before, { timeout: 15000 })
+  await expect(stage(page)).not.toHaveAttribute('data-options', options, { timeout: 15000 })
 }
 
 test('верные ворота дают очки, неверные — отнимают жизнь и показывают перевод', async ({ page }) => {
@@ -86,18 +87,51 @@ test('↑ — прыжок, ↓ — подкат, поза сама возвра
   await expect(stage(page)).toHaveAttribute('data-pose', 'slide')
 })
 
+// Дорожки, где впереди лежит турбо: в нём препятствие не бьёт.
+async function boostLanes(page) {
+  const list = (await stage(page).getAttribute('data-pickups')) || ''
+  return list
+    .split('|')
+    .filter((x) => x.includes('boost'))
+    .map((x) => Number(x.split(':')[0]))
+}
+
 test('после разминки на дороге препятствия; удар стоит серии, а не жизни', async ({ page }) => {
   test.setTimeout(150_000)
   await openRunner(page)
-  // Средний: на подход ровно одно препятствие (Лёгкий иногда кладёт ноль).
+  // Средний: на подход два-три захода (Лёгкий иногда кладёт один).
   await startAt(page, 'Средний')
-  for (let i = 0; i < 3; i++) await passRow(page)
+  // Первый подход пустой (WARMUP_ROWS = 2): препятствия лежат за вторыми воротами.
+  for (let i = 0; i < 2; i++) await passRow(page)
+  await expect(stage(page)).not.toHaveAttribute('data-obstacles', '', { timeout: 30000 })
+  // Ближнее — первое; в беге его не проходит ни одно препятствие. Дорожку с
+  // турбо обходим: турбо сносит препятствие без удара.
   const layout = await stage(page).getAttribute('data-obstacles')
-  expect(layout).not.toBe('')
-  // Ближнее — первое; в беге его не проходит ни одно препятствие.
-  await goToLane(page, Number(layout.split('|')[0].split(':')[0]))
-  await expect(stage(page)).toHaveAttribute('data-hits', '1', { timeout: 15000 })
+  const boosts = await boostLanes(page)
+  const lane = layout
+    .split('|')
+    .map((x) => Number(x.split(':')[0]))
+    .find((l) => !boosts.includes(l))
+  // Удары могли случиться и раньше — по пути через верные ворота.
+  const before = Number(await stage(page).getAttribute('data-hits'))
+  await goToLane(page, lane)
+  await expect(stage(page)).toHaveAttribute('data-hits', String(before + 1), { timeout: 15000 })
   await expect(stage(page)).toHaveAttribute('data-lives', '3')
+})
+
+test('монета на дорожке даёт очки и счётчик монет', async ({ page }) => {
+  test.setTimeout(150_000)
+  await openRunner(page)
+  await startAt(page, 'Лёгкий')
+  await passRow(page)
+  // Цепочка монет есть на каждом подходе; берём ближнюю низкую — над
+  // препятствием монета берётся только прыжком.
+  await expect(stage(page)).toHaveAttribute('data-pickups', /coin(\||$)/, { timeout: 30000 })
+  const list = await stage(page).getAttribute('data-pickups')
+  const coin = list.split('|').find((x) => x.endsWith(':coin'))
+  await goToLane(page, Number(coin.split(':')[0]))
+  await expect(stage(page)).not.toHaveAttribute('data-coins', '0', { timeout: 15000 })
+  await expect(page.locator('.ar-run-coins')).not.toContainText(/^0$/)
 })
 
 test('зал открывает обе игры и возвращает назад', async ({ page }) => {

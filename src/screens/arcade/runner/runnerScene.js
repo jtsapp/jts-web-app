@@ -6,10 +6,11 @@
 // ряд, исход прохода, скорость — и сцена его только рисует. Правила живут в
 // src/practice/arcade/runner/engine.js и проверяются тестами без WebGL.
 //
-// Бегун — модель Higgsfield (Meshy image→3D с авто-ригом): бег, прыжок,
-// подкат и спотыкание — клипы одного рига, склеенные в runner-v2.glb
-// (scripts/merge-runner-clips.js). Препятствия — тоже модели, вписанные в
-// размер из правил. Ворота и город строятся кодом: неоновая трубка светится
+// Бегун — модель Higgsfield (Meshy image→3D с авто-ригом): сетка, риг и бег —
+// первой выгрузки, прыжок, подкат и спотыкание перенесены на её скелет с
+// другого рига (scripts/retarget-runner-clips.js → runner-v3.glb; почему не
+// склейка по именам — там же). Препятствия — тоже модели, вписанные в
+// размер из правил. Монеты и молния турбо — кодом. Ворота и город строятся кодом: неоновая трубка светится
 // без постобработки и перекрашивается одним color.setHex, а дома — одинаковые
 // боксы с окнами, которые переезжают вперёд, когда уходят за камеру.
 
@@ -36,21 +37,33 @@ const RUNNER_HEIGHT = 1.8
 // свой клип (stumble).
 const MISS_HOP = 0.6
 // Дуга прыжка поверх клипа: Jump_Run подпрыгивает невысоко, а барьер должен
-// читаться перепрыгнутым, а не пройденным насквозь. Подбирается живым прогоном.
-const JUMP_ARC = 0.7
+// читаться перепрыгнутым, а не пройденным насквозь. 0.7 не читались прыжком
+// (жалоба владельца 01.10.2026) — теперь бегун поднимается выше шлагбаума.
+const JUMP_ARC = 1.5
 const FADE = 0.1
-// Размер препятствия на сцене — из правил: барьер ниже дуги прыжка, под
-// перекладиной шлагбаума проходит подкат, автобус выше всего. Длина вдоль
+// Размер препятствия на сцене — из правил: барьер ниже дуги прыжка, автобус
+// выше всего. Шлагбаум проходят и подкатом, и прыжком, поэтому перекладина
+// (верхняя четверть модели) — между лежащим бегуном и дугой прыжка; на 1.7
+// перепрыгнутый шлагбаум выглядел бы пройденным насквозь. Длина вдоль
 // дороги — из движка (KINDS), иначе удар случался бы «в воздухе».
 const OBSTACLE_SIZE = {
   barrier: { w: LANE_W - 0.5, h: 0.9 },
-  boom: { w: LANE_W - 0.2, h: 1.7 },
+  boom: { w: LANE_W - 0.2, h: 1.25 },
   bus: { w: LANE_W - 0.3, h: 2.9 },
 }
 // На дороге разом — подход к текущему ряду и хвост прошлого: до четырёх
 // одного вида. Не хватит экземпляра — препятствие стало бы невидимым, а удар
 // о невидимое нечестен.
 const POOL = 4
+// Монет на дороге разом — две цепочки подхода и хвост прошлого.
+const COIN_POOL = 24
+const COIN_Y = 0.9
+// Монета над барьером — на высоте дуги, где её берёт прыжок.
+const COIN_HIGH_Y = COIN_Y + JUMP_ARC * 0.8
+// Турбо: насколько расширяется угол камеры и сколько линий скорости.
+const BOOST_FOV = 9
+const STREAKS = 36
+const BOOST_TONE = 0x5ff2ff
 const POSES = ['run', 'jump', 'slide', 'stumble']
 const SKY = 0x1c0d45
 const FOG = 0x2d1570
@@ -60,7 +73,7 @@ const hex = (n) => `#${n.toString(16).padStart(6, '0')}`
 export async function loadRunnerAssets() {
   const loader = new GLTFLoader()
   const [runner, barrier, boom, bus, skyline] = await Promise.all([
-    loader.loadAsync(`${BASE}/runner-v2.glb`),
+    loader.loadAsync(`${BASE}/runner-v3.glb`),
     // Препятствия обязательны, как и бегун: без модели препятствие невидимо,
     // а удар о невидимое нечестен — лучше честно не стартовать.
     loader.loadAsync(`${BASE}/barrier.glb`),
@@ -323,6 +336,48 @@ function fitObstacle(gltf, kind) {
   return holder
 }
 
+function makeCoin() {
+  const coin = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.32, 0.07, 28),
+    new THREE.MeshStandardMaterial({ color: 0xffc21a, emissive: 0xff9a00, emissiveIntensity: 0.55, metalness: 0.6, roughness: 0.3 }),
+  )
+  // Ребром к дороге, лицом к камере: так кружок читается и вдали.
+  coin.rotation.x = Math.PI / 2
+  const holder = new THREE.Group()
+  holder.add(coin)
+  return holder
+}
+
+function glowTexture(rgb) {
+  return canvasTexture(64, 64, (ctx, w) => {
+    const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2)
+    g.addColorStop(0, `rgba(${rgb}, 0.9)`)
+    g.addColorStop(1, `rgba(${rgb}, 0)`)
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, w, w)
+  })
+}
+
+// Молния — плоский зигзаг с толщиной и ореол позади: отличается от монеты и
+// формой, и цветом, даже когда оба вдали — пятнышки.
+function makeBolt(glow) {
+  const shape = new THREE.Shape()
+  const pts = [[0.12, 0.55], [-0.28, -0.02], [-0.02, -0.02], [-0.14, -0.55], [0.28, 0.08], [0.02, 0.08]]
+  shape.moveTo(...pts[0])
+  for (const p of pts.slice(1)) shape.lineTo(...p)
+  shape.closePath()
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false })
+  geo.center()
+  const bolt = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: BOOST_TONE }))
+  const halo = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glow, color: BOOST_TONE, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
+  )
+  halo.scale.setScalar(1.6)
+  const holder = new THREE.Group()
+  holder.add(halo, bolt)
+  return holder
+}
+
 function makeRunner(gltf) {
   const model = gltf.scene
   // Скиннинг двигает вершины уже после проверки видимости: без этого бегун
@@ -481,8 +536,59 @@ export function createRunnerScene(canvas, assets) {
     })
   }
 
+  const coins = Array.from({ length: COIN_POOL }, () => {
+    const coin = makeCoin()
+    coin.visible = false
+    scene.add(coin)
+    return coin
+  })
+  const glow = glowTexture('95, 242, 255')
+  const bolts = [0, 1].map(() => {
+    const bolt = makeBolt(glow)
+    bolt.visible = false
+    scene.add(bolt)
+    return bolt
+  })
+
+  // Турбо: линии скорости по сторонам и ореол вокруг бегуна. Видны, пока
+  // `boostFade` > 0, — он плавно растёт и гаснет, а не мигает со снимком.
+  const streakMat = new THREE.MeshBasicMaterial({
+    color: BOOST_TONE,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  })
+  const streakGeo = new THREE.BoxGeometry(0.035, 0.035, 4)
+  const streaks = new THREE.Group()
+  const respawnStreak = (m, z) => {
+    const side = Math.random() < 0.5 ? -1 : 1
+    m.position.set(side * (1.2 + Math.random() * 4), 0.3 + Math.random() * 3.6, z)
+  }
+  for (let i = 0; i < STREAKS; i++) {
+    const m = new THREE.Mesh(streakGeo, streakMat)
+    respawnStreak(m, -60 + Math.random() * 66)
+    streaks.add(m)
+  }
+  streaks.visible = false
+  scene.add(streaks)
+
   const { hero, mixer, actions } = makeRunner(assets.runner)
   scene.add(hero)
+  const aura = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.62, 0.5, 2.1, 24, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: BOOST_TONE,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  )
+  aura.position.y = 1
+  aura.visible = false
+  hero.add(aura)
   const shadow = new THREE.Mesh(
     new THREE.CircleGeometry(0.55, 24),
     new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }),
@@ -501,6 +607,9 @@ export function createRunnerScene(canvas, assets) {
   let poseKey = 'run'
   let hitKey = 0
   let stumbleLeft = 0
+  let baseFov = 58
+  let boostFade = 0
+  let spin = 0
 
   // Новый клип стартует с начала, старый гаснет за FADE. `seconds` подгоняет
   // длину клипа под позу движка: клип Meshy длится сколько длится, а прыжок в
@@ -524,10 +633,12 @@ export function createRunnerScene(canvas, assets) {
     poseKey = 'run'
     hitKey = 0
     stumbleLeft = 0
+    boostFade = 0
     if (shown !== 'run') play('run')
     hero.visible = true
     rowGroup.visible = false
     for (const kind in pools) for (const item of pools[kind]) item.visible = false
+    for (const item of [...coins, ...bolts]) item.visible = false
   }
 
   function resize() {
@@ -541,7 +652,8 @@ export function createRunnerScene(canvas, assets) {
     const dist = aspect < 1 ? 7.5 : 5.4
     const halfW = LANE_W + 1.2
     const vHalf = Math.max(Math.tan(THREE.MathUtils.degToRad(29)), halfW / (dist * aspect))
-    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(vHalf))
+    baseFov = THREE.MathUtils.radToDeg(2 * Math.atan(vHalf))
+    camera.fov = baseFov + boostFade * BOOST_FOV
     camera.aspect = aspect
     camera.position.set(0, aspect < 1 ? 3.6 : 2.8, dist)
     // Стоя взгляд выше: иначе нижняя треть кадра — пустой асфальт под бегуном.
@@ -592,11 +704,61 @@ export function createRunnerScene(canvas, assets) {
       const item = pools[o.kind]?.[used[o.kind]++]
       if (!item) continue
       item.position.set(laneX(o.lane), 0, -(o.z + o.len / 2))
+      item.rotation.set(0, 0, 0)
+      if (o.smashed) {
+        // Снесённое турбо отлетает вверх и в сторону, кувыркаясь, — по
+        // пройденному после удара пути, без своего таймера.
+        const k = Math.min(1, -o.z / 8)
+        const side = o.lane === 1 ? 1 : Math.sign(o.lane - 1)
+        item.position.x += side * k * 3
+        item.position.y = Math.sin(k * Math.PI * 0.8) * 3
+        item.rotation.set(-k * 3, 0, side * k * 1.5)
+      }
     }
     for (const kind in pools) {
       pools[kind].forEach((item, i) => {
         item.visible = i < used[kind]
       })
+    }
+
+    // Монеты и молнии — так же из пулов. Взятая монета взлетает и тает
+    // по пройденному после взятия пути, а не исчезает рывком.
+    spin += dt * 4
+    let usedCoins = 0
+    let usedBolts = 0
+    for (const p of snap.pickups || []) {
+      if (p.z > SPAWN || (p.taken && p.z < -1.5)) continue
+      const item = p.kind === 'boost' ? bolts[usedBolts++] : coins[usedCoins++]
+      if (!item) continue
+      const lift = p.taken ? -p.z * 1.4 : 0
+      const y = p.kind === 'boost' ? 1.1 : p.high ? COIN_HIGH_Y : COIN_Y
+      item.position.set(laneX(p.lane), y + lift + Math.sin(spin + p.id) * 0.06, -p.z)
+      item.rotation.y = spin + p.id
+      item.scale.setScalar(p.taken ? Math.max(0.01, 1 + p.z / 1.5) : 1)
+    }
+    coins.forEach((c, i) => (c.visible = i < usedCoins))
+    bolts.forEach((b, i) => (b.visible = i < usedBolts))
+
+    // Турбо: ореол, линии скорости, шире угол и быстрее ноги.
+    const boost = snap.boost || 0
+    boostFade += ((boost > 0 ? 1 : 0) - boostFade) * (1 - Math.exp(-dt * (boost > 0 ? 10 : 4)))
+    if (boostFade < 0.01 && boost <= 0) boostFade = 0
+    streaks.visible = aura.visible = boostFade > 0
+    if (boostFade > 0) {
+      streakMat.opacity = 0.75 * boostFade
+      aura.material.opacity = (0.22 + 0.1 * Math.sin(spin * 3)) * boostFade
+      // Линии летят быстрее мира — так скорость видна и боковым зрением.
+      for (const m of streaks.children) {
+        m.position.z += v * dt * 1.6
+        if (m.position.z > 8) respawnStreak(m, -60 - Math.random() * 10)
+      }
+      // Последняя секунда турбо мигает ореолом: видно, что кончается.
+      if (boost > 0 && boost < 1) aura.visible = Math.floor(boost * 8) % 2 === 0
+    }
+    const fov = baseFov + boostFade * BOOST_FOV
+    if (Math.abs(camera.fov - fov) > 0.01) {
+      camera.fov = fov
+      camera.updateProjectionMatrix()
     }
 
     // Клипы. Удар важнее позы: спотыкание начинается в кадре удара, хотя
@@ -639,7 +801,7 @@ export function createRunnerScene(canvas, assets) {
     shadow.position.x = runnerX
     shadow.scale.setScalar(1 - Math.min(0.5, arc * 0.6))
     // Темп бега — от скорости забега; клипы поз идут своим темпом из play().
-    if (actions.run) actions.run.timeScale = 0.75 + 0.35 * (snap.speedMul || 1)
+    if (actions.run) actions.run.timeScale = (0.75 + 0.35 * (snap.speedMul || 1)) * (1 + 0.3 * boostFade)
     mixer.update(snap.moving ? dt : 0)
     camera.position.x = runnerX * 0.35
     renderer.render(scene, camera)
