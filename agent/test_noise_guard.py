@@ -294,6 +294,28 @@ out, dropped = nomem.process(
 )
 assert dropped == ""
 
+# «Свой» говорящий меряется и от памяти об ученике. Живой звонок 02.10.2026
+# («Свободно», новости −6 дБ): разметка отдала ученику тихие слова фона, его
+# уровень в потоке просел, и фон оказался «своим» (0.67 от основного) — фраза
+# новостей ушла тьютору целиком. От уровня по звонку это ~0.55 — фон.
+def _sagged(prior):
+    lock = G.SpeakerLock(keep=0, outlier=0, prior=prior)
+    # Ученик ~3535 (просел), фон ~2263 (0.64 от него), «расщеплённый» ученик ~3300.
+    _feed(lock, (1.2, 5000), (0.9, 3200), (0.9, 4667))
+    return lock.process(
+        [_tok(" I", 100, 300, "2"), _tok(" think", 300, 600, "2"), _tok(" online", 600, 900, "2"),
+         _tok(" lessons", 900, 1150, "2"),
+         _tok(" good", 1250, 1500, "1"), _tok(" evening", 1500, 1800, "1"), _tok(" group", 1800, 2050, "1"),
+         _tok(" are", 2150, 2400, "3"), _tok(" more", 2400, 2700, "3"), _tok(" comfortable", 2700, 3000, "3"),
+         END]
+    )
+out, dropped = _sagged(prior=lambda: 5000.0)
+assert dropped == "good evening group", dropped
+assert "".join(_texts(out)) == " I think online lessons are more comfortable<end>", out
+# Без памяти — как раньше: тот же говорящий проходит «своим».
+out, dropped = _sagged(prior=None)
+assert dropped == "", dropped
+
 # Черновые куски громкость не двигают: основного по ним не выбрать.
 lock4 = G.SpeakerLock()
 _feed(lock4, (1.0, 3000))
