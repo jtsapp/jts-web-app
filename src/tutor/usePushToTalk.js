@@ -18,7 +18,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RpcError } from 'livekit-client'
-import { holdVerdict, isPushToTalkKey } from './pushToTalk.js'
+import { HOLD_MIN_MS, holdVerdict, isPushToTalkKey } from './pushToTalk.js'
+
+// Сколько висит подсказка «держи кнопку» после промаха тапом.
+const TAP_HINT_MS = 2200
 
 // Коды, после которых повторять бессмысленно: адресат такого метода не умеет.
 // Таймауты и обрывы сюда НЕ входят — они разовые, и из-за одного плохого
@@ -31,6 +34,11 @@ const DEAD_CODES = new Set([
 
 export function usePushToTalk({ enabled, room, agentIdentity }) {
   const [holding, setHolding] = useState(false)
+  // Рация теперь режим по умолчанию, и новичок по привычке ТАПАЕТ кнопку. Такой
+  // тап короче HOLD_MIN_MS и уходит агенту отменой хода — тьютор молчит, и без
+  // подсказки ученик не понимает почему.
+  const [tapHint, setTapHint] = useState(false)
+  const tapHintTimer = useRef(0)
   // Держим в ref, а не только в стейте: press/release зовутся из обработчиков
   // окна, и им нужно текущее значение, а не то, что было на рендере.
   const holdingRef = useRef(false)
@@ -89,6 +97,13 @@ export function usePushToTalk({ enabled, room, agentIdentity }) {
     holdingRef.current = false
     setHolding(false)
     const held = Date.now() - startedAtRef.current
+    if (held < HOLD_MIN_MS) {
+      setTapHint(true)
+      window.clearTimeout(tapHintTimer.current)
+      tapHintTimer.current = window.setTimeout(() => setTapHint(false), TAP_HINT_MS)
+    } else {
+      setTapHint(false)
+    }
     if (mutedModeRef.current) {
       setMic(false)
       return
@@ -99,6 +114,14 @@ export function usePushToTalk({ enabled, room, agentIdentity }) {
       if (mutedModeRef.current) setMic(false)
     })
   }, [rpc, setMic])
+
+  // Режим переключили посреди нажатия (рация → «Свободно» прямо в звонке):
+  // отпускание кнопки уже не придёт в обработчики, а ход остался бы открытым.
+  useEffect(() => {
+    if (!enabled && holdingRef.current) release()
+  }, [enabled, release])
+
+  useEffect(() => () => window.clearTimeout(tapHintTimer.current), [])
 
   useEffect(() => {
     if (!enabled) return undefined
@@ -149,5 +172,5 @@ export function usePushToTalk({ enabled, room, agentIdentity }) {
       }
     : null
 
-  return { holding, pointerHandlers }
+  return { holding, pointerHandlers, tapHint: enabled && tapHint }
 }
