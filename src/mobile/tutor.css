@@ -111,14 +111,20 @@
     line-height: 20px;
   }
 
-  /* ---------- Приветствие + выбор тьютора (кадр 4338:1182) ----------
-     В макете приветствие отдельным экраном, а выбор — каруселью (4338:1568).
-     В приложении это один экран нового макета «Speaking Buddy»: баннер +
-     ряд фигурок. Баннер на телефоне — карточка кадра приветствия: панель 400
-     с той же группой маскотов, что на выборе языка. */
+  /* ---------- Приветствие + выбор тьютора (кадры 4338:1182, 4338:1568) ----------
+     В макете приветствие и выбор — два кадра, выбор каруселью. В приложении это
+     один экран нового макета «Speaking Buddy» (баннер + ряд фигурок), поэтому
+     на телефоне он идёт двумя шагами (TutorChoosePage): сначала баннер —
+     карточка кадра приветствия, панель 400 с той же группой маскотов, что на
+     выборе языка, — а по кнопке карусель (TutorCarousel). Ряд фигурок и его
+     заголовок на телефоне не показываются: выбор живёт в карусели. */
   .t-pick {
     padding-top: 16px;
     gap: 32px;
+  }
+  .t-pick__heading,
+  .t-pick__row {
+    display: none;
   }
   .t-pick__hero {
     gap: 0;
@@ -169,10 +175,186 @@
   .t-pick__start:hover:not(:disabled) {
     transform: none;
   }
-  .t-pick__heading {
+
+  /* Шаг-карусель (кадр 4338:1568). Фон у кадра белый, у остальных экранов
+     раздела — #f8f8f8. Колонка тянется до низа экрана: кнопки прижаты к низу,
+     блок «аватар + подписи» — по центру между ними и шапкой, с полями 40, как
+     в кадре. */
+  .t-app:has(.t-car) {
+    background: #ffffff;
+  }
+  .t-pick--car {
+    flex: 1;
+    padding-top: 0;
+    gap: 0;
+  }
+  .t-car {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .t-car__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+    padding: 40px 0;
+  }
+  /* Кадр высотой 956; на телефоне пониже (360×740) поля 40 уводили «Выбрать»
+     за нижний край — там их сжимаем. */
+  @media (max-height: 800px) {
+    .t-car__main {
+      gap: 24px;
+      padding: 16px 0;
+    }
+  }
+  /* Сцена во всю ширину экрана (поля контента 16 снимаем) — соседи срезаются
+     краем экрана, как в кадре. Дальние слоты цикла уезжают за сцену и
+     обрезаются ею, а не раздувают ширину страницы. clip, а не hidden: сцену
+     с hidden браузер сам прокручивает к сфокусированному соседу (тап по нему
+     = фокус), и вся лента съезжала на 28px. pan-y: горизонталь забирает
+     свайп, вертикаль остаётся прокрутке. */
+  .t-car__stage {
+    position: relative;
+    height: 200px;
+    margin: 0 -16px;
+    overflow: hidden;
+    overflow: clip;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* Круг 200, соседи — scale 0.62 (124) из JS; позиция, прозрачность и
+     отключение перехода на время свайпа — инлайном. Подложка — нижний эллипс
+     кадра, видна, пока картинка не загрузилась. */
+  .t-car__slot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 200px;
+    height: 200px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--t-purple);
+    cursor: pointer;
+    transition:
+      transform 0.34s cubic-bezier(0.3, 0.8, 0.3, 1),
+      opacity 0.34s ease;
+    will-change: transform;
+  }
+  .t-car__slot.is-center {
+    z-index: 1;
+    cursor: default;
+  }
+  .t-car__slot:focus-visible {
+    outline: 3px solid var(--t-purple);
+    outline-offset: 3px;
+  }
+  .t-car__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  /* Подписи всех тьюторов в одной ячейке: высота — по самой длинной, и при
+     листании центр блока (а с ним аватар) стоит на месте. */
+  .t-car__infos {
+    display: grid;
+  }
+  .t-car__info {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    visibility: hidden;
+  }
+  .t-car__info.is-current {
+    visibility: visible;
+  }
+  .t-car__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .t-car__name {
     font-size: 24px;
-    line-height: 29px;
-    letter-spacing: -0.03em;
+    font-weight: 700;
+    line-height: 26px;
+    text-align: center;
+    color: #181818;
+  }
+  .t-car__chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+  }
+  .t-car__chip {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+    color: #ffffff;
+  }
+  .t-car__desc {
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+    color: #181818;
+  }
+  .t-car__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 16px;
+    margin-bottom: calc(var(--safe-bottom) - 16px);
+  }
+  .t-car__listen,
+  .t-car__choose {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 17px;
+    cursor: pointer;
+  }
+  .t-car__listen {
+    gap: 13px;
+    height: 44px;
+    border-radius: 30px;
+    background: #ebdeff;
+    color: var(--t-purple);
+  }
+  .t-car__listen.is-none {
+    visibility: hidden;
+  }
+  .t-car__choose {
+    height: 48px;
+    border-radius: 80px;
+    background: var(--t-purple);
+    color: #ffffff;
+  }
+  /* Тьютор без голоса (comingSoon) — как у кнопки баннера на десктопе. */
+  .t-car__choose:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .t-car__slot {
+      transition: none;
+    }
   }
 
   /* ---------- Выбор языка (кадр 4338:1515) ----------
@@ -395,19 +577,29 @@
   .t-analysis__glow {
     margin-top: 32px;
   }
+  /* На десктопе строки выровнены по левому краю (там «лесенка» галочек
+     считалась браком), в кадре же каждая строка стоит по центру — на телефоне
+     так и делаем. */
   .t-analysis__list {
     margin-top: 32px;
+    align-items: center;
     gap: 16px;
   }
-  /* Строки выровнены по левому краю (решение десктопа: без этого галочки идут
-     лесенкой) — в кадре каждая строка по центру. Цвет — как в кадре: ждущий
-     пункт отличается только пустым кружком. */
+  /* Цвет — как в кадре: ждущий пункт отличается только пустым кружком. */
   .t-analysis__item {
     gap: 16px;
     font-size: 17px;
     font-weight: 500;
     line-height: 24px;
     color: #000;
+  }
+  /* Галочка — экспорт иконки кадра (check-fill в круге 24), а не CSS-уголок
+     десктопа: тот толще (2 против 1.33) и сидит иначе. */
+  .t-analysis__item.is-done .t-radio {
+    background: url(/assets/m/tutor/check.svg) center / 24px 24px no-repeat border-box;
+  }
+  .t-analysis__item.is-done .t-radio::after {
+    display: none;
   }
 
   /* ---------- Голосовой разговор (кадры 4338:2111, 4338:2175) ----------
