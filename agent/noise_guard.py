@@ -81,6 +81,13 @@ logger = logging.getLogger("jts-agent")
 #   (ученик, расщеплённый разметкой надвое); 0 — выключить.
 # SPEAKER_LOCK_OUTLIER — во сколько раз слово громче медианы своего говорящего,
 #   чтобы считать его словом ученика, записанным на фон; 0 — выключить.
+# SPEAKER_LOCK_MEMORY=on — помнить уровень ученика между потоками
+#   распознавания (в рации поток новый на каждый ход). Выключено по умолчанию.
+# SPEAKER_LOCK_PRIOR_BG — с памятью: говорящий тише этой доли уровня ученика —
+#   фон, даже если в новом потоке он пока один.
+# SPEAKER_LOCK_DEBUG=on — на конце каждой фразы строка в лог: уровни и каждое
+#   слово с говорящим, громкостью и решением. Только для канарейки: это текст
+#   речи ученика в логах.
 SPEAKER_LOCK_DEFAULT = "on"
 TURN_WATCHDOG_DEFAULT_SEC = 1.2
 SPEAKER_LOCK_RATIO_DEFAULT = 1.3
@@ -105,6 +112,13 @@ SPEAKER_LOCK_SAME_DEFAULT = 0.6
 # вернул 3 слова ученика ценой 3 слов фона.
 SPEAKER_LOCK_OUTLIER_DEFAULT = 1.6
 SPEAKER_LOCK_OUTLIER_FLOOR = 0.5
+# Живой звонок 01.10.2026 (v3, новости −6 дБ): в рации поток распознавания
+# новый на каждый ход, Soniox в нём заново нумерует говорящих, и замок каждый
+# раз начинал с нуля — фраза одного фона в начале хода проходила. Память
+# переносит в новый поток уровень ученика; говорящий тише PRIOR_BG этого
+# уровня — фон. Порог консервативный: уровень ученика между потоками гулял
+# 5907 → 2422, и тихий ученик не должен оказаться «фоном».
+SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.35
 
 _OFF = ("off", "0", "false", "no")
 
@@ -177,6 +191,18 @@ def _env_fraction(name: str, default: float, lo: float, hi: float) -> float:
         logger.warning("%s=%r вне [%s, %s] — беру %s", name, raw, lo, hi, default)
         return default
     return value
+
+
+def speaker_lock_memory() -> bool:
+    return (os.getenv("SPEAKER_LOCK_MEMORY") or "").strip().lower() in ("on", "1", "true", "yes")
+
+
+def speaker_lock_debug() -> bool:
+    return (os.getenv("SPEAKER_LOCK_DEBUG") or "").strip().lower() in ("on", "1", "true", "yes")
+
+
+def speaker_lock_prior_bg() -> float:
+    return _env_fraction("SPEAKER_LOCK_PRIOR_BG", SPEAKER_LOCK_PRIOR_BG_DEFAULT, 0.0, 1.0)
 
 
 def speaker_lock_same() -> float:
@@ -281,12 +307,22 @@ class SpeakerLock:
         keep: float = SPEAKER_LOCK_KEEP_DEFAULT,
         same: float = SPEAKER_LOCK_SAME_DEFAULT,
         outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
+        prior: Callable[[], float | None] | None = None,
+        prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+        on_level: Callable[[float], None] | None = None,
+        on_segment: Callable[[str], None] | None = None,
         on_switch: Callable[[str | None, str, float, float], None] | None = None,
     ) -> None:
         self._ratio = ratio
         self._keep = keep
         self._same = same
         self._outlier = outlier
+        # Память об ученике из прошлых потоков: prior() — его уровень или None;
+        # on_level(уровень) — сообщить уровень основного наружу.
+        self._prior = prior
+        self._prior_bg = prior_bg
+        self._on_level = on_level
+        self._on_segment = on_segment
         self._on_switch = on_switch
         self.reset()
 
@@ -375,6 +411,8 @@ class SpeakerLock:
             self.primary = best
             if self._on_switch:
                 self._on_switch(None, best, levels[best], 0.0)
+            if self._on_level:
+                self._on_level(levels[best])
             return
         current = levels[self.primary]
         if (
@@ -386,12 +424,28 @@ class SpeakerLock:
             self.primary = best
             if self._on_switch:
                 self._on_switch(old, best, levels[best], current)
+        if self._on_level and self.primary is not None:
+            self._on_level(levels[self.primary])
+
+    def _prior_level(self) -> float | None:
+        return self._prior() if self._prior else None
 
     def _keep_word(self, speaker: str | None, loud: float | None) -> bool:
         """Оставить ли слово целиком."""
-        # Пока основного нет (ни у кого ещё не посчитан уровень), пропускаем
-        # всё: лучше лишнее слово, чем глухой тьютор.
-        if self.primary is None or speaker is None or speaker == self.primary:
+        if speaker is None or speaker == self.primary:
+            return True
+        if self.primary is None:
+            # Основного в этом потоке ещё нет. С памятью об ученике говорящий
+            # намного тише его уровня — фон, даже если он тут пока один (фраза
+            # новостей в начале хода рацией). Без памяти пропускаем всё: лучше
+            # лишнее слово, чем глухой тьютор.
+            prior = self._prior_level()
+            speaker_level = self.level(speaker)
+            if prior and self._prior_bg > 0 and speaker_level is not None:
+                if speaker_level < prior * self._prior_bg and not (
+                    loud is not None and loud >= prior * self._keep
+                ):
+                    return False
             return True
         primary_level = self.level(self.primary)
         if not primary_level:
@@ -428,6 +482,24 @@ class SpeakerLock:
                 dropped.append("".join(str(t.get("text", "")) for t in word).strip())
         return kept, dropped
 
+    def _describe(
+        self, words: list[list[dict[str, Any]]], infos: list[tuple[str | None, float | None]]
+    ) -> str:
+        """Строка отладки: уровни говорящих, память и каждое слово фразы."""
+        levels = " ".join(
+            f"{spk}={round(self.level(spk) or 0)}/{len(h)}" for spk, h in sorted(self._history.items())
+        )
+        prior = self._prior_level()
+        parts = []
+        for word, (spk, loud) in list(zip(words, infos))[:40]:
+            text = "".join(str(t.get("text", "")) for t in word).strip()
+            mark = "+" if self._keep_word(spk, loud) else "x"
+            parts.append(f"{text}:{spk}:{round(loud) if loud is not None else '-'}{mark}")
+        return (
+            f"основной={self.primary} уровни[{levels}] память={round(prior) if prior else '-'} | "
+            + " ".join(parts)
+        )
+
     def process(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
         """Токены одного ответа Soniox → токены для плагина.
 
@@ -448,6 +520,8 @@ class SpeakerLock:
                 # ученика, решается уже против уровня ученика.
                 self._learn(infos)
                 kept, dropped = self._decide(words, infos)
+                if self._on_segment and words:
+                    self._on_segment(self._describe(words, infos))
                 self.kept_words += len(_words(kept))
                 self.dropped_words += len(dropped)
                 dropped_all.extend(dropped)
@@ -548,6 +622,10 @@ if aiohttp is not None and soniox is not None:
                     keep=stt._keep,
                     same=stt._same,
                     outlier=stt._outlier,
+                    prior=(lambda: stt._learner_level) if stt._memory else None,
+                    prior_bg=stt._prior_bg,
+                    on_level=stt._remember_level,
+                    on_segment=self._log_segment if stt._debug else None,
                     on_switch=self._log_switch,
                 )
                 if stt._lock_on
@@ -580,6 +658,9 @@ if aiohttp is not None and soniox is not None:
                 except RuntimeError:
                     # Поток уже закрыт — закрывать нечего.
                     pass
+
+        def _log_segment(self, line: str) -> None:
+            logger.info("LOCK seg: %s", line[:900])
 
         def _log_switch(self, old: str | None, new: str, loud: float, old_loud: float) -> None:
             if old is None:
@@ -660,6 +741,9 @@ if aiohttp is not None and soniox is not None:
             keep: float = SPEAKER_LOCK_KEEP_DEFAULT,
             same: float = SPEAKER_LOCK_SAME_DEFAULT,
             outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
+            memory: bool = False,
+            prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+            debug: bool = False,
             finalize: bool = True,
             **kwargs: Any,
         ) -> None:
@@ -673,6 +757,11 @@ if aiohttp is not None and soniox is not None:
             self._keep = keep
             self._same = same
             self._outlier = outlier
+            self._memory = memory
+            self._prior_bg = prior_bg
+            self._debug = debug
+            # Уровень ученика по последнему потоку сессии (см. MEMORY).
+            self._learner_level: float | None = None
             self._finalize = finalize
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
@@ -686,6 +775,9 @@ if aiohttp is not None and soniox is not None:
             )
             self._streams.add(s)
             return s
+
+        def _remember_level(self, level: float) -> None:
+            self._learner_level = level
 
         def finalize_now(self) -> int:
             """Рация: кнопку отпустили — ученик договорил. Взводит finalize у

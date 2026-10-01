@@ -82,6 +82,12 @@ assert G.speaker_lock_same() == 0.7 and G.speaker_lock_outlier() == 0.0
 _env(SPEAKER_LOCK_SAME="2", SPEAKER_LOCK_OUTLIER="x")
 assert G.speaker_lock_same() == 0.6 and G.speaker_lock_outlier() == 1.6
 _env(SPEAKER_LOCK_SAME=None, SPEAKER_LOCK_OUTLIER=None)
+assert G.speaker_lock_memory() is False and G.speaker_lock_debug() is False
+assert G.speaker_lock_prior_bg() == 0.35
+_env(SPEAKER_LOCK_MEMORY="on", SPEAKER_LOCK_DEBUG="on", SPEAKER_LOCK_PRIOR_BG="0.4")
+assert G.speaker_lock_memory() is True and G.speaker_lock_debug() is True
+assert G.speaker_lock_prior_bg() == 0.4
+_env(SPEAKER_LOCK_MEMORY=None, SPEAKER_LOCK_DEBUG=None, SPEAKER_LOCK_PRIOR_BG=None)
 _env(SPEAKER_LOCK_KEEP="0")
 assert G.speaker_lock_keep() == 0.0
 for bad in ("1.5", "-0.1", "x"):
@@ -254,6 +260,38 @@ out, dropped = mis.process(
 )
 assert "".join(_texts(out)) == " I think so than class<end>", out
 assert dropped == "tonight heavy rain expected", dropped
+
+# Память между потоками: в рации поток новый на каждый ход, и замок в нём
+# начинает с нуля. Уровень ученика из прошлого потока делает фоном говорящего,
+# который намного тише, даже если он в новом потоке пока один.
+remembered = []
+first = G.SpeakerLock(on_level=remembered.append)
+_feed(first, (1.0, 9000), (1.0, 1500))
+first.process(
+    [_tok(" I", 100, 300, "1"), _tok(" like", 300, 600, "1"), _tok(" it", 600, 900, "1"),
+     _tok(" rain", 1100, 1400, "2"), _tok(" is", 1400, 1700, "2"), _tok(" here", 1700, 1900, "2"), END]
+)
+assert remembered and abs(remembered[-1] - 9000 / 2 ** 0.5) < 50, remembered
+lines = []
+second = G.SpeakerLock(prior=lambda: remembered[-1], prior_bg=0.35, on_segment=lines.append)
+_feed(second, (1.0, 1500), (1.0, 8000))
+out, dropped = second.process(
+    [_tok(" good", 100, 400, "1"), _tok(" evening", 400, 700, "1"), _tok(" news", 700, 900, "1"), END]
+)
+assert second.primary is None  # говорящий в потоке пока один
+assert dropped == "good evening news", dropped
+# Ученик в новом потоке — не тише памяти: его слова проходят.
+out, dropped = second.process([_tok(" hello", 1100, 1500, "2"), _tok(" there", 1500, 1900, "2"), END])
+assert _texts(out) == [" hello", " there", "<end>"], out
+# Отладочная строка: уровни, память и каждое слово с решением.
+assert "память=6364" in lines[0] and "good:1:" in lines[0] and lines[0].rstrip().endswith("x"), lines[0]
+# Без памяти одинокий фон проходит, как раньше.
+nomem = G.SpeakerLock()
+_feed(nomem, (1.0, 1500))
+out, dropped = nomem.process(
+    [_tok(" good", 100, 400, "1"), _tok(" evening", 400, 700, "1"), _tok(" news", 700, 900, "1"), END]
+)
+assert dropped == ""
 
 # Черновые куски громкость не двигают: основного по ним не выбрать.
 lock4 = G.SpeakerLock()
