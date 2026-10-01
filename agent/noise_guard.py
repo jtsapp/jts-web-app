@@ -102,9 +102,14 @@ def speaker_lock_enabled(tutor: str) -> bool:
     return _tutor_allowed(tutor)
 
 
-def soniox_finalize_enabled() -> bool:
-    """SONIOX_FINALIZE=off — откат «закончить сейчас» для рации секретом."""
-    return (os.getenv("SONIOX_FINALIZE") or "").strip().lower() not in _OFF
+def soniox_finalize_enabled(tutor: str | None = None) -> bool:
+    """SONIOX_FINALIZE=off — откат «закончить сейчас» для рации секретом.
+    С тьютором подчиняется и канарейке NOISE_GUARD_TUTORS: первый вариант
+    (мгновенный finalize) съедал последнее слово, и новый включается сперва
+    одному тьютору."""
+    if (os.getenv("SONIOX_FINALIZE") or "").strip().lower() in _OFF:
+        return False
+    return tutor is None or _tutor_allowed(tutor)
 
 
 def speaker_lock_ratio() -> float:
@@ -302,6 +307,19 @@ class SpeakerLock:
 # сразу отдаёт FINAL. Без него конец фразы решает сам Soniox, и это до
 # max_endpoint_delay_ms (2 с по умолчанию) после последнего слова.
 FINALIZE_MESSAGE = json.dumps({"type": "finalize"})
+# Когда слать finalize. НЕ сразу по отпусканию: живой звонок 01.10.2026
+# (агент aZ5pJhsWSuto) показал, что мгновенный finalize съедает последнее слово —
+# «too.» вместо «too tired.», «class.» вместо «classroom» в 3 ходах из 4: Soniox
+# закрывает фразу, не дослушав хвост, если после него нет тишины. Тишину
+# commit_user_turn досылает сам (2 с нулей пачкой, тем же каналом, что и звук),
+# поэтому отпускание только взводит команду, а уходит она, когда за последним
+# словом в поток прошло FINALIZE_AFTER_SILENCE_SEC чистых нулей. Нули пачкой
+# идут мгновенно — к задержке это не добавляет.
+FINALIZE_AFTER_SILENCE_SEC = 0.5
+# Сколько ждать этой тишины. commit досылает её сразу; если её нет (финал
+# пришёл меньше чем за 0.5 с до отпускания — тогда commit не ждёт и не досылает),
+# взвод гаснет и не сработает на тишине уже следующего хода.
+FINALIZE_ARM_SEC = 3.0
 
 
 if aiohttp is not None and soniox is not None:
@@ -369,6 +387,32 @@ if aiohttp is not None and soniox is not None:
                 else None
             )
             self._drop_buf: list[str] = []
+            self._fin_deadline = 0.0
+            self._fin_zero = 0.0
+
+        def arm_finalize(self) -> None:
+            self._fin_deadline = time.monotonic() + FINALIZE_ARM_SEC
+            self._fin_zero = 0.0
+
+        def push_frame(self, frame: Any) -> None:
+            super().push_frame(frame)
+            if not self._fin_deadline:
+                return
+            if time.monotonic() > self._fin_deadline:
+                self._fin_deadline = 0.0
+                return
+            if np.frombuffer(frame.data.tobytes(), dtype=np.int16).any():
+                # Хвост речи ещё идёт (кадры, отправленные до отпускания).
+                self._fin_zero = 0.0
+                return
+            self._fin_zero += frame.duration
+            if self._fin_zero >= FINALIZE_AFTER_SILENCE_SEC:
+                self._fin_deadline = 0.0
+                try:
+                    self.flush()
+                except RuntimeError:
+                    # Поток уже закрыт — закрывать нечего.
+                    pass
 
         def _log_switch(self, old: str | None, new: str, loud: float, old_loud: float) -> None:
             if old is None:
@@ -473,20 +517,16 @@ if aiohttp is not None and soniox is not None:
             return s
 
         def finalize_now(self) -> int:
-            """Закрыть текущую фразу у Soniox прямо сейчас (рация: кнопку
-            отпустили — значит, ученик договорил). Возвращает число потоков,
-            которым ушла команда."""
+            """Рация: кнопку отпустили — ученик договорил. Взводит finalize у
+            живых потоков; сама команда уходит после тишины за последним словом
+            (см. FINALIZE_AFTER_SILENCE_SEC). Возвращает число взведённых."""
             if not self._finalize:
                 return 0
-            sent = 0
+            armed = 0
             for s in list(self._streams):
-                try:
-                    s.flush()
-                    sent += 1
-                except RuntimeError:
-                    # Поток уже закрыт или вход завершён — закрывать нечего.
-                    continue
-            return sent
+                s.arm_finalize()
+                armed += 1
+            return armed
 
 else:  # pragma: no cover
     GuardedSonioxSTT = None  # type: ignore[assignment,misc]
