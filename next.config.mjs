@@ -32,6 +32,10 @@ const nextConfig = {
   async headers() {
     return [
       cache('/assets/:path*', ART),
+      // Картинки лендинга — экспорт макета, меняются только перевыгрузкой.
+      // Не '/landing/:path*': пустой :path* совпал бы и с самой страницей.
+      cache('/landing/img/:path*', ART),
+      cache('/landing/icons/:path*', ART),
       // Медиа перенесённого курса: картинки и аудио весят 185 МБ и правятся
       // разве что вместе с самим уроком.
       cache('/course/:level/img/:path*', ART),
