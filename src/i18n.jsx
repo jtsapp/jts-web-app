@@ -1493,6 +1493,7 @@ const dict = {
     'practice.listening.desc':
       'Слушай и разбирай английскую речь: собери фразу, напиши диктант, различи похожие слова',
     'practice.listening.cta': 'Перейти к тренировке',
+    'practice.listening.byLevel': 'Собран по вашему уровню',
     'practice.writing.title': 'Письмо',
     'practice.writing.heading': 'Учись писать по-английски\nпо шагам',
     'practice.writing.desc':
@@ -4002,6 +4003,7 @@ const dict = {
     'practice.listening.desc':
       'Listen to real English and break it down: build the phrase, write a dictation, tell similar words apart',
     'practice.listening.cta': 'Start training',
+    'practice.listening.byLevel': 'Built for your level',
     'practice.writing.title': 'Writing',
     'practice.writing.heading': 'Write in English,\nstep by step',
     'practice.writing.desc':
@@ -6499,6 +6501,7 @@ const dict = {
     'practice.listening.desc':
       'Ағылшын сөзін тыңдап талда: фразаны құрастыр, диктант жаз, ұқсас сөздерді ажырат',
     'practice.listening.cta': 'Жаттығуға өту',
+    'practice.listening.byLevel': 'Сіздің деңгейіңізге сай',
     'practice.writing.title': 'Жазылым',
     'practice.writing.heading': 'Ағылшынша жазуды\nқадаммен үйрен',
     'practice.writing.desc':

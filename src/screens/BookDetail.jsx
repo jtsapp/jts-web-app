@@ -5,6 +5,7 @@ import { userIdFromToken } from '../lib/jwt.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
+import { Dots } from './practice/PracticeCards.jsx'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // У читалки два источника глав, в порядке приоритета:
@@ -228,13 +229,20 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
             ) : (
               <div className="bk-ov__cover bk-ov__cover--ph">{book.title}</div>
             )}
+            {/* Сложность плашкой на обложке — только в мобильном макете
+                (кадр 4295:15510); на десктопе её прячет src/mobile/practice.css. */}
+            <span className="bk-ov__diff">
+              <Dots level={book.level} />
+            </span>
             <div className="bk-ov__actions">
               <button className="bk-btn bk-btn--primary" onClick={() => openChapter(0, 'read')}>
                 Начать чтение
               </button>
               {tracks.some((t) => t.audioUrl) && (
                 <button className="bk-btn bk-btn--ghost" onClick={() => openChapter(0, 'audio')}>
-                  🎧 Аудио
+                  {/* Эмодзи в своей обёртке: мобильный макет ставит на его место
+                      иконку наушников (src/mobile/practice.css). */}
+                  <span className="bk-btn__ico" aria-hidden="true">🎧</span> Аудио
                 </button>
               )}
             </div>
@@ -328,7 +336,11 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 // ── Режим чтения ────────────────────────────────────────────────────────────
 function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved, onAudio }) {
   // Язык перевода следует за языком интерфейса: казахский — en→kk, иначе en→ru.
-  const { lang } = useI18n()
+  const { lang, t } = useI18n()
+  // Оглавление на телефоне — отдельный лист по кнопке в шапке (макет
+  // 4302:17033), а не список над текстом: у длинной книги до первой строки
+  // главы пришлось бы листать десятки пунктов. На десктопе это колонка сбоку.
+  const [toc, setToc] = useState(false)
   const tl = lang === 'kk' ? 'kk' : 'ru'
   const chapter = chapters[ch] || {}
   // Главы без текста (книга не из библиотеки и текст не заведён в админке)
@@ -450,8 +462,12 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           <ChevronLeftIcon size={18} /> {chapter.title || `Глава ${ch + 1}`}
         </button>
         <div className="vd__headtitle">
+          {/* На телефоне «назад» — круглый значок без подписи, и глава
+              переезжает в заголовок; на десктопе этой строки нет. */}
+          <b className="bk-head__chapter">{chapter.title || `Глава ${ch + 1}`}</b>
           <span>{book.title}</span>
         </div>
+        <button type="button" className="bk-head__toc" onClick={() => setToc(true)} aria-label="Главы книги" />
       </div>
 
       <div className="bk-read" ref={hostRef}>
@@ -508,14 +524,18 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           )}
         </article>
 
-        <aside className="bk-read__side">
+        <aside className={`bk-read__side${toc ? ' is-open' : ''}`}>
           <h2 className="bk-read__sidetitle">Главы книги</h2>
+          <button type="button" className="bk-read__close" onClick={() => setToc(false)} aria-label={t('common.close')} />
           <div className="bk-chapters">
             {chapters.map((t, i) => (
               <button
                 key={t.id || i}
                 className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}`}
-                onClick={() => onPick(i)}
+                onClick={() => {
+                  setToc(false)
+                  onPick(i)
+                }}
               >
                 <span className="bk-chapter__idx">{i + 1}</span>
                 <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>
@@ -555,7 +575,10 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
 
 // ── Аудио-плеер ─────────────────────────────────────────────────────────────
 function BookAudio({ book, tracks, ch, onPick, onBack }) {
+  const { t } = useI18n()
   const track = tracks[ch] || {}
+  // Оглавление на телефоне — лист по кнопке в шапке, как в режиме чтения.
+  const [toc, setToc] = useState(false)
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [cur, setCur] = useState(0)
@@ -589,8 +612,10 @@ function BookAudio({ book, tracks, ch, onPick, onBack }) {
           <ChevronLeftIcon size={18} /> {track.title || `Глава ${ch + 1}`}
         </button>
         <div className="vd__headtitle">
+          <b className="bk-head__chapter">{track.title || `Глава ${ch + 1}`}</b>
           <span>{book.title}</span>
         </div>
+        <button type="button" className="bk-head__toc" onClick={() => setToc(true)} aria-label="Главы книги" />
       </div>
 
       <div className="bk-read">
@@ -628,14 +653,18 @@ function BookAudio({ book, tracks, ch, onPick, onBack }) {
           </div>
         </div>
 
-        <aside className="bk-read__side">
+        <aside className={`bk-read__side${toc ? ' is-open' : ''}`}>
           <h2 className="bk-read__sidetitle">Главы книги</h2>
+          <button type="button" className="bk-read__close" onClick={() => setToc(false)} aria-label={t('common.close')} />
           <div className="bk-chapters">
             {tracks.map((t, i) => (
               <button
                 key={t.id || i}
                 className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}`}
-                onClick={() => onPick(i)}
+                onClick={() => {
+                  setToc(false)
+                  onPick(i)
+                }}
               >
                 <span className="bk-chapter__idx">{i + 1}</span>
                 <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>

@@ -2,6 +2,7 @@
 
 import { useI18n } from '../../i18n.jsx'
 import MultiLine from './MultiLine.jsx'
+import { pickLang } from './SituationsCatalog.jsx'
 import SpeakingRecorder from './SpeakingRecorder.jsx'
 
 // Один сценарий: видео → что происходит → сцена → задание → запись → разбор
@@ -69,7 +70,7 @@ function Scene({ scene }) {
 }
 
 export default function SituationView({ level, item, token, done, onBack, onDone }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
 
   return (
     <article className="sit-view">
@@ -77,6 +78,13 @@ export default function SituationView({ level, item, token, done, onBack, onDone
         <button type="button" className="sit-back" onClick={onBack}>
           ← {t('situations.toCatalog')}
         </button>
+        {/* Название и раздел в шапке есть только в мобильном макете (кадр
+            4302:17814: крестик + «Подготовка к… / Ситуации»); на десктопе их
+            прячет src/mobile/practice.css. */}
+        <span className="sit-top__title">
+          <b>{pickLang(item.title, lang)}</b>
+          <span>{t('practice.chip.situations')}</span>
+        </span>
         <span className="sit-level">
           {level.toUpperCase()} · {item.id}/10
         </span>
