@@ -447,6 +447,18 @@ describe('HomeworkPage: работа из части-материала', () => 
     })
   }
 
+  // Слушатель `message` HomeworkMaterialPart вешает в useEffect — уже после того,
+  // как рамка появилась в DOM. Посланное сразу сообщение под нагрузкой полного
+  // прогона уходило в никуда, и кнопка так и не оживала (флак в CI develop
+  // 01.10.2026; воспроизводится задержкой подписки на 30 мс). Шлём, пока кнопка
+  // не оживёт: повторы компонент гасит сам (reportedRef).
+  async function тронутьРамку(frame) {
+    await waitFor(() => {
+      fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
+      expect(кнопкаСдачи().disabled).toBe(false)
+    })
+  }
+
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -462,9 +474,7 @@ describe('HomeworkPage: работа из части-материала', () => 
     const frame = await открытьЧасть(container)
     expect(кнопкаСдачи().disabled).toBe(true)
 
-    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
-
-    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+    await тронутьРамку(frame)
     fireEvent.click(кнопкаСдачи())
     await waitFor(() => expect(api.submitHomework).toHaveBeenCalledWith('TOK', 7))
   })
@@ -476,8 +486,7 @@ describe('HomeworkPage: работа из части-материала', () => 
     const { container } = renderPage()
 
     const frame = await открытьЧасть(container)
-    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
-    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+    await тронутьРамку(frame)
 
     fireEvent.click(screen.getByRole('button', { name: /Работа 8/ }))
     await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 8'))
@@ -492,15 +501,13 @@ describe('HomeworkPage: работа из части-материала', () => 
     const { container } = renderPage()
 
     const frame = await открытьЧасть(container)
-    fireEvent(window, new MessageEvent('message', { source: frame.contentWindow, data: mirror }))
-    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+    await тронутьРамку(frame)
 
     // На соседней работе ученик тоже поработал в части — касаний теперь два.
     fireEvent.click(screen.getByRole('button', { name: /Работа 8/ }))
     await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 8'))
     const frame8 = await открытьЧасть(container)
-    fireEvent(window, new MessageEvent('message', { source: frame8.contentWindow, data: mirror }))
-    await waitFor(() => expect(кнопкаСдачи().disabled).toBe(false))
+    await тронутьРамку(frame8)
 
     fireEvent.click(screen.getByRole('button', { name: /Работа 7/ }))
     await waitFor(() => expect(container.querySelector('.hw-detail__title').textContent).toBe('Работа 7'))
