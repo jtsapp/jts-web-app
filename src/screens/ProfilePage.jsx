@@ -16,6 +16,7 @@ import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
+import { PRIVACY_URL } from '../lib/support.js'
 import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
 
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
@@ -320,7 +321,7 @@ export default function ProfilePage({
     { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif },
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
-    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open('https://justtostudy.kz/privacy', '_blank') },
+    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(PRIVACY_URL, '_blank') },
     { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => window.open('https://justtostudy.kz/terms', '_blank') },
   ]
 

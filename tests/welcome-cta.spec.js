@@ -53,10 +53,11 @@ test.describe('welcome / панель входа — мобилка', () => {
 test.describe('welcome / панель входа — десктоп', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) <= 720, 'только широкий вьюпорт')
 
-  test('.cta — пилюля, футер виден (десктоп не тронут)', async ({ page }) => {
+  // Пилюля 503×92 с r90 — десктопный кадр «Регистрации» 1433:4892
+  test('.cta — пилюля, футер виден', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('.cta')).toBeVisible({ timeout: 20_000 })
-    await expect(page.locator('.cta')).toHaveCSS('border-radius', '999px')
+    await expect(page.locator('.cta')).toHaveCSS('border-radius', '90px')
     await expect(page.locator('.footer')).toBeVisible()
   })
 })

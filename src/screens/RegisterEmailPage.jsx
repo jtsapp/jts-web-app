@@ -3,6 +3,7 @@ import Shell from '../components/Shell.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
 import { isEmailIdentifier } from '../api.js'
+import { PRIVACY_URL } from '../lib/support.js'
 
 /**
  * Шаг 2 саморегистрации: почта. Номер уже собран на прошлом шаге
@@ -45,6 +46,13 @@ export default function RegisterEmailPage({ onBack, onSubmit, loading, error }) 
           <button className="form-primary" type="submit" disabled={!valid || loading}>
             {loading ? t('regemail.saving') : t('regemail.submit')}
           </button>
+
+          <p className="form-consent">
+            {t('reg.consent')}
+            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+              {t('phone.privacy')}
+            </a>
+          </p>
         </form>
       </div>
     </Shell>

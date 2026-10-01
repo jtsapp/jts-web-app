@@ -4,6 +4,7 @@ import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
 import { COUNTRY_OPTIONS, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
+import { PRIVACY_URL } from '../lib/support.js'
 
 /**
  * Шаг 1 саморегистрации: номер телефона. Код подтверждения сюда не идёт —
@@ -102,12 +103,20 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
               )}
             </div>
 
+            {/* Подсказка — маска «(___) ___ - __ - __», как в кадре. Она верна только
+                для +7: у других стран своя длина и раскладка, им — пример номера. */}
             <input
               ref={inputRef}
               type="tel"
               inputMode="numeric"
               autoFocus
-              placeholder={country.dial ? t('phone.placeholder') : t('phone.placeholderAnyCountry')}
+              placeholder={
+                !country.dial
+                  ? t('phone.placeholderAnyCountry')
+                  : country.dial === '7'
+                    ? t('phone.placeholderMask')
+                    : t('phone.placeholder')
+              }
               value={formatNational(country, digits)}
               onChange={onChange}
             />
@@ -118,6 +127,13 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
           <button className="form-primary" type="submit" disabled={!valid || loading}>
             {loading ? t('regphone.saving') : t('regphone.submit')}
           </button>
+
+          <p className="form-consent">
+            {t('reg.consent')}
+            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+              {t('phone.privacy')}
+            </a>
+          </p>
         </form>
       </div>
     </Shell>
