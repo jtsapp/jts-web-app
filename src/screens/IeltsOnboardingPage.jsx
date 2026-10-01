@@ -72,6 +72,7 @@ export default function IeltsOnboardingPage({ token, onExit, onDiagnostic }) {
   const [phase, setPhase] = useState('steps') // steps | guide | quiz | quizResult
   const [guidePage, setGuidePage] = useState(1)
   const [quiz, setQuiz] = useState({})
+  const [quizIdx, setQuizIdx] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -142,29 +143,26 @@ export default function IeltsOnboardingPage({ token, onExit, onDiagnostic }) {
   } else if (phase === 'quiz' || phase === 'quizResult') {
     const score = QUIZ.filter((c, i) => quiz[i] === c).length
     const done = phase === 'quizResult'
-    body = (
+    // как в прототипе: вопрос на экран с прогрессом и «Назад»; в разборе — только ошибки с объяснением
+    const i = quizIdx
+    const last = i === QUIZ.length - 1
+    const wrong = QUIZ.map((c, k) => k).filter((k) => quiz[k] !== QUIZ[k])
+    body = done ? (
       <>
-        <h1>{P('quiz.titleA')}</h1>
-        <p className="ih-ob__sub">{done ? P('quiz.score', { n: String(score), total: String(QUIZ.length) }) : P('quiz.subA')}</p>
-        {QUIZ.map((correct, i) => (
-          <section key={i} className="ih-card ih-ob__q">
-            <b>{i + 1}. {P(`quiz.a${i + 1}.q`)}</b>
-            <div className="ih-dq__options" role="radiogroup">
-              {[1, 2, 3, 4].map((o) => (
-                <button key={o} type="button" role="radio" aria-checked={quiz[i] === o} disabled={done}
-                  className={`ih-qopt ${quiz[i] === o ? 'is-on' : ''} ${done && o === correct ? 'is-right' : ''} ${done && quiz[i] === o && o !== correct ? 'is-wrong' : ''}`}
-                  onClick={() => setQuiz((q) => ({ ...q, [i]: o }))}>
-                  {P(`quiz.a${i + 1}.o${o}`)}
-                </button>
-              ))}
-            </div>
-            {done && <p className="ih-muted">{P(`quiz.a${i + 1}.ex`)}</p>}
+        <h1>{P('quiz.resultTitle')}</h1>
+        <p className="ih-ob__sub">{P('quiz.score', { n: String(score), total: String(QUIZ.length) })} · {P(score >= QUIZ_PASS ? 'quiz.passA' : 'quiz.failA')}</p>
+        {wrong.map((k) => (
+          <section key={k} className="ih-card ih-ob__q">
+            <b>{k + 1}. {P(`quiz.a${k + 1}.q`)}</b>
+            <p className="ih-ob__qans">
+              {quiz[k] != null && <span className="is-wrong">{P('quiz.yours')}: {P(`quiz.a${k + 1}.o${quiz[k]}`)}</span>}
+              <span className="is-right">{P('quiz.right')}: {P(`quiz.a${k + 1}.o${QUIZ[k]}`)}</span>
+            </p>
+            <p className="ih-muted">{P(`quiz.a${k + 1}.ex`)}</p>
           </section>
         ))}
         <div className="ih-ob__actions">
-          {!done ? (
-            <button type="button" className="ih-cta" disabled={Object.keys(quiz).length < QUIZ.length} onClick={() => setPhase('quizResult')}>{t('ieltsOb.checkQuiz')}</button>
-          ) : score >= QUIZ_PASS ? (
+          {score >= QUIZ_PASS ? (
             <button type="button" className="ih-cta" onClick={() => onDiagnostic?.()}>{P('ob.done.toDiagnostic')}</button>
           ) : (
             <>
@@ -172,6 +170,32 @@ export default function IeltsOnboardingPage({ token, onExit, onDiagnostic }) {
               <button type="button" className="ih-cta" onClick={() => setPhase('guide')}>{P('quiz.toGuide')}</button>
             </>
           )}
+        </div>
+      </>
+    ) : (
+      <>
+        <h1>{P('quiz.titleA')}</h1>
+        <p className="ih-ob__sub">{P('quiz.subA')}</p>
+        <div className="ih-ob__qprog">
+          <span>{P('quiz.progress', { n: String(i + 1), total: String(QUIZ.length) })}</span>
+          <i><i style={{ width: `${((i + 1) / QUIZ.length) * 100}%` }} /></i>
+        </div>
+        <section className="ih-card ih-ob__q">
+          <h2>{P(`quiz.a${i + 1}.q`)}</h2>
+          <div className="ih-ob__qopts" role="radiogroup">
+            {[1, 2, 3, 4].map((o) => (
+              <button key={o} type="button" role="radio" aria-checked={quiz[i] === o} className={`ih-qopt ${quiz[i] === o ? 'is-on' : ''}`} onClick={() => setQuiz((q) => ({ ...q, [i]: o }))}>
+                <span className="ih-ob__qnum">{o}</span>
+                {P(`quiz.a${i + 1}.o${o}`)}
+              </button>
+            ))}
+          </div>
+        </section>
+        <div className="ih-ob__actions">
+          {i > 0 && <button type="button" className="ih-btn ih-btn--outline" onClick={() => setQuizIdx(i - 1)}>{t('ieltsReading.back')}</button>}
+          <button type="button" className="ih-cta" disabled={quiz[i] == null} onClick={() => (last ? setPhase('quizResult') : setQuizIdx(i + 1))}>
+            {last ? t('ieltsOb.checkQuiz') : t('ieltsOb.continue')}
+          </button>
         </div>
       </>
     )

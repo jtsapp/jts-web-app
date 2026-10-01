@@ -1,4 +1,5 @@
 // Форматтеры дат и длительностей раздела IELTS — на языке интерфейса.
+import { pluralForm } from '../lib/plural.js'
 
 const LOCALES = { ru: 'ru-RU', en: 'en-GB', kk: 'kk-KZ' }
 
@@ -24,4 +25,12 @@ export function formatDuration(minutes, t) {
   if (!h) return t('ieltsHub.minutes', { n: String(rest) })
   if (!rest) return t('ieltsHub.hours', { n: String(h) })
   return `${t('ieltsHub.hours', { n: String(h) })} ${t('ieltsHub.minutes', { n: String(rest) })}`
+}
+
+// 5 → «5 месяцев», 2.5 → «2,5 месяца»: у дробного числа русский берёт родительный единственного, как у «few»;
+// pluralForm считает по целой части и дал бы «2,5 месяцев».
+export function formatMonths(n, t, lang = 'ru') {
+  const frac = n % 1 !== 0
+  const form = frac ? 'few' : pluralForm(n, lang)
+  return t(`ieltsOb.months.${form}`, { n: String(n).replace('.', lang === 'en' ? '.' : ',') })
 }

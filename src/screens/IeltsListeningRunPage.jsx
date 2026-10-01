@@ -182,7 +182,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
   const examLocked = mode === 'exam' && phase?.name === 'intro'
 
   return (
-    <div className="ih-run ih-lrun" data-mode={mode}>
+    <div className="ih-run ih-lrun ih-skin-listening" data-mode={mode}>
       <header className="ih-run__top">
         <button type="button" className="ih-round" onClick={() => { player.stop(); onExit?.(run.testId) }} aria-label={t('ieltsReading.close')}>
           <CloseIcon size={20} />

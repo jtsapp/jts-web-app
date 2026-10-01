@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getIeltsDiagnosticPath, startIeltsDiagnostic, submitIeltsDiagnostic } from '../api.js'
 import { loadToken } from '../lib/session.js'
-import { speakTts, stopTts, unlockSpeech } from '../lib/speech.js'
-import { VOICE } from '../lib/ttsShared.js'
+import { stopTts, unlockSpeech } from '../lib/speech.js'
 import { useI18n } from '../i18n.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import ConfirmDialog from '../ielts/ui/ConfirmDialog.jsx'
 import DiagQuestion from '../ielts/diagnostic/DiagQuestion.jsx'
+import DiagClipPlayer from '../ielts/diagnostic/DiagClipPlayer.jsx'
+import PassagePane from '../ielts/reading/PassagePane.jsx'
+import { addHighlight } from '../ielts/reading/highlights.js'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { formatSec } from '../ielts/speaking/speaking.js'
 import { countWords } from '../ielts/writing/writing.js'
@@ -220,14 +222,17 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
       return a + (cfg.listening.take?.[String(s)] ?? c.items.length)
     }, 0)
     body = (
-      <section className="ih-card ih-diag__clip">
+      <section className="ih-card ih-diag__clip ih-skin-listening">
         <span className="ih-chip ih-chip--violet ih-chip--md"><span>{P('block.clip', { n: String(d.slotIdx + 1), total: String(slots.length) })}</span></span>
         <p className="ih-muted" lang="en">{clip.context}</p>
-        {clip.audio?.url ? (
-          <audio controls src={clip.audio.url} className="ih-diag__audio" />
-        ) : (
-          <button type="button" className="ih-btn ih-btn--soft-violet" onClick={() => speakTts(clip.transcript, { voice: VOICE.gb })}><HeadphonesIcon size={16} />{t('ieltsListening.play')}</button>
-        )}
+        <DiagClipPlayer
+          key={clip.id}
+          clip={clip}
+          mode={cfg.listening.mode}
+          nQuestions={Math.min(take, clip.items.length)}
+          played={!!d.played?.[clip.id]}
+          onPlayed={() => update({ played: { ...(d.played || {}), [clip.id]: true } })}
+        />
         {cfg.listening.mode === 'exam' && <p className="ih-muted">{P('block.playOnce')}</p>}
         {clip.instruction && <p className="ih-dq__ins" lang="en">{clip.instruction}</p>}
         {clip.items.slice(0, take).map((it, i) => (
@@ -242,17 +247,26 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
   } else if (d.block === 'reading') {
     const task = form.reading[d.module === 'general' ? 'general' : 'academic']
     const items = cfg.reading.light ? task.items.filter((i) => task.lightItems.includes(i.id)) : task.items
+    // Текст — тем же PassagePane, что в тренажёре: маркер трёх цветов и выделение, как на компьютерном IELTS.
+    // У GT текстов несколько, строки «## …» — подзаголовки внутри текста, в абзац они идут жирной подписью.
+    const texts = task.paragraphs
+      ? [{ title: task.title, paragraphs: task.paragraphs }]
+      : (task.texts || []).map((x) => ({
+          label: x.label,
+          title: x.title,
+          paragraphs: (x.body || []).map((line) => (line.startsWith('## ') ? { label: line.slice(3), text: '' } : { text: line })),
+        }))
+    const highlights = d.highlights || []
     body = (
       <div className="ih-diag__reading">
         <section className="ih-card ih-diag__text" lang="en">
-          {task.title && <h3>{task.title}</h3>}
-          {(task.paragraphs || []).map((p) => <p key={p.label}><b>{p.label}</b> {p.text}</p>)}
-          {(task.texts || []).map((x) => (
-            <div key={x.label} className="ih-diag__subtext">
-              <h4>{x.label} · {x.title}</h4>
-              {(x.body || []).map((line, i) => (line.startsWith('## ') ? <h5 key={i}>{line.slice(3)}</h5> : <p key={i}>{line}</p>))}
-            </div>
-          ))}
+          <PassagePane
+            texts={texts}
+            highlights={highlights}
+            onHighlight={(h) => update({ highlights: addHighlight(highlights, h) })}
+            onClearAll={() => update({ highlights: [] })}
+            noCopy
+          />
         </section>
         <section className="ih-card ih-diag__questions">
           {items.map((it, i) => (

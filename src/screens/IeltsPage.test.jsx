@@ -13,6 +13,10 @@ vi.mock('../api.js', () => ({
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   // профиль IELTS ещё не настроен — на «Сегодня» стоит приглашение в онбординг
   getIeltsProfile: vi.fn(async () => ({ onboarded: false, track: 'academic', bands: null })),
+  // главный экран без бэкенда — экран показывает стартовый план, а не падает
+  getIeltsDashboard: vi.fn(async () => null),
+  rebuildIeltsPlan: vi.fn(async () => null),
+  getIeltsProgress: vi.fn(async () => ({ history: [], byType: { listening: [], reading: [] }, traps: {}, writing: { checked: 0, criteria: {} }, speaking: { checked: 0, criteria: {} }, recent: [] })),
   // каталог Reading с бэкенда: один полный тест и один текст, чтобы вкладки было что рисовать
   getIeltsTests: vi.fn(async (_token, skill = 'reading') => skill !== 'reading' ? [] : [
     { id: 'RM-AC-F01', kind: 'test', module: 'academic', title: 'Full 1', questionCount: 40, maxScore: 40, attemptCount: 1,
@@ -48,7 +52,7 @@ describe('IeltsPage — хаб раздела', () => {
     expect(screen.getByText('Быстрые действия')).toBeTruthy()
     expect(screen.getByText('Путь до экзамена')).toBeTruthy()
     // Серия — из общего баланса; XP бэкенд ещё не считает — чипа нет.
-    expect(await screen.findByText('3 дней подряд')).toBeTruthy()
+    expect(await screen.findByText('3 дня подряд')).toBeTruthy()
     expect(screen.queryByText(/XP/)).toBeNull()
     // Без балла — приглашение пройти тест, а не «0.0».
     expect(screen.getByText('Пройдите пробный тест, чтобы узнать балл')).toBeTruthy()

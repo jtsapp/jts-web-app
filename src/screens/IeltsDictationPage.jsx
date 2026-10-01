@@ -141,7 +141,7 @@ export default function IeltsDictationPage({ token, target, onExit }) {
   const avg = accuracies.length ? Math.round((accuracies.reduce((a, b) => a + b, 0) / accuracies.length) * 100) : 0
 
   return (
-    <div className="ih-run ih-dict">
+    <div className="ih-run ih-dict ih-skin-listening">
       <header className="ih-run__top">
         <button type="button" className="ih-round" onClick={() => { audioRef.current?.pause(); onExit?.() }} aria-label={t('ieltsReading.close')}>
           <CloseIcon size={20} />

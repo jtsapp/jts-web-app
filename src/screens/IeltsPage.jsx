@@ -23,6 +23,9 @@ import SpeakingGuideView from '../ielts/speaking/SpeakingGuideView.jsx'
 import ShadowingView from '../ielts/speaking/ShadowingView.jsx'
 import { TranslateIcon, DescriptionIcon } from '../ielts/icons.jsx'
 import { useIeltsDashboard, starterPlan } from '../ielts/model/useIeltsDashboard.js'
+import { planTaskView } from '../ielts/model/plan.js'
+import { rebuildIeltsPlan } from '../api.js'
+import { loadToken } from '../lib/session.js'
 import { useReadingCatalog, useListeningCatalog, useIeltsCatalog, useIeltsTrack } from '../ielts/reading/useReadingCatalog.js'
 
 // Хаб раздела IELTS (?screen=ielts): шапка с серией и XP, вкладки и их содержимое. Макет — Figma «JTS-clone»
@@ -107,7 +110,19 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
     writeHubUrl(merged)
   }
 
-  const plan = useMemo(() => data.plan || starterPlan(t), [data.plan, t])
+  // план дня строит бэкенд (по слабым типам, дате экзамена и маршруту); без ответа — стартовый план по секциям
+  // данные макета (?ieltsSample=1) несут план уже готовыми строками, бэкенд — сырыми задачами
+  const plan = useMemo(() => {
+    if (Array.isArray(data.plan)) return data.plan
+    return data.plan?.tasks?.length ? data.plan.tasks.map((x) => planTaskView(x, t)) : starterPlan(t)
+  }, [data.plan, t])
+  const startTask = (task) => {
+    const target = task.target
+    if (target?.screen) onNav?.(target.screen)
+    else if (target?.hub) go(target.hub)
+    else goTarget(target)
+  }
+  const rebuildPlan = () => rebuildIeltsPlan(token || loadToken()).catch(() => null).then(reload)
 
   // Цели задач и быстрых действий: экраны IELTS — App (onGo), разделы приложения — сайдбарная навигация (onNav).
   const goTarget = (dest) => {
@@ -141,8 +156,8 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
       <TodayTab
         data={data}
         plan={plan}
-        onStartTask={(task) => goTarget(task.target)}
-        onRebuild={reload}
+        onStartTask={startTask}
+        onRebuild={rebuildPlan}
         onQuickAction={onQuickAction}
         onLessonReport={() => onNav?.('lessons')}
         onStartStep={(step) => onNav?.(step === 'onboarding' ? 'ielts-onboarding' : step === 'diagnostic' ? 'ielts-diagnostic' : 'ielts-route')}
@@ -266,7 +281,19 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   } else if (hub.tab === 'mocks') {
     panel = <MockTestsTab catalog={catalog} track={track} onTrack={setTrack} onStart={startRun} onOpenTest={openTest} />
   } else if (hub.tab === 'progress') {
-    panel = <ProgressTab data={data} onGo={onGo} />
+    panel = (
+      <ProgressTab
+        data={data}
+        token={token}
+        onOpenAttempt={(a) => {
+          // разбор — там, где у навыка свой экран работы
+          if (a.skill === 'writing') go({ tab: 'learn', view: 'writing-work', attemptId: String(a.id) })
+          else if (a.skill === 'speaking') go({ tab: 'learn', view: 'speaking-work', attemptId: String(a.id) })
+          else if (a.skill === 'diagnostic') onNav?.('ielts-diagnostic-result', { attemptId: String(a.id) })
+          else onNav?.('ielts-reading-review', { attemptId: a.id, back: { tab: 'progress' } })
+        }}
+      />
+    )
   } else if (hub.tab === 'vocab') {
     panel = (
       <ComingSoonTab
@@ -280,7 +307,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ih">
-        <IeltsHeader streakDays={data.streakDays} xp={data.xp} level={data.level} />
+        <IeltsHeader streakDays={data.streakDays} streakBest={data.streakBest} xp={data.xp} level={data.level} />
         <Tabs items={tabs} value={hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
         <div role="tabpanel" id={`ih-panel-${hub.tab}`} aria-labelledby={`ih-tab-${hub.tab}`} className="ih__panel">
           {panel}

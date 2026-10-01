@@ -8,9 +8,35 @@ import { ttsUrl, VOICE } from '../../lib/ttsShared.js'
  * rules — из playerRules(): в экзамене нельзя паузу, перемотку и повтор (maxPlays: 1). «Прослушанным» считается
  * старт с начала: продолжение после паузы прослушивание не тратит.
  */
+// Голос устройства — запасной путь, когда /api/tts не отвечает (нет ключа Soniox, лимит, сеть): тишина в Listening
+// хуже робота. Возвращает false, если синтеза в браузере нет вовсе.
+function deviceSay(text, rate, onDone) {
+  const ss = typeof window !== 'undefined' ? window.speechSynthesis : null
+  if (!ss || typeof SpeechSynthesisUtterance === 'undefined') return false
+  const u = new SpeechSynthesisUtterance(text)
+  u.lang = 'en-GB'
+  u.rate = rate || 1
+  u.onend = () => onDone()
+  u.onerror = () => onDone()
+  ss.cancel()
+  ss.speak(u)
+  return true
+}
+
+function stopDevice() {
+  try {
+    window.speechSynthesis?.cancel()
+  } catch {
+    /* синтеза нет — нечего останавливать */
+  }
+}
+
 export function useAudioPlayer({ src, transcript, rules, onEnded }) {
   const audioRef = useRef(null)
   const ttsRef = useRef({ i: -1, stopped: true })
+  // true — /api/tts уже не ответил в этом плеере: дальше реплики сразу читает устройство, без ожидания ошибки
+  const deviceRef = useRef(false)
+  const speakFromRef = useRef(null)
   const endAtRef = useRef(null)
   const onEndedRef = useRef(onEnded)
   onEndedRef.current = onEnded
@@ -30,17 +56,30 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
       upd({ time: a.currentTime })
     }
     a.onloadedmetadata = () => upd({ duration: a.duration || 0 })
-    a.onplay = () => upd({ playing: true })
+    a.onplay = () => upd({ playing: true, error: false })
     a.onpause = () => upd({ playing: false })
-    a.onerror = () => upd({ error: true, playing: false })
+    a.onerror = () => {
+      // синтез реплики не пришёл — дочитываем голосом устройства с этой же реплики
+      if (!ttsRef.current.stopped && ttsRef.current.i >= 0 && speakFromRef.current) {
+        deviceRef.current = true
+        speakFromRef.current(ttsRef.current.i)
+        return
+      }
+      upd({ error: true, playing: false })
+    }
     a.onended = () => {
       upd({ playing: false })
       onEndedRef.current?.()
     }
     return () => {
+      // сначала отвязать обработчики: пустой src сам рождает событие error, и оно (в dev — после повторного монтирования
+      // StrictMode) красило новый плеер в «Не удалось загрузить запись»
+      a.ontimeupdate = a.onloadedmetadata = a.onplay = a.onpause = a.onerror = a.onended = null
       a.pause()
-      a.src = ''
+      a.removeAttribute('src')
+      a.load()
       ttsRef.current.stopped = true
+      stopDevice()
     }
   }, [])
 
@@ -70,26 +109,53 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
     const speakers = [...new Set(lines.map((l) => l.speaker).filter(Boolean))]
     const voice = speakers.indexOf(lines[i].speaker) === 1 ? VOICE.gbMale : VOICE.gb
     ttsRef.current = { i, stopped: false }
-    a.src = ttsUrl({ text: lines[i].text, voice, lang: 'en', speed: state.rate }) || ''
-    a.onended = () => !ttsRef.current.stopped && speakFrom(i + 1)
     setState((s) => ({ ...s, time: Number(lines[i].start) || 0 }))
-    a.play().catch(() => setState((s) => ({ ...s, error: true, playing: false })))
+    const next = () => !ttsRef.current.stopped && ttsRef.current.i === i && speakFrom(i + 1)
+    if (deviceRef.current) {
+      setState((s) => ({ ...s, playing: true }))
+      if (!deviceSay(lines[i].text, state.rate, next)) setState((s) => ({ ...s, error: true, playing: false }))
+      return
+    }
+    const url = ttsUrl({ text: lines[i].text, voice, lang: 'en', speed: state.rate })
+    if (!url) {
+      deviceRef.current = true
+      return speakFrom(i)
+    }
+    a.src = url
+    a.onended = next
+    a.play().catch((e) => {
+      // NotAllowedError — браузер не пустил звук без жеста, голос устройства тут не поможет
+      if (e?.name === 'NotAllowedError') {
+        ttsRef.current.stopped = true
+        return setState((s) => ({ ...s, error: true, playing: false, plays: i === 0 ? Math.max(0, s.plays - 1) : s.plays }))
+      }
+      deviceRef.current = true
+      speakFrom(i)
+    })
   }, [transcript, state.rate])
+  useEffect(() => {
+    speakFromRef.current = speakFrom
+  }, [speakFrom])
 
   const play = useCallback(() => {
     const a = audioRef.current
     if (!a) return
-    const fromStart = tts ? ttsRef.current.i < 0 || ttsRef.current.stopped : a.currentTime < 0.5 || a.ended
+    // после паузы синтез продолжается с той же реплики и прослушивание не тратит
+    const fromStart = tts ? ttsRef.current.i < 0 || (ttsRef.current.stopped && !ttsRef.current.paused) : a.currentTime < 0.5 || a.ended
     if (fromStart && rules?.maxPlays && state.plays >= rules.maxPlays) return
     if (fromStart) setState((s) => ({ ...s, plays: s.plays + 1 }))
     if (tts) return speakFrom(fromStart ? 0 : ttsRef.current.i)
     if (a.ended) a.currentTime = 0
-    a.play().catch(() => setState((s) => ({ ...s, error: true })))
+    // автозапуск, который браузер не пустил, единственное прослушивание экзамена не сжигает
+    a.play().catch((e) => setState((s) => ({ ...s, error: true, plays: e?.name === 'NotAllowedError' && fromStart ? Math.max(0, s.plays - 1) : s.plays })))
   }, [rules, state.plays, tts, speakFrom])
 
   const pause = useCallback(() => {
     if (rules && !rules.allowPause) return
-    if (tts) ttsRef.current.stopped = true
+    if (tts) {
+      ttsRef.current = { ...ttsRef.current, stopped: true, paused: true }
+      stopDevice()
+    }
     audioRef.current?.pause()
     setState((s) => ({ ...s, playing: false }))
   }, [rules, tts])
@@ -124,6 +190,7 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
 
   const stop = useCallback(() => {
     ttsRef.current.stopped = true
+    stopDevice()
     audioRef.current?.pause()
   }, [])
 

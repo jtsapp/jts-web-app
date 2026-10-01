@@ -39,8 +39,12 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
     const endBox = range.endContainer.parentElement?.closest('[data-ptext]')
     // выделение через два абзаца не красим — маркер на экзамене тоже идёт по одному абзацу
     if (!startBox || startBox !== endBox) return setMenu(null)
-    const start = offsetIn(startBox, range.startContainer, range.startOffset)
-    const end = offsetIn(startBox, range.endContainer, range.endOffset)
+    // края — до границы слова: мышью легко зацепить полслова, а маркер на «m|ost of» читается как ошибка
+    const full = startBox.textContent || ''
+    let start = offsetIn(startBox, range.startContainer, range.startOffset)
+    let end = offsetIn(startBox, range.endContainer, range.endOffset)
+    while (start > 0 && /[\w'’-]/.test(full[start - 1]) && /[\w'’-]/.test(full[start])) start--
+    while (end < full.length && /[\w'’-]/.test(full[end]) && /[\w'’-]/.test(full[end - 1])) end++
     if (end <= start) return setMenu(null)
     const rect = range.getBoundingClientRect()
     const host = paneRef.current.getBoundingClientRect()
@@ -49,7 +53,7 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
       key: startBox.dataset.ptext,
       start,
       end,
-      word: sel.toString().trim(),
+      word: full.slice(start, end).trim(),
       x: rect.left - host.left + paneRef.current.scrollLeft + rect.width / 2,
       y: rect.top - host.top + paneRef.current.scrollTop - 8,
     })
@@ -69,7 +73,9 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
   }
 
   return (
-    <div className="ih-passage" ref={paneRef} onMouseUp={onMouseUp} onCopy={noCopy ? (e) => e.preventDefault() : undefined}>
+    // data-selectable снимает глобальный запрет выделения (styles.css): без него маркер и «В словарь» не работали —
+    // выделить текст было нельзя. Копирование по-прежнему гасит NoCopyGuard.
+    <div className="ih-passage" ref={paneRef} data-selectable="" onMouseUp={onMouseUp} onCopy={noCopy ? (e) => e.preventDefault() : undefined}>
       {showMarkerBar && onHighlight && (
         <div className="ih-marker">
           <span>{t('ieltsReading.marker.label')}</span>

@@ -1285,6 +1285,19 @@ export function getIeltsWritingModel(token, id) {
 
 // Профиль IELTS (онбординг, маршрут) и диагностика. Диагностику проверяет бэкенд: ключей у экрана нет, поэтому и
 // адаптивный клип Listening он спрашивает (…/diagnostic/path) по ответам на предыдущие слоты.
+// «Сегодня» (баллы, план дня, roadmap, прогноз, XP) и «Прогресс» IELTS. План и XP считает бэкенд по фактам попыток.
+export function getIeltsDashboard(token) {
+  return authGet('/mobile/ielts/dashboard', token)
+}
+
+export function rebuildIeltsPlan(token) {
+  return authPost('/mobile/ielts/dashboard/plan', token, {})
+}
+
+export function getIeltsProgress(token) {
+  return authGet('/mobile/ielts/progress', token)
+}
+
 export function getIeltsProfile(token) {
   return authGet('/mobile/ielts/profile', token)
 }
