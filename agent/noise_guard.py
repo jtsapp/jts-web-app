@@ -66,7 +66,12 @@ logger = logging.getLogger("jts-agent")
 #
 # SPEAKER_LOCK=on|off — фильтр говорящих.
 # TURN_WATCHDOG_SEC=<сек> — сторож конца хода; 0 или пусто — выключен.
-# NOISE_GUARD_TUTORS=bro,hype — сузить оба слоя до персон (канарейка).
+# NOISE_GUARD_TUTORS=bro,hype — сузить все слои до персон (канарейка).
+# SPEAKER_LOCK_TUTORS / TURN_WATCHDOG_TUTORS — своя канарейка у замка и у
+#   сторожа; если задана, она главнее общей. Нужна, чтобы обкатывать замок на
+#   одном тьюторе, не отбирая finalize рации у остальных. Список — ТОЛЬКО
+#   файлом (`lk agent update-secrets --secrets-file`): в --secrets запятая
+#   делит пары KEY=VALUE.
 # SPEAKER_LOCK_RATIO — во сколько раз новый говорящий должен быть громче
 #   основного, чтобы забрать у него микрофон.
 # SPEAKER_LOCK_KEEP — доля громкости ученика, начиная с которой слово
@@ -85,12 +90,9 @@ SPEAKER_LOCK_KEEP_DEFAULT = 0.75
 _OFF = ("off", "0", "false", "no")
 
 
-def _tutor_allowed(tutor: str) -> bool:
-    only = [
-        x.strip().lower()
-        for x in (os.getenv("NOISE_GUARD_TUTORS") or "").split(",")
-        if x.strip()
-    ]
+def _tutor_allowed(tutor: str, own_env: str = "") -> bool:
+    raw = (os.getenv(own_env) if own_env else "") or os.getenv("NOISE_GUARD_TUTORS") or ""
+    only = [x.strip().lower() for x in raw.split(",") if x.strip()]
     return not only or (tutor or "").strip().lower() in only
 
 
@@ -99,7 +101,7 @@ def speaker_lock_enabled(tutor: str) -> bool:
     raw = (os.getenv("SPEAKER_LOCK") or SPEAKER_LOCK_DEFAULT).strip().lower()
     if raw in _OFF:
         return False
-    return _tutor_allowed(tutor)
+    return _tutor_allowed(tutor, "SPEAKER_LOCK_TUTORS")
 
 
 def soniox_finalize_enabled(tutor: str | None = None) -> bool:
@@ -155,7 +157,7 @@ def turn_watchdog_sec(tutor: str) -> float:
             return 0.0
     if value <= 0 or math.isnan(value):
         return 0.0
-    return value if _tutor_allowed(tutor) else 0.0
+    return value if _tutor_allowed(tutor, "TURN_WATCHDOG_TUTORS") else 0.0
 
 
 # ── Замок на ученика ─────────────────────────────────────────────────────────
@@ -167,18 +169,45 @@ def _is_end_token(token: dict[str, Any]) -> bool:
     return token.get("text") in ("<end>", "<fin>")
 
 
+def _words(tokens: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Токены Soniox → слова. Soniox режет слово на куски («Y|ester|day»), новое
+    слово начинается с пробела; знаки препинания без пробела прилипают к
+    предыдущему слову."""
+    words: list[list[dict[str, Any]]] = []
+    for t in tokens:
+        text = str(t.get("text", ""))
+        if not words or text.startswith(" "):
+            words.append([t])
+        else:
+            words[-1].append(t)
+    return words
+
+
 class SpeakerLock:
-    """Решает по каждому слову Soniox, оставить его или выкинуть.
+    """Решает по каждому СЛОВУ фразы Soniox, оставить его или выкинуть.
+
+    v2 (01.10.2026). Первая версия решала по кускам слов и на лету, и живой
+    звонок с Krisp BVC показал две беды: разметка говорящих прыгает ВНУТРИ слова
+    на стыке ученика и фона — выходило «esterdched» вместо «Yesterday I
+    watched»; а новости, звучавшие до первого слова ученика, проходили: фон был
+    единственным говорящим и успевал стать основным. Поэтому теперь:
+
+    * решение по целому слову — по большинству его кусков;
+    * финальные слова фразы придерживаются до её конца (<end>/<fin>) и
+      решаются разом, когда уже известно, кто громче. Задержки это не
+      добавляет: плагин и так отдаёт FINAL только на конце фразы. Пока фраза
+      идёт, придержанные слова уходят плагину черновыми — подпись и порог
+      перебивания их видят.
 
     Громкость считаем сами по аудио, которое ушло в Soniox: у слова есть
     start_ms/end_ms от начала сокета, и мы берём медиану RMS по окнам 100 мс,
     попавшим в этот отрезок. По громкости каждого говорящего держим
-    сглаженное среднее, обновляем его только на ФИНАЛЬНЫХ словах (черновые
+    сглаженное среднее, обновляем его только на ФИНАЛЬНЫХ кусках (черновые
     Soniox присылает повторно, они перевесили бы).
 
-    Основной говорящий — первый, у кого появилась громкость. Сменить его может
-    только тот, кто громче в `ratio` раз: без запаса микрофон метался бы между
-    учеником и телевизором на каждом слове.
+    Основной говорящий — самый громкий: сменить текущего может только тот, кто
+    громче в `ratio` раз, иначе микрофон метался бы между учеником и
+    телевизором на каждом слове.
     """
 
     WINDOW_SEC = 0.1
@@ -208,6 +237,8 @@ class SpeakerLock:
         self._window_len = 0
         self._loudness: dict[str, float] = {}
         self.primary: str | None = None
+        # Финальные куски текущей фразы — ждут её конца.
+        self._held: list[dict[str, Any]] = []
         self.kept_words = 0
         self.dropped_words = 0
 
@@ -236,7 +267,9 @@ class SpeakerLock:
             self._base += cut
 
     def _token_loudness(self, token: dict[str, Any]) -> float | None:
-        start, end = token.get("start_ms"), token.get("end_ms")
+        return self._span_loudness(token.get("start_ms"), token.get("end_ms"))
+
+    def _span_loudness(self, start: Any, end: Any) -> float | None:
         if start is None or end is None:
             return None
         i0 = int(float(start) / 1000 / self.WINDOW_SEC) - self._base
@@ -270,36 +303,73 @@ class SpeakerLock:
             if self._on_switch:
                 self._on_switch(old, speaker, self._loudness[speaker], primary_loud)
 
-    def _loud_as_primary(self, token: dict[str, Any]) -> bool:
-        if self._keep <= 0 or self.primary is None:
-            return False
-        primary_loud = self._loudness.get(self.primary)
-        loud = self._token_loudness(token)
-        return bool(primary_loud) and loud is not None and loud >= primary_loud * self._keep
-
-    def filter_tokens(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
-        """Оставить слова основного говорящего. Возвращает (оставленные,
-        текст выкинутых ФИНАЛЬНЫХ слов) — второе только для лога."""
-        kept: list[dict[str, Any]] = []
-        dropped_final: list[str] = []
-        for token in tokens:
-            raw_speaker = token.get("speaker")
-            if raw_speaker is None or _is_end_token(token):
-                kept.append(token)
+    def _keep_word(self, word: list[dict[str, Any]]) -> bool:
+        """Оставить ли слово целиком."""
+        # Пока основного нет (ни у кого ещё не посчитана громкость), пропускаем
+        # всё: лучше лишнее слово, чем глухой тьютор.
+        if self.primary is None:
+            return True
+        votes: dict[str, int] = {}
+        for t in word:
+            if t.get("speaker") is None:
                 continue
-            speaker = str(raw_speaker)
+            spk = str(t["speaker"])
+            votes[spk] = votes.get(spk, 0) + max(1, len(str(t.get("text", "")).strip()))
+        if not votes:
+            return True
+        speaker = max(votes, key=votes.get)
+        if speaker == self.primary:
+            return True
+        # Слово «чужого» говорящего, но громкое как речь ученика, — это ученик,
+        # сказавший его поверх фона (громкость смеси не ниже его голоса).
+        primary_loud = self._loudness.get(self.primary)
+        if self._keep > 0 and primary_loud:
+            loud = self._span_loudness(word[0].get("start_ms"), word[-1].get("end_ms"))
+            if loud is not None and loud >= primary_loud * self._keep:
+                return True
+        return False
+
+    def _decide(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
+        kept: list[dict[str, Any]] = []
+        dropped: list[str] = []
+        for word in _words(tokens):
+            if self._keep_word(word):
+                kept.extend(word)
+            else:
+                dropped.append("".join(str(t.get("text", "")) for t in word).strip())
+        return kept, dropped
+
+    def process(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+        """Токены одного ответа Soniox → токены для плагина.
+
+        Финальные куски придерживаются; на конце фразы уходят отфильтрованные
+        пословно и разом, перед самим <end>/<fin>. Пока фраза идёт, плагину
+        уходит черновой вид: придержанные куски плюс черновые, отфильтрованные
+        по текущему основному и помеченные is_final=False (накопитель черновых
+        у плагина новый на каждый ответ, так что повтор безопасен).
+        Возвращает (токены, текст выкинутых слов фразы) — второе для лога."""
+        out: list[dict[str, Any]] = []
+        drafts: list[dict[str, Any]] = []
+        dropped_all: list[str] = []
+        for token in tokens:
+            if _is_end_token(token):
+                kept, dropped = self._decide(self._held)
+                self.kept_words += len(_words(kept))
+                self.dropped_words += len(dropped)
+                dropped_all.extend(dropped)
+                out.extend(kept)
+                out.append(token)
+                self._held = []
+                continue
             if token.get("is_final"):
-                self._observe(speaker, token)
-            # Пока основного нет (ни у кого ещё не посчитана громкость),
-            # пропускаем всё: лучше лишнее слово, чем глухой тьютор.
-            if self.primary is None or speaker == self.primary or self._loud_as_primary(token):
-                kept.append(token)
-                if token.get("is_final"):
-                    self.kept_words += 1
-            elif token.get("is_final"):
-                self.dropped_words += 1
-                dropped_final.append(str(token.get("text", "")))
-        return kept, "".join(dropped_final).strip()
+                if token.get("speaker") is not None:
+                    self._observe(str(token["speaker"]), token)
+                self._held.append(token)
+            else:
+                drafts.append(token)
+        view, _ = self._decide(self._held + drafts)
+        out.extend({**t, "is_final": False} for t in view)
+        return out, " ".join(w for w in dropped_all if w)
 
 
 # Ручное закрытие фразы в протоколе Soniox: сервер дорасшифровывает всё, что
@@ -369,12 +439,10 @@ if aiohttp is not None and soniox is not None:
             fin = any(t.get("text") == "<fin>" for t in tokens)
             if self._lock is None:
                 return msg, fin
-            kept, dropped = self._lock.filter_tokens(tokens)
+            out, dropped = self._lock.process(tokens)
             if dropped:
                 self._log_drop(dropped)
-            if len(kept) == len(tokens):
-                return msg, fin
-            content["tokens"] = kept
+            content["tokens"] = out
             return msg._replace(data=json.dumps(content, ensure_ascii=False)), fin
 
     class _GuardedSpeechStream(soniox_stt.SpeechStream):
