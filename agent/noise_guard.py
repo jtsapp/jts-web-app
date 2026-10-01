@@ -20,6 +20,11 @@ Soniox послушно пишет их в реплику ученика.
 * TurnWatchdog — детектор голоса держит ход открытым, пока слышит хоть что-то
   похожее на речь, и музыка с пением держит его бесконечно. Сторож закрывает ход
   сам, если «речь» идёт, а слов ученика (уже после фильтра) нет дольше порога.
+
+Плюс «закончить сейчас» для рации (GuardedSonioxSTT.finalize_now): живой
+звонок 01.10.2026 показал 1.4–2.6 с тишины после отпускания кнопки — агент ждал,
+пока Soniox сам закроет фразу (max_endpoint_delay до 2 с), а команду finalize
+плагин 1.6.7 не шлёт вовсе.
 """
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ import logging
 import math
 import os
 import time
+import weakref
 from statistics import median
 from typing import Any, Callable
 
@@ -38,12 +44,16 @@ import numpy as np
 try:  # pragma: no cover - плагина нет только в урезанных окружениях
     import aiohttp
     from livekit import rtc
+    from livekit.agents import stt as lk_stt
+    from livekit.agents.language import LanguageCode
     from livekit.plugins import soniox
     # SpeechStream пакет наружу не отдаёт — только модуль stt.
     from livekit.plugins.soniox import stt as soniox_stt
 except Exception:  # pragma: no cover
     aiohttp = None
     rtc = None
+    lk_stt = None
+    LanguageCode = str
     soniox = None
     soniox_stt = None
 
@@ -90,6 +100,11 @@ def speaker_lock_enabled(tutor: str) -> bool:
     if raw in _OFF:
         return False
     return _tutor_allowed(tutor)
+
+
+def soniox_finalize_enabled() -> bool:
+    """SONIOX_FINALIZE=off — откат «закончить сейчас» для рации секретом."""
+    return (os.getenv("SONIOX_FINALIZE") or "").strip().lower() not in _OFF
 
 
 def speaker_lock_ratio() -> float:
@@ -282,16 +297,31 @@ class SpeakerLock:
         return kept, "".join(dropped_final).strip()
 
 
+# Ручное закрытие фразы в протоколе Soniox: сервер дорасшифровывает всё, что
+# успел получить, и присылает токен <fin> — плагин считает его концом фразы и
+# сразу отдаёт FINAL. Без него конец фразы решает сам Soniox, и это до
+# max_endpoint_delay_ms (2 с по умолчанию) после последнего слова.
+FINALIZE_MESSAGE = json.dumps({"type": "finalize"})
+
+
 if aiohttp is not None and soniox is not None:
 
     class _FilteringWS:
         """Обёртка сокета Soniox: плагин читает из неё ответы, в которых уже
-        нет слов фона. Отправка и закрытие уходят в настоящий сокет как есть."""
+        нет слов фона (если замок включён), а после ответа на finalize зовётся
+        on_fin. Отправка и закрытие уходят в настоящий сокет как есть."""
 
-        def __init__(self, ws: Any, lock: SpeakerLock, log_drop: Callable[[str], None]) -> None:
+        def __init__(
+            self,
+            ws: Any,
+            lock: SpeakerLock | None,
+            log_drop: Callable[[str], None],
+            on_fin: Callable[[], None],
+        ) -> None:
             self._ws = ws
             self._lock = lock
             self._log_drop = log_drop
+            self._on_fin = on_fin
 
         def __getattr__(self, name: str) -> Any:
             return getattr(self._ws, name)
@@ -301,30 +331,43 @@ if aiohttp is not None and soniox is not None:
 
         async def _iter(self):
             async for msg in self._ws:
+                fin = False
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    msg = self._filter(msg)
+                    msg, fin = self._filter(msg)
                 yield msg
+                # Сюда возвращаемся, когда плагин уже разобрал сообщение (и,
+                # если фраза была, отдал её FINAL-ом) и ждёт следующее.
+                if fin:
+                    self._on_fin()
 
-        def _filter(self, msg: Any) -> Any:
+        def _filter(self, msg: Any) -> tuple[Any, bool]:
             try:
                 content = json.loads(msg.data)
             except (TypeError, ValueError):
-                return msg
+                return msg, False
             tokens = content.get("tokens")
             if not tokens:
-                return msg
+                return msg, False
+            fin = any(t.get("text") == "<fin>" for t in tokens)
+            if self._lock is None:
+                return msg, fin
             kept, dropped = self._lock.filter_tokens(tokens)
             if dropped:
                 self._log_drop(dropped)
             if len(kept) == len(tokens):
-                return msg
+                return msg, fin
             content["tokens"] = kept
-            return msg._replace(data=json.dumps(content, ensure_ascii=False))
+            return msg._replace(data=json.dumps(content, ensure_ascii=False)), fin
 
     class _GuardedSpeechStream(soniox_stt.SpeechStream):
         def __init__(self, stt: "GuardedSonioxSTT", conn_options: Any) -> None:
             super().__init__(stt=stt, conn_options=conn_options)
-            self._lock = SpeakerLock(ratio=stt._ratio, keep=stt._keep, on_switch=self._log_switch)
+            self._guard: GuardedSonioxSTT = stt
+            self._lock = (
+                SpeakerLock(ratio=stt._ratio, keep=stt._keep, on_switch=self._log_switch)
+                if stt._lock_on
+                else None
+            )
             self._drop_buf: list[str] = []
 
         def _log_switch(self, old: str | None, new: str, loud: float, old_loud: float) -> None:
@@ -347,25 +390,46 @@ if aiohttp is not None and soniox is not None:
 
         async def _connect_ws(self) -> Any:
             ws = await super()._connect_ws()
-            # Новый сокет — новое время слов и новые номера говорящих.
-            self._lock.reset()
+            if self._lock is not None:
+                # Новый сокет — новое время слов и новые номера говорящих.
+                self._lock.reset()
             self._drop_buf = []
-            return _FilteringWS(ws, self._lock, self._log_drop)
+            return _FilteringWS(ws, self._lock, self._log_drop, self._on_fin)
+
+        def _on_fin(self) -> None:
+            # Ответ на finalize. Если фраза к этому моменту уже была отдана
+            # (Soniox сам закрыл её на паузе до отпускания кнопки), плагин на
+            # пустой <fin> не отдаёт ничего — а commit_user_turn в это время
+            # ждёт НОВЫЙ FINAL до 2 с и сдаётся по таймауту. Пустой FINAL
+            # снимает это ожидание: audio_recognition взводит событие «финал
+            # пришёл» до проверки на пустоту, а пустой текст в реплику не идёт.
+            self._event_ch.send_nowait(
+                lk_stt.SpeechEvent(
+                    type=lk_stt.SpeechEventType.FINAL_TRANSCRIPT,
+                    alternatives=[lk_stt.SpeechData(language=LanguageCode(""), text="")],
+                )
+            )
 
         async def _prepare_audio_task(self) -> None:
-            # Копия родителя (soniox 1.6.7) плюс счёт громкости: считать её надо
-            # ровно по тому аудио, которое ушло в сокет, иначе время слов и окна
-            # громкости разъедутся.
+            # Копия родителя (soniox 1.6.7) плюс две вещи. Счёт громкости: считать
+            # её надо ровно по тому аудио, которое ушло в сокет, иначе время слов и
+            # окна громкости разъедутся. И flush → finalize: родитель метку конца
+            # сегмента молча выбрасывает. Метка идёт тем же каналом, что и кадры,
+            # поэтому finalize встаёт в очередь сокета строго ПОСЛЕ последнего
+            # кадра речи — хвост фразы не отрежется.
             if not self._ws:
                 return
             async for data in self._input_ch:
                 if isinstance(data, rtc.AudioFrame):
                     pcm_data = data.data.tobytes()
-                    self._lock.push_pcm(pcm_data, data.sample_rate)
+                    if self._lock is not None:
+                        self._lock.push_pcm(pcm_data, data.sample_rate)
                     self.audio_queue.put_nowait(pcm_data)
+                elif isinstance(data, self._FlushSentinel) and self._guard._finalize:
+                    self.audio_queue.put_nowait(FINALIZE_MESSAGE)
 
         async def aclose(self) -> None:
-            if self._lock.kept_words or self._lock.dropped_words:
+            if self._lock is not None and (self._lock.kept_words or self._lock.dropped_words):
                 logger.info(
                     "Speaker lock: слов ученика %d, выкинуто фона %d",
                     self._lock.kept_words, self._lock.dropped_words,
@@ -373,29 +437,56 @@ if aiohttp is not None and soniox is not None:
             await super().aclose()
 
     class GuardedSonioxSTT(soniox.STT):
-        """soniox.STT с замком на основного говорящего. Разметку говорящих
-        включает сам: без неё фильтровать нечего."""
+        """soniox.STT с замком на основного говорящего (lock) и ручным
+        закрытием фразы (finalize_now). Разметку говорящих включает сам, когда
+        замок включён: без неё фильтровать нечего."""
 
         def __init__(
             self,
             *,
+            lock: bool = True,
             ratio: float = SPEAKER_LOCK_RATIO_DEFAULT,
             keep: float = SPEAKER_LOCK_KEEP_DEFAULT,
+            finalize: bool = True,
             **kwargs: Any,
         ) -> None:
             params = kwargs.get("params") or soniox.STTOptions()
-            params.enable_speaker_diarization = True
+            if lock:
+                params.enable_speaker_diarization = True
             kwargs["params"] = params
             super().__init__(**kwargs)
+            self._lock_on = lock
             self._ratio = ratio
             self._keep = keep
+            self._finalize = finalize
+            # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
+            # распознавания создаёт и держит сам фреймворк.
+            self._streams: weakref.WeakSet = weakref.WeakSet()
 
         def stream(self, *, language: Any = None, conn_options: Any = None) -> Any:
             from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
 
-            return _GuardedSpeechStream(
+            s = _GuardedSpeechStream(
                 stt=self, conn_options=conn_options or DEFAULT_API_CONNECT_OPTIONS
             )
+            self._streams.add(s)
+            return s
+
+        def finalize_now(self) -> int:
+            """Закрыть текущую фразу у Soniox прямо сейчас (рация: кнопку
+            отпустили — значит, ученик договорил). Возвращает число потоков,
+            которым ушла команда."""
+            if not self._finalize:
+                return 0
+            sent = 0
+            for s in list(self._streams):
+                try:
+                    s.flush()
+                    sent += 1
+                except RuntimeError:
+                    # Поток уже закрыт или вход завершён — закрывать нечего.
+                    continue
+            return sent
 
 else:  # pragma: no cover
     GuardedSonioxSTT = None  # type: ignore[assignment,misc]

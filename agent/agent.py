@@ -5579,13 +5579,18 @@ def _build_turn_detector(mode: str):
         return None
 
 
-def _cascade_stt_soniox(profile: LearnerProfile):
+def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     """Soniox распознаёт en/ru/kk с переключением языка внутри фразы — ради этого
     он и выбран. Набор языков ограничен списком (см. SONIOX_STT_LANGUAGES), иначе
     автодетект по всему набору Soniox подсовывает посторонние языки.
 
     (soniox.STT не принимает `model` отдельным аргументом — вся конфигурация
-    через params.) Ключ передаём явно."""
+    через params.) Ключ передаём явно.
+
+    guard_tutor — тьютор, по которому решается замок на ученика. Это НЕ всегда
+    profile.tutor: у теста Speaking Buddy сессия собирается на профиле Декстера
+    (buddy_voice_profile), и канарейка NOISE_GUARD_TUTORS=jarvis замка не
+    включала — живой звонок 01.10.2026 показал «Speaker lock: off, tutor=bro»."""
     if soniox is None:
         raise RuntimeError("VOICE_STACK=cascade needs livekit-plugins-soniox")
     key = os.getenv("SONIOX_API_KEY")
@@ -5617,15 +5622,24 @@ def _cascade_stt_soniox(profile: LearnerProfile):
         language_hints_strict=strict,
         context=context,
     )
-    if noise_guard.speaker_lock_enabled(profile.tutor) and noise_guard.GuardedSonioxSTT is not None:
-        ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
-        logger.info(
-            "Speaker lock: on (ratio %.2f, keep %.2f), tutor=%s",
-            ratio, keep, profile.tutor or "<none>",
-        )
-        return noise_guard.GuardedSonioxSTT(api_key=key, params=params, ratio=ratio, keep=keep)
-    logger.info("Speaker lock: off, tutor=%s", profile.tutor or "<none>")
-    return soniox.STT(api_key=key, params=params)
+    tutor = guard_tutor or profile.tutor
+    lock = noise_guard.speaker_lock_enabled(tutor)
+    finalize = noise_guard.soniox_finalize_enabled()
+    if noise_guard.GuardedSonioxSTT is None:
+        return soniox.STT(api_key=key, params=params)
+    ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
+    logger.info(
+        "Speaker lock: %s, finalize %s, tutor=%s",
+        f"on (ratio {ratio:.2f}, keep {keep:.2f})" if lock else "off",
+        "on" if finalize else "off",
+        tutor or "<none>",
+    )
+    # Обёртка стоит и при выключенном замке: через неё рация закрывает фразу у
+    # Soniox сразу по отпусканию кнопки (finalize_now). Без замка она ничего не
+    # фильтрует и разметку говорящих не включает.
+    return noise_guard.GuardedSonioxSTT(
+        api_key=key, params=params, lock=lock, ratio=ratio, keep=keep, finalize=finalize
+    )
 
 
 def _cascade_stt_azure(profile: LearnerProfile):
@@ -5663,7 +5677,7 @@ def _cascade_stt_azure(profile: LearnerProfile):
     return azure.STT(**kwargs)
 
 
-def _cascade_stt(profile: LearnerProfile):
+def _cascade_stt(profile: LearnerProfile, guard_tutor: str = ""):
     """STT одной сессии. Тот же контракт, что у _cascade_tts: провайдер не
     настроен на этом деплое → предупреждение и откат на Soniox."""
     which = _stt_provider_for(profile)
@@ -5672,7 +5686,7 @@ def _cascade_stt(profile: LearnerProfile):
             f"STT provider {which!r} not recognised (expected one of {', '.join(STT_PROVIDERS)})"
         )
     builders = {
-        "soniox": _cascade_stt_soniox,
+        "soniox": lambda p: _cascade_stt_soniox(p, guard_tutor),
         "azure": _cascade_stt_azure,
     }
     try:
@@ -5692,6 +5706,7 @@ def build_cascade_session(
     persona_temperature: float,
     api_url: str,
     brain_url: str = "",
+    guard_tutor: str = "",
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -5719,7 +5734,7 @@ def build_cascade_session(
         "tts-aligned" if _aligned_transcript_for(profile) else "estimated",
     )
 
-    stt = _cascade_stt(profile)
+    stt = _cascade_stt(profile, guard_tutor)
     # Brain: OpenAI-compat shim over lib/llm. The plugin appends /chat/completions
     # to base_url → hits app/api/voice/brain/chat/completions/route.ts, and sends
     # api_key as `Authorization: Bearer`. Раньше тут стоял "jts-voice", а роут
@@ -6301,6 +6316,9 @@ async def entrypoint(ctx: JobContext):
             persona_temperature=persona_temp,
             api_url=api_url,
             brain_url=brain_url,
+            # Замок на ученика решается по настоящему тьютору звонка, а не по
+            # профилю сборки (у теста Speaking Buddy это Декстер).
+            guard_tutor=profile.tutor,
         )
     else:
         session = build_session(
@@ -6436,6 +6454,13 @@ async def entrypoint(ctx: JobContext):
             if turn_state["mode"] != "ptt":
                 return "auto"
             session.input.set_audio_enabled(False)
+            # Кнопку отпустили — ученик договорил, и это известно точно. Говорим
+            # Soniox закрыть фразу сейчас: иначе commit ждёт, пока он сам решит,
+            # что фраза кончилась, — живой звонок 01.10.2026 дал 1.4–2.6 с
+            # тишины после отпускания (eou_delay = transcription_delay).
+            finalize = getattr(session.stt, "finalize_now", None)
+            if callable(finalize):
+                finalize()
             # Future НЕ ждём: он резолвится финальным транскриптом, а RPC должен
             # ответить сразу — клиенту нужен только факт доставки команды.
             _detach(session.commit_user_turn())
