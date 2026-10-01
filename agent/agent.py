@@ -5645,6 +5645,11 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         keep=keep,
         same=noise_guard.speaker_lock_same(),
         outlier=noise_guard.speaker_lock_outlier(),
+        memory=noise_guard.speaker_lock_memory(),
+        prior_bg=noise_guard.speaker_lock_prior_bg(),
+        # Отладочная строка — это текст речи ученика в логах: только там, где
+        # замок вообще включён (канарейка), и только по явному секрету.
+        debug=lock and noise_guard.speaker_lock_debug(),
         finalize=finalize,
     )
 
