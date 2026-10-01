@@ -59,6 +59,10 @@ try:
 except Exception:  # pragma: no cover - plugin missing in some envs
     noise_cancellation = None
 
+# Второй слой поверх Krisp: замок на основного говорящего и сторож конца хода
+# (близкий фон BVC пропускает, и Soniox пишет его в реплику ученика).
+import noise_guard
+
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
 # (en/ru) + Soniox (kz), Brain=OpenAI-compatible shim over lib/llm
@@ -5434,14 +5438,31 @@ def _interruption_options() -> dict[str, Any]:
 # настройка стенда. PUSH_TO_TALK=off — рубильник на случай, если ручной режим
 # поведёт себя плохо в проде: секретом воркера возвращаем всех на VAD, не
 # трогая ни образ, ни приложение.
+def _push_to_talk_allowed() -> bool:
+    """Рубильник воркера: PUSH_TO_TALK=off выключает рацию всем, включая
+    переключение режима посреди звонка."""
+    return (os.getenv("PUSH_TO_TALK") or "").strip().lower() not in ("off", "0", "false")
+
+
 def _push_to_talk_for(profile: LearnerProfile) -> bool:
     """Включена ли рация в этой сессии."""
     if not profile.push_to_talk:
         return False
-    if (os.getenv("PUSH_TO_TALK") or "").strip().lower() in ("off", "0", "false"):
+    if not _push_to_talk_allowed():
         logger.info("Рация запрошена, но PUSH_TO_TALK=off — остаёмся на VAD.")
         return False
     return True
+
+
+# Режимы хода, между которыми ученик переключается прямо в звонке. Имена — те
+# же, что шлёт клиент в RPC set_turn_mode (src/tutor/useTurnMode.js).
+TURN_MODES = ("ptt", "auto")
+
+
+def _turn_mode_from_payload(payload: Any) -> str | None:
+    """Payload RPC → режим или None, если прислали не то."""
+    mode = str(payload or "").strip().lower()
+    return mode if mode in TURN_MODES else None
 
 
 def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
@@ -5449,15 +5470,21 @@ def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
     чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
     TTS и ключи, а это чистая функция над env и уже готовым детектором."""
     if push_to_talk:
-        # Ход открывает и закрывает клиент (см. RPC в entrypoint). Порогов
-        # перебивания здесь нет намеренно: в manual фреймворк не перебивает
-        # тьютора по VAD вообще, а нажатие рации перебивает его явно —
-        # session.interrupt() в start_turn. Значит и собственный голос тьютора
-        # из колонок его больше не рвёт.
+        # Ход открывает и закрывает клиент (см. RPC в entrypoint). В manual
+        # фреймворк не перебивает тьютора по VAD вообще, а нажатие рации
+        # перебивает его явно — session.interrupt() в start_turn.
         #
-        # endpointing не задаём: в ручном режиме его никто не читает.
+        # Пороги перебивания и окно эндпойнтинга задаём всё равно: с 01.10.2026
+        # ученик переключает режим прямо в звонке (RPC set_turn_mode), а
+        # update_options меняет только turn_detection. Без них звонок, начатый с
+        # рацией, после «Свободно» жил бы на дефолтах фреймворка — min_words=0,
+        # то есть перебивался бы любым шумом, ровно как до фикса ложных
+        # перебиваний. Окно min_delay manual-коммит тоже читает: 0.3 вместо
+        # дефолтных 0.5 — ответ после отпускания кнопки на 0.2 с раньше.
         return {
             "turn_detection": "manual",
+            "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
+            "interruption": _interruption_options(),
             "preemptive_generation": {"enabled": True},
         }
     if detector is not None:
@@ -5585,14 +5612,20 @@ def _cascade_stt_soniox(profile: LearnerProfile):
         if context else "off",
         profile.tutor or "<none>",
     )
-    return soniox.STT(
-        api_key=key,
-        params=soniox.STTOptions(
-            language_hints=langs,
-            language_hints_strict=strict,
-            context=context,
-        ),
+    params = soniox.STTOptions(
+        language_hints=langs,
+        language_hints_strict=strict,
+        context=context,
     )
+    if noise_guard.speaker_lock_enabled(profile.tutor) and noise_guard.GuardedSonioxSTT is not None:
+        ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
+        logger.info(
+            "Speaker lock: on (ratio %.2f, keep %.2f), tutor=%s",
+            ratio, keep, profile.tutor or "<none>",
+        )
+        return noise_guard.GuardedSonioxSTT(api_key=key, params=params, ratio=ratio, keep=keep)
+    logger.info("Speaker lock: off, tutor=%s", profile.tutor or "<none>")
+    return soniox.STT(api_key=key, params=params)
 
 
 def _cascade_stt_azure(profile: LearnerProfile):
@@ -6342,19 +6375,38 @@ async def entrypoint(ctx: JobContext):
 
     # ── Рация: ход открывает и закрывает ученик ──────────────────────────────
     # Три RPC вместо детектора конца речи. Имена — как в рецепте push-to-talk у
-    # LiveKit, чтобы читающий этот код нашёл первоисточник.
+    # LiveKit, чтобы читающий этот код нашёл первоисточник. Четвёртый,
+    # set_turn_mode, — переключатель «Рация | Свободно» прямо в звонке.
     #
-    # Регистрируем ТОЛЬКО когда рация действительно включена: клиент по отказу
-    # RPC понимает, что воркер про неё не знает, и уходит на запасной путь
-    # (мьют трека). Воркер катится отдельно от приложения, поэтому такая пара
-    # версий — обычное состояние, а не авария.
+    # С 01.10.2026 RPC регистрируются в КАЖДОМ cascade-звонке, а не только в
+    # звонке с рацией: ученик может включить её посреди разговора. Не
+    # регистрируем их только под рубильником PUSH_TO_TALK=off — тогда клиент
+    # по отказу RPC уходит на запасной путь (мьют трека), как и со старым
+    # воркером, который про рацию не знает. Воркер катится отдельно от
+    # приложения, поэтому такая пара версий — обычное состояние, а не авария.
     #
-    # Аудиовход держим отцепленным, пока кнопку не нажали: тогда commit
-    # прогоняет через распознавание кусок тишины и получает финальный
-    # транскрипт сразу, не дожидаясь, пока Soniox сам решит, что фраза
-    # кончилась. Микрофон при этом у ученика включён весь звонок — всё, что
-    # прилетело между ходами, просто не доходит до STT.
-    if voice_stack == "cascade" and _push_to_talk_for(profile):
+    # В режиме рации аудиовход держим отцепленным, пока кнопку не нажали:
+    # тогда commit прогоняет через распознавание кусок тишины и получает
+    # финальный транскрипт сразу, не дожидаясь, пока Soniox сам решит, что
+    # фраза кончилась. Микрофон при этом у ученика включён весь звонок — всё,
+    # что прилетело между ходами, просто не доходит до STT.
+    if voice_stack == "cascade" and _push_to_talk_allowed():
+        ptt_on = _push_to_talk_for(profile)
+        # Чем закрывать ход в «Свободно». Звонок, начатый с рацией, детектор не
+        # строил (см. build_cascade_session) — ему достаётся Silero VAD.
+        auto_turn = "vad" if ptt_on else (session.turn_detection or "vad")
+        turn_state = {"mode": "ptt" if ptt_on else "auto"}
+
+        # Сторож конца хода нужен только в «Свободно»: в рации конец хода
+        # задаёт палец ученика.
+        watchdog = noise_guard.TurnWatchdog(noise_guard.turn_watchdog_sec(profile.tutor))
+        watchdog.enabled = watchdog.quiet_sec > 0 and not ptt_on
+        if watchdog.quiet_sec > 0:
+            noise_guard.attach_turn_watchdog(session, watchdog)
+        logger.info(
+            "Turn watchdog: %s",
+            f"{watchdog.quiet_sec:.1f}s" if watchdog.quiet_sec > 0 else "off",
+        )
 
         def _detach(fut: Any) -> None:
             """Забрать исключение у future, которую мы намеренно не ждём.
@@ -6367,6 +6419,11 @@ async def entrypoint(ctx: JobContext):
                 fut.add_done_callback(lambda f: f.cancelled() or f.exception())
 
         async def _ptt_start(data: Any) -> str:
+            # Кнопка рации в «Свободно» не рисуется, но команда могла
+            # обогнать переключение режима — без этой проверки она отцепила бы
+            # микрофон в свободном режиме.
+            if turn_state["mode"] != "ptt":
+                return "auto"
             # Нажатие рации — это и есть перебивание: ученик взял эфир.
             _detach(session.interrupt())
             # Чистим буфер прошлого хода: в него мог попасть шум, приехавший до
@@ -6376,6 +6433,8 @@ async def entrypoint(ctx: JobContext):
             return "ok"
 
         async def _ptt_end(data: Any) -> str:
+            if turn_state["mode"] != "ptt":
+                return "auto"
             session.input.set_audio_enabled(False)
             # Future НЕ ждём: он резолвится финальным транскриптом, а RPC должен
             # ответить сразу — клиенту нужен только факт доставки команды.
@@ -6383,6 +6442,8 @@ async def entrypoint(ctx: JobContext):
             return "ok"
 
         async def _ptt_cancel(data: Any) -> str:
+            if turn_state["mode"] != "ptt":
+                return "auto"
             # Промах по кнопке: эфир закрываем, но ход не отдаём — иначе тьютор
             # отвечает на тишину (в ручном режиме пустой транскрипт его не
             # останавливает).
@@ -6390,14 +6451,40 @@ async def entrypoint(ctx: JobContext):
             session.clear_user_turn()
             return "ok"
 
-        session.input.set_audio_enabled(False)
+        async def _set_turn_mode(data: Any) -> str:
+            # Ответ — сам режим: клиент сверяет его со своим запросом и только
+            # тогда перерисовывает кнопку.
+            mode = _turn_mode_from_payload(getattr(data, "payload", ""))
+            if mode is None:
+                return "error"
+            if mode == turn_state["mode"]:
+                return mode
+            if mode == "ptt":
+                session.update_options(turn_detection="manual")
+                session.clear_user_turn()
+                session.input.set_audio_enabled(False)
+            else:
+                session.update_options(turn_detection=auto_turn)
+                session.clear_user_turn()
+                session.input.set_audio_enabled(True)
+            turn_state["mode"] = mode
+            watchdog.enabled = watchdog.quiet_sec > 0 and mode == "auto"
+            logger.info("Режим хода: %s (переключил ученик)", "рация" if mode == "ptt" else "свободно")
+            return mode
+
+        if ptt_on:
+            session.input.set_audio_enabled(False)
         for name, handler in (
             ("start_turn", _ptt_start),
             ("end_turn", _ptt_end),
             ("cancel_turn", _ptt_cancel),
+            ("set_turn_mode", _set_turn_mode),
         ):
             ctx.room.local_participant.register_rpc_method(name, handler)
-        logger.info("Рация: ручной ход, RPC start_turn/end_turn/cancel_turn зарегистрированы.")
+        logger.info(
+            "Режим хода на старте: %s; RPC start_turn/end_turn/cancel_turn/set_turn_mode зарегистрированы.",
+            "рация" if ptt_on else "свободно",
+        )
     elif profile.push_to_talk and voice_stack != "cascade":
         logger.warning(
             "Рация запрошена, но VOICE_STACK=%s: ручной ход есть только в cascade — "

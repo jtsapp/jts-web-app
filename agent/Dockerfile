@@ -44,6 +44,8 @@ COPY stt-terms-kk.txt ./stt-terms-kk.txt
 COPY scenarios/ ./scenarios/
 COPY agent.py .
 COPY latency_logging.py .
+# agent.py импортирует его на старте: без этой строки образ падает при запуске.
+COPY noise_guard.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is
 # fast instead of stalling on a model download.

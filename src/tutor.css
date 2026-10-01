@@ -1789,6 +1789,69 @@
     display: none;
   }
 }
+/* Переключатель «Рация | Свободно» прямо над кнопкой микрофона. Раньше режим
+   жил в «Управлении тьютором», а шумное место обнаруживается уже в разговоре —
+   переключатель должен быть там, где ученик в этот момент смотрит. Сегменты,
+   а не тумблер: у двух режимов два имени, и выбранный должен читаться словом. */
+.t-voice__mode {
+  margin-top: 16px;
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: #ece6fb;
+}
+.t-voice__modeopt {
+  min-width: 112px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b6480;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.t-voice__modeopt.is-on {
+  background: #fff;
+  color: var(--t-purple);
+  box-shadow: 0 1px 4px rgba(144, 71, 255, 0.18);
+}
+.t-voice__modeopt:disabled {
+  cursor: progress;
+}
+.t-voice__modeopt:focus-visible {
+  outline: 2px solid var(--t-purple);
+  outline-offset: 2px;
+}
+/* Короткие сообщения под переключателем и кнопкой: «держи кнопку» после
+   промаха тапом и «со следующего звонка», если воркер не умеет переключаться
+   на лету. Видны и на телефоне — в отличие от подсказки про пробел. */
+.t-voice__modenote,
+.t-voice__taphint {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6480;
+  text-align: center;
+}
+.t-voice__taphint {
+  color: var(--t-purple);
+}
+@media (max-width: 560px) {
+  .t-voice__modeopt {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  .t-voice__mode {
+    width: min(100%, 300px);
+  }
+}
 /* Завершить разговор — вторичная по весу кнопка под микрофоном: действие
    необратимое, поэтому не должна конкурировать по акценту с мьютом. */
 .t-voice__end {

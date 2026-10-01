@@ -32,6 +32,7 @@ import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { getEnglishOnly } from '../lib/englishOnly.js'
 import { getPushToTalk } from '../lib/pushToTalk.js'
 import { usePushToTalk } from '../tutor/usePushToTalk.js'
+import { useTurnMode } from '../tutor/useTurnMode.js'
 
 function ArrowUpIcon({ size = 22 }) {
   return (
@@ -423,7 +424,8 @@ function CallFace({ face, emotion, speaking, agentState, audioTrack }) {
 }
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({
+// Экспорт — для теста переключателя режима (TutorVoiceChatPage.test.jsx).
+export function CallStage({
   onFinish,
   t,
   ttl,
@@ -453,10 +455,19 @@ function CallStage({
   // сам по себе, пока ученик читал разбор.
   const closeCallSession = useCallSession(roomName, agentPresent)
 
+  // Режим хода — «Рация» или «Свободно». Стартует с того, что ушло в
+  // metadata комнаты, а дальше переключается прямо в звонке (useTurnMode).
+  const turn = useTurnMode({
+    initialPtt: pushToTalk,
+    room,
+    agentIdentity: va.agent?.identity || '',
+  })
+  const pttOn = turn.ptt
+
   // Рация. Ход открывает и закрывает ученик, поэтому детектора конца речи у
   // агента в этом режиме нет вовсе — см. usePushToTalk.
-  const { holding, pointerHandlers } = usePushToTalk({
-    enabled: pushToTalk,
+  const { holding, pointerHandlers, tapHint } = usePushToTalk({
+    enabled: pttOn,
     room,
     agentIdentity: va.agent?.identity || '',
   })
@@ -748,16 +759,47 @@ function CallStage({
         audioTrack={agentTrack}
       />
       <CallCaption text={text} isUser={isUser} />
+      {/* Переключатель режима — до появления тьютора его нет: переключать
+          некому, а выбор всё равно уйдёт в metadata следующего звонка. */}
+      {agentPresent && (
+        <div className="t-voice__mode" role="radiogroup" aria-label={t('voice.modeLabel')}>
+          <button
+            className={'t-voice__modeopt' + (pttOn ? ' is-on' : '')}
+            type="button"
+            role="radio"
+            aria-checked={pttOn}
+            disabled={turn.busy}
+            onClick={() => void turn.choose(true)}
+          >
+            {t('voice.modePtt')}
+          </button>
+          <button
+            className={'t-voice__modeopt' + (!pttOn ? ' is-on' : '')}
+            type="button"
+            role="radio"
+            aria-checked={!pttOn}
+            disabled={turn.busy}
+            onClick={() => void turn.choose(false)}
+          >
+            {t('voice.modeFree')}
+          </button>
+        </div>
+      )}
+      {turn.notice === 'later' && (
+        <span className="t-voice__modenote" role="status">
+          {t('voice.modeLater')}
+        </span>
+      )}
       <MicButton
         track={micTrack}
         listening={va.state === 'listening'}
         micOn={micOn}
         onClick={toggleMic}
-        ptt={pushToTalk}
+        ptt={pttOn}
         holding={holding}
         pointerHandlers={pointerHandlers}
         label={
-          pushToTalk
+          pttOn
             ? holding
               ? t('voice.pttTalking')
               : t('voice.pttHold')
@@ -768,7 +810,12 @@ function CallStage({
       />
       {/* Подсказка про пробел — только там, где есть клавиатура: на телефоне
           CSS её прячет. */}
-      {pushToTalk && <span className="t-voice__ptthint">{t('voice.pttSpace')}</span>}
+      {pttOn && tapHint && (
+        <span className="t-voice__taphint" role="status">
+          {t('voice.pttTapHint')}
+        </span>
+      )}
+      {pttOn && !tapHint && <span className="t-voice__ptthint">{t('voice.pttSpace')}</span>}
       <button className="t-voice__end" type="button" onClick={endCall}>
         {t('voice.end')}
       </button>
