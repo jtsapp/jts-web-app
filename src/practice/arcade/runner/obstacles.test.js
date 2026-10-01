@@ -24,7 +24,7 @@ function* layouts(n = 300) {
 }
 
 describe('layoutObstacles', () => {
-  it('подходы к рядам 0–2 пустые — разминка', () => {
+  it('подходы до WARMUP_ROWS пустые — разминка', () => {
     for (const d of RUN_DIFFICULTIES) {
       for (let rowIndex = 0; rowIndex < WARMUP_ROWS; rowIndex++) {
         expect(layoutObstacles({ difficulty: d.key, rowIndex, speed: SPAWN / d.lead, rng: seeded(7) })).toEqual([])
@@ -44,15 +44,26 @@ describe('layoutObstacles', () => {
     }
   })
 
-  it('на одном расстоянии не больше двух и на разных дорожках; между расстояниями — зазор', () => {
-    for (const { speed, layout } of layouts()) {
-      const byD = new Map()
-      for (const o of layout) byD.set(o.d, [...(byD.get(o.d) || []), o])
-      const slots = [...byD.entries()].sort((a, b) => a[0] - b[0])
-      for (const [, group] of slots) {
-        expect(group.length).toBeLessThanOrEqual(2)
+  // Заход — препятствия на одном расстоянии.
+  const slotsOf = (layout) => {
+    const byD = new Map()
+    for (const o of layout) byD.set(o.d, [...(byD.get(o.d) || []), o])
+    return [...byD.entries()].sort((a, b) => a[0] - b[0])
+  }
+
+  it('заход — одна, две или три дорожки, все разные; стена — только из проходимых прыжком', () => {
+    for (const { layout } of layouts()) {
+      for (const [, group] of slotsOf(layout)) {
+        expect(group.length).toBeLessThanOrEqual(3)
         expect(new Set(group.map((o) => o.lane)).size).toBe(group.length)
+        if (group.length === 3) for (const o of group) expect(['barrier', 'boom']).toContain(o.kind)
       }
+    }
+  })
+
+  it('между заходами — зазор на приземление', () => {
+    for (const { speed, layout } of layouts()) {
+      const slots = slotsOf(layout)
       for (let i = 1; i < slots.length; i++) {
         const [d0, g0] = slots[i - 1]
         const end = d0 + Math.max(...g0.map((o) => o.len))
@@ -61,31 +72,56 @@ describe('layoutObstacles', () => {
     }
   })
 
-  it('плотность по сложностям', () => {
-    const counts = {}
-    for (const { d, layout } of layouts()) (counts[d.key] ||= new Set()).add(layout.length)
-    expect([...counts.easy].sort()).toEqual([0, 1])
-    expect([...counts.medium]).toEqual([1])
-    expect([...counts.hard].sort()).toEqual([1, 2])
-    expect([...counts.veryHard]).toEqual([1])
+  // До 01.10.2026 было по одному препятствию на подход (hard изредка два),
+  // easy — через раз ни одного. У потолка скорости окно раскладки короче, и
+  // заходов там меньше — поэтому считаем на стартовой скорости.
+  it('плотность по сложностям на старте: заходов больше прежнего', () => {
+    const slots = {}
+    for (const d of RUN_DIFFICULTIES) {
+      for (let seed = 1; seed <= 300; seed++) {
+        const layout = layoutObstacles({ difficulty: d.key, rowIndex: WARMUP_ROWS, speed: SPAWN / d.lead, rng: seeded(seed * 7919) })
+        ;(slots[d.key] ||= []).push(slotsOf(layout).length)
+      }
+    }
+    const mean = (list) => list.reduce((a, b) => a + b, 0) / list.length
+    expect(new Set(slots.easy)).toEqual(new Set([1, 2]))
+    expect(Math.min(...slots.medium)).toBeGreaterThanOrEqual(1)
+    expect(mean(slots.medium)).toBeGreaterThan(2)
+    expect(mean(slots.hard)).toBeGreaterThan(2)
+    expect(Math.max(...slots.medium)).toBe(3)
+    expect(Math.max(...slots.veryHard)).toBe(2)
+  })
+
+  it('стены во все три дорожки встречаются на каждой сложности, но не в каждом подходе', () => {
+    for (const d of RUN_DIFFICULTIES) {
+      let walls = 0
+      let total = 0
+      for (let seed = 1; seed <= 300; seed++) {
+        const layout = layoutObstacles({ difficulty: d.key, rowIndex: WARMUP_ROWS, speed: SPAWN / d.lead, rng: seeded(seed * 7919) })
+        total++
+        if (slotsOf(layout).some(([, g]) => g.length === 3)) walls++
+      }
+      expect(walls).toBeGreaterThan(0)
+      expect(walls).toBeLessThan(total * 0.75)
+    }
   })
 
   it('easy — без автобусов; hard иногда ставит пару на одном расстоянии', () => {
     let pairs = 0
     for (const { d, layout } of layouts()) {
       if (d.key === 'easy') expect(layout.some((o) => o.kind === 'bus')).toBe(false)
-      if (d.key === 'hard' && layout.length === 2 && layout[0].d === layout[1].d) pairs++
+      if (d.key === 'hard' && slotsOf(layout).some(([, g]) => g.length === 2)) pairs++
     }
     expect(pairs).toBeGreaterThan(0)
   })
 
-  it('veryHard у потолка скорости — без автобуса, но не пустой', () => {
+  it('veryHard у потолка скорости — один заход без автобуса, но не пустой', () => {
     const d = RUN_DIFFICULTIES.find((x) => x.key === 'veryHard')
     const speed = (SPAWN / d.lead) * SPEED_CAP
     for (let seed = 1; seed <= 300; seed++) {
       const layout = layoutObstacles({ difficulty: 'veryHard', rowIndex: WARMUP_ROWS, speed, rng: seeded(seed * 7919) })
-      expect(layout).toHaveLength(1)
-      expect(layout[0].kind).not.toBe('bus')
+      expect(slotsOf(layout)).toHaveLength(1)
+      for (const o of layout) expect(o.kind).not.toBe('bus')
     }
   })
 
