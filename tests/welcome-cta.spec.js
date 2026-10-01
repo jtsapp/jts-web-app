@@ -20,8 +20,9 @@ test.describe('welcome / панель входа — мобилка', () => {
     const cta = page.locator('.cta')
     await expect(cta).toBeVisible({ timeout: 20_000 })
 
-    // Не пилюля (999px), а умеренное скругление карточки.
-    await expect(cta).toHaveCSS('border-radius', '30px')
+    // Не пилюля (999px), а умеренное скругление карточки — 20, как в макете
+    // «Web Адаптивка» (кадр 4095:39600).
+    await expect(cta).toHaveCSS('border-radius', '20px')
     await expect(cta).toHaveCSS('flex-direction', 'column')
 
     // Обе кнопки лежат внутри карточки по горизонтали (никакого overflow).

@@ -13,20 +13,23 @@ test.use(FRESH_PROFILE)
 test.describe('онбординг тьютора — мобилка', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
 
-  test('язык: в панели карусель тьюторов, опции не перекрыты', async ({ page }) => {
+  // Макет «Web Адаптивка» (кадр 4338:1515) вернул на телефон группу маскотов
+  // вместо карусели тьюторов. Регрессия прежняя: группа не должна вылезать из
+  // панели на кнопки выбора языка — её держит overflow панели.
+  test('язык: в панели группа маскотов, опции не перекрыты', async ({ page }) => {
     await page.goto('/?screen=tutor-lang')
-    await expect(page.locator('.t-card__carousel')).toBeVisible()
+    await expect(page.locator('.t-card__mascot')).toBeVisible()
+    await expect(page.locator('.t-card__carousel')).toBeHidden()
     // Layout под параллельным прогоном стабилизируется не сразу.
     await page.waitForTimeout(400)
-    // Статичная композиция маскотов скрыта (раньше вылезала на кнопки выбора).
-    await expect(page.locator('.t-card__mascot')).toBeHidden()
     const panel = await page.locator('.t-card__panel').boundingBox()
-    const carousel = await page.locator('.t-card__carousel').boundingBox()
-    expect(carousel.y).toBeGreaterThanOrEqual(panel.y - 3)
-    expect(carousel.y + carousel.height).toBeLessThanOrEqual(panel.y + panel.height + 3)
-    // Опции языка выше панели и ничем не перекрыты.
-    const lastOption = await page.locator('.t-lang__option').last().boundingBox()
-    expect(lastOption.y + lastOption.height).toBeLessThanOrEqual(panel.y + 3)
+    await expect(page.locator('.t-card__panel')).toHaveCSS('overflow', 'hidden')
+    const mascot = await page.locator('.t-card__mascot').boundingBox()
+    expect(mascot.y).toBeGreaterThanOrEqual(panel.y - 3)
+    expect(mascot.y + mascot.height).toBeLessThanOrEqual(panel.y + panel.height + 3)
+    // Опции языка — под панелью (как в кадре) и ничем не перекрыты.
+    const firstOption = await page.locator('.t-lang__option').first().boundingBox()
+    expect(firstOption.y).toBeGreaterThanOrEqual(panel.y + panel.height - 3)
   })
 
   // Приветствие и выбор тьютора — один экран (макет «Speaking Buddy»). На
