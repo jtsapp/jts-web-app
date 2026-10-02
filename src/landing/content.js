@@ -1,9 +1,10 @@
 // Тексты и данные лендинга (макет Figma «Landing», файл pitch JTS (Copy),
 // кадр «Screen» 5688:2728 — «обновлённая версия по комментариям»).
 //
-// Только русский: казахских текстов в макете нет. Переключатель РУС/ҚАЗ в
-// шапке есть, но, пока словаря `kz` нет, он остаётся на русском — см.
-// `pickContent`. Добавить язык = положить рядом объект с теми же ключами.
+// Русский — из макета; он же задаёт структуру, картинки и ссылки. Казахский
+// (content-kz.js) — только строки поверх неё: в макете его нет, это наш
+// перевод.
+import { kzText } from './content-kz.js'
 
 // Куда ведут кнопки входа. Лендинг живёт отдельным маршрутом рядом с SPA, а
 // экраны приложения открываются диплинком ?screen= (App.jsx применяет его
@@ -15,6 +16,12 @@ const IMG = '/landing/img/'
 const IC = '/landing/icons/'
 
 export const ru = {
+  meta: {
+    title: 'Just to Study — индивидуальные уроки английского по цене групповых',
+    description:
+      'Уроки с преподавателем, AI-тьютор 24/7, сказки, книги, комиксы и караоке — всё для английского в одном месте. Бесплатный доступ на 24 часа.',
+  },
+
   nav: {
     login: 'Войти',
     start: 'Начать обучение',
@@ -278,7 +285,23 @@ export const ru = {
   },
 }
 
-const DICTS = { ru }
+// Накладывает строки перевода на базовый словарь: массивы — по индексу,
+// объекты — по ключам, всё, чего в переводе нет (картинки, ссылки, флаги
+// done/current, а при недосмотре и строка), остаётся из базы.
+export function mergeText(base, over) {
+  if (over === undefined || over === null) return base
+  if (Array.isArray(base)) return base.map((item, i) => mergeText(item, over[i]))
+  if (base && typeof base === 'object') {
+    const out = {}
+    for (const key of Object.keys(base)) out[key] = mergeText(base[key], over[key])
+    return out
+  }
+  return over
+}
+
+export const kz = mergeText(ru, kzText)
+
+const DICTS = { ru, kz }
 
 // Нет словаря для языка — отдаём русский: лучше русский текст, чем пустая
 // страница или ключи вместо слов.

@@ -6,15 +6,20 @@ import '../../landing.css'
 import Landing from '../../landing/Landing.jsx'
 import { pickContent } from '../../landing/content.js'
 
-export const metadata = {
-  title: 'Just to Study — индивидуальные уроки английского по цене групповых',
-  description:
-    'Уроки с преподавателем, AI-тьютор 24/7, сказки, книги, комиксы и караоке — всё для английского в одном месте. Бесплатный доступ на 24 часа.',
+// Язык — в адресе (?lang=kz), а не в localStorage: поисковик и ссылка из
+// рекламы должны получать казахскую страницу сразу, с сервера.
+async function langOf(searchParams) {
+  const sp = await searchParams
+  return sp?.lang === 'kz' ? 'kz' : 'ru'
+}
+
+export async function generateMetadata({ searchParams }) {
+  const { meta } = pickContent(await langOf(searchParams))
+  return { title: meta.title, description: meta.description }
 }
 
 export default async function LandingPage({ searchParams }) {
-  const sp = await searchParams
-  const lang = sp?.lang === 'kz' ? 'kz' : 'ru'
+  const lang = await langOf(searchParams)
   return (
     <>
       {/* Шрифты макета: Onest — вся страница, Geist — подвал. React 19 сам

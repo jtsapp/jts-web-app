@@ -511,6 +511,12 @@
   letter-spacing: -0.01em;
 }
 
+/* Акцент не рвётся: в казахском «танисың ба?» иначе оставляло «ба?» одно на
+   строке — пусть уж переносится вся вторая половина. */
+.ld-pains__title em {
+  white-space: nowrap;
+}
+
 .ld-pains__lead {
   margin-top: 20px;
   font-size: 18px;

@@ -16,6 +16,16 @@ test('первый экран и кнопки входа ведут в прил�
   await expect(login).toHaveAttribute('href', '/?screen=login-password')
 })
 
+test('ҚАЗ переключает страницу на казахский с сервера', async ({ page }) => {
+  await page.getByRole('link', { name: 'ҚАЗ' }).click()
+  await expect(page).toHaveURL(/\?lang=kz$/)
+  await expect(page.locator('h1')).toContainText('топтық бағамен')
+  await expect(page.locator('.ld')).toHaveAttribute('lang', 'kk')
+  await expect(page).toHaveTitle(/жеке сабақтар/)
+  await page.getByRole('link', { name: 'РУС' }).click()
+  await expect(page.locator('h1')).toContainText('по цене групповых')
+})
+
 test('раздел выбирается руками, и таймер больше не листает', async ({ page }) => {
   const tabs = page.getByRole('tab')
   await expect(tabs).toHaveCount(7)

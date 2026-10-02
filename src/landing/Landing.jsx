@@ -509,7 +509,9 @@ function Footer({ c }) {
 
 export default function Landing({ c, lang }) {
   return (
-    <div className="ld" id="top">
+    // <html lang> задаёт общий layout приложения (ru) — язык страницы
+    // уточняем на корне: по нему браузер и скринридеры выбирают произношение.
+    <div className="ld" id="top" lang={lang === 'kz' ? 'kk' : 'ru'}>
       <Header c={c} lang={lang} />
       <main>
         <Hero c={c} />
