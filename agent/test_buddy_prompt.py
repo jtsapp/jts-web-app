@@ -145,8 +145,10 @@ assert "C1 and C2 learners are served with the B2 profile" in BUDDY_CORE
 assert "Айгерим" in wrapper
 assert "works as a nurse" in wrapper and "weekend plans" in wrapper
 assert "I go yesterday -> I went yesterday" in wrapper and "schedule" in wrapper
-for tool in ("log_mistake", "log_topic", "log_fact", "log_resolved", "log_review", "raise_safety_alert"):
+for tool in ("log_mistake", "log_topic", "log_fact", "log_resolved", "raise_safety_alert"):
     assert tool in wrapper, tool
+# log_review у Buddy нет (BUDDY_SKIP_TOOLS): отмечал повторения не спросив.
+assert "log_review" not in text
 # Наш формат тега ([mood:x:n]) в промпт v3 не идёт: ядро задаёт свой ([happy]),
 # парсер переводит его (MOOD_ALIASES). Два формата в одном промпте — развилка.
 assert "==== MOOD TAG" not in text and "[mood:" not in text
