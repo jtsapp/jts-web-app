@@ -784,6 +784,20 @@ export default function PracticePage({
           />
         )
 
+      case 'speakspin':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-speakspin"
+            variant="speakspin"
+            wide
+            title={t('practice.speakspin.heading')}
+            desc={t('practice.speakspin.desc')}
+            cta={t('practice.speakspin.cta')}
+            onStart={() => onNav?.('speakspin')}
+          />
+        )
+
       case 'reading':
         return (
           <Banner

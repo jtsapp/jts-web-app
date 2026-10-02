@@ -55,6 +55,9 @@ export const SKILLS = [
     sections: [
       { id: 'shadowing', all: 'link' },
       { id: 'situations', all: 'pill', small: true },
+      // SpeakSpin (02.10.2026) — в макете его нет; широкий баннер после
+      // «Ситуаций», как «Слова в картинках» в Аудировании.
+      { id: 'speakspin' },
       { id: 'karaoke', all: 'pill', small: true },
       // «Аркада» — зал мини-игр (Speak or Die, Word Rush). В макете её нет;
       // стоит последней перед сказками, чтобы правило «сказки — последняя

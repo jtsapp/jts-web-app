@@ -27,6 +27,7 @@ import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
+import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
@@ -114,7 +115,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -1233,6 +1234,7 @@ export default function App() {
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
+    else if (key === 'speakspin') setScreen('speakspin')
     // Уровень приносит карточка Практики — она же и списала квоту.
     else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
@@ -1280,6 +1282,7 @@ export default function App() {
     else if (key === 'reading') setScreen('reading')
     else if (key === 'words') setScreen('words')
     else if (key === 'verbs') setScreen('verbs')
+    else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'listenchoose') setScreen('listenchoose')
     else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
@@ -1680,6 +1683,16 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'speakspin':
+      return (
+        <SpeakSpinPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

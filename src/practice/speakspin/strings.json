@@ -1,0 +1,647 @@
+{
+ "intro": {
+  "en": "Get a random topic. Find your words. Make them yours.",
+  "ru": "Случайная тема. Твои мысли. Твой английский.",
+  "kk": "Кездейсоқ тақырып. Өз ойың. Өз ағылшының."
+ },
+ "step1": {
+  "en": "Choose",
+  "ru": "Выбери",
+  "kk": "Таңда"
+ },
+ "step2": {
+  "en": "Prepare",
+  "ru": "Подготовься",
+  "kk": "Дайындал"
+ },
+ "step3": {
+  "en": "Speak",
+  "ru": "Говори",
+  "kk": "Сөйле"
+ },
+ "step4": {
+  "en": "Reflect",
+  "ru": "Разбери",
+  "kk": "Талда"
+ },
+ "studio": {
+  "en": "YOUR ONE-MINUTE SPEAKING STUDIO",
+  "ru": "ТВОЯ МИНУТА АНГЛИЙСКОГО",
+  "kk": "АҒЫЛШЫНША СӨЙЛЕУГЕ БІР МИНУТ"
+ },
+ "headline": {
+  "en": "Your voice.\nOne minute.",
+  "ru": "Твой голос.\nОдна минута.",
+  "kk": "Сенің дауысың.\nБір минут."
+ },
+ "subcopy": {
+  "en": "A little thinking. A little courage. A new conversation with every spin.",
+  "ru": "Немного подумать. Немного смелости. Новая тема с каждым вращением.",
+  "kk": "Аздап ойлан. Батылдық таныт. Әр айналымда жаңа тақырып."
+ },
+ "difficulty": {
+  "en": "Choose your challenge",
+  "ru": "Выбери сложность",
+  "kk": "Қиындықты таңда"
+ },
+ "easy": {
+  "en": "Easy",
+  "ru": "Лёгкий",
+  "kk": "Жеңіл"
+ },
+ "medium": {
+  "en": "Medium",
+  "ru": "Средний",
+  "kk": "Орташа"
+ },
+ "hard": {
+  "en": "Hard",
+  "ru": "Сложный",
+  "kk": "Күрделі"
+ },
+ "easyNote": {
+  "en": "Familiar topics. Simple words. Start with a few sentences.",
+  "ru": "Знакомые темы и простые слова. Начни с нескольких предложений.",
+  "kk": "Таныс тақырыптар, қарапайым сөздер. Бірнеше сөйлемнен баста."
+ },
+ "mediumNote": {
+  "en": "Share an opinion, give a reason, add an example.",
+  "ru": "Поделись мнением, объясни причину, добавь пример.",
+  "kk": "Пікіріңді айт, себебін түсіндір, мысал келтір."
+ },
+ "hardNote": {
+  "en": "Explore a point of view, a trade-off and another angle.",
+  "ru": "Рассмотри позицию, её ограничения и другую точку зрения.",
+  "kk": "Пікірді, оның шектеулерін және басқа көзқарасты қарастыр."
+ },
+ "mode": {
+  "en": "Support",
+  "ru": "Подсказки",
+  "kk": "Көмек"
+ },
+ "rounds": {
+  "en": "Rounds",
+  "ru": "Раунды",
+  "kk": "Раундтар"
+ },
+ "guided": {
+  "en": "Guided",
+  "ru": "С опорами",
+  "kk": "Көмекпен"
+ },
+ "challenge": {
+  "en": "Challenge",
+  "ru": "Без опор",
+  "kk": "Көмексіз"
+ },
+ "guidedNote": {
+  "en": "Topic vocabulary and sentence starters are there if you need them.",
+  "ru": "Тематические слова и начала фраз доступны, если понадобятся.",
+  "kk": "Қажет болса, тақырыпқа сай сөздер мен сөйлем бастамалары бар."
+ },
+ "challengeModeNote": {
+  "en": "Just you, the topic and the timer. No prompts or vocabulary.",
+  "ru": "Только ты, тема и таймер. Без словаря и речевых опор.",
+  "kk": "Тек сен, тақырып және таймер. Сөздік пен тірек сөйлемдерсіз."
+ },
+ "topicMachine": {
+  "en": "A fresh topic awaits",
+  "ru": "Здесь ждёт новая тема",
+  "kk": "Жаңа тақырып күтіп тұр"
+ },
+ "topics": {
+  "en": "topics",
+  "ru": "тем",
+  "kk": "тақырып"
+ },
+ "spin": {
+  "en": "Spin a topic",
+  "ru": "Крутить тему",
+  "kk": "Тақырыпты айналдыр"
+ },
+ "prepare": {
+  "en": "to prepare",
+  "ru": "подготовка",
+  "kk": "дайындық"
+ },
+ "speak": {
+  "en": "to speak",
+  "ru": "ответ",
+  "kk": "жауап"
+ },
+ "reflect": {
+  "en": "listen & reflect",
+  "ru": "слушай и разбирай",
+  "kk": "тыңда және талда"
+ },
+ "autoNote": {
+  "en": "Allow the microphone first. After the spin: 30 seconds to prepare, then recording starts automatically.",
+  "ru": "Сначала разреши микрофон. После вращения: 30 секунд подготовки, затем запись начнётся автоматически.",
+  "kk": "Алдымен микрофонға рұқсат бер. Айналғаннан кейін: 30 секунд дайындық, содан соң жазу автоматты басталады."
+ },
+ "micRequirement": {
+  "en": "For microphone access, open on HTTPS or localhost. Local-file support depends on your browser.",
+  "ru": "Для записи открой через HTTPS или localhost. Работа из файла зависит от браузера.",
+  "kk": "Жазу үшін HTTPS не localhost арқылы аш. Жергілікті файлдан жұмыс істеуі браузерге байланысты."
+ },
+ "cancel": {
+  "en": "Cancel",
+  "ru": "Отмена",
+  "kk": "Болдырмау"
+ },
+ "skipAnimation": {
+  "en": "Skip animation",
+  "ru": "Пропустить анимацию",
+  "kk": "Анимацияны өткізу"
+ },
+ "cancelRound": {
+  "en": "Cancel preparation",
+  "ru": "Отменить подготовку",
+  "kk": "Дайындықты тоқтату"
+ },
+ "help": {
+  "en": "Need a little help?",
+  "ru": "Немного помощи?",
+  "kk": "Аздап көмек керек пе?"
+ },
+ "challengeNote": {
+  "en": "Take a moment to organise your ideas. A pause is okay.",
+  "ru": "Соберись с мыслями. Делать паузы — нормально.",
+  "kk": "Ойыңды жинақта. Кідіріс жасауға болады."
+ },
+ "seconds": {
+  "en": "seconds",
+  "ru": "секунд",
+  "kk": "секунд"
+ },
+ "another": {
+  "en": "Another topic",
+  "ru": "Другая тема",
+  "kk": "Басқа тақырып"
+ },
+ "finishEarly": {
+  "en": "Finish early",
+  "ru": "Завершить",
+  "kk": "Аяқтау"
+ },
+ "backSettings": {
+  "en": "Back to settings",
+  "ru": "К настройкам",
+  "kk": "Баптауларға"
+ },
+ "tryAgain": {
+  "en": "Try again",
+  "ru": "Записать ещё раз",
+  "kk": "Қайта жазу"
+ },
+ "download": {
+  "en": "Download recording",
+  "ru": "Скачать запись",
+  "kk": "Жазбаны жүктеу"
+ },
+ "delete": {
+  "en": "Delete recording",
+  "ru": "Удалить запись",
+  "kk": "Жазбаны жою"
+ },
+ "memoryNote": {
+  "en": "Recordings stay in this tab. Download the ones you want to keep before leaving.",
+  "ru": "Записи хранятся в этой вкладке. Перед выходом скачай те, которые хочешь сохранить.",
+  "kk": "Жазбалар осы қойындыда сақталады. Шығар алдында керегін жүктеп ал."
+ },
+ "attempts": {
+  "en": "Takes in this session",
+  "ru": "Попытки этой сессии",
+  "kk": "Осы сессиядағы талпыныстар"
+ },
+ "yourTake": {
+  "en": "YOUR VOICE, CAPTURED",
+  "ru": "ТВОЙ ОТВЕТ ЗАПИСАН",
+  "kk": "ЖАУАБЫҢ ЖАЗЫЛДЫ"
+ },
+ "nextStep": {
+  "en": "MAKE THE NEXT TAKE BETTER",
+  "ru": "СЛЕДУЮЩАЯ ПОПЫТКА — ЛУЧШЕ",
+  "kk": "КЕЛЕСІ ЖАУАПТЫ ЖАҚСАРТ"
+ },
+ "feedbackTitle": {
+  "en": "A little reflection goes a long way.",
+  "ru": "Послушай себя. Заметь прогресс.",
+  "kk": "Өзіңді тыңда. Ілгерілеуді байқа."
+ },
+ "getFeedback": {
+  "en": "Get AI feedback",
+  "ru": "Получить ИИ-разбор",
+  "kk": "ЖИ талдауын алу"
+ },
+ "cancelAnalysis": {
+  "en": "Cancel analysis",
+  "ru": "Отменить анализ",
+  "kk": "Талдауды тоқтату"
+ },
+ "practiceOnly": {
+  "en": "Practice feedback within this task level. Not an IELTS band or official CEFR assessment.",
+  "ru": "Обратная связь для практики в рамках задания. Не балл IELTS и не официальная оценка CEFR.",
+  "kk": "Осы тапсырма деңгейіндегі жаттығуға арналған пікір. IELTS балы немесе ресми CEFR бағасы емес."
+ },
+ "completed": {
+  "en": "rounds completed",
+  "ru": "раундов завершено",
+  "kk": "аяқталған раунд"
+ },
+ "recordedTime": {
+  "en": "recorded audio",
+  "ru": "длительность записей",
+  "kk": "жазбалардың ұзақтығы"
+ },
+ "gentle": {
+  "en": "Clear thoughts beat perfect sentences.",
+  "ru": "Мысль важнее идеальной фразы.",
+  "kk": "Ойыңды жеткізу мінсіз сөйлемнен маңызды."
+ },
+ "gentleDetail": {
+  "en": "Pauses are welcome. Start where you are.",
+  "ru": "Паузы — это нормально. Начни с того, что умеешь.",
+  "kk": "Кідіріс жасауға болады. Қолыңнан келгенінен баста."
+ },
+ "bankNote": {
+  "en": "90 topics · 3 levels · Your own pace",
+  "ru": "90 тем · 3 уровня · Твой темп",
+  "kk": "90 тақырып · 3 деңгей · Өз қарқының"
+ },
+ "localNote": {
+  "en": "Local practice. No account sync.",
+  "ru": "Локальная практика. Без синхронизации аккаунта.",
+  "kk": "Жергілікті жаттығу. Аккаунтпен синхрондалмайды."
+ },
+ "micCheck": {
+  "en": "Waiting for microphone…",
+  "ru": "Ожидаем микрофон…",
+  "kk": "Микрофонды күтіп тұрмыз…"
+ },
+ "spinning": {
+  "en": "Finding your next topic…",
+  "ru": "Выбираем новую тему…",
+  "kk": "Жаңа тақырып таңдалуда…"
+ },
+ "ready": {
+  "en": "Ready to think",
+  "ru": "Время подумать",
+  "kk": "Ойланатын уақыт"
+ },
+ "preparing": {
+  "en": "Preparation time",
+  "ru": "Подготовка",
+  "kk": "Дайындық"
+ },
+ "recording": {
+  "en": "Recording",
+  "ru": "Идёт запись",
+  "kk": "Жазылып жатыр"
+ },
+ "speakingTime": {
+  "en": "Your minute is yours",
+  "ru": "Это твоя минута",
+  "kk": "Бір минут бойы сөйле"
+ },
+ "micReady": {
+  "en": "Microphone ready — not recording",
+  "ru": "Микрофон готов — запись не идёт",
+  "kk": "Микрофон дайын — жазу жүріп жатқан жоқ"
+ },
+ "micLive": {
+  "en": "Your microphone is recording now.",
+  "ru": "Микрофон записывает твой ответ.",
+  "kk": "Микрофон жауабыңды жазып жатыр."
+ },
+ "startNow": {
+  "en": "Start speaking now",
+  "ru": "Начать ответ сейчас",
+  "kk": "Қазір жауап беру"
+ },
+ "starting": {
+  "en": "Starting recording…",
+  "ru": "Запись начинается…",
+  "kk": "Жазу басталуда…"
+ },
+ "finishing": {
+  "en": "Saving your take…",
+  "ru": "Сохраняем попытку…",
+  "kk": "Жазба сақталуда…"
+ },
+ "round": {
+  "en": "Round",
+  "ru": "Раунд",
+  "kk": "Раунд"
+ },
+ "attempt": {
+  "en": "Take",
+  "ru": "Попытка",
+  "kk": "Талпыныс"
+ },
+ "interrupted": {
+  "en": "Interrupted",
+  "ru": "Прервано",
+  "kk": "Үзілді"
+ },
+ "assisted": {
+  "en": "Assisted practice",
+  "ru": "Повтор после образца",
+  "kk": "Үлгіден кейінгі жаттығу"
+ },
+ "vocabulary": {
+  "en": "Useful expressions",
+  "ru": "Полезные выражения",
+  "kk": "Пайдалы тіркестер"
+ },
+ "starters": {
+  "en": "A place to start",
+  "ru": "С чего начать",
+  "kk": "Неден бастауға болады"
+ },
+ "supportHint": {
+  "en": "Pick what helps. You do not need to use every expression.",
+  "ru": "Выбирай то, что помогает. Не обязательно использовать все слова.",
+  "kk": "Керегін таңда. Барлық тіркесті қолдану міндетті емес."
+ },
+ "nextTopic": {
+  "en": "Next topic",
+  "ru": "Следующая тема",
+  "kk": "Келесі тақырып"
+ },
+ "completeSession": {
+  "en": "Finish session",
+  "ru": "Завершить сессию",
+  "kk": "Сессияны аяқтау"
+ },
+ "sessionDone": {
+  "en": "Session complete. Ready for another?",
+  "ru": "Сессия завершена. Начнём новую?",
+  "kk": "Сессия аяқталды. Жаңасын бастаймыз ба?"
+ },
+ "aiOff": {
+  "en": "AI feedback is not connected yet. You can listen to your recording, download it or try again.",
+  "ru": "ИИ-проверка пока не подключена. Можно прослушать запись, скачать её или попробовать ещё раз.",
+  "kk": "ЖИ талдауы әлі қосылмаған. Жазбаны тыңдауға, жүктеуге немесе қайта жазуға болады."
+ },
+ "aiConsent": {
+  "en": "By choosing Get AI feedback, you send this recording to the feedback service for analysis.",
+  "ru": "Нажимая «Получить ИИ-разбор», ты отправляешь эту запись сервису проверки.",
+  "kk": "«ЖИ талдауын алу» түймесін басқанда, бұл жазба талдау қызметіне жіберіледі."
+ },
+ "uploading": {
+  "en": "Sending your recording…",
+  "ru": "Отправляем запись…",
+  "kk": "Жазба жіберілуде…"
+ },
+ "analyzing": {
+  "en": "Analysing your response…",
+  "ru": "Анализируем ответ…",
+  "kk": "Жауабың талдануда…"
+ },
+ "analysisCancelled": {
+  "en": "Analysis cancelled. Your recording is still here.",
+  "ru": "Анализ отменён. Запись сохранена в этой вкладке.",
+  "kk": "Талдау тоқтатылды. Жазба осы қойындыда сақталды."
+ },
+ "aiError": {
+  "en": "We could not get feedback. Your recording is safe here. Please try again.",
+  "ru": "Не удалось получить разбор. Запись осталась здесь. Попробуй снова.",
+  "kk": "Талдауды алу мүмкін болмады. Жазба осында сақталған. Қайта көр."
+ },
+ "timeout": {
+  "en": "The service took too long. Your recording is still here; you can retry.",
+  "ru": "Сервис не ответил вовремя. Запись осталась здесь; можно повторить запрос.",
+  "kk": "Қызмет уақытында жауап бермеді. Жазба осында; қайта сұрауға болады."
+ },
+ "invalidResponse": {
+  "en": "The service returned an unsupported or invalid response. Your recording is still available.",
+  "ru": "Сервис вернул некорректный ответ. Запись осталась доступна.",
+  "kk": "Қызмет қате жауап қайтарды. Жазба әлі қолжетімді."
+ },
+ "noSpeech": {
+  "en": "There is not enough reliable speech to assess. Try another take.",
+  "ru": "Недостаточно разборчивой речи для оценки. Попробуй записать ещё раз.",
+  "kk": "Бағалау үшін анық сөйлеу жеткіліксіз. Қайта жазып көр."
+ },
+ "feedbackReady": {
+  "en": "Your feedback",
+  "ru": "Твой разбор",
+  "kk": "Сенің талдауың"
+ },
+ "summary": {
+  "en": "Overview",
+  "ru": "Итог",
+  "kk": "Қорытынды"
+ },
+ "strengths": {
+  "en": "What worked well",
+  "ru": "Что получилось",
+  "kk": "Сәтті тұстары"
+ },
+ "fixes": {
+  "en": "Focus on these first",
+  "ru": "Что улучшить в первую очередь",
+  "kk": "Алдымен нені жақсарту керек"
+ },
+ "said": {
+  "en": "You said",
+  "ru": "Ты сказал(а)",
+  "kk": "Сен айттың"
+ },
+ "better": {
+  "en": "Better",
+  "ru": "Лучше так",
+  "kk": "Жақсырақ нұсқа"
+ },
+ "why": {
+  "en": "Why",
+  "ru": "Почему",
+  "kk": "Неліктен"
+ },
+ "upgrades": {
+  "en": "Useful vocabulary upgrades",
+  "ru": "Как улучшить лексику",
+  "kk": "Сөздік қорды жақсарту"
+ },
+ "improved": {
+  "en": "A clearer version of your idea",
+  "ru": "Твоя мысль — яснее",
+  "kk": "Ойыңды анығырақ жеткізу"
+ },
+ "assistedNote": {
+  "en": "After opening this example, your next take on this topic is assisted practice.",
+  "ru": "После просмотра этого образца повтор темы отмечается как практика с образцом.",
+  "kk": "Бұл үлгіні көрген соң, осы тақырыптағы қайталау үлгімен жаттығу деп белгіленеді."
+ },
+ "nextFocus": {
+  "en": "One focus for your next take",
+  "ru": "Одна цель на следующую попытку",
+  "kk": "Келесі талпынысқа бір мақсат"
+ },
+ "transcript": {
+  "en": "Recognised words",
+  "ru": "Распознанный текст",
+  "kk": "Танылған сөздер"
+ },
+ "limitations": {
+  "en": "What this analysis cannot tell us",
+  "ru": "Ограничения разбора",
+  "kk": "Талдаудың шектеулері"
+ },
+ "notAssessed": {
+  "en": "Not assessed",
+  "ru": "Не оценено",
+  "kk": "Бағаланбады"
+ },
+ "taskResponse": {
+  "en": "Task response",
+  "ru": "Раскрытие темы",
+  "kk": "Тақырыпты ашу"
+ },
+ "fluencyCoherence": {
+  "en": "Fluency & coherence",
+  "ru": "Беглость и связность",
+  "kk": "Еркіндік және байланыстылық"
+ },
+ "grammar": {
+  "en": "Grammar",
+  "ru": "Грамматика",
+  "kk": "Грамматика"
+ },
+ "vocabularyCriterion": {
+  "en": "Vocabulary",
+  "ru": "Лексика",
+  "kk": "Сөздік қор"
+ },
+ "pronunciation": {
+  "en": "Pronunciation & intelligibility",
+  "ru": "Произношение и понятность",
+  "kk": "Айтылым және түсініктілік"
+ },
+ "textOnly": {
+  "en": "Text-based analysis: pronunciation, intonation and acoustic fluency are not assessed.",
+  "ru": "Анализ по тексту: произношение, интонация и акустическая беглость не оцениваются.",
+  "kk": "Мәтіндік талдау: айтылым, интонация және дыбыстық еркіндік бағаланбайды."
+ },
+ "coherenceOnly": {
+  "en": "Text organisation only",
+  "ru": "Только связность текста",
+  "kk": "Тек мәтіннің байланыстылығы"
+ },
+ "recordingMetric": {
+  "en": "Recording duration",
+  "ru": "Длительность записи",
+  "kk": "Жазба ұзақтығы"
+ },
+ "speechMetric": {
+  "en": "Detected speech duration",
+  "ru": "Длительность обнаруженной речи",
+  "kk": "Анықталған сөйлеу ұзақтығы"
+ },
+ "wordMetric": {
+  "en": "Recognised word count",
+  "ru": "Распознанных слов",
+  "kk": "Танылған сөздер саны"
+ },
+ "rateMetric": {
+  "en": "Words per minute (measured speech)",
+  "ru": "Слов в минуту звучащей речи",
+  "kk": "Нақты сөйлеудегі минутына сөз саны"
+ },
+ "metrics": {
+  "en": "Available measurements",
+  "ru": "Доступные измерения",
+  "kk": "Қолжетімді өлшемдер"
+ },
+ "rubricNote": {
+  "en": "Scores 1–5 describe this attempt within the task level: 1 needs much more support; 2 developing; 3 communicates the main idea; 4 clear and effective; 5 consistently effective. No overall learner level is inferred.",
+  "ru": "Оценки 1–5 описывают эту попытку в рамках задания: 1 — нужна значительная поддержка; 2 — навык развивается; 3 — основная мысль передана; 4 — ясно и эффективно; 5 — стабильно эффективно. Общий уровень ученика не определяется.",
+  "kk": "1–5 бағалары осы тапсырма аясындағы жауапты сипаттайды: 1 — көп көмек қажет; 2 — дағды дамып келеді; 3 — негізгі ой жеткізілген; 4 — анық әрі тиімді; 5 — тұрақты тиімді. Оқушының жалпы деңгейі анықталмайды."
+ },
+ "confirmDelete": {
+  "en": "Delete this recording from this tab? This cannot delete copies already sent to the feedback service.",
+  "ru": "Удалить запись из этой вкладки? Это не удалит копии, уже отправленные сервису проверки.",
+  "kk": "Жазбаны осы қойындыдан жою керек пе? Бұл талдау қызметіне жіберілген көшірмелерді жоймайды."
+ },
+ "deleted": {
+  "en": "Recording deleted.",
+  "ru": "Запись удалена.",
+  "kk": "Жазба жойылды."
+ },
+ "secureError": {
+  "en": "Microphone access needs HTTPS or localhost. Open this file through a local server or your JTS site.",
+  "ru": "Для микрофона нужен HTTPS или localhost. Открой файл через локальный сервер или сайт JTS.",
+  "kk": "Микрофон үшін HTTPS не localhost керек. Файлды жергілікті сервер немесе JTS сайты арқылы аш."
+ },
+ "unsupported": {
+  "en": "This browser does not support microphone recording. Try a recent Chrome, Edge, Firefox or Safari browser.",
+  "ru": "Браузер не поддерживает запись. Попробуй актуальную версию Chrome, Edge, Firefox или Safari.",
+  "kk": "Браузер дыбыс жазуды қолдамайды. Chrome, Edge, Firefox не Safari браузерінің жаңа нұсқасын қолдан."
+ },
+ "permissionDenied": {
+  "en": "Microphone access was denied. Allow it in your browser’s site settings, then try again.",
+  "ru": "Доступ к микрофону запрещён. Разреши его в настройках сайта в браузере и попробуй снова.",
+  "kk": "Микрофонға рұқсат берілмеді. Браузердің сайт баптауында рұқсат беріп, қайта көр."
+ },
+ "noDevice": {
+  "en": "No microphone was found. Connect a microphone and try again.",
+  "ru": "Микрофон не найден. Подключи его и попробуй снова.",
+  "kk": "Микрофон табылмады. Оны қосып, қайта көр."
+ },
+ "busyDevice": {
+  "en": "The microphone could not start. Close other apps using it and try again.",
+  "ru": "Микрофон не запустился. Закрой использующие его приложения и попробуй снова.",
+  "kk": "Микрофон іске қосылмады. Оны пайдаланатын басқа қолданбаларды жауып, қайта көр."
+ },
+ "recordError": {
+  "en": "Recording could not start. Check your microphone and try again.",
+  "ru": "Не удалось начать запись. Проверь микрофон и попробуй снова.",
+  "kk": "Жазу басталмады. Микрофонды тексеріп, қайта көр."
+ },
+ "emptyRecording": {
+  "en": "No audio file was captured. Check your microphone and record another take.",
+  "ru": "Аудиофайл не записался. Проверь микрофон и повтори попытку.",
+  "kk": "Аудиофайл жазылмады. Микрофонды тексеріп, қайта жаз."
+ },
+ "backgroundPrep": {
+  "en": "Preparation was interrupted. Return when you are ready and restart with the same topic.",
+  "ru": "Подготовка прервана. Вернись, когда будешь готов(а), и начни с той же темы.",
+  "kk": "Дайындық үзілді. Дайын болғанда оралып, сол тақырыпты қайта баста."
+ },
+ "backgroundRecording": {
+  "en": "Recording was interrupted. The available audio has been saved.",
+  "ru": "Запись прервана. Доступный фрагмент сохранён.",
+  "kk": "Жазу үзілді. Қолжетімді бөлігі сақталды."
+ },
+ "streamEnded": {
+  "en": "Your microphone disconnected. Reconnect it to continue.",
+  "ru": "Микрофон отключился. Подключи его, чтобы продолжить.",
+  "kk": "Микрофон ажыратылды. Жалғастыру үшін қайта қос."
+ },
+ "restart": {
+  "en": "Restart this topic",
+  "ru": "Начать эту тему заново",
+  "kk": "Осы тақырыпты қайта бастау"
+ },
+ "retryMic": {
+  "en": "Try microphone again",
+  "ru": "Проверить микрофон снова",
+  "kk": "Микрофонды қайта тексеру"
+ },
+ "storageUnavailable": {
+  "en": "Settings could not be saved on this device. Practice still works in this tab.",
+  "ru": "Настройки не сохраняются на устройстве. Практика работает в этой вкладке.",
+  "kk": "Баптаулар құрылғыда сақталмады. Жаттығу осы қойындыда жұмыс істейді."
+ },
+ "countdown": {
+  "en": "Recording starts in 3 seconds.",
+  "ru": "Запись начнётся через 3 секунды.",
+  "kk": "Жазу 3 секундтан кейін басталады."
+ },
+ "noMoreRounds": {
+  "en": "Choose your next session.",
+  "ru": "Выбери параметры новой сессии.",
+  "kk": "Жаңа сессия баптауларын таңда."
+ }
+}
