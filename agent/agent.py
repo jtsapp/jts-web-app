@@ -1656,8 +1656,12 @@ _MOOD_ALT = "|".join(_MOOD_TAG_NAMES)
 # Сила необязательна: у тегов v3 её нет. Имя без силы у наших тегов
 # ([mood:anger]) раньше считалось битым и срезалось без эмоции — теперь это
 # та же эмоция с силой 2.
+#
+# Угловые скобки вокруг тега («<[default]> Good.») — тоже тег: Haiku на промпте
+# Speaking Buddy пишет так в 6 из 468 реплик (прогон 02.10.2026), и без них
+# ученик слышал «default». Скобки необязательны и снимаются вместе с тегом.
 MOOD_TAG_RE = _re.compile(
-    rf"^\s*\[(?:mood:)?({_MOOD_ALT})(?::([1-3]))?\]\s*", _re.IGNORECASE
+    rf"^\s*<?\[(?:mood:)?({_MOOD_ALT})(?::([1-3]))?\]>?\s*", _re.IGNORECASE
 )
 # Тег, который НЕ прошёл разбор (сила вне 1-3, лишний пробел, мусор в имени),
 # всё равно надо снять: иначе он уедет в озвучку и ученик услышит «mood anger
@@ -1670,7 +1674,7 @@ MOOD_TAG_RE = _re.compile(
 # У формы БЕЗ префикса такого сигнала нет, поэтому имя обязано быть ровно
 # одним из известных — мусора после него разрешено меньше (до 12 символов).
 MOOD_TAG_JUNK_RE = _re.compile(
-    rf"^\s*\[(?:mood:[^\]\n]{{0,24}}|(?:{_MOOD_ALT})[^\]\n]{{0,12}})\]\s*",
+    rf"^\s*<?\[(?:mood:[^\]\n]{{0,24}}|(?:{_MOOD_ALT})[^\]\n]{{0,12}})\]>?\s*",
     _re.IGNORECASE,
 )
 # Сколько символов головы реплики ждать, прежде чем решить, что тега нет.
@@ -1693,6 +1697,8 @@ def _could_be_tag(buf: str) -> bool:
     (или наоборот, вариант — префикс накопленного), ждём дальше.
     """
     s = buf.lstrip().lower()
+    if s.startswith("<"):
+        s = s[1:]  # «<[default]>» — см. MOOD_TAG_RE
     if not s:
         return True  # пока только пробелы — судить рано
     starts = [_MOOD_PREFIX] + [f"[{n}{end}" for n in _MOOD_TAG_NAMES for end in (":", "]")]
@@ -1749,14 +1755,12 @@ class _MoodStripper:
         self._buf += text
         found, mood, intensity, rest = _match_mood_tag(self._buf)
         if found:
-            self._done = True
-            self._buf = ""
-            # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
-            # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
-            # Ровный тег v3 ([default]) тоже снимается — эмоции у него нет.
-            if mood and mood in self._allowed:
-                self.mood, self.intensity = mood, intensity
-            return rest
+            # «<[default]» дочитан до «]», а «>» ещё в следующем чанке: решим
+            # сейчас — скобка уйдёт в озвучку. Ждём первого символа после тега
+            # (или flush, если реплика на этом кончилась).
+            if not rest and self._buf.lstrip().startswith("<"):
+                return ""
+            return self._take(mood, intensity, rest)
         if len(self._buf) >= MOOD_SCAN_LIMIT or not _could_be_tag(self._buf):
             self._done = True
             out, self._buf = self._buf, ""
@@ -1764,13 +1768,136 @@ class _MoodStripper:
             return MOOD_TAG_JUNK_RE.sub("", out, count=1)
         return ""
 
+    def _take(self, mood: str, intensity: int, rest: str) -> str:
+        self._done = True
+        self._buf = ""
+        # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
+        # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
+        # Ровный тег v3 ([default]) тоже снимается — эмоции у него нет.
+        if mood and mood in self._allowed:
+            self.mood, self.intensity = mood, intensity
+        return rest
+
     def flush(self) -> str:
         """Реплика кончилась, не добрав до лимита — отдать накопленное."""
         if self._done:
             return ""
+        found, mood, intensity, rest = _match_mood_tag(self._buf)
+        if found:
+            return self._take(mood, intensity, rest)
         self._done = True
         out, self._buf = self._buf, ""
         return out
+
+
+# Рассуждение модели, написанное ТЕКСТОМ. Мозг зовёт Haiku без extended thinking,
+# но на длинном промпте с правилами (пакет Speaking Buddy: «Internally: understand
+# → choose one move → check limits», бюджеты слов) она иногда думает вслух прямо
+# в ответе: «<thinking>The learner said… According to the core rules (section
+# 10)… = 8 words, 2 sentences</thinking>\n\n[default] реплика». Жалоба 02.10.2026
+# «KZ TEST зачитывает инструкции своего промпта» — это оно: тег эмоции снимался,
+# а рассуждение уходило в озвучку целиком. Прогон KZ TEST A0, 12 ходов: блок
+# в 16 из 36 разговоров на v3.4 и в 13 из 24 на v3.1. Попав в историю, он
+# закрепляется — дальше модель пишет его почти на каждом ходу, поэтому резать
+# надо до истории, а не только до синтеза.
+_REASONING_OPEN_RE = _re.compile(r"<(thinking|think)>", _re.IGNORECASE)
+_REASONING_CLOSE_RE = _re.compile(r"</(thinking|think)>", _re.IGNORECASE)
+_REASONING_OPEN_TAGS = ("<thinking>", "<think>")
+_REASONING_CLOSE_TAGS = ("</thinking>", "</think>")
+
+
+def _partial_tag_len(buf: str, tags: tuple[str, ...]) -> int:
+    """Длина хвоста буфера, который ещё может дорасти до одного из тегов: стрим
+    рвёт «<thin|king>» где угодно, и решать по половине тега нельзя."""
+    i = buf.rfind("<")
+    if i < 0:
+        return 0
+    tail = buf[i:].lower()
+    return len(tail) if any(t.startswith(tail) for t in tags) else 0
+
+
+class _ReasoningStripper:
+    """Вырезает из потока реплики всё от <thinking> до </thinking>.
+
+    Живёт одну реплику. Обычная речь проходит без задержки: придерживается
+    только хвост, похожий на начало тега. Незакрытый к концу реплики блок
+    выбрасывается целиком — тишина лучше, чем рассуждение вслух.
+    """
+
+    def __init__(self) -> None:
+        self._buf = ""
+        self._inside = False
+        self.cut = 0  # сколько символов рассуждения выброшено (для лога)
+
+    def feed(self, text: str) -> str:
+        self._buf += text
+        out: list[str] = []
+        while True:
+            if self._inside:
+                m = _REASONING_CLOSE_RE.search(self._buf)
+                if m:
+                    self.cut += m.end()
+                    self._buf = self._buf[m.end():]
+                    self._inside = False
+                    continue
+                keep = _partial_tag_len(self._buf, _REASONING_CLOSE_TAGS)
+                self.cut += len(self._buf) - keep
+                self._buf = self._buf[len(self._buf) - keep:]
+                break
+            m = _REASONING_OPEN_RE.search(self._buf)
+            if m:
+                out.append(self._buf[: m.start()])
+                self.cut += len(m.group(0))
+                self._buf = self._buf[m.end():]
+                self._inside = True
+                continue
+            keep = _partial_tag_len(self._buf, _REASONING_OPEN_TAGS)
+            out.append(self._buf[: len(self._buf) - keep])
+            self._buf = self._buf[len(self._buf) - keep:]
+            break
+        return "".join(out)
+
+    def flush(self) -> str:
+        out, self._buf = self._buf, ""
+        if self._inside:
+            self.cut += len(out)
+            return ""
+        return out
+
+
+class _SpeechCleaner:
+    """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
+    озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
+    (тег стоит ПОСЛЕ рассуждения, так что порядок важен). `allowed` пустой —
+    эмоций у тьютора нет, тег не разбираем, но рассуждение режем всё равно."""
+
+    def __init__(self, allowed: frozenset[str] | None):
+        self._reasoning = _ReasoningStripper()
+        self._mood = _MoodStripper(allowed) if allowed else None
+
+    @property
+    def mood(self) -> str:
+        return self._mood.mood if self._mood else ""
+
+    @property
+    def intensity(self) -> int:
+        return self._mood.intensity if self._mood else 0
+
+    @property
+    def reasoning_cut(self) -> int:
+        return self._reasoning.cut
+
+    def feed(self, text: str) -> str:
+        out = self._reasoning.feed(text)
+        if self._mood is not None and out:
+            out = self._mood.feed(out)
+        return out
+
+    def flush(self) -> str:
+        out = self._reasoning.flush()
+        if self._mood is None:
+            return out
+        return (self._mood.feed(out) if out else "") + self._mood.flush()
 
 
 # ---- произношение: что уходит в TTS вместо того, что видит ученик ----------
@@ -2123,31 +2250,26 @@ class TutorAgent(Agent):
             logger.exception("publish mood failed")
 
     async def llm_node(self, chat_ctx, tools, model_settings):
-        """Снять mood-тег с потока ответа до того, как он уйдёт в TTS.
+        """Снять служебное с потока ответа до того, как он уйдёт в TTS:
+        рассуждение текстом (у всех тьюторов) и mood-тег (у кого есть эмоции).
 
         Именно llm_node, а не tts_node: этот хук стоит выше И озвучки, И
-        субтитров, поэтому тег вырезается один раз и не всплывает ни в голосе,
-        ни в тексте на экране.
+        субтитров, И истории разговора, поэтому служебное вырезается один раз и
+        не всплывает ни в голосе, ни в тексте на экране, ни в следующих ходах.
         """
         allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
-        if not allowed:
-            # Тьютору эмоции не выданы — не трогаем поток вообще.
-            async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
-                yield chunk
-            return
-
-        stripper = _MoodStripper(allowed)
+        cleaner = _SpeechCleaner(allowed)
         published = False
         async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
             if isinstance(chunk, str):
-                out = stripper.feed(chunk)
+                out = cleaner.feed(chunk)
                 if out:
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
                 content = getattr(delta, "content", None) if delta is not None else None
                 if content:
-                    delta.content = stripper.feed(content)
+                    delta.content = cleaner.feed(content)
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
@@ -2155,18 +2277,25 @@ class TutorAgent(Agent):
                 yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
             # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
-            if stripper.mood and not published:
+            if cleaner.mood and not published:
                 published = True
                 task = asyncio.create_task(
-                    self._publish_mood(stripper.mood, stripper.intensity)
+                    self._publish_mood(cleaner.mood, cleaner.intensity)
                 )
                 self._bg_tasks.add(task)
                 task.add_done_callback(self._bg_tasks.discard)
 
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
-        tail = stripper.flush()
+        tail = cleaner.flush()
         if tail:
             yield tail
+        if cleaner.reasoning_cut:
+            # Только размер, без текста: это разговор ученика. По этой строке
+            # видно, как часто модель думает вслух на живых звонках.
+            logger.warning(
+                "LLM wrote reasoning as text: %d chars cut before TTS (tutor=%s)",
+                cleaner.reasoning_cut, self._tutor or "<none>",
+            )
 
     async def tts_node(self, text, model_settings):
         """Починить произношение до синтеза — и ТОЛЬКО его.
