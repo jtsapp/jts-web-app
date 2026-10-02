@@ -450,6 +450,7 @@ textarea {
 .hero {
   position: relative;
   flex: 1;
+  background-image: url(/assets/reg/hero-desktop.webp);
   background-size: cover;
   background-position: center top;
   display: flex;
@@ -529,6 +530,91 @@ textarea {
 }
 .btn--secondary:hover {
   filter: brightness(0.97);
+}
+
+/* Подложка под боковые поля кадра — нужна только десктопу, см. ниже */
+.hero__backdrop {
+  display: none;
+}
+
+/* Десктоп: герой — кадр макета 1440×980 целиком и без прокрутки. Раньше
+   картинка шла cover от ширины, и на ноутбуке (1490×787 при масштабе Windows
+   125%) от кадра оставалось 687px из 1014 — подвал срезал маскота по очки.
+
+   Кадр 1440:980 уже ноутбучного окна, поэтому он вписывается по ВЫСОТЕ
+   (экран минус подвал), а бока закрываются в два слоя:
+   - сам кадр (::after) — исходник картинки из Figma с полями, которые макет
+     обрезал: по ~104 пикселя макета с каждой стороны настоящего фона
+     (hero-wide.webp — тот же кроп по вертикали, полная ширина исходника);
+   - под ним размытое продолжение той же картинки (hero-wide-blur.webp), в
+     которое края кадра тают маской. Края тают только в пределах полей
+     исходника, поле самого кадра макета остаётся резким.
+   На высоком окне (планшет стоя) кадр шире экрана и режется по бокам,
+   подложку не видно.
+
+   --u — один пиксель макета, от высоты героя. Текст и кнопки меряются в нём,
+   иначе они разъехались бы с маскотом; полы шрифтов и высоты кнопок — чтобы
+   на низком окне надписи оставались читаемыми (раздутие съедает часть зазора
+   в 40px между CTA и шапочкой, но не перекрывает её). Ширинный предел --u —
+   чтобы двухстрочный заголовок влезал на узком высоком окне. Ниже 540px
+   высоты кадр перестаёт сжиматься и появляется прокрутка. */
+@media (min-width: 761px) {
+  .hero {
+    --hh: max(100vh - 100px, 540px);
+    --u: min(var(--hh) / 980, (100vw - 48px) / 665);
+    flex: none;
+    height: var(--hh);
+    overflow: hidden;
+    background-image: none;
+  }
+  .hero__backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url(/assets/reg/hero-wide-blur.webp) center / cover no-repeat;
+  }
+  /* 2580×1534 — размер hero-wide.webp; маска размером с картинку. Слой ниже
+     градиента (::before, z-index 1) и выше подложки — по порядку в дереве. */
+  .hero::after {
+    --iw: calc(var(--hh) * 2580 / 1534);
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url(/assets/reg/hero-wide.webp) center / auto 100% no-repeat;
+    -webkit-mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent) center / var(--iw) 100% no-repeat;
+    mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent) center / var(--iw) 100% no-repeat;
+  }
+  /* Ширина блока не уже 470px: столько занимает подзаголовок на полу в 14px.
+     Иначе на низком окне подзаголовок и заголовок ломались лишней строкой и
+     тянули CTA на шапочку маскота. */
+  .hero__content {
+    padding: calc(var(--u) * 130) 24px 0;
+    max-width: calc(max(var(--u) * 665, 470px) + 48px);
+  }
+  .hero__title {
+    font-size: max(36px, var(--u) * 64);
+  }
+  .hero__subtitle {
+    font-size: max(14px, var(--u) * 20);
+    margin-top: calc(var(--u) * 20);
+  }
+  .cta {
+    gap: calc(var(--u) * 8);
+    margin-top: calc(var(--u) * 42);
+    padding: calc(var(--u) * 16) calc(var(--u) * 21) calc(var(--u) * 16) calc(var(--u) * 20);
+    border-radius: calc(var(--u) * 90);
+  }
+  .cta .btn {
+    height: max(44px, var(--u) * 60);
+    padding: 0 calc(var(--u) * 72);
+    border-radius: calc(var(--u) * 60);
+    font-size: max(15px, var(--u) * 18);
+  }
+  .cta .btn--secondary {
+    padding: 0 calc(var(--u) * 77);
+  }
 }
 
 /* ======================================================= */
