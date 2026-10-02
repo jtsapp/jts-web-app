@@ -1872,6 +1872,28 @@ class _ReasoningStripper:
         return out
 
 
+# Префилл ответа у Speaking Buddy: агент дописывает в конец истории реплику
+# тьютора «[», шим отдаёт её Anthropic последним assistant-сообщением, и модель
+# продолжает уже начатый тег эмоции — открыть <thinking> ей негде. Ядро пакета
+# и так требует тег в начале КАЖДОЙ реплики, поэтому префилл ничего не меняет
+# по смыслу. Замер KZ TEST 02.10.2026 (A0, 24 разговора по 12 ходов, Haiku):
+# рассуждение текстом 7.4% → 0 из 288 ходов (≈1–2 с тишины на каждом), немой
+# ход «только тул» 2.3% → 0, сарказм и злость на своих ситуациях 8/8 и 8/8.
+# Строка-запрет в промпте того же не дала (5–8% во всех вариантах). Шим
+# brain-us не трогаем: отдельный сервер, с мержами не пересобирается.
+TAG_PREFILL = "["
+
+
+def _last_is_user_message(chat_ctx: Any) -> bool:
+    """Последний элемент истории — реплика ученика (а не результат тула или
+    системное событие вроде приветствия)."""
+    items = getattr(chat_ctx, "items", None) or []
+    if not items:
+        return False
+    it = items[-1]
+    return getattr(it, "type", None) == "message" and getattr(it, "role", None) == "user"
+
+
 class _SpeechCleaner:
     """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
     озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
@@ -2208,8 +2230,11 @@ class TutorAgent(Agent):
         speech_lang: str = "",
         skip_tools: frozenset[str] = frozenset(),
         due_items: tuple[str, ...] = (),
+        prefill_tag: bool = False,
     ):
         super().__init__(instructions=instructions)
+        # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
+        self._prefill_tag = prefill_tag
         # Что память этой сессии назвала DUE (повторения + словарь): log_review
         # пишет только по ним — см. _matches_due.
         self._due_items = tuple(x for x in due_items if x)
@@ -2322,14 +2347,28 @@ class TutorAgent(Agent):
         allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
         cleaner = _SpeechCleaner(allowed)
         published = False
+        # Префилл: только на реплику ученика. После тула модель вправе промолчать
+        # (ядро §3: ход уже отвечен) — «[» заставил бы её говорить второй раз; на
+        # приветствии последним стоит системное событие, а не ученик.
+        prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
+        if prefill:
+            chat_ctx = chat_ctx.copy()
+            chat_ctx.add_message(role="assistant", content=TAG_PREFILL)
+        # «[» модель не повторяет — возвращаем его в поток перед первым текстом.
+        # Ответ «только тул» текста не несёт, и одинокая скобка не прозвучит.
+        pending = TAG_PREFILL if prefill else ""
         async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
             if isinstance(chunk, str):
+                if chunk and pending:
+                    chunk, pending = pending + chunk, ""
                 out = cleaner.feed(chunk)
                 if out:
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
                 content = getattr(delta, "content", None) if delta is not None else None
+                if content and pending:
+                    content, pending = pending + content, ""
                 if content:
                     delta.content = cleaner.feed(content)
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
@@ -6609,6 +6648,11 @@ async def entrypoint(ctx: JobContext):
         skip_tools=(POST_CALL_MEMORY_TOOLS if post_call_memory else frozenset())
         | (BUDDY_SKIP_TOOLS if is_buddy else frozenset()),
         due_items=(*profile.due_reviews, *profile.due_vocab),
+        # Префилл «[» — только Buddy (тег там обязателен в каждой реплике) и
+        # только мозг на Claude через шим: у OpenAI хвостовая реплика тьютора
+        # не продолжается, а читается как уже сказанная.
+        prefill_tag=is_buddy
+        and not _is_openai_brain(_brain_model_for(buddy_voice_profile(profile).tutor)),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
