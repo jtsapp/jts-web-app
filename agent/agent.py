@@ -1448,12 +1448,17 @@ def format_skills_block(skills: dict[str, int]) -> str:
     return "\n".join(parts)
 
 
-def format_memory_block(p: LearnerProfile, neutral: bool = False) -> str:
+def format_memory_block(
+    p: LearnerProfile, neutral: bool = False, review_tool: bool = True
+) -> str:
     """Память ученика для промпта.
 
     `neutral` — без оценок тона («warmly», «celebrate»): для сборки Speaking Buddy
     (build_buddy_instructions), где как реагировать решает характер. Факты те же,
-    меняются только эти две формулировки — у живых тьюторов текст прежний."""
+    меняются только эти две формулировки — у живых тьюторов текст прежний.
+
+    `review_tool=False` — у сессии нет log_review (Speaking Buddy, см.
+    BUDDY_SKIP_TOOLS): DUE-пункты остаются, просьба отметить их тулом — нет."""
     lines: list[str] = []
     if p.facts:
         lines.append(
@@ -1474,16 +1479,18 @@ def format_memory_block(p: LearnerProfile, neutral: bool = False) -> str:
     if p.due_reviews:
         lines.append(
             "DUE for spaced-repetition review (scheduled for today): naturally work "
-            "at least one or two of these into the lesson, quiz the learner on each, "
-            "then silently call log_review with whether they got it right — "
+            "at least one or two of these into the lesson, quiz the learner on each"
+            + (", then silently call log_review with whether they got it right — "
+               if review_tool else " — ")
             + "; ".join(p.due_reviews)
             + "."
         )
     if p.due_vocab:
         lines.append(
             "DUE vocabulary to reactivate today: naturally use each of these words "
-            "yourself and nudge the learner to use it back, then silently call "
-            "log_review with whether they used it correctly — "
+            "yourself and nudge the learner to use it back"
+            + (", then silently call log_review with whether they used it correctly — "
+               if review_tool else " — ")
             + ", ".join(p.due_vocab)
             + "."
         )
@@ -1865,6 +1872,28 @@ class _ReasoningStripper:
         return out
 
 
+# Префилл ответа у Speaking Buddy: агент дописывает в конец истории реплику
+# тьютора «[», шим отдаёт её Anthropic последним assistant-сообщением, и модель
+# продолжает уже начатый тег эмоции — открыть <thinking> ей негде. Ядро пакета
+# и так требует тег в начале КАЖДОЙ реплики, поэтому префилл ничего не меняет
+# по смыслу. Замер KZ TEST 02.10.2026 (A0, 24 разговора по 12 ходов, Haiku):
+# рассуждение текстом 7.4% → 0 из 288 ходов (≈1–2 с тишины на каждом), немой
+# ход «только тул» 2.3% → 0, сарказм и злость на своих ситуациях 8/8 и 8/8.
+# Строка-запрет в промпте того же не дала (5–8% во всех вариантах). Шим
+# brain-us не трогаем: отдельный сервер, с мержами не пересобирается.
+TAG_PREFILL = "["
+
+
+def _last_is_user_message(chat_ctx: Any) -> bool:
+    """Последний элемент истории — реплика ученика (а не результат тула или
+    системное событие вроде приветствия)."""
+    items = getattr(chat_ctx, "items", None) or []
+    if not items:
+        return False
+    it = items[-1]
+    return getattr(it, "type", None) == "message" and getattr(it, "role", None) == "user"
+
+
 class _SpeechCleaner:
     """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
     озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
@@ -2128,6 +2157,57 @@ def build_mood_block(tutor: str) -> str:
     )
 
 
+# ---- log_review: только то, что память сессии назвала DUE -------------------
+#
+# Бэкенд (/api/profile/review → reviewItem) двигает ЛЮБУЮ строку review_item
+# ученика, на которую похож присланный ярлык, а строка там заводится на каждую
+# ошибку из log_mistake. Значит, вызов по пункту из «Recent learner mistakes»
+# тоже попадает в базу: correct=false сбрасывает его в box 0 и +1 к промахам.
+# Прогон KZ TEST 02.10.2026 (A0, 36 разговоров по 12 ходов): Декстер звал
+# log_review в 126 ходах из 432 — по списку ошибок, по пункту за ход, в 107 из
+# 128 вызовов с correct=false и не задав ни одного вопроса. Каждый такой звонок
+# ломал ученику расписание повторений. Контракт тула и раньше был «только DUE»,
+# но держала его одна модель, поэтому он проверяется здесь.
+#
+# Сопоставление — порт src/lib/db/reviewMatch.js (matchesReviewItem): что
+# пропустит агент, то найдёт и база, и наоборот. Меняются только парой.
+_REVIEW_STOPWORDS = frozenset({"a", "an", "the", "of", "to", "in", "on", "at", "for", "with", "and", "or"})
+
+
+def _review_norm(s: str) -> str:
+    return " ".join(_re.sub(r"[^\w]+|_", " ", (s or "").lower()).split())
+
+
+def _review_tokens(s: str) -> list[str]:
+    def singular(t: str) -> str:
+        return t[:-1] if len(t) > 3 and t.endswith("s") and not t.endswith("ss") else t
+
+    return [singular(t) for t in _review_norm(s).split(" ") if t and t not in _REVIEW_STOPWORDS]
+
+
+def _matches_review_item(item_text: str, query: str) -> bool:
+    item, q = _review_norm(item_text), _review_norm(query)
+    if not item or not q:
+        return False
+    if item == q:
+        return True  # reviewItem сначала сверяет item_key целиком
+    query_tokens = set(_review_tokens(query))
+    if not query_tokens:
+        return False
+    if len(query_tokens) == 1:
+        return q in item
+    item_tokens = set(_review_tokens(item_text))
+    hits = len(query_tokens & item_tokens)
+    if hits == len(query_tokens):
+        return True
+    return len(query_tokens) >= 4 and hits >= 3 and hits / len(query_tokens) >= 0.75
+
+
+def _matches_due(item: str, due_items: tuple[str, ...]) -> bool:
+    """Относится ли ярлык из log_review к одному из DUE-пунктов сессии."""
+    return any(_matches_review_item(d, item) for d in due_items)
+
+
 class TutorAgent(Agent):
     """Agent subclass that exposes log_mistake / log_topic as Gemini tools.
 
@@ -2149,8 +2229,17 @@ class TutorAgent(Agent):
         moods_enabled: bool = False,
         speech_lang: str = "",
         skip_tools: frozenset[str] = frozenset(),
+        due_items: tuple[str, ...] = (),
+        prefill_tag: bool = False,
     ):
         super().__init__(instructions=instructions)
+        # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
+        self._prefill_tag = prefill_tag
+        # Прозвучал ли текст в текущем ответе модели — см. _ack.
+        self._spoke = False
+        # Что память этой сессии назвала DUE (повторения + словарь): log_review
+        # пишет только по ним — см. _matches_due.
+        self._due_items = tuple(x for x in due_items if x)
         # Тулы, которых у этой сессии нет (см. POST_CALL_MEMORY_TOOLS). Режем
         # список Agent сразу после сборки: модель не должна их даже видеть.
         if skip_tools:
@@ -2260,16 +2349,33 @@ class TutorAgent(Agent):
         allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
         cleaner = _SpeechCleaner(allowed)
         published = False
+        # Префилл: только на реплику ученика. После тула модель вправе промолчать
+        # (ядро §3: ход уже отвечен) — «[» заставил бы её говорить второй раз; на
+        # приветствии последним стоит системное событие, а не ученик.
+        self._spoke = False
+        prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
+        if prefill:
+            chat_ctx = chat_ctx.copy()
+            chat_ctx.add_message(role="assistant", content=TAG_PREFILL)
+        # «[» модель не повторяет — возвращаем его в поток перед первым текстом.
+        # Ответ «только тул» текста не несёт, и одинокая скобка не прозвучит.
+        pending = TAG_PREFILL if prefill else ""
         async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
             if isinstance(chunk, str):
+                if chunk and pending:
+                    chunk, pending = pending + chunk, ""
                 out = cleaner.feed(chunk)
                 if out:
+                    self._spoke = self._spoke or bool(out.strip())
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
                 content = getattr(delta, "content", None) if delta is not None else None
+                if content and pending:
+                    content, pending = pending + content, ""
                 if content:
                     delta.content = cleaner.feed(content)
+                    self._spoke = self._spoke or bool(delta.content.strip())
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
@@ -2288,6 +2394,7 @@ class TutorAgent(Agent):
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
         tail = cleaner.flush()
         if tail:
+            self._spoke = self._spoke or bool(tail.strip())
             yield tail
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
@@ -2326,6 +2433,18 @@ class TutorAgent(Agent):
         async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
             yield frame
 
+    def _ack(self) -> str | None:
+        """Ответ тихого тула памяти модели.
+
+        LiveKit зовёт модель ВТОРОЙ раз после любого тула, вернувшего значение
+        (generation.py: reply_required = output is not None), а None — нет. Тулы
+        памяти раньше всегда отвечали «ok»: реплика уже прозвучала, а модель
+        звали снова — лишний круг мозга и в 2–4% ходов второй ответ подряд
+        (прогон KZ TEST 02.10.2026). Если текст в этом ответе уже был — None, и
+        второго вызова нет. Если модель ответила одним тулом, не сказав ни
+        слова, — «ok»: второй вызов нужен, чтобы она заговорила."""
+        return None if self._spoke else "ok"
+
     @function_tool()
     async def log_mistake(
         self,
@@ -2333,7 +2452,7 @@ class TutorAgent(Agent):
         learner_said: str,
         corrected_form: str,
         rule: str,
-    ) -> str:
+    ) -> str | None:
         """Record a concrete error the learner just made.
 
         Call this every time you correct the learner. Do not announce that
@@ -2350,10 +2469,10 @@ class TutorAgent(Agent):
             "/api/profile/mistakes",
             {"deviceId": self._device_id, "items": [text]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_topic(self, topic: str) -> str:
+    async def log_topic(self, topic: str) -> str | None:
         """Record a new topic that the lesson is now focused on.
 
         Call this whenever you switch to a new grammar rule, vocab area, or
@@ -2365,10 +2484,10 @@ class TutorAgent(Agent):
             "/api/profile/topics",
             {"deviceId": self._device_id, "items": [topic]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_fact(self, fact: str) -> str:
+    async def log_fact(self, fact: str) -> str | None:
         """Record a durable personal fact about the learner for long-term memory.
 
         Call this whenever the learner reveals something worth remembering
@@ -2382,10 +2501,10 @@ class TutorAgent(Agent):
             "/api/profile/facts",
             {"deviceId": self._device_id, "items": [fact]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_resolved(self, corrected_form: str) -> str:
+    async def log_resolved(self, corrected_form: str) -> str | None:
         """Record that the learner has MASTERED a previously-wrong form.
 
         Call this the moment the learner uses a form correctly that they used
@@ -2403,10 +2522,10 @@ class TutorAgent(Agent):
             "/api/profile/resolved",
             {"deviceId": self._device_id, "items": [corrected_form]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_review(self, item: str, correct: bool) -> str:
+    async def log_review(self, item: str, correct: bool) -> str | None:
         """Report the result of a spaced-repetition review.
 
         Call this AFTER you quiz the learner on an item that appeared in your
@@ -2420,14 +2539,22 @@ class TutorAgent(Agent):
             correct: True if the learner produced it correctly this time,
                 else False.
         """
+        if not _matches_due(item, self._due_items):
+            # Ответ модели тот же, что у принятого: отказ или ошибка тула вызвали
+            # бы реплику про него. Текст пункта в лог не пишем — это ошибка ученика.
+            logger.info(
+                "[review] skipped: not DUE in this session (due=%d, tutor=%s)",
+                len(self._due_items), self._tutor or "<none>",
+            )
+            return self._ack()
         await self._post_json(
             "/api/profile/review",
             {"deviceId": self._device_id, "mistake": item, "correct": bool(correct)},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def raise_safety_alert(self, reason: str = "") -> str:
+    async def raise_safety_alert(self, reason: str = "") -> str | None:
         """Flag a genuinely dangerous situation for the backend.
 
         Call this ONCE if the learner expresses self-harm, suicidal ideation,
@@ -2443,7 +2570,7 @@ class TutorAgent(Agent):
             "/api/profile/safety",
             {"deviceId": self._device_id},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
     async def report_task_complete(
@@ -3299,13 +3426,34 @@ _BUDDY_PLATFORM_RULES = (
 )
 
 
+# У Buddy нет отметки повторения на лету. Прогон KZ TEST 02.10.2026: Декстер
+# звал log_review без единого вопроса — по списку прошлых ошибок в 29% ходов, а
+# при DUE-пункте и по нему (30 из 51 вызовов, «Hello» → false). Бэкенд по такому
+# вызову сбрасывает пункт в box 0 — звонок ломал ученику расписание. Проверка
+# по списку DUE (_matches_due) отличить «спросил» от «просто отметил» не может.
+# Лестницу и без тула двигают показы (serves в src/lib/db/profile.js), а в проде
+# log_review и у живых тьюторов звался раз на 56 строк.
+BUDDY_SKIP_TOOLS = frozenset({"log_review"})
+
+
 def _buddy_tools_block() -> str:
     """Тот же MEMORY_TOOLS_BLOCK, что у живых тьюторов, минус две оценки тона
     («genuine cheer», «stay warm»): как реагировать — решает персона, как вести
-    себя при опасности — ядро. Якоря проверяются: поменяют текст тулов — сборка
+    себя при опасности — ядро. И минус log_review — тула у Buddy нет
+    (BUDDY_SKIP_TOOLS). Якоря проверяются: поменяют текст тулов — сборка
     упадёт на тесте, а не уедет в звонок с тёплой строкой."""
     text = MEMORY_TOOLS_BLOCK
+    review_start = text.find(" - log_review(item, correct)\n")
+    review_end = text.find(" - raise_safety_alert(reason)\n")
+    if review_start < 0 or review_end < review_start:
+        raise RuntimeError("MEMORY_TOOLS_BLOCK changed, log_review bullet not found")
+    text = text[:review_start] + text[review_end:]
     for old, new in (
+        (
+            _MEMORY_TOOLS_HEAD_ALL,
+            "You have five tools — log_mistake, log_topic, log_fact, log_resolved\n"
+            "and raise_safety_alert.",
+        ),
         (
             "surfacing that error next time so you won't re-drill it. Give a quick\n"
             "   genuine cheer out loud, but don't mention the tool.\n",
@@ -3357,15 +3505,23 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
             "First call with this learner — nothing from before. Do not pretend to "
             "remember anything.\n"
         )
+    # Строка про DUE — только когда есть что повторять, и без log_review: тула
+    # у Buddy нет (BUDDY_SKIP_TOOLS). Безусловная строка «quiz it, then call
+    # log_review» стояла рядом со списком прошлых ошибок, и модель отмечала их
+    # по одной за ход, не спросив (KZ TEST 02.10.2026: 29% ходов).
+    due_line = (
+        "- DUE items are scheduled for today: work at least one into the call and quiz it.\n"
+        if p.due_reviews or p.due_vocab
+        else ""
+    )
     return (
         "\n==== MEMORY (from earlier calls — private; never read it out as a list) ====\n"
-        + format_memory_block(p, neutral=True)
+        + format_memory_block(p, neutral=True, review_tool=False)
         + "\nHow to use it:\n"
         "- Your first question may tie back to ONE concrete item from here — a past "
         "mistake, a topic, a plan — by name. Not a menu.\n"
-        "- DUE items are scheduled for today: work at least one into the call, quiz it, "
-        "then call log_review.\n"
-        "- If a mistake from here comes back, point it out once and fix it.\n"
+        + due_line
+        + "- If a mistake from here comes back, point it out once and fix it.\n"
         "- Never claim to remember anything that is not listed here.\n"
     )
 
@@ -6507,7 +6663,14 @@ async def entrypoint(ctx: JobContext):
         # Пусто → tts_node пропускает текст как есть (см. _pronunciation_lang:
         # гейт по провайдеру, чтобы не трогать живого Спарка на проде).
         speech_lang=_pronunciation_lang(buddy_voice_profile(profile)),
-        skip_tools=POST_CALL_MEMORY_TOOLS if post_call_memory else frozenset(),
+        skip_tools=(POST_CALL_MEMORY_TOOLS if post_call_memory else frozenset())
+        | (BUDDY_SKIP_TOOLS if is_buddy else frozenset()),
+        due_items=(*profile.due_reviews, *profile.due_vocab),
+        # Префилл «[» — только Buddy (тег там обязателен в каждой реплике) и
+        # только мозг на Claude через шим: у OpenAI хвостовая реплика тьютора
+        # не продолжается, а читается как уже сказанная.
+        prefill_tag=is_buddy
+        and not _is_openai_brain(_brain_model_for(buddy_voice_profile(profile).tutor)),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
