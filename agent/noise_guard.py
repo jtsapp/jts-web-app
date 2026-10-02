@@ -85,6 +85,8 @@ logger = logging.getLogger("jts-agent")
 #   распознавания (в рации поток новый на каждый ход). Выключено по умолчанию.
 # SPEAKER_LOCK_PRIOR_BG — с памятью: говорящий тише этой доли уровня ученика —
 #   фон, даже если в новом потоке он пока один.
+# SPEAKER_LOCK_WARMUP_MS — окно прогрева от первого слова звонка, мс: основной
+#   только из слов этого окна уступает живому говорящему; 0 — выключить.
 # SPEAKER_LOCK_DEBUG=on — на конце каждой фразы строка в лог: уровни и каждое
 #   слово с говорящим, громкостью и решением. Только для канарейки: это текст
 #   речи ученика в логах.
@@ -127,6 +129,20 @@ SPEAKER_LOCK_OUTLIER_FLOOR = 0.5
 # же живого лога: 0.45 и 0.55 — ученик 59/59, фон 5/21; 0.65 — ученик 50/59.
 # Берём середину безопасного диапазона.
 SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.5
+# Прогрев тракта: первые ~2.5 с речи в звонке приходят громче в 2.5–3.5 раза
+# (Krisp/усиление ещё не встали). Зонд KZ TEST 02.10.2026 (синтез Daniel без
+# фона, «Свободно»): «I usually go to the gym after work» — 14222…4158 при
+# 6206…1433 той же записи офлайн, к 2.5 с — уже ×1.1. Soniox на паузе разрезал
+# ученика надвое: говорящий 1 — только эта фраза, дальше всё — говорящий 2.
+# Основным стал «1» с завышенным уровнем 9190, живой ученик (~3000–4000) не
+# дотягивал до SAME и был фоном до конца звонка: тьютор слышал «is», «to» —
+# 36–40 слов из ~50 выкинуто в 4 звонках из 6. Отсюда правило: основной, у
+# которого ВСЕ слова пришлись на прогрев, уступает микрофон живому говорящему
+# (см. SpeakerLock._yield_ghost). Окно — от первого слова звонка. Проигрыш
+# живых логов кодом правила при окне 2–4 с одинаков: зонды с разрезом 36/42
+# (было 10, 8, 6 из 42; теряется одна фраза), без разреза 42/42; четыре
+# замера с новостями −6/−12 дБ — ученик и фон без изменений.
+SPEAKER_LOCK_WARMUP_MS_DEFAULT = 3000.0
 
 _OFF = ("off", "0", "false", "no")
 
@@ -219,6 +235,10 @@ def speaker_lock_same() -> float:
 
 def speaker_lock_outlier() -> float:
     return _env_fraction("SPEAKER_LOCK_OUTLIER", SPEAKER_LOCK_OUTLIER_DEFAULT, 0.0, 10.0)
+
+
+def speaker_lock_warmup_ms() -> float:
+    return _env_fraction("SPEAKER_LOCK_WARMUP_MS", SPEAKER_LOCK_WARMUP_MS_DEFAULT, 0.0, 10000.0)
 
 
 def turn_watchdog_sec(tutor: str) -> float:
@@ -333,14 +353,23 @@ class SpeakerLock:
         outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
         prior: Callable[[], float | None] | None = None,
         prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+        warmup_ms: float = SPEAKER_LOCK_WARMUP_MS_DEFAULT,
+        claim_warmup: Callable[[], bool] | None = None,
         on_primary_words: Callable[[list[float]], None] | None = None,
         on_segment: Callable[[str], None] | None = None,
         on_switch: Callable[[str | None, str, float, float], None] | None = None,
+        on_ghost: Callable[[str, str], None] | None = None,
     ) -> None:
         self._ratio = ratio
         self._keep = keep
         self._same = same
         self._outlier = outlier
+        # Прогрев (SPEAKER_LOCK_WARMUP_MS_DEFAULT) — один на звонок: окно
+        # получает сокет, первым увидевший слово. claim_warmup() — «окно моё?»
+        # (GuardedSonioxSTT отдаёт его один раз); без него — всегда моё.
+        self._warmup_ms = warmup_ms
+        self._claim_warmup = claim_warmup
+        self._on_ghost = on_ghost
         # Память об ученике по звонку: prior() — его уровень или None;
         # on_primary_words(громкости) — слова основного этой фразы наружу.
         self._prior = prior
@@ -363,6 +392,24 @@ class SpeakerLock:
         self._held: list[dict[str, Any]] = []
         self.kept_words = 0
         self.dropped_words = 0
+        # Окно прогрева в этом сокете: конец окна в его же времени (start_ms)
+        # или None — окна нет (выключено или досталось другому сокету).
+        self._warm_decided = False
+        self._warm_until: float | None = None
+        # Слов говорящего ПОСЛЕ прогрева: у «призрака» их ноль.
+        self._fresh: dict[str, int] = {}
+
+    def _is_fresh(self, start: Any) -> bool:
+        """Слово после окна прогрева (или окна у этого сокета нет)."""
+        if start is None:
+            return True
+        start = float(start)
+        if not self._warm_decided:
+            self._warm_decided = True
+            mine = self._claim_warmup() if self._claim_warmup else True
+            if mine and self._warmup_ms > 0:
+                self._warm_until = start + self._warmup_ms
+        return self._warm_until is None or start >= self._warm_until
 
     # -- аудио --------------------------------------------------------------
     def push_pcm(self, pcm: bytes, sample_rate: int) -> None:
@@ -416,12 +463,23 @@ class SpeakerLock:
         speaker = max(votes, key=votes.get) if votes else None
         return speaker, self._span_loudness(word[0].get("start_ms"), word[-1].get("end_ms"))
 
-    def _learn(self, infos: list[tuple[str | None, float | None]]) -> None:
-        """Слова законченной фразы → уровни говорящих → основной."""
-        for speaker, loud in infos:
+    def _learn(
+        self,
+        infos: list[tuple[str | None, float | None]],
+        fresh: list[bool] | None = None,
+    ) -> None:
+        """Слова законченной фразы → уровни говорящих → основной.
+
+        `fresh` — слово после окна прогрева (см. _is_fresh); не передано — все
+        слова свежие, прогрева нет."""
+        if fresh is None:
+            fresh = [True] * len(infos)
+        for (speaker, loud), is_fresh in zip(infos, fresh):
             if speaker is None or loud is None:
                 continue
             self._history.setdefault(speaker, deque(maxlen=self.HISTORY)).append(loud)
+            if is_fresh:
+                self._fresh[speaker] = self._fresh.get(speaker, 0) + 1
         levels = {spk: self.level(spk) for spk in self._history}
         levels = {spk: lvl for spk, lvl in levels.items() if lvl is not None}
         if not levels:
@@ -436,20 +494,70 @@ class SpeakerLock:
             self.primary = best
             if self._on_switch:
                 self._on_switch(None, best, levels[best], 0.0)
-            self._report(infos)
-            return
-        best = max(levels, key=levels.get)
-        current = levels[self.primary]
-        if (
-            best != self.primary
-            and len(self._history[best]) >= self.MIN_SWITCH_WORDS
-            and levels[best] > current * self._ratio
-        ):
-            old = self.primary
-            self.primary = best
-            if self._on_switch:
-                self._on_switch(old, best, levels[best], current)
+        else:
+            # «Призрак» прогрева не отбирает микрофон у живого основного своим
+            # завышенным уровнем: иначе каждая фраза гоняла бы его туда и
+            # обратно. Пока прогрев у всех, смена — как раньше.
+            live_primary = not self._ghost(self.primary)
+            contenders = [
+                spk for spk in levels
+                if spk == self.primary or not (live_primary and self._ghost(spk))
+            ]
+            best = max(contenders, key=levels.get)
+            current = levels[self.primary]
+            if (
+                best != self.primary
+                and len(self._history[best]) >= self.MIN_SWITCH_WORDS
+                and levels[best] > current * self._ratio
+            ):
+                old = self.primary
+                self.primary = best
+                if self._on_switch:
+                    self._on_switch(old, best, levels[best], current)
+        # До отчёта в память: слова этой фразы должны уйти от живого основного.
+        self._yield_ghost(levels)
         self._report(infos)
+
+    def _ghost(self, speaker: str) -> bool:
+        """Все слова говорящего пришлись на прогрев этого сокета."""
+        return self._warm_until is not None and not self._fresh.get(speaker)
+
+    def _yield_ghost(self, levels: dict[str, float]) -> None:
+        """Основной, звучавший только на прогреве, уступает живому говорящему.
+
+        Его уровень завышен прогревом и уже не обновится — он молчит, а
+        расщеплённый Soniox ученик под другим номером до SAME не дотягивает
+        (см. SPEAKER_LOCK_WARMUP_MS_DEFAULT).
+
+        Живой — не меньше MIN_SWITCH_WORDS слов после прогрева И больше слов,
+        чем у «призрака». По громкости их не развести: расщеплённый ученик
+        против «призрака» 0.32–0.41, фраза новостей против ученика, чья первая
+        фраза пришлась на прогрев, — 0.28 (тест «stable»). Зато ученик под
+        новым номером к третьей фразе наговорил больше своей первой фразы
+        (17 слов против 8), а фраза новостей — меньше. Цена для зонда — одна
+        фраза («But yesterday I was too tired»), а не весь звонок.
+        Если фон всё-таки переговорит молчащего ученика, он проходит, пока
+        ученик не заговорит снова: свежие слова снимают с ученика «призрака»,
+        и обычное правило смены возвращает ему микрофон."""
+        if self.primary is None or not self._ghost(self.primary):
+            return
+        # Офлайн-стенд (24 записи, прогрева и Krisp там нет — правило там может
+        # только мешать): owen −6 дБ фон 51 → 53 из 80, ученик и остальные
+        # конфигурации без изменений. Счёт только свежих слов живого дал 56,
+        # оба условия сразу — тоже 56.
+        ghost_words = len(self._history.get(self.primary, ()))
+        alive = [
+            spk for spk in levels
+            if spk != self.primary
+            and self._fresh.get(spk, 0) >= self.MIN_SWITCH_WORDS
+            and len(self._history[spk]) > ghost_words
+        ]
+        if not alive:
+            return
+        old = self.primary
+        self.primary = max(alive, key=lambda spk: (len(self._history[spk]), levels[spk]))
+        if self._on_ghost:
+            self._on_ghost(old, self.primary)
 
     def _report(self, infos: list[tuple[str | None, float | None]]) -> None:
         if self._on_primary_words and self.primary is not None:
@@ -558,9 +666,10 @@ class SpeakerLock:
             if _is_end_token(token):
                 words = _words(self._held)
                 infos = [self._word_info(w) for w in words]
+                fresh = [self._is_fresh(w[0].get("start_ms")) for w in words]
                 # Сперва уровни — этой же фразой: фон, начавший её раньше
                 # ученика, решается уже против уровня ученика.
-                self._learn(infos)
+                self._learn(infos, fresh)
                 kept, dropped = self._decide(words, infos)
                 if self._on_segment and words:
                     self._on_segment(self._describe(words, infos))
@@ -666,9 +775,12 @@ if aiohttp is not None and soniox is not None:
                     outlier=stt._outlier,
                     prior=stt._prior_level if stt._memory else None,
                     prior_bg=stt._prior_bg,
+                    warmup_ms=stt._warmup_ms,
+                    claim_warmup=stt._claim_warmup,
                     on_primary_words=stt._learner_words.extend,
                     on_segment=self._log_segment if stt._debug else None,
                     on_switch=self._log_switch,
+                    on_ghost=self._log_ghost,
                 )
                 if stt._lock_on
                 else None
@@ -712,6 +824,12 @@ if aiohttp is not None and soniox is not None:
                     "Speaker lock: основной говорящий %s → %s (громкость %.0f против %.0f)",
                     old, new, loud, old_loud,
                 )
+
+        def _log_ghost(self, old: str, new: str) -> None:
+            logger.info(
+                "Speaker lock: основной говорящий %s звучал только на прогреве — микрофон у %s",
+                old, new,
+            )
 
         def _log_drop(self, text: str) -> None:
             # Фон бубнит без перерыва — копим и печатаем кусками, а не по
@@ -785,6 +903,7 @@ if aiohttp is not None and soniox is not None:
             outlier: float = SPEAKER_LOCK_OUTLIER_DEFAULT,
             memory: bool = False,
             prior_bg: float = SPEAKER_LOCK_PRIOR_BG_DEFAULT,
+            warmup_ms: float = SPEAKER_LOCK_WARMUP_MS_DEFAULT,
             debug: bool = False,
             finalize: bool = True,
             **kwargs: Any,
@@ -805,6 +924,11 @@ if aiohttp is not None and soniox is not None:
             # Громкость слов ученика по всему звонку (см. MEMORY): в рации поток
             # распознавания новый на каждый ход, а ученик тот же.
             self._learner_words: deque = deque(maxlen=300)
+            # Прогрев тракта — раз на звонок: окно получает первый сокет со
+            # словом. В рации поток новый на каждый ход, но второй ход уже
+            # «тёплый»; переподключение сокета посреди звонка — тоже.
+            self._warmup_ms = warmup_ms
+            self._warm_claimed = False
             self._finalize = finalize
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
@@ -823,6 +947,12 @@ if aiohttp is not None and soniox is not None:
             if len(self._learner_words) < 5:
                 return None
             return quantile(self._learner_words, SpeakerLock.LEVEL_QUANTILE)
+
+        def _claim_warmup(self) -> bool:
+            if self._warm_claimed:
+                return False
+            self._warm_claimed = True
+            return True
 
         def finalize_now(self) -> int:
             """Рация: кнопку отпустили — ученик договорил. Взводит finalize у

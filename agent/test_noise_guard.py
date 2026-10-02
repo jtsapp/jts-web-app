@@ -351,6 +351,67 @@ tv_first.reset()
 assert tv_first.primary is None and tv_first._windows == [] and tv_first._held == []
 
 
+# --- прогрев: «призрак» первой фразы ------------------------------------------------
+# Зонд KZ TEST 02.10.2026 (синтез без фона, «Свободно»): первые ~2.5 с речи в
+# звонке приходят громче в 2.5–3.5 раза, Soniox разрезал ученика на паузе —
+# «1» только первая фраза (громкая), дальше всё «2». Основным стал «1», и живой
+# ученик был фоном до конца звонка.
+def _ghost_call(**kw):
+    ghosts = []
+    lock = G.SpeakerLock(on_ghost=lambda old, new: ghosts.append((old, new)), **kw)
+    _feed(lock, (1.6, 13000), (0.7, 0), (1.4, 4200), (9.1, 0), (3.6, 5000))
+
+    def phrase(start, end, n, spk):
+        step = (end - start) // n
+        return [_tok(f" {spk}w{i}", start + i * step, start + (i + 1) * step - 20, spk) for i in range(n)] + [END]
+
+    out1, d1 = lock.process(phrase(0, 1600, 8, "1"))      # «I usually go to the gym after work.»
+    out2, d2 = lock.process(phrase(2300, 3700, 6, "2"))   # «But yesterday I was too tired.»
+    out3, d3 = lock.process(phrase(12800, 16400, 11, "2"))  # «My favorite food is plov, …»
+    return lock, ghosts, (d1, d2, d3)
+
+
+# Без окна прогрева — сбой как в звонке: третья фраза ученика — «фон».
+lock, ghosts, (d1, d2, d3) = _ghost_call(warmup_ms=0)
+assert lock.primary == "1" and ghosts == []
+assert len(d3.split()) == 11, d3
+
+# С окном: «призрак» уступает, как только живой наговорил больше него. Фраза,
+# на которой ещё не наговорил (6 слов против 8), — цена правила.
+lock, ghosts, (d1, d2, d3) = _ghost_call()
+assert d1 == "" and len(d2.split()) == 6, (d1, d2)
+assert ghosts == [("1", "2")] and lock.primary == "2", (ghosts, lock.primary)
+assert d3 == "", d3
+
+# Окно одно на звонок: второму сокету (рация, переподключение) прогрев не
+# достаётся — там «призраков» нет, правило не включается.
+lock, ghosts, (d1, d2, d3) = _ghost_call(claim_warmup=lambda: False)
+assert lock.primary == "1" and ghosts == [] and len(d3.split()) == 11, (ghosts, d3)
+
+# Фон переговорил ученика, чья первая фраза пришлась на прогрев, — проходит,
+# пока ученик молчит. Заговорил — свежие слова снимают с него «призрака», и
+# обычная смена (громче в ratio раз) возвращает ему микрофон; фон снова режется.
+back = G.SpeakerLock(on_ghost=lambda old, new: None)
+_feed(back, (1.6, 13000), (1.9, 0), (1.5, 2000), (1.0, 0), (2.0, 2000), (2.0, 0), (1.5, 9000), (1.0, 0), (1.5, 2000))
+back.process([_tok(f" i{i}", i * 200, i * 200 + 180, "1") for i in range(8)] + [END])
+_, d = back.process([_tok(f" n{i}", 3500 + i * 350, 3500 + i * 350 + 300, "2") for i in range(4)] + [END])
+assert back.primary is None or back.primary == "1"
+_, d = back.process([_tok(f" t{i}", 6000 + i * 400, 6000 + i * 400 + 350, "2") for i in range(5)] + [END])
+assert back.primary == "2" and d == "", (back.primary, d)  # цена: 9 слов фона против 8 ученика
+_, d = back.process([_tok(f" l{i}", 10000 + i * 300, 10000 + i * 300 + 250, "1") for i in range(5)] + [END])
+assert back.primary == "1" and d == "", (back.primary, d)
+_, d = back.process([_tok(f" z{i}", 12500 + i * 300, 12500 + i * 300 + 250, "2") for i in range(4)] + [END])
+assert d == "z0 z1 z2 z3", d
+
+# Сессия отдаёт окно прогрева один раз на звонок.
+eng_w = G.GuardedSonioxSTT(api_key="test", params=soniox.STTOptions())
+assert eng_w._claim_warmup() is True and eng_w._claim_warmup() is False
+_env(SPEAKER_LOCK_WARMUP_MS=None)
+assert G.speaker_lock_warmup_ms() == 3000.0
+_env(SPEAKER_LOCK_WARMUP_MS="0")
+assert G.speaker_lock_warmup_ms() == 0.0
+_env(SPEAKER_LOCK_WARMUP_MS=None)
+
 # --- сквозной: настоящий плагин Soniox + наш сокет ----------------------------------
 class _FakeWS:
     """Сокет, который отвечает заранее записанными сообщениями — но только
