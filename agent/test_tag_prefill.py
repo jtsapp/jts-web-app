@@ -6,6 +6,9 @@
 Префилл (замер KZ TEST 02.10.2026, A0, 24 разговора по 12 ходов): ответ модели
 начат с «[» — дальше она пишет тег, а не <thinking>. Рассуждение текстом 7.4% →
 0 из 288 ходов, немой ход «только тул» 2.3% → 0, сарказм и злость 8/8 и 8/8.
+
+Тихие тулы памяти отвечают None, если реплика в этом ответе уже прозвучала:
+иначе LiveKit зовёт модель второй раз и в 2–4% ходов тьютор говорит дважды.
 """
 import asyncio
 
@@ -113,6 +116,30 @@ async def main():
     spoken = await run(a, ctx_user(), [chunk("You like tea.")])
     assert last(seen[0])[1] == "user"
     assert spoken == "You like tea.", spoken
+
+    # --- тихие тулы памяти: второй вызов модели только если она молчала -----
+    # None → LiveKit не зовёт модель второй раз (reply_required = output is not None).
+    for prefill in (True, False):
+        a = make_agent(prefill)
+        posts = []
+
+        async def fake_post(path, body, posts=posts):
+            posts.append(path)
+
+        a._post_json = fake_post
+        await run(a, ctx_user(), [chunk("default] You like tea." if prefill else "You like tea."), chunk(tool="log_fact")])
+        assert await a.log_fact("likes tea") is None, "реплика прозвучала — второго ответа не надо"
+        assert await a.log_mistake("x", "y", "z", "r") is None
+        assert await a.raise_safety_alert("r") is None
+        assert posts == ["/api/profile/facts", "/api/profile/mistakes", "/api/profile/safety"], posts
+
+        # Новый ответ модели — флаг заново. Ответ «только тул»: модель должна заговорить.
+        await run(a, ctx_user(), [chunk(tool="log_fact")])
+        assert await a.log_fact("likes tea") == "ok"
+
+        # Пробелы и снятый тег речью не считаются.
+        await run(a, ctx_user(), [chunk("default]  " if prefill else "  "), chunk(tool="log_topic")])
+        assert await a.log_topic("food") == "ok"
 
 
 asyncio.run(main())

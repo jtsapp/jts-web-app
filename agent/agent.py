@@ -2235,6 +2235,8 @@ class TutorAgent(Agent):
         super().__init__(instructions=instructions)
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
+        # Прозвучал ли текст в текущем ответе модели — см. _ack.
+        self._spoke = False
         # Что память этой сессии назвала DUE (повторения + словарь): log_review
         # пишет только по ним — см. _matches_due.
         self._due_items = tuple(x for x in due_items if x)
@@ -2350,6 +2352,7 @@ class TutorAgent(Agent):
         # Префилл: только на реплику ученика. После тула модель вправе промолчать
         # (ядро §3: ход уже отвечен) — «[» заставил бы её говорить второй раз; на
         # приветствии последним стоит системное событие, а не ученик.
+        self._spoke = False
         prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
         if prefill:
             chat_ctx = chat_ctx.copy()
@@ -2363,6 +2366,7 @@ class TutorAgent(Agent):
                     chunk, pending = pending + chunk, ""
                 out = cleaner.feed(chunk)
                 if out:
+                    self._spoke = self._spoke or bool(out.strip())
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
@@ -2371,6 +2375,7 @@ class TutorAgent(Agent):
                     content, pending = pending + content, ""
                 if content:
                     delta.content = cleaner.feed(content)
+                    self._spoke = self._spoke or bool(delta.content.strip())
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
@@ -2389,6 +2394,7 @@ class TutorAgent(Agent):
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
         tail = cleaner.flush()
         if tail:
+            self._spoke = self._spoke or bool(tail.strip())
             yield tail
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
@@ -2427,6 +2433,18 @@ class TutorAgent(Agent):
         async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
             yield frame
 
+    def _ack(self) -> str | None:
+        """Ответ тихого тула памяти модели.
+
+        LiveKit зовёт модель ВТОРОЙ раз после любого тула, вернувшего значение
+        (generation.py: reply_required = output is not None), а None — нет. Тулы
+        памяти раньше всегда отвечали «ok»: реплика уже прозвучала, а модель
+        звали снова — лишний круг мозга и в 2–4% ходов второй ответ подряд
+        (прогон KZ TEST 02.10.2026). Если текст в этом ответе уже был — None, и
+        второго вызова нет. Если модель ответила одним тулом, не сказав ни
+        слова, — «ok»: второй вызов нужен, чтобы она заговорила."""
+        return None if self._spoke else "ok"
+
     @function_tool()
     async def log_mistake(
         self,
@@ -2434,7 +2452,7 @@ class TutorAgent(Agent):
         learner_said: str,
         corrected_form: str,
         rule: str,
-    ) -> str:
+    ) -> str | None:
         """Record a concrete error the learner just made.
 
         Call this every time you correct the learner. Do not announce that
@@ -2451,10 +2469,10 @@ class TutorAgent(Agent):
             "/api/profile/mistakes",
             {"deviceId": self._device_id, "items": [text]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_topic(self, topic: str) -> str:
+    async def log_topic(self, topic: str) -> str | None:
         """Record a new topic that the lesson is now focused on.
 
         Call this whenever you switch to a new grammar rule, vocab area, or
@@ -2466,10 +2484,10 @@ class TutorAgent(Agent):
             "/api/profile/topics",
             {"deviceId": self._device_id, "items": [topic]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_fact(self, fact: str) -> str:
+    async def log_fact(self, fact: str) -> str | None:
         """Record a durable personal fact about the learner for long-term memory.
 
         Call this whenever the learner reveals something worth remembering
@@ -2483,10 +2501,10 @@ class TutorAgent(Agent):
             "/api/profile/facts",
             {"deviceId": self._device_id, "items": [fact]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_resolved(self, corrected_form: str) -> str:
+    async def log_resolved(self, corrected_form: str) -> str | None:
         """Record that the learner has MASTERED a previously-wrong form.
 
         Call this the moment the learner uses a form correctly that they used
@@ -2504,10 +2522,10 @@ class TutorAgent(Agent):
             "/api/profile/resolved",
             {"deviceId": self._device_id, "items": [corrected_form]},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def log_review(self, item: str, correct: bool) -> str:
+    async def log_review(self, item: str, correct: bool) -> str | None:
         """Report the result of a spaced-repetition review.
 
         Call this AFTER you quiz the learner on an item that appeared in your
@@ -2522,21 +2540,21 @@ class TutorAgent(Agent):
                 else False.
         """
         if not _matches_due(item, self._due_items):
-            # Ответ модели тот же «ok»: отказ вслух или ошибка тула вызвали бы
-            # реплику про него. Текст пункта в лог не пишем — это ошибка ученика.
+            # Ответ модели тот же, что у принятого: отказ или ошибка тула вызвали
+            # бы реплику про него. Текст пункта в лог не пишем — это ошибка ученика.
             logger.info(
                 "[review] skipped: not DUE in this session (due=%d, tutor=%s)",
                 len(self._due_items), self._tutor or "<none>",
             )
-            return "ok"
+            return self._ack()
         await self._post_json(
             "/api/profile/review",
             {"deviceId": self._device_id, "mistake": item, "correct": bool(correct)},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
-    async def raise_safety_alert(self, reason: str = "") -> str:
+    async def raise_safety_alert(self, reason: str = "") -> str | None:
         """Flag a genuinely dangerous situation for the backend.
 
         Call this ONCE if the learner expresses self-harm, suicidal ideation,
@@ -2552,7 +2570,7 @@ class TutorAgent(Agent):
             "/api/profile/safety",
             {"deviceId": self._device_id},
         )
-        return "ok"
+        return self._ack()
 
     @function_tool()
     async def report_task_complete(
