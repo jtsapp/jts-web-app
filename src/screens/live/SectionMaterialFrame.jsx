@@ -143,6 +143,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // Что сообщил мост о проигрывании этого документа: идёт ли пачка и не
   // восстановление ли это (у него своя подпись — «Загружаем урок…»).
   const replayRef = useRef({ busy: false, restoring: false })
+  // Последняя стадия, которую рамка прошла, проигрывая пачку: пока идёт
+  // проигрывание, наверх она не уходит — «Темы» мигали бы каждой стадией потока
+  // (стенд 04.10). Отдаётся одна, когда мост сообщит конец.
+  const deferredStageRef = useRef(null)
   const coverTimerRef = useRef(null)
   // Какой документ открыт в рамке. Адрес зависит не только от материала и
   // перезагрузки: у ученика — от страницы следования, у преподавателя — от
@@ -168,6 +172,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   useLayoutEffect(() => {
     documentKeyRef.current = documentKey
     replayRef.current = { busy: false, restoring: false }
+    deferredStageRef.current = null
     loadedRef.current = false
     settledRef.current = false
     ownStageAtRef.current = null
@@ -402,7 +407,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       if (stage) {
         const armedAt = ownStageAtRef.current
         ownStageAtRef.current = null
-        onStage?.(stage, { own: armedAt != null && Date.now() - armedAt <= OWN_STAGE_MS })
+        const own = armedAt != null && Date.now() - armedAt <= OWN_STAGE_MS
+        if (!own && replayRef.current.busy) {
+          deferredStageRef.current = stage
+        } else {
+          deferredStageRef.current = null
+          onStage?.(stage, { own })
+        }
         stageReportedRef.current = true
         // Отчёт урока по умолчанию до goto-lesson — ещё не готовность: переход
         // ждёт осадки (handleLoad).
@@ -415,6 +426,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       if (!data || data.source !== BRIDGE) return
       if (data.type === 'replay') {
         handleReplayState(data)
+        const deferred = deferredStageRef.current
+        if (!data.busy && deferred) {
+          deferredStageRef.current = null
+          onStage?.(deferred, { own: false })
+        }
         return
       }
       if (!isStaff) {

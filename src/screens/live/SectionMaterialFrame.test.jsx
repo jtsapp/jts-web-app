@@ -670,3 +670,45 @@ describe('SectionMaterialFrame — лоадер', () => {
     expect(shown(container)).toBe(false)
   })
 })
+
+// Под лоадером догона рамка проигрывает поток преподавателя и проходит стадии
+// одну за другой; «Темы» справа видны и мигали тем же списком (стенд 04.10).
+// Пока рамка закрыта, наверх уходит только итог — последняя стадия.
+describe('SectionMaterialFrame — стадии под лоадером', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const replayState = (busy, size) => message({ source: 'jts-bridge', type: 'replay', busy, size })
+  const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
+
+  it('проигрывание пачки — наверх только последняя стадия, когда лоадер ушёл', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { iframe } = renderFrame({ follow: true, onStage })
+    await settle(iframe)
+    onStage.mockClear()
+
+    await replayState(true, 40)
+    await stage(2)
+    await stage(1)
+    await stage(4)
+    await stage(1)
+    expect(onStage).not.toHaveBeenCalled()
+
+    await replayState(false, 0)
+
+    expect(onStage).toHaveBeenCalledTimes(1)
+    expect(onStage).toHaveBeenCalledWith({ index: 1, total: 7 }, { own: false })
+  })
+
+  it('пока рамка открыта, стадии уходят сразу, как раньше', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { iframe } = renderFrame({ follow: true, onStage })
+    await settle(iframe)
+    onStage.mockClear()
+
+    await stage(3)
+
+    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { own: false })
+  })
+})
