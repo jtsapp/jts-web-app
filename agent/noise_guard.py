@@ -826,6 +826,9 @@ class EchoReference:
         self._partial = ""
         self._partial_at = 0
         self._windows: deque[list[float | None]] = deque(maxlen=self.MAX_WINDOWS)
+        # Громкость слов эха и слов ученика за звонок (см. EchoFilter).
+        self.echo_levels: deque = deque(maxlen=60)
+        self.learner_levels: deque = deque(maxlen=60)
 
     def _speaking(self) -> bool:
         return bool(self._windows) and self._windows[-1][1] is None
@@ -895,6 +898,11 @@ class EchoReference:
         elif self._speaking():
             self._windows[-1][1] = now
 
+    def in_window(self, t: float) -> bool:
+        """Звук в момент t мог быть эхом: тьютор говорил (или договорил меньше
+        хвоста назад)."""
+        return self._in_window(t)
+
     def _in_window(self, t: float) -> bool:
         for start, end in self._windows:
             if t >= start - self.LEAD_SEC and (end is None or t <= end + self._tail):
@@ -916,6 +924,57 @@ class EchoReference:
             if similar_word(heard, said) or (partial and said.startswith(heard)):
                 return True
         return False
+
+
+class LoudnessTrack:
+    """Громкость звука, ушедшего в Soniox, по окнам 100 мс — и громкость слова
+    по его start_ms/end_ms (медиана окон). Та же арифметика, что у SpeakerLock,
+    но отдельно: замок включён не у всех, а эхо-фильтру громкость нужна всегда."""
+
+    WINDOW_SEC = 0.1
+    # Час звука — с запасом больше дневного лимита звонка.
+    MAX_WINDOWS = 36000
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self._windows: list[float] = []
+        self._base = 0
+        self._acc_sq = 0.0
+        self._acc_n = 0
+        self._window_len = 0
+
+    def push_pcm(self, pcm: bytes, sample_rate: int) -> None:
+        if not pcm or sample_rate <= 0:
+            return
+        if not self._window_len:
+            self._window_len = max(1, int(sample_rate * self.WINDOW_SEC))
+        samples = np.frombuffer(pcm, dtype=np.int16).astype(np.float64)
+        pos = 0
+        while pos < len(samples):
+            take = min(len(samples) - pos, self._window_len - self._acc_n)
+            chunk = samples[pos : pos + take]
+            self._acc_sq += float(np.dot(chunk, chunk))
+            self._acc_n += take
+            pos += take
+            if self._acc_n >= self._window_len:
+                self._windows.append(math.sqrt(self._acc_sq / self._acc_n))
+                self._acc_sq = 0.0
+                self._acc_n = 0
+        if len(self._windows) > self.MAX_WINDOWS:
+            cut = len(self._windows) - self.MAX_WINDOWS
+            del self._windows[:cut]
+            self._base += cut
+
+    def span(self, start: Any, end: Any) -> float | None:
+        if start is None or end is None:
+            return None
+        i0 = max(int(float(start) / 1000 / self.WINDOW_SEC) - self._base, 0)
+        i1 = min(int(math.ceil(float(end) / 1000 / self.WINDOW_SEC)) - self._base, len(self._windows))
+        if i1 <= i0:
+            return None
+        return float(median(self._windows[i0:i1]))
 
 
 class AudioClock:
@@ -963,9 +1022,42 @@ class EchoFilter:
     останавливало тьютора на полуслове. Задержки придержка не добавляет —
     плагин и так отдаёт FINAL только на конце фразы."""
 
-    def __init__(self, ref: EchoReference, clock: Callable[[Any], float | None]) -> None:
+    # Громкость. Текст отделяет эхо от ученика не всегда: эхо Декстера Soniox
+    # пишет с другим окончанием («путешествия» → «путешествие», «Целым» → «в
+    # целом», «блять» → «блядь») и даже латиницей («гоу» → «go»), и такие слова
+    # уходили ходом ученика (живые зонды 03.10.2026). А ученик, перебивший
+    # тьютора теми же словами, что тот говорит («Стоп, я не понял»), по тексту
+    # неотличим от эха. Физически эхо из колонок тише голоса ученика у
+    # микрофона. Поэтому за звонок учим два уровня: эха — по словам, совпавшим
+    # с речью тьютора, и ученика — по словам, когда тьютор молчит. Пока тьютор
+    # говорит, слово решает громкость: тише границы — эхо, громче — ученик.
+    #
+    # Сколько слов нужно, чтобы уровню верить.
+    MIN_LEVEL_WORDS = 3
+    LEVEL_WORDS = 60
+    # Уровня ученика ещё нет — эхо всё, что не громче эха вдвое (+6 дБ).
+    QUIET_RATIO = 2.0
+    # Ученик громче эха меньше чем в 2.5 раза — по громкости их не развести,
+    # решает только текст.
+    SEPARATION = 2.5
+    # Совпавшее с речью тьютора слово отдаём ученику, только если оно не тише
+    # этой доли его уровня — или, пока уровня ученика нет, вчетверо громче эха.
+    MATCH_LEARNER_SHARE = 0.7
+    MATCH_RATIO = 4.0
+
+    def __init__(
+        self,
+        ref: EchoReference,
+        clock: Callable[[Any], float | None],
+        loudness: Callable[[Any, Any], float | None] | None = None,
+    ) -> None:
         self._ref = ref
         self._clock = clock
+        self._loudness = loudness
+        # Уровни — по всему звонку: живут на эталоне, он один на звонок, а
+        # поток распознавания бывает новым (переподключение сокета).
+        self._echo_levels: deque = ref.echo_levels
+        self._learner_levels: deque = ref.learner_levels
         self.reset()
         self.kept_words = 0
         self.dropped_words = 0
@@ -973,28 +1065,97 @@ class EchoFilter:
     def reset(self) -> None:
         self._held: list[dict[str, Any]] = []
 
+    def levels(self) -> tuple[float | None, float | None]:
+        """(уровень эха, уровень ученика) или None, пока слов мало."""
+        echo = median(self._echo_levels) if len(self._echo_levels) >= self.MIN_LEVEL_WORDS else None
+        learner = (
+            median(self._learner_levels)
+            if len(self._learner_levels) >= self.MIN_LEVEL_WORDS
+            else None
+        )
+        return echo, learner
+
+    def boundary(self) -> float | None:
+        """Громкость, ниже которой слово в окне тьютора — эхо (None — решает текст)."""
+        echo, learner = self.levels()
+        if echo is None or echo <= 0:
+            return None
+        if learner is None:
+            return echo * self.QUIET_RATIO
+        if learner < echo * self.SEPARATION:
+            return None
+        return math.sqrt(echo * learner)
+
+    def _match_override(self) -> float:
+        """Громкость, с которой слово, совпавшее с речью тьютора, всё-таки
+        считается словом ученика («Стоп, я не понял» поверх «…я не понял…»)."""
+        echo, learner = self.levels()
+        limit = self.boundary() or 0.0
+        if learner is None:
+            return max(limit, (echo or 0.0) * self.MATCH_RATIO)
+        return max(limit, learner * self.MATCH_LEARNER_SHARE)
+
     def _decide(
-        self, words: list[list[dict[str, Any]]], partial_last: bool = False
+        self, words: list[list[dict[str, Any]]], partial_last: bool = False, final: bool = False
     ) -> tuple[list[dict[str, Any]], list[str], int]:
         texts = ["".join(str(t.get("text", "")) for t in word).strip() for word in words]
-        echo = [
-            bool(norm_word(text))
-            and self._ref.is_echo(
-                text,
-                self._clock(word[0].get("start_ms")),
-                partial=partial_last and i == len(words) - 1,
+        now = self._ref._now()
+        infos: list[tuple[bool, bool, float | None] | None] = []
+        for i, (word, text) in enumerate(zip(words, texts)):
+            if not norm_word(text):
+                infos.append(None)
+                continue
+            t = self._clock(word[0].get("start_ms"))
+            in_window = self._ref.in_window(now if t is None else t)
+            match = in_window and self._ref.is_echo(
+                text, t, partial=partial_last and i == len(words) - 1
             )
-            for i, (word, text) in enumerate(zip(words, texts))
-        ]
-        # Короткое слово рядом со словами ученика — его слово, даже если тьютор
-        # тоже его говорил. Офлайн-стенд и живой зонд: «Тоқта, мен түсінбедім» и
-        # «Мен түсінбедім» поверх недавнего «Мен Айзеремін» — «мен» уходило в
-        # эхо. Эхо идёт сплошными кусками фразы тьютора: короткое слово эха
-        # стоит рядом с другим словом эха (или одно во фразе).
+            loud = (
+                self._loudness(word[0].get("start_ms"), word[-1].get("end_ms"))
+                if self._loudness
+                else None
+            )
+            infos.append((in_window, match, loud))
+        if final:
+            # Учим уровни на законченной фразе — до решения по ней же: первая
+            # фраза эха (приветствие) решается уже по своему уровню.
+            limit = self.boundary()
+            for info in infos:
+                if info is None or info[2] is None:
+                    continue
+                in_window, match, loud = info
+                if not in_window:
+                    self._learner_levels.append(loud)
+                elif match and (limit is None or loud < limit):
+                    self._echo_levels.append(loud)
+        limit = self.boundary()
+        override = self._match_override()
+        echo = [False] * len(words)
+        by_text = [False] * len(words)
+        for i, info in enumerate(infos):
+            if info is None:
+                continue
+            in_window, match, loud = info
+            if not in_window:
+                continue
+            if limit is not None and loud is not None:
+                # Несимметрично. Слово, совпавшее с речью тьютора, — эхо, пока
+                # оно не громкое как ученик: ударные слова эха громче
+                # соседних, и по одной границе «мына», «мен» уходили ученику
+                # (офлайн-стенд). Несовпавшее — эхо, только если тихое.
+                echo[i] = loud < override if match else loud < limit
+            else:
+                echo[i] = match
+                by_text[i] = True
+        # Только для решений по тексту: короткое слово рядом со словами ученика
+        # — его слово, даже если тьютор тоже его говорил. Офлайн-стенд и живой
+        # зонд: «Тоқта, мен түсінбедім» и «Мен түсінбедім» поверх недавнего «Мен
+        # Айзеремін» — «мен» уходило в эхо. Эхо идёт сплошными кусками фразы
+        # тьютора: короткое слово эха стоит рядом с другим словом эха.
         lettered = [i for i, text in enumerate(texts) if norm_word(text)]
         raw = list(echo)
         for j, i in enumerate(lettered):
-            if not raw[i] or len(norm_word(texts[i])) > 3:
+            if not raw[i] or not by_text[i] or len(norm_word(texts[i])) > 3:
                 continue
             neighbours = [lettered[k] for k in (j - 1, j + 1) if 0 <= k < len(lettered)]
             if any(not raw[n] for n in neighbours) and not any(raw[n] for n in neighbours):
@@ -1031,7 +1192,7 @@ class EchoFilter:
         dropped_all: list[str] = []
         for token in tokens:
             if _is_end_token(token):
-                kept, dropped, kept_words = self._decide(_words(self._held))
+                kept, dropped, kept_words = self._decide(_words(self._held), final=True)
                 self.kept_words += kept_words
                 self.dropped_words += sum(1 for w in dropped if norm_word(w))
                 dropped_all.extend(dropped)
@@ -1168,8 +1329,11 @@ if aiohttp is not None and soniox is not None:
             self._fin_zero = 0.0
             # Эхо: часы сокета (время слов → момент прихода звука) и фильтр.
             self._clock = AudioClock()
+            self._loud = LoudnessTrack()
             self._echo = (
-                EchoFilter(stt.echo, self._clock.at) if stt.echo is not None else None
+                EchoFilter(stt.echo, self._clock.at, self._loud.span)
+                if stt.echo is not None
+                else None
             )
             self._echo_buf: list[str] = []
             # finalize по концу речи VAD: сколько звука ещё дослать до команды
@@ -1285,6 +1449,7 @@ if aiohttp is not None and soniox is not None:
                 self._lock.reset()
             # Время слов у нового сокета снова с нуля.
             self._clock.reset()
+            self._loud.reset()
             if self._echo is not None:
                 self._echo.reset()
             # Взвод finalize по тишине относился к звуку старого сокета: на
@@ -1327,6 +1492,8 @@ if aiohttp is not None and soniox is not None:
                     # Часы эха — по тому же звуку и в том же порядке, что ушёл в
                     # сокет: время слов Soniox считается от него.
                     self._clock.push(data.duration)
+                    if self._echo is not None:
+                        self._loud.push_pcm(pcm_data, data.sample_rate)
                     self.audio_queue.put_nowait(pcm_data)
                 elif isinstance(data, _FinalizeMark):
                     self.audio_queue.put_nowait(FINALIZE_MESSAGE)
@@ -1340,9 +1507,12 @@ if aiohttp is not None and soniox is not None:
                     self._lock.kept_words, self._lock.dropped_words,
                 )
             if self._echo is not None and (self._echo.kept_words or self._echo.dropped_words):
+                echo_level, learner_level = self._echo.levels()
                 logger.info(
-                    "Echo guard: слов ученика %d, выкинуто эха %d",
+                    "Echo guard: слов ученика %d, выкинуто эха %d; уровень эха %s, ученика %s",
                     self._echo.kept_words, self._echo.dropped_words,
+                    round(echo_level) if echo_level else "-",
+                    round(learner_level) if learner_level else "-",
                 )
             await super().aclose()
 

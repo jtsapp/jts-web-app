@@ -245,6 +245,88 @@ out, dropped = flt.process([_tok("Қайталай", 6000, 6300), END])
 assert [t["text"] for t in out] == ["Қайталай", "<end>"], out
 flt.reset()
 
+# --- громкость: эхо тихое, ученик у микрофона громкий ------------------------------
+# Живые зонды 03.10.2026: эхо Декстера Soniox пишет с другим окончанием и даже
+# латиницей («Рация», «go», «блядь») — по тексту не поймать; а громкое «Стоп,
+# я не понял» ученика совпадало словами с речью тьютора.
+clk = _Clock(50.0)
+ref = G.EchoReference(tail_sec=0.6, now=clk)
+ref.begin_reply()
+ref.add_text("Ну бля, привет, братан! Давай разбираться, что тебе нужно сегодня? Ну давай, гоу.")
+ref.end_reply()
+ref.on_agent_state("speaking")
+loud = {}
+flt = G.EchoFilter(ref, clock=lambda ms: None if ms is None else 50.0 + ms / 1000,
+                   loudness=lambda start, end: loud.get(start))
+toks = [_tok("Ну", 100, 200), _tok(" бля,", 200, 400), _tok(" привет,", 400, 800),
+        _tok(" Рация,", 900, 1300), _tok(" братан", 1300, 1700), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 300.0
+loud[900] = 320.0
+assert flt.boundary() is None  # уровней ещё нет
+out, dropped = flt.process(toks)
+# Первая же фраза учит уровень эха и решается по нему: искажённое «Рация» — эхо.
+assert [t["text"] for t in out] == ["<end>"], out
+assert "Рация," in dropped, dropped
+assert flt.boundary() == 600.0  # уровня ученика нет — вдвое громче эха
+# Тьютор замолчал; ученик говорит — его уровень.
+clk.t = 52.0
+ref.on_agent_state("listening")
+toks = [_tok("Привет,", 5000, 5400), _tok(" меня", 5400, 5700), _tok(" зовут", 5700, 6000),
+        _tok(" Нурлан.", 6000, 6600), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 3000.0
+out, dropped = flt.process(toks)
+assert [t["text"] for t in out][:-1] == ["Привет,", " меня", " зовут", " Нурлан."], out
+assert abs(flt.boundary() - (300.0 * 3000.0) ** 0.5) < 1e-6
+# Тьютор снова говорит «…я не понял…», ученик перебивает теми же словами громко.
+clk.t = 57.0
+ref.begin_reply()
+ref.add_text("Ну, я не понял тебя, давай ещё раз.")
+ref.end_reply()
+ref.on_agent_state("speaking")
+toks = [_tok("Стоп,", 7200, 7600), _tok(" я", 7600, 7700), _tok(" не", 7700, 7800),
+        _tok(" понял.", 7800, 8300), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 2800.0
+out, dropped = flt.process(toks)
+assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], out
+assert dropped == ""
+# А тихое искажённое эхо его же речи («тебе» вместо «тебя») — выкинуто.
+loud[8500] = 310.0
+out, dropped = flt.process([_tok("тебе", 8500, 8800), END])
+assert [t["text"] for t in out] == ["<end>"], out
+# Черновик решается так же: громкое слово ученика проходит сразу (перебивание).
+loud[9000] = 2900.0
+out, _ = flt.process([_tok("Подожди", 9000, 9400, False)])
+assert [t["text"] for t in out] == ["Подожди"], out
+
+# Ученик почти так же тих, как эхо, — по громкости не развести, решает текст.
+clk2 = _Clock(10.0)
+ref2 = G.EchoReference(tail_sec=0.6, now=clk2)
+ref2.begin_reply()
+ref2.add_text("Сәлем! Мен Айзеремін. Бүгін жаттығу жасаймыз.")
+ref2.end_reply()
+ref2.on_agent_state("speaking")
+loud2 = {}
+flt2 = G.EchoFilter(ref2, clock=lambda ms: None if ms is None else 10.0 + ms / 1000,
+                    loudness=lambda start, end: loud2.get(start))
+toks = [_tok("Сәлем!", 100, 400), _tok(" Мен", 400, 600), _tok(" Айзеремін.", 600, 1100), END]
+for t in toks[:-1]:
+    loud2[t["start_ms"]] = 300.0
+flt2.process(toks)
+clk2.t = 13.0
+ref2.on_agent_state("listening")
+toks = [_tok("Жақсы", 4000, 4400), _tok(" екен", 4400, 4700), _tok(" рахмет", 4700, 5100), END]
+for t in toks[:-1]:
+    loud2[t["start_ms"]] = 450.0
+flt2.process(toks)
+assert flt2.boundary() is None
+ref2.on_agent_state("speaking")
+loud2[5600] = 460.0
+out, _ = flt2.process([_tok("Тоқта", 5600, 6000), END])
+assert [t["text"] for t in out] == ["Тоқта", "<end>"], out  # не совпало с речью — ученик
+
 # --- сквозной: настоящий плагин Soniox + наш сокет -------------------------------
 class _FakeWS:
     """Сокет, который отдаёт заранее записанные сообщения после того, как ушло
