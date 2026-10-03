@@ -2208,6 +2208,23 @@ def _matches_due(item: str, due_items: tuple[str, ...]) -> bool:
     return any(_matches_review_item(d, item) for d in due_items)
 
 
+async def _tap_echo(text, echo):
+    """Текст реплики по пути в синтез — копией в эталон фильтра эха
+    (noise_guard.EchoReference). Поток не задерживается: кусок уходит дальше
+    сразу, эталон сам доберёт разорванное между кусками слово."""
+    if echo is None:
+        async for chunk in text:
+            yield chunk
+        return
+    echo.begin_reply()
+    try:
+        async for chunk in text:
+            echo.add_text(chunk)
+            yield chunk
+    finally:
+        echo.end_reply()
+
+
 class TutorAgent(Agent):
     """Agent subclass that exposes log_mistake / log_topic as Gemini tools.
 
@@ -2233,6 +2250,9 @@ class TutorAgent(Agent):
         prefill_tag: bool = False,
     ):
         super().__init__(instructions=instructions)
+        # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
+        # когда фильтр включён; tts_node кормит его текстом реплик.
+        self._echo = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
         # Прозвучал ли текст в текущем ответе модели — см. _ack.
@@ -2413,7 +2433,11 @@ class TutorAgent(Agent):
 
         Стрим не ломаем: текст придерживается только до ближайшего пробела, то
         есть на одно слово, а не на всю реплику.
+
+        Здесь же текст реплики уходит в эталон фильтра эха — до правки
+        произношения: эхо Soniox распознаёт обычным написанием.
         """
+        text = _tap_echo(text, self._echo)
         if not self._speech_lang:
             async for frame in Agent.default.tts_node(self, text, model_settings):
                 yield frame
@@ -5923,13 +5947,18 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     tutor = guard_tutor or profile.tutor
     lock = noise_guard.speaker_lock_enabled(tutor)
     finalize = noise_guard.soniox_finalize_enabled(tutor)
+    echo = noise_guard.echo_guard_enabled(tutor)
+    vad_finalize = noise_guard.vad_finalize_enabled(tutor)
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
+    echo_tail, vad_delay = noise_guard.echo_tail_sec(), noise_guard.vad_finalize_delay_sec()
     logger.info(
-        "Speaker lock: %s, finalize %s, tutor=%s",
+        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, tutor=%s",
         f"on (ratio {ratio:.2f}, keep {keep:.2f})" if lock else "off",
         "on" if finalize else "off",
+        f"on (tail {echo_tail:.1f}s)" if echo else "off",
+        f"on (+{vad_delay:.1f}s)" if vad_finalize else "off",
         tutor or "<none>",
     )
     # Обёртка стоит и при выключенном замке: через неё рация закрывает фразу у
@@ -5950,6 +5979,10 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         # замок вообще включён (канарейка), и только по явному секрету.
         debug=lock and noise_guard.speaker_lock_debug(),
         finalize=finalize,
+        echo=echo,
+        echo_tail_sec=echo_tail,
+        vad_finalize=vad_finalize,
+        vad_finalize_sec=vad_delay,
     )
 
 
@@ -6707,6 +6740,19 @@ async def entrypoint(ctx: JobContext):
     start_kwargs["room_output_options"] = _transcript_output_options(
         _tts_provider_for(buddy_voice_profile(profile)) if voice_stack == "cascade" else ""
     )
+    # Фильтр эха и finalize по концу речи (noise_guard, жалоба тестера
+    # 03.10.2026). Подписка ДО старта: эхо приветствия — самое опасное, браузер
+    # и Krisp в начале звонка ещё не подстроились. Режим хода меняется прямо в
+    # звонке (RPC set_turn_mode ниже) — finalize по VAD читает его каждый раз.
+    agent._echo = getattr(session.stt, "echo", None)
+    turn_auto = {
+        "on": not (
+            voice_stack == "cascade" and _push_to_talk_allowed() and _push_to_talk_for(profile)
+        )
+    }
+    noise_guard.attach_echo_and_vad_finalize(
+        session, session.stt, is_auto=lambda: turn_auto["on"]
+    )
     await session.start(**start_kwargs)
 
     # ── Рация: ход открывает и закрывает ученик ──────────────────────────────
@@ -6811,6 +6857,7 @@ async def entrypoint(ctx: JobContext):
                 session.clear_user_turn()
                 session.input.set_audio_enabled(True)
             turn_state["mode"] = mode
+            turn_auto["on"] = mode == "auto"
             watchdog.enabled = watchdog.quiet_sec > 0 and mode == "auto"
             logger.info("Режим хода: %s (переключил ученик)", "рация" if mode == "ptt" else "свободно")
             return mode

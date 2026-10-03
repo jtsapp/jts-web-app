@@ -25,11 +25,28 @@ Soniox послушно пишет их в реплику ученика.
 звонок 01.10.2026 показал 1.4–2.6 с тишины после отпускания кнопки — агент ждал,
 пока Soniox сам закроет фразу (max_endpoint_delay до 2 с), а команду finalize
 плагин 1.6.7 не шлёт вовсе.
+
+И два слоя по жалобе тестера 03.10.2026 (Айзере, «Свободно»), оба выключены по
+умолчанию и включаются секретом:
+
+* EchoFilter — эхо тьютора. Его голос из колонок возвращается в микрофон,
+  Soniox пишет его как слова ученика, одного слова хватает на перебивание
+  (min_words=1), и обрывок уходит ходом ученика. Живой зонд с эхом −20 дБ:
+  «Кешіріңіз, анық естімедім» 12 раз за 40 с — правило «меньше трёх слов —
+  переспроси» замыкало петлю. Выкидываем слова, которые тьютор говорит прямо
+  сейчас (или договорил меньше ECHO_TAIL_SEC назад), — до того, как их увидят
+  перебивание и ход.
+
+* finalize по концу речи (finalize_on_silence) — в «Свободно» ход закрывает VAD,
+  но фреймворк ждёт финальный транскрипт, а казахскую фразу Soniox закрывает
+  сам только через ~2.6 с (английскую — за 0.3–0.5 с). Шлём ему finalize, как
+  рация, только сигналом служит конец речи по VAD.
 """
 
 from __future__ import annotations
 
 import asyncio
+import bisect
 import json
 import logging
 import math
@@ -90,6 +107,14 @@ logger = logging.getLogger("jts-agent")
 # SPEAKER_LOCK_DEBUG=on — на конце каждой фразы строка в лог: уровни и каждое
 #   слово с говорящим, громкостью и решением. Только для канарейки: это текст
 #   речи ученика в логах.
+# ECHO_GUARD=on — фильтр эха тьютора. Выключен по умолчанию.
+# ECHO_GUARD_TUTORS — его канарейка (иначе — общая NOISE_GUARD_TUTORS).
+# ECHO_TAIL_SEC — сколько после конца речи тьютора его слова ещё считаются эхом.
+# SONIOX_VAD_FINALIZE=on — «Свободно»: finalize Soniox по концу речи VAD.
+#   Выключен по умолчанию.
+# SONIOX_VAD_FINALIZE_TUTORS — его канарейка (иначе — NOISE_GUARD_TUTORS).
+# SONIOX_VAD_FINALIZE_SEC — сколько звука дослать после конца речи VAD, прежде
+#   чем слать finalize.
 SPEAKER_LOCK_DEFAULT = "on"
 TURN_WATCHDOG_DEFAULT_SEC = 1.2
 SPEAKER_LOCK_RATIO_DEFAULT = 1.3
@@ -143,8 +168,31 @@ SPEAKER_LOCK_PRIOR_BG_DEFAULT = 0.5
 # (было 10, 8, 6 из 42; теряется одна фраза), без разреза 42/42; четыре
 # замера с новостями −6/−12 дБ — ученик и фон без изменений.
 SPEAKER_LOCK_WARMUP_MS_DEFAULT = 3000.0
+# Хвост эха. Последнее слово тьютора возвращается в агента через сеть ученика
+# и обратно: ~0.15 с до браузера, буфер воспроизведения, ~0.15 с назад — эхо
+# начала слова приходит не позже ~0.4–0.5 с после конца речи. Ученик, который
+# повторяет за тьютором, начинает не раньше: та же дорога плюс реакция. Хвост
+# длиннее съедал бы «повтори за мной», короче — пропускал бы эхо.
+ECHO_TAIL_SEC_DEFAULT = 0.6
+# Сколько звука дослать после конца речи по VAD перед finalize. VAD отдаёт конец
+# речи после VAD_SILENCE_SEC (0.3 с) тишины; вместе — около секунды тишины за
+# последним словом.
+#
+# Первая выкатка стояла на 0.2 (полсекунды вместе, как у рации) — и живой зонд
+# 03.10.2026 резал ход на паузе между предложениями (0.4–0.6 с у ученика):
+# «Тоқта,» | «мен түсінбедім», «ойнадым. It's» | «was very fun». Обрывок короче
+# трёх слов промпт велит переспрашивать — и тьютор отвечал «Кешіріңіз, анық
+# естімедім» на нормальную речь. Секунда паузы закрывает фразу всё равно
+# заметно раньше, чем казахскую фразу закрывает сам Soniox (~2.6 с).
+VAD_FINALIZE_DELAY_SEC_DEFAULT = 0.7
+# Звук после конца речи громче этой доли речи ученика — он заговорил снова, и
+# команда не уходит. VAD замечает новую речь с опозданием (нужна её минимальная
+# длительность плюс инференс), и без этой проверки finalize попадал в начало
+# следующего слова: Soniox закрывал его обрубком.
+VAD_FINALIZE_RESUME_FRACTION = 0.25
 
 _OFF = ("off", "0", "false", "no")
+_ON = ("on", "1", "true", "yes")
 
 
 def _tutor_allowed(tutor: str, own_env: str = "") -> bool:
@@ -254,6 +302,30 @@ def turn_watchdog_sec(tutor: str) -> float:
     if value <= 0 or math.isnan(value):
         return 0.0
     return value if _tutor_allowed(tutor, "TURN_WATCHDOG_TUTORS") else 0.0
+
+
+def echo_guard_enabled(tutor: str) -> bool:
+    """Включать ли фильтр эха. Выключен по умолчанию: выкатка образа не меняет
+    ни одного звонка, а «до/после» меряется на одной версии кода секретом."""
+    if (os.getenv("ECHO_GUARD") or "").strip().lower() not in _ON:
+        return False
+    return _tutor_allowed(tutor, "ECHO_GUARD_TUTORS")
+
+
+def echo_tail_sec() -> float:
+    return _env_fraction("ECHO_TAIL_SEC", ECHO_TAIL_SEC_DEFAULT, 0.0, 3.0)
+
+
+def vad_finalize_enabled(tutor: str) -> bool:
+    """Слать ли Soniox finalize по концу речи VAD в «Свободно». Выключен по
+    умолчанию — по той же причине, что и фильтр эха."""
+    if (os.getenv("SONIOX_VAD_FINALIZE") or "").strip().lower() not in _ON:
+        return False
+    return _tutor_allowed(tutor, "SONIOX_VAD_FINALIZE_TUTORS")
+
+
+def vad_finalize_delay_sec() -> float:
+    return _env_fraction("SONIOX_VAD_FINALIZE_SEC", VAD_FINALIZE_DELAY_SEC_DEFAULT, 0.0, 3.0)
 
 
 # ── Замок на ученика ─────────────────────────────────────────────────────────
@@ -690,6 +762,249 @@ class SpeakerLock:
         return out, " ".join(w for w in dropped_all if w)
 
 
+# ── Эхо тьютора ──────────────────────────────────────────────────────────────
+
+
+def norm_word(text: str) -> str:
+    """Слово для сравнения: без регистра, знаков и пробелов, ё → е."""
+    return "".join(ch for ch in str(text).lower() if ch.isalnum()).replace("ё", "е")
+
+
+def similar_word(heard: str, said: str) -> bool:
+    """Похоже ли услышанное слово (уже norm_word) на слово тьютора.
+
+    Точное совпадение — или обрывок: Soniox успел только начало слова эха
+    («есті» от «естімедім»), не короче четырёх букв.
+
+    «Похоже на 80%» здесь нельзя. Живой зонд 03.10.2026: ученик перебил тьютора
+    «Тоқта, мен түсінбедім» («я не понял»), а тьютор в это время говорил
+    «түсіндім» («понял») — по сходству это одно слово, и фильтр съел смысл
+    реплики. В казахском отрицание и лицо — суффиксы: соседние формы различаются
+    парой букв и значат противоположное. Эхо чистого синтеза Soniox пишет
+    точно, так что строгость почти ничего не пропускает."""
+    if heard == said:
+        return True
+    return len(heard) >= 4 and said.startswith(heard)
+
+
+class EchoReference:
+    """Что тьютор говорит и когда — эталон для фильтра эха.
+
+    Текст приходит из tts_node раньше звука: синтез идёт впереди воспроизведения.
+    Поэтому слово считается эхом, только если оно звучит, пока тьютор говорит
+    (состояние сессии «speaking»), или в хвосте после конца речи.
+
+    Окно — по состоянию сессии, а не по времени каждого слова: время слов у
+    синтеза без таймингов угадывается и уезжало на секунды (см. субтитры
+    Айзере), а начало и конец речи сессия знает точно."""
+
+    # Сколько последних реплик тьютора держим: эхо древней фразы не ловим.
+    KEEP_REPLIES = 3
+    # Состояние «speaking» встаёт чуть позже первого кадра звука.
+    LEAD_SEC = 0.2
+    MAX_WINDOWS = 8
+
+    def __init__(self, tail_sec: float = ECHO_TAIL_SEC_DEFAULT, now: Callable[[], float] = time.monotonic) -> None:
+        self._tail = tail_sec
+        self._now = now
+        self._replies: deque[list[str]] = deque(maxlen=self.KEEP_REPLIES)
+        self._partial = ""
+        self._windows: deque[list[float | None]] = deque(maxlen=self.MAX_WINDOWS)
+
+    # -- текст ----------------------------------------------------------------
+    def begin_reply(self) -> None:
+        self.end_reply()
+        self._replies.append([])
+
+    def add_text(self, text: str) -> None:
+        """Кусок реплики как пришёл от модели: слово может разорваться между
+        кусками, поэтому незаконченное держим до пробела."""
+        if not self._replies:
+            self._replies.append([])
+        buf = self._partial + str(text)
+        parts = buf.split()
+        if buf and not buf[-1].isspace() and parts:
+            self._partial = parts.pop()
+        else:
+            self._partial = ""
+        self._replies[-1].extend(w for w in (norm_word(p) for p in parts) if w)
+
+    def end_reply(self) -> None:
+        if self._partial and self._replies:
+            word = norm_word(self._partial)
+            if word:
+                self._replies[-1].append(word)
+        self._partial = ""
+
+    def words(self) -> list[str]:
+        out = [w for reply in self._replies for w in reply]
+        tail = norm_word(self._partial)
+        return out + [tail] if tail else out
+
+    # -- время ----------------------------------------------------------------
+    def on_agent_state(self, state: str) -> None:
+        now = self._now()
+        if state == "speaking":
+            if not self._windows or self._windows[-1][1] is not None:
+                self._windows.append([now, None])
+        elif self._windows and self._windows[-1][1] is None:
+            self._windows[-1][1] = now
+
+    def _in_window(self, t: float) -> bool:
+        for start, end in self._windows:
+            if t >= start - self.LEAD_SEC and (end is None or t <= end + self._tail):
+                return True
+        return False
+
+    def is_echo(self, word: str, t: float | None = None, *, partial: bool = False) -> bool:
+        """Слово ученика — эхо тьютора? `t` — момент, когда звук слова пришёл в
+        агента (None — сейчас). `partial` — недосказанное слово черновика: его
+        сравниваем по началу с любым словом тьютора, иначе первые куски эха
+        («ан» от «анық») успевали перебить тьютора."""
+        heard = norm_word(word)
+        if not heard:
+            return False
+        if not self._in_window(self._now() if t is None else t):
+            return False
+        for said in self.words():
+            if similar_word(heard, said) or (partial and said.startswith(heard)):
+                return True
+        return False
+
+
+class AudioClock:
+    """Время слова Soniox (мс от начала сокета) → момент, когда этот звук пришёл
+    в агента (time.monotonic). Звук идёт в сокет по мере прихода, поэтому
+    запоминаем время каждого кадра: пачку тишины рация досылает разом, и
+    простое «начало + мс» там соврало бы."""
+
+    # Кадров по 20 мс — ~4 минуты; эхо старше никому не нужно.
+    MAX_FRAMES = 12000
+
+    def __init__(self, now: Callable[[], float] = time.monotonic) -> None:
+        self._now = now
+        self.reset()
+
+    def reset(self) -> None:
+        self._starts: list[float] = []
+        self._monos: list[float] = []
+        self._ms = 0.0
+
+    def push(self, duration_sec: float) -> None:
+        self._starts.append(self._ms)
+        self._monos.append(self._now())
+        self._ms += duration_sec * 1000
+        if len(self._starts) > 2 * self.MAX_FRAMES:
+            del self._starts[: self.MAX_FRAMES]
+            del self._monos[: self.MAX_FRAMES]
+
+    def at(self, ms: Any) -> float | None:
+        if ms is None or not self._starts:
+            return None
+        ms = float(ms)
+        i = bisect.bisect_right(self._starts, ms) - 1
+        if i < 0:
+            return None
+        return self._monos[i] + (ms - self._starts[i]) / 1000
+
+
+class EchoFilter:
+    """Выкидывает из фразы Soniox слова эха тьютора — по образцу SpeakerLock.
+
+    Финальные куски придерживаются до конца фразы и решаются целыми словами;
+    пока фраза идёт, плагину уходит черновой вид уже без эха. Это важно:
+    перебивание считает слова ЧЕРНОВИКА (min_words), и одно слово эха в нём
+    останавливало тьютора на полуслове. Задержки придержка не добавляет —
+    плагин и так отдаёт FINAL только на конце фразы."""
+
+    def __init__(self, ref: EchoReference, clock: Callable[[Any], float | None]) -> None:
+        self._ref = ref
+        self._clock = clock
+        self.reset()
+        self.kept_words = 0
+        self.dropped_words = 0
+
+    def reset(self) -> None:
+        self._held: list[dict[str, Any]] = []
+
+    def _decide(
+        self, words: list[list[dict[str, Any]]], partial_last: bool = False
+    ) -> tuple[list[dict[str, Any]], list[str], int]:
+        texts = ["".join(str(t.get("text", "")) for t in word).strip() for word in words]
+        echo = [
+            bool(norm_word(text))
+            and self._ref.is_echo(
+                text,
+                self._clock(word[0].get("start_ms")),
+                partial=partial_last and i == len(words) - 1,
+            )
+            for i, (word, text) in enumerate(zip(words, texts))
+        ]
+        # Короткое слово рядом со словами ученика — его слово, даже если тьютор
+        # тоже его говорил. Офлайн-стенд и живой зонд: «Тоқта, мен түсінбедім» и
+        # «Мен түсінбедім» поверх недавнего «Мен Айзеремін» — «мен» уходило в
+        # эхо. Эхо идёт сплошными кусками фразы тьютора: короткое слово эха
+        # стоит рядом с другим словом эха (или одно во фразе).
+        lettered = [i for i, text in enumerate(texts) if norm_word(text)]
+        raw = list(echo)
+        for j, i in enumerate(lettered):
+            if not raw[i] or len(norm_word(texts[i])) > 3:
+                continue
+            neighbours = [lettered[k] for k in (j - 1, j + 1) if 0 <= k < len(lettered)]
+            if any(not raw[n] for n in neighbours) and not any(raw[n] for n in neighbours):
+                echo[i] = False
+        kept: list[dict[str, Any]] = []
+        dropped: list[str] = []
+        kept_words = 0
+        drop_prev = False
+        for word, text, is_echo in zip(words, texts, echo):
+            if not norm_word(text):
+                # Знак без букв («—», «?») уходит вместе со своим словом: один
+                # он выглядел бы для перебивания отдельным словом.
+                drop = drop_prev
+            else:
+                drop = is_echo
+                if not drop:
+                    kept_words += 1
+            if drop:
+                dropped.append(text)
+            else:
+                kept.extend(word)
+            drop_prev = drop
+        # Выкинули начало фразы — первое оставленное слово без пробела впереди:
+        # плагин склеивает текст как есть.
+        if kept and str(kept[0].get("text", "")).startswith(" "):
+            kept[0] = {**kept[0], "text": str(kept[0]["text"]).lstrip()}
+        return kept, dropped, kept_words
+
+    def process(self, tokens: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+        """Токены одного ответа Soniox → токены для плагина (и текст выкинутого
+        эха — для лога: это слова самого тьютора, не ученика)."""
+        out: list[dict[str, Any]] = []
+        drafts: list[dict[str, Any]] = []
+        dropped_all: list[str] = []
+        for token in tokens:
+            if _is_end_token(token):
+                kept, dropped, kept_words = self._decide(_words(self._held))
+                self.kept_words += kept_words
+                self.dropped_words += sum(1 for w in dropped if norm_word(w))
+                dropped_all.extend(dropped)
+                out.extend(kept)
+                out.append(token)
+                self._held = []
+                continue
+            if token.get("is_final"):
+                self._held.append(token)
+            else:
+                drafts.append(token)
+        words = _words(self._held + drafts)
+        if words:
+            # Недосказанным бывает только слово черновика на самом конце.
+            view, _, _ = self._decide(words, partial_last=bool(drafts))
+            out.extend({**t, "is_final": False} for t in view)
+        return out, " ".join(w for w in dropped_all if w)
+
+
 # Ручное закрытие фразы в протоколе Soniox: сервер дорасшифровывает всё, что
 # успел получить, и присылает токен <fin> — плагин считает его концом фразы и
 # сразу отдаёт FINAL. Без него конец фразы решает сам Soniox, и это до
@@ -712,6 +1027,11 @@ FINALIZE_ARM_SEC = 3.0
 
 if aiohttp is not None and soniox is not None:
 
+    class _FinalizeMark:
+        """Метка «закрыть фразу» от VAD в канале кадров. Своя, а не
+        _FlushSentinel: тот шлёт flush() из commit_user_turn рации, и рубильник
+        у него свой (SONIOX_FINALIZE)."""
+
     class _FilteringWS:
         """Обёртка сокета Soniox: плагин читает из неё ответы, в которых уже
         нет слов фона (если замок включён), а после ответа на finalize зовётся
@@ -723,11 +1043,15 @@ if aiohttp is not None and soniox is not None:
             lock: SpeakerLock | None,
             log_drop: Callable[[str], None],
             on_fin: Callable[[], None],
+            echo: EchoFilter | None = None,
+            log_echo: Callable[[str], None] | None = None,
         ) -> None:
             self._ws = ws
             self._lock = lock
             self._log_drop = log_drop
             self._on_fin = on_fin
+            self._echo = echo
+            self._log_echo = log_echo
 
         def __getattr__(self, name: str) -> Any:
             return getattr(self._ws, name)
@@ -755,11 +1079,19 @@ if aiohttp is not None and soniox is not None:
             if not tokens:
                 return msg, False
             fin = any(t.get("text") == "<fin>" for t in tokens)
-            if self._lock is None:
+            if self._lock is None and self._echo is None:
                 return msg, fin
-            out, dropped = self._lock.process(tokens)
-            if dropped:
-                self._log_drop(dropped)
+            out = tokens
+            if self._lock is not None:
+                out, dropped = self._lock.process(out)
+                if dropped:
+                    self._log_drop(dropped)
+            # Эхо — после замка. Порядок им не мешает: оба придерживают
+            # финальные куски до конца фразы и отдают плагину черновой вид.
+            if self._echo is not None:
+                out, echoed = self._echo.process(out)
+                if echoed and self._log_echo:
+                    self._log_echo(echoed)
             content["tokens"] = out
             return msg._replace(data=json.dumps(content, ensure_ascii=False)), fin
 
@@ -788,13 +1120,65 @@ if aiohttp is not None and soniox is not None:
             self._drop_buf: list[str] = []
             self._fin_deadline = 0.0
             self._fin_zero = 0.0
+            # Эхо: часы сокета (время слов → момент прихода звука) и фильтр.
+            self._clock = AudioClock()
+            self._echo = (
+                EchoFilter(stt.echo, self._clock.at) if stt.echo is not None else None
+            )
+            self._echo_buf: list[str] = []
+            # finalize по концу речи VAD: сколько звука ещё дослать до команды
+            # (None — не взведён), громкость последних кадров (уровень речи
+            # ученика перед паузой) и порог «заговорил снова».
+            self._vad_fin_left: float | None = None
+            self._vad_rms: deque | None = deque(maxlen=200) if stt.vad_finalize else None
+            self._vad_resume: float | None = None
 
         def arm_finalize(self) -> None:
             self._fin_deadline = time.monotonic() + FINALIZE_ARM_SEC
             self._fin_zero = 0.0
 
+        def arm_vad_finalize(self, after_sec: float) -> None:
+            """Ученик замолчал (VAD). Команда уйдёт, когда за концом речи в
+            сокет пройдёт ещё `after_sec` звука. Считаем звук, а не нули, как
+            у рации: микрофон в «Свободно» открыт, и после речи идёт тихий шум
+            комнаты, а не цифровой ноль."""
+            self._vad_fin_left = max(0.0, after_sec)
+            # Уровень речи — по громким кадрам перед паузой (последние ~2 с).
+            level = max(self._vad_rms) if self._vad_rms else 0.0
+            self._vad_resume = level * VAD_FINALIZE_RESUME_FRACTION if level > 0 else None
+            if self._vad_fin_left <= 1e-6:
+                self._send_finalize_mark()
+
+        def cancel_vad_finalize(self) -> None:
+            self._vad_fin_left = None
+
+        def _send_finalize_mark(self) -> None:
+            self._vad_fin_left = None
+            try:
+                # Тем же каналом, что и кадры: команда встаёт в очередь сокета
+                # строго после всего звука, ушедшего до неё.
+                self._input_ch.send_nowait(_FinalizeMark())
+            except Exception:
+                # Поток уже закрыт — закрывать нечего.
+                pass
+
         def push_frame(self, frame: Any) -> None:
             super().push_frame(frame)
+            if self._vad_rms is not None:
+                samples = np.frombuffer(frame.data.tobytes(), dtype=np.int16).astype(np.float64)
+                rms = float(np.sqrt(np.mean(samples * samples))) if len(samples) else 0.0
+                self._vad_rms.append(rms)
+                if (
+                    self._vad_fin_left is not None
+                    and self._vad_resume is not None
+                    and rms > self._vad_resume
+                ):
+                    # Ученик заговорил снова раньше, чем это заметил VAD.
+                    self._vad_fin_left = None
+            if self._vad_fin_left is not None:
+                self._vad_fin_left -= frame.duration
+                if self._vad_fin_left <= 1e-6:
+                    self._send_finalize_mark()
             if not self._fin_deadline:
                 return
             if time.monotonic() > self._fin_deadline:
@@ -840,13 +1224,31 @@ if aiohttp is not None and soniox is not None:
                 logger.info("STT drop: фон «%s»", joined[:120])
                 self._drop_buf = []
 
+        def _log_echo(self, text: str) -> None:
+            # Это слова самого тьютора, не ученика, — печатать можно.
+            self._echo_buf.append(text)
+            joined = " ".join(self._echo_buf)
+            if len(joined) >= 40:
+                logger.info("STT echo: эхо тьютора «%s»", joined[:120])
+                self._echo_buf = []
+
         async def _connect_ws(self) -> Any:
             ws = await super()._connect_ws()
             if self._lock is not None:
                 # Новый сокет — новое время слов и новые номера говорящих.
                 self._lock.reset()
+            # Время слов у нового сокета снова с нуля.
+            self._clock.reset()
+            if self._echo is not None:
+                self._echo.reset()
+            # Взвод finalize по тишине относился к звуку старого сокета: на
+            # новом он закрыл бы фразу не там, где ученик замолчал.
+            self._vad_fin_left = None
             self._drop_buf = []
-            return _FilteringWS(ws, self._lock, self._log_drop, self._on_fin)
+            self._echo_buf = []
+            return _FilteringWS(
+                ws, self._lock, self._log_drop, self._on_fin, self._echo, self._log_echo
+            )
 
         def _on_fin(self) -> None:
             # Ответ на finalize. Если фраза к этому моменту уже была отдана
@@ -876,7 +1278,12 @@ if aiohttp is not None and soniox is not None:
                     pcm_data = data.data.tobytes()
                     if self._lock is not None:
                         self._lock.push_pcm(pcm_data, data.sample_rate)
+                    # Часы эха — по тому же звуку и в том же порядке, что ушёл в
+                    # сокет: время слов Soniox считается от него.
+                    self._clock.push(data.duration)
                     self.audio_queue.put_nowait(pcm_data)
+                elif isinstance(data, _FinalizeMark):
+                    self.audio_queue.put_nowait(FINALIZE_MESSAGE)
                 elif isinstance(data, self._FlushSentinel) and self._guard._finalize:
                     self.audio_queue.put_nowait(FINALIZE_MESSAGE)
 
@@ -885,6 +1292,11 @@ if aiohttp is not None and soniox is not None:
                 logger.info(
                     "Speaker lock: слов ученика %d, выкинуто фона %d",
                     self._lock.kept_words, self._lock.dropped_words,
+                )
+            if self._echo is not None and (self._echo.kept_words or self._echo.dropped_words):
+                logger.info(
+                    "Echo guard: слов ученика %d, выкинуто эха %d",
+                    self._echo.kept_words, self._echo.dropped_words,
                 )
             await super().aclose()
 
@@ -906,6 +1318,10 @@ if aiohttp is not None and soniox is not None:
             warmup_ms: float = SPEAKER_LOCK_WARMUP_MS_DEFAULT,
             debug: bool = False,
             finalize: bool = True,
+            echo: bool = False,
+            echo_tail_sec: float = ECHO_TAIL_SEC_DEFAULT,
+            vad_finalize: bool = False,
+            vad_finalize_sec: float = VAD_FINALIZE_DELAY_SEC_DEFAULT,
             **kwargs: Any,
         ) -> None:
             params = kwargs.get("params") or soniox.STTOptions()
@@ -930,6 +1346,11 @@ if aiohttp is not None and soniox is not None:
             self._warmup_ms = warmup_ms
             self._warm_claimed = False
             self._finalize = finalize
+            # Эталон эха — один на звонок: его кормят tts_node (текст) и
+            # события сессии (когда тьютор говорит), а читают потоки.
+            self.echo: EchoReference | None = EchoReference(echo_tail_sec) if echo else None
+            self.vad_finalize = vad_finalize
+            self._vad_finalize_sec = vad_finalize_sec
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
             self._streams: weakref.WeakSet = weakref.WeakSet()
@@ -965,6 +1386,24 @@ if aiohttp is not None and soniox is not None:
                 s.arm_finalize()
                 armed += 1
             return armed
+
+        def finalize_on_silence(self) -> int:
+            """«Свободно»: VAD решил, что ученик договорил. Без команды
+            казахскую фразу Soniox закрывает сам через ~2.6 с, и всё это время
+            фреймворк ждёт финальный транскрипт (eou_delay = transcription_delay
+            в живом зонде 03.10.2026). Возвращает число взведённых потоков."""
+            if not self.vad_finalize:
+                return 0
+            armed = 0
+            for s in list(self._streams):
+                s.arm_vad_finalize(self._vad_finalize_sec)
+                armed += 1
+            return armed
+
+        def cancel_silence_finalize(self) -> None:
+            """Ученик заговорил снова раньше, чем ушла команда."""
+            for s in list(self._streams):
+                s.cancel_vad_finalize()
 
 else:  # pragma: no cover
     GuardedSonioxSTT = None  # type: ignore[assignment,misc]
@@ -1065,3 +1504,35 @@ def attach_turn_watchdog(session: Any, watchdog: TurnWatchdog, *, tick: float = 
         task.cancel()
 
     return task
+
+
+def attach_echo_and_vad_finalize(session: Any, stt: Any, *, is_auto: Callable[[], bool]) -> None:
+    """Подписать фильтр эха и finalize по концу речи на события сессии.
+
+    Эталону эха нужно знать, когда тьютор говорит (agent_state_changed).
+    finalize по концу речи слушает user_state_changed: speaking → listening —
+    это и есть конец речи по VAD. Только в «Свободно» (is_auto): в рации конец
+    хода задаёт кнопка, и finalize шлёт её RPC."""
+    echo = getattr(stt, "echo", None)
+    if echo is not None:
+
+        @session.on("agent_state_changed")
+        def _on_agent(ev: Any) -> None:
+            state = str(getattr(ev, "new_state", ""))
+            # В рации эху неоткуда взяться: микрофон открыт, только пока ученик
+            # держит кнопку, а нажатие сразу обрывает тьютора. Окно эха там
+            # только мешало бы: ученик, нажавший кнопку и сразу повторивший
+            # слово тьютора, терял бы его в хвосте.
+            if state == "speaking" and not is_auto():
+                return
+            echo.on_agent_state(state)
+
+    if getattr(stt, "vad_finalize", False):
+
+        @session.on("user_state_changed")
+        def _on_user(ev: Any) -> None:
+            new = str(getattr(ev, "new_state", ""))
+            if new == "speaking":
+                stt.cancel_silence_finalize()
+            elif new == "listening" and str(getattr(ev, "old_state", "")) == "speaking" and is_auto():
+                stt.finalize_on_silence()
