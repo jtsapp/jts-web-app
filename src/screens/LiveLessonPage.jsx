@@ -20,6 +20,7 @@ import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
+import LiveLoader from './live/LiveLoader.jsx'
 import LessonSidePanel from './live/LessonSidePanel.jsx'
 import LessonTopics from './live/LessonTopics.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
@@ -1769,7 +1770,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           <p className="live__status-msg">{t(!token ? 'schedule.needAuth' : 'live.noLesson')}</p>
         ) : (
           <>
-            {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
+            {state === 'loading' && <LiveLoader label={t('live.loadingLesson')} />}
             {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
           </>
         )}
@@ -2037,7 +2038,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           </div>
                         </>
                       ) : view === 'loading' ? (
-                        <p className="live__status-msg">{t('schedule.loading')}</p>
+                        <LiveLoader label={t('live.loadingLesson')} />
                       ) : view === 'hidden' ? (
                         <p className="live__status-msg">{t('live.allStepsHidden')}</p>
                       ) : view === 'denied' ? (
