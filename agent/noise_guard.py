@@ -1217,6 +1217,9 @@ if aiohttp is not None and soniox is not None:
             self._clock.reset()
             if self._echo is not None:
                 self._echo.reset()
+            # Взвод finalize по тишине относился к звуку старого сокета: на
+            # новом он закрыл бы фразу не там, где ученик замолчал.
+            self._vad_fin_left = None
             self._drop_buf = []
             self._echo_buf = []
             return _FilteringWS(
