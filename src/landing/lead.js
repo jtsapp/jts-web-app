@@ -1,0 +1,32 @@
+// Номер телефона в форме лендинга «Получить консультацию»: маска и разбор.
+// Общий для браузера (TrialForm) и сервера (leadServer.js), поэтому без
+// зависимостей.
+//
+// Куда уходит сама заявка — см. src/app/api/landing/lead/route.js.
+
+// Десять цифр номера после кода страны из того, что сейчас в поле. Поле
+// держит префикс «+7 (», поэтому его семёрка — код страны, а не начало
+// номера. Вставленный целиком номер бывает и с восьмёркой: 8 747 163 41 18.
+export function phoneDigits(raw) {
+  const s = String(raw || '').trim()
+  let d = s.replace(/\D/g, '')
+  if (s.startsWith('+7')) d = d.slice(1)
+  else if (d.length === 11 && /^[78]/.test(d)) d = d.slice(1)
+  return d.slice(0, 10)
+}
+
+// «+7 (747) 163-41-18». Разделитель дописывается только перед следующей
+// цифрой: допиши мы «)» сразу после третьей, Backspace упирался бы в скобку —
+// стёртая скобка тут же возвращалась бы маской.
+export function formatPhone(digits) {
+  const d = String(digits || '').replace(/\D/g, '').slice(0, 10)
+  let s = '+7 (' + d.slice(0, 3)
+  if (d.length > 3) s += ') ' + d.slice(3, 6)
+  if (d.length > 6) s += '-' + d.slice(6, 8)
+  if (d.length > 8) s += '-' + d.slice(8, 10)
+  return s
+}
+
+export function isPhoneComplete(digits) {
+  return /^\d{10}$/.test(String(digits || ''))
+}
