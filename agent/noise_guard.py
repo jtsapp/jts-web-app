@@ -836,6 +836,8 @@ class EchoReference:
         # Громкость слов эха и слов ученика за звонок (см. EchoFilter).
         self.echo_levels: deque = deque(maxlen=60)
         self.learner_levels: deque = deque(maxlen=60)
+        # Ученик уже сказал хоть одну фразу, пока тьютор молчал.
+        self.learner_spoke = False
 
     def _speaking(self) -> bool:
         return bool(self._windows) and self._windows[-1][1] is None
@@ -1140,6 +1142,8 @@ class EchoFilter:
             )
             infos.append((in_window, match, loud))
         lettered = [i for i, text in enumerate(texts) if norm_word(text)]
+        if final and any(info and not info[0] for info in infos):
+            self._ref.learner_spoke = True
         if final:
             # Учим уровни на законченной фразе — до решения по ней же: первая
             # фраза эха (приветствие) решается уже по своему уровню.
@@ -1178,7 +1182,15 @@ class EchoFilter:
             in_window, match, loud = info
             if not in_window:
                 continue
-            if limit is not None and loud is not None:
+            if not self._ref.learner_spoke:
+                # Пока ученик ни разу не говорил сам, всё в окне тьютора — эхо.
+                # Живые зонды: эхо приветствия Декстера («Чё каво?» → «Только
+                # вот», «Хм», «О», «Рация») уходило ходом ученика — уровней в
+                # начале звонка ещё нет, а сленг текстом не узнать. Перебивать
+                # приветствие ученику незачем; его «привет» поверх него не
+                # потеря.
+                echo[i] = True
+            elif limit is not None and loud is not None:
                 # Несимметрично. Слово, совпавшее с речью тьютора, — эхо, пока
                 # оно не громкое как ученик: ударные слова эха громче
                 # соседних, и по одной границе «мына», «мен» уходили ученику

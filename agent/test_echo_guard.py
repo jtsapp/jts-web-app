@@ -190,6 +190,8 @@ ref.begin_reply()
 ref.add_text("Кешіріңіз, анық естімедім — қайталай аласыз ба?")
 ref.end_reply()
 ref.on_agent_state("speaking")
+# Ученик уже говорил в этом звонке (до первой его фразы всё в окне — эхо, см. ниже).
+ref.learner_spoke = True
 # Время слова: мс сокета = секунды от 5.0 (часы-заглушка).
 flt = G.EchoFilter(ref, clock=lambda ms: None if ms is None else 5.0 + ms / 1000)
 # Черновик: эхо уходит плагину уже без своих слов, слова ученика остаются.
@@ -365,10 +367,35 @@ ref4.begin_reply()
 ref4.add_text("Привет, Нурлан, ну вот. Я Декстер, и я не шучу.")
 ref4.end_reply()
 ref4.on_agent_state("speaking")
+ref4.learner_spoke = True
 flt4 = G.EchoFilter(ref4, clock=lambda ms: None if ms is None else 10.0 + ms / 1000)
+
 out, dropped = flt4.process([_tok("Стоп,", 1500, 1900), _tok(" я", 1900, 2000), _tok(" не", 2000, 2100),
                              _tok(" понял.", 2100, 2600), END])
 assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], out
+
+# Пока ученик ни разу не говорил, всё в окне тьютора — эхо: эхо приветствия
+# Декстера («Чё каво?» → «Только вот») по тексту не узнать, уровней ещё нет.
+clk5 = _Clock(10.0)
+ref5 = G.EchoReference(tail_sec=0.6, now=clk5)
+ref5.begin_reply()
+ref5.add_text("Ну бля, давай гоу, братан. Чё каво? Сегодня разберём Present Simple.")
+ref5.end_reply()
+ref5.on_agent_state("speaking")
+flt5 = G.EchoFilter(ref5, clock=lambda ms: None if ms is None else 10.0 + ms / 1000)
+out, dropped = flt5.process([_tok("Только", 2000, 2400), _tok(" вот,", 2400, 2700),
+                             _tok(" сегодня", 2700, 3100), END])
+assert [t["text"] for t in out] == ["<end>"], out
+assert ref5.learner_spoke is False
+# Ученик ответил, когда тьютор замолчал, — дальше решают текст и громкость.
+clk5.t = 20.0
+ref5.on_agent_state("listening")
+out, _ = flt5.process([_tok("Привет,", 12000, 12400), _tok(" я", 12400, 12500), _tok(" Нурлан.", 12500, 13000), END])
+assert [t["text"] for t in out] == ["Привет,", " я", " Нурлан.", "<end>"], out
+assert ref5.learner_spoke is True
+ref5.on_agent_state("speaking")
+out, _ = flt5.process([_tok("Подожди", 10500, 10900), END])
+assert [t["text"] for t in out] == ["Подожди", "<end>"], out
 
 # --- сквозной: настоящий плагин Soniox + наш сокет -------------------------------
 class _FakeWS:
@@ -423,6 +450,9 @@ async def _run_echo(messages, *, echo: bool, speaking: bool = True):
             engine.echo.begin_reply()
             engine.echo.add_text("Кешіріңіз, анық естімедім — қайталай аласыз ба?")
             engine.echo.end_reply()
+            # Ученик уже говорил в звонке: проверяем решение по словам, а не
+            # правило начала звонка.
+            engine.echo.learner_spoke = True
             if speaking:
                 engine.echo.on_agent_state("speaking")
         stream = engine.stream()
