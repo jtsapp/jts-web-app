@@ -1,16 +1,20 @@
 'use client'
 
-// Форма «Получить консультацию». Куда уходит заявка и почему пока в
-// WhatsApp — см. шапку lead.js.
+// Форма «Получить консультацию». Заявка уходит на свой роут
+// (/api/landing/lead → бэкенд → amoCRM), а человек сразу переходит в
+// регистрацию приложения на шаг почты: имя и номер он уже дал здесь, роут
+// возвращает готовый адрес перехода.
 import { useState } from 'react'
-import { buildLeadMessage, formatPhone, isPhoneComplete, leadWhatsappUrl, phoneDigits } from './lead.js'
+import { formatPhone, isPhoneComplete, phoneDigits } from './lead.js'
 
-export default function TrialForm({ f, privacyUrl, mascot, icons }) {
+export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [goal, setGoal] = useState(f.goals[0])
+  // Ловушка для ботов: поле есть в разметке, но человеку его не видно.
+  const [website, setWebsite] = useState('')
   const [errors, setErrors] = useState({})
-  const [sent, setSent] = useState(false)
+  const [status, setStatus] = useState('idle') // idle | sending | sent | error | too_many
 
   const digits = phoneDigits(phone)
 
@@ -19,18 +23,39 @@ export default function TrialForm({ f, privacyUrl, mascot, icons }) {
     if (errors.phone) setErrors((x) => ({ ...x, phone: null }))
   }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
+    if (status === 'sending' || status === 'sent') return
     const next = {
       name: name.trim() ? null : f.errName,
       phone: isPhoneComplete(digits) ? null : f.errPhone,
     }
     setErrors(next)
     if (next.name || next.phone) return
-    const message = buildLeadMessage(f.message, { name, digits, goal })
-    window.open(leadWhatsappUrl(message), '_blank', 'noopener,noreferrer')
-    setSent(true)
+    setStatus('sending')
+    try {
+      const res = await fetch('/api/landing/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), phone: digits, goal, lang, website }),
+      })
+      if (res.status === 429) return setStatus('too_many')
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.ok) return setStatus('error')
+      setStatus('sent')
+      // Ловушка сработала — адреса нет, бот остаётся на «принято».
+      if (data.redirect) window.location.assign(data.redirect)
+    } catch {
+      setStatus('error')
+    }
   }
+
+  const note = {
+    sending: f.sending,
+    sent: f.sent,
+    error: f.errSend,
+    too_many: f.errTooMany,
+  }[status]
 
   return (
     <form className="ld-form" onSubmit={submit} noValidate>
@@ -45,6 +70,7 @@ export default function TrialForm({ f, privacyUrl, mascot, icons }) {
             type="text"
             name="name"
             autoComplete="given-name"
+            maxLength={100}
             placeholder={f.namePlaceholder}
             value={name}
             aria-invalid={!!errors.name}
@@ -74,6 +100,17 @@ export default function TrialForm({ f, privacyUrl, mascot, icons }) {
         {errors.phone && <span className="ld-field__error">{errors.phone}</span>}
       </label>
 
+      <input
+        className="ld-form__trap"
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+      />
+
       <fieldset className="ld-field ld-goals">
         <legend className="ld-field__label">{f.goalLabel}</legend>
         <div className="ld-goals__list">
@@ -86,12 +123,12 @@ export default function TrialForm({ f, privacyUrl, mascot, icons }) {
         </div>
       </fieldset>
 
-      <button type="submit" className="ld-cta ld-cta--form">
-        <span>{f.submit}</span>
+      <button type="submit" className="ld-cta ld-cta--form" disabled={status === 'sending' || status === 'sent'}>
+        <span>{status === 'sending' ? f.sending : f.submit}</span>
         <span className="ld-cta__arrow"><img src={icons.arrow} width="18" height="18" alt="" /></span>
       </button>
-      {sent
-        ? <p className="ld-form__note ld-form__note--ok" role="status">{f.sent}</p>
+      {note
+        ? <p className={'ld-form__note' + (status === 'sent' ? ' ld-form__note--ok' : status === 'sending' ? '' : ' ld-form__note--err')} role="status">{note}</p>
         : <p className="ld-form__note"><a href={privacyUrl} target="_blank" rel="noopener noreferrer">{f.consent}</a></p>}
     </form>
   )

@@ -414,7 +414,7 @@ function Stories({ c }) {
   )
 }
 
-function Trial({ c }) {
+function Trial({ c, lang }) {
   const t = c.trial
   return (
     <section className="ld-trial" id="trial">
@@ -438,7 +438,7 @@ function Trial({ c }) {
             ))}
           </ol>
         </div>
-        <TrialForm f={t.form} privacyUrl={PRIVACY_URL} mascot={IMG + 'aizere-form.webp'} icons={{
+        <TrialForm f={t.form} lang={lang} privacyUrl={PRIVACY_URL} mascot={IMG + 'aizere-form.webp'} icons={{
           person: IC + 'ic-person.svg', phone: IC + 'ic-call-form.svg', arrow: IC + 'ic-arrow-form.svg',
         }} />
       </div>
@@ -522,7 +522,7 @@ export default function Landing({ c, lang, links }) {
         <Library c={c} />
         <Teachers c={c} />
         <Stories c={c} />
-        <Trial c={c} />
+        <Trial c={c} lang={lang} />
         <Faq c={c} />
       </main>
       <Footer c={c} />

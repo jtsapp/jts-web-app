@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { phoneDigits, formatPhone, isPhoneComplete, buildLeadMessage, leadPayload, leadWhatsappUrl } from './lead.js'
+import { phoneDigits, formatPhone, isPhoneComplete } from './lead.js'
 
 describe('phoneDigits', () => {
   it('семёрка префикса «+7 (» — код страны, а не начало номера', () => {
@@ -33,20 +33,10 @@ describe('formatPhone', () => {
   })
 })
 
-describe('заявка', () => {
-  const digits = '7471634118'
-  it('номер целиком — только десять цифр', () => {
-    expect(isPhoneComplete(digits)).toBe(true)
+describe('isPhoneComplete', () => {
+  it('номер целиком — ровно десять цифр', () => {
+    expect(isPhoneComplete('7471634118')).toBe(true)
     expect(isPhoneComplete('747163')).toBe(false)
-  })
-  it('сообщение менеджеру с подставленными полями', () => {
-    const msg = buildLeadMessage('Имя: {name}\nНомер: {phone}\nЦель: {goal}', { name: '  Алия ', digits, goal: 'IELTS' })
-    expect(msg).toBe('Имя: Алия\nНомер: +7 (747) 163-41-18\nЦель: IELTS')
-  })
-  it('номер в формате бэкенда', () => {
-    expect(leadPayload({ name: 'Алия', digits, goal: 'Работа' }).phone).toBe('77471634118')
-  })
-  it('ссылка в WhatsApp поддержки с текстом', () => {
-    expect(leadWhatsappUrl('Привет & пока')).toBe('https://wa.me/77471634118?text=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%26%20%D0%BF%D0%BE%D0%BA%D0%B0')
+    expect(isPhoneComplete('74716341a8')).toBe(false)
   })
 })

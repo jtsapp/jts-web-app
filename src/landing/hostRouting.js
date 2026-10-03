@@ -6,14 +6,19 @@
 // Чистые функции без next/server — чтобы правило накрывалось юнит-тестом.
 
 // Что домену лендинга отдаём как есть: бандл Next, картинки лендинга,
-// иконка вкладки (/assets/dexter.png из общего layout) и шрифты.
-const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/fonts/']
+// иконка вкладки (/assets/dexter.png из общего layout), шрифты и ручки самого
+// лендинга — POST формы, уведённый редиректом на другой домен, браузер не
+// повторит (CORS), и заявка тихо пропала бы.
+const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/fonts/', '/api/landing/']
 const PASS_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml'])
 
 // Локальная разработка видит /landing всегда — иначе страницу не посмотреть.
 const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\]|::1)$/
 
-const clean = (v) => String(v ?? '').replace(/^﻿/, '').trim()
+const clean = (v) => String(v ?? '').replace(/^\uFEFF/, '').trim()
+
+// Значение env без BOM и пробелов — общий помощник серверной части лендинга.
+export const cleanEnv = clean
 
 function bareHost(value) {
   // «JustToStudy-English.kz:443» → «justtostudy-english.kz»; IPv6 в скобках

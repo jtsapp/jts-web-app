@@ -43,6 +43,13 @@ services:
       LANDING_HOSTS: ${LANDING_HOSTS:-}
       # 1 → /landing открывается и на этом стенде (посмотреть на деве до домена).
       LANDING_PREVIEW: ${LANDING_PREVIEW:-}
+      # Ключ для POST /landing/leads бэкенда (тот же LANDING_LEAD_KEY стоит у
+      # бэкенда): заявка с формы лендинга уходит в amoCRM. Пусто — заявка в CRM
+      # не уходит (сделку заведёт саморегистрация), форма работает.
+      LANDING_LEAD_KEY: ${LANDING_LEAD_KEY:-}
+      # Ключ шифрования имени и номера на пути «лендинг → регистрация». Пусто —
+      # берётся INTERNAL_API_KEY; нет и его — регистрация начнётся с начала.
+      LANDING_HANDOFF_SECRET: ${LANDING_HANDOFF_SECRET:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
       AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}

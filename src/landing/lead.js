@@ -1,13 +1,8 @@
-// Заявка с формы лендинга «Получить консультацию».
+// Номер телефона в форме лендинга «Получить консультацию»: маска и разбор.
+// Общий для браузера (TrialForm) и сервера (leadServer.js), поэтому без
+// зависимостей.
 //
-// Публичной ручки для заявки без входа у бэкенда нет: `POST /mobile/leads`
-// берёт имя и телефон из токена (см. createLead в src/api.js — открытая форма
-// с чужим номером стала бы каналом спама), а `/trial/link/{token}/lead`
-// живёт под ссылкой пробного урока. Поэтому пока заявка уходит менеджеру
-// сообщением в WhatsApp — тот же номер поддержки, что у кнопок «написать
-// менеджеру» в приложении. Появится ручка — меняется только TrialForm.submit.
-import { normalizePhone } from '../api.js'
-import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+// Куда уходит сама заявка — см. src/app/api/landing/lead/route.js.
 
 // Десять цифр номера после кода страны из того, что сейчас в поле. Поле
 // держит префикс «+7 (», поэтому его семёрка — код страны, а не начало
@@ -33,22 +28,5 @@ export function formatPhone(digits) {
 }
 
 export function isPhoneComplete(digits) {
-  return String(digits || '').length === 10
-}
-
-export function buildLeadMessage(template, { name, digits, goal }) {
-  return template
-    .replace('{name}', String(name || '').trim())
-    .replace('{phone}', formatPhone(digits))
-    .replace('{goal}', goal || '—')
-}
-
-// Номер — в формате бэкенда (7XXXXXXXXXX): появится ручка — менять формат не
-// придётся.
-export function leadPayload({ name, digits, goal }) {
-  return { name: String(name || '').trim(), phone: normalizePhone('7' + digits), goal }
-}
-
-export function leadWhatsappUrl(message) {
-  return `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(message)}`
+  return /^\d{10}$/.test(String(digits || ''))
 }

@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { parseHosts, requestHost, routeLanding, appLink, sameHostUrl } from './hostRouting.js'
 
-const hosts = parseHosts('﻿justtostudy-english.kz, WWW.justtostudy-english.kz ')
+const hosts = parseHosts('\uFEFFjusttostudy-english.kz, WWW.justtostudy-english.kz ')
 const APP = 'https://ai-tutor.justtostudy.kz'
 const on = (host, pathname, search = '', extra = {}) =>
   routeLanding({ host, pathname, search, landingHosts: hosts, appUrl: APP, ...extra })
 
 describe('parseHosts / requestHost', () => {
   it('список доменов из env: BOM, пробелы, регистр, порт', () => {
-    expect([...parseHosts('﻿ a.kz ,B.kz:443,,')]).toEqual(['a.kz', 'b.kz'])
+    expect([...parseHosts('\uFEFF a.kz ,B.kz:443,,')]).toEqual(['a.kz', 'b.kz'])
     expect(parseHosts('').size).toBe(0)
     expect(parseHosts(undefined).size).toBe(0)
   })
@@ -28,7 +28,7 @@ describe('домен лендинга', () => {
     expect(on('justtostudy-english.kz', '/landing', '?lang=kz')).toEqual({ action: 'redirect', to: '/?lang=kz' })
   })
   it('картинки, шрифты и бандл отдаются как есть', () => {
-    for (const p of ['/_next/static/chunks/a.js', '/landing/img/dexter.webp', '/assets/dexter.png', '/fonts/x.woff2', '/favicon.ico'])
+    for (const p of ['/_next/static/chunks/a.js', '/landing/img/dexter.webp', '/assets/dexter.png', '/fonts/x.woff2', '/favicon.ico', '/api/landing/lead'])
       expect(on('justtostudy-english.kz', p)).toEqual({ action: 'next' })
   })
   it('экраны приложения уводятся на домен приложения', () => {

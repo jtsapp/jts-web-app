@@ -54,11 +54,9 @@ test('вопросы: открыт один, второй закрывает п�
   await expect(items.nth(0)).not.toHaveAttribute('open', '')
 })
 
-test('форма: маска телефона, ошибки и заявка в WhatsApp', async ({ page }) => {
+test('форма: маска, ошибки, заявка — и сразу шаг почты в регистрации', async ({ page }) => {
   const form = page.locator('.ld-form')
   await form.scrollIntoViewIfNeeded()
-  // window.open перехватываем: настоящий WhatsApp тесту не нужен.
-  await page.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null } })
 
   await form.getByRole('button', { name: 'Отправить заявку' }).click()
   await expect(form.locator('.ld-field__error')).toHaveCount(2)
@@ -71,16 +69,21 @@ test('форма: маска телефона, ошибки и заявка в W
   await expect(phone).toHaveValue('+7 (747) 163-41-18')
   await form.getByText('IELTS', { exact: true }).click()
 
+  const sent = page.waitForRequest((r) => r.url().endsWith('/api/landing/lead') && r.method() === 'POST')
   await form.getByRole('button', { name: 'Отправить заявку' }).click()
-  await expect(form.locator('.ld-field__error')).toHaveCount(0)
-  const opened = await page.evaluate(() => window.__opened)
-  expect(opened).toHaveLength(1)
-  const text = decodeURIComponent(new URL(opened[0]).searchParams.get('text'))
-  expect(opened[0]).toMatch(/^https:\/\/wa\.me\/77471634118\?text=/)
-  expect(text).toContain('Имя: Алия')
-  expect(text).toContain('+7 (747) 163-41-18')
-  expect(text).toContain('Цель: IELTS')
-  await expect(form.getByRole('status')).toBeVisible()
+  expect((await sent).postDataJSON()).toMatchObject({ name: 'Алия', phone: '7471634118', goal: 'IELTS', lang: 'ru', website: '' })
+
+  // Имя и номер уже даны — регистрация открывается на шаге почты, а код
+  // передачи из адреса уже убран.
+  await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 20000 })
+  expect(page.url()).not.toContain('handoff')
+})
+
+test('битый код передачи — регистрация с начала', async ({ page }) => {
+  await page.goto('/?screen=reg-email&handoff=broken')
+  await expect(page.locator('.reg-header')).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('input[type="email"]')).toHaveCount(0)
+  expect(page.url()).not.toContain('handoff')
 })
 
 test('лента преподавателей листается кнопкой', async ({ page }, info) => {

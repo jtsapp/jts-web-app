@@ -2085,6 +2085,27 @@
   color: #15803d;
 }
 
+.ld-form__note--err {
+  font-size: 13px;
+  color: #e5484d;
+}
+
+.ld-cta:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Ловушка для ботов: в разметке есть, человеку не видна и в Tab не попадает.
+   Не display:none — такие поля боты научились пропускать. */
+.ld-form__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── вопросы ──────────────────────────────────────────────────────────── */
 
 .ld-faq {
