@@ -1067,6 +1067,9 @@ class EchoFilter:
     MATCH_RATIO = 4.0
     # Уровень эха не учим на словах громче этой доли уровня ученика.
     LEARN_SHARE = 0.7
+    # Эха в звонке не было: совпавшее слово не тише этой доли уровня ученика —
+    # его слово.
+    NO_ECHO_LEARNER_SHARE = 0.5
 
     def __init__(
         self,
@@ -1174,6 +1177,7 @@ class EchoFilter:
                     self._echo_levels.append(loud)
         limit = self.boundary()
         override = self._match_override()
+        echo_level, learner_level = self.levels()
         echo = [False] * len(words)
         by_text = [False] * len(words)
         for i, info in enumerate(infos):
@@ -1190,6 +1194,18 @@ class EchoFilter:
                 # приветствие ученику незачем; его «привет» поверх него не
                 # потеря.
                 echo[i] = True
+            elif (
+                match
+                and loud is not None
+                and echo_level is None
+                and learner_level is not None
+                and loud >= learner_level * self.NO_ECHO_LEARNER_SHARE
+            ):
+                # Эха в звонке не было (уровня эха нет), а слово громкое как
+                # ученик — это он, даже если тьютор говорил те же слова. Живой
+                # зонд: «Стоп, я не понял» Декстеру без эха 0 из 3 целиком —
+                # он сам незадолго говорил «понял», и текст отдавал слова эху.
+                echo[i] = False
             elif limit is not None and loud is not None:
                 # Несимметрично. Слово, совпавшее с речью тьютора, — эхо, пока
                 # оно не громкое как ученик: ударные слова эха громче

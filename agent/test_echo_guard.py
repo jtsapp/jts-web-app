@@ -360,6 +360,30 @@ for n in range(3):
     ref3.on_agent_state("listening")
 assert flt3.levels()[0] is None, flt3.levels()  # эха в звонке не было — уровня нет
 
+# Звонок без эха, Декстер сам говорил «я не понял», ученик громко перебивает
+# теми же словами — его слова (живой зонд: было 0 из 3 целиком).
+clk6 = _Clock(10.0)
+ref6 = G.EchoReference(tail_sec=0.6, now=clk6)
+loud6 = {}
+flt6 = G.EchoFilter(ref6, clock=lambda ms: None if ms is None else 10.0 + ms / 1000,
+                    loudness=lambda start, end: loud6.get(start))
+toks = [_tok(w, 1000 + k * 300, 1000 + k * 300 + 250) for k, w in
+        enumerate(["Привет,", " меня", " зовут", " Нурлан,", " я", " студент."])] + [END]
+for t in toks[:-1]:
+    loud6[t["start_ms"]] = 6000.0
+flt6.process(toks)
+ref6.begin_reply()
+ref6.add_text("Ну бля, ты чё, я не понял, что ты сказал. Давай ещё раз.")
+ref6.end_reply()
+clk6.t = 20.0
+ref6.on_agent_state("speaking")
+toks = [_tok("Стоп,", 12500, 12900), _tok(" я", 12900, 13000), _tok(" не", 13000, 13100),
+        _tok(" понял.", 13100, 13600), END]
+loud6.update({12500: 7000.0, 12900: 2500.0, 13000: 3500.0, 13100: 6500.0})
+out, dropped = flt6.process(toks)
+assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], (out, dropped)
+assert flt6.levels()[0] is None
+
 # Текст без громкости: цепочка коротких «я не» между словами ученика — его.
 clk4 = _Clock(10.0)
 ref4 = G.EchoReference(tail_sec=0.6, now=clk4)
