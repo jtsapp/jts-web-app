@@ -150,6 +150,22 @@ ref.on_agent_state("speaking")
 assert ref.is_echo("кешіріңіз", 20.1) is False
 assert ref.is_echo("words", 20.1) is True
 
+# Только уже сказанное: ученик перебил тьютора в начале реплики, а те же слова
+# стоят дальше в ещё не сказанном тексте (живой зонд 03.10.2026, Декстер: «Стоп,
+# я не понял» — «не понял» уходило в эхо).
+clk = _Clock(30.0)
+ref = G.EchoReference(tail_sec=0.6, now=clk)
+ref.begin_reply()
+ref.add_text("Ну бля, Нурлан, ты серьёзно? It was very fun — так никто не говорит, "
+             "ты меня вообще не понял, давай заново.")
+ref.end_reply()
+ref.on_agent_state("speaking")  # звук реплики пошёл в 30.0
+# Через секунду сказано ~18 символов (+ запас) — «понял» (≈90-й символ) ещё впереди.
+assert ref.is_echo("понял", 31.0) is False
+assert ref.is_echo("Нурлан", 31.0) is True
+# Через четыре секунды тьютор до него уже дошёл — теперь это эхо.
+assert ref.is_echo("понял", 34.0) is True
+
 # --- часы: время слова Soniox → момент прихода этого звука -------------------------
 clk = _Clock(50.0)
 ac = G.AudioClock(now=clk)
@@ -174,6 +190,8 @@ ref.begin_reply()
 ref.add_text("Кешіріңіз, анық естімедім — қайталай аласыз ба?")
 ref.end_reply()
 ref.on_agent_state("speaking")
+# Ученик уже говорил в этом звонке (до первой его фразы всё в окне — эхо, см. ниже).
+ref.learner_spoke = True
 # Время слова: мс сокета = секунды от 5.0 (часы-заглушка).
 flt = G.EchoFilter(ref, clock=lambda ms: None if ms is None else 5.0 + ms / 1000)
 # Черновик: эхо уходит плагину уже без своих слов, слова ученика остаются.
@@ -229,6 +247,180 @@ out, dropped = flt.process([_tok("Қайталай", 6000, 6300), END])
 assert [t["text"] for t in out] == ["Қайталай", "<end>"], out
 flt.reset()
 
+# --- громкость: эхо тихое, ученик у микрофона громкий ------------------------------
+# Живые зонды 03.10.2026: эхо Декстера Soniox пишет с другим окончанием и даже
+# латиницей («Рация», «go», «блядь») — по тексту не поймать; а громкое «Стоп,
+# я не понял» ученика совпадало словами с речью тьютора.
+clk = _Clock(50.0)
+ref = G.EchoReference(tail_sec=0.6, now=clk)
+ref.begin_reply()
+ref.add_text("Ну бля, привет, братан! Давай разбираться, что тебе нужно сегодня? Ну давай, гоу.")
+ref.end_reply()
+ref.on_agent_state("speaking")
+loud = {}
+flt = G.EchoFilter(ref, clock=lambda ms: None if ms is None else 50.0 + ms / 1000,
+                   loudness=lambda start, end: loud.get(start))
+toks = [_tok("Ну", 100, 200), _tok(" бля,", 200, 400), _tok(" привет,", 400, 800),
+        _tok(" Рация,", 900, 1300), _tok(" братан!", 1300, 1700), _tok(" Давай", 1800, 2100), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 300.0
+loud[900] = 320.0
+assert flt.boundary() is None  # уровней ещё нет
+out, dropped = flt.process(toks)
+# Первая же фраза учит уровень эха и решается по нему: искажённое «Рация» — эхо.
+assert [t["text"] for t in out] == ["<end>"], out
+assert "Рация," in dropped, dropped
+assert flt.boundary() == 600.0  # уровня ученика нет — вдвое громче эха
+# Тьютор замолчал; ученик говорит — его уровень.
+clk.t = 52.0
+ref.on_agent_state("listening")
+toks = [_tok("Привет,", 5000, 5400), _tok(" меня", 5400, 5700), _tok(" зовут", 5700, 6000),
+        _tok(" Нурлан,", 6000, 6600), _tok(" здравствуй.", 6600, 7000), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 3000.0
+out, dropped = flt.process(toks)
+assert [t["text"] for t in out][:-1] == ["Привет,", " меня", " зовут", " Нурлан,", " здравствуй."], out
+assert abs(flt.boundary() - (300.0 * 3000.0) ** 0.5) < 1e-6
+# Тьютор снова говорит «…я не понял…», ученик перебивает теми же словами громко.
+clk.t = 57.0
+ref.begin_reply()
+ref.add_text("Ну, я не понял тебя, давай ещё раз.")
+ref.end_reply()
+ref.on_agent_state("speaking")
+toks = [_tok("Стоп,", 7200, 7600), _tok(" я", 7600, 7700), _tok(" не", 7700, 7800),
+        _tok(" понял.", 7800, 8300), END]
+for t in toks[:-1]:
+    loud[t["start_ms"]] = 2800.0
+out, dropped = flt.process(toks)
+assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], out
+assert dropped == ""
+# А тихое искажённое эхо его же речи («тебе» вместо «тебя») — выкинуто.
+loud[8500] = 310.0
+out, dropped = flt.process([_tok("тебе", 8500, 8800), END])
+assert [t["text"] for t in out] == ["<end>"], out
+# Черновик решается так же: громкое слово ученика проходит сразу (перебивание).
+loud[9000] = 2900.0
+out, _ = flt.process([_tok("Подожди", 9000, 9400, False)])
+assert [t["text"] for t in out] == ["Подожди"], out
+
+# Ученик почти так же тих, как эхо, — по громкости не развести, решает текст.
+clk2 = _Clock(10.0)
+ref2 = G.EchoReference(tail_sec=0.6, now=clk2)
+ref2.begin_reply()
+ref2.add_text("Сәлем! Мен Айзеремін. Бүгін жаттығу жасаймыз.")
+ref2.end_reply()
+ref2.on_agent_state("speaking")
+loud2 = {}
+flt2 = G.EchoFilter(ref2, clock=lambda ms: None if ms is None else 10.0 + ms / 1000,
+                    loudness=lambda start, end: loud2.get(start))
+toks = [_tok("Сәлем!", 100, 400), _tok(" Мен", 400, 600), _tok(" Айзеремін.", 600, 1100),
+        _tok(" Бүгін", 1200, 1500), _tok(" жаттығу", 1500, 1900), END]
+for t in toks[:-1]:
+    loud2[t["start_ms"]] = 300.0
+flt2.process(toks)
+clk2.t = 13.0
+ref2.on_agent_state("listening")
+toks = [_tok("Жақсы", 4000, 4400), _tok(" екен", 4400, 4700), _tok(" рахмет", 4700, 5100),
+        _tok(" сізге", 5100, 5400), _tok(" көп", 5400, 5600), END]
+for t in toks[:-1]:
+    loud2[t["start_ms"]] = 450.0
+flt2.process(toks)
+assert flt2.boundary() is None
+ref2.on_agent_state("speaking")
+loud2[6600] = 460.0
+out, _ = flt2.process([_tok("Тоқта", 6600, 7000), END])
+assert [t["text"] for t in out] == ["Тоқта", "<end>"], out  # не совпало с речью — ученик
+
+# Звонок без эха: ученик перебивает «Тоқта, мен түсінбедім», одиночное «мен»
+# совпадает с речью тьютора — уровень эха на нём не учится (живой зонд:
+# иначе следующее «Тоқта» выкидывалось как тихое эхо).
+clk3 = _Clock(10.0)
+ref3 = G.EchoReference(tail_sec=0.6, now=clk3)
+loud3 = {}
+flt3 = G.EchoFilter(ref3, clock=lambda ms: None if ms is None else 10.0 + ms / 1000,
+                    loudness=lambda start, end: loud3.get(start))
+toks = [_tok(w, 1000 + k * 300, 1000 + k * 300 + 250) for k, w in
+        enumerate(["Сәлем.", " Менің", " атым", " Нұрлан,", " мен", " үйренемін."])] + [END]
+for t in toks[:-1]:
+    loud3[t["start_ms"]] = 3000.0
+flt3.process(toks)  # тьютор молчит — уровень ученика
+for n in range(3):
+    ref3.begin_reply()
+    ref3.add_text("Танысқаныма қуаныштымын, Нұрлан! Мен Айзеремін.")
+    ref3.end_reply()
+    clk3.t = 20.0 + n * 10
+    ref3.on_agent_state("speaking")
+    base = int((clk3.t - 10.0) * 1000) + 1500
+    toks = [_tok("Тоқта,", base, base + 400), _tok(" мен", base + 400, base + 600),
+            _tok(" түсінбедім.", base + 600, base + 1200), END]
+    loud3[base], loud3[base + 400], loud3[base + 600] = 2900.0, 2100.0, 2800.0
+    out, dropped = flt3.process(toks)
+    assert [t["text"] for t in out] == ["Тоқта,", " мен", " түсінбедім.", "<end>"], (n, out)
+    clk3.t += 5
+    ref3.on_agent_state("listening")
+assert flt3.levels()[0] is None, flt3.levels()  # эха в звонке не было — уровня нет
+
+# Звонок без эха, Декстер сам говорил «я не понял», ученик громко перебивает
+# теми же словами — его слова (живой зонд: было 0 из 3 целиком).
+clk6 = _Clock(10.0)
+ref6 = G.EchoReference(tail_sec=0.6, now=clk6)
+loud6 = {}
+flt6 = G.EchoFilter(ref6, clock=lambda ms: None if ms is None else 10.0 + ms / 1000,
+                    loudness=lambda start, end: loud6.get(start))
+toks = [_tok(w, 1000 + k * 300, 1000 + k * 300 + 250) for k, w in
+        enumerate(["Привет,", " меня", " зовут", " Нурлан,", " я", " студент."])] + [END]
+for t in toks[:-1]:
+    loud6[t["start_ms"]] = 6000.0
+flt6.process(toks)
+ref6.begin_reply()
+ref6.add_text("Ну бля, ты чё, я не понял, что ты сказал. Давай ещё раз.")
+ref6.end_reply()
+clk6.t = 20.0
+ref6.on_agent_state("speaking")
+toks = [_tok("Стоп,", 12500, 12900), _tok(" я", 12900, 13000), _tok(" не", 13000, 13100),
+        _tok(" понял.", 13100, 13600), END]
+loud6.update({12500: 7000.0, 12900: 2500.0, 13000: 3500.0, 13100: 6500.0})
+out, dropped = flt6.process(toks)
+assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], (out, dropped)
+assert flt6.levels()[0] is None
+
+# Текст без громкости: цепочка коротких «я не» между словами ученика — его.
+clk4 = _Clock(10.0)
+ref4 = G.EchoReference(tail_sec=0.6, now=clk4)
+ref4.begin_reply()
+ref4.add_text("Привет, Нурлан, ну вот. Я Декстер, и я не шучу.")
+ref4.end_reply()
+ref4.on_agent_state("speaking")
+ref4.learner_spoke = True
+flt4 = G.EchoFilter(ref4, clock=lambda ms: None if ms is None else 10.0 + ms / 1000)
+
+out, dropped = flt4.process([_tok("Стоп,", 1500, 1900), _tok(" я", 1900, 2000), _tok(" не", 2000, 2100),
+                             _tok(" понял.", 2100, 2600), END])
+assert [t["text"] for t in out] == ["Стоп,", " я", " не", " понял.", "<end>"], out
+
+# Пока ученик ни разу не говорил, всё в окне тьютора — эхо: эхо приветствия
+# Декстера («Чё каво?» → «Только вот») по тексту не узнать, уровней ещё нет.
+clk5 = _Clock(10.0)
+ref5 = G.EchoReference(tail_sec=0.6, now=clk5)
+ref5.begin_reply()
+ref5.add_text("Ну бля, давай гоу, братан. Чё каво? Сегодня разберём Present Simple.")
+ref5.end_reply()
+ref5.on_agent_state("speaking")
+flt5 = G.EchoFilter(ref5, clock=lambda ms: None if ms is None else 10.0 + ms / 1000)
+out, dropped = flt5.process([_tok("Только", 2000, 2400), _tok(" вот,", 2400, 2700),
+                             _tok(" сегодня", 2700, 3100), END])
+assert [t["text"] for t in out] == ["<end>"], out
+assert ref5.learner_spoke is False
+# Ученик ответил, когда тьютор замолчал, — дальше решают текст и громкость.
+clk5.t = 20.0
+ref5.on_agent_state("listening")
+out, _ = flt5.process([_tok("Привет,", 12000, 12400), _tok(" я", 12400, 12500), _tok(" Нурлан.", 12500, 13000), END])
+assert [t["text"] for t in out] == ["Привет,", " я", " Нурлан.", "<end>"], out
+assert ref5.learner_spoke is True
+ref5.on_agent_state("speaking")
+out, _ = flt5.process([_tok("Подожди", 10500, 10900), END])
+assert [t["text"] for t in out] == ["Подожди", "<end>"], out
+
 # --- сквозной: настоящий плагин Soniox + наш сокет -------------------------------
 class _FakeWS:
     """Сокет, который отдаёт заранее записанные сообщения после того, как ушло
@@ -282,6 +474,9 @@ async def _run_echo(messages, *, echo: bool, speaking: bool = True):
             engine.echo.begin_reply()
             engine.echo.add_text("Кешіріңіз, анық естімедім — қайталай аласыз ба?")
             engine.echo.end_reply()
+            # Ученик уже говорил в звонке: проверяем решение по словам, а не
+            # правило начала звонка.
+            engine.echo.learner_spoke = True
             if speaking:
                 engine.echo.on_agent_state("speaking")
         stream = engine.stream()
