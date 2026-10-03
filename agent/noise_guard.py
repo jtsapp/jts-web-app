@@ -54,7 +54,6 @@ import os
 import time
 import weakref
 from collections import deque
-from difflib import SequenceMatcher
 from statistics import median
 from typing import Any, Callable
 
@@ -176,10 +175,21 @@ SPEAKER_LOCK_WARMUP_MS_DEFAULT = 3000.0
 # длиннее съедал бы «повтори за мной», короче — пропускал бы эхо.
 ECHO_TAIL_SEC_DEFAULT = 0.6
 # Сколько звука дослать после конца речи по VAD перед finalize. VAD отдаёт конец
-# речи после VAD_SILENCE_SEC (0.3 с) тишины; вместе — полсекунды за последним
-# словом, как у рации (FINALIZE_AFTER_SILENCE_SEC): без тишины за хвостом Soniox
-# съедал последнее слово.
-VAD_FINALIZE_DELAY_SEC_DEFAULT = 0.2
+# речи после VAD_SILENCE_SEC (0.3 с) тишины; вместе — около секунды тишины за
+# последним словом.
+#
+# Первая выкатка стояла на 0.2 (полсекунды вместе, как у рации) — и живой зонд
+# 03.10.2026 резал ход на паузе между предложениями (0.4–0.6 с у ученика):
+# «Тоқта,» | «мен түсінбедім», «ойнадым. It's» | «was very fun». Обрывок короче
+# трёх слов промпт велит переспрашивать — и тьютор отвечал «Кешіріңіз, анық
+# естімедім» на нормальную речь. Секунда паузы закрывает фразу всё равно
+# заметно раньше, чем казахскую фразу закрывает сам Soniox (~2.6 с).
+VAD_FINALIZE_DELAY_SEC_DEFAULT = 0.7
+# Звук после конца речи громче этой доли речи ученика — он заговорил снова, и
+# команда не уходит. VAD замечает новую речь с опозданием (нужна её минимальная
+# длительность плюс инференс), и без этой проверки finalize попадал в начало
+# следующего слова: Soniox закрывал его обрубком.
+VAD_FINALIZE_RESUME_FRACTION = 0.25
 
 _OFF = ("off", "0", "false", "no")
 _ON = ("on", "1", "true", "yes")
@@ -763,19 +773,18 @@ def norm_word(text: str) -> str:
 def similar_word(heard: str, said: str) -> bool:
     """Похоже ли услышанное слово (уже norm_word) на слово тьютора.
 
-    Короткие — только точно: иначе «is» совпало бы с «it», «in» — с «inside», и
-    фильтр глотал бы служебные слова ученика. Длинные — ещё и обрывок
-    (Soniox успел начало слова эха, «есті» от «естімедім») и опечатка
-    распознавания в одну-две буквы."""
+    Точное совпадение — или обрывок: Soniox успел только начало слова эха
+    («есті» от «естімедім»), не короче четырёх букв.
+
+    «Похоже на 80%» здесь нельзя. Живой зонд 03.10.2026: ученик перебил тьютора
+    «Тоқта, мен түсінбедім» («я не понял»), а тьютор в это время говорил
+    «түсіндім» («понял») — по сходству это одно слово, и фильтр съел смысл
+    реплики. В казахском отрицание и лицо — суффиксы: соседние формы различаются
+    парой букв и значат противоположное. Эхо чистого синтеза Soniox пишет
+    точно, так что строгость почти ничего не пропускает."""
     if heard == said:
         return True
-    if min(len(heard), len(said)) < 3:
-        return False
-    if said.startswith(heard):
-        return True
-    if min(len(heard), len(said)) >= 4 and SequenceMatcher(None, heard, said).ratio() >= 0.8:
-        return True
-    return False
+    return len(heard) >= 4 and said.startswith(heard)
 
 
 class EchoReference:
@@ -931,20 +940,18 @@ class EchoFilter:
             )
             for i, (word, text) in enumerate(zip(words, texts))
         ]
-        # Короткое слово между двумя словами ученика — его слово, даже если
-        # тьютор тоже его сказал. Офлайн-стенд на настоящем Soniox: ученик
-        # перебил эхо «Сәлем! Мен Айзеремін…» фразой «Тоқта, мен түсінбедім»,
-        # и «мен» уходило в эхо. Эхо идёт сплошными кусками фразы тьютора и
-        # слов ученика по обе стороны от себя не имеет.
+        # Короткое слово рядом со словами ученика — его слово, даже если тьютор
+        # тоже его говорил. Офлайн-стенд и живой зонд: «Тоқта, мен түсінбедім» и
+        # «Мен түсінбедім» поверх недавнего «Мен Айзеремін» — «мен» уходило в
+        # эхо. Эхо идёт сплошными кусками фразы тьютора: короткое слово эха
+        # стоит рядом с другим словом эха (или одно во фразе).
         lettered = [i for i, text in enumerate(texts) if norm_word(text)]
+        raw = list(echo)
         for j, i in enumerate(lettered):
-            if (
-                echo[i]
-                and len(norm_word(texts[i])) <= 3
-                and 0 < j < len(lettered) - 1
-                and not echo[lettered[j - 1]]
-                and not echo[lettered[j + 1]]
-            ):
+            if not raw[i] or len(norm_word(texts[i])) > 3:
+                continue
+            neighbours = [lettered[k] for k in (j - 1, j + 1) if 0 <= k < len(lettered)]
+            if any(not raw[n] for n in neighbours) and not any(raw[n] for n in neighbours):
                 echo[i] = False
         kept: list[dict[str, Any]] = []
         dropped: list[str] = []
@@ -1120,8 +1127,11 @@ if aiohttp is not None and soniox is not None:
             )
             self._echo_buf: list[str] = []
             # finalize по концу речи VAD: сколько звука ещё дослать до команды
-            # (None — не взведён).
+            # (None — не взведён), громкость последних кадров (уровень речи
+            # ученика перед паузой) и порог «заговорил снова».
             self._vad_fin_left: float | None = None
+            self._vad_rms: deque | None = deque(maxlen=200) if stt.vad_finalize else None
+            self._vad_resume: float | None = None
 
         def arm_finalize(self) -> None:
             self._fin_deadline = time.monotonic() + FINALIZE_ARM_SEC
@@ -1133,6 +1143,9 @@ if aiohttp is not None and soniox is not None:
             у рации: микрофон в «Свободно» открыт, и после речи идёт тихий шум
             комнаты, а не цифровой ноль."""
             self._vad_fin_left = max(0.0, after_sec)
+            # Уровень речи — по громким кадрам перед паузой (последние ~2 с).
+            level = max(self._vad_rms) if self._vad_rms else 0.0
+            self._vad_resume = level * VAD_FINALIZE_RESUME_FRACTION if level > 0 else None
             if self._vad_fin_left <= 1e-6:
                 self._send_finalize_mark()
 
@@ -1151,6 +1164,17 @@ if aiohttp is not None and soniox is not None:
 
         def push_frame(self, frame: Any) -> None:
             super().push_frame(frame)
+            if self._vad_rms is not None:
+                samples = np.frombuffer(frame.data.tobytes(), dtype=np.int16).astype(np.float64)
+                rms = float(np.sqrt(np.mean(samples * samples))) if len(samples) else 0.0
+                self._vad_rms.append(rms)
+                if (
+                    self._vad_fin_left is not None
+                    and self._vad_resume is not None
+                    and rms > self._vad_resume
+                ):
+                    # Ученик заговорил снова раньше, чем это заметил VAD.
+                    self._vad_fin_left = None
             if self._vad_fin_left is not None:
                 self._vad_fin_left -= frame.duration
                 if self._vad_fin_left <= 1e-6:

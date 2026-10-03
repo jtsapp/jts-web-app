@@ -81,11 +81,13 @@ for bad in ("abc", "-1", "9"):
     _env(ECHO_TAIL_SEC=bad)
     assert G.echo_tail_sec() == 0.6, bad
 _env(ECHO_TAIL_SEC=None)
-assert G.vad_finalize_delay_sec() == G.VAD_FINALIZE_DELAY_SEC_DEFAULT == 0.2
-_env(SONIOX_VAD_FINALIZE_SEC="0.7")
-assert G.vad_finalize_delay_sec() == 0.7
-_env(SONIOX_VAD_FINALIZE_SEC="x")
+# Около секунды тишины вместе с окном VAD: на 0.2 живой зонд резал ход на паузе
+# между предложениями.
+assert G.vad_finalize_delay_sec() == G.VAD_FINALIZE_DELAY_SEC_DEFAULT == 0.7
+_env(SONIOX_VAD_FINALIZE_SEC="0.2")
 assert G.vad_finalize_delay_sec() == 0.2
+_env(SONIOX_VAD_FINALIZE_SEC="x")
+assert G.vad_finalize_delay_sec() == 0.7
 _env(SONIOX_VAD_FINALIZE_SEC=None)
 
 # --- сходство слов -------------------------------------------------------------------
@@ -95,8 +97,13 @@ assert G.norm_word("Ёлка!") == "елка"
 assert G.similar_word("кешіріңіз", "кешіріңіз")
 # Обрывок слова эха: Soniox успел только начало («есті—»).
 assert G.similar_word("есті", "естімедім")
-# Опечатка распознавания в длинном слове.
-assert G.similar_word("жаттыгу", "жаттығу")
+# «Похоже на 80%» больше нет: в казахском отрицание — суффикс, и «түсінбедім»
+# («не понял») по сходству совпадал с «түсіндім» («понял») — живой зонд
+# 03.10.2026, фильтр съел смысл перебивания.
+assert not G.similar_word("түсінбедім", "түсіндім")
+assert not G.similar_word("жаттыгу", "жаттығу")
+# Обрывок короче четырёх букв — не эхо (в финале; черновик решает отдельно).
+assert not G.similar_word("ан", "анық")
 # Короткие — только точно: иначе «is» совпало бы с «it's», «in» — с «inside».
 assert G.similar_word("is", "is")
 assert not G.similar_word("is", "it")
@@ -190,20 +197,31 @@ assert flt.dropped_words == 2 and flt.kept_words == 1, (flt.dropped_words, flt.k
 out, dropped = flt.process([_tok("Кешіріңіз.", 1500, 1900), END])
 assert [t["text"] for t in out] == ["<end>"], out
 assert dropped == "Кешіріңіз."
-# Короткое слово тьютора между двумя словами ученика — слово ученика
+# Короткое слово тьютора рядом со словами ученика — слово ученика
 # (офлайн-стенд: «Тоқта, мен түсінбедім» поверх эха «Мен Айзеремін»).
 ref.begin_reply()
 ref.add_text("Сәлем! Мен Айзеремін.")
 ref.end_reply()
-out, dropped = flt.process([_tok("Мен", 1950, 2100), _tok(" Тоқта,", 2100, 2500), _tok(" мен", 2500, 2700),
+out, dropped = flt.process([_tok("Тоқта,", 2100, 2500), _tok(" мен", 2500, 2700),
                             _tok(" түсінбедім.", 2700, 3300), END])
 assert [t["text"] for t in out] == ["Тоқта,", " мен", " түсінбедім.", "<end>"], out
-assert dropped == "Мен", dropped
+assert dropped == "", dropped
+# А рядом со словом эха короткое — тоже эхо.
+out, dropped = flt.process([_tok("Мен", 1950, 2100), _tok(" Айзеремін.", 2100, 2700), END])
+assert [t["text"] for t in out] == ["<end>"], out
+assert dropped == "Мен Айзеремін.", dropped
 # А длинное слово тьютора между словами ученика — всё равно эхо: эхо и
 # ученик перемешиваются, и длинное совпадение случайным не бывает.
 out, dropped = flt.process([_tok("Тоқта,", 3500, 3900), _tok(" Айзеремін", 3900, 4400),
                             _tok(" түсінбедім.", 4400, 5000), END])
 assert dropped == "Айзеремін", dropped
+# Перебивание «түсінбедім» поверх «Түсіндім» тьютора — слово ученика.
+ref.begin_reply()
+ref.add_text("Түсіндім, Нұрлан, сіз университетте оқисыз.")
+ref.end_reply()
+out, dropped = flt.process([_tok("Мен", 5200, 5400), _tok(" түсінбедім.", 5400, 6000), END])
+assert [t["text"] for t in out] == ["Мен", " түсінбедім.", "<end>"], out
+assert dropped == "", dropped
 # Тьютор замолчал, хвост прошёл — те же слова уже ученика.
 clk.t = 10.0
 ref.on_agent_state("listening")
@@ -349,7 +367,7 @@ class _FinalizeWS:
         await asyncio.sleep(3600)
 
 
-async def _vad_case(*, enabled=True, cancel=False, ptt_finalize=False, noise_sec=0.6):
+async def _vad_case(*, enabled=True, cancel=False, ptt_finalize=False, noise_sec=0.6, resume=False):
     ws = _FinalizeWS()
     real_connect = soniox_stt.SpeechStream._connect_ws
 
@@ -374,6 +392,13 @@ async def _vad_case(*, enabled=True, cancel=False, ptt_finalize=False, noise_sec
             # Ученик заговорил снова раньше, чем ушла команда.
             engine.cancel_silence_finalize()
         noise = _pcm(0.02, 40)
+        if resume:
+            # 0.1 с паузы — и ученик снова говорит, а VAD этого ещё не заметил.
+            for _ in range(5):
+                stream.push_frame(rtc.AudioFrame(noise, SR, 1, 320))
+            loud = _pcm(0.02, 5000)
+            for _ in range(10):
+                stream.push_frame(rtc.AudioFrame(loud, SR, 1, 320))
         for _ in range(int(round(noise_sec / 0.02))):
             stream.push_frame(rtc.AudioFrame(noise, SR, 1, 320))
         finals = []
@@ -403,6 +428,12 @@ assert ws.bytes_at_finalize == speech_bytes + 10 * 640, (ws.bytes_at_finalize, s
 assert finals == ["Мен студентпін", ""], finals
 # Ученик продолжил — взвод снят, команды нет.
 engine, ws, armed, finals, _ = asyncio.run(_vad_case(cancel=True))
+assert not any(json.loads(t).get("type") == "finalize" for t in ws.texts), ws.texts
+assert finals == []
+# Ученик заговорил снова раньше, чем VAD это заметил, — команда не уходит
+# (иначе Soniox закрыл бы начало его слова обрубком: «It's» вместо «It was»).
+engine, ws, armed, finals, _ = asyncio.run(_vad_case(resume=True))
+assert armed == 1
 assert not any(json.loads(t).get("type") == "finalize" for t in ws.texts), ws.texts
 assert finals == []
 # Рубильник выключен — ничего не взводится, Soniox ждёт сам.
