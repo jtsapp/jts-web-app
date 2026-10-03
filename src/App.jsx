@@ -1103,6 +1103,7 @@ export default function App() {
   const lessonsTourKey = tourKeyFor(profileId || getDeviceId(), 'lessons')
   const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
   const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
+  const homeTourKey = tourKeyFor(profileId || getDeviceId(), 'home')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1559,6 +1560,7 @@ export default function App() {
           // «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
+          tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}

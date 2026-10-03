@@ -1,0 +1,525 @@
+/* ======================================================================
+   «Главная» на телефоне — макет Figma «Web Адаптивка», секция «Главная»
+   (5922:2684): кадры 440px «демо-аккаунт», «демо без теста», «полный
+   доступ», «новый уровень».
+
+   Карточки те же, что на десктопе (demo.css, hm-*), здесь только их
+   телефонная раскладка. Макет главной нарисован на Manrope, а не на PT Root
+   UI, как остальной мобильный слой (base.css), — шрифт возвращаем на .hm,
+   шапка (MobileTopBar) остаётся на PT Root UI, как в кадре.
+   ====================================================================== */
+
+@media (max-width: 560px) {
+  .hm {
+    gap: 16px;
+    padding: 16px 16px 32px;
+    font-family: Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  .hm-row,
+  .hm-col {
+    gap: 16px;
+  }
+
+  /* ---------- плашка демо (DemoStrip 408×158, r16, p16) ----------
+     Сверху значок «ДЕМО» и остаток времени по краям, ниже текст, кнопка во
+     всю ширину. */
+  .dm-banner {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  /* Строки заданы явно: в разметке таймер идёт после текста, и автоматическая
+     раскладка увела бы его под текст, а не в правый угол первой строки. */
+  .dm-banner__badge {
+    grid-row: 1;
+    grid-column: 1;
+    justify-self: start;
+    align-self: center;
+  }
+  .dm-banner__timer {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: end;
+  }
+  .dm-banner__text {
+    order: 0;
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+  .dm-banner__cta {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    justify-content: center;
+    margin-left: 0;
+    padding: 8px 14px 8px 16px;
+  }
+
+  /* ---------- карточка уровня (LevelHero 408, r24, p20, gap 16) ----------
+     Сетка из двух колонок: слева подпись, уровень и прирост, справа плашка
+     цели 101×101; дорожка и подпись под ними — во всю ширину. Обёртка
+     .hm-level__body растворяется (display: contents), чтобы её дети встали в
+     сетку карточки напрямую. */
+  .hm-level {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 101px;
+    /* Лишняя высота плашки цели (101 против подписи с уровнем) уходит во
+       вторую строку: иначе сетка делит её поровну и уровень отъезжает от
+       подписи «ВАШ УРОВЕНЬ», когда плашки прироста нет. */
+    grid-template-rows: auto 1fr;
+    /* row-gap — ноль: десктопный gap флекса в сетке стал бы зазором между
+       строками и раздвинул бы карточку. Отступы — у самих строк. */
+    gap: 0 12px;
+    align-items: start;
+    padding: 20px;
+    border-radius: 24px;
+  }
+  .hm-level__body {
+    display: contents;
+  }
+  .hm-level__label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .hm-level__head {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .hm-level__name {
+    font-size: 32px;
+    line-height: 44px;
+  }
+  .hm-level__week {
+    padding: 6px 12px 6px 10px;
+  }
+
+  /* Плашка цели: медаль 101×101 выглядывает над плашкой на 24px, подпись —
+     у нижнего края. */
+  .hm-level__goal {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    align-self: start;
+    width: 101px;
+    height: 101px;
+    min-height: 0;
+    gap: 0;
+    padding: 11px 6px;
+    border-radius: 14.4px;
+    font-size: 11.5px;
+    line-height: 16px;
+  }
+  /* Арт медали в файле занимает поле плотнее, чем в макете, — рамка на
+     8px меньше, чтобы сама медаль совпала с кадром по размеру и месту. */
+  .hm-level__medal {
+    position: absolute;
+    left: 4px;
+    top: -15px;
+    transform: none;
+    width: 93px;
+    height: 93px;
+  }
+
+  /* Достигнутая цель: большая медаль срезана правым краем карточки, как в
+     кадре «новый уровень» (150×150, x+290 и y−34 от верхнего ряда). */
+  .hm-level__trophy {
+    position: absolute;
+    top: -14px;
+    right: -52px;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+  }
+
+  /* ---------- дорожка: кружки 32px, подписи под ними ----------
+     Отрезки — флекс между кружками на высоте их центра, поэтому линия
+     непрерывна от «Старта» до «Финиша» при любом числе ступеней. Подписи
+     вынесены абсолютом под кружок: шириной они больше кружка, и в потоке
+     раздвигали бы дорожку неравномерно. */
+  .hm-level__track {
+    grid-column: 1 / -1;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 0;
+    margin-top: 16px;
+    padding: 0 0 28px;
+    border-radius: 0;
+    background: none;
+  }
+  .hm-level__seg {
+    flex: 1 1 0;
+    min-width: 8px;
+    height: 3px;
+    margin-top: 14.5px;
+    border-radius: 2px;
+    background: #ac75ff;
+  }
+  .hm-level__stop {
+    position: relative;
+    flex: none;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #ac75ff;
+    color: #fff;
+  }
+  .hm-level__ico {
+    width: 18px;
+    height: 18px;
+  }
+  .hm-level__lbl {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+  }
+  /* Крайние подписи прижаты к краям дорожки, а не к центру кружка: «Финиш · B2»
+     иначе вылезал бы за карточку. */
+  .hm-level__stop--now .hm-level__lbl {
+    left: 0;
+    transform: none;
+    font-weight: 600;
+    color: #fff;
+  }
+  .hm-level__stop--finish .hm-level__lbl {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+  .hm-level__stop--now {
+    background: #fff;
+  }
+  .hm-level__dot {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #9047ff;
+  }
+
+  /* В кадре — во всю ширину карточки, капсула ростом 26. */
+  .hm-level__buy {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: 16px;
+    padding: 3px 6px 4px;
+    border-radius: 16px;
+  }
+  /* Подпись под дорожкой в макете — просто текст, без капсулы. */
+  .hm-level__plan {
+    grid-column: 1 / -1;
+    display: block;
+    margin: 16px 0 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 14px;
+    line-height: 19px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* ---------- общая карточка (r24, p24/20, обводка #ededed) ---------- */
+  .hm-card {
+    padding: 24px 20px;
+    border-radius: 24px;
+  }
+  .hm-card__title {
+    margin: 0 0 24px;
+    font-size: 20px;
+    line-height: 28px;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---------- сильные и слабые стороны ---------- */
+  .hm-skills__list {
+    gap: 12px;
+    opacity: 0.8;
+  }
+  .hm-skill {
+    grid-template-columns: 92px minmax(0, 1fr) 44px 18px;
+    gap: 16px;
+  }
+  .hm-skill__name {
+    font-size: 15px;
+    line-height: 20px;
+  }
+  .hm-skill__pct {
+    text-align: left;
+  }
+  /* Стрелка в цвет полосы; у «рабочего» уровня (фиолетовая полоса) в макете
+     стрелки нет вовсе. */
+  .hm-skill__trend--high {
+    color: #31b423;
+  }
+  .hm-skill__trend--mid {
+    visibility: hidden;
+  }
+  .hm-skill__trend--low {
+    color: #e8a020;
+  }
+  .hm-skills__tags {
+    margin-top: 24px;
+  }
+  .hm-tag {
+    padding: 8px 14px 8px 12px;
+    font-size: 13px;
+  }
+
+  /* ---------- что сделать сегодня (в макете нет — в языке соседних карточек) ---------- */
+  .hm-recommend__cta {
+    flex-wrap: wrap;
+    padding: 16px;
+    border-radius: 16px;
+    background: #f8f8f8;
+  }
+
+  /* ---------- практика на сегодня: плитки 88px с картинкой справа ---------- */
+  .hm-prac {
+    padding: 20px 20px 24px;
+  }
+  .hm-prac__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .hm-prac__tile {
+    position: relative;
+    height: 88px;
+    padding: 24px;
+    border-radius: 16px;
+    background: #f8f8f8;
+  }
+  .hm-prac__text {
+    gap: 4px;
+    max-width: calc(100% - 64px);
+  }
+  .hm-prac__text b {
+    font-size: 16px;
+    line-height: 20px;
+  }
+  .hm-prac__text i {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8a8a8a;
+  }
+  .hm-prac__emoji {
+    display: none;
+  }
+  .hm-prac__img {
+    display: block;
+    position: absolute;
+    top: 4px;
+    right: 12px;
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    background: none;
+  }
+
+  /* ---------- расписание ----------
+     Строка: число и день недели колонкой 24px, вертикальная черта, урок.
+     Сегодняшнее число — в красной плашке. Неделя длиннее карточки: низ списка
+     тает (в макете — белая вуаль 111px поверх). */
+  .hm-sched {
+    padding: 24px 20px 20px;
+    border-radius: 20px;
+  }
+  .hm-sched__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 265px;
+    margin: 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 111px), rgba(0, 0, 0, 0.2));
+    mask-image: linear-gradient(#000 calc(100% - 111px), rgba(0, 0, 0, 0.2));
+  }
+  .hm-sched__day {
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    border-top: 0;
+  }
+  .hm-sched__date {
+    width: 24px;
+    margin-right: 12px;
+    padding-top: 0;
+  }
+  .hm-sched__date b,
+  .hm-sched__date.is-busy b {
+    display: block;
+    width: 24px;
+    height: 18px;
+    margin: 0;
+    padding: 0 2px;
+    border-radius: 8px;
+    background: none;
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 700;
+    color: #181818;
+    text-align: center;
+  }
+  .hm-sched__date.is-today b {
+    background: #ff5c5c;
+    color: #fff;
+  }
+  .hm-sched__date i {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8a8a8a;
+  }
+  .hm-sched__empty,
+  .hm-sched__items {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: 12px;
+    border-left: 2px solid #f8f8f8;
+  }
+  .hm-sched__empty {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #8a8a8a;
+  }
+  .hm-sched__items {
+    gap: 8px;
+  }
+  .hm-sched__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 16px;
+    column-gap: 12px;
+    row-gap: 4px;
+    align-items: center;
+    width: 100%;
+  }
+  .hm-sched__item b {
+    font-size: 14px;
+    line-height: 20px;
+    color: #181818;
+  }
+  .hm-sched__item i {
+    grid-column: 1;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8a8a8a;
+  }
+  .hm-sched__chev {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    color: #c4c4c4;
+  }
+  .hm-card__more {
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  /* ---------- домашнее задание: пункты #f8f8f8 r11 p12 ---------- */
+  .hm-hw {
+    padding: 24px 20px 20px;
+    border-radius: 20px;
+  }
+  .hm-hw__list {
+    gap: 12px;
+    margin: 0;
+  }
+  .hm-hw__item {
+    padding: 12px;
+    border-radius: 11px;
+    background: #f8f8f8;
+  }
+  .hm-hw__item b {
+    font-size: 14px;
+    line-height: 20px;
+    color: #181818;
+  }
+  .hm-hw__item span {
+    gap: 12px;
+  }
+  .hm-hw__item i {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #898787;
+  }
+  .hm-hw__ico {
+    display: block;
+    flex: none;
+  }
+  .hm-hw__empty {
+    margin: 0;
+  }
+
+  /* ---------- пробный урок (демо): кадр 368×238 r14 ---------- */
+  .hm-trial {
+    padding: 18px 20px;
+    border-radius: 20px;
+  }
+  .hm-trial__art {
+    aspect-ratio: 368 / 238;
+    max-width: none;
+    margin: 0 0 14px;
+  }
+
+  /* ---------- уровень не определён (демо без теста) ---------- */
+  /* Отступы — у элементов (16 под заголовком, 20 над кнопкой), поэтому
+     десктопный gap флекса гасим: иначе они складывались. */
+  .hm-placement {
+    gap: 0;
+    min-height: 0;
+    padding: 28px 24px;
+    border-radius: 24px;
+  }
+  .hm-placement__title {
+    font-size: 26px;
+    line-height: 32px;
+  }
+  .hm-placement__sub {
+    margin-top: 16px;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #181818;
+  }
+  .hm-placement__cta {
+    width: 100%;
+    height: 48px;
+    margin-top: 20px;
+    border-radius: 60px;
+    font-size: 15px;
+  }
+}
+
+/* На самых узких (360) две ступени с полными подписями и «Финиш · B2»
+   касаются друг друга — подписи на пункт меньше. */
+@media (max-width: 380px) {
+  .hm-level__track:not(.is-short) .hm-level__lbl {
+    font-size: 11px;
+  }
+}

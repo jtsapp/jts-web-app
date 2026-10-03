@@ -1,10 +1,13 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
 import AssetImage from '../components/AssetImage.jsx'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
-import { levelSummary, nextLevel, touchWeeklySnapshot } from '../lib/levelProgress.js'
+import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
+import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
+import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress } from '../api.js'
 import { pickRecommendation } from '../lib/assistant/recommend.js'
@@ -36,6 +39,8 @@ export default function HomePage({
   onOpenTrial,
   onOpenLesson,
   onStartLevelTest,
+  // Ключ отметки «тур показан» — из App, в нём id профиля (tourKeyFor).
+  tourKey,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -69,10 +74,57 @@ export default function HomePage({
 
   const summary = useMemo(() => levelSummary(userLevel, stats, progress), [userLevel, stats, progress])
 
-  // Ступени дорожки — ближайший уровень и следующий за ним. Дальше рисовать
-  // нечего: «Финиш» и есть конец пути, а обещать конкретную ступень через две
-  // от текущей значило бы показывать план, которого у курса нет.
-  const stops = useMemo(() => [summary.next, nextLevel(summary.next)].filter(Boolean), [summary.next])
+  // Цель ученика — до какого уровня он идёт. Кэш сразу, сервер следом (см.
+  // lib/levelGoal.js). Выбор, сделанный до ответа сервера, ответом не
+  // перетираем: GET мог уйти раньше клика и принести старую цель.
+  const [goal, setGoal] = useState(null)
+  const pickedRef = useRef(false)
+  useEffect(() => {
+    setGoal(readCachedGoal(token))
+    if (!token) return
+    let alive = true
+    loadLevelGoal(token).then((g) => {
+      if (alive && g !== undefined && !pickedRef.current) setGoal(g)
+    })
+    return () => { alive = false }
+  }, [token])
+
+  const options = useMemo(() => goalOptions(summary), [summary])
+  const pickGoal = (code) => {
+    // Точка отсчёта — уровень профиля в момент выбора: по ней дорожка
+    // нарисуется пройденной, когда профиль дорастёт до цели.
+    const next = sanitizeGoal({ target: code, from: summary.level })
+    if (!next) return
+    pickedRef.current = true
+    setGoal(next)
+    saveLevelGoal(token, next)
+  }
+  const [goalOpen, setGoalOpen] = useState(false)
+
+  // Дорожка: без цели — ближайший уровень и следующий за ним, с целью — все
+  // ступени до неё (lib/levelProgress.js, levelTrack).
+  const track = useMemo(() => levelTrack(summary, goal), [summary, goal])
+  const reached = track.mode === 'reached'
+  // Выбранная цель, если она ещё впереди, — её и подсвечиваем в выборе.
+  const goalValue = track.mode === 'goal' ? track.goal : null
+
+  // Тур «Главной»: первым шагом — выбор цели. Без пройденного теста карточки
+  // уровня нет, и цель выбирать не от чего — тур ждёт, пока уровень появится.
+  const tour = useScreenTour(levelUnknown ? null : tourKey)
+  const tourSteps = [
+    {
+      selector: '.hm-level',
+      title: t('tour.home.goal.title'),
+      text: t('tour.home.goal.text'),
+      content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
+      // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
+      // целиком можно всегда, тогда дорожка остаётся прежней.
+      canNext: !options.length || !!goalValue,
+    },
+    { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+    { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
+    { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
+  ]
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
   // занятие (расписание), оставленная заявка (/mobile/trial-request) и ничего.
@@ -163,6 +215,7 @@ export default function HomePage({
       token={token}
       onNav={onNav}
       onProfile={onProfile}
+      onHelp={levelUnknown ? undefined : tour.start}
     >
       <div className="hm">
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
@@ -178,14 +231,14 @@ export default function HomePage({
             </button>
           </section>
         ) : (
-        <section className="hm-level">
+        <section className={`hm-level hm-level--${track.mode}`}>
           <div className="hm-level__body">
-            <span className="hm-level__label">{t('home.level.label')}</span>
+            <span className="hm-level__label">{t(reached ? 'home.level.labelReached' : 'home.level.label')}</span>
             <div className="hm-level__head">
               <h1 className="hm-level__name">
                 {summary.level} · {levelName}
               </h1>
-              {week > 0 && (
+              {!reached && week > 0 && (
                 <span className="hm-level__week">
                   <TrendIcon up />
                   {t('home.level.week', { n: String(week) })}
@@ -193,45 +246,80 @@ export default function HomePage({
               )}
             </div>
 
-            {/* Дорожка «Старт → следующие ступени → Финиш». Одинокая полоса
-                показывала только «сколько до соседнего уровня» — по ней не было
-                видно, куда путь ведёт дальше. Заполнен только первый отрезок:
-                процент считается до ближайшей ступени, дальние знать неоткуда. */}
-            <div className="hm-level__track">
-              <span className="hm-level__stop hm-level__stop--now">{t('home.level.start')}</span>
-              {stops.map((code, i) => (
-                <Fragment key={code}>
+            {/* Дорожка «Старт → ступени → Финиш». Одинокая полоса показывала
+                только «сколько до соседнего уровня» — по ней не было видно, куда
+                путь ведёт дальше. Заполнен только первый отрезок: процент
+                считается до ближайшей ступени, дальние знать неоткуда. У
+                достигнутой цели залито всё (класс hm-level--reached). */}
+            <div className={`hm-level__track${track.short ? ' is-short' : ''}`}>
+              <span className="hm-level__stop hm-level__stop--now">
+                <i className="hm-level__dot" aria-hidden="true" />
+                <span className="hm-level__lbl">{t('home.level.start')}</span>
+              </span>
+              {[...track.stops, null].map((code, i) => (
+                <Fragment key={code || 'finish'}>
                   <span className="hm-level__seg">
-                    {i === 0 && summary.percent !== null && (
+                    {i === 0 && !reached && summary.percent !== null && (
                       <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />
                     )}
                   </span>
-                  <span className="hm-level__stop">
-                    <FlagIcon />
-                    {t('home.level.stop', { level: code })}
-                  </span>
+                  {code ? (
+                    <span className="hm-level__stop">
+                      <FlagIcon />
+                      <span className="hm-level__lbl">
+                        {track.short ? code : t('home.level.stop', { level: code })}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="hm-level__stop hm-level__stop--finish">
+                      <FinishIcon />
+                      <span className="hm-level__lbl">
+                        {track.finish ? t('home.level.finishAt', { level: track.finish }) : t('home.level.finish')}
+                      </span>
+                    </span>
+                  )}
                 </Fragment>
               ))}
-              <span className="hm-level__seg" />
-              <span className="hm-level__stop hm-level__stop--finish">
-                <FinishIcon />
-                {t('home.level.finish')}
-              </span>
             </div>
+
+            {/* Цель достигнута — дальше учиться можно только следующим курсом,
+                и подпись «ещё N материалов» тут уже не про что. */}
+            {reached && (
+              <button type="button" className="hm-level__buy" onClick={() => onOpenPricing?.()}>
+                {t('home.level.buy')}
+                <ChevronIcon />
+              </button>
+            )}
 
             {/* Остаток — в материалах курса, а не в «примерно четырёх уроках»:
                 раньше его выводили из процента по средней отдаче занятия, потому
                 что самого курса в этих числах не было. Пока сервер не ответил,
                 подписи нет вовсе: правдоподобное число человек примет за своё. */}
-            {planLine && <p className="hm-level__plan">{planLine}</p>}
+            {reached
+              ? <p className="hm-level__plan">{t('home.level.reached')}</p>
+              : planLine && <p className="hm-level__plan">{planLine}</p>}
           </div>
 
-          {summary.next && (
+          {/* Медаль — она же вход в смену цели. Без выбора (потолок C2) это
+              просто плашка: кнопка, которая ничего не открывает, хуже никакой. */}
+          {reached ? (
+            <AssetImage className="hm-level__trophy" src="/assets/m/home/trophy.webp" alt="" />
+          ) : track.goal && (options.length ? (
+            <button
+              type="button"
+              className="hm-level__goal"
+              title={t('home.goal.change')}
+              onClick={() => setGoalOpen(true)}
+            >
+              <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
+              <span>{t('home.level.goal', { level: track.goal })}</span>
+            </button>
+          ) : (
             <div className="hm-level__goal">
               <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
-              <span>{t('home.level.goal', { level: summary.next })}</span>
+              <span>{t('home.level.goal', { level: track.goal })}</span>
             </div>
-          )}
+          ))}
         </section>
         )}
 
@@ -255,7 +343,7 @@ export default function HomePage({
                         />
                       </div>
                       <span className="hm-skill__pct">{percent}%</span>
-                      <span className="hm-skill__trend" aria-hidden="true">
+                      <span className={`hm-skill__trend hm-skill__trend--${band(percent)}`} aria-hidden="true">
                         <TrendIcon up={percent >= 60} size={18} />
                       </span>
                     </div>
@@ -348,6 +436,10 @@ export default function HomePage({
           </div>
         </div>
       </div>
+      {tour.open && <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />}
+      {goalOpen && (
+        <GoalDialog options={options} value={goalValue} onPick={pickGoal} onClose={() => setGoalOpen(false)} />
+      )}
     </LearningLayout>
   )
 }
@@ -360,25 +452,60 @@ function band(percent) {
   return 'low'
 }
 
-// Ступень впереди — флажок на пути: вешка, до которой ещё идти. Иконки
-// местные, как TrendIcon ниже: тащить их в общий icons.jsx ради одного экрана
-// незачем.
+// Ступень впереди — флажок на лунке (golf_course из макета): вешка, до которой
+// ещё идти. Иконки местные, как TrendIcon ниже: тащить их в общий icons.jsx
+// ради одного экрана незачем. Контуры — экспортом из Figma, не на глаз.
 function FlagIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M7 21V4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-      <path d="M7 5h9.5l-2.2 3.4L16.5 12H7z" fill="currentColor" />
+    <svg className="hm-level__ico" width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M14.0072 15.3265C13.6405 15.3265 13.3289 15.1982 13.0722 14.9415C12.8155 14.6849 12.6872 14.3732 12.6872 14.0065C12.6872 13.6399 12.8155 13.3282 13.0722 13.0715C13.3289 12.8149 13.6405 12.6865 14.0072 12.6865C14.3739 12.6865 14.6855 12.8149 14.9422 13.0715C15.1989 13.3282 15.3272 13.6399 15.3272 14.0065C15.3272 14.3732 15.1989 14.6849 14.9422 14.9415C14.6855 15.1982 14.3739 15.3265 14.0072 15.3265ZM7.04055 16.2432C5.72666 16.2432 4.60985 16.0675 3.69013 15.7161C2.77041 15.3646 2.31055 14.9421 2.31055 14.4487C2.31055 14.1206 2.49388 13.8243 2.86055 13.5599C3.22721 13.2954 3.80166 13.0776 4.58388 12.9065V13.6582C4.58388 13.8816 4.65911 14.0689 4.80956 14.2199C4.9599 14.371 5.14629 14.4465 5.36873 14.4465C5.59105 14.4465 5.7786 14.371 5.93138 14.2199C6.08416 14.0689 6.16055 13.8816 6.16055 13.6582V2.73153C6.16055 2.40764 6.3011 2.15556 6.58221 1.97528C6.86332 1.795 7.15055 1.7782 7.44388 1.92486L11.1105 3.7582C11.4283 3.91391 11.5903 4.17284 11.5964 4.53498C11.6025 4.89712 11.4405 5.16375 11.1105 5.33486L7.95721 6.92986V12.7074C9.08166 12.7668 9.99832 12.9549 10.7072 13.2717C11.4161 13.5885 11.7705 13.9773 11.7705 14.4381C11.7705 14.9448 11.3046 15.3724 10.3726 15.7207C9.44069 16.069 8.32999 16.2432 7.04055 16.2432Z"
+      />
     </svg>
   )
 }
 
-// Финиш — та же вешка, но в круге: конец пути, а не очередная ступень.
+// Финиш — флажок в круге (flag_circle из макета): конец пути, а не очередная ступень.
 function FinishIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.1" />
-      <path d="M10 17V7.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-      <path d="M10 8h5l-1.2 1.9L15 11.8h-5z" fill="currentColor" />
+    <svg className="hm-level__ico" width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7.0405 9.60619H8.5805L9.1855 10.5045C9.27105 10.639 9.38282 10.7429 9.52081 10.8162C9.6588 10.8895 9.8037 10.9262 9.9555 10.9262H12.6688C12.9169 10.9262 13.1287 10.8386 13.3041 10.6635C13.4795 10.4882 13.5672 10.2767 13.5672 10.029V7.13632C13.5672 6.88845 13.4795 6.67591 13.3041 6.49869C13.1287 6.32146 12.9169 6.23285 12.6688 6.23285H11.3672L10.7622 5.33452C10.6766 5.20007 10.5648 5.09618 10.4268 5.02285C10.2889 4.94952 10.144 4.91285 9.99216 4.91285H6.69216C6.44405 4.91285 6.2323 5.00055 6.05691 5.17593C5.88152 5.35132 5.79383 5.56307 5.79383 5.81119V12.9429C5.79383 13.1229 5.85353 13.2718 5.97294 13.3896C6.09223 13.5073 6.2389 13.5662 6.41294 13.5662C6.58687 13.5662 6.73494 13.5073 6.85716 13.3896C6.97938 13.2718 7.0405 13.1229 7.0405 12.9429V9.60619ZM8.80563 16.4262C7.7555 16.4262 6.76696 16.2275 5.84003 15.83C4.91309 15.4325 4.10239 14.8866 3.40793 14.1921C2.71346 13.4976 2.16749 12.6872 1.77003 11.7607C1.37256 10.8343 1.17383 9.8444 1.17383 8.79109C1.17383 7.7346 1.37293 6.7446 1.77113 5.82108C2.16933 4.89745 2.71627 4.08742 3.41196 3.391C4.10765 2.69446 4.91811 2.15063 5.84333 1.75952C6.76843 1.36841 7.75696 1.17285 8.80893 1.17285C9.8653 1.17285 10.8552 1.36841 11.7786 1.75952C12.7021 2.15063 13.5122 2.69452 14.2088 3.39119C14.9055 4.08785 15.4494 4.89947 15.8405 5.82603C16.2316 6.7526 16.4272 7.7426 16.4272 8.79603C16.4272 9.84947 16.2316 10.8376 15.8405 11.7604C15.4494 12.6831 14.9056 13.4924 14.209 14.1881C13.5126 14.8837 12.7012 15.4307 11.7749 15.8289C10.8486 16.2271 9.85882 16.4262 8.80563 16.4262Z"
+      />
+    </svg>
+  )
+}
+
+// Срок и число заданий в домашке — иконки schedule и assignment из макета.
+// На десктопе прячутся (.hm-hw__ico): там строки без иконок.
+function ClockIcon() {
+  return (
+    <svg className="hm-hw__ico" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7.65 8.35L8.35 7.65L6.5 5.8V3.5H5.5V6.2L7.65 8.35ZM6 11C5.30833 11 4.65833 10.8688 4.05 10.6063C3.44167 10.3438 2.9125 9.9875 2.4625 9.5375C2.0125 9.0875 1.65625 8.55833 1.39375 7.95C1.13125 7.34167 1 6.69167 1 6C1 5.30833 1.13125 4.65833 1.39375 4.05C1.65625 3.44167 2.0125 2.9125 2.4625 2.4625C2.9125 2.0125 3.44167 1.65625 4.05 1.39375C4.65833 1.13125 5.30833 1 6 1C6.69167 1 7.34167 1.13125 7.95 1.39375C8.55833 1.65625 9.0875 2.0125 9.5375 2.4625C9.9875 2.9125 10.3438 3.44167 10.6063 4.05C10.8688 4.65833 11 5.30833 11 6C11 6.69167 10.8688 7.34167 10.6063 7.95C10.3438 8.55833 9.9875 9.0875 9.5375 9.5375C9.0875 9.9875 8.55833 10.3438 7.95 10.6063C7.34167 10.8688 6.69167 11 6 11ZM6 10C7.10833 10 8.05208 9.61042 8.83125 8.83125C9.61042 8.05208 10 7.10833 10 6C10 4.89167 9.61042 3.94792 8.83125 3.16875C8.05208 2.38958 7.10833 2 6 2C4.89167 2 3.94792 2.38958 3.16875 3.16875C2.38958 3.94792 2 4.89167 2 6C2 7.10833 2.38958 8.05208 3.16875 8.83125C3.94792 9.61042 4.89167 10 6 10Z"
+      />
+    </svg>
+  )
+}
+
+function TasksIcon() {
+  return (
+    <svg className="hm-hw__ico" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M2.5 10.5C2.225 10.5 1.98958 10.4021 1.79375 10.2063C1.59792 10.0104 1.5 9.775 1.5 9.5V2.5C1.5 2.225 1.59792 1.98958 1.79375 1.79375C1.98958 1.59792 2.225 1.5 2.5 1.5H4.6C4.70833 1.2 4.88958 0.958333 5.14375 0.775C5.39792 0.591667 5.68333 0.5 6 0.5C6.31667 0.5 6.60208 0.591667 6.85625 0.775C7.11042 0.958333 7.29167 1.2 7.4 1.5H9.5C9.775 1.5 10.0104 1.59792 10.2063 1.79375C10.4021 1.98958 10.5 2.225 10.5 2.5V9.5C10.5 9.775 10.4021 10.0104 10.2063 10.2063C10.0104 10.4021 9.775 10.5 9.5 10.5H2.5ZM2.5 9.5H9.5V2.5H2.5V9.5ZM3.5 8.5H7V7.5H3.5V8.5ZM3.5 6.5H8.5V5.5H3.5V6.5ZM3.5 4.5H8.5V3.5H3.5V4.5ZM6.26875 2.01875C6.33958 1.94792 6.375 1.85833 6.375 1.75C6.375 1.64167 6.33958 1.55208 6.26875 1.48125C6.19792 1.41042 6.10833 1.375 6 1.375C5.89167 1.375 5.80208 1.41042 5.73125 1.48125C5.66042 1.55208 5.625 1.64167 5.625 1.75C5.625 1.85833 5.66042 1.94792 5.73125 2.01875C5.80208 2.08958 5.89167 2.125 6 2.125C6.10833 2.125 6.19792 2.08958 6.26875 2.01875Z"
+      />
+    </svg>
+  )
+}
+
+function ChevronIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8.40065 8L5.33398 4.93333L6.26732 4L10.2673 8L6.26732 12L5.33398 11.0667L8.40065 8Z" fill="currentColor" />
     </svg>
   )
 }
@@ -461,9 +588,11 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
     <section className="hm-card hm-sched">
       <h2 className="hm-card__title">{t('home.schedule.title')}</h2>
       <ul className="hm-sched__list">
-        {days.map(({ date, items }) => (
+        {days.map(({ date, items }, i) => (
           <li className="hm-sched__day" key={date.toISOString()}>
-            <span className={`hm-sched__date${items.length ? ' is-busy' : ''}`}>
+            {/* Сегодня — первая строка: на телефоне по макету её число в
+                красной плашке, чтобы неделя читалась от «сейчас». */}
+            <span className={`hm-sched__date${items.length ? ' is-busy' : ''}${i === 0 ? ' is-today' : ''}`}>
               <b>{date.getDate()}</b>
               <i>{date.toLocaleDateString(locale, { weekday: 'short' })}</i>
             </span>
@@ -480,6 +609,7 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
                   >
                     <b>{o.teacherName || t('home.schedule.lesson')}</b>
                     <i>{lessonTimeRange(o, lang === 'kk' ? 'kk' : 'ru')}</i>
+                    <span className="hm-sched__chev" aria-hidden="true"><ChevronIcon /></span>
                   </button>
                 ))}
               </span>
@@ -538,11 +668,19 @@ function HomeworkCard({ t, lang, items, onNav }) {
                   <b>{h.title}</b>
                   <span>
                     {h.dueDate && (
-                      <i>{t('home.homework.due', {
-                        date: new Date(h.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long' }),
-                      })}</i>
+                      <i>
+                        <ClockIcon />
+                        {t('home.homework.due', {
+                          date: new Date(h.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long' }),
+                        })}
+                      </i>
                     )}
-                    {count != null && <i>{t('home.homework.tasks', { n: String(count) })}</i>}
+                    {count != null && (
+                      <i>
+                        <TasksIcon />
+                        {t('home.homework.tasks', { n: String(count) })}
+                      </i>
+                    )}
                   </span>
                 </button>
               </li>
@@ -618,6 +756,10 @@ function PracticeToday({ t, onNav }) {
               <i>{t(`home.practice.${tile.key}.sub`)}</i>
             </span>
             <span className="hm-prac__emoji" aria-hidden="true">{tile.emoji}</span>
+            {/* Телефонный макет рисует плитки картинками вместо эмодзи (CSS
+                переключает одно на другое). lazy: на десктопе картинка скрыта и
+                грузиться ей незачем. */}
+            <AssetImage className="hm-prac__img" src={`/assets/m/home/prac-${tile.key}.webp`} alt="" loading="lazy" />
           </button>
         ))}
       </div>

@@ -3796,6 +3796,21 @@
   filter: brightness(1.06);
   transform: translateY(-1px);
 }
+/* Шаг ждёт выбора (canNext: false) — «Далее» видна, но приглушена. */
+.t-tour__ok:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: none;
+  transform: none;
+}
+/* Свой интерактив шага (выбор цели на «Главной») — под текстом. Карточке с
+   ним тесно в 300: шесть чипов уровней с подписями обрезались бы до «Elem…». */
+.t-tour__content {
+  margin-top: 14px;
+}
+.t-tour__pop:has(.t-tour__content) {
+  width: min(380px, calc(100vw - 32px));
+}
 @media (prefers-reduced-motion: reduce) {
   .t-tour__hole,
   .t-tour__pop,

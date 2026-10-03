@@ -31,6 +31,7 @@ import '../mobile/tutor.css'
 import '../mobile/learning.css'
 import '../mobile/practice.css'
 import '../mobile/practice-grammar.css'
+import '../mobile/home.css'
 import Providers from './providers.jsx'
 
 // Тот же дефолт, что в src/api.js (BASE) — держать в синхроне.
