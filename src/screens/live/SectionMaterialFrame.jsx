@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
 import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
+import LiveLoader from './LiveLoader.jsx'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -23,6 +24,27 @@ const OWN_STAGE_MS = 500
 // же present-event, что и настоящий) приходит сразу за ним; позже — уже
 // настоящий клик.
 const GOTO_ECHO_MS = 1000
+// Лоадер рамки (видео владельца 03.10): пока документ грузится и пока мост
+// проигрывает пачку — снимок «Внимания», догон, восстановление ответов после
+// F5. Конец проигрывания мост сообщает сам (jts-bridge/replay, busy:false);
+// старый мост этого не умеет, поэтому лоадер догона снимается и по длине пачки
+// (шаг проигрывания моста — REPLAY_GAP_MS), а любой — не позже CATCHUP_MAX_MS.
+const REPLAY_GAP_MS = 80
+const CATCHUP_MAX_MS = 15000
+
+// Лоадер документа `key`; не пустой — со страховкой по времени, чтобы рамку не
+// закрыло навсегда, если мост так и не сообщит конец проигрывания. Функция
+// модуля, а не компонента: её зовёт слушатель сообщений, и в зависимостях его
+// эффекта ей делать нечего (setCover и ref стабильны). Таймер прошлого
+// документа при смене не снимаем: он гасит лоадер только своего ключа.
+function scheduleCover(setCover, timerRef, key, phase, maxMs = CATCHUP_MAX_MS) {
+  clearTimeout(timerRef.current)
+  setCover({ key, phase })
+  if (phase == null) return
+  timerRef.current = setTimeout(() => {
+    setCover((current) => (current.key === key ? { key, phase: null } : current))
+  }, maxMs)
+}
 
 // Встраивает активный материал раздела прямо в страницу (никогда в новую
 // вкладку) — как web-admin. INTERACTIVE_HTML идёт через рендер-эндпоинт с
@@ -112,6 +134,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // отдаётся, а его отчёт о стадии — не готовность для своего перехода. Ref, а
   // не пропс: методы рамки и слушатель сообщений живут дольше рендера.
   const lessonNoRef = useRef(null)
+  // Лоадер поверх рамки: 'loading' — документ грузится или восстанавливает
+  // ответы, 'catchup' — догоняет преподавателя, null — рамка видна. Хранится с
+  // ключом документа: у нового документа лоадер включён сам, без setState в
+  // эффекте (сравнением в рендере ниже).
+  const [cover, setCover] = useState({ key: null, phase: null })
+  const documentKeyRef = useRef(null)
+  // Что сообщил мост о проигрывании этого документа: идёт ли пачка и не
+  // восстановление ли это (у него своя подпись — «Загружаем урок…»).
+  const replayRef = useRef({ busy: false, restoring: false })
+  const coverTimerRef = useRef(null)
   // Какой документ открыт в рамке. Адрес зависит не только от материала и
   // перезагрузки: у ученика — от страницы следования, у преподавателя — от
   // ученика, чей экран он смотрит (studentId в адресе). Сменилось любое из них —
@@ -134,6 +166,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   }, [material?.focusLessonNo])
 
   useLayoutEffect(() => {
+    documentKeyRef.current = documentKey
+    replayRef.current = { busy: false, restoring: false }
     loadedRef.current = false
     settledRef.current = false
     ownStageAtRef.current = null
@@ -282,6 +316,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     return true
   }
 
+  // Мост начал или закончил проигрывать пачку. Одиночное живое действие
+  // (size 1) лоадера не заслуживает; size -1 — восстановление ответов, длина
+  // которого станет известна после запроса. До осадки рамку и так закрывает
+  // лоадер загрузки — здесь только запоминаем, что идёт.
+  function handleReplayState(data) {
+    const replay = replayRef.current
+    if (data.busy) {
+      if (data.size === 1) return
+      replay.busy = true
+      if (data.size === -1) replay.restoring = true
+      if (settledRef.current) scheduleCover(setCover, coverTimerRef, documentKeyRef.current, replay.restoring ? 'loading' : 'catchup')
+      return
+    }
+    replayRef.current = { busy: false, restoring: false }
+    if (settledRef.current) scheduleCover(setCover, coverTimerRef, documentKeyRef.current, null)
+  }
+
   function handleLoad() {
     loadedRef.current = true
     const lessonNo = lessonNoRef.current
@@ -298,10 +349,18 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     clearTimeout(settleTimerRef.current)
     settleTimerRef.current = setTimeout(() => {
       settledRef.current = true
-      if (pendingRef.current.length) {
+      const batch = pendingRef.current.length
+      if (batch) {
         post({ type: 'present', events: pendingRef.current })
         pendingRef.current = []
       }
+      // Рамка осела: лоадер снимается, если ей нечего проигрывать. Пачку,
+      // отданную только что, мост начнёт сообщением чуть позже — лоадер
+      // переключаем сразу, иначе между ними мелькнула бы страница.
+      const replay = replayRef.current
+      if (replay.busy) scheduleCover(setCover, coverTimerRef, documentKeyRef.current, replay.restoring ? 'loading' : 'catchup')
+      else if (batch > 1) scheduleCover(setCover, coverTimerRef, documentKeyRef.current, 'catchup', Math.min(CATCHUP_MAX_MS, batch * REPLAY_GAP_MS + 1000))
+      else scheduleCover(setCover, coverTimerRef, documentKeyRef.current, null)
       // Снимок скрытия, накопленный, пока рамка ещё грузилась или не осела —
       // см. комментарий у setHiddenKeys/pendingHiddenKeysRef. null значит
       // «вызовов не было», и тогда слать нечего (совпадает с сегодняшним
@@ -354,6 +413,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         return
       }
       if (!data || data.source !== BRIDGE) return
+      if (data.type === 'replay') {
+        handleReplayState(data)
+        return
+      }
       if (!isStaff) {
         if (data.type === 'mirror') {
           onMirror?.({ selector: data.selector, eventType: data.eventType, value: data.value ?? null })
@@ -384,6 +447,15 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>
   }
 
+  const coverPhase = cover.key === documentKey ? cover.phase : 'loading'
+  const loader = (
+    <LiveLoader
+      className={`lw-frame-cover${coverPhase ? '' : ' is-hidden'}`}
+      hidden={!coverPhase}
+      label={t(coverPhase === 'catchup' ? 'live.catchingUp' : 'live.loadingLesson')}
+    />
+  )
+
   // "Урок из каталога" attaches as a LINK material pointing at the catalog's own storage, not an
   // uploaded INTERACTIVE_HTML file - but it's still an HTML page and the backend can now fetch and
   // bridge it the same way (see TeachingMaterialService.getRawHtmlForRender). Without this, it fell
@@ -394,14 +466,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   if (material.materialType !== 'INTERACTIVE_HTML' && !isCatalogHtml) {
     return (
-      <div className={`lw-material-frame${className}`}>
+      <div className={`lw-material-frame${className}`} aria-busy={coverPhase != null}>
         <iframe
           key={`${material.id}-plain`}
           src={material.fileUrl}
           title={material.title}
           className="lw-material-iframe"
           allow="autoplay"
+          onLoad={() => scheduleCover(setCover, coverTimerRef, documentKeyRef.current, null)}
         />
+        {loader}
       </div>
     )
   }
@@ -414,7 +488,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   })
 
   return (
-    <div className={`lw-material-frame${className}`}>
+    <div className={`lw-material-frame${className}`} aria-busy={coverPhase != null}>
       {/* allow="autoplay" — не украшение, а условие работы трансляции.
           Разрешение на автовоспроизведение выдаётся ДОКУМЕНТУ, а материал живёт
           в своём iframe: клики ученика по нашей странице этому документу ничего
@@ -432,6 +506,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         allow="autoplay"
         onLoad={handleLoad}
       />
+      {loader}
     </div>
   )
 })

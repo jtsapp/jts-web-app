@@ -3310,6 +3310,65 @@
      iframe без width это его дефолтные 300×150, ровно та поломка, что уже
      однажды была на этом месте (см. шапку файла). */
   width: 100%;
+  /* Лоадер (.lw-frame-cover) ложится поверх рамки, а не рядом с ней. */
+  position: relative;
+}
+
+/* --- лоадер ---------------------------------------------------------- */
+
+/* Кружок — общий .spinner (styles.css), тот же, что на входе и в пробном уроке;
+   здесь только размер под колонку урока и подпись. Подпись — --lw-ink-2, а не
+   --lw-muted: серый на белом не добирает контраста AA для мелкого текста. */
+.lw-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px 16px;
+  color: var(--lw-ink-2);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.lw-loader__spinner {
+  width: 36px;
+  height: 36px;
+  border-width: 3px;
+}
+
+/* Поверх рамки, пока она грузится и догоняет преподавателя: под ним пустой
+   белый лист и проигрывание потока (стадии мелькают одна за другой). Фон —
+   поверхность урока, поэтому смена «лоадер → урок» не вспыхивает. Уходит
+   затуханием 180 мс — урок проявляется, а не выскакивает. */
+.lw-frame-cover {
+  position: absolute;
+  inset: 8px;
+  z-index: 1;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-surface);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease-out, visibility 0s linear 0s;
+}
+
+.lw-frame-cover.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease-out, visibility 0s linear 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-frame-cover,
+  .lw-frame-cover.is-hidden {
+    transition: none;
+  }
+  /* Кружок не останавливаем — без движения он не говорит «идёт»; медленнее. */
+  .lw-loader__spinner {
+    animation-duration: 2.4s;
+  }
 }
 
 /* Документ урока и материал рисуются прямо в `.learn__main`, у которого своих

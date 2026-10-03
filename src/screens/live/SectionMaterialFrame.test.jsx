@@ -551,3 +551,122 @@ describe('SectionMaterialFrame — урок файла открывается п
   })
 })
 
+
+// Лоадер рамки (видео владельца 03.10): после выбора урока и после «Перенести
+// ученика сюда» рамка секундами стояла пустым белым листом, а затем на глазах
+// проигрывала поток преподавателя — стадии мелькали одна за другой. Лоадер
+// закрывает рамку, пока она грузится и пока мост проигрывает пачку; одиночное
+// живое действие его не вызывает.
+describe('SectionMaterialFrame — лоадер', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const cover = (container) => container.querySelector('.lw-frame-cover')
+  const shown = (container) => !cover(container).classList.contains('is-hidden')
+  const replayState = (busy, size) => message({ source: 'jts-bridge', type: 'replay', busy, size })
+  const EVENTS = [
+    { selector: '#a', eventType: 'click', value: null },
+    { selector: 'window', eventType: 'stage', value: '2' },
+    { selector: 'window', eventType: 'scroll', value: '0' },
+  ]
+
+  it('пока рамка грузится — «Загружаем урок…», после осадки скрыт', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame()
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+    expect(container.querySelector('.lw-material-frame').getAttribute('aria-busy')).toBe('true')
+
+    await settle(iframe)
+
+    expect(shown(container)).toBe(false)
+    expect(cover(container).getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelector('.lw-material-frame').getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('пачка показа, дождавшаяся загрузки, — «Переходим к преподавателю…» до сигнала моста «свободен»', async () => {
+    vi.useFakeTimers()
+    const { ref, container, iframe } = renderFrame({ follow: true })
+    act(() => { ref.current.replay(EVENTS) })
+
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Переходим к преподавателю')
+
+    await replayState(true, 3)
+    expect(shown(container)).toBe(true)
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('без сигнала моста (старый бэкенд) лоадер догона снимается сам, по длине пачки', async () => {
+    vi.useFakeTimers()
+    const { ref, container, iframe } = renderFrame({ follow: true })
+    act(() => { ref.current.replay(EVENTS) })
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+
+    await act(async () => { vi.advanceTimersByTime(EVENTS.length * 80 + 1000) })
+
+    expect(shown(container)).toBe(false)
+  })
+
+  it('одиночное живое действие лоадер не показывает', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+
+    await replayState(true, 1)
+    expect(shown(container)).toBe(false)
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('снимок осевшей рамке («Слушаем вместе» включили) — лоадер на время проигрывания', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+
+    await replayState(true, 12)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Переходим к преподавателю')
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('восстановление ответов (F5) держит «Загружаем урок…» и после осадки — до «свободен»', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    await replayState(true, -1)
+
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+
+    await replayState(true, 40)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('перезагрузка рамки (указка) — лоадер снова', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+    expect(shown(container)).toBe(false)
+
+    rerender(frame({ ref, follow: true, reloadToken: 1 }))
+
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+  })
+
+  it('видео/ссылка без моста — лоадер до загрузки рамки', async () => {
+    const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
+    const { container } = render(frame({ material: video }))
+    expect(shown(container)).toBe(true)
+
+    await act(async () => { container.querySelector('iframe').dispatchEvent(new Event('load')) })
+
+    expect(shown(container)).toBe(false)
+  })
+})
