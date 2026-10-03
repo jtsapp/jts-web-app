@@ -13,9 +13,10 @@ afterEach(() => {
 })
 
 describe('PICK_TUTORS — карточки экрана выбора', () => {
-  it('прод: трое в порядке макета, Айзере нет', async () => {
+  // С 03.10.2026 Айзере в проде: четыре карточки в порядке макета, KZ теста нет.
+  it('прод: четверо в порядке макета, Айзере четвёртая', async () => {
     const { PICK_TUTORS } = await load(false)
-    expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark'])
+    expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere'])
     for (const t of PICK_TUTORS) expect(t.figure).toMatch(/^\/tutor\/pick\/.+\.webp$/)
   })
 
@@ -24,26 +25,28 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere', 'jarvis'])
   })
 
-  // С 24.09.2026 Айзере говорит: на dev-стенде она полноценный тьютор — её
-  // можно выбрать, позвонить, увидеть в шапке звонка. Кнопка «Скоро» ей больше
-  // не нужна.
-  it('dev-стенд: Айзере — выбираемый тьютор с аватаркой', async () => {
-    const { PICK_TUTORS, TUTORS, getTutor, temperFor } = await load(true)
-    const aizere = getTutor('aizere')
-    expect(aizere.key).toBe('aizere')
-    expect(PICK_TUTORS.find((t) => t.key === 'aizere').comingSoon).toBeFalsy()
-    expect(TUTORS.map((t) => t.key)).toEqual(['luna', 'dexter', 'spark', 'aizere', 'jarvis'])
-    expect(aizere.avatar).toMatch(/^\/tutor\/.+\.png$/)
-    // Нрава 18+ нет, как у Луны: наверх уходит null, агент берёт базовую персону.
-    expect(temperFor('aizere', 'harsh')).toBeNull()
+  // Айзере — полноценный тьютор и на проде, и на стенде: её можно выбрать,
+  // позвонить, увидеть в шапке звонка. Старый сохранённый выбор 'aizere' больше
+  // не падает на тьютора по умолчанию.
+  it('Айзере — выбираемый тьютор с аватаркой на проде и на стенде', async () => {
+    for (const dev of [false, true]) {
+      const { PICK_TUTORS, TUTORS, getTutor, temperFor } = await load(dev)
+      const aizere = getTutor('aizere')
+      expect(aizere.key).toBe('aizere')
+      expect(PICK_TUTORS.find((t) => t.key === 'aizere').comingSoon).toBeFalsy()
+      expect(TUTORS.map((t) => t.key)).toEqual(
+        dev ? ['luna', 'dexter', 'spark', 'aizere', 'jarvis'] : ['luna', 'dexter', 'spark', 'aizere'],
+      )
+      expect(aizere.avatar).toMatch(/^\/tutor\/.+\.png$/)
+      // Нрава 18+ нет, как у Луны: наверх уходит null, агент берёт базовую персону.
+      expect(temperFor('aizere', 'harsh')).toBeNull()
+    }
   })
 
-  // Своих промпта и методички у неё ещё нет — на проде её нет нигде, а старый
-  // сохранённый выбор падает на тьютора по умолчанию.
-  it('прод: Айзере нет ни в TUTORS, ни в getTutor', async () => {
+  it('прод: KZ теста нет ни в TUTORS, ни в getTutor', async () => {
     const { TUTORS, getTutor, DEFAULT_TUTOR } = await load(false)
-    expect(TUTORS.some((t) => t.key === 'aizere')).toBe(false)
-    expect(getTutor('aizere')).toBe(DEFAULT_TUTOR)
+    expect(TUTORS.some((t) => t.key === 'jarvis')).toBe(false)
+    expect(getTutor('jarvis')).toBe(DEFAULT_TUTOR)
   })
 
   // Мобильная карусель (кадр 4338:1568): Декстер в центре, Луна слева, Спарк
