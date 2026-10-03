@@ -2,25 +2,26 @@ import { useState, useRef, useEffect } from 'react'
 import Logo from '../components/Logo.jsx'
 import LangSelector from '../components/LangSelector.jsx'
 import Footer from '../components/Footer.jsx'
-import {
-  ChevronLeftIcon,
-  SendIcon,
-  PhoneChatIcon,
-  GoogleIcon,
-} from '../components/icons.jsx'
+import { ChevronLeftIcon, SendIcon, PhoneChatIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 
-export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, error }) {
-  const { t, lang } = useI18n()
+// Регистрация — только через номер: почту берёт следующий шаг (reg-email).
+// Входа через Google здесь нет намеренно (решение владельца 04.10.2026): он
+// заводил аккаунт вовсе без номера, а в макете номер обязателен. Google
+// остался на экране входа (PasswordLoginPage).
+export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
+  const { t } = useI18n()
 
   // Реплики Декстера после того, как пользователь назвал имя.
   // delay — сколько «печатать» перед показом. В стейте лежат i18n-ключи, а не
   // готовые строки: перевод происходит при рендере, поэтому смена языка
   // селектором в шапке мгновенно переводит и уже показанные реплики.
+  // Четыре реплики — как в кадре 1434:5833; длинной про сказки и игры даём
+  // «печатать» дольше остальных.
   const dexterScript = [
     { key: 'dexter.nice', delay: 900 },
-    { key: 'dexter.motiv', delay: 1600 },
+    { key: 'dexter.features', delay: 1800 },
+    { key: 'dexter.fun', delay: 1200 },
     { key: 'dexter.toReg', delay: 1300 },
   ]
 
@@ -31,26 +32,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   const [value, setValue] = useState('')
   const [showAuth, setShowAuth] = useState(false)
   const [name, setName] = useState('')
-  const [googleReady, setGoogleReady] = useState(false)
   const listRef = useRef(null)
-  const googleRef = useRef(null)
   const timers = useRef([])
-
-  // Официальную кнопку рисует сам Google (GIS) — только когда диалог дошёл до
-  // вариантов входа. Перерисовываем при смене языка интерфейса.
-  useEffect(() => {
-    if (!showAuth || !isGoogleAuthEnabled()) return
-    let cancelled = false
-    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken, name), lang)
-      .then((ok) => {
-        if (!cancelled && ok) setGoogleReady(true)
-      })
-      .catch(() => {}) // остаётся фолбэк-кнопка
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAuth, lang])
 
   // Автоскролл вниз при новых сообщениях/индикаторе печати/появлении кнопок
   useEffect(() => {
@@ -89,7 +72,10 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   function send() {
     const text = value.trim()
     if (!text || typing || showAuth) return
-    setMessages((prev) => [...prev, { from: 'me', text }])
+    // В поле ученик вводит только имя — «Меня зовут» стоит перед полем
+    // неизменяемой приставкой (кадр 1434:6126), а пузырь показывает фразу
+    // целиком. Храним ключ, а не готовую строку, — как у реплик Декстера.
+    setMessages((prev) => [...prev, { from: 'me', key: 'chat.myName' }])
     setValue('')
     setName(text)
     playScript()
@@ -138,7 +124,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       key={i}
                       className={`bubble ${m.from === 'me' ? 'bubble--me' : 'bubble--dexter'}`}
                     >
-                      {m.from === 'me' ? m.text : t(m.key, { name })}
+                      {t(m.key, { name })}
                     </div>
                   ))}
 
@@ -151,8 +137,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                   )}
                 </div>
 
-                {/* Вход после диалога: номер телефона и Google. Apple ID с
-                    сайта убран по решению владельца. */}
+                {/* После диалога — одна кнопка: регистрация по номеру */}
                 {showAuth && (
                   <div className="auth">
                     <button
@@ -163,24 +148,6 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       <PhoneChatIcon size={18} />
                       <span>{t('auth.phone')}</span>
                     </button>
-
-                    {/* Вторая строка блока входа — в кадре там пара «Apple |
-                        Google»; Apple с сайта убран, поэтому Google занимает
-                        строку целиком. Кнопку рисует GIS; пока не отрисована
-                        или client ID не задан — неактивный фолбэк. */}
-                    <div className="auth-row">
-                      <div
-                        className="google-slot"
-                        ref={googleRef}
-                        style={googleReady ? undefined : { display: 'none' }}
-                      />
-                      {!googleReady && (
-                        <button className="auth-btn auth-btn--google" type="button" disabled>
-                          <GoogleIcon size={20} />
-                          <span>{t('auth.google')}</span>
-                        </button>
-                      )}
-                    </div>
                     {error && <div className="form-error">{error}</div>}
                   </div>
                 )}
@@ -189,8 +156,10 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
               {/* Поле ввода — пока идёт знакомство */}
               {!showAuth && (
                 <div className="chat__input">
+                  <span className="chat__prefix">{t('chat.prefix')}</span>
                   <input
                     type="text"
+                    aria-label={t('chat.prefix')}
                     placeholder={t('chat.placeholder')}
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
