@@ -81,10 +81,12 @@ describe('LessonSchedule container', () => {
     expect(container.querySelector('.lesson-card--empty')).not.toBeNull()
   })
 
-  // Тот самый случай: урок начали 8-го и не закрыли, календарь открыт на 10-м.
-  // Без карточки сверху ученику не попасть в класс — на своей клетке он видит
-  // только «преподаватель ещё не начал урок» про другое занятие.
+  // Тот самый случай: урок начали 8-го перед полуночью, а ученик зашёл уже
+  // 9-го, и календарь открыт на новом дне. Без карточки сверху ученику не
+  // попасть в класс — на своей клетке он видит только «преподаватель ещё не
+  // начал урок» про другое занятие.
   it('идущий урок с другого дня всё равно даёт вход в класс', async () => {
+    vi.setSystemTime(new Date(2026, 7, 9, 0, 30, 0))
     const api = await import('../../api.js')
     api.getMyLessonOccurrences.mockResolvedValueOnce([
       { lessonId: 49, participantId: 49, scheduledAt: '2026-08-08T23:59:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'IN_PROGRESS', format: 'ONLINE' },
@@ -100,6 +102,31 @@ describe('LessonSchedule container', () => {
     fireEvent.click(join)
 
     expect(opened).toEqual([49])
+  })
+
+  // Прод, 01.10.2026: преподаватель не нажимал «Завершить», урок 21 сентября
+  // так и остался IN_PROGRESS, и карточка вела в него вместо сегодняшнего.
+  it('забытый незакрытый урок не занимает карточку — вход ведёт в сегодняшний', async () => {
+    vi.setSystemTime(new Date(2026, 9, 1, 12, 0, 0))
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValueOnce([
+      { lessonId: 21, participantId: 21, scheduledAt: '2026-09-21T17:30:00', durationMinutes: 30, teacherName: 'Demo', lessonStatus: 'IN_PROGRESS', format: 'ONLINE' },
+      { lessonId: 101, participantId: 101, scheduledAt: '2026-10-01T17:30:00', durationMinutes: 30, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ])
+    const opened = []
+    const { container } = render(
+      <I18nProvider>
+        <LessonSchedule token={STUDENT} onOpenLesson={(id) => opened.push(id)} />
+      </I18nProvider>
+    )
+
+    const join = await screen.findByRole('button', { name: /присоединиться к уроку/i })
+    const card = container.querySelector('.lesson-card')
+    expect(card.textContent).toContain('Сегодня')
+    expect(card.textContent).not.toContain('Урок начался')
+
+    fireEvent.click(join)
+    expect(opened).toEqual([101])
   })
 
   // Ссылка на видеозвонок лежит в карточке урока, а не в списке occurrences —
