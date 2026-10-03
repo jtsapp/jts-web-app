@@ -1033,7 +1033,7 @@ class EchoFilter:
     # говорит, слово решает громкость: тише границы — эхо, громче — ученик.
     #
     # Сколько слов нужно, чтобы уровню верить.
-    MIN_LEVEL_WORDS = 3
+    MIN_LEVEL_WORDS = 5
     LEVEL_WORDS = 60
     # Уровня ученика ещё нет — эхо всё, что не громче эха вдвое (+6 дБ).
     QUIET_RATIO = 2.0
@@ -1044,6 +1044,8 @@ class EchoFilter:
     # этой доли его уровня — или, пока уровня ученика нет, вчетверо громче эха.
     MATCH_LEARNER_SHARE = 0.7
     MATCH_RATIO = 4.0
+    # Уровень эха не учим на словах громче этой доли уровня ученика.
+    LEARN_SHARE = 0.7
 
     def __init__(
         self,
@@ -1116,17 +1118,34 @@ class EchoFilter:
                 else None
             )
             infos.append((in_window, match, loud))
+        lettered = [i for i, text in enumerate(texts) if norm_word(text)]
         if final:
             # Учим уровни на законченной фразе — до решения по ней же: первая
             # фраза эха (приветствие) решается уже по своему уровню.
+            #
+            # Уровень эха — только с кусков, похожих на эхо: два совпавших слова
+            # подряд или длинное совпавшее слово, и не громче LEARN_SHARE уровня
+            # ученика. Живой зонд без эха: ученик перебивал «Тоқта, мен
+            # түсінбедім», одиночное «мен» совпадало с речью тьютора и учило
+            # «уровень эха» голосом ученика — после этого его же «Тоқта»
+            # выкидывалось как тихое эхо.
             limit = self.boundary()
-            for info in infos:
-                if info is None or info[2] is None:
+            _, learner = self.levels()
+            for j, i in enumerate(lettered):
+                in_window, match, loud = infos[i]
+                if loud is None:
                     continue
-                in_window, match, loud = info
                 if not in_window:
                     self._learner_levels.append(loud)
-                elif match and (limit is None or loud < limit):
+                    continue
+                if not match or (limit is not None and loud >= limit):
+                    continue
+                if learner is not None and loud >= learner * self.LEARN_SHARE:
+                    continue
+                run = any(
+                    0 <= k < len(lettered) and infos[lettered[k]][1] for k in (j - 1, j + 1)
+                )
+                if run or len(norm_word(texts[i])) >= 5:
                     self._echo_levels.append(loud)
         limit = self.boundary()
         override = self._match_override()
@@ -1147,19 +1166,28 @@ class EchoFilter:
             else:
                 echo[i] = match
                 by_text[i] = True
-        # Только для решений по тексту: короткое слово рядом со словами ученика
-        # — его слово, даже если тьютор тоже его говорил. Офлайн-стенд и живой
-        # зонд: «Тоқта, мен түсінбедім» и «Мен түсінбедім» поверх недавнего «Мен
-        # Айзеремін» — «мен» уходило в эхо. Эхо идёт сплошными кусками фразы
-        # тьютора: короткое слово эха стоит рядом с другим словом эха.
-        lettered = [i for i, text in enumerate(texts) if norm_word(text)]
+        # Только для решений по тексту: короткие слова рядом со словами ученика
+        # — его слова, даже если тьютор тоже их говорил. Офлайн-стенд и живые
+        # зонды: «Тоқта, мен түсінбедім», «Стоп, я не понял» — «мен», «я не»
+        # уходили в эхо. Эхо идёт сплошными кусками фразы тьютора с длинными
+        # словами; цепочка одних коротких между словами ученика — не эхо.
         raw = list(echo)
-        for j, i in enumerate(lettered):
-            if not raw[i] or not by_text[i] or len(norm_word(texts[i])) > 3:
+        j = 0
+        while j < len(lettered):
+            i = lettered[j]
+            if not (raw[i] and by_text[i] and len(norm_word(texts[i])) <= 3):
+                j += 1
                 continue
-            neighbours = [lettered[k] for k in (j - 1, j + 1) if 0 <= k < len(lettered)]
-            if any(not raw[n] for n in neighbours) and not any(raw[n] for n in neighbours):
-                echo[i] = False
+            k = j
+            while k < len(lettered) and raw[lettered[k]] and by_text[lettered[k]] and len(
+                norm_word(texts[lettered[k]])
+            ) <= 3:
+                k += 1
+            sides = [lettered[n] for n in (j - 1, k) if 0 <= n < len(lettered)]
+            if any(not raw[n] for n in sides) and not any(raw[n] for n in sides):
+                for n in range(j, k):
+                    echo[lettered[n]] = False
+            j = k
         kept: list[dict[str, Any]] = []
         dropped: list[str] = []
         kept_words = 0
