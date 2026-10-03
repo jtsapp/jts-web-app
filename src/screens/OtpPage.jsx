@@ -5,8 +5,14 @@ import { useI18n } from '../i18n.jsx'
 
 const LENGTH = 4
 
-export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, error }) {
+/**
+ * Ввод кода. channel — куда он ушёл: при регистрации бэкенд шлёт его на почту
+ * (RegisterEmailPage), при входе по коду — СМС. Заголовок «Мы отправили вам
+ * СМС-код» на шаге регистрации обманывал: письмо ждали в телефоне.
+ */
+export default function OtpPage({ phone, channel = 'sms', onBack, onSubmit, onResend, loading, error }) {
   const { t } = useI18n()
+  const byEmail = channel === 'email'
   const [digits, setDigits] = useState(Array(LENGTH).fill(''))
   const [seconds, setSeconds] = useState(60)
   const inputs = useRef([])
@@ -83,7 +89,7 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
       <div className="form-inner">
       <form className="form-card" onSubmit={submit}>
         <h2 className="form-title">
-          <Multiline text={t('otp.title')} />
+          <Multiline text={t(byEmail ? 'otp.titleEmail' : 'otp.title')} />
         </h2>
         <p className="form-sub">{t('otp.subtitle')}</p>
 
@@ -93,6 +99,7 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
               key={i}
               ref={(el) => (inputs.current[i] = el)}
               className={`otp-box ${d ? 'otp-box--filled' : ''}`}
+              placeholder="0"
               type="text"
               inputMode="numeric"
               maxLength={1}
@@ -107,12 +114,14 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
         {error && <div className="form-error">{error}</div>}
 
         <button className="form-primary" type="submit" disabled={!valid || loading}>
-          {loading ? t('otp.checking') : t('otp.submit')}
+          {loading ? t('otp.checking') : t(byEmail ? 'otp.submitEmail' : 'otp.submit')}
         </button>
 
         <p className="form-note form-note--center">
           {seconds > 0 ? (
-            t('otp.resendIn', { sec: seconds })
+            t(byEmail ? 'otp.resendInClockEmail' : 'otp.resendInClock', {
+              time: `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+            })
           ) : (
             <a href="#" onClick={(e) => { e.preventDefault(); resend() }}>
               {t('otp.resend')}

@@ -160,13 +160,18 @@
 
 /* Найденное слово: показывается на паузе после верного тапа. */
 .wd-fb {
-  position: absolute; right: 0; top: -6px; display: flex; align-items: baseline; gap: 8px;
+  position: absolute; right: 0; top: -6px; display: flex; align-items: center; gap: 8px;
   background: #fff; border: 1.5px solid var(--wd-green-line); border-radius: 14px; padding: 6px 14px;
   opacity: 0; transform: translateY(-6px); transition: opacity 0.18s, transform 0.18s; pointer-events: none;
 }
 .wd-fb--show { opacity: 1; transform: translateY(0); }
 .wd-fb b { font-size: 17px; font-weight: 800; }
 .wd-fb em { font-style: normal; font-size: 13px; color: var(--wd-ink-3); }
+.wd-fb__ok {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none;
+  border-radius: 50%; background: var(--wd-green-line); color: #fff;
+}
+.wd-fb__ok .wd-i { width: 13px; height: 13px; stroke-width: 3; }
 
 .wd-hint { min-height: 18px; width: 100%; font-size: 13px; color: var(--wd-red); }
 
@@ -194,8 +199,52 @@
 }
 .wd-sprite img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; }
 .wd-sprite:hover { filter: drop-shadow(0 0 10px rgba(135, 75, 248, 0.55)); }
-.wd-sprite--found { cursor: default; filter: grayscale(0.35) opacity(0.55); }
-.wd-sprite--found:hover { filter: grayscale(0.35) opacity(0.55); }
+/* Найденное остаётся в цвете, с галочкой и зелёным пятном под ногами — как в
+   прототипе. Серая заливка, что стояла здесь раньше, читалась как «выключено»,
+   а не как «угадал». */
+.wd-sprite--found { cursor: default; z-index: 2; }
+.wd-sprite--found:hover { filter: none; }
+.wd-sprite--found::before {
+  content: ''; position: absolute; left: 50%; bottom: -2%; width: 86%; height: 14%;
+  transform: translateX(-50%); border-radius: 50%; pointer-events: none; z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 212, 65, 0.55), rgba(0, 212, 65, 0));
+}
+.wd-sprite__badge {
+  position: absolute; right: -4px; top: -2px; width: 26px; height: 26px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--wd-green-line); color: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: wd-badge 0.35s cubic-bezier(0.2, 1.4, 0.3, 1) both;
+}
+.wd-sprite__badge .wd-i { width: 15px; height: 15px; stroke-width: 3; }
+@keyframes wd-badge {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+.wd-sprite--pop { animation: wd-pop 0.6s cubic-bezier(0.2, 1.4, 0.3, 1); }
+@keyframes wd-pop {
+  0%, 100% { transform: translate(-50%, -100%) scale(1); }
+  40% { transform: translate(-50%, -100%) scale(1.16); }
+}
+/* Вспышка и искры живут внутри кнопки: у неё transform, значит свой контекст
+   наложения, и z-index -1 уводит вспышку за картинку, но не за сцену. */
+.wd-glow {
+  position: absolute; left: 50%; top: 60%; width: 60%; aspect-ratio: 1; border-radius: 50%;
+  pointer-events: none; z-index: -1; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.9), rgba(0, 212, 65, 0.45) 40%, transparent 70%);
+  animation: wd-glow 0.9s ease-out forwards;
+}
+@keyframes wd-glow {
+  from { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  to { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+.wd-spark {
+  position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; border-radius: 50%;
+  pointer-events: none; animation: wd-spark 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes wd-spark {
+  from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); opacity: 0; }
+}
 .wd-sprite--no { animation: wd-no 0.42s ease; }
 @keyframes wd-no {
   0%, 100% { transform: translate(-50%, -100%); }
@@ -237,6 +286,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wd-speak--nudge,
-  .wd-sprite--no { animation: none; }
+  .wd-sprite--no,
+  .wd-sprite--pop,
+  .wd-sprite__badge { animation: none; }
+  /* Без движения искры застыли бы точками посреди картинки — их просто нет.
+     Галочка и звон остаются: это и есть отклик. */
+  .wd-glow,
+  .wd-spark { display: none; }
   .wd-fb { transition: none; }
 }

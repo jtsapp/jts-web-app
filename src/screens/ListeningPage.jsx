@@ -20,7 +20,9 @@ import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
-const normLevel = (lvl) => {
+// Экспорт — для звезды уровня на баннере Практики: она обязана показывать
+// тот же уровень, на котором откроется тренажёр.
+export const normLevel = (lvl) => {
   const l = String(lvl || 'a1').toLowerCase()
   return LEVELS.includes(l) ? l : 'a1'
 }
@@ -91,7 +93,8 @@ function AudioBlock({ src }) {
         <VolumeIcon size={26} />
       </button>
       <button type="button" className="lt-audio__slow" onClick={() => play(0.7)}>
-        🐢 {t('listening.listenSlow')}
+        {/* Эмодзи в обёртке — на телефоне вместо него улитка из макета. */}
+        <span className="lt-audio__ico" aria-hidden="true">🐢</span> {t('listening.listenSlow')}
       </button>
     </div>
   )
@@ -236,7 +239,14 @@ function Intro({ level, loading, onStart, doneCount }) {
       </div>
       <h2 className="lt-intro__title">{t('listening.introTitle')}</h2>
       <p className="lt-intro__sub">{t('practice.listening.desc')}</p>
-      <div className="lt-intro__hint">🎧 {t('listening.headphones')}</div>
+      {/* Эмодзи в своей обёртке: мобильный макет ставит на его место иконку
+          гарнитуры (src/mobile/practice.css). Внешний span держит строку
+          одним флекс-элементом — на десктопе раскладка прежняя. */}
+      <div className="lt-intro__hint">
+        <span>
+          <span className="lt-intro__ico" aria-hidden="true">🎧</span> {t('listening.headphones')}
+        </span>
+      </div>
       <button type="button" className="lt-primary" disabled={loading} onClick={onStart}>
         {loading ? t('practice.loading') : t('listening.start')}
       </button>

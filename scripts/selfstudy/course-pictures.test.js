@@ -36,3 +36,17 @@ describe('A0: картинки на месте', () => {
     expect(bad.map(({ where }) => where)).toEqual([])
   })
 })
+
+// Фото карточек ищет selfstudy/card-photos.js по индексам всех уровней, и в
+// индексе A0 есть строки на файлы, которых нет на диске. Карточка с таким
+// адресом показала бы пустую плашку вместо иконки.
+describe('фото карточек лежат на диске', () => {
+  for (const level of ['a0', 'a1', 'a2', 'b1', 'b2']) {
+    it(level, () => {
+      const missing = steps(level).flatMap(({ s, where }) =>
+        s.type === 'cards' ? s.words.filter((w) => w.img && !fs.existsSync(path.join(ROOT, 'public', w.img))).map((w) => `${where} ${w.img}`) : [],
+      )
+      expect(missing).toEqual([])
+    })
+  }
+})

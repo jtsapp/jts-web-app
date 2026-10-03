@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { VolumeIcon } from '../../components/icons.jsx'
+import { MicIcon, VolumeIcon } from '../../components/icons.jsx'
 import { plural } from '../../lib/plural.js'
 import { stripTags } from '../../practice/grammar/grammarData.js'
 import { PRACTICE_LEVELS } from '../../practice/practiceLevel.js'
@@ -29,7 +29,8 @@ function difficulty(level) {
 }
 
 // Точки сложности: у книг — точки и подпись, у караоке — ещё и сам уровень.
-function Dots({ level, cefr }) {
+// Экспорт — для плашки на обложке в обзоре книги (BookDetail).
+export function Dots({ level, cefr }) {
   const { t } = useI18n()
   const { dots, label } = difficulty(level)
   return (
@@ -140,7 +141,7 @@ export function Rail({ grid, className, children }) {
 // Промо-баннер тренажёра: градиент, заголовок, описание и белая кнопка.
 // Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
 // с артом — в макете заголовок в одну строку, перенос делает ширина.
-export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
+export function Banner({ id, variant, wide, title, desc, cta, onStart, badge }) {
   return (
     <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
       <div className="pk-banner__text">
@@ -151,7 +152,59 @@ export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
         {cta}
         <PkChevron size={18} />
       </button>
+      {/* Звезда с уровнем есть только в мобильном макете (Figma «Web
+          Адаптивка», 4254:2213): на десктопе её прячет src/mobile/practice.css. */}
+      {badge && (
+        <span className="pk-banner__badge">
+          <span className="pk-banner__badge-cap">{badge.caption}</span>
+          <span className="pk-banner__badge-lvl">{badge.level}</span>
+        </span>
+      )}
     </section>
+  )
+}
+
+// Карточка «Аркады» (вкладки «Говорение» и «Чтение»): зал мини-игр. Каждая
+// игра открывается своей кнопкой прямо из Практики, «Все игры» ведёт в зал.
+// Геометрия и кнопка — от широкого промо-баннера, картинка — Word Rush.
+export function ArcadeCard({ onOpen }) {
+  const { t } = useI18n()
+  const games = [
+    { key: 'speak', title: 'practice.arcade.speak.title', text: 'practice.arcade.speak.text', mic: true },
+    { key: 'runner', title: 'practice.arcade.runner.title', text: 'practice.arcade.runner.text' },
+  ]
+  return (
+    <div className="pk-arcade">
+      <div className="pk-arcade__text">
+        <h3 className="pk-arcade__title">
+          {t('practice.arcade.title')}
+          <span className="ar-beta ar-beta--light">{t('arcade.beta')}</span>
+        </h3>
+        <p className="pk-arcade__tagline">{t('practice.arcade.tagline')}</p>
+        <p className="pk-arcade__desc">{t('practice.arcade.desc')}</p>
+        <div className="pk-arcade__games">
+          {games.map((g) => (
+            <button key={g.key} type="button" className="pk-arcade__game" onClick={() => onOpen(g.key)}>
+              <b>{t(g.title)}</b>
+              <span>
+                {g.mic && <MicIcon size={13} />}
+                {t(g.text)}
+              </span>
+              <PkChevron size={16} />
+            </button>
+          ))}
+        </div>
+        <div className="pk-arcade__foot">
+          <button type="button" className="pk-banner__cta" onClick={() => onOpen(null)}>
+            {t('practice.arcade.cta')}
+            <PkChevron size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="pk-arcade__art" aria-hidden="true">
+        <img className="pk-arcade__cover" src="/arcade/runner/card.webp" alt="" loading="lazy" />
+      </div>
+    </div>
   )
 }
 

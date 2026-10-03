@@ -11,6 +11,7 @@ import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '..
 import { canControl, contentLocked } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
+import { useLessonLiveState } from './live/useLessonLiveState.js'
 import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
@@ -20,6 +21,7 @@ import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonSidePanel from './live/LessonSidePanel.jsx'
+import LessonTopics from './live/LessonTopics.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
@@ -36,10 +38,38 @@ import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
 import { knowsFocusTarget } from './live/followFocus.js'
+import { nextFollow } from './live/liveFollow.js'
+import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
+// Шапка занятия (ссылка на звонок, тема, состав) — опросом раз в 30 с. Статус
+// приходит состоянием занятия сразу, ждать опроса ему не нужно (спека
+// live-lesson-server-state §2 п.6). Пока сокет лежит или состояния ещё нет,
+// статус берётся из опроса — и опрос идёт раз в 5 с, как до состояния занятия
+// (решение владельца 28.09).
+const LESSON_POLL_MS = 30000
+const LESSON_POLL_NO_STATE_MS = 5000
+// Просьбы одного ученика про один материал чаще раза в 3 с не обслуживаются, а
+// запрос снимка без ответа рамки истекает через 5 с (snapshotQueue.js).
+const CATCH_UP_COOLDOWN_MS = 3000
+const SNAPSHOT_TIMEOUT_MS = 5000
+// Стадии класса нет или ученик за классом не идёт.
+const NO_CLASS_STAGE = { materialId: null, index: null }
+
+/** Стадия файлового урока, на которой стоит класс, — если она есть. */
+function classStageOf(live) {
+  return live.stageIndex != null ? { materialId: live.materialId, index: live.stageIndex } : NO_CLASS_STAGE
+}
+
+/**
+ * Есть ли что догонять: класс ведут на материале. У доски рамки класса на
+ * экране нет, и снимок её потока лёг бы в буфер показа без адресата.
+ */
+function wantsCatchUp(live) {
+  return Boolean(live?.leading) && live.materialId != null && live.focusView !== 'BOARD'
+}
 // Одна и та же пустота на все рендеры: новый `[]` каждый раз сбрасывал бы
 // мемоизацию маршрута ниже (см. lessonSteps/visibleSteps — та же причина).
 const NO_STAGES = []
@@ -88,7 +118,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
   const { roster: presenceRoster, connected: presenceConnected } = useLessonPresence(lessonId, token)
-  const pollRef = useRef(null)
 
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
@@ -104,6 +133,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // показать классу перевод, — а видел его до этого только сам.
   const [revealedCards, setRevealedCards] = useState(() => new Set())
   const followModeRef = useRef(false)
+  // Следует ли ученик за классом и какую указку уже применил — вход правила
+  // следования (liveFollow.js, спека §4.3). Ref, а не state: на экран это не
+  // выводится, а решать надо в обработчике состояния, синхронно.
+  const followRef = useRef({ following: false, focusSeq: null })
+  // Стадия файлового урока, на которую рамку ведёт класс, — пока ученик следует.
+  const [classStage, setClassStage] = useState(NO_CLASS_STAGE)
+  // Долг догоняющего снимка: ученик вошёл (или переподключился, или включил
+  // следование) посреди показа и должен попросить у преподавателя снимок его
+  // рамки — как только у него откроется свежая страница следования того же
+  // материала (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
+  const [catchUp, setCatchUp] = useState(null)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
   // (так открываются и материалы, которые преподаватель загрузил сам).
@@ -122,9 +162,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // полем `checked` в сохранённом прогрессе (stepProgress.js) — формат тот же
   // массив строк, просто теперь не голые id шагов.
   const [checkedSteps, setCheckedSteps] = useState(() => new Set())
-  // Шаг, на котором стоит преподаватель. Приходит только событием focus, поэтому
-  // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
-  // выдумывать ему позицию значило бы показывать ученику неправду.
+  // Шаг, на котором стоит преподаватель. Приходит только указкой (состояние
+  // занятия с сервера), поэтому, пока класс не ведут, бегунка «Т» на треке нет —
+  // и это честно: выдумывать ему позицию значило бы показывать ученику неправду.
   const [teacherStepId, setTeacherStepId] = useState(null)
   const [focusTargetId, setFocusTargetId] = useState(null)
   const [focusNonce, setFocusNonce] = useState(0)
@@ -143,10 +183,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
   const [presenting, setPresenting] = useState(false)
+  // Восстановление места и ведения персонала ждёт занятия (restoreFromFirstState).
+  const staffRestorePendingRef = useRef(false)
   const materialFrameRef = useRef(null)
   // Present events that arrived before the follow iframe mounted / finished
   // loading (same race web-admin solves with pendingPresent).
   const pendingPresentRef = useRef([])
+  // Преподаватель: кому отдать ответ рамки на request-snapshot — всему классу
+  // после «Внимания» или ученикам, попросившим догнать класс.
+  const [snapshotQueue] = useState(() => createSnapshotQueue({ cooldownMs: CATCH_UP_COOLDOWN_MS, timeoutMs: SNAPSHOT_TIMEOUT_MS }))
   // Focus can name a catalog step before that lesson's JSON has loaded; catalog
   // resolve used to always reset to steps[0] and wipe the teacher's target.
   const pendingFocusStepRef = useRef(null)
@@ -184,6 +229,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Тип занятия известен не всегда (урок ещё грузится) — тогда единственное, чем
   // можно ответить, это число участников, как было раньше.
   const groupLesson = isGroupLesson(lesson) ?? activeParticipants.length > 1
+  const isLessonTeacher = selfUserId != null && lesson?.teacherId != null && String(lesson.teacherId) === String(selfUserId)
   // Ученик: «Вас вызвали» и «Учитель смотрит ваш экран» (макет живого урока).
   // Имя преподавателя, а не флаг: в вызове ученик видит, кто его зовёт. Счётчик
   // нужен, чтобы повторный вызов был заметен — метка уже висит, и без него
@@ -238,13 +284,45 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function selectSection(sectionId) {
+    // Нажатый открытый раздел (вкладка или тема маршрута) — не уход с него:
+    // иначе он снимал бы следование ученика и отпускал класс у ведущего.
+    if (String(sectionId) === String(activeSectionId)) return
     setActiveSectionId(sectionId)
     // Материал выбирается заново: id из прошлого раздела в новом не найдётся,
     // и без сброса первый рендер сваливался бы на «первый по списку» молча.
     setActiveMaterialId(null)
+    leaveClass()
+    if (isStaff) {
+      // Ушёл с раздела — перестал вести. Сервер должен это знать: иначе
+      // вошедший ученик шёл бы к позиции, от которой преподаватель ушёл.
+      if (presenting) sendRelease()
+      setPresenting(false)
+      snapshotQueue.reset()
+    }
+  }
+
+  // Другой материал внутри раздела — такой же ручной уход, как другой раздел
+  // (решение владельца 27.09). Своя же вкладка — не выбор другого.
+  function selectMaterial(materialId) {
+    if (materialId === activeMaterial?.materialId) return
+    setActiveMaterialId(materialId)
+    leaveClass()
+  }
+
+  // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
+  // тянет только новая указка. Рамка снова своя, а не страница следования: на
+  // ней ученик работает, и ответы сохраняются. Указка на шаг, ждущая разбора
+  // урока, — тоже переход с классом: на выбранный им материал она не переезжает.
+  // Переключатель «Идти за преподавателем» гаснет вместе с уходом: он не должен
+  // обещать следование, которого нет, и вернуться к классу — одно нажатие.
+  function leaveClass() {
     setFollowMode(false)
     followModeRef.current = false
-    if (isStaff) setPresenting(false)
+    pendingFocusStepRef.current = null
+    followRef.current = { ...followRef.current, following: false }
+    setFollowTeacher(false)
+    setClassStage(NO_CLASS_STAGE)
+    setCatchUp(null)
   }
 
   // Урок каталога показываем разобранным на шаги, а не файлом в iframe.
@@ -331,7 +409,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       })
     return () => { cancelled = true }
     // lesson?.engine, а не весь lesson: движок не меняется после создания
-    // занятия, а полный объект приходит заново на каждом опросе (5с) — им в
+    // занятия, а полный объект приходит заново на каждом опросе (30 с) — им в
     // зависимостях эффект пересчитывал бы указку урока каталога без всякого
     // повода, на каждый тик.
     //
@@ -386,6 +464,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     ? liveTitles.map((title, index) => ({ index, title, taskCount: 0 }))
     : serverStages
   const currentStage = stageAt.materialId === activeMaterialKey ? stageAt.index : 0
+  // Стадия, до которой рамку преподавателя довести после загрузки: после F5 —
+  // стадия класса, после «Внимания» — та, на которой его нажали. «Внимание»
+  // перезагружает рамку, и новая страница открывается на стадии 0, а сервер на
+  // том же материале стадию класса не сбрасывает: без доводки класс и ведущий
+  // разошлись бы. Доводка — не действие преподавателя и классу не уходит
+  // (SectionMaterialFrame), поэтому стадию «Внимания» сервер получает на эхо
+  // своей указки (stageToShareRef, как сверка в web-admin).
+  const [stageRestore, setStageRestore] = useState(null)
+  const stageToShareRef = useRef(null)
 
   // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
   // Вырезать их на сервере нельзя: шаги приезжают из каталога — один и тот же урок на
@@ -490,16 +577,38 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const routeActiveId = onLessonSteps ? activeStepId : onFileStages ? String(currentStage) : activeSectionId
   const selectRouteStep = onLessonSteps ? selectLessonStep : onFileStages ? selectFileStage : selectSection
 
-  // Переход по стадии — через рамку: скрипт в файле кликает рельс стадий, и тот
-  // же клик зеркалом уходит собеседнику. Своего состояния у позиции нет — она
-  // вернётся сообщением `stage` от рамки (handleFrameStage), как и при переходе
+  // Переход по стадии — через рамку: скрипт в файле кликает рельс стадий. У
+  // ученика этот клик зеркалом уходит преподавателю, у ведущего классу уходит
+  // сама стадия (handleFrameStage → состояние занятия). Своего состояния у
+  // позиции нет — она вернётся сообщением `stage` от рамки, как и при переходе
   // кнопками внутри самого файла.
   function selectFileStage(id) {
     materialFrameRef.current?.gotoStage?.(Number(id))
   }
 
-  function handleFrameStage({ index }) {
+  function handleFrameStage({ index }, { own }) {
     setStageAt({ materialId: activeMaterialKey, index })
+    // Ведущий преподаватель сообщает стадию своей рамки серверу — за ней идут
+    // следующие ученики. Только после собственного действия: стадию в рамке
+    // двигают и открытие страницы, и работа просматриваемого ученика (см.
+    // SectionMaterialFrame). И только на материале класса: рамка другого
+    // материала говорит о своём, а не о том, что видит класс.
+    if (!own) return
+    if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey
+      && liveState.stageIndex !== index) {
+      sendStage(activeMaterialKey, index)
+    }
+  }
+
+  // Только на эхо своей указки — позиция та, на которую её слали. Указка из
+  // другой вкладки ведёт класс в другое место, и стадия этого «Внимания» ей не
+  // пара: отметка ждёт своего эха.
+  function shareStageAfterFocus(live) {
+    const stage = stageToShareRef.current
+    if (!stage || String(live.sectionId) !== String(stage.sectionId) || live.materialId !== stage.materialId) return
+    stageToShareRef.current = null
+    if (!live.leading || live.stageIndex === stage.index) return
+    sendStage(stage.materialId, stage.index)
   }
 
   function handleFrameStageList(titles) {
@@ -699,13 +808,197 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setFocusNonce((n) => n + 1)
   }
 
-  // --- Живая синхронизация (follow-me + зеркалирование) -------------------
-  // Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
-  // когда время видят обе стороны.
-  const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
+  // --- Состояние занятия (спека live-lesson-server-state) -----------------
+  //
+  // Где класс, ведёт ли преподаватель, стадия и таймер хранит сервер и шлёт
+  // целиком; сюда приходит каждое применённое состояние парой prev→next
+  // (useLessonLiveState). Раньше то же самое собиралось из разрозненных событий
+  // focus, и вошедший позже ученик не знал, куда смотрит класс.
+  function applyLiveState(next, prev) {
+    if (isStaff) {
+      applyStaffLiveState(next, prev)
+      return
+    }
+    const local = followRef.current
+    // Вырос focusSeq — это явная указка, а не смена стадии: только она
+    // перезагружает рамку, как раньше каждое событие focus.
+    const explicit = prev !== null && next.focusSeq > local.focusSeq
+    const { following, focusSeq, go } = nextFollow(local, prev, next)
+    followRef.current = { following, focusSeq }
+    setClassStage(following ? classStageOf(next) : NO_CLASS_STAGE)
+    // Долг снимается, когда ученик не следует, класс ушёл с материала, к доске
+    // или его отпустили, — и при явной указке: она сама перезагружает рамку, а
+    // её снимок преподаватель раздаёт всему классу, второй повторил бы поток.
+    // Функцией, а не по замыканию: долг мог появиться в этом же тике.
+    const keepsDebt = following && !explicit && wantsCatchUp(next)
+    setCatchUp((pending) => (pending && keepsDebt && next.materialId === pending.materialId ? pending : null))
+    if (go) goToClass(next, explicit)
+  }
 
-  const { connected: liveConnected, roster: liveRoster = [], sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
-    onTimer,
+  // Переход к позиции класса — тем же кодом, что применял указку раньше.
+  function goToClass(live, explicit) {
+    const target = {
+      view: live.focusView === 'BOARD' ? 'board' : 'lesson',
+      sectionId: live.sectionId,
+      materialId: live.materialId,
+      stepId: live.stepId,
+      questionId: live.questionId,
+    }
+    // Зов на доску адреса материала не несёт — раздел там ни при чём.
+    if (target.view === 'board') {
+      applyTeacherPointer(target)
+      return
+    }
+    // Позиции нет (занятие ещё никто не вёл) — идти некуда.
+    if (target.sectionId == null) return
+    // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
+    setTeacherStepId(target.stepId ?? target.sectionId)
+    // iframe catch-up только для HTML-материала. На шагах каталога
+    // reloadToken только лишний ре-рендер LessonContent.
+    const reloadsFrame = explicit && target.stepId == null
+    // Указка приносит снимок рамки преподавателя со всем потоком до неё:
+    // накопленное раньше проигралось бы поверх него второй раз.
+    if (reloadsFrame) pendingPresentRef.current = []
+    const run = () => {
+      applyTeacherPointer(target)
+      if (reloadsFrame) setReloadToken((n) => n + 1)
+    }
+    if (!knowsFocusTarget(sections, target)) {
+      // Раздел могли прикрепить после входа — перечитываем. Нет его и после
+      // этого (удалили посреди занятия) — ученик остаётся на месте (спека §9).
+      // Пока ответа не было, ученик мог уйти сам или прийти новая указка — тогда
+      // этот переход уже устарел.
+      const { focusSeq } = followRef.current
+      loadSections().then((list) => {
+        const follow = followRef.current
+        if (!follow.following || follow.focusSeq !== focusSeq) return
+        if (list?.some((s) => String(s.id) === String(target.sectionId))) run()
+      })
+      return
+    }
+    run()
+  }
+
+  // Преподаватель правило следования не применяет — он ведущий. Из состояния
+  // он берёт то, что терял после F5: ведёт ли он класс и где. Дальше — только
+  // ПЕРЕХОДЫ ведения (другая вкладка отпустила или повела класс): состояние с
+  // тем же leading свой presenting не трогает.
+  //
+  // «Ведёт» из состояния достаётся только преподавателю этого занятия и только
+  // вкладке на материале класса: иначе наблюдающий админ или вторая вкладка на
+  // другом материале тоже «вели» бы — отвечали на «догоните», слали стадию
+  // своей рамки. Остальным — пассивный признак (classLedElsewhere).
+  // Собственные действия вкладки («Внимание», отпустить) — у любого персонала.
+  function applyStaffLiveState(next, prev) {
+    if (prev === null) {
+      staffRestorePendingRef.current = true
+      restoreFromFirstState(next)
+      return
+    }
+    if (prev.leading && !next.leading) {
+      setPresenting(false)
+      snapshotQueue.reset()
+    } else if (!prev.leading && next.leading && isLessonTeacher && activeMaterialKey === next.materialId) {
+      setPresenting(true)
+    }
+    if (next.focusSeq > prev.focusSeq) shareStageAfterFocus(next)
+    // Указка из другой вкладки двигает бегунок «Т» и здесь.
+    if (next.focusSeq > prev.focusSeq && next.focusView !== 'BOARD' && next.sectionId != null) {
+      setTeacherStepId(next.stepId ?? next.sectionId)
+    }
+  }
+
+  // Первое состояние ждёт занятия: кто его преподаватель, знает только ответ
+  // занятия, а он может прийти и позже снимка. Применяется состояние на момент
+  // прихода занятия, а не первое: класс за это время могли отпустить.
+  function restoreFromFirstState(live) {
+    if (!staffRestorePendingRef.current || !live || !lesson) return
+    staffRestorePendingRef.current = false
+    const placed = restoreClassPosition(live)
+    const leads = Boolean(live.leading) && placed && isLessonTeacher
+    setPresenting(leads)
+    // Ведущий после F5 доводит свою рамку до стадии класса — это не его
+    // действие, и классу оно не уходит (handleFrameStage).
+    if (leads && live.materialId != null && live.stageIndex != null) {
+      setStageRestore({ materialId: live.materialId, index: live.stageIndex })
+    }
+  }
+
+  // Раздел и материал, на которых преподаватель вёл класс, — если раздел ещё
+  // существует. Разделы могут не успеть загрузиться к первому состоянию: тогда
+  // раздел ставится как есть, а loadSections оставит его, только если найдёт.
+  // true — вкладка встала на место класса.
+  function restoreClassPosition(live) {
+    if (live.sectionId == null) return false
+    if (sections.length && !sections.some((s) => String(s.id) === String(live.sectionId))) return false
+    setActiveSectionId(live.sectionId)
+    if (live.materialId != null) setActiveMaterialId(live.materialId)
+    if (live.stepId != null) {
+      pendingFocusStepRef.current = live.stepId
+      setActiveStepId(live.stepId)
+    }
+    setTeacherStepId(live.stepId ?? live.sectionId)
+    return true
+  }
+
+  // Снимок состояния — точка «только что вошёл или переподключился». Если класс
+  // ведут и ученик за ним следует, он просит у преподавателя снимок его рамки:
+  // сервер хранит, где класс, но не прокрутку и не открытые карточки внутри
+  // рамки (§10). Ушедшему самому снимок не нужен — он смотрит своё.
+  function handleLiveSnapshot(live) {
+    if (isStaff || !wantsCatchUp(live) || !followRef.current.following) return
+    oweCatchUp(live.materialId)
+  }
+
+  // Мост проигрывает снимок потоком кликов, и на странице, где действия уже
+  // применены, они повторились бы (переключатели, «далее», play). Поэтому долг
+  // заводится вместе с перезагрузкой рамки: погасить его можно только на
+  // странице материала класса, открытой уже после этого, — свежей.
+  function oweCatchUp(materialId) {
+    setCatchUp({ materialId })
+    setReloadToken((n) => n + 1)
+  }
+
+  // Ученик переключает «Идти за преподавателем». Выключение — тот же ручной
+  // уход (§7): стадия класса больше не двигает рамку, отложенное отменяется, а
+  // рамка уходит со страницы следования, где мост ответов не сохраняет.
+  // Включённый, пока класс ведут, — сразу к классу, как на входе: ждать
+  // следующей смены позиции значило бы стоять на месте неизвестно сколько.
+  function toggleFollowTeacher() {
+    if (followTeacher) {
+      leaveClass()
+      return
+    }
+    setFollowTeacher(true)
+    // Следует тот, кого застали за ведением (§4.3 п.1): без ведения включённый
+    // переключатель ждёт указки, а шаги неведущего преподавателя не тянут.
+    followRef.current = { ...followRef.current, following: Boolean(liveState?.leading) }
+    if (liveState?.leading) {
+      setClassStage(classStageOf(liveState))
+      goToClass(liveState, false)
+      // Пока ученик не следовал, поток показа шёл мимо него — просим снимок
+      // рамки, как на входе.
+      if (wantsCatchUp(liveState)) oweCatchUp(liveState.materialId)
+    }
+  }
+
+  // --- Живая синхронизация (follow-me + зеркалирование) -------------------
+  // Состояние занятия хранит сервер (спека live-lesson-server-state): снимок
+  // берётся на каждом подключении сокета, дальше приходит каналом state.
+  const { state: liveState, offset: liveOffset, onState: acceptLiveState, onConnect: syncLiveState } = useLessonLiveState(lessonId, token, {
+    onApply: applyLiveState,
+    onSnapshot: handleLiveSnapshot,
+  })
+  // Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
+  // когда время видят обе стороны. Время окончания — из состояния, поэтому
+  // вошедший позже ученик видит остаток, а не пустое место. Пока состояния нет,
+  // таймер «неизвестен» (undefined), а не «не идёт»: вход в идущий отсчёт не
+  // должен звучать как его старт.
+  const { remaining: timerLeft, expired: timerExpired } = useLessonTimer(liveState ? (liveState.timer ?? null) : undefined, liveOffset)
+
+  const { connected: liveConnected, roster: liveRoster = [], sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
+    onConnect: syncLiveState,
+    onState: acceptLiveState,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     //
@@ -720,30 +1013,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         onBlocked: () => setBlockedAudio(evt),
       })
     },
-    onFocus: (evt) => {
-      // Зов на доску адреса материала не несёт — раздел там ни при чём.
-      if (evt.view === 'board') {
-        if (!isStaff) applyTeacherPointer(evt)
-        return
-      }
-      if (evt.sectionId == null) return
-      // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
-      setTeacherStepId(evt.stepId ?? evt.sectionId)
-      if (isStaff) return
-      const run = () => {
-        applyTeacherPointer(evt)
-        // iframe catch-up только для HTML-материала. На шагах каталога
-        // reloadToken только лишний ре-рендер LessonContent.
-        if (evt.stepId == null) setReloadToken((n) => n + 1)
-      }
-      if (!knowsFocusTarget(sections, evt)) {
-        loadSections().then((list) => { if (list) run() })
-        return
-      }
-      run()
-    },
+    // Общий показ и адресный ответ на мою просьбу догнать класс (present/{self})
+    // приходят сюда одинаково — и одинаково ждут рамку.
     onPresent: (evt) => {
       if (isStaff) return
+      // Не следующему показ не адресован: к классу его вернёт указка, и она
+      // принесёт снимок рамки со всем потоком — копить мимо него нечего.
+      if (!followRef.current.following) return
       const events = evt.events || []
       if (!events.length) return
       // Material may still be switching after focus — buffer until iframe can replay.
@@ -764,6 +1040,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (reviewStudentId != null && evt.studentId != null && evt.studentId !== reviewStudentId) return
       materialFrameRef.current?.mirror?.(evt)
     },
+    onCatchUp: handleCatchUpRequest,
     onSectionsChanged: loadSections,
     // Учительский канал шагов слушает только преподаватель (см. хук).
     isStaff,
@@ -777,12 +1054,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // «где сейчас преподаватель».
       if (evt.senderName) setPeerName(evt.senderName)
       if (evt.stepId != null) setPeerStepId(evt.stepId)
-      // «Внимание на упражнение» включает followMode один раз (см. onFocus), но
+      // Указка включает followMode один раз (см. goToClass), но
       // без этого студента переносило бы только на первый шаг — дальше
       // преподаватель продолжает идти по уроку, а бегунок «Т» просто едет мимо
-      // застывшего экрана. Пока следование включено, каждый следующий шаг
-      // преподавателя переносит и сюда — до тех пор, пока студент сам не
-      // сменит раздел (см. selectSection, где followMode гасится).
+      // застывшего экрана. Пока ученик следует за классом, каждый следующий шаг
+      // преподавателя переносит и сюда; ушедшего сам, выключившего
+      // переключатель или отпущенного классом — нет (followRef, §4.3).
       if (!isStaff && evt.senderRole !== 'STUDENT') {
         // Teacher filled a word-bank gap (or corrected an answer) — apply it
         // here. A remount via applyTeacherPointer would wipe the uncontrolled
@@ -840,7 +1117,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         // ИЗМЕНЕНИЕ в ответе, поэтому она только адресату: у соседа по классу
         // на том вопросе не поменялось ничего, и прыжок туда он читает как
         // «со мной что-то сделали», без объяснений.
-        if (followTeacher
+        if (followRef.current.following
           && evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
           // Без questionId указка встаёт на начало шага (`block-0`) — ровно
           // то, что нужно тому, кого перенесло за классом, а не за правкой.
@@ -1197,14 +1474,42 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     sendPresent(activeMaterial.materialId, events)
   }
 
+  // Ученик вошёл посреди показа и просит догнать класс — отвечаем снимком
+  // своей рамки ему одному (handleBridgeSnapshot). Только пока ведём и только
+  // на том же материале: иначе снимок увёл бы его не туда. Рамки нет (доска,
+  // шаги разбора) — просьба в очередь не встаёт: она заняла бы отсечку и ждала
+  // ответа, которого не будет.
+  function handleCatchUpRequest(evt) {
+    if (!isStaff || !presenting || evt.studentId == null || !materialFrameRef.current) return
+    if (evt.materialId == null || evt.materialId !== activeMaterial?.materialId) return
+    if (snapshotQueue.ask(evt.studentId, evt.materialId)) materialFrameRef.current?.requestSnapshot?.()
+  }
+
+  // Ответ рамки на request-snapshot: после «Внимания» — всему классу, на
+  // просьбы догнать — адресно, каждому ждущему. Ничей ответ выбрасывается.
+  function handleBridgeSnapshot(events) {
+    if (!activeMaterial) return
+    const { everyone, students } = snapshotQueue.take()
+    if (everyone) {
+      sendPresent(activeMaterial.materialId, events)
+      return
+    }
+    students.forEach((studentId) => sendPresent(activeMaterial.materialId, events, studentId))
+  }
+
   function handleFocusClick() {
     if (!activeSectionId) return
     const stepId = onLessonSteps && activeStepId ? activeStepId : null
     sendFocus(activeSectionId, activeMaterial?.materialId ?? null, stepId, stepId ? 'block-0' : null)
-    // Своё эхо брокера сокет глушит, поэтому onFocus здесь не сработает —
-    // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
+    // Состояние с этой указкой вернётся сокетом только через сервер — бегунок
+    // «Т» и ведение ставим сразу, иначе преподаватель не увидит себя на треке.
     setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
     setPresenting(true)
+    const stageAtFocus = !onLessonSteps && stageAt.materialId === activeMaterialKey
+      ? { sectionId: activeSectionId, materialId: activeMaterialKey, index: stageAt.index }
+      : null
+    if (stageAtFocus) setStageRestore(stageAtFocus)
+    stageToShareRef.current = stageAtFocus
     // На шагах каталога iframe нет — достаточно focus (+ stepId внутри него).
     if (onLessonSteps && activeStepId) {
       sendStepProgress({
@@ -1220,13 +1525,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // After «Внимание» remounts the iframe, pull a snapshot once it can answer.
+  //
+  // Только на «Внимание» (у преподавателя reloadToken растёт лишь в
+  // handleFocusClick): ведение, пришедшее из состояния занятия (F5, вторая
+  // вкладка), рамку классу не пересылает — класс уже стоит на этой позиции, и
+  // повторный поток прошёл бы по его рамкам второй раз.
   useEffect(() => {
-    if (!presenting || !isStaff) return undefined
+    if (!isStaff || reloadToken === 0) return undefined
     const handle = setTimeout(() => {
+      snapshotQueue.askEveryone()
       materialFrameRef.current?.requestSnapshot?.()
     }, 500)
     return () => clearTimeout(handle)
-  }, [presenting, reloadToken, isStaff])
+  }, [reloadToken, isStaff, snapshotQueue])
+
+  // Сменился материал — запрос в рамку ушёл вместе со старой страницей, а её
+  // снимок ждавшим про старый материал не нужен.
+  useEffect(() => {
+    if (isStaff) snapshotQueue.reset()
+  }, [isStaff, snapshotQueue, activeMaterialKey])
 
   // Flush present events buffered while the follow iframe was mounting.
   useEffect(() => {
@@ -1252,18 +1569,22 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   useEffect(() => {
     if (!lessonId || !token) return undefined
     load()
-    // No STOMP status topic exists; a student polls so "teacher started" appears on its own.
-    if (!isStaff) {
-      pollRef.current = setInterval(() => {
-        getLessonById(token, lessonId).then((d) => {
-          setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
-          setState((s) => (s === 'ready' ? s : 'ready'))
-        }).catch(() => {})
-      }, 5000)
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, token, isStaff])
+  }, [lessonId, token])
+
+  // Статус приходит состоянием занятия; пока оно живо, опрос нужен только
+  // шапке — ссылка на звонок, тема, состав класса меняются редко.
+  const lessonPollMs = liveConnected && liveState ? LESSON_POLL_MS : LESSON_POLL_NO_STATE_MS
+  useEffect(() => {
+    if (!lessonId || !token || isStaff) return undefined
+    const handle = setInterval(() => {
+      getLessonById(token, lessonId).then((d) => {
+        setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
+        setState((s) => (s === 'ready' ? s : 'ready'))
+      }).catch(() => {})
+    }, lessonPollMs)
+    return () => clearInterval(handle)
+  }, [lessonId, token, isStaff, lessonPollMs])
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -1274,6 +1595,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId, token])
 
+  // Первое состояние персонала, пришедшее раньше занятия, применяется, как
+  // только занятие известно (restoreFromFirstState).
+  const lessonLoaded = lesson != null
+  useEffect(() => {
+    if (isStaff) restoreFromFirstState(liveState)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaff, lessonLoaded])
+
   async function act(fn) {
     setBusy(true)
     try { const updated = await fn(token, lessonId); if (updated) setLesson(updated); else await load() }
@@ -1281,7 +1610,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     finally { setBusy(false) }
   }
 
-  const status = lesson?.status
+  // Статус — из состояния занятия: пауза и завершение приходят сокетом сразу,
+  // а не со следующим опросом. Сервер хранит PAUSED до конца паузы и о конце
+  // не сообщает (§9) — его отмечает здесь один таймер по часам сервера. Пока
+  // состояния нет (старый бэкенд, снимок не пришёл) или сокет лежит и оно
+  // больше не обновляется — статус самого занятия из опроса шапки.
+  const pausedUntilMs = liveState?.status === 'PAUSED' ? (liveState.pausedUntilMs ?? null) : null
+  const [pauseEndedAt, setPauseEndedAt] = useState(null)
+  useEffect(() => {
+    if (pausedUntilMs == null) return undefined
+    const handle = setTimeout(() => setPauseEndedAt(pausedUntilMs), Math.max(0, pausedUntilMs - (Date.now() + liveOffset)))
+    return () => clearTimeout(handle)
+  }, [pausedUntilMs, liveOffset])
+  const status = liveState && liveConnected
+    ? (pausedUntilMs != null && pauseEndedAt === pausedUntilMs ? 'IN_PROGRESS' : liveState.status)
+    : lesson?.status
   // Урок открыт в любом состоянии, кроме отменённого: ученик заходит и делает
   // задания до того, как преподаватель нажал «Начать», на перерыве и после
   // «Завершить» (решение владельца 20.09.2026, spec-lesson-always-open).
@@ -1342,6 +1685,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // заданиями, и на рамку файлового материала — что из них на экране, зависит
   // от вида урока, а состояние одно.
   const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
+  // Класс ведут, но не из этой вкладки (другой преподаватель или вкладка,
+  // админ-наблюдатель): только признак — класс она не тянет и на «догоните» не
+  // отвечает.
+  const classLedElsewhere = isStaff && Boolean(liveState?.leading) && !presenting
   const contentReadOnly = contentLocked(isStaff)
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
@@ -1359,6 +1706,37 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     allStepsHidden,
     denied: catalogDenied,
   })
+
+  // Долг гасится одной просьбой, когда на экране рамка материала класса и это
+  // страница следования: на шагах разбора снимка рамки нет, на доске рамки нет
+  // вовсе, а рамке другого материала он чужой. Свежая она по построению — долг
+  // заведён вместе с её перезагрузкой (oweCatchUp); ответ ляжет в буфер показа
+  // и проиграется, когда она загрузится. Отправленная просьба помечается, а не
+  // стирается — стирать через setState в эффекте значит каскад рендеров.
+  const frameOnScreen = state === 'ready' && lesson != null && lessonOpen && tab === 'lesson' && view === 'file'
+  const catchUpSentRef = useRef(null)
+  useEffect(() => {
+    if (!catchUp || catchUpSentRef.current === catchUp) return
+    if (!frameOnScreen || !followMode || activeMaterialKey !== catchUp.materialId) return
+    catchUpSentRef.current = catchUp
+    // Снимок рамки преподавателя несёт весь поток до этой просьбы: накопленное
+    // раньше проигралось бы поверх него второй раз.
+    pendingPresentRef.current = []
+    sendCatchUp(catchUp.materialId)
+  }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
+
+  // Доводка уходит в рамку того материала, для которого заведена, — после
+  // перерисовки: «Внимание» и восстановление места меняют документ рамки, и
+  // вызов до неё достался бы закрывающейся странице. Рамка сама дождётся
+  // осадки новой. Одна доводка — один вызов; отмечается, а не стирается, по
+  // той же причине, что и просьба догнать класс выше.
+  const stageRestoreSentRef = useRef(null)
+  useEffect(() => {
+    if (!stageRestore || stageRestoreSentRef.current === stageRestore) return
+    if (!frameOnScreen || activeMaterialKey !== stageRestore.materialId || !materialFrameRef.current) return
+    stageRestoreSentRef.current = stageRestore
+    materialFrameRef.current.restoreStage(stageRestore.index)
+  }, [stageRestore, frameOnScreen, activeMaterialKey])
 
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
@@ -1448,7 +1826,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     <button
                       type="button"
                       className={`ls-follow ${followTeacher ? 'is-on' : ''}`}
-                      onClick={() => setFollowTeacher((v) => !v)}
+                      onClick={toggleFollowTeacher}
                       aria-pressed={followTeacher}
                       aria-label={t(followTeacher ? 'live.followOnHint' : 'live.followOffHint')}
                     >
@@ -1500,7 +1878,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               key={m.materialId}
                               type="button"
                               className={`ls-tab ${m.materialId === activeMaterial?.materialId ? 'ls-tab--active' : ''}`}
-                              onClick={() => setActiveMaterialId(m.materialId)}
+                              onClick={() => selectMaterial(m.materialId)}
                             >
                               {m.title || t('live.materialTab', { n: i + 1 })}
                             </button>
@@ -1516,8 +1894,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           Вызов ученик снимает сам: это обращение к нему, и
                           гасить его должен человек, а не таймер. Метку
                           просмотра снимает преподаватель, закрыв чужой экран. */}
-                      {(calledBy != null || watchedBy != null || savedWord != null || blockedAudio != null) && (
+                      {(calledBy != null || watchedBy != null || savedWord != null || blockedAudio != null || classLedElsewhere) && (
                         <div className="lv-flags" role="status">
+                          {classLedElsewhere && (
+                            <span className="lv-flag lv-flag--led">{t('live.classLedByTeacher')}</span>
+                          )}
                           {calledBy != null && (
                             <span className="lv-flag lv-flag--call" key={callNonce}>
                               {t('live.calledOnYou')}
@@ -1673,8 +2054,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           follow={followMode}
                           reloadToken={reloadToken}
                           presenting={presenting}
+                          stage={isStaff || classStage.materialId !== activeMaterialKey ? null : classStage.index}
                           onMirror={handleBridgeMirror}
                           onPresentEvent={handleBridgePresentEvent}
+                          onSnapshot={handleBridgeSnapshot}
                           onStage={handleFrameStage}
                           onStageList={handleFrameStageList}
                         />
@@ -1823,26 +2206,31 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             </svg>
           </button>
           {sheet === 'topics' ? (
-            <LessonSidePanel
-              steps={routeSteps}
-              activeStepId={routeActiveId}
-              statusById={routeStatusById}
-              onSelect={(id) => {
-                selectRouteStep(id)
-                setSheet(null)
-              }}
-              hiddenIds={routeHiddenIds}
-              teacherStepId={routeTeacherStepId}
-              teacherId={lesson?.teacherId}
-              teacherName={lesson?.teacherName}
-              participants={activeParticipants}
-              onlineUserIds={onlineUserIds}
-              selfUserId={selfUserId}
-              isStaff={isStaff}
-              reviewStudentId={reviewStudentId}
-              onWatch={watchStudent}
-              onCall={sendCall}
-            />
+            // Лист «Темы урока» (макет 4676:4312): заголовок со счётчиком и сразу
+            // строки — без вкладок «Темы / Группа». Участники остаются в панели
+            // под материалом на самой странице урока.
+            <div className="lw-card lv-side lv-side--sheet">
+              <div className="lv-topics__head">
+                <h2 className="lv-topics__title">{t('live.topicsSheetTitle')}</h2>
+                <span className="lv-topics__count">
+                  {t('live.topicsProgress', {
+                    n: Math.max(1, routeSteps.findIndex((s) => String(s.id) === String(routeActiveId)) + 1),
+                    total: routeSteps.length,
+                  })}
+                </span>
+              </div>
+              <LessonTopics
+                steps={routeSteps}
+                activeStepId={routeActiveId}
+                statusById={routeStatusById}
+                onSelect={(id) => {
+                  selectRouteStep(id)
+                  setSheet(null)
+                }}
+                hiddenIds={routeHiddenIds}
+                teacherStepId={routeTeacherStepId}
+              />
+            </div>
           ) : sheet === 'vocab' ? (
             <LessonDictionary token={token} defaultOpen incoming={savedWord ? { ...savedWord, n: savedWordNonce } : null} />
           ) : (

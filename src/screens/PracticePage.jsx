@@ -26,6 +26,7 @@ import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
+import { normLevel as listeningLevel } from './ListeningPage.jsx'
 import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
@@ -47,6 +48,7 @@ import {
   GrammarTile,
   WorkbookTile,
   SituationCard,
+  ArcadeCard,
 } from './practice/PracticeCards.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -755,6 +757,7 @@ export default function PracticePage({
               desc={t('practice.listening.desc')}
               cta={t('practice.listening.cta')}
               onStart={() => onNav?.('listening')}
+              badge={{ caption: t('practice.listening.byLevel'), level: listeningLevel(userLevel).toUpperCase() }}
             />
             <Banner
               id="sec-listenchoose"
@@ -778,6 +781,20 @@ export default function PracticePage({
             desc={t('practice.words.desc')}
             cta={t('practice.words.cta')}
             onStart={() => onNav?.('words')}
+          />
+        )
+
+      case 'speakspin':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-speakspin"
+            variant="speakspin"
+            wide
+            title={t('practice.speakspin.heading')}
+            desc={t('practice.speakspin.desc')}
+            cta={t('practice.speakspin.cta')}
+            onStart={() => onNav?.('speakspin')}
           />
         )
 
@@ -990,6 +1007,17 @@ export default function PracticePage({
                 <WorkbookTile key={l.code} level={l} index={i} onOpen={openWorkbookLevel} />
               ))}
             </Rail>
+          </section>
+        )
+
+      case 'arcade':
+        // Игр две и без уровней, поэтому ни «Посмотреть все», ни фильтра по
+        // уровню у секции нет. Вкладка едет с переходом: «Назад» из зала
+        // возвращает туда, откуда пришли (секция есть в двух вкладках).
+        return (
+          <section key={sec.id} id="sec-arcade" className="pk-sec">
+            {head(sec, t('practice.chip.arcade'))}
+            <ArcadeCard onOpen={(game) => onNav?.('arcade', { game, skill: tab })} />
           </section>
         )
 

@@ -13,9 +13,9 @@
 //            есть только у неё). Свой ключ — ELEVENLABS_API_KEY_JARVIS, если
 //            клон живёт в другом кабинете. Пути soniox/openai/fish рабочие:
 //            вернуть — TTS_PROVIDER_JARVIS. Тьютор dev-only (JARVIS_ENABLED).
-//   Aizere → ElevenLabs, ТОТ ЖЕ клон, что у Jarvis (стенд обкатывал её
-//            голос), но модель eleven_v3_conversational — казахский есть, вдвое
-//            дешевле v3. Свой ключ — ELEVENLABS_API_KEY_AIZERE, иначе общий.
+//   Aizere → ElevenLabs, свой клон «zere» (до 01.10.2026 — клон Jarvis),
+//            модель eleven_v4_turbo — казахский есть, вдвое дешевле v4.
+//            Свой ключ — ELEVENLABS_API_KEY_AIZERE, иначе общий.
 //            Пока dev-only (AIZERE_ENABLED).
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
@@ -71,7 +71,7 @@ const TUTOR_PROVIDER = {
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
   'jarvis-harsh': 'eleven',
-  aizere: 'eleven', // клон KZ-стенда, разговорная v3
+  aizere: 'eleven', // свой клон «zere», v4 Turbo
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
@@ -81,8 +81,8 @@ const FALLBACK_PROVIDER = 'soniox'
 // что зашит в agent.py.
 const DEXTER_VOICE_ID = process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
 const JARVIS_VOICE_ID = process.env.ELEVEN_VOICE_ID_JARVIS || '2ZqnRUaCU5IaXJ45uakV'
-// Зеркало ELEVEN_VOICE["aizere"] в agent.py: тот же клон, что у стенда.
-const AIZERE_VOICE_ID = process.env.ELEVEN_VOICE_ID_AIZERE || '2ZqnRUaCU5IaXJ45uakV'
+// Зеркало ELEVEN_VOICE["aizere"] в agent.py: свой клон «zere».
+const AIZERE_VOICE_ID = process.env.ELEVEN_VOICE_ID_AIZERE || 'o8Njj7tTSGK0GTiDKKes'
 const ELEVEN_VOICE = {
   dexter: DEXTER_VOICE_ID,
   'dexter-harsh': DEXTER_VOICE_ID,
@@ -95,8 +95,8 @@ const ELEVEN_MODEL = {
   'dexter-harsh': process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
   jarvis: process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
   'jarvis-harsh': process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
-  // Разговорная v3 — зеркало ELEVEN_MODEL["aizere"] в agent.py.
-  aizere: process.env.ELEVENLABS_MODEL_AIZERE || 'eleven_v3_conversational',
+  // v4 Turbo — зеркало ELEVEN_MODEL["aizere"] в agent.py.
+  aizere: process.env.ELEVENLABS_MODEL_AIZERE || 'eleven_v4_turbo',
 }
 const DEFAULT_ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
 // Совпадает с PERSONA_VOICE_SETTINGS["bro"] в agent.py: низкая stability +

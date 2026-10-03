@@ -64,6 +64,14 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(кнопкаОткрыть()).toBeTruthy()
   })
 
+  // Жалоба владельца 29.09: у выданного блока снимок — сырой текст самого блока
+  // («🛏 bedroom👍👎🍳 kitchen👍👎…»), и он стоял строкой «что задано».
+  it('выданный блок подписан «Фрагмент урока», а не сырым текстом блока', () => {
+    показать(карточка({ blockKeys: ['block@4:2'], stageTitlesSnapshot: '🛏 bedroom👍👎🍳 kitchen👍👎' }))
+    expect(screen.getByText('Фрагмент урока')).toBeTruthy()
+    expect(screen.queryByText(/bedroom/)).toBeNull()
+  })
+
   it('урок каталога открывается рамкой на этой же странице, а не новой вкладкой', async () => {
     const { container } = показать()
 
@@ -79,6 +87,18 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(frame.getAttribute('src')).toContain('assignmentId=24')
     // Главное в этой спеке: ученик остался в кабинете.
     expect(открытыеВкладки).toEqual([])
+  })
+
+  // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
+  // рендера, что у рамки, — с токеном ученика в строке запроса.
+  it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {
+    const { container } = показать()
+
+    кнопкаОткрыть().click()
+
+    await waitFor(() => expect(container.querySelector('.hw-frame__iframe')).not.toBeNull())
+    expect(screen.queryByText(/во весь экран/i)).toBeNull()
+    expect(container.querySelector('a[href*="/render"]')).toBeNull()
   })
 
   /* Заданиям на слух нужен autoplay: разрешение выдаётся документу, а материал

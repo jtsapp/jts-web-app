@@ -13,8 +13,9 @@
 //   public/course/<level>/audio/<хэш>.mp3 — записи курса (дедуп по содержимому)
 //
 // Картинки слов НЕ приходят из этого источника — в нём их нет вовсе, только
-// имена иконок. Поэтому карточка берёт фото из уже выгруженного
-// public/course/<level>/img-index.json: слово то же, снимок тот же.
+// имена иконок. Поэтому карточка берёт фото из уже выгруженных
+// public/course/<level>/img-index.json: слово то же, снимок тот же
+// (правила поиска — selfstudy/card-photos.js).
 //
 // Запуск (a1 — 36 МБ, нужна увеличенная куча):
 //   node --max-old-space-size=8192 scripts/extract-selfstudy-course.js \
@@ -24,6 +25,22 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { readSelfStudyCourse } = require('./selfstudy/read-course')
 const { lessonSteps, plain } = require('./selfstudy/steps')
+const { photoFinder, loadPhotoSources } = require('./selfstudy/card-photos')
+const { readingSteps } = require('./selfstudy/reading-steps')
+const { STAGE_NAMES, line } = require('./selfstudy/steps')
+
+/**
+ * Чтение урока из оригинального курса (data/course-reading/<level>.json,
+ * выгружает scripts/import-course-reading.js). Нет файла или урока в нём —
+ * урок остаётся с чтением self-study редакции.
+ */
+function readingSource(level, lang = 'ru') {
+  const file = path.join(ROOT, 'data/course-reading', `${level}.json`)
+  if (!fs.existsSync(file)) return () => null
+  const { lessons } = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const stage = line(STAGE_NAMES.read, lang)
+  return (no) => (lessons[String(no)] ? readingSteps(lessons[String(no)].html, { stage }) : null)
+}
 const { clipFixer, clipFixFiles, FIX_ROOT } = require('./selfstudy/clip-fixes')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
@@ -62,29 +79,6 @@ function writeAudio(course, outDir) {
   return { byKey, written }
 }
 
-// Ключ слова для поиска фото: регистр, апостроф и знаки препинания у двух
-// поколений курса пишутся по-разному («don’t like» против «don't like»), и
-// точное совпадение находило 16 слов A0 из 266 вместо 51.
-const imgKey = (w) =>
-  String(w || '')
-    .toLowerCase()
-    .replace(/[‘’]/g, "'")
-    .replace(/[^a-z' ]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-/** Фото слова из прошлой выгрузки курса (нового источника картинок нет). */
-function imageIndex(outDir) {
-  const file = path.join(outDir, 'img-index.json')
-  if (!fs.existsSync(file)) return new Map()
-  try {
-    const raw = JSON.parse(fs.readFileSync(file, 'utf8'))
-    return new Map(Object.keys(raw).map((k) => [imgKey(k), raw[k]]))
-  } catch {
-    return new Map()
-  }
-}
-
 /** Записанная озвучка слова (scripts/make-lesson-audio.js), если она есть. */
 function wordAudioLookup(level) {
   const dir = path.join(ROOT, 'public/learning/audio', level)
@@ -108,7 +102,8 @@ function build(file) {
     course.audio[`fix:${rel}`] = fs.readFileSync(path.join(FIX_ROOT, rel)).toString('base64')
   }
   const { byKey, written } = writeAudio(course, outDir)
-  const imgs = imageIndex(outDir)
+  const photo = photoFinder(loadPhotoSources(path.join(ROOT, 'public'), course.level))
+  const reading = readingSource(course.level)
   const wordAudio = wordAudioLookup(course.level)
 
   // Ключ клипа у A0/A2 живёт внутри урока, у A1 — общий на уровень: пробуем
@@ -141,7 +136,7 @@ function build(file) {
     level: course.level,
     video: videoUrl(unit),
     clip: (key, role) => fixes.clip(lessonKey, key, role),
-    img: (word) => imgs.get(imgKey(word)) || null,
+    img: (word, translation) => photo(word, translation),
     // Картинки вариантов «выберите картинку» — иконки самого курса.
     icon: (name) => course.icons[name] || null,
     wordAudio,
@@ -155,7 +150,7 @@ function build(file) {
   const lessons = []
   let stepCount = 0
   for (const lesson of course.lessons) {
-    const steps = lessonSteps(lesson, course.perItem, makeCtx(lesson))
+    const steps = lessonSteps(lesson, course.perItem, { ...makeCtx(lesson), reading: reading(lesson.no) })
     stepCount += steps.length
     const name = `steps-${lesson.no}.json`
     // Подпись урока у A0 в меню курса трёхъязычная, у A1/A2 — строкой. Плеер

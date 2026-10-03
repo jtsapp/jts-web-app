@@ -37,11 +37,12 @@ export default function WelcomePage({ onRegister, onLogin }) {
           </div>
         </header>
 
-        {/* Герой */}
-        <section
-          className="hero"
-          style={{ backgroundImage: 'url(/assets/hero-london.jpg)' }}
-        >
+        {/* Герой. Картинки — в CSS, а не инлайном: на десктопе кадр рисуют
+            два слоя (подложка и ::after, см. styles.css), и инлайновый фон
+            самой секции было бы не снять; на телефоне mobile/registration.css
+            ставит свой кроп 440×955. */}
+        <section className="hero">
+          <div className="hero__backdrop" aria-hidden="true" />
           <div className="hero__content">
             <h1 className="hero__title">
               {t('welcome.title')

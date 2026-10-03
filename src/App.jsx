@@ -27,8 +27,10 @@ import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
+import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
+import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -113,7 +115,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -244,6 +246,12 @@ export default function App() {
     if (deepLink === 'listenchoose') {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
+    }
+    // ?screen=arcade&game=runner — сразу в игру «Аркады», минуя зал: без
+    // этого проверить Word Rush по ссылке можно было бы только кликом.
+    if (deepLink === 'arcade') {
+      const game = searchParams.get('game')
+      if (game) setArcadeTarget({ game })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -516,6 +524,9 @@ export default function App() {
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
+  // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
+  // вернуться): { game: 'speak'|'runner'|null, skill }.
+  const [arcadeTarget, setArcadeTarget] = useState(null)
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1223,9 +1234,11 @@ export default function App() {
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
+    else if (key === 'speakspin') setScreen('speakspin')
     // Уровень приносит карточка Практики — она же и списала квоту.
     else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
+    else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1269,7 +1282,9 @@ export default function App() {
     else if (key === 'reading') setScreen('reading')
     else if (key === 'words') setScreen('words')
     else if (key === 'verbs') setScreen('verbs')
+    else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'listenchoose') setScreen('listenchoose')
+    else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1448,6 +1463,9 @@ export default function App() {
       return (
         <OtpPage
           phone={mode === 'register' ? email : phone}
+          // Куда ушёл код, видно по самому адресату: регистрация шлёт его на
+          // почту, вход по коду — туда, что ввели (номер или почту).
+          channel={isEmailIdentifier(mode === 'register' ? email : phone) ? 'email' : 'sms'}
           onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-birth' : 'phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
@@ -1669,6 +1687,16 @@ export default function App() {
           onProfile={() => setScreen('profile')}
         />
       )
+    case 'speakspin':
+      return (
+        <SpeakSpinPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'verbs':
       return (
         <VerbsPage
@@ -1698,6 +1726,17 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={listenChooseTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'arcade':
+      return (
+        <ArcadePage
+          initialTarget={arcadeTarget}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -1748,7 +1787,9 @@ export default function App() {
       // обратно на экран класса — тот вернёт его в тот же урок. onLessonClosed
       // передаём только аккаунту класса: обычный ученик и преподаватель этот
       // проп не получают, и их сценарий не меняется ни на йоту.
-      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
+      // key — урок: следование за классом, очередь снимков и буфер показа живут
+      // в ref-ах экрана и не должны переживать смену занятия.
+      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':

@@ -51,11 +51,9 @@ export function materialCard(a) {
     // одну карточку из тридцати не сообщает ученику ничего: он не поймёт, что
     // именно ему задали, пока не откроет урок и не пролистает его целиком.
     title: a.cardTitle || a.materialTitle,
-    // Что именно задано («Урок целиком», «Practice · Задание 1, …») — снимок
-    // подписей с сервера (stage_titles_snapshot). Заголовок карточки — название
-    // материала, а задают из него урок или пару заданий; без этой строки ученик
-    // в списке не отличит две выдачи по одному файлу уровня.
-    stageTitlesSnapshot: a.stageTitlesSnapshot ?? null,
+    // Что именно задано, список выводит из самой выдачи (assignment ниже) через
+    // assignmentScope — плоская копия снимка тут показывала бы и сырой текст
+    // выданного блока, который ученику не показывают.
     // Статус и просрочку считает СЕРВЕР (MaterialAssignmentService.statusOf) — здесь
     // их больше не выводят. Раньше выводили: «есть вложения — значит сдана», своей
     // копией правила в каждом клиенте. Копии успели разойтись, а по работе, которая
@@ -65,6 +63,11 @@ export function materialCard(a) {
     isOverdue: a.isOverdue,
     dueDate: a.dueDate ?? null,
     grade: a.teacherScore ?? null,
+    // Преподаватель закрыл выдачу без сдачи (та же отметка, что у домашней
+    // работы, spec §5.7) — без неё homeworkStateKey не отличал такую выдачу от
+    // настоящей проверки, и список показывал зелёное «Проверено» тому, чей
+    // ответ преподаватель не открывал.
+    closedWithoutSubmission: a.closedWithoutSubmission,
     assignment: a,
   }
 }
@@ -109,6 +112,35 @@ export function isLessonCard(a) {
 
 /** Файл урока каталога — та же примета, по которой его узнаёт живой урок (SectionMaterialFrame). */
 const CATALOG_LESSON_FILE = /\/course-catalog\/.*\.html?(?:[?#]|$)/i
+
+/**
+ * Что именно задано из материала — строка под его названием: ключ словаря
+ * (`{ key }`) или готовый текст сервера (`{ text }`); null — строки нет.
+ *
+ * <p>Снимок stageTitlesSnapshot пишет сервер (MaterialAssignmentService.resolveScope):
+ * у заданий и стадий это собранные им подписи («Practice · Задание 1, …»), у
+ * урока файла целиком — «Урок целиком», у простого файла снимка нет вовсе. Но
+ * подпись текстового блока у файла без ключей присылает страница — это сырой
+ * текст самого блока (blockText моста режет textContent до 80 символов): эмодзи,
+ * слова вперемешку, обрыв на полуслове. Ученик читал под заголовком
+ * «🛏 bedroom👍👎🍳 kitchen👍👎…». Такой снимок не показываем никогда: блок
+ * называется «Фрагмент урока», а какой именно — видно, когда рамка открывается
+ * на нём.
+ *
+ * <p>У карточки урока строки нет: её название (materialCard.title) уже и есть то,
+ * что задано.
+ *
+ * <p>То же правило у преподавателя (web-admin, assignment-title.util.ts →
+ * assignmentScope): что задали, обе стороны обязаны называть одинаково.
+ */
+export function assignmentScope(a) {
+  if (!a || isLessonCard(a)) return null
+  if ((a.blockKeys?.length ?? 0) > 0) return { key: 'homework.scope.fragment' }
+  const snapshot = String(a.stageTitlesSnapshot ?? '').trim()
+  if ((a.taskTids?.length ?? 0) > 0) return snapshot ? { text: snapshot } : { key: 'homework.scope.tasks' }
+  if ((a.stageIndexes?.length ?? 0) > 0) return snapshot ? { text: snapshot } : { key: 'homework.scope.stages' }
+  return snapshot ? { text: snapshot } : null
+}
 
 /**
  * Выдан конкретный кусок материала, а не он весь.

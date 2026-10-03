@@ -18,24 +18,25 @@ test.use({
 })
 
 test.describe('Тьютор — режим рации', () => {
-  test('тумблер включается и переживает перезагрузку', async ({ page }) => {
+  test('рация включена по умолчанию, выключение переживает перезагрузку', async ({ page }) => {
     await page.goto('/?screen=tutor-manage')
     const toggle = page.locator(SWITCH)
     await expect(toggle).toBeVisible({ timeout: 15000 })
-    await expect(toggle).toHaveAttribute('aria-checked', 'false')
-
-    await toggle.click()
+    // С 01.10.2026 рация — режим по умолчанию: в шуме кнопка задаёт конец хода
+    // точнее детектора.
     await expect(toggle).toHaveAttribute('aria-checked', 'true')
 
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-checked', 'false')
+
     // Настройка живёт на устройстве (localStorage) — значит должна пережить
-    // перезагрузку страницы, иначе ученик включал бы её перед каждым звонком.
+    // перезагрузку страницы, иначе ученик выключал бы её перед каждым звонком.
     await page.reload()
-    await expect(page.locator(SWITCH)).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator(SWITCH)).toHaveAttribute('aria-checked', 'false')
   })
 
-  test('включённый тумблер уезжает в запрос токена комнаты', async ({ page, context }) => {
+  test('рация по умолчанию уезжает в запрос токена комнаты', async ({ page, context }) => {
     await context.grantPermissions(['microphone'])
-    await page.addInitScript(() => localStorage.setItem('jts:tutor:pushToTalk', '1'))
 
     let body = null
     // Отвечаем отказом по дневному лимиту: экран покажет сообщение и не полезет
@@ -56,6 +57,7 @@ test.describe('Тьютор — режим рации', () => {
 
   test('выключенный тумблер флаг не шлёт', async ({ page, context }) => {
     await context.grantPermissions(['microphone'])
+    await page.addInitScript(() => localStorage.setItem('jts:tutor:pushToTalk', '0'))
     let body = null
     await page.route('**/api/livekit/token', async (route) => {
       body = route.request().postDataJSON()

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   materialCard, isMaterialGraded, isInteractiveMaterial, isCatalogHtmlLink, isLessonCard,
-  hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson,
+  hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson, assignmentScope,
 } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
 
@@ -59,12 +59,26 @@ describe('materialCard', () => {
     expect(homeworkStateKey(просрочена, new Date(2026, 7, 20))).toBe('overdue')
   })
 
-  it('переносит снимок «что задано» на карточку — списку нужна строка, а не назначение', () => {
-    const card = materialCard(assignment({ stageTitlesSnapshot: 'Practice · Задание 1, Listening · Задание 2' }))
-    expect(card.stageTitlesSnapshot).toBe('Practice · Задание 1, Listening · Задание 2')
+  // Строку «что задано» список выводит из самой выдачи (assignmentScope), а не из
+  // плоской копии снимка: та показала бы и сырой текст выданного блока.
+  it('несёт саму выдачу — из неё список выводит, что задано', () => {
+    const выдача = assignment({ taskTids: ['lis-tick'], stageTitlesSnapshot: 'Practice · Задание 1, Listening · Задание 2' })
+    const card = materialCard(выдача)
+    expect(card.assignment).toBe(выдача)
+    expect(assignmentScope(card.assignment)).toEqual({ text: 'Practice · Задание 1, Listening · Задание 2' })
+  })
 
-    // Старая выдача без снимка — null, а не undefined: карточка плоская, поле есть всегда.
-    expect(materialCard(assignment()).stageTitlesSnapshot).toBeNull()
+  // Регрессия из разведки: materialCard не копировала closedWithoutSubmission,
+  // и закрытая без сдачи выдача читалась homeworkStateKey как обычное
+  // «Проверено» — зелёная плашка на работе, которую преподаватель не открывал.
+  it('прокидывает closedWithoutSubmission — без него homeworkStateKey не отличит закрытую выдачу от проверенной', () => {
+    const закрытаБезСдачи = materialCard(assignment({ status: 'COMPLETED', closedWithoutSubmission: true }))
+    expect(закрытаБезСдачи.closedWithoutSubmission).toBe(true)
+    expect(homeworkStateKey(закрытаБезСдачи)).toBe('closedNoSubmission')
+
+    const проверена = materialCard(assignment({ status: 'COMPLETED', closedWithoutSubmission: false, teacherScore: 5 }))
+    expect(проверена.closedWithoutSubmission).toBe(false)
+    expect(homeworkStateKey(проверена)).toBe('completed')
   })
 })
 
@@ -267,5 +281,54 @@ describe('урок каталога целиком', () => {
     expect(isWholeCatalogLesson(урокЦеликом({ materialType: 'PDF', fileUrl: 'https://files.example/course-catalog/a1/x.pdf' }))).toBe(false)
     expect(isWholeCatalogLesson(assignment())).toBe(false)
     expect(isWholeCatalogLesson(null)).toBe(false)
+  })
+})
+
+/**
+ * Что именно задано — строка под названием материала.
+ *
+ * Жалоба владельца 29.09 («не пиши рандомные слова с эмодзи»): у выданного блока
+ * снимок — сырой текст самого блока (мост режет textContent до 80 символов), и
+ * ученик читал под заголовком «🛏 bedroom👍👎🍳 kitchen👍👎…». Преподаватель
+ * видит ту же выдачу по тому же правилу (web-admin, assignment-title.util.ts →
+ * assignmentScope): обе стороны обязаны называть её одинаково.
+ */
+describe('assignmentScope — что задано', () => {
+  const СЫРОЙ_БЛОК = '🛏 bedroom👍👎🍳 kitchen👍👎🛁 bathroom'
+
+  it('блок — всегда «Фрагмент урока», сырой текст блока не показывается никогда', () => {
+    expect(assignmentScope(assignment({ blockKeys: ['block@4:2'], stageTitlesSnapshot: СЫРОЙ_БЛОК })))
+      .toEqual({ key: 'homework.scope.fragment' })
+    expect(assignmentScope(assignment({ blockKeys: ['block@4:2'], stageTitlesSnapshot: null })))
+      .toEqual({ key: 'homework.scope.fragment' })
+  })
+
+  it('задания — снимок сервера («Стадия · Задание N, …»), без снимка — «Задания урока»', () => {
+    expect(assignmentScope(assignment({ taskTids: ['lis-tick'], stageTitlesSnapshot: 'Practice · Задание 1, 2' })))
+      .toEqual({ text: 'Practice · Задание 1, 2' })
+    expect(assignmentScope(assignment({ taskTids: ['lis-tick'], stageTitlesSnapshot: '  ' })))
+      .toEqual({ key: 'homework.scope.tasks' })
+  })
+
+  it('стадии — снимок сервера, без снимка — «Часть урока»', () => {
+    expect(assignmentScope(assignment({ stageIndexes: [2, 4], stageTitlesSnapshot: 'Warm-up, Listening' })))
+      .toEqual({ text: 'Warm-up, Listening' })
+    expect(assignmentScope(assignment({ stageIndexes: [2], stageTitlesSnapshot: null })))
+      .toEqual({ key: 'homework.scope.stages' })
+  })
+
+  // «Урок целиком» сервер пишет в снимок сам (resolveScope, lessonNo задан). У
+  // простого файла снимка нет — и придумывать ему подпись незачем.
+  it('ничего не сужено — снимок, если сервер его дал, иначе ничего', () => {
+    expect(assignmentScope(assignment({ stageTitlesSnapshot: 'Урок целиком' }))).toEqual({ text: 'Урок целиком' })
+    expect(assignmentScope(assignment({ blockKeys: [], taskTids: [], stageIndexes: [], stageTitlesSnapshot: null }))).toBeNull()
+  })
+
+  it('карточка урока — ничего: её название уже и есть то, что задано', () => {
+    const карточка = assignment({ cardId: 'cad401560', catalogLessonId: 314, cardTitle: 'Итог урока', stageTitlesSnapshot: 'Итог урока' })
+    expect(assignmentScope(карточка)).toBeNull()
+    // Контроль: у той же выдачи без карточки снимок бы показался.
+    expect(assignmentScope({ ...карточка, cardId: null })).toEqual({ text: 'Итог урока' })
+    expect(assignmentScope(null)).toBeNull()
   })
 })

@@ -21,6 +21,9 @@ const STAGE_NAMES = {
   gram: { en: 'Grammar', ru: 'Грамматика', kk: 'Грамматика' },
   prac: { en: 'Practice', ru: 'Практика', kk: 'Тәжірибе' },
   lisrd: { en: 'Listening', ru: 'Аудирование', kk: 'Тыңдалым' },
+  // Чтение из оригинального курса (reading-steps.js): своя подпись, а не
+  // «Аудирование», под которым self-study редакция держит и тексты, и записи.
+  read: { en: 'Reading', ru: 'Чтение', kk: 'Оқылым' },
   freer: { en: 'Speaking', ru: 'Говорение', kk: 'Сөйлеу' },
   wrap: { en: 'Wrap', ru: 'Итоги', kk: 'Қорытынды' },
   // B1/B2 называют стадии иначе: input — материал (чтение и аудирование),
@@ -208,8 +211,12 @@ function optionIcons(ctx, names) {
   return icons.every(Boolean) ? { optionIcons: icons } : {}
 }
 
+// Фото карточки. Перевод нужен поиску: снимок с чужого уровня подходит,
+// только если там он стоит к слову с тем же переводом (selfstudy/card-photos.js).
+const cardImg = (ctx, it) => ctx.img(it.w, [it.ru, it.kk].filter(Boolean).join(' '))
+
 function cardIcon(ctx, it) {
-  if (!ctx.icon || !it.icon || ctx.img(it.w)) return {}
+  if (!ctx.icon || !it.icon || cardImg(ctx, it)) return {}
   const icon = ctx.icon(it.icon)
   return icon ? { icon } : {}
 }
@@ -242,7 +249,7 @@ function recordFields(ctx, texts) {
 /**
  * Экран курса → шаг плеера.
  * @param {object} sc экран (после flattenGroups)
- * @param {object} ctx { lang, clip(key), img(word), wordAudio(word), seedBase }
+ * @param {object} ctx { lang, clip(key), img(word, translation), wordAudio(word), seedBase }
  * @returns {object|null} шаг или null, если экран не переносится
  */
 function screenToStep(sc, ctx) {
@@ -312,7 +319,7 @@ function screenToStep(sc, ctx) {
           ru: it.ru || '',
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
-          img: ctx.img(it.w),
+          img: cardImg(ctx, it),
           // Фото есть у малой части слов (A0 — 51 из 266), а иконка курса —
           // у каждого: движок курса рисует её на карточке. Нет фото — иконка.
           ...cardIcon(ctx, it),
@@ -845,7 +852,37 @@ function lessonGlossary(groups, lang = 'ru') {
   return map
 }
 
-/** Урок целиком: экраны → шаги. */
+// Экран с записью: вопрос на аудирование. Материал чтения к нему не едет —
+// раньше текст статьи висел над 85 вопросами «Listen…» (A1, A2, B1).
+const isAudioScreen = (sc) => !!sc.clip || sc.t === 'listen' || /^(now )?listen\b|^послушайте/i.test(plain(sc.ins, 'en'))
+
+// Объяснения навыка в блоке чтения («How skimming works» у B2): не текст и не
+// вопрос к нему — при замене чтения остаются на месте.
+const EXPLAIN_TYPES = new Set(['rule', 'expl', 'worked', 'examples'])
+
+/**
+ * Блок чтения self-study урока: от вопроса-прогноза перед текстом до первого
+ * экрана с записью в той же стадии. Нет текста — пустой блок в начале стадии
+ * чтения/аудирования (туда встаёт чтение, которого у урока не было).
+ * @returns {{start: number, end: number} | null}
+ */
+function readingBlock(screens) {
+  const inStage = (sc) => sc && (sc.stage === 'lisrd' || sc.stage === 'input')
+  const first = screens.findIndex((sc) => inStage(sc) && MATERIAL_TYPES.has(sc.t) && !isAudioScreen(sc))
+  if (first < 0) {
+    const at = screens.findIndex(inStage)
+    return at < 0 ? null : { start: at, end: at }
+  }
+  const stage = screens[first].stage
+  const same = (sc) => sc && sc.stage === stage && !isAudioScreen(sc)
+  let start = first
+  while (start > 0 && same(screens[start - 1])) start--
+  let end = first + 1
+  while (end < screens.length && same(screens[end])) end++
+  return { start, end }
+}
+
+/** Урок целиком: экраны → шаги. ctx.reading — шаги чтения на замену (reading-steps.js). */
 function lessonSteps(lesson, perItem, ctx) {
   const screens = flattenGroups(lesson.groups, perItem)
   const glossary = lessonGlossary(lesson.groups, ctx.lang)
@@ -860,10 +897,23 @@ function lessonSteps(lesson, perItem, ctx) {
   // расшифровка. Вопросы, которые идут следом, ссылаются на него словами
   // «прочитайте ещё раз», поэтому он едет с ними.
   let carry = null
-  for (const sc of screens) {
+  const block = ctx.reading && ctx.reading.length ? readingBlock(screens) : null
+  for (const [i, sc] of screens.entries()) {
+    if (block && i === block.start) {
+      for (const keep of screens.slice(block.start, block.end)) {
+        if (keep && EXPLAIN_TYPES.has(keep.t)) {
+          const step = screenToStep(keep, { ...full, carry: null })
+          // Объяснение навыка чтения — под подписью чтения, а не «Аудирования».
+          if (step) out.push({ ...step, stage: ctx.reading[0].stage })
+        }
+      }
+      out.push(...ctx.reading)
+      carry = null
+    }
+    if (block && i >= block.start && i < block.end) continue
     if (!sc || !sc.t) continue
     if (MATERIAL_TYPES.has(sc.t)) carry = null
-    const step = screenToStep(sc, { ...full, carry })
+    const step = screenToStep(sc, { ...full, carry: isAudioScreen(sc) ? null : carry })
     if (!step) continue
     // У карточки-заметки плеер печатает только заголовок и html: подпись он не
     // рисует вовсе (см. блок шапки в CourseStepPlayer). Поэтому подпись
@@ -880,4 +930,4 @@ function lessonSteps(lesson, perItem, ctx) {
   return out
 }
 
-module.exports = { flattenGroups, screenToStep, lessonSteps, splitGap, STAGE_NAMES, shuffle, hashSeed, line, plain }
+module.exports = { flattenGroups, screenToStep, lessonSteps, readingBlock, splitGap, STAGE_NAMES, shuffle, hashSeed, line, plain }

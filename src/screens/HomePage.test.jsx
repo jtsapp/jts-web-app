@@ -352,6 +352,28 @@ describe('Карточка домашки у ученика', () => {
     expect(titles[0]).toBe('Сдать завтра')
     expect(titles).toHaveLength(3)
   })
+
+  // Одна домашка на занятие (spec §5, §9): выданные с урока материалы теперь
+  // часть работы (materialParts), а не отдельные карточки списка — раньше их
+  // никто не считал, и счёт «N заданий» занижал реальный объём работы.
+  it('«N заданий» считает и упражнения, и части-материалы работы', async () => {
+    homework.value = [{
+      id: 1, title: 'Урок 12.09', status: 'ASSIGNED',
+      exercises: [{ id: 1 }, { id: 2 }],
+      materialParts: [{ id: 5 }, { id: 6 }, { id: 7 }],
+    }]
+    renderHome({ token: 'T', isDemoAccount: false })
+
+    expect(await screen.findByText('5 заданий')).toBeTruthy()
+  })
+
+  it('без упражнений и частей строка «N заданий» не рисуется вовсе', async () => {
+    homework.value = [{ id: 1, title: 'Файлом', status: 'ASSIGNED' }]
+    const { container } = renderHome({ token: 'T', isDemoAccount: false })
+
+    await screen.findByText('Файлом')
+    expect(container.querySelector('.hm-hw__item i')).toBeNull()
+  })
 })
 // «Что сделать сегодня»: рекомендация по реальным данным экрана, без сети и
 // без вызова помощника (см. lib/assistant/recommend.js).

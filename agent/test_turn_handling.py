@@ -141,13 +141,32 @@ _env(PUSH_TO_TALK="yes")
 assert _push_to_talk_for(LearnerProfile(push_to_talk=True)) is True
 _env(PUSH_TO_TALK=None)
 
-# Ручная ветка turn_handling: детектора конца речи нет вовсе, и порогов
-# перебивания тоже — ход перебивает само нажатие рации.
+# Ручная ветка turn_handling: детектора конца речи нет вовсе. Пороги
+# перебивания задаются ВСЁ РАВНО: режим переключается посреди звонка
+# (set_turn_mode), update_options меняет только turn_detection, и без них
+# «Свободно» после рации жило бы на min_words=0 — перебивалось любым шумом.
+_env(INTERRUPT_MIN_WORDS=None, INTERRUPT_MIN_SEC=None, MIN_ENDPOINTING_SEC=None)
 ptt = _turn_handling(None, push_to_talk=True)
 assert ptt["turn_detection"] == "manual"
-assert "endpointing" not in ptt
-assert "interruption" not in ptt
+assert ptt["interruption"] == {"min_words": 1, "min_duration": 0.8}, ptt["interruption"]
+assert ptt["endpointing"] == {"min_delay": 0.3}, ptt["endpointing"]
 assert ptt["preemptive_generation"] == {"enabled": True}
+# Те же пороги, что у VAD-ветки, — переключение их не меняет.
+assert ptt["interruption"] == _turn_handling(None)["interruption"]
+
+# Рубильник воркера выключает и переключение режима посреди звонка.
+_env(PUSH_TO_TALK=None)
+assert A._push_to_talk_allowed() is True
+_env(PUSH_TO_TALK="off")
+assert A._push_to_talk_allowed() is False
+_env(PUSH_TO_TALK=None)
+
+# Payload RPC set_turn_mode → режим. Мусор не превращается в режим.
+assert A._turn_mode_from_payload("ptt") == "ptt"
+assert A._turn_mode_from_payload(" AUTO ") == "auto"
+assert A._turn_mode_from_payload("") is None
+assert A._turn_mode_from_payload(None) is None
+assert A._turn_mode_from_payload("manual") is None
 
 # Детектор в ручном режиме игнорируется: даже если его передали, ход всё равно
 # закрывает клиент.

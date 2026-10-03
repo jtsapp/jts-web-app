@@ -15,7 +15,7 @@ import { LANGS, useI18n } from '../i18n.jsx'
  * В самом списке названия всегда полные — там их и читают.
  */
 export default function LangSelector({ compact = false, flagOnly = false }) {
-  const { lang, setLang } = useI18n()
+  const { lang, setLang, t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -51,12 +51,18 @@ export default function LangSelector({ compact = false, flagOnly = false }) {
         )}
       </button>
 
+      {/* Оверлей и заголовок нужны только мобильной шторке (≤560px, макет «Web
+          Адаптивка»): на десктопе это обычное выпадающее меню, и CSS их прячет. */}
+      {open && <div className="lang-overlay" onClick={() => setOpen(false)} />}
       {open && (
         <ul className="lang-menu" role="listbox">
+          <li className="lang-menu__title" aria-hidden="true">
+            {t('lang.sheetTitle')}
+          </li>
           {LANGS.map((l) => {
             const Flag = l.Flag
             return (
-              <li key={l.code}>
+              <li key={l.code} data-lang={l.code}>
                 <button
                   className={`lang-option ${l.code === lang ? 'lang-option--active' : ''}`}
                   type="button"

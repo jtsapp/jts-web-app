@@ -13,9 +13,11 @@ describe('practiceTabs', () => {
   })
 
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
-    expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'tales'])
+    expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'arcade', 'tales'])
     expect(skillModules('writing')).toEqual(['grammar', 'writing', 'verbs', 'workbooks'])
-    expect(skillModules('speaking')).toHaveLength(4)
+    // SpeakSpin (02.10.2026) — шестой у «Говорения».
+    expect(skillModules('speaking')).toHaveLength(6)
+    expect(skillModules('speaking')).toContain('speakspin')
     expect(skillModules('listening')).toContain('words')
     expect(skillModules('nope')).toEqual([])
   })
@@ -30,6 +32,16 @@ describe('practiceTabs', () => {
     expect(skillOfModule('situations')).toBe('speaking')
     expect(skillOfModule('tales')).toBe('listening')
     expect(skillOfModule('nope')).toBeNull()
+  })
+
+  it('«Аркада» — в «Говорении» и «Чтении», последней перед сказками', () => {
+    for (const key of ['speaking', 'reading']) {
+      const ids = SKILLS.find((s) => s.key === key).sections.map((sec) => sec.id)
+      expect(ids.slice(-2), key).toEqual(['arcade', 'tales'])
+    }
+    expect(skillOfModule('arcade')).toBeTruthy()
+    // Игр две, без уровней — полного списка у секции нет.
+    expect(EXPANDABLE.has('arcade')).toBe(false)
   })
 
   it('развернуть можно только секции-списки', () => {

@@ -5,21 +5,26 @@ import { stompConnectHeaders } from '../../lib/stompAuth.js'
 
 const PRESENCE_REJOIN_MS = 15000
 
-// Живая координация урока помимо доски: «Внимание на упражнение» (focus),
-// зеркалирование действий студента внутри материала (mirror), проигрывание
-// потока действий учителя студенту (present), сигнал «список разделов
-// изменился» (sectionsChanged). Порт web-admin'овского LessonLiveSocketService
-// на голый @stomp/stompjs — тот же brokerURL/connectHeaders, что и в
-// useLessonPresence.js. Колбэки передаются параметром (как в useLessonBoard),
-// чтобы не плодить лишний React-стейт здесь — событие пришло, вызвали и всё.
-// Брокер рассылает публикацию всем подписчикам топика, включая самого
-// отправителя — focus/present сравнивают senderUserId с selfUserId и глушат
-// собственное эхо (тот же приём, что и в useLessonBoard).
+// Живая координация урока помимо доски: состояние занятия (state — где класс,
+// ведёт ли преподаватель, стадия, таймер, статус), зеркалирование действий
+// студента внутри материала (mirror), проигрывание потока действий учителя
+// студенту (present), сигнал «список разделов изменился» (sectionsChanged).
+// Порт web-admin'овского LessonLiveSocketService на голый @stomp/stompjs — тот
+// же brokerURL/connectHeaders, что и в useLessonPresence.js. Колбэки передаются
+// параметром (как в useLessonBoard), чтобы не плодить лишний React-стейт здесь —
+// событие пришло, вызвали и всё. Брокер рассылает публикацию всем подписчикам
+// топика, включая самого отправителя — present сравнивает senderUserId с
+// selfUserId и глушит собственное эхо (тот же приём, что и в useLessonBoard).
+//
+// Каналов focus и timer здесь больше нет: их заменило состояние (спека
+// live-lesson-server-state §7). Сервер строит его из focus/timer любой админки,
+// в том числе старой, и пока пересылает старые каналы для старых клиентов.
+//
 // `isStaff` — подписываться ли на учительский канал шагов. Работа ученика идёт
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Соединение нужно знать снаружи: publish до CONNECT молча теряется, и
   // вызывающему приходится ждать связи, чтобы отправить состояние (см.
@@ -31,8 +36,8 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // onVocabSaved здесь не было вовсе: подписка на канал слова вызывала
   // handlersRef.current.onVocabSaved, которого в объекте не существовало, — и
   // ученик не узнавал о слове, которое ему только что положили.
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved } })
+  const handlersRef = useRef({ onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved })
+  useEffect(() => { handlersRef.current = { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -64,38 +69,33 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
         })
         announce()
         rejoin = setInterval(announce, PRESENCE_REJOIN_MS)
-        client.subscribe(`/topic/lesson/${lessonId}/focus`, (m) => {
+        // Состояние занятия сервер рассылает целиком, и своё изменение
+        // преподаватель получает тем же каналом — по нему он узнаёт, что ведёт
+        // класс. Поэтому эхо здесь не глушится.
+        client.subscribe(`/topic/lesson/${lessonId}/state`, (m) => {
           const evt = parse(m.body)
-          if (!evt || evt.senderUserId === selfUserId) return
-          handlersRef.current.onFocus?.(evt)
+          if (evt) handlersRef.current.onState?.(evt)
         })
         client.subscribe(`/topic/lesson/${lessonId}/material-mirror`, (m) => {
           const evt = parse(m.body)
           if (evt) handlersRef.current.onMirror?.(evt)
         })
-        client.subscribe(`/topic/lesson/${lessonId}/present`, (m) => {
+        const onPresentMessage = (m) => {
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return
           handlersRef.current.onPresent?.(evt)
-        })
+        }
+        client.subscribe(`/topic/lesson/${lessonId}/present`, onPresentMessage)
         client.subscribe(`/topic/lesson/${lessonId}/sections-changed`, () => {
           handlersRef.current.onSectionsChanged?.()
         })
         // Учитель транслирует аудио всему классу ("Транслировать классу") — лесson-wide
         // топик, как и позиция учителя в step-progress. Своё эхо глушим тем же приёмом,
-        // что и focus/present: у teacher-клиента звук уже играет локально по клику.
+        // что и present: у teacher-клиента звук уже играет локально по клику.
         client.subscribe(`/topic/lesson/${lessonId}/audio`, (m) => {
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return
           handlersRef.current.onAudioBroadcast?.(evt)
-        })
-        // Таймер урока: преподаватель включил отсчёт — он идёт и у ученика.
-        // Своё эхо глушим, как у focus/present: у преподавателя таймер уже тикает
-        // локально с момента нажатия, и повторный запуск сбросил бы ему секунды.
-        client.subscribe(`/topic/lesson/${lessonId}/timer`, (m) => {
-          const evt = parse(m.body)
-          if (!evt || evt.senderUserId === selfUserId) return
-          handlersRef.current.onTimer?.(evt)
         })
         // Урок каталога, открытый шагами: где стоит собеседник и что он ответил.
         // Своё эхо глушим здесь же — иначе ответ ученика вернулся бы ему извне и
@@ -109,9 +109,22 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
         client.subscribe(`/topic/lesson/${lessonId}/step-progress`, onStep)
         // Работа учеников адресована преподавателю, и подписан на неё только он.
         if (isStaff) client.subscribe(`/topic/lesson/${lessonId}/step-progress/staff`, onStep)
+        // Ученик вошёл или переподключился посреди показа и просит догнать класс:
+        // преподаватель отвечает ему снимком своей рамки адресно (sendPresent с
+        // targetStudentId). Просьбы других учеников ученику ни к чему.
+        if (isStaff) {
+          client.subscribe(`/topic/lesson/${lessonId}/catch-up/staff`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onCatchUp?.(evt)
+          })
+        }
         // Учитель поправил мой ответ — канал персональный, свой senderUserId тут
         // сравнивать не с чем (учитель не путает себя с учеником), эхо-фильтр не нужен.
         if (!isStaff && selfUserId != null) {
+          // Ответ преподавателя на мою просьбу догнать класс — снимок его рамки,
+          // адресованный только мне. Разбирается как общий показ: тот же буфер,
+          // тот же реплей в рамку.
+          client.subscribe(`/topic/lesson/${lessonId}/present/${selfUserId}`, onPresentMessage)
           client.subscribe(`/topic/lesson/${lessonId}/answer-correction/${selfUserId}`, (m) => {
             const evt = parse(m.body)
             if (evt) handlersRef.current.onAnswerCorrection?.(evt)
@@ -138,6 +151,10 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
             if (evt) handlersRef.current.onVocabSaved?.(evt)
           })
         }
+        // Все подписки уже стоят — теперь можно брать снимок состояния: изменение,
+        // случившееся после ответа снимка, дойдёт каналом state. Зовётся и на
+        // каждом переподключении — за время обрыва класс мог уйти.
+        handlersRef.current.onConnect?.()
       },
     })
     client.activate()
@@ -154,7 +171,9 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   const publish = useCallback((action, body) => {
     const client = clientRef.current
     if (!client?.connected) return
-    client.publish({ destination: `/app/lesson/${lessonId}/${action}`, body: JSON.stringify(body) })
+    // Команда без тела (release) уходит пустым кадром: JSON.stringify(undefined)
+    // вернул бы не строку, а undefined.
+    client.publish({ destination: `/app/lesson/${lessonId}/${action}`, body: body === undefined ? '' : JSON.stringify(body) })
   }, [lessonId])
 
   // Учитель: указать всем, на какой раздел/материал/шаг смотреть.
@@ -164,7 +183,18 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // Студент: передать одно захваченное действие внутри материала.
   const sendMirror = useCallback((materialId, event) => publish('material-mirror', { materialId, ...event }), [publish])
   // Учитель: передать пачку своих действий, чтобы студенты повторили их у себя.
-  const sendPresent = useCallback((materialId, events) => publish('present', { materialId, events }), [publish])
+  // С адресатом — ответ на просьбу одного ученика догнать класс: весь поток
+  // рамки остальным не нужен, они его уже видели.
+  const sendPresent = useCallback((materialId, events, targetStudentId) => publish('present',
+    targetStudentId != null ? { materialId, events, targetStudentId } : { materialId, events }), [publish])
+  // Учитель: перестал вести класс. Без этого вошедший ученик шёл бы к позиции,
+  // от которой преподаватель уже ушёл.
+  const sendRelease = useCallback(() => publish('release'), [publish])
+  // Ученик: вошёл посреди показа — попросить у преподавателя снимок его рамки.
+  const sendCatchUp = useCallback((materialId) => publish('catch-up', { materialId }), [publish])
+  // Учитель: стадия файлового урока, на которой стоит его рамка, пока он ведёт
+  // класс. Сервер хранит её в состоянии, и следующие ученики идут за ней.
+  const sendStage = useCallback((materialId, stageIndex) => publish('stage', { materialId, stageIndex }), [publish])
   // Урок шагами: свой переход по шагу, свой ответ или нажатие «Проверить».
   // Одно событие — одно поле: пустые поля не шлём, чтобы у смотрящего не
   // появился «ответ», которого не было (см. DTO на бэкенде).
@@ -187,7 +217,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // у того, от кого преподаватель уже ушёл.
   const sendWatch = useCallback((studentId, watching) => publish('watch', { studentId, watching }), [publish])
 
-  return { connected, roster, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
+  return { connected, roster, sendFocus, sendMirror, sendPresent, sendRelease, sendCatchUp, sendStage, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
 }
 
 function parse(body) {

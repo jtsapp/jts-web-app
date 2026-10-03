@@ -37,10 +37,12 @@ export const DICT = {
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
     // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
-    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета;
-    // описания и кнопок у неё нет: экран выбора их не рисует.
+    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета.
+    // Описания и визитки голоса у неё нет — мобильная карусель их пропускает,
+    // а «Выбрать» ей нужна.
     'tutor.aizere.trait1': 'Мудрая',
     'tutor.aizere.trait2': 'Заботливая',
+    'tutor.aizere.choose': 'Выбрать Айзере',
     'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
     'tutor.luna.trait3': 'Спокойная',
@@ -134,6 +136,11 @@ export const DICT = {
     'voice.pttHold': 'Держи, чтобы говорить',
     'voice.pttTalking': 'Говори…',
     'voice.pttSpace': 'или удерживай пробел',
+    'voice.pttTapHint': 'Держи кнопку, пока говоришь',
+    'voice.modeLabel': 'Режим разговора',
+    'voice.modePtt': 'Рация',
+    'voice.modeFree': 'Свободно',
+    'voice.modeLater': 'Включится со следующего звонка',
     'voice.permAllow': 'Разрешить, когда я на сайте',
     'voice.permHint': 'Дайте разрешение на использование микрофона в браузере',
     'voice.permDenied':
@@ -446,6 +453,7 @@ export const DICT = {
     'choose.soon': 'Жақында',
     'tutor.aizere.trait1': 'Дана',
     'tutor.aizere.trait2': 'Қамқор',
+    'tutor.aizere.choose': 'Айзере таңдау',
     'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
     'tutor.luna.trait3': 'Байсалды',
@@ -522,6 +530,11 @@ export const DICT = {
     'voice.pttHold': 'Сөйлеу үшін ұстап тұр',
     'voice.pttTalking': 'Сөйле…',
     'voice.pttSpace': 'немесе бос орынды басып тұр',
+    'voice.pttTapHint': 'Сөйлеп тұрғанда түймені басып тұр',
+    'voice.modeLabel': 'Сөйлесу режимі',
+    'voice.modePtt': 'Рация',
+    'voice.modeFree': 'Еркін',
+    'voice.modeLater': 'Келесі қоңыраудан бастап қосылады',
     'voice.permAllow': 'Сайтта болғанда рұқсат ету',
     'voice.permHint': 'Браузерде микрофонды пайдалануға рұқсат беріңіз',
     'voice.permDenied':
@@ -821,6 +834,7 @@ export const DICT = {
     'choose.soon': 'Coming soon',
     'tutor.aizere.trait1': 'Wise',
     'tutor.aizere.trait2': 'Caring',
+    'tutor.aizere.choose': 'Choose Aizere',
     'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
     'tutor.luna.trait3': 'Calm',
@@ -897,6 +911,11 @@ export const DICT = {
     'voice.pttHold': 'Hold to talk',
     'voice.pttTalking': 'Talking…',
     'voice.pttSpace': 'or hold the spacebar',
+    'voice.pttTapHint': 'Hold the button while you speak',
+    'voice.modeLabel': 'Conversation mode',
+    'voice.modePtt': 'Walkie-talkie',
+    'voice.modeFree': 'Hands-free',
+    'voice.modeLater': 'Takes effect from your next call',
     'voice.permAllow': 'Allow while on the site',
     'voice.permHint': 'Grant microphone permission in the browser',
     'voice.permDenied':
