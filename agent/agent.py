@@ -5981,6 +5981,7 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         finalize=finalize,
         echo=echo,
         echo_tail_sec=echo_tail,
+        echo_debug=echo and noise_guard.echo_guard_debug(),
         vad_finalize=vad_finalize,
         vad_finalize_sec=vad_delay,
     )

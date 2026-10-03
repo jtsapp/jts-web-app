@@ -313,6 +313,13 @@ def echo_guard_enabled(tutor: str) -> bool:
     return _tutor_allowed(tutor, "ECHO_GUARD_TUTORS")
 
 
+def echo_guard_debug() -> bool:
+    """ECHO_GUARD_DEBUG=on — строка в лог на каждую фразу в окне тьютора: слова,
+    время от конца его речи, громкость, совпадение и решение. Слова ученика в
+    логах — только на время замера."""
+    return (os.getenv("ECHO_GUARD_DEBUG") or "").strip().lower() in _ON
+
+
 def echo_tail_sec() -> float:
     return _env_fraction("ECHO_TAIL_SEC", ECHO_TAIL_SEC_DEFAULT, 0.0, 3.0)
 
@@ -898,6 +905,18 @@ class EchoReference:
         elif self._speaking():
             self._windows[-1][1] = now
 
+    def where(self, t: float) -> str:
+        """Для отладки: «in» — тьютор говорил, «+0.42» — столько после конца
+        его речи (ближайшего окна), «-» — окон нет."""
+        best = None
+        for start, end in self._windows:
+            if end is None or start - self.LEAD_SEC <= t <= end:
+                if t >= start - self.LEAD_SEC:
+                    return "in"
+            elif t > end and (best is None or t - end < best):
+                best = t - end
+        return f"+{best:.2f}" if best is not None else "-"
+
     def in_window(self, t: float) -> bool:
         """Звук в момент t мог быть эхом: тьютор говорил (или договорил меньше
         хвоста назад)."""
@@ -1052,10 +1071,12 @@ class EchoFilter:
         ref: EchoReference,
         clock: Callable[[Any], float | None],
         loudness: Callable[[Any, Any], float | None] | None = None,
+        debug: Callable[[str], None] | None = None,
     ) -> None:
         self._ref = ref
         self._clock = clock
         self._loudness = loudness
+        self._debug = debug
         # Уровни — по всему звонку: живут на эталоне, он один на звонок, а
         # поток распознавания бывает новым (переподключение сокета).
         self._echo_levels: deque = ref.echo_levels
@@ -1188,6 +1209,28 @@ class EchoFilter:
                 for n in range(j, k):
                     echo[lettered[n]] = False
             j = k
+        places = []
+        if final and self._debug:
+            for word, info in zip(words, infos):
+                t = self._clock(word[0].get("start_ms"))
+                places.append(self._ref.where(now if t is None else t) if info else "")
+        # Пишем фразы в окне и в трёх секундах после него: там и прячутся
+        # утечки хвоста.
+        near = [p for p in places if p == "in" or (p.startswith("+") and float(p[1:]) < 3.0)]
+        if final and self._debug and near:
+            parts = []
+            for text, info, is_echo, place in list(zip(texts, infos, echo, places))[:40]:
+                if info is None:
+                    continue
+                parts.append(
+                    f"{text}:{place}:"
+                    f"{round(info[2]) if info[2] is not None else '-'}:"
+                    f"{'m' if info[1] else '.'}{'x' if is_echo else '+'}"
+                )
+            self._debug(
+                f"граница={round(limit) if limit else '-'} совпад={round(override)} | "
+                + " ".join(parts)
+            )
         kept: list[dict[str, Any]] = []
         dropped: list[str] = []
         kept_words = 0
@@ -1359,7 +1402,14 @@ if aiohttp is not None and soniox is not None:
             self._clock = AudioClock()
             self._loud = LoudnessTrack()
             self._echo = (
-                EchoFilter(stt.echo, self._clock.at, self._loud.span)
+                EchoFilter(
+                    stt.echo,
+                    self._clock.at,
+                    self._loud.span,
+                    debug=(lambda line: logger.info("ECHO seg: %s", line[:900]))
+                    if stt._echo_debug
+                    else None,
+                )
                 if stt.echo is not None
                 else None
             )
@@ -1564,6 +1614,7 @@ if aiohttp is not None and soniox is not None:
             finalize: bool = True,
             echo: bool = False,
             echo_tail_sec: float = ECHO_TAIL_SEC_DEFAULT,
+            echo_debug: bool = False,
             vad_finalize: bool = False,
             vad_finalize_sec: float = VAD_FINALIZE_DELAY_SEC_DEFAULT,
             **kwargs: Any,
@@ -1593,6 +1644,7 @@ if aiohttp is not None and soniox is not None:
             # Эталон эха — один на звонок: его кормят tts_node (текст) и
             # события сессии (когда тьютор говорит), а читают потоки.
             self.echo: EchoReference | None = EchoReference(echo_tail_sec) if echo else None
+            self._echo_debug = echo_debug
             self.vad_finalize = vad_finalize
             self._vad_finalize_sec = vad_finalize_sec
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
