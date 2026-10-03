@@ -1518,7 +1518,14 @@ def attach_echo_and_vad_finalize(session: Any, stt: Any, *, is_auto: Callable[[]
 
         @session.on("agent_state_changed")
         def _on_agent(ev: Any) -> None:
-            echo.on_agent_state(str(getattr(ev, "new_state", "")))
+            state = str(getattr(ev, "new_state", ""))
+            # В рации эху неоткуда взяться: микрофон открыт, только пока ученик
+            # держит кнопку, а нажатие сразу обрывает тьютора. Окно эха там
+            # только мешало бы: ученик, нажавший кнопку и сразу повторивший
+            # слово тьютора, терял бы его в хвосте.
+            if state == "speaking" and not is_auto():
+                return
+            echo.on_agent_state(state)
 
     if getattr(stt, "vad_finalize", False):
 

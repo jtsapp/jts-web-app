@@ -500,6 +500,13 @@ sess.emit("agent_state_changed", _Ev("speaking", "thinking"))
 assert fstt.echo._windows and fstt.echo._windows[-1][1] is None
 sess.emit("agent_state_changed", _Ev("listening", "speaking"))
 assert fstt.echo._windows[-1][1] is not None
+# Рация: тьютор говорит, но окно эха не открывается — микрофон закрыт.
+mode["auto"] = False
+n_windows = len(fstt.echo._windows)
+sess.emit("agent_state_changed", _Ev("speaking", "thinking"))
+assert len(fstt.echo._windows) == n_windows
+assert fstt.echo.is_echo("сәлем") is False
+mode["auto"] = True
 # Обёртка без фильтров — подписок нет вовсе.
 sess2 = _FakeSession()
 
