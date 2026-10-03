@@ -719,10 +719,17 @@ textarea {
     min-height: 0;
     overflow: hidden;
   }
+  /* Полосу прокрутки прячем: в кадре её нет, а с четырьмя репликами лента
+     длиннее карточки всегда — системная полоса Windows стояла бы постоянно.
+     Колесо и тач прокручивают как прежде. */
   .chat__scroll {
     min-height: 0;
     max-height: none;
     padding-top: 0;
+    scrollbar-width: none;
+  }
+  .chat__scroll::-webkit-scrollbar {
+    display: none;
   }
   .chat__author {
     position: sticky;
@@ -746,10 +753,6 @@ textarea {
   .chat .auth {
     margin-top: auto;
     padding: 16px 0 15px;
-  }
-  /* Google (в кадре его нет) — той же высоты, что «Начать регистрацию» */
-  .chat .auth-btn {
-    height: 48px;
   }
 }
 /* Аватар — готовый экспорт макета (круг 56 с фоном и маскотом) */
@@ -1492,7 +1495,9 @@ textarea {
   }
 }
 
-/* Поле ввода: серая плашка 516×68, r20, у низа карточки */
+/* Поле ввода: серая плашка 516×68, r20, у низа карточки. Слева неизменяемая
+   приставка «Меня зовут» 18/500, через 3px — само имя 18/700 фиолетовым
+   (кадры 1434:6021 и 1434:6126). */
 .chat__input {
   display: flex;
   align-items: center;
@@ -1502,6 +1507,13 @@ textarea {
   background: #f6f6f6;
   border-radius: 20px;
 }
+.chat__prefix {
+  flex: none;
+  font-size: 18px;
+  font-weight: 500;
+  color: #181818;
+  white-space: nowrap;
+}
 .chat__input input {
   flex: 1;
   min-width: 0;
@@ -1509,9 +1521,12 @@ textarea {
   background: transparent;
   font-family: inherit;
   font-size: 18px;
-  font-weight: 500;
-  color: #181818;
+  font-weight: 700;
+  color: #9047ff;
   outline: none;
+}
+.chat__input input::placeholder {
+  font-weight: 500;
 }
 .chat__input input::placeholder {
   color: #afafaf;

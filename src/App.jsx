@@ -1402,7 +1402,6 @@ export default function App() {
     case 'chat':
       return (
         <RegistrationPage
-          onGoogleToken={handleGoogleCredential}
           onBack={() => setScreen('welcome')}
           onPhoneLogin={(userName) => {
             setName(userName || '')

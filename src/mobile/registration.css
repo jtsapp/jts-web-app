@@ -281,11 +281,16 @@
     border-radius: 20px;
     background: #f6f6f6;
   }
-  .chat__input input {
-    min-width: 0;
+  .chat__prefix {
     font-size: 18px;
     font-weight: 500;
     color: #181818;
+  }
+  .chat__input input {
+    min-width: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #9047ff;
   }
   .chat__input input::placeholder {
     color: #afafaf;
