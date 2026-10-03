@@ -150,6 +150,22 @@ ref.on_agent_state("speaking")
 assert ref.is_echo("кешіріңіз", 20.1) is False
 assert ref.is_echo("words", 20.1) is True
 
+# Только уже сказанное: ученик перебил тьютора в начале реплики, а те же слова
+# стоят дальше в ещё не сказанном тексте (живой зонд 03.10.2026, Декстер: «Стоп,
+# я не понял» — «не понял» уходило в эхо).
+clk = _Clock(30.0)
+ref = G.EchoReference(tail_sec=0.6, now=clk)
+ref.begin_reply()
+ref.add_text("Ну бля, Нурлан, ты серьёзно? It was very fun — так никто не говорит, "
+             "ты меня вообще не понял, давай заново.")
+ref.end_reply()
+ref.on_agent_state("speaking")  # звук реплики пошёл в 30.0
+# Через секунду сказано ~18 символов (+ запас) — «понял» (≈90-й символ) ещё впереди.
+assert ref.is_echo("понял", 31.0) is False
+assert ref.is_echo("Нурлан", 31.0) is True
+# Через четыре секунды тьютор до него уже дошёл — теперь это эхо.
+assert ref.is_echo("понял", 34.0) is True
+
 # --- часы: время слова Soniox → момент прихода этого звука -------------------------
 clk = _Clock(50.0)
 ac = G.AudioClock(now=clk)

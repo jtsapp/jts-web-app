@@ -51,6 +51,7 @@ import json
 import logging
 import math
 import os
+import re
 import time
 import weakref
 from collections import deque
@@ -796,58 +797,102 @@ class EchoReference:
 
     Окно — по состоянию сессии, а не по времени каждого слова: время слов у
     синтеза без таймингов угадывается и уезжало на секунды (см. субтитры
-    Айзере), а начало и конец речи сессия знает точно."""
+    Айзере), а начало и конец речи сессия знает точно.
+
+    И только то, что тьютор УЖЕ успел сказать: текст реплики целиком приходит
+    раньше звука. Живой зонд 03.10.2026 (Декстер): ученик перебил его в начале
+    реплики «Стоп, я не понял», а «не понял» стояло дальше в ещё не сказанном
+    тексте — фильтр выкинул смысл перебивания. Сказанное оцениваем по темпу:
+    от начала звука реплики — не больше CHARS_PER_SEC символов в секунду плюс
+    запас MARGIN_CHARS."""
 
     # Сколько последних реплик тьютора держим: эхо древней фразы не ловим.
     KEEP_REPLIES = 3
     # Состояние «speaking» встаёт чуть позже первого кадра звука.
     LEAD_SEC = 0.2
     MAX_WINDOWS = 8
+    # Темп синтеза — с запасом сверху: у Айзере 12–18 символов в секунду (замер
+    # 03.10.2026); быстрее не бывает, а недооценка темпа пропускала бы эхо.
+    CHARS_PER_SEC = 18.0
+    # Запас на ошибку оценки темпа и на эхо, приходящее с опозданием.
+    MARGIN_CHARS = 30.0
 
     def __init__(self, tail_sec: float = ECHO_TAIL_SEC_DEFAULT, now: Callable[[], float] = time.monotonic) -> None:
         self._tail = tail_sec
         self._now = now
-        self._replies: deque[list[str]] = deque(maxlen=self.KEEP_REPLIES)
+        # Реплика: слова со смещением в символах от её начала и момент, когда
+        # зазвучал её звук (None — ещё не звучала).
+        self._replies: deque[dict[str, Any]] = deque(maxlen=self.KEEP_REPLIES)
         self._partial = ""
+        self._partial_at = 0
         self._windows: deque[list[float | None]] = deque(maxlen=self.MAX_WINDOWS)
+
+    def _speaking(self) -> bool:
+        return bool(self._windows) and self._windows[-1][1] is None
 
     # -- текст ----------------------------------------------------------------
     def begin_reply(self) -> None:
         self.end_reply()
-        self._replies.append([])
+        # Реплика, начатая посреди речи (продолжение после тула), звучит сразу.
+        self._replies.append(
+            {"words": [], "t_audio": self._now() if self._speaking() else None}
+        )
+        self._partial, self._partial_at = "", 0
 
     def add_text(self, text: str) -> None:
         """Кусок реплики как пришёл от модели: слово может разорваться между
         кусками, поэтому незаконченное держим до пробела."""
         if not self._replies:
-            self._replies.append([])
+            self.begin_reply()
         buf = self._partial + str(text)
-        parts = buf.split()
-        if buf and not buf[-1].isspace() and parts:
-            self._partial = parts.pop()
+        items = [(self._partial_at + m.start(), m.group()) for m in re.finditer(r"\S+", buf)]
+        base = self._partial_at
+        if buf and not buf[-1].isspace() and items:
+            self._partial_at, self._partial = items.pop()
         else:
-            self._partial = ""
-        self._replies[-1].extend(w for w in (norm_word(p) for p in parts) if w)
+            self._partial, self._partial_at = "", base + len(buf)
+        self._replies[-1]["words"].extend(
+            (at, w) for at, w in ((at, norm_word(p)) for at, p in items) if w
+        )
 
     def end_reply(self) -> None:
         if self._partial and self._replies:
             word = norm_word(self._partial)
             if word:
-                self._replies[-1].append(word)
-        self._partial = ""
+                self._replies[-1]["words"].append((self._partial_at, word))
+        self._partial, self._partial_at = "", 0
 
     def words(self) -> list[str]:
-        out = [w for reply in self._replies for w in reply]
+        out = [w for reply in self._replies for _, w in reply["words"]]
         tail = norm_word(self._partial)
         return out + [tail] if tail else out
+
+    def _said_by(self, t: float):
+        """Слова тьютора, которые к моменту t уже могли прозвучать."""
+        last = len(self._replies) - 1
+        for i, reply in enumerate(self._replies):
+            if reply["t_audio"] is None:
+                continue
+            limit = (t - reply["t_audio"]) * self.CHARS_PER_SEC + self.MARGIN_CHARS
+            words = reply["words"]
+            if i == last and self._partial:
+                words = words + [(self._partial_at, norm_word(self._partial))]
+            for at, word in words:
+                if at > limit:
+                    break
+                if word:
+                    yield word
 
     # -- время ----------------------------------------------------------------
     def on_agent_state(self, state: str) -> None:
         now = self._now()
         if state == "speaking":
-            if not self._windows or self._windows[-1][1] is not None:
+            if not self._speaking():
                 self._windows.append([now, None])
-        elif self._windows and self._windows[-1][1] is None:
+            # Зазвучала последняя начатая реплика.
+            if self._replies and self._replies[-1]["t_audio"] is None:
+                self._replies[-1]["t_audio"] = now
+        elif self._speaking():
             self._windows[-1][1] = now
 
     def _in_window(self, t: float) -> bool:
@@ -864,9 +909,10 @@ class EchoReference:
         heard = norm_word(word)
         if not heard:
             return False
-        if not self._in_window(self._now() if t is None else t):
+        t = self._now() if t is None else t
+        if not self._in_window(t):
             return False
-        for said in self.words():
+        for said in self._said_by(t):
             if similar_word(heard, said) or (partial and said.startswith(heard)):
                 return True
         return False
