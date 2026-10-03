@@ -5,7 +5,6 @@
 //
 // Картинки — экспорт из Figma как есть (public/landing/img), не пересборка:
 // маскоты, фото, превью разделов и карта острова — растр рендера макета.
-import { APP_LOGIN_URL, APP_START_URL } from './content.js'
 import { PRIVACY_URL, SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import LibraryTabs from './LibraryTabs.jsx'
 import TeachersCarousel from './TeachersCarousel.jsx'
@@ -23,7 +22,7 @@ function Icon({ src, size, className }) {
   return <img className={className} src={src} width={size} height={size} alt="" aria-hidden="true" />
 }
 
-function Header({ c, lang }) {
+function Header({ c, lang, links }) {
   return (
     <header className="ld-header">
       <div className="ld-header__bar">
@@ -36,8 +35,8 @@ function Header({ c, lang }) {
             <a className={'ld-lang__opt' + (lang === 'kz' ? ' is-on' : '')} href="?lang=kz" hrefLang="kk">{c.nav.langKz}</a>
           </nav>
           <div className="ld-header__btns">
-            <a className="ld-btn ld-btn--ghost" href={APP_LOGIN_URL}>{c.nav.login}</a>
-            <a className="ld-btn ld-btn--primary" href={APP_START_URL}>{c.nav.start}</a>
+            <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
+            <a className="ld-btn ld-btn--primary" href={links.start}>{c.nav.start}</a>
           </div>
         </div>
       </div>
@@ -507,12 +506,14 @@ function Footer({ c }) {
   )
 }
 
-export default function Landing({ c, lang }) {
+// links — куда ведут «Войти» и «Начать обучение»: на домене лендинга это
+// адрес приложения (см. appLink в hostRouting.js).
+export default function Landing({ c, lang, links }) {
   return (
     // <html lang> задаёт общий layout приложения (ru) — язык страницы
     // уточняем на корне: по нему браузер и скринридеры выбирают произношение.
     <div className="ld" id="top" lang={lang === 'kz' ? 'kk' : 'ru'}>
-      <Header c={c} lang={lang} />
+      <Header c={c} lang={lang} links={links} />
       <main>
         <Hero c={c} />
         <Perks c={c} />
@@ -528,8 +529,8 @@ export default function Landing({ c, lang }) {
       {/* Нижняя панель телефона из макета (Buttonbar 5748:7131): на десктопе
           эти кнопки живут в шапке. */}
       <div className="ld-mbar">
-        <a className="ld-btn ld-btn--ghost" href={APP_LOGIN_URL}>{c.nav.login}</a>
-        <a className="ld-btn ld-btn--primary" href={APP_START_URL}>{c.nav.start}</a>
+        <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
+        <a className="ld-btn ld-btn--primary" href={links.start}>{c.nav.start}</a>
       </div>
     </div>
   )
