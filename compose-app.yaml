@@ -59,6 +59,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_TTS_VOICE_JARVIS: ${OPENAI_TTS_VOICE_JARVIS:-}
       GOOGLE_CREDENTIALS_JSON: ${GOOGLE_CREDENTIALS_JSON}
+      # Тот же секрет, что LANDING_LEAD_KEY на бэкенде. Серверный, не NEXT_PUBLIC_.
+      LANDING_LEAD_KEY: ${LANDING_LEAD_KEY:-}
     restart: always
     depends_on:
       - postgres
