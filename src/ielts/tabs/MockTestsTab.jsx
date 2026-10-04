@@ -5,6 +5,7 @@ import EmptyState from '../ui/EmptyState.jsx'
 import { TrackSwitch } from '../reading/ReadingListView.jsx'
 import { fullTests, singleTexts, testNumber } from '../reading/catalog.js'
 import { listDrafts, pausedLeftSec } from '../reading/run.js'
+import { plural } from '../../lib/plural.js'
 import { HeadphonesIcon, MenuBookIcon, TimerIcon } from '../icons.jsx'
 import { useI18n } from '../../i18n.jsx'
 
@@ -20,7 +21,7 @@ function resultLine(a, t) {
 }
 
 export default function MockTestsTab({ catalog, track, onTrack, onStart, onOpenTest }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [format, setFormat] = useState('full')
   const [draft, setDraft] = useState(null)
 
@@ -75,9 +76,10 @@ export default function MockTestsTab({ catalog, track, onTrack, onStart, onOpenT
             <b>{t('ieltsMocks.draft.title', { name: `Reading, ${draftTest.kind === 'test' ? `Test ${testNumber(draftTest.id) ?? ''}` : draftTest.title}` })}</b>
             <span>
               {t('ieltsMocks.draft.text', {
-                n: String(Object.keys(draft.answers || {}).length),
-                total: String(draftTest.questionCount),
-                min: String(draft.minLeft),
+                // ответ choose-TWO — массив букв, и каждая буква — свой номер из 40
+                n: String(Object.values(draft.answers || {}).reduce((s, v) => s + (Array.isArray(v) ? v.length : v ? 1 : 0), 0)),
+                total: String(draftTest.maxScore || draftTest.questionCount),
+                left: plural(t, lang, 'ieltsHub.minutesLeft', draft.minLeft),
               })}
             </span>
           </div>

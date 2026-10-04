@@ -30,7 +30,7 @@ export default function ListeningListView({ list, catalog, onOpenTest, onBack })
       const last = x.lastAttempt
       const meta =
         list === 'tasks'
-          ? `${x.category ? x.category.replace(/^part(\d)$/, 'Part $1') + ' · ' : ''}${t('ieltsReading.questions', { n: String(x.questionCount) })}`
+          ? `${x.category ? x.category.replace(/^part(\d)$/, 'Part $1') + ' · ' : ''}${t('ieltsReading.questions', { n: String(x.maxScore || x.questionCount) })}`
           : t('ieltsListening.phrases', { n: String(x.questionCount) })
       const result = last
         ? list === 'tasks'

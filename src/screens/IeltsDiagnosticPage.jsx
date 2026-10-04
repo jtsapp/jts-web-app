@@ -12,9 +12,27 @@ import { addHighlight } from '../ielts/reading/highlights.js'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { formatSec } from '../ielts/speaking/speaking.js'
 import { countWords } from '../ielts/writing/writing.js'
-import { CloseIcon, HeadphonesIcon, MicIcon, TimerIcon } from '../ielts/icons.jsx'
+import { ArrowForwardIcon, CheckCircleIcon, CloseIcon, HeadphonesIcon, InfoIcon, MicIcon, RadioOffIcon, TimerIcon } from '../ielts/icons.jsx'
+import LearningLayout from '../components/LearningLayout.jsx'
+import { SECTION_META, SectionTile } from '../ielts/sections.jsx'
+import { plural } from '../lib/plural.js'
 
 const BLOCKS = ['listening', 'reading', 'writing', 'speaking']
+const LEVELS = ['light', 'standard', 'full']
+
+// Объём каждого блока на уровне — из самой формы, а не из текста: у облегчённой половина вопросов, у полной эссе длиннее.
+// Listening адаптивный, но клипы одного слота одинаковой длины, поэтому число вопросов известно до старта.
+export function blockVolume(form, level, module) {
+  const cfg = form.levels[level]
+  const listening = cfg.listening.slots.reduce((a, s) => {
+    const slot = form.listening.slots.find((x) => x.slot === s)
+    return a + (cfg.listening.take?.[String(s)] ?? slot?.clips?.[0]?.items?.length ?? 0)
+  }, 0)
+  const task = form.reading[module === 'general' ? 'general' : 'academic']
+  const reading = cfg.reading.light ? (task.lightItems || []).length : task.items.length
+  const minutes = typeof cfg.minutes === 'number' ? cfg.minutes : BLOCKS.reduce((a, b) => a + (cfg[b].minutes || 0), 0)
+  return { listening, reading, words: cfg.writing.words, part1: cfg.speaking.part1, monologueSec: cfg.speaking.monologueSec, minutes }
+}
 const DRAFT = 'jts_ielts_diag_draft'
 
 function loadDraft() {
@@ -45,7 +63,7 @@ function dropDraft() {
  * бэкенд; Writing и Speaking в диагностике не оцениваются (ждут ИИ), записи Speaking остаются в браузере — на сервер
  * уходит только длительность ответов. Черновик — на устройстве: перезагрузка не сбрасывает пройденное.
  */
-export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
+export default function IeltsDiagnosticPage({ token, target, onExit, onDone, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useI18n()
   const P = useCallback((k, v) => t(`ieltsOb.p.diag.${k}`, v), [t])
   const authToken = token || loadToken()
@@ -58,12 +76,17 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
   const [recId, setRecId] = useState(null)
   const takes = useRef({})
   const [, force] = useState(0)
+  // Уровень выбирают на стартовом экране (Figma 2): по умолчанию — тот, что сервер дал по онбордингу
+  const [pick, setPick] = useState(target?.level || null)
+  const [recommended, setRecommended] = useState(null)
 
   useEffect(() => {
     let alive = true
-    startIeltsDiagnostic(authToken, { level: target?.level, module: target?.module })
+    startIeltsDiagnostic(authToken, { level: pick || undefined, module: target?.module })
       .then((s) => {
         if (!alive) return
+        // первый ответ без выбранного уровня — это рекомендация по онбордингу, её и помечаем чипом
+        setRecommended((r) => r || s.level)
         const old = loadDraft()
         const keep = old && old.formId === s.formId && old.level === s.level && old.module === s.module
         setD(keep ? old : { formId: s.formId, level: s.level, module: s.module, block: null, slotIdx: 0, path: {}, answers: {}, writing: '', speakingSec: {}, startedAt: new Date().toISOString() })
@@ -74,7 +97,7 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
       alive = false
       stopTts()
     }
-  }, [authToken, target?.level, target?.module])
+  }, [authToken, pick, target?.module])
 
   const update = (patch) =>
     setD((cur) => {
@@ -184,23 +207,79 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
   }
 
   // ---------------------------------------------------------------- разметка блоков
-  let body
+  // ---------------------------------------------------------------- стартовый экран (Figma 2): в оболочке с меню
   if (!d.block) {
-    body = (
-      <section className="ih-card ih-diag__intro">
-        <span className="ih-chip ih-chip--violet ih-chip--md"><span>{P(`level.${d.level}`)}</span></span>
-        <h2>{P('intro.title')}</h2>
-        <p>{P(`level.${d.level}Hint`)}</p>
-        <ul className="ih-diag__blocks">
-          {BLOCKS.map((b) => (
-            <li key={b}><b>{P(`block.${b}`)}</b><span>{t('ieltsWriting.minutes', { n: String(cfg[b].minutes) })}</span></li>
-          ))}
-        </ul>
-        <p className="ih-muted">{P('intro.honest')}</p>
-        <button type="button" className="ih-cta" onClick={() => update({ block: 'listening-intro' })}>{P('intro.start')}</button>
-      </section>
+    const trackName = d.module === 'general' ? 'General Training' : 'Academic'
+    const vol = blockVolume(form, d.level, d.module)
+    const levelHint = (lv) => {
+      const v = blockVolume(form, lv, d.module)
+      return P(`levelCard.${lv}`, { l: String(v.listening), r: String(v.reading), w: String(v.words), s: String(v.part1), m: String(v.monologueSec) })
+    }
+    const chip = {
+      listening: `${plural(t, lang, 'ieltsOb.p.diag.chip.questions', vol.listening)} · ${P('chip.min', { n: String(cfg.listening.minutes) })}`,
+      reading: `${plural(t, lang, 'ieltsOb.p.diag.chip.questions', vol.reading)} · ${P('chip.min', { n: String(cfg.reading.minutes) })}`,
+      writing: `${P('chip.words', { n: String(vol.words) })} · ${P('chip.min', { n: String(cfg.writing.minutes) })}`,
+      speaking: `${P('chip.speaking', { q: plural(t, lang, 'ieltsOb.p.diag.chip.questions', vol.part1) })} · ${P('chip.min', { n: String(cfg.speaking.minutes) })}`,
+    }
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} token={token} onNav={onNav} onProfile={onProfile} active="ielts">
+        <div className="ih">
+          <div className="ih-dstart">
+            <header className="ih-dstart__head">
+              <span className="ih-chip ih-chip--violet ih-chip--md"><span>{P('intro.stepChip')}</span></span>
+              <h1>{P('intro.title')}</h1>
+              <p>{P('intro.sub')}</p>
+            </header>
+            <section className="ih-dstart__levels">
+              <h2>{P('level.label')}</h2>
+              <div className="ih-dstart__grid" role="radiogroup" aria-label={P('level.label')}>
+                {LEVELS.map((lv) => {
+                  const on = d.level === lv
+                  const v = blockVolume(form, lv, d.module)
+                  return (
+                    <button key={lv} type="button" role="radio" aria-checked={on} className={`ih-dstart__level ${on ? 'is-on' : ''}`} onClick={() => !on && setPick(lv)}>
+                      <span className="ih-dstart__level-top">
+                        {on ? <CheckCircleIcon size={22} /> : <RadioOffIcon size={22} />}
+                        <b>{P(`level.${lv}`)}</b>
+                        {recommended === lv && <span className="ih-dstart__rec">{P('level.recommended')}</span>}
+                      </span>
+                      <span className="ih-dstart__min">{plural(t, lang, 'ieltsOb.p.diag.approxMin', v.minutes)}</span>
+                      <span className="ih-dstart__hint">{levelHint(lv)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+            <section className="ih-card ih-dstart__blocks">
+              <div className="ih-dstart__blocks-head">
+                <h2>{P('intro.what')}</h2>
+                <span className="ih-dstart__form">{P('intro.form', { code: state.start.code || d.formId })} · {trackName}</span>
+              </div>
+              {BLOCKS.map((b) => (
+                <div key={b} className="ih-dstart__row">
+                  <SectionTile section={b} size={44} iconSize={22} />
+                  <span className="ih-dstart__row-body">
+                    <b>{SECTION_META[b].name}</b>
+                    <span>{P(`what.${b}`, { track: trackName })}</span>
+                  </span>
+                  <span className="ih-dstart__chip" style={{ '--ih-tone': SECTION_META[b].tone, '--ih-tint': SECTION_META[b].tint }}>{chip[b]}</span>
+                </div>
+              ))}
+            </section>
+            <div className="ih-dstart__foot">
+              <p className="ih-dstart__note"><InfoIcon size={20} /><span>{P('intro.honest')}</span></p>
+              <button type="button" className="ih-cta ih-dstart__cta" onClick={() => update({ block: 'listening-intro' })}>
+                {P('intro.start')}<ArrowForwardIcon size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </LearningLayout>
     )
-  } else if (d.block.endsWith('-intro')) {
+  }
+
+  let body
+  if (d.block.endsWith('-intro')) {
     const b = d.block.replace('-intro', '')
     body = (
       <section className="ih-card ih-diag__intro">
@@ -362,7 +441,7 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone }) {
         <span className="ih-run__spacer" />
         {current && cfg[current] && <span className="ih-run__clock"><TimerIcon size={18} />{t('ieltsWriting.minutes', { n: String(cfg[current].minutes) })}</span>}
       </header>
-      <main className="ih-diag__body">{body}</main>
+      <main key={d.block} className="ih-diag__body ih-enter">{body}</main>
       <ConfirmDialog
         open={confirm}
         title={P('block.finishTitle')}

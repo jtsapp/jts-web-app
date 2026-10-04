@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flattenItems, createRun, setAnswer, moveTo, answeredCount, submitBody, examSeconds, remainingSec, formatClock, isAnswered, pausedLeftSec, resumeDraft } from './run.js'
+import { flattenItems, createRun, setAnswer, moveTo, answeredCount, markTotal, submitBody, examSeconds, remainingSec, formatClock, isAnswered, pausedLeftSec, resumeDraft } from './run.js'
 
 const doc = {
   id: 'RD-AC-P1',
@@ -39,6 +39,17 @@ describe('прохождение Reading', () => {
     run = setAnswer(run, 'Q1', 'ii', 1000)
     expect(run.checked.Q1).toBeUndefined()
     expect(answeredCount(run, flattenItems(doc))).toBe(1)
+  })
+
+  it('отвечено и всего считаются по номерам IELTS: choose-TWO — два номера', () => {
+    const items = flattenItems(doc)
+    expect(markTotal(items)).toBe(5)
+    let run = createRun(doc, 'exam', 0)
+    run = setAnswer(run, 'Q3', ['A'], 1000)
+    expect(answeredCount(run, items)).toBe(1)
+    run = setAnswer(run, 'Q3', ['A', 'C'], 2000)
+    run = setAnswer(run, 'Q5', 'tree', 3000)
+    expect(answeredCount(run, items)).toBe(3)
   })
 
   it('в сдачу уходят только данные ответы и общее время', () => {

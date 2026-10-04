@@ -85,8 +85,10 @@ export default function IeltsRoutePage({ token, onChosen, onPricing, userName, u
                 </div>
                 <h2>{t(`ieltsOb.route.${o.id}`)}</h2>
                 <p className="ih-route__termline">
-                  <b className={`ih-route__term ${o.term.long ? 'is-long' : ''}`}>{o.term.long ? t('ieltsOb.termLong') : `≈ ${formatMonths(o.term.months, t, lang)}`}</b>
-                  {!o.term.long && <span>{t('ieltsOb.toGoal')}</span>}
+                  {/* Срок длиннее полутора лет не называем (§11.4), но пишем тем же крупным кеглем, что и срок у соседей:
+                      мелкая строка «больше полутора лет» во всех трёх карточках выглядела как поломка */}
+                  <b className="ih-route__term" title={o.term.long ? t('ieltsOb.termLong') : undefined}>{o.term.long ? t('ieltsOb.termLongShort') : `≈ ${formatMonths(o.term.months, t, lang)}`}</b>
+                  <span>{t('ieltsOb.toGoal')}</span>
                 </p>
                 {fitChip(o)}
                 <ul>

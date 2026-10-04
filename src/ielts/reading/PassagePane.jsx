@@ -3,6 +3,9 @@ import { segments, MARKER_COLORS } from './highlights.js'
 import { TranslateIcon } from '../icons.jsx'
 import { useI18n } from '../../i18n.jsx'
 
+// «В словарь» — для слова или короткой фразы: предложение целиком в словаре бесполезно
+const MAX_SAVE_WORDS = 6
+
 // Смещение начала/конца выделения внутри текста абзаца: Range от начала текстового блока до края выделения.
 function offsetIn(container, node, offset) {
   const r = document.createRange()
@@ -102,13 +105,20 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
             const key = `${keyBase + ti}:${pi}`
             const mine = highlights.filter((h) => h.key === key)
             const m = mark && mark.key === key ? mark : null
+            const segs = segments(p.text || '', mine, m)
             return (
               <p key={key} data-pkey={key} className={`ih-para ${focusKey === key ? 'is-focus' : ''}`}>
                 {p.label && <b className="ih-para__label">{p.label}</b>}
                 <span data-ptext={key}>
-                  {segments(p.text || '', mine, m).map((s, i) =>
+                  {segs.map((s, i) =>
                     s.color || s.mark ? (
-                      <mark key={i} className={`${s.color ? `ih-hl--${s.color}` : ''} ${s.mark ? 'ih-hl--answer' : ''}`.trim()}>
+                      // у первого куска места ответа — номер вопроса на полях (Figma 7). Номер рисует ::before из
+                      // data-n: текст псевдоэлемента не входит в Range, и смещения маркера не съезжают
+                      <mark
+                        key={i}
+                        data-n={s.mark && m?.n && !segs[i - 1]?.mark ? m.n : undefined}
+                        className={`${s.color ? `ih-hl--${s.color}` : ''} ${s.mark ? 'ih-hl--answer' : ''}`.trim()}
+                      >
                         {s.text}
                       </mark>
                     ) : (
@@ -126,7 +136,7 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
           {MARKER_COLORS.map((c) => (
             <button key={c} type="button" className={`ih-hl-dot ih-hl-dot--${c}`} aria-label={t(`ieltsReading.marker.c${c}`)} onClick={() => paint(c)} />
           ))}
-          {onSaveWord && menu.word.split(/\s+/).length <= 4 && (
+          {onSaveWord && menu.word && menu.word.split(/\s+/).length <= MAX_SAVE_WORDS && (
             <>
               <i className="ih-selmenu__sep" />
               <button type="button" className="ih-selmenu__vocab" onClick={save}>

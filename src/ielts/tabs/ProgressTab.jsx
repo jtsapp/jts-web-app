@@ -27,14 +27,22 @@ function WeeklyChart({ history, target, t }) {
   const W = 360
   const H = 210
   const L = 34
-  const R = 10
+  // правый отступ — под половину подписи «28.09»: с 10 последняя дата обрезалась краем svg
+  const R = 22
   const T = 10
   const B = 30
   const { lo, hi, ticks } = chartScale(weeks.map((w) => w.band), target)
-  const X = (i) => L + (i * (W - L - R)) / (weeks.length - 1)
+  const span = weeks[weeks.length - 1].n || 1
+  const X = (i) => L + (weeks[i].n * (W - L - R)) / span
   const Y = (v) => T + ((hi - v) * (H - T - B)) / (hi - lo || 1)
   const label = (w) => `${w.slice(8, 10)}.${w.slice(5, 7)}`
-  const every = Math.ceil(weeks.length / 6)
+  // подписи прореживаются по месту на оси, а не по счёту точек: соседние недели стоят теснее, чем через месяц
+  const shown = []
+  weeks.forEach((w, i) => {
+    const last = i === weeks.length - 1
+    while (last && shown.length && X(i) - X(shown[shown.length - 1]) < 34) shown.pop()
+    if (last || !shown.length || X(i) - X(shown[shown.length - 1]) >= 34) shown.push(i)
+  })
   return (
     <svg className="ih-pchart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={t('ieltsDash.p.pg.chart.aria', { points: weeks.map((w) => `${label(w.week)} ${w.band.toFixed(1)}`).join(', ') })}>
       {ticks.map((v) => (
@@ -43,7 +51,7 @@ function WeeklyChart({ history, target, t }) {
           <text x={2} y={Y(v) + 4} className={`ih-pchart__tick ${target != null && Math.abs(v - target) < 0.01 ? 'is-target' : ''}`}>{v.toFixed(1)}</text>
         </g>
       ))}
-      {weeks.map((w, i) => (i % every === 0 || i === weeks.length - 1 ? <text key={w.week} x={X(i)} y={H - 8} textAnchor="middle" className="ih-pchart__tick">{label(w.week)}</text> : null))}
+      {weeks.map((w, i) => (shown.includes(i) ? <text key={w.week} x={X(i)} y={H - 8} textAnchor="middle" className="ih-pchart__tick">{label(w.week)}</text> : null))}
       <polyline points={weeks.map((w, i) => `${X(i)},${Y(w.band)}`).join(' ')} className="ih-pchart__line" />
       {weeks.map((w, i) => <circle key={w.week} cx={X(i)} cy={Y(w.band)} r={4.5} className="ih-pchart__dot" />)}
     </svg>
@@ -98,7 +106,7 @@ export default function ProgressTab({ data, token, onOpenAttempt }) {
   const term = gap != null && gap > 0 ? estimateTerm(gap, daily) : null
   const typeName = (type) => t(`ieltsOb.p.diag.types.${type}`)
   const sectionName = (s) => s[0].toUpperCase() + s.slice(1)
-  const tiles = typeTiles(p.typeLists?.[section], p.byType?.[section])
+  const tiles = typeTiles(p.typeLists?.[section], p.byType?.[section], section)
   const traps = Object.entries(p.traps || {}).sort((a, b) => b[1] - a[1]).slice(0, 5)
   const trapMax = traps[0]?.[1] || 1
   const times = (p.timeByType?.[section] || []).slice(0, 5)
@@ -170,7 +178,8 @@ export default function ProgressTab({ data, token, onOpenAttempt }) {
           <span className="ih-seg" role="tablist">
             {['reading', 'listening'].map((s) => (
               <button key={s} type="button" role="tab" aria-selected={section === s} className={section === s ? 'is-on' : ''} onClick={() => setSection(s)}>
-                {t('ieltsDash.typesCount', { section: sectionName(s), n: String((p.typeLists?.[s] || []).length) })}
+                {/* число — по плиткам, которые реально нарисованы: «12 типов» при 13 плитках читалось как ошибка */}
+                {t('ieltsDash.typesCount', { section: sectionName(s), n: String(typeTiles(p.typeLists?.[s], p.byType?.[s], s).length) })}
               </button>
             ))}
           </span>
@@ -178,7 +187,7 @@ export default function ProgressTab({ data, token, onOpenAttempt }) {
         <ul className="ih-ptiles">
           {tiles.map((x) => (
             <li key={x.type} className={`ih-ptile is-${x.tone}`}>
-              <span>{typeName(x.type)}</span>
+              <span>{x.label}</span>
               {x.total ? (
                 <span className="ih-ptile__val"><b>{Math.round((x.correct / x.total) * 100)} %</b><small>{t('ieltsDash.answersShort', { n: String(x.total) })}</small></span>
               ) : (

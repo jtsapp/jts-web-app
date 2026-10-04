@@ -10,7 +10,7 @@
 // Записи никуда не сохраняются: после оценки остаются только стенограммы. Поэтому повторной оценки нет — упала
 // модель, ученик переписывает ответ (работа помечается failed).
 
-import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
+import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic.js'
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
 import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import { assessPronunciationChunked, isAzureSpeechConfigured, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
@@ -112,7 +112,7 @@ export async function POST(request) {
 
   let graded
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, maxOutputTokens: 900, timeoutMs: 60_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, maxOutputTokens: 900, timeoutMs: 80_000 })
     graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
   } catch (e) {
     console.error('ielts/speaking/assess model failed:', e?.message || e)

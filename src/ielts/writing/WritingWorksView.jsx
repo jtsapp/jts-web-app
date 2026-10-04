@@ -7,12 +7,24 @@ import { loadToken } from '../../lib/session.js'
 import { formatDate } from '../format.js'
 import { EditIcon } from '../icons.jsx'
 import { categoryLabel } from './WritingListView.jsx'
+import { listWritingDrafts } from './writing.js'
 import { useI18n } from '../../i18n.jsx'
 
 // «Мои работы» Writing и Speaking: все сданные работы навыка, новые сверху, со статусом ИИ-проверки и band.
-export default function WritingWorksView({ token, onOpenWork, onBack, skill = 'writing' }) {
+// У Writing сверху ещё черновики устройства (Figma: «сданные работы, черновики…»): без них начатое эссе находилось
+// только через то же задание в списке.
+export default function WritingWorksView({ token, onOpenWork, onOpenTask, catalog, onBack, skill = 'writing' }) {
   const { t, lang } = useI18n()
   const [state, setState] = useState({ status: 'loading', rows: [] })
+  const [drafts, setDrafts] = useState([])
+
+  // localStorage читаем после монтирования — иначе сервер и клиент нарисуют разное
+  useEffect(() => {
+    if (skill === 'writing') setDrafts(listWritingDrafts())
+  }, [skill])
+  const draftRows = drafts
+    .map((d) => ({ ...d, test: (catalog?.items || []).find((x) => x.id === d.testId) }))
+    .filter((d) => d.test)
 
   useEffect(() => {
     let alive = true
@@ -30,9 +42,23 @@ export default function WritingWorksView({ token, onOpenWork, onBack, skill = 'w
   if (state.status === 'loading') body = <p className="ih-muted">{t('ieltsReading.loading')}</p>
   else if (state.status === 'guest') body = <EmptyState icon={<EditIcon size={28} />} title={t('ieltsReading.guestTitle')} text={t('ieltsReading.guestText')} />
   else if (state.status === 'error') body = <EmptyState icon={<EditIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />
-  else if (!state.rows.length) body = <EmptyState icon={<EditIcon size={28} />} title={t('ieltsWriting.noWorksTitle')} text={t('ieltsWriting.noWorksText')} />
-  else
-    body = state.rows.map((w) => (
+  else if (!state.rows.length && !draftRows.length) body = <EmptyState icon={<EditIcon size={28} />} title={t('ieltsWriting.noWorksTitle')} text={t('ieltsWriting.noWorksText')} />
+  else {
+    const draftList = draftRows.map((d) => (
+      <button key={`draft-${d.testId}`} type="button" className="ih-trow ih-trow--writing" onClick={() => onOpenTask?.(d.testId)}>
+        <SectionTile section="writing" />
+        <span className="ih-trow__body">
+          <b>{d.test.title}</b>
+          <span>
+            {[d.test.kind === 'task2' ? 'Task 2' : 'Task 1', categoryLabel(t, d.test.kind, d.test.category), t('ieltsWriting.wordsN', { n: String(d.words) }), d.savedAt ? formatDate(new Date(d.savedAt).toISOString(), lang) : null]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </span>
+        <span className="ih-trow__last is-pending">{t('ieltsWriting.p.card.draft')}</span>
+      </button>
+    ))
+    const workList = state.rows.map((w) => (
       <button key={w.attemptId} type="button" className="ih-trow ih-trow--writing" onClick={() => onOpenWork(w.attemptId)}>
         <SectionTile section={skill} />
         <span className="ih-trow__body">
@@ -48,6 +74,17 @@ export default function WritingWorksView({ token, onOpenWork, onBack, skill = 'w
         </span>
       </button>
     ))
+    body = draftList.length ? (
+      <>
+        <h3 className="ih-rlist__sub">{t('ieltsWriting.p.works.drafts')}</h3>
+        {draftList}
+        {workList.length > 0 && <h3 className="ih-rlist__sub">{t('ieltsWriting.p.works.submitted')}</h3>}
+        {workList}
+      </>
+    ) : (
+      workList
+    )
+  }
 
   return (
     <div className="ih-rlist">

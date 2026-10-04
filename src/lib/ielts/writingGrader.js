@@ -76,7 +76,7 @@ CALIBRATION
 - Memorised or template padding → lower Coherence and Lexical.
 
 EVIDENCE RULES
-- errors: 3–8 items, each with a VERBATIM "quote" from the response, a 3–8 word "issue", a "correction" and the "criterion" it hits. Never invent a quote.
+- errors: 3–8 items, each with a VERBATIM "quote" from the response, a 3–8 word "issue" written in ${fbLang} (it is shown to the student next to the quote), a "correction" and the "criterion" it hits. Never invent a quote.
 - rewrites: 1–4 of the weakest sentences, "original" verbatim, "improved" at about band 7–8.
 - feedback: 2–3 sentences in ${fbLang}: the band call and the single highest-impact fix. No generic praise.
 

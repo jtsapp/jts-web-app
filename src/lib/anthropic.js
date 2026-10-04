@@ -26,6 +26,13 @@ const DEFAULT_GRADING_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 export const SUMMARY_MODEL =
   process.env.CALL_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
 const MAX_OUTPUT_TOKENS = 4096;
+// Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
+// остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
+// способом вызова, а Sonnet 5.5 его не принимает — см. structuredJson ниже.
+export const IELTS_REVIEW_MODEL = process.env.IELTS_REVIEW_MODEL || "claude-sonnet-5-5";
+// Модели, у которых нет «выключенного» мышления и принудительного вызова инструмента: thinking:{disabled} и
+// tool_choice {type:"tool"} у них — 400. JSON с них берём через structured outputs (output_config.format).
+const JSON_OUTPUT_MODELS = /^claude-(sonnet-5-5|opus-5-5|fable-5-1|mythos-5-1)\b/;
 
 let cached = null;
 function getClient() {
@@ -253,6 +260,47 @@ function toJsonSchema(schema) {
  *           images?: {mimeType: string, dataBase64: string}[],
  *           model?: string, maxOutputTokens?: number, timeoutMs?: number }} args
  */
+// Structured outputs требуют additionalProperties:false у каждого объекта схемы.
+function closeObjects(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  const out = { ...schema };
+  if (out.type === "object") {
+    out.additionalProperties = false;
+    if (out.properties) out.properties = Object.fromEntries(Object.entries(out.properties).map(([k, v]) => [k, closeObjects(v)]));
+  }
+  if (out.type === "array" && out.items) out.items = closeObjects(out.items);
+  return out;
+}
+
+// JSON по схеме через output_config.format: у Sonnet 5.5 нет принудительного tool_choice и выключенного мышления.
+// Мышление адаптивное, глубина — effort (medium: разбор по дескрипторам выигрывает от рассуждения, а ответ
+// укладывается в таймаут роута); max_tokens с запасом — мышление тратит его же.
+async function structuredJson(client, model, args, content) {
+  const res = await client.messages.create(
+    {
+      model,
+      max_tokens: Math.max(args.maxOutputTokens ?? MAX_OUTPUT_TOKENS, 16000),
+      system: args.systemPrompt,
+      messages: [{ role: "user", content }],
+      output_config: {
+        effort: args.effort || "medium",
+        format: { type: "json_schema", schema: closeObjects(toJsonSchema(args.schema)) },
+      },
+    },
+    args.timeoutMs ? { timeout: args.timeoutMs } : undefined,
+  );
+  try {
+    const u = res.usage || {};
+    console.log(JSON.stringify({ kind: "llm_cost", task: "structured", model, inputTokens: u.input_tokens ?? null, outputTokens: u.output_tokens ?? null }));
+  } catch {
+    /* logging must never break the reply */
+  }
+  if (res.stop_reason === "refusal") throw new Error(`Claude declined: ${res.stop_details?.category || "refusal"}`);
+  if (res.stop_reason === "max_tokens") throw new Error("Claude hit max_tokens before finishing the JSON");
+  const text = res.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+  return JSON.parse(text);
+}
+
 export async function structured(args) {
   const client = getClient();
   const model = args.model || DEFAULT_GRADING_MODEL;
@@ -272,6 +320,8 @@ export async function structured(args) {
           { type: "text", text: args.userMessage },
         ]
       : args.userMessage;
+
+  if (JSON_OUTPUT_MODELS.test(model)) return structuredJson(client, model, args, content);
 
   const res = await client.messages.create(
     {

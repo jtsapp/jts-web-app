@@ -50,8 +50,19 @@ export function createRun(doc, mode, now = Date.now()) {
   }
 }
 
+// Счёт идёт по НОМЕРАМ IELTS, а не по карточкам: choose-TWO «12–13» — два вопроса, как в итоге «8 из 13».
+// Считай мы карточки, сетка писала бы «из 12», а результат той же попытки — «из 13».
+export function markTotal(items) {
+  return items.reduce((n, x) => n + x.numbers.length, 0)
+}
+
 export function answeredCount(run, items) {
-  return items.filter((x) => isAnswered(run.answers[x.id])).length
+  return items.reduce((n, x) => {
+    const v = run.answers[x.id]
+    if (!isAnswered(v)) return n
+    // у choose-TWO одна выбранная буква закрывает один номер из двух
+    return n + (Array.isArray(v) ? Math.min(v.length, x.numbers.length) : x.numbers.length)
+  }, 0)
 }
 
 // Время на вопрос копится, пока он текущий: при уходе с вопроса добавляем прожитые секунды.

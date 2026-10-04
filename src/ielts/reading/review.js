@@ -33,7 +33,9 @@ export function reviewSummary(attempt, rows) {
     accuracy: a.maxScore ? Math.round((a.rawScore / a.maxScore) * 100) : 0,
     timeSec: a.timeSec ?? null,
     slow: rows.filter((r) => (r.verdict.timeSec || 0) > SLOW_SEC).length,
-    wrong: rows.filter((r) => r.status !== 'ok').length,
+    // по номерам, как итог «9 из 13»: у choose-TWO с одной верной буквой неверен один номер из двух
+    all: rows.reduce((n, r) => n + r.numbers.length, 0),
+    wrong: rows.reduce((n, r) => (r.status === 'ok' ? n : n + Math.max(1, r.numbers.length - (r.verdict.score || 0))), 0),
     spelling: rows.filter((r) => r.status === 'spelling').length,
     band: a.band ?? null,
   }

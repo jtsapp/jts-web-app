@@ -19,6 +19,8 @@ export function useRecorder() {
   const [state, setState] = useState('idle')
   const [error, setError] = useState(null)
   const [elapsed, setElapsed] = useState(0)
+  // поток микрофона наружу — для живой акустики под записью (liveAcoustics.js): тот же микрофон, второго запроса нет
+  const [stream, setStream] = useState(null)
   const streamRef = useRef(null)
   const recRef = useRef(null)
   const timerRef = useRef(null)
@@ -27,6 +29,7 @@ export function useRecorder() {
     clearInterval(timerRef.current)
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+    setStream(null)
   }, [])
 
   useEffect(() => release, [release])
@@ -38,7 +41,10 @@ export function useRecorder() {
       return false
     }
     try {
-      if (!streamRef.current) streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      if (!streamRef.current) {
+        streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+        setStream(streamRef.current)
+      }
     } catch (e) {
       setError(e?.name === 'NotAllowedError' ? 'denied' : 'failed')
       return false
@@ -79,5 +85,5 @@ export function useRecorder() {
     if (recRef.current?.state === 'recording') recRef.current.stop()
   }, [])
 
-  return { state, error, elapsed, start, stop, release }
+  return { state, error, elapsed, stream, start, stop, release }
 }

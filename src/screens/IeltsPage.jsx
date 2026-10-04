@@ -8,6 +8,7 @@ import LearnTab from '../ielts/tabs/LearnTab.jsx'
 import MockTestsTab from '../ielts/tabs/MockTestsTab.jsx'
 import ProgressTab from '../ielts/tabs/ProgressTab.jsx'
 import ComingSoonTab from '../ielts/tabs/ComingSoonTab.jsx'
+import InfoTab from '../ielts/tabs/InfoTab.jsx'
 import ReadingListView from '../ielts/reading/ReadingListView.jsx'
 import ReadingTaskView from '../ielts/reading/ReadingTaskView.jsx'
 import ListeningListView from '../ielts/listening/ListeningListView.jsx'
@@ -21,7 +22,7 @@ import SpeakingTaskView from '../ielts/speaking/SpeakingTaskView.jsx'
 import SpeakingWorkView from '../ielts/speaking/SpeakingWorkView.jsx'
 import SpeakingGuideView from '../ielts/speaking/SpeakingGuideView.jsx'
 import ShadowingView from '../ielts/speaking/ShadowingView.jsx'
-import { TranslateIcon, DescriptionIcon } from '../ielts/icons.jsx'
+import { TranslateIcon } from '../ielts/icons.jsx'
 import { useIeltsDashboard, starterPlan } from '../ielts/model/useIeltsDashboard.js'
 import { planTaskView } from '../ielts/model/plan.js'
 import { rebuildIeltsPlan } from '../api.js'
@@ -104,8 +105,12 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
       }, 0)
   }, [target])
 
+  // Первый показ раздела уже анимирует обёртка экранов App (.scr-in) — панель анимируем только при переходах внутри
+  // хаба, иначе два появления складываются в одно затянутое.
+  const [moved, setMoved] = useState(false)
   const go = (next) => {
     const merged = { view: null, testId: null, attemptId: null, autoGrade: false, ...next }
+    setMoved(true)
     setHub(merged)
     writeHubUrl(merged)
   }
@@ -238,7 +243,15 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
       />
     )
   } else if (hub.tab === 'learn' && hub.view === 'writing-works') {
-    panel = <WritingWorksView token={token} onOpenWork={(attemptId) => go({ tab: 'learn', view: 'writing-work', attemptId })} onBack={() => go({ tab: 'learn' })} />
+    panel = (
+      <WritingWorksView
+        token={token}
+        catalog={writingCatalog}
+        onOpenWork={(attemptId) => go({ tab: 'learn', view: 'writing-work', attemptId })}
+        onOpenTask={(testId) => go({ tab: 'learn', view: 'writing-works', testId })}
+        onBack={() => go({ tab: 'learn' })}
+      />
+    )
   } else if (hub.tab === 'learn' && hub.view === 'writing-guide') {
     panel = <WritingGuideView token={token} track={track} onBack={() => go({ tab: 'learn' })} />
   } else if (hub.tab === 'learn' && hub.testId) {
@@ -302,14 +315,22 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         action={{ label: t('ieltsHub.soon.vocab.cta'), onClick: () => onNav?.('vocab') }}
       />
     )
-  } else panel = <ComingSoonTab tabKey="info" icon={<DescriptionIcon size={28} />} />
+  } else panel = <InfoTab track={track} />
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ih">
         <IeltsHeader streakDays={data.streakDays} streakBest={data.streakBest} xp={data.xp} level={data.level} />
         <Tabs items={tabs} value={hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
-        <div role="tabpanel" id={`ih-panel-${hub.tab}`} aria-labelledby={`ih-tab-${hub.tab}`} className="ih__panel">
+        {/* key — по вкладке и экрану внутри неё: новый экран монтируется заново и проигрывает короткое появление
+            (.ih-enter, только opacity и transform). Внутри одного экрана обновления данных его не перезапускают. */}
+        <div
+          key={`${hub.tab}|${hub.view || ''}|${hub.testId || ''}|${hub.attemptId || ''}`}
+          role="tabpanel"
+          id={`ih-panel-${hub.tab}`}
+          aria-labelledby={`ih-tab-${hub.tab}`}
+          className={moved ? 'ih__panel ih-enter' : 'ih__panel'}
+        >
           {panel}
         </div>
       </div>

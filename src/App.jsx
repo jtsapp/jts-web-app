@@ -1845,7 +1845,7 @@ export default function App() {
     case 'ielts-diagnostic':
       return (
         <IeltsDiagnosticPage
-          token={token}
+          {...ieltsProps}
           target={ieltsRunTarget}
           onExit={() => handleNav('ielts', { tab: 'today' })}
           onDone={(attemptId) => handleNav('ielts-diagnostic-result', { attemptId: String(attemptId) })}

@@ -2163,6 +2163,15 @@
   flex-direction: column;
   gap: 10px;
 }
+.ih-rlist__sub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-muted, #667085);
+}
+.ih-rlist__sub:first-child {
+  margin-top: 0;
+}
 .ih-seg {
   display: inline-flex;
   padding: 4px;
@@ -5278,11 +5287,13 @@
 .ih-ob__main h1 {
   margin: 8px 0 0;
   text-align: center;
-  font-size: 32px;
+  font-size: 36px;
+  line-height: 1.35;
 }
 .ih-ob__sub {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   text-align: center;
+  font-size: 17px;
   color: var(--ih-muted);
 }
 .ih-ob__progress {
@@ -5314,13 +5325,13 @@
 }
 .ih-obopt {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
   width: 100%;
   text-align: left;
-  padding: 16px 18px;
-  border: 1px solid var(--ih-line);
-  border-radius: 16px;
+  padding: 18px 20px;
+  border: 2px solid #e8e8ee;
+  border-radius: 20px;
   background: #fff;
   font: inherit;
   color: inherit;
@@ -5328,7 +5339,613 @@
 }
 .ih-obopt.is-on {
   border-color: var(--ih-violet);
+  background: #f2ebff;
+}
+.ih-obopt__body > b {
+  font-size: 17px;
+}
+.ih-obopt__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f2ebff;
+  color: var(--ih-violet);
+}
+.ih-obopt.is-on .ih-obopt__icon {
+  background: #fff;
+}
+/* карточка «Уже знаю дату» с календарём внутри (1.4): блок, выбирает её шапка */
+.ih-obopt--date {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  cursor: default;
+}
+.ih-obopt__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-obopt__cal-icon {
+  display: grid;
+  color: var(--ih-violet);
+}
+.ih-obopt__body > .ih-obopt__date {
+  color: var(--ih-violet);
+  font-weight: 500;
+}
+.ih-obopt--date .ih-cal {
+  padding: 16px 18px;
+  border-radius: 16px;
+}
+/* 1.1 и 1.2: сетка больших карточек с иллюстрацией */
+/* ---- вкладка «Инфо» (Figma «Инфо об экзамене»): оглавление 260 px + глава ---- */
+.ih-info {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.ih-info__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 16px;
+}
+.ih-info__navitem {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2, #4a4a55);
+  text-align: left;
+  cursor: pointer;
+}
+.ih-info__navitem:hover {
+  background: #f8f8f8;
+}
+.ih-info__navitem.is-on {
+  background: #f2ebff;
+  color: #9047ff;
+  font-weight: 700;
+}
+.ih-info__disclaimer {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8f8f8;
+  color: #8a8a8a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ih-info__disclaimer svg {
+  flex: none;
+  margin-top: 1px;
+}
+.ih-info__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.ih-info__body p {
+  margin: 0;
+  line-height: 1.55;
+}
+.ih-info__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ih-info__head h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.ih-info__track {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2ebff;
+  color: #9047ff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ih-info__lead {
+  font-size: 16px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-info__fmt {
+  border: 1px solid #ededf2;
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+.ih-info__fmt-head,
+.ih-info__fmt-row {
+  display: grid;
+  grid-template-columns: 200px 100px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+}
+.ih-info__fmt-head {
+  padding: 12px 20px;
+  background: #f8f8f8;
+  color: #8a8a8a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ih-info__fmt-row {
+  border-top: 1px solid #ededf2;
+  font-size: 14px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-info__skill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #181818;
+  font-size: 15px;
+}
+.ih-info__time {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ih-info__total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.ih-info__total svg {
+  color: #9047ff;
+}
+.ih-info__pair,
+.ih-info__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.ih-info__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  font-size: 14px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-info__card h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #181818;
+}
+.ih-info__card--gold {
+  background: #fff8e6;
+  border-color: #f5dfa6;
+}
+.ih-info__card--violet {
   background: #f6f0ff;
+  border-color: #e6d8ff;
+}
+.ih-info__example {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f2ebff;
+  color: #9047ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.ih-info__btns,
+.ih-info__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ih-info__links {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.ih-info__ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #dadae3;
+  border-radius: 999px;
+  color: #181818;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ih-info__ext:hover {
+  border-color: #9047ff;
+  color: #9047ff;
+}
+.ih-info__h {
+  margin: 0 0 -8px;
+  font-size: 17px;
+}
+.ih-info__list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+  line-height: 1.5;
+}
+.ih-info__warn {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff1e3;
+  color: #9a5b00;
+}
+.ih-info__checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ih-info__checks li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.45;
+}
+.ih-info__checks svg {
+  flex: none;
+  margin-top: 1px;
+  color: #1f9d55;
+}
+.ih-info__scroll {
+  overflow-x: auto;
+}
+.ih-info__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ededf2;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 14px;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-info__table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.ih-info__table th,
+.ih-info__table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #ededf2;
+  text-align: left;
+  vertical-align: top;
+}
+.ih-info__table thead th {
+  background: #f8f8f8;
+  color: #8a8a8a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ih-info__table tbody th {
+  color: #181818;
+  font-weight: 700;
+}
+.ih-info__table--band {
+  border: 0;
+}
+.ih-info__table--band th,
+.ih-info__table--band td {
+  padding: 6px 10px;
+}
+@media (max-width: 900px) {
+  .ih-info {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .ih-info__nav {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .ih-info__navitem {
+    flex: none;
+    white-space: nowrap;
+  }
+  .ih-info__disclaimer {
+    display: none;
+  }
+  .ih-info__fmt-head {
+    display: none;
+  }
+  .ih-info__fmt-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ih-info__fmt-row > span:last-child {
+    grid-column: 1 / -1;
+  }
+  .ih-info__pair,
+  .ih-info__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- плавность раздела: только opacity / transform / цвета — без перерасчёта раскладки и без JS ----
+   Появление экрана — 220 мс; выбор карточки, наведение и нажатие — 160 мс. Кто выключил анимацию в системе,
+   получает всё мгновенно (prefers-reduced-motion в конце блока). */
+/* То же семейство, что .scr-in в styles.css (fade + лёгкий подъём). fill-mode — backwards, не both: удержанный после
+   анимации transform делает обёртку containing block'ом для position:fixed потомков (диалоги вкладок) и ломает sticky
+   (оглавление «Инфо») — грабля описана у .scr-in. */
+@keyframes ih-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ih-enter {
+  animation: ih-enter 0.22s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+.ih-obopt,
+.ih-obcard,
+.ih-obband,
+.ih-obday,
+.ih-dstart__level,
+.ih-route__opt,
+.ih-trow,
+.ih-qopt,
+.ih-info__navitem,
+.ih-info__ext,
+.ih-info__track,
+.ih-cal__grid button,
+.ih-cta,
+.ih-btn {
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+}
+/* лёгкий отклик на нажатие — карточка чуть «проседает» */
+.ih-obopt:active,
+.ih-obcard:active,
+.ih-obband:active,
+.ih-obday:active,
+.ih-dstart__level:active,
+.ih-trow:active,
+.ih-qopt:active,
+.ih-cta:not(:disabled):active,
+.ih-btn:not(:disabled):active {
+  transform: scale(0.985);
+}
+/* наведение — только на устройствах с мышью: на телефоне hover «залипает» после тапа */
+@media (hover: hover) {
+  .ih-obopt:not(.is-on):not(.ih-obopt--date):hover,
+  .ih-obcard:not(.is-on):hover,
+  .ih-obband:not(.is-on):hover,
+  .ih-obday:not(.is-on):hover,
+  .ih-dstart__level:not(.is-on):hover {
+    border-color: #d9c8ff;
+  }
+}
+/* полоски прогресса доезжают, а не прыгают */
+.ih-bar > span,
+.ih-dres__bar > i,
+.ih-ob__progress span {
+  transition: width 0.4s ease, background-color 0.25s ease;
+}
+/* картинки онбординга проявляются, а не «выпрыгивают» по мере загрузки */
+.ih-obcard img {
+  animation: fade-in 0.3s ease-out backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ih-enter,
+  .ih-obcard img {
+    animation: none;
+  }
+  .ih *,
+  .ih-ob *,
+  .ih-run * {
+    transition-duration: 0s !important;
+  }
+  .ih-obopt:active,
+  .ih-obcard:active,
+  .ih-obband:active,
+  .ih-obday:active,
+  .ih-dstart__level:active,
+  .ih-trow:active,
+  .ih-qopt:active,
+  .ih-cta:active,
+  .ih-btn:active {
+    transform: none;
+  }
+}
+
+.ih-obcards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-obcard {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 20px 20px 24px;
+  border: 2px solid #e8e8ee;
+  border-radius: 24px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-obcard.is-on {
+  border-color: var(--ih-violet);
+  background: #f2ebff;
+}
+.ih-obcard__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ih-obcard__top img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+.ih-obcard__title {
+  font-size: 20px;
+}
+.ih-obcard__hint {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ih-ink-2);
+}
+.ih-obcard--big {
+  gap: 8px;
+  padding: 20px 24px 28px;
+}
+.ih-obcard--big .ih-obcard__top {
+  margin-bottom: 0;
+}
+.ih-obcard__art {
+  align-self: center;
+  width: 168px;
+  height: 168px;
+  object-fit: contain;
+}
+.ih-obcard--big .ih-obcard__title {
+  font-size: 22px;
+}
+.ih-obcard--big .ih-obcard__hint {
+  font-size: 15px;
+}
+.ih-obcard__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-obcard__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f6f6f9;
+  color: var(--ih-ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.ih-obcard__note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--ih-muted);
+}
+.ih-obcard.is-on .ih-obcard__note {
+  background: #fff;
+}
+.ih-ob__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--ih-muted);
+}
+/* 1.5: четыре карточки нагрузки сеткой */
+.ih-obdaily {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-obday {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border: 2px solid #e8e8ee;
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-obday.is-on {
+  border-color: var(--ih-violet);
+  background: #f2ebff;
+}
+.ih-obday__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ih-obday__top b {
+  flex: 1;
+  font-size: 20px;
+}
+.ih-obday__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f2ebff;
+  color: var(--ih-violet);
+}
+.ih-obday.is-on .ih-obday__icon {
+  background: #fff;
+}
+.ih-obday__pace {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-obday.is-on .ih-obday__pace {
+  color: var(--ih-violet);
+}
+.ih-obday__term {
+  font-size: 14px;
+  color: var(--ih-muted);
 }
 .ih-obopt__body {
   flex: 1;
@@ -5367,40 +5984,61 @@
 .ih-obgrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 .ih-obband {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
-  padding: 16px;
-  border: 1px solid var(--ih-line);
-  border-radius: 16px;
+  gap: 6px;
+  align-items: stretch;
+  padding: 18px;
+  border: 2px solid #e8e8ee;
+  border-radius: 20px;
   background: #fff;
   font: inherit;
+  color: inherit;
   cursor: pointer;
   text-align: left;
 }
-.ih-obband b {
-  font-size: 24px;
+.ih-obband__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.ih-obband span {
-  font-size: 12px;
-  color: var(--ih-muted);
+.ih-obband b {
+  font-size: 32px;
+  line-height: 1.35;
+}
+.ih-obband > span:last-child {
+  font-size: 14px;
+  color: var(--ih-ink-2);
 }
 .ih-obband.is-on {
   border-color: var(--ih-violet);
-  background: #f6f0ff;
+  background: #f2ebff;
+}
+.ih-obband.is-on b {
+  color: var(--ih-violet);
 }
 .ih-ob__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 14px 18px;
+  border-radius: 16px;
   font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.ih-ob__note svg {
+  flex: none;
 }
 .ih-ob__note.is-ok {
-  background: #eaf7ef;
+  background: #e6f6ec;
+  color: var(--ih-ink);
+}
+.ih-ob__note.is-ok svg {
   color: var(--ih-green);
 }
 .ih-ob__note.is-warn {
@@ -5410,15 +6048,27 @@
 .ih-ob__summary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--ih-soft);
+  gap: 10px;
+  padding: 16px 20px;
+  border: 1px solid #e8e8ee;
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-ob__summary > b {
+  font-size: 14px;
+  color: var(--ih-muted);
 }
 .ih-ob__summary div {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+}
+.ih-ob__chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ih-soft);
+  font-size: 14px;
+  font-weight: 700;
 }
 .ih-ob__actions {
   display: flex;
@@ -5458,6 +6108,11 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  color: var(--ih-ink-2);
+}
+.ih-cal__head b {
+  font-size: 15px;
+  color: var(--ih-ink);
 }
 .ih-cal__head button {
   border: 0;
@@ -5472,12 +6127,17 @@
   text-align: center;
 }
 .ih-cal__wd {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--ih-muted);
   text-transform: capitalize;
 }
+/* день — круг 36×36 по центру ячейки: растянутая на ячейку кнопка с border-radius 50% давала овал */
 .ih-cal__grid button {
-  height: 34px;
+  justify-self: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
   border-radius: 50%;
   background: none;
@@ -5822,6 +6482,14 @@
   }
   .ih-obgrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ih-obcards,
+  .ih-obdaily {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-obcard__art {
+    width: 120px;
+    height: 120px;
   }
   .ih-diag__reading,
   .ih-route__grid {
@@ -6203,7 +6871,206 @@
   width: 100%;
   justify-content: center;
   min-height: 46px;
+  margin-top: auto;
   font-size: 15px;
+}
+.ih-route__opt.is-rec > .ih-cta {
+  /* у .ih-cta свои поля (53 px) — в карточке маршрута все три кнопки одной высоты, как в макете */
+  height: 46px;
+  padding-top: 0;
+  padding-bottom: 0;
+  box-shadow: none;
+}
+
+/* ---- старт диагностики (Figma 2): уровень, «Что будет», подсказка и кнопка ---- */
+.ih-dstart {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.ih-dstart__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ih-dstart__head h1 {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.35;
+}
+.ih-dstart__head p {
+  margin: 0;
+  font-size: 17px;
+  color: var(--ih-muted, #8a8a8a);
+}
+.ih-dstart__levels h2,
+.ih-dstart__blocks-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.ih-dstart__levels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-dstart__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-dstart__level {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #ededf2;
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-dstart__level.is-on {
+  border: 2px solid #9047ff;
+  padding: 19px;
+  background: #fbf8ff;
+}
+.ih-dstart__level-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ih-dstart__level-top svg {
+  flex: none;
+  color: #c8c8d0;
+}
+.ih-dstart__level.is-on .ih-dstart__level-top svg {
+  color: #9047ff;
+}
+.ih-dstart__level-top b {
+  flex: 1;
+  font-size: 17px;
+}
+.ih-dstart__rec {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #9047ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-dstart__min {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-ink-2, #4a4a55);
+}
+.ih-dstart__level.is-on .ih-dstart__min {
+  color: #9047ff;
+}
+.ih-dstart__hint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #8a8a8a;
+}
+.ih-dstart__blocks {
+  gap: 0;
+  padding: 20px 24px 8px;
+}
+.ih-dstart__blocks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+.ih-dstart__form {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f4f4f4;
+  color: var(--ih-ink-2, #4a4a55);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ih-dstart__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #ededf2;
+}
+.ih-dstart__row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ih-dstart__row-body b {
+  font-size: 16px;
+}
+.ih-dstart__row-body span {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+.ih-dstart__chip {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ih-tint);
+  color: var(--ih-tone);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-dstart__foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ih-dstart__note {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f8f8f8;
+  color: var(--ih-ink-2, #4a4a55);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ih-dstart__note svg {
+  flex: none;
+  color: #8a8a8a;
+}
+.ih-dstart__cta {
+  flex: none;
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .ih-dstart__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-dstart__head h1 {
+    font-size: 28px;
+  }
+  .ih-dstart__row {
+    flex-wrap: wrap;
+  }
+  .ih-dstart__chip {
+    margin-left: 60px;
+  }
+  .ih-dstart__foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ih-dstart__cta {
+    justify-content: center;
+  }
 }
 .ih-route__why {
   display: flex;
@@ -6421,6 +7288,8 @@
 /* ========================================================================= */
 .ih-progress {
   gap: 20px;
+  /* старое правило первой версии вкладки ставило align-items: start — блоки сжимались по содержимому */
+  align-items: stretch;
 }
 .ih-progress h3 {
   font-size: 18px;
@@ -6830,4 +7699,374 @@
 .ih-ob__qans .is-right {
   color: var(--ih-green);
   font-weight: 600;
+}
+
+/* разбор Reading: номер вопроса у места ответа — зелёный кружок на полях (Figma 7). absolute без top встаёт на строку
+   начала цитаты, left — от абзаца в поле текста */
+.ih-para {
+  position: relative;
+}
+.ih-hl--answer[data-n]::before {
+  content: attr(data-n);
+  position: absolute;
+  left: -36px;
+  min-width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ih-green, #1f9d55);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 24px;
+  text-align: center;
+}
+@media (max-width: 900px) {
+  .ih-hl--answer[data-n]::before {
+    left: -14px;
+    min-width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 11px;
+  }
+}
+
+/* плитки точности — значения макета «Прогресс» (Figma 1:780) */
+.ih-ptile {
+  gap: 4px;
+  min-height: 87px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ih-ink);
+}
+.ih-ptile.is-high {
+  background: #e6f6ec;
+}
+.ih-ptile.is-mid {
+  background: #fff4db;
+}
+.ih-ptile.is-low {
+  background: #fdecef;
+}
+.ih-ptile.is-none {
+  background: #f4f4f4;
+}
+.ih-ptile.is-mid .ih-ptile__val b {
+  color: #b7791f;
+}
+.ih-ptile.is-low .ih-ptile__val b {
+  color: #e0364f;
+}
+.ih-ptile__val small {
+  font-size: 12px;
+  font-weight: 500;
+}
+.ih-ptile__none {
+  font-size: 18px;
+}
+.ih-ptiles__legend .is-mid {
+  background: #e0a93a;
+}
+.ih-ptiles__legend i {
+  width: 10px;
+  height: 10px;
+}
+
+/* ========================================================================= */
+/* ==========  IELTS: Speaking — прохождение по Figma 11 (1:2839)  ========== */
+/* ========================================================================= */
+.ih-srun__body {
+  grid-template-columns: minmax(0, 640px) minmax(320px, 560px);
+  justify-content: center;
+  column-gap: 80px;
+  row-gap: 20px;
+  max-width: 1360px;
+  padding-top: 36px;
+}
+.ih-srun__left {
+  gap: 20px;
+}
+/* карточка Part 2 */
+.ih-srun__left > .ih-card:has(.ih-cue) {
+  padding: 28px 32px;
+  border-radius: 24px;
+}
+.ih-cue {
+  gap: 14px;
+}
+.ih-cue .ih-chip {
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.ih-cue h3 {
+  font-size: 22px;
+  line-height: 1.36;
+}
+.ih-cue > .ih-muted {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ih-cue ul {
+  list-style: none;
+  padding: 0;
+  gap: 10px;
+}
+.ih-cue li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+.ih-cue li::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ih-green);
+}
+.ih-cue > p:last-child {
+  font-size: 16px;
+}
+/* заметки — жёлтая карточка с фишками */
+.ih-snotes {
+  gap: 10px;
+  padding: 20px 24px;
+  border: 1px solid #f2e3a6;
+  border-radius: 20px;
+  background: #fffbea;
+}
+.ih-snotes header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ih-snotes header b {
+  flex: 1;
+  font-size: 15px;
+}
+.ih-snotes header svg {
+  color: #b7791f;
+}
+.ih-snotes header span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.ih-snotes__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ih-snotes__chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-snotes__chips li button {
+  border: 0;
+  background: none;
+  padding: 0 0 0 2px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ih-muted);
+  cursor: pointer;
+}
+.ih-snotes__chips li.ih-snotes__input {
+  padding: 0;
+  background: none;
+  /* поле тянется на остаток строки: в 200px подсказка «Ключевое слово — и Enter» обрезалась */
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+.ih-snotes__input input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  border: 1px dashed #e6cf77;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ih-snotes__input input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: #b7791f;
+}
+.ih-snotes__chips li.ih-snotes__empty {
+  background: none;
+  padding: 0;
+  font-weight: 500;
+  color: var(--ih-muted);
+}
+.ih-snotes > p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ih-muted);
+}
+/* правая карточка записи */
+.ih-srec {
+  gap: 24px;
+  padding: 36px;
+  border-radius: 28px;
+}
+.ih-srec__status {
+  font-size: 15px;
+}
+.ih-srec__status.is-rec {
+  color: var(--ih-red, #e0364f);
+}
+.ih-srec__status.is-rec::before {
+  width: 10px;
+  height: 10px;
+  background: var(--ih-red, #e0364f);
+}
+.ih-sring {
+  width: 220px;
+  height: 220px;
+}
+.ih-sring__track {
+  stroke: #efeff4;
+}
+.ih-sring__body b {
+  font-size: 48px;
+  line-height: 1.35;
+}
+.ih-sring__body span {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ih-swave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+}
+.ih-swave i {
+  width: 5px;
+  border-radius: 3px;
+  background: #cfe9da;
+  transition: height 0.1s linear;
+}
+.ih-swave i.is-voiced {
+  background: var(--ih-green);
+}
+.ih-shear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ih-soft);
+  color: var(--ih-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-shear.is-on {
+  background: #e6f6ec;
+  color: var(--ih-green);
+}
+.ih-srec__stop {
+  min-height: 54px;
+  padding: 16px 28px;
+  font-size: 16px;
+}
+.ih-srec__pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.ih-srec__pause i {
+  width: 2px;
+  height: 7px;
+  background: #fff;
+}
+.ih-srec > .ih-muted {
+  font-size: 13px;
+}
+.ih-srec__stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8f8f8;
+}
+.ih-srec__stats b {
+  font-size: 18px;
+}
+.ih-srec__stats span {
+  font-weight: 500;
+}
+/* шаги Part 2: пройденный — серая плашка с галочкой, текущий — зелёная, дальше — без фона; между ними черта */
+.ih-sstep {
+  gap: 0;
+}
+.ih-sstep li {
+  padding: 6px 12px;
+  color: var(--ih-muted);
+}
+.ih-sstep li + li {
+  margin-left: 32px;
+  position: relative;
+}
+.ih-sstep li + li::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  width: 16px;
+  height: 2px;
+  background: #ededf2;
+}
+.ih-sstep li.is-done {
+  background: #f4f4f4;
+  color: var(--ih-ink-2);
+}
+.ih-sstep li.is-done svg {
+  color: var(--ih-green);
+}
+.ih-sstep li.is-on {
+  background: #e6f6ec;
+  color: var(--ih-green);
+}
+@media (max-width: 1100px) {
+  .ih-srun__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .ih-srec {
+    padding: 24px 16px;
+  }
+  .ih-srec__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+  .ih-sstep li + li {
+    margin-left: 8px;
+  }
+  .ih-sstep li + li::before {
+    display: none;
+  }
 }

@@ -6,7 +6,7 @@
 //
 // Ключ IELTS_GRADER_KEY знает только сервер: без него бэкенд не отдаст работу на оценку и не примет band.
 
-import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
+import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic.js'
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
 import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import { isDbConfigured, recordIeltsWriting } from '@/lib/db/ielts.js'
@@ -55,7 +55,7 @@ export async function POST(request) {
 
   let assessment
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, timeoutMs: 90_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, timeoutMs: 90_000 })
     assessment = normalizeAssessment(raw, job.text)
   } catch (e) {
     console.error('ielts/writing/assess model failed:', e?.message || e)

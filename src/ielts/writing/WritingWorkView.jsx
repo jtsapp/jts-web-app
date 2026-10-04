@@ -10,6 +10,7 @@ import { formatClock } from '../reading/run.js'
 import { EditIcon, InfoIcon, TimerIcon } from '../icons.jsx'
 import WritingTaskBody from './WritingTaskBody.jsx'
 import { CRITERIA, countWords, kindKey, selfCheckFor } from './writing.js'
+import { categoryLabel } from './WritingListView.jsx'
 import { useI18n } from '../../i18n.jsx'
 
 const CRIT_KEY = { taskResponse: 'tr', coherenceCohesion: 'cc', lexicalResource: 'lr', grammaticalRange: 'gra' }
@@ -122,6 +123,13 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
   return (
     <div className="ih-wwork">
       <Breadcrumbs items={crumbs} />
+      {/* без заголовка страница оценки не говорила, какое это эссе: у ученика их несколько на одну тему */}
+      <div className="ih-rlist__head">
+        <div>
+          <h2>{doc.title}</h2>
+          <p>{[doc.kind === 'task2' ? 'Task 2' : 'Task 1', categoryLabel(t, doc.kind, doc.category || doc.visual || doc.register || doc.essayType), formatDate(v.attempt.finishedAt, lang)].filter(Boolean).join(' · ')}</p>
+        </div>
+      </div>
 
       {status === 'done' ? (
         <section className="ih-card ih-wscore">

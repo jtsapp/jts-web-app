@@ -9,7 +9,38 @@ import { setIeltsParams } from '../ielts/urlParams.js'
 import { CueCard } from '../ielts/speaking/SpeakingTaskView.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { TIMING, formatSec, speakingQuestions } from '../ielts/speaking/speaking.js'
+import { useLiveAcoustics } from '../ielts/speaking/liveAcoustics.js'
 import { CheckIcon, CloseIcon, EditIcon, MicIcon, Replay5Icon } from '../ielts/icons.jsx'
+
+// «Прошлый ответ» в строке метрик (Figma 11) — длина предыдущего ответа той же части, и между заходами тоже
+const lastKey = (kind) => `jts_ielts_sp_last_${kind}`
+function readLast(kind) {
+  try {
+    const v = Number(localStorage.getItem(lastKey(kind)))
+    return v > 0 ? v : null
+  } catch {
+    return null
+  }
+}
+function writeLast(kind, sec) {
+  try {
+    localStorage.setItem(lastKey(kind), String(sec))
+  } catch {
+    /* без хранилища метрика просто начнётся с прочерка */
+  }
+}
+
+// Волна под кольцом: последние кадры громкости; кадры с голосом — зелёные, тишина — бледная (Figma 11)
+function Wave({ levels }) {
+  const bars = levels.length ? levels : Array.from({ length: 22 }, () => ({ level: 0, voiced: false }))
+  return (
+    <div className="ih-swave" aria-hidden="true">
+      {bars.map((b, i) => (
+        <i key={i} className={b.voiced ? 'is-voiced' : ''} style={{ height: `${Math.max(10, Math.round(b.level * 48))}px` }} />
+      ))}
+    </div>
+  )
+}
 
 // Кольцо записи: сколько прошло из потолка ответа (Figma 11 — «1:24 из 2:00»).
 function Ring({ value, max, children, live }) {
@@ -43,7 +74,11 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
   const [phase, setPhase] = useState('intro') // intro | ask | prep | answer | review | followup | done
   const [idx, setIdx] = useState(0)
   const [takes, setTakes] = useState({}) // itemId → { wav, url, durationSec }
-  const [notes, setNotes] = useState('')
+  // живая акустика идёт только во время записи — тем же микрофоном (rec.stream)
+  const live = useLiveAcoustics(rec.stream, rec.state === 'recording')
+  const [notes, setNotes] = useState([]) // заметки Part 2 — фишками, как в Figma: ключевые слова, не предложения
+  const [noteDraft, setNoteDraft] = useState('')
+  const [prevDur, setPrevDur] = useState(null)
   const [prepLeft, setPrepLeft] = useState(0)
   const [models, setModels] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -74,18 +109,28 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
   const timing = doc ? TIMING[doc.kind] : null
   const part2 = doc?.kind === 'part2'
 
+  const kind = doc?.kind
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- значение из localStorage, только на клиенте после загрузки теста
+    if (kind) setPrevDur(readLast(kind))
+  }, [kind])
+
   const record = useCallback(
     (itemId, maxSec, next) => {
       rec.start({
         maxSec,
         onDone: (take) => {
           if (!alive.current) return
-          if (take) setTakes((m) => ({ ...m, [itemId]: take }))
+          if (take) {
+            setTakes((m) => ({ ...m, [itemId]: take }))
+            setPrevDur(take.durationSec)
+            if (kind) writeLast(kind, take.durationSec)
+          }
           next?.(take)
         },
       })
     },
-    [rec],
+    [rec, kind],
   )
 
   const goNext = useCallback(() => {
@@ -185,6 +230,11 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
   if (state.status === 'loading') return <div className="ih-run ih-run--empty"><p className="ih-muted">{t('ieltsReading.loading')}</p></div>
 
   const recording = rec.state === 'recording'
+  const addNote = () => {
+    const v = noteDraft.trim()
+    if (v) setNotes((n) => [...n, v])
+    setNoteDraft('')
+  }
   const steps = part2 ? ['prep', 'answer', 'followup'] : null
   // до старта ни один этап не начат и не пройден
   const stepIndex = part2 ? (phase === 'intro' ? -1 : phase === 'prep' ? 0 : phase === 'followup' || phase === 'done' ? 2 : 1) : null
@@ -207,7 +257,8 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
             {steps.map((s, i) => (
               <li key={s} className={i < stepIndex ? 'is-done' : i === stepIndex ? 'is-on' : ''}>
                 {i < stepIndex ? <CheckIcon size={14} /> : <span>{i + 1}</span>}
-                {t(`ieltsSpeaking.step.${s}`)}{s === 'prep' && phase === 'prep' ? ` · ${formatSec(prepLeft)}` : ''}
+                {/* у подготовки — остаток минуты, а пройденной — её длина (Figma: «✓ Подготовка · 1:00») */}
+                {t(`ieltsSpeaking.step.${s}`)}{s === 'prep' ? ` · ${formatSec(phase === 'prep' ? prepLeft : TIMING.part2.prepSec)}` : ''}
               </li>
             ))}
           </ol>
@@ -254,8 +305,41 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
             )}
             {part2 && (
               <section className="ih-snotes">
-                <b><EditIcon size={16} />{t('ieltsSpeaking.notes')}</b>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('ieltsSpeaking.notesHint')} lang="en" disabled={phase !== 'prep'} />
+                <header>
+                  <b><EditIcon size={18} />{t('ieltsSpeaking.notes')}</b>
+                  <span>{t('ieltsSpeaking.notesMadeIn')}</span>
+                </header>
+                <ul className="ih-snotes__chips" lang="en">
+                  {notes.map((n, i) => (
+                    <li key={`${n}-${i}`}>
+                      {n}
+                      {phase === 'prep' && (
+                        <button type="button" aria-label={t('ieltsSpeaking.removeNote')} onClick={() => setNotes((all) => all.filter((_, j) => j !== i))}>×</button>
+                      )}
+                    </li>
+                  ))}
+                  {phase === 'prep' ? (
+                    <li className="ih-snotes__input">
+                      <input
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault()
+                            addNote()
+                          }
+                        }}
+                        onBlur={addNote}
+                        placeholder={t('ieltsSpeaking.notesAdd')}
+                        lang="en"
+                        aria-label={t('ieltsSpeaking.notes')}
+                      />
+                    </li>
+                  ) : (
+                    !notes.length && <li className="ih-snotes__empty">{t('ieltsSpeaking.notesEmpty')}</li>
+                  )}
+                </ul>
+                <p>{t('ieltsSpeaking.notesFooter')}</p>
               </section>
             )}
           </div>
@@ -279,8 +363,17 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
                   <b>{formatSec(recording ? rec.elapsed : 0)}</b>
                   <span>{t('ieltsSpeaking.ofTime', { time: formatSec(maxSec) })}</span>
                 </Ring>
+                {recording && (
+                  <>
+                    <Wave levels={live.levels} />
+                    <span className={`ih-shear ${live.hearing ? 'is-on' : ''}`}>
+                      <MicIcon size={18} />
+                      {live.hearing ? (live.device ? t('ieltsSpeaking.hearing', { device: live.device.replace(/\s*\(.*\)$/, '') }) : t('ieltsSpeaking.hearingShort')) : t('ieltsSpeaking.notHearing')}
+                    </span>
+                  </>
+                )}
                 {recording ? (
-                  <button type="button" className="ih-btn ih-btn--dark ih-srec__main" onClick={rec.stop}>{t('ieltsSpeaking.stop')}</button>
+                  <button type="button" className="ih-btn ih-btn--dark ih-srec__main ih-srec__stop" onClick={rec.stop}><span className="ih-srec__pause" aria-hidden="true"><i /><i /></span>{t('ieltsSpeaking.stop')}</button>
                 ) : phase === 'review' ? (
                   <div className="ih-srec__review">
                     {takes[q.id] && <audio controls src={takes[q.id].url} />}
@@ -296,9 +389,12 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
                 {rec.error && <p className="ih-run__error" role="alert">{t(`ieltsSpeaking.micError.${rec.error}`)}</p>}
               </>
             )}
+            {/* метрики Figma 11: прошлый ответ, доля речи, паузы дольше 2 с, слова в минуту — считаются на устройстве */}
             <div className="ih-srec__stats">
-              <div><b>{answered}/{qs.length}</b><span>{t('ieltsSpeaking.answered')}</span></div>
-              <div><b>{takes[q?.id] ? formatSec(takes[q.id].durationSec) : '—'}</b><span>{t('ieltsSpeaking.lastTake')}</span></div>
+              <div><b>{prevDur ? formatSec(prevDur) : '—'}</b><span>{t('ieltsSpeaking.metric.prev')}</span></div>
+              <div><b>{live.speechShare != null ? `${live.speechShare} %` : '—'}</b><span>{t('ieltsSpeaking.metric.share')}</span></div>
+              <div><b>{live.speechShare != null ? live.longPauses : '—'}</b><span>{t('ieltsSpeaking.metric.pauses')}</span></div>
+              <div><b>{live.wpm ?? '—'}</b><span>{t('ieltsSpeaking.metric.wpm')}</span></div>
             </div>
           </section>
         </main>

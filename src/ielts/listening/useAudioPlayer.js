@@ -108,7 +108,7 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
     }
     const speakers = [...new Set(lines.map((l) => l.speaker).filter(Boolean))]
     const voice = speakers.indexOf(lines[i].speaker) === 1 ? VOICE.gbMale : VOICE.gb
-    ttsRef.current = { i, stopped: false }
+    ttsRef.current = { i, stopped: false, at: Date.now() }
     setState((s) => ({ ...s, time: Number(lines[i].start) || 0 }))
     const next = () => !ttsRef.current.stopped && ttsRef.current.i === i && speakFrom(i + 1)
     if (deviceRef.current) {
@@ -136,6 +136,22 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
   useEffect(() => {
     speakFromRef.current = speakFrom
   }, [speakFrom])
+
+  // Синтез идёт репликами, и время плеера прыгало раз в 5–10 с — дорожка казалась стоящей. Между началами реплик
+  // ведём её по часам: от начала реплики с поправкой на темп, но не дальше её конца по транскрипту.
+  useEffect(() => {
+    if (!tts || !state.playing) return
+    const id = setInterval(() => {
+      const cur = ttsRef.current
+      const line = transcript?.[cur.i]
+      if (cur.stopped || !line || !cur.at) return
+      const start = Number(line.start) || 0
+      const end = Number(line.end) || Number(transcript[cur.i + 1]?.start) || start
+      const t = Math.min(Math.max(start, end), start + ((Date.now() - cur.at) / 1000) * (state.rate || 1))
+      setState((s) => (Math.abs(s.time - t) < 0.05 ? s : { ...s, time: t }))
+    }, 250)
+    return () => clearInterval(id)
+  }, [tts, state.playing, state.rate, transcript])
 
   const play = useCallback(() => {
     const a = audioRef.current

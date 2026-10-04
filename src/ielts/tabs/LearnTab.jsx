@@ -9,6 +9,18 @@ import { useI18n } from '../../i18n.jsx'
 // Все четыре секции — банк бэкенда. Квоту IELTS тратит только ИИ-оценка Writing и
 // Speaking, и её запирают серверные роуты оценки (429), а не вход в задания: писать, говорить, сверяться с моделью и
 // проверять себя можно и при исчерпанной квоте. Строки без экрана помечены «скоро».
+// Пока каталог секции грузится, строка не пишет ни «ещё не начинали», ни пустую полоску: при первом заходе вкладка
+// показывала нетронутые секции у ученика с десятком попыток. Пустая полоска (0 из N) не рисуется и после загрузки —
+// в макете у неначатой строки только подпись.
+function settle(rows, cat) {
+  const loading = !cat || cat.status === 'loading'
+  return rows.map((r) => {
+    if (r.soon) return r
+    if (loading) return { ...r, meta: null, progress: undefined }
+    return r.progress && !r.progress.value ? { ...r, progress: undefined } : r
+  })
+}
+
 export default function LearnTab({ catalog, listeningCatalog, writingCatalog, speakingCatalog, track, onOpenReading }) {
   const { t } = useI18n()
 
@@ -75,15 +87,15 @@ export default function LearnTab({ catalog, listeningCatalog, writingCatalog, sp
 
   return (
     <div className="ih-learn">
-      <SkillCard section="listening" subtitle={lAcc != null ? t('ieltsLearn.accuracy', { n: String(lAcc) }) : null} rows={listening} soonLabel={t('ieltsLearn.soon')} />
+      <SkillCard section="listening" subtitle={lAcc != null ? t('ieltsLearn.accuracy', { n: String(lAcc) }) : null} rows={settle(listening, listeningCatalog)} soonLabel={t('ieltsLearn.soon')} />
       <SkillCard
         section="reading"
-        subtitle={acc != null ? t('ieltsLearn.accuracy', { n: String(acc) }) : catalog.status === 'loading' ? '…' : null}
-        rows={reading}
+        subtitle={acc != null ? t('ieltsLearn.accuracy', { n: String(acc) }) : null}
+        rows={settle(reading, catalog)}
         soonLabel={t('ieltsLearn.soon')}
       />
-      <SkillCard section="writing" rows={writing} soonLabel={t('ieltsLearn.soon')} />
-      <SkillCard section="speaking" rows={speaking} soonLabel={t('ieltsLearn.soon')} />
+      <SkillCard section="writing" rows={settle(writing, writingCatalog)} soonLabel={t('ieltsLearn.soon')} />
+      <SkillCard section="speaking" rows={settle(speaking, speakingCatalog)} soonLabel={t('ieltsLearn.soon')} />
     </div>
   )
 }

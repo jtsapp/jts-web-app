@@ -7,7 +7,8 @@ import { SectionTile } from '../sections.jsx'
 import { getIeltsTest } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { typeLabel } from './meta.js'
-import { examSeconds, loadDraft, dropDraft, MODES } from './run.js'
+import { examSeconds, loadDraft, dropDraft, MODES, pausedLeftSec } from './run.js'
+import { plural } from '../../lib/plural.js'
 import { formatDate } from '../format.js'
 import { ArrowForwardIcon, CheckCircleIcon, DescriptionIcon, EditIcon, HeadphonesIcon, MenuBookIcon, RadioOffIcon, Replay5Icon, TaskAltIcon, TimerIcon, TranslateIcon } from '../icons.jsx'
 import { totalAudioSec } from '../listening/listening.js'
@@ -98,7 +99,7 @@ export default function ReadingTaskView({ token, testId, listLabel, onBackToLear
               {/* Listening общий для Academic и GT — модуль у него не подписываем */}
               {!listening && <Chip tone="neutral" className="ih-chip--soft-ink">{test.module === 'general' ? 'General Training' : 'Academic'}</Chip>}
               {part && <Chip tone="neutral" className="ih-chip--soft-ink">{part}</Chip>}
-              <Chip tone="neutral" className="ih-chip--soft-ink">{t('ieltsReading.questions', { n: String(test.questionCount) })}</Chip>
+              <Chip tone="neutral" className="ih-chip--soft-ink">{t('ieltsReading.questions', { n: String(test.maxScore || test.questionCount) })}</Chip>
               {test.words > 0 && <Chip tone="neutral" className="ih-chip--soft-ink">{t('ieltsReading.words', { n: String(test.words) })}</Chip>}
               <Chip tone="neutral" className="ih-chip--soft-ink">{t(listening ? 'ieltsListening.audioMin' : 'ieltsReading.aboutMin', { n: String(minutes) })}</Chip>
             </div>
@@ -114,6 +115,8 @@ export default function ReadingTaskView({ token, testId, listLabel, onBackToLear
           {draft && (
             <div className="ih-rtask__draft" role="status">
               {t('ieltsReading.draftNote', { mode: t(`ieltsReading.mode.${draft.mode}`), n: String(Object.keys(draft.answers || {}).length) })}
+              {/* у экзамена часы стоят, пока тест закрыт (pausedLeftSec) — об этом стоит сказать, иначе ученик торопится зря */}
+              {draft.mode === 'exam' && pausedLeftSec(draft) != null && ` · ${t('ieltsReading.draftTimer', { left: plural(t, lang, 'ieltsHub.minutesLeft', Math.max(0, Math.round(pausedLeftSec(draft) / 60))) })}`}
               <button type="button" onClick={() => { dropDraft(testId); setDraft(null) }}>{t('ieltsReading.draftDrop')}</button>
             </div>
           )}

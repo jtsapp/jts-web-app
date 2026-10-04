@@ -80,7 +80,7 @@ function TextRow({ test, onOpen }) {
       <span className="ih-trow__body">
         <b>{test.title}</b>
         <span>
-          {test.kind === 'section' ? 'General Training' : 'Academic'} · {t('ieltsReading.questions', { n: String(test.questionCount) })}
+          {test.kind === 'section' ? 'General Training' : 'Academic'} · {t('ieltsReading.questions', { n: String(test.maxScore || test.questionCount) })}
           {test.words ? ` · ${t('ieltsReading.words', { n: String(test.words) })}` : ''}
         </span>
       </span>

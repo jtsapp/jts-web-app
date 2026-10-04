@@ -13,7 +13,7 @@ import { locateAnswer, textIndex } from '../ielts/reading/anchor.js'
 import { mechanicOf } from '../ielts/reading/meta.js'
 import { partLabel } from '../ielts/reading/ReadingTaskView.jsx'
 import {
-  answeredCount, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, remainingSec,
+  answeredCount, markTotal, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, remainingSec,
   resumeDraft, saveDraft, setAnswer, submitBody, toggleFlag,
 } from '../ielts/reading/run.js'
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, MenuBookIcon, TimerIcon } from '../ielts/icons.jsx'
@@ -188,7 +188,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
   }
 
   const groups = (doc.groups || []).map((g, gi) => ({ g, entries: items.filter((x) => x.groupIndex === gi) }))
-  const unanswered = items.length - done
+  const unanswered = markTotal(items) - done
 
   return (
     <div className={`ih-run ${big ? 'ih-run--big' : ''}`} data-mode={mode}>
@@ -217,7 +217,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
       <div className="ih-run__switch" role="tablist" hidden={texts.length === 0}>
         <button type="button" role="tab" aria-selected={pane === 'text'} onClick={() => setPane('text')}>{t('ieltsReading.paneText')}</button>
         <button type="button" role="tab" aria-selected={pane === 'questions'} onClick={() => setPane('questions')}>
-          {t('ieltsReading.paneQuestions')} · {done}/{items.length}
+          {t('ieltsReading.paneQuestions')} · {done}/{markTotal(items)}
         </button>
       </div>
 
@@ -239,7 +239,8 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
             highlights={run.highlights}
             onHighlight={(h) => setRun((r) => ({ ...r, highlights: addHighlight(r.highlights, h) }))}
             onClearAll={() => setRun((r) => ({ ...r, highlights: r.highlights.filter((h) => texts.length > 1 && !h.key.startsWith(`${textTab}:`)) }))}
-            onSaveWord={mode === 'exam' ? null : saveWord}
+            // «В словарь» — во всех режимах, как в макете экзамена (Figma 6): слово уходит в общий «Словарь», не в ответ
+            onSaveWord={saveWord}
             mark={focus}
             focusKey={focus?.key}
             noCopy={mode === 'exam'}
@@ -291,7 +292,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
             )
           })}
         </div>
-        <span className="ih-run__answered">{t('ieltsReading.answeredOf', { n: String(done), total: String(items.length) })}</span>
+        <span className="ih-run__answered">{t('ieltsReading.answeredOf', { n: String(done), total: String(markTotal(items)) })}</span>
         <button type="button" className="ih-round" onClick={() => go(-1)} aria-label={t('ieltsReading.prev')}><ChevronLeftIcon size={20} /></button>
         <button type="button" className="ih-round" onClick={() => go(1)} aria-label={t('ieltsReading.next')}><ChevronRightIcon size={20} /></button>
       </nav>

@@ -12,7 +12,7 @@ import { useAudioPlayer } from '../ielts/listening/useAudioPlayer.js'
 import { EXAM, flatDoc, lineAt, playerRules } from '../ielts/listening/listening.js'
 import { mechanicOf } from '../ielts/reading/meta.js'
 import {
-  answeredCount, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, saveDraft, setAnswer,
+  answeredCount, markTotal, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, saveDraft, setAnswer,
   submitBody, toggleFlag,
 } from '../ielts/reading/run.js'
 import { setIeltsParams } from '../ielts/urlParams.js'
@@ -267,7 +267,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
             )
           })}
         </div>
-        <span className="ih-run__answered">{t('ieltsReading.answeredOf', { n: String(done), total: String(items.length) })}</span>
+        <span className="ih-run__answered">{t('ieltsReading.answeredOf', { n: String(done), total: String(markTotal(items)) })}</span>
         {parts.length > 1 && (
           <span className="ih-lrun__parts" role="tablist">
             {parts.map((p, i) => (
@@ -306,7 +306,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
       <ConfirmDialog
         open={confirm}
         title={t('ieltsReading.confirmTitle')}
-        text={items.length - done ? t('ieltsReading.confirmUnanswered', { n: String(items.length - done) }) : t('ieltsReading.confirmAll')}
+        text={markTotal(items) - done ? t('ieltsReading.confirmUnanswered', { n: String(markTotal(items) - done) }) : t('ieltsReading.confirmAll')}
         confirmLabel={mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
         cancelLabel={t('ieltsReading.cancel')}
         busy={submitting}

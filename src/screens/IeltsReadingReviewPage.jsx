@@ -69,7 +69,8 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
     const loc = locateAnswer(doc, openRow.item, openRow.group?.text)
     if (loc) {
       setTextTab(Number(loc.key.split(':')[0]))
-      setFocus({ ...loc, kind: openRow.status === 'ok' ? 'answer' : 'answer' })
+      // номер вопроса — кружком у начала цитаты на полях текста (Figma 7): видно, к какому вопросу место ответа
+      setFocus({ ...loc, kind: 'answer', n: openRow.numbers?.join('–') })
     } else setFocus(null)
   }, [openRow, doc, listening])
 
@@ -165,7 +166,7 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
           </section>
 
           <div className="ih-review__filters" role="tablist">
-            {[['all', rows.length], ['wrong', s.wrong], ['spelling', s.spelling]].map(([k, n]) => (
+            {[['all', s.all], ['wrong', s.wrong], ['spelling', s.spelling]].map(([k, n]) => (
               <button key={k} type="button" role="tab" aria-selected={filter === k} className={filter === k ? 'is-on' : ''} onClick={() => setFilter(k)}>
                 {t(`ieltsReading.review.filter.${k}`)} · {n}
               </button>
@@ -228,7 +229,7 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
                     <div>
                       <span>{t('ieltsReading.review.where')}{loc?.label ? ` · ${t('ieltsReading.review.paragraph', { p: loc.label })}` : ''}</span>
                       {!listening && (
-                        <button type="button" onClick={() => { if (loc) { setTextTab(textIndex(doc, loc.textLabel)); setFocus({ ...loc, at: Date.now() }) } }}>
+                        <button type="button" onClick={() => { if (loc) { setTextTab(textIndex(doc, loc.textLabel)); setFocus({ ...loc, n: r.numbers?.join('–'), at: Date.now() }) } }}>
                           {t('ieltsReading.showInText')}
                         </button>
                       )}

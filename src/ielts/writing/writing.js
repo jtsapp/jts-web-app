@@ -92,6 +92,24 @@ export function saveWritingDraft(testId, draft) {
   }
 }
 
+// Все черновики устройства — для «Моих работ»: незаконченная работа есть только здесь, сервер её не видит.
+export function listWritingDrafts() {
+  const out = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key || !key.startsWith('jts_ielts_wr_draft_')) continue
+      const testId = key.slice('jts_ielts_wr_draft_'.length)
+      const d = loadWritingDraft(testId)
+      // пустой черновик (открыл и закрыл) — не работа
+      if (d && d.text.trim()) out.push({ testId, words: d.words ?? countWords(d.text), savedAt: d.savedAt || null })
+    }
+  } catch {
+    /* без хранилища черновиков нет */
+  }
+  return out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
+}
+
 export function dropWritingDraft(testId) {
   try {
     localStorage.removeItem(DRAFT(testId))
