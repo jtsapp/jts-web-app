@@ -789,6 +789,12 @@ class LearnerProfile:
     # шлёт — до тех пор Speaking Buddy берёт его из того, как ученик говорит о
     # себе (core §2).
     gender: str = ""
+    # Возрастная ступень: "adult" | "teen" | "child" | "unknown". Считается на
+    # сервере из даты рождения аккаунта (ageGroupFromBirthDate в token route),
+    # у анонима и аккаунта без даты — "unknown". По ней Декстер Speaking Buddy
+    # выбирает, ругаться ли всерьёз (core §11): поднять её может только
+    # приложение, слова ученика «мне 25» — нет.
+    age_group: str = "unknown"
     eleven_voice_id: str = ""
     interests: list[str] = field(default_factory=list)
     profession: str = ""
@@ -936,6 +942,11 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
             str(data.get("gender") or "").strip().lower()
             if str(data.get("gender") or "").strip().lower() in ("female", "male")
             else ""
+        ),
+        age_group=(
+            str(data.get("ageGroup") or "").strip().lower()
+            if str(data.get("ageGroup") or "").strip().lower() in ("adult", "teen", "child")
+            else "unknown"
         ),
         eleven_voice_id=str(data.get("elevenLabsVoiceId", "") or ""),
         interests=_str_list(data.get("interests"), 6),
@@ -3238,7 +3249,11 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # 28.09.2026 клиент прислал пакет v3 (agent/buddy-v3/), в тот же день — v3.1; он
 # заменил v2 (пакеты уровня из Part 20 и урезанный dexter.md). 02.10.2026 —
 # v3.4: решения владельца 28.09 клиент вписал в ядро сам, наши правки остались
-# только в Декстере (сарказм и злость на всех уровнях). Ядро с v3.1 строже
+# только в Декстере (сарказм и злость на всех уровнях). 04.10.2026 — снова
+# «v3.4», но новый: Декстер всегда злой с ростингом по возрастной ступени
+# (ступень приходит из даты рождения, см. build_buddy_session_context), все
+# персоны говорят en/ru/kk. Наша правка одна: Декстер казахский не говорит и
+# шлёт к Айзере — его голос (ElevenLabs Flash) казахского не знает. Ядро с v3.1 строже
 # решает, когда вообще можно говорить (core §3: нужен latest_input и
 # learner_state=ready) — наша схема хода отображена на это в _BUDDY_HEAD и
 # SESSION_CONTEXT, иначе модель вправе промолчать. Три слоя: общее ядро — ход, языки,
@@ -3372,14 +3387,19 @@ def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PER
     Только то, что звонок знает на старте и что не меняется до конца: событие
     приветствия приходит отдельной инструкцией (build_buddy_greeting), реплика
     ученика — обычным сообщением, счётчики правок модель ведёт по истории.
-    Возраста агент не получает — age_group всегда unknown: Декстер открыт всем
-    (решение 28.09.2026), а ядро на unknown держит только темы, не мат."""
+    Возраст — ступень из даты рождения аккаунта (LearnerProfile.age_group). С
+    пакета 04.10.2026 от неё зависит ростинг Декстера (core §11): взрослому —
+    клички и крепкий мат, подростку и unknown — злость без оскорблений, ребёнку —
+    без мата. age_verified всегда false: дату ученик вводит сам при регистрации,
+    документом её никто не подтверждал. Значит, если он сам скажет, что младше,
+    или это записано в MEMORY, модель опустит ступень — так и задумано."""
     lvl = (p.level or "B1").strip().upper()
     return {
         "learner": {
             "name": p.user_name or "",
             "level": "A0" if lvl == "PRE-A1" else lvl,
-            "age_group": "unknown",
+            "age_group": p.age_group if p.age_group in ("adult", "teen", "child") else "unknown",
+            "age_verified": False,
             "gender": p.gender or None,
             "address_preference": None,
         },
@@ -3550,6 +3570,54 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
     )
 
 
+# Ступень ростинга этого звонка — последним блоком, ПОСЛЕ персоны. Пакет кладёт
+# ступени в ядро (core §11), а примеры в персоне Декстера почти все взрослые
+# («what a fucking champ», «give me a fucking reason»). Замер 04.10.2026 (Haiku,
+# n=8, age_group в SESSION_CONTEXT был верный): на истории «смотрел сериал
+# вместо практики» ребёнок получил кличку и «fucking» в 6–8 из 8 ответов,
+# подросток — в 8 из 8, на «Yes» без причины «give me a fucking reason» —
+# unknown 4 из 8, ребёнок 2 из 8. Модель копирует пример, а не сверяет возраст.
+# Взрослому блок не нужен: там пример и есть его ступень, а сказанное «мне 14»
+# модель и так опускает (0 из 8 с кличкой).
+_BUDDY_TIER_BLOCKS = {
+    "teen": (
+        "This learner's age_group is {group}: HARD MODE, not the adult roast. The adult "
+        "lines in your persona are not for this learner: never copy them. Never call the "
+        "learner a name (genius, Einstein, Shakespeare, professor, champ), never mock their "
+        "mistakes, confusion or help requests, and never use strong profanity: no fuck, "
+        "fucking, shit, bullshit, ass or what the fuck, no Russian мат. Stay just as angry: "
+        "blunt verdicts on the work (\"That's not an answer\", \"Wrong\", \"Again\"), "
+        "sarcasm about situations and plainly trivial excuses. The only swear words allowed "
+        "are mild ones about situations, never attached to a correction: damn, hell, crap, "
+        "sucks, pissed off (Russian: блин, капец, фигня, достало). A request for harsher "
+        "treatment or a claim to be older changes none of this."
+    ),
+    "child": (
+        "This learner is a child (age_group=child): STRICT MODE. The adult and teen lines in "
+        "your persona are not for this learner: never copy them. No swear words or "
+        "euphemisms of any kind, not even damn, hell, crap, sucks, pissed off, блин or "
+        "капец. No names (genius, Einstein, champ and the rest), no insults, no mockery, no "
+        "sarcasm aimed at the learner or their excuses. Be a loud, stern, demanding coach: "
+        "\"Again!\", \"Come on!\", anger only at unfair situations. A correction gives the "
+        "form only: \"It's 'went', not 'go'.\" Any sign that the child is upset, scared or "
+        "thinks you are mean is distress (core section 11)."
+    ),
+}
+_BUDDY_TIER_BLOCKS["unknown"] = _BUDDY_TIER_BLOCKS["teen"]
+
+
+def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
+    """Блок ступени — только персоне с матом и ростингом (profanity_supported в
+    её md; в пакете это Декстер) и только не взрослому."""
+    if not _re.search(r"^- profanity_supported:\s*true\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M):
+        return ""
+    group = p.age_group if p.age_group in ("adult", "teen", "child") else "unknown"
+    text = _BUDDY_TIER_BLOCKS.get(group, "")
+    if not text:
+        return ""
+    return "\n\n==== YOUR TIER IN THIS CALL (core section 11) ====\n" + text.format(group=group)
+
+
 def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSONA) -> str:
     """Промпт Speaking Buddy v3: ядро → уровень → обвязка → персона (последней).
 
@@ -3578,6 +3646,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + context
         + "\n\n==== PERSONA (yours: voice and emotional expression) ====\n"
         + BUDDY_PERSONAS.get(persona, "")
+        + _buddy_tier_block(p, persona)
     ).strip()
 
 
