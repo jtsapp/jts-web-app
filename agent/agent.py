@@ -3618,6 +3618,39 @@ def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     return "\n\n==== YOUR TIER IN THIS CALL (core section 11) ====\n" + text.format(group=group)
 
 
+def _buddy_level_param(lvl: str, name: str, default: int) -> int:
+    """Число из таблицы Parameters профиля уровня («| normal_max_words | 44 |»):
+    один источник правды — клиентский файл, а не копия чисел в коде."""
+    m = _re.search(rf"^\|\s*{name}\s*\|\s*(\d+)\s*\|", BUDDY_LEVEL_PROFILES.get(lvl, ""), _re.M)
+    return int(m.group(1)) if m else default
+
+
+# Лимиты реплики — последним блоком, конкретными числами уровня. В пакете они
+# есть (таблица профиля уровня + core §4, §8), но лежат в середине промпта на
+# 85 тыс. символов, а последними идут живые примеры персоны. Замер 05.10.2026
+# (Haiku, длинная реплика ученика с 2–4 ошибками, 16 ситуаций × 3): длиннее
+# лимита по словам 35 из 48, по предложениям 44 из 48, два и больше исправлений
+# за ход 24 из 48 — в живом звонке Декстер отвечал до 90 слов и правил по три
+# ошибки сразу. С блоком (n=96): длиннее лимита 14 из 96 (медиана 46 → 29 слов),
+# два и больше исправлений 23 из 96. Без явного «никакого второго через and»
+# модель склеивала два исправления в одну фразу (29 из 96). Ступени возраста и
+# стражи на прежнем замере не сдвинулись.
+def _buddy_limits_block(lvl: str) -> str:
+    sentences = _buddy_level_param(lvl, "normal_max_sentences", 2)
+    words = _buddy_level_param(lvl, "normal_max_words", 40)
+    focuses = _buddy_level_param(lvl, "free_chat_max_correction_focuses", 1)
+    return (
+        f"\n\n==== LIMITS FOR EVERY REPLY (level profile {lvl}) ====\n"
+        f"At most {sentences} sentences and {words} spoken words in total: the reaction, "
+        "the correction and the question all count, and a short exclamation like "
+        "\"Fine.\" is a sentence too. A long learner answer does not earn a longer reply. "
+        f"Correct at most {focuses} error per learner turn: name exactly one wrong form, "
+        "with its fix. Every other mistake stays unmentioned, even in the same sentence, "
+        "even when it is obvious; no \"and also\", no list of fixes. Pick the one that "
+        "matters most. If you are not sure something is wrong, do not correct it."
+    )
+
+
 def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSONA) -> str:
     """Промпт Speaking Buddy v3: ядро → уровень → обвязка → персона (последней).
 
@@ -3647,6 +3680,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + "\n\n==== PERSONA (yours: voice and emotional expression) ====\n"
         + BUDDY_PERSONAS.get(persona, "")
         + _buddy_tier_block(p, persona)
+        + _buddy_limits_block(lvl)
     ).strip()
 
 
