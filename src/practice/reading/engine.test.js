@@ -12,6 +12,7 @@ import {
   exTotal,
   gapParts,
   initExercise,
+  isAnswered,
   isChoice,
   isMatch,
   isOrder,
@@ -149,6 +150,49 @@ describe('solvedState', () => {
   it('order восстанавливает исходный порядок', () => {
     const ex = { type: 'order', items: ['a', 'b', 'c'] }
     expect(solvedState(ex, initExercise(ex)).seq).toEqual([0, 1, 2])
+  })
+})
+
+// «Завершить» досдаёт непроверенные задания, но только те, где ученик
+// что-то ответил: пустое задание, записанное как 0/N, считалось бы сделанным.
+describe('isAnswered', () => {
+  it('выбор ответа — хотя бы один выбранный вариант', () => {
+    const ex = { type: 'mc', items: [{ q: '?', o: ['a', 'b'], a: 0 }] }
+    const st = initExercise(ex)
+    expect(isAnswered(ex, st)).toBe(false)
+    expect(isAnswered(ex, { ...st, sel: { 0: 1 } })).toBe(true)
+  })
+
+  it('пары — хотя бы одна связанная пара, а не просто выделенная половинка', () => {
+    const ex = { type: 'match', pairs: [{ l: 'a', r: 'x' }, { l: 'b', r: 'y' }] }
+    const st = initExercise(ex)
+    expect(isAnswered(ex, { ...st, activeL: 0 })).toBe(false)
+    expect(isAnswered(ex, { ...st, pairs: { 0: 1 } })).toBe(true)
+  })
+
+  it('пропуски — хотя бы одно вставленное слово', () => {
+    const ex = { type: 'gap', text: '{one} {two}' }
+    const st = initExercise(ex)
+    expect(isAnswered(ex, st)).toBe(false)
+    expect(isAnswered(ex, { ...st, fill: [0, null] })).toBe(true)
+  })
+
+  it('порядок — ученик хоть раз сдвинул пункт', () => {
+    // Стартовый порядок перемешан, и проверка нетронутого дала бы 0 из N
+    // при том, что ученик задание даже не открывал.
+    const ex = { type: 'order', items: ['a', 'b', 'c'] }
+    const st = initExercise(ex)
+    expect(isAnswered(ex, st)).toBe(false)
+    const moved = { ...st, seq: [...st.seq].reverse() }
+    expect(isAnswered(ex, moved)).toBe(true)
+    expect(isAnswered(ex, { ...moved, seq: st.seq.slice() })).toBe(false)
+  })
+
+  it('мнение — непустой текст', () => {
+    const ex = { type: 'reflection', keys: [['a']] }
+    const st = initExercise(ex)
+    expect(isAnswered(ex, { ...st, reflect: '   ' })).toBe(false)
+    expect(isAnswered(ex, { ...st, reflect: 'I think' })).toBe(true)
   })
 })
 
