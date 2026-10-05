@@ -7,7 +7,7 @@ import { loc } from '../../practice/reading/loc.js'
 import { readMin, sentences, wordCount } from '../../practice/reading/engine.js'
 import ReadingArticle from './ReadingArticle.jsx'
 import ReadingKeywords from './ReadingKeywords.jsx'
-import ReadingTasks from './ReadingTasks.jsx'
+import ReadingTasks, { checkUnchecked } from './ReadingTasks.jsx'
 import useReadingVoice from './useReadingVoice.js'
 
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
@@ -16,6 +16,9 @@ import useReadingVoice from './useReadingVoice.js'
 export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish }) {
   const { t, lang } = useI18n()
   const [tab, setTab] = useState('text')
+  // Реестр заданий с непроверенным ответом: «Завершить» досдаёт их перед
+  // итогом (см. checkUnchecked). Один объект на всю жизнь читалки.
+  const [unchecked] = useState(() => new Map())
   const g = genreOf(text.genre)
 
   const lines = useMemo(() => text.text.flatMap((p) => sentences(p)), [text])
@@ -107,10 +110,17 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
         </aside>
 
         <section className="rd-pane rd-pane--ex" id="rd-pane-ex" role="tabpanel" aria-labelledby="rd-tab-ex">
-          <ReadingTasks text={text} />
+          <ReadingTasks text={text} unchecked={unchecked} />
           <div className="rd-finish">
             <p>🏁 {t('reading.finishHint')}</p>
-            <button type="button" className="rd-btn rd-btn--primary" onClick={onFinish}>
+            <button
+              type="button"
+              className="rd-btn rd-btn--primary"
+              onClick={() => {
+                checkUnchecked(unchecked)
+                onFinish()
+              }}
+            >
               {t('reading.finish')} →
             </button>
           </div>
