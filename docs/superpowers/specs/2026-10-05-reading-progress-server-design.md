@@ -32,7 +32,8 @@
 
 ### Сервер — источник истины, слияние «лучший результат»
 
-`src/lib/practiceContract.js`:
+`src/lib/readingState.js` — чистые правила формы, общие для клиента и сервера
+(`practiceContract.js` подключает отсюда слияние):
 
 - `sanitizeReadingState(raw)` — приводит вход к форме
   `{ texts: { <id>: { ex: { <i>: { score, total } }, done } } }` или
@@ -45,8 +46,10 @@
   данные текста поменялись); `done` только включается (`a || b`). Ни один
   вход не может уменьшить сохранённое. Повторная отправка той же дельты ничего
   не меняет.
-- `mergeModuleState('reading', …)` → `mergeReadingState`. Остальные модули без
-  изменений.
+- `readingDelta(base, next)` — что в `next` лучше, чем в `base` (для досылки
+  недолетевшего); `null`, если нечего.
+- `practiceContract.js`: `mergeModuleState('reading', …)` → `mergeReadingState`.
+  Остальные модули без изменений.
 
 `src/lib/db/practice.js`, `savePracticeState`: read-merge-write в транзакции
 (`sql.begin`) под `pg_advisory_xact_lock(hashtext(profile_id || ':' || module))`.
@@ -77,8 +80,7 @@ localStorage-черновик и запоминает. Так смена акк�
 выход (их `clearLocalPractice` чистит черновик) не показывают чужой прогресс.
 
 **Запись.** `markExercise` / `markTextDone` сливают изменение в `mem` тем же
-`mergeReadingState` (клиент импортирует его из `practiceContract.js` — он без
-серверных зависимостей), пробуют записать черновик в localStorage (ошибку
+`mergeReadingState` (из `src/lib/readingState.js`), пробуют записать черновик в localStorage (ошибку
 квоты по-прежнему глотаем — теперь это безопасно), шлют событие прогресса. Для
 вошедшего — ставят ДЕЛЬТУ (`{ texts: { id: { ex: { i: {score,total} } } } }`
 или `{ texts: { id: { done: true } } }`) в очередь отправки.
@@ -130,7 +132,7 @@ localStorage-черновик и запоминает. Так смена акк�
 
 ## Тесты
 
-- `practiceContract.test.js`: `mergeReadingState` — лучший счёт побеждает,
+- `src/lib/readingState.test.js`: `mergeReadingState` — лучший счёт побеждает,
   урезанная дельта не стирает, `done` не выключается, повтор идемпотентен;
   `sanitizeReadingState` — мусор, отрицательные/дробные/`score>total`,
   лимиты размеров → `null`; лишние поля отброшены.
