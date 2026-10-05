@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { initExercise, isChoice, isMatch, isOrder, solvedState } from '../../practice/reading/engine.js'
+import { initExercise, isAnswered, isChoice, isMatch, isOrder, solvedState } from '../../practice/reading/engine.js'
 import { checkExercise } from '../../practice/reading/check.js'
 import { loc } from '../../practice/reading/loc.js'
 import { markExercise, textState } from '../../practice/reading/readingProgress.js'
@@ -12,21 +12,33 @@ import GapTask, { gapPlace, gapTap, chipTap } from './tasks/GapTask.jsx'
 import OrderTask, { orderMove, orderDrop } from './tasks/OrderTask.jsx'
 import ReflectionTask from './tasks/ReflectionTask.jsx'
 
-export default function ReadingTasks({ text }) {
+// unchecked — реестр читалки «номер задания → досдать его ответ» (см.
+// checkUnchecked). Без него тексты тоже работают: досдавать просто некому.
+export default function ReadingTasks({ text, unchecked }) {
   return (
     <>
       {text.exercises.map((ex, i) => (
-        <Exercise key={`${text.id}:${i}`} textId={text.id} ex={ex} index={i} />
+        <Exercise key={`${text.id}:${i}`} textId={text.id} ex={ex} index={i} unchecked={unchecked} />
       ))}
     </>
   )
+}
+
+/**
+ * Досдать всё, что ответили, но не проверили. Вызывается перед экраном итога:
+ * ученик отвечал на все задания и жал «Завершить», не нажимая «Проверить» у
+ * каждого, — баллы писала только «Проверить», и при всех верных ответах итог
+ * выходил 0 %. Прототип вёл себя так же; здесь это починено, а не перенесено.
+ */
+export function checkUnchecked(unchecked) {
+  if (unchecked) unchecked.forEach((flush) => flush())
 }
 
 // Одно упражнение целиком: своё состояние ответа, свой результат, свои кнопки.
 // Проверка и «показать ответ» разведены намеренно — как в прототипе: показ
 // правильных ответов рисует ту же разметку, но НЕ пишет прогресс, иначе
 // раздел проходился бы кнопкой «показать ответ».
-function Exercise({ textId, ex, index }) {
+function Exercise({ textId, ex, index, unchecked }) {
   const { t, lang } = useI18n()
   const [st, setSt] = useState(() => initExercise(ex))
   const [res, setRes] = useState(null)
@@ -68,6 +80,20 @@ function Exercise({ textId, ex, index }) {
     setRes(null)
     setRevealed(false)
   }, [ex])
+
+  // Досдача для «Завершить» — с текущим ответом, поэтому перерегистрируется
+  // на каждом его изменении. Проверенное и показанное уже решено (res есть,
+  // а у мнения показ образца живёт в showModel): показ ответа не должен
+  // засчитываться и здесь.
+  useEffect(() => {
+    if (!unchecked) return undefined
+    unchecked.set(index, () => {
+      if (res || showModel || !isAnswered(ex, st)) return
+      const r = checkExercise(ex, st)
+      markExercise(textId, index, r.score, r.total)
+    })
+    return () => unchecked.delete(index)
+  }, [unchecked, index, ex, st, res, showModel, textId])
 
   const body = () => {
     if (isChoice(ex.type)) {
