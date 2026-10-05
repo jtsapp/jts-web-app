@@ -1933,6 +1933,72 @@ def _last_is_user_message(chat_ctx: Any) -> bool:
     return getattr(it, "type", None) == "message" and getattr(it, "role", None) == "user"
 
 
+# Имя тега пакета Speaking Buddy по нашему имени эмоции — обратный ход
+# MOOD_ALIASES: в историю для мозга тег возвращается на языке персоны
+# ([angry], а не [mood:anger:2]), иначе модель увидит в своих прошлых репликах
+# чужой формат и начнёт писать его. Берём алиас силы 2: furious — это сила 3,
+# а Декстеру он запрещён персоной. Имён без алиаса (praise, curious…) у Buddy
+# нет; если всё же придут — тег вида [praise], его парсер тоже понимает.
+_MOOD_TAG_LABEL: dict[str, str] = {}
+for _alias, (_name, _level) in MOOD_ALIASES.items():
+    if _name and _level == 2:
+        _MOOD_TAG_LABEL.setdefault(_name, _alias)
+
+
+def _mood_tag_label(mood: tuple[str, int]) -> str:
+    """Тег, которым реплика пойдёт в историю для мозга: ровная — [default]."""
+    return _MOOD_TAG_LABEL.get(mood[0], mood[0]) if mood[0] else "default"
+
+
+def _reply_key(text: str) -> str:
+    """Ключ сверки реплики с историей: только буквы и цифры. Субтитры и история
+    могут разойтись с потоком модели пробелами и разметкой, а прерванная
+    реплика лежит в истории обрезанной — поэтому сверка по префиксу ключа."""
+    return "".join(ch.lower() for ch in text if ch.isalnum())
+
+
+def _with_reply_tags(chat_ctx: Any, tags: list[tuple[str, str]]) -> Any:
+    """Копия истории для мозга, где реплики тьютора снова начинаются с тега.
+
+    Тег снимается в llm_node до истории (иначе он всплыл бы в субтитрах и
+    выжимке звонка), и GPT-6 Sol, глядя на свои прошлые реплики без тега,
+    перестаёт его ставить. Без тега эмоцию додумывает фолбэк, и после
+    [sympathy] на горе лицо так и оставалось сочувствующим, хотя персона
+    велит дальше [default]. Прогон разговоров 05.10.2026 (Sol, Декстер, горе /
+    травля / ирония): тег сам — 103 из 151 ответа без тега в истории и 189 из
+    189 с ним; ученик после горя перешёл к делу — ровное лицо в 12 из 23 и в
+    28 из 28.
+
+    tags — (текст реплики, тег) в порядке реплик. Сверяем по порядку: каждой
+    реплике истории — первая подходящая запись после предыдущей найденной, так
+    две реплики с одинаковым началом не перепутаются. Реплика без записи
+    (агент перезапускался, приветствие мимо llm_node) остаётся как есть.
+    Настоящая история не меняется: подменяем элементы только в копии."""
+    if not tags:
+        return chat_ctx
+    ctx = chat_ctx.copy()
+    items = list(ctx.items)
+    keys = [_reply_key(text) for text, _ in tags]
+    j = 0
+    for i, item in enumerate(items):
+        if getattr(item, "type", None) != "message" or getattr(item, "role", None) != "assistant":
+            continue
+        text = item.text_content or ""
+        key = _reply_key(text)
+        if not key or MOOD_TAG_RE.match(text):
+            continue
+        for k in range(j, len(tags)):
+            if keys[k] and (keys[k].startswith(key) or key.startswith(keys[k])):
+                content = list(item.content)
+                at = next(n for n, c in enumerate(content) if isinstance(c, str) and c.strip())
+                content[at] = f"[{tags[k][1]}] {content[at].lstrip()}"
+                items[i] = item.model_copy(update={"content": content})
+                j = k + 1
+                break
+    ctx.items = items
+    return ctx
+
+
 class _SpeechCleaner:
     """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
     озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
@@ -2297,6 +2363,7 @@ class TutorAgent(Agent):
         due_items: tuple[str, ...] = (),
         prefill_tag: bool = False,
         fallback_mood: tuple[str, int] | None = None,
+        tag_history: bool = False,
     ):
         super().__init__(instructions=instructions)
         # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
@@ -2315,6 +2382,12 @@ class TutorAgent(Agent):
         # Последняя эмоция, которую модель назвала сама в этом звонке; ("", 0) —
         # назвала ровную ([default]). None — ещё ни одной.
         self._last_mood: tuple[str, int] | None = None
+        # Возвращать ли мозгу его реплики с тегом (см. _with_reply_tags) и что
+        # для этого помнить: (текст реплики, тег) по порядку. _shown_mood —
+        # эмоция текущей реплики, как её решил _reply_mood.
+        self._tag_history = tag_history
+        self._reply_tags: list[tuple[str, str]] = []
+        self._shown_mood: tuple[str, int] | None = None
         # Прозвучал ли текст в текущем ответе модели — см. _ack.
         self._spoke = False
         # Что память этой сессии назвала DUE (повторения + словарь): log_review
@@ -2447,6 +2520,7 @@ class TutorAgent(Agent):
         mood = self._reply_mood(cleaner)
         if mood is None:
             return False
+        self._shown_mood = mood
         if mood[0]:
             task = asyncio.create_task(self._publish_mood(mood[0], mood[1]))
             self._bg_tasks.add(task)
@@ -2468,6 +2542,10 @@ class TutorAgent(Agent):
         # (ядро §3: ход уже отвечен) — «[» заставил бы её говорить второй раз; на
         # приветствии последним стоит системное событие, а не ученик.
         self._spoke = False
+        self._shown_mood = None
+        said: list[str] = []
+        if self._tag_history:
+            chat_ctx = _with_reply_tags(chat_ctx, self._reply_tags)
         prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
         if prefill:
             chat_ctx = chat_ctx.copy()
@@ -2482,6 +2560,7 @@ class TutorAgent(Agent):
                 out = cleaner.feed(chunk)
                 if out:
                     self._spoke = self._spoke or bool(out.strip())
+                    said.append(out)
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
@@ -2491,6 +2570,7 @@ class TutorAgent(Agent):
                 if content:
                     delta.content = cleaner.feed(content)
                     self._spoke = self._spoke or bool(delta.content.strip())
+                    said.append(delta.content)
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
@@ -2505,9 +2585,12 @@ class TutorAgent(Agent):
         tail = cleaner.flush()
         if tail:
             self._spoke = self._spoke or bool(tail.strip())
+            said.append(tail)
             yield tail
         if not published:
             self._publish_reply_mood(cleaner)
+        if self._tag_history and self._shown_mood is not None and "".join(said).strip():
+            self._reply_tags.append(("".join(said), _mood_tag_label(self._shown_mood)))
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
             # видно, как часто модель думает вслух на живых звонках.
@@ -7024,6 +7107,9 @@ async def entrypoint(ctx: JobContext):
         prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
         # Тег забыт — эмоция последней явной реплики или персоны (см. _reply_mood).
         fallback_mood=buddy_default_mood(buddy_persona_for(profile)) if is_buddy else None,
+        # Тег прошлых реплик — обратно в историю для мозга (см. _with_reply_tags).
+        # Где есть префилл «[», тег держит он, историю не трогаем.
+        tag_history=is_buddy and not _brain_supports_prefill(session_brain_model(profile)),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
