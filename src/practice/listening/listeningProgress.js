@@ -3,25 +3,16 @@
 // Пройденные задания аудирования. У раздела не было ни хранения, ни понятия
 // «пройдено» — вводим множество id верно выполненных заданий (id стабильны:
 // a1_001, a2_005, … в public/practice/listening/content/<level>.json). Ключ и
-// событие — общие из practiceKeys.js.
+// событие — общие из practiceKeys.js; хранение — общее хранилище прогресса
+// (память + черновик + сервер, см. progressStore.js).
 
 import { LISTENING_KEY as KEY, LISTENING_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore, doneListOptions } from '../progressStore.js'
+
+const store = createProgressStore({ module: 'listening', key: KEY, event: EVENT, ...doneListOptions })
 
 function read() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(KEY) || '[]'))
-  } catch {
-    return new Set()
-  }
-}
-
-function write(set) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...set]))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
-  }
+  return new Set(store.read())
 }
 
 export function isTaskDone(taskId) {
@@ -38,16 +29,9 @@ export function getListeningDone(level) {
 
 export function markTaskDone(taskId) {
   if (typeof taskId !== 'string' || !taskId) return
-  const set = read()
-  if (set.has(taskId)) return
-  set.add(taskId)
-  write(set)
-  pushModule('listening', set) // best-effort серверный синк (no-op для гостя)
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
+  const list = store.read()
+  if (list.includes(taskId)) return
+  store.write([...list, taskId]) // событие и синк — внутри хранилища
 }
 
 export const LISTENING_PROGRESS_EVENT = EVENT

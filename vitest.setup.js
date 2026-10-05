@@ -13,6 +13,16 @@
  * vitest кладёт экземпляр JSDOM в глобал `jsdom` только в окружении jsdom —
  * в node-окружении окна нет, и подменять там нечего.
  */
+import { beforeEach } from 'vitest'
+
+// Память прогресса «Практики» (src/practice/progressStore.js) живёт в модуле и
+// переживает localStorage.clear() между тестами. Сбросы она кладёт в глобал, а
+// не экспортом: импорт хранилища отсюда загрузил бы настоящий practiceSync
+// раньше моков тестового файла.
+beforeEach(() => {
+  globalThis.__jtsPracticeStores?.forEach((fn) => fn())
+})
+
 if (typeof globalThis.jsdom !== 'undefined') {
   for (const name of ['localStorage', 'sessionStorage']) {
     Object.defineProperty(globalThis, name, {
