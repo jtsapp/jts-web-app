@@ -2,6 +2,8 @@
 // проверяем на Web Request — поэтому здесь нет ни импортов алиаса `@`, ни доступа
 // к localStorage: всё unit-тестируется в node.
 
+import { mergeReadingState } from './readingState.js'
+
 // 'situations' — статический движок «Speaking Practice A1–C1»
 // (public/practice/situations/), не путать с ситуативками из Java-бэкенда: те
 // адресуются по id и ограничиваются через ContentType.SITUATIVKA. Здесь
@@ -16,13 +18,15 @@
 // устройств может потерять результат одного из них — осознанный компромисс,
 // тот же, что уже принят для vocab.
 // 'reading' — стейт-объект {texts: {<id>: {ex, done}}} (результат каждого
-// упражнения текста + «дочитал»), та же семантика replace, что у writing.
+// упражнения текста + «дочитал»). НЕ replace: сервер сливает по заданию
+// «лучший результат» (readingState.js), и клиент шлёт дельты. Replace терял
+// результаты, когда клиент собирал состояние из забитого localStorage (05.10.2026).
 // 'words' — стейт-объект {scenes: {<id>: {found, done}}} визуального словаря
 // «Слова в картинках»: найденные слова сцены копятся между заходами. Уровня
 // у сцен нет вовсе (материал разбит по темам, а не по CEFR), поэтому в
 // домашнюю работу раздел не отчитывается.
 // 'verbs' — стейт-объект {saved, progress} «Неправильных глаголов»: отмеченные
-// глаголы и результат каждого задания по ключу режима. Replace, как у reading.
+// глаголы и результат каждого задания по ключу режима. Replace, как у writing.
 // Area 'verbs' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'listenchoose' — стейт-объект {seen: {easy, medium, hard}} «Слушай и выбирай»:
 // какие задания выборка уже показывала на каждой сложности. Replace, как у verbs.
@@ -69,9 +73,11 @@ export function emptyState(module) {
   return DONE_MODULES.includes(module) ? { done: [] } : {}
 }
 
-// Семантика записи: union для done-модулей (монотонность прохождения), replace
-// для vocab (настройки + SRS перезаписываются целиком).
+// Семантика записи: union для done-модулей (монотонность прохождения), слияние
+// «лучший результат» для reading, replace для остальных объектов (vocab:
+// настройки + SRS перезаписываются целиком).
 export function mergeModuleState(module, existing, incoming) {
+  if (module === 'reading') return mergeReadingState(existing, incoming)
   if (DONE_MODULES.includes(module)) {
     return {
       done: normalizeDone([
