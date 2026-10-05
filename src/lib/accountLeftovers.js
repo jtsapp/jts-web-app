@@ -11,11 +11,15 @@ import { clearLocalLessonProgress } from '../learning/lessonProgress.js'
 import { clearLocalSkillStats } from '../practice/skillStats.js'
 import { clearWeeklySnapshot } from './levelProgress.js'
 import { clearLocalPractice } from '../practice/practiceSync.js'
+import { clearCatalogStorage } from './catalogCacheKeys.js'
 
 export function clearAccountLeftovers() {
   clearLocalLessonProgress()
   clearLocalSkillStats()
   clearWeeklySnapshot()
+  // Кэш каталогов — копия сервера, ключи по ученику: после выхода он только
+  // занимал бы общую квоту localStorage (на ней же токен и черновики домашки).
+  clearCatalogStorage()
 }
 
 // Сессия умерла сама (restoreSession: 401 и рефреш не прошёл) — это тот же
