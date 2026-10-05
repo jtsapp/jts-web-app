@@ -233,6 +233,44 @@ describe('кэш каталога и отзыв выдачи курса', () => 
   // Уборка прошлых поколений. Версия в ключе разводит поколения, но сама по
   // себе ничего не удаляет — записи v1 остались бы лежать навсегда и занимать
   // общую квоту домена (5 МБ), вытесняя черновики домашки и прогресс Практики.
+  // 06.10.2026: разделы «Словаря» по 170–550 КБ забивали localStorage домена, и
+  // молча переставали записываться токен сессии, черновики домашки и прогресс.
+  // Большие ответы теперь живут только в памяти вкладки.
+  describe('большие ответы', () => {
+    const SCOPE_PATH = '/mobile/vocab-catalog/scopes/A0'
+    const big = () => ({ cards: [{ en: 'x'.repeat(120000) }] })
+
+    it('в localStorage не кладутся, но отдаются и держатся в памяти вкладки', async () => {
+      const token = studentToken(DANIYAR)
+      globalThis.fetch.mockResolvedValue(ok(big()))
+      expect(await api.getVocabScope(token, 'A0')).toEqual(big())
+      expect(catalogKeys()).toEqual([])
+      // Повторный заход в той же вкладке отдаётся сразу, из памяти.
+      globalThis.fetch.mockReturnValue(new Promise(() => {}))
+      expect(await api.getVocabScope(token, 'A0')).toEqual(big())
+    })
+
+    it('уже лежащая большая запись выметается при загрузке, маленькие остаются', async () => {
+      const bigKey = liveKey(DANIYAR.sub, SCOPE_PATH)
+      const smallKey = liveKey(DANIYAR.sub, CATALOG_PATH)
+      window.localStorage.setItem(bigKey, JSON.stringify(big()))
+      window.localStorage.setItem(smallKey, JSON.stringify(TREE))
+
+      api = await bootApp()
+
+      expect(catalogKeys()).toEqual([smallKey])
+    })
+
+    it('ответ стал большим — прежняя маленькая копия удаляется, а не остаётся устаревшей', async () => {
+      const token = studentToken(DANIYAR)
+      window.localStorage.setItem(liveKey(DANIYAR.sub, SCOPE_PATH), JSON.stringify({ cards: [] }))
+      globalThis.fetch.mockResolvedValue(ok(big()))
+      await api.getVocabScope(token, 'A0') // отдаёт копию, обновляет фоном
+      await settleBackground()
+      expect(catalogKeys()).toEqual([])
+    })
+  })
+
   describe('уборка прошлых поколений', () => {
     it('выносит записи прошлого поколения, включая общий бакет "anon"', async () => {
       const sharedWords = legacyKey('anon', WORDS_PATH)
