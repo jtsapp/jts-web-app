@@ -7,7 +7,8 @@
 // его добила, — и дефект стал бы плавающим вместо стабильного.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice } from './practiceSync.js'
+import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice, hydratePractice } from './practiceSync.js'
+import { createProgressStore, doneListOptions } from './progressStore.js'
 import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY } from './practiceKeys.js'
 
 // Управляемый fetch: тест сам решает, когда сервер ответит.
@@ -105,6 +106,38 @@ describe('flushModule', () => {
     pushModule('workbooks', new Set(['a0']))
     await flushModule('workbooks')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+// Ответ сервера должен попасть в память разделов, даже когда localStorage
+// забит (кэш каталогов): раньше applyHydratedState писал только в хранилище,
+// запись падала, и раздел поднимал устаревший черновик.
+describe('hydratePractice → память разделов', () => {
+  const jwt = (sub) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`
+
+  it('серверное попадает в память хранилища при забитом localStorage', async () => {
+    const token = jwt('7')
+    localStorage.setItem('jts_access_token', token)
+    const store = createProgressStore({ module: 'grammar', key: 'test_hydr', event: 'test-hydr', ...doneListOptions })
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ state: { grammar: { done: ['a1:3'] } } }) })))
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+    await hydratePractice(token)
+    spy.mockRestore()
+    expect(store.read()).toEqual(['a1:3'])
+  })
+
+  it('clearLocalPractice забывает память разделов', () => {
+    const store = createProgressStore({ module: 'listening', key: 'test_clear', event: 'test-clear', ...doneListOptions })
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+    store.write(['a1_001'])
+    spy.mockRestore()
+    expect(store.read()).toEqual(['a1_001'])
+    clearLocalPractice()
+    expect(store.read()).toEqual([])
   })
 })
 
