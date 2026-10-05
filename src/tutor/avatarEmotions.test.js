@@ -51,7 +51,6 @@ describe('avatarEmotions', () => {
 
   it('лицо каждого тьютора в покое есть среди карточек', () => {
     for (const tutor of TUTORS) {
-      if (tutor.face === 'orb') continue
       expect(EMOTIONS[tutor.mood], `${tutor.key}: mood ${tutor.mood}`).toBeDefined()
     }
   })
