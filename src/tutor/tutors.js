@@ -57,15 +57,17 @@ const BASE_TUTORS = [
 
 // Джарвис — не тьютор, а ассистент, и по всем осям он исключение из тройки выше:
 //
-//  - face: 'orb' вместо avatar-картинки. Лица у него нет, есть светящаяся сфера
-//    (src/tutor/orbEngine.js), и карточка рисует её живой канвой. Поле читают
-//    TutorChoosePage/TutorVoiceChatPage/TutorDashboardPage (через TutorThumb);
-//    у остальных троих поля нет, и они по-прежнему идут через avatar/figure.
+//  - face: 'orb' вместо avatar-картинки — только в значках: карточка выбора,
+//    аватарка в шапке (TutorThumb, TutorStatus). Своей картинки у стенда нет, и
+//    светящаяся сфера (src/tutor/orbEngine.js) отличает его от живых тьюторов.
+//    В звонке и на дашборде у него то же лицо с эмоциями, что у всех: с 25.09
+//    на стенде обкатывается Speaking Buddy (новый Декстер), агент шлёт ему
+//    эмоции тегом, а орб их показать не мог — по нему не видно, злится тьютор
+//    или сочувствует.
 //  - traitColors — палитра самого орба (тыл → фронт), чтобы чипы не выпадали
 //    из карточки.
-//  - mood здесь не используется: записи 'jarvis' нет в TUTOR_MOODS агента,
-//    поэтому сканер эмоций для него молчит, а состояния орба (idle / listening /
-//    thinking / speaking) приходят из самого звонка, не из тега модели.
+//  - mood — родная эмоция Декстера из пакета (default_emotion: angry): с неё
+//    начинается круг эмоций на дашборде.
 //  - голос — ВРЕМЕННО OpenAI TTS, был Fish Audio (TUTOR_PROVIDER в
 //    app/api/tutor-tts/route.js).
 //
@@ -94,7 +96,7 @@ const JARVIS = {
   face: 'orb',
   assistant: true,
   traitColors: ['#c24e00', '#ff8c37', '#e0a34a'],
-  mood: 'idle',
+  mood: 'angry', // злой — это Декстер Speaking Buddy
   tempers: TEMPERS,
   defaultTemper: 'calm',
 }
