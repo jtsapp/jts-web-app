@@ -278,6 +278,23 @@ assert _pronunciation_lang(vp) == "", "казахский словарь про�
 luna = profile(tutor="gentle")
 assert buddy_voice_profile(luna) is luna
 
+# ── Мозг теста — свой (GPT-6 Sol, замер 05.10), живой Декстер не меняется ────
+from agent import BUDDY_BRAIN_MODEL, _brain_model_for, _brain_supports_prefill, session_brain_model  # noqa: E402
+
+assert BUDDY_BRAIN_MODEL == "gpt-6-sol" and session_brain_model(p) == "gpt-6-sol"
+for other in ("bro", "gentle", "hype", "aizere"):
+    assert session_brain_model(profile(tutor=other)) == _brain_model_for(other), other
+os.environ["BRAIN_MODEL_BUDDY"] = "claude-haiku-4-5"
+assert session_brain_model(p) == "claude-haiku-4-5", "откат секретом воркера, без деплоя"
+os.environ.pop("BRAIN_MODEL_BUDDY")
+os.environ["KZ_TEST_PROMPT"] = "legacy"
+assert session_brain_model(p) == _brain_model_for("jarvis"), "стенд на старой персоне — и мозг прежний"
+os.environ.pop("KZ_TEST_PROMPT")
+# Префилл «[» — только Haiku: Sonnet 5 отвечает на него 400, у OpenAI он ломает ход.
+assert _brain_supports_prefill("jts-voice-router") and _brain_supports_prefill("claude-haiku-4-5")
+for m in ("claude-sonnet-5", "claude-sonnet-5-5", "gpt-6-sol", ""):
+    assert not _brain_supports_prefill(m), m
+
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)
 assert "SESSION_START" in g and "wait" in g and "emotion tag" in g

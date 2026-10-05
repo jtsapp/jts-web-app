@@ -5451,6 +5451,39 @@ def _brain_model_for(tutor: str) -> str:
     return DEFAULT_BRAIN_MODEL
 
 
+# Мозг стенда KZ TEST (Speaking Buddy) — свой, отдельно от живого Декстера. Голос,
+# распознавание и детектор у теста Декстера (buddy_voice_profile → "bro"), и через
+# BRAIN_MODEL_BRO мозг переехал бы заодно у прода. Замер 05.10.2026 (длинные
+# реплики ученика, 16 ситуаций × 6, судья Sonnet 5.5 вслепую; ступени возраста и
+# стражи — 34 ситуации × 8; оба мозга — на промпте с блоком лимитов реплики):
+#   длиннее лимита по словам 14/96 → 0/91, 2+ исправлений за ход 23/96 → 6/91,
+#   неверные исправления 8/96 → 0/91; первое слово мед 0.69 → ~1.0 с, p90 ~1.8 с;
+#   ступени чистые, ростинг и мат взрослому на месте.
+# Минусы: тег эмоции без префикса держится на модели (82/91 и 245/245), log_mistake
+# почти не зовёт (8 из 96 против 82 у Sonnet 5) — память ошибок беднее. Sonnet 5
+# на том же стенде проиграл задержкой: тулы до текста в 52/96, мед 2.5 с.
+# BRAIN_MODEL_BUDDY — откат без деплоя кода (например claude-haiku-4-5).
+BUDDY_BRAIN_MODEL = "gpt-6-sol"
+
+
+def session_brain_model(profile: LearnerProfile) -> str:
+    """Модель мозга звонка: у теста Speaking Buddy — своя, у остальных — по
+    тьютору, как раньше (buddy_voice_profile у них отдаёт профиль как есть)."""
+    if buddy_test_on(profile):
+        return (os.getenv("BRAIN_MODEL_BUDDY") or "").strip() or BUDDY_BRAIN_MODEL
+    return _brain_model_for(buddy_voice_profile(profile).tutor)
+
+
+def _brain_supports_prefill(model: str) -> bool:
+    """Префилл «[» (хвостовая реплика тьютора, которую модель продолжает) — только
+    Haiku. Sonnet 5 отвечает на него 400 «does not support assistant message
+    prefill» (проверено 05.10.2026) — тьютор молчал бы на каждой реплике; у
+    OpenAI хвостовая реплика читается как уже сказанная. Дефолт роута мозга —
+    Haiku (VOICE_BRAIN_MODEL на вебе)."""
+    model = (model or "").strip().lower()
+    return model == DEFAULT_BRAIN_MODEL or model.startswith("claude-haiku")
+
+
 def _cascade_tts(profile: LearnerProfile):
     """TTS одной сессии. Провайдер выбирается ПО ТЬЮТОРУ (_tts_provider_for).
 
@@ -6121,6 +6154,7 @@ def build_cascade_session(
     api_url: str,
     brain_url: str = "",
     guard_tutor: str = "",
+    brain_model: str = "",
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -6172,7 +6206,9 @@ def build_cascade_session(
     # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
-    brain_model = _brain_model_for(profile.tutor)
+    # brain_model приходит от session_brain_model: у теста Speaking Buddy мозг
+    # свой, а profile здесь — уже профиль живого Декстера (buddy_voice_profile).
+    brain_model = brain_model or _brain_model_for(profile.tutor)
     openai_key = _openai_api_key() if _is_openai_brain(brain_model) else ""
     if _is_openai_brain(brain_model) and not openai_key:
         logger.error(
@@ -6183,7 +6219,9 @@ def build_cascade_session(
     if openai_key:
         # reasoning_effort="none": рассуждения перед первым токеном — это
         # секунды тишины в звонке, а замер выше снят именно в этом режиме.
-        logger.info("[brain] direct OpenAI %s for tutor=%s", brain_model, profile.tutor)
+        logger.info(
+            "[brain] direct OpenAI %s for tutor=%s", brain_model, guard_tutor or profile.tutor
+        )
         llm = lk_openai.LLM(
             model=brain_model,
             api_key=openai_key,
@@ -6733,6 +6771,7 @@ async def entrypoint(ctx: JobContext):
             # Замок на ученика решается по настоящему тьютору звонка, а не по
             # профилю сборки (у теста Speaking Buddy это Декстер).
             guard_tutor=profile.tutor,
+            brain_model=session_brain_model(profile),
         )
     else:
         session = build_session(
@@ -6771,10 +6810,9 @@ async def entrypoint(ctx: JobContext):
         | (BUDDY_SKIP_TOOLS if is_buddy else frozenset()),
         due_items=(*profile.due_reviews, *profile.due_vocab),
         # Префилл «[» — только Buddy (тег там обязателен в каждой реплике) и
-        # только мозг на Claude через шим: у OpenAI хвостовая реплика тьютора
-        # не продолжается, а читается как уже сказанная.
-        prefill_tag=is_buddy
-        and not _is_openai_brain(_brain_model_for(buddy_voice_profile(profile).tutor)),
+        # только мозг, который его умеет (_brain_supports_prefill): у OpenAI
+        # хвостовая реплика читается как уже сказанная, Sonnet 5 отвечает 400.
+        prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
