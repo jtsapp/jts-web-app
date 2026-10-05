@@ -15,6 +15,7 @@ import {
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { practiceCardsOf } from './vocab/practiceCards.js'
 import { topVocabMisses } from './vocab/vocabMisses.js'
+import { VOCAB_LEARNED_EVENT, VOCAB_MISSES_EVENT } from '../practice/practiceKeys.js'
 import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 import { levelIndex } from '../kingdoms.js'
@@ -96,6 +97,22 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   useEffect(() => {
     refreshTopMiss()
   }, [refreshTopMiss, screen])
+
+  // «Изучено» и ошибки живут в общем хранилище и приезжают с сервера
+  // (hydratePractice) — часто уже после того, как экран открыт. Без подписки
+  // счётчики оставались бы на черновике до следующей навигации.
+  useEffect(() => {
+    const bump = () => {
+      setLearnedTick((n) => n + 1)
+      refreshTopMiss()
+    }
+    window.addEventListener(VOCAB_LEARNED_EVENT, bump)
+    window.addEventListener(VOCAB_MISSES_EVENT, bump)
+    return () => {
+      window.removeEventListener(VOCAB_LEARNED_EVENT, bump)
+      window.removeEventListener(VOCAB_MISSES_EVENT, bump)
+    }
+  }, [refreshTopMiss])
 
   const flash = useCallback((msg) => {
     setToast(msg)
