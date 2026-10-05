@@ -1766,6 +1766,13 @@ class _MoodStripper:
         self._done = False  # тег снят либо ясно, что его нет
         self.mood = ""
         self.intensity = 0
+        # Был ли тег вообще — в том числе ровный [default], у которого эмоции
+        # нет. Отличает «модель сказала: без эмоции» от «модель тег забыла».
+        self.tagged = False
+
+    @property
+    def decided(self) -> bool:
+        return self._done
 
     def feed(self, text: str) -> str:
         if self._done:
@@ -1788,6 +1795,7 @@ class _MoodStripper:
 
     def _take(self, mood: str, intensity: int, rest: str) -> str:
         self._done = True
+        self.tagged = True
         self._buf = ""
         # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
         # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
@@ -1922,6 +1930,15 @@ class _SpeechCleaner:
     @property
     def intensity(self) -> int:
         return self._mood.intensity if self._mood else 0
+
+    @property
+    def tagged(self) -> bool:
+        return self._mood.tagged if self._mood else False
+
+    @property
+    def decided(self) -> bool:
+        """Ясно ли уже, есть у реплики тег или нет (без эмоций — сразу да)."""
+        return self._mood.decided if self._mood else True
 
     @property
     def reasoning_cut(self) -> int:
@@ -2259,6 +2276,7 @@ class TutorAgent(Agent):
         skip_tools: frozenset[str] = frozenset(),
         due_items: tuple[str, ...] = (),
         prefill_tag: bool = False,
+        fallback_mood: tuple[str, int] | None = None,
     ):
         super().__init__(instructions=instructions)
         # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
@@ -2266,6 +2284,17 @@ class TutorAgent(Agent):
         self._echo = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
+        # Эмоция реплики, которую модель оставила без тега (см. _reply_mood).
+        # Только у Speaking Buddy: там тег обязателен в каждой реплике, а мозг
+        # без префикса (GPT) его теряет. None — у тьютора фолбэка нет.
+        self._fallback_mood = (
+            fallback_mood
+            if fallback_mood and fallback_mood[0] in TUTOR_MOODS.get((tutor or "").strip().lower(), ())
+            else None
+        )
+        # Последняя эмоция, которую модель назвала сама в этом звонке; ("", 0) —
+        # назвала ровную ([default]). None — ещё ни одной.
+        self._last_mood: tuple[str, int] | None = None
         # Прозвучал ли текст в текущем ответе модели — см. _ack.
         self._spoke = False
         # Что память этой сессии назвала DUE (повторения + словарь): log_review
@@ -2369,6 +2398,41 @@ class TutorAgent(Agent):
         except Exception:
             logger.exception("publish mood failed")
 
+    def _reply_mood(self, cleaner: "_SpeechCleaner") -> tuple[str, int] | None:
+        """Эмоция текущей реплики, как только она ясна; None — ещё не ясна.
+        ("", 0) — ясна, но публиковать нечего.
+
+        Тег есть — он и решает, и запоминается. Тега нет — у тьютора без
+        фолбэка всё как раньше (ничего), у Speaking Buddy — последняя эмоция,
+        которую модель назвала сама в этом звонке, а до первой — эмоция персоны
+        по умолчанию. Живой звонок 05.10.2026 на GPT-6 Sol: тег был только в
+        первых репликах — история хранит их уже без тега, и модель перестаёт его
+        ставить; аватар Декстера, который по пакету злой всегда, гас в
+        нейтральный. Последняя, а не персоны: после [sympathy] реплика без тега
+        не должна вдруг стать злой."""
+        if cleaner.mood:
+            self._last_mood = (cleaner.mood, cleaner.intensity)
+            return self._last_mood
+        if cleaner.tagged:
+            self._last_mood = ("", 0)
+            return self._last_mood
+        if not cleaner.decided or not self._spoke:
+            return None
+        if self._fallback_mood is None:
+            return ("", 0)
+        return self._last_mood if self._last_mood is not None else self._fallback_mood
+
+    def _publish_reply_mood(self, cleaner: "_SpeechCleaner") -> bool:
+        """Опубликовать эмоцию реплики, если она уже ясна. True — вопрос решён."""
+        mood = self._reply_mood(cleaner)
+        if mood is None:
+            return False
+        if mood[0]:
+            task = asyncio.create_task(self._publish_mood(mood[0], mood[1]))
+            self._bg_tasks.add(task)
+            task.add_done_callback(self._bg_tasks.discard)
+        return True
+
     async def llm_node(self, chat_ctx, tools, model_settings):
         """Снять служебное с потока ответа до того, как он уйдёт в TTS:
         рассуждение текстом (у всех тьюторов) и mood-тег (у кого есть эмоции).
@@ -2414,19 +2478,16 @@ class TutorAgent(Agent):
                 yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
             # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
-            if cleaner.mood and not published:
-                published = True
-                task = asyncio.create_task(
-                    self._publish_mood(cleaner.mood, cleaner.intensity)
-                )
-                self._bg_tasks.add(task)
-                task.add_done_callback(self._bg_tasks.discard)
+            if not published:
+                published = self._publish_reply_mood(cleaner)
 
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
         tail = cleaner.flush()
         if tail:
             self._spoke = self._spoke or bool(tail.strip())
             yield tail
+        if not published:
+            self._publish_reply_mood(cleaner)
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
             # видно, как часто модель думает вслух на живых звонках.
@@ -3362,6 +3423,17 @@ def _buddy_persona_languages(persona: str) -> tuple[str, ...]:
     и для модели, и для кода."""
     m = _re.search(r"^- supported_languages:\s*(.+)$", BUDDY_PERSONAS.get(persona, ""), _re.M)
     return tuple(x.strip() for x in m.group(1).split(",")) if m else ("en",)
+
+
+def buddy_default_mood(persona: str) -> tuple[str, int] | None:
+    """Эмоция персоны по умолчанию (default_emotion в её md) — в формате агента:
+    у Декстера angry → ("anger", 2). Ровная (default) — None: публиковать нечего."""
+    m = _re.search(r"^- default_emotion:\s*(\w+)\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M)
+    if not m:
+        return None
+    name = m.group(1).lower()
+    mood = MOOD_ALIASES.get(name, (name, 2))
+    return mood if mood[0] else None
 
 
 def _buddy_support_language(p: LearnerProfile, persona: str) -> str:
@@ -6847,6 +6919,8 @@ async def entrypoint(ctx: JobContext):
         # только мозг, который его умеет (_brain_supports_prefill): у OpenAI
         # хвостовая реплика читается как уже сказанная, Sonnet 5 отвечает 400.
         prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
+        # Тег забыт — эмоция последней явной реплики или персоны (см. _reply_mood).
+        fallback_mood=buddy_default_mood(BUDDY_TEST_PERSONA) if is_buddy else None,
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the

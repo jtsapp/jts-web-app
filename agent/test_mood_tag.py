@@ -259,4 +259,50 @@ assert _could_be_tag("[hap") is True and _could_be_tag("[default]") is True
 # Обычная речь в скобках по-прежнему не тег.
 assert parse_mood_tag("[happiness] is") == ("", 0, "[happiness] is")
 
+# --- Эмоция реплики без тега: фолбэк Speaking Buddy -------------------------
+# Живой звонок 05.10.2026 на GPT-6 Sol: тег только в первых репликах, дальше
+# аватар Декстера гас в нейтральный. tagged отличает «ровный тег» от «забыл».
+from types import SimpleNamespace  # noqa: E402
+
+from agent import TutorAgent, _SpeechCleaner, buddy_default_mood  # noqa: E402
+
+assert buddy_default_mood("dexter") == ("anger", 2)
+assert buddy_default_mood("luna") is None, "ровная эмоция по умолчанию — публиковать нечего"
+
+ALLOWED = TUTOR_MOODS["jarvis"]
+
+
+def reply(agent, text):
+    """Прогнать реплику через чистильщик и вернуть решённую эмоцию."""
+    c = _SpeechCleaner(ALLOWED)
+    out = c.feed(text) + c.flush()
+    agent._spoke = bool(out.strip())
+    return TutorAgent._reply_mood(agent, c)
+
+
+buddy = SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False)
+assert reply(buddy, "Fine. What did you eat?") == ("anger", 2), "до первого тега — эмоция персоны"
+assert reply(buddy, "[sarcastic] Great plan.") == ("gloat", 2)
+assert reply(buddy, "And then?") == ("gloat", 2), "без тега — последняя явная"
+assert reply(buddy, "[sympathy] I'm so sorry about your dad.") == ("sadness", 2)
+assert reply(buddy, "Okay, something easy. What food do you like?") == ("sadness", 2), \
+    "после горя реплика без тега не становится злой"
+assert reply(buddy, "[default] Okay.") == ("", 0) and buddy._last_mood == ("", 0)
+assert reply(buddy, "Go on.") == ("", 0), "ровный тег — тоже явный выбор модели"
+
+# Без фолбэка (все остальные тьюторы) — как раньше: без тега эмоции нет.
+plain = SimpleNamespace(_fallback_mood=None, _last_mood=None, _spoke=False)
+assert reply(plain, "Fine. What did you eat?") == ("", 0)
+assert reply(plain, "[angry] No.") == ("anger", 2)
+assert reply(plain, "And then?") == ("", 0)
+
+# Пока голова не разобрана или текста не было — решения нет.
+c = _SpeechCleaner(ALLOWED)
+assert c.feed("[ang") == "" and not c.decided
+assert TutorAgent._reply_mood(SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False), c) is None
+tool_only = SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False)
+c = _SpeechCleaner(ALLOWED)
+c.flush()
+assert TutorAgent._reply_mood(tool_only, c) is None, "ответ только тулом — лицо не трогаем"
+
 print("mood-парсер: все ассерты прошли")
