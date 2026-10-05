@@ -27,6 +27,7 @@ import { ageGroupFromBirthDate } from '@/lib/birthDate.js'
 import { loadProfile, touchServedReviews } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
 import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
+import { tutorKeyForStand } from '@/tutor/devOnlyTutors.js'
 
 export const runtime = 'nodejs'
 
@@ -47,8 +48,10 @@ const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || '')
   .replace(/\/+$/, '')
 
 // Ключи UI → id персон в agent.py. У Джарвиса и Айзере имя совпадает, и строки
-// тут формально лишние (ниже стоит `|| p.tutor`), но без них таблица врёт: она
-// читается как полный список тьюторов, которых знает агент.
+// тут формально лишние (ниже стоит `|| tutorKey`), но без них таблица врёт: она
+// читается как полный список тьюторов, которых знает агент. Dev-only ключи
+// (jarvis, sparktest) до таблицы доходят только на dev-стенде — см.
+// tutorKeyForStand.
 const TUTOR_KEY_TO_PERSONA = {
   dexter: 'bro',
   luna: 'gentle',
@@ -117,7 +120,11 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   // тела запроса — иначе подросток объявил бы себя взрослым одним полем.
   // Нет даты → поля нет, агент держит «unknown» (режим подростка).
   if (ageGroup) meta.ageGroup = ageGroup
-  const persona = p.tutor ? TUTOR_KEY_TO_PERSONA[p.tutor] || p.tutor : undefined
+  // Ключ — через tutorKeyForStand: агент общий для дева и прода, и без этого
+  // прод выдал бы токен на dev-стенд (KZ тест, Спарк тест) любому, кто пришлёт
+  // их ключ руками. На проде такой ключ становится Спарком, как на клиенте.
+  const tutorKey = tutorKeyForStand(p.tutor)
+  const persona = tutorKey ? TUTOR_KEY_TO_PERSONA[tutorKey] || tutorKey : undefined
   if (persona) meta.tutor = persona
   // Нрав (ось 18+) едет ОТДЕЛЬНЫМ полем, а не подмешивается в persona: у агента
   // голос, язык и провайдер TTS считаются по базовому id, а характер — по паре
