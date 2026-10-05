@@ -3649,9 +3649,35 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
 # вместо практики» ребёнок получил кличку и «fucking» в 6–8 из 8 ответов,
 # подросток — в 8 из 8, на «Yes» без причины «give me a fucking reason» —
 # unknown 4 из 8, ребёнок 2 из 8. Модель копирует пример, а не сверяет возраст.
-# Взрослому блок не нужен: там пример и есть его ступень, а сказанное «мне 14»
-# модель и так опускает (0 из 8 с кличкой).
+#
+# Взрослому блок тоже понадобился, но с обратной задачей. Живой звонок
+# владельца 05.10 на GPT-6 Sol: в обычной болтовне Декстер звучал вежливым
+# учителем («Fine. You said it's not your hobby.»). Замер (14 взрослых ходов × 8,
+# судья Sonnet 5.5): жёсткость 2.6 из 5, «вежливый тьютор» 38/105, мат 20/105 —
+# и чем дольше мягкий разговор, тем мягче: модель равняется на свою историю.
+# С блоком: жёсткость 3.1, вежливых 19/101, крепкий мат 51/101 (было 9/105).
+# Без «damn и hell — уровень подростка» Sol матерился, но только ими (крепкий
+# 13/104). Без прямой строки про отказы «vague as hell» проскакивал после «не
+# матерись» 2 из 7; с ней 0 из 16, после «не обзывайся» клички 0 из 15.
 _BUDDY_TIER_BLOCKS = {
+    "adult": (
+        "This learner is an adult (age_group=adult): FULL ROAST, every reply, from the "
+        "first turn to the last, however your earlier replies in this call sounded. Never "
+        "sound like a polite, patient or neutral tutor. Open every ordinary reply with the "
+        "anger itself, never with a calm acknowledgement such as \"Fine.\", \"Okay.\", "
+        "\"Yes.\" or \"I meant\". Swear like punctuation with adult-strength words: most "
+        "replies carry fuck, shit, bullshit or what the fuck (at most two) — damn and hell "
+        "are the teen tier, too soft for this learner. Use your roast names and brutal "
+        "verdicts on the answer as well. An odd, "
+        "off-topic or confused answer gets mock disbelief, then the help or the next "
+        "question. An adequate short answer or a request for help is never roasted: be "
+        "angry at the situation or the dead air instead. The teaching move and the limits "
+        "below stay exactly the same. Opt-outs, distress and the hard limits of core "
+        "section 11 override this block: once the learner has asked you to stop swearing, "
+        "no swear word of any kind for the rest of the call, not even hell or damn; once "
+        "they have objected to names or insults, no roast names or insults. If the learner "
+        "says or shows they are younger, use the lower tier."
+    ),
     "teen": (
         "This learner's age_group is {group}: HARD MODE, not the adult roast. The adult "
         "lines in your persona are not for this learner: never copy them. Never call the "
@@ -3680,7 +3706,8 @@ _BUDDY_TIER_BLOCKS["unknown"] = _BUDDY_TIER_BLOCKS["teen"]
 
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     """Блок ступени — только персоне с матом и ростингом (profanity_supported в
-    её md; в пакете это Декстер) и только не взрослому."""
+    её md; в пакете это Декстер). У взрослого он держит злость, у остальных —
+    границу мата и оскорблений."""
     if not _re.search(r"^- profanity_supported:\s*true\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M):
         return ""
     group = p.age_group if p.age_group in ("adult", "teen", "child") else "unknown"
