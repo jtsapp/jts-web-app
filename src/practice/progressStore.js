@@ -157,8 +157,10 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
     mem.state = next
     persist(next)
     notify()
-    if (sync && mem.owner !== 'guest') {
-      dirty = true
+    if (sync) {
+      if (mem.owner !== 'guest') dirty = true
+      // Гостю pushModule сам ничего не шлёт — зовём его всегда, как раньше
+      // звали модули: в одном месте решается, кому синк положен.
       pushModule(module, next)
     }
   }

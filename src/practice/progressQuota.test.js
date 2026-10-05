@@ -11,6 +11,11 @@ import { markTaskDone, isTaskDone, getListeningDone } from './listening/listenin
 import { markSegmentDone, isSegmentDone, countLessonDone } from './shadowing/shadowingProgress.js'
 import { markSituationLevelDone, readSituationsDone } from './situations/situationsProgress.js'
 import { markWorkbookLevelDone, readWorkbooksDone } from './workbooks/workbooksProgress.js'
+import { markAct, actPassed, lessonDone, toggleSelfCheck, selfCheck } from './workbook/workbookProgress.js'
+import { markTask, markSeen, genreDoneCount, stepDone } from './writing/writingProgress.js'
+import { markWordFound, markSceneDone, sceneState } from './words/wordsProgress.js'
+import { toggleSaved, recordResult, savedCount, scoresFor } from './verbs/verbsProgress.js'
+import { writeSeen, readSeen } from './listenchoose/listenchooseProgress.js'
 
 function fillStorage() {
   return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -56,5 +61,44 @@ describe('забитый localStorage не прячет пройденное', (
     markWorkbookLevelDone('a0')
     markWorkbookLevelDone('a1')
     expect(readWorkbooksDone()).toEqual(['a0', 'a1'])
+  })
+
+  it('воркбук', () => {
+    markAct('a0', 1, 0, [], null)
+    markAct('a0', 1, 1, [2], null)
+    toggleSelfCheck('a0', 1, 0)
+    expect(actPassed('a0', 1, 0)).toBe(true)
+    expect(lessonDone('a0', 1, 3)).toBe(2)
+    expect(selfCheck('a0', 1, 0)).toBe(true)
+  })
+
+  it('«Письмо»', () => {
+    markTask('g1', 't1', 3, 4)
+    markTask('g1', 't2', 4, 4)
+    markSeen('g1', 1)
+    expect(genreDoneCount('g1')).toBe(2)
+    expect(stepDone({ id: 'g1', tasks: [] }, 1)).toBe(true)
+  })
+
+  it('«Слова в картинках»', () => {
+    markWordFound('farm', 'cow')
+    markWordFound('farm', 'pig')
+    markSceneDone('farm')
+    expect(sceneState('farm')).toEqual({ found: ['cow', 'pig'], done: true })
+  })
+
+  it('«Неправильные глаголы»', () => {
+    toggleSaved('go')
+    recordResult('k', 'go', { kind: 'manual' })
+    recordResult('k', 'be', { kind: 'manual' })
+    expect(savedCount()).toBe(1)
+    expect(Object.keys(scoresFor('k'))).toEqual(['go', 'be'])
+  })
+
+  it('«Слушай и выбирай»', () => {
+    writeSeen('easy', ['a'])
+    writeSeen('medium', ['b'])
+    expect(readSeen('easy')).toEqual(['a'])
+    expect(readSeen('medium')).toEqual(['b'])
   })
 })

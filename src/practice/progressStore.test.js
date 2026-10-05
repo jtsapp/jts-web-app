@@ -38,11 +38,11 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('progressStore — запись и чтение', () => {
-  it('гость: память и черновик, без отправки', () => {
+  it('гость: память и черновик; pushModule зовётся, но гостю он сам ничего не шлёт', () => {
     list.write(['a1:1'])
     expect(list.read()).toEqual(['a1:1'])
     expect(JSON.parse(localStorage.getItem(LIST_KEY))).toEqual(['a1:1'])
-    expect(pushModule).not.toHaveBeenCalled()
+    expect(pushModule).toHaveBeenCalledWith('grammar', ['a1:1'])
   })
 
   it('вошедший: на сервер уходит полное состояние из памяти', () => {
