@@ -226,7 +226,13 @@ assert build_buddy_session_context(profile(age_group="admin"))["learner"]["age_g
 # Ступень звонка — последним блоком, после персоны: без него модель копировала
 # взрослые примеры ребёнку и подростку (замер 04.10: «fucking champ» 6–8 из 8).
 TIER = "==== YOUR TIER IN THIS CALL"
-assert TIER not in build_buddy_instructions(profile(age_group="adult")), "взрослому — пример и есть ступень"
+# Взрослому — тоже блок, но держит злость: на GPT-6 Sol в обычной болтовне
+# Декстер звучал вежливо (замер 05.10: крепкий мат 9/105 → 51/101 с блоком).
+adult = build_buddy_instructions(profile(age_group="adult")).partition(TIER)[2]
+assert "FULL ROAST" in adult and "adult-strength words" in adult
+# Отказы ученика сильнее блока: без него «vague as hell» после «не матерись» 2 из 7.
+assert "not even hell or damn" in adult and "no roast names or insults" in adult
+assert "is never roasted" in adult, "короткий нормальный ответ и просьба о помощи — не мишень"
 for grp, mode in (("teen", "HARD MODE"), ("unknown", "HARD MODE"), ("child", "STRICT MODE")):
     t = build_buddy_instructions(profile(age_group=grp))
     tail = t.partition(TIER)[2]
