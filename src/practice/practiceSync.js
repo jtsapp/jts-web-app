@@ -7,6 +7,7 @@
 
 import { loadToken } from '../lib/session.js'
 import { applyHydratedState, serializeForPush } from './practiceSyncCore.js'
+import { adoptHydratedState, ownerOf, resetPracticeStores } from './progressStore.js'
 import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY } from './practiceKeys.js'
 import { WRITING_ARTIFACT_KEYS } from './writing/writingStore.js'
 
@@ -84,7 +85,13 @@ export async function hydratePractice(token) {
     return
   }
   if (!data?.state) return
-  applyHydratedState(data.state, {
+  // Разделы с хранилищем (progressStore.js) берут ответ в ПАМЯТЬ сами: в
+  // забитый кэшем каталогов localStorage он не лёг бы, и раздел поднял бы
+  // устаревший черновик. Их черновики пишет хранилище, здесь — только прочие.
+  const handled = adoptHydratedState(data.state, ownerOf(token))
+  const rest = { ...data.state }
+  for (const m of handled) delete rest[m]
+  applyHydratedState(rest, {
     setItem: (k, v) => {
       try { localStorage.setItem(k, v) } catch {}
     },
@@ -102,4 +109,7 @@ export function clearLocalPractice() {
   for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, ...WRITING_ARTIFACT_KEYS]) {
     try { localStorage.removeItem(k) } catch {}
   }
+  // Память разделов и снимок сервера — туда же: иначе при забитом хранилище
+  // (память там главная) следующий ученик увидел бы прогресс предыдущего.
+  resetPracticeStores()
 }
