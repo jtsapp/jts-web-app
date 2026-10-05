@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, fireEvent, cleanup, within } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import { READING_KEY } from '../../practice/practiceKeys.js'
+import { resetReadingMemory } from '../../practice/reading/readingProgress.js'
 
 // Текст, слова и озвучка к проверке отношения не имеют, а тянут словарь и
 // синтез речи — заглушаем, остаётся панель заданий с кнопкой «Завершить».
@@ -46,7 +47,12 @@ function pick(utils, question, option) {
   fireEvent.click(within(utils.getByRole('radiogroup', { name: question })).getAllByRole('radio')[option])
 }
 
-beforeEach(() => localStorage.clear())
+// Прогресс страницы живёт в модульной памяти readingProgress — она переживает
+// localStorage.clear(), поэтому сбрасываем её отдельно.
+beforeEach(() => {
+  localStorage.clear()
+  resetReadingMemory()
+})
 afterEach(cleanup)
 
 // Жалоба: все ответы верные, а итог 0 %. Ученик выбрал ответы и сразу нажал
