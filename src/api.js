@@ -174,6 +174,8 @@ async function authPost(path, token, body) {
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
     err.status = res.status
+    // текст отказа сервера — отдельным полем, как у authPut: message вызывающие местами сравнивают
+    err.serverMessage = await rejectionText(res)
     throw err
   }
   return res.json().catch(() => null)
@@ -1489,6 +1491,187 @@ export function abortIeltsMock(token, id) {
 
 export function getIeltsProgress(token) {
   return authGet('/mobile/ielts/progress', token)
+}
+
+// ---- SAT (бэкенд /mobile/sat/**, docs/sat/TEST_FORMAT.md): профиль, таксономия, вопрос без ключа, проверка
+export function getSatProfile(token) {
+  return authGet('/mobile/sat/profile', token)
+}
+
+/** Частичное сохранение: поля null остаются как были — каждая глава онбординга пишет своё. */
+export function saveSatProfile(token, body) {
+  return authPut('/mobile/sat/profile', token, body)
+}
+
+/** Диагностика SAT: status none | active (вопросы без ключей) | finished (последний отчёт). */
+export function getSatDiagnostic(token) {
+  return authGet('/mobile/sat/diagnostic', token)
+}
+
+/** Начать диагностику или продолжить идущую — набор выбирает сервер. */
+export function startSatDiagnostic(token) {
+  return authPost('/mobile/sat/diagnostic', token, {})
+}
+
+/** Сдать все ответы разом: { answers: {id: ответ}, times: {id: секунды}, elapsedSec } → отчёт. */
+export function submitSatDiagnostic(token, id, body) {
+  return authPost(`/mobile/sat/diagnostic/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+export function getSatPlan(token) {
+  return authGet('/mobile/sat/plan', token)
+}
+
+/** Дни (1 = пн) и минуты: первый раз строит план, дальше пересобирает недели впереди. */
+export function saveSatPlan(token, body) {
+  return authPut('/mobile/sat/plan', token, body)
+}
+
+export function rebuildSatPlan(token) {
+  return authPost('/mobile/sat/plan/rebuild', token, {})
+}
+
+/** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
+export function updateSatLesson(token, lessonId, body) {
+  return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
+}
+
+/** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
+export function startSatSession(token, body) {
+  return authPost('/mobile/sat/sessions', token, body)
+}
+
+export function getSatSession(token, id) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}`, token)
+}
+
+/** Подсказка внутри сессии — до проверки делает попытку «с подсказкой» (сервер помнит сам). */
+export function getSatSessionHint(token, id, qid, index) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/hints/${index}`, token)
+}
+
+/** Полное решение; до проверки делает попытку «с объяснением». */
+export function getSatSessionExplanation(token, id, qid) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/explanation`, token)
+}
+
+/** «Похожее»: вопрос того же навыка в конец сессии. */
+export function addSatSimilar(token, id, qid) {
+  return authPost(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/similar`, token, {})
+}
+
+export function finishSatSession(token, id) {
+  return authPost(`/mobile/sat/sessions/${encodeURIComponent(id)}/finish`, token, {})
+}
+
+/** Проверка одного ответа: { given, mode, helpType, timeSec, sessionId } → верность, ключ, разбор, ошибка в очереди. */
+export function checkSatAnswer(token, qid, body) {
+  return authPost(`/mobile/sat/questions/${encodeURIComponent(qid)}/check`, token, body)
+}
+
+/** Тип ошибки (Figma 23): knowledge | misread | calculation | strategy | time | careless. */
+export function setSatErrorType(token, errorId, errorType) {
+  return authPatch(`/mobile/sat/errors/${errorId}`, token, { errorType })
+}
+
+/** Таксономия SAT с числом опубликованных вопросов банка по навыку (questions) — «40 в банке» (Figma 15). */
+export function getSatTaxonomy(token) {
+  return authGet('/mobile/sat/taxonomy', token)
+}
+
+/** «Сегодня» SAT (Figma 11): незавершённая сессия, следующее занятие, ошибки к повтору, до экзамена, проверка, серия. */
+export function getSatToday(token) {
+  return authGet('/mobile/sat/today', token)
+}
+
+/** «Прогресс» SAT (Figma 17): самостоятельно / с помощью, карта навыков, домены, темп, 90 дней, бейджи. */
+export function getSatProgress(token) {
+  return authGet('/mobile/sat/progress', token)
+}
+
+/** Журнал ошибок: status due | waiting | resolved | all. */
+export function getSatErrors(token, status = 'all') {
+  return authGet(`/mobile/sat/errors?status=${encodeURIComponent(status)}`, token)
+}
+
+/** Ошибка журнала: { errorType } и/или { resolved: true | false } — отметка «разобрано» или вернуть в очередь. */
+export function patchSatError(token, id, body) {
+  return authPatch(`/mobile/sat/errors/${id}`, token, body)
+}
+
+/** Сколько вопросов банка подходит под выбор конструктора практики (тело — как у startSatSession). */
+export function getSatPracticePool(token, body) {
+  return authPost('/mobile/sat/practice/pool', token, body)
+}
+
+/** Ежедневная проверка: сегодняшняя (начатая или новая). */
+export function startSatDaily(token) {
+  return authPost('/mobile/sat/daily', token, {})
+}
+
+/** Сдать проверку разом: { answers, times }. */
+export function submitSatDaily(token, id, body) {
+  return authPost(`/mobile/sat/daily/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+/** Словарь SAT: дневная цель, оценено сегодня, расписание SM-2 по слову, свои слова (колода — public/sat/vocab). */
+export function getSatVocab(token) {
+  return authGet('/mobile/sat/vocab', token)
+}
+
+/** Оценить карточку: 0 «Снова», 3 «Трудно», 4 «Хорошо», 5 «Легко». */
+export function gradeSatVocab(token, wordId, grade) {
+  return authPost('/mobile/sat/vocab/grade', token, { wordId, grade })
+}
+
+export function setSatVocabGoal(token, goal) {
+  return authPut('/mobile/sat/vocab/goal', token, { goal })
+}
+
+/** Своё слово: { word, definition, example, ru }. */
+export function addSatVocabWord(token, body) {
+  return authPost('/mobile/sat/vocab/words', token, body)
+}
+
+export function deleteSatVocabWord(token, id) {
+  return authDelete(`/mobile/sat/vocab/words/${encodeURIComponent(id)}`, token)
+}
+
+/** Курс «36 юнитов»: размер набора каждого юнита и что ученик в нём сделал. */
+export function getSatCourse(token) {
+  return authGet('/mobile/sat/course', token)
+}
+
+/** Пробники SAT: хватает ли банка, идущее прохождение, сданные, опубликованные пробники. */
+export function getSatMocks(token) {
+  return authGet('/mobile/sat/mocks', token)
+}
+
+/** Начать полную симуляцию ({ timed }) или пробник ({ paperId }); прохождение одно за раз. */
+export function startSatMock(token, body) {
+  return authPost('/mobile/sat/mocks', token, body)
+}
+
+export function getSatMock(token, id) {
+  return authGet(`/mobile/sat/mocks/${encodeURIComponent(id)}`, token)
+}
+
+/** Начать текущий модуль (и закончить перерыв раньше). */
+export function startSatMockModule(token, id) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/start`, token, {})
+}
+
+/** Сдать модуль целиком: { key, answers, times, marked, elapsedSec }. */
+export function submitSatMockModule(token, id, body) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+export function abandonSatMock(token, id) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/abandon`, token, {})
+}
+
+export function getSatMockReview(token, id) {
+  return authGet(`/mobile/sat/mocks/${encodeURIComponent(id)}/review`, token)
 }
 
 export function getIeltsProfile(token) {

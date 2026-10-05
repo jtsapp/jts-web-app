@@ -17,6 +17,7 @@ import {
   LessonsIcon,
   HomeworkIcon,
   IeltsIcon,
+  SatIcon,
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -40,6 +41,7 @@ const NAV_FULL = [
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
+  { key: 'sat', label: 'nav.sat', Icon: SatIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из

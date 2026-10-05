@@ -1,0 +1,401 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  addSatSimilar, checkSatAnswer, finishSatSession, getSatProfile, getSatSession, getSatSessionExplanation, getSatSessionHint,
+  setSatErrorType, startSatSession,
+} from '../api.js'
+import { loadToken } from '../lib/session.js'
+import { useI18n } from '../i18n.jsx'
+import QuestionScreen from '../sat/question/QuestionScreen.jsx'
+import useSatSession from '../sat/question/useSatSession.js'
+import { goTo, timeOn } from '../sat/question/session.js'
+import HintPopover from '../sat/study/HintPopover.jsx'
+import ExplanationPanel from '../sat/study/ExplanationPanel.jsx'
+import ErrorTypeDialog from '../sat/study/ErrorTypeDialog.jsx'
+import StudySummary from '../sat/study/StudySummary.jsx'
+import { pick } from '../sat/model/profile.js'
+import { parse } from '../sat/model/plan.js'
+import { domainName, skillName } from '../sat/names.js'
+import { lessonByCode } from '../sat/model/course.js'
+import { BookOpenIcon, BulbIcon, ReplayIcon, RobotIcon } from '../sat/icons.jsx'
+import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
+
+// Один запрос старта на занятие за раз: экран в разработке монтируется дважды (StrictMode), и без этого два POST
+// собирали бы два набора. Сервер тоже держит одну открытую сессию на занятие — это вторая линия.
+const starting = new Map()
+function startOnce(token, lessonId) {
+  if (!starting.has(lessonId)) {
+    const p = startSatSession(token, { lessonId }).finally(() => setTimeout(() => starting.delete(lessonId), 0))
+    starting.set(lessonId, p)
+  }
+  return starting.get(lessonId)
+}
+
+function param(name) {
+  try {
+    return new URLSearchParams(window.location.search).get(name)
+  } catch {
+    return null
+  }
+}
+
+function setParams(patch) {
+  try {
+    const url = new URL(window.location.href)
+    for (const [k, v] of Object.entries(patch)) {
+      if (v) url.searchParams.set(k, v)
+      else url.searchParams.delete(k)
+    }
+    window.history.replaceState(window.history.state, '', url)
+  } catch {
+    /* без истории — параметры не пишем */
+  }
+}
+
+/** Итог проверки под вопросом (Figma 23–24): верно / неверно, ключ, тип ошибки и когда вопрос вернётся. */
+function VerdictBox({ res, loc }) {
+  const { t } = useI18n()
+  const answer = Array.isArray(res.answer) ? res.answer.join(' · ') : res.answer
+  const due = res.reviewDueAt ? new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).format(parse(res.reviewDueAt.slice(0, 10))) : null
+  if (res.correct) {
+    const helped = res.helpType && res.helpType !== 'none'
+    return (
+      <div className="st-verdict is-right">
+        <b>{t('sat.study.right')}</b>
+        <span>{t(helped ? 'sat.study.rightHelped' : 'sat.study.rightOwn')}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="st-verdict is-wrong">
+      <b>{t('sat.study.wrong', { a: String(answer) })}</b>
+      <span>
+        {res.errorType
+          ? t('sat.study.wrongTyped', { type: t(`sat.etype.${res.errorType}`).toLowerCase(), date: due || '' })
+          : t('sat.study.wrongPick', { g: String(res.given ?? '—') })}
+      </span>
+    </div>
+  )
+}
+
+/** Прохождение учебной сессии: общий экран вопроса (фаза 3) + слой помощи (фаза 5). */
+function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
+  const { t, lang } = useI18n()
+  const token = loadToken()
+  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
+  const spec = useMemo(
+    () => ({ key: `study-${data.id}`, mode: 'study', questions: data.questions.map((q) => ({ id: q.id, section: q.section })), timing: {} }),
+    // ключ — id сессии: «Похожее» дописывает вопросы через append, а не пересоздаёт сессию
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.id],
+  )
+  const { session, update, append, clear } = useSatSession(spec)
+  const [busy, setBusy] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [hints, setHints] = useState({})
+  const [hintOpen, setHintOpen] = useState(false)
+  const [panel, setPanel] = useState(null) // null | 'explain' | 'ai'
+  const [pre, setPre] = useState({}) // объяснения, открытые до ответа
+  const [etype, setEtype] = useState(null) // id вопроса, для которого открыт выбор типа ошибки
+
+  const docs = useMemo(() => Object.fromEntries(data.questions.map((q) => [q.id, q])), [data.questions])
+  const results = data.results || {}
+  const verdicts = useMemo(() => {
+    const v = {}
+    for (const [qid, r] of Object.entries(results)) if (docs[qid]?.type === 'mcq') v[qid] = { answer: r.answer, chosen: r.given }
+    return v
+  }, [results, docs])
+
+  const fail = useCallback((e) => {
+    setToast(e?.serverMessage || t('sat.study.netError'))
+    setTimeout(() => setToast(null), 4000)
+  }, [t])
+
+  if (!session) return <div className="ih st st-run" />
+  const q = session.questions[session.index]
+  const doc = docs[q.id]
+  const res = results[q.id]
+  const checked = !!res
+  const isSimilar = !!data.similar?.[q.id]
+  const helpBlocked = isSimilar && !checked // похожий вопрос решается без помощи, пока не проверен
+  const taken = hints[q.id] || []
+  const total = doc?.hintCount || 0
+
+  const onCheck = async (qid) => {
+    const a = session.answers[qid]
+    setBusy(true)
+    try {
+      const r = await checkSatAnswer(token, qid, {
+        given: a.value,
+        // набор юнита курса — попытки «lesson», как у прототипа (meta.lessonCode); остальное — учебный режим
+        mode: data.kind === 'unit' ? 'lesson' : 'study',
+        helpType: data.help?.[qid] || 'none',
+        timeSec: Math.round(timeOn(session, qid) / 1000),
+        sessionId: data.id,
+      })
+      if (r.formatError) {
+        setToast(t(`sat.spr.err.${r.formatError}`))
+        setTimeout(() => setToast(null), 4000)
+        return
+      }
+      setData((d) => ({ ...d, results: { ...(d.results || {}), [qid]: r } }))
+      setHintOpen(false)
+      if (!r.correct && r.errorId) setEtype(qid)
+    } catch (e) {
+      fail(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const loadHint = async () => {
+    if (taken.length >= total) return setHintOpen(true)
+    setBusy(true)
+    try {
+      const h = await getSatSessionHint(token, data.id, q.id, taken.length)
+      setHints((m) => ({ ...m, [q.id]: [...(m[q.id] || []), pick(h.hint, explainLang)] }))
+      setData((d) => ({ ...d, help: { ...(d.help || {}), [q.id]: d.help?.[q.id] === 'explanation' ? 'explanation' : 'hint' } }))
+      setHintOpen(true)
+    } catch (e) {
+      fail(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const reveal = async () => {
+    setBusy(true)
+    try {
+      const x = await getSatSessionExplanation(token, data.id, q.id)
+      setPre((m) => ({ ...m, [q.id]: x }))
+      if (!checked) setData((d) => ({ ...d, help: { ...(d.help || {}), [q.id]: 'explanation' } }))
+    } catch (e) {
+      fail(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const similar = async () => {
+    setBusy(true)
+    try {
+      const nq = await addSatSimilar(token, data.id, q.id)
+      setData((d) => (d.questions.some((x) => x.id === nq.id) ? d : {
+        ...d,
+        questions: [...d.questions, nq],
+        similar: { ...(d.similar || {}), [nq.id]: nq.similarOf },
+      }))
+      append({ id: nq.id, section: nq.section })
+      update((s) => goTo(s, s.questions.findIndex((x) => x.id === nq.id)))
+      setPanel(null)
+      setHintOpen(false)
+    } catch (e) {
+      fail(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const saveType = async (qid, type) => {
+    const r = results[qid]
+    setBusy(true)
+    try {
+      const out = await setSatErrorType(token, r.errorId, type)
+      setData((d) => ({ ...d, results: { ...d.results, [qid]: { ...d.results[qid], errorType: out.errorType, reviewDueAt: out.reviewDueAt } } }))
+      setEtype(null)
+    } catch (e) {
+      fail(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const finish = async () => {
+    setBusy(true)
+    try {
+      const done = await finishSatSession(token, data.id)
+      clear()
+      onFinished(done)
+    } catch (e) {
+      fail(e)
+      setBusy(false)
+    }
+  }
+
+  const togglePanel = (tab) => {
+    setHintOpen(false)
+    setPanel((p) => (p === tab ? null : tab))
+  }
+
+  const footerExtra = (
+    <div className="st-help">
+      {hintOpen && taken.length > 0 && (
+        <HintPopover
+          hints={taken}
+          total={total}
+          busy={busy}
+          onMore={loadHint}
+          onSolution={() => {
+            setHintOpen(false)
+            setPanel('explain')
+          }}
+          onClose={() => setHintOpen(false)}
+        />
+      )}
+      <button type="button" className={`st-tool ${taken.length ? 'is-on' : ''}`} disabled={busy || checked || helpBlocked || !total}
+        title={!total ? t('sat.study.noHints') : helpBlocked ? t('sat.study.similarAlone') : undefined}
+        onClick={() => (hintOpen ? setHintOpen(false) : taken.length ? setHintOpen(true) : loadHint())}>
+        <BulbIcon size={16} />{taken.length ? t('sat.study.hintCount', { n: String(taken.length), total: String(total) }) : t('sat.study.hint')}
+      </button>
+      <button type="button" className={`st-tool ${panel === 'explain' ? 'is-on' : ''}`} disabled={helpBlocked}
+        title={helpBlocked ? t('sat.study.similarAlone') : undefined} onClick={() => togglePanel('explain')}>
+        <BookOpenIcon size={16} />{t('sat.study.explanation')}
+      </button>
+      <button type="button" className={`st-tool ${panel === 'ai' ? 'is-on' : ''}`} onClick={() => togglePanel('ai')}>
+        <RobotIcon size={16} />{t('sat.study.askAi')}
+      </button>
+      <button type="button" className="st-tool" disabled={busy} onClick={similar}>
+        <ReplayIcon size={16} />{t('sat.study.similar')}
+      </button>
+    </div>
+  )
+
+  const shownData = res || pre[q.id] || null
+  const sidePanel = panel ? (
+    <ExplanationPanel
+      tab={panel}
+      onTab={setPanel}
+      onClose={() => setPanel(null)}
+      doc={doc}
+      data={shownData}
+      chosen={res?.given}
+      checked={checked}
+      correct={res?.correct}
+      gated={!shownData && !helpBlocked}
+      busy={busy}
+      explainLang={explainLang}
+      onReveal={reveal}
+      onSimilar={similar}
+      canSimilar={checked && (!res.correct || (res.helpType && res.helpType !== 'none'))}
+    />
+  ) : null
+
+  const etypeRes = etype ? results[etype] : null
+  const names = data.skillIds.map((s) => skillName(s, lang)).join(' · ')
+  return (
+    <>
+      <QuestionScreen
+        session={session}
+        onChange={update}
+        docs={docs}
+        title={data.unitCode ? `${data.unitCode} · ${pick(lessonByCode(data.unitCode)?.t, lang) || names}` : t('sat.study.title', { skills: names })}
+        subtitle={t('sat.sample.studySub', { n: String(session.index + 1), total: String(session.questions.length) })}
+        setLabel={t('sat.study.setLabel')}
+        onExit={onExit}
+        onFinish={finish}
+        footerExtra={footerExtra}
+        sidePanel={sidePanel}
+        overlay={etypeRes && (
+          <ErrorTypeDialog
+            suggested={etypeRes.suggestedErrorType}
+            timeSec={etypeRes.timeSec}
+            pace={etypeRes.pace}
+            current={etypeRes.errorType}
+            busy={busy}
+            onSave={(type) => saveType(etype, type)}
+            onSkip={() => setEtype(null)}
+          />
+        )}
+        study={{
+          onCheck,
+          checking: busy,
+          verdicts,
+          isChecked: (qid) => !!results[qid],
+          skillLabel: (d) => [domainName(d.domain, lang), skillName(d.skillId, lang)].filter(Boolean).join(' · '),
+          below: (qid) => {
+            const r = results[qid]
+            if (!r) return isSimilar && qid === q.id ? <p className="st-similar-note">{t('sat.study.similarAlone')}</p> : null
+            return <VerdictBox res={r} loc={loc} />
+          },
+        }}
+      />
+      {toast && <p className="st-error st-run__toast" role="alert">{toast}</p>}
+    </>
+  )
+}
+
+/**
+ * Учебный режим SAT — фаза 5 плана (Figma 21–25, 28). `?screen=sat-study&satLesson=<занятие плана>` начинает (или
+ * продолжает) занятие; дальше адрес держит `satSession=<id>`, и перезагрузка возвращает ту же сессию: проверенное —
+ * с сервера, остальное — черновиком на устройстве. Законченная сессия показывает итог.
+ */
+export default function SatStudyPage({ token, onNav }) {
+  const { t } = useI18n()
+  const authToken = token || loadToken()
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+  const [explainLang, setExplainLang] = useState('ru')
+
+  useEffect(() => {
+    let alive = true
+    getSatProfile(authToken).then((p) => alive && p?.explainLang && setExplainLang(p.explainLang)).catch(() => {})
+    const lessonId = param('satLesson')
+    const sessionId = param('satSession')
+    const load = sessionId ? getSatSession(authToken, sessionId) : lessonId ? startOnce(authToken, lessonId) : Promise.reject(new Error('no session'))
+    load
+      .then((s) => {
+        if (!alive) return
+        setParams({ satLesson: null, satSession: s.id })
+        setData(s)
+      })
+      .catch((e) => alive && setError(e?.serverMessage || t('sat.study.netError')))
+    window.scrollTo(0, 0)
+    return () => {
+      alive = false
+    }
+  }, [authToken, t])
+
+  const toHub = (tab) => {
+    setParams({ satSession: null, satLesson: null, satUnit: null, satTab: tab || null })
+    onNav?.('sat')
+  }
+  // набор юнита курса возвращается на свой юнит, занятие плана — в «План»
+  const back = () => {
+    if (!data?.unitCode) return toHub('plan')
+    setParams({ satSession: null, satUnit: data.unitCode })
+    onNav?.('sat-unit')
+  }
+
+  if (error) {
+    return (
+      <div className="ih st st-ob">
+        <header className="st-ob__top">
+          <button type="button" className="ih-round" onClick={() => toHub('plan')} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
+          <b className="st-ob__logo">just to study</b>
+        </header>
+        <div className="ih-empty st-study__err">
+          <h2>{t('sat.study.cantStart')}</h2>
+          <p>{error}</p>
+          <button type="button" className="ih-cta" onClick={() => toHub('plan')}>{t('sat.sum.toPlan')}</button>
+        </div>
+      </div>
+    )
+  }
+  if (!data) return <div className="ih st st-run" />
+  if (data.finished) {
+    return (
+      <div className="ih st st-ob">
+        <header className="st-ob__top">
+          <button type="button" className="ih-round" onClick={() => toHub('plan')} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
+          <b className="st-ob__logo">just to study</b>
+          <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t('sat.study.chip')}</span></span>
+          <span className="st-spacer" />
+          <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
+        </header>
+        <div className="ih-enter">
+          <StudySummary summary={data.summary} skillIds={data.skillIds} onPlan={back} planLabel={data.unitCode ? t('sat.unit.backToUnit') : undefined} onErrors={() => toHub('errors')} />
+        </div>
+      </div>
+    )
+  }
+  return <StudyRun data={data} setData={setData} explainLang={explainLang} onExit={back} onFinished={setData} />
+}

@@ -972,6 +972,44 @@ speaking-works|speaking-work&ieltsWork=<id>` (`src/ielts/speaking/`), прохо
 нет выключенного мышления и принудительного `tool_choice` (оба — 400), поэтому `structured()` для таких моделей берёт JSON
 через structured outputs (`output_config.format`, effort `medium`); остальные грейдеры идут прежним путём.
 
+**SAT — по плану docs/sat/PLAN.md, фазами.** Прототип — `jts-sat-platform` (соседний репозиторий), дизайн — Figma «JTS
+clone», страница SAT. Банк вопросов — в JTS-бэкенде (`modules/sat`, `docs/sat/TEST_FORMAT.md`), выгрузку из прототипа
+делает `node scripts/sat/export-sat.js` в `build/sat/`; вопросы, похожие на College Board Question Bank, лежат в
+`jts-sat-platform/college-board-review/` и в выгрузку не попадают, пока владелец контента не решит, что с ними делать.
+Экраны: хаб `?screen=sat&satTab=…` (`src/screens/SatPage.jsx`, вкладки — семь из Figma плюс «Материалы» и «Ошибки»),
+онбординг `?screen=sat-onboarding` (шесть глав, `src/sat/onboarding/chapters.jsx` — их же рисует «Гайд»). Справочные
+данные (главы, вузы, даты экзаменов, таксономия) — `src/sat/data/*.json` из той же выгрузки; правило цели, листков дат и
+долей доменов — `src/sat/model/profile.js` под тестами. Профиль (цель по секциям, дата) — `/mobile/sat/profile`.
+Экран вопроса — один на диагностику, учебный режим и пробник: `src/sat/question/QuestionScreen.jsx` (Bluebook, Figma 8,
+26, 27, 30), режим сессии решает инструменты; состояние — чистый `session.js`, черновик на устройстве
+(`useSatSession`), маркер — смещениями в тексте (`highlight.js`). Стенд — `?screen=sat-run&satSample=study|diagnostic|exam`.
+Диагностика и план (фаза 4): `?screen=sat-diagnostic&satDiag=intro|report|time` (`src/screens/SatDiagnosticPage.jsx`,
+`src/sat/diagnostic/`), вкладка «План» — `src/sat/tabs/PlanTab.jsx` + `src/sat/plan/`. Набор диагностики, отчёт и план
+считает бэкенд (`modules/sat/planning/`, контракт — `backend/docs/sat/TEST_FORMAT.md` §7); `src/sat/model/plan.js` повторяет
+правила недель только для показа (сводка Figma 10 до сборки), и `plan.test.js` держит его на том же примере, что SatPlannerTest.
+Учебный режим (фаза 5): `?screen=sat-study&satLesson=<занятие>` → `satSession=<id>` (`src/screens/SatStudyPage.jsx`,
+`src/sat/study/`). Помощь (подсказка, решение до ответа) записывает сервер и сам ставит её в попытку — клиентской
+`helpType` он верит только вверх; AI-тьютор — заглушка `src/sat/ai/` до флага `SAT_AI` (решение A плана).
+«Сегодня», «Практика», «Прогресс», «Ошибки» (фаза 6) — `src/sat/tabs/`, данные — `/mobile/sat/today|progress|errors`;
+проверка дня — `?screen=sat-daily` (одна на день, без помощи). Время на бэкенде пишется в UTC (`LocalDateTime` JVM)
+— правя `review_due_at` руками в базе, считайте от `now() at time zone 'utc'`.
+Пробники (фаза 7): вкладка `src/sat/tabs/MocksTab.jsx`, прохождение `?screen=sat-mock&satMock=<id>` (модуль — общий
+экран вопроса в режиме exam, между модулями, перерыв, итог — `src/sat/mock/`), разбор `?screen=sat-mock-review`.
+Прохождение и его фаза живут на сервере (`SatMockService`, `TEST_FORMAT.md` §10): набор модуля 2 выбирается только по
+проверенному модулю 1, часы модуля и перерыва — стена часов сервера, и черновик устройства берёт конец модуля у него
+(`syncWallClock`). Итог — диапазон «внутренняя оценка JTS», не балл. Модули — на экране от 1024 px.
+Курс «36 юнитов» (фаза 8): вкладка «Материалы» (`src/sat/tabs/MaterialsTab.jsx`) и юнит во всё окно
+`?screen=sat-unit&satUnit=U1` (`src/screens/SatUnitPage.jsx`: урок по частям, набор практики, доска `src/sat/course/`,
+Desmos). Тексты — статика из выгрузки прототипа: `node scripts/sat/export-sat.js && node scripts/sat/build-course.js`
+пишут `src/sat/data/course.json` и `public/sat/course/<код>.json`; руками их не править. Набор юнита — вопросы банка
+kind=lesson с кодом юнита (сессия kind=unit, `GET /mobile/sat/course`); все 360 вопросов наборов прототипа сейчас в
+списке проверки College Board, поэтому юниты пишут «набор готовится».
+Словарь (фаза 9): `src/sat/tabs/VocabTab.jsx` + `src/sat/vocab/`; колода и игры — статика `public/sat/vocab/`, гид по
+Desmos — `src/sat/data/desmosGuide.json` (`node scripts/sat/build-reference.js`). Расписание SM-2, свои слова и цель —
+`/mobile/sat/vocab` (`dueAt` — миллисекунды эпохи, не LocalDateTime); очередь дня считает `src/sat/model/vocab.js`.
+Игры расписание не трогают и на сервер не пишут.
+Подписки на SAT пока нет: раздел открыт любому вошедшему, проверка продукта — перед продом.
+
 **Экосистема минут (Roadmap) — своей таблицы у сводки нет.** Недельная сводка
 `GET /api/profile/ecosystem` (`src/lib/db/ecosystem.js`) берёт каждое время там,
 где его уже пишут: тьютор — `voice_usage`, шэдоуинг — `shadowing_assess` (оценка
@@ -1125,6 +1163,7 @@ JTS-бэкенд (`src/learning/lessonProgress.js`).
   `src/mobile/base.css`): макет весь на нём, а решение «один Manrope» (17.07)
   было против перехода шрифта между разделами — на одном устройстве его нет.
   Иконки и картинки макета — экспортом из Figma в `public/assets/m/<секция>/`.
+- **SAT:** стили раздела — `src/sat.css` (префикс `st-`, корень `ih st` берёт токены и кирпичи из `ielts.css`).
 - Телефоны нормализуются в формат бэкенда `7XXXXXXXXXX` —
   `normalizePhone()` в `src/api.js`, не дублировать.
 - Анонимный прогресс привязан к device-id и мержится в аккаунт после входа

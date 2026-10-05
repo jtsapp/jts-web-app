@@ -1,6 +1,7 @@
 import '../styles.css'
 import '../tutor.css'
 import '../ielts.css'
+import '../sat.css'
 import '../grammar.css'
 import '../vocab.css'
 import '../vocab-catalog.css'

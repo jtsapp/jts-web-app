@@ -1,0 +1,1014 @@
+{
+ "lessonsTotal": 36,
+ "wordsPerLesson": 10,
+ "schedule": {
+  "perWeek": 3,
+  "weeks": 12,
+  "tests": 12
+ },
+ "phases": [
+  {
+   "id": "month1",
+   "weeks": "1–4",
+   "from": 1,
+   "to": 12,
+   "name": {
+    "en": "Month 1 · Foundations",
+    "ru": "Месяц 1 · Основа",
+    "kk": "1-ай · Негіз"
+   },
+   "lead": {
+    "en": "Units 1–12, weeks 1–4: the first half of the content. Every unit is a method, a full lesson and a practice set, with a full practice test every weekend.",
+    "ru": "Юниты 1–12, недели 1–4: первая половина материала. Каждый юнит — метод, полный урок и практика, и каждые выходные — полный practice test.",
+    "kk": "1–12 юниттер, 1–4 апталар: материалдың бірінші жартысы. Әр юнит — әдіс, толық сабақ және жаттығу, әр демалыс сайын толық practice test."
+   }
+  },
+  {
+   "id": "month2",
+   "weeks": "5–8",
+   "from": 13,
+   "to": 24,
+   "name": {
+    "en": "Month 2 · The rest of the content",
+    "ru": "Месяц 2 · Остальной материал",
+    "kk": "2-ай · Қалған материал"
+   },
+   "lead": {
+    "en": "Units 13–24, weeks 5–8: the remaining topics. Timing starts to matter from week 4, and practice shifts to the hardest questions in weeks 6–8.",
+    "ru": "Юниты 13–24, недели 5–8: оставшиеся темы. С 4-й недели важен тайминг, а в неделях 6–8 практика смещается к самым сложным вопросам.",
+    "kk": "13–24 юниттер, 5–8 апталар: қалған тақырыптар. 4-аптадан бастап уақыт маңызды, ал 6–8 апталарда жаттығу ең күрделі сұрақтарға ауысады."
+   }
+  },
+  {
+   "id": "challenge",
+   "weeks": "9–12",
+   "from": 25,
+   "to": 36,
+   "name": {
+    "en": "Month 3 · Challenge",
+    "ru": "Месяц 3 · Challenge",
+    "kk": "3-ай · Challenge"
+   },
+   "lead": {
+    "en": "Challenge 1–12: hard-module practice tests. R&W and Math modules alternate, then two full simulations. Every test ends with an error review.",
+    "ru": "Challenge 1–12: практика сложного модуля. Модули R&W и Math чередуются, затем две полные симуляции. После каждого теста — разбор ошибок.",
+    "kk": "Challenge 1–12: күрделі модуль практикасы. R&W және Math модульдері кезектеседі, содан кейін екі толық симуляция. Әр тесттен кейін қателерді талдау."
+   }
+  }
+ ],
+ "officialTests": [
+  {
+   "id": "pt6",
+   "after": null,
+   "name": {
+    "en": "Official Bluebook Practice Test 6",
+    "ru": "Официальный Bluebook Practice Test 6",
+    "kk": "Ресми Bluebook Practice Test 6"
+   },
+   "note": {
+    "en": "The diagnostic. Take it before Unit 1, in one sitting and under exam conditions, so the course starts from your real score.",
+    "ru": "Диагностика. Пройдите его до юнита 1, за один присест и в условиях экзамена, чтобы курс начинался с вашего реального балла.",
+    "kk": "Диагностика. Оны 1-юнитке дейін, бір отырыста және емтихан жағдайында тапсырыңыз, сонда курс нақты баллыңыздан басталады."
+   }
+  },
+  {
+   "id": "pt8",
+   "after": "month1",
+   "name": {
+    "en": "Official Bluebook Practice Test 8",
+    "ru": "Официальный Bluebook Practice Test 8",
+    "kk": "Ресми Bluebook Practice Test 8"
+   },
+   "note": {
+    "en": "The progress test that closes Month 1. Take it in one sitting under exam conditions and review it the next day.",
+    "ru": "Прогресс-тест, закрывающий месяц 1. Пройдите его за один присест в условиях экзамена и разберите на следующий день.",
+    "kk": "1-айды жабатын прогресс тест. Оны бір отырыста емтихан жағдайында тапсырып, келесі күні талдаңыз."
+   }
+  },
+  {
+   "id": "ptLatest",
+   "after": "month2",
+   "name": {
+    "en": "The latest official Bluebook practice test",
+    "ru": "Последний официальный practice test в Bluebook",
+    "kk": "Bluebook-тағы ең соңғы ресми practice test"
+   },
+   "note": {
+    "en": "The progress test that closes Month 2: the newest full-length test in Bluebook. Take it in one sitting under exam conditions and review it the next day.",
+    "ru": "Прогресс-тест, закрывающий месяц 2: самый новый полный тест в Bluebook. Пройдите его за один присест в условиях экзамена и разберите на следующий день.",
+    "kk": "2-айды жабатын прогресс тест: Bluebook-тағы ең жаңа толық тест. Оны бір отырыста емтихан жағдайында тапсырып, келесі күні талдаңыз."
+   }
+  }
+ ],
+ "gates": [
+  {
+   "n": 1,
+   "afterLesson": 12,
+   "name": {
+    "en": "Bluebook Practice Test 8 — end of Month 1",
+    "ru": "Bluebook Practice Test 8 — конец месяца 1",
+    "kk": "Bluebook Practice Test 8 — 1-айдың соңы"
+   }
+  },
+  {
+   "n": 2,
+   "afterLesson": 24,
+   "name": {
+    "en": "Latest Bluebook practice test — end of Month 2",
+    "ru": "Последний Bluebook practice test — конец месяца 2",
+    "kk": "Bluebook-тағы соңғы practice test — 2-айдың соңы"
+   }
+  }
+ ],
+ "gateRule": {
+  "en": "Each month closes with a new official Bluebook practice test, which also counts as that weekend’s test. Review it the next day: a test without a review is worth half a test.",
+  "ru": "Каждый месяц заканчивается новым официальным practice test в Bluebook — он же тест этих выходных. Разберите его на следующий день: тест без разбора стоит половину теста.",
+  "kk": "Әр ай Bluebook-тағы жаңа ресми practice test-пен аяқталады — ол сол демалыстың тесті де. Оны келесі күні талдаңыз: талдаусыз тест жарты тестке тең."
+ },
+ "homework": [
+  {
+   "id": "words",
+   "mins": "10–15",
+   "name": {
+    "en": "Word list #N",
+    "ru": "Word list #N",
+    "kk": "Word list #N"
+   },
+   "body": {
+    "en": "Ten words, N being the unit number. The test on them opens the next unit.",
+    "ru": "Десять слов, где N — номер юнита. Тест по ним — в начале следующего юнита.",
+    "kk": "Он сөз, N — юнит нөмірі. Олар бойынша тест келесі юниттің басында."
+   }
+  },
+  {
+   "id": "set",
+   "mins": "60–90",
+   "name": {
+    "en": "Set #N",
+    "ru": "Набор #N",
+    "kk": "#N жинағы"
+   },
+   "body": {
+    "en": "The practice set on this unit’s code, Easy through Hard. In the Challenge month, Hard only.",
+    "ru": "Практика по коду этого юнита, от Easy к Hard. В месяц Challenge — только Hard.",
+    "kk": "Осы юниттің коды бойынша жаттығу, Easy-ден Hard-қа дейін. Challenge айында — тек Hard."
+   }
+  },
+  {
+   "id": "video",
+   "mins": "20–30",
+   "name": {
+    "en": "Read ahead",
+    "ru": "Прочитать заранее",
+    "kk": "Алдын ала оқу"
+   },
+   "body": {
+    "en": "Read the written lesson for the NEXT unit and take notes — so the unit starts from practice, not from first contact.",
+    "ru": "Прочитайте урок СЛЕДУЮЩЕГО юнита с конспектом — чтобы юнит начинался с практики, а не с первого знакомства.",
+    "kk": "КЕЛЕСІ юниттің жазбаша сабағын конспектімен оқыңыз — сабақ практикадан басталуы үшін, алғашқы танысудан емес."
+   }
+  }
+ ],
+ "units": [
+  {
+   "id": "m-alg",
+   "section": "math",
+   "kind": "unit",
+   "n": 1,
+   "domain": "m.alg",
+   "name": {
+    "en": "Algebra",
+    "ru": "Algebra",
+    "kk": "Algebra"
+   },
+   "lead": {
+    "en": "Linear equations, lines, systems and inequalities — the backbone of the Math section.",
+    "ru": "Линейные уравнения, прямые, системы и неравенства — основа секции Math.",
+    "kk": "Сызықтық теңдеулер, түзулер, жүйелер және теңсіздіктер — Math секциясының негізі."
+   }
+  },
+  {
+   "id": "m-adv",
+   "section": "math",
+   "kind": "unit",
+   "n": 2,
+   "domain": "m.adv",
+   "name": {
+    "en": "Advanced Math",
+    "ru": "Advanced Math",
+    "kk": "Advanced Math"
+   },
+   "lead": {
+    "en": "Quadratics, exponentials, radicals, functions and polynomials.",
+    "ru": "Квадратичные, показательные, корни, функции и многочлены.",
+    "kk": "Квадраттық, көрсеткіштік, түбірлер, функциялар және көпмүшелер."
+   }
+  },
+  {
+   "id": "m-psda",
+   "section": "math",
+   "kind": "unit",
+   "n": 3,
+   "domain": "m.psda",
+   "name": {
+    "en": "Problem-Solving and Data Analysis",
+    "ru": "Problem-Solving and Data Analysis",
+    "kk": "Problem-Solving and Data Analysis"
+   },
+   "lead": {
+    "en": "Ratios, rates, percentages, statistics and probability.",
+    "ru": "Пропорции, скорости, проценты, статистика и вероятность.",
+    "kk": "Қатынастар, жылдамдықтар, пайыздар, статистика және ықтималдық."
+   }
+  },
+  {
+   "id": "m-geo",
+   "section": "math",
+   "kind": "unit",
+   "n": 4,
+   "domain": "m.geo",
+   "name": {
+    "en": "Geometry and Trigonometry",
+    "ru": "Geometry and Trigonometry",
+    "kk": "Geometry and Trigonometry"
+   },
+   "lead": {
+    "en": "Lines, angles, triangles, circles, trigonometry and volume.",
+    "ru": "Прямые, углы, треугольники, окружности, тригонометрия и объём.",
+    "kk": "Түзулер, бұрыштар, үшбұрыштар, шеңберлер, тригонометрия және көлем."
+   }
+  },
+  {
+   "id": "v-cs",
+   "section": "rw",
+   "kind": "unit",
+   "n": 1,
+   "domain": "rw.cs",
+   "name": {
+    "en": "Craft and Structure",
+    "ru": "Craft and Structure",
+    "kk": "Craft and Structure"
+   },
+   "lead": {
+    "en": "Vocabulary in context, the job each part of a text does, and how two texts answer each other.",
+    "ru": "Лексика в контексте, роль каждой части текста и то, как два текста отвечают друг другу.",
+    "kk": "Контекстегі лексика, мәтіннің әр бөлігінің қызметі және екі мәтіннің бір-біріне жауабы."
+   }
+  },
+  {
+   "id": "v-ii",
+   "section": "rw",
+   "kind": "unit",
+   "n": 2,
+   "domain": "rw.ii",
+   "name": {
+    "en": "Information and Ideas",
+    "ru": "Information and Ideas",
+    "kk": "Information and Ideas"
+   },
+   "lead": {
+    "en": "Main ideas, evidence from text and data, and inference.",
+    "ru": "Главные идеи, доказательства из текста и данных, вывод.",
+    "kk": "Негізгі идеялар, мәтін мен деректен дәлел, қорытынды."
+   }
+  },
+  {
+   "id": "v-sec",
+   "section": "rw",
+   "kind": "unit",
+   "n": 3,
+   "domain": "rw.sec",
+   "name": {
+    "en": "Standard English Conventions",
+    "ru": "Standard English Conventions",
+    "kk": "Standard English Conventions"
+   },
+   "lead": {
+    "en": "Punctuation and grammar as a set of rules — the fastest points in the section.",
+    "ru": "Пунктуация и грамматика как набор правил — самые быстрые баллы в секции.",
+    "kk": "Тыныс белгілері мен грамматика — ережелер жиынтығы, секциядағы ең жылдам ұпайлар."
+   }
+  },
+  {
+   "id": "v-ei",
+   "section": "rw",
+   "kind": "unit",
+   "n": 4,
+   "domain": "rw.ei",
+   "name": {
+    "en": "Expression of Ideas",
+    "ru": "Expression of Ideas",
+    "kk": "Expression of Ideas"
+   },
+   "lead": {
+    "en": "Rhetorical synthesis and transitions: the answer is chosen against the stated goal.",
+    "ru": "Rhetorical synthesis и связки: ответ выбирается под заявленную цель.",
+    "kk": "Rhetorical synthesis және байланыстырғыштар: жауап айтылған мақсатқа қарап таңдалады."
+   }
+  },
+  {
+   "id": "ch",
+   "section": "both",
+   "kind": "hard",
+   "name": {
+    "en": "Challenge",
+    "ru": "Challenge",
+    "kk": "Challenge"
+   },
+   "lead": {
+    "en": "Hard-module practice: timed sets at the difficulty of the second, harder module, each followed by an error review.",
+    "ru": "Практика сложного модуля: наборы на время на уровне второго, сложного модуля, после каждого — разбор ошибок.",
+    "kk": "Күрделі модуль практикасы: екінші, күрделі модуль деңгейіндегі уақытпен орындалатын жинақтар, әрқайсысынан кейін қателерді талдау."
+   }
+  }
+ ],
+ "lessons": [
+  {
+   "code": "U1",
+   "unit": "v-cs",
+   "n": 1,
+   "week": 1,
+   "diagnostic": true,
+   "t": {
+    "en": "Words in Context",
+    "ru": "Слова в контексте",
+    "kk": "Контекстегі сөздер"
+   },
+   "skills": {
+    "en": "The four-step method, two special cases, word parts as a backup tool",
+    "ru": "Метод из четырёх шагов, два особых случая, части слова как запасной инструмент",
+    "kk": "Төрт қадамдық әдіс, екі ерекше жағдай, сөз бөліктері — қосалқы құрал"
+   }
+  },
+  {
+   "code": "U2",
+   "unit": "v-cs",
+   "n": 2,
+   "week": 1,
+   "t": {
+    "en": "Text Structure and Purpose",
+    "ru": "Структура и цель текста",
+    "kk": "Мәтін құрылымы және мақсаты"
+   },
+   "skills": {
+    "en": "The job-label method; purpose, structure and function questions",
+    "ru": "Метод меток-функций; вопросы о цели, структуре и функции",
+    "kk": "Қызмет-белгі әдісі; мақсат, құрылым және қызмет туралы сұрақтар"
+   }
+  },
+  {
+   "code": "U3",
+   "unit": "m-alg",
+   "n": 3,
+   "week": 1,
+   "t": {
+    "en": "Linear Equations and Inequalities in One Variable",
+    "ru": "Линейные уравнения и неравенства с одной переменной",
+    "kk": "Бір айнымалысы бар сызықтық теңдеулер мен теңсіздіктер"
+   },
+   "skills": {
+    "en": "The solving sequence, no solution and infinitely many, word problems, the Desmos shortcut",
+    "ru": "Порядок решения, нет решений и бесконечно много, текстовые задачи, приём с Desmos",
+    "kk": "Шешу реті, шешімі жоқ және шексіз көп, мәтінді есептер, Desmos тәсілі"
+   }
+  },
+  {
+   "code": "U4",
+   "unit": "v-cs",
+   "n": 4,
+   "week": 2,
+   "t": {
+    "en": "Cross-Text Connections",
+    "ru": "Связи между двумя текстами",
+    "kk": "Екі мәтін арасындағы байланыс"
+   },
+   "skills": {
+    "en": "The five relationships between two texts, the method, the traps",
+    "ru": "Пять типов отношений между текстами, метод, ловушки",
+    "kk": "Екі мәтін арасындағы бес қатынас, әдіс, тұзақтар"
+   }
+  },
+  {
+   "code": "U5",
+   "unit": "m-alg",
+   "n": 5,
+   "week": 2,
+   "t": {
+    "en": "Linear Equations in Two Variables, Slope, and Linear Functions",
+    "ru": "Линейные уравнения с двумя переменными, наклон и линейные функции",
+    "kk": "Екі айнымалысы бар сызықтық теңдеулер, еңіс және сызықтық функциялар"
+   },
+   "skills": {
+    "en": "Slope, points on a line, what the equation means in context, the Desmos workflow",
+    "ru": "Наклон, точки на прямой, смысл уравнения в контексте, работа в Desmos",
+    "kk": "Еңіс, түзудегі нүктелер, теңдеудің контексттегі мағынасы, Desmos-пен жұмыс"
+   }
+  },
+  {
+   "code": "U6",
+   "unit": "m-alg",
+   "n": 6,
+   "week": 2,
+   "t": {
+    "en": "Systems of Linear Equations",
+    "ru": "Системы линейных уравнений",
+    "kk": "Сызықтық теңдеулер жүйелері"
+   },
+   "skills": {
+    "en": "Three algebraic methods, special-answer questions, the Desmos method, word problems",
+    "ru": "Три алгебраических метода, вопросы об особых ответах, метод Desmos, текстовые задачи",
+    "kk": "Үш алгебралық әдіс, ерекше жауап сұрақтары, Desmos әдісі, мәтінді есептер"
+   }
+  },
+  {
+   "code": "U7",
+   "unit": "v-ii",
+   "n": 7,
+   "week": 3,
+   "t": {
+    "en": "Central Ideas and Details",
+    "ru": "Главная мысль и детали",
+    "kk": "Негізгі ой және детальдар"
+   },
+   "skills": {
+    "en": "The main idea method, the detail method, two different reading rhythms",
+    "ru": "Метод главной мысли, метод деталей, два разных ритма чтения",
+    "kk": "Негізгі ой әдісі, деталь әдісі, оқудың екі түрлі ырғағы"
+   }
+  },
+  {
+   "code": "U8",
+   "unit": "v-ii",
+   "n": 8,
+   "week": 3,
+   "t": {
+    "en": "Command of Evidence: Textual",
+    "ru": "Доказательства из текста",
+    "kk": "Мәтіннен дәлел"
+   },
+   "skills": {
+    "en": "Support, weaken and illustrate questions; the method and common patterns",
+    "ru": "Вопросы «подтвердить», «ослабить», «проиллюстрировать»; метод и типичные схемы",
+    "kk": "«Қолдау», «әлсірету», «мысалмен көрсету» сұрақтары; әдіс және жиі үлгілер"
+   }
+  },
+  {
+   "code": "U9",
+   "unit": "m-adv",
+   "n": 9,
+   "week": 3,
+   "t": {
+    "en": "Quadratics Part 1",
+    "ru": "Квадратичные функции, часть 1",
+    "kk": "Квадраттық функциялар, 1-бөлім"
+   },
+   "skills": {
+    "en": "The three forms, factoring, polynomial operations, reading a graph or table, Desmos",
+    "ru": "Три формы, разложение на множители, действия с многочленами, график и таблица, Desmos",
+    "kk": "Үш түрі, көбейткішке жіктеу, көпмүшелермен амалдар, график пен кесте, Desmos"
+   }
+  },
+  {
+   "code": "U10",
+   "unit": "v-ii",
+   "n": 10,
+   "week": 4,
+   "t": {
+    "en": "Command of Evidence: Quantitative",
+    "ru": "Доказательства из данных",
+    "kk": "Деректен дәлел"
+   },
+   "skills": {
+    "en": "Tables and graphs as evidence; the method, the traps, a worked example",
+    "ru": "Таблицы и графики как доказательство; метод, ловушки, разобранный пример",
+    "kk": "Кестелер мен графиктер дәлел ретінде; әдіс, тұзақтар, талданған мысал"
+   }
+  },
+  {
+   "code": "U11",
+   "unit": "m-adv",
+   "n": 11,
+   "week": 4,
+   "t": {
+    "en": "Quadratics Part 2",
+    "ru": "Квадратичные функции, часть 2",
+    "kk": "Квадраттық функциялар, 2-бөлім"
+   },
+   "skills": {
+    "en": "The discriminant, completing the square, the vertex, nonlinear systems, Desmos for hard questions",
+    "ru": "Дискриминант, выделение полного квадрата, вершина, нелинейные системы, Desmos для сложных задач",
+    "kk": "Дискриминант, толық квадрат бөлу, төбе, сызықтық емес жүйелер, күрделі есептерге Desmos"
+   }
+  },
+  {
+   "code": "U12",
+   "unit": "m-adv",
+   "n": 12,
+   "week": 4,
+   "t": {
+    "en": "Exponentials and Radicals",
+    "ru": "Показательные функции и корни",
+    "kk": "Көрсеткіштік функциялар және түбірлер"
+   },
+   "skills": {
+    "en": "Percent change in the base, growth and decay, radicals, Desmos applications",
+    "ru": "Процентное изменение в основании, рост и убывание, корни, применение Desmos",
+    "kk": "Негіздегі пайыздық өзгеріс, өсу мен кему, түбірлер, Desmos қолдану"
+   }
+  },
+  {
+   "code": "U13",
+   "unit": "v-ii",
+   "n": 13,
+   "week": 5,
+   "t": {
+    "en": "Inferences",
+    "ru": "Выводы",
+    "kk": "Қорытындылар"
+   },
+   "skills": {
+    "en": "The method and the four ways a choice overshoots the text",
+    "ru": "Метод и четыре способа, которыми вариант выходит за рамки текста",
+    "kk": "Әдіс және нұсқаның мәтіннен асып кетуінің төрт жолы"
+   }
+  },
+  {
+   "code": "U14",
+   "unit": "v-sec",
+   "n": 14,
+   "week": 5,
+   "t": {
+    "en": "Boundaries Part 1",
+    "ru": "Границы предложений, часть 1",
+    "kk": "Сөйлем шекаралары, 1-бөлім"
+   },
+   "skills": {
+    "en": "The connector menu, the error catalog, the method",
+    "ru": "Меню соединителей, каталог ошибок, метод",
+    "kk": "Байланыстырғыштар мәзірі, қателер каталогы, әдіс"
+   }
+  },
+  {
+   "code": "U15",
+   "unit": "m-psda",
+   "n": 15,
+   "week": 5,
+   "t": {
+    "en": "Ratios, Rates, and Percentages",
+    "ru": "Пропорции, скорости и проценты",
+    "kk": "Қатынастар, жылдамдықтар және пайыздар"
+   },
+   "skills": {
+    "en": "The percent multiplier method, ratios and proportions, the Desmos angle",
+    "ru": "Метод процентного множителя, отношения и пропорции, Desmos",
+    "kk": "Пайыздық көбейткіш әдісі, қатынастар мен пропорциялар, Desmos"
+   }
+  },
+  {
+   "code": "U16",
+   "unit": "v-sec",
+   "n": 16,
+   "week": 6,
+   "t": {
+    "en": "Boundaries Part 2",
+    "ru": "Границы предложений, часть 2",
+    "kk": "Сөйлем шекаралары, 2-бөлім"
+   },
+   "skills": {
+    "en": "Colons, dashes and the other new tools; the trap patterns",
+    "ru": "Двоеточия, тире и другие новые инструменты; типичные ловушки",
+    "kk": "Қос нүкте, сызықша және басқа жаңа құралдар; тұзақ үлгілері"
+   }
+  },
+  {
+   "code": "U17",
+   "unit": "m-psda",
+   "n": 17,
+   "week": 6,
+   "t": {
+    "en": "Statistics, Data Displays, and Probability",
+    "ru": "Статистика, представление данных и вероятность",
+    "kk": "Статистика, деректерді көрсету және ықтималдық"
+   },
+   "skills": {
+    "en": "Centre and spread, displays, two-way tables, lines of fit, margin of error and study design",
+    "ru": "Среднее и разброс, диаграммы, таблицы сопряжённости, линии тренда, погрешность и дизайн исследования",
+    "kk": "Орта мән мен шашырау, диаграммалар, екі өлшемді кестелер, тренд сызығы, қателік және зерттеу дизайны"
+   }
+  },
+  {
+   "code": "U18",
+   "unit": "m-alg",
+   "n": 18,
+   "week": 6,
+   "t": {
+    "en": "Linear Inequalities, Absolute Value, and Desmos Shading",
+    "ru": "Линейные неравенства, модуль и штриховка в Desmos",
+    "kk": "Сызықтық теңсіздіктер, модуль және Desmos-тағы бояу"
+   },
+   "skills": {
+    "en": "Systems of inequalities, the Desmos method, inequalities in context, absolute value",
+    "ru": "Системы неравенств, метод Desmos, неравенства в контексте, модуль",
+    "kk": "Теңсіздіктер жүйесі, Desmos әдісі, контексттегі теңсіздіктер, модуль"
+   }
+  },
+  {
+   "code": "U19",
+   "unit": "v-sec",
+   "n": 19,
+   "week": 7,
+   "t": {
+    "en": "Form, Structure, and Sense: Verbs, Pronouns, Modifiers, Possessives",
+    "ru": "Form, Structure, and Sense: глаголы, местоимения, определения, притяжательные",
+    "kk": "Form, Structure, and Sense: етістіктер, есімдіктер, анықтауыштар, тәуелдік"
+   },
+   "skills": {
+    "en": "Subject–verb agreement, verb tense, pronouns, modifiers, possessives and apostrophes, one unified method",
+    "ru": "Согласование подлежащего и сказуемого, время глагола, местоимения, определения, притяжательные формы и апострофы, единый метод",
+    "kk": "Бастауыш пен баяндауыштың қиысуы, етістік шағы, есімдіктер, анықтауыштар, тәуелдік формалар мен апострофтар, бірыңғай әдіс"
+   }
+  },
+  {
+   "code": "U20",
+   "unit": "m-geo",
+   "n": 20,
+   "week": 7,
+   "t": {
+    "en": "Geometry Part 1: Lines, Angles, Triangles, Area and Volume",
+    "ru": "Геометрия, часть 1: прямые, углы, треугольники, площадь и объём",
+    "kk": "Геометрия, 1-бөлім: түзулер, бұрыштар, үшбұрыштар, аудан және көлем"
+   },
+   "skills": {
+    "en": "The reference sheet, lines and angles, similar triangles, area and scaling, volume",
+    "ru": "Справочный лист, прямые и углы, подобные треугольники, площадь и масштаб, объём",
+    "kk": "Анықтамалық парақ, түзулер мен бұрыштар, ұқсас үшбұрыштар, аудан және масштаб, көлем"
+   }
+  },
+  {
+   "code": "U21",
+   "unit": "m-adv",
+   "n": 21,
+   "week": 7,
+   "t": {
+    "en": "Functions, Polynomials, and Rational Equations",
+    "ru": "Функции, многочлены и рациональные уравнения",
+    "kk": "Функциялар, көпмүшелер және рационал теңдеулер"
+   },
+   "skills": {
+    "en": "Evaluation, composites, domain and range, transformations, polynomial zeros, rational equations",
+    "ru": "Вычисление, композиция, область определения и значений, преобразования, нули многочленов, рациональные уравнения",
+    "kk": "Мәнін есептеу, композиция, анықталу және мәндер облысы, түрлендірулер, көпмүше нөлдері, рационал теңдеулер"
+   }
+  },
+  {
+   "code": "U22",
+   "unit": "v-ei",
+   "n": 22,
+   "week": 8,
+   "t": {
+    "en": "Rhetorical Synthesis",
+    "ru": "Риторический синтез",
+    "kk": "Риторикалық синтез"
+   },
+   "skills": {
+    "en": "The method and the common goal types",
+    "ru": "Метод и типичные виды целей",
+    "kk": "Әдіс және мақсаттың жиі түрлері"
+   }
+  },
+  {
+   "code": "U23",
+   "unit": "v-ei",
+   "n": 23,
+   "week": 8,
+   "t": {
+    "en": "Transitions",
+    "ru": "Связки",
+    "kk": "Байланыстырғыштар"
+   },
+   "skills": {
+    "en": "The method and the two classic traps",
+    "ru": "Метод и две классические ловушки",
+    "kk": "Әдіс және екі классикалық тұзақ"
+   }
+  },
+  {
+   "code": "U24",
+   "unit": "m-geo",
+   "n": 24,
+   "week": 8,
+   "t": {
+    "en": "Geometry Part 2: Right Triangles, Trigonometry, Circles",
+    "ru": "Геометрия, часть 2: прямоугольные треугольники, тригонометрия, окружности",
+    "kk": "Геометрия, 2-бөлім: тікбұрышты үшбұрыштар, тригонометрия, шеңберлер"
+   },
+   "skills": {
+    "en": "Right triangles, trigonometry, circle equations, arcs, sectors and radians, circle theorems, Desmos",
+    "ru": "Прямоугольные треугольники, тригонометрия, уравнения окружности, дуги, секторы и радианы, теоремы об окружности, Desmos",
+    "kk": "Тікбұрышты үшбұрыштар, тригонометрия, шеңбер теңдеулері, доғалар, секторлар және радиандар, шеңбер теоремалары, Desmos"
+   }
+  },
+  {
+   "code": "CH1",
+   "unit": "ch",
+   "n": 25,
+   "week": 9,
+   "hard": true,
+   "t": {
+    "en": "R&W Hard Module A",
+    "ru": "R&W: сложный модуль A",
+    "kk": "R&W: күрделі модуль A"
+   },
+   "skills": {
+    "en": "Baseline hard module. Focus on Words in Context and Text Structure (Classes 1–2).",
+    "ru": "Стартовый сложный модуль. Фокус: Words in Context и структура текста (уроки 1–2).",
+    "kk": "Бастапқы күрделі модуль. Назарда: Words in Context және мәтін құрылымы (1–2 сабақ)."
+   }
+  },
+  {
+   "code": "CH2",
+   "unit": "ch",
+   "n": 26,
+   "week": 9,
+   "hard": true,
+   "t": {
+    "en": "Math Hard Module A",
+    "ru": "Math: сложный модуль A",
+    "kk": "Math: күрделі модуль A"
+   },
+   "skills": {
+    "en": "Baseline hard module. Focus on linear equations, systems and inequalities (Classes 3, 5, 6, 18).",
+    "ru": "Стартовый сложный модуль. Фокус: линейные уравнения, системы и неравенства (уроки 3, 5, 6, 18).",
+    "kk": "Бастапқы күрделі модуль. Назарда: сызықтық теңдеулер, жүйелер және теңсіздіктер (3, 5, 6, 18 сабақ)."
+   }
+  },
+  {
+   "code": "CH3",
+   "unit": "ch",
+   "n": 27,
+   "week": 9,
+   "hard": true,
+   "t": {
+    "en": "R&W Hard Module B",
+    "ru": "R&W: сложный модуль B",
+    "kk": "R&W: күрделі модуль B"
+   },
+   "skills": {
+    "en": "Command of Evidence: textual and quantitative (Classes 8, 10).",
+    "ru": "Доказательства из текста и из данных (уроки 8, 10).",
+    "kk": "Мәтіннен және деректен дәлел (8, 10 сабақ)."
+   }
+  },
+  {
+   "code": "CH4",
+   "unit": "ch",
+   "n": 28,
+   "week": 10,
+   "hard": true,
+   "t": {
+    "en": "Math Hard Module B",
+    "ru": "Math: сложный модуль B",
+    "kk": "Math: күрделі модуль B"
+   },
+   "skills": {
+    "en": "Advanced Math: quadratics, equivalent expressions, exponentials, radicals, functions, polynomials (Classes 9, 11, 12, 21).",
+    "ru": "Advanced Math: квадратичные, равносильные выражения, показательные, корни, функции, многочлены (уроки 9, 11, 12, 21).",
+    "kk": "Advanced Math: квадраттық, тең өрнектер, көрсеткіштік, түбірлер, функциялар, көпмүшелер (9, 11, 12, 21 сабақ)."
+   }
+  },
+  {
+   "code": "CH5",
+   "unit": "ch",
+   "n": 29,
+   "week": 10,
+   "hard": true,
+   "t": {
+    "en": "R&W Hard Module C",
+    "ru": "R&W: сложный модуль C",
+    "kk": "R&W: күрделі модуль C"
+   },
+   "skills": {
+    "en": "Inferences, Cross-Text, Central Ideas (Classes 4, 7, 13).",
+    "ru": "Выводы, два текста, главная мысль (уроки 4, 7, 13).",
+    "kk": "Қорытындылар, екі мәтін, негізгі ой (4, 7, 13 сабақ)."
+   }
+  },
+  {
+   "code": "CH6",
+   "unit": "ch",
+   "n": 30,
+   "week": 10,
+   "hard": true,
+   "t": {
+    "en": "Math Hard Module C",
+    "ru": "Math: сложный модуль C",
+    "kk": "Math: күрделі модуль C"
+   },
+   "skills": {
+    "en": "Ratios, percents, statistics, probability, margin of error (Classes 15, 17).",
+    "ru": "Пропорции, проценты, статистика, вероятность, погрешность (уроки 15, 17).",
+    "kk": "Қатынастар, пайыздар, статистика, ықтималдық, қателік (15, 17 сабақ)."
+   }
+  },
+  {
+   "code": "CH7",
+   "unit": "ch",
+   "n": 31,
+   "week": 11,
+   "hard": true,
+   "t": {
+    "en": "R&W Hard Module D",
+    "ru": "R&W: сложный модуль D",
+    "kk": "R&W: күрделі модуль D"
+   },
+   "skills": {
+    "en": "Boundaries, Form/Structure/Sense, Synthesis, Transitions (Classes 14, 16, 19, 22, 23).",
+    "ru": "Границы предложений, Form/Structure/Sense, синтез, связки (уроки 14, 16, 19, 22, 23).",
+    "kk": "Сөйлем шекаралары, Form/Structure/Sense, синтез, байланыстырғыштар (14, 16, 19, 22, 23 сабақ)."
+   }
+  },
+  {
+   "code": "CH8",
+   "unit": "ch",
+   "n": 32,
+   "week": 11,
+   "hard": true,
+   "t": {
+    "en": "Math Hard Module D",
+    "ru": "Math: сложный модуль D",
+    "kk": "Math: күрделі модуль D"
+   },
+   "skills": {
+    "en": "Geometry, circles, trigonometry (Classes 20, 24; completing the square from Class 11).",
+    "ru": "Геометрия, окружности, тригонометрия (уроки 20, 24; полный квадрат из урока 11).",
+    "kk": "Геометрия, шеңберлер, тригонометрия (20, 24 сабақ; толық квадрат — 11 сабақтан)."
+   }
+  },
+  {
+   "code": "CH9",
+   "unit": "ch",
+   "n": 33,
+   "week": 11,
+   "hard": true,
+   "t": {
+    "en": "R&W Hard Module E",
+    "ru": "R&W: сложный модуль E",
+    "kk": "R&W: күрделі модуль E"
+   },
+   "skills": {
+    "en": "Mixed, hardest-difficulty only. Target: 30 min finish.",
+    "ru": "Смешанный, только самые сложные. Цель: уложиться в 30 минут.",
+    "kk": "Аралас, тек ең күрделілері. Мақсат: 30 минутта бітіру."
+   }
+  },
+  {
+   "code": "CH10",
+   "unit": "ch",
+   "n": 34,
+   "week": 12,
+   "hard": true,
+   "t": {
+    "en": "Math Hard Module E",
+    "ru": "Math: сложный модуль E",
+    "kk": "Math: күрделі модуль E"
+   },
+   "skills": {
+    "en": "Mixed, hardest-difficulty only, student-produced responses.",
+    "ru": "Смешанный, только самые сложные, задания с вводом ответа.",
+    "kk": "Аралас, тек ең күрделілері, жауабын өзі енгізетін тапсырмалар."
+   }
+  },
+  {
+   "code": "CH11",
+   "unit": "ch",
+   "n": 35,
+   "week": 12,
+   "hard": true,
+   "t": {
+    "en": "Full Hard Simulation I",
+    "ru": "Полная сложная симуляция I",
+    "kk": "Толық күрделі симуляция I"
+   },
+   "skills": {
+    "en": "Full adaptive test under real conditions (Bluebook).",
+    "ru": "Полный адаптивный тест в реальных условиях (Bluebook).",
+    "kk": "Нақты жағдайдағы толық адаптивті тест (Bluebook)."
+   }
+  },
+  {
+   "code": "CH12",
+   "unit": "ch",
+   "n": 36,
+   "week": 12,
+   "hard": true,
+   "t": {
+    "en": "Full Hard Simulation II",
+    "ru": "Полная сложная симуляция II",
+    "kk": "Толық күрделі симуляция II"
+   },
+   "skills": {
+    "en": "Final simulation one week before test day.",
+    "ru": "Финальная симуляция за неделю до экзамена.",
+    "kk": "Емтиханға бір апта қалғандағы соңғы симуляция."
+   }
+  }
+ ],
+ "teach": {
+  "U1": {
+   "parts": 5,
+   "minutes": 18
+  },
+  "U2": {
+   "parts": 4,
+   "minutes": 18
+  },
+  "U3": {
+   "parts": 5,
+   "minutes": 18
+  },
+  "U4": {
+   "parts": 4,
+   "minutes": 17
+  },
+  "U5": {
+   "parts": 5,
+   "minutes": 21
+  },
+  "U6": {
+   "parts": 5,
+   "minutes": 20
+  },
+  "U7": {
+   "parts": 4,
+   "minutes": 16
+  },
+  "U8": {
+   "parts": 4,
+   "minutes": 17
+  },
+  "U9": {
+   "parts": 6,
+   "minutes": 27
+  },
+  "U10": {
+   "parts": 4,
+   "minutes": 18
+  },
+  "U11": {
+   "parts": 5,
+   "minutes": 24
+  },
+  "U12": {
+   "parts": 5,
+   "minutes": 21
+  },
+  "U13": {
+   "parts": 4,
+   "minutes": 18
+  },
+  "U14": {
+   "parts": 4,
+   "minutes": 18
+  },
+  "U15": {
+   "parts": 4,
+   "minutes": 17
+  },
+  "U16": {
+   "parts": 4,
+   "minutes": 17
+  },
+  "U17": {
+   "parts": 6,
+   "minutes": 30
+  },
+  "U18": {
+   "parts": 5,
+   "minutes": 20
+  },
+  "U19": {
+   "parts": 8,
+   "minutes": 36
+  },
+  "U20": {
+   "parts": 5,
+   "minutes": 19
+  },
+  "U21": {
+   "parts": 8,
+   "minutes": 34
+  },
+  "U22": {
+   "parts": 4,
+   "minutes": 18
+  },
+  "U23": {
+   "parts": 4,
+   "minutes": 17
+  },
+  "U24": {
+   "parts": 6,
+   "minutes": 24
+  }
+ }
+}

@@ -50,6 +50,15 @@ import IeltsWritingRunPage from './screens/IeltsWritingRunPage.jsx'
 import IeltsSpeakingRunPage from './screens/IeltsSpeakingRunPage.jsx'
 import IeltsMockPage from './screens/IeltsMockPage.jsx'
 import IeltsOnboardingPage from './screens/IeltsOnboardingPage.jsx'
+import SatPage from './screens/SatPage.jsx'
+import SatRunPage from './screens/SatRunPage.jsx'
+import SatDiagnosticPage from './screens/SatDiagnosticPage.jsx'
+import SatStudyPage from './screens/SatStudyPage.jsx'
+import SatDailyPage from './screens/SatDailyPage.jsx'
+import SatMockPage from './screens/SatMockPage.jsx'
+import SatMockReviewPage from './screens/SatMockReviewPage.jsx'
+import SatUnitPage from './screens/SatUnitPage.jsx'
+import SatOnboardingPage from './screens/SatOnboardingPage.jsx'
 import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
 import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
 import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
@@ -141,6 +150,21 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
   // Анкета и маршрут General English (спека 2026-10-12): данные берут у бэкенда сами, параметров в адресе не нужно
   'ge-onboarding', 'ge-route',
+  // SAT: хаб держит вкладку в ?satTab= сам (docs/sat/PLAN.md)
+  'sat', 'sat-onboarding',
+  // образец экрана вопроса (фаза 3): режим — в ?satSample=, черновик — на устройстве
+  'sat-run',
+  // диагностика держит шаг в ?satDiag= сама
+  'sat-diagnostic',
+  // учебная сессия держит себя в ?satSession= (или ?satLesson= до старта)
+  'sat-study',
+  // ежедневная проверка — одна на день, свой экран без меню
+  'sat-daily',
+  // пробник и его разбор держат прохождение в ?satMock= (фаза — на сервере)
+  'sat-mock',
+  'sat-mock-review',
+  // юнит курса держит код в ?satUnit=
+  'sat-unit',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -1525,6 +1549,7 @@ export default function App() {
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
+    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -2133,6 +2158,24 @@ export default function App() {
       )
     case 'ielts-onboarding':
       return <IeltsOnboardingPage token={token} onExit={() => handleNav('ielts', { tab: 'today' })} onDiagnostic={() => handleNav('ielts-diagnostic')} />
+    case 'sat':
+      return <SatPage {...ieltsProps} />
+    case 'sat-run':
+      return <SatRunPage onNav={handleNav} />
+    case 'sat-daily':
+      return <SatDailyPage token={token} onNav={handleNav} />
+    case 'sat-mock':
+      return <SatMockPage token={token} onNav={handleNav} />
+    case 'sat-mock-review':
+      return <SatMockReviewPage token={token} onNav={handleNav} />
+    case 'sat-unit':
+      return <SatUnitPage token={token} onNav={handleNav} />
+    case 'sat-study':
+      return <SatStudyPage token={token} onNav={handleNav} />
+    case 'sat-diagnostic':
+      return <SatDiagnosticPage token={token} onNav={handleNav} />
+    case 'sat-onboarding':
+      return <SatOnboardingPage token={token} onExit={() => handleNav('sat')} onDiagnostic={() => handleNav('sat-diagnostic')} />
     case 'ielts-diagnostic':
       return (
         <IeltsDiagnosticPage
