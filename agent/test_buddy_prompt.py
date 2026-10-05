@@ -237,6 +237,24 @@ assert "not even damn" in build_buddy_instructions(profile(age_group="child")).p
 for pid in ("luna", "spark", "aizere"):
     assert TIER not in build_buddy_instructions(profile(age_group="child"), pid), pid
 
+# ── Лимиты реплики — самым последним блоком, числа из профиля уровня ─────────
+# Замер 05.10: без блока длиннее лимита по словам 35 из 48, два и больше
+# исправлений за ход 24 из 48; с блоком 14 из 96 и 23 из 96.
+LIMITS = "==== LIMITS FOR EVERY REPLY"
+for lvl, prof, sent, words in (("A1", "A1", 2, 24), ("A2", "A2", 2, 36), ("B1", "B1", 2, 44),
+                               ("B2", "B2", 3, 60), ("C1", "B2", 3, 60)):
+    for grp in ("adult", "child"):
+        t = build_buddy_instructions(profile(level=lvl, age_group=grp))
+        tail = t.partition(LIMITS)[2]
+        assert f"(level profile {prof})" in tail and f"At most {sent} sentences and {words} spoken words" in tail, (lvl, grp)
+        assert "Correct at most 1 error per learner turn" in tail and "name exactly one wrong form" in tail
+        assert "====" not in tail.split("\n", 1)[1], "лимиты — последний блок промпта"
+        if grp == "child":
+            assert t.index(TIER) < t.index(LIMITS), "лимиты после ступени"
+# Блок у всех персон пакета: бюджеты — ядро, а не характер.
+for pid in ("luna", "spark", "aizere"):
+    assert LIMITS in build_buddy_instructions(p, pid), pid
+
 # ── Уровни: A0–B2 свои профили, C1/C2 — B2 ──────────────────────────────────
 for lvl, prof in (("A0", "A0"), ("PRE-A1", "A0"), ("A1", "A1"), ("B1", "B1"), ("B2", "B2"),
                   ("C1", "B2"), ("C2", "B2"), ("", "B1")):
