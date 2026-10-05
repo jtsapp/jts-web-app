@@ -3,6 +3,7 @@
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
+import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
@@ -336,7 +337,6 @@ export function returnHomeworkForRevision(token, id, comment) {
 //
 // v1 → v2: в v1 ученик, чей токен не разобрался, попадал в общий бакет 'anon'.
 const CATALOG_CACHE_VER = 'v2'
-const CATALOG_KEY_PREFIX = 'jts_catalog_'
 const CATALOG_LIVE_PREFIX = `${CATALOG_KEY_PREFIX}${CATALOG_CACHE_VER}:`
 
 // RAM-кэш на сессию вкладки: тяжёлые ответы (scopes словаря) часто не
@@ -397,7 +397,12 @@ function sweepStaleCatalogCache() {
     const stale = []
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i)
-      if (key?.startsWith(CATALOG_KEY_PREFIX) && !key.startsWith(CATALOG_LIVE_PREFIX)) stale.push(key)
+      if (!key?.startsWith(CATALOG_KEY_PREFIX)) continue
+      // Прошлое поколение — и живые записи больше порога: их клали до того, как
+      // большие ответы перестали попадать в localStorage, и они так и занимали
+      // квоту (см. CATALOG_STORE_MAX_CHARS).
+      if (!key.startsWith(CATALOG_LIVE_PREFIX)) stale.push(key)
+      else if ((window.localStorage.getItem(key) || '').length > CATALOG_STORE_MAX_CHARS) stale.push(key)
     }
     // Удаляем вторым проходом: removeItem сдвигает индексы, и удаление прямо в
     // цикле по key(i) пропускало бы каждый второй ключ.
@@ -438,7 +443,12 @@ async function cachedAuthGet(path, token, onFresh) {
     authGet(path, token).then((data) => {
       memoryCatalogCache.set(key, data)
       try {
-        window.localStorage.setItem(key, JSON.stringify(data))
+        const raw = JSON.stringify(data)
+        // Большой ответ — только в памяти вкладки: в localStorage он вытеснял бы
+        // то, что терять нельзя. Прежнюю копию убираем, иначе она осталась бы
+        // лежать устаревшей и занимать место.
+        if (raw.length <= CATALOG_STORE_MAX_CHARS) window.localStorage.setItem(key, raw)
+        else window.localStorage.removeItem(key)
       } catch {
         /* квота localStorage исчерпана — RAM-кэш всё равно держит ответ */
       }
