@@ -20,9 +20,22 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     for (const t of PICK_TUTORS) expect(t.figure).toMatch(/^\/tutor\/pick\/.+\.webp$/)
   })
 
-  it('dev-стенд: Айзере сразу за тройкой, KZ тест в хвосте', async () => {
+  it('dev-стенд: Айзере сразу за тройкой, KZ тест и Спарк тест в хвосте', async () => {
     const { PICK_TUTORS } = await load(true)
-    expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere', 'jarvis'])
+    expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere', 'jarvis', 'sparktest'])
+  })
+
+  // «Спарк тест» — место для тестов эмоций: лицо, а не шар (face не задан),
+  // картинки Спарка, нрава 18+ нет.
+  it('dev-стенд: Спарк тест — с лицом и без нрава', async () => {
+    const { getTutor, temperFor } = await load(true)
+    const st = getTutor('sparktest')
+    expect(st.key).toBe('sparktest')
+    expect(st.face).toBeUndefined()
+    expect(st.assistant).toBeFalsy()
+    expect(st.avatar).toMatch(/^\/tutor\/.+\.png$/)
+    expect(st.figure).toMatch(/^\/tutor\/pick\/.+\.webp$/)
+    expect(temperFor('sparktest', 'harsh')).toBeNull()
   })
 
   // Айзере — полноценный тьютор и на проде, и на стенде: её можно выбрать,
@@ -35,7 +48,7 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
       expect(aizere.key).toBe('aizere')
       expect(PICK_TUTORS.find((t) => t.key === 'aizere').comingSoon).toBeFalsy()
       expect(TUTORS.map((t) => t.key)).toEqual(
-        dev ? ['luna', 'dexter', 'spark', 'aizere', 'jarvis'] : ['luna', 'dexter', 'spark', 'aizere'],
+        dev ? ['luna', 'dexter', 'spark', 'aizere', 'jarvis', 'sparktest'] : ['luna', 'dexter', 'spark', 'aizere'],
       )
       expect(aizere.avatar).toMatch(/^\/tutor\/.+\.png$/)
       // Нрава 18+ нет, как у Луны: наверх уходит null, агент берёт базовую персону.
@@ -43,10 +56,12 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     }
   })
 
-  it('прод: KZ теста нет ни в TUTORS, ни в getTutor', async () => {
+  it('прод: KZ теста и Спарк теста нет ни в TUTORS, ни в getTutor', async () => {
     const { TUTORS, getTutor, DEFAULT_TUTOR } = await load(false)
-    expect(TUTORS.some((t) => t.key === 'jarvis')).toBe(false)
-    expect(getTutor('jarvis')).toBe(DEFAULT_TUTOR)
+    for (const key of ['jarvis', 'sparktest']) {
+      expect(TUTORS.some((t) => t.key === key)).toBe(false)
+      expect(getTutor(key)).toBe(DEFAULT_TUTOR)
+    }
   })
 
   // Мобильная карусель (кадр 4338:1568): Декстер в центре, Луна слева, Спарк

@@ -117,12 +117,32 @@ const AIZERE = {
   mood: 'idle', // спокойная
 }
 
+// «Спарк тест» — второе dev-only место для тестов Speaking Buddy, под тем же
+// флагом JARVIS_ENABLED (05.10.2026). За ним тот же бот, что за KZ тестом
+// (пакет v3.4, мозг GPT-6 Sol), но персона — новый Спарк из пакета, а голос,
+// распознавание и детектор — живого Спарка (BUDDY_STANDS в agent/agent.py).
+// Карточка ради эмоций: у KZ теста вместо лица шар, и эмоции, которые агент
+// шлёт, на экране не видны. Здесь face не задан — в звонке обычное лицо
+// Speaking Buddy с реакциями.
+//  - картинки Спарка: своих у стенда нет, и он ими честно и звучит;
+//  - нрава 18+ нет (tempers не заведены): в пакете тумблера нет, характер вшит;
+//  - визитки (TUTOR_GREETING) нет — кнопка «послушать» в карусели не рисуется.
+// Ключ зашит в token route (TUTOR_KEY_TO_PERSONA) и SPARK_TEST_STAND агента.
+const SPARK_TEST = {
+  key: 'sparktest',
+  name: 'Спарк тест',
+  avatar: '/tutor/tutor-spark.png',
+  figure: '/tutor/pick/spark.webp',
+  traitColors: ['#ffa200', '#f12929', '#51a41e'],
+  mood: 'happy',
+}
+
 // Айзере и dev-only тьюторы идут в хвосте: на порядок BASE_TUTORS завязаны
 // мини-карусель в MascotCard и дефолты.
 export const TUTORS = [
   ...BASE_TUTORS,
   AIZERE,
-  ...(JARVIS_ENABLED ? [JARVIS] : []),
+  ...(JARVIS_ENABLED ? [JARVIS, SPARK_TEST] : []),
 ]
 
 // Карточки экрана выбора. Порядок — из макета (Декстер, Луна, Спарк, Айзере) и
