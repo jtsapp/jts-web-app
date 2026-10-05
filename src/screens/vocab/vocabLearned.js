@@ -1,54 +1,83 @@
-// Локальный прогресс «N изучено» по уровню/сфере: слова, на которые
-// ученик ответил верно хотя бы раз в проверке каталога.
+// Прогресс «N изучено» по уровню/сфере: слова, на которые ученик ответил верно
+// хотя бы раз в проверке каталога (или отметил вручную).
+//
+// С 06.10.2026 — модуль 'vocabLearned' общего хранилища прогресса (память +
+// черновик + сервер, см. practice/progressStore.js). Раньше жил только в
+// localStorage и на сервер не уходил: при забитом кэшем каталогов хранилище
+// счётчик не рос, а на другом устройстве его не было вовсе.
+// Параметр token у функций остался — по нему находится старая запись.
 
-const STORE = 'jts.vocab.learned.v1'
+import { loadToken } from '../../lib/session.js'
+import { VOCAB_LEARNED_KEY as KEY, VOCAB_LEARNED_EVENT as EVENT } from '../../practice/practiceKeys.js'
+import { createProgressStore, hasServerSnapshot } from '../../practice/progressStore.js'
+import { peekLegacy, dropLegacy } from './legacyVocabBlob.js'
 
-function userKey(token) {
-  if (!token || typeof token !== 'string') return 'anon'
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return String(payload.sub || payload.userId || payload.id || 'anon')
-  } catch {
-    return 'anon'
+const LEGACY = 'jts.vocab.learned.v1'
+
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
+const keyOf = (k) => String(k).toLowerCase()
+
+function normalize(raw) {
+  const scopes = {}
+  const src = isObj(raw) && isObj(raw.scopes) ? raw.scopes : {}
+  for (const [id, list] of Object.entries(src)) {
+    if (Array.isArray(list)) scopes[id] = [...new Set(list.filter((k) => typeof k === 'string' && k))]
   }
+  return { scopes }
 }
 
-function readAll() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE) || '{}') || {}
-  } catch {
-    return {}
+const store = createProgressStore({
+  module: 'vocabLearned',
+  key: KEY,
+  event: EVENT,
+  empty: () => ({ scopes: {} }),
+  normalize,
+})
+
+// Старая запись { <scopeId>: [ключи] } поверх состояния — объединением.
+function withLegacy(state, bag) {
+  const scopes = { ...state.scopes }
+  for (const [id, list] of Object.entries(bag)) {
+    if (!Array.isArray(list)) continue
+    scopes[id] = [...new Set([...(scopes[id] || []), ...list.filter((k) => k != null && k !== '').map(keyOf)])]
   }
+  return { scopes }
 }
 
-function writeAll(data) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(data))
-  } catch {
-    /* quota */
+/**
+ * Состояние с учётом старой записи. Перенос — один раз и объединением с тем,
+ * что уже на сервере: поэтому вошедшему он делается только после ответа
+ * сервера (replace затёр бы серверное). До этого показываем объединение, не
+ * записывая.
+ */
+function current(token) {
+  const bag = peekLegacy(LEGACY, token)
+  if (!bag) return store.read()
+  if (!loadToken() || hasServerSnapshot()) {
+    dropLegacy(LEGACY, token)
+    store.write(withLegacy(store.read(), bag))
+    return store.read()
   }
+  return withLegacy(store.read(), bag)
 }
 
 /** keys — уникальные ключи слов (обычно lowercase en / id). */
 export function recordVocabLearned(token, scopeId, keys) {
   if (!scopeId || !Array.isArray(keys) || !keys.length) return
-  const all = readAll()
-  const uid = userKey(token)
-  const bag = all[uid] || {}
-  const set = new Set(bag[scopeId] || [])
+  const state = current(token)
+  const before = state.scopes[scopeId] || []
+  const set = new Set(before)
   for (const k of keys) {
     if (k == null || k === '') continue
-    set.add(String(k).toLowerCase())
+    set.add(keyOf(k))
   }
-  bag[scopeId] = [...set]
-  all[uid] = bag
-  writeAll(all)
+  if (set.size === before.length) return // ничего нового — не пишем и не синкаем
+  store.write({ ...state, scopes: { ...state.scopes, [scopeId]: [...set] } })
 }
 
 export function learnedCount(token, scopeId) {
   if (!scopeId) return 0
-  const bag = readAll()[userKey(token)] || {}
-  const list = bag[scopeId]
+  const list = current(token).scopes[scopeId]
   return Array.isArray(list) ? list.length : 0
 }
 
@@ -67,8 +96,8 @@ export function vocabKey(card) {
 /** Все изученные ключи набора — множеством, чтобы считать пересечения. */
 export function learnedKeys(token, scopeId) {
   if (!scopeId) return new Set()
-  const bag = readAll()[userKey(token)] || {}
-  return new Set(Array.isArray(bag[scopeId]) ? bag[scopeId] : [])
+  const list = current(token).scopes[scopeId]
+  return new Set(Array.isArray(list) ? list : [])
 }
 
 /** Сколько карточек из списка уже изучено. */
@@ -87,11 +116,10 @@ export function learnedInCards(keys, cards) {
  */
 export function forgetVocabLearned(token, scopeId, keys) {
   if (!scopeId || !Array.isArray(keys) || !keys.length) return
-  const all = readAll()
-  const uid = userKey(token)
-  const bag = all[uid] || {}
-  const drop = new Set(keys.filter(Boolean).map((k) => String(k).toLowerCase()))
-  bag[scopeId] = (bag[scopeId] || []).filter((k) => !drop.has(k))
-  all[uid] = bag
-  writeAll(all)
+  const state = current(token)
+  const drop = new Set(keys.filter(Boolean).map(keyOf))
+  const before = state.scopes[scopeId] || []
+  const after = before.filter((k) => !drop.has(k))
+  if (after.length === before.length) return
+  store.write({ ...state, scopes: { ...state.scopes, [scopeId]: after } })
 }

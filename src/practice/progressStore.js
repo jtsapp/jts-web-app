@@ -201,6 +201,11 @@ export function adoptHydratedState(serverState, owner = currentOwner()) {
   return handled
 }
 
+/** Пришёл ли уже ответ сервера для текущего ученика (в этой загрузке). */
+export function hasServerSnapshot() {
+  return !!snapshot && snapshot.owner === currentOwner()
+}
+
 /** Выход/вход: забыть снимок и память всех разделов. */
 export function resetPracticeStores() {
   for (const fn of resets) fn()
