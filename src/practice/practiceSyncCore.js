@@ -32,7 +32,7 @@ import {
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'vocabLearned', 'vocabMisses']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {

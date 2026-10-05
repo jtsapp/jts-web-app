@@ -8,7 +8,7 @@
 import { loadToken } from '../lib/session.js'
 import { applyHydratedState, serializeForPush } from './practiceSyncCore.js'
 import { adoptHydratedState, ownerOf, resetPracticeStores } from './progressStore.js'
-import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY } from './practiceKeys.js'
+import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, VOCAB_LEARNED_KEY, VOCAB_MISSES_KEY } from './practiceKeys.js'
 import { WRITING_ARTIFACT_KEYS } from './writing/writingStore.js'
 
 export function isSyncEnabled() {
@@ -106,7 +106,7 @@ export function clearLocalPractice() {
   // вместе с прогрессом: на общей машине черновики — это тексты ученика, и они
   // не должны достаться следующему аккаунту. «Слова в картинках» сюда сначала
   // забыли — найденные слова переезжали к следующему ученику.
-  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, ...WRITING_ARTIFACT_KEYS]) {
+  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, VOCAB_LEARNED_KEY, VOCAB_MISSES_KEY, ...WRITING_ARTIFACT_KEYS]) {
     try { localStorage.removeItem(k) } catch {}
   }
   // Память разделов и снимок сервера — туда же: иначе при забитом хранилище
