@@ -30,6 +30,7 @@ import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
+import SatMathPage from './screens/SatMathPage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
@@ -115,7 +116,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'sat', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -1684,6 +1685,17 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    // SAT Math — только по диплинку ?screen=sat: карточки в Практике пока нет.
+    case 'sat':
+      return (
+        <SatMathPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
