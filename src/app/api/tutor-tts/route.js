@@ -52,6 +52,8 @@ const SONIOX_VOICE = {
   'jarvis-harsh': 'Daniel',
   // Айзере — только откат: женский голос, иначе дефолтный Owen сделал бы из неё Спарка.
   aizere: 'Maya',
+  // «Спарк тест» (dev-only) звучит живым Спарком — сессию агент берёт его же.
+  sparktest: 'Owen',
 }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
@@ -72,6 +74,7 @@ const TUTOR_PROVIDER = {
   'spark-harsh': 'soniox',
   'jarvis-harsh': 'eleven',
   aizere: 'eleven', // свой клон «zere», v4 Turbo
+  sparktest: 'soniox', // dev-стенд нового Спарка — голос живого Спарка
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'

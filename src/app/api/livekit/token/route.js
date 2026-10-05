@@ -55,6 +55,8 @@ const TUTOR_KEY_TO_PERSONA = {
   spark: 'hype',
   jarvis: 'jarvis',
   aizere: 'aizere',
+  // «Спарк тест» — dev-only стенд Speaking Buddy (SPARK_TEST_STAND в agent.py).
+  sparktest: 'sparktest',
 }
 
 const MAX_LEN = 120

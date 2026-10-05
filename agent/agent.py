@@ -571,6 +571,13 @@ KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "aizere"})
 # «это тот самый стенд, ему можно», уже больше одного.
 KZ_DEV_STAND_PERSONA = "jarvis"
 
+# Второй стенд Speaking Buddy — «Спарк тест» на карточке, dev-only под тем же
+# флагом (JARVIS_ENABLED). Новый Спарк пакета v3.4 голосом живого Спарка, и с
+# лицом: у KZ TEST вместо лица шар, эмоции агент шлёт, а на экране их не видно.
+# Тут эмоции и проверяют. Ключ отдельный, а не нрав у jarvis: у стенда своя
+# персона, свой голос и свой набор эмоций (см. BUDDY_STANDS).
+SPARK_TEST_STAND = "sparktest"
+
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
     "speaks or asks in Kazakh, do NOT answer in Kazakh and do NOT fake it. Say plainly, "
@@ -824,6 +831,13 @@ class LearnerProfile:
     # Preferred language for the tutor's explanations (independent of UI/STT
     # language). "" → fall back to `lang`.
     explanation_lang: str = ""
+    # Язык-подсказка синтезу, когда его задаёт персона звонка, а не тьютор, чей
+    # голос взят. Пусто → по тьютору голоса (tutor_session_lang), как всегда.
+    # Нужен «Спарк тесту»: голос живого Спарка настроен на казахский, а новый
+    # Спарк объясняет на языке ученика (ru/kk/en), и русский с подсказкой kk
+    # звучал бы с казахским акцентом. Из metadata не приходит — ставит
+    # buddy_voice_profile.
+    tts_lang: str = ""
     # Тумблер «только английский» с дашборда (общий для всех тьюторов). Перебивает
     # и explanation_lang, и зеркалирование языка ученика, и смешанный режим A1/A2:
     # весь разговор идёт по-английски. Приходит в metadata как englishOnly.
@@ -1641,6 +1655,12 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     # мат целиком в md пакета v3. Теги v3 ([happy], [sarcastic]…) сюда приходят
     # уже нашими именами — см. MOOD_ALIASES.
     "jarvis": frozenset(MOOD_NAMES) - {"encourage"},
+    # «Спарк тест» — allowed_emotions из Spark.md пакета, нашими именами (см.
+    # MOOD_ALIASES): happy, excited, surprised, sarcastic, sympathy, confused.
+    # Злости в его характере нет — [angry] снимется и не уйдёт на лицо.
+    SPARK_TEST_STAND: frozenset(
+        {"joy", "celebrate", "surprised", "gloat", "sadness", "confused"}
+    ),
 }
 
 # Префикс «mood:» необязателен: на живых прогонах модель писала тег и как
@@ -3339,8 +3359,18 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 #
 # KZ_TEST_PROMPT=legacy — откат на прежнюю персону стенда секретом воркера, без
 # деплоя кода.
+#
+# 05.10.2026 к нему добавился «Спарк тест» (SPARK_TEST_STAND) — та же сборка и
+# тот же мозг, но персона Спарка и сессия живого Спарка. Ему откатываться
+# некуда: прежней персоны у ключа нет, поэтому KZ_TEST_PROMPT его не трогает.
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
+# Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
+# голос, распознавание, детектор конца речи, температура).
+BUDDY_STANDS: dict[str, tuple[str, str]] = {
+    KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+    SPARK_TEST_STAND: ("spark", "hype"),
+}
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
 _BUDDY_PERSONA_FILES = {
@@ -3376,34 +3406,75 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
         BUDDY_PERSONAS[_pid] = _text
 
 
+def _stand_key(p: LearnerProfile) -> str:
+    return (p.tutor or "").strip().lower()
+
+
+def buddy_persona_for(p: LearnerProfile) -> str:
+    """Персона пакета для звонка со стендом (у KZ TEST — Декстер)."""
+    return BUDDY_STANDS.get(_stand_key(p), (BUDDY_TEST_PERSONA, ""))[0]
+
+
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
-    свои. Оба нрава стенда — Декстер v3: тумблера 18+ в новой схеме нет."""
-    if (p.tutor or "").strip().lower() != KZ_DEV_STAND_PERSONA:
+    свои. Оба нрава KZ TEST — Декстер v3: тумблера 18+ в новой схеме нет."""
+    stand = BUDDY_STANDS.get(_stand_key(p))
+    if stand is None:
         return False
     if p.mode != "tutor" or p.scenario:
         return False
-    if (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false"):
+    if _stand_key(p) == KZ_DEV_STAND_PERSONA and (
+        (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false")
+    ):
         return False
     # Ядро требует тег эмоции в начале КАЖДОЙ реплики (core §13), а снимает его
     # только llm_node каскада. У realtime-модели свой тракт — там тег прозвучал
     # бы вслух, поэтому вне каскада стенд остаётся на прежней персоне.
     if (os.getenv("VOICE_STACK") or "gemini-live").strip().lower() != "cascade":
         return False
-    return bool(BUDDY_CORE and BUDDY_LEVEL_PROFILES and BUDDY_PERSONAS.get(BUDDY_TEST_PERSONA))
+    return bool(BUDDY_CORE and BUDDY_LEVEL_PROFILES and BUDDY_PERSONAS.get(stand[0]))
 
 
 def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
     """Профиль для сборки СЕССИИ — распознавание, мозг, синтез, детектор конца
-    речи, словарь произношения: у теста всё это Декстера.
+    речи, словарь произношения: у теста всё это живого тьютора стенда (у KZ TEST
+    — Декстера, у «Спарк теста» — Спарка).
 
     Исходный профиль не трогаем: по нему идут промпт, эмоции и история звонков,
     и там стенд должен остаться стендом. eleven_voice_id сбрасываем, чтобы голос
-    стенда не протёк в тест."""
-    if not buddy_test_on(p):
+    стенда не протёк в тест.
+
+    У «Спарк теста» своих таблиц голоса нет вовсе, поэтому подмена у него в
+    любом режиме: сценарий или проверка уровня с этой карточки звучат живым
+    Спарком, а не голосом по умолчанию. KZ TEST вне Buddy остаётся со своими."""
+    on = buddy_test_on(p)
+    stand = BUDDY_STANDS.get(_stand_key(p))
+    if stand is None or not (on or _stand_key(p) == SPARK_TEST_STAND):
         return p
-    return _dc_replace(p, tutor=BUDDY_VOICE_TUTOR, eleven_voice_id="")
+    persona, voice_tutor = stand
+    return _dc_replace(
+        p,
+        tutor=voice_tutor,
+        eleven_voice_id="",
+        # Синтезу — язык, на котором объясняет ПЕРСОНА (тот же, что уходит в
+        # SESSION_CONTEXT), а не язык тьютора голоса. Вне Buddy — как у живого.
+        tts_lang=(
+            ("en" if p.english_only else _buddy_support_language(p, persona)) if on else ""
+        ),
+    )
+
+
+def buddy_guard_tutor(p: LearnerProfile) -> str:
+    """По какому тьютору решаются замок на ученика, фильтр эха и finalize
+    (noise_guard). Обычно — настоящий тьютор звонка: на KZ TEST обкатывают
+    канарейки (SPEAKER_LOCK_TUTORS=jarvis). «Спарк теста» в списках секретов
+    нет — они перечисляют тьюторов поимённо (ECHO_GUARD_TUTORS=…,hype,jarvis), —
+    и без подмены он остался бы без фильтра эха. Поэтому защиты у него — живого
+    Спарка."""
+    if _stand_key(p) == SPARK_TEST_STAND:
+        return BUDDY_STANDS[SPARK_TEST_STAND][1]
+    return p.tutor
 
 
 def _buddy_profile_level(level: str) -> str:
@@ -5176,7 +5247,8 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
+    # Персона со своим языком (tts_lang, см. LearnerProfile) важнее тьютора голоса.
+    app_lang = profile.tts_lang or tutor_session_lang(profile.tutor, profile.lang or "en")
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
@@ -6794,7 +6866,7 @@ async def entrypoint(ctx: JobContext):
         and persona_key(profile.tutor, profile.temper) in STANDALONE_PROMPT_PERSONAS
     )
     instructions = (
-        build_buddy_instructions(profile)
+        build_buddy_instructions(profile, buddy_persona_for(profile))
         if is_buddy
         else build_standalone_instructions(profile)
         if is_standalone
@@ -6829,8 +6901,9 @@ async def entrypoint(ctx: JobContext):
         )
     if is_buddy:
         logger.info(
-            "Speaking Buddy mode (KZ TEST = Dexter): %d chars; voice, STT, brain of %s",
-            len(instructions), BUDDY_VOICE_TUTOR,
+            "Speaking Buddy mode (%s = %s): %d chars; voice, STT, brain of %s",
+            profile.tutor, buddy_persona_for(profile), len(instructions),
+            buddy_voice_profile(profile).tutor,
         )
     elif is_standalone:
         logger.info(
@@ -6843,9 +6916,11 @@ async def entrypoint(ctx: JobContext):
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
     elif is_debate:
         logger.info("Debate mode: motion=%s", profile.debate_topic or "<default>")
-    # У теста температура живого злого Декстера — сравниваем промпт, а не ручки.
+    # У теста температура живого тьютора стенда (у KZ TEST — злого Декстера):
+    # сравниваем промпт, а не ручки.
     persona_temp = PERSONA_TEMPERATURE.get(
-        BUDDY_VOICE_TUTOR if is_buddy else persona_key(profile.tutor, profile.temper), 0.7
+        buddy_voice_profile(profile).tutor if is_buddy else persona_key(profile.tutor, profile.temper),
+        0.7,
     )
     logger.info(
         "Persona temperature: %s (tutor=%s, temper=%s)",
@@ -6902,8 +6977,9 @@ async def entrypoint(ctx: JobContext):
             api_url=api_url,
             brain_url=brain_url,
             # Замок на ученика решается по настоящему тьютору звонка, а не по
-            # профилю сборки (у теста Speaking Buddy это Декстер).
-            guard_tutor=profile.tutor,
+            # профилю сборки (у теста Speaking Buddy это Декстер). Исключение —
+            # «Спарк тест», см. buddy_guard_tutor.
+            guard_tutor=buddy_guard_tutor(profile),
             brain_model=session_brain_model(profile),
         )
     else:
@@ -6947,7 +7023,7 @@ async def entrypoint(ctx: JobContext):
         # хвостовая реплика читается как уже сказанная, Sonnet 5 отвечает 400.
         prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
         # Тег забыт — эмоция последней явной реплики или персоны (см. _reply_mood).
-        fallback_mood=buddy_default_mood(BUDDY_TEST_PERSONA) if is_buddy else None,
+        fallback_mood=buddy_default_mood(buddy_persona_for(profile)) if is_buddy else None,
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
