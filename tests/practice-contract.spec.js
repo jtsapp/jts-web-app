@@ -31,6 +31,8 @@ test.describe('practiceContract — валидация и merge', () => {
       'words',
       'verbs',
       'listenchoose',
+      'vocabLearned',
+      'vocabMisses',
     ])
     expect(isValidModule('grammar')).toBe(true)
     expect(isValidModule('situations')).toBe(true)
