@@ -38,6 +38,10 @@ services:
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
+      # Кэш озвучки /api/tts — сервис redis из compose.yaml. Не секрет, а
+      # внутреннее имя сервиса, поэтому дефолт здесь, а не в GitLab.
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      TTS_CACHE_TTL_DAYS: ${TTS_CACHE_TTL_DAYS:-90}
       AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
       AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
