@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { OPEN_EVENT, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
@@ -71,7 +71,11 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   // Актуальные значения для send и обработчика события открытия: они живут
   // дольше одного рендера и иначе видели бы устаревший разговор.
   const stateRef = useRef(null)
-  useEffect(() => {
+  // Именно layout-эффект, а не useEffect: пассивный эффект отрабатывает ПОСЛЕ отрисовки, и «Повторить»,
+  // нажатая сразу, как показалась ошибка, успевала прочитать разговор прошлого рендера — [вопрос, пустой
+  // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
+  // Layout-эффект идёт внутри коммита, до любого события.
+  useLayoutEffect(() => {
     stateRef.current = { messages, screen, token, lang, enabled }
   })
 
