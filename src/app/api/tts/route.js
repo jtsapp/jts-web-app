@@ -11,6 +11,10 @@
 // Ответы: 200/206 audio/mpeg; 400 — нечего или нечем читать; 429 — лимит
 // (клиент читает голосом устройства); 503 — Soniox не настроен или отказал по
 // ключу/балансу; 502 — остальные сбои провайдера.
+//
+// Заголовок X-TTS-Cache: hit — запись из кэша (или из чужого синтеза того же
+// текста, который шёл в эту же секунду), miss — платный синтез. По нему одним
+// curl видно, пережил ли кэш деплой.
 
 import { createRateLimiter } from '../../../lib/assistant/rateLimit.js'
 import {
@@ -67,6 +71,7 @@ function cachedResponse(buf, request) {
     'Content-Type': 'audio/mpeg',
     'Cache-Control': AUDIO_CACHE,
     'Accept-Ranges': 'bytes',
+    'X-TTS-Cache': 'hit',
   }
   const m = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') || '')
   if (m && (m[1] || m[2])) {
@@ -152,6 +157,6 @@ export async function GET(request) {
     })
 
   return new Response(toClient, {
-    headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': AUDIO_CACHE },
+    headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': AUDIO_CACHE, 'X-TTS-Cache': 'miss' },
   })
 }

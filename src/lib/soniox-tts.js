@@ -9,10 +9,10 @@
 //    мере синтеза: первый байт через ~0.6 с, а фраза на восемь секунд целиком —
 //    только через семь (замер 23.09.2026). Ждать файл целиком значило бы
 //    семь секунд тишины после нажатия.
-// 2. Готовая запись кэшируется на диске. Одно и то же слово словаря слушают
-//    сотни учеников, и платить за его синтез каждый раз незачем. Кэш
-//    заполняется второй веткой того же потока (tee), так что первый слушатель
-//    ничего не ждёт.
+// 2. Готовая запись кэшируется — в Redis, а без него на диске. Одно и то же
+//    слово словаря слушают сотни учеников, и платить за его синтез каждый раз
+//    незачем. Кэш заполняется второй веткой того же потока (tee), так что
+//    первый слушатель ничего не ждёт.
 // 3. Синтез ограничен по частоте. У Soniox лимит запросов в минуту — на
 //    ОРГАНИЗАЦИЮ, а на той же организации живёт голос тьютора. Пачка кнопок
 //    «послушать» не должна отнимать у тьютора голос (см. make-lesson-audio.js:
@@ -23,6 +23,8 @@ import crypto from 'node:crypto'
 import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+
+import { getRedis } from './redis.js'
 
 const env = (name) => (process.env[name] ?? '').replace(/^\uFEFF/, '').trim()
 
@@ -35,10 +37,39 @@ const model = () => env('SONIOX_TTS_MODEL') || 'tts-rt-v2'
 // общий таймаут обрезал бы длинную запись посередине.
 const HEADERS_TIMEOUT_MS = 15_000
 
-/* ── Дисковый кэш ─────────────────────────────────────────────────────── */
+/* ── Кэш: Redis, а без него диск ──────────────────────────────────────── */
 
-// В контейнере это /tmp: переживает перезапуск процесса, но не передеплой —
-// для кэша этого хватает, записи просто снова наберутся.
+// Redis (задан REDIS_URL) — основной кэш на сервере: у него свой volume, и он
+// переживает деплой. Дисковый кэш в /tmp контейнера умирал на каждом деплое
+// (CI делает `up --force-recreate`), и каждое слово снова оплачивалось. Диск
+// остался для локалки и тестов, где Redis нет.
+const REDIS_PREFIX = 'tts:'
+// Кэш не должен тормозить звук: ждать Redis дольше этого дороже, чем
+// синтезировать заново.
+const REDIS_READ_MS = 300
+// Синтез не детерминирован и изредка срывается, а вечный кэш держал бы брак у
+// всех вечно (раньше его смывал деплой). 90 дней — компромисс: популярное
+// слово переоплачиваем раз в квартал. Срочно — DELETE /api/tts.
+const ttlSec = () => (Number(env('TTS_CACHE_TTL_DAYS')) || 90) * 86400
+
+// Пока Redis лежит, ошибкой отвечает каждое нажатие — одной строки в минуту
+// хватает.
+let redisWarnedAt = 0
+function redisWarn(op, e) {
+  const now = Date.now()
+  if (now - redisWarnedAt < 60_000) return
+  redisWarnedAt = now
+  console.warn(`[tts] redis ${op} skipped:`, e?.message || e)
+}
+
+function within(promise, ms) {
+  let timer
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer))
+}
+
 const cacheDir = () => env('TTS_CACHE_DIR') || path.join(os.tmpdir(), 'jts-tts')
 const cacheMaxBytes = () => (Number(env('TTS_CACHE_MAX_MB')) || 512) * 1024 * 1024
 const PRUNE_EVERY = 200
@@ -55,6 +86,17 @@ export function cacheKey(n) {
 const cachePath = (key) => path.join(cacheDir(), `${key}.mp3`)
 
 export async function readCached(key) {
+  const redis = getRedis()
+  if (redis) {
+    // Redis задан, но не ответил — промах, а НЕ диск: два кэша дали бы на одно
+    // слово два разных звука.
+    try {
+      return await within(redis.getBuffer(REDIS_PREFIX + key), REDIS_READ_MS)
+    } catch (e) {
+      redisWarn('read', e)
+      return null
+    }
+  }
   try {
     return await fsp.readFile(cachePath(key))
   } catch {
@@ -73,6 +115,11 @@ export function looksLikeMp3(buf) {
 
 export async function writeCached(key, buf) {
   if (!looksLikeMp3(buf)) return
+  const redis = getRedis()
+  if (redis) {
+    await redis.set(REDIS_PREFIX + key, buf, 'EX', ttlSec())
+    return
+  }
   const dir = cacheDir()
   await fsp.mkdir(dir, { recursive: true })
   // Через временный файл: читатель не должен увидеть недописанную запись.
@@ -107,6 +154,23 @@ export async function pruneCache() {
     await fsp.unlink(path.join(dir, f.name)).catch(() => {})
     total -= f.size
   }
+}
+
+/** Удалить записи по ключам (брак синтеза). Возвращает, сколько нашлось. */
+export async function dropCached(keys) {
+  if (!keys.length) return 0
+  const redis = getRedis()
+  if (redis) return redis.del(...keys.map((k) => REDIS_PREFIX + k))
+  let n = 0
+  for (const k of keys) {
+    try {
+      await fsp.unlink(cachePath(k))
+      n++
+    } catch {
+      /* такой записи не было */
+    }
+  }
+  return n
 }
 
 /* ── Лимит на всю организацию ─────────────────────────────────────────── */
