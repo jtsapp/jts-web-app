@@ -5,12 +5,14 @@ import EmptyState from '../ui/EmptyState.jsx'
 import { TrackSwitch } from '../reading/ReadingListView.jsx'
 import { fullTests, singleTexts, testNumber } from '../reading/catalog.js'
 import { listDrafts, pausedLeftSec } from '../reading/run.js'
+import { listeningFullTests } from '../listening/catalog.js'
 import { plural } from '../../lib/plural.js'
 import { HeadphonesIcon, MenuBookIcon, TimerIcon } from '../icons.jsx'
 import { useI18n } from '../../i18n.jsx'
 
 // Вкладка «Пробные тесты» (Figma «Пробные тесты»): незаконченный тест, четыре формата и таблица выбранного.
-// Reading — живой (один текст 20 минут и полный тест 60 минут); Listening и полный mock — «Готовится»
+// Reading — живой (один текст 20 минут и полный тест 60 минут), Listening — полные тесты банка (kind: test, 4 части);
+// полный mock — «Готовится»
 //. Mock идёт только экзаменом: band честен лишь в условиях экзамена.
 const FORMATS = ['single', 'full', 'listening', 'fullMock']
 
@@ -20,7 +22,7 @@ function resultLine(a, t) {
   return `${t('ieltsReading.of', { n: String(a.rawScore), total: String(a.maxScore) })}${band}`
 }
 
-export default function MockTestsTab({ catalog, track, onTrack, onStart, onOpenTest }) {
+export default function MockTestsTab({ catalog, listeningCatalog, track, onTrack, onStart, onOpenTest }) {
   const { t, lang } = useI18n()
   const [format, setFormat] = useState('full')
   const [draft, setDraft] = useState(null)
@@ -37,11 +39,14 @@ export default function MockTestsTab({ catalog, track, onTrack, onStart, onOpenT
   const single = singleTexts(catalog.items, track)
   const full = fullTests(catalog.items, track)
   const draftTest = draft && catalog.items.find((x) => x.id === draft.testId)
-  const rows = format === 'single' ? single : full
+  // Listening общий для обоих треков (ТЗ §3) — трек его не фильтрует
+  const listening = listeningFullTests(listeningCatalog?.items)
+  const rows = format === 'single' ? single : format === 'listening' ? listening : full
+  const shown = format === 'listening' ? listeningCatalog || { status: 'loading' } : catalog
 
   const card = (key) => {
-    const live = key === 'single' || key === 'full'
-    const count = key === 'single' ? single.length : key === 'full' ? full.length : 0
+    const live = key === 'single' || key === 'full' || key === 'listening'
+    const count = key === 'single' ? single.length : key === 'full' ? full.length : key === 'listening' ? listening.length : 0
     const icon = key === 'listening' ? <HeadphonesIcon size={20} /> : key === 'fullMock' ? <TimerIcon size={20} /> : <MenuBookIcon size={20} />
     const content = (
       <>
@@ -91,17 +96,17 @@ export default function MockTestsTab({ catalog, track, onTrack, onStart, onOpenT
 
       <section className="ih-card ih-mocks__table">
         <header className="ih-mocks__head">
-          <h2>{t(`ieltsMocks.tableTitle.${format}`)} · {track === 'general' ? 'General Training' : 'Academic'}</h2>
-          <TrackSwitch track={track} onChange={onTrack} />
+          <h2>{t(`ieltsMocks.tableTitle.${format}`)}{format === 'listening' ? '' : ` · ${track === 'general' ? 'General Training' : 'Academic'}`}</h2>
+          {format !== 'listening' && <TrackSwitch track={track} onChange={onTrack} />}
           <Chip tone="neutral" size="sm" className="ih-chip--soft-ink">
             {t('ieltsMocks.passed', { n: String(rows.filter((x) => x.attemptCount > 0).length), total: String(rows.length) })}
           </Chip>
         </header>
-        {catalog.status === 'loading' && <p className="ih-muted">{t('ieltsReading.loading')}</p>}
-        {catalog.status === 'guest' && <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.guestTitle')} text={t('ieltsReading.guestText')} />}
-        {catalog.status === 'error' && <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
-        {catalog.status === 'ready' && rows.length === 0 && <p className="ih-muted">{t('ieltsReading.emptyList')}</p>}
-        {catalog.status === 'ready' && rows.length > 0 && (
+        {shown.status === 'loading' && <p className="ih-muted">{t('ieltsReading.loading')}</p>}
+        {shown.status === 'guest' && <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.guestTitle')} text={t('ieltsReading.guestText')} />}
+        {shown.status === 'error' && <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
+        {shown.status === 'ready' && rows.length === 0 && <p className="ih-muted">{t('ieltsReading.emptyList')}</p>}
+        {shown.status === 'ready' && rows.length > 0 && (
           <table className="ih-mtable">
             <thead>
               <tr>

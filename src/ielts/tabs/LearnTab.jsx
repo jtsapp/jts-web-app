@@ -61,8 +61,8 @@ export default function LearnTab({ catalog, listeningCatalog, writingCatalog, sp
     { key: 'tasks', title: t('ieltsLearn.listening.tasks'), text: t('ieltsLearn.listening.tasksText'), meta: doneMeta(ls.tasks), onClick: () => onOpenReading('listening-tasks') },
     { key: 'dictation', title: t('ieltsLearn.listening.dictation'), text: t('ieltsLearn.listening.dictationText'), progress: { value: ls.dictation.done, max: ls.dictation.total || 1 }, meta: doneMeta(ls.dictation), onClick: () => onOpenReading('listening-dictation') },
     { key: 'spelling', title: t('ieltsLearn.listening.spelling'), text: t('ieltsLearn.listening.spellingText'), progress: { value: ls.spelling.done, max: ls.spelling.total || 1 }, meta: doneMeta(ls.spelling), onClick: () => onOpenReading('listening-spelling') },
-    { key: 'types', title: t('ieltsLearn.reading.types'), text: t('ieltsLearn.listening.typesText'), soon: true },
-    { key: 'drills', title: t('ieltsLearn.reading.drills'), text: t('ieltsLearn.listening.drillsText'), soon: true },
+    { key: 'types', title: t('ieltsLearn.reading.types'), text: t('ieltsLearn.listening.typesText'), meta: doneMeta(ls.types), onClick: () => onOpenReading('listening-types'), soon: !ls.types.total },
+    { key: 'drills', title: t('ieltsLearn.reading.drills'), text: t('ieltsLearn.listening.drillsText'), meta: doneMeta(ls.drills), onClick: () => onOpenReading('listening-drills'), soon: !ls.drills.total },
   ]
 
   // Writing — банк бэкенда (часть 3): списки заданий открываются всегда, квоту тратит только ИИ-проверка работы

@@ -2,7 +2,7 @@ import Breadcrumbs from '../ui/Breadcrumbs.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import PillButton from '../ui/PillButton.jsx'
 import { SectionTile } from '../sections.jsx'
-import { dictations, listeningTasks, spellings } from './catalog.js'
+import { dictations, listeningDrills, listeningTasks, listeningTypes, spellings } from './catalog.js'
 import { formatTime } from './listening.js'
 import { HeadphonesIcon } from '../icons.jsx'
 import { useI18n } from '../../i18n.jsx'
@@ -13,8 +13,8 @@ import { useI18n } from '../../i18n.jsx'
  */
 export default function ListeningListView({ list, catalog, onOpenTest, onBack }) {
   const { t } = useI18n()
-  const titleKey = { tasks: 'ieltsLearn.listening.tasks', dictation: 'ieltsLearn.listening.dictation', spelling: 'ieltsLearn.listening.spelling' }[list]
-  const rows = list === 'dictation' ? dictations(catalog.items) : list === 'spelling' ? spellings(catalog.items) : listeningTasks(catalog.items)
+  const titleKey = { tasks: 'ieltsLearn.listening.tasks', dictation: 'ieltsLearn.listening.dictation', spelling: 'ieltsLearn.listening.spelling', types: 'ieltsLearn.listening.types', drills: 'ieltsLearn.listening.drills' }[list]
+  const rows = list === 'dictation' ? dictations(catalog.items) : list === 'spelling' ? spellings(catalog.items) : list === 'types' ? listeningTypes(catalog.items) : list === 'drills' ? listeningDrills(catalog.items) : listeningTasks(catalog.items)
 
   let body
   if (catalog.status === 'loading') body = <p className="ih-muted">{t('ieltsReading.loading')}</p>

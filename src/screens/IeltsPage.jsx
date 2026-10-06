@@ -36,7 +36,7 @@ import { useReadingCatalog, useListeningCatalog, useIeltsCatalog, useIeltsTrack 
 export const IELTS_TABS = ['today', 'learn', 'mocks', 'progress', 'vocab', 'info']
 const READING_LISTS = ['types', 'drills', 'texts']
 // Списки Listening в адресе с префиксом: «types»/«drills» есть у обеих секций.
-const LISTENING_LISTS = ['listening-tasks', 'listening-dictation', 'listening-spelling']
+const LISTENING_LISTS = ['listening-tasks', 'listening-types', 'listening-drills', 'listening-dictation', 'listening-spelling']
 const isListeningView = (view) => LISTENING_LISTS.includes(view)
 // Writing: списки Task 1 / Task 2, «Мои работы», «Как писать» и работа (её id — ?ieltsWork=)
 const WRITING_VIEWS = ['writing-task1', 'writing-task2', 'writing-works', 'writing-guide', 'writing-work']
@@ -292,7 +292,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   } else if (hub.tab === 'learn') {
     panel = <LearnTab token={token} catalog={catalog} track={track} listeningCatalog={listeningCatalog} writingCatalog={writingCatalog} speakingCatalog={speakingCatalog} onOpenReading={(view) => go({ tab: 'learn', view })} onGo={onGo} />
   } else if (hub.tab === 'mocks') {
-    panel = <MockTestsTab catalog={catalog} track={track} onTrack={setTrack} onStart={startRun} onOpenTest={openTest} />
+    panel = <MockTestsTab catalog={catalog} listeningCatalog={listeningCatalog} track={track} onTrack={setTrack} onStart={startRun} onOpenTest={openTest} />
   } else if (hub.tab === 'progress') {
     panel = (
       <ProgressTab
