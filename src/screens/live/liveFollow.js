@@ -47,3 +47,12 @@ export function nextFollow(local, prev, next) {
   if (local.following && positionChanged(prev, next)) return { following: true, focusSeq, go: true }
   return { following: local.following, focusSeq, go: false }
 }
+
+/**
+ * Событие показа — «Перенести ученика сюда» на задание или блок (мост шлёт его как
+ * `eventType: 'point'`). Автоуказка при открытии выдачи его не шлёт (silent), поэтому это
+ * всегда осознанное действие преподавателя, а не клик по странице.
+ */
+export function isPointEvent(event) {
+  return event?.eventType === 'point'
+}

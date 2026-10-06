@@ -1323,6 +1323,84 @@ describe('LiveLessonPage — преподаватель', () => {
 
 // Ручной уход (спека §4.3): другой раздел или другой материал раздела. Он
 // снимает следование и отменяет переходы с классом, которые ещё ждут.
+/*
+ * «Перенести ученика сюда» на задание, когда класс уже на этом материале (dev, 06.10: урок у ученика
+ * «запускался заново»). Преподаватель в этом случае не шлёт «Внимание» — явный focus растит focusSeq и
+ * перезагружает рамку каждому ученику. Саму указку класс получает потоком показа: событие 'point'.
+ */
+describe('LiveLessonPage — указка на задание без «Внимания»', () => {
+  const point = (selector = '[data-jts-block="b1"]') => [{ selector, eventType: 'point', value: null }]
+
+  it('следующий за классом: указка идёт в рамку, а рамка не перезагружается', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    const frame = frameOf(container)
+    const post = await loadFrame(container)
+    const srcBefore = frame.getAttribute('src')
+    // Вход на занятие уже просил снимок у ведущего — считаем только то, что после указки.
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(frameOf(container)).toBe(frame)
+    expect(frame.getAttribute('src')).toBe(srcBefore)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events: point() }, '*')
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  // Ушёл сам (другой раздел, выключенный переключатель) — к классу его возвращает именно указка: «Перенести
+  // ученика сюда» не должно молча ничего не делать. Возвращается он так же, как по переключателю: чистая
+  // страница следования и снимок рамки у ведущего.
+  it('ушёл сам: указка возвращает его к классу — страница следования и просьба о снимке', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    expect(frameMaterial(container)).toBe(12)
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('true')
+    expect(frameMaterial(container)).toBe(11)
+    expect(frameOf(container).getAttribute('src')).toContain('follow=1')
+    expect(sendCatchUp).toHaveBeenCalledWith(11)
+  })
+
+  it('ушёл сам: обычный показ класса (клики) его не возвращает — только указка', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+    await flush()
+
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
+    expect(frameMaterial(container)).toBe(12)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  it('класс не ведут (отпущен): указка ушедшего не возвращает — идти не к кому', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    await push(liveState({ version: 2, focusSeq: 1, leading: false, sectionId: 3, materialId: 11 }))
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+})
+
 describe('LiveLessonPage — ученик уходит сам', () => {
   it('выбрал другой материал раздела — своя страница, стадия класса не тянет', async () => {
     sections = TWO_MATERIALS
