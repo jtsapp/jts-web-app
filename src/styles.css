@@ -9556,6 +9556,61 @@ textarea {
   .cr--full .cr__hint { transition: none; }
 }
 
+/* ── Читалка комикса: зум пальцами ── */
+/* Сцена отдаёт браузеру только вертикальную прокрутку: горизонталь — это свайп
+   читалки, а щипок — её зум (usePinchZoom.js). Без pan-y браузер увеличивал бы
+   всю страницу вместе с шапкой. Увеличенный лист водят пальцем, поэтому тогда
+   браузеру не отдаём ничего. */
+.cr__stage { touch-action: pan-y; }
+.cr__stage--zoomed {
+  overflow: hidden;
+  touch-action: none;
+}
+/* Долгое нажатие на iOS открывало бы меню «Сохранить картинку» посреди
+   перетаскивания листа. */
+.cr__stage--zoomed .cr__img {
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+/* Увеличенная картинка трансформирована и рисуется поверх соседей — стрелки
+   поднимаем над ней, иначе их накрывает лист. */
+.cr__stage--zoomed .cr__nav {
+  position: relative;
+  z-index: 2;
+}
+/* Правый ВЕРХНИЙ угол: в правом нижнем висит плавающий помощник, и тап по
+   кнопке уходил ему. */
+.cr__unzoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ececf3;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(23, 19, 38, 0.18);
+  color: #6c6b78;
+  cursor: pointer;
+}
+.cr__unzoom:hover { color: var(--purple); border-color: #d9d2f7; }
+/* В полном экране сверху поверх сцены лежит панель — кнопку держим под ней. */
+.cr--full .cr__unzoom {
+  top: 64px;
+  background: rgba(14, 12, 22, 0.72);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ece9f6;
+}
+.cr__hintTouch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .cr__hintMouse { display: none; }
+  .cr__hintTouch { display: inline; }
+}
+
 /* Задания из «Практики» в домашней работе: не поле для ответа, а переход в
    раздел — материал живёт там, и прогресс считает он же. */
 .hw-practice { margin-top: 20px; }
