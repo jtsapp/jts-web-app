@@ -41,19 +41,23 @@ function streamOf(buf) {
 let dir
 let fetchMock
 let GET
+let DELETE
 
 const req = (qs, headers = {}) => new Request(`http://localhost/api/tts?${qs}`, { headers })
+const del = (qs, headers = {}) =>
+  new Request(`http://localhost/api/tts?${qs}`, { method: 'DELETE', headers })
 
 beforeEach(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jts-tts-test-'))
   vi.stubEnv('TTS_CACHE_DIR', dir)
   vi.stubEnv('SONIOX_API_KEY', '\uFEFFsnx_test')
   vi.stubEnv('TTS_SONIOX_PER_MIN', '')
+  vi.stubEnv('INTERNAL_API_KEY', 'k_test')
   fetchMock = vi.fn(async () => new Response(streamOf(MP3), { status: 200, headers: { 'content-type': 'audio/mpeg' } }))
   vi.stubGlobal('fetch', fetchMock)
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.resetModules()
-  ;({ GET } = await import('./route.js'))
+  ;({ GET, DELETE } = await import('./route.js'))
 })
 
 afterEach(() => {
@@ -249,5 +253,70 @@ describe('GET /api/tts с Redis', () => {
     expect(Date.now() - t0).toBeGreaterThanOrEqual(290)
     expect(Date.now() - t0).toBeLessThan(2000)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('DELETE /api/tts — снести брак синтеза', () => {
+  const key = { 'x-internal-key': 'k_test' }
+  let redis
+  beforeEach(() => {
+    redis = fakeRedis()
+    redisBox.client = redis
+  })
+
+  it('без ключа — 401, ничего не удаляем', async () => {
+    const res = await DELETE(del('t=apple'))
+    expect(res.status).toBe(401)
+    expect(redis.del).not.toHaveBeenCalled()
+  })
+
+  it('пустой INTERNAL_API_KEY закрывает канал (fail-closed)', async () => {
+    vi.stubEnv('INTERNAL_API_KEY', '')
+    const res = await DELETE(del('t=apple', { 'x-internal-key': '' }))
+    expect(res.status).toBe(401)
+    expect(redis.del).not.toHaveBeenCalled()
+  })
+
+  it('только текст — сносит все варианты фразы, чужие фразы не трогает', async () => {
+    await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
+    await (await GET(req('v=Freya&s=0.7&t=apple'))).arrayBuffer()
+    await (await GET(req('v=Grace&s=0.9&t=pear'))).arrayBuffer()
+    await vi.waitFor(() => expect(redis.store.size).toBe(3))
+
+    // Пробелы нормализуются, регистр — нет: «Apple» был бы другим текстом.
+    const res = await DELETE(del('t=%20apple%20', key))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(await res.json()).toEqual({ deleted: 2 })
+    expect(redis.store.size).toBe(1)
+
+    fetchMock.mockClear()
+    const again = await GET(req('v=Grace&s=0.9&t=apple'))
+    expect(again.headers.get('x-tts-cache')).toBe('miss')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('с голосом и темпом — только этот вариант', async () => {
+    await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
+    await (await GET(req('v=Freya&s=0.9&t=apple'))).arrayBuffer()
+    await vi.waitFor(() => expect(redis.store.size).toBe(2))
+    const res = await DELETE(del('v=Grace&s=0.9&t=apple', key))
+    expect(await res.json()).toEqual({ deleted: 1 })
+    expect(redis.store.size).toBe(1)
+  })
+
+  it('неизвестный голос — 400, пустой текст — 400', async () => {
+    expect((await DELETE(del('v=Nobody&t=apple', key))).status).toBe(400)
+    expect((await DELETE(del('t=%20', key))).status).toBe(400)
+    expect(redis.del).not.toHaveBeenCalled()
+  })
+
+  it('без Redis удаляет файл записи', async () => {
+    redisBox.client = null
+    await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
+    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1))
+    const res = await DELETE(del('t=apple', key))
+    expect(await res.json()).toEqual({ deleted: 1 })
+    expect(cachedFiles()).toHaveLength(0)
   })
 })

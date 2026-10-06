@@ -17,9 +17,11 @@
 // curl видно, пережил ли кэш деплой.
 
 import { createRateLimiter } from '../../../lib/assistant/rateLimit.js'
+import { isTrustedInternalCaller } from '../../../lib/auth-server.js'
 import {
   cacheKey,
   collectStream,
+  dropCached,
   looksLikeMp3,
   openSonioxStream,
   readCached,
@@ -27,7 +29,7 @@ import {
   takeSonioxSlot,
   writeCached,
 } from '../../../lib/soniox-tts.js'
-import { normalizeTts, TTS_VOICES, VOICE } from '../../../lib/ttsShared.js'
+import { normalizeTts, TTS_SPEED_MAX, TTS_SPEED_MIN, TTS_VOICES, VOICE } from '../../../lib/ttsShared.js'
 
 export const runtime = 'nodejs'
 
@@ -159,4 +161,41 @@ export async function GET(request) {
   return new Response(toClient, {
     headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': AUDIO_CACHE, 'X-TTS-Cache': 'miss' },
   })
+}
+
+// Все темпы, которые может выдать normalizeTts (шаг 0.05), и все языки.
+const SPEEDS = []
+for (let i = Math.round(TTS_SPEED_MIN * 20); i <= Math.round(TTS_SPEED_MAX * 20); i++) SPEEDS.push(i / 20)
+const LANG_CODES = ['en', 'ru', 'kk']
+
+// Удалить бракованную запись. Синтез изредка срывается (бормотание вместо
+// слова), а кэш теперь переживает деплой — без этой двери брак звучал бы у всех
+// до конца срока жизни записи. Закрыто тем же ключом, что канал агента:
+// удалить запись = заставить заплатить за новый синтез, это не для всех.
+//
+// Не указанный параметр = все его значения: «удали apple» сносит и обычный, и
+// медленный темп, и американский, и британский голос. Текст — тот, что ушёл в
+// синтез: для омографов Словаря это «reed», а не «read» (RESPELL в
+// src/practice/vocab/audio.js). Браузер, который уже скачал брак, держит его до
+// недели (AUDIO_CACHE) — до него отсюда не дотянуться.
+export async function DELETE(request) {
+  if (!isTrustedInternalCaller(request)) return fail(401, 'Unauthorized.')
+  const q = new URL(request.url).searchParams
+  const v = q.get('v')
+  if (v && !TTS_VOICES.has(v)) return fail(400, 'Unknown voice.')
+  const voices = v ? [v] : [...TTS_VOICES]
+  const langs = q.get('l') ? [q.get('l')] : LANG_CODES
+  const speeds = q.get('s') ? [q.get('s')] : SPEEDS
+  const keys = new Set()
+  for (const voice of voices) {
+    for (const lang of langs) {
+      for (const speed of speeds) {
+        const n = normalizeTts({ text: q.get('t'), voice, lang, speed })
+        if (!n) return fail(400, 'Text is required.')
+        keys.add(cacheKey(n))
+      }
+    }
+  }
+  const deleted = await dropCached([...keys])
+  return Response.json({ deleted }, { headers: { 'Cache-Control': 'no-store' } })
 }
