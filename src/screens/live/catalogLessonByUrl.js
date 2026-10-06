@@ -1,4 +1,4 @@
-import { getCourseCatalog } from '../../api.js'
+import { getCourseCatalog, getLevelTestByFile } from '../../api.js'
 
 // Материал раздела ссылается на файл урока каталога, а не на сам урок: раздел
 // хранит {title, fileUrl}, и id урока в нём нет. Чтобы показать урок разобранным
@@ -134,12 +134,31 @@ export function findCatalogLessonId(levels, fileUrl, focusLessonNo) {
   return sameFile[0].id
 }
 
+/**
+ * Тест на определение уровня — урок каталога в своей папке (`course-catalog/exams/`).
+ * В дерево ученика он не входит, поэтому урок за файлом ищется отдельно.
+ */
+export function isLevelTestUrl(url) {
+  return /\/course-catalog\/exams\//i.test(String(url || ''))
+}
+
 /** То же, но с походом за каталогом. Каталог кэшируется на уровне api.js. */
 export async function catalogLessonIdFor(fileUrl, token, focusLessonNo) {
   if (!fileUrl || !token) return null
+  let found = null
   try {
     const levels = await getCourseCatalog(token)
-    return findCatalogLessonId(levels, fileUrl, focusLessonNo)
+    found = findCatalogLessonId(levels, fileUrl, focusLessonNo)
+  } catch {
+    found = null
+  }
+  if (found != null || !isLevelTestUrl(fileUrl)) return found
+  // Тест дают только преподаватель: сервер отдаёт урок тому, кому его задали или
+  // показали на занятии, — тогда ученик проходит его карточками, как тест курса.
+  // Не дан или старая версия файла — 404, и тест открывается файлом, как раньше.
+  try {
+    const lesson = await getLevelTestByFile(fileUrl, token)
+    return lesson?.id ?? null
   } catch {
     return null
   }

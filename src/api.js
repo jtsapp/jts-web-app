@@ -536,6 +536,12 @@ export function getCourseCatalogLesson(id, token) {
   return authGet(`/mobile/course-catalog/lessons/${id}`, token)
 }
 
+// Урок теста на определение уровня по адресу его файла: в дерево ученика тест не
+// входит, его дают только преподаватель — на занятии или на дом. 404 — не дан.
+export function getLevelTestByFile(fileUrl, token) {
+  return authGet(`/mobile/course-catalog/lessons/by-file?url=${encodeURIComponent(fileUrl)}`, token)
+}
+
 // Пройденные уроки каталога — одним списком на весь каталог, а не по уроку:
 // раздел «Самостоятельно» показывает всё дерево сразу.
 export function getCatalogProgress(token) {
