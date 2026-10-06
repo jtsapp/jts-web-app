@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nextFollow, positionChanged } from './liveFollow.js'
+import { isPointEvent, nextFollow, positionChanged } from './liveFollow.js'
 
 /**
  * Правило следования (спека §4.3) — одно на оба клиента: ученик в web-admin
@@ -146,5 +146,22 @@ describe('positionChanged', () => {
 
   it('стадия null → 0 — это смена', () => {
     expect(positionChanged(state({ stageIndex: null }), state({ stageIndex: 0 }))).toBe(true)
+  })
+})
+
+describe('isPointEvent — указка преподавателя в потоке показа', () => {
+  it('«Перенести ученика сюда» — eventType point', () => {
+    expect(isPointEvent({ selector: '[data-jts-block="b1"]', eventType: 'point', value: null })).toBe(true)
+  })
+
+  it('клик, ввод, стадия и прокрутка — не указка', () => {
+    for (const eventType of ['click', 'input', 'change', 'scroll', 'stage']) {
+      expect(isPointEvent({ selector: '#a', eventType, value: null })).toBe(false)
+    }
+  })
+
+  it('пустое событие не падает', () => {
+    expect(isPointEvent(null)).toBe(false)
+    expect(isPointEvent(undefined)).toBe(false)
   })
 })
