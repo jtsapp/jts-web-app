@@ -39,7 +39,7 @@ import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
 import { knowsFocusTarget } from './live/followFocus.js'
-import { nextFollow } from './live/liveFollow.js'
+import { isPointEvent, nextFollow } from './live/liveFollow.js'
 import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -970,6 +970,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       leaveClass()
       return
     }
+    rejoinClass()
+  }
+
+  // Вернуться к классу: включённый переключатель, а для ушедшего сам — ещё и указка
+  // «Перенести ученика сюда» (см. onPresent).
+  function rejoinClass() {
     setFollowTeacher(true)
     // Следует тот, кого застали за ведением (§4.3 п.1): без ведения включённый
     // переключатель ждёт указки, а шаги неведущего преподавателя не тянут.
@@ -1018,10 +1024,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // приходят сюда одинаково — и одинаково ждут рамку.
     onPresent: (evt) => {
       if (isStaff) return
+      const events = evt.events || []
       // Не следующему показ не адресован: к классу его вернёт указка, и она
       // принесёт снимок рамки со всем потоком — копить мимо него нечего.
-      if (!followRef.current.following) return
-      const events = evt.events || []
+      if (!followRef.current.following) {
+        // «Перенести ученика сюда» на задание, пока класс уже на этом материале, — не «Внимание»: явный
+        // focus перезагрузил бы рамку каждому ученику (урок запускался заново), поэтому преподаватель
+        // шлёт одну указку — событие 'point'. Следующему оно просто прокручивает рамку; ушедшего сам
+        // указка зовёт обратно так же, как включённый им переключатель.
+        if (events.some(isPointEvent) && liveState?.leading) rejoinClass()
+        return
+      }
       if (!events.length) return
       // Material may still be switching after focus — buffer until iframe can replay.
       if (evt.materialId !== activeMaterial?.materialId || !materialFrameRef.current) {
