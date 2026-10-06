@@ -38,8 +38,8 @@ import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
 import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
-import { knowsFocusTarget } from './live/followFocus.js'
-import { isPointEvent, nextFollow } from './live/liveFollow.js'
+import { knowsFocusTarget, sectionWithMaterial } from './live/followFocus.js'
+import { isPointerBatch, nextFollow } from './live/liveFollow.js'
 import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -145,6 +145,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // рамки — как только у него откроется свежая страница следования того же
   // материала (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
   const [catchUp, setCatchUp] = useState(null)
+  // Указка «Перенести ученика сюда», ждущая рамку своего материала (bringToPointer):
+  // материал ещё переключается или открыта доска. Объект, а не id: повторная
+  // указка на то же задание — новая.
+  const [pendingPointer, setPendingPointer] = useState(null)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
   // (так открываются и материалы, которые преподаватель загрузил сам).
@@ -324,6 +328,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setFollowTeacher(false)
     setClassStage(NO_CLASS_STAGE)
     setCatchUp(null)
+    setPendingPointer(null)
   }
 
   // Урок каталога показываем разобранным на шаги, а не файлом в iframe.
@@ -973,8 +978,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     rejoinClass()
   }
 
-  // Вернуться к классу: включённый переключатель, а для ушедшего сам — ещё и указка
-  // «Перенести ученика сюда» (см. onPresent).
+  // Вернуться к классу — включённый переключатель.
   function rejoinClass() {
     setFollowTeacher(true)
     // Следует тот, кого застали за ведением (§4.3 п.1): без ведения включённый
@@ -987,6 +991,26 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // рамки, как на входе.
       if (wantsCatchUp(liveState)) oweCatchUp(liveState.materialId)
     }
+  }
+
+  // «Перенести ученика сюда»: указка уходит в ту рамку, что у ученика открыта, —
+  // открыть стадию задания, прокрутить и подсветить, без перезагрузки (владелец
+  // 06.10: «всё должно сразу переноситься»). Следующему — в страницу следования,
+  // ушедшему сам или при отпущенном классе — в его собственную. Следование она не
+  // включает и не снимает: смена страницы рамки (своя ↔ следования) — другой
+  // документ, то есть та самая перезагрузка урока («Загружаем урок…»). С доски
+  // возвращает на урок; задание на другом материале — он открывается, указка ждёт
+  // его рамку (эффект pendingPointer).
+  //
+  // Материала нет в разделах — ничего: разделы ученик перечитывает по
+  // sectionsChanged раньше, чем преподаватель успевает открыть новый и указать.
+  function bringToPointer(materialId, events) {
+    const section = sectionWithMaterial(sections, materialId)
+    if (!section) return
+    setTab('lesson')
+    setActiveSectionId(section.id)
+    setActiveMaterialId(materialId)
+    setPendingPointer({ materialId, events })
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
@@ -1025,16 +1049,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     onPresent: (evt) => {
       if (isStaff) return
       const events = evt.events || []
-      // Не следующему показ не адресован: к классу его вернёт указка, и она
-      // принесёт снимок рамки со всем потоком — копить мимо него нечего.
-      if (!followRef.current.following) {
-        // «Перенести ученика сюда» на задание, пока класс уже на этом материале, — не «Внимание»: явный
-        // focus перезагрузил бы рамку каждому ученику (урок запускался заново), поэтому преподаватель
-        // шлёт одну указку — событие 'point'. Следующему оно просто прокручивает рамку; ушедшего сам
-        // указка зовёт обратно так же, как включённый им переключатель.
-        if (events.some(isPointEvent) && liveState?.leading) rejoinClass()
+      // Указка «Перенести ученика сюда» — адресное «смотри сюда», а не показ
+      // класса: доходит до каждого, следует он за классом или нет.
+      if (isPointerBatch(events)) {
+        bringToPointer(evt.materialId, events)
         return
       }
+      // Не следующему показ класса не адресован: к классу его вернёт «Внимание»,
+      // и оно принесёт снимок рамки со всем потоком — копить мимо него нечего.
+      if (!followRef.current.following) return
       if (!events.length) return
       // Material may still be switching after focus — buffer until iframe can replay.
       if (evt.materialId !== activeMaterial?.materialId || !materialFrameRef.current) {
@@ -1738,6 +1761,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     pendingPresentRef.current = []
     sendCatchUp(catchUp.materialId)
   }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
+
+  // Указка (bringToPointer) уходит в рамку своего материала, когда та на экране. Рамка сама придержит её до своей осадки (replay копит). Одна
+  // указка — один вызов; отмечается, а не стирается, по той же причине, что и
+  // просьба догнать класс выше.
+  const pointerSentRef = useRef(null)
+  useEffect(() => {
+    if (!pendingPointer || pointerSentRef.current === pendingPointer) return
+    if (!frameOnScreen || activeMaterialKey !== pendingPointer.materialId || !materialFrameRef.current) return
+    pointerSentRef.current = pendingPointer
+    materialFrameRef.current.replay(pendingPointer.events)
+  }, [pendingPointer, frameOnScreen, activeMaterialKey])
 
   // Доводка уходит в рамку того материала, для которого заведена, — после
   // перерисовки: «Внимание» и восстановление места меняют документ рамки, и

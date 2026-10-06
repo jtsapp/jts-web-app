@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPointEvent, nextFollow, positionChanged } from './liveFollow.js'
+import { isPointEvent, isPointerBatch, nextFollow, positionChanged } from './liveFollow.js'
 
 /**
  * Правило следования (спека §4.3) — одно на оба клиента: ученик в web-admin
@@ -165,3 +165,27 @@ describe('isPointEvent — указка преподавателя в поток
     expect(isPointEvent(undefined)).toBe(false)
   })
 })
+
+describe('isPointerBatch — указка, а не показ класса', () => {
+  const point = { selector: '[data-jts-block="b1"]', eventType: 'point', value: null }
+  const click = { selector: '#a', eventType: 'click', value: null }
+  const scroll = { selector: 'window', eventType: 'scroll', value: '{"y":300}' }
+
+  it('одна указка (и несколько подряд) — указка', () => {
+    expect(isPointerBatch([point])).toBe(true)
+    expect(isPointerBatch([point, point])).toBe(true)
+  })
+
+  // Снимок рамки несёт прошлые указки из истории моста, но это поток показа.
+  it('снимок с прошлыми указками среди кликов и прокрутки — не указка', () => {
+    expect(isPointerBatch([click, point, scroll])).toBe(false)
+    expect(isPointerBatch([click])).toBe(false)
+  })
+
+  it('пустое и не массив — не указка', () => {
+    expect(isPointerBatch([])).toBe(false)
+    expect(isPointerBatch(null)).toBe(false)
+    expect(isPointerBatch(undefined)).toBe(false)
+  })
+})
+

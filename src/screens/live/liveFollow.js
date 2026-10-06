@@ -56,3 +56,14 @@ export function nextFollow(local, prev, next) {
 export function isPointEvent(event) {
   return event?.eventType === 'point'
 }
+
+/**
+ * Пачка показа — указка «Перенести ученика сюда», а не поток класса: в ней только
+ * события 'point'. Снимок рамки преподавателя тоже несёт прошлые указки (мост пишет
+ * их в историю), но вперемешку с кликами и с прокруткой последним событием — это
+ * показ, и переносить ученика по нему нельзя.
+ */
+export function isPointerBatch(events) {
+  return Array.isArray(events) && events.length > 0 && events.every(isPointEvent)
+}
+
