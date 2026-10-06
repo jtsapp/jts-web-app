@@ -20,6 +20,14 @@ describe('данные SpeakSpin', () => {
     expect(STRINGS).toEqual(extractStrings(HTML))
   })
 
+  it('экстрактор не зависит от окончаний строк — CRLF-checkout на Windows', () => {
+    // core.autocrlf отдаёт html с CRLF, и \r прилипал к последней колонке
+    // (kk): тест выше краснел на Windows и зеленел на Linux-раннере.
+    const crlf = HTML.replace(/\r?\n/g, '\r\n')
+    expect(extractStrings(crlf)).toEqual(STRINGS)
+    expect(extractContent(crlf)).toEqual(TOPICS)
+  })
+
   it('у каждого слова темы есть статья словаря с переводами ru и kk', () => {
     for (const t of TOPICS.topics) {
       for (const v of t.vocabulary) {

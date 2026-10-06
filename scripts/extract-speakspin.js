@@ -45,7 +45,9 @@ function extractStrings(html) {
   const end = html.indexOf('`;', start + marker.length)
   const body = html.slice(start + marker.length, end)
   const out = {}
-  for (const line of body.trim().split('\n')) {
+  // \r?\n, а не '\n': на Windows git (core.autocrlf) отдаёт html с CRLF, и
+  // \r прилипал к последней колонке — к kk.
+  for (const line of body.trim().split(/\r?\n/)) {
     const [key, en, ru, kk] = line.split('|')
     if (!key || en == null) continue
     // В прототипе перенос строки внутри фразы записан как «\n» буквами
