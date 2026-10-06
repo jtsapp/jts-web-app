@@ -170,16 +170,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   }, [material?.focusLessonNo])
 
   useLayoutEffect(() => {
-    documentKeyRef.current = documentKey
-    replayRef.current = { busy: false, restoring: false }
-    deferredStageRef.current = null
-    loadedRef.current = false
-    settledRef.current = false
-    ownStageAtRef.current = null
-    gotoEchoUntilRef.current = 0
-    stageReportedRef.current = false
-    pendingOwnGotoRef.current = null
-    pendingRef.current = []
+    // Тот же документ — сбрасывать нечего. Эффект повторяется и без смены
+    // страницы: в разработке StrictMode прогоняет эффекты только что
+    // смонтированной рамки дважды, и сброс на повторе стирал то, что родитель
+    // отдал ей в том же коммите, — указку «Перенести ученика сюда» на только что
+    // открытый материал (стенд 06.10).
+    if (documentKeyRef.current !== documentKey) {
+      documentKeyRef.current = documentKey
+      replayRef.current = { busy: false, restoring: false }
+      deferredStageRef.current = null
+      loadedRef.current = false
+      settledRef.current = false
+      ownStageAtRef.current = null
+      gotoEchoUntilRef.current = 0
+      stageReportedRef.current = false
+      pendingOwnGotoRef.current = null
+      pendingRef.current = []
+    }
     // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
     // рамка уже не досмотрит до конца), а тут — последнее известное состояние
@@ -193,6 +200,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     //
     // Осадка прошлой страницы, сработав после смены, отметила бы новую
     // осевшей до её загрузки, а её goto-lesson открыл бы урок в незагруженной.
+    // Поэтому таймеры снимаются при любой смене, и сброс выше от этого не зависит.
     return () => {
       clearTimeout(settleTimerRef.current)
       clearTimeout(lessonTimerRef.current)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { knowsFocusTarget } from './followFocus.js'
+import { knowsFocusTarget, sectionWithMaterial } from './followFocus.js'
 
 const SECTIONS = [
   { id: 1, title: 'Разогрев', materials: [{ id: 8, materialId: 3, title: 'Уровень PRE INTER' }] },
@@ -40,3 +40,22 @@ describe('knowsFocusTarget', () => {
     expect(knowsFocusTarget(undefined, { sectionId: 1, materialId: 3 })).toBe(false)
   })
 })
+
+describe('sectionWithMaterial', () => {
+  it('находит раздел материала, id сравниваются как строки', () => {
+    expect(sectionWithMaterial(SECTIONS, 3)).toBe(SECTIONS[0])
+    expect(sectionWithMaterial(SECTIONS, '3')).toBe(SECTIONS[0])
+  })
+
+  it('материала нет ни в одном разделе — null', () => {
+    expect(sectionWithMaterial(SECTIONS, 99)).toBeNull()
+    expect(sectionWithMaterial(SECTIONS, null)).toBeNull()
+  })
+
+  it('переживает пустой и отсутствующий список разделов', () => {
+    expect(sectionWithMaterial([], 3)).toBeNull()
+    expect(sectionWithMaterial(undefined, 3)).toBeNull()
+    expect(sectionWithMaterial([{ id: 5 }], 3)).toBeNull()
+  })
+})
+

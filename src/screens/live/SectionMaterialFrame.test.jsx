@@ -4,7 +4,7 @@
 // наверх, переход на стадию уходит вниз — тем же контрактом, что у рабочей
 // области преподавателя в web-admin (см. lessonStages.js).
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createRef, useLayoutEffect } from 'react'
+import { StrictMode, createRef, useEffect, useLayoutEffect } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
@@ -431,6 +431,29 @@ describe('SectionMaterialFrame — новый документ в рамке', (
 
     await settle(fresh)
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['s1'] }, '*')
+  })
+
+  // Указка «Перенести ученика сюда» на другой материал: страница уже стоит,
+  // рамка нового материала монтируется в обновлении, и указка уходит в неё в
+  // том же коммите. В разработке StrictMode повторяет эффекты только что
+  // смонтированной рамки (не страницы) — сброс на повторе стирал указку (стенд 06.10).
+  it('повтор эффектов новой рамки (StrictMode) не стирает реплей, отданный в том же коммите', async () => {
+    vi.useFakeTimers()
+    const events = [{ selector: '[data-tid="voc-match"]', eventType: 'point', value: null }]
+    const ref = createRef()
+    function Page({ open }) {
+      useEffect(() => { if (open) ref.current.replay(events) }, [open])
+      return open ? <SectionMaterialFrame ref={ref} lessonId={14} token="t" material={MATERIAL} isStaff={false} /> : null
+    }
+    const tree = (open) => <StrictMode><I18nProvider><Page open={open} /></I18nProvider></StrictMode>
+    const { container, rerender } = render(tree(false))
+
+    act(() => { rerender(tree(true)) })
+    const iframe = container.querySelector('iframe')
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await settle(iframe)
+
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
   })
 
   // Поздний вход ученика включает страницу следования без перезагрузки: ответ
