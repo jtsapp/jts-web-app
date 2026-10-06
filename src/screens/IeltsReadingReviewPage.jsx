@@ -63,7 +63,8 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
   const openRow = rows.find((r) => r.id === open)
   const listening = doc?.skill === 'listening'
   const openPart = listening ? (doc.parts || []).find((p) => p.number === openRow?.group?.part) || doc.parts?.[0] : null
-  const player = useAudioPlayer({ src: openPart?.audio?.url || null, transcript: null, rules: null })
+  // часть без записи звучит синтезом по транскрипту — как в прохождении, иначе в разборе её было нечем переслушать
+  const player = useAudioPlayer({ src: openPart?.audio?.url || null, transcript: openPart?.audio?.tts ? openPart.transcript : null, rules: null })
   useEffect(() => {
     if (!openRow || !doc || listening) return
     const loc = locateAnswer(doc, openRow.item, openRow.group?.text)
@@ -120,9 +121,9 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
               <TranscriptPanel
                 transcript={openPart.transcript}
                 voices={openPart.voices}
-                current={-1}
+                current={player.playing ? player.line : -1}
                 mark={openRow?.item?.line != null ? openRow.item.line : undefined}
-                onSeek={openPart.audio?.url ? (s) => player.playRange(s, null) : null}
+                onSeek={openPart.audio?.url || player.tts ? (i) => player.seekLine(i, { play: true, force: true }) : null}
               />
             )}
           </div>

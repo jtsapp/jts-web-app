@@ -58,3 +58,53 @@ export function partOfGroup(doc, groupIndexInFlat) {
   const flat = flatDoc(doc).groups
   return flat[groupIndexInFlat]?.part ?? 1
 }
+
+// ---- Синтез по репликам: своя шкала времени ----
+// Без записи часть звучит репликами /api/tts. Таймкоды транскрипта — от сценария, а синтез говорит в своём темпе, поэтому
+// шкала плеера строится из ДЛИНЫ каждой синтезированной реплики: реплика i занимает [start_i, end_i) подряд, без дыр.
+// Пока реплика не скачана, её длина — оценка по словам; скачалась — точная (декодированный звук).
+
+// ≈ 2.6 слова в секунду у голосов Soniox на темпе 1 и короткая пауза вдоха; реплика не короче секунды
+export function estimateLineSec(text) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean).length
+  return Math.max(1, words / 2.6 + 0.3)
+}
+
+// Шкала: длины реплик (точные или null) → [{ start, end }] подряд от нуля.
+export function buildTimeline(lines, durations = []) {
+  const out = []
+  let at = 0
+  ;(lines || []).forEach((l, i) => {
+    const d = Number(durations[i]) > 0 ? Number(durations[i]) : estimateLineSec(l?.text)
+    out.push({ start: at, end: at + d })
+    at += d
+  })
+  return out
+}
+
+// Где на шкале момент t: реплика и смещение внутри неё. За концом — последняя реплика у самого конца.
+export function locate(timeline, t) {
+  const n = timeline?.length || 0
+  if (!n) return { i: -1, within: 0 }
+  const x = Math.max(0, Number(t) || 0)
+  for (let i = 0; i < n; i++) if (x < timeline[i].end) return { i, within: Math.max(0, x - timeline[i].start) }
+  const last = timeline[n - 1]
+  return { i: n - 1, within: Math.max(0, last.end - last.start) }
+}
+
+// Реплика под моментом t по шкале плеера (−1 до начала). В отличие от lineAt знает концы реплик.
+export function lineOnTimeline(timeline, t) {
+  if (!timeline?.length || t < 0) return -1
+  return locate(timeline, t).i
+}
+
+// Время сценария (audioStart вопроса, start реплики) → время шкалы синтеза: та же доля внутри той же реплики.
+// Так «переслушать отрезок» попадает в нужное место, хотя синтез звучит в другом темпе, чем записанный сценарий.
+export function mapScriptTime(transcript, timeline, t) {
+  const i = lineAt(transcript, t)
+  if (i < 0 || !timeline?.[i]) return Math.max(0, Number(t) || 0)
+  const s = Number(transcript[i].start) || 0
+  const e = Number(transcript[i].end) || Number(transcript[i + 1]?.start) || s
+  const f = e > s ? Math.min(1, Math.max(0, (t - s) / (e - s))) : 0
+  return timeline[i].start + f * (timeline[i].end - timeline[i].start)
+}

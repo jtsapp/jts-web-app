@@ -3799,18 +3799,65 @@
   position: relative;
   flex: 1;
   min-width: 120px;
-  height: 6px;
+  /* поле касания 24 px, видимая дорожка — 6 px посередине (content-box): тянуть 6 px пальцем невозможно */
+  box-sizing: border-box;
+  height: 24px;
   border-radius: 3px;
   background: var(--ih-soft);
-  overflow: hidden;
+  background-clip: content-box;
+  padding: 9px 0;
+  margin: -9px 0;
+  touch-action: none;
 }
 .ih-player__track.is-seekable {
   cursor: pointer;
 }
-.ih-player__track > span {
+/* заливка — transform, а не width: двигается каждый кадр и не пересчитывает раскладку */
+.ih-player__fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 6px;
+  border-radius: 3px;
   background: var(--ih-violet, #9047ff);
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+.ih-player__knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--ih-violet, #9047ff), 0 1px 3px rgba(16, 24, 40, 0.2);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+.ih-player__track.is-seekable:hover .ih-player__knob,
+.ih-player__track.is-seekable:focus-visible .ih-player__knob,
+.ih-player__track.is-dragging .ih-player__knob {
+  opacity: 1;
+  transform: scale(1);
+}
+.ih-player__track:focus-visible {
+  outline: 2px solid var(--ih-violet, #9047ff);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+/* реплика синтеза догружается для перемотки внутрь неё — дорожка мягко «дышит» */
+.ih-player.is-loading .ih-player__fill {
+  animation: ih-player-wait 1s ease-in-out infinite alternate;
+}
+@keyframes ih-player-wait {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
 }
 .ih-player__rates {
   display: inline-flex;
@@ -3898,6 +3945,12 @@
 .ih-tline.is-current {
   background: #f3ecff;
   color: var(--ih-ink);
+}
+.ih-tline {
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+.ih-tline:not(.is-current):not(:disabled):hover {
+  background: #f8f5ff;
 }
 .ih-tline.is-mark {
   box-shadow: inset 3px 0 0 var(--ih-violet, #9047ff);

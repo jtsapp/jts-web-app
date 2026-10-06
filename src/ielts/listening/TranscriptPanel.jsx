@@ -5,7 +5,8 @@ import { useI18n } from '../../i18n.jsx'
 
 /**
  * Транскрипт части (Figma: реплики с подписью говорящего, текущая подсвечена синим). Текущая — по времени плеера
- * или выбранная в разборе (line вопроса). Клик по реплике переводит запись туда, если перемотка разрешена.
+ * или выбранная в разборе (line вопроса). Клик по реплике переводит запись к её началу, если перемотка разрешена:
+ * onSeek получает НОМЕР реплики — её место на шкале знает плеер (у синтеза оно не совпадает с таймкодом сценария).
  */
 export default function TranscriptPanel({ transcript, voices, current, onSeek, onClose, mark }) {
   const { t } = useI18n()
@@ -34,7 +35,7 @@ export default function TranscriptPanel({ transcript, voices, current, onSeek, o
             type="button"
             data-line={i}
             className={`ih-tline ${i === current ? 'is-current' : ''} ${i === mark ? 'is-mark' : ''}`}
-            onClick={() => onSeek?.(Number(l.start) || 0)}
+            onClick={() => onSeek?.(i)}
             disabled={!onSeek}
           >
             {l.speaker && <b>{names[l.speaker] || l.speaker}</b>}

@@ -9,7 +9,7 @@ import Chip from '../ielts/ui/Chip.jsx'
 import AudioPlayerBar from '../ielts/listening/AudioPlayerBar.jsx'
 import TranscriptPanel from '../ielts/listening/TranscriptPanel.jsx'
 import { useAudioPlayer } from '../ielts/listening/useAudioPlayer.js'
-import { EXAM, flatDoc, lineAt, playerRules } from '../ielts/listening/listening.js'
+import { EXAM, flatDoc, playerRules } from '../ielts/listening/listening.js'
 import { mechanicOf } from '../ielts/reading/meta.js'
 import {
   answeredCount, markTotal, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, saveDraft, setAnswer,
@@ -150,7 +150,8 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
 
   const { test } = state
   const done = answeredCount(run, items)
-  const current = lineAt(transcript, player.time)
+  // реплика под временем плеера — по его шкале: у синтеза она своя, не таймкоды сценария
+  const current = player.line
   const checkedOf = (id) => run.checked[id]
   const numbers = partItems.flatMap((x) => x.numbers)
   const range = numbers.length ? `${numbers[0]}–${numbers.at(-1)}` : ''
@@ -239,7 +240,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
               transcript={transcript}
               voices={part?.voices}
               current={current}
-              onSeek={rules.allowSeek ? (s) => { player.seek(s); if (!player.playing) player.play() } : null}
+              onSeek={rules.allowSeek ? (i) => player.seekLine(i, { play: true }) : null}
               onClose={mode === 'practice' ? () => setTranscriptOpen(false) : null}
             />
           )}
