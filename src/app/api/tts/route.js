@@ -29,7 +29,14 @@ import {
   takeSonioxSlot,
   writeCached,
 } from '../../../lib/soniox-tts.js'
-import { normalizeTts, TTS_SPEED_MAX, TTS_SPEED_MIN, TTS_VOICES, VOICE } from '../../../lib/ttsShared.js'
+import {
+  normalizeTts,
+  TTS_LANG_CODES,
+  TTS_SPEED_MAX,
+  TTS_SPEED_MIN,
+  TTS_VOICES,
+  VOICE,
+} from '../../../lib/ttsShared.js'
 
 export const runtime = 'nodejs'
 
@@ -163,10 +170,9 @@ export async function GET(request) {
   })
 }
 
-// Все темпы, которые может выдать normalizeTts (шаг 0.05), и все языки.
+// Все темпы, которые может выдать normalizeTts (шаг 0.05).
 const SPEEDS = []
 for (let i = Math.round(TTS_SPEED_MIN * 20); i <= Math.round(TTS_SPEED_MAX * 20); i++) SPEEDS.push(i / 20)
-const LANG_CODES = ['en', 'ru', 'kk']
 
 // Удалить бракованную запись. Синтез изредка срывается (бормотание вместо
 // слова), а кэш теперь переживает деплой — без этой двери брак звучал бы у всех
@@ -184,7 +190,7 @@ export async function DELETE(request) {
   const v = q.get('v')
   if (v && !TTS_VOICES.has(v)) return fail(400, 'Unknown voice.')
   const voices = v ? [v] : [...TTS_VOICES]
-  const langs = q.get('l') ? [q.get('l')] : LANG_CODES
+  const langs = q.get('l') ? [q.get('l')] : TTS_LANG_CODES
   const speeds = q.get('s') ? [q.get('s')] : SPEEDS
   const keys = new Set()
   for (const voice of voices) {

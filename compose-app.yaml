@@ -68,6 +68,9 @@ services:
     restart: always
     depends_on:
       - postgres
+      # Порядок старта, не готовность: пока Redis не принял соединение, кэш
+      # просто промахивается (src/lib/redis.js), звук всё равно есть.
+      - redis
     ports:
       - ${APP_PORT}:3000
     mem_limit: 1g
