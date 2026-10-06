@@ -7,7 +7,6 @@
 // одно и то же. Ни сети, ни React — под юнит-тесты.
 
 import { isLevelTestUrl, isStandaloneLessonUrl } from '../live/catalogLessonByUrl.js'
-import { engineOf } from '../live/lessonExtractor.js'
 
 /** Оценено ли назначение преподавателем (у него нет статусной машины ДЗ). */
 export function isMaterialGraded(a) {

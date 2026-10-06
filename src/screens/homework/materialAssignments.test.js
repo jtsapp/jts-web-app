@@ -4,6 +4,7 @@ import {
   hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson, assignmentScope,
 } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
+import { LESSON_EXTRACTOR } from '../live/lessonExtractor.js'
 
 const assignment = (over = {}) => ({
   id: 5,
