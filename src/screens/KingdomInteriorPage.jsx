@@ -13,6 +13,7 @@ import {
   catalogFrontier,
   catalogUnitsDone,
   isReviewLessonUnlocked,
+  isReviewSelfPaced,
   isReviewLevelFullyOpen,
   isReviewUnitUnlocked,
   pickGeneralCourse,
@@ -124,6 +125,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // но во втором случае завершение урока уходит мимо серверной проверки квоты —
   // одна осечка снимала бы главный демо-лимит на весь визит.
   const [modulesUnavailable, setModulesUnavailable] = useState(false)
+  // Ответил ли каталог прогресса. Отличать обязательно: отказ сети и «ученик
+  // ничего не проходил» дают одинаковый пустой результат, а открывать тропу
+  // из-за упавшего запроса нельзя (см. isReviewSelfPaced).
+  const [catalogAnswered, setCatalogAnswered] = useState(false)
   // Токен, под которым читались модули (practice-токен, если он выдался):
   // повторный запрос обязан идти под тем же, иначе бэкенд ответит иначе.
   const authTokenRef = useRef(token)
@@ -204,6 +209,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setDone(new Set(d))
         const general = pickGeneralCourse(catalog, level)
         const completed = catalogProgress?.completedLessonIds
+        setCatalogAnswered(catalogProgress != null)
         setCatalogDone(catalogUnitsDone(general, completed))
         setFrontier(catalogFrontier(general, completed))
         setState({ loading: false, error: trail.length ? null : 'empty' })
@@ -247,6 +253,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return map
   }, [units])
 
+  // Каталог ответил и не открывает на этом уровне ничего — тропа идёт по
+  // собственному прохождению, с первого урока по порядку. Иначе у ученика без
+  // единой отметки (самостоятельный тариф — занятий с преподавателем нет
+  // вовсе) раздел оказывается запертым целиком и открыть его изнутри нечем.
+  const selfPaced = useMemo(
+    () => isReviewSelfPaced(catalogAnswered, frontier),
+    [catalogAnswered, frontier],
+  )
+
   // Урок разблокирован, если: модуль не закрыт админом целиком; индекс не
   // упирается в квоту "сколько уроков этого модуля можно пройти" (см. ниже);
   // ЮНИТ и урок внутри него открыты по lib/reviewUnlock.js: уровень ниже
@@ -288,13 +303,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       }
       if (unlockAll || fullyOpen) return true
       const meta = unitByLessonIndex.get(i)
+      if (!meta) return false
       const catalogOpts = { fullyOpen, frontier, unitsDone: catalogDone }
       if (
-        !meta
-        || !isReviewUnitUnlocked(catalogDone, meta.unit, catalogOpts)
+        !isReviewUnitUnlocked(catalogDone, meta.unit, catalogOpts)
         || !isReviewLessonUnlocked(meta.unit, meta.lessonInUnit, catalogOpts)
       ) {
-        return false
+        // Запасным ходом, а не вместо каталога: то, что каталог уже открыл,
+        // этой веткой не закрывается — она только снимает тупик у того, кому
+        // он не открывает ничего.
+        if (!selfPaced) return false
+        return i === 0 || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
       }
       // Уже разобранное на занятии не заставляем проходить по порядку в
       // «Повторении»: три «Пройдено» в юните 1 открывают три печеньки, а не одну.
@@ -307,7 +326,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       }
       return meta.isFirstInUnit || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
     },
-    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone, frontier, level, userLevel],
+    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone, frontier, level, userLevel, selfPaced],
   )
 
   const openLesson = useCallback(
@@ -639,12 +658,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         const isLast = j === g.items.length - 1
                         const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
                         const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
-                        const lessonLockedByCatalog = unitLockedByCatalog
-                          || !isReviewLessonUnlocked(g.unit, j + 1, catalogOpts)
+                        // У самостоятельного ученика каталог причиной замка уже не
+                        // является: тропа идёт по его собственному прохождению, и
+                        // «пройдите в Уроках» отправило бы его не туда.
+                        const lessonLockedByCatalog = !selfPaced
+                          && (unitLockedByCatalog || !isReviewLessonUnlocked(g.unit, j + 1, catalogOpts))
                         const isExam = l.kind === 'exam'
                         // Подпись замка — по его причине: экзамен ждёт весь курс
                         // в каталоге, остальное (квота) — общий текст.
-                        const lockedTitle = isExam && unitLockedByCatalog
+                        const lockedTitle = isExam && unitLockedByCatalog && !selfPaced
                           ? t('exam.locked')
                           : t(lessonLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
                         const label = isExam ? t('lesson.examUnit') : l.title || l.code

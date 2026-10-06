@@ -316,9 +316,51 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     getContentQuota.mockResolvedValue(null) // без лимита модуля — квота тут не при чём
   })
 
-  it('новый ученик на своём уровне (каталог пуст) — заперты оба юнита целиком', async () => {
+  /**
+   * Ученик, которому каталог не открывает ничего, идёт по тропе сам.
+   *
+   * Прежде здесь были заперты оба юнита целиком, и у того, кто занимается
+   * только самостоятельно, раздел оказывался тупиком: отметкам в каталоге
+   * взяться неоткуда — занятий с преподавателем у него нет вовсе. Так и
+   * пришла жалоба: «мында жерде басылмайды», не нажимается ни одна печенька.
+   */
+  it('каталог пуст — открыт первый урок, остальные ждут своей очереди', async () => {
     getCourseCatalog.mockResolvedValue(generalCourse())
     getCatalogProgress.mockResolvedValue(progress([]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false)
+    expect(buttons.slice(1).every((b) => b.disabled)).toBe(true)
+    // Причина замка теперь порядок, а не каталог: «пройдите в Уроках»
+    // отправило бы самостоятельного ученика не туда.
+    expect(buttons[1].title).toBe('Сначала пройди предыдущий урок')
+  })
+
+  it('каталог пуст, первый урок пройден — открывается следующий, и через границу юнита', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([]))
+    loadDone.mockResolvedValue(new Set(['m0', 'm1']))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    // m0, m1 пройдены → открыт m2, первый урок СЛЕДУЮЩЕГО юнита.
+    expect(buttons[2].disabled).toBe(false)
+    expect(buttons[3].disabled).toBe(true)
+  })
+
+  /**
+   * Отказ каталога и «ученик ничего не проходил» снаружи одинаковы —
+   * getCatalogProgress ловит ошибку в null. Открывать тропу из-за упавшего
+   * запроса нельзя: это чужой прогресс, а не самостоятельный ученик.
+   */
+  it('каталог не ответил — тропа остаётся запертой, как прежде', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockRejectedValue(new Error('сеть'))
 
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
@@ -354,7 +396,14 @@ describe('KingdomInteriorPage — юниты открываются по кат�
     expect(buttons[2].disabled).toBe(false) // первый шаг юнита 2 не ждёт соседа из юнита 1
   })
 
-  it('на уровне только курс с отдельным доступом — общего нет, ничего не открыто даже при «пройдено»', async () => {
+  /**
+   * Спец-курс («Business English» и подобные) юниты «Повторения» не открывает:
+   * материалы там другие, и сопоставлять их по номеру юнита неправильно. Это
+   * правило осталось прежним — а вот запертой наглухо тропа больше не
+   * остаётся: общего курса на уровне нет, открывать её каталогу нечем, и
+   * ученик идёт по ней сам, как любой без отметок.
+   */
+  it('на уровне только курс с отдельным доступом — «пройдено» не открывает юнит 2', async () => {
     getCourseCatalog.mockResolvedValue([
       { code: 'B1', separateAccess: true, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
     ])
@@ -362,7 +411,10 @@ describe('KingdomInteriorPage — юниты открываются по кат�
 
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
-    expect([...container.querySelectorAll('.kt-step')].every((b) => b.disabled)).toBe(true)
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false) // тропа своим ходом — с первого урока
+    expect(buttons[2].disabled).toBe(true) // юнит 2 спец-курсом не открыт
   })
 
   it('B1-ученик в A2 без каталога — весь уровень открыт: ниже своего не ждут занятие и порядок шагов', async () => {

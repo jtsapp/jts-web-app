@@ -9,6 +9,7 @@ import {
   isReviewLevelFullyOpen,
   isReviewUnitUnlocked,
   pickGeneralCourse,
+  isReviewSelfPaced,
 } from './reviewUnlock.js'
 
 const lesson = (id) => ({ id })
@@ -190,5 +191,22 @@ describe('фронтир каталога — до материала в зан�
     expect(catalogFrontier(mixed, [2, 5, 8])).toEqual({ unit: 1, lesson: 3 })
     expect(catalogUnitsDone(mixed, [2, 5, 8])).toEqual([false])
     expect(catalogUnitsDone(mixed, [2, 5, 8, 11])).toEqual([true])
+  })
+})
+
+describe('isReviewSelfPaced — тупик у ученика без отметок', () => {
+  it('каталог ответил и ничего не открывает — тропа идёт своим ходом', () => {
+    expect(isReviewSelfPaced(true, null)).toBe(true)
+  })
+
+  it('каталог что-то открывает — прежнее поведение, своим ходом не идём', () => {
+    expect(isReviewSelfPaced(true, { unit: 2, lesson: 3 })).toBe(false)
+  })
+
+  // Отказ сети и «ничего не проходил» снаружи одинаковы: getCatalogProgress
+  // ловит ошибку в null. Открыть тропу из-за упавшего запроса значило бы
+  // показать чужое открытым.
+  it('каталог не ответил — не трогаем, даже без фронтира', () => {
+    expect(isReviewSelfPaced(false, null)).toBe(false)
   })
 })
