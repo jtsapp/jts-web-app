@@ -155,9 +155,19 @@ function shuffleInPlace(a, rng) {
 // оставался: «don't» и «don’t» не сходились ни в одну сторону.
 const APOSTROPHES = /[’‘ʼ`´]/g
 
-export function normalizeAnswer(s) {
+// Диакритика латиницы ответа не различает: «café» (A0 L19) на обычной
+// клавиатуре без «é» не набрать, и верный «cafe» шёл в ошибку (ревью
+// 08.10.2026). Снимаем знаки только у латинских букв — у кириллицы «й» и «и»
+// разные буквы, «мой» и «мои» должны остаться разными переводами.
+export function foldLatinMarks(s) {
   return String(s || '')
-    .normalize('NFKC')
+    .normalize('NFD')
+    .replace(/([A-Za-z])[\u0300-\u036f]+/g, '$1')
+    .normalize('NFC')
+}
+
+export function normalizeAnswer(s) {
+  return foldLatinMarks(String(s || '').normalize('NFKC'))
     .toLowerCase()
     .replace(APOSTROPHES, "'")
     // «партнер» вместо «партнёр» — не ошибка, так пишет почти каждый.

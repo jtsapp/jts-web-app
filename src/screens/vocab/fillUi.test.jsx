@@ -186,3 +186,18 @@ describe('FillUI — слово, собранное подсказками, не
     expect(onDone).toHaveBeenCalledWith([{ key: 'pleasant', ok: true }])
   })
 })
+
+// Ревью 08.10.2026: A0 L19 «café» — на обычной клавиатуре «é» нет, а ячейка
+// под ним принимала только «é»: ученик печатал «cafe», и экран открывал букву
+// за него («Собрано с подсказками», ok:false) — верно ответить было нельзя.
+describe('FillUI — буква с диакритикой', () => {
+  it('«cafe» с клавиатуры засчитывается за «café»', () => {
+    const onDone = vi.fn()
+    const word = { key: 'cafe', word: 'café', translationRu: 'кафе', example: 'We had lunch in a small café.' }
+    const { container } = render(<I18nProvider><Harness word={word} sentence="We had lunch in a small ____." onDone={onDone} /></I18nProvider>)
+    напечатать(container, 'cafe')
+    fireEvent.click(screen.getByRole('button', { name: /Проверить|Check/i }))
+    expect(container.querySelector('.vp-state')).toBeNull()
+    expect(boxes(container).every((i) => i.className.includes('ok'))).toBe(true)
+  })
+})

@@ -10,6 +10,7 @@ import {
   meaningOf,
   normalizeAnswer,
   latinLookalikes,
+  foldLatinMarks,
   answersMatch,
   writeTranslationOk,
   buildChoiceOptions,
@@ -86,8 +87,11 @@ function canAskTranslation(word) {
 const isSlot = (ch) => /[\p{L}\p{N}]/u.test(ch)
 
 /** Одна буква совпала — с той же терпимостью к двойникам, что и всё слово. */
+// И с той же терпимостью к диакритике латиницы: ячейка «é» в «café»
+// принимала только «é», которого нет на обычной клавиатуре.
 function sameLetter(a, b) {
-  return !!a && latinLookalikes(a).toLowerCase() === latinLookalikes(b).toLowerCase()
+  const fold = (ch) => foldLatinMarks(latinLookalikes(ch)).toLowerCase()
+  return !!a && fold(a) === fold(b)
 }
 
 function escapeRe(s) {

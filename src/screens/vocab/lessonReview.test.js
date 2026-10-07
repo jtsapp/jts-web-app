@@ -290,3 +290,16 @@ describe('answersMatch — сокращения с точками', () => {
     expect(answersMatch('top', 'to')).toBe(false)
   })
 })
+
+// Ревью 08.10.2026: «café» (A0 L19) без «é» не набрать с обычной клавиатуры.
+// Диакритику снимаем только у латиницы — «мой» и «мои» в переводах остаются
+// разными словами.
+describe('answersMatch — диакритика латиницы', () => {
+  it('cafe = café, naive = naïve', () => {
+    expect(answersMatch('cafe', 'café')).toBe(true)
+    expect(answersMatch('naive', 'naïve')).toBe(true)
+  })
+  it('кириллица не трогается: «мои» ≠ «мой»', () => {
+    expect(writeTranslationOk('мои', { translationRu: 'мой' })).toBe(false)
+  })
+})
