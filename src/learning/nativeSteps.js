@@ -541,7 +541,11 @@ export function groupBinary(steps, { withMaterial = false } = {}) {
         title: s.title,
         sub: s.sub || '',
         options: s.options,
-        items: chunk.map((x) => ({ q: x.prompt, answer: x.answer })),
+        // Разбор каждого утверждения (`why` из курса) едет вместе с ним: без
+        // него таблица показывала одно «Неверно» на весь экран, а отдельным
+        // экраном у утверждения объяснение было (ревью 08.10.2026: терялось у
+        // 320 из 353 утверждений A2–B2).
+        items: chunk.map((x) => (x.why ? { q: x.prompt, answer: x.answer, why: x.why } : { q: x.prompt, answer: x.answer })),
       }
       if (withMaterial) {
         if (s.html) row.html = s.html
