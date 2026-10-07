@@ -362,6 +362,12 @@
 .wb-rec__no { font-size: 13px; color: var(--wb-red); }
 
 /* ── нижняя панель ── */
+/* Панель «Дальше» должна липнуть к ОКНУ. У общей оболочки экранов
+   (.learn__main) стоит overflow: auto, и sticky привязывался к ней — а
+   прокручивается на самом деле окно, так что панель на длинном экране
+   оказывалась в самом конце, а 120px отступа под неё пустовали. Тот же приём,
+   что у читалки (.learn__main:has(.rd) в reading.css). */
+.learn__main:has(.wb) { overflow: visible; }
 .wb-actionbar {
   position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
   background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(8px);
