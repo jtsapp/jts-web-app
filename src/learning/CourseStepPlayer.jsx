@@ -1609,6 +1609,10 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
               {opts.map((o) => {
                 let cls = 'cp-rows__opt'
                 if (answers[i] === o) cls += checked ? (o === it.answer ? ' is-right' : ' is-wrong') : ' is-sel'
+                // На ошибочной строке после проверки — и верный вариант: экран
+                // засчитывается целиком, и без этого ученик видел одно
+                // «Неверно», не зная, какое утверждение и как было на самом деле.
+                else if (checked && answers[i] !== it.answer && o === it.answer) cls += ' is-right'
                 return (
                   <button key={o} className={cls} type="button" disabled={checked} onClick={() => setAnswers((s) => ({ ...s, [i]: o }))}>
                     {o}
@@ -1616,6 +1620,7 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
                 )
               })}
             </span>
+            {checked && answers[i] !== it.answer && it.why && <p className="cp-rows__why">{it.why}</p>}
           </div>
         )
       })}
