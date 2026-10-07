@@ -221,6 +221,13 @@ export function wordSpan(align, text, wi) {
   return [s, e]
 }
 
+/** Первое слово фразы: от его начала до начала второго (хвост срежет fitClip). */
+export function phraseHead(align, text) {
+  const first = wordSpan(align, text, 0)
+  const second = wordSpan(align, text, 1)
+  return first && second ? [first[0], Math.max(first[1], second[0])] : first
+}
+
 function slice(pcm, span, pad = 0.015) {
   const a = Math.max(0, Math.floor((span[0] - pad) * RATE))
   const b = Math.min(pcm.length, Math.ceil((span[1] + pad) * RATE))
@@ -250,10 +257,11 @@ async function makeClip(item, opts) {
       pcm = res.pcm
       span = wordSpan(res.align, line, idx)
     } else {
-      const res = await synth({ ...cfg, text: text + '.' })
+      const res = await synth({ ...cfg, text: text + opts.punct })
       pcm = res.pcm
       // «tear the paper» (омограф): фраза нужна для произношения, звучит первое слово.
-      span = /\s/.test(text) ? wordSpan(res.align, text, 0) : [0, pcm.length / RATE]
+      // Конец слова у v3 в таймингах занижен — режем до начала следующего слова.
+      span = /\s/.test(text) ? phraseHead(res.align, text) : [0, pcm.length / RATE]
     }
     if (!span) continue
     const fit = fitClip(slice(pcm, span))
@@ -267,10 +275,11 @@ async function makeClip(item, opts) {
 function parseArgs(argv) {
   const o = {
     voice: '876MHA6EtWKaHTEGzjy5',
-    model: 'eleven_multilingual_v2',
+    model: 'eleven_v3', // v3 живее на коротких словах: v2 читал «do» плоско, как робот
     style: 'isolated',
     speed: 1.05,
-    stability: 0.4,
+    punct: '.',
+    stability: 0.5, // у v3 допустимы 0 / 0.5 / 1
     styleAmt: 0.35,
     only: null,
     write: false,
@@ -284,6 +293,8 @@ function parseArgs(argv) {
     else if (a === '--model') o.model = argv[++i]
     else if (a === '--style') o.style = argv[++i]
     else if (a === '--speed') o.speed = Number(argv[++i])
+    else if (a === '--punct') o.punct = argv[++i]
+    else if (a === '--styleamt') o.styleAmt = Number(argv[++i])
     else if (a === '--stability') o.stability = Number(argv[++i])
     else if (a === '--only') o.only = argv[++i].split(',')
     else if (a === '--out') o.out = argv[++i]
