@@ -59,6 +59,29 @@ describe('practiceCardsOf — что практика спрашивает у к
     expect(practiceCardsOf(lesson)[0].def).toBe('making you feel embarrassed')
   })
 
+  // Ревью 08.10.2026: у 31 карточки (весь A1 L3, A1 L5/L19/L25, A0 L17/L20)
+  // подпись — не слово, а подпись: «go → went», «have (own)», «Brazil →
+  // Brazilian». Пропуск в примере атома ждёт слово атома, а практика брала
+  // подпись: в «On Saturday we ___ to the cinema» клетки «[g][_]→[_][_][_][_]»,
+  // «went» не вписывалось, и выхода, кроме «Не помню», не было.
+  it('подпись-«стрелка» карточки из одного атома: спрашивается слово атома', () => {
+    const lesson = {
+      cards: [
+        { id: 'a1c3_go_went', en: 'go → went', ru: 'идти', kk: 'бару', atoms: ['a'], example: 'On Saturday we ___ to the cinema with friends.' },
+        { id: 'a1c19_have', en: 'have (own)', ru: 'иметь', kk: 'иелену', atoms: ['b'], example: 'They ___ two cars and a small house.' },
+      ],
+      atoms: [
+        { id: 'a', en: 'went', ru: 'идти', kk: 'бару', ctx: 'On Saturday we ___ to the cinema with friends.', sp: 1 },
+        { id: 'b', en: 'have', ru: 'иметь', kk: 'иелену', ctx: 'They ___ two cars and a small house.', sp: 1 },
+      ],
+    }
+    const [went, have] = practiceCardsOf(lesson)
+    expect(went).toMatchObject({ id: 'a1c3_go_went', en: 'went', ru: 'идти' })
+    expect(have).toMatchObject({ en: 'have' })
+    // Ключ прогресса — по-прежнему ключ карточки.
+    expect(vocabKey(went)).toBe('a1c3_go_went')
+  })
+
   it('без урока — пустой список', () => {
     expect(practiceCardsOf(null)).toEqual([])
     expect(practiceCardsOf({})).toEqual([])
