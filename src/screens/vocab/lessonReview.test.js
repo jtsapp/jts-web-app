@@ -230,6 +230,24 @@ describe('lesson vocab cycles', () => {
     ])
   })
 
+  // Ревью 08.10.2026: в одной сетке «соедините» оказывались слова с общим
+  // вариантом перевода (B1 L4 unfortunately «к сожалению» и sadly «к
+  // сожалению, увы»; A1 L3 do «делать» и make «делать / готовить»). Пара
+  // sadly ↔ «к сожалению» выглядела верной, засчитывалась ошибкой, и в «хуже
+  // запомненные» уходили оба слова. Второе такое слово — отдельным заданием.
+  it('fitTasks: слова с общим переводом не попадают в одну сетку «соедините»', () => {
+    const byKey = {
+      u: { key: 'u', word: 'unfortunately', translationRu: 'к сожалению' },
+      s: { key: 's', word: 'sadly', translationRu: 'к сожалению, увы' },
+      l: { key: 'l', word: 'luckily', translationRu: 'к счастью' },
+      h: { key: 'h', word: 'hopefully', translationRu: 'надеюсь' },
+    }
+    const out = fitTasks([{ type: 'match', wordKeys: ['u', 's', 'l', 'h'] }], byKey, 'ru')
+    const grid = out.find((t) => t.type === 'match')
+    expect(grid.wordKeys).toEqual(['u', 'l', 'h'])
+    expect(out).toContainEqual({ type: 'choice', wordKeys: ['s'] })
+  })
+
   it('uniqueByKey оставляет первое вхождение, planCycle не плодит одно слово', () => {
     expect(uniqueByKey([
       { key: 'work', word: 'work' },
