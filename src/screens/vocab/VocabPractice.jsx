@@ -19,6 +19,7 @@ import {
 import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey, learnedKeys } from './vocabLearned.js'
 import { saveStudentVocab } from '../../api.js'
+import { recordSkill } from '../../practice/skillStats.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -434,6 +435,10 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       // висело на главной словаря навсегда.
       for (const k of okKeys) if (!missMap[k]) clearVocabMiss(token, k)
       if (scopeId && okKeys.length) recordVocabLearned(token, scopeId, okKeys)
+      // Навык «Словарь» на Главной и в профиле: раньше recordSkill('vocab')
+      // звался только в старой сессии словаря, которую никто не открывает, и
+      // навык от практики не рос вообще (ревью 08.10.2026).
+      for (const a of answers) if (a.key) recordSkill('vocab', !!a.ok)
       // Наружу — сами слова, а не ключи: у карточек «Моего словаря» ключ — id
       // записи, а /saved/learned отмечает по слову, и номера там не находились.
       const okWords = okKeys.map((k) => byKey[k]?.word).filter(Boolean)
