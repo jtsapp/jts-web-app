@@ -51,9 +51,83 @@ export function stripPunct(sentence) {
 
 export function norm(s) {
   return String(s || "").toLowerCase()
+    // Диакритика не различает ответ: «cafe» набирают без é (ревью 08.10.2026).
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/[‘’“”]/g, "'")
     .replace(/[.,!?;:()"'—–-]/g, " ")
     .replace(/\s+/g, " ").trim();
+}
+
+/* Подсказка задания на пунктуацию: предложение без знаков. Ревью 08.10.2026:
+   stripPunct резал знаки и внутри чисел — ученик видел «temperature was 382»
+   вместо 38.2, «4500 tenge» вместо 4,500, «1420» вместо 14:20 и обязан был
+   угадать то, чего не видно. Знак между цифрами — часть числа, а не
+   пунктуация предложения: его оставляем. Апострофы и кавычки (в том числе
+   типографские) по-прежнему убираем — их и ставит ученик. */
+export function punctPrompt(sentence) {
+  return String(sentence || "")
+    .replace(/[.,!?;:"'‘’“”]/g, function (ch, i, s) {
+      return ".,:".indexOf(ch) >= 0 && /\d/.test(s.charAt(i - 1)) && /\d/.test(s.charAt(i + 1)) ? ch : "";
+    })
+    .replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/* Сверка ответа на пунктуацию: знаки и регистр — суть задания, поэтому
+   сравнение точное, со схлопнутыми пробелами. Но iPhone со «смарт-
+   пунктуацией» (по умолчанию) ставит ’ вместо ' и “ ” вместо ", и 25 пунктов
+   с апострофом или кавычками на нём не проходились никогда. Типографские
+   знаки сводим к прямым, а одинарные и двойные кавычки-цитаты считаем одной
+   пунктуацией («Press 'Add file'» = «Press "Add file"»); апостроф внутри
+   слова не трогаем. */
+export function punctMatch(val, answer) {
+  var clean = function (s) {
+    return String(s || "").replace(/[‘’ʼ]/g, "'").replace(/[“”«»]/g, '"').replace(/\s+/g, " ").trim();
+  };
+  var quotes = function (s) {
+    return s.replace(/(^|[\s(\[])'/g, '$1"').replace(/'(?=[\s.,!?;:)\]]|$)/g, '"');
+  };
+  var a = clean(val), b = clean(answer);
+  return a === b || (!!a && quotes(a) === quotes(b));
+}
+
+/* Стяжения ученика → полные формы — только для сверки с must/avoid. Ревью
+   08.10.2026: norm превращал «I'm» в «i m», «I've» в «i ve», и must «am from»
+   / «have never» не находился в верном ответе «I'm from Kazakhstan» (21 из 30
+   жанров A1), «I've never visited Turkey». В must/avoid стяжений нет ни
+   одного, так что раскрывать надо только ввод. 's/'d двузначны: перед
+   причастием это has/had, иначе is/would. */
+var PRON_S = /\b(it|he|she|that|there|here|what|who|where|how|everyone|everybody|somebody|someone|nobody|everything|something|nothing)'s\b/g;
+export function expandContractions(s) {
+  return String(s || "")
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/\bcan't\b/gi, "can not").replace(/\bwon't\b/gi, "will not").replace(/\bshan't\b/gi, "shall not")
+    .replace(/\b([a-z]+)n't\b/gi, "$1 not")
+    .replace(/\b([a-z]+)'m\b/gi, "$1 am").replace(/\b([a-z]+)'re\b/gi, "$1 are")
+    .replace(/\b([a-z]+)'ve\b/gi, "$1 have").replace(/\b([a-z]+)'ll\b/gi, "$1 will")
+    .replace(/\b([a-z]+)'d(\s+)(been|better|[a-z]+ed)\b/gi, "$1 had$2$3").replace(/\b([a-z]+)'d\b/gi, "$1 would")
+    .replace(/\blet's\b/gi, "let us")
+    .replace(/\b([a-z]+)'s(\s+)(been|got|[a-z]+ed)\b/gi, function (m, w, sp, next) {
+      return /^(it|he|she|that|there|here|what|who|where|how)$/i.test(w) ? w + " has" + sp + next : m;
+    })
+    .replace(PRON_S, "$1 is");
+}
+
+function sameText(a, b) {
+  var c = function (s) {
+    return String(s || "").toLowerCase().replace(/[‘’ʼ]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim();
+  };
+  return c(a) === c(b);
+}
+
+// Слово или фраза must/avoid в нормализованном вводе — целиком, по границам
+// слов: голый indexOf находил «we» в «were» (b2: «Data were collected in March»
+// отвергался) и «info» в «information». Длинные must (от 5 знаков) — по
+// началу слова: в банке есть основы вроде «satisf» (satisfied/satisfaction).
+function hasWord(v, w) {
+  return (" " + v + " ").indexOf(" " + w + " ") >= 0;
+}
+function hasStem(v, w) {
+  return (" " + v).indexOf(" " + w) >= 0;
 }
 export function wordsOf(s) { var m = String(s || "").trim().match(/[A-Za-zЀ-ӿ0-9'’-]+/g); return m || []; }
 export function sentencesOf(s) {
@@ -71,9 +145,26 @@ export function textMatch(val, item) {
   var i;
   if (item.answers) for (i = 0; i < item.answers.length; i++) if (norm(item.answers[i]) === v) return true;
   if (item.must) {
+    // Исходное предложение, переписанное как есть, — не ответ: must у части
+    // пунктов выполнен уже в нём самом (6 пунктов A2–C1 засчитывали src).
+    // Сверяем со знаками: у «Merge two claims with a semicolon» верный ответ
+    // отличается от src только «;» вместо «.», а norm знаки выкидывает.
+    if (item.src && sameText(val, item.src)) return false;
+    var x = norm(expandContractions(val));
     var ok = true;
-    for (i = 0; i < item.must.length; i++) if (v.indexOf(norm(item.must[i])) < 0) ok = false;
-    if (item.avoid) for (i = 0; i < item.avoid.length; i++) if (v.indexOf(norm(item.avoid[i])) >= 0) ok = false;
+    for (i = 0; i < item.must.length; i++) {
+      var m = norm(item.must[i]);
+      // must из одного знака («;» у C1 «Merge two claims with a semicolon»)
+      // после norm пустой, и indexOf("") засчитывал любой текст: знак ищем в
+      // самом вводе.
+      if (!m) {
+        if (String(val).indexOf(item.must[i]) < 0) ok = false;
+      } else if (!(m.length >= 5 ? hasStem(x, m) : hasWord(x, m))) ok = false;
+    }
+    if (item.avoid) for (i = 0; i < item.avoid.length; i++) {
+      var a = norm(item.avoid[i]);
+      if (a && hasWord(x, a)) ok = false;
+    }
     if (ok) return true;
   }
   return false;
