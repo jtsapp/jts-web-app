@@ -1508,7 +1508,9 @@ export async function updateUser(token, { name, email, city, gender, birthDate, 
       (Array.isArray(data?.messages) && data.messages[0]) ||
       data?.message ||
       `Не удалось сохранить профиль (${res.status})`
-    throw new Error(msg)
+    const err = new Error(msg)
+    err.status = res.status
+    throw err
   }
   return data
 }
