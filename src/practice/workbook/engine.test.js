@@ -102,6 +102,19 @@ function portOracle(a, where) {
   return o
 }
 
+// Единственное НАМЕРЕННОЕ расхождение с прототипом (ревью 08.10.2026):
+// прототипы A2/B1 браковали дефис, набранный пробелом, — «full time» за
+// «full-time», «best selling» за «best-selling». Порт это прощает. Строка
+// эталона пропускается, только если прототип сказал «нет», порт — «да», и ввод
+// совпадает с ключом, где дефис заменён пробелом; число таких строк закреплено,
+// так что любое другое расхождение по-прежнему роняет тест.
+const DASHED_KEY = /[‐-―-]/
+const dashAsSpace = (item, input, level) =>
+  [item.a, ...(item.alt || [])].some(
+    (k) => DASHED_KEY.test(String(k)) && matcherFor(level)(input, [String(k).replace(/\s*[‐-―-]\s*/g, ' ')]),
+  )
+const DASH_AS_SPACE_ROWS = { a0: 0, a1: 0, a2: 7, b1: 7, b2: 0 }
+
 describe.each(LEVELS)('движок воркбука — сверка с прототипом (%s)', (level) => {
   const { oracle, allActs } = DATA[level]
 
@@ -122,6 +135,16 @@ describe.each(LEVELS)('движок воркбука — сверка с про�
 
   it('грейдер набранного ответа судит как прототип', () => {
     let rows = 0
+    let forgiven = 0
+    const judge = (item, row, where) => {
+      const got = typeOk(item, row.in, level)
+      rows++
+      if (got !== row.ok && row.ok === false && dashAsSpace(item, row.in, level)) {
+        forgiven++
+        return
+      }
+      expect(got, where + ': «' + row.in + '»').toBe(row.ok)
+    }
     allActs.forEach(({ n, i, a }, k) => {
       const want = oracle.acts[k]
       const grade = want.grade || (want.task && want.task.grade)
@@ -133,21 +156,16 @@ describe.each(LEVELS)('движок воркбука — сверка с про�
         // просто список вводов.
         if (task.t === 'chain') {
           itemRows.forEach((stepRows, si) => {
-            stepRows.forEach((row) => {
-              expect(typeOk(task.items[ii].steps[si], row.in, level), where + '.' + si + ': «' + row.in + '»').toBe(row.ok)
-              rows++
-            })
+            stepRows.forEach((row) => judge(task.items[ii].steps[si], row, where + '.' + si))
           })
           return
         }
-        itemRows.forEach((row) => {
-          expect(typeOk(task.items[ii], row.in, level), where + ': «' + row.in + '»').toBe(row.ok)
-          rows++
-        })
+        itemRows.forEach((row) => judge(task.items[ii], row, where))
       })
     })
     // Корпус не должен схлопнуться в ноль при рефакторинге экстрактора
     expect(rows).toBeGreaterThan(500)
+    expect(forgiven).toBe(DASH_AS_SPACE_ROWS[level])
   })
 })
 
