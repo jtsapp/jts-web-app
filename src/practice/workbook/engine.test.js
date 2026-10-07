@@ -231,6 +231,21 @@ describe.each(LEVELS)('инварианты уровня (%s)', (level) => {
     })
   })
 
+  // Ревью 08.10.2026: у цепочки (B2 chain) и у bank мест больше, чем пунктов —
+  // промах хранит номер МЕСТА, а subsetAct брал его за номер пункта: шаг 2
+  // первого предложения (место 1) показывал в разборе второе предложение.
+  it('разбор переводит места в пункты: у цепочки место — это шаг', () => {
+    if (level !== 'b2') return
+    const a = DATA.b2.lessons.get(1).acts[10]
+    expect(a.t).toBe('chain')
+    const one = subsetAct(a, [1], meta.subsettable)
+    expect(one.items).toEqual([a.items[0]])
+    expect(one.reviewSlots).toEqual([0, 1])
+    const two = subsetAct(a, [5, 7], meta.subsettable)
+    expect(two.items).toEqual([a.items[2], a.items[3]])
+    expect(two.reviewSlots).toEqual([4, 5, 6, 7])
+  })
+
   it('каталог знает каждый урок ровно одного юнита', () => {
     const seen = new Set()
     index.units.forEach((u) => {
