@@ -228,6 +228,21 @@ describe('answerMatches — числа и время', () => {
   })
 })
 
+// С русской раскладки «с» в «can» набирается кириллицей: на экране слово
+// верное, а сверка его отвергала. Словарь двойники уже сводил (lessonReview),
+// общая проверка — нет.
+describe('answerMatches — кириллические двойники латиницы', () => {
+  it('«сan» с кириллической «с» = «can»', () => {
+    expect(answerMatches('сan', ['can'])).toBe(true)
+    expect(answerMatches('hе is frоm Pаris', ['he is from Paris'])).toBe(true)
+  })
+
+  it('русский ответ по-прежнему сверяется с русским', () => {
+    expect(answerMatches('привет', ['Привет'])).toBe(true)
+    expect(answerMatches('пока', ['Привет'])).toBe(false)
+  })
+})
+
 describe("normAnswer — it's и its различаются", () => {
   it('разные строки', () => {
     expect(normAnswer("it's")).not.toBe(normAnswer('its'))
