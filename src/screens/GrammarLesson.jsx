@@ -5,6 +5,7 @@ import { loadGrammarLevel } from '../practice/grammar/grammarData.js'
 import { uiStr } from '../practice/grammar/strings.js'
 import RichBlock from '../practice/grammar/RichContent.jsx'
 import ActivityPlayer from '../practice/grammar/ActivityPlayer.jsx'
+import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Экран урока грамматики (полноэкранный takeover внутри LearningLayout).
 // Три вкладки — Теория (карусель блоков) / Примеры / Практика (движок упражнений).
@@ -117,16 +118,21 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
         <Examples unit={unit} blocks={exampleBlocks} learnTr={data.learnTr} lang={lang} />
       )}
 
+      {/* Граница ошибок: задание формата, которого плеер не знает (57 «Sort»
+          B1 падали на `a.buckets.map`), роняло без неё всё приложение в белый
+          экран. Теперь падает только упражнение, шапка урока с «Назад» живёт. */}
       {data && tab === 'practice' && (
-        <ActivityPlayer
-          activities={data.activities}
-          lang={lang}
-          token={token}
-          level={level}
-          unitId={unit.id}
-          onExit={onExit}
-          onNextLesson={nextUnit ? () => onOpenUnit(nextUnit) : null}
-        />
+        <LessonErrorBoundary key={unit.id} onExit={onExit}>
+          <ActivityPlayer
+            activities={data.activities}
+            lang={lang}
+            token={token}
+            level={level}
+            unitId={unit.id}
+            onExit={onExit}
+            onNextLesson={nextUnit ? () => onOpenUnit(nextUnit) : null}
+          />
+        </LessonErrorBoundary>
       )}
     </div>
   )

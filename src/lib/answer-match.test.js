@@ -131,6 +131,124 @@ describe('answerMatches — разновидности тире в ответе-
   })
 })
 
+// Жалоба «правильный ответ засчитывают за неправильный» (ревью 08.10.2026):
+// апостроф стирался ДО таблицы стяжений, а в таблице не было 'll/'d/'s, поэтому
+// «I'll» превращалось в «ill», «It's» — в «its», и с полной формой они не
+// совпадали никогда. Ключи — настоящие задания грамматики (a2 u118, a2 u30, …).
+describe('answerMatches — стяжения will / would / had / is / has / are', () => {
+  it("'ll = will", () => {
+    expect(answerMatches('I will', ["I'll"])).toBe(true)
+    expect(answerMatches("I'll", ['I will'])).toBe(true)
+    expect(answerMatches('you will miss the bus unless you hurry', ["you'll miss the bus unless you hurry"])).toBe(true)
+  })
+
+  it("'s после местоимения = is и has", () => {
+    expect(answerMatches('It is', ["It's"])).toBe(true)
+    expect(answerMatches('it is half past nine', ["it's half past nine"])).toBe(true)
+    expect(answerMatches("It's expected", ['It is expected'])).toBe(true)
+    expect(answerMatches('it has been raining', ["it's been raining"])).toBe(true)
+  })
+
+  it("'d = would и had", () => {
+    expect(answerMatches("he said he'd help me", ['he said he would help me'])).toBe(true)
+    expect(answerMatches('she had been running', ["she'd been running"])).toBe(true)
+  })
+
+  it("'re, needn't", () => {
+    expect(answerMatches('we are late', ["we're late"])).toBe(true)
+    expect(answerMatches('you need not come', ["you needn't come"])).toBe(true)
+  })
+
+  // У «'s» и «'d» раскрытие двузначно, но «is got» и «had like» не бывает.
+  it('невозможное раскрытие не засчитывается', () => {
+    expect(answerMatches('He has got a laptop.', ["He's got a laptop."])).toBe(true)
+    expect(answerMatches('He is got a laptop.', ["He's got a laptop."])).toBe(false)
+    expect(answerMatches('I would like a tea', ["I'd like a tea"])).toBe(true)
+    expect(answerMatches('I had like a tea', ["I'd like a tea"])).toBe(false)
+  })
+
+  it('неверное слово неверным и остаётся', () => {
+    expect(answerMatches('I would', ["I'll"])).toBe(false)
+    expect(answerMatches('it was', ["It's"])).toBe(false)
+  })
+})
+
+// Упражнения ровно на апостроф (a2 u30 «it's or its?», a2 u56 «the boys'
+// toys», a2 u73 «Tom___ bag»): когда апостроф стирался всегда, its = it's,
+// were = we're, boys = boy's = boys' — засчитывались ошибки.
+describe('answerMatches — короткий ответ, где апостроф меняет слово', () => {
+  it("its ≠ it's, were ≠ we're", () => {
+    expect(answerMatches('its', ["It's"])).toBe(false)
+    expect(answerMatches("it's", ['its'])).toBe(false)
+    expect(answerMatches('were', ["we're"])).toBe(false)
+  })
+
+  // «Ill call you» — пропущенный апостроф, а не «больной»: такое путают только
+  // клавиатурой, и браковать его — наказывать за телефон.
+  it('ill / well без апострофа — те же I\'ll / we\'ll', () => {
+    expect(answerMatches('ill', ["I'll"])).toBe(true)
+    expect(answerMatches('well see', ["we'll see"])).toBe(true)
+  })
+
+  it("окончание стяжения без апострофа: «m not» = «'m not»", () => {
+    expect(answerMatches('m not', ["'m not"])).toBe(true)
+    expect(answerMatches('s got', ["'s got"])).toBe(true)
+    expect(answerMatches('ll tell', ["'ll tell"])).toBe(true)
+  })
+
+  it('притяжательный: boys ≠ boy\'s ≠ boys\'', () => {
+    expect(answerMatches('boys', ["boys'"])).toBe(false)
+    expect(answerMatches("boy's", ["boys'"])).toBe(false)
+    expect(answerMatches('boys’', ["boys'"])).toBe(true)
+    expect(answerMatches("sisters'", ["sister's"])).toBe(false)
+    expect(answerMatches('childrens', ["children's"])).toBe(false)
+  })
+
+  it("ответ-окончание 's", () => {
+    expect(answerMatches('s', ["'s"])).toBe(false)
+    expect(answerMatches('’s', ["'s"])).toBe(true)
+  })
+})
+
+describe('answerMatches — длинный ответ: апостроф по-прежнему не обязателен', () => {
+  it('без апострофа во фразе из трёх слов и больше', () => {
+    expect(answerMatches('the managers office', ["the manager's office"])).toBe(true)
+    expect(answerMatches('Ill call you tomorrow', ["I'll call you tomorrow"])).toBe(true)
+  })
+})
+
+describe('answerMatches — числа и время', () => {
+  it('разделитель тысяч', () => {
+    expect(answerMatches("He's saved £2,000.", ['he has saved £2000'])).toBe(true)
+  })
+
+  it('8pm = 8 pm = 8 p.m.', () => {
+    expect(answerMatches("I'll see you on Monday at 8 pm", ["i'll see you on monday at 8pm"])).toBe(true)
+    expect(answerMatches("I'll see you on Monday at 8 p.m.", ["i'll see you on monday at 8pm"])).toBe(true)
+  })
+})
+
+// С русской раскладки «с» в «can» набирается кириллицей: на экране слово
+// верное, а сверка его отвергала. Словарь двойники уже сводил (lessonReview),
+// общая проверка — нет.
+describe('answerMatches — кириллические двойники латиницы', () => {
+  it('«сan» с кириллической «с» = «can»', () => {
+    expect(answerMatches('сan', ['can'])).toBe(true)
+    expect(answerMatches('hе is frоm Pаris', ['he is from Paris'])).toBe(true)
+  })
+
+  it('русский ответ по-прежнему сверяется с русским', () => {
+    expect(answerMatches('привет', ['Привет'])).toBe(true)
+    expect(answerMatches('пока', ['Привет'])).toBe(false)
+  })
+})
+
+describe("normAnswer — it's и its различаются", () => {
+  it('разные строки', () => {
+    expect(normAnswer("it's")).not.toBe(normAnswer('its'))
+  })
+})
+
 // Задание A1 «Add '» (That's the students_ classroom): эталон — один прямой
 // апостроф. Клавиатура iOS по умолчанию ставит типографский — ответ верный.
 describe('answerMatches — ответ-апостроф', () => {

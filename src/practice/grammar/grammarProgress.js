@@ -35,11 +35,14 @@ export function getDoneUnits(level) {
 export function markUnitDone(level, unitId) {
   const list = store.read()
   const key = unitKey(level, unitId)
-  if (list.includes(key)) return
-  store.write([...list, key])
+  if (!list.includes(key)) store.write([...list, key])
   // Тот же юнит мог быть задан на дом: засчитываем его и там. Отдельным
   // вызовом, а не внутри синка, — домашка живёт в другом сервисе (JTS), и
   // прогресс «Практики» ему в его виде не нужен, нужен только адрес юнита.
+  //
+  // И при повторном прохождении тоже: раньше отчёт стоял после раннего выхода
+  // «уже пройден», и юнит, пройденный до того, как его задали, в домашке не
+  // засчитывался никогда — сколько его ни проходи. Бэкенд повтор игнорирует.
   countUnitTowardsHomework('grammar', level, unitId)
 }
 
