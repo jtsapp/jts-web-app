@@ -2,15 +2,16 @@ import { useState, useRef, useEffect } from 'react'
 import Logo from '../components/Logo.jsx'
 import LangSelector from '../components/LangSelector.jsx'
 import Footer from '../components/Footer.jsx'
-import { ChevronLeftIcon, SendIcon, PhoneChatIcon } from '../components/icons.jsx'
+import { ChevronLeftIcon, SendIcon, PhoneChatIcon, GoogleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
+import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 
-// Регистрация — только через номер: почту берёт следующий шаг (reg-email).
-// Входа через Google здесь нет намеренно (решение владельца 04.10.2026): он
-// заводил аккаунт вовсе без номера, а в макете номер обязателен. Google
-// остался на экране входа (PasswordLoginPage).
-export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
-  const { t } = useI18n()
+// Регистрация: номер телефона или Google. 04.10.2026 Google отсюда убирали — он заводил аккаунт вовсе
+// без номера. Вернули вместе с обязательным шагом «номер телефона» после Google-входа (App.jsx,
+// phoneGate): без номера дальше экрана номера не пускает, так что причина, по которой Google
+// убирали, снята.
+export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, error }) {
+  const { t, lang } = useI18n()
 
   // Реплики Декстера после того, как пользователь назвал имя.
   // delay — сколько «печатать» перед показом. В стейте лежат i18n-ключи, а не
@@ -32,8 +33,26 @@ export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
   const [value, setValue] = useState('')
   const [showAuth, setShowAuth] = useState(false)
   const [name, setName] = useState('')
+  const [googleReady, setGoogleReady] = useState(false)
   const listRef = useRef(null)
+  const googleRef = useRef(null)
   const timers = useRef([])
+
+  // Официальную кнопку рисует сам Google (GIS) — только когда диалог дошёл до
+  // вариантов входа. Перерисовываем при смене языка интерфейса.
+  useEffect(() => {
+    if (!showAuth || !isGoogleAuthEnabled()) return
+    let cancelled = false
+    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken, name), lang)
+      .then((ok) => {
+        if (!cancelled && ok) setGoogleReady(true)
+      })
+      .catch(() => {}) // остаётся фолбэк-кнопка
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAuth, lang])
 
   // Автоскролл вниз при новых сообщениях/индикаторе печати/появлении кнопок
   useEffect(() => {
@@ -137,7 +156,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
                   )}
                 </div>
 
-                {/* После диалога — одна кнопка: регистрация по номеру */}
+                {/* После диалога: номер телефона и Google */}
                 {showAuth && (
                   <div className="auth">
                     <button
@@ -148,6 +167,22 @@ export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
                       <PhoneChatIcon size={18} />
                       <span>{t('auth.phone')}</span>
                     </button>
+
+                    {/* Вторая строка блока входа — под номером. Кнопку рисует GIS; пока не
+                        отрисована или client ID не задан — неактивный фолбэк. */}
+                    <div className="auth-row">
+                      <div
+                        className="google-slot"
+                        ref={googleRef}
+                        style={googleReady ? undefined : { display: 'none' }}
+                      />
+                      {!googleReady && (
+                        <button className="auth-btn auth-btn--google" type="button" disabled>
+                          <GoogleIcon size={20} />
+                          <span>{t('auth.google')}</span>
+                        </button>
+                      )}
+                    </div>
                     {error && <div className="form-error">{error}</div>}
                   </div>
                 )}
