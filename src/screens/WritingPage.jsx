@@ -173,8 +173,10 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     [loadLevel],
   )
 
-  const showResult = useCallback((assessment, text, level, genreId) => {
-    setView({ name: 'result', assessment, text, level, genreId })
+  // draftId едет через экран результата, чтобы «Доработать текст» вернуло в
+  // тот же черновик (у свободного письма другого способа его найти нет).
+  const showResult = useCallback((assessment, text, level, genreId, draftId) => {
+    setView({ name: 'result', assessment, text, level, genreId, draftId })
   }, [])
 
   // Назад — зеркало цепочки прототипа: levels ← genres ← trainer; pad
@@ -187,7 +189,7 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
       if (view.genreId) setView({ name: 'trainer', level: view.level, genreId: view.genreId, step: 6 })
       else setView({ name: 'levels' })
     } else if (view.name === 'result') {
-      setView({ name: 'pad', level: view.level, genreId: view.genreId, seedText: null, withTimer: false })
+      setView({ name: 'pad', level: view.level, genreId: view.genreId, seedText: null, withTimer: false, draftId: view.draftId })
     } else onNav?.('practice')
   }, [view, onNav])
 
@@ -274,7 +276,8 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
           seedText={view.seedText}
           withTimer={view.withTimer}
           token={token}
-          onResult={(assessment, text) => showResult(assessment, text, view.level, view.genreId)}
+          draftId={view.draftId}
+          onResult={(assessment, text, draftId) => showResult(assessment, text, view.level, view.genreId, draftId)}
           onBack={goBack}
         />
       )

@@ -39,7 +39,7 @@ function dateStr(ts) {
   return pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + timeStr(ts)
 }
 
-export default function WritingPad({ genre, meta, level, seedText, withTimer, token, onResult }) {
+export default function WritingPad({ genre, meta, level, seedText, withTimer, token, draftId, onResult }) {
   const { t } = useI18n()
 
   /* ── Черновик: существующий для жанра или новый (порт openPad). Инициализатор
@@ -49,6 +49,12 @@ export default function WritingPad({ genre, meta, level, seedText, withTimer, to
      хранилище). seedText всегда открывает новый — это «перенеси ответы
      guided-write в собственный текст». ── */
   const [draft, setDraft] = useState(() => {
+    // draftId — возврат к уже открытому черновику (с экрана результата).
+    // Без него свободное письмо (жанра нет) всегда заводило новый пустой
+    // черновик: «Доработать текст» открывало чистый лист, а проверенный текст
+    // находился только в «Моих работах».
+    const byId = draftId ? draftsAll().find((it) => it && it.id === draftId) : null
+    if (byId) return byId
     const existing = genre && !seedText ? currentDraftFor(genre.id) : null
     if (existing) return existing
     return {
@@ -272,7 +278,7 @@ export default function WritingPad({ genre, meta, level, seedText, withTimer, to
       // Проверенный текст закрывает free-write жанра — но только первый раз:
       // best-of в markTask и так не ухудшит, просто не шумим синком.
       if (genre && freeWriteTask && !taskState(genre.id, freeWriteTask.id)) markTask(genre.id, freeWriteTask.id, 1, 1)
-      onResult(assessment, text)
+      onResult(assessment, text, draftRef.current.id)
     } finally {
       setChecking(false)
     }
