@@ -249,13 +249,34 @@ export const SUBSETTABLE = ['type', 'choose', 'tf', 'odd', 'label', 'respond', '
 export function subsetAct(a, idxs, subsettable) {
   const list = subsettable && subsettable.length ? subsettable : SUBSETTABLE
   if (!list.includes(a.t) || !a.items) return a
-  const items = (idxs || []).filter((i) => a.items[i]).map((i) => a.items[i])
-  if (!items.length) return a
-  const out = { ...a, items }
+  // Промах хранит номер МЕСТА, а не пункта. Обычно это одно и то же, но у
+  // цепочки место — каждый шаг, у bank — каждый пропуск (см. slotCount): шаг 2
+  // первого предложения B2 (место 1) показывал в разборе второе предложение.
+  // Переводим места в пункты и запоминаем, какие исходные места у суженного
+  // экрана идут подряд — по ним разбор вернёт остаток в исходную нумерацию.
+  const per = a.items.map((it) => slotsOfItem(a.t, it))
+  const firstSlot = []
+  per.reduce((acc, n, k) => ((firstSlot[k] = acc), acc + n), 0)
+  const wanted = new Set(idxs || [])
+  const picked = a.items.map((_, k) => k).filter((k) => {
+    for (let s = firstSlot[k]; s < firstSlot[k] + per[k]; s++) if (wanted.has(s)) return true
+    return false
+  })
+  if (!picked.length) return a
+  const items = picked.map((k) => a.items[k])
+  const reviewSlots = picked.flatMap((k) => Array.from({ length: per[k] }, (_, s) => firstSlot[k] + s))
+  const out = { ...a, items, reviewSlots }
   // Банк слов пересобирается под оставшиеся пункты: иначе в разборе на два
   // пропуска приходится восемь слов, и это уже другое задание.
   if (out.bank) out.bank = items.map((x) => x.a)
   return out
+}
+
+/** Сколько судимых мест у одного пункта задания (как в slotCount). */
+function slotsOfItem(t, it) {
+  if (t === 'chain') return (it.steps || []).length
+  if (t === 'bank') return gapsIn(it.s)
+  return 1
 }
 
 /* Сколько судимых мест на экране. В прототипе счётчик набегал вызовами

@@ -13,12 +13,29 @@
 // кавычки, точка в конце), строго к слову — реально неверный ответ верным
 // не становится.
 
+/* ── Числа: одно правило на все уровни ─────────────────────────────────── */
+/* Ревью 08.10.2026: число сверялось как текст после вырезания точек и запятых.
+   «2 478 000» (так пишут по-русски, часто с неразрывным пробелом), «45,5 %»,
+   «21°C», «08:30» браковались, а «455» засчитывалось за 45.5 — точка просто
+   исчезала. Разделитель тысяч (дальше ровно три цифры) убираем, десятичный и
+   часовой разделитель между цифрами сводим к одному знаку «·», который
+   нормализаторы уровней не вырезают: 45,5 = 45.5 ≠ 455, 8.30 = 8:30. */
+function normNumbers(s) {
+  return s
+    .replace(/(\d)[\s\u00a0\u202f,.](?=\d{3}(?!\d))/g, '$1')
+    .replace(/\b0(\d)(?=[:.]\d{2}(?!\d))/g, '$1')
+    .replace(/(\d)[.,:](?=\d)/g, '$1·')
+    .replace(/(\d)\s*°\s*[cf]?(?![a-z])/g, '$1')
+    .replace(/(\d)\s+%/g, '$1%')
+}
+
+const base = (s) => normNumbers(String(s).toLowerCase())
+
 /* ── Нормализация: у каждого уровня своя ────────────────────────────────── */
 
 /** A0: кавычки, знаки препинания, дефис-или-пробел. */
 function nrmA0(s) {
-  return String(s)
-    .toLowerCase()
+  return base(s)
     .replace(/[‘’ʼ´`]/g, "'")
     .replace(/[“”«»"]/g, '')
     .replace(/[.,!?;:…£€₸$]/g, '')
@@ -29,8 +46,7 @@ function nrmA0(s) {
 
 /** A1: только кавычки и знаки конца — дефисы разбирает второй проход. */
 function nrmA1(s) {
-  return String(s)
-    .toLowerCase()
+  return base(s)
     .replace(/[‘’]/g, "'")
     .replace(/[.,!?;:…£€₸$]/g, '')
     .replace(/\s+/g, ' ')
@@ -39,8 +55,7 @@ function nrmA1(s) {
 
 /** A2: сюда добавились скобки, а дефис приводится к одному виду, а не к пробелу. */
 function nrmA2(s) {
-  return String(s)
-    .toLowerCase()
+  return base(s)
     .replace(/[‘’ʼ`´]/g, "'")
     .replace(/[“”«»"]/g, '')
     .replace(/[‐-―]/g, '-')
@@ -51,8 +66,7 @@ function nrmA2(s) {
 
 /** B1: двойные кавычки остаются — на этом уровне встречается прямая речь. */
 function nrmB1(s) {
-  return String(s)
-    .toLowerCase()
+  return base(s)
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[.,!?;:…£€₸$]/g, '')
@@ -62,8 +76,7 @@ function nrmB1(s) {
 
 /** B2: то же, что B1, плюс дефис-или-пробел. */
 function nrmB2(s) {
-  return String(s)
-    .toLowerCase()
+  return base(s)
     .replace(/[‘’ʼ´`]/g, "'")
     .replace(/[“”«»]/g, '"')
     .replace(/[.,!?;:…£€₸$]/g, '')
@@ -121,6 +134,50 @@ const USVAR = {
   defence: 'defense', offence: 'offense', tyre: 'tire', tyres: 'tires', storey: 'story',
   moustache: 'mustache', dialogue: 'dialog', catalogue: 'catalog', analyse: 'analyze',
   analysed: 'analyzed',
+  // Дополнено ревью 08.10.2026 — ключи, на которых A0/A1/B1/B2 браковали
+  // американское написание (список применялся только на A2).
+  analysing: 'analyzing', cosy: 'cozy', cosier: 'cozier', cosiest: 'coziest',
+  enquire: 'inquire', enquired: 'inquired', enquiry: 'inquiry', enquiries: 'inquiries',
+  savoury: 'savory', coloured: 'colored', colourful: 'colorful', multicoloured: 'multicolored',
+  favour: 'favor', favours: 'favors', neighbourhood: 'neighborhood', behaviours: 'behaviors',
+  travellers: 'travelers', offences: 'offenses', defences: 'defenses',
+  fulfil: 'fulfill', enrol: 'enroll', skilful: 'skillful',
+  // Две формы прошедшего у одного глагола — не американизм, но тот же ответ:
+  // «She learned it easily» за ключ «She learnt it easily».
+  learnt: 'learned', spilt: 'spilled', burnt: 'burned', dreamt: 'dreamed', spelt: 'spelled',
+  smelt: 'smelled', leapt: 'leaped', spoilt: 'spoiled', knelt: 'kneeled',
+  // Одно слово или два — то же отрицание.
+  cannot: 'can not',
+}
+
+/* Сводит американское / британское написание и формы из USVAR к одному виду
+   на уровне слов: сопоставление пар, а не правило (см. комментарий к USVAR). */
+function usFold(s) {
+  return String(s).replace(/[a-z]+/gi, (w) => USVAR[w.toLowerCase()] || w)
+}
+
+/* Варианты одного слова, которые прощаются на ВСЕХ уровнях поверх их
+   собственного судьи: американское написание (список USVAR), дефис = пробел =
+   слитно («weight-lifting» / «weight lifting» / «weightlifting»). Раньше это
+   умел только A2 (американизмы) и A0/B2 (дефис = пробел), остальные браковали
+   верный ответ. Слитное написание берётся только из слова с дефисом —
+   «alot» за «a lot» по-прежнему ошибка. */
+// Проверка — без флага g: у /g-регулярки .test() помнит lastIndex между
+// вызовами и через раз «не видит» дефис.
+const HAS_DASH = /[‐-―-]/
+const DASH = /\s*[‐-―-]\s*/g
+function withSpellingVariants(match) {
+  return (input, keys) => {
+    if (match(input, keys)) return true
+    const dashed = (list) =>
+      list.flatMap((k) => (HAS_DASH.test(String(k)) ? [String(k).replace(DASH, ' '), String(k).replace(DASH, '')] : []))
+    const keyVars = dashed(keys)
+    if (keyVars.length && match(input, keyVars)) return true
+    const inputVars = dashed([input])
+    if (inputVars.some((v) => match(v, keys))) return true
+    const allKeys = keys.concat(keyVars).map(usFold)
+    return [input, ...inputVars].some((v) => match(usFold(v), allKeys))
+  }
 }
 
 /* Потерянный апостроф прощается — кроме случаев, где без него получается
@@ -264,19 +321,19 @@ function answerMatchesWith(nrm, list, ambiguous, guardMax) {
 /* ── Судья уровня ───────────────────────────────────────────────────────── */
 
 const MATCH = {
-  a0: (input, keys) => {
+  a0: withSpellingVariants((input, keys) => {
     const v = nrmA0(input)
     return !!v && keys.some((k) => nrmA0(k) === v)
-  },
-  a1: (input, keys) => {
+  }),
+  a1: withSpellingVariants((input, keys) => {
     const v = nrmA1(input)
     if (!v) return false
     const vl = looseA1(input)
     return keys.some((k) => nrmA1(k) === v || looseA1(k) === vl)
-  },
-  a2: typedOkA2,
-  b1: answerMatchesWith(nrmB1, CONTRACTIONS_B1, true, 160),
-  b2: answerMatchesWith(nrmB2, CONTRACTIONS_B2, false, 120),
+  }),
+  a2: withSpellingVariants(typedOkA2),
+  b1: withSpellingVariants(answerMatchesWith(nrmB1, CONTRACTIONS_B1, true, 160)),
+  b2: withSpellingVariants(answerMatchesWith(nrmB2, CONTRACTIONS_B2, false, 120)),
 }
 
 /**
