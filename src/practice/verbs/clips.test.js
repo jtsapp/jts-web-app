@@ -43,7 +43,9 @@ describe('parseWav', () => {
   it('настоящая запись: 16 кГц, длина по data-чанку, сэмплы в [-1, 1]', () => {
     const r = parseWav(wav('go'))
     expect(r.rate).toBe(16000)
-    expect(r.samples.length / r.rate).toBeCloseTo(0.349, 2)
+    // Длина — по размеру файла (44 байта заголовка), а не константа: записи перезаливают.
+    expect(r.samples.length).toBe((wav('go').length - 44) / 2)
+    expect(r.samples.length / r.rate).toBeLessThanOrEqual(0.47)
     expect(Math.max(...r.samples)).toBeLessThanOrEqual(1)
     expect(Math.min(...r.samples)).toBeGreaterThanOrEqual(-1)
   })
