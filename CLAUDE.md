@@ -745,7 +745,9 @@ JTS-бэкенд (`src/learning/lessonProgress.js`).
 - Neon Postgres: `src/lib/db/sql.js` → `getSql()` возвращает `null`, если
   `DATABASE_URL` не задан — вызывающий код обязан тихо деградировать
   (прогресс тогда живёт в localStorage). Никогда не бросать на импорте.
-- Redis (`compose.yaml`, сервис `redis`): только кэш озвучки `/api/tts`.
+- Redis — ОДИН на dev и прод (`compose-redis.yaml`, проект `jts-tts-redis`,
+  поднимает CI без `--force-recreate`): только кэш озвучки `/api/tts`.
+  Правка этого файла в develop перезапускает Redis и проду.
   `src/lib/redis.js` → `getRedis()` = `null` без `REDIS_URL` (тогда кэш на
   диске, как на локалке). Наружу не открыт. Брак синтеза сносится
   `DELETE /api/tts?t=…` с заголовком `x-internal-key`.

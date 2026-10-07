@@ -67,3 +67,17 @@
 - `npm run build` + `npm run lint`.
 - Живьём на dev после мержа: новое слово → `miss`, повтор → `hit`, после
   следующего деплоя → снова `hit` (кэш пережил деплой).
+
+## 07.10: один Redis на dev и прод
+
+Решение владельца: вместо Redis на каждый стенд — один общий, 256 МБ на всех.
+
+- `compose-redis.yaml`, свой проект `jts-tts-redis`, внешняя сеть
+  `jts-tts-redis`, алиас `tts-redis`; web обоих стендов входит в сеть,
+  `REDIS_URL=redis://tts-redis:6379`.
+- CI перед деплоем стенда: `docker network create … || true`, `up -d` общего
+  Redis БЕЗ `--force-recreate` (с повтором через 5 с на гонку пайплайнов),
+  удаление сироты `jts-$APP_ENV-redis-1` и её volume от #594.
+- Цена: прод не изолирован от dev — запись, испорченная кодом с dev, звучит и
+  на проде (лечится `DELETE /api/tts`); правка `compose-redis.yaml` в develop
+  перезапускает Redis обоим; очистка кэша — общая.
