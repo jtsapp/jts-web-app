@@ -89,6 +89,38 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(открытыеВкладки).toEqual([])
   })
 
+  // Владелец 01.10: «в домашке они должны появляться как все остальные домашние
+  // задания». Тест на определение уровня, заданный без занятия (lessonEngine null),
+  // с catalogLessonId, раньше уводил ученика в плеер раздела «Уроки».
+  it('тест на определение уровня открывается рамкой в домашке, а не плеером «Уроков»', async () => {
+    const вПлеер = vi.fn()
+    const { container } = render(
+      <I18nProvider>
+        <MaterialAssignmentDetail
+          card={карточка({
+            materialTitle: 'Тест на определение уровня · Beginner Level Final Test',
+            fileUrl: 'https://files-dev.justtostudy.kz/development/course-catalog/exams/a0/beginner-1a2b3c4d.html',
+            catalogLessonId: 4,
+            lessonEngine: null,
+            stageTitlesSnapshot: null,
+          })}
+          token="tkn" onOpenCard={вПлеер} onSaved={() => {}} />
+      </I18nProvider>
+    )
+
+    кнопкаОткрыть().click()
+
+    const frame = await waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+    expect(frame.getAttribute('src')).toContain('/student/materials/14/render')
+    expect(frame.getAttribute('src')).toContain('assignmentId=24')
+    expect(вПлеер).not.toHaveBeenCalled()
+    expect(открытыеВкладки).toEqual([])
+  })
+
   // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
   // рендера, что у рамки, — с токеном ученика в строке запроса.
   it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {

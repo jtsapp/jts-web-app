@@ -40,7 +40,9 @@ export function rankSkills(stats) {
 
 // Шкала «Главной» начинается с A0: сервер считает A0 отдельным уровнем курса.
 // LEVELS из cefr.js не расширяем — по нему рисуется шкала теста, где A0 нет.
-const COURSE_LEVELS = ['A0', ...LEVELS]
+export const COURSE_LEVELS = ['A0', ...LEVELS]
+
+const rank = (level) => COURSE_LEVELS.indexOf(String(level || '').toUpperCase())
 
 /** Следующий уровень CEFR или null на потолке (C2). */
 export function nextLevel(level) {
@@ -89,6 +91,74 @@ export function levelSummary(userLevel, stats, progress = null) {
     total: progress?.total ?? null,
     remaining: typeof progress?.remaining === 'number' ? progress.remaining : null,
   }
+}
+
+/**
+ * Цель ученика из хранилища → `{ target, from }` или null.
+ *
+ * Общая проверка для сервера (что записывать) и клиента (чему верить из кэша):
+ * оба уровня — со шкалы курса, и цель строго выше точки отсчёта. Цель «A1 с
+ * A2» дорожку не нарисует — её проще не принять, чем потом объяснять экраном.
+ */
+export function sanitizeGoal(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const target = String(raw.target || '').toUpperCase()
+  const from = String(raw.from || '').toUpperCase()
+  if (rank(target) < 0 || rank(from) < 0 || rank(target) <= rank(from)) return null
+  return { target, from }
+}
+
+/**
+ * Какие уровни можно выбрать целью: от ближайшей ступени до потолка.
+ *
+ * Ниже ближайшей — некуда: цель за спиной дорожку не нарисует. И не ниже
+ * следующего за профилем: профиль бывает выше курса (менеджер поднял уровень,
+ * а купленный курс старый), и «цель» на уровне, который уже стоит в профиле,
+ * сразу читалась бы как достигнутая.
+ */
+export function goalOptions(summary) {
+  if (!summary?.next) return []
+  const start = Math.max(rank(summary.next), rank(summary.level) + 1)
+  return start > 0 ? COURSE_LEVELS.slice(start) : []
+}
+
+/**
+ * Дорожка «Старт → ступени → Финиш» для карточки уровня.
+ *
+ * Три состояния, и каждое — про своё:
+ *  - `goal` — цель выбрана и ещё впереди: ступени от ближайшего уровня до
+ *    цели, финиш — сама цель (A0 → B2: A1, A2, B1, Финиш · B2);
+ *  - `reached` — уровень в профиле дорос до цели: та же дорожка, что была
+ *    при выборе (от `from`), вся пройдена;
+ *  - `default` — цели нет или она уже не впереди: как было до выбора цели,
+ *    ближайший уровень и следующий за ним, финиш без подписи.
+ *
+ * Заливка — только у первого отрезка и только процентом сервера: он считает
+ * путь до ближайшего уровня, дальние отрезки знать неоткуда. У пройденной
+ * дорожки залито всё.
+ *
+ * `short` — подписи ступеней коротким кодом («A1», а не «Уровень A1»): три и
+ * больше ступени в полном виде не влезают в строку даже на десктопе.
+ */
+export function levelTrack(summary, goal) {
+  const g = sanitizeGoal(goal)
+  const between = (fromIdx, toIdx) => COURSE_LEVELS.slice(fromIdx, toIdx)
+
+  if (g && rank(summary?.level) >= rank(g.target)) {
+    const stops = between(rank(g.from) + 1, rank(g.target))
+    return { mode: 'reached', stops, finish: g.target, goal: g.target, short: stops.length > 2 }
+  }
+
+  const next = summary?.next || null
+  if (g && goalOptions(summary).includes(g.target)) {
+    const stops = between(rank(next), rank(g.target))
+    return { mode: 'goal', stops, finish: g.target, goal: g.target, short: stops.length > 2 }
+  }
+
+  // Без `next` (C2) ступеней нет вовсе: раньше nextLevel(null) читался как A1
+  // и на потолке дорожка обещала «Уровень A2».
+  const stops = next ? [next, nextLevel(next)].filter(Boolean) : []
+  return { mode: 'default', stops, finish: null, goal: next, short: false }
 }
 
 const SNAPSHOT_KEY = 'jts_level_progress_week'

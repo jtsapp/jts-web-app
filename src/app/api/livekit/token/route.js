@@ -23,9 +23,11 @@ import {
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
 import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
+import { ageGroupFromBirthDate } from '@/lib/birthDate.js'
 import { loadProfile, touchServedReviews } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
 import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
+import { tutorKeyForStand } from '@/tutor/devOnlyTutors.js'
 
 export const runtime = 'nodejs'
 
@@ -46,14 +48,18 @@ const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || '')
   .replace(/\/+$/, '')
 
 // Ключи UI → id персон в agent.py. У Джарвиса и Айзере имя совпадает, и строки
-// тут формально лишние (ниже стоит `|| p.tutor`), но без них таблица врёт: она
-// читается как полный список тьюторов, которых знает агент.
+// тут формально лишние (ниже стоит `|| tutorKey`), но без них таблица врёт: она
+// читается как полный список тьюторов, которых знает агент. Dev-only ключи
+// (jarvis, sparktest) до таблицы доходят только на dev-стенде — см.
+// tutorKeyForStand.
 const TUTOR_KEY_TO_PERSONA = {
   dexter: 'bro',
   luna: 'gentle',
   spark: 'hype',
   jarvis: 'jarvis',
   aizere: 'aizere',
+  // «Спарк тест» — dev-only стенд Speaking Buddy (SPARK_TEST_STAND в agent.py).
+  sparktest: 'sparktest',
 }
 
 const MAX_LEN = 120
@@ -83,7 +89,7 @@ function scenarioSlug(raw) {
   return raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
 }
 
-function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec = 0) {
+function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec = 0, ageGroup = null) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
@@ -108,7 +114,17 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   // подставит чужое. У анонима имени нет, и сцена спросит его сама.
   const name = trimStr(userName, 40)
   if (name) meta.userName = name
-  const persona = p.tutor ? TUTOR_KEY_TO_PERSONA[p.tutor] || p.tutor : undefined
+  // Возрастная ступень (adult/teen/child) — по ней голосовой Декстер решает,
+  // можно ли всерьёз ругаться и давать клички (пакет Speaking Buddy, core §11).
+  // Тоже только из проверенного токена: дата рождения из аккаунта, а не из
+  // тела запроса — иначе подросток объявил бы себя взрослым одним полем.
+  // Нет даты → поля нет, агент держит «unknown» (режим подростка).
+  if (ageGroup) meta.ageGroup = ageGroup
+  // Ключ — через tutorKeyForStand: агент общий для дева и прода, и без этого
+  // прод выдал бы токен на dev-стенд (KZ тест, Спарк тест) любому, кто пришлёт
+  // их ключ руками. На проде такой ключ становится Спарком, как на клиенте.
+  const tutorKey = tutorKeyForStand(p.tutor)
+  const persona = tutorKey ? TUTOR_KEY_TO_PERSONA[tutorKey] || tutorKey : undefined
   if (persona) meta.tutor = persona
   // Нрав (ось 18+) едет ОТДЕЛЬНЫМ полем, а не подмешивается в persona: у агента
   // голос, язык и провайдер TTS считаются по базовому id, а характер — по паре
@@ -198,7 +214,7 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   return JSON.stringify(meta)
 }
 
-async function issue(p, profileId, userName, limitOverride, isDemoAccount = false) {
+async function issue(p, profileId, userName, limitOverride, isDemoAccount = false, ageGroup = null) {
   const apiKey = process.env.LIVEKIT_API_KEY
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.LIVEKIT_URL
@@ -330,7 +346,7 @@ async function issue(p, profileId, userName, limitOverride, isDemoAccount = fals
     ? Math.max(0, Math.min(sceneBudgetSec, ttl - CLOCK_GRACE_SEC))
     : 0
 
-  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec)
+  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec, ageGroup)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
@@ -386,7 +402,10 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(body, resolved.id, resolved.name, limitOverride, resolved.isDemoAccount)
+  return issue(
+    body, resolved.id, resolved.name, limitOverride, resolved.isDemoAccount,
+    ageGroupFromBirthDate(resolved.birthDate),
+  )
 }
 
 export async function GET(request) {
@@ -395,5 +414,8 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, p.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(p, resolved.id, resolved.name, limitOverride, resolved.isDemoAccount)
+  return issue(
+    p, resolved.id, resolved.name, limitOverride, resolved.isDemoAccount,
+    ageGroupFromBirthDate(resolved.birthDate),
+  )
 }

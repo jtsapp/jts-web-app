@@ -1323,6 +1323,188 @@ describe('LiveLessonPage — преподаватель', () => {
 
 // Ручной уход (спека §4.3): другой раздел или другой материал раздела. Он
 // снимает следование и отменяет переходы с классом, которые ещё ждут.
+/*
+ * «Перенести ученика сюда» (dev, 06.10: урок у ученика «запускался заново», владелец: «всё должно сразу
+ * переноситься»). Преподаватель больше не шлёт «Внимание» вовсе — явный focus растит focusSeq и
+ * перезагружает рамку каждому ученику. Указка приходит потоком показа, событием 'point': следующему — в
+ * страницу следования, остальным — в их собственную рамку, без смены страницы и без следования.
+ */
+describe('LiveLessonPage — указка «Перенести ученика сюда» без перезагрузки', () => {
+  const point = (selector = '[data-jts-block="b1"]') => [{ selector, eventType: 'point', value: null }]
+  const pointed = (post) => post.mock.calls.filter(([m]) => m.type === 'present' && m.events.some((e) => e.eventType === 'point'))
+
+  it('следующий за классом: указка идёт в рамку, а рамка не перезагружается', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    const frame = frameOf(container)
+    const post = await loadFrame(container)
+    const srcBefore = frame.getAttribute('src')
+    // Вход на занятие уже просил снимок у ведущего — считаем только то, что после указки.
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(frameOf(container)).toBe(frame)
+    expect(frame.getAttribute('src')).toBe(srcBefore)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events: point() }, '*')
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  // Тот самый случай с dev: ученик на своей странице того же материала. Раньше указка переводила его на
+  // страницу следования — другой документ рамки, то есть перезагрузку с «Загружаем урок…».
+  it('не следует, тот же материал: указка в его же рамку — ни перезагрузки, ни страницы следования', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(container.querySelector('.ls-follow'))
+    await flush()
+    const frame = frameOf(container)
+    expect(frame.getAttribute('src')).toContain('follow=0')
+    const post = await loadFrame(container)
+    const srcBefore = frame.getAttribute('src')
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameOf(container)).toBe(frame)
+    expect(frame.getAttribute('src')).toBe(srcBefore)
+    expect(pointed(post)).toHaveLength(1)
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  // Ушёл сам на другой раздел — указка открывает материал задания его же страницей (не страницей
+  // следования) и, когда та загрузится, прокручивает к заданию. Следовать за классом он не начинает.
+  it('ушёл на другой материал: открывается материал задания своей страницей, указка — после загрузки', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    expect(frameMaterial(container)).toBe(12)
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(11)
+    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
+    const post = await loadFrame(container)
+    expect(pointed(post)).toHaveLength(1)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  // Класс отпущен — указка всё равно переносит: это адресное «смотри сюда», а не ведение класса.
+  it('класс не ведут: указка всё равно переносит к заданию', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    await push(liveState({ version: 2, focusSeq: 1, leading: false, sectionId: 3, materialId: 11 }))
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(11)
+    const post = await loadFrame(container)
+    expect(pointed(post)).toHaveLength(1)
+  })
+
+  it('открыта доска: возвращает на урок, указка — в рамку после её загрузки', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(container.querySelector('.ls-follow'))
+    await flush()
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    expect(frameOf(container)).toBeNull()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(11)
+    const post = await loadFrame(container)
+    expect(pointed(post)).toHaveLength(1)
+  })
+
+  // Следует за классом, но смотрит доску — рамки на экране нет, и указка раньше копилась мимо него.
+  it('следует, но открыта доска: возвращает на урок, указка — в страницу следования после загрузки', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    expect(frameOf(container)).toBeNull()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
+    await flush()
+
+    expect(frameOf(container).getAttribute('src')).toContain('follow=1')
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('true')
+    const post = await loadFrame(container)
+    expect(pointed(post)).toHaveLength(1)
+  })
+
+  // Снимок рамки несёт прошлые указки из истории моста — по нему ушедшего никуда не тянет.
+  it('не следует: снимок класса с прошлой указкой внутри его не переносит', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: [...click('#a'), ...point(), ...click('#b')] }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+  })
+
+  it('не следует: обычный показ класса (клики) его не трогает — только указка', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    sendCatchUp.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+    await flush()
+
+    expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
+    expect(frameMaterial(container)).toBe(12)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
+  it('материала указки у ученика нет — остаётся на месте', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 99, events: point() }) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+  })
+
+  // Указка ждёт загрузки рамки задания, а ученик за это время сам ушёл — догонять его она не должна.
+  it('ученик ушёл сам раньше, чем рамка задания загрузилась, — указка его не догоняет', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(container.querySelector('.ls-follow'))
+    await flush()
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: point() }) })
+    // У раздела класса в имени кнопки ещё и бегунок «Т».
+    fireEvent.click(screen.getByRole('button', { name: /^Разминка/ }))
+    await flush()
+
+    expect(frameMaterial(container)).toBe(11)
+    const post = await loadFrame(container)
+    expect(pointed(post)).toHaveLength(0)
+  })
+})
+
 describe('LiveLessonPage — ученик уходит сам', () => {
   it('выбрал другой материал раздела — своя страница, стадия класса не тянет', async () => {
     sections = TWO_MATERIALS

@@ -175,6 +175,12 @@ describe('isUnitTestType', () => {
     expect(isUnitTestType('TEST')).toBe(true)
   })
 
+  // Тест на определение уровня, заданный вопросами: правильных ответов до
+  // «Завершить тест» ученик не видит — как у теста курса.
+  it('тест на определение уровня — тоже тест', () => {
+    expect(isUnitTestType('EXAM')).toBe(true)
+  })
+
   it('обычный урок и пустое значение — не тест', () => {
     expect(isUnitTestType('LESSON')).toBe(false)
     expect(isUnitTestType(undefined)).toBe(false)

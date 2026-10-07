@@ -82,10 +82,11 @@
    (.learn__bell, styles.css) — ровно туда, куда упирается CTA плашки. Без
    запаса «Открыть полный доступ», RU и уведомления лежат друг на друге
    (колокольчик не видно и не нажимается). Брейкпоинт тот же, на котором
-   кабинет эту группу показывает; на мобилке она в MobileTopBar и не мешает. */
+   кабинет эту группу показывает; на мобилке она в MobileTopBar и не мешает.
+   222 = «?» тура главной (42 + зазор 10) + язык + колокольчик. */
 @media (min-width: 761px) {
   .dm-banner {
-    margin-right: 170px;
+    margin-right: 222px;
   }
 }
 @media (max-width: 860px) {
@@ -617,6 +618,186 @@
   width: 104px;
   height: 88px;
   object-fit: contain;
+}
+/* Медаль — она же вход в смену цели: кнопка, но выглядит плашкой, как в
+   макете. Отклик на наведение — лёгкое осветление, без рамок и теней: на
+   фиолетовом любая обводка спорила бы с медалью. */
+button.hm-level__goal {
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button.hm-level__goal:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+button.hm-level__goal:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+/* Подпись ступени — отдельным узлом, чтобы на телефоне её можно было увести
+   под кружок (src/mobile/home.css). На десктопе она в строку с иконкой. */
+.hm-level__lbl {
+  display: inline;
+}
+/* Точка в «Старте» и картинки-иконки нужны только телефонному макету. */
+.hm-level__dot,
+.hm-hw__ico,
+.hm-sched__chev,
+.hm-prac__img {
+  display: none;
+}
+.hm-level__ico {
+  flex: none;
+}
+/* Цель достигнута: дорожка пройдена целиком — все ступени сплошные, как
+   «Старт», отрезки залиты. */
+.hm-level--reached .hm-level__stop {
+  border-style: solid;
+  border-color: transparent;
+  background: #fff;
+  color: #9047ff;
+}
+.hm-level--reached .hm-level__seg {
+  background: #fff;
+}
+.hm-level__trophy {
+  flex: none;
+  align-self: center;
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+/* «Приобрести новый курс» — белая капсула на фиолетовом, как в кадре
+   «Главная · новый уровень». */
+.hm-level__buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: fit-content;
+  margin-top: 16px;
+  padding: 8px 14px 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #9047ff;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hm-level__buy:hover {
+  background: #f3ecff;
+}
+
+/* --- выбор цели: чипы уровней (тур и диалог по медали) --- */
+.hm-goal {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.hm-goal__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid #ededed;
+  border-radius: 14px;
+  background: #fff;
+  color: #181818;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.hm-goal__chip:hover {
+  border-color: #c9adff;
+}
+.hm-goal__chip b {
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.hm-goal__chip i {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  color: #8a8a8a;
+}
+.hm-goal__chip.is-on {
+  border-color: #9047ff;
+  background: #f3ecff;
+}
+.hm-goal__chip.is-on b {
+  color: #9047ff;
+}
+.hm-goal__chip:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+
+.hm-goaldlg {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 17, 17, 0.6);
+}
+.hm-goaldlg__card {
+  width: min(420px, 100%);
+  padding: 24px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.hm-goaldlg__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hm-goaldlg__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #181818;
+}
+.hm-goaldlg__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #8a8a8a;
+  cursor: pointer;
+}
+.hm-goaldlg__close:hover {
+  background: #f8f8f8;
+  color: #181818;
+}
+.hm-goaldlg__sub {
+  margin: 8px 0 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #5c5c5c;
 }
 @media (max-width: 900px) {
   /* Дорожка переносится по строкам — отрезкам нужен минимум, иначе они

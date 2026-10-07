@@ -5,7 +5,6 @@ import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { useEmotionShowcase } from '../tutor/useEmotionShowcase.js'
-import JarvisOrb from '../tutor/JarvisOrb.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
 import { MenuIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -112,11 +111,7 @@ export default function TutorDashboardPage({
                 onClick={onTalk}
                 aria-label={t('dash.ctaTitle').replace('\n', ' ')}
               >
-                {tutor.face === 'orb' ? (
-                  <JarvisOrb className="t-dash__face" label={name} />
-                ) : (
-                  <ShowcaseFace mood={mood} />
-                )}
+                <ShowcaseFace mood={mood} />
               </button>
               {/* Всё ниже — про урок английского, поэтому у ассистента этого нет.
                   Кнопка «начать разговор» появилась потому, что по одному орбу

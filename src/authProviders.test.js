@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url'
 // Вход через Apple ID с сайта убран, вход через Google — оставлен (решение
 // владельца, 2026-08-25: сначала убрали оба, потом Google вернули).
 //
+// 04.10.2026 владелец убрал Google из регистрации (чат с Декстером): по макету
+// регистрация идёт только через номер, а почту берёт следующим шагом. Google
+// через чат заводил аккаунт вовсе без номера. На экране входа Google остался.
+//
 // Apple жил в шести местах сразу — два экрана входа, регистрация, иконки,
 // переводы и стили, — поэтому вернуться он может так же незаметно: достаточно
 // одной кнопки в новом экране. Тест читает исходники как текст, потому что
@@ -44,17 +48,21 @@ describe('вход: Apple убран, Google на месте', () => {
     expect(readFileSync(join(src, 'styles.css'), 'utf8')).not.toMatch(/auth-btn--apple/)
   })
 
-  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка', () => {
+  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка на экране входа', () => {
     expect(existsSync(join(src, 'lib', 'googleAuth.js'))).toBe(true)
     expect(readFileSync(join(src, 'api.js'), 'utf8')).toMatch(/loginWithGoogle/)
-    const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
-    expect(reg).toMatch(/auth-btn--google/)
-    expect(reg).toMatch(/google-slot/)
+    const login = readFileSync(join(src, 'screens', 'PasswordLoginPage.jsx'), 'utf8')
+    expect(login).toMatch(/auth-btn--google/)
+    expect(login).toMatch(/google-slot/)
   })
 
-  it('кнопка Google стоит второй строкой блока входа — под номером телефона', () => {
+  it('в регистрации (чат с Декстером) Google нет — только «Начать регистрацию»', () => {
     const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
-    expect(reg.indexOf("t('auth.phone')")).toBeLessThan(reg.indexOf("t('auth.google')"))
+    expect(reg).toMatch(/t\('auth\.phone'\)/)
+    // Следы кода, а не слово: комментарий про решение владельца оставляем.
+    for (const mark of [/googleAuth/, /google-slot/, /auth-btn--google/, /onGoogleToken/, /auth\.google/]) {
+      expect(reg).not.toMatch(mark)
+    }
   })
 
   it('подписи кнопки есть во всех трёх языках', () => {

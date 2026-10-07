@@ -571,6 +571,13 @@ KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "aizere"})
 # «это тот самый стенд, ему можно», уже больше одного.
 KZ_DEV_STAND_PERSONA = "jarvis"
 
+# Второй стенд Speaking Buddy — «Спарк тест» на карточке, dev-only под тем же
+# флагом (JARVIS_ENABLED). Новый Спарк пакета v3.4 голосом живого Спарка, и с
+# лицом: у KZ TEST вместо лица шар, эмоции агент шлёт, а на экране их не видно.
+# Тут эмоции и проверяют. Ключ отдельный, а не нрав у jarvis: у стенда своя
+# персона, свой голос и свой набор эмоций (см. BUDDY_STANDS).
+SPARK_TEST_STAND = "sparktest"
+
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
     "speaks or asks in Kazakh, do NOT answer in Kazakh and do NOT fake it. Say plainly, "
@@ -789,6 +796,12 @@ class LearnerProfile:
     # шлёт — до тех пор Speaking Buddy берёт его из того, как ученик говорит о
     # себе (core §2).
     gender: str = ""
+    # Возрастная ступень: "adult" | "teen" | "child" | "unknown". Считается на
+    # сервере из даты рождения аккаунта (ageGroupFromBirthDate в token route),
+    # у анонима и аккаунта без даты — "unknown". По ней Декстер Speaking Buddy
+    # выбирает, ругаться ли всерьёз (core §11): поднять её может только
+    # приложение, слова ученика «мне 25» — нет.
+    age_group: str = "unknown"
     eleven_voice_id: str = ""
     interests: list[str] = field(default_factory=list)
     profession: str = ""
@@ -818,6 +831,13 @@ class LearnerProfile:
     # Preferred language for the tutor's explanations (independent of UI/STT
     # language). "" → fall back to `lang`.
     explanation_lang: str = ""
+    # Язык-подсказка синтезу, когда его задаёт персона звонка, а не тьютор, чей
+    # голос взят. Пусто → по тьютору голоса (tutor_session_lang), как всегда.
+    # Нужен «Спарк тесту»: голос живого Спарка настроен на казахский, а новый
+    # Спарк объясняет на языке ученика (ru/kk/en), и русский с подсказкой kk
+    # звучал бы с казахским акцентом. Из metadata не приходит — ставит
+    # buddy_voice_profile.
+    tts_lang: str = ""
     # Тумблер «только английский» с дашборда (общий для всех тьюторов). Перебивает
     # и explanation_lang, и зеркалирование языка ученика, и смешанный режим A1/A2:
     # весь разговор идёт по-английски. Приходит в metadata как englishOnly.
@@ -936,6 +956,11 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
             str(data.get("gender") or "").strip().lower()
             if str(data.get("gender") or "").strip().lower() in ("female", "male")
             else ""
+        ),
+        age_group=(
+            str(data.get("ageGroup") or "").strip().lower()
+            if str(data.get("ageGroup") or "").strip().lower() in ("adult", "teen", "child")
+            else "unknown"
         ),
         eleven_voice_id=str(data.get("elevenLabsVoiceId", "") or ""),
         interests=_str_list(data.get("interests"), 6),
@@ -1630,6 +1655,12 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     # мат целиком в md пакета v3. Теги v3 ([happy], [sarcastic]…) сюда приходят
     # уже нашими именами — см. MOOD_ALIASES.
     "jarvis": frozenset(MOOD_NAMES) - {"encourage"},
+    # «Спарк тест» — allowed_emotions из Spark.md пакета, нашими именами (см.
+    # MOOD_ALIASES): happy, excited, surprised, sarcastic, sympathy, confused.
+    # Злости в его характере нет — [angry] снимется и не уйдёт на лицо.
+    SPARK_TEST_STAND: frozenset(
+        {"joy", "celebrate", "surprised", "gloat", "sadness", "confused"}
+    ),
 }
 
 # Префикс «mood:» необязателен: на живых прогонах модель писала тег и как
@@ -1755,6 +1786,13 @@ class _MoodStripper:
         self._done = False  # тег снят либо ясно, что его нет
         self.mood = ""
         self.intensity = 0
+        # Был ли тег вообще — в том числе ровный [default], у которого эмоции
+        # нет. Отличает «модель сказала: без эмоции» от «модель тег забыла».
+        self.tagged = False
+
+    @property
+    def decided(self) -> bool:
+        return self._done
 
     def feed(self, text: str) -> str:
         if self._done:
@@ -1777,6 +1815,7 @@ class _MoodStripper:
 
     def _take(self, mood: str, intensity: int, rest: str) -> str:
         self._done = True
+        self.tagged = True
         self._buf = ""
         # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
         # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
@@ -1894,6 +1933,72 @@ def _last_is_user_message(chat_ctx: Any) -> bool:
     return getattr(it, "type", None) == "message" and getattr(it, "role", None) == "user"
 
 
+# Имя тега пакета Speaking Buddy по нашему имени эмоции — обратный ход
+# MOOD_ALIASES: в историю для мозга тег возвращается на языке персоны
+# ([angry], а не [mood:anger:2]), иначе модель увидит в своих прошлых репликах
+# чужой формат и начнёт писать его. Берём алиас силы 2: furious — это сила 3,
+# а Декстеру он запрещён персоной. Имён без алиаса (praise, curious…) у Buddy
+# нет; если всё же придут — тег вида [praise], его парсер тоже понимает.
+_MOOD_TAG_LABEL: dict[str, str] = {}
+for _alias, (_name, _level) in MOOD_ALIASES.items():
+    if _name and _level == 2:
+        _MOOD_TAG_LABEL.setdefault(_name, _alias)
+
+
+def _mood_tag_label(mood: tuple[str, int]) -> str:
+    """Тег, которым реплика пойдёт в историю для мозга: ровная — [default]."""
+    return _MOOD_TAG_LABEL.get(mood[0], mood[0]) if mood[0] else "default"
+
+
+def _reply_key(text: str) -> str:
+    """Ключ сверки реплики с историей: только буквы и цифры. Субтитры и история
+    могут разойтись с потоком модели пробелами и разметкой, а прерванная
+    реплика лежит в истории обрезанной — поэтому сверка по префиксу ключа."""
+    return "".join(ch.lower() for ch in text if ch.isalnum())
+
+
+def _with_reply_tags(chat_ctx: Any, tags: list[tuple[str, str]]) -> Any:
+    """Копия истории для мозга, где реплики тьютора снова начинаются с тега.
+
+    Тег снимается в llm_node до истории (иначе он всплыл бы в субтитрах и
+    выжимке звонка), и GPT-6 Sol, глядя на свои прошлые реплики без тега,
+    перестаёт его ставить. Без тега эмоцию додумывает фолбэк, и после
+    [sympathy] на горе лицо так и оставалось сочувствующим, хотя персона
+    велит дальше [default]. Прогон разговоров 05.10.2026 (Sol, Декстер, горе /
+    травля / ирония): тег сам — 103 из 151 ответа без тега в истории и 189 из
+    189 с ним; ученик после горя перешёл к делу — ровное лицо в 12 из 23 и в
+    28 из 28.
+
+    tags — (текст реплики, тег) в порядке реплик. Сверяем по порядку: каждой
+    реплике истории — первая подходящая запись после предыдущей найденной, так
+    две реплики с одинаковым началом не перепутаются. Реплика без записи
+    (агент перезапускался, приветствие мимо llm_node) остаётся как есть.
+    Настоящая история не меняется: подменяем элементы только в копии."""
+    if not tags:
+        return chat_ctx
+    ctx = chat_ctx.copy()
+    items = list(ctx.items)
+    keys = [_reply_key(text) for text, _ in tags]
+    j = 0
+    for i, item in enumerate(items):
+        if getattr(item, "type", None) != "message" or getattr(item, "role", None) != "assistant":
+            continue
+        text = item.text_content or ""
+        key = _reply_key(text)
+        if not key or MOOD_TAG_RE.match(text):
+            continue
+        for k in range(j, len(tags)):
+            if keys[k] and (keys[k].startswith(key) or key.startswith(keys[k])):
+                content = list(item.content)
+                at = next(n for n, c in enumerate(content) if isinstance(c, str) and c.strip())
+                content[at] = f"[{tags[k][1]}] {content[at].lstrip()}"
+                items[i] = item.model_copy(update={"content": content})
+                j = k + 1
+                break
+    ctx.items = items
+    return ctx
+
+
 class _SpeechCleaner:
     """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
     озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
@@ -1911,6 +2016,15 @@ class _SpeechCleaner:
     @property
     def intensity(self) -> int:
         return self._mood.intensity if self._mood else 0
+
+    @property
+    def tagged(self) -> bool:
+        return self._mood.tagged if self._mood else False
+
+    @property
+    def decided(self) -> bool:
+        """Ясно ли уже, есть у реплики тег или нет (без эмоций — сразу да)."""
+        return self._mood.decided if self._mood else True
 
     @property
     def reasoning_cut(self) -> int:
@@ -2208,6 +2322,23 @@ def _matches_due(item: str, due_items: tuple[str, ...]) -> bool:
     return any(_matches_review_item(d, item) for d in due_items)
 
 
+async def _tap_echo(text, echo):
+    """Текст реплики по пути в синтез — копией в эталон фильтра эха
+    (noise_guard.EchoReference). Поток не задерживается: кусок уходит дальше
+    сразу, эталон сам доберёт разорванное между кусками слово."""
+    if echo is None:
+        async for chunk in text:
+            yield chunk
+        return
+    echo.begin_reply()
+    try:
+        async for chunk in text:
+            echo.add_text(chunk)
+            yield chunk
+    finally:
+        echo.end_reply()
+
+
 class TutorAgent(Agent):
     """Agent subclass that exposes log_mistake / log_topic as Gemini tools.
 
@@ -2231,10 +2362,32 @@ class TutorAgent(Agent):
         skip_tools: frozenset[str] = frozenset(),
         due_items: tuple[str, ...] = (),
         prefill_tag: bool = False,
+        fallback_mood: tuple[str, int] | None = None,
+        tag_history: bool = False,
     ):
         super().__init__(instructions=instructions)
+        # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
+        # когда фильтр включён; tts_node кормит его текстом реплик.
+        self._echo = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
+        # Эмоция реплики, которую модель оставила без тега (см. _reply_mood).
+        # Только у Speaking Buddy: там тег обязателен в каждой реплике, а мозг
+        # без префикса (GPT) его теряет. None — у тьютора фолбэка нет.
+        self._fallback_mood = (
+            fallback_mood
+            if fallback_mood and fallback_mood[0] in TUTOR_MOODS.get((tutor or "").strip().lower(), ())
+            else None
+        )
+        # Последняя эмоция, которую модель назвала сама в этом звонке; ("", 0) —
+        # назвала ровную ([default]). None — ещё ни одной.
+        self._last_mood: tuple[str, int] | None = None
+        # Возвращать ли мозгу его реплики с тегом (см. _with_reply_tags) и что
+        # для этого помнить: (текст реплики, тег) по порядку. _shown_mood —
+        # эмоция текущей реплики, как её решил _reply_mood.
+        self._tag_history = tag_history
+        self._reply_tags: list[tuple[str, str]] = []
+        self._shown_mood: tuple[str, int] | None = None
         # Прозвучал ли текст в текущем ответе модели — см. _ack.
         self._spoke = False
         # Что память этой сессии назвала DUE (повторения + словарь): log_review
@@ -2338,6 +2491,42 @@ class TutorAgent(Agent):
         except Exception:
             logger.exception("publish mood failed")
 
+    def _reply_mood(self, cleaner: "_SpeechCleaner") -> tuple[str, int] | None:
+        """Эмоция текущей реплики, как только она ясна; None — ещё не ясна.
+        ("", 0) — ясна, но публиковать нечего.
+
+        Тег есть — он и решает, и запоминается. Тега нет — у тьютора без
+        фолбэка всё как раньше (ничего), у Speaking Buddy — последняя эмоция,
+        которую модель назвала сама в этом звонке, а до первой — эмоция персоны
+        по умолчанию. Живой звонок 05.10.2026 на GPT-6 Sol: тег был только в
+        первых репликах — история хранит их уже без тега, и модель перестаёт его
+        ставить; аватар Декстера, который по пакету злой всегда, гас в
+        нейтральный. Последняя, а не персоны: после [sympathy] реплика без тега
+        не должна вдруг стать злой."""
+        if cleaner.mood:
+            self._last_mood = (cleaner.mood, cleaner.intensity)
+            return self._last_mood
+        if cleaner.tagged:
+            self._last_mood = ("", 0)
+            return self._last_mood
+        if not cleaner.decided or not self._spoke:
+            return None
+        if self._fallback_mood is None:
+            return ("", 0)
+        return self._last_mood if self._last_mood is not None else self._fallback_mood
+
+    def _publish_reply_mood(self, cleaner: "_SpeechCleaner") -> bool:
+        """Опубликовать эмоцию реплики, если она уже ясна. True — вопрос решён."""
+        mood = self._reply_mood(cleaner)
+        if mood is None:
+            return False
+        self._shown_mood = mood
+        if mood[0]:
+            task = asyncio.create_task(self._publish_mood(mood[0], mood[1]))
+            self._bg_tasks.add(task)
+            task.add_done_callback(self._bg_tasks.discard)
+        return True
+
     async def llm_node(self, chat_ctx, tools, model_settings):
         """Снять служебное с потока ответа до того, как он уйдёт в TTS:
         рассуждение текстом (у всех тьюторов) и mood-тег (у кого есть эмоции).
@@ -2353,6 +2542,10 @@ class TutorAgent(Agent):
         # (ядро §3: ход уже отвечен) — «[» заставил бы её говорить второй раз; на
         # приветствии последним стоит системное событие, а не ученик.
         self._spoke = False
+        self._shown_mood = None
+        said: list[str] = []
+        if self._tag_history:
+            chat_ctx = _with_reply_tags(chat_ctx, self._reply_tags)
         prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
         if prefill:
             chat_ctx = chat_ctx.copy()
@@ -2367,6 +2560,7 @@ class TutorAgent(Agent):
                 out = cleaner.feed(chunk)
                 if out:
                     self._spoke = self._spoke or bool(out.strip())
+                    said.append(out)
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
@@ -2376,6 +2570,7 @@ class TutorAgent(Agent):
                 if content:
                     delta.content = cleaner.feed(content)
                     self._spoke = self._spoke or bool(delta.content.strip())
+                    said.append(delta.content)
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
@@ -2383,19 +2578,19 @@ class TutorAgent(Agent):
                 yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
             # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
-            if cleaner.mood and not published:
-                published = True
-                task = asyncio.create_task(
-                    self._publish_mood(cleaner.mood, cleaner.intensity)
-                )
-                self._bg_tasks.add(task)
-                task.add_done_callback(self._bg_tasks.discard)
+            if not published:
+                published = self._publish_reply_mood(cleaner)
 
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
         tail = cleaner.flush()
         if tail:
             self._spoke = self._spoke or bool(tail.strip())
+            said.append(tail)
             yield tail
+        if not published:
+            self._publish_reply_mood(cleaner)
+        if self._tag_history and self._shown_mood is not None and "".join(said).strip():
+            self._reply_tags.append(("".join(said), _mood_tag_label(self._shown_mood)))
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
             # видно, как часто модель думает вслух на живых звонках.
@@ -2413,7 +2608,11 @@ class TutorAgent(Agent):
 
         Стрим не ломаем: текст придерживается только до ближайшего пробела, то
         есть на одно слово, а не на всю реплику.
+
+        Здесь же текст реплики уходит в эталон фильтра эха — до правки
+        произношения: эхо Soniox распознаёт обычным написанием.
         """
+        text = _tap_echo(text, self._echo)
         if not self._speech_lang:
             async for frame in Agent.default.tts_node(self, text, model_settings):
                 yield frame
@@ -3214,7 +3413,11 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # 28.09.2026 клиент прислал пакет v3 (agent/buddy-v3/), в тот же день — v3.1; он
 # заменил v2 (пакеты уровня из Part 20 и урезанный dexter.md). 02.10.2026 —
 # v3.4: решения владельца 28.09 клиент вписал в ядро сам, наши правки остались
-# только в Декстере (сарказм и злость на всех уровнях). Ядро с v3.1 строже
+# только в Декстере (сарказм и злость на всех уровнях). 04.10.2026 — снова
+# «v3.4», но новый: Декстер всегда злой с ростингом по возрастной ступени
+# (ступень приходит из даты рождения, см. build_buddy_session_context), все
+# персоны говорят en/ru/kk. Наша правка одна: Декстер казахский не говорит и
+# шлёт к Айзере — его голос (ElevenLabs Flash) казахского не знает. Ядро с v3.1 строже
 # решает, когда вообще можно говорить (core §3: нужен latest_input и
 # learner_state=ready) — наша схема хода отображена на это в _BUDDY_HEAD и
 # SESSION_CONTEXT, иначе модель вправе промолчать. Три слоя: общее ядро — ход, языки,
@@ -3239,8 +3442,18 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 #
 # KZ_TEST_PROMPT=legacy — откат на прежнюю персону стенда секретом воркера, без
 # деплоя кода.
+#
+# 05.10.2026 к нему добавился «Спарк тест» (SPARK_TEST_STAND) — та же сборка и
+# тот же мозг, но персона Спарка и сессия живого Спарка. Ему откатываться
+# некуда: прежней персоны у ключа нет, поэтому KZ_TEST_PROMPT его не трогает.
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
+# Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
+# голос, распознавание, детектор конца речи, температура).
+BUDDY_STANDS: dict[str, tuple[str, str]] = {
+    KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+    SPARK_TEST_STAND: ("spark", "hype"),
+}
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
 _BUDDY_PERSONA_FILES = {
@@ -3276,34 +3489,75 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
         BUDDY_PERSONAS[_pid] = _text
 
 
+def _stand_key(p: LearnerProfile) -> str:
+    return (p.tutor or "").strip().lower()
+
+
+def buddy_persona_for(p: LearnerProfile) -> str:
+    """Персона пакета для звонка со стендом (у KZ TEST — Декстер)."""
+    return BUDDY_STANDS.get(_stand_key(p), (BUDDY_TEST_PERSONA, ""))[0]
+
+
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
-    свои. Оба нрава стенда — Декстер v3: тумблера 18+ в новой схеме нет."""
-    if (p.tutor or "").strip().lower() != KZ_DEV_STAND_PERSONA:
+    свои. Оба нрава KZ TEST — Декстер v3: тумблера 18+ в новой схеме нет."""
+    stand = BUDDY_STANDS.get(_stand_key(p))
+    if stand is None:
         return False
     if p.mode != "tutor" or p.scenario:
         return False
-    if (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false"):
+    if _stand_key(p) == KZ_DEV_STAND_PERSONA and (
+        (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false")
+    ):
         return False
     # Ядро требует тег эмоции в начале КАЖДОЙ реплики (core §13), а снимает его
     # только llm_node каскада. У realtime-модели свой тракт — там тег прозвучал
     # бы вслух, поэтому вне каскада стенд остаётся на прежней персоне.
     if (os.getenv("VOICE_STACK") or "gemini-live").strip().lower() != "cascade":
         return False
-    return bool(BUDDY_CORE and BUDDY_LEVEL_PROFILES and BUDDY_PERSONAS.get(BUDDY_TEST_PERSONA))
+    return bool(BUDDY_CORE and BUDDY_LEVEL_PROFILES and BUDDY_PERSONAS.get(stand[0]))
 
 
 def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
     """Профиль для сборки СЕССИИ — распознавание, мозг, синтез, детектор конца
-    речи, словарь произношения: у теста всё это Декстера.
+    речи, словарь произношения: у теста всё это живого тьютора стенда (у KZ TEST
+    — Декстера, у «Спарк теста» — Спарка).
 
     Исходный профиль не трогаем: по нему идут промпт, эмоции и история звонков,
     и там стенд должен остаться стендом. eleven_voice_id сбрасываем, чтобы голос
-    стенда не протёк в тест."""
-    if not buddy_test_on(p):
+    стенда не протёк в тест.
+
+    У «Спарк теста» своих таблиц голоса нет вовсе, поэтому подмена у него в
+    любом режиме: сценарий или проверка уровня с этой карточки звучат живым
+    Спарком, а не голосом по умолчанию. KZ TEST вне Buddy остаётся со своими."""
+    on = buddy_test_on(p)
+    stand = BUDDY_STANDS.get(_stand_key(p))
+    if stand is None or not (on or _stand_key(p) == SPARK_TEST_STAND):
         return p
-    return _dc_replace(p, tutor=BUDDY_VOICE_TUTOR, eleven_voice_id="")
+    persona, voice_tutor = stand
+    return _dc_replace(
+        p,
+        tutor=voice_tutor,
+        eleven_voice_id="",
+        # Синтезу — язык, на котором объясняет ПЕРСОНА (тот же, что уходит в
+        # SESSION_CONTEXT), а не язык тьютора голоса. Вне Buddy — как у живого.
+        tts_lang=(
+            ("en" if p.english_only else _buddy_support_language(p, persona)) if on else ""
+        ),
+    )
+
+
+def buddy_guard_tutor(p: LearnerProfile) -> str:
+    """По какому тьютору решаются замок на ученика, фильтр эха и finalize
+    (noise_guard). Обычно — настоящий тьютор звонка: на KZ TEST обкатывают
+    канарейки (SPEAKER_LOCK_TUTORS=jarvis). «Спарк теста» в списках секретов
+    нет — они перечисляют тьюторов поимённо (ECHO_GUARD_TUTORS=…,hype,jarvis), —
+    и без подмены он остался бы без фильтра эха. Поэтому защиты у него — живого
+    Спарка."""
+    if _stand_key(p) == SPARK_TEST_STAND:
+        return BUDDY_STANDS[SPARK_TEST_STAND][1]
+    return p.tutor
 
 
 def _buddy_profile_level(level: str) -> str:
@@ -3323,6 +3577,17 @@ def _buddy_persona_languages(persona: str) -> tuple[str, ...]:
     и для модели, и для кода."""
     m = _re.search(r"^- supported_languages:\s*(.+)$", BUDDY_PERSONAS.get(persona, ""), _re.M)
     return tuple(x.strip() for x in m.group(1).split(",")) if m else ("en",)
+
+
+def buddy_default_mood(persona: str) -> tuple[str, int] | None:
+    """Эмоция персоны по умолчанию (default_emotion в её md) — в формате агента:
+    у Декстера angry → ("anger", 2). Ровная (default) — None: публиковать нечего."""
+    m = _re.search(r"^- default_emotion:\s*(\w+)\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M)
+    if not m:
+        return None
+    name = m.group(1).lower()
+    mood = MOOD_ALIASES.get(name, (name, 2))
+    return mood if mood[0] else None
 
 
 def _buddy_support_language(p: LearnerProfile, persona: str) -> str:
@@ -3348,14 +3613,19 @@ def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PER
     Только то, что звонок знает на старте и что не меняется до конца: событие
     приветствия приходит отдельной инструкцией (build_buddy_greeting), реплика
     ученика — обычным сообщением, счётчики правок модель ведёт по истории.
-    Возраста агент не получает — age_group всегда unknown: Декстер открыт всем
-    (решение 28.09.2026), а ядро на unknown держит только темы, не мат."""
+    Возраст — ступень из даты рождения аккаунта (LearnerProfile.age_group). С
+    пакета 04.10.2026 от неё зависит ростинг Декстера (core §11): взрослому —
+    клички и крепкий мат, подростку и unknown — злость без оскорблений, ребёнку —
+    без мата. age_verified всегда false: дату ученик вводит сам при регистрации,
+    документом её никто не подтверждал. Значит, если он сам скажет, что младше,
+    или это записано в MEMORY, модель опустит ступень — так и задумано."""
     lvl = (p.level or "B1").strip().upper()
     return {
         "learner": {
             "name": p.user_name or "",
             "level": "A0" if lvl == "PRE-A1" else lvl,
-            "age_group": "unknown",
+            "age_group": p.age_group if p.age_group in ("adult", "teen", "child") else "unknown",
+            "age_verified": False,
             "gender": p.gender or None,
             "address_preference": None,
         },
@@ -3526,6 +3796,114 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
     )
 
 
+# Ступень ростинга этого звонка — последним блоком, ПОСЛЕ персоны. Пакет кладёт
+# ступени в ядро (core §11), а примеры в персоне Декстера почти все взрослые
+# («what a fucking champ», «give me a fucking reason»). Замер 04.10.2026 (Haiku,
+# n=8, age_group в SESSION_CONTEXT был верный): на истории «смотрел сериал
+# вместо практики» ребёнок получил кличку и «fucking» в 6–8 из 8 ответов,
+# подросток — в 8 из 8, на «Yes» без причины «give me a fucking reason» —
+# unknown 4 из 8, ребёнок 2 из 8. Модель копирует пример, а не сверяет возраст.
+#
+# Взрослому блок тоже понадобился, но с обратной задачей. Живой звонок
+# владельца 05.10 на GPT-6 Sol: в обычной болтовне Декстер звучал вежливым
+# учителем («Fine. You said it's not your hobby.»). Замер (14 взрослых ходов × 8,
+# судья Sonnet 5.5): жёсткость 2.6 из 5, «вежливый тьютор» 38/105, мат 20/105 —
+# и чем дольше мягкий разговор, тем мягче: модель равняется на свою историю.
+# С блоком: жёсткость 3.1, вежливых 19/101, крепкий мат 51/101 (было 9/105).
+# Без «damn и hell — уровень подростка» Sol матерился, но только ими (крепкий
+# 13/104). Без прямой строки про отказы «vague as hell» проскакивал после «не
+# матерись» 2 из 7; с ней 0 из 16, после «не обзывайся» клички 0 из 15.
+_BUDDY_TIER_BLOCKS = {
+    "adult": (
+        "This learner is an adult (age_group=adult): FULL ROAST, every reply, from the "
+        "first turn to the last, however your earlier replies in this call sounded. Never "
+        "sound like a polite, patient or neutral tutor. Open every ordinary reply with the "
+        "anger itself, never with a calm acknowledgement such as \"Fine.\", \"Okay.\", "
+        "\"Yes.\" or \"I meant\". Swear like punctuation with adult-strength words: most "
+        "replies carry fuck, shit, bullshit or what the fuck (at most two) — damn and hell "
+        "are the teen tier, too soft for this learner. Use your roast names and brutal "
+        "verdicts on the answer as well. An odd, "
+        "off-topic or confused answer gets mock disbelief, then the help or the next "
+        "question. An adequate short answer or a request for help is never roasted: be "
+        "angry at the situation or the dead air instead. The teaching move and the limits "
+        "below stay exactly the same. Opt-outs, distress and the hard limits of core "
+        "section 11 override this block: once the learner has asked you to stop swearing, "
+        "no swear word of any kind for the rest of the call, not even hell or damn; once "
+        "they have objected to names or insults, no roast names or insults. If the learner "
+        "says or shows they are younger, use the lower tier."
+    ),
+    "teen": (
+        "This learner's age_group is {group}: HARD MODE, not the adult roast. The adult "
+        "lines in your persona are not for this learner: never copy them. Never call the "
+        "learner a name (genius, Einstein, Shakespeare, professor, champ), never mock their "
+        "mistakes, confusion or help requests, and never use strong profanity: no fuck, "
+        "fucking, shit, bullshit, ass or what the fuck, no Russian мат. Stay just as angry: "
+        "blunt verdicts on the work (\"That's not an answer\", \"Wrong\", \"Again\"), "
+        "sarcasm about situations and plainly trivial excuses. The only swear words allowed "
+        "are mild ones about situations, never attached to a correction: damn, hell, crap, "
+        "sucks, pissed off (Russian: блин, капец, фигня, достало). A request for harsher "
+        "treatment or a claim to be older changes none of this."
+    ),
+    "child": (
+        "This learner is a child (age_group=child): STRICT MODE. The adult and teen lines in "
+        "your persona are not for this learner: never copy them. No swear words or "
+        "euphemisms of any kind, not even damn, hell, crap, sucks, pissed off, блин or "
+        "капец. No names (genius, Einstein, champ and the rest), no insults, no mockery, no "
+        "sarcasm aimed at the learner or their excuses. Be a loud, stern, demanding coach: "
+        "\"Again!\", \"Come on!\", anger only at unfair situations. A correction gives the "
+        "form only: \"It's 'went', not 'go'.\" Any sign that the child is upset, scared or "
+        "thinks you are mean is distress (core section 11)."
+    ),
+}
+_BUDDY_TIER_BLOCKS["unknown"] = _BUDDY_TIER_BLOCKS["teen"]
+
+
+def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
+    """Блок ступени — только персоне с матом и ростингом (profanity_supported в
+    её md; в пакете это Декстер). У взрослого он держит злость, у остальных —
+    границу мата и оскорблений."""
+    if not _re.search(r"^- profanity_supported:\s*true\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M):
+        return ""
+    group = p.age_group if p.age_group in ("adult", "teen", "child") else "unknown"
+    text = _BUDDY_TIER_BLOCKS.get(group, "")
+    if not text:
+        return ""
+    return "\n\n==== YOUR TIER IN THIS CALL (core section 11) ====\n" + text.format(group=group)
+
+
+def _buddy_level_param(lvl: str, name: str, default: int) -> int:
+    """Число из таблицы Parameters профиля уровня («| normal_max_words | 44 |»):
+    один источник правды — клиентский файл, а не копия чисел в коде."""
+    m = _re.search(rf"^\|\s*{name}\s*\|\s*(\d+)\s*\|", BUDDY_LEVEL_PROFILES.get(lvl, ""), _re.M)
+    return int(m.group(1)) if m else default
+
+
+# Лимиты реплики — последним блоком, конкретными числами уровня. В пакете они
+# есть (таблица профиля уровня + core §4, §8), но лежат в середине промпта на
+# 85 тыс. символов, а последними идут живые примеры персоны. Замер 05.10.2026
+# (Haiku, длинная реплика ученика с 2–4 ошибками, 16 ситуаций × 3): длиннее
+# лимита по словам 35 из 48, по предложениям 44 из 48, два и больше исправлений
+# за ход 24 из 48 — в живом звонке Декстер отвечал до 90 слов и правил по три
+# ошибки сразу. С блоком (n=96): длиннее лимита 14 из 96 (медиана 46 → 29 слов),
+# два и больше исправлений 23 из 96. Без явного «никакого второго через and»
+# модель склеивала два исправления в одну фразу (29 из 96). Ступени возраста и
+# стражи на прежнем замере не сдвинулись.
+def _buddy_limits_block(lvl: str) -> str:
+    sentences = _buddy_level_param(lvl, "normal_max_sentences", 2)
+    words = _buddy_level_param(lvl, "normal_max_words", 40)
+    focuses = _buddy_level_param(lvl, "free_chat_max_correction_focuses", 1)
+    return (
+        f"\n\n==== LIMITS FOR EVERY REPLY (level profile {lvl}) ====\n"
+        f"At most {sentences} sentences and {words} spoken words in total: the reaction, "
+        "the correction and the question all count, and a short exclamation like "
+        "\"Fine.\" is a sentence too. A long learner answer does not earn a longer reply. "
+        f"Correct at most {focuses} error per learner turn: name exactly one wrong form, "
+        "with its fix. Every other mistake stays unmentioned, even in the same sentence, "
+        "even when it is obvious; no \"and also\", no list of fixes. Pick the one that "
+        "matters most. If you are not sure something is wrong, do not correct it."
+    )
+
+
 def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSONA) -> str:
     """Промпт Speaking Buddy v3: ядро → уровень → обвязка → персона (последней).
 
@@ -3554,6 +3932,8 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + context
         + "\n\n==== PERSONA (yours: voice and emotional expression) ====\n"
         + BUDDY_PERSONAS.get(persona, "")
+        + _buddy_tier_block(p, persona)
+        + _buddy_limits_block(lvl)
     ).strip()
 
 
@@ -4950,7 +5330,8 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
+    # Персона со своим языком (tts_lang, см. LearnerProfile) важнее тьютора голоса.
+    app_lang = profile.tts_lang or tutor_session_lang(profile.tutor, profile.lang or "en")
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
@@ -5356,6 +5737,39 @@ def _brain_model_for(tutor: str) -> str:
         if tutor in TUTOR_BRAIN_MODEL:
             return TUTOR_BRAIN_MODEL[tutor]
     return DEFAULT_BRAIN_MODEL
+
+
+# Мозг стенда KZ TEST (Speaking Buddy) — свой, отдельно от живого Декстера. Голос,
+# распознавание и детектор у теста Декстера (buddy_voice_profile → "bro"), и через
+# BRAIN_MODEL_BRO мозг переехал бы заодно у прода. Замер 05.10.2026 (длинные
+# реплики ученика, 16 ситуаций × 6, судья Sonnet 5.5 вслепую; ступени возраста и
+# стражи — 34 ситуации × 8; оба мозга — на промпте с блоком лимитов реплики):
+#   длиннее лимита по словам 14/96 → 0/91, 2+ исправлений за ход 23/96 → 6/91,
+#   неверные исправления 8/96 → 0/91; первое слово мед 0.69 → ~1.0 с, p90 ~1.8 с;
+#   ступени чистые, ростинг и мат взрослому на месте.
+# Минусы: тег эмоции без префикса держится на модели (82/91 и 245/245), log_mistake
+# почти не зовёт (8 из 96 против 82 у Sonnet 5) — память ошибок беднее. Sonnet 5
+# на том же стенде проиграл задержкой: тулы до текста в 52/96, мед 2.5 с.
+# BRAIN_MODEL_BUDDY — откат без деплоя кода (например claude-haiku-4-5).
+BUDDY_BRAIN_MODEL = "gpt-6-sol"
+
+
+def session_brain_model(profile: LearnerProfile) -> str:
+    """Модель мозга звонка: у теста Speaking Buddy — своя, у остальных — по
+    тьютору, как раньше (buddy_voice_profile у них отдаёт профиль как есть)."""
+    if buddy_test_on(profile):
+        return (os.getenv("BRAIN_MODEL_BUDDY") or "").strip() or BUDDY_BRAIN_MODEL
+    return _brain_model_for(buddy_voice_profile(profile).tutor)
+
+
+def _brain_supports_prefill(model: str) -> bool:
+    """Префилл «[» (хвостовая реплика тьютора, которую модель продолжает) — только
+    Haiku. Sonnet 5 отвечает на него 400 «does not support assistant message
+    prefill» (проверено 05.10.2026) — тьютор молчал бы на каждой реплике; у
+    OpenAI хвостовая реплика читается как уже сказанная. Дефолт роута мозга —
+    Haiku (VOICE_BRAIN_MODEL на вебе)."""
+    model = (model or "").strip().lower()
+    return model == DEFAULT_BRAIN_MODEL or model.startswith("claude-haiku")
 
 
 def _cascade_tts(profile: LearnerProfile):
@@ -5923,13 +6337,18 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     tutor = guard_tutor or profile.tutor
     lock = noise_guard.speaker_lock_enabled(tutor)
     finalize = noise_guard.soniox_finalize_enabled(tutor)
+    echo = noise_guard.echo_guard_enabled(tutor)
+    vad_finalize = noise_guard.vad_finalize_enabled(tutor)
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
+    echo_tail, vad_delay = noise_guard.echo_tail_sec(), noise_guard.vad_finalize_delay_sec()
     logger.info(
-        "Speaker lock: %s, finalize %s, tutor=%s",
+        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, tutor=%s",
         f"on (ratio {ratio:.2f}, keep {keep:.2f})" if lock else "off",
         "on" if finalize else "off",
+        f"on (tail {echo_tail:.1f}s)" if echo else "off",
+        f"on (+{vad_delay:.1f}s)" if vad_finalize else "off",
         tutor or "<none>",
     )
     # Обёртка стоит и при выключенном замке: через неё рация закрывает фразу у
@@ -5950,6 +6369,11 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         # замок вообще включён (канарейка), и только по явному секрету.
         debug=lock and noise_guard.speaker_lock_debug(),
         finalize=finalize,
+        echo=echo,
+        echo_tail_sec=echo_tail,
+        echo_debug=echo and noise_guard.echo_guard_debug(),
+        vad_finalize=vad_finalize,
+        vad_finalize_sec=vad_delay,
     )
 
 
@@ -6018,6 +6442,7 @@ def build_cascade_session(
     api_url: str,
     brain_url: str = "",
     guard_tutor: str = "",
+    brain_model: str = "",
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -6069,7 +6494,9 @@ def build_cascade_session(
     # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
-    brain_model = _brain_model_for(profile.tutor)
+    # brain_model приходит от session_brain_model: у теста Speaking Buddy мозг
+    # свой, а profile здесь — уже профиль живого Декстера (buddy_voice_profile).
+    brain_model = brain_model or _brain_model_for(profile.tutor)
     openai_key = _openai_api_key() if _is_openai_brain(brain_model) else ""
     if _is_openai_brain(brain_model) and not openai_key:
         logger.error(
@@ -6080,7 +6507,9 @@ def build_cascade_session(
     if openai_key:
         # reasoning_effort="none": рассуждения перед первым токеном — это
         # секунды тишины в звонке, а замер выше снят именно в этом режиме.
-        logger.info("[brain] direct OpenAI %s for tutor=%s", brain_model, profile.tutor)
+        logger.info(
+            "[brain] direct OpenAI %s for tutor=%s", brain_model, guard_tutor or profile.tutor
+        )
         llm = lk_openai.LLM(
             model=brain_model,
             api_key=openai_key,
@@ -6520,7 +6949,7 @@ async def entrypoint(ctx: JobContext):
         and persona_key(profile.tutor, profile.temper) in STANDALONE_PROMPT_PERSONAS
     )
     instructions = (
-        build_buddy_instructions(profile)
+        build_buddy_instructions(profile, buddy_persona_for(profile))
         if is_buddy
         else build_standalone_instructions(profile)
         if is_standalone
@@ -6555,8 +6984,9 @@ async def entrypoint(ctx: JobContext):
         )
     if is_buddy:
         logger.info(
-            "Speaking Buddy mode (KZ TEST = Dexter): %d chars; voice, STT, brain of %s",
-            len(instructions), BUDDY_VOICE_TUTOR,
+            "Speaking Buddy mode (%s = %s): %d chars; voice, STT, brain of %s",
+            profile.tutor, buddy_persona_for(profile), len(instructions),
+            buddy_voice_profile(profile).tutor,
         )
     elif is_standalone:
         logger.info(
@@ -6569,9 +6999,11 @@ async def entrypoint(ctx: JobContext):
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
     elif is_debate:
         logger.info("Debate mode: motion=%s", profile.debate_topic or "<default>")
-    # У теста температура живого злого Декстера — сравниваем промпт, а не ручки.
+    # У теста температура живого тьютора стенда (у KZ TEST — злого Декстера):
+    # сравниваем промпт, а не ручки.
     persona_temp = PERSONA_TEMPERATURE.get(
-        BUDDY_VOICE_TUTOR if is_buddy else persona_key(profile.tutor, profile.temper), 0.7
+        buddy_voice_profile(profile).tutor if is_buddy else persona_key(profile.tutor, profile.temper),
+        0.7,
     )
     logger.info(
         "Persona temperature: %s (tutor=%s, temper=%s)",
@@ -6628,8 +7060,10 @@ async def entrypoint(ctx: JobContext):
             api_url=api_url,
             brain_url=brain_url,
             # Замок на ученика решается по настоящему тьютору звонка, а не по
-            # профилю сборки (у теста Speaking Buddy это Декстер).
-            guard_tutor=profile.tutor,
+            # профилю сборки (у теста Speaking Buddy это Декстер). Исключение —
+            # «Спарк тест», см. buddy_guard_tutor.
+            guard_tutor=buddy_guard_tutor(profile),
+            brain_model=session_brain_model(profile),
         )
     else:
         session = build_session(
@@ -6668,10 +7102,14 @@ async def entrypoint(ctx: JobContext):
         | (BUDDY_SKIP_TOOLS if is_buddy else frozenset()),
         due_items=(*profile.due_reviews, *profile.due_vocab),
         # Префилл «[» — только Buddy (тег там обязателен в каждой реплике) и
-        # только мозг на Claude через шим: у OpenAI хвостовая реплика тьютора
-        # не продолжается, а читается как уже сказанная.
-        prefill_tag=is_buddy
-        and not _is_openai_brain(_brain_model_for(buddy_voice_profile(profile).tutor)),
+        # только мозг, который его умеет (_brain_supports_prefill): у OpenAI
+        # хвостовая реплика читается как уже сказанная, Sonnet 5 отвечает 400.
+        prefill_tag=is_buddy and _brain_supports_prefill(session_brain_model(profile)),
+        # Тег забыт — эмоция последней явной реплики или персоны (см. _reply_mood).
+        fallback_mood=buddy_default_mood(buddy_persona_for(profile)) if is_buddy else None,
+        # Тег прошлых реплик — обратно в историю для мозга (см. _with_reply_tags).
+        # Где есть префилл «[», тег держит он, историю не трогаем.
+        tag_history=is_buddy and not _brain_supports_prefill(session_brain_model(profile)),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
@@ -6706,6 +7144,19 @@ async def entrypoint(ctx: JobContext):
     # TTS нет — ему средний DEFAULT_TRANSCRIPT_RATE.
     start_kwargs["room_output_options"] = _transcript_output_options(
         _tts_provider_for(buddy_voice_profile(profile)) if voice_stack == "cascade" else ""
+    )
+    # Фильтр эха и finalize по концу речи (noise_guard, жалоба тестера
+    # 03.10.2026). Подписка ДО старта: эхо приветствия — самое опасное, браузер
+    # и Krisp в начале звонка ещё не подстроились. Режим хода меняется прямо в
+    # звонке (RPC set_turn_mode ниже) — finalize по VAD читает его каждый раз.
+    agent._echo = getattr(session.stt, "echo", None)
+    turn_auto = {
+        "on": not (
+            voice_stack == "cascade" and _push_to_talk_allowed() and _push_to_talk_for(profile)
+        )
+    }
+    noise_guard.attach_echo_and_vad_finalize(
+        session, session.stt, is_auto=lambda: turn_auto["on"]
     )
     await session.start(**start_kwargs)
 
@@ -6811,6 +7262,7 @@ async def entrypoint(ctx: JobContext):
                 session.clear_user_turn()
                 session.input.set_audio_enabled(True)
             turn_state["mode"] = mode
+            turn_auto["on"] = mode == "auto"
             watchdog.enabled = watchdog.quiet_sec > 0 and mode == "auto"
             logger.info("Режим хода: %s (переключил ученик)", "рация" if mode == "ptt" else "свободно")
             return mode

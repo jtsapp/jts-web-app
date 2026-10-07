@@ -57,15 +57,17 @@ const BASE_TUTORS = [
 
 // Джарвис — не тьютор, а ассистент, и по всем осям он исключение из тройки выше:
 //
-//  - face: 'orb' вместо avatar-картинки. Лица у него нет, есть светящаяся сфера
-//    (src/tutor/orbEngine.js), и карточка рисует её живой канвой. Поле читают
-//    TutorChoosePage/TutorVoiceChatPage/TutorDashboardPage (через TutorThumb);
-//    у остальных троих поля нет, и они по-прежнему идут через avatar/figure.
+//  - face: 'orb' вместо avatar-картинки — только в значках: карточка выбора,
+//    аватарка в шапке (TutorThumb, TutorStatus). Своей картинки у стенда нет, и
+//    светящаяся сфера (src/tutor/orbEngine.js) отличает его от живых тьюторов.
+//    В звонке и на дашборде у него то же лицо с эмоциями, что у всех: с 25.09
+//    на стенде обкатывается Speaking Buddy (новый Декстер), агент шлёт ему
+//    эмоции тегом, а орб их показать не мог — по нему не видно, злится тьютор
+//    или сочувствует.
 //  - traitColors — палитра самого орба (тыл → фронт), чтобы чипы не выпадали
 //    из карточки.
-//  - mood здесь не используется: записи 'jarvis' нет в TUTOR_MOODS агента,
-//    поэтому сканер эмоций для него молчит, а состояния орба (idle / listening /
-//    thinking / speaking) приходят из самого звонка, не из тега модели.
+//  - mood — родная эмоция Декстера из пакета (default_emotion: angry): с неё
+//    начинается круг эмоций на дашборде.
 //  - голос — ВРЕМЕННО OpenAI TTS, был Fish Audio (TUTOR_PROVIDER в
 //    app/api/tutor-tts/route.js).
 //
@@ -94,7 +96,7 @@ const JARVIS = {
   face: 'orb',
   assistant: true,
   traitColors: ['#c24e00', '#ff8c37', '#e0a34a'],
-  mood: 'idle',
+  mood: 'angry', // злой — это Декстер Speaking Buddy
   tempers: TEMPERS,
   defaultTemper: 'calm',
 }
@@ -117,12 +119,32 @@ const AIZERE = {
   mood: 'idle', // спокойная
 }
 
+// «Спарк тест» — второе dev-only место для тестов Speaking Buddy, под тем же
+// флагом JARVIS_ENABLED (05.10.2026). За ним тот же бот, что за KZ тестом
+// (пакет v3.4, мозг GPT-6 Sol), но персона — новый Спарк из пакета, а голос,
+// распознавание и детектор — живого Спарка (BUDDY_STANDS в agent/agent.py).
+// Карточка ради эмоций: у KZ теста вместо лица шар, и эмоции, которые агент
+// шлёт, на экране не видны. Здесь face не задан — в звонке обычное лицо
+// Speaking Buddy с реакциями.
+//  - картинки Спарка: своих у стенда нет, и он ими честно и звучит;
+//  - нрава 18+ нет (tempers не заведены): в пакете тумблера нет, характер вшит;
+//  - визитки (TUTOR_GREETING) нет — кнопка «послушать» в карусели не рисуется.
+// Ключ зашит в token route (TUTOR_KEY_TO_PERSONA) и SPARK_TEST_STAND агента.
+const SPARK_TEST = {
+  key: 'sparktest',
+  name: 'Спарк тест',
+  avatar: '/tutor/tutor-spark.png',
+  figure: '/tutor/pick/spark.webp',
+  traitColors: ['#ffa200', '#f12929', '#51a41e'],
+  mood: 'happy',
+}
+
 // Айзере и dev-only тьюторы идут в хвосте: на порядок BASE_TUTORS завязаны
 // мини-карусель в MascotCard и дефолты.
 export const TUTORS = [
   ...BASE_TUTORS,
   AIZERE,
-  ...(JARVIS_ENABLED ? [JARVIS] : []),
+  ...(JARVIS_ENABLED ? [JARVIS, SPARK_TEST] : []),
 ]
 
 // Карточки экрана выбора. Порядок — из макета (Декстер, Луна, Спарк, Айзере) и

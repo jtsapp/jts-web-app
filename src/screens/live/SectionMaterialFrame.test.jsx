@@ -4,7 +4,7 @@
 // наверх, переход на стадию уходит вниз — тем же контрактом, что у рабочей
 // области преподавателя в web-admin (см. lessonStages.js).
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createRef, useLayoutEffect } from 'react'
+import { StrictMode, createRef, useEffect, useLayoutEffect } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
@@ -433,6 +433,29 @@ describe('SectionMaterialFrame — новый документ в рамке', (
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['s1'] }, '*')
   })
 
+  // Указка «Перенести ученика сюда» на другой материал: страница уже стоит,
+  // рамка нового материала монтируется в обновлении, и указка уходит в неё в
+  // том же коммите. В разработке StrictMode повторяет эффекты только что
+  // смонтированной рамки (не страницы) — сброс на повторе стирал указку (стенд 06.10).
+  it('повтор эффектов новой рамки (StrictMode) не стирает реплей, отданный в том же коммите', async () => {
+    vi.useFakeTimers()
+    const events = [{ selector: '[data-tid="voc-match"]', eventType: 'point', value: null }]
+    const ref = createRef()
+    function Page({ open }) {
+      useEffect(() => { if (open) ref.current.replay(events) }, [open])
+      return open ? <SectionMaterialFrame ref={ref} lessonId={14} token="t" material={MATERIAL} isStaff={false} /> : null
+    }
+    const tree = (open) => <StrictMode><I18nProvider><Page open={open} /></I18nProvider></StrictMode>
+    const { container, rerender } = render(tree(false))
+
+    act(() => { rerender(tree(true)) })
+    const iframe = container.querySelector('iframe')
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await settle(iframe)
+
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+  })
+
   // Поздний вход ученика включает страницу следования без перезагрузки: ответ
   // на просьбу догнать класс, ушедший в прежний документ, пропал бы вместе с ним.
   it('включилась страница следования — реплей ждёт загрузки новой страницы', async () => {
@@ -551,3 +574,164 @@ describe('SectionMaterialFrame — урок файла открывается п
   })
 })
 
+
+// Лоадер рамки (видео владельца 03.10): после выбора урока и после «Перенести
+// ученика сюда» рамка секундами стояла пустым белым листом, а затем на глазах
+// проигрывала поток преподавателя — стадии мелькали одна за другой. Лоадер
+// закрывает рамку, пока она грузится и пока мост проигрывает пачку; одиночное
+// живое действие его не вызывает.
+describe('SectionMaterialFrame — лоадер', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const cover = (container) => container.querySelector('.lw-frame-cover')
+  const shown = (container) => !cover(container).classList.contains('is-hidden')
+  const replayState = (busy, size) => message({ source: 'jts-bridge', type: 'replay', busy, size })
+  const EVENTS = [
+    { selector: '#a', eventType: 'click', value: null },
+    { selector: 'window', eventType: 'stage', value: '2' },
+    { selector: 'window', eventType: 'scroll', value: '0' },
+  ]
+
+  it('пока рамка грузится — «Загружаем урок…», после осадки скрыт', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame()
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+    expect(container.querySelector('.lw-material-frame').getAttribute('aria-busy')).toBe('true')
+
+    await settle(iframe)
+
+    expect(shown(container)).toBe(false)
+    expect(cover(container).getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelector('.lw-material-frame').getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('пачка показа, дождавшаяся загрузки, — «Переходим к преподавателю…» до сигнала моста «свободен»', async () => {
+    vi.useFakeTimers()
+    const { ref, container, iframe } = renderFrame({ follow: true })
+    act(() => { ref.current.replay(EVENTS) })
+
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Переходим к преподавателю')
+
+    await replayState(true, 3)
+    expect(shown(container)).toBe(true)
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('без сигнала моста (старый бэкенд) лоадер догона снимается сам, по длине пачки', async () => {
+    vi.useFakeTimers()
+    const { ref, container, iframe } = renderFrame({ follow: true })
+    act(() => { ref.current.replay(EVENTS) })
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+
+    await act(async () => { vi.advanceTimersByTime(EVENTS.length * 80 + 1000) })
+
+    expect(shown(container)).toBe(false)
+  })
+
+  it('одиночное живое действие лоадер не показывает', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+
+    await replayState(true, 1)
+    expect(shown(container)).toBe(false)
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('снимок осевшей рамке («Слушаем вместе» включили) — лоадер на время проигрывания', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+
+    await replayState(true, 12)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Переходим к преподавателю')
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('восстановление ответов (F5) держит «Загружаем урок…» и после осадки — до «свободен»', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    await replayState(true, -1)
+
+    await settle(iframe)
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+
+    await replayState(true, 40)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+    await replayState(false, 0)
+    expect(shown(container)).toBe(false)
+  })
+
+  it('перезагрузка рамки (указка) — лоадер снова', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender, iframe } = renderFrame({ follow: true })
+    await settle(iframe)
+    expect(shown(container)).toBe(false)
+
+    rerender(frame({ ref, follow: true, reloadToken: 1 }))
+
+    expect(shown(container)).toBe(true)
+    expect(cover(container).textContent).toContain('Загружаем урок')
+  })
+
+  it('видео/ссылка без моста — лоадер до загрузки рамки', async () => {
+    const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
+    const { container } = render(frame({ material: video }))
+    expect(shown(container)).toBe(true)
+
+    await act(async () => { container.querySelector('iframe').dispatchEvent(new Event('load')) })
+
+    expect(shown(container)).toBe(false)
+  })
+})
+
+// Под лоадером догона рамка проигрывает поток преподавателя и проходит стадии
+// одну за другой; «Темы» справа видны и мигали тем же списком (стенд 04.10).
+// Пока рамка закрыта, наверх уходит только итог — последняя стадия.
+describe('SectionMaterialFrame — стадии под лоадером', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const replayState = (busy, size) => message({ source: 'jts-bridge', type: 'replay', busy, size })
+  const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
+
+  it('проигрывание пачки — наверх только последняя стадия, когда лоадер ушёл', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { iframe } = renderFrame({ follow: true, onStage })
+    await settle(iframe)
+    onStage.mockClear()
+
+    await replayState(true, 40)
+    await stage(2)
+    await stage(1)
+    await stage(4)
+    await stage(1)
+    expect(onStage).not.toHaveBeenCalled()
+
+    await replayState(false, 0)
+
+    expect(onStage).toHaveBeenCalledTimes(1)
+    expect(onStage).toHaveBeenCalledWith({ index: 1, total: 7 }, { own: false })
+  })
+
+  it('пока рамка открыта, стадии уходят сразу, как раньше', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { iframe } = renderFrame({ follow: true, onStage })
+    await settle(iframe)
+    onStage.mockClear()
+
+    await stage(3)
+
+    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { own: false })
+  })
+})
