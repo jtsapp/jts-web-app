@@ -38,9 +38,10 @@ services:
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
-      # Кэш озвучки /api/tts — сервис redis из compose.yaml. Не секрет, а
-      # внутреннее имя сервиса, поэтому дефолт здесь, а не в GitLab.
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # Кэш озвучки /api/tts — общий для dev и прода Redis из
+      # compose-redis.yaml (имя tts-redis в сети jts-tts-redis). Не секрет,
+      # поэтому дефолт здесь, а не в GitLab.
+      REDIS_URL: ${REDIS_URL:-redis://tts-redis:6379}
       TTS_CACHE_TTL_DAYS: ${TTS_CACHE_TTL_DAYS:-90}
       AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
       AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION}
@@ -68,10 +69,19 @@ services:
     restart: always
     depends_on:
       - postgres
-      # Порядок старта, не готовность: пока Redis не принял соединение, кэш
-      # просто промахивается (src/lib/redis.js), звук всё равно есть.
-      - redis
     ports:
       - ${APP_PORT}:3000
     mem_limit: 1g
     memswap_limit: 2g
+    # default — своя сеть стенда (postgres); tts — общая с Redis кэша озвучки.
+    # Раз сети перечислены явно, default обязан быть в списке, иначе web
+    # потеряет postgres.
+    networks:
+      - default
+      - tts
+# Внешняя: её создаёт CI до деплоя (.gitlab-ci.yml). Локальный
+# `docker compose up` без неё не стартует — `docker network create jts-tts-redis`.
+networks:
+  tts:
+    name: jts-tts-redis
+    external: true
