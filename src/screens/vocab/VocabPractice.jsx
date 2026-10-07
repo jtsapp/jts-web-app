@@ -163,7 +163,7 @@ function CorrectReveal({ word, lang, t, speak, token, note }) {
           </div>
           <div className="vp-reveal-acts">
             {speak ? (
-              <button type="button" className="vp-spk" onClick={() => speak(word.word)} aria-label={t('vocab.lesson.listen')}>
+              <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })} aria-label={t('vocab.lesson.listen')}>
                 <IconSpeaker />
               </button>
             ) : null}
@@ -260,6 +260,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     initVoices()
     ttsSpeak(text, {
       rate: opts?.slow ? 0.65 : undefined,
+      ipa: opts?.ipa,
       onNoVoice: () => {
         setToast(t('vocab.lesson.noVoice'))
         speakProp?.(text)
@@ -391,7 +392,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
             {card.ipa ? <div className="vp-study__ipa">/{String(card.ipa).replace(/^\/|\/$/g, '')}/</div> : null}
             <div className="vp-study__tr">{tr}</div>
             {speak && card.word ? (
-              <button type="button" className="vp-spk" onClick={() => speak(card.word)} aria-label={t('vocab.lesson.listen')}>
+              <button type="button" className="vp-spk" onClick={() => speak(card.word, { ipa: card.ipa })} aria-label={t('vocab.lesson.listen')}>
                 <IconSpeaker />
               </button>
             ) : null}
@@ -474,7 +475,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
                       <button
                         type="button"
                         className="vp-spk"
-                        onClick={() => speak(w.word)}
+                        onClick={() => speak(w.word, { ipa: w.ipa })}
                         aria-label={t('vocab.lesson.listen')}
                       >
                         <IconSpeaker />
@@ -586,7 +587,7 @@ function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
         <div className="w">
           {word.word}
           {speak ? (
-            <button type="button" className="vp-spk" onClick={() => speak(word.word)}>
+            <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })}>
               <IconSpeaker />
             </button>
           ) : null}
@@ -727,10 +728,10 @@ function DictationUI({ word, lang, t, speak, token, onDone }) {
   return (
     <>
       <p className="vp-howto">{t('vocab.prac.askListen')}</p>
-      <button type="button" className="vp-listen-big" onClick={() => speak(word.word)} aria-label={t('vocab.lesson.listen')}>
+      <button type="button" className="vp-listen-big" onClick={() => speak(word.word, { ipa: word.ipa })} aria-label={t('vocab.lesson.listen')}>
         <IconSpeaker size={28} />
       </button>
-      <button type="button" className="vp-slow" onClick={() => speak(word.word, { slow: true })}>
+      <button type="button" className="vp-slow" onClick={() => speak(word.word, { slow: true, ipa: word.ipa })}>
         {t('vocab.prac.listenSlow')}
       </button>
       <input
@@ -777,7 +778,7 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
         <div className="w">
           {word.word}
           {speak ? (
-            <button type="button" className="vp-spk" onClick={() => speak(word.word)}>
+            <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })}>
               <IconSpeaker />
             </button>
           ) : null}

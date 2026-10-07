@@ -64,10 +64,14 @@ export function initVoices() {
   window.speechSynthesis.onvoiceschanged = chooseVoices
 }
 
-// Омографы: в датасете у этих слов ровно один смысл (глагол), а TTS без
-// контекста читает более частую форму. Подменяем только одиночные слова —
-// примеры-предложения произносятся с контекстом.
+// Омографы: TTS без контекста читает более частую форму, поэтому одиночное
+// слово подменяем написанием нужного смысла (глагол). Примеры-предложения
+// произносятся с контекстом и не трогаются.
 const RESPELL = { read: 'reed', close: 'cloze', live: 'liv', tear: 'tare', bow: 'bough' }
+// Но смысл в каталоге бывает и другой: B1 L5 «live» — прилагательное «в
+// прямом эфире» /laɪv/, и подмена на «liv» читала его как глагол (ревью
+// 08.10.2026). Если IPA карточки говорит о другом смысле — не подменяем.
+const OTHER_SENSE = { live: /aɪ/, read: /r[eɛ]d/, close: /s$/, tear: /ɪə|ɪr/, bow: /əʊ|oʊ/ }
 let voiceWarned = false
 let speakTimer = null
 
@@ -107,9 +111,13 @@ function viaServer(text, { onStart, onEnd, onNoVoice }) {
 
 // Одиночное слово — через RESPELL (омографы), фраза — как есть: Soniox без
 // контекста ошибается в тех же словах, что и синтез устройства.
-function spokenForm(text) {
+function spokenForm(text, ipa) {
   const s = String(text).trim()
-  return /^[a-z'’-]+$/i.test(s) ? RESPELL[s.toLowerCase()] || text : text
+  if (!/^[a-z'’-]+$/i.test(s)) return text
+  const w = s.toLowerCase()
+  const sound = String(ipa || '').replace(/[/[\]ˈˌ]/g, '')
+  if (sound && OTHER_SENSE[w] && OTHER_SENSE[w].test(sound)) return text
+  return RESPELL[w] || text
 }
 
 // onNoVoice — колбэк для тоста «нет английского голоса» (в прототипе toast()).
@@ -122,7 +130,7 @@ export function speak(text, opts = {}) {
   // На сервере (SSR) звука нет и быть не может — ни браузерного, ни сетевого:
   // играть его некуда и некому.
   if (typeof window === 'undefined') return
-  const { accent = 'us', rate, onStart, onEnd } = opts
+  const { accent = 'us', rate, onStart, onEnd, ipa } = opts
   const gb = accent === 'gb'
   clearTimeout(speakTimer)
   try {
@@ -130,7 +138,7 @@ export function speak(text, opts = {}) {
   } catch {
     /* синтеза нет — гасить нечего */
   }
-  const started = playTts(spokenForm(text), {
+  const started = playTts(spokenForm(text, ipa), {
     voice: gb ? SONIOX_VOICE.gb : SONIOX_VOICE.us,
     // 0.96 синтеза устройства на слух — это 0.9 Soniox; «медленно» (0.65) упрётся
     // в нижнюю границу провайдера 0.7.
@@ -147,7 +155,7 @@ export function speak(text, opts = {}) {
 }
 
 // Запасной путь — прежний синтез устройства, логика прототипа без изменений.
-function speakDevice(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = {}) {
+function speakDevice(text, { accent = 'us', rate, onStart, onEnd, onNoVoice, ipa } = {}) {
   // Синтеза в браузере нет вовсе. Раньше здесь был молчаливый return, и до
   // серверной озвучки дело не доходило.
   if (!window.speechSynthesis) {
@@ -165,7 +173,7 @@ function speakDevice(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = 
     // Chrome отдаёт список голосов асинхронно — одна повторная попытка
     speakTimer = setTimeout(() => {
       chooseVoices()
-      if (voices.length) speakDevice(text, { accent, rate, onStart, onEnd, onNoVoice })
+      if (voices.length) speakDevice(text, { accent, rate, onStart, onEnd, onNoVoice, ipa })
       // Голосов нет и после повтора — устройство читать не умеет. Раньше
       // здесь был тост и тишина; отправляем на сервер, как и остальные два
       // случая.
@@ -188,10 +196,7 @@ function speakDevice(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = 
     viaServer(text, { onStart, onEnd, onNoVoice })
     return
   }
-  const single = /^[a-z'’-]+$/i.test(String(text).trim())
-  const u = new SpeechSynthesisUtterance(
-    single ? RESPELL[String(text).trim().toLowerCase()] || text : text,
-  )
+  const u = new SpeechSynthesisUtterance(spokenForm(text, ipa))
   u.lang = gb ? 'en-GB' : 'en-US'
   u.voice = v
   u.rate = typeof rate === 'number' ? rate : 0.96

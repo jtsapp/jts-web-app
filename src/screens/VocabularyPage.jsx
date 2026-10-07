@@ -119,10 +119,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     setTimeout(() => setToast(''), 2200)
   }, [])
 
+  // ipa — чтобы омограф читался в смысле карточки (live «в прямом эфире»
+  // /laɪv/ — не глагол /lɪv/, см. audio.js).
   const speak = useCallback(
-    (text) => {
+    (text, opts) => {
       initVoices()
-      ttsSpeak(text, { onNoVoice: () => flash(t('vocab.lesson.noVoice')) })
+      ttsSpeak(text, { ipa: opts?.ipa, onNoVoice: () => flash(t('vocab.lesson.noVoice')) })
     },
     [flash, t],
   )
@@ -463,7 +465,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
               <span
                 className="vp-spk"
                 role="presentation"
-                onClick={(e) => { e.stopPropagation(); speak(w.word) }}
+                onClick={(e) => { e.stopPropagation(); speak(w.word, { ipa: w.ipa }) }}
               ><IconSpeaker /></span>
             </button>
           ))}
@@ -485,7 +487,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
             </div>
             {topMiss.map((w) => (
               <div className="vp-top3-row" key={w.key || w.word}>
-                <button type="button" className="vp-spk" onClick={() => speak(w.word)} aria-label={t('vocab.lesson.listen')}>
+                <button type="button" className="vp-spk" onClick={() => speak(w.word, { ipa: w.ipa })} aria-label={t('vocab.lesson.listen')}>
                   <IconSpeaker />
                 </button>
                 <b>{w.word}</b>
@@ -764,7 +766,7 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
               <button
                 type="button"
                 className="vp-spk vp-pcard-spk"
-                onClick={() => speak(card.en)}
+                onClick={() => speak(card.en, { ipa: card.ipa })}
                 aria-label={t('vocab.speak')}
               >
                 <IconSpeaker />
@@ -860,7 +862,7 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
               <span
                 className="vp-spk"
                 role="presentation"
-                onClick={(e) => { e.stopPropagation(); speak(w.word) }}
+                onClick={(e) => { e.stopPropagation(); speak(w.word, { ipa: w.ipa }) }}
               ><IconSpeaker /></span>
             </div>
             <div className="tr">{trOf(w, lang)}</div>
@@ -896,7 +898,7 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
               </>
             )}
             <div className="macts">
-              <button type="button" className="vp-btn ghost" onClick={() => speak(detail.word)}>
+              <button type="button" className="vp-btn ghost" onClick={() => speak(detail.word, { ipa: detail.ipa })}>
                 <IconSpeaker /> {t('vocab.listenWord')}
               </button>
               <button type="button" className="vp-btn" onClick={() => speak(trOf(detail, lang))}>
