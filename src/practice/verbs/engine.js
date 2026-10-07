@@ -4,9 +4,15 @@
 //
 // Порт сверяется с оракулом (__fixtures__/oracle.json), который посчитали
 // САМИ функции прототипа: красный engine.test.js значит, что разъехался порт,
-// и чинить надо его. Поэтому странности прототипа сохранены как есть —
-// например, распознанное сверяется ПОЗИЦИОННО («um be was been» — ноль из
-// трёх): так оно работает у студентов прототипа, и так же должно у нас.
+// и чинить надо его. Поэтому странности прототипа сохранены как есть — кроме
+// тех, где верный ответ засчитывался неверным (ревью 08.10.2026): одно
+// лишнее слово в начале речи («um be was been» — ноль из трёх), созвучия
+// вроде read → «red», цифры вместо числительных, «were/was» на письме и
+// кириллическая буква в латинском слове. Там порт расходится с оракулом
+// намеренно, и только в сторону «засчитать» — расхождения перечислены в
+// engine.test.js.
+
+import { latinLookalikes } from '../../lib/latinLookalikes.js'
 
 export const LEVELS = ['A1', 'A2', 'B1']
 export const MODES = ['repeat', 'gap', 'write', 'sentence', 'fix']
@@ -153,13 +159,99 @@ export function progressKey(mode, formCount, level) {
   return `practice-v4-${mode}-${formCount}-${level}`
 }
 
+// Цифры распознаватель пишет вместо числительных: «eat 8 eaten», «1» за won.
+// Прототип вырезал их вместе с прочими не-буквами, и форма пропадала.
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
 /** Слова расшифровки: только латиница и апостроф, остальное — пробел. */
 export function tokens(s) {
   return String(s)
     .toLowerCase()
+    .replace(/\d+/g, (n) => ` ${NUMBER_WORDS[Number(n)] || ''} `)
     .replace(/[^a-z\s']/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
+}
+
+// Созвучия сверх ALIASES прототипа (ревью 08.10.2026): read в прошедшем
+// звучит как «red», write — как «right», и распознаватель пишет более частое
+// слово. Часть — настоящие омофоны, часть — то, что живой Chrome записал на
+// чистое произношение (eaten → Eden, win → when, threw → true). Ни одно не
+// совпадает с другой формой того же глагола: «lead» за led нельзя — это уже
+// ошибка ученика.
+const HOMOPHONES = {
+  be: ['bee'],
+  been: ['bean', 'bin'],
+  read: ['red', 'reed'],
+  write: ['right', 'rite'],
+  wrote: ['rote'],
+  hear: ['here'],
+  heard: ['herd'],
+  meet: ['meat'],
+  threw: ['through', 'thru', 'true'],
+  blew: ['blue'],
+  flew: ['flu', 'flue'],
+  grown: ['groan'],
+  thrown: ['throne'],
+  sell: ['cell'],
+  sent: ['cent', 'scent'],
+  rose: ['rows'],
+  made: ['maid'],
+  rode: ['road', 'rowed'],
+  eaten: ['eden'],
+  win: ['when'],
+  sink: ['sync'],
+  choose: ['chews'],
+  freeze: ['frees'],
+  steal: ['steel'],
+  break: ['brake'],
+  beat: ['beet'],
+  bite: ['byte'],
+  build: ['billed'],
+  find: ['fined'],
+  wear: ['where', 'ware'],
+  wore: ['war'],
+  worn: ['warn'],
+}
+
+const own = (o, k) => (Object.prototype.hasOwnProperty.call(o, k) ? o[k] : [])
+
+function heardAs(f, word, i, { mode, gap, aliases }) {
+  return (
+    word === f ||
+    own(aliases, f).indexOf(word) >= 0 ||
+    own(HOMOPHONES, f).indexOf(word) >= 0 ||
+    (f === 'was' && word === 'were') ||
+    (f === 'got' && word === 'gotten' && (mode === 'gap' ? gap === 2 : i === 2))
+  )
+}
+
+/**
+ * Сверка по порядку с пропусками: самая длинная общая подпоследовательность
+ * форм и слов. «um go went gone», «be was were been», «go go went gone» —
+ * лишнее слово больше не сдвигает все формы после него.
+ */
+function inOrder(expected, ts, opts) {
+  const n = expected.length
+  const m = ts.length
+  const best = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      const take = heardAs(expected[i], ts[j], i, opts) ? 1 + best[i + 1][j + 1] : 0
+      best[i][j] = Math.max(take, best[i + 1][j], best[i][j + 1])
+    }
+  }
+  const heard = new Array(n).fill(false)
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    if (heardAs(expected[i], ts[j], i, opts) && best[i][j] === 1 + best[i + 1][j + 1]) {
+      heard[i++] = true
+      j++
+    } else if (best[i][j + 1] === best[i][j]) j++
+    else i++
+  }
+  return heard
 }
 
 /**
@@ -167,28 +259,32 @@ export function tokens(s) {
  * расшифровки против i-й формы. Созвучия (buy ~ by, knew ~ new) засчитываются:
  * распознаватель пишет то, что чаще встречается, и студент тут не виноват.
  * were за was — всегда, gotten за got — только там, где это V3.
+ *
+ * Позиционная сверка роняла весь ответ из-за одного лишнего слова в начале:
+ * «um go went gone» — 0 из 3 (ревью 08.10.2026). Если позиционно попало не
+ * всё, сверяем по порядку с пропусками и берём лучший из двух счётов — так
+ * результат никогда не хуже прототипного и совпадает с ним, где выигрыша нет.
  */
 export function scoreTargets(expected, text, { mode, gap, aliases = {} } = {}) {
   const ts = tokens(text)
-  const results = []
-  let hits = 0
-  expected.forEach((f, i) => {
-    const word = ts[i] || ''
-    const alt = Object.prototype.hasOwnProperty.call(aliases, f) ? aliases[f] : []
-    const ok =
-      word === f ||
-      alt.indexOf(word) >= 0 ||
-      (f === 'was' && word === 'were') ||
-      (f === 'got' && word === 'gotten' && (mode === 'gap' ? gap === 2 : i === 2))
-    results.push({ form: f, heard: ok })
-    if (ok) hits++
-  })
-  return { hits, total: expected.length, results }
+  const opts = { mode, gap, aliases }
+  let heard = expected.map((f, i) => heardAs(f, ts[i] || '', i, opts))
+  const count = (list) => list.filter(Boolean).length
+  if (count(heard) < expected.length) {
+    const alt = inOrder(expected, ts, opts)
+    if (count(alt) > count(heard)) heard = alt
+  }
+  const results = expected.map((f, i) => ({ form: f, heard: heard[i] }))
+  return { hits: count(heard), total: expected.length, results }
 }
 
-/** Ответ к сравнению: регистр, пробелы вокруг «/» и финальный знак не важны. */
+/**
+ * Ответ к сравнению: регистр, пробелы вокруг «/» и финальный знак не важны.
+ * Кириллические двойники («с», «е», «о»…) сводятся к латинице: раскладку не
+ * переключили на одной букве — на экране «сame» и «came» неразличимы.
+ */
 export function normalizeAnswer(s) {
-  return String(s)
+  return latinLookalikes(String(s))
     .toLowerCase()
     .trim()
     .replace(/\s*\/\s*/g, '/')
@@ -199,11 +295,19 @@ export function answerOptions(v, index) {
   return formsOf(v)[index].split(/\s*\/\s*/).map(normalizeAnswer)
 }
 
-/** Годится любой вариант формы или все варианты через «/» в исходном порядке. */
+/**
+ * Годится любой вариант формы или все варианты сразу. Прототип принимал «все»
+ * только как «was/were» — в исходном порядке и через косую; «were/was» и
+ * «was, were» засчитывались ошибкой (ревью 08.10.2026). Теперь порядок и
+ * разделитель (/ , ; or пробел) не важны, но каждый вариант — ровно один раз.
+ */
 export function checkForm(value, v, index) {
   const val = normalizeAnswer(value)
   const variants = answerOptions(v, index)
-  return variants.indexOf(val) >= 0 || val === variants.join('/')
+  if (variants.indexOf(val) >= 0 || val === variants.join('/')) return true
+  if (variants.length < 2) return false
+  const parts = val.split(/\s*(?:[/,;]|\s+or\s+|\s+)\s*/).filter(Boolean)
+  return parts.length === variants.length && variants.every((x) => parts.includes(x))
 }
 
 /**

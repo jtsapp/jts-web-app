@@ -443,6 +443,44 @@ describe('после ревью', () => {
     expect(drill.getSnapshot().count).toBe(2)
   })
 
+  // Ревью 08.10.2026: короткое одиночное слово Chrome часто так и оставляет
+  // промежуточным (3 из 12 на живом распознавателе) — подпись под микрофоном
+  // показывала «was», а итог говорил «слова не распознаны».
+  it('пропуск: слово осталось промежуточным — засчитывается по нему', async () => {
+    const { drill, snap } = setup()
+    drill.setMode('gap')
+    drill.startAttempt('speech')
+    await flush()
+    const rec = FakeSR.last
+    rec.onstart()
+    rec.onresult({ results: [result('was', false)] })
+    drill.finishSpeaking()
+    await vi.advanceTimersByTimeAsync(1800) // onend так и не пришёл
+    expect(snap().result).toMatchObject({ kind: 'speech', score: { hits: 1, total: 1 }, text: 'was' })
+  })
+
+  it('«показать ответ» после верной проверки не затирает попадание', () => {
+    const { drill, snap, persisted } = setup()
+    drill.setMode('write')
+    drill.checkWritten(['was', 'been'])
+    expect(snap().scores.be).toMatchObject({ hits: 2, total: 2 })
+    drill.checkWritten(['was', 'been'], true)
+    expect(persisted).toHaveLength(1)
+    expect(snap().scores.be).toMatchObject({ hits: 2, total: 2 })
+    expect(snap().result).toMatchObject({ revealed: false, score: { hits: 2 } })
+  })
+
+  it('«без микрофона» у пропуска переводит ввод в ручной — «ещё раз» не упирается в отказ', async () => {
+    const denied = () => Promise.reject(Object.assign(new Error('x'), { name: 'NotAllowedError' }))
+    const { drill, snap } = setup({ env: { getUserMedia: denied } })
+    drill.setMode('gap')
+    drill.startAttempt('speech')
+    await flush()
+    expect(snap().notice.key).toBe('denied')
+    drill.fallbackManual()
+    expect(snap()).toMatchObject({ input: 'manual', result: { kind: 'manual' } })
+  })
+
   it('подпись «новый темп» не переживает остановку бита', () => {
     const { drill, snap } = setup()
     drill.togglePreview()

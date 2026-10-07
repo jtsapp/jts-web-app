@@ -125,9 +125,13 @@ export default function VerbsWritten({ drill, snap, data, token }) {
           <button type="submit" className="vb-btn">
             {t('verbs.check')}
           </button>
-          <button type="button" className="vb-btn vb-btn--ghost" onClick={() => check(true)}>
-            {t('verbs.revealAnswer')}
-          </button>
+          {/* После проверки верные формы и так стоят в разборе ниже, а
+              «показать ответ» затирал бы уже засчитанное (см. checkWritten). */}
+          {!result && (
+            <button type="button" className="vb-btn vb-btn--ghost" onClick={() => check(true)}>
+              {t('verbs.revealAnswer')}
+            </button>
+          )}
         </div>
       </form>
 
