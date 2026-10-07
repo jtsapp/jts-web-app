@@ -99,21 +99,24 @@ describe('Order — ответ строкой (b1.json)', () => {
     answer: "I don't mind waiting",
     why: 'mind + -ing.',
   }
-  const pick = (container, order) => {
-    const bank = container.querySelectorAll('.gr-word')
-    order.forEach((i) => fireEvent.click(bank[i]))
+  // Банк перемешан (см. shuffledIndexes в плеере) — фишки берём по тексту.
+  const pick = (container, words) => {
+    for (const w of words) {
+      const chip = [...container.querySelectorAll('.gr-word')].find((b) => b.textContent === w && !b.className.includes('used'))
+      fireEvent.click(chip)
+    }
     fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
   }
 
   it('верная сборка засчитывается', () => {
     const { container } = play(activity)
-    pick(container, [0, 1, 2, 3])
+    pick(container, ['I', "don't", 'mind', 'waiting'])
     expect(container.querySelector('.gr-slots').className).toMatch(/correct/)
   })
 
   it('неверная сборка показывает правильный порядок по словам', () => {
     const { container } = play(activity)
-    pick(container, [3, 2, 1, 0])
+    pick(container, ['waiting', 'mind', "don't", 'I'])
     const slots = container.querySelector('.gr-slots')
     expect(slots.className).toMatch(/wrong/)
     expect([...slots.querySelectorAll('.gr-slot-word')].map((b) => b.textContent)).toEqual([
