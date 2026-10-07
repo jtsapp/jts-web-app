@@ -52,7 +52,7 @@ export function stripPunct(sentence) {
 export function norm(s) {
   return String(s || "").toLowerCase()
     // Диакритика не различает ответ: «cafe» набирают без é (ревью 08.10.2026).
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[‘’“”]/g, "'")
     .replace(/[.,!?;:()"'—–-]/g, " ")
     .replace(/\s+/g, " ").trim();
