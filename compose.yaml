@@ -38,5 +38,33 @@ services:
     mem_limit: 512m
     volumes:
       - jts-web-app-data:/var/lib/postgresql
+  # Кэш озвучки /api/tts (src/lib/soniox-tts.js). Раньше он жил в /tmp
+  # контейнера web и пропадал на каждом деплое (CI делает up --force-recreate),
+  # а каждый промах — платный синтез Soniox. Здесь записи лежат в своём volume.
+  #
+  # Порт наружу НЕ пробрасываем: Redis без пароля, и видит его только web
+  # внутри сети compose. AOF раз в секунду — пересозданный контейнер поднимает
+  # кэш с диска. maxmemory + allkeys-lru: переполнился — выкинул давно не
+  # слушанные записи, а не упал. mem_limit с запасом над maxmemory — перезапись
+  # AOF делает fork.
+  redis:
+    image: 'redis:7-alpine'
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+      - --save
+      - ''
+      - --maxmemory
+      - ${TTS_REDIS_MAXMEMORY:-256mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    mem_limit: 512m
+    volumes:
+      - jts-web-app-redis:/data
 volumes:
   jts-web-app-data:
+  jts-web-app-redis:

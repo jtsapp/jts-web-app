@@ -745,6 +745,10 @@ JTS-бэкенд (`src/learning/lessonProgress.js`).
 - Neon Postgres: `src/lib/db/sql.js` → `getSql()` возвращает `null`, если
   `DATABASE_URL` не задан — вызывающий код обязан тихо деградировать
   (прогресс тогда живёт в localStorage). Никогда не бросать на импорте.
+- Redis (`compose.yaml`, сервис `redis`): только кэш озвучки `/api/tts`.
+  `src/lib/redis.js` → `getRedis()` = `null` без `REDIS_URL` (тогда кэш на
+  диске, как на локалке). Наружу не открыт. Брак синтеза сносится
+  `DELETE /api/tts?t=…` с заголовком `x-internal-key`.
 - Anthropic: `src/lib/anthropic.js` — голосовой «мозг» на Haiku 4.5 с prompt
   caching (три cache-breakpoint'а — не ломай их, иначе стоимость ×2.5),
   IELTS-грейдинг на Sonnet.
