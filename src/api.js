@@ -1407,6 +1407,9 @@ export async function saveWord(token, { word, translation, alternates, language 
   }
   if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
   dropCachedAuthGet('/mobile/lesson-vocab', token)
+  // «Мой словарь» читает именно /saved: без сброса первым показывался старый
+  // кэш, и слово из книги появлялось только после фонового обновления.
+  dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
   dropCachedAuthGet('/mobile/saved-words', token)
   return res.json().catch(() => ({}))
 }

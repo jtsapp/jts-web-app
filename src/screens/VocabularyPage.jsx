@@ -47,6 +47,15 @@ function exampleHtml(card, word = card.en || '') {
     .replace(/___+/g, word ? `<mark>${word}</mark>` : '___')
 }
 
+// Бэкенд отдаёт сохранённые слова от старых к новым (findByUserIdOrderByIdAsc),
+// а полоса «Мой словарь» показывает первые восемь: у ученика с 8+ словами
+// только что сохранённое (из книги, чтения, урока) не появлялось вовсе — это и
+// выглядело как «не получается добавить слово» (ревью 08.10.2026). Показываем
+// новые сверху.
+function newestFirst(data) {
+  return data && Array.isArray(data.words) ? { ...data, words: [...data.words].reverse() } : data
+}
+
 /**
  * Слово для пропуска в примере карточки. Пример — предложение её первого атома
  * (так его заполняет бэкенд), и ждёт оно слово атома: у «Father, mother» —
@@ -81,6 +90,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [activeLevel, setActiveLevel] = useState(null)
   const [lesson, setLesson] = useState(null)
   const [mine, setMine] = useState(null)
+  const [mineError, setMineError] = useState(false)
   const [practiceCards, setPracticeCards] = useState(null)
   const [practiceTitle, setPracticeTitle] = useState('')
   const [practiceBack, setPracticeBack] = useState('lesson')
@@ -167,12 +177,16 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     if (!token) return
     let alive = true
     openLessonVocab('saved', token, (data) => {
-      if (alive) setMine(data)
+      if (alive) setMine(newestFirst(data))
     })
       .then((data) => {
-        if (alive) setMine(data)
+        if (!alive) return
+        setMine(newestFirst(data))
+        setMineError(false)
       })
-      .catch(() => {})
+      // Ошибку не глотаем: без неё экран писал «Пока нет сохранённых слов»,
+      // хотя слова есть, а не загрузились.
+      .catch(() => alive && setMineError(true))
     return () => {
       alive = false
     }
@@ -275,9 +289,10 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         onExit={() => {
           refreshTopMiss()
           setLearnedTick((n) => n + 1)
-          if (practiceBack === 'mine') {
-            openLessonVocab('saved', token).then(setMine).catch(() => {})
-          }
+          // Перечитываем всегда, а не только после практики «Моего словаря»:
+          // из урока слово тоже можно сохранить закладкой, и полоса на главной
+          // оставалась старой до захода в «Мой словарь».
+          if (token) openLessonVocab('saved', token).then((d) => setMine(newestFirst(d))).catch(() => {})
           setScreen(practiceBack)
         }}
         speak={speak}
@@ -311,7 +326,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         speak={speak}
         flash={flash}
         onBack={() => setScreen('home')}
-        onChanged={setMine}
+        onChanged={(next) => setMine(newestFirst(next))}
         onPractice={() => {
           const cards = (mine?.words || []).map((w) => ({
             id: w.id,
@@ -457,7 +472,9 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
           <button type="button" className="vp-sec-arrow" onClick={openMine} aria-label="more">→</button>
         </div>
         <div className="vp-row">
-          {mineWords.length === 0 && <p className="vp-state">{t('vocab.lesson.empty')}</p>}
+          {mineWords.length === 0 && (
+            <p className="vp-state">{!mine && mineError ? t('vocab.home.mineError') : t('vocab.lesson.empty')}</p>
+          )}
           {mineWords.slice(0, 8).map((w) => (
             <button type="button" key={w.id || w.word} className="vp-mine-chip" onClick={openMine}>
               <b>{w.word}</b>
@@ -917,7 +934,9 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
             <input value={word} onChange={(e) => setWord(e.target.value)} />
             <label>{t('vocab.addTr')}</label>
             <input value={tr} onChange={(e) => setTr(e.target.value)} />
-            <button type="button" className="vp-btn wide" style={{ marginTop: 16 }} onClick={add}>{t('vocab.save')}</button>
+            {/* Без перевода сохранить нельзя (бэкенд его требует) — раньше
+                кнопка молча ничего не делала; теперь неактивна, пока поля пустые. */}
+            <button type="button" className="vp-btn wide" style={{ marginTop: 16 }} disabled={!word.trim() || !tr.trim()} onClick={add}>{t('vocab.save')}</button>
           </div>
         </div>
       )}
