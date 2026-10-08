@@ -52,7 +52,10 @@ describe('skillHighlights', () => {
     })
     const { strongest, weakest } = skillHighlights(ranked)
     expect(strongest.skill).toBe('grammar')
-    expect(weakest.percent).toBe(0)
+    // Слабейший — не «любой нулевой», а последний в рейтинге: среди ещё не
+    // тренированных навыков ничья по нулю решается порядком SKILLS, и vocab в нём
+    // последний. «Главная» показывает именно его.
+    expect(weakest).toEqual({ skill: 'vocab', percent: 0 })
   })
 
   it('слабейшего нет, если все навыки равны', () => {
@@ -61,7 +64,7 @@ describe('skillHighlights', () => {
     expect(skillHighlights(ranked)).toEqual({ strongest: ranked[0], weakest: null })
   })
 
-  it('пустой или кривой вход не роняет', () => {
+  it('не рейтинг (null) и пустой рейтинг — ни сильной, ни слабой стороны', () => {
     expect(skillHighlights(null)).toEqual({ strongest: null, weakest: null })
     expect(skillHighlights([])).toEqual({ strongest: null, weakest: null })
   })
@@ -130,6 +133,16 @@ describe('levelSummary', () => {
     expect(s.strongest).toBe(null)
     expect(s.weakest).toBe(null)
     expect(s.remaining).toBe(40)
+  })
+
+  it('с заданиями сильная и слабая сторона берутся из рейтинга навыков', () => {
+    const s = levelSummary('A1', {
+      grammar: { done: 50, firstTry: 45 },
+      listening: { done: 30, firstTry: 9 },
+    })
+
+    expect(s.strongest).toEqual({ skill: 'grammar', percent: 90 })
+    expect(s.weakest).toEqual({ skill: 'vocab', percent: 0 })
   })
 
   it('на C2 следующего уровня нет', () => {
