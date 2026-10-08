@@ -61,6 +61,38 @@ async function setup(lines = ['One.', 'Two.']) {
 }
 
 describe('useReadingVoice', () => {
+  // Ревью 08.10.2026: «Its heart is big too — like a small car!» звучало двумя
+  // голосами. Движок воркбука читает тире как смену говорящего (там это
+  // диалоги), а в текстах Чтения все 1175 тире — вставочные, диалогов нет.
+  it('предложение с тире читает один диктор, одним куском', async () => {
+    const line = 'Its heart is big too — like a small car!'
+    const { hook } = await setup([line])
+    act(() => hook.result.current.start())
+    expect(tts.calls.map((c) => c.text)).toEqual([line])
+    expect(new Set(tts.calls.map((c) => c.voice)).size).toBe(1)
+  })
+
+  it('с тире, Soniox упал: запасной синтез тоже не делит предложение', async () => {
+    const said = []
+    vi.stubGlobal('speechSynthesis', {
+      speaking: false,
+      paused: false,
+      getVoices: () => [],
+      speak: (u) => said.push(u.text),
+      cancel: () => {},
+      resume: () => {},
+      pause: () => {},
+      addEventListener: () => {},
+    })
+    tts.down = true
+    const { hook } = await setup(['Its heart is big too — like a small car!'])
+    act(() => hook.result.current.start())
+    // Синтез устройства ждёт голоса и идёт по таймерам — прокручиваем их.
+    await act(() => vi.advanceTimersByTimeAsync(8000))
+    expect(said.join(' ')).toContain('big too')
+    expect(said.join(' ')).toContain('small car')
+    expect(said.some((x) => /too\s*$/.test(x))).toBe(false)
+  })
   it('тап по слову посреди чтения не оставляет «Слушать» зависшим', async () => {
     const { hook, voice } = await setup()
     act(() => hook.result.current.start())
