@@ -136,8 +136,12 @@ function weekTutorSeconds(voiceRows, week) {
 function practiceAreas(rows) {
   const latest = new Map()
   for (const r of rows || []) {
-    const area = PRACTICE_AREA_BY_MODULE[r?.module]
-    if (!area) continue
+    // Словарь — обычный объект: по имени constructor, toString или __proto__ он
+    // отдал бы то, что лежит в прототипе, и это стало бы «разделом» ответа.
+    // Из хранилища такое имя сегодня не придёт (savePracticeState пускает только
+    // свои модули), но ответ не должен зависеть от того, что туда пишут.
+    if (!Object.hasOwn(PRACTICE_AREA_BY_MODULE, r?.module)) continue
+    const area = PRACTICE_AREA_BY_MODULE[r.module]
     const at = new Date(r.updated_at)
     if (Number.isNaN(at.getTime())) continue
     const prev = latest.get(area)

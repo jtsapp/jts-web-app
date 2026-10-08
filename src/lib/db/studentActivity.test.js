@@ -314,6 +314,25 @@ describe('buildStudentAppActivity', () => {
     ])
   })
 
+  it('унаследованные имена объекта (constructor, toString, __proto__) разделами не становятся', () => {
+    const at = new Date('2026-10-02T08:00:00Z')
+    const out = buildStudentAppActivity({
+      week,
+      practice: [
+        { module: 'constructor', updated_at: at },
+        { module: 'toString', updated_at: at },
+        { module: '__proto__', updated_at: at },
+        { module: 'hasOwnProperty', updated_at: at },
+        { module: 'valueOf', updated_at: at },
+        null,
+        {},
+        { module: 'reading', updated_at: at },
+      ],
+    })
+    // Остаётся один настоящий раздел, и его имя — строка, а не функция из прототипа.
+    expect(out.practice).toEqual([{ area: 'reading', updatedAt: '2026-10-02T08:00:00.000Z' }])
+  })
+
   it('строка с непонятной датой пропускается, а не роняет весь ответ', () => {
     const out = buildStudentAppActivity({
       week,
