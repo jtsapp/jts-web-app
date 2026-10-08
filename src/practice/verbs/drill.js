@@ -727,15 +727,25 @@ export class VerbDrill {
     this.emit()
   }
 
-  /** Кнопка «Без микрофона» из уведомления об ошибке. */
+  /**
+   * Кнопка «Без микрофона» из уведомления об ошибке. У пропуска это «показать
+   * ответ» — и ввод, как и там, становится ручным: иначе «Ещё раз» снова
+   * открывал микрофон, упирался в тот же отказ и возвращал то же уведомление
+   * (ревью 08.10.2026).
+   */
   fallbackManual() {
-    if (this.mode === 'gap') this.finishManual('manual')
+    if (this.mode === 'gap') this.reveal()
     else this.startAttempt('manual')
   }
 
   finishSpeech() {
     if (!this.busy) return
-    const text = this.finalTranscript || ''
+    // Расшифровка целиком: законченные фразы плюс последняя промежуточная.
+    // Прототип брал только законченные, а короткое одиночное слово Chrome
+    // нередко так и оставляет промежуточным (3 из 12 на живом
+    // распознавателе) — подпись показывала «was», итог — «не распознано».
+    // К этому моменту распознавание закрыто, уточнять гипотезу больше некому.
+    const text = this.transcript || this.finalTranscript || ''
     const s = this.getSettings()
     const score = scoreTargets(this.expected(), text, { mode: this.mode, gap: this.gap(), aliases: this.data.aliases || {} })
     this.stopAttempt(false)
@@ -803,6 +813,11 @@ export class VerbDrill {
    */
   checkWritten(values, reveal = false) {
     if (isSpoken(this.mode)) return -1
+    // Ответ уже проверен и разбор показан (верные формы в нём видны) —
+    // «показать ответ» ничего не добавляет. Раньше он перезаписывал
+    // сохранённое попадание нулём, и верно решённое задание уходило в
+    // «трудные» (ревью 08.10.2026).
+    if (reveal && this.result && this.result.kind === 'written') return -1
     const fields = this.fields()
     if (!reveal) {
       const empty = firstEmpty(fields.map((_, i) => values[i]))

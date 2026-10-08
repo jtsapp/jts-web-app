@@ -132,18 +132,24 @@ export function DropAct({ act, ctl }) {
             const idx = slotIdx
             const closed = !!ctl.state.closed[idx]
             const revealed = ctl.revealed && !own[idx]
+            // Повтор того же текста в списке не показываем — два одинаковых
+            // пункта ученик прочитает как подвох (A1 L23: «roast» дважды).
+            const shown = part.order.filter((oi, k) => part.order.findIndex((x) => part.opts[x] === part.opts[oi]) === k)
+            const rightShown = shown.find((oi) => part.opts[oi] === part.opts[0])
             return (
               <select
                 key={pi}
                 className={'wb-dsel' + (bad[idx] ? ' is-no' : own[idx] ? ' is-ok' : revealed ? ' is-rev' : '')}
                 aria-label={t('workbook.chooseWord')}
                 disabled={closed || revealed}
-                value={closed || revealed ? '0' : ''}
+                value={closed || revealed ? String(rightShown) : ''}
                 onChange={(e) => {
                   const v = e.target.value
                   if (v === '') return
                   // Верный вариант в данных всегда нулевой; перемешан только показ.
-                  if (Number(v) === 0) {
+                  // Сверяем по тексту, а не по номеру: в A1 L23 «roast» записан
+                  // дважды, и второй, неотличимый на экране, шёл в ошибку.
+                  if (part.opts[Number(v)] === part.opts[0]) {
                     setOwn((o) => ({ ...o, [idx]: true }))
                     ctl.judge(idx, clean[idx] !== false)
                     return
@@ -159,7 +165,7 @@ export function DropAct({ act, ctl }) {
                 }}
               >
                 <option value="">—</option>
-                {part.order.map((oi) => (
+                {shown.map((oi) => (
                   <option key={oi} value={String(oi)}>
                     {part.opts[oi]}
                   </option>

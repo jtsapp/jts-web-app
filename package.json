@@ -16,6 +16,7 @@
     "@livekit/components-styles": "^1.1.6",
     "@stomp/stompjs": "^7.3.0",
     "fabric": "^7.4.0",
+    "ioredis": "^5.11.1",
     "livekit-client": "^2.9.5",
     "livekit-server-sdk": "^2.9.7",
     "microsoft-cognitiveservices-speech-sdk": "^1.50.0",

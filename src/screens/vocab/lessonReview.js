@@ -155,9 +155,19 @@ function shuffleInPlace(a, rng) {
 // оставался: «don't» и «don’t» не сходились ни в одну сторону.
 const APOSTROPHES = /[’‘ʼ`´]/g
 
-export function normalizeAnswer(s) {
+// Диакритика латиницы ответа не различает: «café» (A0 L19) на обычной
+// клавиатуре без «é» не набрать, и верный «cafe» шёл в ошибку (ревью
+// 08.10.2026). Снимаем знаки только у латинских букв — у кириллицы «й» и «и»
+// разные буквы, «мой» и «мои» должны остаться разными переводами.
+export function foldLatinMarks(s) {
   return String(s || '')
-    .normalize('NFKC')
+    .normalize('NFD')
+    .replace(/([A-Za-z])[\u0300-\u036f]+/g, '$1')
+    .normalize('NFC')
+}
+
+export function normalizeAnswer(s) {
+  return foldLatinMarks(String(s || '').normalize('NFKC'))
     .toLowerCase()
     .replace(APOSTROPHES, "'")
     // «партнер» вместо «партнёр» — не ошибка, так пишет почти каждый.
@@ -335,8 +345,25 @@ export function fitTasks(tasks, byKey, lang) {
     const known = words.filter((w) => meaningOf(w, lang))
     const blind = words.filter((w) => !meaningOf(w, lang))
     if (task.type === 'match') {
-      if (known.length >= 3) out.push({ type: 'match', wordKeys: known.map((w) => w.key) })
-      else for (const w of known) out.push({ type: 'choice', wordKeys: [w.key] })
+      // Слова с общим вариантом перевода в одну сетку не кладём: «к
+      // сожалению» у unfortunately и «к сожалению, увы» у sadly — пара sadly ↔
+      // «к сожалению» выглядит верной, а засчитывалась ошибкой, и в «хуже
+      // запомненные» уходили оба слова. Как и отвлекающие в choice
+      // (buildChoiceOptions), такое слово спрашиваем отдельно.
+      const grid = []
+      const spill = []
+      const taken = new Set()
+      for (const w of known) {
+        const parts = translationVariants(meaningOf(w, lang), w.word)
+        if (parts.some((p) => taken.has(p))) spill.push(w)
+        else {
+          grid.push(w)
+          parts.forEach((p) => taken.add(p))
+        }
+      }
+      if (grid.length >= 3) out.push({ type: 'match', wordKeys: grid.map((w) => w.key) })
+      else for (const w of grid) out.push({ type: 'choice', wordKeys: [w.key] })
+      for (const w of spill) out.push({ type: 'choice', wordKeys: [w.key] })
       for (const w of blind) out.push({ type: 'write', wordKeys: [w.key] })
     } else if (task.type === 'choice' && blind.length) {
       out.push({ type: 'write', wordKeys: task.wordKeys })

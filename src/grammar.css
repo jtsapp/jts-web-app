@@ -274,7 +274,9 @@
   justify-content: center;
   gap: 6px;
   padding: 9px 12px;
-  background: var(--correct-bg);
+  /* --correct-bg объявлен только на .gr-lesson, а каталог живёт в .pk — без
+     запасного значения бейдж был прозрачным поверх обложки. */
+  background: var(--correct-bg, #e8f6e2);
   color: #2f6b1e;
   font-weight: 800;
   font-size: 12.5px;
@@ -790,7 +792,10 @@
   transition: 0.15s;
   position: relative;
 }
-.gr-opt:hover:not(:disabled) { border-color: var(--violet); background: var(--violet-100); }
+/* Ховер — только у невыбранного варианта: у выбранного он перекрывал фон
+   светло-фиолетовым, а текст оставался белым — выбранный вариант исчезал,
+   пока на нём курсор (десктоп, 561–760px; ≤560 починено в mobile). */
+.gr-opt:not(.sel):hover:not(:disabled) { border-color: var(--violet); background: var(--violet-100); }
 .gr-opt.sel { border-color: var(--violet); background: var(--violet); color: #fff; }
 .gr-opt.correct { border-color: var(--correct); background: var(--correct); color: #fff; }
 .gr-opt.wrong { border-color: var(--incorrect); background: var(--incorrect); color: #fff; }

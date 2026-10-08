@@ -76,7 +76,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
@@ -331,7 +331,12 @@ export default function App() {
         }
         // Ссылка из админки важнее сессии: студент должен задать пароль.
         if (inviteToken) setScreen('complete-registration')
-        else if (deepLink) {
+        // Ученик без номера (Google-вход его не даёт) дальше не идёт, пока не укажет: восстановленная
+        // сессия не должна обходить гейт, который он прошёл бы при входе.
+        else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
+          setPhoneGate(true)
+          setScreen('reg-phone')
+        } else if (deepLink) {
           setScreen(deepLink)
           // Гостю раздел открывается сразу, но стоит ему пойти логиниться — и
           // намерение пропадало: адрес чистит эффект синхронизации, а после
@@ -367,6 +372,9 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthDateGate, setBirthDateGate] = useState(false)
+  // Вход через Google не даёт телефон, а школе он нужен всегда: пока номера нет, дальше не пускаем
+  // (экран 'reg-phone' в режиме googleGate). Тот же гейт ловит и старые Google-аккаунты без номера.
+  const [phoneGate, setPhoneGate] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
@@ -595,6 +603,7 @@ export default function App() {
   // Шаг 1 регистрации: только номер — код ещё не запрашиваем, сперва нужна
   // почта (см. handleRegEmailSubmit), она и есть канал OTP.
   function handleRegPhoneSubmit(fullPhone) {
+    if (phoneGate) return handleGooglePhoneSubmit(fullPhone)
     setError('')
     setPhone(fullPhone)
     setScreen('reg-email')
@@ -882,15 +891,54 @@ export default function App() {
         role: data.role || null,
       })
       const me = await getCurrentUser(tok).catch(() => null)
-      if (!me?.birthDate) {
-        setBirthDateGate(true)
-        setScreen('reg-birth')
+      // Номер обязателен: бэкенд говорит об этом флагом, а при его отсутствии (старый сервер) смотрим профиль.
+      if (data?.phoneRequired === true || (me && !me.phone)) {
+        setPhoneGate(true)
+        setScreen('reg-phone')
         return
       }
-      setBirthDate(String(me.birthDate).slice(0, 10))
-      await finishGoogleSession(tok)
+      await continueGoogleOnboarding(tok, me)
     } catch (e) {
       setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // После номера (или если он уже был): дата рождения, затем обычный пост-логин.
+  async function continueGoogleOnboarding(tok, knownMe) {
+    const me = knownMe ?? (await getCurrentUser(tok).catch(() => null))
+    if (!me?.birthDate) {
+      setBirthDateGate(true)
+      setScreen('reg-birth')
+      return
+    }
+    setBirthDate(String(me.birthDate).slice(0, 10))
+    await finishGoogleSession(tok)
+  }
+
+  // Номер после Google-входа: сохраняем в профиль (PUT /user/update) БЕЗ подтверждения кодом — SMSC пока не
+  // настроен, ученик просто вводит номер и проходит дальше. Проверку кодом (запрос OTP → ввод → сохранение)
+  // подключать здесь, между экраном номера и updateUser. Смена номера меняет JWT subject, поэтому
+  // бэкенд присылает свежую пару токенов — подменяем её, иначе refresh пойдёт по старому subject.
+  async function handleGooglePhoneSubmit(fullPhone) {
+    setError('')
+    setLoading(true)
+    try {
+      const saved = await updateUser(token, { name: name || 'User', phone: fullPhone })
+      let tok = token
+      if (saved?.accessToken) {
+        tok = saved.accessToken
+        setToken(tok)
+        saveToken(tok, saved.refreshToken || null)
+      }
+      setPhone(fullPhone)
+      patchUserSnapshot({ phone: saved?.phone || fullPhone })
+      setPhoneGate(false)
+      await continueGoogleOnboarding(tok, null)
+    } catch (e) {
+      // Занятый номер бэкенд называет по-русски; показываем текст на языке интерфейса.
+      setError(/уже есть/i.test(e?.message || '') ? t('err.userExists') : e?.message || t('regphone.error'))
     } finally {
       setLoading(false)
     }
@@ -1403,6 +1451,7 @@ export default function App() {
     case 'chat':
       return (
         <RegistrationPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => setScreen('welcome')}
           onPhoneLogin={(userName) => {
             setName(userName || '')
@@ -1427,7 +1476,8 @@ export default function App() {
     case 'reg-phone':
       return (
         <RegisterPhonePage
-          onBack={() => { setError(''); setScreen('chat') }}
+          googleGate={phoneGate}
+          onBack={phoneGate ? undefined : () => { setError(''); setScreen('chat') }}
           onSubmit={handleRegPhoneSubmit}
           loading={loading}
           error={error}

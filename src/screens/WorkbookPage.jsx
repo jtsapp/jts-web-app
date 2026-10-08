@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -150,6 +150,11 @@ export default function WorkbookPage({
     [loadLesson, level]
   )
 
+  // Номер раунда разбора — часть ключа экрана. Если после раунда на том же
+  // экране остались промахи, он открывается снова с теми же n и i: без раунда
+  // в ключе React не перемонтировал его, и состояние прошлого раунда (поле
+  // «решено», «Дальше» активна) переезжало в новый — раунд крутился бесконечно.
+  const reviewRound = useRef(0)
   const openReview = useCallback(() => {
     const keys = missKeys(level, readState())
     if (!keys.length) {
@@ -157,7 +162,9 @@ export default function WorkbookPage({
       return
     }
     const [n, i] = keys[0].slice(level.length + 1).split('.').map(Number)
-    loadLesson(n, () => setView({ name: 'review', n, i }))
+    reviewRound.current += 1
+    const round = reviewRound.current
+    loadLesson(n, () => setView({ name: 'review', n, i, round }))
   }, [level, loadLesson])
 
   const counts = useMemo(
@@ -297,7 +304,7 @@ export default function WorkbookPage({
       const keys = missKeys(level, progress)
       return (
         <WorkbookReview
-          key={view.n + '.' + view.i}
+          key={view.n + '.' + view.i + '.' + view.round}
           level={level}
           lesson={lesson}
           index={view.i}

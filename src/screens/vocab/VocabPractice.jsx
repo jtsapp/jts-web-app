@@ -10,6 +10,7 @@ import {
   meaningOf,
   normalizeAnswer,
   latinLookalikes,
+  foldLatinMarks,
   answersMatch,
   writeTranslationOk,
   buildChoiceOptions,
@@ -18,6 +19,7 @@ import {
 import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey, learnedKeys } from './vocabLearned.js'
 import { saveStudentVocab } from '../../api.js'
+import { recordSkill } from '../../practice/skillStats.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -86,8 +88,11 @@ function canAskTranslation(word) {
 const isSlot = (ch) => /[\p{L}\p{N}]/u.test(ch)
 
 /** Одна буква совпала — с той же терпимостью к двойникам, что и всё слово. */
+// И с той же терпимостью к диакритике латиницы: ячейка «é» в «café»
+// принимала только «é», которого нет на обычной клавиатуре.
 function sameLetter(a, b) {
-  return !!a && latinLookalikes(a).toLowerCase() === latinLookalikes(b).toLowerCase()
+  const fold = (ch) => foldLatinMarks(latinLookalikes(ch)).toLowerCase()
+  return !!a && fold(a) === fold(b)
 }
 
 function escapeRe(s) {
@@ -158,7 +163,7 @@ function CorrectReveal({ word, lang, t, speak, token, note }) {
           </div>
           <div className="vp-reveal-acts">
             {speak ? (
-              <button type="button" className="vp-spk" onClick={() => speak(word.word)} aria-label={t('vocab.lesson.listen')}>
+              <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })} aria-label={t('vocab.lesson.listen')}>
                 <IconSpeaker />
               </button>
             ) : null}
@@ -255,6 +260,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     initVoices()
     ttsSpeak(text, {
       rate: opts?.slow ? 0.65 : undefined,
+      ipa: opts?.ipa,
       onNoVoice: () => {
         setToast(t('vocab.lesson.noVoice'))
         speakProp?.(text)
@@ -386,7 +392,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
             {card.ipa ? <div className="vp-study__ipa">/{String(card.ipa).replace(/^\/|\/$/g, '')}/</div> : null}
             <div className="vp-study__tr">{tr}</div>
             {speak && card.word ? (
-              <button type="button" className="vp-spk" onClick={() => speak(card.word)} aria-label={t('vocab.lesson.listen')}>
+              <button type="button" className="vp-spk" onClick={() => speak(card.word, { ipa: card.ipa })} aria-label={t('vocab.lesson.listen')}>
                 <IconSpeaker />
               </button>
             ) : null}
@@ -430,6 +436,10 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       // висело на главной словаря навсегда.
       for (const k of okKeys) if (!missMap[k]) clearVocabMiss(token, k)
       if (scopeId && okKeys.length) recordVocabLearned(token, scopeId, okKeys)
+      // Навык «Словарь» на Главной и в профиле: раньше recordSkill('vocab')
+      // звался только в старой сессии словаря, которую никто не открывает, и
+      // навык от практики не рос вообще (ревью 08.10.2026).
+      for (const a of answers) if (a.key) recordSkill('vocab', !!a.ok)
       // Наружу — сами слова, а не ключи: у карточек «Моего словаря» ключ — id
       // записи, а /saved/learned отмечает по слову, и номера там не находились.
       const okWords = okKeys.map((k) => byKey[k]?.word).filter(Boolean)
@@ -465,7 +475,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
                       <button
                         type="button"
                         className="vp-spk"
-                        onClick={() => speak(w.word)}
+                        onClick={() => speak(w.word, { ipa: w.ipa })}
                         aria-label={t('vocab.lesson.listen')}
                       >
                         <IconSpeaker />
@@ -577,7 +587,7 @@ function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
         <div className="w">
           {word.word}
           {speak ? (
-            <button type="button" className="vp-spk" onClick={() => speak(word.word)}>
+            <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })}>
               <IconSpeaker />
             </button>
           ) : null}
@@ -718,10 +728,10 @@ function DictationUI({ word, lang, t, speak, token, onDone }) {
   return (
     <>
       <p className="vp-howto">{t('vocab.prac.askListen')}</p>
-      <button type="button" className="vp-listen-big" onClick={() => speak(word.word)} aria-label={t('vocab.lesson.listen')}>
+      <button type="button" className="vp-listen-big" onClick={() => speak(word.word, { ipa: word.ipa })} aria-label={t('vocab.lesson.listen')}>
         <IconSpeaker size={28} />
       </button>
-      <button type="button" className="vp-slow" onClick={() => speak(word.word, { slow: true })}>
+      <button type="button" className="vp-slow" onClick={() => speak(word.word, { slow: true, ipa: word.ipa })}>
         {t('vocab.prac.listenSlow')}
       </button>
       <input
@@ -768,7 +778,7 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
         <div className="w">
           {word.word}
           {speak ? (
-            <button type="button" className="vp-spk" onClick={() => speak(word.word)}>
+            <button type="button" className="vp-spk" onClick={() => speak(word.word, { ipa: word.ipa })}>
               <IconSpeaker />
             </button>
           ) : null}

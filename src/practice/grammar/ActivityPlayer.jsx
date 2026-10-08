@@ -7,6 +7,7 @@ import TrainerResult from '../../components/TrainerResult.jsx'
 import { normAnswer, answerMatches } from '../../lib/answer-match.js'
 import { playTts } from '../../lib/speech.js'
 import { VOICE } from '../../lib/ttsShared.js'
+import { normalizeActivities, transformExtras, errorTargets } from './activityShape.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -48,6 +49,21 @@ function shuffle(arr) {
   return a
 }
 
+// Порядок показа вариантов. Выгрузка курса хранит их в порядке генератора: в
+// диалогах верная реплика первая в 742 шагах из 742, в тестах верный вариант
+// второй в 72%, у «собери предложение» банк слов уже лежит в порядке ответа в
+// 161 задании из 306 (весь C1). Без перемешивания задание проходилось «по
+// месту», а не по знанию. Перемешиваем один раз на показ задания (useMemo по
+// заданию) и стараемся не выдать тот же порядок, если `same` его узнаёт.
+const isIdentity = (order) => order.every((v, k) => v === k)
+
+function shuffledIndexes(n, same) {
+  const base = Array.from({ length: n }, (_, i) => i)
+  let order = shuffle(base)
+  for (let tries = 0; tries < 8 && n > 1 && same && same(order); tries++) order = shuffle(base)
+  return order
+}
+
 // Доверенный HTML из данных курса (подсветки <b>/<em>/<span class="hl">).
 function Html({ html, as = 'span', className, ...rest }) {
   const Tag = as
@@ -63,10 +79,13 @@ export default function ActivityPlayer({
   onExit,
   onNextLesson,
 }) {
+  // Расхождения выгрузки с плеером (формат categorize B1, задания без ошибки,
+  // ответ timeline вне зон) — см. activityShape.js.
+  const list = useMemo(() => normalizeActivities(activities), [activities])
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [points, setPoints] = useState(0)
-  const total = activities.length
+  const total = list.length
   const finished = idx >= total
 
   // Побочные эффекты завершения: локальная отметка «Пройдено» для каталога и
@@ -111,7 +130,7 @@ export default function ActivityPlayer({
       </div>
       <Activity
         key={idx}
-        a={activities[idx]}
+        a={list[idx]}
         idx={idx}
         total={total}
         lang={lang}
@@ -260,7 +279,8 @@ function Body(props) {
 
 // ——— MC ———
 function MC({ a, answered, finish, setCanCheck, bind }) {
-  const [picked, setPicked] = useState(null)
+  const [picked, setPicked] = useState(null) // индекс варианта в данных, не на экране
+  const order = useMemo(() => shuffledIndexes(a.options.length, isIdentity), [a])
   useEffect(() => setCanCheck(picked !== null && !answered), [picked, answered, setCanCheck])
   bind(() => {
     if (answered || picked === null) return
@@ -271,7 +291,8 @@ function MC({ a, answered, finish, setCanCheck, bind }) {
     <>
       <Html className="gr-actq" as="div" html={a.q} />
       <div className="gr-opts">
-        {a.options.map((o, i) => {
+        {order.map((i) => {
+          const o = a.options[i]
           let cls = 'gr-opt'
           if (picked === i && !answered) cls += ' sel'
           if (answered) {
@@ -309,7 +330,10 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
     // Пустой эталон — «ничего не ставить» (6 заданий a2/c1, в разборе «leave it
     // blank»). Пустое поле отправить нельзя, поэтому прочерк там тоже верен:
     // раньше его засчитывала та же дыра с пунктуацией, и терять это нельзя.
-    const accepted = [a.answer, ...(a.alts || [])]
+    // transformExtras — целое предложение и одни слова пропусков для заданий
+    // «Complete: I saw ___ old man and ___ dog. →»: ключ выгрузки хранит один
+    // вид (середину фразы), а поле просит предложение целиком.
+    const accepted = [a.answer, ...(a.alts || []), ...transformExtras(a)]
     if (!String(a.answer ?? '').trim()) accepted.push('-')
     const ok = answerMatches(value, accepted)
     // Ответ студента в поле не подменяем: человек видел в своём поле чужой
@@ -401,6 +425,11 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   // остальные уровни. join у строки падал внутри клика — «Проверить» молчал, и
   // урок было не закончить. Режем по пробелам: слова задания сами без пробелов.
   const answerWords = Array.isArray(a.answer) ? a.answer : String(a.answer ?? '').trim().split(/\s+/)
+  // Банк — в перемешанном порядке и не в порядке ответа (см. shuffledIndexes).
+  const bank = useMemo(() => {
+    const want = (Array.isArray(a.answer) ? a.answer : String(a.answer ?? '').trim().split(/\s+/)).join(' ')
+    return shuffledIndexes(a.words.length, (order) => order.map((i) => a.words[i]).join(' ') === want)
+  }, [a])
   useEffect(
     () => setCanCheck(slots.length === a.words.length && !answered),
     [slots, a.words.length, answered, setCanCheck],
@@ -432,14 +461,14 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
         ))}
       </div>
       <div className="gr-bank">
-        {a.words.map((w, i) => (
+        {bank.map((i) => (
           <button
             key={i}
             className={`gr-word ${slots.includes(i) ? 'used' : ''}`}
             onClick={() => add(i)}
             disabled={answered}
           >
-            {w}
+            {a.words[i]}
           </button>
         ))}
       </div>
@@ -450,12 +479,19 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
 // ——— error (найди ошибку) ———
 function ErrorPick({ a, lang, answered, finish, setCanCheck, bind }) {
   const [picked, setPicked] = useState(null)
+  // Ошибка из двух слов («you are», «would have») засчитывается за любое из них
+  // — см. errorTargets.
+  const targets = useMemo(() => errorTargets(a), [a])
+  const hit = picked !== null && targets.has(picked)
   useEffect(() => setCanCheck(picked !== null && !answered), [picked, answered, setCanCheck])
   bind(() => {
     if (answered || picked === null) return
-    finish(picked === a.wrong, a.why)
+    finish(targets.has(picked), a.why)
   })
 
+  // Исправление показываем на том слове, которое ученик нашёл; при промахе —
+  // подсвечиваем слово из ключа.
+  const fixedAt = hit ? picked : a.wrong
   return (
     <>
       <div className="gr-actq">{uiStr(lang, 'error_instr')}</div>
@@ -463,9 +499,9 @@ function ErrorPick({ a, lang, answered, finish, setCanCheck, bind }) {
         {a.words.map((w, i) => {
           let cls = 'gr-eword'
           if (!answered && picked === i) cls += ' sel'
-          if (answered && i === a.wrong) cls += ' correct'
-          if (answered && i === picked && picked !== a.wrong) cls += ' wrong'
-          const show = answered && i === a.wrong && picked === a.wrong && a.correct ? a.correct : w
+          if (answered && i === fixedAt) cls += ' correct'
+          if (answered && i === picked && !hit) cls += ' wrong'
+          const show = answered && hit && i === picked && a.correct ? a.correct : w
           return (
             <span key={i}>
               <span className={cls} onClick={() => !answered && setPicked(i)}>
@@ -587,7 +623,10 @@ function Matching({ a, lang, answered, finish }) {
     if (count === a.pairs.length && !answered && !marked) {
       const id = setTimeout(() => {
         setMarked(true)
-        const allOk = a.pairs.every((_, i) => paired[i] === i)
+        // По тексту, а не по номеру пары: в a2 u70 две пары с одной правой
+        // подписью «suggestion», и верная раскладка с «другой» кнопкой
+        // «suggestion» засчитывалась как ошибка примерно в половине случаев.
+        const allOk = a.pairs.every((p, i) => paired[i] !== undefined && a.pairs[paired[i]].r === p.r)
         finish(allOk, (allOk ? uiStr(lang, 'match_ok') : uiStr(lang, 'match_no')) + (a.why || ''))
       }, 220)
       return () => clearTimeout(id)
@@ -626,7 +665,7 @@ function Matching({ a, lang, answered, finish }) {
         <div className="gr-match-col">
           {a.pairs.map((p, i) => {
             const asg = paired[i]
-            const ok = asg === i
+            const ok = asg !== undefined && a.pairs[asg].r === p.r
             let cls = 'gr-match-l'
             if (!marked && sel === i) cls += ' sel'
             if (marked) cls += ok ? ' correct' : ' wrong'
@@ -851,6 +890,9 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
   }
 
   const current = a.steps[step]
+  // Реплики шага — вперемешку: в выгрузке верная всегда первая (см.
+  // shuffledIndexes). pick() получает индекс в данных.
+  const optOrder = useMemo(() => (current ? shuffledIndexes(current.options.length, isIdentity) : []), [current])
   return (
     <>
       <Html className="gr-actq" as="div" html={a.scene} />
@@ -868,9 +910,9 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
       </div>
       {!answered && showOpts && current && (
         <div className="gr-dlg-opts">
-          {current.options.map((o, i) => (
+          {optOrder.map((i) => (
             <button key={i} className="gr-opt" onClick={() => pick(i)}>
-              <Html html={o.t} />
+              <Html html={current.options[i].t} />
             </button>
           ))}
         </div>

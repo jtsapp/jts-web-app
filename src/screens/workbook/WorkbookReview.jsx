@@ -32,10 +32,11 @@ export default function WorkbookReview({ level, lesson, index, missed, meta, slo
 
   const finish = () => {
     // Суженное задание нумеруется заново, поэтому остаток промахов надо
-    // вернуть в исходные индексы. Если сузить не удалось (sort, seq, memo…),
-    // экран показан целиком и индексы уже исходные — переводить нечего.
+    // вернуть в исходные места — по act.reviewSlots (у цепочки место — шаг,
+    // не пункт). Если сузить не удалось (sort, seq, memo…), экран показан
+    // целиком и номера уже исходные — переводить нечего.
     const still = ctl.state.missed
-    resolveMiss(level, lesson.n, index, narrowed ? still : mapWhole(still, missed))
+    resolveMiss(level, lesson.n, index, narrowed ? still.map((m) => act.reviewSlots[m]) : mapWhole(still, missed))
     onNext()
   }
 

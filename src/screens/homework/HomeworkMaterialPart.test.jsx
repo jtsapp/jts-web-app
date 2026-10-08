@@ -178,13 +178,19 @@ describe('HomeworkMaterialPart — «Мой ответ» у карточки у�
 describe('HomeworkMaterialPart — действие в рамке оживляет сдачу', () => {
   async function открытьРамку() {
     const onTouched = vi.fn()
+    const подписка = vi.spyOn(window, 'addEventListener')
     const { container } = показать({ onTouched })
     fireEvent.click(screen.getByRole('button', { name: 'Открыть задание' }))
+    // Ждём не только рамку, но и подписку на message: она вешается в useEffect
+    // ПОСЛЕ отрисовки рамки, и под нагрузкой CI (полный vitest) сообщение
+    // успевало уйти раньше — тест падал «0 times» и валил деплой develop.
     const frame = await waitFor(() => {
       const el = container.querySelector('.hw-frame__iframe')
       expect(el).not.toBeNull()
+      expect(подписка).toHaveBeenCalledWith('message', expect.any(Function))
       return el
     })
+    подписка.mockRestore()
     return { frame, onTouched }
   }
   const прислать = (source, data) => fireEvent(window, new MessageEvent('message', { source, data }))

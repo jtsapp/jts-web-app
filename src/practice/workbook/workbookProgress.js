@@ -184,14 +184,19 @@ export function missFor(level, n, i, state) {
 
 /**
  * Итог пересдачи в разборе. Порт кнопки «дальше» из renderReview: остаются
- * только те промахи, что провалены СНОВА, и обязательно в исходных индексах —
- * разбор показывает подмножество пунктов, и его нумерация своя.
+ * только те промахи, что провалены СНОВА.
+ *
+ * stillWrong — уже ИСХОДНЫЕ номера мест: перевод из нумерации суженного экрана
+ * делает разбор (WorkbookReview, по act.reviewSlots), он один знает, как экран
+ * сужали. Раньше сюда приходили то позиции в списке промахов (суженный экран),
+ * то исходные номера (экран целиком), а переводилось всё как позиции — и у
+ * экрана целиком повторная ошибка терялась или подменялась чужой.
  */
 export function resolveMiss(level, n, i, stillWrong) {
   const state = editable()
   const k = actKey(level, n, i)
   const orig = state.miss[k] || []
-  const keep = (stillWrong || []).map((m) => orig[m]).filter((x) => x !== undefined)
+  const keep = orig.filter((x) => (stillWrong || []).includes(x))
   if (keep.length) state.miss[k] = keep
   else delete state.miss[k]
   writeState(state)

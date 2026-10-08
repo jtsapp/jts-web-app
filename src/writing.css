@@ -1016,7 +1016,11 @@
   color: var(--ink, #26243b);
   cursor: pointer;
 }
-.wr-chip:hover { border-color: var(--wr-purple); color: var(--wr-purple); }
+/* Ховер — только у невыбранной фишки: правило стоит ниже .wr-chip.is-sel с той
+   же специфичностью и перекрашивало выбранную в фиолетовый текст на фиолетовом
+   — подпись пропадала, пока на ней курсор (а на телефоне ховер «залипает»
+   после тапа). */
+.wr-chip:not(.is-sel):hover { border-color: var(--wr-purple); color: var(--wr-purple); }
 /* составной чип «слово + крестик» — сам чип не кнопка, кнопки внутри */
 .wr-chip--word { padding: 0; cursor: default; }
 .wr-chip--word > button {
@@ -1110,6 +1114,10 @@
 /* ── мобайл: одна колонка, редактор первым, панели ниже; бар прилипает к
    низу, «Проверить» всегда под рукой. На 390px страница не скроллится вбок:
    всё широкое переносится (chipbank/metrics — flex-wrap). ── */
+/* Бар «Проверить» липнет к ОКНУ: у оболочки экранов (.learn__main) overflow:
+   auto, и sticky привязывался к ней, а прокручивается окно — бар уезжал в конец
+   страницы. Тот же приём, что у читалки (.learn__main:has(.rd)). */
+.learn__main:has(.wr) { overflow: visible; }
 @media (max-width: 760px) {
   .wr-pad { grid-template-columns: 1fr; }
   .wr-editor { min-height: 45vh; }

@@ -42,8 +42,16 @@ export function practiceCardsOf(lesson, rng = Math.random) {
     const atom = own[0]
     if (!atom) return card
     const example = card.example || atom.ctx || ''
+    // Подпись карточки бывает подписью, а не словом: «go → went», «have
+    // (own)», «Brazil → Brazilian». Пример — предложение атома, и пропуск в нём
+    // ждёт слово атома («went»), как и gapWord() в списке слов. Пока бралась
+    // подпись, FillUI рисовал клетки «[g][_]→[_][_][_][_]», «went» не
+    // вписывалось, а диктант ждал «go went» (31 карточка, весь A1 L3; ревью
+    // 08.10.2026). Регистр («Family» / «family») подписью не считаем.
+    const label = example === atom.ctx && atom.en && String(card.en || '').trim().toLowerCase() !== String(atom.en).trim().toLowerCase()
     return {
       ...card,
+      ...(label ? { en: atom.en } : {}),
       ipa: card.ipa || atom.ipa || '',
       example,
       def: card.def || atom.mean || '',

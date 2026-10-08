@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 // Вход через Apple ID с сайта убран, вход через Google — оставлен (решение
 // владельца, 2026-08-25: сначала убрали оба, потом Google вернули).
 //
-// 04.10.2026 владелец убрал Google из регистрации (чат с Декстером): по макету
-// регистрация идёт только через номер, а почту берёт следующим шагом. Google
-// через чат заводил аккаунт вовсе без номера. На экране входа Google остался.
+// 04.10.2026 владелец убрал Google из регистрации (чат с Декстером): он заводил
+// аккаунт вовсе без номера. Вернули 07.10.2026 вместе с обязательным шагом
+// «номер телефона» после Google-входа (App.jsx, phoneGate) — см. googlePhoneGate.test.js.
 //
 // Apple жил в шести местах сразу — два экрана входа, регистрация, иконки,
 // переводы и стили, — поэтому вернуться он может так же незаметно: достаточно
@@ -56,13 +56,14 @@ describe('вход: Apple убран, Google на месте', () => {
     expect(login).toMatch(/google-slot/)
   })
 
-  it('в регистрации (чат с Декстером) Google нет — только «Начать регистрацию»', () => {
+  it('в регистрации (чат с Декстером) Google на месте — второй строкой, под номером', () => {
     const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
-    expect(reg).toMatch(/t\('auth\.phone'\)/)
-    // Следы кода, а не слово: комментарий про решение владельца оставляем.
-    for (const mark of [/googleAuth/, /google-slot/, /auth-btn--google/, /onGoogleToken/, /auth\.google/]) {
-      expect(reg).not.toMatch(mark)
-    }
+    expect(reg).toMatch(/auth-btn--google/)
+    expect(reg).toMatch(/google-slot/)
+    expect(reg).toMatch(/onGoogleToken/)
+    expect(reg.indexOf("t('auth.phone')")).toBeLessThan(reg.indexOf("t('auth.google')"))
+    const app = readFileSync(join(src, 'App.jsx'), 'utf8')
+    expect(app).toMatch(/<RegistrationPage\s+onGoogleToken=\{handleGoogleCredential\}/)
   })
 
   it('подписи кнопки есть во всех трёх языках', () => {

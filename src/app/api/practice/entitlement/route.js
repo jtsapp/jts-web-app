@@ -2,14 +2,15 @@
 // content renders (unlike /api/practice/state, which only records progress
 // after the fact). Demo accounts get a completion cap per module, configured
 // admin-side (see backend ContentQuotaService); this app owns the completion
-// count itself (done-arrays for grammar/listening/shadowing, seenCount for
-// vocab) since that data lives in this app's own DB, not the Java backend's -
+// count itself (done-arrays for grammar/listening/shadowing, learned/missed
+// words for vocab — see src/lib/practiceCompleted.js) since that data lives in this app's own DB, not the Java backend's -
 // the backend is only asked for the configured limit.
 
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { loadPracticeState } from '@/lib/db/practice.js'
 import { resolveProfileId, bearerFromRequest, fetchContentQuota } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
+import { completedCountFor } from '@/lib/practiceCompleted.js'
 
 export const runtime = 'nodejs'
 
@@ -38,15 +39,6 @@ function isEntitlementModule(moduleName) {
   return Object.prototype.hasOwnProperty.call(CONTENT_TYPE_BY_MODULE, moduleName)
 }
 
-function completedCountFor(moduleName, state) {
-  if (moduleName === 'vocab') return state.vocab?.seenCount ?? 0
-  // У writing state — объект {tasks, seen}, а не done-массив: единица счёта —
-  // закрытое задание жанра.
-  if (moduleName === 'writing') return Object.keys(state.writing?.tasks ?? {}).length
-  // books/memes/tales — нет done в practice state (см. CONTENT_TYPE_BY_MODULE).
-  if (moduleName === 'books' || moduleName === 'memes' || moduleName === 'tales') return 0
-  return state[moduleName]?.done?.length ?? 0
-}
 
 export async function GET(request) {
   const denied = unauthorizedIfNoBearer(request)
