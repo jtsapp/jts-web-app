@@ -79,10 +79,13 @@ export default function useReadingVoice(lines) {
           return
         }
         setIndex(i)
-        speak([list[i]], { onAbort }, () => step(i + 1))
+        // solo: текст Чтения — проза одного диктора. Движок воркбука читает
+        // тире как смену говорящего (там это диалоги), и предложение с
+        // вставочным « — » звучало двумя голосами (ревью 08.10.2026).
+        speak([{ t: list[i], solo: true }], { onAbort }, () => step(i + 1))
         // Следующее предложение синтезируется, пока звучит это: иначе перед
         // каждым была бы лишняя секунда тишины на ещё не озвученном тексте.
-        if (i + 1 < list.length) prefetch([list[i + 1]])
+        if (i + 1 < list.length) prefetch([{ t: list[i + 1], solo: true }])
       }
       step(from)
     },
