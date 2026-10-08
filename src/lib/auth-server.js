@@ -221,6 +221,12 @@ export async function fetchContentQuota(token, contentType) {
  * 404 («такого ученика нет») для вызывающего — тот же отказ: подробности о
  * чужих id не раздаём. Сбой связи — не отказ, а «спросить не удалось»: сотрудник
  * увидит «попробуйте позже», а не «нет доступа».
+ *
+ * studentId вызывающий обязан передать уже проверенным целым > 0: здесь его не
+ * проверяют. encodeURIComponent('..') остаётся '..', а разбор URL схлопывает
+ * такой сегмент (/admin/students/../activity/access становится
+ * /admin/activity/access), и запрос ушёл бы на чужой адрес бэкенда с токеном
+ * сотрудника.
  */
 export async function checkStudentActivityAccess(token, studentId) {
   if (!token) return 'unauthorized'
@@ -232,6 +238,10 @@ export async function checkStudentActivityAccess(token, studentId) {
     if (res.status === 204) return 'allowed'
     if (res.status === 401) return 'unauthorized'
     if (res.status === 403 || res.status === 404) return 'forbidden'
+    // Любой другой статус вердиктом не считается, сотрудник увидит лишь «позже».
+    // Без строки в логе 5xx бэкенда или 200 от прокси на месте ручки не отличить
+    // от обычного сбоя связи. Пишем только статус: токен в лог не идёт никогда.
+    console.error('[auth] student-activity access: unexpected status', res.status)
     return 'unavailable'
   } catch (err) {
     console.error(

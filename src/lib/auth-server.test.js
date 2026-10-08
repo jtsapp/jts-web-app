@@ -11,7 +11,7 @@
 // verifyToken стабим транспортом (fetch к бэкендовому /user/me) — так под
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { resolveProfileId, fetchContentQuota, verifyTokenStatus, checkStudentActivityAccess } from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
@@ -162,13 +162,25 @@ describe('checkStudentActivityAccess: «свой ли ученик» решае�
     return fetchMock
   }
 
+  // Лог ловим сами: так он не шумит в выводе прогона и его можно проверить.
+  let errorSpy
+  beforeEach(() => {
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    errorSpy.mockRestore()
+  })
+
   it('204 — можно; уходит токен того, кто спрашивает', async () => {
     const fetchMock = stub(204)
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('allowed')
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toMatch(/\/admin\/students\/141\/activity\/access$/)
+    // Проверка прав ничего не меняет у бэкенда: только GET.
+    expect(init.method).toBe('GET')
     expect(init.headers.Authorization).toBe('Bearer TOK')
     expect(init.cache).toBe('no-store')
+    expect(errorSpy).not.toHaveBeenCalled()
   })
 
   it('403 и 404 — отказ: о чужих id подробностей не раздаём', async () => {
@@ -176,18 +188,25 @@ describe('checkStudentActivityAccess: «свой ли ученик» решае�
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
     stub(404)
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
+    // Отказ — обычный вердикт, а не сбой: логом он не засоряется.
+    expect(errorSpy).not.toHaveBeenCalled()
   })
 
   it('401 — токен протух', async () => {
     stub(401)
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('unauthorized')
+    expect(errorSpy).not.toHaveBeenCalled()
   })
 
   it('500 и сетевой обрыв — «спросить не удалось», а не отказ', async () => {
     stub(500)
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Неожиданный статус — в лог, иначе 5xx бэкенда не отличить от обрыва связи.
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access: unexpected status', 500)
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Токен не попадает в лог ни при статусе, ни при обрыве.
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('TOK')
   })
 
   it('без токена бэкенд не спрашиваем', async () => {
@@ -199,5 +218,7 @@ describe('checkStudentActivityAccess: «свой ли ученик» решае�
   it('200 вместо 204 — не разрешение: пускаем только по контракту бэкенда', async () => {
     stub(200)
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Заглушка или прокси на месте ручки должны быть видны в логе.
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access: unexpected status', 200)
   })
 })
