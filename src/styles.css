@@ -9295,6 +9295,20 @@ textarea {
   color: #8b8a97;
   font-weight: 600;
 }
+/* «Повторить» на экране сбоя загрузки комикса (ревью 08.10.2026, #60). */
+.cr__retry {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #874bf8;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cr__retry:focus-visible { outline: 2px solid #874bf8; outline-offset: 3px; }
 @media (max-width: 760px) {
   /* На телефоне стрелки мешают странице — листаем свайпом и тапом. */
   .cr__nav { display: none; }

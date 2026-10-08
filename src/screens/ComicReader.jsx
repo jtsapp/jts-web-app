@@ -74,6 +74,9 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const [doc, setDoc] = useState(null)
   const [i, setI] = useState(0)
   const [failed, setFailed] = useState(false)
+  // Номер попытки загрузки: «Повторить» на экране сбоя увеличивает его и
+  // перезапускает загрузку (ревью 08.10.2026, #60).
+  const [attempt, setAttempt] = useState(0)
   // Раскрытые переводы реплик — индексы блоков на текущей странице.
   const [shown, setShown] = useState(() => new Set())
   // {word, translation, alternates, loading, saving, saved}
@@ -190,6 +193,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   useEffect(() => {
     let alive = true
+    setFailed(false)
     loadComic(token, comic).then((d) => {
       if (!alive) return
       if (!d?.pages?.length) {
@@ -203,7 +207,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     return () => {
       alive = false
     }
-  }, [token, comic, key])
+  }, [token, comic, key, attempt])
 
   const total = doc?.pages?.length || 0
   const go = useCallback(
@@ -321,7 +325,12 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     return (
       <div className="cr" ref={setRoot}>
         {bar}
-        <div className="cr__empty">{t('comics.failed')}</div>
+        <div className="cr__empty">
+          {t('comics.failed')}
+          <button type="button" className="cr__retry" onClick={() => setAttempt((n) => n + 1)}>
+            {t('comics.retry')}
+          </button>
+        </div>
       </div>
     )
   }
