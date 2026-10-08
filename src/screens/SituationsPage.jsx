@@ -22,7 +22,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { SITUATIONS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { recordSkill } from '../practice/skillStats.js'
-import { countDone, markItemDone, readDoneItems } from '../practice/situations/itemsProgress.js'
+import { countDone, markScenarioDone, readDoneItems } from '../practice/situations/itemsProgress.js'
 import { loadLevel } from '../practice/situations/situationsData.js'
 import { markSituationLevelDone } from '../practice/situations/situationsProgress.js'
 import SituationsCatalog from './situations/SituationsCatalog.jsx'
@@ -75,7 +75,7 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
 
   const handleDone = useCallback(
     (id) => {
-      markItemDone(level, id)
+      markScenarioDone(level, id, items?.length)
       // Сценарий засчитан — это говорение, и в сводке навыков он должен быть
       // виден: раздел до этого в skillStats не попадал вовсе.
       //
@@ -86,7 +86,7 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
       recordSkill('speaking', true)
       setDone(readDoneItems(level))
     },
-    [level],
+    [level, items],
   )
 
   const current = items && openId ? items.find((s) => s.id === openId) : null
