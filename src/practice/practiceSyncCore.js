@@ -1,8 +1,10 @@
 // Чистые хелперы клиентского синка: что отправлять на сервер и как разложить
 // серверный стейт по локальным хранилищам. Ни fetch, ни прямых глобалей —
-// localStorage.setItem и window.dispatchEvent инъектируются, поэтому node-тест.
+// localStorage.getItem/setItem и window.dispatchEvent инъектируются, поэтому
+// node-тест.
 
 import { normalizeDone } from '../lib/practiceContract.js'
+import { mergeReadingState } from '../lib/readingState.js'
 import {
   VOCAB_KEY,
   GRAMMAR_KEY,
@@ -43,7 +45,7 @@ export function serializeForPush(module, raw) {
 
 // serverState — ответ GET /api/practice/state (поле state). Пишем в те же ключи,
 // что читают экраны, и будим каталоги теми же событиями, что и локальная отметка.
-export function applyHydratedState(serverState, { setItem, dispatch }) {
+export function applyHydratedState(serverState, { setItem, dispatch, getItem = () => null }) {
   if (!serverState || typeof serverState !== 'object') return
   if (serverState.vocab && typeof serverState.vocab === 'object') {
     setItem(VOCAB_KEY, JSON.stringify(serverState.vocab))
@@ -79,7 +81,19 @@ export function applyHydratedState(serverState, { setItem, dispatch }) {
     dispatch(WORKBOOK_PROGRESS_EVENT)
   }
   if (serverState.reading && typeof serverState.reading === 'object') {
-    setItem(READING_KEY, JSON.stringify(serverState.reading))
+    // Черновик сливается с серверным «лучшим результатом», а не затирается: в
+    // нём лежат результаты, не долетевшие в прошлую загрузку, и «Чтение»
+    // досылает их при открытии (loadReadingFromServer). Затёртый черновик
+    // досылать было уже нечего (ревью 08.10.2026, #36). Чужим он быть не может:
+    // вход и выход чистят его до гидратации (clearLocalPractice).
+    let merged = serverState.reading
+    try {
+      const draft = JSON.parse(getItem(READING_KEY) || 'null')
+      if (draft) merged = mergeReadingState(serverState.reading, draft)
+    } catch {
+      /* битый черновик — берём серверное; остальные разделы ниже не страдают */
+    }
+    setItem(READING_KEY, JSON.stringify(merged))
     dispatch(READING_PROGRESS_EVENT)
   }
   if (serverState.words && typeof serverState.words === 'object') {

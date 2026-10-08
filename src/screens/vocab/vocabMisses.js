@@ -21,12 +21,26 @@ function normalize(raw) {
   return { words }
 }
 
+// Промахи только копятся (снятое слово удаляется целиком), поэтому при
+// сведении с сервером по слову побеждает большее число — как при переносе
+// старой записи. Иначе правка от устаревшего черновика понижала бы счёт
+// промахов с другого устройства (ревью PR, #78).
+function moreMisses(server, next) {
+  const words = { ...next.words }
+  for (const [k, mine] of Object.entries(words)) {
+    const theirs = server.words[k]
+    if (isObj(theirs) && (theirs.misses || 0) > (mine?.misses || 0)) words[k] = theirs
+  }
+  return { ...next, words }
+}
+
 const store = createProgressStore({
   module: 'vocabMisses',
   key: KEY,
   event: EVENT,
   empty: () => ({ words: {} }),
   normalize,
+  settle: moreMisses,
 })
 
 // Старая запись { <ключ>: {...} } поверх состояния: по слову побеждает запись

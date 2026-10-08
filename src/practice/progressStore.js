@@ -15,10 +15,19 @@
 // перезагрузку и чтобы видеть записи соседней вкладки; сервер — источник
 // истины для вошедшего, его ответ попадает в память напрямую, минуя хранилище.
 // Серверная семантика прежняя: union для «галочек», replace для объектов.
+//
+// Разделы-объекты (ревью 08.10.2026, #78). Сервер хранит их заменой, и:
+// - запись до ответа сервера уходила целиком и стирала прогресс с другого
+//   устройства — теперь до снимка сервера она не уходит вовсе;
+// - сведение «без действий — побеждает сервер» забывало то, что не долетело в
+//   прошлую загрузку, — теперь правки ученика копятся патчем (statePatch.js),
+//   переживают перезагрузку и кладутся поверх серверного, пока сервер не
+//   подтвердит приём.
 
 import { loadToken } from '../lib/session.js'
 import { payloadOf } from '../lib/jwt.js'
 import { normalizeDone } from '../lib/practiceContract.js'
+import { applyPatch, composePatch, diffState, isEmptyPatch, isValidPatch, subtractPatch } from './statePatch.js'
 // Только pushModule: тесты модулей прогресса мокают practiceSync одной этой
 // функцией, а сам practiceSync зовёт сюда (adoptHydratedState) — цикл импорта
 // безопасен, пока ни одна сторона не трогает другую на верхнем уровне модуля.
@@ -54,6 +63,54 @@ export const doneListOptions = {
   empty: () => [],
   normalize: (raw) => normalizeDone(Array.isArray(raw) ? raw : raw?.done),
   merge: (server, local) => normalizeDone([...server, ...local]),
+  // Сервер сам объединяет присланное с хранимым: раннюю запись ему не
+  // страшно получить, и ждать снимка незачем.
+  serverUnion: true,
+}
+
+function snapshotFor(who) {
+  return !!snapshot && snapshot.owner === who
+}
+
+// Неотправленные правки разделов-объектов — чтобы пережили перезагрузку:
+// { owner, modules: { <модуль>: патч } }. Владелец один: вход и выход чистят
+// ключ (clearLocalPractice), а чужой патч при чтении не берётся. Ключ общий у
+// вкладок, поэтому запись — наложение своей правки на сохранённое, а
+// подтверждение — вычитание отправленного: иначе вкладки стирали бы правки
+// друг друга.
+export const UNSYNCED_KEY = 'jts_practice_unsynced'
+
+function readUnsyncedAll() {
+  try {
+    const all = JSON.parse(localStorage.getItem(UNSYNCED_KEY) || 'null')
+    return all && typeof all === 'object' && all.modules && typeof all.modules === 'object' ? all : null
+  } catch {
+    return null
+  }
+}
+
+function readUnsynced(owner, module) {
+  const all = readUnsyncedAll()
+  const p = all && all.owner === owner ? all.modules[module] : null
+  // Битая или чужого формата запись не должна ронять раздел при каждой загрузке.
+  return p && isValidPatch(p) ? p : null
+}
+
+// change(сохранённое) → новое сохранённое.
+function updateUnsynced(owner, module, change) {
+  if (owner === 'guest') return
+  let all = readUnsyncedAll()
+  if (!all || all.owner !== owner) all = { owner, modules: {} }
+  const cur = all.modules[module]
+  const patch = change(cur && isValidPatch(cur) ? cur : null)
+  if (isEmptyPatch(patch)) delete all.modules[module]
+  else all.modules[module] = patch
+  try {
+    if (Object.keys(all.modules).length) localStorage.setItem(UNSYNCED_KEY, JSON.stringify(all))
+    else localStorage.removeItem(UNSYNCED_KEY)
+  } catch {
+    /* квота: патч живёт в памяти до конца загрузки */
+  }
 }
 
 /**
@@ -63,14 +120,22 @@ export const doneListOptions = {
  * @param empty     () => пустое состояние
  * @param normalize (сырое из черновика или с сервера) => состояние
  * @param merge     (server, local) => состояние; есть — сведение объединением,
- *                  нет — побеждает сервер, если в этой загрузке не было действий
+ *                  нет — серверное плюс неподтверждённые правки ученика (патч)
+ * @param serverUnion сервер сам объединяет присланное (doneListOptions); нет —
+ *                  он хранит заменой, и до его снимка запись не отправляется
+ * @param settle    (server, next) => состояние; после наложения патча — для
+ *                  значений «лучший результат»: правка, посчитанная от
+ *                  устаревшего черновика, не должна понижать серверное
+ * @param atomic    разделы, чьи значения патч берёт целиком (statePatch.js)
  */
-export function createProgressStore({ module, key, event, empty, normalize, merge = null }) {
+export function createProgressStore({ module, key, event, empty, normalize, merge = null, serverUnion = false, settle = null, atomic = [] }) {
   // mem: { owner, state, raw, draftOk } — raw: строка, которую мы последней
   // видели/писали в черновике; draftOk: последняя наша запись прошла.
   let mem = null
-  // Были ли действия в этой загрузке, ещё не сведённые с ответом сервера.
+  // Были ли действия, отложенные до ответа сервера.
   let dirty = false
+  // Правки ученика, которых сервер ещё не подтвердил (только без merge).
+  let patch = null
 
   function readRaw() {
     try {
@@ -117,9 +182,22 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
     if (merge) {
       next = merge(server, mem.state)
       send = JSON.stringify(next) !== JSON.stringify(server)
-    } else if (dirty) {
-      next = mem.state
-      send = true
+    } else if (!isEmptyPatch(patch)) {
+      // Серверное плюс правки ученика: раньше при действиях до ответа здесь
+      // побеждала память целиком и стирала чужое серверное, а без действий —
+      // сервер, и не долетевшее в прошлую загрузку пропадало (#78).
+      next = normalize(applyPatch(server, patch))
+      if (settle) next = normalize(settle(server, next))
+      send = JSON.stringify(next) !== JSON.stringify(server)
+      // Патч ничего не меняет поверх серверного: сервер уже принял эти правки
+      // (ответ мог потеряться — закрытая вкладка, 524) или лучший результат
+      // их перекрыл. Считаем подтверждёнными, иначе патч жил бы вечно и
+      // однажды откатил бы правку с другого устройства.
+      if (!send) {
+        const done = patch
+        patch = null
+        updateUnsynced(mem.owner, module, (stored) => subtractPatch(stored, done))
+      }
     } else {
       next = server
     }
@@ -127,15 +205,38 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
     dirty = false
     persist(next)
     if (!quiet) notify()
-    if (send && mem.owner !== 'guest') pushModule(module, next)
+    if (send && mem.owner !== 'guest') push(next)
+  }
+
+  // Сервер ответил «принял» — отправленные правки больше не нужны. Вычитаем
+  // ровно их: то, что ученик поменял после отправки, и правки соседней
+  // вкладки в общем ключе остаются.
+  function acked(who, sent) {
+    // Ответ пришёл уже другому ученику (выход и вход, пока летел запрос):
+    // его неподтверждённое не трогаем.
+    if (currentOwner() !== who) return
+    if (mem && mem.owner === who) patch = subtractPatch(patch, sent)
+    updateUnsynced(who, module, (stored) => subtractPatch(stored, sent))
+  }
+
+  function push(next) {
+    if (merge || isEmptyPatch(patch)) pushModule(module, next)
+    else {
+      const who = mem.owner
+      const sent = patch
+      pushModule(module, next, () => acked(who, sent))
+    }
   }
 
   function load(who) {
     const raw = readRaw()
     mem = { owner: who, state: parse(raw), raw, draftOk: true }
     dirty = false
-    if (snapshot && snapshot.owner === who && snapshot.state && module in snapshot.state) {
-      reconcile(snapshot.state[module], { quiet: true })
+    patch = !merge && who !== 'guest' ? readUnsynced(who, module) : null
+    if (snapshotFor(who)) {
+      if (snapshot.state && module in snapshot.state) reconcile(snapshot.state[module], { quiet: true })
+      // Раздела на сервере нет — стирать нечего, наше и есть всё.
+      else if (!isEmptyPatch(patch)) push(mem.state)
     }
   }
 
@@ -154,15 +255,31 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
 
   function write(next, { sync = true } = {}) {
     read()
+    const prev = mem.state
     mem.state = next
     persist(next)
     notify()
-    if (sync) {
-      if (mem.owner !== 'guest') dirty = true
-      // Гостю pushModule сам ничего не шлёт — зовём его всегда, как раньше
-      // звали модули: в одном месте решается, кому синк положен.
+    if (!sync) return
+    // Гостю pushModule сам ничего не шлёт — зовём его всегда, как раньше
+    // звали модули: в одном месте решается, кому синк положен.
+    if (mem.owner === 'guest') {
       pushModule(module, next)
+      return
     }
+    if (!merge) {
+      const delta = diffState(prev, next, { atomic })
+      if (!isEmptyPatch(delta)) {
+        patch = composePatch(patch, delta)
+        updateUnsynced(mem.owner, module, (stored) => composePatch(stored, delta))
+      }
+    }
+    // Сервер хранит раздел заменой: запись раньше его снимка стёрла бы то,
+    // чего в черновике этого устройства нет. Уйдёт сведённой (reconcile).
+    if (!serverUnion && !snapshotFor(mem.owner)) {
+      dirty = true
+      return
+    }
+    push(next)
   }
 
   function adopt(serverRaw) {
@@ -172,12 +289,29 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
     notify()
   }
 
+  // Снимок пришёл, а раздела в нём нет (строки на сервере ещё не было):
+  // отложенное уходит как есть — стирать на сервере нечего.
+  function adoptAbsent() {
+    const who = currentOwner()
+    // Раздел в этой загрузке не открывали: load сам посмотрит в снимок и
+    // дошлёт неподтверждённое из прошлой загрузки.
+    if (!mem || mem.owner !== who) {
+      load(who)
+      return
+    }
+    if (dirty || !isEmptyPatch(patch)) {
+      dirty = false
+      push(mem.state)
+    }
+  }
+
   function reset() {
     mem = null
     dirty = false
+    patch = null
   }
 
-  stores.set(module, { adopt, reset })
+  stores.set(module, { adopt, adoptAbsent, reset })
   return { read, write }
 }
 
@@ -187,15 +321,18 @@ export function createProgressStore({ module, key, event, empty, normalize, merg
  */
 export function adoptHydratedState(serverState, owner = currentOwner()) {
   if (!serverState || typeof serverState !== 'object') return []
-  snapshot = { owner, state: serverState }
   const handled = []
-  // Чужой ответ (токен сменился, пока шёл запрос) в память не кладём: снимок
-  // по владельцу и так не применится, а живые хранилища смотрят на текущего.
+  // Чужой ответ (токен сменился, пока шёл запрос) не берём вовсе: и в память,
+  // и в снимок — поздний ответ прежнего ученика затёр бы снимок нового, и его
+  // разделы-объекты ждали бы снимка до конца загрузки.
   if (owner !== currentOwner()) return handled
+  snapshot = { owner, state: serverState }
   for (const [module, store] of stores) {
     if (Object.prototype.hasOwnProperty.call(serverState, module)) {
       store.adopt(serverState[module])
       handled.push(module)
+    } else {
+      store.adoptAbsent()
     }
   }
   return handled

@@ -108,3 +108,19 @@ describe('writingProgress', () => {
     expect(readState()).toEqual({ tasks: {}, seen: {} })
   })
 })
+
+// Независимое ревью PR (#78): правка от устаревшего черновика понижала лучший
+// результат задания, уже лежащий на сервере.
+describe('сведение с сервером — лучший результат', () => {
+  it('2 из 5 на этом устройстве не понижают 5 из 5 на сервере', async () => {
+    const { adoptHydratedState, ownerOf, resetPracticeStores } = await import('../progressStore.js')
+    resetPracticeStores()
+    const jwt = `h.${btoa(JSON.stringify({ sub: '7' })).replace(/=+$/, '')}.s`
+    localStorage.setItem('jts_access_token', jwt)
+    markTask('a1-email', 't1', 2, 5)
+    adoptHydratedState({ writing: { tasks: { 'a1-email:t1': { done: true, correct: 5, total: 5, at: 1 } }, seen: {} } }, ownerOf(jwt))
+    expect(taskState('a1-email', 't1')).toMatchObject({ correct: 5 })
+    localStorage.removeItem('jts_access_token')
+    resetPracticeStores()
+  })
+})
