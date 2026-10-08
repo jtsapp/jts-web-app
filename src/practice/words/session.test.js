@@ -9,11 +9,14 @@ import { SECTIONS, loadFixture, loadSection } from './__fixtures__/testData.js'
 describe('оракул: пул и раунды', () => {
   for (const section of SECTIONS) {
     it(`${section}: пул, раунды и их состав совпадают с прототипом`, () => {
-      const { scenes, words, confusable } = loadSection(section)
+      const { scenes, words, confusable, confusableOwn = [] } = loadSection(section)
+      // Оракул посчитан с парами прототипа — наши (#47) в сверку не берём.
+      const own = new Set(confusableOwn.map((p) => p.join('~')))
+      const proto = confusable.filter((p) => !own.has(p.join('~')))
       const oracle = loadFixture(section)
       for (const scene of scenes) {
         const rng = makeRng(oracle.seed)
-        const s = buildSession(scene, words, { rng, portrait: oracle.portrait, confusable })
+        const s = buildSession(scene, words, { rng, portrait: oracle.portrait, confusable: proto })
         expect(s.pool.map((w) => w.id), `${section}/${scene.id}: пул`).toEqual(oracle.scenes[scene.id].pool)
         expect(
           s.rounds.map((r) => r.map((w) => w.id)),
@@ -147,5 +150,38 @@ describe('makeRng и shuffle', () => {
     const list = [1, 2, 3, 4, 5]
     shuffle(list, makeRng(1))
     expect(list).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+// Ревью 08.10.2026 (#47): в прототипе не было пар, которые на картинках
+// путают — утка и гусь, мука и рис в мешках, молоко и кефир в бутылках.
+describe('наши путаемые пары', () => {
+  const PAIRS = [['animals', 'duck', 'goose'], ['food', 'flour', 'rice'], ['food', 'milk', 'kefir']]
+
+  it('лежат в данных секции', () => {
+    for (const [section, a, b] of PAIRS) {
+      const { confusable } = loadSection(section)
+      expect(confusable.some((p) => p.includes(a) && p.includes(b)), `${a}~${b}`).toBe(true)
+    }
+  })
+
+  it('не попадают в один раунд ни при каком сиде и ориентации', () => {
+    let checked = 0
+    for (const [section, a, b] of PAIRS) {
+      const { scenes, words, confusable } = loadSection(section)
+      for (const scene of scenes) {
+        for (const portrait of [false, true]) {
+          for (let seed = 1; seed <= 30; seed++) {
+            const { rounds } = buildSession(scene, words, { seed, portrait, confusable })
+            const ra = rounds.findIndex((r) => r.some((x) => x.id === a))
+            const rb = rounds.findIndex((r) => r.some((x) => x.id === b))
+            if (ra < 0 || rb < 0 || rounds.length < 2) continue
+            checked += 1
+            expect(ra, `${section}/${scene.id} ${a}~${b} сид ${seed}`).not.toBe(rb)
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0)
   })
 })
