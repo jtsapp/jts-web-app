@@ -5,19 +5,30 @@ import { useI18n } from '../../i18n.jsx'
 import { speak } from '../../practice/workbook/voice.js'
 import { saveReadingKeyword } from '../../practice/reading/saveKeyword.js'
 
+// Подпись кнопки по тому, куда ушло слово (saveReadingKeyword): личный
+// словарь — «Уже в словаре», только банк повторений (гость) — «Сохранено»,
+// запись ещё идёт — «Сохраняю…».
+export function savedLabels(kind, t) {
+  if (kind === 'bank') return { title: t('lesson.inBank'), text: t('lesson.savedBank') }
+  if (kind === 'saving') return { title: t('lesson.savingVocab'), text: t('lesson.savingVocab') }
+  if (kind) return { title: t('lesson.inVocab'), text: t('lesson.inVocab') }
+  return { title: t('lesson.addToVocab'), text: t('lesson.toVocab') }
+}
+
 // Список ключевых слов текста: озвучка и «забрать в словарь».
 // Сохранённые в этой сессии помечаются галочкой — повторный тап ничего
 // не меняет (слово в словаре уникально), а студенту нужен видимый ответ.
 export default function ReadingKeywords({ words, compact, token, source }) {
   const { t } = useI18n()
+  // слово → 'saving' | 'dict' | 'bank'
   const [saved, setSaved] = useState({})
 
   const add = async (w) => {
     const key = w.en
     if (saved[key]) return
-    setSaved((s) => ({ ...s, [key]: true }))
-    const ok = await saveReadingKeyword(token, w, source)
-    if (!ok) setSaved((s) => ({ ...s, [key]: false }))
+    setSaved((s) => ({ ...s, [key]: 'saving' }))
+    const kind = await saveReadingKeyword(token, w, source)
+    setSaved((s) => ({ ...s, [key]: kind || false }))
   }
 
   return (
@@ -37,14 +48,14 @@ export default function ReadingKeywords({ words, compact, token, source }) {
             <button type="button" className="rd-say" onClick={() => speak([w.en])} aria-label={`🔊 ${w.en}`}>🔊</button>
             <button
               type="button"
-              className={`rd-save${saved[w.en] ? ' is-saved' : ''}`}
+              className={`rd-save${saved[w.en] && saved[w.en] !== 'saving' ? ' is-saved' : ''}`}
               disabled={!!saved[w.en]}
-              title={saved[w.en] ? t('lesson.inVocab') : t('lesson.addToVocab')}
-              aria-label={saved[w.en] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+              title={savedLabels(saved[w.en], t).title}
+              aria-label={savedLabels(saved[w.en], t).title}
               onClick={() => add(w)}
             >
-              {saved[w.en] ? <SavedIcon /> : <BookIcon />}
-              <span>{saved[w.en] ? t('lesson.inVocab') : t('lesson.toVocab')}</span>
+              {saved[w.en] && saved[w.en] !== 'saving' ? <SavedIcon /> : <BookIcon />}
+              <span>{savedLabels(saved[w.en], t).text}</span>
             </button>
           </div>
         </li>

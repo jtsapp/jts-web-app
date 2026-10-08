@@ -18,10 +18,15 @@ async function saveLang(token, word, translation, language, source) {
 }
 
 /**
+ * Куда ушло слово: 'dict' — личный словарь (его показывает «Словарь»), 'bank'
+ * — только банк повторений тьютора (гость: «Словаря» у него нет), false —
+ * никуда. По этому кнопка и подписывается: гостю «Сохранено», а не «Уже в
+ * словаре» (решение владельца 09.10.2026, как в Обучении).
+ *
  * @param {string|null|undefined} token
  * @param {{en: string, ru?: string, kz?: string, kk?: string}} w
  * @param {string} [source]
- * @returns {Promise<boolean>}
+ * @returns {Promise<'dict'|'bank'|false>}
  */
 export async function saveReadingKeyword(token, w, source) {
   const word = String(w?.en || '').trim()
@@ -33,7 +38,7 @@ export async function saveReadingKeyword(token, w, source) {
   // Банк тьютора (повторения) пишем всем; гость другого словаря не имеет, и
   // слово уходит туда под device-id.
   const bank = addVocabWords([{ word, hint: hint || null }])
-  if (!token) return bank
+  if (!token) return (await bank) ? 'bank' : false
   const [, ruOk, kzOk] = await Promise.all([
     bank,
     saveLang(token, word, ru, 'ru', source),
@@ -42,5 +47,5 @@ export async function saveReadingKeyword(token, w, source) {
   // «В словаре» — только если слово принял личный словарь: банк тьютора в
   // разделе «Словарь» не виден, и его одно «да» давало ложную галочку
   // (ревью 08.10.2026).
-  return ruOk || kzOk
+  return ruOk || kzOk ? 'dict' : false
 }

@@ -13,7 +13,8 @@ import { saveReadingKeyword } from '../../practice/reading/saveKeyword.js'
 export default function ReadingArticle({ text, dict, ensureDict, speakingIndex, token }) {
   const { t } = useI18n()
   const [pop, setPop] = useState(null) // { at: {left, top}, word, entry, state }
-  const [savedKeys, setSavedKeys] = useState(() => new Set())
+  // слово → куда ушло: 'dict' | 'bank' (saveReadingKeyword)
+  const [savedKeys, setSavedKeys] = useState(() => new Map())
   const hostRef = useRef(null)
 
   // Плоский список предложений в порядке чтения — тот же индекс, что у
@@ -140,8 +141,8 @@ export default function ReadingArticle({ text, dict, ensureDict, speakingIndex, 
           t={t}
           token={token}
           source={text.title}
-          saved={savedKeys.has(norm(pop.entry?.en || pop.word))}
-          onSaved={(en) => setSavedKeys((prev) => new Set(prev).add(norm(en)))}
+          saved={savedKeys.get(norm(pop.entry?.en || pop.word))}
+          onSaved={(en, kind) => setSavedKeys((prev) => new Map(prev).set(norm(en), kind))}
         />
       )}
     </div>
@@ -204,9 +205,9 @@ function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
   const onSave = async () => {
     if (!canSave) return
     setSaving(true)
-    const ok = await saveReadingKeyword(token, { en: e.en, ru: e.ru, kz: e.kz }, source)
+    const kind = await saveReadingKeyword(token, { en: e.en, ru: e.ru, kz: e.kz }, source)
     setSaving(false)
-    if (ok) onSaved(e.en)
+    if (kind) onSaved(e.en, kind)
   }
 
   return (
@@ -245,7 +246,9 @@ function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
               disabled={saved || saving}
               onClick={onSave}
             >
-              {saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
+              {/* Гостю «Сохранено»: «Словаря» у него нет, слово в банке
+                  повторений (решение владельца 09.10.2026). */}
+              {saving ? t('lesson.savingVocab') : saved === 'bank' ? t('lesson.savedBank') : saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
             </button>
           )}
         </>
