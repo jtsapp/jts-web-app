@@ -106,7 +106,7 @@ export default function ReadingResult({ text, texts, progressTick, token, onOpen
               <li key={o.i}>
                 <span>{o.i + 1}. {t('reading.exType.' + o.ex.type)}</span>
                 <span className="rd-review__score">{o.s ? o.s.score : 0}/{exTotal(o.ex)}</span>
-                <button type="button" className="rd-btn rd-btn--secondary rd-btn--sm" onClick={onReview}>
+                <button type="button" className="rd-btn rd-btn--secondary rd-btn--sm" onClick={() => onReview(o.i)}>
                   {t('reading.result.open')}
                 </button>
               </li>

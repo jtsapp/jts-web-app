@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { isTtsActive, pauseTts, resumeTts } from '../../lib/speech.js'
-import { prefetch, speak, stopAudio } from '../../practice/workbook/voice.js'
+import { armAbort, prefetch, speak, stopAudio } from '../../practice/workbook/voice.js'
 
 // Озвучка текста с подсветкой текущего предложения (ttsStart/ttsNext прототипа,
 // jtsreading.html:613–626). Голос берём готовый — из воркбука: там Soniox, а
@@ -28,15 +28,21 @@ export default function useReadingVoice(lines) {
     linesRef.current = lines
   }, [lines])
 
-  const stop = useCallback(() => {
+  // Сброс без глушения звука: при обрыве чужим speak() звучит уже чужое, и
+  // гасить его нельзя.
+  const reset = useCallback(() => {
     runRef.current++
     pausedRef.current = false
     pendingRef.current = null
-    stopAudio()
     setPlaying(false)
     setPaused(false)
     setIndex(-1)
   }, [])
+
+  const stop = useCallback(() => {
+    reset()
+    stopAudio()
+  }, [reset])
 
   useEffect(() => stop, [stop])
 
@@ -50,10 +56,21 @@ export default function useReadingVoice(lines) {
       pendingRef.current = null
       setPlaying(true)
       setPaused(false)
+      // Тап по слову и 🔊 у ключевых слов говорят через тот же движок и
+      // обрывают предложение — колбэк «дальше» тогда не придёт. Прототип здесь
+      // останавливал чтение (sayWord → ttsStop); без этого кнопка и подсветка
+      // зависали в «играет» (ревью 08.10.2026).
+      const onAbort = () => {
+        if (my === runRef.current) reset()
+      }
       const step = (i) => {
         if (my !== runRef.current) return
         if (pausedRef.current) {
           pendingRef.current = () => step(i)
+          // На паузе между предложениями движок молчит и об обрыве сообщить
+          // не может — сторож ставим сами, иначе тап по слову оставлял чтение
+          // висеть «на паузе».
+          armAbort(onAbort)
           return
         }
         if (i >= list.length) {
@@ -62,14 +79,14 @@ export default function useReadingVoice(lines) {
           return
         }
         setIndex(i)
-        speak([list[i]], {}, () => step(i + 1))
+        speak([list[i]], { onAbort }, () => step(i + 1))
         // Следующее предложение синтезируется, пока звучит это: иначе перед
         // каждым была бы лишняя секунда тишины на ещё не озвученном тексте.
         if (i + 1 < list.length) prefetch([list[i + 1]])
       }
       step(from)
     },
-    [],
+    [reset],
   )
 
   const pauseResume = useCallback(() => {
@@ -92,7 +109,12 @@ export default function useReadingVoice(lines) {
     if (was) {
       const next = pendingRef.current
       pendingRef.current = null
-      if (next) next()
+      if (next) {
+        // Сторож паузы снимаем до продолжения: speak() внутри next() сам
+        // глушит прошлое и иначе принял бы продолжение за обрыв.
+        armAbort(null)
+        next()
+      }
     }
     setPaused(!was)
   }, [])

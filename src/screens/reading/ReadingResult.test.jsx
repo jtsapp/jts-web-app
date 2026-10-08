@@ -38,10 +38,10 @@ function fakeServer() {
   return s
 }
 
-function mount() {
+function mount(onReview = () => {}) {
   return render(
     <I18nProvider>
-      <ReadingResult text={TEXT} texts={[TEXT]} progressTick={0} token="t" onOpen={() => {}} onLibrary={() => {}} onReview={() => {}} />
+      <ReadingResult text={TEXT} texts={[TEXT]} progressTick={0} token="t" onOpen={() => {}} onLibrary={() => {}} onReview={onReview} />
     </I18nProvider>,
   )
 }
@@ -90,5 +90,16 @@ describe('ReadingResult — итог с сервера', () => {
     await waitFor(() => expect(utils.queryByText(/Не удалось сохранить результат/)).toBeNull())
     expect(utils.getByText('100%')).toBeTruthy()
     expect(server.state.texts[TEXT.id].ex[0]).toEqual({ score: 2, total: 2 })
+  })
+})
+
+describe('ReadingResult — «Что повторить»', () => {
+  it('«Открыть» сообщает, какое задание открыть', async () => {
+    fakeServer()
+    markExercise(TEXT.id, 0, 1, 2)
+    const onReview = vi.fn()
+    const utils = mount(onReview)
+    fireEvent.click(await utils.findByRole('button', { name: 'Открыть' }))
+    expect(onReview).toHaveBeenCalledWith(0)
   })
 })

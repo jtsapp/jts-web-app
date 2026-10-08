@@ -30,11 +30,17 @@ export async function saveReadingKeyword(token, w, source) {
   const kz = w.kz || w.kk
   const hint = [ru, kz].filter(Boolean).join(' · ')
 
-  const jobs = [addVocabWords([{ word, hint: hint || null }])]
-  if (token) {
-    jobs.push(saveLang(token, word, ru, 'ru', source))
-    jobs.push(saveLang(token, word, kz, 'kk', source))
-  }
-  const results = await Promise.all(jobs)
-  return results.some(Boolean)
+  // Банк тьютора (повторения) пишем всем; гость другого словаря не имеет, и
+  // слово уходит туда под device-id.
+  const bank = addVocabWords([{ word, hint: hint || null }])
+  if (!token) return bank
+  const [, ruOk, kzOk] = await Promise.all([
+    bank,
+    saveLang(token, word, ru, 'ru', source),
+    saveLang(token, word, kz, 'kk', source),
+  ])
+  // «В словаре» — только если слово принял личный словарь: банк тьютора в
+  // разделе «Словарь» не виден, и его одно «да» давало ложную галочку
+  // (ревью 08.10.2026).
+  return ruOk || kzOk
 }

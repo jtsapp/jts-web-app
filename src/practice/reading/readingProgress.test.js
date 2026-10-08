@@ -101,12 +101,19 @@ describe('readingProgress — гость', () => {
     expect(textState(TEXT.id).ex[0].score).toBe(4)
   })
 
-  it('markTextDone идемпотентна и отчитывается в домашку один раз', () => {
+  it('markTextDone повторно не пишет, но в домашку отчитывается каждый раз', () => {
+    // Текст, дочитанный ДО того, как его задали на дом, иначе не засчитывался
+    // в домашке никогда — сколько его ни проходи (ревью 08.10.2026). Повтор
+    // бэкенд игнорирует; так же устроена грамматика (markUnitDone).
     markTextDone(TEXT.id)
+    const spy = vi.fn()
+    window.addEventListener(READING_PROGRESS_EVENT, spy)
     markTextDone(TEXT.id)
+    window.removeEventListener(READING_PROGRESS_EVENT, spy)
     expect(textState(TEXT.id).done).toBe(true)
-    expect(countUnitTowardsHomework).toHaveBeenCalledTimes(1)
-    expect(countUnitTowardsHomework).toHaveBeenCalledWith('reading', 'a1', TEXT.id)
+    expect(spy).not.toHaveBeenCalled()
+    expect(countUnitTowardsHomework).toHaveBeenCalledTimes(2)
+    expect(countUnitTowardsHomework).toHaveBeenLastCalledWith('reading', 'a1', TEXT.id)
   })
 
   it('«дочитал» не стирает уже сохранённые упражнения', () => {

@@ -28,6 +28,62 @@ describe('baseForms', () => {
   })
 })
 
+describe('lookup: догадка об основе не подменяет слово', () => {
+  // Ревью 08.10.2026: формы перебирались «короткая основа раньше верной», и
+  // тап по used/uses/using показывал us «нас», times — «Тим (имя)», notes —
+  // not «не», а as — артикль «a» (78 раз на текстах A1–C1).
+  it.each([
+    ['used', 'use'],
+    ['uses', 'use'],
+    ['using', 'use'],
+    ['times', 'time'],
+    ['timing', 'time'],
+    ['ones', 'one'],
+    ['notes', 'note'],
+    ['noted', 'note'],
+    ['caring', 'care'],
+    ['cared', 'care'],
+    ['cares', 'care'],
+    ['Bees', 'bee'],
+    ['hides', 'hide'],
+    ['hiding', 'hide'],
+    ['shining', 'shine'],
+  ])('%s → %s', (word, base) => {
+    expect(lookup(word, DICT, []).ru).toBe(DICT[base][0])
+  })
+
+  it('у -s/-es/-ed/-er основа короче трёх букв не берётся: as — не «a», toes — не «to»', () => {
+    expect(lookup('as', DICT, [])).toBeNull()
+    expect(lookup('toes', DICT, [])).toBeNull()
+  })
+
+  it('-es срезается только после шипящих и o: runes — не run', () => {
+    expect(lookup('runes', DICT, [])).toBeNull()
+    expect(lookup('boxes', DICT, []).ru).toBe(DICT.box[0])
+    expect(lookup('dishes', DICT, []).ru).toBe(DICT.dish[0])
+    expect(lookup('heroes', DICT, []).ru).toBe(DICT.hero[0])
+  })
+
+  it("короткие глаголы с -ing и местоимения с 's по-прежнему находятся", () => {
+    expect(lookup('being', DICT, []).ru).toBe(DICT.be[0])
+    expect(lookup('doing', DICT, []).ru).toBe(DICT.do[0])
+    expect(lookup("it's", DICT, []).ru).toBe(DICT.it[0])
+  })
+
+  it('удвоенная согласная снимается последней: planning → plan, winner → win, hugged → hug', () => {
+    expect(lookup('planning', DICT, []).ru).toBe(DICT.plan[0])
+    expect(lookup('winner', DICT, []).ru).toBe(DICT.win[0])
+    expect(lookup('hugged', DICT, []).ru).toBe(DICT.hug[0])
+  })
+
+  it('слова, где догадка по основе врёт, уходят к сетевому переводчику', () => {
+    // Прогон всех слов текстов A1–C1: news — не new «новый», Peter the Great —
+    // не pet, willing — не will «(будущее время)», marks — не «Марк».
+    const traps = ['news', 'goods', 'sheer', 'Peter', 'shower', 'drawer', 'willing', 'forester', 'counter', 'owner', 'marks', 'marker', 'missed', 'lays']
+    for (const w of traps) expect(lookup(w, DICT, []), w).toBeNull()
+  })
+})
+
 describe('displayWord', () => {
   it('снимает обрамляющую пунктуацию, оставляя регистр', () => {
     expect(displayWord('“Honey,”')).toBe('Honey')
