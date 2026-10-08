@@ -272,7 +272,7 @@ describe('buildStudentAppActivity', () => {
     expect(out.weakest).toBe('vocab')
   })
 
-  it('неделя — та же сводка, что у помощника, без целей', () => {
+  it('неделя: тьютор — из суточных строк, остальные модули — из сводки помощника, целей нет', () => {
     const out = buildStudentAppActivity({ week, voice: [{ day: '2026-10-06', seconds: 2100 }] })
     expect(out.week.weekStart).toBe('2026-10-05')
     expect(out.week.modules.ai_tutor).toMatchObject({ actualMinutes: 35, tracked: 'measured', targetMinutes: null })
@@ -302,6 +302,24 @@ describe('buildStudentAppActivity', () => {
       .filter((d) => d.date >= week.weekStart && d.date < week.weekEndExclusive)
       .reduce((sum, d) => sum + d.tutorSeconds, 0)
     expect(out.week.modules.ai_tutor.actualMinutes).toBe(Math.round(weekSeconds / 60))
+  })
+
+  // Недельная сводка помощника (loadEcosystemWeek) отдаёт week.voiceSeconds — сумму
+  // одной колонки seconds, а она уже входит в суточные строки (seconds +
+  // pool_seconds): сложить обе цифры значит посчитать seconds дважды. Общий каркас
+  // week держит voiceSeconds: 0, и такая регрессия прошла бы мимо всех тестов выше.
+  // Здесь число заведомо чужое: ни прибавлять его к строкам, ни брать вместо них нельзя.
+  it('минуты тьютора за неделю — только суточные строки: voiceSeconds сводки помощника не подмешивается', () => {
+    const voice = [
+      { day: '2026-10-06', seconds: 720 },
+      { day: '2026-10-07', seconds: 1500 },
+    ]
+    const rowsOnly = buildStudentAppActivity({ week, voice })
+    const out = buildStudentAppActivity({ week: { ...week, voiceSeconds: 99999 }, voice })
+
+    // 720 + 1500 = 2220 с = 37 мин. Со сложением вышло бы 1704.
+    expect(rowsOnly.week.modules.ai_tutor.actualMinutes).toBe(37)
+    expect(out.week.modules.ai_tutor.actualMinutes).toBe(rowsOnly.week.modules.ai_tutor.actualMinutes)
   })
 
   it('дни сводятся из трёх таблиц, пустые выкидываются, порядок — по дате', () => {
