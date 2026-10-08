@@ -9165,6 +9165,8 @@ textarea {
 /* Глава за пределами ознакомительного доступа: кликать нечего — текста в
    ответе сервера нет (см. /api/books/[id]). */
 .bk-chapter--locked { opacity: 0.55; cursor: not-allowed; }
+/* Вместо «Перейти к следующей главе», когда она закрыта демо-доступом. */
+.bk-read__locked { margin: 24px 0 0; color: var(--muted, #6b6880); font-size: 15px; }
 .bk-ov__preview { margin: 8px 0 0; font-size: 13px; color: #6b6480; }
 
 /* ── Читалка комикса ── */
