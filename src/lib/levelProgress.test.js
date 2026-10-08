@@ -6,6 +6,7 @@ import {
   nextLevel,
   rankSkills,
   sanitizeGoal,
+  skillHighlights,
   skillPercent,
   weeklyDelta,
 } from './levelProgress.js'
@@ -36,6 +37,33 @@ describe('rankSkills', () => {
     })
     expect(ranked[0]).toEqual({ skill: 'speaking', percent: 84 })
     expect(ranked[ranked.length - 1].percent).toBe(0)
+  })
+})
+
+describe('skillHighlights', () => {
+  it('у новичка без заданий нет ни сильной, ни слабой стороны', () => {
+    expect(skillHighlights(rankSkills({}))).toEqual({ strongest: null, weakest: null })
+  })
+
+  it('сильнейший — первый в рейтинге, слабейший — последний', () => {
+    const ranked = rankSkills({
+      grammar: { done: 50, firstTry: 45 },
+      listening: { done: 30, firstTry: 9 },
+    })
+    const { strongest, weakest } = skillHighlights(ranked)
+    expect(strongest.skill).toBe('grammar')
+    expect(weakest.percent).toBe(0)
+  })
+
+  it('слабейшего нет, если все навыки равны', () => {
+    const ranked = ['listening', 'speaking', 'reading', 'writing', 'grammar', 'vocab']
+      .map((skill) => ({ skill, percent: 40 }))
+    expect(skillHighlights(ranked)).toEqual({ strongest: ranked[0], weakest: null })
+  })
+
+  it('пустой или кривой вход не роняет', () => {
+    expect(skillHighlights(null)).toEqual({ strongest: null, weakest: null })
+    expect(skillHighlights([])).toEqual({ strongest: null, weakest: null })
   })
 })
 
