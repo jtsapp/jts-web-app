@@ -56,8 +56,23 @@ describe('saveReadingKeyword', () => {
     expect(saveWord).toHaveBeenCalledWith('tok', expect.objectContaining({ language: 'kk', translation: 'сынақ' }))
   })
 
-  it('если личный словарь упал, а банк принял — считаем успехом', async () => {
+  // Ревью 08.10.2026: банк тьютора в разделе «Словарь» не виден, и «Уже в
+  // словаре» после его одного «да» врало — в «Моём словаре» слова не было.
+  it('личный словарь упал, а банк принял — это не «в словаре»', async () => {
     saveWord.mockRejectedValue(new Error('offline'))
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(false)
+  })
+
+  it('личный словарь принял, банк тьютора упал — слово в словаре', async () => {
+    addVocabWords.mockResolvedValue(false)
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(true)
+  })
+
+  it('хватает одного языка: ru принят, kk упал', async () => {
+    saveWord.mockImplementation(async (_t, { language }) => {
+      if (language === 'kk') throw new Error('500')
+      return {}
+    })
     await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(true)
   })
 
