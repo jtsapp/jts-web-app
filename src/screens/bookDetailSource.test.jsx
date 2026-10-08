@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react'
 
 // Книга, которой нет в статике public/practice/books, читается главами из
 // админки: список каталога отдаёт треки без текста, поэтому читалка добирает
@@ -77,7 +77,9 @@ describe('BookDetail — книга из админки', () => {
 
     await waitFor(() => expect(screen.getByText('Track one')).toBeTruthy())
     expect(screen.getByText('5:30')).toBeTruthy()
-    expect(screen.getByText('🎧 Аудио')).toBeTruthy()
+    // Эмодзи кнопки — отдельный aria-hidden span (на телефоне вместо него
+    // иконка макета), поэтому ищем кнопку по доступному имени.
+    expect(screen.getByRole('button', { name: /Аудио/ })).toBeTruthy()
   })
 
   it('сбой сети не роняет экран — книга открывается без глав', async () => {
@@ -103,5 +105,69 @@ describe('BookDetail — книга из админки', () => {
     await waitFor(() => expect(screen.getByText('The Otis Family')).toBeTruthy())
     expect(screen.getByText('Начать чтение')).toBeTruthy()
     expect(screen.queryByText('Читать книгу')).toBeNull()
+  })
+})
+
+describe('BookDetail — полоса чтения и субтитры', () => {
+  // Читалка мотает окно наверх при смене главы, а jsdom прокрутки не умеет и
+  // сыплет «Not implemented» в вывод.
+  beforeEach(() => {
+    window.scrollTo = vi.fn()
+  })
+
+  // Полоса живёт в портале body и на телефоне плавает внизу экрана; в jsdom
+  // размеров нет, поэтому проверяем, что она есть и честно стоит на нуле.
+  it('в режиме чтения рисует полосу прогресса главы', async () => {
+    getAudiobook.mockResolvedValue({
+      id: 48,
+      tracks: [{ trackIndex: 1, title: 'One', text: 'Первое предложение. Второе.' }],
+    })
+    render(<BookDetail book={book(48)} token="t" onBack={() => {}} />)
+    await waitFor(() => expect(screen.getByText('One')).toBeTruthy())
+    fireEvent.click(screen.getByText('Начать чтение'))
+
+    const bar = await screen.findByRole('progressbar', { name: 'books.readProgress' })
+    expect(bar.getAttribute('aria-valuenow')).toBe('0')
+    expect(bar.parentElement).toBe(document.body)
+  })
+
+  it('у главы без текста полосы нет', async () => {
+    const audioOnly = { ...book(49), tracks: [{ id: 1, title: 'Track one', audioUrl: 'a.mp3' }] }
+    getAudiobook.mockResolvedValue({ id: 49, tracks: [{ id: 1, trackIndex: 1, title: 'Track one', audioUrl: 'a.mp3' }] })
+    render(<BookDetail book={audioOnly} token="t" onBack={() => {}} />)
+    await waitFor(() => expect(screen.getByText('Track one')).toBeTruthy())
+    fireEvent.click(screen.getByText('Начать чтение'))
+
+    await screen.findByText(/Текст этой главы ещё не добавлен/)
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  // Субтитры — текст того же трека с detail-эндпоинта (у трека в списке
+  // каталога текста нет).
+  it('в аудио показывает субтитры из текста трека', async () => {
+    const withAudio = { ...book(50), tracks: [{ id: 5, title: 'Глава 1', audioUrl: 'a.mp3' }] }
+    getAudiobook.mockResolvedValue({
+      id: 50,
+      tracks: [{ id: 5, trackIndex: 1, title: 'Глава 1', audioUrl: 'a.mp3', text: 'The universe had a beginning. And so on.' }],
+    })
+    render(<BookDetail book={withAudio} token="t" onBack={() => {}} />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /Аудио/ })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: /Аудио/ }))
+
+    await screen.findByText('books.subtitles')
+    expect(screen.getByText(/The universe had a beginning\./)).toBeTruthy()
+    // До старта ничего не «прозвучало».
+    expect(document.querySelectorAll('.bk-subs .is-said')).toHaveLength(0)
+  })
+
+  it('трек без текста — карточки субтитров нет', async () => {
+    const withAudio = { ...book(51), tracks: [{ id: 6, title: 'Глава 1', audioUrl: 'a.mp3' }] }
+    getAudiobook.mockResolvedValue({ id: 51, tracks: [{ id: 6, trackIndex: 1, title: 'Глава 1', audioUrl: 'a.mp3' }] })
+    render(<BookDetail book={withAudio} token="t" onBack={() => {}} />)
+    await waitFor(() => expect(screen.getByRole('button', { name: /Аудио/ })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: /Аудио/ }))
+
+    await waitFor(() => expect(getAudiobook).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('books.subtitles')).toBeNull()
   })
 })

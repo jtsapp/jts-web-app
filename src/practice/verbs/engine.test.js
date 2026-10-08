@@ -45,17 +45,42 @@ describe('оракул: глаголы', () => {
     }
   })
 
+  // Расхождения с прототипом — намеренные (ревью 08.10.2026, см. шапку
+  // engine.js) и только в сторону «засчитать»; их число зафиксировано, чтобы
+  // случайное новое расхождение не спряталось среди задуманных.
   it('checkForm на всех ответах совпадает с прототипом', () => {
+    const diverged = []
     for (const c of ORACLE.checkForm) {
-      expect(checkForm(c.value, BY[c.v1], c.index), `${c.v1} V${c.index + 1} «${c.value}»`).toBe(c.ok)
+      const got = checkForm(c.value, BY[c.v1], c.index)
+      if (got === c.ok) continue
+      diverged.push(`${c.v1} V${c.index + 1} «${c.value}»`)
+      expect(got, `${c.v1} V${c.index + 1} «${c.value}»: расходиться можно только в «верно»`).toBe(true)
     }
+    // Оба варианта в другом порядке: прототип ждал только «was/were» и
+    // «got/gotten».
+    expect(diverged).toEqual(['be V2 «were/was»', 'get V3 «gotten/got»'])
   })
 
   it('scoreTargets на всех расшифровках совпадает с прототипом', () => {
+    const diverged = { filler: 0, reversed: 0 }
     for (const s of ORACLE.score) {
       const got = scoreTargets(s.expected, s.text, { mode: s.mode, gap: s.gap, aliases: DATA.aliases })
-      expect(got, `${s.mode}/${s.gap} ${s.expected.join(' ')} ← «${s.text}»`).toEqual(s.result)
+      const where = `${s.mode}/${s.gap} ${s.expected.join(' ')} ← «${s.text}»`
+      if (JSON.stringify(got) === JSON.stringify(s.result)) continue
+      expect(got.hits, `${where}: расходиться можно только в сторону попаданий`).toBeGreaterThan(s.result.hits)
+      if (/^um /.test(s.text)) {
+        // Слово-паразит в начале: прототип сдвигал все формы — ноль.
+        expect(got.hits, where).toBe(got.total)
+        diverged.filler++
+      } else {
+        // Формы задом наперёд: позиционно — почти ноль, по порядку с
+        // пропусками одна форма стоит на месте. Полного счёта нет.
+        expect(s.text, where).toBe(s.expected.slice().reverse().join(' '))
+        expect(got.hits, where).toBeLessThan(got.total)
+        diverged.reversed++
+      }
     }
+    expect(diverged).toEqual({ filler: 360, reversed: 116 })
   })
 })
 

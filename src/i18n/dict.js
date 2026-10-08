@@ -37,10 +37,12 @@ export const DICT = {
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
     // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
-    // Айзере — пока только на dev-стенде (AIZERE_ENABLED). Черты — с макета;
-    // описания и кнопок у неё нет: экран выбора их не рисует.
+    // Айзере — в проде с 03.10.2026. Черты — с макета.
+    // Описания и визитки голоса у неё нет — мобильная карусель их пропускает,
+    // а «Выбрать» ей нужна.
     'tutor.aizere.trait1': 'Мудрая',
     'tutor.aizere.trait2': 'Заботливая',
+    'tutor.aizere.choose': 'Выбрать Айзере',
     'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
     'tutor.luna.trait3': 'Спокойная',
@@ -90,6 +92,15 @@ export const DICT = {
       'Тот же голос, но дворецкий, которому надоело. Всё так же на «сіз» и всё так же «мырза» — только вежливость теперь работает как оружие: холодно, коротко, с матом там, где вы его заслужили. Плану вашему он скажет, что о нём думает. Отвечает при этом ровно так же точно.',
     'tutor.jarvis.listen': 'Послушать KZ тест',
     'tutor.jarvis.choose': 'Выбрать KZ тест',
+    // «Спарк тест» — второе dev-only место для тестов Speaking Buddy (тот же
+    // JARVIS_ENABLED): новый Спарк из пакета v3.4 с лицом и эмоциями. Ключи во
+    // всех трёх языках по той же причине, что у KZ теста.
+    'tutor.sparktest.trait1': 'Тестируется',
+    'tutor.sparktest.trait2': 'Эмоции',
+    'tutor.sparktest.trait3': 'Speaking Buddy',
+    'tutor.sparktest.desc':
+      'Стенд нового Спарка из пакета Speaking Buddy v3.4: саркастичный, говорит по-английски, по-русски и по-казахски, голосом живого Спарка. В звонке видно лицо с эмоциями — для их проверки он и сделан. Доступен только на тестовом стенде.',
+    'tutor.sparktest.choose': 'Выбрать Спарк тест',
 
     // Загрузка
     'loading.heading': '{name} собирает\nтебе обучение...',
@@ -451,6 +462,7 @@ export const DICT = {
     'choose.soon': 'Жақында',
     'tutor.aizere.trait1': 'Дана',
     'tutor.aizere.trait2': 'Қамқор',
+    'tutor.aizere.choose': 'Айзере таңдау',
     'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
     'tutor.luna.trait3': 'Байсалды',
@@ -489,6 +501,12 @@ export const DICT = {
       'Сол дауыс, бірақ шыдамы таусылған дворецкий. Бәрібір «сіз» деп, «мырза» деп қаратады — тек сыпайылығы енді қару: суық, қысқа, лайық жерінде боқтап та жібереді. Жоспарыңыз туралы ойын тура айтады. Жауабының дәлдігі сол күйі қалады.',
     'tutor.jarvis.listen': 'KZ тестті тыңдау',
     'tutor.jarvis.choose': 'KZ тестті таңдау',
+    'tutor.sparktest.trait1': 'Сынақтан өтуде',
+    'tutor.sparktest.trait2': 'Эмоциялар',
+    'tutor.sparktest.trait3': 'Speaking Buddy',
+    'tutor.sparktest.desc':
+      'Speaking Buddy v3.4 пакетіндегі жаңа Спарктың стенді: сарказмы бар, ағылшынша, орысша және қазақша сөйлейді, тірі Спарктың дауысымен. Қоңырауда эмоциясы бар бет көрінеді — оны тексеру үшін жасалған. Тек сынақ стендінде қолжетімді.',
+    'tutor.sparktest.choose': 'Спарк тестті таңдау',
 
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
 
@@ -831,6 +849,7 @@ export const DICT = {
     'choose.soon': 'Coming soon',
     'tutor.aizere.trait1': 'Wise',
     'tutor.aizere.trait2': 'Caring',
+    'tutor.aizere.choose': 'Choose Aizere',
     'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
     'tutor.luna.trait3': 'Calm',
@@ -869,6 +888,12 @@ export const DICT = {
       'The same voice, but a butler out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
     'tutor.jarvis.listen': 'Listen to KZ test',
     'tutor.jarvis.choose': 'Choose KZ test',
+    'tutor.sparktest.trait1': 'In testing',
+    'tutor.sparktest.trait2': 'Emotions',
+    'tutor.sparktest.trait3': 'Speaking Buddy',
+    'tutor.sparktest.desc':
+      'Test stand for the new Spark from the Speaking Buddy v3.4 pack: sarcastic, speaks English, Russian and Kazakh, in the live Spark voice. The call shows a face with emotions — that is what it is here to test. Available on the test stand only.',
+    'tutor.sparktest.choose': 'Choose Spark test',
 
     'loading.heading': '{name} is putting\nyour lessons together...',
 

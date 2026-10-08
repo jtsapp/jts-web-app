@@ -5,6 +5,8 @@ import { useI18n } from '../i18n.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { READING_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { readView, writeView, viewVars, stepFont } from '../practice/reading/viewSettings.js'
+import { loadReadingFromServer } from '../practice/reading/readingProgress.js'
+import { loadDict } from '../practice/reading/loadDict.js'
 import ReadingLibrary from './reading/ReadingLibrary.jsx'
 import ReadingText from './reading/ReadingText.jsx'
 import ReadingResult from './reading/ReadingResult.jsx'
@@ -37,22 +39,6 @@ function fetchLevel(level) {
   return levelCache.get(level)
 }
 
-// Словарь тапа по слову — 216 КБ, и он общий на все уровни. Тянем его ЛЕНИВО,
-// с первого тапа: большинству читателей он не нужен вовсе (перевод ключевых
-// слов уже лежит рядом с текстом).
-let dictPromise = null
-function fetchDict() {
-  if (!dictPromise) {
-    dictPromise = fetch('/practice/reading/dict.json')
-      .then((r) => (r.ok ? r.json() : {}))
-      .catch(() => {
-        dictPromise = null
-        return {}
-      })
-  }
-  return dictPromise
-}
-
 // Экран «Чтение»: внутренняя view-машина (как S.screen в прототипе) —
 // библиотека → читалка → результат. Отдельных Next-роутов нет намеренно:
 // навигация всего приложения — state-машина App.jsx.
@@ -77,6 +63,13 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
     window.addEventListener(READING_PROGRESS_EVENT, bump)
     return () => window.removeEventListener(READING_PROGRESS_EVENT, bump)
   }, [])
+
+  // Прогресс вошедшего берём с сервера при каждом открытии раздела: он там
+  // главный (readingProgress.js). Пока ответа нет, карточки рисуют черновик, а
+  // ответ будит их тем же событием прогресса.
+  useEffect(() => {
+    if (token) loadReadingFromServer()
+  }, [token])
 
   // Уходя с раздела, глушим синтез: иначе браузер продолжает читать текст
   // на уже закрытом экране (в прототипе это чинил beforeunload).
@@ -108,8 +101,9 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
 
   const ensureDict = useCallback(() => {
     if (dict) return Promise.resolve(dict)
-    return fetchDict().then((d) => {
-      setDict(d)
+    return loadDict().then((d) => {
+      // Сбой (null) в состояние не кладём — следующий тап попробует снова.
+      if (d) setDict(d)
       return d
     })
   }, [dict])
@@ -214,6 +208,8 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
           dict={dict}
           ensureDict={ensureDict}
           token={token}
+          initialTab={view.tab}
+          focusEx={view.ex}
           onFont={(dir) => applyView({ ...viewPrefs, fs: stepFont(viewPrefs.fs, dir) })}
           onSettings={() => setSettingsOpen(true)}
           onFinish={() => {
@@ -232,7 +228,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
         token={token}
         onOpen={openText}
         onLibrary={goLibrary}
-        onReview={() => setView({ name: 'read', textId: current.id, tab: 'ex' })}
+        onReview={(i) => setView({ name: 'read', textId: current.id, tab: 'ex', ex: i })}
       />
     )
   }

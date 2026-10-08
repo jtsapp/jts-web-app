@@ -26,6 +26,7 @@ import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
+import { normLevel as listeningLevel } from './ListeningPage.jsx'
 import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
@@ -195,6 +196,18 @@ export default function PracticePage({
   const [memesBlocked, setMemesBlocked] = useState(false)
   const [talesBlocked, setTalesBlocked] = useState(false)
   const [books, setBooks] = useState([])
+  // Почему каталоги книг и комиксов пусты. `null` — всё в порядке (или ещё
+  // грузится); 'guest' — посетитель без входа, а гостевой витрины на стенде нет
+  // (`/api/practice/demo-token` отвечает 503, пока не заданы DEMO_PHONE и
+  // DEMO_PASSWORD); 'failed' — запрос не прошёл у вошедшего.
+  //
+  // Раньше все три случая выглядели одинаково — «Нет данных»: сбой ловился
+  // пустым catch, и «каталог не загрузился» неотличим от «книг нет». Так и
+  // пришло обращение «на мобильной нет книжек и комиксов» при 40 активных книгах
+  // и 87 комиксах в базе.
+  const [catalogIssue, setCatalogIssue] = useState(null)
+  // Счётчик «Повторить»: меняет зависимости эффектов и перезапускает загрузку.
+  const [catalogRetry, setCatalogRetry] = useState(0)
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
   const [apiToken, setApiToken] = useState(token || '')
   // Открытие конкретного урока грамматики гейтится квотой (см. openUnit ниже) —
@@ -273,25 +286,36 @@ export default function PracticePage({
   useEffect(() => {
     let alive = true
     setState({ loading: true, error: '' })
+    setCatalogIssue(null)
     fetchCoversIndex() // параллельно с токеном и каталогами, а не после аудиокниг
     getPracticeToken(token)
       .then((tok) => {
         if (alive) setApiToken(tok)
+        // Нет токена вовсе — это гость на стенде без демо-витрины: серверные
+        // каталоги ему не отдадутся, и говорить «Нет данных» нечестно.
+        if (alive && !tok) setCatalogIssue('guest')
         // Тянем всё параллельно; отдельные сбои не роняют страницу целиком.
         // apply применяется дважды: к кэшу (мгновенный рендер) и к свежим
         // данным, когда фоновое обновление SWR-кэша доходит до сети.
-        const pull = (start, set, transform) => {
+        const pull = (start, set, transform, onFail) => {
           const apply = async (d) => {
             if (!alive || d == null) return
             const arr = Array.isArray(d) ? d : d?.content || d?.items || []
             set(transform ? await transform(arr) : arr)
           }
-          return start(apply).then(apply).catch(() => {})
+          // Отказ по-прежнему не роняет страницу, но больше и не немой: каталог
+          // без данных обязан сказать об этом, а не прикинуться пустым.
+          return start(apply).then(apply).catch(() => {
+            if (alive) onFail?.()
+          })
         }
+        // Гостевую причину не затираем: у гостя запрос без токена тоже упадёт,
+        // и 'failed' оказался бы ложным диагнозом.
+        const markFailed = () => setCatalogIssue((i) => i ?? 'failed')
         return Promise.all([
           pull((onFresh) => getMediaClips(tok, onFresh), setClips),
           pull((onFresh) => getSituativki(tok, null, onFresh), setSituativkiAll),
-          pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers),
+          pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers, markFailed),
           pull((onFresh) => loadKaraokeIndex(tok, onFresh), setKaraoke),
         ])
       })
@@ -302,7 +326,7 @@ export default function PracticePage({
     return () => {
       alive = false
     }
-  }, [token])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, catalogRetry])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Тяжёлый оверлей мира сказок (~3 МБ) подгружаем на простое после первого
   // рендера: первый клик открывает его мгновенно и загрузка не конкурирует с
@@ -342,7 +366,10 @@ export default function PracticePage({
           if (!q) setHasComics(list.length > 0)
           setComics(visibleComics(list, profile))
         })
-        .catch(() => {})
+        .catch(() => {
+          // Поиск, не нашедший ничего, — не отказ; отказ каталога — отказ.
+          if (alive && !q) setCatalogIssue((i) => i ?? 'failed')
+        })
     if (!q) {
       run()
       return () => {
@@ -354,7 +381,7 @@ export default function PracticePage({
       alive = false
       clearTimeout(id)
     }
-  }, [apiToken, comicQuery, profile])
+  }, [apiToken, comicQuery, profile, catalogRetry])
 
   // Книжки: сначала уровень (переключатель в шапке), потом озвучка, потом
   // поиск. Каталог загружен целиком, поэтому без запросов к бэкенду; normTitle
@@ -625,12 +652,16 @@ export default function PracticePage({
   // Ref-страж, как у сказок: два быстрых клика по разным мемам иначе
   // открывали тот, чей ответ квоты пришёл позже.
   const reelLoadingRef = useRef(false)
+  // Потолок из последнего свежего ответа квоты — по нему лента проверяет
+  // каждый следующий ролик (watchReel).
+  const reelLimitRef = useRef(null)
   const tryOpenReel = async (index) => {
     if (reelLoadingRef.current) return
     reelLoadingRef.current = true
     try {
       const id = clips[index]?.id ?? index
       const fresh = await memesEntitlement.check()
+      reelLimitRef.current = fresh.limit
       if (!fresh.allowed || !canOpenSeen('memes', id, fresh.limit)) {
         setMemesBlocked(true)
         return
@@ -640,6 +671,21 @@ export default function PracticePage({
     } finally {
       reelLoadingRef.current = false
     }
+  }
+
+  // Лента листается дальше открытого ролика, а квота проверялась только на
+  // входе — демо-ученик с лимитом смотрел все мемы подряд (ревью 08.10.2026,
+  // #80). Теперь каждый новый ролик в кадре — та же проверка, что на входе:
+  // уже виденный лимит не тратит, сверх лимита — экран лимита.
+  const watchReel = (index) => {
+    const id = clips[index]?.id ?? index
+    if (canOpenSeen('memes', id, reelLimitRef.current)) {
+      markSeen('memes', id)
+      return true
+    }
+    setOpenReel(null)
+    setMemesBlocked(true)
+    return false
   }
 
   // Книги ограничивает сервер, а не этот экран: квота PRACTICE_BOOKS означает
@@ -701,7 +747,7 @@ export default function PracticePage({
   }
 
   if (openReel !== null) {
-    return layout(<ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />)
+    return layout(<ReelsViewer clips={clips} startIndex={openReel} onActive={watchReel} onBack={() => setOpenReel(null)} />)
   }
 
   if (openKaraoke) {
@@ -756,6 +802,7 @@ export default function PracticePage({
               desc={t('practice.listening.desc')}
               cta={t('practice.listening.cta')}
               onStart={() => onNav?.('listening')}
+              badge={{ caption: t('practice.listening.byLevel'), level: listeningLevel(userLevel).toUpperCase() }}
             />
             <Banner
               id="sec-listenchoose"
@@ -779,6 +826,20 @@ export default function PracticePage({
             desc={t('practice.words.desc')}
             cta={t('practice.words.cta')}
             onStart={() => onNav?.('words')}
+          />
+        )
+
+      case 'speakspin':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-speakspin"
+            variant="speakspin"
+            wide
+            title={t('practice.speakspin.heading')}
+            desc={t('practice.speakspin.desc')}
+            cta={t('practice.speakspin.cta')}
+            onStart={() => onNav?.('speakspin')}
           />
         )
 
@@ -894,7 +955,11 @@ export default function PracticePage({
               </>,
             )}
             {books.length === 0 ? (
-              <Empty loading={state.loading} skeleton="book" />
+              catalogIssue && !state.loading ? (
+                <CatalogIssue issue={catalogIssue} onRetry={() => setCatalogRetry((n) => n + 1)} />
+              ) : (
+                <Empty loading={state.loading} skeleton="book" />
+              )
             ) : levelBooks.length === 0 ? (
               levelEmpty
             ) : visibleBooks.length === 0 ? (
@@ -921,17 +986,25 @@ export default function PracticePage({
 
       case 'comics':
         // Раздела нет вовсе, пока каталог пуст: пустая лента выглядит
-        // поломкой, а комикс — контент штучный.
-        if (!hasComics) return null
+        // поломкой, а комикс — контент штучный. Исключение — каталог, который
+        // не загрузился: молча убрать раздел значило бы выдать сбой за «комиксов
+        // нет», с него это обращение и началось.
+        if (!hasComics && !catalogIssue) return null
         return (
           <section key={sec.id} id="sec-comics" className="pk-sec">
             {head(
               sec,
               t('practice.chip.comics'),
-              <SearchBox value={comicQuery} onChange={setComicQuery} placeholder={t('comics.search')} ariaLabel={t('comics.searchAria')} clearLabel={t('comics.clear')} />,
+              hasComics ? (
+                <SearchBox value={comicQuery} onChange={setComicQuery} placeholder={t('comics.search')} ariaLabel={t('comics.searchAria')} clearLabel={t('comics.clear')} />
+              ) : null,
             )}
             {comics.length === 0 ? (
-              <Empty text={t('comics.nothing', { q: comicQuery.trim() })} />
+              !hasComics && catalogIssue ? (
+                <CatalogIssue issue={catalogIssue} onRetry={() => setCatalogRetry((n) => n + 1)} />
+              ) : (
+                <Empty text={t('comics.nothing', { q: comicQuery.trim() })} />
+              )
             ) : (
               <Rail grid={grid} className="pk-rail--books">
                 {comics.map((c) => (
@@ -1129,6 +1202,23 @@ function SkeletonRail({ variant }) {
   )
 }
 
+// Каталог, который не загрузился, а не «пустой»: гостю без входа и вошедшему
+// после сбоя нужны разные слова, и только второму — кнопка «Повторить». У гостя
+// повтор бесполезен: серверной витрины на стенде нет, и дело не в соединении.
+function CatalogIssue({ issue, onRetry }) {
+  const { t } = useI18n()
+  return (
+    <div className="pp-empty pp-empty--issue" role="status">
+      <p>{t(issue === 'guest' ? 'practice.catalog.guest' : 'practice.catalog.failed')}</p>
+      {issue !== 'guest' && (
+        <button type="button" className="pp-empty__retry" onClick={onRetry}>
+          {t('practice.catalog.retry')}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function Empty({ loading, text, skeleton }) {
   const { t } = useI18n()
   if (loading && skeleton) return <SkeletonRail variant={skeleton} />
@@ -1146,13 +1236,20 @@ function Empty({ loading, text, skeleton }) {
 // играет, остальные стоят. На десктопе остаются кнопки/колесо/стрелки —
 // кнопки и клавиши мотают ленту плавным scrollTo; на мобиле кнопок нет
 // (спрятаны в CSS), сама лента — полноэкранный оверлей.
-function ReelsViewer({ clips, startIndex, onBack }) {
+// onActive(k) — ролик k встал в кадр; false — смотреть его нельзя (квота).
+function ReelsViewer({ clips, startIndex, onActive, onBack }) {
   const { t } = useI18n()
   const [i, setI] = useState(startIndex)
   const [hint, setHint] = useState(true)
   const [paused, setPaused] = useState(false)
   const feedRef = useRef(null)
   const iRef = useRef(startIndex)
+  // Наблюдатель создаётся один раз на ленту — свежий onActive берём из ref,
+  // а не из замыкания первого рендера.
+  const onActiveRef = useRef(onActive)
+  useEffect(() => {
+    onActiveRef.current = onActive
+  }, [onActive])
   // Тач-экран → в подсказке свайп, а не колесо (matchMedia безопасен и в SSR-гарде)
   const coarse =
     typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
@@ -1173,6 +1270,7 @@ function ReelsViewer({ clips, startIndex, onBack }) {
         entries.forEach((en) => {
           if (!en.isIntersecting) return
           const k = Number(en.target.dataset.idx)
+          if (k !== iRef.current && onActiveRef.current && !onActiveRef.current(k)) return
           iRef.current = k
           setI((cur) => {
             if (cur !== k) setHint(false)

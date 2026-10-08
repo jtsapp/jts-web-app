@@ -17,6 +17,7 @@ import { SITUATIONS_ITEMS_KEY as KEY, SITUATIONS_PROGRESS_EVENT as EVENT } from 
 // Ключ свой у каждого ученика: серверной копии нет, и под общим ключом
 // следующий на том же компьютере видел чужие пройденные сценарии.
 import { userScopedKey } from '../../lib/userScopedKey.js'
+import { countUnitTowardsHomework } from '../practiceHomework.js'
 
 function read() {
   try {
@@ -75,4 +76,20 @@ export function markItemDone(level, id) {
 /** Сколько сценариев уровня пройдено — для прогресс-бара каталога. */
 export function countDone(level) {
   return readDoneItems(level).length
+}
+
+/**
+ * Сценарий пройден: отметка плюс отчёт в домашнюю работу. Раньше отчёта не
+ * было вовсе — заданный уровень «Ситуаций» оставался невыполненным (ревью
+ * 08.10.2026, #8). Уровень выдаётся целиком, как у Аудирования, поэтому
+ * уходят числа: порог засчитывания считает сервер. Отчёт и на повторном
+ * прохождении — уровень могли задать уже после; сервер повтор не задваивает.
+ *
+ * @param total сколько сценариев в уровне (длина загруженного списка)
+ */
+export function markScenarioDone(level, id, total) {
+  const code = String(level || '').toLowerCase()
+  if (!code) return
+  markItemDone(code, id)
+  countUnitTowardsHomework('situations', code, code, { done: countDone(code), total })
 }

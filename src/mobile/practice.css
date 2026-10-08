@@ -1,0 +1,1379 @@
+/* ======================================================================
+   Мобильная «Практика» без грамматики (Figma «Web Адаптивка» → «Практика»,
+   секция 4095:3183, фреймы 440px): главная, полные списки разделов,
+   «Книжки», «Мемы и рилсы», «Аудирование». Грамматика — practice-grammar.css.
+
+   Макет и приложение устроены по-разному: в макете под шапкой лента чипов
+   РАЗДЕЛОВ («Все · Грамматика · Ситуации…»), у нас — фильтр уровня и карточки
+   навыков. Чипами по макету оформлен фильтр уровня (то же место и та же роль
+   «Все + варианты»), карточки навыков остаются как есть — их в макете нет, но
+   и спрятать их нельзя: это вкладки.
+   ====================================================================== */
+
+/* Элементы, которых нет в десктопной вёрстке: звезда уровня на баннере
+   Аудирования, глава в шапке книги, кнопка и крестик оглавления-листа,
+   полоса прогресса главы, название сценария в шапке «Ситуаций». */
+.pk-banner__badge,
+.bk-head__chapter,
+.bk-head__toc,
+.bk-read__close,
+.bk-ov__diff,
+.bk-readbar,
+.sit-top__title {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  /* Рабочая область макета серая #f8f8f8: белые чипы сказок и пилюли на
+     белом фоне терялись бы. Полоса чипов под шапкой — белая. */
+  .learn__main:has(.pk) {
+    background: #f8f8f8;
+  }
+  .pk {
+    gap: 32px;
+    padding: 0 16px 40px;
+  }
+
+  /* ---------- Полоса чипов (фрейм 4254:2202: 440×54, поля 8/16) ---------- */
+  .pk-head {
+    display: block;
+    min-height: 0;
+    margin: 0 -16px -16px;
+    padding: 8px 0;
+    background: #fff;
+  }
+  /* Скролл — у самого ряда, а поле 16 — внутри него: иначе прокрученные чипы
+     обрезались бы на отступе, а не на краю экрана, как в макете. */
+  .pk-levels {
+    display: flex;
+    width: auto;
+    gap: 8px;
+    padding: 0 16px;
+    border-radius: 0;
+    background: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .pk-levels::-webkit-scrollbar {
+    display: none;
+  }
+  /* Чип 38 (поля 10/20), r30: голубой с фиолетовой подписью, выбранный —
+     фиолетовый с белой. */
+  .pk-levels__btn,
+  .pk-levels__btn:hover {
+    flex: none;
+    width: auto;
+    height: 38px;
+    padding: 0 20px;
+    border-radius: 30px;
+    background: #b7f0ff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 18px;
+    color: #9047ff;
+  }
+  .pk-levels__btn.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+
+  /* ---------- Шапка секции: 24/110%, «Посмотреть все» 154×32 ---------- */
+  .pk-sec__title {
+    font-size: 24px;
+    line-height: 26px;
+  }
+  .pk-sec__title--sm {
+    font-size: 18px;
+    line-height: 20px;
+  }
+  /* От шапки до ленты в макете по-разному: 16 у Аудирования, 12 у мемов,
+     книжек и ситуаций, 14 у сказок — сверено по узлам. */
+  #sec-memes,
+  #sec-books,
+  #sec-comics,
+  #sec-situations {
+    gap: 12px;
+  }
+  #sec-tales {
+    gap: 14px;
+  }
+
+  /* ---------- Баннер «Тренируй Listening» (4254:2213, 408×182) ---------- */
+  .pk-pair {
+    gap: 16px;
+  }
+  .pk-banner {
+    position: relative;
+    gap: 12px;
+    padding: 24px 16px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  /* Градиент — ручки макета, пересчитанные под пропорцию мобильного баннера. */
+  .pk-banner--listening {
+    min-height: 182px;
+    background: linear-gradient(114.6deg, #9047ff 14.8%, #6932bb 93.7%);
+  }
+  .pk-banner__text {
+    position: relative;
+    z-index: 1;
+    gap: 4px;
+  }
+  .pk-banner__title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 20px;
+    letter-spacing: -0.03em;
+  }
+  .pk-banner__desc {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 17px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  /* Кнопка — белая пилюля 27 (поля 8/12), подпись 12/700, без шеврона. */
+  .pk-banner__cta {
+    position: relative;
+    z-index: 1;
+    height: 27px;
+    padding: 0 12px;
+    gap: 0;
+    border-radius: 45px;
+    font-size: 12px;
+    line-height: 13px;
+  }
+  .pk-banner__cta:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .pk-banner__cta svg {
+    display: none;
+  }
+  /* Текст — колонкой 186: справа маскот и звезда уровня. */
+  .pk-banner--listening .pk-banner__text {
+    max-width: 186px;
+  }
+  /* Маскот — экспорт из макета, уже обрезанный кромкой баннера снизу. */
+  .pk-banner--listening::before {
+    content: '';
+    position: absolute;
+    right: 85px;
+    bottom: 0;
+    width: 129px;
+    height: 132px;
+    background: url(/assets/m/practice/listening-mascot.webp) center bottom / contain no-repeat;
+  }
+  .pk-banner__badge {
+    position: absolute;
+    z-index: 1;
+    top: 24px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 114px;
+  }
+  .pk-banner__badge-cap {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+    color: #fff;
+  }
+  /* Звезда — экспорт фигуры (87×90 внутри рамки 100). */
+  .pk-banner__badge-lvl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 100px;
+    background: url(/assets/m/practice/level-star.svg) center / 87px 90px no-repeat;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 46px;
+    color: #9047ff;
+  }
+
+  /* ---------- Ленты ---------- */
+  .pk-rail--books {
+    gap: 6px;
+  }
+  /* Сказка и шэдоуинг — 358 с обложкой 358×201, как на десктопе; прежняя
+     мобильная адаптация ужимала их до 280. */
+  .pk-tale,
+  .pk-video {
+    width: 358px;
+  }
+  .pk-tale__cover,
+  .pk-video__cover {
+    height: 201px;
+  }
+
+  /* ---------- Полный список («Посмотреть все») ----------
+     В макете это отдельный экран раздела: сетка без шапки (кадры 4302:17286,
+     4302:17705, 4295:15077, 4273:14765). Шапку с «Свернуть» оставляем — это
+     единственный выход из списка, — а заголовок и кнопку ставим в одну
+     строку: инструменты раскладываем прямо в шапку, сегмент озвучки и поиск
+     уходят на свои строки (их order задан в styles.css). */
+  .pk-sec__tools {
+    display: contents;
+  }
+  .pk-sec__head .pk-all {
+    order: 1;
+  }
+
+  /* Поиск 408×48: белая плашка r20, обводка #eee, лупа — экспорт из макета. */
+  .pk-sec__head .pp-search {
+    gap: 9px;
+    height: 48px;
+    padding: 0 13px;
+    border-color: #eee;
+    border-radius: 20px;
+  }
+  .pk-sec__head .pp-search > svg {
+    display: none;
+  }
+  .pk-sec__head .pp-search::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: url(/assets/m/practice/search.svg) center / 16px 16px no-repeat;
+  }
+  .pk-sec__head .pp-search input {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #181818;
+  }
+  .pk-sec__head .pp-search input::placeholder {
+    font-weight: 500;
+    color: #afafaf;
+  }
+  /* От поиска до сетки в макете 32. */
+  .pk-sec__head:has(.pp-search) + * {
+    margin-top: 20px;
+  }
+
+  /* Сетки в две колонки тянутся по ширине: на 440 колонка 198 (199 у
+     ситуаций), уже экрана — пропорционально, картинки держат пропорции макета. */
+  .pk-rail--grid.pk-rail--books,
+  .pk-rail--grid.pk-rail--memes,
+  .pk-rail--grid.pk-rail--situ {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+  }
+  .pk-rail--grid.pk-rail--books {
+    row-gap: 24px;
+  }
+  .pk-rail--grid.pk-rail--memes {
+    row-gap: 12px;
+  }
+  .pk-rail--grid.pk-rail--situ {
+    column-gap: 10px;
+    row-gap: 12px;
+  }
+  .pk-rail--grid .pk-book {
+    width: auto;
+    min-width: 0;
+  }
+  .pk-rail--grid .pk-book__cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 198 / 292;
+    border-radius: 10px;
+  }
+  .pk-rail--grid .pk-meme {
+    width: auto;
+    height: auto;
+    aspect-ratio: 198 / 320;
+    border-radius: 10px;
+  }
+  .pk-rail--grid .pk-situ {
+    width: auto;
+    min-width: 0;
+  }
+  .pk-rail--grid .pk-situ__pic {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 20px;
+  }
+  /* Сказки списком: карточка во всю ширину, обложка 408×259 r30, шаг 32. */
+  .pk-rail--grid:has(> .pk-tale),
+  .pk-rail--grid:has(> .pk-video) {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 32px;
+  }
+  .pk-rail--grid .pk-tale,
+  .pk-rail--grid .pk-video {
+    width: 100%;
+  }
+  .pk-rail--grid .pk-tale__cover,
+  .pk-rail--grid .pk-video__cover {
+    height: auto;
+    aspect-ratio: 408 / 259;
+    border-radius: 30px;
+  }
+}
+
+/* На узком экране маскоту некуда встать между текстом и звездой. */
+@media (max-width: 419px) {
+  .pk-banner--listening::before {
+    display: none;
+  }
+}
+
+/* ======================================================================
+   «Книжки»: обзор книги, чтение, аудиокнига (секция 4095:4184).
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* Своя шапка раздела (× + название) заменяет общую, как у Аудирования:
+     две полосы навигации подряд макет не рисует. */
+  .learn:has(.bk) .mtop {
+    display: none;
+  }
+  .learn__main:has(.bk) {
+    background: #f8f8f8;
+  }
+  /* fill-mode backwards, а не both: удержанный после входа transform (даже
+     единичный) делает .bk containing block'ом, и лист оглавления с
+     position: fixed растягивался на всю книгу вместо экрана. */
+  .bk {
+    padding: 0 16px 40px;
+    animation-fill-mode: backwards;
+  }
+
+  /* Шапка 69: крестик в фиолетовом круге 36, заголовок 16/700 фиолетовым,
+     подпись 14/500 серым; справа у чтения и аудио — оглавление. */
+  .bk .vd__head {
+    height: 69px;
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 16px;
+    border-bottom: 0;
+    background: #fff;
+  }
+  .bk .vd__back {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: #9047ff;
+    font-size: 0;
+  }
+  .bk .vd__back svg {
+    display: none;
+  }
+  .bk .vd__back::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: url(/assets/m/practice/close.svg) center / 20px 20px no-repeat;
+  }
+  .bk .vd__headtitle {
+    flex: 1;
+    min-width: 0;
+  }
+  .bk .vd__headtitle b,
+  .bk .vd__headtitle span {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .bk .vd__headtitle b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #9047ff;
+  }
+  .bk .vd__headtitle span {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 15px;
+    color: #9d9d9d;
+  }
+  .bk-head__toc {
+    display: block;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 80px;
+    background: #ebdeff url(/assets/m/practice/toc.svg) center / 19px 16px no-repeat;
+    cursor: pointer;
+  }
+
+  /* ---------- Обзор (кадр 4295:15510) ----------
+     Порядок макета: обложка → название и автор → кнопки → прогресс →
+     содержание. В разметке кнопки стоят под обложкой, а текст — отдельной
+     колонкой, поэтому обе колонки раскладываем прямо в общий столбец. */
+  .bk-ov {
+    align-items: stretch;
+    gap: 24px;
+  }
+  .bk-ov__body {
+    display: contents;
+  }
+  .bk-ov__title {
+    order: 2;
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 38px;
+    text-align: center;
+    color: #181818;
+  }
+  .bk-ov__author {
+    order: 3;
+    margin: -16px 0 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    text-align: center;
+    color: #afafaf;
+  }
+  /* Сложность — белая плашка 40 (поля 10, r40) в левом нижнем углу обложки,
+     16 от краёв. Обложка и плашка — соседи во флекс-колонке, поэтому плашка
+     заезжает на обложку отрицательным полем: -80 = -(16 + 40 + 24 зазора). */
+  .bk-ov__diff {
+    order: 1;
+    align-self: flex-start;
+    display: flex;
+    height: 40px;
+    margin: -80px 0 16px 16px;
+    padding: 10px;
+    border-radius: 40px;
+    background: #fff;
+  }
+  /* Описания в макете нет; если книга его несёт — сразу под автором. */
+  .bk-ov__body > .bk-ov__label,
+  .bk-ov__desc {
+    order: 4;
+    margin: 0;
+  }
+  .bk-ov__desc {
+    margin-top: -16px;
+  }
+  .bk-ov__actions {
+    order: 5;
+    gap: 5px;
+  }
+  .bk-ov__progress {
+    order: 6;
+    margin: 0;
+  }
+  .bk-ov__contents {
+    order: 7;
+  }
+
+  /* Кнопки 48: «Начать чтение» тянется, «Аудио» 134 сиреневая с наушниками. */
+  .bk-ov__actions .bk-btn {
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 80px;
+    font-size: 15px;
+    line-height: 17px;
+  }
+  .bk-ov__actions .bk-btn--ghost {
+    flex: 0 0 134px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 50px;
+    background: #eadcff;
+  }
+  .bk-btn__ico {
+    display: none;
+  }
+  .bk-btn--ghost::before {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: url(/assets/m/practice/headphone.svg) center / 20px 20px no-repeat;
+  }
+
+  /* Прогресс: строка 16/700 и полоса 16 r30 на 19% фиолетового; пустая
+     полоса в макете всё равно начинается точкой. */
+  .bk-ov__progress-top {
+    margin-bottom: 8px;
+    line-height: 22px;
+  }
+  .bk-prog {
+    height: 16px;
+    border-radius: 30px;
+    background: rgba(144, 71, 255, 0.19);
+  }
+  .bk-prog__fill {
+    min-width: 18px;
+    border-radius: 30px;
+  }
+
+  /* Содержание: «Содержание» 16/700 серым и счёт фиолетовым, строки глав —
+     белые плашки 56 r20 через 5. */
+  .bk-ov__contents-head {
+    align-items: center;
+    margin-bottom: 9px;
+  }
+  .bk-ov__contents-head .bk-ov__label {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #afafaf;
+  }
+  .bk-ov__count {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #9047ff;
+  }
+  .bk-ov__preview {
+    margin: 0 0 9px;
+  }
+  .bk-chapter {
+    min-height: 56px;
+    padding: 16px 12px;
+  }
+  /* Кружок 24 с обводкой #afafaf; номер главы оставляем внутри — в данных
+     названия глав без «Глава N». */
+  .bk-chapter__idx {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #afafaf;
+    background: none;
+    font-size: 11px;
+    font-weight: 700;
+    color: #afafaf;
+  }
+  .bk-chapter__title {
+    font-size: 14px;
+    color: #181818;
+  }
+  .bk-chapter__dur {
+    line-height: 20px;
+  }
+
+  /* ---------- Чтение (кадры 4302:16980, 4302:17015) ---------- */
+  .bk-read {
+    align-items: stretch;
+    gap: 0;
+  }
+  .bk-read__title {
+    margin-top: 0;
+  }
+  .bk-read__text {
+    font-size: 18px;
+    line-height: 25px;
+    color: #181818;
+  }
+  .bk-read__next {
+    height: 48px;
+    padding: 0 16px;
+    font-size: 15px;
+    line-height: 17px;
+  }
+
+  /* Полоса прогресса главы: белая пилюля 340×36 (поля 8/10, r20, тень
+     0 4 20 12%) по центру в 24 от низа, дорожка 16 r30 на 19% фиолетового и
+     процент 14/500 через 18. Ширина — от полей 50, как в кадре, чтобы на 360
+     пилюля сужалась, а не вылезала. На 100% уходит (кадр 4302:17015 — там на
+     её месте кнопка следующей главы); пустая дорожка начинается точкой, как
+     прогресс книги на обзоре. */
+  .bk-readbar {
+    position: fixed;
+    left: 50px;
+    right: 50px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    max-width: 340px;
+    height: 36px;
+    margin: 0 auto;
+    padding: 8px 10px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+  .bk-readbar.is-done {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .bk-readbar__track {
+    flex: 1;
+    min-width: 0;
+    height: 16px;
+    border-radius: 30px;
+    background: rgba(144, 71, 255, 0.19);
+    overflow: hidden;
+  }
+  .bk-readbar__fill {
+    display: block;
+    min-width: 16px;
+    max-width: 100%;
+    height: 100%;
+    border-radius: 30px;
+    background: #9047ff;
+    transition: width 0.15s ease-out;
+  }
+  .bk-readbar__pct {
+    flex: none;
+    min-width: 26px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: #9047ff;
+  }
+
+  /* Перевод слова (кадр 4302:16980): белая плашка 274 с тенью, слово серым,
+     перевод тёмным, справа закладка вместо кнопки «Сохранить в словарь».
+     Подпись кнопки остаётся её доступным именем, на экране — только значок:
+     серый, после сохранения фиолетовый. */
+  .bk-pop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
+    min-width: 274px;
+    max-width: calc(100vw - 32px);
+    padding: 19px 7px 19px 15px;
+    border: 0;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  }
+  .bk-pop__word,
+  .bk-pop__tr,
+  .bk-pop__alts {
+    grid-column: 1;
+  }
+  .bk-pop__word {
+    line-height: 20px;
+  }
+  .bk-pop__tr {
+    margin: 0;
+    line-height: 22px;
+  }
+  .bk-pop__save,
+  .bk-pop__save:disabled {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: #afafaf;
+    font-size: 0;
+    -webkit-mask: url(/assets/m/practice/bookmark.svg) center / 16px 16px no-repeat;
+    mask: url(/assets/m/practice/bookmark.svg) center / 16px 16px no-repeat;
+  }
+  .bk-pop__save--on:disabled {
+    background: #9047ff;
+  }
+
+  /* Оглавление — белый лист поверх экрана (кадр 4302:17033): заголовок
+     20/700 и серый круглый крестик 34, главы — плашки #fafafa через 4. */
+  .bk-read:has(> .bk-read__text) .bk-read__side,
+  .bk-read__side {
+    display: none;
+  }
+  .bk-read .bk-read__side.is-open {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    display: block;
+    overflow-y: auto;
+    padding: 0 16px 40px;
+    background: #fff;
+  }
+  .bk-read__sidetitle {
+    margin: 0;
+    padding: 19px 50px 19px 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+    color: #181818;
+  }
+  .bk-read__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: block;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 20px;
+    background: #f6f5fa url(/assets/m/practice/close-large.svg) center / 12px 12px no-repeat;
+    cursor: pointer;
+  }
+  .bk-read__side .bk-chapters {
+    gap: 4px;
+    padding-top: 16px;
+  }
+  .bk-read__side .bk-chapter {
+    padding: 16px;
+    background: #fafafa;
+  }
+  .bk-read__side .bk-chapter--on {
+    background: #f1ebff;
+  }
+
+  /* ---------- Аудиокнига (кадр 4295:16276) ----------
+     Обложка 280×412, под ней глава фиолетовым и книга серым, время над
+     полосой 4 с бегунком 10, кнопки — 32 · 64 · 32 через 74. */
+  .bk-audio {
+    margin: 0;
+  }
+  .bk-audio__cover {
+    margin: 0 0 16px;
+  }
+  .bk-audio__title {
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+  }
+  .bk-audio__sub {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    color: #afafaf;
+  }
+  .bk-audio__time {
+    order: 1;
+    width: auto;
+    margin: 0 19px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #afafaf;
+  }
+  .bk-audio__bar {
+    order: 2;
+    width: auto;
+    height: 4px;
+    margin: 0 19px;
+    border-radius: 20px;
+    background: rgba(144, 71, 255, 0.19);
+    overflow: visible;
+  }
+  .bk-audio__fill {
+    position: relative;
+    border-radius: 20px;
+  }
+  .bk-audio__fill::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #9047ff;
+  }
+  .bk-audio__ctrls {
+    order: 3;
+    justify-content: center;
+    gap: 74px;
+    margin-top: 28px;
+  }
+  .bk-audio__play {
+    box-shadow: none;
+  }
+
+  /* Субтитры (кадр 4295:16276): белая карточка r20 через 16 под кнопками,
+     поля 16/16/28/16; «Субтитры» 20/700 серым, через 13 окно на шесть строк
+     16/22 — прозвучавшее 700 тёмным, впереди 400 серым. Колонка текста в
+     кадре 338 из 376 — правое поле 54 повторяем: от него зависят переносы. */
+  .bk-subs {
+    order: 4;
+    margin: 16px 0 0;
+    padding: 16px 54px 28px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .bk-subs__title {
+    margin: 0 0 13px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #afafaf;
+  }
+  .bk-subs__view {
+    height: 132px;
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .bk-subs__view span {
+    font-weight: 400;
+    color: #afafaf;
+  }
+  .bk-subs__view .is-said {
+    font-weight: 700;
+    color: #181818;
+  }
+}
+
+/* ======================================================================
+   «Мемы и рилсы»: лента роликов (кадры 4273:14953, 4288:15061). Белая шапка
+   и фиолетовый круг уже стоят в styles.css; здесь — значки из макета и
+   затемнение кадра под подсказкой.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .rl .vd__back svg {
+    display: none;
+  }
+  .rl .vd__back::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: url(/assets/m/practice/close.svg) center / 20px 20px no-repeat;
+  }
+  .rl .vd__headtitle b {
+    line-height: 22px;
+  }
+  /* Пока висит подсказка, кадр притушен на 43% (заливка поверх картинки в
+     кадре 4273:14953); ушла подсказка — ушло и затемнение. Клики проходят
+     сквозь слой к ролику. */
+  .rl__frame:has(.rl__hint)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.43);
+    pointer-events: none;
+  }
+  .rl__hint {
+    z-index: 1;
+    line-height: 20px;
+    letter-spacing: -0.03em;
+  }
+  .rl__hint > svg {
+    display: none;
+  }
+  .rl__hint::before {
+    content: '';
+    width: 60px;
+    height: 60px;
+    background: url(/assets/m/practice/swipe.svg) center / 60px 52px no-repeat;
+  }
+}
+
+/* ======================================================================
+   «Аудирование» (секция 4095:5979). Раскладка заданий и итогов по этому же
+   макету уже стоит в listening.css (≤760px); здесь — шапка во всю ширину,
+   значки из макета и интро-карточка (кадр 4273:9630).
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* Шапка — белая полоса 69 от края до края, контент начинается через 16. */
+  .lt-top {
+    height: 69px;
+    margin: -16px -16px 16px;
+    padding: 16px;
+    background: #fff;
+  }
+  .lt-back svg,
+  .lt-dict svg {
+    display: none;
+  }
+  .lt-back::before,
+  .lt-dict::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: center / 20px 20px no-repeat;
+  }
+  .lt-back::before {
+    background-image: url(/assets/m/practice/close.svg);
+  }
+  .lt-dict::before {
+    background-image: url(/assets/m/practice/dict.svg);
+  }
+  /* Пилюля языка 58×33: флаг 16, шеврон вниз 18 (экспорт), поля 6/8/6/12. */
+  .lt-top .lang-selector--flag {
+    gap: 4px;
+    padding: 6px 8px 6px 12px;
+  }
+  .lt-top .lang-selector--flag:hover {
+    transform: none;
+  }
+  .lt-top .lang-selector--flag > svg {
+    flex: none;
+    width: 16px;
+    height: auto;
+  }
+  .lt-top .lang-selector--flag .chev {
+    width: 18px;
+    height: 18px;
+    background: url(/assets/m/practice/lang-chev.svg) center / 18px 18px no-repeat;
+  }
+  .lt-top .lang-selector--flag .chev svg {
+    display: none;
+  }
+  .lt-crumb b {
+    line-height: 22px;
+  }
+  .lt-crumb span {
+    line-height: 15px;
+  }
+
+  /* Интро: маскот в круге 156 (экспорт маски макета), заголовок 28/110%,
+     подпись 16/140%, плашка про наушники голубая с гарнитурой, до кнопки 72. */
+  .lt-intro {
+    padding: 32px;
+  }
+  .lt-intro__mascot {
+    width: 156px;
+    height: 156px;
+    margin: 0 auto 16px;
+    background: url(/assets/m/practice/listening-intro-mascot.webp) center / cover no-repeat;
+  }
+  .lt-intro__mascot img {
+    display: none;
+  }
+  .lt-intro__title {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 31px;
+    letter-spacing: -0.03em;
+  }
+  .lt-intro__sub {
+    max-width: none;
+    margin: 16px 0 0;
+    font-size: 16px;
+    line-height: 22px;
+    letter-spacing: -0.03em;
+    color: #181818;
+  }
+  .lt-intro__hint {
+    justify-content: flex-start;
+    gap: 16px;
+    max-width: none;
+    margin: 24px 0 0;
+    padding: 16px;
+    border-radius: 20px;
+    background: #b7f0ff;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 22px;
+    letter-spacing: -0.03em;
+    text-align: left;
+    color: #9047ff;
+  }
+  .lt-intro__ico {
+    display: none;
+  }
+  .lt-intro__hint::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/practice/headset.svg) center / 24px 24px no-repeat;
+  }
+  .lt-intro .lt-primary {
+    margin-top: 72px;
+  }
+}
+
+/* ---------- Аудирование: экран задания (кадры 4273:12059…13505) ---------- */
+@media (max-width: 560px) {
+  /* Кнопка шага в макете стоит у нижней кромки экрана, а не сразу под
+     вариантами: раздел — колонка во всю высоту, полоса кнопки прижата вниз.
+     Оболочка резервирует высоту под шапку и подвал, которых здесь нет. */
+  .learn__main:has(.lt) {
+    min-height: 100dvh;
+  }
+  .lt {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+  .lt:has(> .lt-task) {
+    padding-bottom: 0;
+  }
+  .lt-task {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  /* margin: 0 auto у блоков задания во флекс-колонке ужимал бы их по
+     содержимому — ширину задаём явно. */
+  .lt-opts,
+  .lt-asm {
+    width: 100%;
+  }
+  /* Плашка ответа едет вниз вместе с кнопкой: в макете это одна полоса
+     (кадр 4273:12584, Frame 440×173 — плашка и кнопка через 16). */
+  .lt-task > .lt-fb {
+    margin: auto 0 0;
+  }
+  .lt-dock {
+    margin-top: auto;
+  }
+  .lt-task > .lt-fb + .lt-dock {
+    margin-top: 0;
+  }
+
+  /* Шаг по вертикали — 24: полоса → вопрос (24/140%) → кнопка звука →
+     «медленно» → варианты. */
+  .lt-bar {
+    margin-bottom: 24px;
+  }
+  .lt-heading {
+    line-height: 34px;
+  }
+  .lt-audio {
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .lt-audio__btn svg {
+    display: none;
+  }
+  .lt-audio__btn::before {
+    content: '';
+    width: 48px;
+    height: 48px;
+    background: url(/assets/m/practice/volume.svg) center / 48px 48px no-repeat;
+  }
+  /* «Прослушать медленно» 274×48: улитка 24 через 10 от подписи 16/700. */
+  .lt-audio__slow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 18px;
+  }
+  .lt-audio__ico {
+    display: none;
+  }
+  .lt-audio__slow::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/practice/snail.svg) center / 24px 24px no-repeat;
+  }
+
+  /* Варианты 62 (поля 20/24, строка 22) через 10. */
+  .lt-opts {
+    gap: 10px;
+  }
+  .lt-opt {
+    min-height: 62px;
+    line-height: 22px;
+  }
+
+  /* Плашка ответа: значок 42 в круге (галочка / грустный смайл — экспорт),
+     заголовок 16/700 тёмно-зелёным или красным. */
+  .lt-fb {
+    align-items: center;
+    gap: 12px;
+  }
+  .lt-fb__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 21px;
+    font-size: 0;
+    background: center / 24px 24px no-repeat;
+  }
+  .lt-fb--ok .lt-fb__icon {
+    background-color: #1eb04b;
+    background-image: url(/assets/m/practice/fb-check.svg);
+  }
+  .lt-fb--no .lt-fb__icon {
+    background-color: #ff4646;
+    background-image: url(/assets/m/practice/fb-wrong.svg);
+  }
+  .lt-fb__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 18px;
+  }
+  .lt-fb--ok .lt-fb__title {
+    color: #067a32;
+  }
+  .lt-fb--no .lt-fb__title {
+    color: #ff4646;
+  }
+  /* Монеты — белая пилюля 80×45 r30 с монетой 24 и «+10» 16/500. */
+  .lt-fb__coin {
+    gap: 6px;
+    height: 45px;
+    padding: 0 21px 0 22px;
+    border-radius: 30px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    color: #181818;
+  }
+  .lt-fb__coin img {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ---------- Аудирование: сборка фразы и диктант ---------- */
+@media (max-width: 560px) {
+  /* Сборка (кадр 4273:12858): строка ответа 65, под ней линия #afafaf через
+     16, банк слов ещё через 16; плитки 65 (поля 13/24, 16/700) через 8, без
+     тени — белые на сером. */
+  .lt-asm__slot {
+    min-height: 81px;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 0 0 16px;
+  }
+  .lt-asm__bank {
+    gap: 8px;
+  }
+  .lt-tile {
+    min-height: 65px;
+    padding: 13px 24px;
+    border-radius: 100px;
+    font-size: 16px;
+    line-height: 22px;
+    color: #181818;
+    box-shadow: none;
+  }
+  .lt-tile--on {
+    color: #fff;
+  }
+
+  /* Диктант (кадры 4273:13274, 4273:13382): поле 67 r20 с фиолетовой рамкой
+     в пиксель, ввод 16/500 фиолетовым, подсказка серым. Цвета проверки —
+     в listening.css. */
+  .lt-input {
+    height: 67px;
+    min-height: 0;
+    padding: 0 15px;
+    border: 1px solid #9047ff;
+    font-size: 16px;
+    font-weight: 500;
+    color: #9047ff;
+  }
+  .lt-input:focus {
+    border-color: #9047ff;
+  }
+  .lt-input::placeholder {
+    color: #9d9d9d;
+    opacity: 1;
+  }
+}
+
+/* ---------- Аудирование: итог (кадры 4273:14444 «85%», 4273:14699 «12%») ----------
+   Тот же компонент TrainerResult рисует итог и в грамматике. */
+@media (max-width: 560px) {
+  .lt-res {
+    width: 100%;
+  }
+  /* В макете подложка маскота 240×243 стоит в кадре 240×280: 8 сверху, а снизу
+     маскот свисает ниже подложки — до процента остаётся 61. */
+  .lt-res__hero {
+    margin: 8px 0 29px;
+  }
+  .lt-res__pct {
+    line-height: 36px;
+  }
+  .lt-res__title {
+    line-height: 32px;
+  }
+  /* Счётчики 200×120: значок 32 и число 24/700 в строку по центру, подпись
+     16/700 по центру, всё цветом исхода. */
+  .lt-res__stats {
+    margin-top: 8px;
+  }
+  .lt-res__stat {
+    align-items: center;
+    text-align: center;
+  }
+  .lt-res__num {
+    gap: 10px;
+    line-height: 26px;
+  }
+  .lt-res__stat:first-child .lt-res__num {
+    color: #ff4646;
+  }
+  .lt-res__stat:last-child .lt-res__num {
+    color: #1eb04b;
+  }
+  .lt-res__badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 21px;
+    font-size: 0;
+    background: center no-repeat;
+  }
+  .lt-res__badge--bad {
+    background-color: #ff4646;
+    background-image: url(/assets/m/practice/fb-wrong.svg);
+    background-size: 21px 21px;
+  }
+  .lt-res__badge--good {
+    background-color: #1eb04b;
+    background-image: url(/assets/m/practice/fb-check.svg);
+    background-size: 20px 20px;
+  }
+  /* Подпись в макете по слову в строке («Неверных / ответов»). */
+  .lt-res__label {
+    width: min-content;
+    line-height: 18px;
+  }
+  /* 56, а не 48, как у кнопки шага: listening.css ставит 48 позже. */
+  .lt-res .lt-res__btn {
+    height: 56px;
+    margin-top: 16px;
+  }
+  .lt-res .lt-ghost {
+    margin-top: 16px;
+    line-height: 17px;
+  }
+}
+
+/* ---------- Аудирование: «Вы уверены что хотите выйти?» (кадр 4273:13988) ----------
+   Затемнение 57%, белый крестик 32 НАД карточкой (через 16), карточка r40 с
+   полями 24: маскот в круге 112 (экспорт маски), заголовок 20/700, подпись
+   14, две кнопки 48 через 5. */
+@media (max-width: 560px) {
+  .lt-modal__backdrop {
+    background: rgba(0, 0, 0, 0.57);
+  }
+  /* Отступ сверху — место крестика: в макете по центру стоит вся группа
+     «крестик + карточка», а не одна карточка. */
+  .lt-modal__card {
+    margin-top: 48px;
+    box-shadow: none;
+  }
+  .lt-modal__close,
+  .lt-modal__close:hover {
+    top: -48px;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 0;
+    background: url(/assets/m/practice/close-white.svg) center / 32px 32px no-repeat;
+    font-size: 0;
+  }
+  .lt-modal__icon {
+    width: 112px;
+    height: 112px;
+    margin: 0 auto 16px;
+    background: url(/assets/m/practice/exit-mascot.webp) center / cover no-repeat;
+  }
+  .lt-modal__title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #000;
+  }
+  .lt-modal__sub {
+    margin: 8px 0 32px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 15px;
+    color: #181818;
+  }
+  .lt-modal__leave {
+    height: 48px;
+    margin-top: 5px;
+    padding: 0;
+    border-radius: 80px;
+    background: #b7f0ff;
+    font-size: 15px;
+    line-height: 17px;
+    color: #9047ff;
+  }
+}
+
+/* ======================================================================
+   «Ситуации»: экран сценария (кадр 4302:17814). Тело в макете — «HTML
+   GENERATED CONTENT», по макету только шапка: крестик + название сценария +
+   «Ситуации», как у остальных разделов. Номер «A1 · 1/10» остаётся справа.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .learn:has(.sit-view) .mtop {
+    display: none;
+  }
+  .learn__main:has(.sit-view) {
+    background: #f8f8f8;
+  }
+  /* У раздела не было боковых полей вовсе: текст и карточки упирались в
+     край экрана. */
+  .sit {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+  .sit-view .sit-top {
+    height: 69px;
+    gap: 8px;
+    margin: -4px -16px 16px;
+    padding: 16px;
+    background: #fff;
+  }
+  .sit-view .sit-back {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    background: #9047ff;
+    font-size: 0;
+  }
+  .sit-view .sit-back::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: url(/assets/m/practice/close.svg) center / 20px 20px no-repeat;
+  }
+  .sit-top__title {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+  .sit-top__title b,
+  .sit-top__title span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .sit-top__title b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #9047ff;
+  }
+  .sit-top__title span {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 15px;
+    color: #9d9d9d;
+  }
+  .sit-view .sit-level {
+    flex: none;
+  }
+}

@@ -25,7 +25,7 @@ function SkillRow({ skill, stat, t }) {
   const empty = done === 0
   const pct = empty ? 0 : Math.round(Math.min(1, firstTry / done) * 100)
   return (
-    <div className="pf-skill">
+    <div className="pf-skill" data-skill={skill}>
       <span className="pf-skill__ic"><SkillIcon skill={skill} /></span>
       <div className="pf-skill__body">
         <div className="pf-skill__top">

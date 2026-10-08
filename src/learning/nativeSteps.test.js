@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tasksToSteps } from './nativeSteps.js'
+import { tasksToSteps, groupBinary } from './nativeSteps.js'
 
 // Уроки A0/A1 приходят кусками разметки исходного курса, и часть из них —
 // не задания, а подписи к ним. Тесты держат именно эту границу: что становится
@@ -476,6 +476,25 @@ describe('nativeSteps — серии заданий и инструкция ст
     expect(steps[0]).toMatchObject({ type: 'rows', title: 'Read. Then choose True or False.', options: ['True', 'False'] })
     expect(steps[0].items).toHaveLength(5)
     expect(steps[0].items[2]).toEqual({ q: 'Answer means “ask a question”.', answer: 'False' })
+  })
+
+  // Ревью 08.10.2026: склейка в таблицу теряла разбор `why` у 320 из 353
+  // утверждений курса A2–B2 — ученик видел «Неверно» без объяснения, хотя
+  // отдельным экраном оно было («“I missed social media so much at work.”»).
+  it('склейка в таблицу сохраняет разбор каждого утверждения', () => {
+    const tf = (prompt, answer, why) => ({ type: 'choice', stage: 'Чтение', title: 'Read.', prompt, options: ['True', 'False'], answer, why })
+    const [row] = groupBinary(
+      [
+        tf('The speaker did not miss social media at all.', 'False', '“I missed social media so much at work.”'),
+        tf('She switched her phone off.', 'True', '“I just turned it off.”'),
+      ],
+      { withMaterial: true },
+    )
+    expect(row.type).toBe('rows')
+    expect(row.items).toEqual([
+      { q: 'The speaker did not miss social media at all.', answer: 'False', why: '“I missed social media so much at work.”' },
+      { q: 'She switched her phone off.', answer: 'True', why: '“I just turned it off.”' },
+    ])
   })
 
   it('инструкция стадии доезжает до всей серии, а не только до первого задания', () => {

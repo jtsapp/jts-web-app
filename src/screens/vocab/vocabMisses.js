@@ -1,39 +1,83 @@
-// Локальная память ошибок словаря: топ «хуже запомненных» на главной.
-// Ключ по user id из JWT (если есть), иначе общий.
+// Память ошибок «Словаря»: топ «хуже запомненных» на главной.
+//
+// С 06.10.2026 — модуль 'vocabMisses' общего хранилища прогресса (память +
+// черновик + сервер, см. practice/progressStore.js). Раньше жил только в
+// localStorage и на сервер не уходил. Параметр token у функций остался — по
+// нему находится старая запись.
 
-const STORE = 'jts.vocab.misses.v1'
+import { loadToken } from '../../lib/session.js'
+import { VOCAB_MISSES_KEY as KEY, VOCAB_MISSES_EVENT as EVENT } from '../../practice/practiceKeys.js'
+import { createProgressStore, hasServerSnapshot } from '../../practice/progressStore.js'
+import { peekLegacy, dropLegacy } from './legacyVocabBlob.js'
 
-function userKey(token) {
-  if (!token || typeof token !== 'string') return 'anon'
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return String(payload.sub || payload.userId || payload.id || 'anon')
-  } catch {
-    return 'anon'
-  }
+const LEGACY = 'jts.vocab.misses.v1'
+
+const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v)
+
+function normalize(raw) {
+  const words = {}
+  const src = isObj(raw) && isObj(raw.words) ? raw.words : {}
+  for (const [key, entry] of Object.entries(src)) if (isObj(entry)) words[key] = entry
+  return { words }
 }
 
-function readAll() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE) || '{}') || {}
-  } catch {
-    return {}
+// Промахи только копятся (снятое слово удаляется целиком), поэтому при
+// сведении с сервером по слову побеждает большее число — как при переносе
+// старой записи. Иначе правка от устаревшего черновика понижала бы счёт
+// промахов с другого устройства (ревью PR, #78).
+function moreMisses(server, next) {
+  const words = { ...next.words }
+  for (const [k, mine] of Object.entries(words)) {
+    const theirs = server.words[k]
+    if (isObj(theirs) && (theirs.misses || 0) > (mine?.misses || 0)) words[k] = theirs
   }
+  return { ...next, words }
 }
 
-function writeAll(data) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(data))
-  } catch {
-    /* quota */
+const store = createProgressStore({
+  module: 'vocabMisses',
+  key: KEY,
+  event: EVENT,
+  empty: () => ({ words: {} }),
+  normalize,
+  settle: moreMisses,
+})
+
+// Старая запись { <ключ>: {...} } поверх состояния: по слову побеждает запись
+// с большим числом промахов (при равенстве — более поздняя).
+function withLegacy(state, bag) {
+  const words = { ...state.words }
+  for (const [key, entry] of Object.entries(bag)) {
+    if (!isObj(entry)) continue
+    const prev = words[key]
+    const more = !prev || (entry.misses || 0) > (prev.misses || 0)
+    const later = prev && (entry.misses || 0) === (prev.misses || 0) && (entry.at || 0) > (prev.at || 0)
+    if (more || later) words[key] = entry
   }
+  return { words }
+}
+
+/**
+ * Состояние с учётом старой записи. Перенос — один раз и объединением с тем,
+ * что уже на сервере: поэтому вошедшему он делается только после ответа
+ * сервера (replace затёр бы серверное). До этого показываем объединение, не
+ * записывая.
+ */
+function current(token) {
+  const bag = peekLegacy(LEGACY, token)
+  if (!bag) return store.read()
+  if (!loadToken() || hasServerSnapshot()) {
+    dropLegacy(LEGACY, token)
+    store.write(withLegacy(store.read(), bag))
+    return store.read()
+  }
+  return withLegacy(store.read(), bag)
 }
 
 export function recordVocabMisses(token, words) {
   if (!Array.isArray(words) || !words.length) return
-  const all = readAll()
-  const uid = userKey(token)
-  const bag = all[uid] || {}
+  const state = current(token)
+  const bag = { ...state.words }
   const now = Date.now()
   for (const w of words) {
     if (!w?.word) continue
@@ -48,26 +92,23 @@ export function recordVocabMisses(token, words) {
       at: now,
     }
   }
-  all[uid] = bag
-  writeAll(all)
+  store.write({ ...state, words: bag })
 }
 
 /** Худшие слова вместе с ключом записи: практика «повторить» спрашивает под
  *  этим же ключом, иначе верный ответ не нашёл бы, что снять. */
 export function topVocabMisses(token, limit = 3) {
-  const bag = readAll()[userKey(token)] || {}
-  return Object.entries(bag)
+  return Object.entries(current(token).words)
     .map(([key, entry]) => ({ ...entry, key }))
     .sort((a, b) => (b.misses - a.misses) || (b.at - a.at))
     .slice(0, limit)
 }
 
 export function clearVocabMiss(token, key) {
-  const all = readAll()
-  const uid = userKey(token)
-  const bag = all[uid]
-  if (!bag) return
-  delete bag[String(key).toLowerCase()]
-  all[uid] = bag
-  writeAll(all)
+  const state = current(token)
+  const k = String(key).toLowerCase()
+  if (!state.words[k]) return
+  const words = { ...state.words }
+  delete words[k]
+  store.write({ ...state, words })
 }

@@ -35,7 +35,16 @@ function toDto(row) {
     assistantSummary: row.assistant_summary || null,
     screenText: row.screen_text || null,
     clientErrors: Array.isArray(row.client_errors) ? row.client_errors : [],
+    note: row.note || null,
+    noteAuthorName: row.note_author_name || null,
+    noteUpdatedAt: iso(row.note_updated_at),
+    editedAt: iso(row.edited_at),
   }
+}
+
+function iso(value) {
+  if (value == null) return null
+  return value instanceof Date ? value.toISOString() : String(value)
 }
 
 /**
@@ -65,7 +74,8 @@ export async function listAssistantErrorReports({ limit = LIST_PAGE, offset = 0,
       total = count?.total ?? 0
       rows = await sql`
         select id, created_at, profile_id, user_id, lang, screen_id, page_url, user_agent,
-               user_message, assistant_summary, screen_text, client_errors
+               user_message, assistant_summary, screen_text, client_errors,
+               note, note_author_name, note_updated_at, edited_at
         from assistant_error_reports
         where user_message ilike ${like}
            or coalesce(assistant_summary, '') ilike ${like}
@@ -83,7 +93,8 @@ export async function listAssistantErrorReports({ limit = LIST_PAGE, offset = 0,
       total = count?.total ?? 0
       rows = await sql`
         select id, created_at, profile_id, user_id, lang, screen_id, page_url, user_agent,
-               user_message, assistant_summary, screen_text, client_errors
+               user_message, assistant_summary, screen_text, client_errors,
+               note, note_author_name, note_updated_at, edited_at
         from assistant_error_reports
         order by created_at desc, id desc
         limit ${take} offset ${skip}
@@ -93,6 +104,84 @@ export async function listAssistantErrorReports({ limit = LIST_PAGE, offset = 0,
   } catch (err) {
     console.error('[assistant] list error reports failed:', err?.message || err)
     return { items: [], total: 0 }
+  }
+}
+
+export const SUMMARY_MAX = 4000
+export const NOTE_MAX = 2000
+
+/**
+ * Правка карточки сотрудником: текст «Что передал помощник» и/или примечание.
+ * Поле, которого нет в patch, не трогаем; пустое примечание его убирает.
+ * Пустое описание не принимаем — карточка без сути бесполезна.
+ *
+ * @param {number} id
+ * @param {{ summary?: string, note?: string }} patch
+ * @param {{ name?: string|null }} author кто правит (для подписи примечания)
+ * @returns {Promise<{ ok: true, item: object } | { ok: false, reason: 'no_db'|'not_found'|'invalid'|'failed' }>}
+ */
+export async function updateAssistantErrorReport(id, patch = {}, author = {}, sql = getSql()) {
+  if (!sql) return { ok: false, reason: 'no_db' }
+  const rowId = Number(id)
+  if (!Number.isInteger(rowId) || rowId <= 0) return { ok: false, reason: 'invalid' }
+
+  const hasSummary = typeof patch.summary === 'string'
+  const hasNote = typeof patch.note === 'string'
+  if (!hasSummary && !hasNote) return { ok: false, reason: 'invalid' }
+
+  const summary = hasSummary ? patch.summary.trim().slice(0, SUMMARY_MAX) : null
+  if (hasSummary && !summary) return { ok: false, reason: 'invalid' }
+  const note = hasNote ? patch.note.trim().slice(0, NOTE_MAX) : null
+  const authorName = clip(author?.name || '', 120) || null
+
+  try {
+    let found = false
+    if (hasSummary) {
+      const rows = await sql`
+        update assistant_error_reports
+           set assistant_summary = ${summary}, edited_at = now()
+         where id = ${rowId}
+        returning id
+      `
+      found = rows.length > 0
+      if (!found) return { ok: false, reason: 'not_found' }
+    }
+    if (hasNote) {
+      const rows = await sql`
+        update assistant_error_reports
+           set note = ${note || null},
+               note_author_name = ${note ? authorName : null},
+               note_updated_at = ${note ? new Date() : null}
+         where id = ${rowId}
+        returning id
+      `
+      found = rows.length > 0
+      if (!found) return { ok: false, reason: 'not_found' }
+    }
+    const [row] = await sql`
+      select id, created_at, profile_id, user_id, lang, screen_id, page_url, user_agent,
+             user_message, assistant_summary, screen_text, client_errors,
+             note, note_author_name, note_updated_at, edited_at
+      from assistant_error_reports where id = ${rowId}
+    `
+    return row ? { ok: true, item: toDto(row) } : { ok: false, reason: 'not_found' }
+  } catch (err) {
+    console.error('[assistant] update error report failed:', err?.message || err)
+    return { ok: false, reason: 'failed' }
+  }
+}
+
+/** @returns {Promise<'deleted'|'not_found'|'no_db'|'invalid'|'failed'>} */
+export async function deleteAssistantErrorReport(id, sql = getSql()) {
+  if (!sql) return 'no_db'
+  const rowId = Number(id)
+  if (!Number.isInteger(rowId) || rowId <= 0) return 'invalid'
+  try {
+    const rows = await sql`delete from assistant_error_reports where id = ${rowId} returning id`
+    return rows.length ? 'deleted' : 'not_found'
+  } catch (err) {
+    console.error('[assistant] delete error report failed:', err?.message || err)
+    return 'failed'
   }
 }
 

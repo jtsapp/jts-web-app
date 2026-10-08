@@ -2,15 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import Logo from '../components/Logo.jsx'
 import LangSelector from '../components/LangSelector.jsx'
 import Footer from '../components/Footer.jsx'
-import {
-  ChevronLeftIcon,
-  SendIcon,
-  PhoneChatIcon,
-  GoogleIcon,
-} from '../components/icons.jsx'
+import { ChevronLeftIcon, SendIcon, PhoneChatIcon, GoogleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 
+// Регистрация: номер телефона или Google. 04.10.2026 Google отсюда убирали — он заводил аккаунт вовсе
+// без номера. Вернули вместе с обязательным шагом «номер телефона» после Google-входа (App.jsx,
+// phoneGate): без номера дальше экрана номера не пускает, так что причина, по которой Google
+// убирали, снята.
 export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, error }) {
   const { t, lang } = useI18n()
 
@@ -18,9 +17,12 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   // delay — сколько «печатать» перед показом. В стейте лежат i18n-ключи, а не
   // готовые строки: перевод происходит при рендере, поэтому смена языка
   // селектором в шапке мгновенно переводит и уже показанные реплики.
+  // Четыре реплики — как в кадре 1434:5833; длинной про сказки и игры даём
+  // «печатать» дольше остальных.
   const dexterScript = [
     { key: 'dexter.nice', delay: 900 },
-    { key: 'dexter.motiv', delay: 1600 },
+    { key: 'dexter.features', delay: 1800 },
+    { key: 'dexter.fun', delay: 1200 },
     { key: 'dexter.toReg', delay: 1300 },
   ]
 
@@ -89,7 +91,10 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   function send() {
     const text = value.trim()
     if (!text || typing || showAuth) return
-    setMessages((prev) => [...prev, { from: 'me', text }])
+    // В поле ученик вводит только имя — «Меня зовут» стоит перед полем
+    // неизменяемой приставкой (кадр 1434:6126), а пузырь показывает фразу
+    // целиком. Храним ключ, а не готовую строку, — как у реплик Декстера.
+    setMessages((prev) => [...prev, { from: 'me', key: 'chat.myName' }])
     setValue('')
     setName(text)
     playScript()
@@ -138,7 +143,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       key={i}
                       className={`bubble ${m.from === 'me' ? 'bubble--me' : 'bubble--dexter'}`}
                     >
-                      {m.from === 'me' ? m.text : t(m.key, { name })}
+                      {t(m.key, { name })}
                     </div>
                   ))}
 
@@ -151,8 +156,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                   )}
                 </div>
 
-                {/* Вход после диалога: номер телефона и Google. Apple ID с
-                    сайта убран по решению владельца. */}
+                {/* После диалога: номер телефона и Google */}
                 {showAuth && (
                   <div className="auth">
                     <button
@@ -164,10 +168,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       <span>{t('auth.phone')}</span>
                     </button>
 
-                    {/* Вторая строка блока входа — в кадре там пара «Apple |
-                        Google»; Apple с сайта убран, поэтому Google занимает
-                        строку целиком. Кнопку рисует GIS; пока не отрисована
-                        или client ID не задан — неактивный фолбэк. */}
+                    {/* Вторая строка блока входа — под номером. Кнопку рисует GIS; пока не
+                        отрисована или client ID не задан — неактивный фолбэк. */}
                     <div className="auth-row">
                       <div
                         className="google-slot"
@@ -189,8 +191,10 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
               {/* Поле ввода — пока идёт знакомство */}
               {!showAuth && (
                 <div className="chat__input">
+                  <span className="chat__prefix">{t('chat.prefix')}</span>
                   <input
                     type="text"
+                    aria-label={t('chat.prefix')}
                     placeholder={t('chat.placeholder')}
                     value={value}
                     onChange={(e) => setValue(e.target.value)}

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import { READING_KEY } from '../../practice/practiceKeys.js'
+import { resetReadingMemory } from '../../practice/reading/readingProgress.js'
 
 // Экран «Чтения» целиком тянет лейаут и квоты — карточке нужен только список
 // уровней для фильтра.
@@ -33,7 +34,12 @@ function mount() {
   )
 }
 
-beforeEach(() => localStorage.clear())
+// Прогресс страницы живёт в модульной памяти readingProgress — она переживает
+// localStorage.clear(), поэтому сбрасываем её отдельно.
+beforeEach(() => {
+  localStorage.clear()
+  resetReadingMemory()
+})
 afterEach(cleanup)
 
 // Карточка из видео клиента: «✓ Готово» и «Читать снова» при 61% читались как

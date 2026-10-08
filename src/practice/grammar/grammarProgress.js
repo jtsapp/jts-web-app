@@ -2,26 +2,17 @@
 
 // Локальный прогресс по урокам грамматики: раздел клиентский (данные из
 // public/practice/grammar/*.json), отдельного бэкенда завершения у него нет,
-// поэтому «пройдено» держим в localStorage. Ключ — «<level>:<unitId>».
+// поэтому «пройдено» держим в общем хранилище прогресса (память + черновик в
+// localStorage + сервер, см. progressStore.js). Ключ — «<level>:<unitId>».
 
 import { GRAMMAR_KEY as KEY, GRAMMAR_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore, doneListOptions } from '../progressStore.js'
 import { countUnitTowardsHomework } from '../practiceHomework.js'
 
-function read() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(KEY) || '[]'))
-  } catch {
-    return new Set() // приватный режим / localStorage отключён
-  }
-}
+const store = createProgressStore({ module: 'grammar', key: KEY, event: EVENT, ...doneListOptions })
 
-function write(set) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...set]))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
-  }
+function read() {
+  return new Set(store.read())
 }
 
 export function unitKey(level, unitId) {
@@ -40,23 +31,19 @@ export function getDoneUnits(level) {
   return out
 }
 
-// Помечает урок пройденным и уведомляет каталог в этой же вкладке.
+// Помечает урок пройденным; хранилище само шлёт событие каталогу и синкает.
 export function markUnitDone(level, unitId) {
-  const set = read()
+  const list = store.read()
   const key = unitKey(level, unitId)
-  if (set.has(key)) return
-  set.add(key)
-  write(set)
-  pushModule('grammar', set) // best-effort серверный синк (no-op для гостя)
+  if (!list.includes(key)) store.write([...list, key])
   // Тот же юнит мог быть задан на дом: засчитываем его и там. Отдельным
   // вызовом, а не внутри синка, — домашка живёт в другом сервисе (JTS), и
   // прогресс «Практики» ему в его виде не нужен, нужен только адрес юнита.
+  //
+  // И при повторном прохождении тоже: раньше отчёт стоял после раннего выхода
+  // «уже пройден», и юнит, пройденный до того, как его задали, в домашке не
+  // засчитывался никогда — сколько его ни проходи. Бэкенд повтор игнорирует.
   countUnitTowardsHomework('grammar', level, unitId)
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
 }
 
 export const GRAMMAR_PROGRESS_EVENT = EVENT

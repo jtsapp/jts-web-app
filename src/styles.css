@@ -195,6 +195,10 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0;
+  /* Вход, регистрация и тест уровня — на PT Root UI: на нём весь макет
+     «Регистрация», и десктопный, и мобильный. Кабинет за входом остаётся на
+     Manrope, поэтому гарнитура задана экрану, а не body. */
+  font-family: 'PT Root UI', Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .card {
@@ -210,6 +214,10 @@ textarea {
 .card--plain {
   background: #ffffff;
 }
+/* Экран чата с Декстером — на сером, белая только карточка диалога */
+.card--plain:has(.reg-inner) {
+  background: #f8f8f8;
+}
 
 /* ---------- Логотип ---------- */
 .logo {
@@ -217,6 +225,20 @@ textarea {
   font-size: 20px;
   letter-spacing: -0.02em;
   white-space: nowrap;
+}
+/* На экранах входа логотип — векторный экспорт макета (jts_logo_h, 150×29),
+   а не набранный текст: у знака свой рисунок букв. Цвет приходит из Logo
+   инлайном и при font-size: 0 ни на что не влияет. */
+.screen .logo {
+  display: block;
+  width: 150px;
+  height: 29px;
+  font-size: 0;
+  background: url(/assets/reg/logo-purple.svg) left center / contain no-repeat;
+}
+.screen .hero-header .logo,
+.screen .footer .logo {
+  background-image: url(/assets/reg/logo-white.svg);
 }
 
 /* ---------- Селектор языка ---------- */
@@ -266,6 +288,41 @@ textarea {
 }
 .lang-selector .chev--open {
   transform: rotate(90deg);
+}
+/* Пилюля языка в шапке входа и регистрации: 152×44, r40, без тени, шеврон —
+   экспорт из макета. Ширина фиксированная, как в кадре: «Қазақша» и
+   «English» в неё помещаются. */
+.hero-header .lang-selector,
+.reg-header .lang-selector {
+  gap: 10px;
+  box-sizing: border-box;
+  width: 152px;
+  height: 44px;
+  padding: 10px 14px 10px 20px;
+  border-radius: 40px;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  color: #000;
+}
+.hero-header .lang-selector > svg,
+.reg-header .lang-selector > svg {
+  flex: none;
+  width: 16px;
+  height: auto;
+}
+.hero-header .lang-selector .chev,
+.reg-header .lang-selector .chev {
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  background: url(/assets/reg/chev.svg) center / 24px 24px no-repeat;
+}
+.hero-header .lang-selector .chev svg,
+.reg-header .lang-selector .chev svg {
+  display: none;
 }
 
 /* Выпадающее меню языка */
@@ -325,51 +382,49 @@ textarea {
 /* ==================  ЭКРАН 1: WELCOME  ================== */
 /* ======================================================= */
 
+/* Размеры — из десктопного кадра «Регистрация» 1433:4892 (1440×1080). */
 .hero-header {
   position: absolute;
   inset: 0 0 auto 0;
   z-index: 3;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 26px 30px;
+  padding: 25px 60px 0;
 }
-.hero-header .logo {
-  color: #fff;
-}
-
 .hero-header__right {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 20px;
 }
 
 .socials {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
+/* Иконки соцсетей — экспорт из макета (24px), белые кружки и пилюля без тени */
 .social-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 10px;
+  height: 36px;
   background: #ffffff;
-  color: #c13584;
+  color: #9047ff;
   text-decoration: none;
-  border-radius: 999px;
-  /* ≥44px по обеим осям — комфортный тап-таргет на тачскрине */
-  min-width: 44px;
-  min-height: 44px;
-  padding: 8px 13px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  border-radius: 18px;
+  padding: 6px 16px 6px 6px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.04em;
   transition: transform 0.15s ease;
 }
-.social-pill span {
-  color: var(--ink);
+.social-pill svg,
+.social-round svg {
+  display: none;
 }
 .social-pill:hover,
 .social-round:hover {
@@ -380,24 +435,24 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: #ffffff;
-  color: #2ca5e0;
+  background: #ffffff url(/assets/reg/tg.svg) center / 24px 24px no-repeat;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
 }
 .social-round--wa {
-  color: #25d366;
+  background-image: url(/assets/reg/wa.svg);
 }
 
-/* Герой-блок */
+/* Герой-блок: фон — экспорт кадра (1440×980 при 2×), сверху заливка #215180,
+   тающая к 724px из 980 (Rectangle 104 макета) — на ней читается белый текст */
 .hero {
   position: relative;
   flex: 1;
+  background-image: url(/assets/reg/hero-desktop.webp);
   background-size: cover;
-  background-position: center 38%;
+  background-position: center top;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -406,12 +461,7 @@ textarea {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(38, 62, 120, 0.55) 0%,
-    rgba(38, 62, 120, 0.12) 22%,
-    rgba(0, 0, 0, 0) 45%
-  );
+  background: linear-gradient(180deg, #215180 0%, rgba(33, 81, 128, 0) 73.9%);
   z-index: 1;
 }
 
@@ -419,47 +469,47 @@ textarea {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 92px 24px 0;
-  max-width: 720px;
+  padding: 130px 24px 0;
+  max-width: 713px;
 }
 
 .hero__title {
   color: #ffffff;
-  font-weight: 800;
-  font-size: clamp(30px, 4vw, 48px);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  font-size: clamp(40px, 4.45vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .hero__subtitle {
-  color: rgba(255, 255, 255, 0.92);
-  font-size: clamp(14px, 1.3vw, 17px);
+  color: #ffffff;
+  font-size: 20px;
   font-weight: 500;
-  margin-top: 16px;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+  margin-top: 20px;
 }
 
-/* Кнопки-CTA в белой «пилюле» */
+/* Кнопки-CTA в белой «пилюле» 503×92 */
 .cta {
   display: inline-flex;
   gap: 8px;
-  margin-top: 28px;
+  margin-top: 42px;
   background: #ffffff;
-  padding: 8px;
-  border-radius: 999px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+  padding: 16px 21px 16px 20px;
+  border-radius: 90px;
 }
 
 .btn {
   border: none;
-  border-radius: 999px;
-  padding: 15px 40px;
+  border-radius: 60px;
+  height: 60px;
+  padding: 0 72px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1.1;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 .btn:hover {
   transform: translateY(-1px);
@@ -468,86 +518,176 @@ textarea {
 .btn--primary {
   color: #fff;
   background: #9047ff;
-  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.4);
 }
 .btn--primary:hover {
   filter: brightness(1.05);
 }
 
 .btn--secondary {
-  color: #1f6f8b;
-  background: var(--blue-soft);
+  padding: 0 77px;
+  color: #9047ff;
+  background: #b7f0ff;
 }
 .btn--secondary:hover {
-  background: var(--blue-soft-2);
+  filter: brightness(0.97);
+}
+
+/* Подложка под боковые поля кадра — нужна только десктопу, см. ниже */
+.hero__backdrop {
+  display: none;
+}
+
+/* Десктоп: герой — кадр макета 1440×980 целиком и без прокрутки. Раньше
+   картинка шла cover от ширины, и на ноутбуке (1490×787 при масштабе Windows
+   125%) от кадра оставалось 687px из 1014 — подвал срезал маскота по очки.
+
+   Кадр 1440:980 уже ноутбучного окна, поэтому он вписывается по ВЫСОТЕ
+   (экран минус подвал), а бока закрываются в два слоя:
+   - сам кадр (::after) — исходник картинки из Figma с полями, которые макет
+     обрезал: по ~104 пикселя макета с каждой стороны настоящего фона
+     (hero-wide.webp — тот же кроп по вертикали, полная ширина исходника);
+   - под ним размытое продолжение той же картинки (hero-wide-blur.webp), в
+     которое края кадра тают маской. Края тают только в пределах полей
+     исходника, поле самого кадра макета остаётся резким.
+   На высоком окне (планшет стоя) кадр шире экрана и режется по бокам,
+   подложку не видно.
+
+   --u — один пиксель макета, от высоты героя. Текст и кнопки меряются в нём,
+   иначе они разъехались бы с маскотом; полы шрифтов и высоты кнопок — чтобы
+   на низком окне надписи оставались читаемыми (раздутие съедает часть зазора
+   в 40px между CTA и шапочкой, но не перекрывает её). Ширинный предел --u —
+   чтобы двухстрочный заголовок влезал на узком высоком окне. Ниже 540px
+   высоты кадр перестаёт сжиматься и появляется прокрутка. */
+@media (min-width: 761px) {
+  .hero {
+    --hh: max(100vh - 100px, 540px);
+    --u: min(var(--hh) / 980, (100vw - 48px) / 665);
+    flex: none;
+    height: var(--hh);
+    overflow: hidden;
+    background-image: none;
+  }
+  .hero__backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url(/assets/reg/hero-wide-blur.webp) center / cover no-repeat;
+  }
+  /* 2580×1534 — размер hero-wide.webp; маска размером с картинку. Слой ниже
+     градиента (::before, z-index 1) и выше подложки — по порядку в дереве. */
+  .hero::after {
+    --iw: calc(var(--hh) * 2580 / 1534);
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: url(/assets/reg/hero-wide.webp) center / auto 100% no-repeat;
+    -webkit-mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent) center / var(--iw) 100% no-repeat;
+    mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent) center / var(--iw) 100% no-repeat;
+  }
+  /* Ширина блока не уже 470px: столько занимает подзаголовок на полу в 14px.
+     Иначе на низком окне подзаголовок и заголовок ломались лишней строкой и
+     тянули CTA на шапочку маскота. */
+  .hero__content {
+    padding: calc(var(--u) * 130) 24px 0;
+    max-width: calc(max(var(--u) * 665, 470px) + 48px);
+  }
+  .hero__title {
+    font-size: max(36px, var(--u) * 64);
+  }
+  .hero__subtitle {
+    font-size: max(14px, var(--u) * 20);
+    margin-top: calc(var(--u) * 20);
+  }
+  .cta {
+    gap: calc(var(--u) * 8);
+    margin-top: calc(var(--u) * 42);
+    padding: calc(var(--u) * 16) calc(var(--u) * 21) calc(var(--u) * 16) calc(var(--u) * 20);
+    border-radius: calc(var(--u) * 90);
+  }
+  .cta .btn {
+    height: max(44px, var(--u) * 60);
+    padding: 0 calc(var(--u) * 72);
+    border-radius: calc(var(--u) * 60);
+    font-size: max(15px, var(--u) * 18);
+  }
+  .cta .btn--secondary {
+    padding: 0 calc(var(--u) * 77);
+  }
 }
 
 /* ======================================================= */
 /* ============  ЭКРАН 2: РЕГИСТРАЦИЯ / ЧАТ  ============== */
 /* ======================================================= */
 
+/* Шапка экранов входа (кадры 1434:6021 и соседние): «назад» 36 в 67px от края,
+   логотип через 24, пилюля языка 44 в 62px от правого края; всё по центру
+   строки на высоте 47. */
 .reg-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 30px;
+  padding: 25px 62px 0 67px;
 }
 .reg-header__left {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-.reg-header .logo {
-  color: var(--purple);
+  gap: 24px;
 }
 
+/* Стрелка — экспорт из макета (28px) на голубом круге 36 */
 .back-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: none;
-  background: #cfeafc;
-  color: #2ca5e0;
+  background: #b7f0ff url(/assets/reg/back.svg) center / 28px 28px no-repeat;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.back-btn svg {
+  display: none;
 }
 .back-btn:hover {
   transform: translateX(-2px);
-  background: #bfe1fa;
+  background-color: #a3ebfd;
 }
 
 .reg-body {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 20px 24px 40px;
+  padding: 12px 24px 64px;
 }
 .reg-inner {
   width: 100%;
-  max-width: 640px;
+  max-width: 556px;
 }
 
 .reg-title {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 35px;
+  letter-spacing: -0.03em;
+  color: #181818;
 }
 .reg-subtitle {
-  color: var(--muted);
-  font-size: 14px;
-  margin-top: 6px;
-  margin-bottom: 22px;
+  color: #181818;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 17px;
+  margin-top: 8px;
+  margin-bottom: 24px;
 }
 
-/* Карточка чата */
+/* Карточка чата: белая, r40, без рамки и тени */
 .chat {
   background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 18px 50px rgba(23, 19, 38, 0.08);
-  border: 1px solid #f0f0f3;
+  border-radius: 40px;
   display: flex;
   flex-direction: column;
   min-height: 320px;
@@ -555,7 +695,7 @@ textarea {
 
 .chat__scroll {
   flex: 1;
-  padding: 22px 22px 8px;
+  padding: 20px 20px 8px;
   overflow-y: auto;
   max-height: 44vh;
 }
@@ -564,39 +704,97 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
+
+/* Десктоп: карточка фиксированной высоты 510, как в кадре, и лента
+   прокручивается внутри неё. Декстер стоит шапкой карточки — при длинном
+   диалоге реплики уезжают под неё (кадр 1434:5833: белая плашка поверх
+   ленты). Верхний отступ карточки живёт в самой шапке, иначе липкая плашка не
+   закрыла бы верхние 20px. На телефоне и планшете (≤760) карточка тянется на
+   весь экран — см. блок «Регистрация на телефоне» ниже. */
+@media (min-width: 761px) {
+  .chat {
+    height: 510px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Полосу прокрутки прячем: в кадре её нет, а с четырьмя репликами лента
+     длиннее карточки всегда — системная полоса Windows стояла бы постоянно.
+     Колесо и тач прокручивают как прежде. */
+  .chat__scroll {
+    min-height: 0;
+    max-height: none;
+    padding-top: 0;
+    scrollbar-width: none;
+  }
+  .chat__scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .chat__author {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex: none;
+    margin-bottom: 12px;
+    padding: 20px 0 10px;
+    background: #fff;
+  }
+  /* Блок входа — у низа карточки, как в кадре, а не сразу под репликой.
+     Лента колонкой, чтобы margin-top: auto было куда толкать. Базовые .auth и
+     .auth-btn объявлены ниже по файлу — отсюда селекторы через .chat. */
+  .chat__scroll {
+    display: flex;
+    flex-direction: column;
+  }
+  .chat__messages {
+    flex: none;
+  }
+  .chat .auth {
+    margin-top: auto;
+    padding: 16px 0 15px;
+  }
+}
+/* Аватар — готовый экспорт макета (круг 56 с фоном и маскотом) */
 .chat__avatar {
-  width: 42px;
-  height: 42px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  object-position: center top;
-  background: linear-gradient(135deg, #ffe0b3, #ffd1e8);
   flex-shrink: 0;
+  content: url(/assets/reg/dexter-avatar.png);
+}
+.chat__author > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .chat__name {
   font-weight: 700;
-  font-size: 15px;
+  font-size: 18px;
+  line-height: 20px;
+  color: #181818;
 }
 .chat__role {
-  color: var(--muted);
-  font-size: 12.5px;
+  color: #181818;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 17px;
 }
 
 .chat__messages {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .bubble {
-  max-width: 78%;
-  padding: 11px 16px;
-  border-radius: 16px;
-  font-size: 14px;
+  max-width: 327px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  font-size: 16px;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 19px;
   word-break: break-word;
 }
 .bubble--dexter {
@@ -607,24 +805,23 @@ textarea {
 }
 .bubble--me {
   align-self: flex-end;
-  background: linear-gradient(135deg, #ff8a3d 0%, #ff6f3c 100%);
+  background: #ff7300;
   color: #fff;
   border-bottom-right-radius: 6px;
-  box-shadow: 0 6px 16px rgba(255, 111, 60, 0.28);
 }
 
-/* Индикатор «печатает…» */
+/* Индикатор «печатает…»: 84×39, точки 8px через 8 */
 .bubble--typing {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 15px 22px;
 }
 .bubble--typing .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: #fff;
   animation: typing-bounce 1.2s infinite ease-in-out;
 }
 .bubble--typing .dot:nth-child(2) {
@@ -675,23 +872,29 @@ textarea {
   }
 }
 
+/* «Начать регистрацию» — оранжевая пилюля 516×48 (кадр 1434:5833). Иконки
+   телефона в десктопном кадре нет; мобильный кадр её рисует сам. */
 .auth-primary {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
+  height: 48px;
   border: none;
-  border-radius: 14px;
-  padding: 15px;
-  background: linear-gradient(135deg, #ff8a3d 0%, #ff6f3c 100%);
+  border-radius: 60px;
+  padding: 0 20px;
+  background: #ff7300;
   color: #fff;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.1;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(255, 111, 60, 0.3);
   transition: transform 0.15s ease, filter 0.15s ease;
+}
+.auth-primary svg {
+  display: none;
 }
 .auth-primary:hover {
   transform: translateY(-1px);
@@ -772,11 +975,12 @@ textarea {
 /* ============  ФОРМЫ: ТЕЛЕФОН и СМС-КОД  =============== */
 /* ======================================================= */
 
+/* Колонка формы 370 по центру; заголовок в кадрах на высоте 138 */
 .form-inner {
   width: 100%;
-  max-width: 420px;
+  max-width: 370px;
   margin: 0 auto;
-  padding-top: 30px;
+  padding-top: 57px;
 }
 .form-card {
   display: flex;
@@ -784,33 +988,39 @@ textarea {
   text-align: center;
 }
 .form-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.12;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 46px;
   text-wrap: balance;
+  color: #181818;
 }
 .form-sub {
-  color: var(--muted);
-  font-size: 14px;
-  margin-top: 12px;
-  margin-bottom: 26px;
-  line-height: 1.4;
+  max-width: 290px;
+  margin: 12px auto 32px;
+  color: #181818;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 22px;
 }
 
-/* Поле телефона */
+/* Поля ввода — серые плашки 370×68, r20, без рамки (кадры 1434:6520, 5801:8897).
+   Фокус — тонкое кольцо внутрь: в макете состояния фокуса нет, а без него
+   клавиатурой не понять, где курсор. */
 .phone-field {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #f6f6f8;
-  border: 1.5px solid #ececf1;
-  border-radius: 14px;
-  padding: 14px 16px;
-  transition: border-color 0.15s ease;
+  gap: 12px;
+  background: #f6f6f6;
+  border: 0;
+  border-radius: 20px;
+  padding: 24px 16px;
+  transition: box-shadow 0.15s ease;
 }
-.phone-field:focus-within {
-  border-color: #b79cf5;
+@media (min-width: 561px) {
+  .phone-field:focus-within {
+    box-shadow: inset 0 0 0 1.5px #c9b4f7;
+  }
 }
 .phone-flag {
   display: inline-flex;
@@ -824,18 +1034,21 @@ textarea {
 }
 .phone-field input {
   flex: 1;
+  min-width: 0;
+  padding: 0;
   border: none;
   background: transparent;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink);
+  font-weight: 500;
+  line-height: 20px;
+  color: #181818;
   outline: none;
 }
 .phone-field input::placeholder {
-  color: #b7b6c1;
+  color: #afafaf;
   font-weight: 500;
+  opacity: 1;
 }
 
 /* Поле email — тот же вид, что у .phone-field, но без контейнера для кода страны */
@@ -843,24 +1056,27 @@ textarea {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  background: #f6f6f8;
-  border: 1.5px solid #ececf1;
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: #f6f6f6;
+  border: 0;
+  border-radius: 20px;
+  padding: 24px 16px;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink);
+  font-weight: 500;
+  line-height: 20px;
+  color: #181818;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: box-shadow 0.15s ease;
 }
-.email-field:focus {
-  border-color: #b79cf5;
+@media (min-width: 561px) {
+  .email-field:focus {
+    box-shadow: inset 0 0 0 1.5px #c9b4f7;
+  }
 }
 .email-field::placeholder {
-  color: #b7b6c1;
+  color: #afafaf;
   font-weight: 500;
+  opacity: 1;
 }
 .date-field {
   display: flex;
@@ -869,9 +1085,10 @@ textarea {
   margin-bottom: 4px;
 }
 .date-field__label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-2, #5c5868);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #afafaf;
 }
 .date-field__input {
   display: block;
@@ -896,20 +1113,25 @@ textarea {
    справа открывает системный календарь. Внешне — та же «коробка», что у
    .date-field__input, поэтому рамка и фон живут на контейнере, а сами
    инпуты внутри прозрачные. */
+/* Даты рождения в макете нет — шаг появился позже. Поле той же серой
+   плашкой 68, что телефон и почта, чтобы шаги регистрации не отличались. */
 .dob-field {
   display: flex;
   align-items: center;
   gap: 2px;
   box-sizing: border-box;
   width: 100%;
-  background: #f6f6f8;
-  border: 1.5px solid #ececf1;
-  border-radius: 14px;
-  padding: 12px 12px 12px 16px;
-  transition: border-color 0.15s ease;
+  height: 68px;
+  background: #f6f6f6;
+  border: 0;
+  border-radius: 20px;
+  padding: 0 12px 0 16px;
+  transition: box-shadow 0.15s ease;
 }
-.dob-field:focus-within {
-  border-color: #b79cf5;
+@media (min-width: 561px) {
+  .dob-field:focus-within {
+    box-shadow: inset 0 0 0 1.5px #c9b4f7;
+  }
 }
 .dob-field__part {
   background: none;
@@ -918,12 +1140,12 @@ textarea {
   padding: 2px 0;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 500;
+  color: #181818;
   text-align: center;
 }
 .dob-field__part::placeholder {
-  color: #b7b6c1;
+  color: #afafaf;
   font-weight: 500;
 }
 /* Ширины по числу цифр, а не по контенту: поля не должны прыгать по мере
@@ -1008,29 +1230,35 @@ textarea {
   position: relative;
   flex-shrink: 0;
 }
+/* В кадре в поле только флаг, «+7» и маска — без шеврона и разделителя.
+   Страну по-прежнему меняет нажатие на флаг (как на телефоне). */
+.phone-country {
+  display: flex;
+}
 .phone-country__btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
   border: none;
   background: transparent;
-  padding: 4px 10px 4px 2px;
-  margin-right: 4px;
-  border-right: 1.5px solid #e4e3ea;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
   font-family: inherit;
+  line-height: 20px;
 }
 .phone-country__flag {
   font-size: 20px;
-  line-height: 1;
+  line-height: 20px;
 }
 .phone-country__dial {
   font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 500;
+  line-height: 20px;
+  color: #181818;
 }
 .phone-country__chev {
-  display: inline-flex;
+  display: none;
   color: #9b99a8;
   transform: rotate(90deg);
   transition: transform 0.15s ease;
@@ -1091,35 +1319,38 @@ textarea {
   color: var(--muted);
 }
 
-/* Основная кнопка формы */
+/* Основная кнопка формы: пилюля 370×56. В макете она всегда насыщенная;
+   недоступность и так держит проверка в submit(), поэтому не гасим её
+   прозрачностью (так же решено на телефоне). */
 .form-primary {
-  margin-top: 18px;
+  height: 56px;
+  margin-top: 12px;
   border: none;
-  border-radius: 14px;
-  padding: 15px;
+  border-radius: 60px;
+  padding: 0;
   background: #9047ff;
   color: #fff;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 1.1;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.32);
-  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 .form-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.04);
 }
 .form-primary:disabled {
-  opacity: 0.5;
   cursor: default;
 }
 
 .form-note {
-  color: #a6a5b2;
+  color: #afafaf;
   font-size: 12px;
-  line-height: 1.45;
-  margin-top: 16px;
+  font-weight: 500;
+  line-height: 17px;
+  margin-top: 20px;
 }
 .form-note--center {
   text-align: center;
@@ -1128,6 +1359,24 @@ textarea {
   color: var(--purple);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+/* Согласие с политикой под кнопкой (кадры телефона и почты): 16/140 серым,
+   целиком подчёркнуто и шире колонки формы — 467 против 370 */
+.form-consent {
+  align-self: center;
+  width: 467px;
+  max-width: calc(100vw - 32px);
+  margin-top: 32px;
+  color: #afafaf;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.form-consent a {
+  color: inherit;
 }
 .form-error {
   color: #e5484d;
@@ -1142,45 +1391,41 @@ textarea {
   color: #8d4a4d;
 }
 
-/* Поля СМС-кода */
+/* Поля кода: четыре плитки 90×120, r20, во всю ширину колонки 370
+   (кадр 1434:6636), пустые — с серым нулём */
 .otp-row {
   display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin: 6px 0 4px;
+  justify-content: space-between;
+  gap: 3px;
+  width: 100%;
 }
 .otp-box {
-  width: 62px;
-  height: 68px;
-  border: 1.5px solid #e6e6ec;
-  border-radius: 16px;
-  background: #fbfbfc;
+  flex: 0 1 90px;
+  min-width: 0;
+  height: 120px;
+  border: 0;
+  border-radius: 20px;
+  background: #f6f6f6;
   text-align: center;
   font-family: inherit;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--ink);
+  font-size: 56px;
+  font-weight: 500;
+  color: #181818;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  transition: box-shadow 0.15s ease;
 }
 .otp-box::placeholder {
-  color: #c9c9d2;
-}
-.otp-box--filled {
-  border-color: #c9b4f7;
+  color: #afafaf;
+  opacity: 1;
 }
 .otp-box:focus {
-  border-color: #9047ff;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+  box-shadow: inset 0 0 0 2px #9047ff;
+}
+/* У кода плитки ближе к подзаголовку, чем поля телефона и почты: 24 против 32 */
+.form-card:has(.otp-row) .form-sub {
+  margin-bottom: 24px;
 }
 
-@media (max-width: 480px) {
-  .otp-box {
-    width: 54px;
-    height: 60px;
-    font-size: 24px;
-  }
-}
 
 /* Кнопка «Пройду позже» */
 .btn-later {
@@ -1200,13 +1445,18 @@ textarea {
   background: var(--blue-soft-2);
 }
 
-/* Экран успеха */
+/* Экран успеха: бейдж 56 и заголовок 32 колонкой 203 (кадр 1434:6694) */
 .success-center {
   align-items: center;
-  justify-content: center;
-  min-height: 40vh;
   display: flex;
   flex-direction: column;
+  width: 203px;
+  margin: 0 auto;
+}
+.success-center .form-title {
+  font-size: 32px;
+  line-height: 38px;
+  letter-spacing: 0;
 }
 .success-badge {
   width: 72px;
@@ -1222,11 +1472,12 @@ textarea {
   animation: pop-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 .success-badge--sm {
-  width: 46px;
-  height: 46px;
-  margin-bottom: 18px;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 21px;
   background: #9047ff;
-  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+  box-shadow: none;
 }
 @keyframes pop-in {
   from {
@@ -1244,44 +1495,70 @@ textarea {
   }
 }
 
-/* Поле ввода */
+/* Поле ввода: серая плашка 516×68, r20, у низа карточки. Слева неизменяемая
+   приставка «Меня зовут» 18/500, через 3px — само имя 18/700 фиолетовым
+   (кадры 1434:6021 и 1434:6126). */
 .chat__input {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  margin: 8px;
-  background: #f6f6f8;
-  border-radius: 14px;
+  gap: 3px;
+  padding: 16px 16px 16px 20px;
+  margin: 0 20px 24px;
+  background: #f6f6f6;
+  border-radius: 20px;
+}
+.chat__prefix {
+  flex: none;
+  font-size: 18px;
+  font-weight: 500;
+  color: #181818;
+  white-space: nowrap;
 }
 .chat__input input {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   font-family: inherit;
-  font-size: 14px;
-  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  color: #9047ff;
   outline: none;
 }
 .chat__input input::placeholder {
-  color: #a6a5b2;
+  font-weight: 500;
+}
+.chat__input input::placeholder {
+  color: #afafaf;
+  opacity: 1;
 }
 
+/* «Отправить» 36 высотой, r18; иконка — экспорт из макета */
 .send-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  flex: none;
+  gap: 10px;
+  height: 36px;
   border: none;
-  border-radius: 999px;
-  padding: 11px 20px;
+  border-radius: 18px;
+  padding: 8px 16px;
   background: #9047ff;
   color: #fff;
   font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.35);
   transition: transform 0.15s ease, filter 0.15s ease;
+}
+.send-btn svg {
+  display: none;
+}
+.send-btn::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: url(/assets/reg/send.svg) center / 14px 14px no-repeat;
 }
 .send-btn:hover {
   transform: translateY(-1px);
@@ -1323,6 +1600,56 @@ textarea {
   font-size: 13.5px;
   justify-self: end;
 }
+/* Подвал экранов входа и регистрации — по кадрам «Регистрации»: 100 высотой,
+   #1d1826, знак-логотип, белые 16px. Подвалы кабинета и тьютора не трогаем —
+   у них свои макеты. */
+.screen > .footer {
+  height: 100px;
+  padding: 0 62px 0 60px;
+  background: #1d1826;
+}
+.screen > .footer .footer-link {
+  padding: 12px 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.screen > .footer .footer-copy {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* Десктопные смещения кадров «Регистрации», которые телефону не нужны: у
+   мобильного макета свои отступы в src/mobile/registration.css, и эти
+   селекторы (специфичнее мобильных) перебили бы их. */
+@media (min-width: 561px) {
+  /* Шапка героя: логотип на 10px ниже верха пилюли языка, соцкнопки — на 4px */
+  .hero-header .logo {
+    margin-top: 10px;
+  }
+  .socials {
+    margin-top: 4px;
+  }
+  /* Иконка Instagram в пилюле — экспорт макета вместо своей SVG */
+  .social-pill::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/reg/ig.svg) center / 24px 24px no-repeat;
+  }
+  /* Заголовок кода в кадре на 11px ниже, чем у телефона и почты (149 и 138) */
+  .form-inner:has(.otp-row) {
+    padding-top: 68px;
+  }
+  /* «Регистрация пройдена» — бейдж на высоте 284 */
+  .form-inner:has(.success-center) {
+    padding-top: 203px;
+  }
+}
 
 /* ---------- Адаптив ---------- */
 @media (max-width: 720px) {
@@ -1336,8 +1663,13 @@ textarea {
     align-items: flex-start;
     gap: 12px;
   }
+  /* Без подписи пилюля Instagram становится таким же кружком 36, как соседи */
   .social-pill span {
     display: none;
+  }
+  .social-pill {
+    width: 36px;
+    padding: 6px;
   }
   .hero__content {
     padding-top: 150px;
@@ -4130,6 +4462,8 @@ textarea {
 /* «Слов в картинках» в макете нет — цвета их прежнего баннера, геометрия
    широкого баннера «Чтения». */
 .pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
+/* SpeakSpin в макете тоже нет — фиолетовый прототипа (#6651d6 → #4e3bac). */
+.pk-banner--speakspin { background: linear-gradient(99.4deg, #6651d6 17%, #4e3bac 95.5%); }
 
 /* «Аркада» во вкладках «Говорение» и «Чтение» — зал из двух игр. В макете её
    нет — геометрия и кнопка от широкого баннера (поля 24, r20, белая пилюля),
@@ -4472,6 +4806,21 @@ textarea {
   color: var(--muted);
   text-align: center;
 }
+/* Каталог не загрузился (гость без входа или сбой запроса) — не «пусто». Текст
+   чуть плотнее обычного пустого состояния и с кнопкой повтора под ним. */
+.pp-empty--issue { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pp-empty--issue p { margin: 0; line-height: 1.45; }
+.pp-empty__retry {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, #7c4dff);
+  cursor: pointer;
+}
+.pp-empty__retry:active { opacity: 0.85; }
 .pp-note { border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
 .pp-note--err { background: #fdecec; color: #c0392b; }
 
@@ -5549,6 +5898,11 @@ textarea {
   font-size: 14px;
   color: var(--muted);
 }
+/* Подпись звания в словаре без двоеточия (на телефоне она отдельной строкой,
+   как в макете); здесь подпись и звание в одной строке — разделяем сами. */
+.pf-rank__text > span::after {
+  content: ':\00a0';
+}
 .pf-rank__text b {
   color: var(--ink);
   font-weight: 700;
@@ -6376,6 +6730,8 @@ textarea {
 }
 .bk-pop__save:disabled { background: #cbc6dd; cursor: default; }
 .bk-pop__save--on:disabled { background: #23b061; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.bk-pop__hint { margin-top: 10px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
 
 /* Аудио-плеер */
 .bk-audio {
@@ -6405,6 +6761,22 @@ textarea {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 8px 22px rgba(144, 71, 255, 0.4);
 }
+/* Субтитры аудиокниги — текст главы под плеером; окно в шесть строк ведёт
+   голос (BookSubtitles в BookDetail.jsx, место — приближение по времени).
+   Прозвучавшее тёмным, впереди серым; начертание одно, чтобы строки не
+   переносились заново на каждом предложении. */
+.bk-subs {
+  align-self: stretch; margin-top: 24px; padding: 14px 16px 16px;
+  border: 1px solid #efeef4; border-radius: 14px; background: #faf9ff; text-align: left;
+}
+.bk-subs__title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+  color: #a6a5b2; margin: 0 0 8px;
+}
+.bk-subs__view { height: 144px; overflow: hidden; font-size: 15px; line-height: 24px; }
+.bk-subs__p { margin: 0; }
+.bk-subs__view span { color: #a6a5b2; transition: color 0.2s ease; }
+.bk-subs__view .is-said { color: var(--ink); }
 
 @media (max-width: 900px) {
   .bk-ov, .bk-read { grid-template-columns: 1fr; }
@@ -9038,6 +9410,8 @@ textarea {
   cursor: pointer;
 }
 .cr-pop__save:disabled { opacity: 0.55; cursor: default; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.cr-pop__hint { margin-top: 9px; font-size: 12.5px; line-height: 1.35; color: #a6a5b2; }
 .cr-pop__close {
   position: absolute;
   top: 8px;
@@ -9227,6 +9601,147 @@ textarea {
   .cr--full .cr__hint { transition: none; }
 }
 
+/* ── Читалка комикса: зум пальцами ── */
+/* Сцена отдаёт браузеру только вертикальную прокрутку: горизонталь — это свайп
+   читалки, а щипок — её зум (usePinchZoom.js). Без pan-y браузер увеличивал бы
+   всю страницу вместе с шапкой. Увеличенный лист водят пальцем, поэтому тогда
+   браузеру не отдаём ничего. */
+.cr__stage { touch-action: pan-y; }
+.cr__stage--zoomed {
+  overflow: hidden;
+  touch-action: none;
+}
+/* Долгое нажатие на iOS открывало бы меню «Сохранить картинку» посреди
+   перетаскивания листа. Мышью увеличенный лист тянут — курсор-ладонь, а
+   выделение текста гасим, иначе протяжка мышью синит панель над сценой. */
+.cr__stage--zoomed {
+  cursor: grab;
+  user-select: none;
+}
+.cr__stage--zoomed .cr__img {
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+.cr__stage--zoomed:active,
+.cr__stage--zoomed .cr__img:active { cursor: grabbing; }
+/* Увеличенная картинка трансформирована и рисуется поверх соседей — стрелки
+   поднимаем над ней, иначе их накрывает лист. */
+.cr__stage--zoomed .cr__nav {
+  position: relative;
+  z-index: 2;
+}
+/* Правый ВЕРХНИЙ угол: в правом нижнем висит плавающий помощник, и тап по
+   кнопке уходил ему. */
+.cr__unzoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ececf3;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(23, 19, 38, 0.18);
+  color: #6c6b78;
+  cursor: pointer;
+}
+.cr__unzoom:hover { color: var(--purple); border-color: #d9d2f7; }
+/* В полном экране сверху поверх сцены лежит панель — кнопку держим под ней. */
+.cr--full .cr__unzoom {
+  top: 64px;
+  background: rgba(14, 12, 22, 0.72);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ece9f6;
+}
+.cr__hintTouch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .cr__hintMouse { display: none; }
+  .cr__hintTouch { display: inline; }
+}
+
+/* ── Читалка комикса: зум мышью ── */
+/* Панель −/цифра/+ в правом верхнем углу сцены — там же, где у пальцев
+   «обычный размер». Только для мыши и тачпада: пальцам хватает щипка, а
+   панель на телефоне накрывала бы лист. Сброс там — цифра, поэтому отдельная
+   кнопка «обычный размер» на компьютере не нужна. */
+.cr__zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #ececf3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 18px rgba(23, 19, 38, 0.18);
+  cursor: default;
+  transition: opacity 0.22s ease;
+}
+.cr__zoomBtn,
+.cr__zoomPct {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cr__zoomBtn { width: 32px; }
+.cr__zoomPct {
+  min-width: 52px;
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.cr__zoomBtn:hover:not(:disabled),
+.cr__zoomPct:hover:not(:disabled) {
+  color: var(--purple);
+  background: rgba(144, 71, 255, 0.08);
+}
+.cr__zoomBtn:disabled { opacity: 0.35; cursor: default; }
+/* На обычном размере цифра — просто подпись «100%», не кнопка. */
+.cr__zoomPct:disabled { color: #a6a5b2; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .cr__zoom { display: inline-flex; }
+  .cr__unzoom { display: none; }
+}
+/* В полном экране сверху поверх сцены лежит панель — держим под ней, как и
+   «обычный размер», и гасим в простое вместе с ней: в простое на странице
+   остаётся только лист. */
+.cr--full .cr__zoom {
+  top: 64px;
+  background: rgba(14, 12, 22, 0.72);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.cr--full .cr__zoomBtn,
+.cr--full .cr__zoomPct { color: #ece9f6; }
+.cr--full .cr__zoomPct:disabled { color: rgba(255, 255, 255, 0.5); }
+.cr--full .cr__zoomBtn:hover:not(:disabled),
+.cr--full .cr__zoomPct:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+.cr--idle .cr__zoom {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr__zoom { transition: none; }
+}
+
 /* Задания из «Практики» в домашней работе: не поле для ответа, а переход в
    раздел — материал живёт там, и прогресс считает он же. */
 .hw-practice { margin-top: 20px; }
@@ -9288,3 +9803,51 @@ textarea {
   padding: 14px 16px;
   background: var(--warn-bg, #fff8e8);
 }
+
+
+/* ── Плашка «Сессия истекла» (components/SessionExpiredNotice.jsx) ──
+   Поверх любого экрана, пока человек не войдёт или не закроет её сам. Янтарная,
+   а не красная: это не ошибка ввода, а объяснение, почему его снова просят войти. */
+.se-notice {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px 10px 14px;
+  border-radius: 14px;
+  background: #fff4e0;
+  color: #8a5300;
+  box-shadow: 0 8px 28px rgba(60, 40, 0, 0.18);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.se-notice__icon { flex: none; }
+.se-notice__text { flex: 1; min-width: 0; font-weight: 600; }
+.se-notice__cta {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: #8a5300;
+  cursor: pointer;
+}
+.se-notice__close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.se-notice__close:hover { opacity: 1; }

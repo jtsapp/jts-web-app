@@ -1,0 +1,877 @@
+/* ======================================================================
+   Мобильная адаптация «Обучения» (Figma «Web Адаптивка» → секция «Обучение»,
+   кадры 440×955: карта уровней 4095:40561, тропа 4104:41222, шаги урока
+   Warm-up … Wrap, «Выход из обучения» 4109:6805).
+
+   Слой лежит поверх двух прежних мобильных блоков, сделанных по тем же
+   кадрам раньше: «Мобильный «Обучение» по макету» в styles.css (карта,
+   тропа) и «Мобильный урок по макету» в course.css (плеер). Здесь только
+   расхождения с макетом, найденные замерами, — повторять те блоки незачем.
+   Размеры — px макета на 440; колонки тянутся, чтобы 360 жил без
+   горизонтальной прокрутки. Иконки — экспорт из макета (/assets/m/learning).
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* ---------- Карта уровней (4095:40561) ----------
+     Картинка острова в макете — та же island.webp, но кадрированная (CROP):
+     видна середина 84% × 90%, то есть остров на 10.7% крупнее, чем «во всю
+     высоту экрана», и чуть приподнят. Узлы стоят по экрану (их раскладка
+     своя, двумя колонками), поэтому крупнее делаем только картинку, а не кадр
+     .lp-isle__map — иначе вместе с ним уехали бы и узлы. */
+  .lp-isle__art {
+    position: absolute;
+    left: -5.35%;
+    top: -5.18%;
+    width: 110.7%;
+    height: 110.7%;
+    max-width: none;
+  }
+  /* Увеличенная картинка вылезает за остров, и с overflow: hidden он
+     становился прокручиваемым: scrollIntoView текущего узла сдвигал остров
+     на 53px вверх. clip режет так же, но прокрутить себя не даёт. */
+  .lp-isle {
+    overflow: clip;
+  }
+  /* Затемнение под шапкой: 132 от верха, #020202 60% → 0 и размытие 1.4. */
+  .lp-isle__head {
+    background: linear-gradient(180deg, rgba(2, 2, 2, 0.6) 0%, rgba(2, 2, 2, 0) 100%);
+    backdrop-filter: blur(1.4px);
+    -webkit-backdrop-filter: blur(1.4px);
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  /* ---------- Тропа уровня (4104:41222) ----------
+     У тропы в макете своя полоса — круглая «назад», уровень и подпись под
+     ним, — а общей шапки с гамбургером нет. Прежний мобильный блок делал
+     наоборот (по более старому кадру): прятал .kt-bar и оставлял .mtop. */
+  .learn:has(.km-scroll) .mtop {
+    display: none;
+  }
+  .kt-bar {
+    display: flex;
+    gap: 16px;
+    height: 69px;
+    padding: 16px;
+  }
+  /* «Назад» — кружок 36 (#b7f0ff) со стрелкой 28 из макета; подпись прячем
+     кеглем, а не удаляем: она остаётся именем кнопки для скринридера. */
+  .kt-bar__back {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    gap: 0;
+    border-radius: 46px;
+    background: #b7f0ff url(/assets/m/learning/trail-back.svg) center / 28px 28px no-repeat;
+    font-size: 0;
+  }
+  .kt-bar__back svg,
+  .kt-bar__castle {
+    display: none;
+  }
+  /* Крупно в макете — «Уровень A2», мелко под ним — раздел. Разметка несёт
+     имя королевства и уровень (b, span) в обратном порядке, поэтому
+     переворачиваем колонку: уровень наверх, имя королевства — подписью. */
+  .kt-bar__place {
+    flex: 1;
+    min-width: 0;
+    flex-direction: column-reverse;
+  }
+  .kt-bar__place span {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #9047ff;
+  }
+  .kt-bar__place b {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 15px;
+    color: #9d9d9d;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Карточка уровня: 32/100% с трекингом −3%, прогресс 14/140%. */
+  .kt-hero__level {
+    letter-spacing: -0.03em;
+  }
+  .kt-hero__prog {
+    line-height: 20px;
+  }
+  .kt-unit__title {
+    line-height: 16px;
+    letter-spacing: -0.03em;
+  }
+  .kt-unit__count {
+    line-height: 14px;
+    letter-spacing: -0.03em;
+  }
+
+  /* ---------- Полоса урока (Navbar всех шагов, 440×69) ---------- */
+  /* Крестик — значок close-circle-fill из макета в фиолетовом круге 36. */
+  .cp-bar__exit {
+    background: #9047ff url(/assets/m/learning/exit-x.svg) center / 20px 20px no-repeat;
+  }
+  .cp-bar__exit svg,
+  .cp-bar__dict svg {
+    display: none;
+  }
+  /* Словарь — залитая книжка макета, а не контурная. */
+  .cp-bar__dict {
+    background: #ebdeff url(/assets/m/learning/dict-book.svg) center / 20px 20px no-repeat;
+  }
+  /* Стадия 16/140% и название урока 14/110%: блок из двух строк — 37. */
+  .cp-bar__place b {
+    line-height: 22px;
+  }
+  .cp-bar__place span {
+    line-height: 15px;
+  }
+  /* Пилюля языка 58×33: флаг 16, шеврон вниз 18 (экспорт), поля 6/8/6/12. */
+  .cp-bar .lang-selector--flag {
+    gap: 4px;
+    height: 33px;
+    padding: 6px 8px 6px 12px;
+  }
+  .cp-bar .lang-selector--flag:hover {
+    transform: none;
+  }
+  .cp-bar .lang-selector--flag > svg {
+    flex: none;
+    width: 16px;
+    height: auto;
+  }
+  .cp-bar .lang-selector--flag .chev {
+    width: 18px;
+    height: 18px;
+    background: url(/assets/m/learning/lang-chev.svg) center / 18px 18px no-repeat;
+  }
+  .cp-bar .lang-selector--flag .chev svg {
+    display: none;
+  }
+
+  /* ---------- Вопрос шага ----------
+     Интерлиньяж в px строк макета: 24 → 29, 32 → 38 (две строки — 76). С
+     дробным 1.2 каждая двухстрочная фраза добавляла по пикселю, и вся колонка
+     ниже съезжала. */
+  .cp-step__title {
+    line-height: 29px;
+  }
+  .cp-step__prompt {
+    line-height: 38px;
+  }
+
+  /* Варианты-пилюли 408×59: поля 20/24 и строка 19. */
+  .cp-choice {
+    min-height: 59px;
+    line-height: 19px;
+  }
+
+  /* «Что вы слышите?» (Listening 4108:4504…4109:4846): плитки 128×96 по три
+     в ряд, как карточки разминки, и состояния у них рамкой 2 внутрь с цветной
+     подписью, а не заливкой: выбрано — #9047ff, верно — #19c119, ошибка —
+     #ff4646. У нас вместо эмодзи с подписью — иконка курса. */
+  .cp-choices.is-pics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cp-choice.cp-choice--pic {
+    aspect-ratio: auto;
+    min-height: 96px;
+    padding: 14px 10px;
+    border: 2px solid transparent;
+    border-radius: 20px;
+  }
+  .cp-choice.cp-choice--pic.is-sel,
+  .cp-choice.cp-choice--pic.is-right,
+  .cp-choice.cp-choice--pic.is-wrong {
+    background: #fff;
+  }
+  .cp-choice.cp-choice--pic.is-sel {
+    border-color: #9047ff;
+    color: #9047ff;
+  }
+  .cp-choice.cp-choice--pic.is-right {
+    border-color: #19c119;
+    color: #19c119;
+  }
+  .cp-choice.cp-choice--pic.is-wrong {
+    border-color: #ff4646;
+    color: #ff4646;
+  }
+  .cp-choice--pic .cp-choice__icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  /* Карточки «выбери что ближе» 128×96: эмодзи 32/38 и подпись 18/22. */
+  .cp-pick__label {
+    line-height: 22px;
+  }
+  .cp-pick__emoji {
+    line-height: 38px;
+  }
+
+  /* Плеер записи: между кнопкой 124 и «медленно» в макете 24, а не 12;
+     значок «медленно» — улитка из макета. */
+  .cp-audio {
+    gap: 24px;
+  }
+  /* Значок «слушать» — залитый динамик макета 48. Меняем только его: во
+     время игры у кнопки значок паузы (один path), его оставляем как есть. */
+  .cp-audio__play:has(svg > path + path) {
+    background: #9047ff url(/assets/m/learning/audio-play.svg) center / 48px 48px no-repeat;
+  }
+  .cp-audio__play svg:has(> path + path) {
+    display: none;
+  }
+  .cp-audio__slow {
+    line-height: 18px;
+  }
+  .cp-audio__slow svg {
+    display: none;
+  }
+  .cp-audio__slow::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/learning/audio-slow.svg) center / 24px 24px no-repeat;
+  }
+
+  /* ---------- Плашка результата и кнопка ----------
+     Под заданием в макете 32 до плашки (или до кнопки, если плашки нет), от
+     плашки до кнопки — 16. Плашка во всю колонку 408, а не 402 по центру. */
+  /* Справа поле 22, а не 16: ряд внутри плашки в макете 370 при её 408. */
+  .cp-fb {
+    width: 100%;
+    margin-top: 32px;
+    padding-right: 22px;
+    line-height: 18px;
+  }
+  .cp-fb__ic svg {
+    display: none;
+  }
+  .cp-fb.is-ok .cp-fb__ic {
+    background: #1eb04b url(/assets/m/learning/fb-ok.svg) center / 24px 24px no-repeat;
+  }
+  .cp-fb.is-no .cp-fb__ic {
+    background: #ff4646 url(/assets/m/learning/fb-no.svg) center / 24px 24px no-repeat;
+  }
+  /* Монета в белой пилюле 80×45, «+10» — 16/110% medium. */
+  .cp-fb__coin {
+    height: 45px;
+    padding: 0 13px 0 12px;
+    line-height: 18px;
+  }
+  .cp-foot {
+    padding-top: 32px;
+  }
+  .cp-fb + .cp-foot,
+  .cp-step:has(.cp-model) + .cp-foot {
+    padding-top: 16px;
+  }
+  /* Подписи кнопки в макете разного кегля: «Продолжить» — 15, «Проверить» и
+     бледная «Продолжить» (ничего не выбрано) — 16; строка 110%. */
+  .cp-cta {
+    font-size: 15px;
+    line-height: 1.1;
+  }
+  .cp-cta.is-check:not(:disabled),
+  .cp-cta.is-go:disabled {
+    font-size: 16px;
+  }
+  .cp-cta.is-go:disabled {
+    color: rgba(144, 71, 255, 0.31);
+  }
+
+  /* ---------- Слова урока (Vocabulary 4108:1584) ----------
+     Сетка — две колонки по 192 с зазором 12, ряды через 24; картинка 192×245
+     (r12), подпись 16/140% под ней через 8. Колонка в макете 396, прижата
+     влево — как и здесь, но на узком экране карточки ужимаются. */
+  .cp-words {
+    grid-template-columns: repeat(2, minmax(0, 192px));
+    justify-content: start;
+    column-gap: 12px;
+    row-gap: 24px;
+  }
+  .cp-word__label {
+    line-height: 22px;
+  }
+  /* Перевёрнутая карточка подписана той же строкой при прозрачности 20%. */
+  .cp-word.is-open .cp-word__label {
+    color: rgba(24, 24, 24, 0.2);
+  }
+  /* Оборот: поля 12, между блоками 12; слово 14/700 с прописной, толкование
+     10/500. */
+  .cp-word__back {
+    gap: 12px;
+  }
+  .cp-word__head b {
+    line-height: 17px;
+  }
+  .cp-word__head b::first-letter {
+    text-transform: uppercase;
+  }
+  .cp-word__head i {
+    line-height: 12px;
+  }
+  /* Плашка перевода 40 высотой: флаг строкой над словом, а не рядом. */
+  .cp-word__tr {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 6px;
+    font-size: 12px;
+    line-height: 14px;
+  }
+  .cp-word__flag {
+    width: 12px;
+    height: 9px;
+    margin: 2.5px 0;
+  }
+  .cp-word__acts {
+    gap: 4px;
+  }
+  .cp-word__save {
+    height: 30px;
+    padding: 0 16px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .cp-word__say {
+    width: 30px;
+    height: 30px;
+    border-radius: 20px;
+    background: #ebdeff url(/assets/m/learning/card-say.svg) center / 14px 14px no-repeat;
+  }
+  .cp-word__say svg {
+    display: none;
+  }
+
+  /* ---------- Лист словаря поверх урока (4108:1689) ----------
+     От заголовка до вкладок 32, от вкладок до списка 24; строки слов через
+     3, перевод тёмный 14/140%, справа голый значок звука 18 — без круга. */
+  .cp-dict {
+    gap: 0;
+  }
+  .cp-dict__title {
+    line-height: 34px;
+  }
+  .cp-dict__close {
+    background: #f6f5fa url(/assets/m/learning/dict-close.svg) center / 12px 12px no-repeat;
+  }
+  .cp-dict__close svg,
+  .cp-dict__say svg {
+    display: none;
+  }
+  .cp-dict__tabs {
+    margin-top: 32px;
+    box-shadow: inset 0 0 0 1px #f4f4f4;
+  }
+  .cp-dict__tab {
+    line-height: 20px;
+  }
+  .cp-dict__list,
+  .cp-dict__empty {
+    margin-top: 24px;
+  }
+  .cp-dict__list {
+    gap: 3px;
+  }
+  .cp-dict__word {
+    gap: 0;
+  }
+  .cp-dict__word b {
+    line-height: 22px;
+  }
+  .cp-dict__word span {
+    line-height: 20px;
+    color: #181818;
+  }
+  .cp-dict__say {
+    width: 18px;
+    height: 18px;
+    border-radius: 0;
+    background: url(/assets/m/learning/dict-say.svg) center / 18px 18px no-repeat;
+  }
+
+  /* ---------- Слайд правила (Grammar 4108:2410) ----------
+     Карточка сразу под полосой прогресса: заголовка шага над ней нет, и
+     собственный отступ 18 сдвигал её ниже макетных 32. Поля 32, заголовок
+     28/−1%. */
+  .cp-step > .cp-note:first-child {
+    margin-top: 0;
+  }
+  /* 32 на 440 — и пропорционально уже на узком экране: на 360 таблица
+     правила с полями 32 сжималась до трёх слов в строке. */
+  .cp-note {
+    padding: min(32px, 7.27vw);
+  }
+  .cp-note__h {
+    margin-bottom: 24px;
+    font-size: 28px;
+    line-height: 34px;
+    letter-spacing: -0.01em;
+  }
+  /* Таблица правила — плашка #f8f8f8 r16 без сеток: шапка фиолетовая (поля
+     12/16), строки 16 regular. */
+  .cp-note table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 16px;
+    background: #f8f8f8;
+    font-size: 16px;
+    line-height: 19px;
+  }
+  .cp-note :where(th, td) {
+    border: none;
+    padding: 8px 6px;
+    vertical-align: top;
+  }
+  .cp-note th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .cp-note tr > :first-child {
+    padding-left: 16px;
+  }
+  .cp-note tr > :last-child {
+    padding-right: 16px;
+  }
+  .cp-note tr:first-child > td,
+  .cp-note tr:has(> th) + tr > td {
+    padding-top: 16px;
+  }
+  .cp-note tr:last-child > td {
+    padding-bottom: 16px;
+  }
+  /* Формула правила: кружки 28 с плюсом, части фразы 16/700 −1%. */
+  .cp-note li.gf {
+    gap: 8px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .cp-note .gf__op {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+  /* Примеры под правилом — белые карточки r20 с подписью 18/700. Пример
+     разбит на слова-кнопки (TapText), и в гриде каждое слово становилось
+     отдельной строкой: «I / like / coffee.» столбиком. Блоком с центровкой
+     содержимого слова снова идут фразой. */
+  .cp-egs__card {
+    display: block;
+    align-content: center;
+    border-radius: 20px;
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  /* ---------- True / False (Practice 4108:3364) ----------
+     Строка 408×72: поля 12/12/12/24, между текстом и кнопками 8; кнопки
+     43 высотой, 16/700 на сиреневом. Верно — #19c119, ошибка — #ea4f4f. */
+  .cp-rows__row {
+    gap: 8px;
+    padding: 12px 12px 12px 24px;
+  }
+  .cp-rows__q {
+    line-height: 24px;
+  }
+  .cp-rows__opt {
+    min-width: 0;
+    padding: 0 16px;
+    border-radius: 30px;
+    background: #ebdeff;
+    font-size: 16px;
+  }
+  .cp-rows__opt.is-right {
+    background: #19c119;
+  }
+  .cp-rows__opt.is-wrong {
+    background: #ea4f4f;
+  }
+
+  /* ---------- Порядок слов (Practice 4108:3740) ----------
+     Собранная фраза — строка 65 над пунктиром 8/8 (#afafaf), банк — под ним;
+     от фразы и до банка по 18. Высота блока постоянная: и пустая строка, и
+     пустой банк держат свои 65. Уже взятое слово из банка уходит (в макете
+     его там нет), а не бледнеет на месте. */
+  .cp-order {
+    gap: 0;
+  }
+  .cp-order__line {
+    max-width: none;
+    min-height: 65px;
+    padding-bottom: 18px;
+    border-bottom: none;
+    background: linear-gradient(90deg, #afafaf 50%, transparent 0) left bottom / 16px 1px repeat-x;
+  }
+  .cp-order__bank {
+    max-width: none;
+    min-height: 65px;
+    margin-top: 18px;
+  }
+  .cp-order__bank .cp-chip:disabled {
+    display: none;
+  }
+  .cp-order .cp-chip {
+    line-height: 22px;
+  }
+  .cp-order__line.is-wrong .cp-chip {
+    background: #ea4f4f;
+  }
+  .cp-order__undo {
+    margin-top: 12px;
+  }
+
+  /* ---------- Поле ответа (Practice 4108:4197, Speaking 4109:5941) ----------
+     Белый блок 70: текст 18/22 medium с полем слева 20. Рамка фокуса (2px)
+     входит в эти 70 — поля ужаты на её толщину. */
+  .cp-field {
+    min-height: 70px;
+    padding: 22px 14px 22px 18px;
+    line-height: 22px;
+  }
+  /* Образец ответа: сиреневая плашка r12, поля 16; «Model answer» 14/500 с
+     трекингом 4%, сам образец 16/700, вопросы самопроверки 16/400. */
+  .cp-model {
+    margin-top: 32px;
+    line-height: 19px;
+  }
+  .cp-model > b {
+    font-size: 14px;
+    line-height: 17px;
+    letter-spacing: 0.04em;
+  }
+  /* Общее правило «.cp-model b» (подпись «Model answer») задевало и
+     выделения внутри размеченного образца: каждое «like» вставало
+     отдельной фиолетовой строкой посреди фразы. */
+  .cp-model__body b {
+    display: inline;
+    margin: 0;
+    font-size: inherit;
+    font-weight: 700;
+    color: inherit;
+  }
+  .cp-model__body :where(ul, ol) {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+
+  /* ---------- Чек-лист «I can …» (Wrap 4109:6453) ----------
+     Строки 408×64, зазор 10; отмеченная — без рамки, только фиолетовый
+     текст и залитый кружок с галочкой из макета. */
+  .cp-check {
+    gap: 10px;
+  }
+  .cp-check__row {
+    min-height: 64px;
+    padding: 18px 14px;
+    line-height: 18px;
+  }
+  .cp-check__row.is-on {
+    border-color: transparent;
+  }
+  .cp-check__row.is-on .cp-check__box {
+    color: transparent;
+    background: #9047ff url(/assets/m/learning/check.svg) center / 16px 16px no-repeat;
+  }
+
+  /* Соединение пар отдельного кадра в макете не имеет: левые пункты уже
+     сделаны карточками 72 (r20), как строки True/False, а правые варианты
+     оставались пилюлями 65 — ряды двух колонок расходились по высоте. */
+  .cp-match__bank .cp-chip {
+    min-height: 72px;
+    border-radius: 20px;
+  }
+
+  /* Тела, которые прежний мобильный блок не растянул: на 440 они стояли
+     узкой колонкой по центру, а соседние задания идут во всю ширину. */
+  .cp-phrases,
+  .cp-mistake,
+  .cp-rec,
+  .cp-cols {
+    width: 100%;
+  }
+}
+
+/* ---------- Итоги урока (Wrap 4109:6507 / 4109:6617) ----------
+   Только на высоких телефонах: для низких (≤720) в styles.css итог ужат
+   ступенями, чтобы влезать без прокрутки, — его не трогаем. В макете итог
+   прижат к верху, маскот 240×280 (кадр макета режет низ картинки), дальше
+   колонка с шагами 16/24/32. Общая шапка остаётся: полоса урока на итогах уже
+   снята вместе с плеером. */
+@media (max-width: 560px) and (min-height: 721px) {
+  /* Оверлей итогов кончается выше низа экрана, и под ним светила полоса
+     фона кабинета (#f4f5f7) — красим кабинет в цвет итогов. */
+  .learn:has(.le-over) {
+    background: #f8f8f8;
+  }
+  .le-card,
+  .le-card--fail {
+    margin: 0 auto auto;
+    gap: 32px;
+  }
+  .le-art,
+  .le-art--win,
+  .le-art--lose {
+    width: 240px;
+    height: 280px;
+    object-fit: cover;
+    object-position: center top;
+  }
+  /* Колонка во всю ширину 408: прежний предел 370 (styles.css, ≤960) — от
+     десктопной раскладки «маскот слева, итоги справа». */
+  .le-info,
+  .le-info--fail {
+    max-width: none;
+    gap: 16px;
+  }
+  .le-info--fail {
+    gap: 32px;
+  }
+  .le-fail {
+    gap: 16px;
+  }
+  .le-pct {
+    padding: 12px 24px;
+    font-size: 36px;
+    line-height: 36px;
+  }
+  .le-head {
+    gap: 6px;
+  }
+  .le-title {
+    font-size: 32px;
+    line-height: 32px;
+  }
+  .le-sub {
+    line-height: 22px;
+  }
+  .le-bottom {
+    margin-top: 8px;
+    gap: 32px;
+  }
+  .le-acts {
+    gap: 32px;
+  }
+  .le-stats {
+    gap: 8px;
+  }
+  .le-stat {
+    min-height: 120px;
+    padding: 23px 22px 17px 23px;
+  }
+  /* Подпись в макете набрана в две строки («Неверных / ответов», «Верных /
+     ответов») — узкий блок по центру плитки. */
+  .le-stat > span {
+    max-width: 100px;
+  }
+  .le-stat__ic svg {
+    display: none;
+  }
+  .le-stat--wrong .le-stat__ic {
+    background: #ff4646 url(/assets/m/learning/stat-no.svg) center / 21px 21px no-repeat;
+  }
+  .le-stat--right .le-stat__ic {
+    background: #1eb04b url(/assets/m/learning/stat-ok.svg) center / 20px 20px no-repeat;
+  }
+  .le-btn {
+    height: 56px;
+    padding: 0 24px;
+  }
+}
+
+/* ---------- Подтверждение выхода (LessonExitConfirm, .lx-*) ----------
+   Диалог общий у «Обучения», онлайн- и живого урока, а макеты у разделов
+   разные. По умолчанию — нижний лист из «Уроков» (кадр 4676:4740): заголовок
+   с крестиком, под ним две кнопки 50 во всю ширину. Прежний мобильный блок
+   (styles.css, ≤760) клал кнопки колонкой, но оставлял им flex: 1 1 0 — в
+   колонке это высота 0, и кнопки сплющивались до строки текста. */
+@media (max-width: 560px) {
+  .lx-over {
+    position: fixed;
+    z-index: 60;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .lx-card {
+    width: 100%;
+    margin: auto 0 0;
+    border-radius: 24px 24px 0 0;
+    box-shadow: none;
+  }
+  .lx-head {
+    gap: 8px;
+    padding: 24px 16px 16px;
+    border-bottom: none;
+  }
+  .lx-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 27px;
+    letter-spacing: -0.01em;
+    color: #15131a;
+  }
+  .lx-sub {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 19px;
+    color: #504b4b;
+  }
+  .lx-close,
+  .lx-close:hover {
+    width: 32px;
+    height: 32px;
+    border-radius: 0;
+    background: url(/assets/m/learning/sheet-close.svg) center / 32px 32px no-repeat;
+  }
+  .lx-close svg {
+    display: none;
+  }
+  .lx-acts {
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 22px calc(14px + env(safe-area-inset-bottom)) 18px;
+  }
+  .lx-continue,
+  .lx-leave {
+    flex: none;
+    width: 100%;
+    height: 50px;
+    border-radius: 10px;
+  }
+  .lx-leave {
+    font-size: 13px;
+    box-shadow: 0 3px 10px rgba(89, 51, 153, 0.28);
+  }
+  .lx-continue {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #504b4b;
+    box-shadow: inset 0 0 0 1px #f1eff8;
+  }
+
+  /* В уроке «Обучения» свой кадр (4109:6805): карточка r40 по центру на
+     затемнении с размытием, крестик над ней справа, сверху маскот в круге
+     112, текст по центру и кнопки-пилюли 48 колонкой. Главная там —
+     «остаться» (фиолетовая), «выйти» — голубая под ней; разметка ставит
+     «выйти» первой, поэтому колонку переворачиваем. */
+  .learn:has(.km-lesson) .lx-over {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.57);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+  }
+  .learn:has(.km-lesson) .lx-card {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin: auto 0;
+    padding: 24px;
+    /* Крестик висит над карточкой (32 + 16): центруем пару целиком. */
+    transform: translateY(24px);
+    border-radius: 40px;
+  }
+  .learn:has(.km-lesson) .lx-head {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0;
+  }
+  .learn:has(.km-lesson) .lx-head::before {
+    content: '';
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    background: url(/assets/m/learning/exit-mascot.webp) center / cover no-repeat;
+  }
+  .learn:has(.km-lesson) .lx-texts {
+    text-align: center;
+  }
+  .learn:has(.km-lesson) .lx-title {
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #000;
+  }
+  .learn:has(.km-lesson) .lx-sub {
+    font-weight: 400;
+    line-height: 15px;
+    color: #181818;
+  }
+  .learn:has(.km-lesson) .lx-close,
+  .learn:has(.km-lesson) .lx-close:hover {
+    position: absolute;
+    top: -48px;
+    right: 0;
+    background-image: url(/assets/m/learning/modal-close.svg);
+  }
+  .learn:has(.km-lesson) .lx-acts {
+    flex-direction: column-reverse;
+    gap: 5px;
+    padding: 0;
+  }
+  .learn:has(.km-lesson) .lx-continue,
+  .learn:has(.km-lesson) .lx-leave {
+    height: 48px;
+    border-radius: 80px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.1;
+    box-shadow: none;
+  }
+  .learn:has(.km-lesson) .lx-continue,
+  .learn:has(.km-lesson) .lx-continue:hover {
+    background: #9047ff;
+    color: #fff;
+  }
+  .learn:has(.km-lesson) .lx-leave,
+  .learn:has(.km-lesson) .lx-leave:hover {
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+}
+
+/* «Что вы слышите?» со словами (решение владельца 02.10: «по дизайну макета»).
+   Та же плитка 128×96, что у вариантов-картинок выше, но с подписью 18/700:
+   эмодзи к словам в данных курса нет, поэтому слово стоит по центру плитки. */
+@media (max-width: 560px) {
+  .cp-choices.is-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+  }
+  .cp-choices.is-tiles .cp-choice {
+    display: grid;
+    place-items: center;
+    min-height: 96px;
+    padding: 16px 12px;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #181818;
+    overflow-wrap: anywhere;
+  }
+  .cp-choices.is-tiles .cp-choice.is-sel {
+    border-color: #9047ff;
+    background: #fff;
+    color: #9047ff;
+  }
+  .cp-choices.is-tiles .cp-choice.is-right {
+    border-color: #19c119;
+    background: #fff;
+    color: #19c119;
+  }
+  .cp-choices.is-tiles .cp-choice.is-wrong {
+    border-color: #ff4646;
+    background: #fff;
+    color: #ff4646;
+  }
+}

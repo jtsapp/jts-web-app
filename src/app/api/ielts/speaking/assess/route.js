@@ -114,7 +114,7 @@ export async function POST(request) {
 
   let graded
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, maxOutputTokens: 900, timeoutMs: 80_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: 80_000 })
     graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
   } catch (e) {
     console.error('ielts/speaking/assess model failed:', e?.message || e)

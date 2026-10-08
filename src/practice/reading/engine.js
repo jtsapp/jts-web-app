@@ -129,8 +129,25 @@ export function initExercise(ex, rnd = Math.random) {
     st.right = shuffledIdx(ex.pairs.length, rnd)
   } else if (isOrder(ex.type)) {
     st.seq = shuffledIdx(ex.items.length, rnd)
+    // Стартовый порядок помним: по нему isAnswered отличает «расставил» от
+    // «не открывал» — у остальных механик пустой ответ виден по самому стейту.
+    st.seq0 = st.seq
   }
   return st
+}
+
+/**
+ * Есть ли в задании ответ ученика. Нужно «Завершить»: оно досдаёт задания, у
+ * которых не нажали «Проверить», но только начатые — пустое, записанное как
+ * 0 из N, считалось бы на итоге сделанным.
+ */
+export function isAnswered(ex, st) {
+  if (isChoice(ex.type)) return Object.keys(st.sel).length > 0
+  if (isMatch(ex.type)) return Object.keys(st.pairs).length > 0
+  if (ex.type === 'gap') return st.fill.some((b) => b !== null && b !== undefined)
+  if (isOrder(ex.type)) return !!st.seq0 && st.seq.some((k, pos) => k !== st.seq0[pos])
+  if (ex.type === 'reflection') return String(st.reflect || '').trim() !== ''
+  return false
 }
 
 /** Ответ «как надо» — для кнопки «Показать ответ». */

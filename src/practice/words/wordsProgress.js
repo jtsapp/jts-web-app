@@ -7,40 +7,53 @@
 // Найденные копятся, а не перезаписываются раундом: сцену проходят в несколько
 // заходов, и выйти на середине — нормальный сценарий, а не сброс.
 //
-// Ключ и событие — общие из practiceKeys.js; стейт целиком уезжает на сервер
-// через pushModule('words', …) — семантика replace, см. practiceContract.js.
+// Ключ и событие — общие из practiceKeys.js; хранение — общее хранилище
+// прогресса (память + черновик + сервер, replace, см. progressStore.js).
 //
 // Домашней работой раздел не отчитывается: у сцен нет CEFR-уровня, задать
 // «пройди Ферму» преподаватель не может, и area 'words' бэкенду неизвестна.
 
 import { WORDS_KEY as KEY, WORDS_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore } from '../progressStore.js'
 
-export function readState() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    const val = raw ? JSON.parse(raw) : null
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      return { scenes: val.scenes && typeof val.scenes === 'object' ? val.scenes : {} }
+// Найденное только копится, поэтому сведение с сервером — объединение по
+// сцене: найденные слова обеих сторон, «пройдена» — если хоть где-то. Без
+// него найденное на этом устройстве до ответа сервера заменяло сцену целиком и
+// стирало найденное на другом (ревью 08.10.2026, #78).
+function mergeScenes(server, local) {
+  const scenes = { ...server.scenes }
+  for (const [id, mine] of Object.entries(local.scenes)) {
+    const theirs = scenes[id]
+    if (!theirs) {
+      scenes[id] = mine
+      continue
     }
-  } catch {
-    /* приватный режим / битый JSON — начинаем с чистого стейта */
+    const found = Array.isArray(theirs.found) ? theirs.found : []
+    const extra = (Array.isArray(mine.found) ? mine.found : []).filter((w) => !found.includes(w))
+    scenes[id] = { ...theirs, found: [...found, ...extra], done: !!(theirs.done || mine.done) }
   }
-  return { scenes: {} }
+  return { scenes }
 }
 
-function writeState(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
-  }
-  pushModule('words', state) // best-effort серверный синк (no-op для гостя)
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
+const store = createProgressStore({
+  module: 'words',
+  merge: mergeScenes,
+  key: KEY,
+  event: EVENT,
+  empty: () => ({ scenes: {} }),
+  normalize: (val) =>
+    val && typeof val === 'object' && !Array.isArray(val)
+      ? { scenes: val.scenes && typeof val.scenes === 'object' ? val.scenes : {} }
+      : { scenes: {} },
+})
+
+// Состояние общее с памятью хранилища — только читать; писатели собирают новое.
+export function readState() {
+  return store.read()
+}
+
+function writeScene(state, sceneId, entry) {
+  store.write({ ...state, scenes: { ...state.scenes, [sceneId]: entry } }) // событие и синк — внутри
 }
 
 function sceneEntry(state, sceneId) {
@@ -62,8 +75,7 @@ export function markWordFound(sceneId, wordId) {
   const state = readState()
   const cur = sceneEntry(state, sceneId)
   if (cur.found.includes(wordId)) return
-  state.scenes[sceneId] = { ...cur, found: [...cur.found, wordId] }
-  writeState(state)
+  writeScene(state, sceneId, { ...cur, found: [...cur.found, wordId] })
 }
 
 /** Отметка «дошёл до экрана результата». Идемпотентна. */
@@ -72,8 +84,7 @@ export function markSceneDone(sceneId) {
   const state = readState()
   const cur = sceneEntry(state, sceneId)
   if (cur.done) return
-  state.scenes[sceneId] = { ...cur, done: true }
-  writeState(state)
+  writeScene(state, sceneId, { ...cur, done: true })
 }
 
 /**

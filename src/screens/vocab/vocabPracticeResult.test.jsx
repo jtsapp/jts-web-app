@@ -66,3 +66,20 @@ describe('VocabPractice: итог и «хуже всего запомненны�
     expect(onResults.mock.calls[0][0]).toEqual([{ key: 'env-01', ok: true }])
   })
 })
+
+// Ревью 08.10.2026: recordSkill('vocab') звался только в старой сессии словаря
+// (src/practice/vocab/Session.jsx), которую никто не открывает, — навык
+// «Словарь» на Главной и в профиле не рос от практики вообще.
+describe('VocabPractice: ответы идут в навык «Словарь»', () => {
+  it('верный ответ засчитывается в навык', async () => {
+    const { readLocalSkillStats } = await import('../../practice/skillStats.js')
+    const before = readLocalSkillStats().vocab.done
+    mount([{ id: 'apple', en: 'apple', ru: 'яблоко' }])
+    fireEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    fireEvent.click(screen.getByRole('button', { name: 'К практике' }))
+    fireEvent.click(screen.getByRole('button', { name: 'яблоко' }))
+    fireEvent.click(screen.getByRole('button', { name: /Продолжить/ }))
+    expect(document.querySelector('.vp-res-card')).not.toBeNull()
+    expect(readLocalSkillStats().vocab.done).toBe(before + 1)
+  })
+})

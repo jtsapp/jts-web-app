@@ -102,6 +102,41 @@ describe('reflection', () => {
     expect(r.detail.missing).toEqual(['patient', 'drop', 'because'])
     expect(r.score).toBe(0)
   })
+
+  // Ревью 08.10.2026: ключ искался подстрокой где угодно — «so» засчитывался
+  // в «also», «possible» в «impossible», «ai» в «said», а «don’t» с iPhone
+  // (типографский апостроф) не совпадал с ключом «don't».
+  const found = (keys, reflect) => checkExercise({ type: 'reflection', keys, min: 1 }, { reflect }).detail.found
+
+  it('апостроф с iPhone и пропущенный апостроф — тот же ключ', () => {
+    expect(found([["don't"]], 'I don’t think the birds are happy in this story')).toEqual(["don't"])
+    expect(found([["don't"]], 'I dont think the birds are happy in this story')).toEqual(["don't"])
+  })
+
+  it('ключ засчитывается только с начала слова', () => {
+    expect(found([['so']], 'I also want to visit the old city again next year')).toEqual([])
+    expect(found([['so']], 'It was late, so we went home and slept until noon')).toEqual(['so'])
+    expect(found([['possible']], 'I think it is impossible to repeat this experiment today')).toEqual([])
+    expect(found([['ai']], 'He said that the computer program was really very clever')).toEqual([])
+  })
+
+  it('длинный ключ продолжается (agreement закрывает agree), короткий — только с окончанием', () => {
+    expect(found([['agree']], 'We reached an agreement after a very long talk about it')).toEqual(['agree'])
+    expect(found([['old']], 'The older people in the village still remember those songs')).toEqual(['old'])
+    expect(found([['ok']], 'I read a book about it and looked at the pictures')).toEqual([])
+    expect(found([['car']], 'Two cars were parked near the station all night long')).toEqual(['car'])
+  })
+
+  it('короткий ключ узнаёт и формы с удвоением, -en и немой e: fitting, seen, eaten, aged', () => {
+    // Подстрока прототипа их засчитывала — новое правило не должно недодавать
+    // балл за настоящий ответ.
+    expect(found([['fit']], 'The new piece was fitting perfectly into the old machine')).toEqual(['fit'])
+    expect(found([['see']], 'I have seen this kind of weather many times before')).toEqual(['see'])
+    expect(found([['eat']], 'We had eaten all the food before the guests came')).toEqual(['eat'])
+    expect(found([['age']], 'My aged grandmother still remembers the old songs')).toEqual(['age'])
+    // d — только после немой e: card не форма car.
+    expect(found([['car']], 'I paid with my card at the shop near the station')).toEqual([])
+  })
 })
 
 describe('mood', () => {

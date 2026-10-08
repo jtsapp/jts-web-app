@@ -1149,10 +1149,22 @@
 }
 .cp-rows__row {
   display: flex;
+  /* Перенос — только для разбора под строкой (.cp-rows__why во всю ширину):
+     вопрос и кнопки по-прежнему стоят в одну линию. */
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 14px 24px;
   border-top: 1px solid #f1f1f5;
+}
+/* Разбор ошибочного утверждения — цитата из текста или правило из курса. */
+.cp-rows__why {
+  flex-basis: 100%;
+  margin: -6px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #5c5c70;
+  text-align: left;
 }
 .cp-rows__row:first-child {
   border-top: none;

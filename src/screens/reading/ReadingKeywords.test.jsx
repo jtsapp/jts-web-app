@@ -28,7 +28,7 @@ function mount() {
 
 beforeEach(() => {
   saveReadingKeyword.mockReset()
-  saveReadingKeyword.mockResolvedValue(true)
+  saveReadingKeyword.mockResolvedValue('dict')
 })
 afterEach(cleanup)
 
@@ -57,5 +57,27 @@ describe('ReadingKeywords — в словарь', () => {
     await waitFor(() => expect(saveReadingKeyword).toHaveBeenCalled())
     expect(getAllByRole('button', { name: 'Добавить в словарь' })).toHaveLength(WORDS.length)
     expect(getAllByRole('button', { name: 'Добавить в словарь' })[0].disabled).toBe(false)
+  })
+})
+
+// Решение владельца 09.10.2026: гостю после «В словарь» — «Сохранено», как в
+// Обучении. «Словаря» у гостя нет: слово уходит в банк повторений тьютора и
+// переезжает в аккаунт при входе.
+describe('ReadingKeywords — подпись по факту', () => {
+  it('гость: банк принял — «Сохранено», а не «Уже в словаре»', async () => {
+    saveReadingKeyword.mockResolvedValue('bank')
+    const { getAllByRole, findByRole, queryByRole } = mount()
+    fireEvent.click(getAllByRole('button', { name: 'Добавить в словарь' })[0])
+    const btn = await findByRole('button', { name: 'Сохранено для повторений' })
+    expect(btn.textContent).toContain('Сохранено')
+    expect(queryByRole('button', { name: 'Уже в словаре' })).toBeNull()
+  })
+
+  it('пока запись идёт — «Сохраняю…»', async () => {
+    saveReadingKeyword.mockReturnValue(new Promise(() => {}))
+    const { getAllByRole, findByRole } = mount()
+    fireEvent.click(getAllByRole('button', { name: 'Добавить в словарь' })[0])
+    const btn = await findByRole('button', { name: 'Сохраняю…' })
+    expect(btn.disabled).toBe(true)
   })
 })

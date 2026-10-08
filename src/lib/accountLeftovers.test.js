@@ -29,6 +29,14 @@ describe('clearAccountLeftovers', () => {
     expect(localStorage.getItem('jts_level_progress_week')).toBeNull()
   })
 
+  it('стирает кэш каталогов всех учеников: это копия сервера, а место общее', () => {
+    localStorage.setItem('jts_catalog_v2:https://x:41:/mobile/course-catalog', '[]')
+    localStorage.setItem('jts_catalog_v2:https://x:42:/mobile/saved-words', '[]')
+    localStorage.setItem('jts_catalog_v1:https://x:anon:/mobile/comics', '[]')
+    clearAccountLeftovers()
+    expect(Object.keys(localStorage).filter((k) => k.startsWith('jts_catalog_'))).toEqual([])
+  })
+
   it('не трогает чужие ключи: язык, устройство, сторонние *-done', () => {
     localStorage.setItem('jts_device_id', 'dev-1')
     localStorage.setItem('jts-lang', 'kk')

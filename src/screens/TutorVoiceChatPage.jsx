@@ -14,7 +14,6 @@ import { ConnectionState, Track } from 'livekit-client'
 import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
-import JarvisOrb from '../tutor/JarvisOrb.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
 import { moodToEmotion } from '../tutor/avatarEmotions.js'
 import { cutAtSec } from '../tutor/scenarioClock.js'
@@ -275,7 +274,7 @@ export default function TutorVoiceChatPage({
           />
         ) : error ? (
           <div className="t-voice__card">
-            <CallFace face={tutor.face || ''} emotion="idle" agentState="idle" />
+            <TutorFace emotion="idle" />
             {errorText && <div className="t-voice__text">{errorText}</div>}
             {limited && (
               <TutorLimitModal
@@ -311,14 +310,13 @@ export default function TutorVoiceChatPage({
               briefId={briefId}
               limitSec={tokenData.scenarioLimitSec || 0}
               holdRef={holdRef}
-              face={tutor.face || ''}
               roomName={tokenData.room || ''}
               pushToTalk={pushToTalk}
             />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
-            <CallFace face={tutor.face || ''} emotion="idle" agentState="idle" />
+            <TutorFace emotion="idle" />
             <div className="t-voice__text">
               {perm === 'granted' ? t('voice.connecting') : t('voice.permHint')}
             </div>
@@ -407,22 +405,6 @@ function MicButton({
   )
 }
 
-// Аватар звонка: у обычных тьюторов — лицо, у Джарвиса — орб (tutors.js →
-// face: 'orb'). Орбу эмоции не нужны, ему хватает состояния агента: он живёт
-// свечением, а не мимикой.
-//
-// Уровень МИКРОФОНА орбу сюда намеренно не заводим — useTrackVolume тикает по
-// несколько раз в секунду и перерисовывал бы весь CallStage (ровно поэтому он
-// и заперт в MicButton, см. комментарий выше). Что ученика слышат, показывает
-// кольцо на кнопке мика; орб отражает сторону тьютора.
-function CallFace({ face, emotion, speaking, agentState, audioTrack }) {
-  if (face === 'orb') {
-    const state = ['listening', 'thinking', 'speaking'].includes(agentState) ? agentState : 'idle'
-    return <JarvisOrb state={state} audioTrack={audioTrack} />
-  }
-  return <TutorFace emotion={emotion} speaking={speaking} />
-}
-
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
 // Экспорт — для теста переключателя режима (TutorVoiceChatPage.test.jsx).
 export function CallStage({
@@ -432,7 +414,6 @@ export function CallStage({
   briefId = '',
   limitSec = 0,
   holdRef,
-  face = '',
   roomName = '',
   pushToTalk = false,
 }) {
@@ -564,11 +545,6 @@ export function CallStage({
   }, [speaking, reaction])
 
   useEffect(() => stopReactionTimer, [])
-
-  // Голос тьютора для пульсации орба Джарвиса. Берём сырой MediaStreamTrack:
-  // TrackReference пересоздаётся на каждый ререндер, а трек внутри тот же —
-  // иначе эффект с AudioContext пересобирался бы вхолостую по десятку раз.
-  const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
 
   // Микрофон ученика — для индикации «слышу тебя» на кнопке (см. MicButton).
   const micTrack = localParticipant?.getTrackPublication(Track.Source.Microphone)?.track || undefined
@@ -751,13 +727,7 @@ export function CallStage({
       )}
       {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
-      <CallFace
-        face={face}
-        emotion={emotion}
-        speaking={speaking}
-        agentState={va.state}
-        audioTrack={agentTrack}
-      />
+      <TutorFace emotion={emotion} speaking={speaking} />
       <CallCaption text={text} isUser={isUser} />
       {/* Переключатель режима — до появления тьютора его нет: переключать
           некому, а выбор всё равно уйдёт в metadata следующего звонка. */}

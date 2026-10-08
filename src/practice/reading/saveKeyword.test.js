@@ -22,7 +22,7 @@ beforeEach(() => {
 
 describe('saveReadingKeyword', () => {
   it('кладёт слово в личный словарь на ru и kz и в vocab_bank', async () => {
-    await expect(saveReadingKeyword('tok', WORD, 'The Pill')).resolves.toBe(true)
+    await expect(saveReadingKeyword('tok', WORD, 'The Pill')).resolves.toBe('dict')
 
     expect(addVocabWords).toHaveBeenCalledWith([{ word: 'placebo', hint: 'плацебо · плацебо' }])
     expect(saveWord).toHaveBeenCalledWith('tok', {
@@ -40,7 +40,9 @@ describe('saveReadingKeyword', () => {
   })
 
   it('без токена всё равно пишет в vocab_bank — гость забирает слово на устройство', async () => {
-    await expect(saveReadingKeyword(null, WORD, 'The Pill')).resolves.toBe(true)
+    // Гостю «Словаря» нет — слово в банке повторений, и подпись должна это
+    // говорить, а не «Уже в словаре» (решение владельца 09.10.2026).
+    await expect(saveReadingKeyword(null, WORD, 'The Pill')).resolves.toBe('bank')
     expect(saveWord).not.toHaveBeenCalled()
     expect(addVocabWords).toHaveBeenCalled()
   })
@@ -56,9 +58,24 @@ describe('saveReadingKeyword', () => {
     expect(saveWord).toHaveBeenCalledWith('tok', expect.objectContaining({ language: 'kk', translation: 'сынақ' }))
   })
 
-  it('если личный словарь упал, а банк принял — считаем успехом', async () => {
+  // Ревью 08.10.2026: банк тьютора в разделе «Словарь» не виден, и «Уже в
+  // словаре» после его одного «да» врало — в «Моём словаре» слова не было.
+  it('личный словарь упал, а банк принял — это не «в словаре»', async () => {
     saveWord.mockRejectedValue(new Error('offline'))
-    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(true)
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(false)
+  })
+
+  it('личный словарь принял, банк тьютора упал — слово в словаре', async () => {
+    addVocabWords.mockResolvedValue(false)
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe('dict')
+  })
+
+  it('хватает одного языка: ru принят, kk упал', async () => {
+    saveWord.mockImplementation(async (_t, { language }) => {
+      if (language === 'kk') throw new Error('500')
+      return {}
+    })
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe('dict')
   })
 
   it('если оба пути не вышли — не врём, что сохранилось', async () => {

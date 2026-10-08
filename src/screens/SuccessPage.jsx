@@ -16,13 +16,11 @@ export default function SuccessPage({ onDone }) {
       <div className="form-inner">
       <div className="form-card success-center">
         <div className="success-badge success-badge--sm" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          {/* Галочка — контур check-fill из кадра 1434:6694 */}
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path
-              d="m5 13 4 4L19 7"
-              stroke="currentColor"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              d="M10.0007 15.1709L19.1931 5.97852L20.6073 7.39273L10.0007 17.9993L3.63672 11.6354L5.05094 10.2212L10.0007 15.1709Z"
+              fill="currentColor"
             />
           </svg>
         </div>

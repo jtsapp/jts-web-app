@@ -47,6 +47,20 @@ export function isValidBirthDate(value, today = new Date()) {
   return birthDateProblem(value, today) === null
 }
 
+// Возрастная ступень для голосового Декстера (пакет Speaking Buddy, core §11):
+// ребёнок — до 12 включительно, подросток — 13–17, взрослый — с 18. От неё
+// зависит, ругается ли он всерьёз, поэтому null (даты нет, она битая или из
+// будущего) НЕ превращается во взрослого: агент тогда держит «unknown», а это
+// режим подростка. Бэкенд отдаёт LocalDate, иногда с временем — берём день.
+export function ageGroupFromBirthDate(value, today = new Date()) {
+  if (value == null) return null
+  const age = ageOn(String(value).slice(0, 10), today)
+  if (age === null || age < 0) return null
+  if (age >= 18) return 'adult'
+  if (age >= 13) return 'teen'
+  return 'child'
+}
+
 function isoYearsAgo(today, years) {
   const d = new Date(today.getFullYear() - years, today.getMonth(), today.getDate())
   const mm = String(d.getMonth() + 1).padStart(2, '0')

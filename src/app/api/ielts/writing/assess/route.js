@@ -55,7 +55,7 @@ export async function POST(request) {
 
   let assessment
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, timeoutMs: 90_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: 90_000 })
     assessment = normalizeAssessment(raw, job.text)
   } catch (e) {
     console.error('ielts/writing/assess model failed:', e?.message || e)

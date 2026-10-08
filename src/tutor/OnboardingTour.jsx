@@ -105,6 +105,11 @@ export function useScreenTour(storageKey) {
 // Гайд-тур: затемняет экран, «прожигает» дырку на текущем элементе (по CSS-селектору),
 // рядом рисует поповер с текстом, прогрессом и кнопкой «ОК». По шагам вперёд; в конце
 // ставит флаг в localStorage и вызывает onFinish.
+//
+// Шаг может нести свой интерактив: `content` рисуется под текстом (выбор цели на
+// «Главной»), а `canNext: false` держит «Далее», пока выбор не сделан. Кликать
+// сквозь затемнение по самой подсвеченной карточке не даём — тогда ожила бы вся
+// карточка, а не только выбор, — поэтому интерактив живёт в поповере.
 export default function OnboardingTour({ steps, onFinish, storageKey }) {
   const t = useT()
   const [i, setI] = useState(0)
@@ -191,12 +196,21 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
     return () => ro.disconnect()
   }, [])
 
-  const next = () => (i + 1 < steps.length ? setI(i + 1) : finish())
+  const blocked = step?.canNext === false
+  const next = () => {
+    if (blocked) return
+    if (i + 1 < steps.length) setI(i + 1)
+    else finish()
+  }
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') finish()
-      else if (e.key === 'Enter' || e.key === ' ') next()
+      // Enter/пробел на кнопке внутри карточки — это её собственное нажатие:
+      // на чипе выбора уровня это выбор, а не «Далее», а на самой «ОК» браузер
+      // и так пришлёт click. У пробела click приходит на keyup, уже после
+      // перерисовки, — и тур перескакивал через шаг.
+      else if ((e.key === 'Enter' || e.key === ' ') && !e.target?.closest?.('.t-tour__pop button')) next()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -246,6 +260,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
       >
         <b className="t-tour__title">{step.title}</b>
         <p className="t-tour__text">{step.text}</p>
+        {step.content && <div className="t-tour__content">{step.content}</div>}
 
         <div className="t-tour__bar">
           <span style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
@@ -259,7 +274,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
             <span className="t-tour__count">
               {i + 1}/{steps.length}
             </span>
-            <button className="t-tour__ok" type="button" onClick={next}>
+            <button className="t-tour__ok" type="button" onClick={next} disabled={blocked}>
               {last ? t('tour.done') : t('tour.next')}
             </button>
           </div>

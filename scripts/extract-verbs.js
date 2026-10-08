@@ -397,11 +397,16 @@ function main() {
   for (const f of fs.readdirSync(AUDIO_DIR)) {
     if (f.endsWith('.wav') && !keys.has(f.slice(0, -4))) fs.unlinkSync(path.join(AUDIO_DIR, f))
   }
+  // Записи в public/ теперь озвучены ElevenLabs (scripts/make-verbs-voice.js),
+  // а в прототипе лежит старый голос: слепая перезапись вернула бы его. Поэтому
+  // существующий файл не трогаем, пока не попросили --prototype-audio.
+  const overwrite = process.argv.includes('--prototype-audio')
   let bytes = 0
   for (const [key, b64] of Object.entries(data.AUDIO)) {
     const buf = Buffer.from(b64, 'base64')
     bytes += buf.length
-    fs.writeFileSync(path.join(AUDIO_DIR, `${key}.wav`), buf)
+    const file = path.join(AUDIO_DIR, `${key}.wav`)
+    if (overwrite || !fs.existsSync(file)) fs.writeFileSync(file, buf)
   }
 
   write(path.join(FIXTURES_DIR, 'oracle.json'), buildOracle(data.engine, data))

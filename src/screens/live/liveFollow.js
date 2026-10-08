@@ -47,3 +47,23 @@ export function nextFollow(local, prev, next) {
   if (local.following && positionChanged(prev, next)) return { following: true, focusSeq, go: true }
   return { following: local.following, focusSeq, go: false }
 }
+
+/**
+ * Событие показа — «Перенести ученика сюда» на задание или блок (мост шлёт его как
+ * `eventType: 'point'`). Автоуказка при открытии выдачи его не шлёт (silent), поэтому это
+ * всегда осознанное действие преподавателя, а не клик по странице.
+ */
+export function isPointEvent(event) {
+  return event?.eventType === 'point'
+}
+
+/**
+ * Пачка показа — указка «Перенести ученика сюда», а не поток класса: в ней только
+ * события 'point'. Снимок рамки преподавателя тоже несёт прошлые указки (мост пишет
+ * их в историю), но вперемешку с кликами и с прокруткой последним событием — это
+ * показ, и переносить ученика по нему нельзя.
+ */
+export function isPointerBatch(events) {
+  return Array.isArray(events) && events.length > 0 && events.every(isPointEvent)
+}
+

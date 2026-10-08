@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url'
 // Вход через Apple ID с сайта убран, вход через Google — оставлен (решение
 // владельца, 2026-08-25: сначала убрали оба, потом Google вернули).
 //
+// 04.10.2026 владелец убрал Google из регистрации (чат с Декстером): он заводил
+// аккаунт вовсе без номера. Вернули 07.10.2026 вместе с обязательным шагом
+// «номер телефона» после Google-входа (App.jsx, phoneGate) — см. googlePhoneGate.test.js.
+//
 // Apple жил в шести местах сразу — два экрана входа, регистрация, иконки,
 // переводы и стили, — поэтому вернуться он может так же незаметно: достаточно
 // одной кнопки в новом экране. Тест читает исходники как текст, потому что
@@ -44,17 +48,22 @@ describe('вход: Apple убран, Google на месте', () => {
     expect(readFileSync(join(src, 'styles.css'), 'utf8')).not.toMatch(/auth-btn--apple/)
   })
 
-  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка', () => {
+  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка на экране входа', () => {
     expect(existsSync(join(src, 'lib', 'googleAuth.js'))).toBe(true)
     expect(readFileSync(join(src, 'api.js'), 'utf8')).toMatch(/loginWithGoogle/)
+    const login = readFileSync(join(src, 'screens', 'PasswordLoginPage.jsx'), 'utf8')
+    expect(login).toMatch(/auth-btn--google/)
+    expect(login).toMatch(/google-slot/)
+  })
+
+  it('в регистрации (чат с Декстером) Google на месте — второй строкой, под номером', () => {
     const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
     expect(reg).toMatch(/auth-btn--google/)
     expect(reg).toMatch(/google-slot/)
-  })
-
-  it('кнопка Google стоит второй строкой блока входа — под номером телефона', () => {
-    const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
+    expect(reg).toMatch(/onGoogleToken/)
     expect(reg.indexOf("t('auth.phone')")).toBeLessThan(reg.indexOf("t('auth.google')"))
+    const app = readFileSync(join(src, 'App.jsx'), 'utf8')
+    expect(app).toMatch(/<RegistrationPage\s+onGoogleToken=\{handleGoogleCredential\}/)
   })
 
   it('подписи кнопки есть во всех трёх языках', () => {

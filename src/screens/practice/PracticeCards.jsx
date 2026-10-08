@@ -29,7 +29,8 @@ function difficulty(level) {
 }
 
 // Точки сложности: у книг — точки и подпись, у караоке — ещё и сам уровень.
-function Dots({ level, cefr }) {
+// Экспорт — для плашки на обложке в обзоре книги (BookDetail).
+export function Dots({ level, cefr }) {
   const { t } = useI18n()
   const { dots, label } = difficulty(level)
   return (
@@ -140,7 +141,7 @@ export function Rail({ grid, className, children }) {
 // Промо-баннер тренажёра: градиент, заголовок, описание и белая кнопка.
 // Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
 // с артом — в макете заголовок в одну строку, перенос делает ширина.
-export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
+export function Banner({ id, variant, wide, title, desc, cta, onStart, badge }) {
   return (
     <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
       <div className="pk-banner__text">
@@ -151,6 +152,14 @@ export function Banner({ id, variant, wide, title, desc, cta, onStart }) {
         {cta}
         <PkChevron size={18} />
       </button>
+      {/* Звезда с уровнем есть только в мобильном макете (Figma «Web
+          Адаптивка», 4254:2213): на десктопе её прячет src/mobile/practice.css. */}
+      {badge && (
+        <span className="pk-banner__badge">
+          <span className="pk-banner__badge-cap">{badge.caption}</span>
+          <span className="pk-banner__badge-lvl">{badge.level}</span>
+        </span>
+      )}
     </section>
   )
 }

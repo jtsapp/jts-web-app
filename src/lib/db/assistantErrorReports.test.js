@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { listAssistantErrorReports, saveAssistantErrorReport } from './assistantErrorReports.js'
+import {
+  listAssistantErrorReports,
+  saveAssistantErrorReport,
+  updateAssistantErrorReport,
+  deleteAssistantErrorReport,
+} from './assistantErrorReports.js'
 
 describe('saveAssistantErrorReport', () => {
   function recorder() {
@@ -130,5 +135,72 @@ describe('listAssistantErrorReports', () => {
     }
     await listAssistantErrorReports({ q: 'белый%экран' }, sql)
     expect(calls[0].values).toContain('%белыйэкран%')
+  })
+})
+
+describe('updateAssistantErrorReport / deleteAssistantErrorReport', () => {
+  function fake(rowsFor = {}) {
+    const calls = []
+    const sql = (strings, ...values) => {
+      const q = strings.join('?')
+      calls.push({ q, values })
+      if (q.includes('update assistant_error_reports')) return Promise.resolve(rowsFor.update ?? [{ id: 7 }])
+      if (q.includes('delete from')) return Promise.resolve(rowsFor.delete ?? [{ id: 7 }])
+      return Promise.resolve(rowsFor.select ?? [{
+        id: 7, created_at: new Date('2026-09-28T06:00:00Z'), profile_id: 'user-7', user_id: 7,
+        user_message: 'м', assistant_summary: 'новый', client_errors: [],
+        note: 'взяли в работу', note_author_name: 'Алия', note_updated_at: new Date('2026-10-02T10:00:00Z'),
+        edited_at: new Date('2026-10-02T10:00:00Z'),
+      }])
+    }
+    return { sql, calls }
+  }
+
+  it('без sql — no_db, не бросает', async () => {
+    expect(await updateAssistantErrorReport(7, { note: 'x' }, {}, null)).toEqual({ ok: false, reason: 'no_db' })
+    expect(await deleteAssistantErrorReport(7, null)).toBe('no_db')
+  })
+
+  it('правка текста ставит edited_at и возвращает карточку с примечанием', async () => {
+    const { sql, calls } = fake()
+    const res = await updateAssistantErrorReport(7, { summary: '  новый  ' }, { name: 'Алия' }, sql)
+    expect(res.ok).toBe(true)
+    expect(calls[0].q).toMatch(/set assistant_summary = \?, edited_at = now\(\)/)
+    expect(calls[0].values).toEqual(['новый', 7])
+    expect(res.item).toMatchObject({ id: 7, note: 'взяли в работу', noteAuthorName: 'Алия' })
+    expect(res.item.editedAt).toBe('2026-10-02T10:00:00.000Z')
+  })
+
+  it('примечание подписывается автором; пустое — стирает вместе с подписью', async () => {
+    const { sql, calls } = fake()
+    await updateAssistantErrorReport(7, { note: ' передали разработчикам ' }, { name: 'Алия' }, sql)
+    expect(calls[0].values.slice(0, 2)).toEqual(['передали разработчикам', 'Алия'])
+    expect(calls[0].values[2]).toBeInstanceOf(Date)
+
+    const cleared = fake()
+    await updateAssistantErrorReport(7, { note: '   ' }, { name: 'Алия' }, cleared.sql)
+    expect(cleared.calls[0].values.slice(0, 3)).toEqual([null, null, null])
+  })
+
+  it('пустое описание и пустая правка — invalid, в базу не ходим', async () => {
+    const { sql, calls } = fake()
+    expect(await updateAssistantErrorReport(7, { summary: '  ' }, {}, sql)).toEqual({ ok: false, reason: 'invalid' })
+    expect(await updateAssistantErrorReport(7, {}, {}, sql)).toEqual({ ok: false, reason: 'invalid' })
+    expect(await updateAssistantErrorReport('abc', { note: 'x' }, {}, sql)).toEqual({ ok: false, reason: 'invalid' })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('нет такой записи — not_found', async () => {
+    const { sql } = fake({ update: [] })
+    expect(await updateAssistantErrorReport(7, { note: 'x' }, {}, sql)).toEqual({ ok: false, reason: 'not_found' })
+  })
+
+  it('delete: удалил / не нашёл / упало', async () => {
+    expect(await deleteAssistantErrorReport(7, fake().sql)).toBe('deleted')
+    expect(await deleteAssistantErrorReport(7, fake({ delete: [] }).sql)).toBe('not_found')
+    expect(await deleteAssistantErrorReport(0, fake().sql)).toBe('invalid')
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await deleteAssistantErrorReport(7, () => Promise.reject(new Error('down')))).toBe('failed')
+    errSpy.mockRestore()
   })
 })

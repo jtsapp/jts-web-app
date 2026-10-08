@@ -158,7 +158,8 @@ describe('Карточка слова в словаре', () => {
     expect(card.contains(spk)).toBe(false)
 
     fireEvent.click(spk)
-    expect(speak).toHaveBeenCalledWith('like')
+    // Вторым аргументом едет IPA карточки (омографы, см. audio.js) — важно само слово.
+    expect(speak.mock.calls[0][0]).toBe('like')
     // Озвучка не должна заодно переворачивать карточку.
     expect(card.getAttribute('aria-pressed')).toBe('false')
   })

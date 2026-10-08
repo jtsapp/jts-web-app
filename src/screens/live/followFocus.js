@@ -23,3 +23,18 @@ export function knowsFocusTarget(sections, evt) {
 
   return (section.materials || []).some((m) => String(m.materialId) === String(evt.materialId))
 }
+
+/**
+ * Раздел, в котором лежит материал. Указка «Перенести ученика сюда» несёт только
+ * материал (её событие показа о разделе не знает), а открыть его ученику — значит
+ * сперва встать на раздел.
+ *
+ * @param {Array} sections загруженные у ученика разделы (с материалами)
+ * @param {number|string} materialId материал указки
+ * @returns {object|null} раздел или null, если материала у ученика нет
+ */
+export function sectionWithMaterial(sections, materialId) {
+  if (materialId == null) return null
+  return (sections || []).find((s) =>
+    (s.materials || []).some((m) => String(m.materialId) === String(materialId))) ?? null
+}

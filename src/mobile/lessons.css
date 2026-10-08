@@ -1,0 +1,404 @@
+/* ======================================================================
+   Мобильные «Уроки» → «Онлайн-уроки» (Figma «Web Адаптивка» → «Уроки»,
+   кадры 4676:3903 и 4676:4047). Спикинг-клабы в приложении скрыты
+   (LessonsPage.jsx), их кадры не переносим.
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* Заголовка «Уроки» в макете нет: вкладки идут сразу под шапкой. Строку
+     оставляем, только если в ней есть кнопка каталога. */
+  .ls__head:not(:has(.cc-entry)) {
+    display: none;
+  }
+  .ls__head {
+    padding: 8px 16px 0;
+    border-bottom: 0;
+  }
+  .ls__head .ls__title {
+    display: none;
+  }
+  .ls__tabs {
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  .ls-tab {
+    height: 38px;
+    padding: 10px 20px;
+    font-size: 16px;
+    line-height: 18px;
+  }
+  .ls__body--wide {
+    padding: 16px 16px 24px;
+  }
+
+  /* ---------- Мой график ---------- */
+  .sch__title {
+    margin: 0 0 16px;
+    font-size: 24px;
+    line-height: 26px;
+    color: #181818;
+  }
+  .sch__title--second {
+    margin-top: 32px;
+  }
+  .sch__top {
+    gap: 8px;
+  }
+  .lesson-card {
+    gap: 0;
+    padding: 0;
+    border-radius: 20px;
+  }
+  .lesson-card__head {
+    gap: 16px;
+    padding: 20px;
+  }
+  .lesson-card__avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 26px;
+  }
+  .lesson-card__who {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .lesson-card__name {
+    font-size: 24px;
+    line-height: 26px;
+    white-space: normal;
+    color: #181818;
+  }
+  .lesson-card__role {
+    margin: 0;
+    font-size: 16px;
+    line-height: 18px;
+    color: #181818;
+  }
+  .lesson-card__sep {
+    background: #e9e9e9;
+  }
+  .lesson-card__foot {
+    padding: 20px;
+  }
+  .lesson-card__topic {
+    font-size: 16px;
+    line-height: 22px;
+    color: #181818;
+  }
+  .lesson-card__meta {
+    gap: 6px 16px;
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 17px;
+  }
+  .lesson-card__state--live {
+    color: #19c119;
+  }
+  .lesson-card__dot {
+    width: 8px;
+    height: 8px;
+  }
+  .meet-link {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0066da;
+  }
+
+  /* «Присоединиться к уроку» в макете — не в карточке, а плашкой внизу экрана
+     (#f8f8f8, поля 16, кнопка 56 r20, подпись слева, шеврон в белом круге).
+     Кольцо тени того же цвета дорисовывает полосу плашки вокруг кнопки. */
+  .lesson-card__join {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    /* fixed-элемент Safari сам держит над своей панелью, поэтому запас
+       --safe-bottom (он для конца документа) тут не нужен — только жестовая полоса */
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    width: auto;
+    justify-content: space-between;
+    height: 56px;
+    padding: 16px 16px 16px 24px;
+    border-radius: 20px;
+    font-size: 16px;
+    line-height: 18px;
+    box-shadow: 0 0 0 16px #f8f8f8;
+  }
+  .lesson-card__chev {
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    color: #9047ff;
+  }
+  .lesson-card__join:disabled .lesson-card__chev {
+    background: #fff;
+  }
+  .ls:has(.lesson-card__join) .ls__body--wide {
+    padding-bottom: 104px;
+  }
+
+  /* Счётчики 2×2: число фиолетовым 24, подпись 14 */
+  .sch__summary {
+    gap: 8px;
+  }
+  .sch-tile {
+    gap: 4px;
+    min-height: 99px;
+    padding: 12px;
+    border-radius: 20px;
+  }
+  .sch-tile__num {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 26px;
+    color: #9047ff;
+  }
+  .sch-tile__label {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 17px;
+    color: #181818;
+  }
+
+  /* ---------- Расписание ---------- */
+  .cal-layout {
+    gap: 8px;
+  }
+  .cal {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .cal__head {
+    margin-bottom: 24px;
+  }
+  .cal__title {
+    font-size: 16px;
+    line-height: 24px;
+    color: #181818;
+  }
+  .cal__navs {
+    gap: 12px;
+  }
+  .cal__nav {
+    width: 32px;
+    height: 32px;
+    background: rgba(144, 71, 255, 0.92);
+    font-size: 16px;
+  }
+  .cal__grid {
+    gap: 2px;
+  }
+  .cal__grid--head {
+    margin-bottom: 8px;
+  }
+  .cal__wd {
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 17px;
+    color: #8b8b8b;
+  }
+  .cal__day {
+    min-height: 51px;
+    gap: 4px;
+    padding: 12px 2px 11px;
+    background: #f8f8f8;
+  }
+  .cal__day--out {
+    background: #fff;
+    color: #8b8b8b;
+  }
+  .cal__num {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+  .cal__dots {
+    height: 4px;
+  }
+  .cal__dot {
+    width: 4px;
+    height: 4px;
+    background: #2b8eff;
+  }
+  .cal__day--sel .cal__dot {
+    background: #fff;
+  }
+
+  /* День: заголовок 16/24, строки #f8f8f8 r12 */
+  .cal-day {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .cal-day__h {
+    margin: 0 0 16px;
+    font-size: 16px;
+    line-height: 24px;
+    color: #181818;
+  }
+  .sch-row {
+    gap: 8px 12px;
+    margin-bottom: 8px;
+    padding: 12px 12px 8px;
+    border-radius: 12px;
+    background: #f8f8f8;
+  }
+  .sch-row__teacher {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 17px;
+    color: #181818;
+  }
+  .sch-row__time {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 17px;
+    color: #8b8b8b;
+  }
+  .sch-row__meta {
+    gap: 6px 12px;
+  }
+  .sch-row__format {
+    font-size: 14px;
+    font-weight: 700;
+    color: #19c119;
+  }
+}
+
+@media (max-width: 560px) {
+  /* Мой .cal__day грузится позже базового и перебивал фон выбранного дня */
+  .cal__day--sel,
+  .cal__day--sel:hover {
+    background: #9047ff;
+  }
+  .lesson-card__when {
+    font-weight: 500;
+  }
+
+  /* Иконки — экспорт макета: стрелки месяца, шеврон кнопки, логотип Meet */
+  .cal__nav {
+    font-size: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+  }
+  .cal__nav:first-child {
+    background-image: url(/assets/m/lessons/cal-prev.svg);
+  }
+  .cal__nav:last-child {
+    background-image: url(/assets/m/lessons/cal-next.svg);
+  }
+  .lesson-card__chev svg {
+    display: none;
+  }
+  .lesson-card__chev {
+    background: #fff url(/assets/m/lessons/join-chev.svg) center / 20px 20px no-repeat;
+  }
+  .lesson-card__join:disabled .lesson-card__chev {
+    background-color: #fff;
+  }
+  .meet-link__icon {
+    display: none;
+  }
+  .meet-link::before {
+    content: '';
+    width: 14px;
+    height: 12px;
+    background: url(/assets/m/lessons/meet.png) center / contain no-repeat;
+  }
+}
+
+/* ---------- Живой урок: листы «Темы урока» и «Чат урока» (4676:4312, 4676:4337) ---------- */
+@media (max-width: 560px) {
+  .lv-modal {
+    background: #17141f;
+  }
+
+  /* Темы: строки 51 (r9, поля 16), текущая — фиолетовая подложка 20% */
+  .lv-modal .lv-topics__list {
+    gap: 12px;
+    padding: 17px 0 14px;
+  }
+  .lv-modal .lv-topics__btn {
+    gap: 9px;
+    min-height: 51px;
+    padding: 16px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 19px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .lv-modal .lv-topics__item.is-done .lv-topics__btn {
+    color: #fff;
+  }
+  .lv-modal .lv-topics__item.is-active .lv-topics__btn {
+    background: rgba(144, 71, 255, 0.2);
+    color: #fff;
+    font-weight: 700;
+  }
+  .lv-modal .lv-topics__marker {
+    width: 16px;
+    height: 16px;
+    background: none;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.25);
+  }
+  .lv-modal .lv-topics__item.is-done .lv-topics__marker {
+    background: none;
+    box-shadow: none;
+    color: #12b76a;
+  }
+  .lv-modal .lv-topics__item.is-active .lv-topics__marker {
+    background: #9047ff;
+    box-shadow: none;
+  }
+  .lv-modal .lv-topics__item.is-active .lv-topics__marker::after {
+    width: 5px;
+    height: 5px;
+  }
+
+  /* Чат: пузыри r11, чужие — белые 9%, свои — фиолетовые; поле ввода и
+     отправка в одной плашке r16, кнопка 44 r12 */
+  .lv-modal .lw-chat__msg {
+    padding: 8px 11px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.09);
+    font-size: 14px;
+    line-height: 19px;
+  }
+  .lv-modal .lw-chat__msg.is-student {
+    border-radius: 11px;
+    background: #9047ff;
+  }
+  .lv-modal .lw-chat__sender {
+    font-size: 12px;
+    line-height: 16px;
+    opacity: 0.4;
+  }
+  .lv-modal .lw-chat__composer {
+    gap: 8px;
+    min-height: 68px;
+    padding: 12px 12px 12px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .lv .lv-modal .lw-chat__input {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 22px;
+  }
+  .lv .lv-modal .lw-chat__input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .lv-modal .lw-chat__send {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #9047ff;
+  }
+}

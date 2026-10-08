@@ -28,11 +28,8 @@ export const SUMMARY_MODEL =
 const MAX_OUTPUT_TOKENS = 4096;
 // Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
 // остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
-// способом вызова, а Sonnet 5.5 его не принимает — см. structuredJson ниже.
+// способом вызова, а Sonnet 5.5 его не принимает — см. structuredViaOutputFormat ниже.
 export const IELTS_REVIEW_MODEL = process.env.IELTS_REVIEW_MODEL || "claude-sonnet-5-5";
-// Модели, у которых нет «выключенного» мышления и принудительного вызова инструмента: thinking:{disabled} и
-// tool_choice {type:"tool"} у них — 400. JSON с них берём через structured outputs (output_config.format).
-const JSON_OUTPUT_MODELS = /^claude-(sonnet-5-5|opus-5-5|fable-5-1|mythos-5-1)\b/;
 
 let cached = null;
 function getClient() {
@@ -256,51 +253,15 @@ function toJsonSchema(schema) {
  * retries, and a hung request keeps its caller alive with it — fatal for the
  * post-call summariser, which runs inside after() on a 1g container.
  *
+ * `maxRetries` overrides the SDK default (2) when the caller has a hard wall
+ * clock (Cloudflare drops a request after 100 s of silence on prod).
+ *
  * @param {{ systemPrompt: string, userMessage: string, schema: object,
  *           images?: {mimeType: string, dataBase64: string}[],
- *           model?: string, maxOutputTokens?: number, timeoutMs?: number }} args
+ *           model?: string, maxOutputTokens?: number, timeoutMs?: number,
+ *           maxRetries?: number }} args
  */
 // Structured outputs требуют additionalProperties:false у каждого объекта схемы.
-function closeObjects(schema) {
-  if (!schema || typeof schema !== "object") return schema;
-  const out = { ...schema };
-  if (out.type === "object") {
-    out.additionalProperties = false;
-    if (out.properties) out.properties = Object.fromEntries(Object.entries(out.properties).map(([k, v]) => [k, closeObjects(v)]));
-  }
-  if (out.type === "array" && out.items) out.items = closeObjects(out.items);
-  return out;
-}
-
-// JSON по схеме через output_config.format: у Sonnet 5.5 нет принудительного tool_choice и выключенного мышления.
-// Мышление адаптивное, глубина — effort (medium: разбор по дескрипторам выигрывает от рассуждения, а ответ
-// укладывается в таймаут роута); max_tokens с запасом — мышление тратит его же.
-async function structuredJson(client, model, args, content) {
-  const res = await client.messages.create(
-    {
-      model,
-      max_tokens: Math.max(args.maxOutputTokens ?? MAX_OUTPUT_TOKENS, 16000),
-      system: args.systemPrompt,
-      messages: [{ role: "user", content }],
-      output_config: {
-        effort: args.effort || "medium",
-        format: { type: "json_schema", schema: closeObjects(toJsonSchema(args.schema)) },
-      },
-    },
-    args.timeoutMs ? { timeout: args.timeoutMs } : undefined,
-  );
-  try {
-    const u = res.usage || {};
-    console.log(JSON.stringify({ kind: "llm_cost", task: "structured", model, inputTokens: u.input_tokens ?? null, outputTokens: u.output_tokens ?? null }));
-  } catch {
-    /* logging must never break the reply */
-  }
-  if (res.stop_reason === "refusal") throw new Error(`Claude declined: ${res.stop_details?.category || "refusal"}`);
-  if (res.stop_reason === "max_tokens") throw new Error("Claude hit max_tokens before finishing the JSON");
-  const text = res.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  return JSON.parse(text);
-}
-
 export async function structured(args) {
   const client = getClient();
   const model = args.model || DEFAULT_GRADING_MODEL;
@@ -321,7 +282,20 @@ export async function structured(args) {
         ]
       : args.userMessage;
 
-  if (JSON_OUTPUT_MODELS.test(model)) return structuredJson(client, model, args, content);
+  const reqOptions = {
+    ...(args.timeoutMs ? { timeout: args.timeoutMs } : {}),
+    ...(args.maxRetries != null ? { maxRetries: args.maxRetries } : {}),
+  };
+
+  // Новое поколение моделей (Sonnet 5.5, Opus 5.5, Fable/Mythos 5.1) отвечает
+  // 400 и на thinking:disabled, и на принудительный tool_choice — а это ровно
+  // то, на чём стоит ветка ниже. Для них JSON берём через structured outputs
+  // (output_config.format), а мышление гасим тем, что модель разрешает.
+  // Остальные модели идут прежним путём байт в байт: их промпты и замеры
+  // настраивались под принудительный инструмент.
+  if (NO_FORCED_TOOL_MODEL.test(model)) {
+    return structuredViaOutputFormat(client, model, args, content, inputSchema, reqOptions);
+  }
 
   const res = await client.messages.create(
     {
@@ -341,7 +315,7 @@ export async function structured(args) {
       // Force the model to answer through the tool so we always get JSON.
       tool_choice: { type: "tool", name: "record_result" },
     },
-    args.timeoutMs ? { timeout: args.timeoutMs } : undefined,
+    Object.keys(reqOptions).length ? reqOptions : undefined,
   );
 
   try {
@@ -362,4 +336,71 @@ export async function structured(args) {
   const toolUse = res.content.find((b) => b.type === "tool_use");
   if (!toolUse) throw new Error("Claude returned no tool_use block");
   return toolUse.input;
+}
+
+// Модели, где tool_choice any/tool и thinking:disabled дают 400.
+const NO_FORCED_TOOL_MODEL = /^claude-(sonnet-5-5|opus-5-5|fable-5-1|mythos-5-1)\b/;
+
+// Structured outputs требуют additionalProperties:false на КАЖДОМ объекте —
+// без него схема отклоняется. В tool-ветке это поле не нужно, поэтому
+// добавляем только здесь, не трогая toJsonSchema.
+function strictObjects(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  const out = { ...schema };
+  if (out.type === "object") {
+    out.additionalProperties = false;
+    if (out.properties) {
+      out.properties = Object.fromEntries(
+        Object.entries(out.properties).map(([k, v]) => [k, strictObjects(v)]),
+      );
+    }
+  }
+  if (out.type === "array" && out.items) out.items = strictObjects(out.items);
+  return out;
+}
+
+async function structuredViaOutputFormat(client, model, args, content, inputSchema, reqOptions) {
+  // between_tools — самый низкий уровень мышления, но его понимает только
+  // Sonnet 5.5; Opus 5.5 и Fable/Mythos мышление не выключают вовсе, им поле
+  // не шлём (там оно адаптивное по умолчанию).
+  // effort — для разборов IELTS: им нужно рассуждение по дескрипторам и длинный ответ (подробный разбор Writing), поэтому
+  // мышление адаптивное с глубиной effort, а max_tokens с запасом — мышление тратит его же. Без effort — прежний путь.
+  const deep = Boolean(args.effort);
+  const thinking = !deep && /^claude-sonnet-5-5\b/.test(model) ? { thinking: { type: "between_tools" } } : {};
+  const res = await client.messages.create(
+    {
+      model,
+      max_tokens: deep ? Math.max(args.maxOutputTokens ?? MAX_OUTPUT_TOKENS, 16000) : args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      ...thinking,
+      system: args.systemPrompt,
+      messages: [{ role: "user", content }],
+      output_config: { ...(deep ? { effort: args.effort } : {}), format: { type: "json_schema", schema: strictObjects(inputSchema) } },
+    },
+    Object.keys(reqOptions).length ? reqOptions : undefined,
+  );
+
+  try {
+    const u = res.usage || {};
+    console.log(
+      JSON.stringify({
+        kind: "llm_cost",
+        task: "structured",
+        model,
+        inputTokens: u.input_tokens ?? null,
+        outputTokens: u.output_tokens ?? null,
+      }),
+    );
+  } catch {
+    /* logging must never break the reply */
+  }
+
+  // Отказ классификатора или обрыв по max_tokens — JSON не гарантирован.
+  if (res.stop_reason === "refusal") throw new Error("Claude refused the request");
+  if (res.stop_reason === "max_tokens") throw new Error("Claude hit max_tokens before finishing JSON");
+  const text = res.content
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  if (!text) throw new Error("Claude returned no text block");
+  return JSON.parse(text);
 }

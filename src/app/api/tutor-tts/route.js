@@ -16,7 +16,7 @@
 //   Aizere → ElevenLabs, свой клон «zere» (до 01.10.2026 — клон Jarvis),
 //            модель eleven_v4_turbo — казахский есть, вдвое дешевле v4.
 //            Свой ключ — ELEVENLABS_API_KEY_AIZERE, иначе общий.
-//            Пока dev-only (AIZERE_ENABLED).
+//            В проде с 03.10.2026 — ключ нужен и прод-окружению.
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
 // Azure тут нет: аккаунта Azure Speech у проекта нет (см. TUTOR_TTS_PROVIDER).
@@ -52,6 +52,8 @@ const SONIOX_VOICE = {
   'jarvis-harsh': 'Daniel',
   // Айзере — только откат: женский голос, иначе дефолтный Owen сделал бы из неё Спарка.
   aizere: 'Maya',
+  // «Спарк тест» (dev-only) звучит живым Спарком — сессию агент берёт его же.
+  sparktest: 'Owen',
 }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
@@ -72,6 +74,7 @@ const TUTOR_PROVIDER = {
   'spark-harsh': 'soniox',
   'jarvis-harsh': 'eleven',
   aizere: 'eleven', // свой клон «zere», v4 Turbo
+  sparktest: 'soniox', // dev-стенд нового Спарка — голос живого Спарка
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'

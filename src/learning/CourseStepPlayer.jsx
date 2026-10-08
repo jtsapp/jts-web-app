@@ -863,7 +863,18 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
 
     // Список утверждений с общей парой кнопок: один экран вместо пяти.
     case 'rows':
-      return <RowsBoard step={step} answers={fills} setAnswers={setFills} checked={checked} />
+      return (
+        <>
+          {/* У True/False курса утверждения — к тексту (диалог, абзац): он
+              стоит над таблицей, как у одиночного вопроса (см. choice). */}
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
+          <RowsBoard step={step} answers={fills} setAnswers={setFills} checked={checked} />
+        </>
+      )
 
     // Соединение пар: слева пункты задания, справа банк вариантов.
     case 'match':
@@ -951,7 +962,7 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
           {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
               неоцениваемый шаг всё равно пропустил бы любой выбор. */}
           {listenSrc(step, level) && (
-            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} tiles={asWordTiles(options)} />
           )}
         </>
       )
@@ -1403,16 +1414,23 @@ function ExampleCarousel({ items, onWord }) {
 // последний оставался один в ряду: сетка выглядела сломанной, а не короткой.
 const inTwoColumns = (options) => (options || []).length % 2 === 0
 
+// «Что вы слышите?» в мобильном макете — сетка плиток по три в ряд (4108:4504).
+// Плитка рассчитана на одно-два слова: варианты-фразы («In Canada» ещё да,
+// предложение — нет) остаются строками. Класс — только метка, раскладку
+// плиткой включает мобильный слой (src/mobile/learning.css).
+const asWordTiles = (options) =>
+  (options || []).length >= 3 && options.every((o) => String(o).length <= 14)
+
 // «Послушайте. Выберите картинку.»: варианты — иконки курса (optionIcons,
 // тот же порядок, что и options), и подписи под ними нет, как в самом курсе:
 // слово под картинкой превратило бы задание в «найди услышанное слово».
 // Ответ по-прежнему сверяется по options.
 const hasPics = (icons, options) => Array.isArray(icons) && icons.length === options.length && icons.every(Boolean)
 
-function Choices({ options, icons, picked, setPicked, checked, answer, grid = false }) {
+function Choices({ options, icons, picked, setPicked, checked, answer, grid = false, tiles = false }) {
   const pics = hasPics(icons, options)
   return (
-    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}`}>
+    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}${!pics && tiles ? ' is-tiles' : ''}`}>
       {options.map((o, i) => {
         // Подсвечиваем только выбранный вариант: в макете после неверного
         // ответа правильный не раскрывается — остальные кнопки остаются белыми.
@@ -1591,6 +1609,10 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
               {opts.map((o) => {
                 let cls = 'cp-rows__opt'
                 if (answers[i] === o) cls += checked ? (o === it.answer ? ' is-right' : ' is-wrong') : ' is-sel'
+                // На ошибочной строке после проверки — и верный вариант: экран
+                // засчитывается целиком, и без этого ученик видел одно
+                // «Неверно», не зная, какое утверждение и как было на самом деле.
+                else if (checked && answers[i] !== it.answer && o === it.answer) cls += ' is-right'
                 return (
                   <button key={o} className={cls} type="button" disabled={checked} onClick={() => setAnswers((s) => ({ ...s, [i]: o }))}>
                     {o}
@@ -1598,6 +1620,7 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
                 )
               })}
             </span>
+            {checked && answers[i] !== it.answer && it.why && <p className="cp-rows__why">{it.why}</p>}
           </div>
         )
       })}
@@ -1676,23 +1699,33 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
   // Уходя со стадии словаря, обрываем речь: иначе последнее слово догоняет
   // студента уже на следующем экране.
   useEffect(() => stopSpeaking, [])
-  // Слова, уже отправленные в личный словарь. Кнопка после этого показывает
-  // галочку и больше не нажимается: повторный тап ничего бы не изменил
-  // (в vocab_bank слово уникально по word_key), а студенту нужен именно
-  // видимый ответ «забрал».
+  // Куда слово уже ушло: 'dict' — личный словарь (его показывает раздел
+  // «Словарь»), 'bank' — только банк повторений тьютора. Кнопка после этого
+  // показывает итог и больше не нажимается: повторный тап ничего бы не
+  // изменил (в vocab_bank слово уникально по word_key), а студенту нужен
+  // именно видимый ответ «забрал». 'saving' — запись идёт: подпись
+  // нейтральная, иначе «В словаре» горело бы и при сбое, и пока висит сеть.
   const [saved, setSaved] = useState({})
 
   const add = async (i, w) => {
-    setSaved((s) => ({ ...s, [i]: true }))
-      // Подсказка словаря — перевод, а где его нет (B2 весь на английском) —
-      // определение слова: пустая подсказка в vocab_bank бесполезна.
+    const tr = [w.ru, w.kk].filter(Boolean).join(' · ')
+    setSaved((s) => ({ ...s, [i]: 'saving' }))
+    // Подсказка банка — перевод, а где его нет (B2 весь на английском) —
+    // определение слова: пустая подсказка в vocab_bank бесполезна.
     const [bankOk, lessonOk] = await Promise.all([
-      addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') }]),
+      addVocabWords([{ word: w.en, hint: tr || w.def || null }]),
       saveCourseWordToLessonDict(token, w, catalogLessonId, source),
     ])
-      // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
-      // которого в словаре нет.
-    if (!bankOk && !lessonOk) setSaved((s) => ({ ...s, [i]: false }))
+    // «В словаре» — только когда слово принял личный словарь: банк в разделе
+    // «Словарь» не виден, и его одно «да» давало ложную галочку и гостю, и
+    // вошедшему, у которого словарь не ответил (ревью 08.10.2026, как T1-7 в
+    // Чтении). Вошедшему со словом, которое словарь мог принять, возвращаем
+    // кнопку — пусть повторит. Гостю (словаря нет) и слову без перевода
+    // (словарю нечего сохранить) банк — лучшее, что есть: «Сохранено».
+    let result = false
+    if (lessonOk) result = 'dict'
+    else if (bankOk && (!token || !tr)) result = 'bank'
+    setSaved((s) => ({ ...s, [i]: result }))
   }
 
   return (
@@ -1769,13 +1802,19 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
               </span>
               <span className="cp-word__acts">
                 <button
-                  className={`cp-word__save ${saved[i] ? 'is-saved' : ''}`}
+                  className={`cp-word__save ${saved[i] && saved[i] !== 'saving' ? 'is-saved' : ''}`}
                   type="button"
                   disabled={!!saved[i]}
-                  title={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+                  title={saved[i] === 'bank' ? t('lesson.inBank') : saved[i] === 'dict' ? t('lesson.inVocab') : t('lesson.addToVocab')}
                   onClick={() => add(i, w)}
                 >
-                  {saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
+                  {saved[i] === 'bank'
+                    ? t('lesson.savedBank')
+                    : saved[i] === 'dict'
+                      ? t('lesson.savedVocab')
+                      : saved[i] === 'saving'
+                        ? t('lesson.savingVocab')
+                        : t('lesson.toVocab')}
                 </button>
                 {!silentFrame(w.en, w.audio) && (
                   <button
