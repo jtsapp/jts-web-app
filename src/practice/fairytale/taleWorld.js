@@ -14,6 +14,7 @@ import { MARKUP } from './markup.js'
 import { CSS_BASE, CSS_SHELL } from './styles.js'
 import { saveStudentVocab } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
+import { dictOwnerOf, scopeFairytaleDict } from './dictOwner.js'
 
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap'
@@ -129,6 +130,8 @@ function ensureWorld() {
 // иначе — на выбор персонажа. Неизвестный id откроет библиотеку движка.
 export function openTaleWorld(taleId, { onExit } = {}) {
   onExitCb = onExit || null
+  // До движка: он читает «Мои слова» уже при создании (счётчик на кнопке).
+  scopeFairytaleDict(dictOwnerOf(loadToken()))
   ensureFont()
   injectStyles()
   const w = ensureWorld()

@@ -104,9 +104,15 @@ function jit(s, spread) {
   return ((hash(s) % 1000) / 1000 - 0.5) * 2 * spread
 }
 
-/** Тире в реплике значит смену говорящего. */
-export function turns(text, who) {
+/**
+ * Тире в реплике значит смену говорящего — так записаны диалоги воркбука.
+ * solo — реплика одного диктора, тире в ней вставочное: Чтение озвучивает
+ * прозу, и «big too — like a small car» звучало двумя голосами (ревью
+ * 08.10.2026).
+ */
+export function turns(text, who, solo = false) {
   const t = normText(text)
+  if (solo) return [{ t, v: who || 'A' }]
   const parts = t.split(/\s*[\u2014\u2013]\s+/)
   if (parts.length < 2) return [{ t, v: who || 'A' }]
   const out = []
@@ -157,11 +163,13 @@ export function plan(lines) {
   for (const raw of lines) {
     let txt = raw
     let who = 'A'
+    let solo = false
     if (raw && typeof raw === 'object') {
       txt = raw.t != null ? raw.t : raw.s
       who = raw.v || (raw.w ? 'B' : 'A')
+      solo = !!raw.solo
     }
-    for (const tn of turns(txt, who)) {
+    for (const tn of turns(txt, who, solo)) {
       for (const ss of sentences(tn.t)) {
         const single = ss.split(' ').length <= 2 && !/[.!?]$/.test(ss)
         const gs = single ? [ss] : groups(ss)
@@ -349,11 +357,13 @@ export function sonioxPlan(lines) {
   for (const raw of lines) {
     let txt = raw
     let who = 'A'
+    let solo = false
     if (raw && typeof raw === 'object') {
       txt = raw.t != null ? raw.t : raw.s
       who = raw.v || (raw.w ? 'B' : 'A')
+      solo = !!raw.solo
     }
-    for (const tn of turns(txt, who)) {
+    for (const tn of turns(txt, who, solo)) {
       for (const part of packSentences(tn.t)) {
         if (!part) continue
         q.push({ t: part, v: tn.v, one: part.split(' ').length <= 2 && !/[.!?]$/.test(part) })
@@ -433,7 +443,8 @@ export function speak(lines, { slow = false, keepPrime = false, onAbort = null }
         // Это продолжение, а не обрыв: onAbort передаём дальше, не дёргая его.
         const handoff = abortCur
         abortCur = null
-        speakDevice(q.slice(i - 1).map((x) => ({ t: x.t, v: x.v })), { slow, keepPrime: true, onAbort: handoff }, cb)
+        // Куски уже поделены по говорящим: второй раз по тире не режем.
+        speakDevice(q.slice(i - 1).map((x) => ({ t: x.t, v: x.v, solo: true })), { slow, keepPrime: true, onAbort: handoff }, cb)
       },
     })
   }

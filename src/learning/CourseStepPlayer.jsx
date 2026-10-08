@@ -1699,23 +1699,33 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
   // Уходя со стадии словаря, обрываем речь: иначе последнее слово догоняет
   // студента уже на следующем экране.
   useEffect(() => stopSpeaking, [])
-  // Слова, уже отправленные в личный словарь. Кнопка после этого показывает
-  // галочку и больше не нажимается: повторный тап ничего бы не изменил
-  // (в vocab_bank слово уникально по word_key), а студенту нужен именно
-  // видимый ответ «забрал».
+  // Куда слово уже ушло: 'dict' — личный словарь (его показывает раздел
+  // «Словарь»), 'bank' — только банк повторений тьютора. Кнопка после этого
+  // показывает итог и больше не нажимается: повторный тап ничего бы не
+  // изменил (в vocab_bank слово уникально по word_key), а студенту нужен
+  // именно видимый ответ «забрал». Пока запись идёт, кнопка уже показывает
+  // ожидаемый итог — иначе подпись мигала бы «В словаре» → «Сохранено».
   const [saved, setSaved] = useState({})
 
   const add = async (i, w) => {
-    setSaved((s) => ({ ...s, [i]: true }))
-      // Подсказка словаря — перевод, а где его нет (B2 весь на английском) —
-      // определение слова: пустая подсказка в vocab_bank бесполезна.
+    const tr = [w.ru, w.kk].filter(Boolean).join(' · ')
+    setSaved((s) => ({ ...s, [i]: token && tr ? 'dict' : 'bank' }))
+    // Подсказка банка — перевод, а где его нет (B2 весь на английском) —
+    // определение слова: пустая подсказка в vocab_bank бесполезна.
     const [bankOk, lessonOk] = await Promise.all([
-      addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') }]),
+      addVocabWords([{ word: w.en, hint: tr || w.def || null }]),
       saveCourseWordToLessonDict(token, w, catalogLessonId, source),
     ])
-      // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
-      // которого в словаре нет.
-    if (!bankOk && !lessonOk) setSaved((s) => ({ ...s, [i]: false }))
+    // «В словаре» — только когда слово принял личный словарь: банк в разделе
+    // «Словарь» не виден, и его одно «да» давало ложную галочку и гостю, и
+    // вошедшему, у которого словарь не ответил (ревью 08.10.2026, как T1-7 в
+    // Чтении). Вошедшему со словом, которое словарь мог принять, возвращаем
+    // кнопку — пусть повторит. Гостю (словаря нет) и слову без перевода
+    // (словарю нечего сохранить) банк — лучшее, что есть: «Сохранено».
+    let result = false
+    if (lessonOk) result = 'dict'
+    else if (bankOk && (!token || !tr)) result = 'bank'
+    setSaved((s) => ({ ...s, [i]: result }))
   }
 
   return (
@@ -1795,10 +1805,10 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
                   className={`cp-word__save ${saved[i] ? 'is-saved' : ''}`}
                   type="button"
                   disabled={!!saved[i]}
-                  title={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+                  title={saved[i] === 'bank' ? t('lesson.inBank') : saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
                   onClick={() => add(i, w)}
                 >
-                  {saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
+                  {saved[i] === 'bank' ? t('lesson.savedBank') : saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
                 </button>
                 {!silentFrame(w.en, w.audio) && (
                   <button

@@ -253,7 +253,40 @@ describe('ListeningPage — двойной клик «Проверить»', () 
     // искать «Продолжить» через Tab.
     await answerFirst()
     await readFeedback()
-    expect(document.activeElement).toBe(screen.getByText('Продолжить'))
+    // Фокус ставит эффект ПОСЛЕ рендера, оживившего кнопку: под нагрузкой
+    // полного прогона проверка сразу за readFeedback успевала раньше него.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('Продолжить')))
+  })
+})
+
+// Ревью 08.10.2026: на телефоне кнопка шага липнет к низу экрана (.lt-dock), и
+// разбор, появившись под ответом, уходил под неё — конец пояснения было видно,
+// только если прокрутить. Разбор сам встаёт в видимую зону; запас под полосу —
+// scroll-margin-bottom в listening.css.
+describe('ListeningPage — разбор не прячется под кнопкой', () => {
+  it('появившийся разбор докручивается в видимую зону', async () => {
+    const seen = []
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (opts) {
+      seen.push({ el: this, opts })
+    }
+    try {
+      vi.stubGlobal('fetch', mockServer({ limit: null }))
+      renderPage()
+      fireEvent.click(await screen.findByText('Начать тренировку'))
+      fireEvent.click(await screen.findByText('In Shanghai'))
+      expect(seen).toHaveLength(0)
+      fireEvent.click(screen.getByText('Проверить'))
+      const fb = document.querySelector('.lt-fb')
+      expect(fb).toBeTruthy()
+      const hit = seen.find((x) => x.el === fb)
+      expect(hit).toBeTruthy()
+      // nearest: если разбор и так виден целиком, экран не дёргается.
+      expect(hit.opts).toMatchObject({ block: 'nearest' })
+    } finally {
+      if (orig) Element.prototype.scrollIntoView = orig
+      else delete Element.prototype.scrollIntoView
+    }
   })
 })
 

@@ -3,7 +3,7 @@
 // что порт разъехался с исходником, и чинить надо порт.
 
 import { describe, expect, it } from 'vitest'
-import { ROUND_SIZE, buildSession, makeRng, poolFor, separateConfusables, shuffle } from './session.js'
+import { ROUND_SIZE, ROUND_SIZE_PORTRAIT, buildSession, makeRng, poolFor, separateConfusables, shuffle } from './session.js'
 import { SECTIONS, loadFixture, loadSection } from './__fixtures__/testData.js'
 
 describe('оракул: пул и раунды', () => {
@@ -44,6 +44,25 @@ describe('нарезка на раунды', () => {
     // слова выглядит поломкой.
     const { rounds } = buildSession(scene, words(9), { seed: 1 })
     expect(rounds.map((r) => r.length)).toEqual([5, 4])
+  })
+
+  // Ревью 08.10.2026 (#51): в «Bird World» 31 слово, и на телефоне (по 6)
+  // нарезка давала 6/6/6/6/6/1 — последний раунд из одного слова.
+  it('«Bird World» на телефоне: последнего раунда из одного слова нет', () => {
+    const { rounds } = buildSession(scene, words(31), { seed: 1, portrait: true })
+    expect(rounds.map((r) => r.length)).toEqual([6, 5, 5, 5, 5, 5])
+  })
+
+  it('ни при каком размере пула раунд не короче половины самого длинного', () => {
+    for (const portrait of [false, true]) {
+      const size = portrait ? ROUND_SIZE_PORTRAIT : ROUND_SIZE
+      for (let n = 1; n <= 80; n++) {
+        const lens = buildSession(scene, words(n), { seed: 1, portrait }).rounds.map((r) => r.length)
+        expect(lens.reduce((a, b) => a + b, 0), `n=${n}`).toBe(n)
+        expect(Math.max(...lens), `n=${n} ${lens}`).toBeLessThanOrEqual(size)
+        expect(Math.min(...lens) * 2, `n=${n} ${lens}`).toBeGreaterThanOrEqual(Math.max(...lens))
+      }
+    }
   })
 
   it('пул меньше раунда остаётся одним раундом', () => {
