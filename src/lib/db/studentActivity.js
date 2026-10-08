@@ -65,11 +65,17 @@ export async function loadStudentAppActivity(profileId, now = new Date(), sql = 
   const stats = await loadSkillStats(profileId, sql)
   const goal = await loadLevelGoal(profileId, sql)
   const week = await loadEcosystemWeek(profileId, now, sql)
+  // Минуты тьютора — seconds + pool_seconds. Разговор за докупленные минуты
+  // пишется в pool_seconds, а НЕ в seconds (usage.js, recordSession; миграция
+  // 0006): seconds — расход против лимитов, и купленное его съедать не должно.
+  // Карточке же важно, сколько ученик говорил на самом деле, откуда бы ни шло
+  // списание, — иначе говорящий на купленных минутах выглядел бы молчуном.
+  // Первичный ключ (device_id, day) даёт одну строку на сутки: группировать и
+  // суммировать нечего.
   const voice = await sql`
-    select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
+    select to_char(day, 'YYYY-MM-DD') as day, (seconds + pool_seconds)::int as seconds
     from voice_usage
     where device_id = ${profileId} and day >= ${from}
-    group by day
   `
   const trainer = await sql`
     select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
@@ -107,6 +113,25 @@ function mergeDays(raw) {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
 }
 
+/**
+ * Секунды разговора с тьютором за неделю — суммой тех же суточных строк, что
+ * уходят в days. Берём не voiceSeconds недельной сводки (loadEcosystemWeek): та
+ * складывает одну колонку seconds и не видит pool_seconds, то есть у ученика,
+ * который говорит на докупленных минутах, неделя показала бы ноль при
+ * ненулевых днях. loadEcosystemWeek кормит и помощника ученика, поэтому
+ * чинить его ради этой ручки нельзя — это отдельное решение; пока он слеп к
+ * pool_seconds, неделю карточки считаем сами. Заодно сумма дней недели и итог
+ * недели не могут разойтись. Даты — строки 'YYYY-MM-DD', их порядок совпадает с
+ * календарным, поэтому сравниваем как строки.
+ */
+function weekTutorSeconds(voiceRows, week) {
+  let total = 0
+  for (const r of voiceRows || []) {
+    if (r?.day >= week.weekStart && r.day < week.weekEndExclusive) total += Number(r.seconds) || 0
+  }
+  return total
+}
+
 /** Раздел → самое позднее updated_at его модулей; свежее — выше. */
 function practiceAreas(rows) {
   const latest = new Map()
@@ -140,7 +165,12 @@ export function buildStudentAppActivity(raw) {
     strongest: strongest ? strongest.skill : null,
     weakest: weakest ? weakest.skill : null,
     goal: raw?.goal || null,
-    week: raw?.week ? { weekStart: raw.week.weekStart, modules: buildWeeklySummary(raw.week) } : null,
+    week: raw?.week
+      ? {
+          weekStart: raw.week.weekStart,
+          modules: buildWeeklySummary({ ...raw.week, voiceSeconds: weekTutorSeconds(raw.voice, raw.week) }),
+        }
+      : null,
     days: mergeDays(raw),
     practice: practiceAreas(raw?.practice),
   }

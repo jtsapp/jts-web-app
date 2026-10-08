@@ -27,18 +27,31 @@ function makeFakeSql(rowsByPrefix = {}) {
 // Отвечает по таблице, из которой читает запрос. Дневные запросы календаря
 // узнаются по to_char: недельная сводка (loadEcosystemWeek) читает те же
 // voice_usage и activity_time, но свои цифры здесь не подмешивает.
+// voice — строки или функция от текста запроса (см. voiceUsageRows).
 function makeTableSql({ stat = [], goal = [], voice = [], trainer = [], tasks = [], practice = [] }) {
   return async (strings) => {
     const q = strings.join('?').replace(/\s+/g, ' ').toLowerCase()
     const daily = q.includes('to_char')
     if (q.includes('from skill_stat')) return stat
     if (q.includes('from level_goal')) return goal
-    if (daily && q.includes('from voice_usage')) return voice
+    if (daily && q.includes('from voice_usage')) return typeof voice === 'function' ? voice(q) : voice
     if (daily && q.includes('from activity_time')) return trainer
     if (q.includes('from skill_day')) return tasks
     if (q.includes('from practice_state')) return practice
     return []
   }
+}
+
+// voice_usage с двумя счётчиками: seconds — расход против лимитов, pool_seconds —
+// разговор за докупленные минуты (usage.js, recordSession). Поддельная база
+// складывает ровно то, что запрос назвал в списке выбора: запрос без
+// `seconds + pool_seconds` недосчитает купленные минуты, как и настоящий.
+function voiceUsageRows(table) {
+  return (q) =>
+    table.map((r) => ({
+      day: r.day,
+      seconds: r.seconds + (/seconds \+ pool_seconds/.test(q) ? r.pool_seconds : 0),
+    }))
 }
 
 describe('windowStart', () => {
@@ -125,6 +138,32 @@ describe('loadStudentAppActivity', () => {
     expect(peak).toBeLessThanOrEqual(3)
   })
 
+  // Купленные минуты тьютора пишутся в voice_usage.pool_seconds, а не в seconds
+  // (usage.js, recordSession). Запрос, читающий одну seconds, показал бы ученика,
+  // говорящего только на купленных минутах, молчуном — и в днях, и в неделе.
+  it('минуты тьютора — seconds плюс pool_seconds: разговор за купленные минуты не теряется', async () => {
+    const sql = makeTableSql({
+      voice: voiceUsageRows([
+        { day: '2026-10-06', seconds: 300, pool_seconds: 420 }, // лимит и пул в один день
+        { day: '2026-10-07', seconds: 0, pool_seconds: 1500 }, // только купленные минуты
+      ]),
+    })
+    const raw = await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
+    expect(raw.voice).toEqual([
+      { day: '2026-10-06', seconds: 720 },
+      { day: '2026-10-07', seconds: 1500 },
+    ])
+
+    // Недельный запрос loadEcosystemWeek в этой поддельной базе отвечает пустотой —
+    // как сводка, слепая к pool_seconds. Неделя обязана прийти из суточных строк.
+    const out = buildStudentAppActivity(raw)
+    expect(out.days.map((d) => [d.date, d.tutorSeconds])).toEqual([
+      ['2026-10-06', 720],
+      ['2026-10-07', 1500],
+    ])
+    expect(out.week.modules.ai_tutor.actualMinutes).toBe(37) // 2220 с
+  })
+
   // Перепутанные voice и trainer молча выдали бы минуты тренажёров за минуты
   // тьютора. Тест на тексты запросов этого не видит — здесь проверяем, что
   // каждый ответ лёг в своё поле.
@@ -155,7 +194,16 @@ describe('loadStudentAppActivity', () => {
 })
 
 describe('buildStudentAppActivity', () => {
-  const week = { weekStart: '2026-10-05', voiceSeconds: 2100, shadowingCredits: 8, activitySeconds: { workbooks: 1200 } }
+  // voiceSeconds: 0 — так недельная сводка помощника (loadEcosystemWeek) видит
+  // ученика, который говорит только на докупленных минутах: она читает одну
+  // seconds. Карточка эту цифру не берёт, минуты тьютора идут из суточных строк.
+  const week = {
+    weekStart: '2026-10-05',
+    weekEndExclusive: '2026-10-12',
+    voiceSeconds: 0,
+    shadowingCredits: 8,
+    activitySeconds: { workbooks: 1200 },
+  }
 
   it('навыки — тем же рейтингом, что у «Главной», с объёмом', () => {
     const out = buildStudentAppActivity({
@@ -204,11 +252,35 @@ describe('buildStudentAppActivity', () => {
   })
 
   it('неделя — та же сводка, что у помощника, без целей', () => {
-    const out = buildStudentAppActivity({ week })
+    const out = buildStudentAppActivity({ week, voice: [{ day: '2026-10-06', seconds: 2100 }] })
     expect(out.week.weekStart).toBe('2026-10-05')
     expect(out.week.modules.ai_tutor).toMatchObject({ actualMinutes: 35, tracked: 'measured', targetMinutes: null })
     expect(out.week.modules.workbooks.actualMinutes).toBe(20)
     expect(out.week.modules.shadowing.tracked).toBe('estimated')
+  })
+
+  it('минуты тьютора за неделю — сумма суток этой недели, соседние недели не в счёт', () => {
+    const out = buildStudentAppActivity({
+      week,
+      voice: [
+        { day: '2026-10-04', seconds: 3000 }, // воскресенье прошлой недели
+        { day: '2026-10-05', seconds: 600 }, // понедельник: начало недели входит
+        { day: '2026-10-07', seconds: 1500 },
+        { day: '2026-10-09', seconds: 20 },
+        { day: '2026-10-10', seconds: 20 },
+        { day: '2026-10-11', seconds: 20 }, // воскресенье: последний день недели
+        { day: '2026-10-12', seconds: 4000 }, // понедельник следующей: weekEndExclusive не входит
+      ],
+    })
+    // 600 + 1500 + 3 × 20 = 2160 с = 36 мин. Округляется сумма секунд, а не
+    // минуты каждого дня: по дням вышло бы 10 + 25 + 0 + 0 + 0 = 35.
+    expect(out.week.modules.ai_tutor.actualMinutes).toBe(36)
+
+    // Итог недели не расходится с днями ответа: те же сутки, сложенные из days.
+    const weekSeconds = out.days
+      .filter((d) => d.date >= week.weekStart && d.date < week.weekEndExclusive)
+      .reduce((sum, d) => sum + d.tutorSeconds, 0)
+    expect(out.week.modules.ai_tutor.actualMinutes).toBe(Math.round(weekSeconds / 60))
   })
 
   it('дни сводятся из трёх таблиц, пустые выкидываются, порядок — по дате', () => {
