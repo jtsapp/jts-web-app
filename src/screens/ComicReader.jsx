@@ -7,6 +7,7 @@ import {
   ChevronRightIcon,
   ExpandIcon,
   CollapseIcon,
+  ZoomInIcon,
   ZoomOutIcon,
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -15,6 +16,7 @@ import { translateWord, cleanWord } from '../lib/wordTranslate.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
 import { usePinchZoom } from '../practice/comics/usePinchZoom.js'
+import { MAX_ZOOM } from '../practice/comics/zoom.js'
 import {
   requestElementFullscreen,
   exitFullscreen,
@@ -38,6 +40,11 @@ import {
 // не прочесть. Увеличенный лист водят пальцем, и он не листается — ни тапом,
 // ни свайпом, пока его не вернут к обычному размеру.
 //
+// На компьютере то же самое мышью и тачпадом: Ctrl + колесо или щипок
+// тачпада, двойной клик, кнопки −/+ на сцене и клавиши + − 0. На ноутбуке
+// страница вписана в высоту экрана, и баллон без зума мелкий так же, как на
+// телефоне. Увеличенный лист тянут мышью и водят колесом.
+//
 // Кликабельных зон поверх самой картинки нет намеренно: координаты баллонов,
 // снятые зрением модели, врут — до половины рамок ложится на пустой рисунок.
 //
@@ -52,6 +59,8 @@ const QUIET = new Set(['sfx', 'sign'])
 
 // Клавиша переключения полного экрана в обеих раскладках.
 const FULL_KEYS = new Set(['f', 'F', 'а', 'А'])
+const ZOOM_IN_KEYS = new Set(['+', '='])
+const ZOOM_OUT_KEYS = new Set(['-', '_'])
 
 // Через столько бездействия в полном экране гаснут панель и подсказка: они
 // висят поверх страницы, а читают её, а не их.
@@ -109,7 +118,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     },
     onSwipe: (d) => go(d),
   })
-  const resetZoom = zoom.reset
+  const { reset: resetZoom, zoomIn, zoomOut } = zoom
 
   useEffect(
     () =>
@@ -222,6 +231,11 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       // F — привычный по плеерам и читалкам переключатель полного экрана;
       // «а» — та же клавиша в русской раскладке.
       else if (FULL_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) toggleFull()
+      // + − 0 — зум листа. С Ctrl/⌘ это штатный зум всего сайта, его не трогаем.
+      // «=» — та же клавиша, что «+», без Shift.
+      else if (ZOOM_IN_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) zoomIn()
+      else if (ZOOM_OUT_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) zoomOut()
+      else if (e.key === '0' && !e.ctrlKey && !e.metaKey && !e.altKey) resetZoom(true)
       else if (e.key === 'Escape') {
         // Свой оверлей закрываем сами. В нативном полном экране Esc забирает
         // браузер — по нему из читалки не выходим, иначе одно нажатие и
@@ -236,7 +250,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go, onBack, pop, overlay, nativeFull, toggleFull, resetZoom])
+  }, [go, onBack, pop, overlay, nativeFull, toggleFull, resetZoom, zoomIn, zoomOut])
 
   const onWord = (raw) => {
     const w = cleanWord(raw)
@@ -365,15 +379,50 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
                 // задержку в момент перелистывания.
                 loading={p.n === page.n ? 'eager' : 'lazy'}
                 decoding="async"
-                // Тап пальцем хук уже разобрал сам (с ожиданием двойного) —
-                // синтетический click после него не листаем второй раз.
-                onClick={() => !zoom.fromTouch() && go(1)}
+                // Клик и тап по листу разбирает хук зума (с ожиданием
+                // двойного) и листает через onTap.
               />
             ))}
           </div>
 
+          {/* Мышью: шаги −/+ и сброс по цифре. Видны только там, где есть
+              мышь или тачпад (CSS, hover + fine pointer): пальцам хватает
+              щипка, а панель на телефоне накрывала бы лист. */}
+          <div className="cr__zoom">
+            <button
+              type="button"
+              className="cr__zoomBtn"
+              onClick={zoomOut}
+              disabled={!zoom.zoomed}
+              aria-label={t('comics.zoomOut')}
+              title={t('comics.zoomOut')}
+            >
+              <ZoomOutIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className="cr__zoomPct"
+              onClick={() => resetZoom(true)}
+              disabled={!zoom.zoomed}
+              aria-label={t('comics.unzoom')}
+              title={t('comics.unzoom')}
+            >
+              {Math.round(zoom.scale * 100)}%
+            </button>
+            <button
+              type="button"
+              className="cr__zoomBtn"
+              onClick={zoomIn}
+              disabled={zoom.scale >= MAX_ZOOM}
+              aria-label={t('comics.zoomIn')}
+              title={t('comics.zoomIn')}
+            >
+              <ZoomInIcon size={16} />
+            </button>
+          </div>
+
           {/* Двойной тап и щипок знают не все — кнопка возвращает обычный
-              размер явно. */}
+              размер явно. На компьютере её роль играет цифра в панели выше. */}
           {zoom.zoomed && (
             <button
               type="button"

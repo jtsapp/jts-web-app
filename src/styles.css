@@ -9582,11 +9582,18 @@ textarea {
   touch-action: none;
 }
 /* Долгое нажатие на iOS открывало бы меню «Сохранить картинку» посреди
-   перетаскивания листа. */
+   перетаскивания листа. Мышью увеличенный лист тянут — курсор-ладонь, а
+   выделение текста гасим, иначе протяжка мышью синит панель над сценой. */
+.cr__stage--zoomed {
+  cursor: grab;
+  user-select: none;
+}
 .cr__stage--zoomed .cr__img {
   -webkit-touch-callout: none;
   cursor: grab;
 }
+.cr__stage--zoomed:active,
+.cr__stage--zoomed .cr__img:active { cursor: grabbing; }
 /* Увеличенная картинка трансформирована и рисуется поверх соседей — стрелки
    поднимаем над ней, иначе их накрывает лист. */
 .cr__stage--zoomed .cr__nav {
@@ -9624,6 +9631,85 @@ textarea {
 @media (hover: none) and (pointer: coarse) {
   .cr__hintMouse { display: none; }
   .cr__hintTouch { display: inline; }
+}
+
+/* ── Читалка комикса: зум мышью ── */
+/* Панель −/цифра/+ в правом верхнем углу сцены — там же, где у пальцев
+   «обычный размер». Только для мыши и тачпада: пальцам хватает щипка, а
+   панель на телефоне накрывала бы лист. Сброс там — цифра, поэтому отдельная
+   кнопка «обычный размер» на компьютере не нужна. */
+.cr__zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #ececf3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 18px rgba(23, 19, 38, 0.18);
+  cursor: default;
+  transition: opacity 0.22s ease;
+}
+.cr__zoomBtn,
+.cr__zoomPct {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cr__zoomBtn { width: 32px; }
+.cr__zoomPct {
+  min-width: 52px;
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.cr__zoomBtn:hover:not(:disabled),
+.cr__zoomPct:hover:not(:disabled) {
+  color: var(--purple);
+  background: rgba(144, 71, 255, 0.08);
+}
+.cr__zoomBtn:disabled { opacity: 0.35; cursor: default; }
+/* На обычном размере цифра — просто подпись «100%», не кнопка. */
+.cr__zoomPct:disabled { color: #a6a5b2; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .cr__zoom { display: inline-flex; }
+  .cr__unzoom { display: none; }
+}
+/* В полном экране сверху поверх сцены лежит панель — держим под ней, как и
+   «обычный размер», и гасим в простое вместе с ней: в простое на странице
+   остаётся только лист. */
+.cr--full .cr__zoom {
+  top: 64px;
+  background: rgba(14, 12, 22, 0.72);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.cr--full .cr__zoomBtn,
+.cr--full .cr__zoomPct { color: #ece9f6; }
+.cr--full .cr__zoomPct:disabled { color: rgba(255, 255, 255, 0.5); }
+.cr--full .cr__zoomBtn:hover:not(:disabled),
+.cr--full .cr__zoomPct:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+.cr--idle .cr__zoom {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr__zoom { transition: none; }
 }
 
 /* Задания из «Практики» в домашней работе: не поле для ответа, а переход в
