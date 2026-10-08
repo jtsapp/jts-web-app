@@ -3,26 +3,16 @@
 // Пройденные фразы Shadowing. Прогресс — множество id вида `${lessonId}_${index}`
 // (sg_000, v2_014, …; см. segmentId в engine.js). «Пройдено» = фразу записали
 // голосом хотя бы раз (в трениже нет верного/неверного — засчитываем факт
-// записи). Ключ и событие общие из practiceKeys.js, серверный синк — через
-// practiceSync. По образцу listeningProgress.js.
+// записи). Ключ и событие общие из practiceKeys.js, хранение — общее хранилище
+// прогресса (память + черновик + сервер, см. progressStore.js).
 
 import { SHADOWING_KEY as KEY, SHADOWING_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore, doneListOptions } from '../progressStore.js'
+
+const store = createProgressStore({ module: 'shadowing', key: KEY, event: EVENT, ...doneListOptions })
 
 function read() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(KEY) || '[]'))
-  } catch {
-    return new Set()
-  }
-}
-
-function write(set) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...set]))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
-  }
+  return new Set(store.read())
 }
 
 export function isSegmentDone(segId) {
@@ -55,16 +45,9 @@ export function isLessonDone(lessonId, total) {
 
 export function markSegmentDone(segId) {
   if (typeof segId !== 'string' || !segId) return
-  const set = read()
-  if (set.has(segId)) return
-  set.add(segId)
-  write(set)
-  pushModule('shadowing', set) // best-effort серверный синк (no-op для гостя)
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
+  const list = store.read()
+  if (list.includes(segId)) return
+  store.write([...list, segId]) // событие и синк — внутри хранилища
 }
 
 export const SHADOWING_PROGRESS_EVENT = EVENT

@@ -293,6 +293,11 @@
 }
 
 .vp-sticky-cta { display: none; }
+/* Нижняя «Начать тренировку» на телефоне липнет к ОКНУ: у оболочки экранов
+   (.learn__main) overflow: auto, и sticky привязывался к ней, а прокручивается
+   окно — кнопка уезжала в самый низ списка карточек (ревью 08.10.2026). Тот же
+   приём, что у читалки (.learn__main:has(.rd) в reading.css). */
+.learn__main:has(.vp) { overflow: visible; }
 
 /* ── Modal ── */
 .vp-modal {

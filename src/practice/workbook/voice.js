@@ -104,9 +104,15 @@ function jit(s, spread) {
   return ((hash(s) % 1000) / 1000 - 0.5) * 2 * spread
 }
 
-/** Тире в реплике значит смену говорящего. */
-export function turns(text, who) {
+/**
+ * Тире в реплике значит смену говорящего — так записаны диалоги воркбука.
+ * solo — реплика одного диктора, тире в ней вставочное: Чтение озвучивает
+ * прозу, и «big too — like a small car» звучало двумя голосами (ревью
+ * 08.10.2026).
+ */
+export function turns(text, who, solo = false) {
   const t = normText(text)
+  if (solo) return [{ t, v: who || 'A' }]
   const parts = t.split(/\s*[\u2014\u2013]\s+/)
   if (parts.length < 2) return [{ t, v: who || 'A' }]
   const out = []
@@ -157,11 +163,13 @@ export function plan(lines) {
   for (const raw of lines) {
     let txt = raw
     let who = 'A'
+    let solo = false
     if (raw && typeof raw === 'object') {
       txt = raw.t != null ? raw.t : raw.s
       who = raw.v || (raw.w ? 'B' : 'A')
+      solo = !!raw.solo
     }
-    for (const tn of turns(txt, who)) {
+    for (const tn of turns(txt, who, solo)) {
       for (const ss of sentences(tn.t)) {
         const single = ss.split(' ').length <= 2 && !/[.!?]$/.test(ss)
         const gs = single ? [ss] : groups(ss)
@@ -202,6 +210,10 @@ let built = false
 let token = 0
 let keep = null
 let curAudio = null
+// «Тебя перебили» текущего speak(): зовёт его следующий speak() или
+// stopAudio(), если этот ещё не договорил. Без него тот, кто читает по кусочку
+// (Чтение), не узнаёт об обрыве — колбэк «дальше» просто не приходит.
+let abortCur = null
 
 function synth() {
   try {
@@ -268,6 +280,8 @@ function primeSpeech() {
 
 function stopPlayback({ cancelSpeech = true } = {}) {
   token++
+  const aborted = abortCur
+  abortCur = null
   clearKeep()
   stopTts()
   try {
@@ -278,13 +292,15 @@ function stopPlayback({ cancelSpeech = true } = {}) {
   } catch {
     /* элемент уже уничтожен */
   }
-  if (!cancelSpeech) return
-  try {
-    const sy = synth()
-    if (sy) sy.cancel()
-  } catch {
-    /* нет синтеза — нечего останавливать */
+  if (cancelSpeech) {
+    try {
+      const sy = synth()
+      if (sy) sy.cancel()
+    } catch {
+      /* нет синтеза — нечего останавливать */
+    }
   }
+  if (aborted) aborted()
 }
 
 function clearKeep() {
@@ -296,6 +312,15 @@ function clearKeep() {
 
 export function stopAudio() {
   stopPlayback({ cancelSpeech: true })
+}
+
+/**
+ * Поставить «тебя перебили» без своей речи: тот, кто стоит на паузе между
+ * кусками (Чтение ждёт «Продолжить»), тоже должен узнать, что следующий
+ * speak() или stopAudio() его обрывает. null — снять.
+ */
+export function armAbort(fn) {
+  abortCur = fn || null
 }
 
 /* ── Soniox ─────────────────────────────────────────────────────────── */
@@ -332,11 +357,13 @@ export function sonioxPlan(lines) {
   for (const raw of lines) {
     let txt = raw
     let who = 'A'
+    let solo = false
     if (raw && typeof raw === 'object') {
       txt = raw.t != null ? raw.t : raw.s
       who = raw.v || (raw.w ? 'B' : 'A')
+      solo = !!raw.solo
     }
-    for (const tn of turns(txt, who)) {
+    for (const tn of turns(txt, who, solo)) {
       for (const part of packSentences(tn.t)) {
         if (!part) continue
         q.push({ t: part, v: tn.v, one: part.split(' ').length <= 2 && !/[.!?]$/.test(part) })
@@ -371,7 +398,11 @@ export function prefetch(lines, { slow = false } = {}) {
   for (const c of sonioxPlan(lines)) prefetchTts(c.t, sonioxOpts(c, slow))
 }
 
-export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
+/**
+ * onAbort — позовётся, если эту озвучку оборвёт следующий speak() или
+ * stopAudio() раньше, чем она договорит; cb в этом случае не придёт.
+ */
+export function speak(lines, { slow = false, keepPrime = false, onAbort = null } = {}, cb) {
   if (!lines || !lines.length) {
     if (cb) cb()
     return
@@ -385,11 +416,13 @@ export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
     primeSpeech()
   }
   const my = token
+  abortCur = onAbort
   const q = sonioxPlan(lines)
   let i = 0
   const step = () => {
     if (my !== token) return
     if (i >= q.length) {
+      abortCur = null
       if (cb) cb()
       return
     }
@@ -407,7 +440,11 @@ export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
         if (my !== token) return
         // Soniox не ответил — остаток задания дочитывает синтез устройства,
         // с той же реплики. keepPrime: разрешение, выданное тапом, не снимаем.
-        speakDevice(q.slice(i - 1).map((x) => ({ t: x.t, v: x.v })), { slow, keepPrime: true }, cb)
+        // Это продолжение, а не обрыв: onAbort передаём дальше, не дёргая его.
+        const handoff = abortCur
+        abortCur = null
+        // Куски уже поделены по говорящим: второй раз по тире не режем.
+        speakDevice(q.slice(i - 1).map((x) => ({ t: x.t, v: x.v, solo: true })), { slow, keepPrime: true, onAbort: handoff }, cb)
       },
     })
   }
@@ -415,7 +452,7 @@ export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
 }
 
 /** Прежний синтез устройства — запасной путь, логика прототипа без изменений. */
-function speakDevice(lines, { slow = false, keepPrime = false } = {}, cb) {
+function speakDevice(lines, { slow = false, keepPrime = false, onAbort = null } = {}, cb) {
   const sy = synth()
   if (!sy || !lines || !lines.length) {
     if (cb) cb()
@@ -430,6 +467,7 @@ function speakDevice(lines, { slow = false, keepPrime = false } = {}, cb) {
     primeSpeech()
   }
   const my = token
+  abortCur = onAbort
   const q = plan(lines)
   let i = 0
   withVoices(() => {
@@ -448,6 +486,7 @@ function speakDevice(lines, { slow = false, keepPrime = false } = {}, cb) {
       if (my !== token) return
       if (i >= q.length) {
         clearKeep()
+        abortCur = null
         if (cb) cb()
         return
       }

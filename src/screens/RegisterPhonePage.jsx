@@ -11,8 +11,11 @@ import { PRIVACY_URL } from '../lib/support.js'
  * следом собираем почту (RegisterEmailPage), и именно на неё бэкенд шлёт OTP
  * (см. RegistrationService: email — канал по умолчанию, когда есть оба поля).
  * Порядок: номер → почта → код на почту → пароль.
+ *
+ * Тот же экран после входа через Google (`googleGate`): Google телефон не отдаёт, а школе номер нужен
+ * всегда — без него дальше не пускаем, поэтому кнопки «Назад» нет.
  */
-export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) {
+export default function RegisterPhonePage({ onBack, onSubmit, loading, error, googleGate = false }) {
   const { t } = useI18n()
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('')
@@ -59,9 +62,9 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
       <div className="form-inner">
         <form className="form-card" onSubmit={submit}>
           <h2 className="form-title">
-            <Multiline text={t('regphone.title')} />
+            <Multiline text={t(googleGate ? 'regphone.titleGoogle' : 'regphone.title')} />
           </h2>
-          <p className="form-sub">{t('regphone.subtitle')}</p>
+          <p className="form-sub">{t(googleGate ? 'regphone.subtitleGoogle' : 'regphone.subtitle')}</p>
 
           <div className="phone-field">
             <div className="phone-country" ref={pickerRef}>

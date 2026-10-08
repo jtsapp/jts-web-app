@@ -20,6 +20,7 @@ import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
+import LiveLoader from './live/LiveLoader.jsx'
 import LessonSidePanel from './live/LessonSidePanel.jsx'
 import LessonTopics from './live/LessonTopics.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
@@ -37,8 +38,8 @@ import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
 import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
-import { knowsFocusTarget } from './live/followFocus.js'
-import { nextFollow } from './live/liveFollow.js'
+import { knowsFocusTarget, sectionWithMaterial } from './live/followFocus.js'
+import { isPointerBatch, nextFollow } from './live/liveFollow.js'
 import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -122,8 +123,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
   const [activeSectionId, setActiveSectionId] = useState(null)
-  // true пока открытый материал — «догоняющая» копия для follow-me: не
-  // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
+  // true, пока ученик идёт за классом: показ преподавателя проигрывается в его
+  // рамку. Сама страница та же, что и в своём уроке, — с backend#222 мост
+  // восстанавливает и сохраняет ответы в обоих режимах, и смена режима рамку не
+  // перезагружает (см. documentKey в SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
   // «Идти за преподавателем»: экран ученика повторяет его переходы по уроку.
   // Включено по умолчанию — на занятии смотрят туда же, куда и преподаватель, а
@@ -144,6 +147,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // рамки — как только у него откроется свежая страница следования того же
   // материала (oweCatchUp). Объект, а не id: повторный вход — новая просьба.
   const [catchUp, setCatchUp] = useState(null)
+  // Указка «Перенести ученика сюда», ждущая рамку своего материала (bringToPointer):
+  // материал ещё переключается или открыта доска. Объект, а не id: повторная
+  // указка на то же задание — новая.
+  const [pendingPointer, setPendingPointer] = useState(null)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
   // (так открываются и материалы, которые преподаватель загрузил сам).
@@ -310,8 +317,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
-  // тянет только новая указка. Рамка снова своя, а не страница следования: на
-  // ней ученик работает, и ответы сохраняются. Указка на шаг, ждущая разбора
+  // тянет только новая указка, и показ класса в его рамку больше не идёт. Рамка
+  // остаётся той же: ученик продолжает с того места, где стоит, ответы
+  // сохраняются, как и при следовании. Указка на шаг, ждущая разбора
   // урока, — тоже переход с классом: на выбранный им материал она не переезжает.
   // Переключатель «Идти за преподавателем» гаснет вместе с уходом: он не должен
   // обещать следование, которого нет, и вернуться к классу — одно нажатие.
@@ -323,6 +331,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setFollowTeacher(false)
     setClassStage(NO_CLASS_STAGE)
     setCatchUp(null)
+    setPendingPointer(null)
   }
 
   // Урок каталога показываем разобранным на шаги, а не файлом в iframe.
@@ -961,7 +970,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Ученик переключает «Идти за преподавателем». Выключение — тот же ручной
   // уход (§7): стадия класса больше не двигает рамку, отложенное отменяется, а
-  // рамка уходит со страницы следования, где мост ответов не сохраняет.
+  // показ класса в рамку больше не проигрывается.
   // Включённый, пока класс ведут, — сразу к классу, как на входе: ждать
   // следующей смены позиции значило бы стоять на месте неизвестно сколько.
   function toggleFollowTeacher() {
@@ -969,6 +978,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       leaveClass()
       return
     }
+    rejoinClass()
+  }
+
+  // Вернуться к классу — включённый переключатель.
+  function rejoinClass() {
     setFollowTeacher(true)
     // Следует тот, кого застали за ведением (§4.3 п.1): без ведения включённый
     // переключатель ждёт указки, а шаги неведущего преподавателя не тянут.
@@ -980,6 +994,26 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // рамки, как на входе.
       if (wantsCatchUp(liveState)) oweCatchUp(liveState.materialId)
     }
+  }
+
+  // «Перенести ученика сюда»: указка уходит в ту рамку, что у ученика открыта, —
+  // открыть стадию задания, прокрутить и подсветить, без перезагрузки (владелец
+  // 06.10: «всё должно сразу переноситься»). Следующему — в страницу следования,
+  // ушедшему сам или при отпущенном классе — в его собственную. Следование она не
+  // включает и не снимает: смена страницы рамки (своя ↔ следования) — другой
+  // документ, то есть та самая перезагрузка урока («Загружаем урок…»). С доски
+  // возвращает на урок; задание на другом материале — он открывается, указка ждёт
+  // его рамку (эффект pendingPointer).
+  //
+  // Материала нет в разделах — ничего: разделы ученик перечитывает по
+  // sectionsChanged раньше, чем преподаватель успевает открыть новый и указать.
+  function bringToPointer(materialId, events) {
+    const section = sectionWithMaterial(sections, materialId)
+    if (!section) return
+    setTab('lesson')
+    setActiveSectionId(section.id)
+    setActiveMaterialId(materialId)
+    setPendingPointer({ materialId, events })
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
@@ -1017,10 +1051,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // приходят сюда одинаково — и одинаково ждут рамку.
     onPresent: (evt) => {
       if (isStaff) return
-      // Не следующему показ не адресован: к классу его вернёт указка, и она
-      // принесёт снимок рамки со всем потоком — копить мимо него нечего.
-      if (!followRef.current.following) return
       const events = evt.events || []
+      // Указка «Перенести ученика сюда» — адресное «смотри сюда», а не показ
+      // класса: доходит до каждого, следует он за классом или нет.
+      if (isPointerBatch(events)) {
+        bringToPointer(evt.materialId, events)
+        return
+      }
+      // Не следующему показ класса не адресован: к классу его вернёт «Внимание»,
+      // и оно принесёт снимок рамки со всем потоком — копить мимо него нечего.
+      if (!followRef.current.following) return
       if (!events.length) return
       // Material may still be switching after focus — buffer until iframe can replay.
       if (evt.materialId !== activeMaterial?.materialId || !materialFrameRef.current) {
@@ -1725,6 +1765,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     sendCatchUp(catchUp.materialId)
   }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
 
+  // Указка (bringToPointer) уходит в рамку своего материала, когда та на экране. Рамка сама придержит её до своей осадки (replay копит). Одна
+  // указка — один вызов; отмечается, а не стирается, по той же причине, что и
+  // просьба догнать класс выше.
+  const pointerSentRef = useRef(null)
+  useEffect(() => {
+    if (!pendingPointer || pointerSentRef.current === pendingPointer) return
+    if (!frameOnScreen || activeMaterialKey !== pendingPointer.materialId || !materialFrameRef.current) return
+    pointerSentRef.current = pendingPointer
+    materialFrameRef.current.replay(pendingPointer.events)
+  }, [pendingPointer, frameOnScreen, activeMaterialKey])
+
   // Доводка уходит в рамку того материала, для которого заведена, — после
   // перерисовки: «Внимание» и восстановление места меняют документ рамки, и
   // вызов до неё достался бы закрывающейся странице. Рамка сама дождётся
@@ -1769,7 +1820,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           <p className="live__status-msg">{t(!token ? 'schedule.needAuth' : 'live.noLesson')}</p>
         ) : (
           <>
-            {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
+            {state === 'loading' && <LiveLoader label={t('live.loadingLesson')} />}
             {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
           </>
         )}
@@ -2037,7 +2088,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           </div>
                         </>
                       ) : view === 'loading' ? (
-                        <p className="live__status-msg">{t('schedule.loading')}</p>
+                        <LiveLoader label={t('live.loadingLesson')} />
                       ) : view === 'hidden' ? (
                         <p className="live__status-msg">{t('live.allStepsHidden')}</p>
                       ) : view === 'denied' ? (
@@ -2051,7 +2102,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           material={activeMaterial}
                           isStaff={isStaff}
                           reviewStudentId={reviewStudentId}
-                          follow={followMode}
                           reloadToken={reloadToken}
                           presenting={presenting}
                           stage={isStaff || classStage.materialId !== activeMaterialKey ? null : classStage.index}

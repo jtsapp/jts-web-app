@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { levelSummary, nextLevel, rankSkills, skillPercent, weeklyDelta } from './levelProgress.js'
+import {
+  goalOptions,
+  levelSummary,
+  levelTrack,
+  nextLevel,
+  rankSkills,
+  sanitizeGoal,
+  skillPercent,
+  weeklyDelta,
+} from './levelProgress.js'
 
 describe('skillPercent', () => {
   it('без заданий — ноль, а не 100%', () => {
@@ -122,6 +131,71 @@ describe('levelSummary', () => {
     const s = levelSummary('B2', null, { level: 'C2', next: null, percent: 10, done: 1, total: 10, remaining: 9 })
 
     expect(s.next).toBe(null)
+  })
+})
+
+describe('sanitizeGoal', () => {
+  it('принимает цель выше точки отсчёта, регистр не важен', () => {
+    expect(sanitizeGoal({ target: 'b2', from: 'a0' })).toEqual({ target: 'B2', from: 'A0' })
+  })
+  it('цель не выше старта, мусор и пустое — null', () => {
+    expect(sanitizeGoal({ target: 'A1', from: 'A2' })).toBe(null)
+    expect(sanitizeGoal({ target: 'B1', from: 'B1' })).toBe(null)
+    expect(sanitizeGoal({ target: 'Z9', from: 'A1' })).toBe(null)
+    expect(sanitizeGoal(null)).toBe(null)
+    expect(sanitizeGoal('B2')).toBe(null)
+  })
+})
+
+describe('goalOptions', () => {
+  it('от ближайшей ступени до C2', () => {
+    expect(goalOptions({ level: 'A0', next: 'A1' })).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'])
+  })
+  it('профиль выше курса — начинаем после профиля', () => {
+    // Менеджер поставил A2, а курс считается по A1 (next A2): цель A2 уже в профиле.
+    expect(goalOptions({ level: 'A2', next: 'A2' })).toEqual(['B1', 'B2', 'C1', 'C2'])
+  })
+  it('на потолке выбирать нечего', () => {
+    expect(goalOptions({ level: 'C2', next: null })).toEqual([])
+  })
+})
+
+describe('levelTrack', () => {
+  const A0 = { level: 'A0', next: 'A1' }
+
+  it('A0 с целью B2: A1, A2, B1 и Финиш · B2', () => {
+    expect(levelTrack(A0, { target: 'B2', from: 'A0' })).toEqual({
+      mode: 'goal', stops: ['A1', 'A2', 'B1'], finish: 'B2', goal: 'B2', short: true,
+    })
+  })
+
+  it('цель — ближайший уровень: сразу финиш', () => {
+    expect(levelTrack(A0, { target: 'A1', from: 'A0' })).toMatchObject({ mode: 'goal', stops: [], finish: 'A1' })
+  })
+
+  it('две ступени помещаются полными подписями', () => {
+    expect(levelTrack({ level: 'A1', next: 'A2' }, { target: 'B2', from: 'A1' }).short).toBe(false)
+  })
+
+  it('без цели — как раньше: ближайший уровень и следующий', () => {
+    expect(levelTrack({ level: 'A1', next: 'A2' }, null)).toEqual({
+      mode: 'default', stops: ['A2', 'B1'], finish: null, goal: 'A2', short: false,
+    })
+  })
+
+  it('на C2 ступеней нет, а не «Уровень A2»', () => {
+    expect(levelTrack({ level: 'C2', next: null }, null).stops).toEqual([])
+  })
+
+  it('профиль дорос до цели — дорожка от старта цели, вся пройдена', () => {
+    expect(levelTrack({ level: 'B2', next: 'C1' }, { target: 'B2', from: 'A1' })).toEqual({
+      mode: 'reached', stops: ['A2', 'B1'], finish: 'B2', goal: 'B2', short: false,
+    })
+  })
+
+  it('цель позади курса, но не достигнута профилем — откат к обычной дорожке', () => {
+    // Профиль A1, купленный курс B1 (next B2), цель A2 осталась от старых времён.
+    expect(levelTrack({ level: 'A1', next: 'B2' }, { target: 'A2', from: 'A0' }).mode).toBe('default')
   })
 })
 

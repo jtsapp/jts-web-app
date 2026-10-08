@@ -1,0 +1,57 @@
+# Общий Redis для dev и прода — кэш озвучки /api/tts (src/lib/soniox-tts.js).
+#
+# Один на оба стенда (решение владельца 07.10.2026): одна память на всех, и
+# слово, синтезированное на одном стенде, на другом уже готово. Ключ записи —
+# хэш модели, голоса, языка, темпа и текста, так что стенды делят кэш, пока
+# у них одна модель Soniox (SONIOX_TTS_MODEL).
+#
+# Свой compose-проект (`-p jts-tts-redis`), а не сервис в compose.yaml: деплой
+# стенда делает `up --force-recreate`, и общий Redis пересоздавался бы на
+# каждый деплой любого из двух. CI зовёт для него `up -d` БЕЗ --force-recreate
+# — контейнер трогается, только если поменялся этот файл.
+#
+# Цена общего Redis — прод не изолирован от dev:
+#   - код с dev, записавший под словом не тот звук, отравит запись и проду
+#     (лечится DELETE /api/tts, см. route.js);
+#   - правка этого файла, смерженная в develop, перезапустит Redis и проду
+#     (данные переживут — они в volume; пока Redis встаёт, кэш промахивается);
+#   - очистка кэша на одном стенде чистит оба.
+#
+# Связь — внешняя сеть jts-tts-redis (её создаёт CI до деплоя), web обоих
+# стендов в неё входит (compose-app.yaml). Порт наружу НЕ пробрасываем: Redis
+# без пароля, и видят его только сайты.
+#
+# AOF раз в секунду — пересозданный контейнер поднимает кэш с диска.
+# maxmemory + allkeys-lru: переполнился — выкинул давно не слушанные записи, а
+# не упал. Лимит записан числом, а не переменной GitLab: файл применяют деплои
+# обоих стендов, и разные значения по окружениям пересоздавали бы Redis на
+# каждом деплое. mem_limit с запасом над maxmemory — перезапись AOF делает fork.
+services:
+  redis:
+    image: 'redis:7-alpine'
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+      - --save
+      - ''
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    mem_limit: 512m
+    volumes:
+      - tts-redis-data:/data
+    networks:
+      tts:
+        aliases:
+          - tts-redis
+networks:
+  tts:
+    name: jts-tts-redis
+    external: true
+volumes:
+  tts-redis-data:

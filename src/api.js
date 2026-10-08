@@ -3,6 +3,8 @@
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
+import { reportUnauthorized } from './lib/session.js'
+import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
@@ -83,6 +85,9 @@ async function authGet(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 404 у профильных полей означает «не заполнено»,
     // а не поломку — отличать это от сетевой осечки приходится по нему.
     const err = new Error(`Ошибка сервера (${res.status})`)
@@ -111,6 +116,9 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -157,6 +165,9 @@ async function authPost(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -181,6 +192,9 @@ async function authPatch(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -201,6 +215,9 @@ async function authDelete(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -336,7 +353,6 @@ export function returnHomeworkForRevision(token, id, comment) {
 //
 // v1 → v2: в v1 ученик, чей токен не разобрался, попадал в общий бакет 'anon'.
 const CATALOG_CACHE_VER = 'v2'
-const CATALOG_KEY_PREFIX = 'jts_catalog_'
 const CATALOG_LIVE_PREFIX = `${CATALOG_KEY_PREFIX}${CATALOG_CACHE_VER}:`
 
 // RAM-кэш на сессию вкладки: тяжёлые ответы (scopes словаря) часто не
@@ -397,7 +413,12 @@ function sweepStaleCatalogCache() {
     const stale = []
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i)
-      if (key?.startsWith(CATALOG_KEY_PREFIX) && !key.startsWith(CATALOG_LIVE_PREFIX)) stale.push(key)
+      if (!key?.startsWith(CATALOG_KEY_PREFIX)) continue
+      // Прошлое поколение — и живые записи больше порога: их клали до того, как
+      // большие ответы перестали попадать в localStorage, и они так и занимали
+      // квоту (см. CATALOG_STORE_MAX_CHARS).
+      if (!key.startsWith(CATALOG_LIVE_PREFIX)) stale.push(key)
+      else if ((window.localStorage.getItem(key) || '').length > CATALOG_STORE_MAX_CHARS) stale.push(key)
     }
     // Удаляем вторым проходом: removeItem сдвигает индексы, и удаление прямо в
     // цикле по key(i) пропускало бы каждый второй ключ.
@@ -438,7 +459,12 @@ async function cachedAuthGet(path, token, onFresh) {
     authGet(path, token).then((data) => {
       memoryCatalogCache.set(key, data)
       try {
-        window.localStorage.setItem(key, JSON.stringify(data))
+        const raw = JSON.stringify(data)
+        // Большой ответ — только в памяти вкладки: в localStorage он вытеснял бы
+        // то, что терять нельзя. Прежнюю копию убираем, иначе она осталась бы
+        // лежать устаревшей и занимать место.
+        if (raw.length <= CATALOG_STORE_MAX_CHARS) window.localStorage.setItem(key, raw)
+        else window.localStorage.removeItem(key)
       } catch {
         /* квота localStorage исчерпана — RAM-кэш всё равно держит ответ */
       }
@@ -524,6 +550,12 @@ export function getCourseCatalog(token, onFresh) {
 // Один урок каталога: fileUrl (сырой L*.html) + type/title.
 export function getCourseCatalogLesson(id, token) {
   return authGet(`/mobile/course-catalog/lessons/${id}`, token)
+}
+
+// Урок теста на определение уровня по адресу его файла: в дерево ученика тест не
+// входит, его дают только преподаватель — на занятии или на дом. 404 — не дан.
+export function getLevelTestByFile(fileUrl, token) {
+  return authGet(`/mobile/course-catalog/lessons/by-file?url=${encodeURIComponent(fileUrl)}`, token)
 }
 
 // Пройденные уроки каталога — одним списком на весь каталог, а не по уроку:
@@ -801,14 +833,15 @@ export function deleteLessonMessage(token, lessonId, messageId) {
 // GET идёт по iframe-навигации (не fetch), поэтому токен передаётся в query,
 // а не в заголовке — тот же приём, что и в web-admin (buildProgressRenderUrl).
 // forceReload добавляет nonce, чтобы iframe гарантированно перезагрузился
-// (нужно студенту, догоняющему учителя через follow=1). Nonce обязан быть
+// (нужно студенту, догоняющему учителя: снимок проигрывается в чистую страницу).
+// Страницы следования отдельным адресом больше нет — с backend#222 мост одинаков
+// в своём уроке и при следовании за классом. Nonce обязан быть
 // ДЕТЕРМИНИРОВАННЫМ от значения forceReload (а не Date.now()) - иначе src
 // меняется на каждый ре-рендер SectionMaterialFrame (например от полинга
 // "учитель начал урок" раз в 5с), и браузер молча перезагружает iframe весь
 // остаток урока, обнуляя непереживший дебаунс прогресс студента.
-export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload, studentId } = {}) {
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', forceReload, studentId } = {}) {
   const params = new URLSearchParams({ mode, access_token: token || '' })
-  if (follow) params.set('follow', '1')
   if (studentId != null) params.set('studentId', String(studentId))
   if (forceReload) params.set('_r', String(forceReload))
   return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
@@ -1389,8 +1422,19 @@ export async function saveWord(token, { word, translation, alternates, language 
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  if (!res.ok) {
+    // 401 с токеном — возможно, кончилась сессия: сообщаем, как authPost. Иначе с
+    // протухшим токеном «Сохранить в словарь» бесконечно показывало «Не
+    // сохранилось», а «Сессия истекла» не приходила (ревью 08.10.2026).
+    if (res.status === 401) reportUnauthorized(token)
+    const err = new Error(`Не удалось сохранить слово (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   dropCachedAuthGet('/mobile/lesson-vocab', token)
+  // «Мой словарь» читает именно /saved: без сброса первым показывался старый
+  // кэш, и слово из книги появлялось только после фонового обновления.
+  dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
   dropCachedAuthGet('/mobile/saved-words', token)
   return res.json().catch(() => ({}))
 }
@@ -1492,7 +1536,9 @@ export async function updateUser(token, { name, email, city, gender, birthDate, 
       (Array.isArray(data?.messages) && data.messages[0]) ||
       data?.message ||
       `Не удалось сохранить профиль (${res.status})`
-    throw new Error(msg)
+    const err = new Error(msg)
+    err.status = res.status
+    throw err
   }
   return data
 }

@@ -23,13 +23,31 @@ function readJson(key, fallback) {
 function writeJson(key, val) {
   try {
     localStorage.setItem(key, JSON.stringify(val))
+    return true
   } catch {
     /* приватный режим / квота — работаем без персиста */
+    return false
   }
 }
 
+// Хранилище домена забивает кэш каталогов, и запись тогда молча падает. Раньше
+// флаш читал буфер только оттуда — прирост навыков не доходил до сервера
+// никогда, а сводка стояла на месте (ревью 08.10.2026). Теперь то, что не
+// записалось, живёт в памяти вкладки до отправки или выхода.
+let unsaved = emptyStats() // дельты, не попавшие в буфер хранилища
+let mirrorMem = null // зеркало, которое не удалось записать
+
+function setMirror(stats) {
+  mirrorMem = writeJson(MIRROR_KEY, stats) ? null : stats
+}
+
+function keepPending(deltas) {
+  const all = mergeDeltas(readJson(PENDING_KEY, emptyStats()), deltas)
+  if (!writeJson(PENDING_KEY, all)) unsaved = mergeDeltas(unsaved, deltas)
+}
+
 export function readLocalSkillStats() {
-  const m = readJson(MIRROR_KEY, null)
+  const m = mirrorMem || readJson(MIRROR_KEY, null)
   return m && typeof m === 'object' ? { ...emptyStats(), ...m } : emptyStats()
 }
 
@@ -37,9 +55,8 @@ let timer = null
 
 export function recordSkill(skill, correct) {
   if (!SKILLS.includes(skill)) return
-  writeJson(MIRROR_KEY, addDelta(readLocalSkillStats(), skill, correct))
-  const pending = addDelta(readJson(PENDING_KEY, emptyStats()), skill, correct)
-  writeJson(PENDING_KEY, pending)
+  setMirror(addDelta(readLocalSkillStats(), skill, correct))
+  keepPending(addDelta(emptyStats(), skill, correct))
   clearTimeout(timer)
   timer = setTimeout(flushSkillStats, FLUSH_DELAY)
 }
@@ -51,10 +68,17 @@ function hasPending(p) {
 export function flushSkillStats() {
   const token = loadToken()
   if (!token) return
-  const pending = readJson(PENDING_KEY, emptyStats())
+  const pending = mergeDeltas(readJson(PENDING_KEY, emptyStats()), unsaved)
   if (!hasPending(pending)) return
   // Оптимистично очищаем буфер перед отправкой; при сбое возвращаем.
-  writeJson(PENDING_KEY, emptyStats())
+  // removeItem, а не запись пустого: в забитом хранилище запись не пройдёт, и
+  // те же дельты ушли бы второй раз.
+  unsaved = emptyStats()
+  try {
+    localStorage.removeItem(PENDING_KEY)
+  } catch {
+    /* приватный режим — буфера и не было */
+  }
   // Ответ приходит позже, и за это время ученик мог выйти, а за ним войти
   // другой (общий компьютер класса). Тогда ни чужое зеркало, ни возврат чужих
   // дельт в буфер писать нельзя: следующий флаш отправил бы их под новым
@@ -80,12 +104,12 @@ export function flushSkillStats() {
       return res.json()
     })
     .then((data) => {
-      if (data?.stats && sameUser()) writeJson(MIRROR_KEY, data.stats) // сервер — источник истины
+      if (data?.stats && sameUser()) setMirror(data.stats) // сервер — источник истины
     })
     .catch((e) => {
       console.warn('[skill.sync] flush failed', e)
       // вернуть дельты в буфер, чтобы не потерять при следующем флаше
-      if (sameUser()) writeJson(PENDING_KEY, mergeDeltas(readJson(PENDING_KEY, emptyStats()), pending))
+      if (sameUser()) keepPending(pending)
     })
 }
 
@@ -99,6 +123,8 @@ export function flushSkillStats() {
 export function clearLocalSkillStats() {
   clearTimeout(timer)
   timer = null
+  unsaved = emptyStats()
+  mirrorMem = null
   for (const k of [MIRROR_KEY, PENDING_KEY]) {
     try {
       localStorage.removeItem(k)
@@ -115,7 +141,7 @@ export async function loadSkillStatsRemote(token) {
     if (!res.ok) return null
     const data = await res.json()
     if (data?.stats) {
-      writeJson(MIRROR_KEY, data.stats)
+      setMirror(data.stats)
       return data.stats
     }
   } catch (e) {

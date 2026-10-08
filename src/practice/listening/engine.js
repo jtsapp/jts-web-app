@@ -3,6 +3,8 @@
 // mix() shuffle. Adds a compact linear "session" model (batch of tasks with a
 // single requeue on a wrong answer) matching the Russian trainer designs.
 
+import { latinLookalikes } from '../../lib/latinLookalikes.js'
+
 // case-insensitive; curly→straight quotes; punctuation→space; apostrophes
 // dropped; whitespace collapsed. Used to compare type/assemble answers.
 export function norm(s) {
@@ -57,6 +59,52 @@ export function buildSession(tasks, size = SESSION_SIZE, startIndex = null) {
   return picked.map((t) => ({ ...t, _retry: false }))
 }
 
+const NUMBER_WORDS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
+]
+const NUMBER_RE = new RegExp(`\\b(${NUMBER_WORDS.join('|')})\\b`, 'g')
+
+// Правки только для диктанта: ученик записывает услышанное, и форма записи
+// смысла не меняет — cafés/cafes, 9/nine, OK/Okay, T A Y L O R/Taylor, «Т» с
+// русской раскладки. В общую сверку ответов (answer-match) их не несём: в
+// грамматике «напиши словами» бывает предметом задания.
+function dictationForm(s) {
+  return (
+    latinLookalikes(String(s ?? ''))
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      // Апостроф снимаем сразу, как и norm(): иначе «one's» стало бы «1's».
+      .replace(/[\u2018\u2019\u02BC\u00B4`']/g, '')
+      .replace(/[\u2010-\u2015\u2212]/g, '-')
+      .replace(/\bokay\b/g, 'ok')
+      .replace(/\b(?:a|one) hundred\b/g, '100')
+      .replace(NUMBER_RE, (w) => String(NUMBER_WORDS.indexOf(w)))
+      // Три и больше одиночных букв подряд — имя по буквам, это одно слово.
+      .replace(/\b[a-z](?:[\s.,;:!?-]+[a-z]\b){2,}/g, (m) => m.replace(/[^a-z]/g, ''))
+  )
+}
+
+/**
+ * Сверка диктанта. Ревью 08.10.2026: прежняя norm() браковала верную запись
+ * услышанного — «Iʼm» с U+02BC, «cafes», «Okay», «9», «Taylor» за
+ * «T A Y L O R», «underexplored». Стяжение и полная форма («I am» за «I'm»)
+ * по-прежнему разные ответы: так закреплено в tests/listening-engine.spec.js,
+ * и задание учит слышать именно слитную речь — менять только с решения
+ * владельца.
+ */
+export function dictationMatches(response, answer) {
+  const r = dictationForm(response)
+  const a = dictationForm(answer)
+  // Прежняя мягкость остаётся: апостроф и пунктуация не важны («Its friendlier»).
+  if (norm(r) === norm(a)) return true
+  // Слитно или через дефис: under-explored = underexplored. Только между
+  // буквами: twenty-five → «20-5» не должно стать «205».
+  const joined = (s) => norm(s.replace(/([a-z])-(?=[a-z])/g, '$1'))
+  return joined(r) === joined(a)
+}
+
 // Validate a user's response for a task. Returns { ok, heard } where `heard`
 // is the correct answer text (for feedback on a wrong answer).
 export function checkAnswer(task, response) {
@@ -68,7 +116,7 @@ export function checkAnswer(task, response) {
       return { ok: norm(chosen) === norm((task.tokens || []).join(' ')), heard: task.text }
     }
     case 'listen_type':
-      return { ok: norm(response) === norm(task.answer), heard: task.answer }
+      return { ok: dictationMatches(response, task.answer), heard: task.answer }
     default:
       return { ok: false, heard: task.answer || '' }
   }

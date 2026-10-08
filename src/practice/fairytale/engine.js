@@ -7070,7 +7070,7 @@ function boot(){ sizeFx(); applyStaticI18n();
    UI, audio or navigation is altered — the only touch-points are the text renderers,
    which now emit tappable <span class="vw"> word tokens. */
 const VW_DICT_KEY  = "jts.fairytale.dict.v1";
-const VW_CACHE_KEY = "jts.fairytale.vocabcache.v1";
+const VW_CACHE_KEY = "jts.fairytale.vocabcache.v2";  // v2: в v1 застревали записи без перевода (ревью 08.10.2026)
 
 /* ---- curated offline vocabulary bank: word -> [definition, kazakh, russian] ----
    High-confidence entries for the vocabulary that recurs across the tales, so the
@@ -7221,7 +7221,7 @@ const VW_BANK = {
 /* ---- storage ---- */
 function vwLoadDict(){ try{ return JSON.parse(localStorage.getItem(VW_DICT_KEY))||[]; }catch(e){ return []; } }
 function vwSaveDict(a){ try{ localStorage.setItem(VW_DICT_KEY, JSON.stringify(a)); }catch(e){} }
-function vwLoadCache(){ try{ return JSON.parse(localStorage.getItem(VW_CACHE_KEY))||{}; }catch(e){ return {}; } }
+function vwLoadCache(){ try{ localStorage.removeItem("jts.fairytale.vocabcache.v1"); return JSON.parse(localStorage.getItem(VW_CACHE_KEY))||{}; }catch(e){ return {}; } }
 function vwSaveCache(c){ try{ localStorage.setItem(VW_CACHE_KEY, JSON.stringify(c)); }catch(e){} }
 
 /* ---- word normalisation + light English lemmatising for offline hits ---- */
@@ -7241,16 +7241,16 @@ function vwOffline(w){ for(const c of vwCandidates(w)){ if(VW_BANK[c]) return {w
 /* ---- runtime fallback for anything not in the offline bank (cached per word) ---- */
 function vwFetchTimeout(url,ms){ return Promise.race([ fetch(url,{mode:"cors"}), new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")), ms||3500)) ]); }
 async function vwMyMemory(w,tl){ try{ const r=await vwFetchTimeout("https://api.mymemory.translated.net/get?q="+encodeURIComponent(w)+"&langpair=en|"+tl);
-  if(!r||!r.ok) return ""; const j=await r.json(); let t=(j&&j.responseData&&j.responseData.translatedText)||"";
-  if(/MYMEMORY WARNING|INVALID|QUERY LENGTH LIMIT/i.test(t)) t=""; return t; }catch(e){ return ""; } }
+  if(!r||!r.ok) return null; const j=await r.json(); let t=(j&&j.responseData&&j.responseData.translatedText)||"";
+  if(/MYMEMORY WARNING|INVALID|QUERY LENGTH LIMIT/i.test(t)) return null; return t; }catch(e){ return null; } }  // null — сбой, "" — перевода нет (ревью 08.10.2026)
 async function vwDictApi(w){ try{ const r=await vwFetchTimeout("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(w));
-  if(!r||!r.ok) return ""; const j=await r.json(); const m=j&&j[0]&&j[0].meanings&&j[0].meanings[0];
-  return (m&&m.definitions&&m.definitions[0]&&m.definitions[0].definition)||""; }catch(e){ return ""; } }
+  if(!r) return null; if(r.status===404) return ""; if(!r.ok) return null; const j=await r.json(); const m=j&&j[0]&&j[0].meanings&&j[0].meanings[0];
+  return (m&&m.definitions&&m.definitions[0]&&m.definitions[0].definition)||""; }catch(e){ return null; } }  // 404 — слова нет в словаре (это ответ), обрыв — null
 async function vwFetch(w){
   const cache=vwLoadCache(); if(cache[w]) return cache[w];
   const [def,kk,ru]=await Promise.all([ vwDictApi(w), vwMyMemory(w,"kk"), vwMyMemory(w,"ru") ]);
   const entry={w,def:def||"",kk:kk||"",ru:ru||"",src:"api"};
-  if(def||kk||ru){ cache[w]=entry; vwSaveCache(cache); }
+  if(def!==null&&kk!==null&&ru!==null){ cache[w]=entry; vwSaveCache(cache); }  // в кэш — только ответы без сбоя: обрыв сети застревал навсегда (ревью 08.10.2026)
   return entry;
 }
 
@@ -7304,7 +7304,7 @@ function vwReflectSaved(){
   btn.classList.toggle("saved",has);
   btn.querySelector(".vpop-add-lbl").textContent = has ? vwT("Saved","Сохранено","Сақталды") : vwT("Add to dictionary","В словарь","Сөздікке қосу");
 }
-function vwAddCurrent(){
+async function vwAddCurrent(){
   if(!vwCurrent) return;
   const dict=vwLoadDict();
   if(dict.some(x=>x.w===vwCurrent.w)){ toast(vwT("My Dictionary","Мой словарь","Менің сөздігім"), vwT("Already saved","Уже сохранено","Бұрын сақталған")); vwReflectSaved(); return; }
@@ -7312,14 +7312,28 @@ function vwAddCurrent(){
   dict.unshift(entry);
   vwSaveDict(dict);
   vwReflectSaved(); vwRefreshBadge();
-  toast(vwT("Added to dictionary","Добавлено в словарь","Сөздікке қосылды"), vwCurrent.w);
-  // Хук приложения: сохранить в «Мой словарь» бэкенда (см. taleWorld.js).
+  // Хук приложения: сохранить в «Мой словарь» бэкенда (см. taleWorld.js). Тост —
+  // по его ответу: раньше «Добавлено» показывалось до сохранения, и сбой ученик
+  // не видел (ревью 08.10.2026). false — сбой: слово снимаем, чтобы можно было
+  // нажать ещё раз; "guest" — у гостя «Моего словаря» нет, слово остаётся в
+  // словаре сказки.
+  // Пока мост отвечает, кнопка неактивна: второй клик давал «Уже сохранено», а
+  // следом приходило «Не сохранилось» — тосты противоречили друг другу.
+  const pop=document.getElementById("vocabPop"); const btn=pop&&pop.querySelector(".vpop-add");
+  if(btn) btn.disabled=true;
+  let res=true;
   try{
     const bridge=typeof window!=="undefined" && window.__jtsFairytaleSaveVocab;
-    if(typeof bridge==="function"){
-      Promise.resolve(bridge(entry)).catch(function(){});
-    }
-  }catch(e){}
+    if(typeof bridge==="function") res=await bridge(entry);
+  }catch(e){ res=false; }
+  finally{ if(btn) btn.disabled=false; }
+  if(res===false){
+    vwSaveDict(vwLoadDict().filter(x=>x.w!==entry.w));
+    vwReflectSaved(); vwRefreshBadge();
+    toast(vwT("Not saved","Не сохранилось","Сақталмады"), vwT("Check the connection and try again","Проверьте связь и попробуйте ещё раз","Байланысты тексеріп, қайталап көріңіз"));
+    return;
+  }
+  toast(vwT("Added to dictionary","Добавлено в словарь","Сөздікке қосылды"), entry.w);
 }
 let __vwSeq=0; function vwStamp(){ return (__vwSeq++); }  // Date.now avoided (unavailable in some contexts); order is enough
 

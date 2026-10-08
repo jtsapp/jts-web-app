@@ -193,12 +193,13 @@ export function isAnswered(value) {
 }
 
 /**
- * Юнит-тест каталога («review»/«test») кабинет проходит без ключей и одной
- * сдачей на весь пакет — обычный урок остаётся тренажёром с проверкой по
- * карточкам. Регистр не важен: сервер отдаёт имя enum'а («REVIEW»).
+ * Юнит-тест каталога («review»/«test») и тест на определение уровня («exam»)
+ * кабинет проходит без ключей и одной сдачей на весь пакет — обычный урок
+ * остаётся тренажёром с проверкой по карточкам. Регистр не важен: сервер
+ * отдаёт имя enum'а («REVIEW»).
  */
 export function isUnitTestType(type) {
-  return ['review', 'test'].includes(String(type ?? '').trim().toLowerCase())
+  return ['review', 'test', 'exam'].includes(String(type ?? '').trim().toLowerCase())
 }
 
 /**

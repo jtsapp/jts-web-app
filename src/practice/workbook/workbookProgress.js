@@ -5,13 +5,13 @@
 // пройден, либо нет — баллы не копятся; промахи запоминаются поимённо и
 // возвращаются в «Разборе ошибок»; самопроверка в конце урока — три галочки.
 //
-// Ключ и событие — общие из practiceKeys.js; стейт целиком уезжает на сервер
-// через pushModule('workbook', …) — семантика replace, см. practiceContract.js.
+// Ключ и событие — общие из practiceKeys.js; хранение — общее хранилище
+// прогресса (память + черновик + сервер, replace, см. progressStore.js).
 // Множество ОТКРЫТЫХ УРОВНЕЙ живёт отдельно (workbooksProgress.js): на нём
 // висит квота PRACTICE_WORKBOOKS, и единицу её учёта менять нельзя.
 
 import { WORKBOOK_KEY as KEY, WORKBOOK_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore } from '../progressStore.js'
 
 /** Ключ экрана: уровень отделён от урока, чтобы уровни не перетирали друг друга. */
 export function actKey(level, n, i) {
@@ -26,31 +26,34 @@ function obj(v) {
   return v && typeof v === 'object' && !Array.isArray(v) ? v : {}
 }
 
+const store = createProgressStore({
+  module: 'workbook',
+  // Промахи экрана — список последней попытки (markAct перезаписывает его
+  // целиком): при сведении с сервером он берётся целиком, а не объединяется.
+  atomic: ['miss'],
+  key: KEY,
+  event: EVENT,
+  empty: () => ({ prog: {}, miss: {}, sc: {} }),
+  normalize: (val) =>
+    val && typeof val === 'object' && !Array.isArray(val)
+      ? { prog: obj(val.prog), miss: obj(val.miss), sc: obj(val.sc) }
+      : { prog: {}, miss: {}, sc: {} },
+})
+
+// Состояние общее с памятью хранилища — только читать. Писатели правят копию
+// (editable): правка на месте поменяла бы память до записи, и хранилище не
+// отличило бы новое от старого.
 export function readState() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    const val = raw ? JSON.parse(raw) : null
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      return { prog: obj(val.prog), miss: obj(val.miss), sc: obj(val.sc) }
-    }
-  } catch {
-    /* приватный режим / битый JSON — начинаем с чистого стейта */
-  }
-  return { prog: {}, miss: {}, sc: {} }
+  return store.read()
+}
+
+function editable() {
+  const s = store.read()
+  return { prog: { ...s.prog }, miss: { ...s.miss }, sc: { ...s.sc } }
 }
 
 function writeState(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
-  }
-  pushModule('workbook', state)
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
+  store.write(state) // черновик, событие и синк — внутри хранилища
 }
 
 /**
@@ -64,7 +67,7 @@ function writeState(state) {
  * баллов нет и заводить их не надо.
  */
 export function markAct(level, n, i, missed, score) {
-  const state = readState()
+  const state = editable()
   const k = actKey(level, n, i)
   state.prog[k] = score == null ? 1 : { d: 1, c: Math.max(0, score) }
   if (missed && missed.length) state.miss[k] = missed.slice()
@@ -98,7 +101,7 @@ export function testScore(lesson, level, state) {
 
 /** Пересдача зачёта: урок очищается целиком — и отметки, и разбор ошибок. */
 export function clearLesson(level, n, total) {
-  const state = readState()
+  const state = editable()
   for (let i = 0; i < total; i++) {
     const k = actKey(level, n, i)
     delete state.prog[k]
@@ -184,14 +187,19 @@ export function missFor(level, n, i, state) {
 
 /**
  * Итог пересдачи в разборе. Порт кнопки «дальше» из renderReview: остаются
- * только те промахи, что провалены СНОВА, и обязательно в исходных индексах —
- * разбор показывает подмножество пунктов, и его нумерация своя.
+ * только те промахи, что провалены СНОВА.
+ *
+ * stillWrong — уже ИСХОДНЫЕ номера мест: перевод из нумерации суженного экрана
+ * делает разбор (WorkbookReview, по act.reviewSlots), он один знает, как экран
+ * сужали. Раньше сюда приходили то позиции в списке промахов (суженный экран),
+ * то исходные номера (экран целиком), а переводилось всё как позиции — и у
+ * экрана целиком повторная ошибка терялась или подменялась чужой.
  */
 export function resolveMiss(level, n, i, stillWrong) {
-  const state = readState()
+  const state = editable()
   const k = actKey(level, n, i)
   const orig = state.miss[k] || []
-  const keep = (stillWrong || []).map((m) => orig[m]).filter((x) => x !== undefined)
+  const keep = orig.filter((x) => (stillWrong || []).includes(x))
   if (keep.length) state.miss[k] = keep
   else delete state.miss[k]
   writeState(state)
@@ -203,7 +211,7 @@ export function selfCheck(level, n, k, state) {
 }
 
 export function toggleSelfCheck(level, n, k) {
-  const state = readState()
+  const state = editable()
   const key = scKey(level, n, k)
   if (state.sc[key]) delete state.sc[key]
   else state.sc[key] = 1

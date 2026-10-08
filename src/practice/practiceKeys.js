@@ -49,6 +49,13 @@ export const LISTENCHOOSE_KEY = 'jts_listenchoose_done'
 // темп, громкость). Не синкается — это свойство устройства, а не ученика; но
 // чистится вместе с прогрессом: следующий аккаунт не должен продолжить чужой набор.
 export const LISTENCHOOSE_RUN_KEY = 'jts_listenchoose_run'
+// «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
+// «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
+// 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
+// браузера) и на сервер не уходили. Семантика replace: слово снимают из
+// «изученных», ошибку — верным ответом, объединение воскрешало бы снятое.
+export const VOCAB_LEARNED_KEY = 'jts_vocab_learned'
+export const VOCAB_MISSES_KEY = 'jts_vocab_misses'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -61,6 +68,8 @@ export const READING_PROGRESS_EVENT = 'reading-progress'
 export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
+export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
+export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
 // плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
 // пересоздать, и прогресс не должен обнуляться вместе с ней.

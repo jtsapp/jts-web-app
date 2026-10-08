@@ -94,6 +94,21 @@ export function buildSession(scene, words, { seed = Date.now(), rng: given, port
   const per = Math.ceil(pool.length / count)
   const rounds = []
   for (let i = 0; i < pool.length; i += per) rounds.push(pool.slice(i, i + per))
+  // Прототип режет по per с остатком в конце, и обычно остаток почти полный.
+  // Но не всегда: «Bird World» (31 слово) на телефоне выходил 6/6/6/6/6/1 —
+  // раунд из одного слова (ревью 08.10.2026, #51). Когда хвост короче
+  // половины раунда, режем ровно: раунды отличаются не больше чем на слово.
+  // Остальные нарезки — прототипные, их сверяет оракул.
+  if (rounds.length > 1 && rounds[rounds.length - 1].length * 2 < per) {
+    rounds.length = 0
+    const base = Math.floor(pool.length / count)
+    const extra = pool.length % count
+    for (let r = 0, at = 0; r < count; r++) {
+      const n = base + (r < extra ? 1 : 0)
+      rounds.push(pool.slice(at, at + n))
+      at += n
+    }
+  }
   separateConfusables(rounds, confusable)
   return { scene, pool, rounds }
 }

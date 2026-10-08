@@ -265,27 +265,42 @@ describe('урок каталога целиком', () => {
     }))).toBe(false)
   })
 
-  // Домашка наследует движок занятия (spec §2): выдача целиком из FILE-занятия — это
-  // файл во фрейме с мостом и серверной проверкой, а не плеер разбора.
-  it('выдача из FILE-занятия — не «урок целиком», откроется рамкой', () => {
-    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(false)
+  // main: уроки идут по старому формату — «урок целиком» открывается плеером разбора
+  // при любом движке занятия (файл курса в рамке мёртвый: скрипта заданий в нём нет).
+  it('урок целиком открывается плеером разбора и у занятия с движком FILE', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(true)
     expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'STEPS' }))).toBe(true)
-    // Без занятия или под старым бэкендом — как раньше.
     expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: null }))).toBe(true)
   })
 
-  // Регрессия финального ревью ветки: раньше здесь сравнивали lessonEngine
-  // напрямую со строкой 'FILE', мимо engineOf — аварийный рубильник
-  // LESSON_EXTRACTOR.enabled (spec §2, §9: «одна строка возвращает всё к
-  // разбору») эту проверку не видел вовсе, и выдача из FILE-занятия осталась бы
-  // рамкой, пока все остальные занятия уже откатились на STEPS.
-  it('рубильник LESSON_EXTRACTOR.enabled возвращает «урок целиком» и выдаче из FILE-занятия', () => {
-    LESSON_EXTRACTOR.enabled = true
-    try {
-      expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(true)
-    } finally {
-      LESSON_EXTRACTOR.enabled = false
-    }
+  it('кусок урока (стадия/задание/блок) из FILE-занятия по-прежнему рамка', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE', stageIndexes: [2] }))).toBe(false)
+  })
+
+  // Решение владельца 01.10: тест на определение уровня в домашке — как остальные
+  // задания, своей страницей рамкой в «Домашней работе». Раньше без занятия
+  // (lessonEngine null → STEPS) он уходил в плеер «Уроков»: там «Сдать работу»
+  // получало 400, а преподаватель не видел ответов.
+  describe('тест на определение уровня', () => {
+    const TEST = 'https://files.justtostudy.kz/production/course-catalog/exams/a0/beginner-1a2b3c4d.html'
+    const тест = (over = {}) => урокЦеликом({ fileUrl: TEST, catalogLessonId: 4, ...over })
+
+    it('не «урок целиком» ни при каком занятии — откроется рамкой на странице домашки', () => {
+      for (const lessonEngine of [null, undefined, 'STEPS', 'FILE']) {
+        expect(isWholeCatalogLesson(тест({ lessonEngine }))).toBe(false)
+        expect(isInteractiveMaterial(тест({ lessonEngine }))).toBe(true)
+      }
+      expect(isWholeCatalogLesson(тест({ catalogLessonId: null }))).toBe(false)
+    })
+
+    it('и при поднятом рубильнике разбора — тест не файл урока', () => {
+      LESSON_EXTRACTOR.enabled = true
+      try {
+        expect(isWholeCatalogLesson(тест())).toBe(false)
+      } finally {
+        LESSON_EXTRACTOR.enabled = false
+      }
+    })
   })
 
   it('чужая ссылка, PDF и загруженный интерактив — не урок каталога', () => {

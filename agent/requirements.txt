@@ -22,6 +22,12 @@ httpx>=0.27.0
 # from livekit-local-inference as a transitive dep. Do NOT add
 # livekit-plugins-turn-detector: 1.6.7 deprecates it in favour of the above.
 livekit-plugins-openai==1.6.7
+# Мозг напрямую в Anthropic для моделей, которых не умеет шим (Haiku 5.5 на
+# стенде KZ TEST, см. ANTHROPIC_DIRECT_BRAINS). SDK держим на 0.x: плагин 1.6.7
+# отдаёт ему httpx.AsyncClient, а 1.x переехал на httpx2 и на таком клиенте
+# падает TypeError при создании мозга.
+livekit-plugins-anthropic==1.6.7
+anthropic==0.125.0
 livekit-plugins-soniox==1.6.7
 livekit-plugins-azure==1.6.7
 # Gemini-TTS via Cloud Text-to-Speech (CASCADE_TTS=gemini). google.TTS only

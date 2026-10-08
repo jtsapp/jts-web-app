@@ -249,9 +249,13 @@ function toJsonSchema(schema) {
  * retries, and a hung request keeps its caller alive with it — fatal for the
  * post-call summariser, which runs inside after() on a 1g container.
  *
+ * `maxRetries` overrides the SDK default (2) when the caller has a hard wall
+ * clock (Cloudflare drops a request after 100 s of silence on prod).
+ *
  * @param {{ systemPrompt: string, userMessage: string, schema: object,
  *           images?: {mimeType: string, dataBase64: string}[],
- *           model?: string, maxOutputTokens?: number, timeoutMs?: number }} args
+ *           model?: string, maxOutputTokens?: number, timeoutMs?: number,
+ *           maxRetries?: number }} args
  */
 export async function structured(args) {
   const client = getClient();
@@ -273,6 +277,21 @@ export async function structured(args) {
         ]
       : args.userMessage;
 
+  const reqOptions = {
+    ...(args.timeoutMs ? { timeout: args.timeoutMs } : {}),
+    ...(args.maxRetries != null ? { maxRetries: args.maxRetries } : {}),
+  };
+
+  // Новое поколение моделей (Sonnet 5.5, Opus 5.5, Fable/Mythos 5.1) отвечает
+  // 400 и на thinking:disabled, и на принудительный tool_choice — а это ровно
+  // то, на чём стоит ветка ниже. Для них JSON берём через structured outputs
+  // (output_config.format), а мышление гасим тем, что модель разрешает.
+  // Остальные модели идут прежним путём байт в байт: их промпты и замеры
+  // настраивались под принудительный инструмент.
+  if (NO_FORCED_TOOL_MODEL.test(model)) {
+    return structuredViaOutputFormat(client, model, args, content, inputSchema, reqOptions);
+  }
+
   const res = await client.messages.create(
     {
       model,
@@ -291,7 +310,7 @@ export async function structured(args) {
       // Force the model to answer through the tool so we always get JSON.
       tool_choice: { type: "tool", name: "record_result" },
     },
-    args.timeoutMs ? { timeout: args.timeoutMs } : undefined,
+    Object.keys(reqOptions).length ? reqOptions : undefined,
   );
 
   try {
@@ -312,4 +331,68 @@ export async function structured(args) {
   const toolUse = res.content.find((b) => b.type === "tool_use");
   if (!toolUse) throw new Error("Claude returned no tool_use block");
   return toolUse.input;
+}
+
+// Модели, где tool_choice any/tool и thinking:disabled дают 400.
+const NO_FORCED_TOOL_MODEL = /^claude-(sonnet-5-5|opus-5-5|fable-5-1|mythos-5-1)\b/;
+
+// Structured outputs требуют additionalProperties:false на КАЖДОМ объекте —
+// без него схема отклоняется. В tool-ветке это поле не нужно, поэтому
+// добавляем только здесь, не трогая toJsonSchema.
+function strictObjects(schema) {
+  if (!schema || typeof schema !== "object") return schema;
+  const out = { ...schema };
+  if (out.type === "object") {
+    out.additionalProperties = false;
+    if (out.properties) {
+      out.properties = Object.fromEntries(
+        Object.entries(out.properties).map(([k, v]) => [k, strictObjects(v)]),
+      );
+    }
+  }
+  if (out.type === "array" && out.items) out.items = strictObjects(out.items);
+  return out;
+}
+
+async function structuredViaOutputFormat(client, model, args, content, inputSchema, reqOptions) {
+  // between_tools — самый низкий уровень мышления, но его понимает только
+  // Sonnet 5.5; Opus 5.5 и Fable/Mythos мышление не выключают вовсе, им поле
+  // не шлём (там оно адаптивное по умолчанию).
+  const thinking = /^claude-sonnet-5-5\b/.test(model) ? { thinking: { type: "between_tools" } } : {};
+  const res = await client.messages.create(
+    {
+      model,
+      max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      ...thinking,
+      system: args.systemPrompt,
+      messages: [{ role: "user", content }],
+      output_config: { format: { type: "json_schema", schema: strictObjects(inputSchema) } },
+    },
+    Object.keys(reqOptions).length ? reqOptions : undefined,
+  );
+
+  try {
+    const u = res.usage || {};
+    console.log(
+      JSON.stringify({
+        kind: "llm_cost",
+        task: "structured",
+        model,
+        inputTokens: u.input_tokens ?? null,
+        outputTokens: u.output_tokens ?? null,
+      }),
+    );
+  } catch {
+    /* logging must never break the reply */
+  }
+
+  // Отказ классификатора или обрыв по max_tokens — JSON не гарантирован.
+  if (res.stop_reason === "refusal") throw new Error("Claude refused the request");
+  if (res.stop_reason === "max_tokens") throw new Error("Claude hit max_tokens before finishing JSON");
+  const text = res.content
+    .filter((b) => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  if (!text) throw new Error("Claude returned no text block");
+  return JSON.parse(text);
 }

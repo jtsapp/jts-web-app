@@ -2,12 +2,21 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon, CollapseIcon } from '../components/icons.jsx'
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ExpandIcon,
+  CollapseIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { saveWord } from '../api.js'
 import { translateWord, cleanWord } from '../lib/wordTranslate.js'
+import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
+import { usePinchZoom } from '../practice/comics/usePinchZoom.js'
+import { MAX_ZOOM } from '../practice/comics/zoom.js'
 import {
   requestElementFullscreen,
   exitFullscreen,
@@ -26,6 +35,16 @@ import {
 // просто нет — пустой блок «на этой странице нет реплик» на каждой странице
 // был бы мёртвым интерфейсом. Появятся данные — панель включится сама.
 //
+// На телефоне и планшете страницу увеличивают двумя пальцами или двойным
+// тапом (см. usePinchZoom.js): мелкий текст баллонов на экране телефона иначе
+// не прочесть. Увеличенный лист водят пальцем, и он не листается — ни тапом,
+// ни свайпом, пока его не вернут к обычному размеру.
+//
+// На компьютере то же самое мышью и тачпадом: Ctrl + колесо или щипок
+// тачпада, двойной клик, кнопки −/+ на сцене и клавиши + − 0. На ноутбуке
+// страница вписана в высоту экрана, и баллон без зума мелкий так же, как на
+// телефоне. Увеличенный лист тянут мышью и водят колесом.
+//
 // Кликабельных зон поверх самой картинки нет намеренно: координаты баллонов,
 // снятые зрением модели, врут — до половины рамок ложится на пустой рисунок.
 //
@@ -40,6 +59,8 @@ const QUIET = new Set(['sfx', 'sign'])
 
 // Клавиша переключения полного экрана в обеих раскладках.
 const FULL_KEYS = new Set(['f', 'F', 'а', 'А'])
+const ZOOM_IN_KEYS = new Set(['+', '='])
+const ZOOM_OUT_KEYS = new Set(['-', '_'])
 
 // Через столько бездействия в полном экране гаснут панель и подсказка: они
 // висят поверх страницы, а читают её, а не их.
@@ -80,6 +101,24 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const [nativeFull, setNativeFull] = useState(false)
   const [overlay, setOverlay] = useState(false)
   const full = nativeFull || overlay
+
+  // Зум. Цель жестов — сцена, увеличиваем текущую картинку. Сцена появляется
+  // только с загруженным комиксом, поэтому узел держим состоянием: на нём
+  // хук и вешает слушатели.
+  const [stageEl, setStageEl] = useState(null)
+  const imgRef = useRef(null)
+  const zoom = usePinchZoom({
+    stage: stageEl,
+    imgRef,
+    // Тап по увеличенному листу не листает: лист разглядывают, а случайный
+    // тап выкинул бы на следующую страницу.
+    onTap: (zoomed) => {
+      setPop(null)
+      if (!zoomed) go(1)
+    },
+    onSwipe: (d) => go(d),
+  })
+  const { reset: resetZoom, zoomIn, zoomOut } = zoom
 
   useEffect(
     () =>
@@ -134,6 +173,9 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   const toggleFull = useCallback(async () => {
     setIdle(false)
+    // Раскладка сейчас поменяется целиком — сдвиг увеличенного листа под
+    // старую сцену стал бы бессмысленным.
+    resetZoom()
     if (getFullscreenElement() === rootRef.current) {
       exitFullscreen()
       return
@@ -144,7 +186,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     }
     const ok = await requestElementFullscreen(rootRef.current)
     if (!ok) setOverlay(true)
-  }, [overlay])
+  }, [overlay, resetZoom])
 
   useEffect(() => {
     let alive = true
@@ -166,11 +208,15 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const total = doc?.pages?.length || 0
   const go = useCallback(
     (d) => {
+      // Зум сбрасываем ДО смены страницы: transform висит на самом <img>, а
+      // соседние картинки остаются в DOM — увеличенная иначе так и вернулась
+      // бы увеличенной при листании назад.
+      resetZoom()
       setI((k) => Math.min(total - 1, Math.max(0, k + d)))
       setShown(new Set())
       setPop(null)
     },
-    [total],
+    [total, resetZoom],
   )
 
   // Закладку пишем на смену страницы, а не на выход: вкладку закрывают молча.
@@ -185,36 +231,26 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       // F — привычный по плеерам и читалкам переключатель полного экрана;
       // «а» — та же клавиша в русской раскладке.
       else if (FULL_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) toggleFull()
+      // + − 0 — зум листа. С Ctrl/⌘ это штатный зум всего сайта, его не трогаем.
+      // «=» — та же клавиша, что «+», без Shift.
+      else if (ZOOM_IN_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) zoomIn()
+      else if (ZOOM_OUT_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) zoomOut()
+      else if (e.key === '0' && !e.ctrlKey && !e.metaKey && !e.altKey) resetZoom(true)
       else if (e.key === 'Escape') {
         // Свой оверлей закрываем сами. В нативном полном экране Esc забирает
         // браузер — по нему из читалки не выходим, иначе одно нажатие и
         // свернуло бы экран, и закрыло комикс.
         if (pop) setPop(null)
-        else if (overlay) setOverlay(false)
+        else if (overlay) {
+          resetZoom()
+          setOverlay(false)
+        }
         else if (!nativeFull) onBack?.()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go, onBack, pop, overlay, nativeFull, toggleFull])
-
-  // Свайп. Порог 40 px и проверка на вертикаль — чтобы обычная прокрутка
-  // страницы не листала комикс.
-  const touch = useRef(null)
-  const onTouchStart = (e) => {
-    const p = e.touches[0]
-    touch.current = { x: p.clientX, y: p.clientY }
-  }
-  const onTouchEnd = (e) => {
-    const s = touch.current
-    if (!s) return
-    touch.current = null
-    const p = e.changedTouches[0]
-    const dx = p.clientX - s.x
-    const dy = p.clientY - s.y
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return
-    go(dx < 0 ? 1 : -1)
-  }
+  }, [go, onBack, pop, overlay, nativeFull, toggleFull, resetZoom, zoomIn, zoomOut])
 
   const onWord = (raw) => {
     const w = cleanWord(raw)
@@ -230,23 +266,23 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
 
+  // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
+  // общий демо-токен) — см. saveTappedWord. Сбой виден на кнопке.
   const onSave = async () => {
-    if (!pop?.translation || pop.saving || pop.saved || !token) return
+    if (!pop?.translation || pop.saving || pop.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
-    try {
-      const saved = await saveWord(token, {
-        word: pop.word,
-        translation: pop.translation,
-        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
-        language: tl,
-        source: doc?.title || comic?.title,
-      })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
-      onWordSaved?.(saved)
-    } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    setPop((p) => p && { ...p, saving: true, failed: false })
+    const res = await saveTappedWord({
+      word: pop.word,
+      translation: pop.translation,
+      alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+      language: tl,
+      source: doc?.title || comic?.title,
+    })
+    if (seqRef.current === seq) {
+      setPop((p) => p && { ...p, saving: false, saved: res.status === 'saved', failed: res.status === 'failed' })
     }
+    if (res.status === 'saved') onWordSaved?.(res.saved)
   }
 
   const bar = (
@@ -313,7 +349,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       {bar}
 
       <div className={blocks.length ? 'cr__body' : 'cr__body cr__body--wide'}>
-        <div className="cr__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className={zoom.zoomed ? 'cr__stage cr__stage--zoomed' : 'cr__stage'} ref={setStageEl}>
           <button
             type="button"
             className="cr__nav cr__nav--prev"
@@ -328,6 +364,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
             {near.map((p) => (
               <img
                 key={p.n}
+                ref={p.n === page.n ? imgRef : undefined}
                 src={p.url}
                 // Размеры бэкенд не всегда отдаёт. Без них резервируем место
                 // пропорцией страницы книги, иначе на загрузке страница
@@ -342,10 +379,64 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
                 // задержку в момент перелистывания.
                 loading={p.n === page.n ? 'eager' : 'lazy'}
                 decoding="async"
-                onClick={() => go(1)}
+                // Клик и тап по листу разбирает хук зума (с ожиданием
+                // двойного) и листает через onTap.
               />
             ))}
           </div>
+
+          {/* Мышью: шаги −/+ и сброс по цифре. Видны только там, где есть
+              мышь или тачпад (CSS, hover + fine pointer): пальцам хватает
+              щипка, а панель на телефоне накрывала бы лист. */}
+          <div className="cr__zoom">
+            <button
+              type="button"
+              className="cr__zoomBtn"
+              onClick={zoomOut}
+              disabled={!zoom.zoomed}
+              aria-label={t('comics.zoomOut')}
+              title={t('comics.zoomOut')}
+            >
+              <ZoomOutIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className="cr__zoomPct"
+              onClick={() => resetZoom(true)}
+              disabled={!zoom.zoomed}
+              aria-label={t('comics.unzoom')}
+              title={t('comics.unzoom')}
+            >
+              {Math.round(zoom.scale * 100)}%
+            </button>
+            <button
+              type="button"
+              className="cr__zoomBtn"
+              onClick={zoomIn}
+              disabled={zoom.scale >= MAX_ZOOM}
+              aria-label={t('comics.zoomIn')}
+              title={t('comics.zoomIn')}
+            >
+              <ZoomInIcon size={16} />
+            </button>
+          </div>
+
+          {/* Двойной тап и щипок знают не все — кнопка возвращает обычный
+              размер явно. На компьютере её роль играет цифра в панели выше. */}
+          {zoom.zoomed && (
+            <button
+              type="button"
+              className="cr__unzoom"
+              onClick={(e) => {
+                e.stopPropagation()
+                resetZoom(true)
+              }}
+              aria-label={t('comics.unzoom')}
+              title={t('comics.unzoom')}
+            >
+              <ZoomOutIcon size={18} />
+            </button>
+          )}
 
           <button
             type="button"
@@ -399,7 +490,11 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       <div className="cr__progress" aria-hidden="true">
         <i style={{ width: `${total ? ((i + 1) / total) * 100 : 0}%` }} />
       </div>
-      <p className="cr__hint">{t('comics.hint')}</p>
+      {/* На сенсорном экране стрелок и клика нет — там своя подсказка. */}
+      <p className="cr__hint">
+        <span className="cr__hintMouse">{t('comics.hint')}</span>
+        <span className="cr__hintTouch">{t('comics.hintTouch')}</span>
+      </p>
 
       {/* Карточку перевода уводим в body: у обёртки экрана (.scr-in) есть
           transform анимации входа, а он делает её containing block для
@@ -419,15 +514,17 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
                 {pop.alternates.length > 0 && (
                   <div className="cr-pop__alt">{pop.alternates.join(', ')}</div>
                 )}
-                {token && (
+                {canSaveWords() ? (
                   <button
                     type="button"
                     className="cr-pop__save"
                     onClick={onSave}
                     disabled={pop.saving || pop.saved}
                   >
-                    {pop.saved ? t('comics.saved') : t('comics.save')}
+                    {pop.saved ? t('comics.saved') : pop.failed ? t('comics.saveFailed') : t('comics.save')}
                   </button>
+                ) : (
+                  <div className="cr-pop__hint">{t('comics.saveLogin')}</div>
                 )}
               </>
             ) : (

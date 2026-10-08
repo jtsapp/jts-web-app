@@ -1,21 +1,41 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { genreOf } from '../../practice/reading/genres.js'
 import { loc } from '../../practice/reading/loc.js'
 import { readMin, sentences, wordCount } from '../../practice/reading/engine.js'
 import ReadingArticle from './ReadingArticle.jsx'
 import ReadingKeywords from './ReadingKeywords.jsx'
-import ReadingTasks from './ReadingTasks.jsx'
+import ReadingTasks, { checkUnchecked } from './ReadingTasks.jsx'
 import useReadingVoice from './useReadingVoice.js'
 
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
 // экране две панели превращаются в вкладки — на телефоне читать текст в
 // половину ширины невозможно.
-export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish }) {
+export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish, initialTab, focusEx }) {
   const { t, lang } = useI18n()
-  const [tab, setTab] = useState('text')
+  const [tab, setTab] = useState(initialTab === 'ex' ? 'ex' : 'text')
+
+  // «Открыть» из итогов ведёт к конкретному заданию, как data-goto прототипа
+  // (:1115): вкладка заданий + прокрутка. Раньше вкладка не передавалась, и на
+  // телефоне ученик попадал на текст и искал задание сам (ревью 08.10.2026).
+  useEffect(() => {
+    if (focusEx == null) return
+    const el = document.getElementById(`rd-ex-${focusEx}`)
+    if (!el) return
+    // Задание не должно уйти под липкую панель читалки. Её высоту меряем, а не
+    // угадываем: на телефоне вкладки встают в две строки (94 px против 55), на
+    // A++ панель ещё выше.
+    const bar = document.querySelector('.rd-toolbar')
+    el.style.scrollMarginTop = `${Math.ceil(bar ? bar.getBoundingClientRect().height : 0) + 12}px`
+    el.scrollIntoView({ block: 'start' })
+    // Только при открытии: дальше читатель листает сам.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  // Реестр заданий с непроверенным ответом: «Завершить» досдаёт их перед
+  // итогом (см. checkUnchecked). Один объект на всю жизнь читалки.
+  const [unchecked] = useState(() => new Map())
   const g = genreOf(text.genre)
 
   const lines = useMemo(() => text.text.flatMap((p) => sentences(p)), [text])
@@ -107,10 +127,17 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
         </aside>
 
         <section className="rd-pane rd-pane--ex" id="rd-pane-ex" role="tabpanel" aria-labelledby="rd-tab-ex">
-          <ReadingTasks text={text} />
+          <ReadingTasks text={text} unchecked={unchecked} />
           <div className="rd-finish">
             <p>🏁 {t('reading.finishHint')}</p>
-            <button type="button" className="rd-btn rd-btn--primary" onClick={onFinish}>
+            <button
+              type="button"
+              className="rd-btn rd-btn--primary"
+              onClick={() => {
+                checkUnchecked(unchecked)
+                onFinish()
+              }}
+            >
               {t('reading.finish')} →
             </button>
           </div>

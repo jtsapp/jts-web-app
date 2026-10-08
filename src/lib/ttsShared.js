@@ -44,6 +44,9 @@ export const TTS_VOICES = new Set([...Object.values(VOICE), ...TALE_VOICES])
 
 // Язык приложения → код Soniox. «kz» — так казахский называется в интерфейсе.
 const LANGS = { en: 'en', ru: 'ru', kk: 'kk', kz: 'kk' }
+// Все коды, которые уходят в Soniox. DELETE /api/tts перебирает их, чтобы
+// снести запись на любом языке, — новый язык попадёт туда сам.
+export const TTS_LANG_CODES = [...new Set(Object.values(LANGS))]
 
 /**
  * Привести запрос к каноническому виду или вернуть null, если озвучивать нечего.

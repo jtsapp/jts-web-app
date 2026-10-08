@@ -5,18 +5,10 @@ import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota, getCourseCatalog, getCatalogProgress } from '../api.js'
+import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
 import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
-import {
-  catalogFrontier,
-  catalogUnitsDone,
-  isReviewLessonUnlocked,
-  isReviewLevelFullyOpen,
-  isReviewUnitUnlocked,
-  pickGeneralCourse,
-} from '../lib/reviewUnlock.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
@@ -107,11 +99,6 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // уровня без исходника экзамена (B1, C1) узла на тропе нет.
   const [exam, setExam] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
-  // Юниты общего курса, пройденные целиком, и самая дальняя точка в каталоге
-  // — источник замка своего уровня. Уровень ниже CEFR ученика каталог не ждёт
-  // (isReviewLevelFullyOpen). См. lib/reviewUnlock.js.
-  const [catalogDone, setCatalogDone] = useState([])
-  const [frontier, setFrontier] = useState(null)
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
   const [moduleLocked, setModuleLocked] = useState(false)
@@ -172,7 +159,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         const lessonsTrail = courseIndex ? courseTrail(courseIndex) : oldTrail
         // Экзамен — последним узлом, юнитом 0: под него в коде уже есть и
         // подпись группы («Финальный экзамен»), и правило замка — открыт, когда
-        // пройден весь курс уровня в каталоге (lib/reviewUnlock.js).
+        // предыдущий урок (последний урок курса) пройден — тропа идёт подряд.
         // Без уроков (курс не загрузился) экзамен один на тропе не нужен —
         // пусть экран честно скажет «пусто».
         const trail = levelExam && lessonsTrail.length
@@ -189,23 +176,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         // тяжёлым <level>.json, чтобы первый клик по уроку не ждал ~700KB.
         // С курсом этот файл не нужен вовсе: урок приходит своим steps-<n>.
         if (!courseIndex && isStepLevel(level)) loadLevel(level).catch(() => null)
-        // Юниты «Повторения» открываются по каталогу (живой урок ИЛИ
-        // «Самостоятельно» — один источник, completedLessonIds), не по
-        // локальному done: не ответил каталог — юниты просто не откроются,
-        // тропа не падает (см. lib/reviewUnlock.js).
-        const [quota, d, catalog, catalogProgress] = await Promise.all([
+        const [quota, d] = await Promise.all([
           mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
           loadDone(level, authToken, mid),
-          getCourseCatalog(authToken).catch(() => []),
-          getCatalogProgress(authToken).catch(() => null),
         ])
         if (!alive) return
         setModuleQuota(quota)
         setDone(new Set(d))
-        const general = pickGeneralCourse(catalog, level)
-        const completed = catalogProgress?.completedLessonIds
-        setCatalogDone(catalogUnitsDone(general, completed))
-        setFrontier(catalogFrontier(general, completed))
         setState({ loading: false, error: trail.length ? null : 'empty' })
       } catch (e) {
         if (alive) setState({ loading: false, error: e.message || 'error' })
@@ -235,79 +212,24 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return out
   }, [lessons])
 
-  // Юнит и позиция внутри него по глобальному индексу урока — обратная
-  // раскладка units, нужна isUnlocked: блокировка теперь по ЮНИТУ (каталог), а
-  // не по всей тропе подряд, и первый урок открытого юнита не должен ждать
-  // соседа из чужого юнита.
-  const unitByLessonIndex = useMemo(() => {
-    const map = new Map()
-    for (const g of units) {
-      g.items.forEach(({ gi }, j) => map.set(gi, { unit: g.unit, lessonInUnit: j + 1, isFirstInUnit: j === 0 }))
-    }
-    return map
-  }, [units])
-
-  // Урок разблокирован, если: модуль не закрыт админом целиком; индекс не
-  // упирается в квоту "сколько уроков этого модуля можно пройти" (см. ниже);
-  // ЮНИТ и урок внутри него открыты по lib/reviewUnlock.js: уровень ниже
-  // CEFR ученика — целиком, без каталога, квоты и порядка «сначала предыдущий»;
-  // свой уровень — до самой дальней точки каталога (материал занятия юнит 2 /
-  // урок 3 открывает всё до неё). Внутри уже открытого отрезка своего уровня —
-  // первый урок юнита или предыдущий урок ТОГО ЖЕ юнита пройден (крест-накрест
-  // между юнитами не тянется).
+  // Урок разблокирован, если это первый или предыдущий пройден (тропа идёт подряд по всему уровню, как
+  // в прежнем разделе «Обучение»), модуль не закрыт админом целиком, и индекс урока не упирается в квоту
+  // "сколько уроков этого модуля можно пройти" (moduleQuota=null — без лимита).
   //
-  // Квота: раньше проверялась только В МОМЕНТ завершения урока (403 от
-  // бэкенда) — тропа при этом всё равно рисовала следующие уроки открытыми для
-  // клика, и студент мог их пройти вплоть до конца, просто без начисления
-  // награды. Теперь узлы сверх квоты не открываются вовсе, как и просил
-  // менеджер. На уровне НИЖЕ своего CEFR квота не режет: это повторение уже
-  // пройденного, а не продвижение по текущему модулю.
+  // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done: квота на модуль появилась
+  // позже прогресса учеников (до неё в базе не было строк lesson_modules, лимит не запрашивался — тропа
+  // была открыта целиком), и у части студентов на момент выкладки уже пройдено больше узлов, чем новый
+  // лимит. Отнимать пройденное нельзя — студент увидит в этом поломку, а не ограничение. Квота обязана
+  // закрывать только НОВЫЕ, ещё не пройденные узлы, а не откатывать уже сделанное.
   //
-  // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done:
-  // квота на модуль появилась позже прогресса учеников (до неё в базе не было
-  // строк lesson_modules, лимит не запрашивался — тропа была открыта целиком),
-  // и у части студентов на момент выкладки уже пройдено больше узлов, чем
-  // новый лимит. Отнимать пройденное нельзя — студент увидит в этом поломку, а
-  // не ограничение. Квота обязана закрывать только НОВЫЕ, ещё не пройденные
-  // узлы, а не откатывать уже сделанное.
-  //
-  // unlockAll (?unlock=1, только dev) снимает и внутриюнитовую
-  // последовательность, и замок по каталогу — тот же принцип, что раньше был
-  // только у последовательности уроков: устройство тропы можно посмотреть
-  // целиком, а блокировку админа и квоту — по-прежнему нет.
+  // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ ограничения админа: блокировку
+  // модуля и квоту не обходит даже просмотр контента.
   const isUnlocked = useCallback(
-    (i) => {
-      if (moduleLocked) return false
-      const fullyOpen = isReviewLevelFullyOpen(level, userLevel)
-      if (
-        !fullyOpen
-        && moduleQuota != null
-        && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))
-      ) {
-        return false
-      }
-      if (unlockAll || fullyOpen) return true
-      const meta = unitByLessonIndex.get(i)
-      const catalogOpts = { fullyOpen, frontier, unitsDone: catalogDone }
-      if (
-        !meta
-        || !isReviewUnitUnlocked(catalogDone, meta.unit, catalogOpts)
-        || !isReviewLessonUnlocked(meta.unit, meta.lessonInUnit, catalogOpts)
-      ) {
-        return false
-      }
-      // Уже разобранное на занятии не заставляем проходить по порядку в
-      // «Повторении»: три «Пройдено» в юните 1 открывают три печеньки, а не одну.
-      if (
-        frontier
-        && (meta.unit < frontier.unit
-          || (meta.unit === frontier.unit && meta.lessonInUnit <= frontier.lesson))
-      ) {
-        return true
-      }
-      return meta.isFirstInUnit || Boolean(lessons[i - 1] && done.has(lessons[i - 1].code))
-    },
-    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogDone, frontier, level, userLevel],
+    (i) =>
+      !moduleLocked &&
+      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
+      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
   const openLesson = useCallback(
@@ -451,14 +373,6 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           // исключение просто гасилось внутри markDone, урок падал в localStorage
           // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
           if (e instanceof ContentRestrictedError) {
-            // Повторение уровня ниже своего CEFR: урок можно пройти по тропе,
-            // даже если квота модуля на сервере уже исчерпана. Награду сервер
-            // не дал — локально узел всё равно отмечаем, иначе B1 не сможет
-            // дойти по A2 дальше трёх уроков демо-лимита.
-            if (isReviewLevelFullyOpen(level, userLevel)) {
-              setDone((d) => new Set(d).add(code))
-              return
-            }
             // Отметку, выставленную в ожидании ответа, снимаем: урок не
             // засчитан. Пройденный раньше урок при этом не трогаем.
             if (!wasDone) {
@@ -621,16 +535,6 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
                   <ol className="kt-list" style={{ height: `${g.items.length * 100}px` }}>
                     {(() => {
-                      // Причина замка на весь юнит — одна на все его узлы: либо
-                      // соответствующий материал ещё не пройден в «Уроках», либо
-                      // (для уже открытого юнита) обычный порядок «сначала
-                      // предыдущий узел».
-                      const catalogOpts = {
-                        fullyOpen: isReviewLevelFullyOpen(level, userLevel),
-                        frontier,
-                        unitsDone: catalogDone,
-                      }
-                      const unitLockedByCatalog = !isReviewUnitUnlocked(catalogDone, g.unit, catalogOpts)
                       return g.items.map(({ l, gi }, j) => {
                         const isDone = done.has(l.code)
                         const unlocked = isUnlocked(gi)
@@ -639,14 +543,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         const isLast = j === g.items.length - 1
                         const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
                         const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
-                        const lessonLockedByCatalog = unitLockedByCatalog
-                          || !isReviewLessonUnlocked(g.unit, j + 1, catalogOpts)
                         const isExam = l.kind === 'exam'
-                        // Подпись замка — по его причине: экзамен ждёт весь курс
-                        // в каталоге, остальное (квота) — общий текст.
-                        const lockedTitle = isExam && unitLockedByCatalog
-                          ? t('exam.locked')
-                          : t(lessonLockedByCatalog ? 'lesson.lockedByCatalog' : 'lesson.locked')
+                        const lockedTitle = t('lesson.locked')
                         const label = isExam ? t('lesson.examUnit') : l.title || l.code
                         return (
                           <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>

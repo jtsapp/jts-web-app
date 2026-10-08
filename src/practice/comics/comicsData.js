@@ -22,7 +22,18 @@ export function loadComicsIndex(token, onFresh) {
   if (!_indexPromise) {
     _indexPromise = getComics(token, (fresh) => onFresh?.(normalizeComics(fresh)))
       .then(normalizeComics)
-      .catch(() => [])
+      .catch((err) => {
+        // Отказ НЕ запоминаем и наружу не прячем в пустой список.
+        //
+        // Раньше здесь стояло `.catch(() => [])`, и этот пустой ответ оседал в
+        // `_indexPromise` до перезагрузки вкладки: один случайный сбой на
+        // нестабильной мобильной сети — и комиксов нет, а повторный заход в
+        // раздел ничего не менял, потому что сети больше никто не спрашивал.
+        // Выглядело это как «каталога нет» (в базе при этом 87 комиксов).
+        // Тот же приём, что у grammarData.js: сбой сбрасывает кэш.
+        _indexPromise = null
+        throw err
+      })
   }
   return _indexPromise
 }

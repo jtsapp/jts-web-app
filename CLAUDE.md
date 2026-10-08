@@ -487,6 +487,17 @@ mp3, трансляция слова на живом уроке, запасно�
 429. Считаются только промахи кэша. Разделы с записями («Слушай и выбирай»,
 «Слова в картинках», «Глаголы») синтеза не имели и не имеют.
 
+**SpeakSpin в «Практике»** (`?screen=speakspin`, вкладка «Говорение») — порт
+прототипа `data/jts-speakspin.html`. Движок прототипа перенесён модулем почти
+дословно (`src/practice/speakspin/engine.js`, mount → destroy), экран живёт в
+Shadow DOM: классы прототипа (`.hero`, `.spinner`, `.timer`…) совпадают с
+глобальными, без изоляции они ломаются. Данные режет
+`scripts/extract-speakspin.js`. Разбор: `/api/practice/speakspin/assess`, где
+Azure даёт текст и произношение, а Sonnet 5.5 (`SPEAKSPIN_MODEL`) ставит
+остальные оси. Ответ — контракт прототипа v1, лимит 20/сутки
+(`speakspinBudget.js`). Текст темы сервер берёт по `topicId` сам — не
+принимать его из запроса.
+
 **Комиксы в «Практике» — картинки, а не разметка, и приходят из API.** Каталог,
 поиск и страницы веб берёт из `/mobile/comics`, `/mobile/comics/search?q=` и
 `/mobile/comics/{id}` — контент заводит методист через админку, статической
@@ -521,6 +532,11 @@ WebP и складывает staging в `build/comics/<id>/`, а `scripts/lib/zi
 
 Закладка чтения помечается slug, а не id: id при перезаливке материала может
 смениться, а место в книге терять нельзя.
+
+Зум страницы пальцами (щипок, двойной тап) у читалки свой —
+`src/practice/comics/usePinchZoom.js`, математика в `zoom.js`. Штатный зум
+браузера на сцене погашен `touch-action`: он увеличивал всю страницу с шапкой,
+а свайп и тап продолжали листать увеличенный лист.
 
 Возрастного гейта у комиксов сейчас по сути нет. Веб умеет прятать карточки с
 флагом `adultOnly` (`visibleComics` в `src/practice/comics/comicsData.js`;
@@ -729,6 +745,12 @@ JTS-бэкенд (`src/learning/lessonProgress.js`).
 - Neon Postgres: `src/lib/db/sql.js` → `getSql()` возвращает `null`, если
   `DATABASE_URL` не задан — вызывающий код обязан тихо деградировать
   (прогресс тогда живёт в localStorage). Никогда не бросать на импорте.
+- Redis — ОДИН на dev и прод (`compose-redis.yaml`, проект `jts-tts-redis`,
+  поднимает CI без `--force-recreate`): только кэш озвучки `/api/tts`.
+  Правка этого файла в develop перезапускает Redis и проду.
+  `src/lib/redis.js` → `getRedis()` = `null` без `REDIS_URL` (тогда кэш на
+  диске, как на локалке). Наружу не открыт. Брак синтеза сносится
+  `DELETE /api/tts?t=…` с заголовком `x-internal-key`.
 - Anthropic: `src/lib/anthropic.js` — голосовой «мозг» на Haiku 4.5 с prompt
   caching (три cache-breakpoint'а — не ломай их, иначе стоимость ×2.5),
   IELTS-грейдинг на Sonnet.

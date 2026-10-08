@@ -4,11 +4,11 @@
 // (taskKey/markTask/stepDone/markSeen, строки ~9998–10017 и 10362–10372):
 // tasks — лучший результат по каждому заданию, seen — просмотры теоретических
 // шагов 1–3 (у них нет проверяемого ответа, «пройдено» = «открывал»).
-// Ключ и событие — общие из practiceKeys.js; стейт целиком уезжает на сервер
-// через pushModule('writing', …) — семантика replace, см. practiceContract.js.
+// Ключ и событие — общие из practiceKeys.js; хранение — общее хранилище
+// прогресса (память + черновик + сервер, replace, см. progressStore.js).
 
 import { WRITING_KEY as KEY, WRITING_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
-import { pushModule } from '../practiceSync.js'
+import { createProgressStore } from '../progressStore.js'
 import { countUnitTowardsHomework } from '../practiceHomework.js'
 // Единица знаменателя прогресса — из движка (11 заданий на жанр в прототипе):
 // движок чистый и без данных, тянуть его сюда безопасно.
@@ -23,36 +23,40 @@ function taskKey(genreId, taskId) {
   return genreId + ':' + taskId
 }
 
-export function readState() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    const val = raw ? JSON.parse(raw) : null
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      return {
-        tasks: val.tasks && typeof val.tasks === 'object' ? val.tasks : {},
-        seen: val.seen && typeof val.seen === 'object' ? val.seen : {},
-      }
+function normalize(val) {
+  if (val && typeof val === 'object' && !Array.isArray(val)) {
+    return {
+      tasks: val.tasks && typeof val.tasks === 'object' ? val.tasks : {},
+      seen: val.seen && typeof val.seen === 'object' ? val.seen : {},
     }
-  } catch {
-    /* приватный режим / битый JSON — начинаем с чистого стейта */
   }
   return { tasks: {}, seen: {} }
 }
 
-function writeState(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state))
-  } catch {
-    /* нет квоты — прогресс просто не переживёт перезагрузку */
+// Результат задания — лучший из попыток (markTask). Правка, посчитанная от
+// устаревшего черновика (сбой отправки, другое устройство), не должна понижать
+// лучший результат, который уже лежит на сервере (ревью PR, #78).
+function bestTasks(server, next) {
+  const tasks = { ...next.tasks }
+  for (const [k, mine] of Object.entries(tasks)) {
+    const theirs = server.tasks[k]
+    if (theirs && (theirs.correct || 0) > (mine?.correct || 0)) tasks[k] = theirs
   }
+  return { ...next, tasks }
 }
 
-function emitChanged() {
-  try {
-    window.dispatchEvent(new Event(EVENT))
-  } catch {
-    /* SSR / нет window */
-  }
+const store = createProgressStore({
+  module: 'writing',
+  key: KEY,
+  event: EVENT,
+  empty: () => ({ tasks: {}, seen: {} }),
+  normalize,
+  settle: bestTasks,
+})
+
+// Состояние общее с памятью хранилища — только читать; писатели собирают новое.
+export function readState() {
+  return store.read()
 }
 
 export function taskState(genreId, taskId) {
@@ -79,10 +83,8 @@ export function markTask(genreId, taskId, correct, total) {
   // best-of как в прототипе (jtswriting.html:10003): пересдача не может
   // ухудшить сохранённый результат — иначе ученик боялся бы повторять задания.
   const best = prev ? Math.max(prev.correct || 0, correct) : correct
-  state.tasks[k] = { done: true, correct: best, total, at: Date.now() }
-  writeState(state)
-  pushModule('writing', state) // best-effort серверный синк (no-op для гостя)
-  emitChanged()
+  // Событие и синк — внутри хранилища.
+  store.write({ ...state, tasks: { ...state.tasks, [k]: { done: true, correct: best, total, at: Date.now() } } })
   reportGenre(genreId)
 }
 
@@ -93,10 +95,7 @@ export function markSeen(genreId, stepN) {
   const state = readState()
   const k = genreId + ':s' + stepN
   if (state.seen[k]) return
-  state.seen[k] = Date.now()
-  writeState(state)
-  pushModule('writing', state)
-  emitChanged()
+  store.write({ ...state, seen: { ...state.seen, [k]: Date.now() } })
 }
 
 // genre — объект жанра из движка (id + tasks). Шаги 1–3 — теория («пройдено» =

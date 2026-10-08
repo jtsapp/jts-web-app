@@ -1,0 +1,6 @@
+/* SpeakSpin — только оболочка приложения вокруг экрана. Сам экран живёт в
+   Shadow DOM со своими стилями (src/practice/speakspin/styles.js). */
+.spsp-top { padding: 12px 32px 0; }
+.spsp-back { border: 0; background: none; color: #6651d6; font: inherit; font-weight: 700; cursor: pointer; min-height: 44px; padding: 0; }
+.spsp-host { display: block; }
+@media (max-width: 560px) { .spsp-top { padding: 8px 16px 0; } }

@@ -19,6 +19,7 @@ import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
 import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
 import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
+import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
@@ -27,6 +28,7 @@ import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
+import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
@@ -75,7 +77,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
@@ -115,7 +117,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -288,6 +290,10 @@ export default function App() {
         // тропу и навыки. До проверки cancelled — это уборка, не стейт.
         if (!session && hadToken) forgetExpiredSession()
         if (cancelled) return
+        // Токен был, а сессии нет — человека сейчас встретит экран входа, и он
+        // должен понять, что это срок, а не сбой: без слова «Сессия истекла»
+        // это выглядело как «приложение само меня разлогинило».
+        if (!session && hadToken) setSessionExpired(true)
         if (session) {
           setToken(session.token)
           setBoothAccount(!!session.boothAccount)
@@ -340,6 +346,12 @@ export default function App() {
         }
         // Ссылка из админки важнее сессии: студент должен задать пароль.
         if (inviteToken) setScreen('complete-registration')
+        // Ученик без номера (Google-вход его не даёт) дальше не идёт, пока не укажет: восстановленная
+        // сессия не должна обходить гейт, который он прошёл бы при входе.
+        else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
+          setPhoneGate(true)
+          setScreen('reg-phone')
+        }
         // Заявка с лендинга: имя и номер человек уже дал там — сразу шаг
         // почты, как решил владелец (04.10.2026). Код не открылся (просрочен,
         // подделан) — регистрация с начала. Вошедшему регистрация не нужна:
@@ -392,6 +404,9 @@ export default function App() {
   const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthDateGate, setBirthDateGate] = useState(false)
+  // Вход через Google не даёт телефон, а школе он нужен всегда: пока номера нет, дальше не пускаем
+  // (экран 'reg-phone' в режиме googleGate). Тот же гейт ловит и старые Google-аккаунты без номера.
+  const [phoneGate, setPhoneGate] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
@@ -431,6 +446,13 @@ export default function App() {
   // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
   // приложении нет, см. lib/purchaseCelebration.js.
   const [celebrate, setCelebrate] = useState(false)
+  // Сессия кончилась сама (токен протух), а не человек нажал «Выйти»: на экране
+  // входа ему нужно сказать, почему его туда вернуло. Гасится, как только он
+  // вошёл снова или закрыл плашку.
+  const [sessionExpired, setSessionExpired] = useState(false)
+  // Свежий handleLogout для подписки ниже: сама подписка ставится один раз, а
+  // функция пересоздаётся на каждый рендер.
+  const handleLogoutRef = useRef(null)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -620,6 +642,7 @@ export default function App() {
   // Шаг 1 регистрации: только номер — код ещё не запрашиваем, сперва нужна
   // почта (см. handleRegEmailSubmit), она и есть канал OTP.
   function handleRegPhoneSubmit(fullPhone) {
+    if (phoneGate) return handleGooglePhoneSubmit(fullPhone)
     setError('')
     setPhone(fullPhone)
     setScreen('reg-email')
@@ -907,15 +930,54 @@ export default function App() {
         role: data.role || null,
       })
       const me = await getCurrentUser(tok).catch(() => null)
-      if (!me?.birthDate) {
-        setBirthDateGate(true)
-        setScreen('reg-birth')
+      // Номер обязателен: бэкенд говорит об этом флагом, а при его отсутствии (старый сервер) смотрим профиль.
+      if (data?.phoneRequired === true || (me && !me.phone)) {
+        setPhoneGate(true)
+        setScreen('reg-phone')
         return
       }
-      setBirthDate(String(me.birthDate).slice(0, 10))
-      await finishGoogleSession(tok)
+      await continueGoogleOnboarding(tok, me)
     } catch (e) {
       setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // После номера (или если он уже был): дата рождения, затем обычный пост-логин.
+  async function continueGoogleOnboarding(tok, knownMe) {
+    const me = knownMe ?? (await getCurrentUser(tok).catch(() => null))
+    if (!me?.birthDate) {
+      setBirthDateGate(true)
+      setScreen('reg-birth')
+      return
+    }
+    setBirthDate(String(me.birthDate).slice(0, 10))
+    await finishGoogleSession(tok)
+  }
+
+  // Номер после Google-входа: сохраняем в профиль (PUT /user/update) БЕЗ подтверждения кодом — SMSC пока не
+  // настроен, ученик просто вводит номер и проходит дальше. Проверку кодом (запрос OTP → ввод → сохранение)
+  // подключать здесь, между экраном номера и updateUser. Смена номера меняет JWT subject, поэтому
+  // бэкенд присылает свежую пару токенов — подменяем её, иначе refresh пойдёт по старому subject.
+  async function handleGooglePhoneSubmit(fullPhone) {
+    setError('')
+    setLoading(true)
+    try {
+      const saved = await updateUser(token, { name: name || 'User', phone: fullPhone })
+      let tok = token
+      if (saved?.accessToken) {
+        tok = saved.accessToken
+        setToken(tok)
+        saveToken(tok, saved.refreshToken || null)
+      }
+      setPhone(fullPhone)
+      patchUserSnapshot({ phone: saved?.phone || fullPhone })
+      setPhoneGate(false)
+      await continueGoogleOnboarding(tok, null)
+    } catch (e) {
+      // Занятый номер бэкенд называет по-русски; показываем текст на языке интерфейса.
+      setError(/уже есть/i.test(e?.message || '') ? t('err.userExists') : e?.message || t('regphone.error'))
     } finally {
       setLoading(false)
     }
@@ -1050,6 +1112,29 @@ export default function App() {
     return target ?? home
   }
 
+  // Сессия кончилась посреди работы: lib/session.js сообщает сюда, когда
+  // бэкенд отверг и access, и refresh. Выход тот же, что по кнопке «Выйти» —
+  // иначе следующий вошедший унаследовал бы чужие хвосты, — плюс слово о причине.
+  useEffect(() => {
+    handleLogoutRef.current = handleLogout
+  })
+  useEffect(() => {
+    setSessionHooks({
+      // Access протух, но refresh принят: человек даже не заметил, но состояние
+      // держит старый токен — без обновления каждый следующий запрос снова бы 401.
+      onRefreshed: (tok) => setToken(tok),
+      onExpired: () => {
+        handleLogoutRef.current?.()
+        setSessionExpired(true)
+      },
+    })
+    return () => setSessionHooks({})
+  }, [])
+  // Вошёл снова — плашка своё отработала.
+  useEffect(() => {
+    if (token) setSessionExpired(false)
+  }, [token])
+
   function handleLogout() {
     // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
     // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
@@ -1128,6 +1213,7 @@ export default function App() {
   const lessonsTourKey = tourKeyFor(profileId || getDeviceId(), 'lessons')
   const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
   const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
+  const homeTourKey = tourKeyFor(profileId || getDeviceId(), 'home')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1259,6 +1345,7 @@ export default function App() {
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
+    else if (key === 'speakspin') setScreen('speakspin')
     // Уровень приносит карточка Практики — она же и списала квоту.
     else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
@@ -1294,25 +1381,13 @@ export default function App() {
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'home') setScreen('home')
-    else if (key === 'pricing') setScreen('pricing')
-    else if (key === 'minutes') setScreen('minutes')
-    else if (key === 'learn' || key === 'learning') setScreen('kingdom')
-    else if (key === 'practice') setScreen('practice')
-    else if (key === 'listening') setScreen('listening')
-    else if (key === 'shadowing') setScreen('shadowing')
-    else if (key === 'writing') setScreen('writing')
-    else if (key === 'workbook') setScreen('workbook')
-    else if (key === 'reading') setScreen('reading')
-    else if (key === 'words') setScreen('words')
-    else if (key === 'verbs') setScreen('verbs')
-    else if (key === 'listenchoose') setScreen('listenchoose')
-    else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
-    else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'lessons') setScreen('lessons')
-    else if (key === 'homework') setScreen('homework')
-    else if (key === 'ielts') setScreen('ielts')
-    else if (key === 'vocab') setScreen('vocab')
+    if (key === 'tutor') setScreen(tutorHome)
+    // Остальное — обычная навигация без адреса: она же сбрасывает цели
+    // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
+    // сбрасывает и не сбрасывала). Свой список переходов здесь целей не
+    // сбрасывал вовсе, и из зоны тьютора Практика снова открывала вчерашний
+    // юнит домашки (ревью 08.10.2026, #79).
+    else handleNav(key)
   }
 
   // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
@@ -1394,6 +1469,18 @@ export default function App() {
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
       {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+      {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
+          не должна её перемонтировать и сбивать анимацию. Только гостю: у
+          вошедшего сообщать не о чем. */}
+      {sessionExpired && !token && (
+        <SessionExpiredNotice
+          onLogin={() => {
+            setSessionExpired(false)
+            setScreen('welcome')
+          }}
+          onClose={() => setSessionExpired(false)}
+        />
+      )}
       {/* Помощник по сайту — тоже вне обёртки с key: разговор переживает
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
@@ -1450,7 +1537,8 @@ export default function App() {
     case 'reg-phone':
       return (
         <RegisterPhonePage
-          onBack={() => { setError(''); setScreen('chat') }}
+          googleGate={phoneGate}
+          onBack={phoneGate ? undefined : () => { setError(''); setScreen('chat') }}
           onSubmit={handleRegPhoneSubmit}
           loading={loading}
           error={error}
@@ -1583,6 +1671,7 @@ export default function App() {
           // «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
+          tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}
@@ -1706,6 +1795,16 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'speakspin':
+      return (
+        <SpeakSpinPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

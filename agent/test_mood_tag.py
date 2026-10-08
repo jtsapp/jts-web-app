@@ -259,4 +259,106 @@ assert _could_be_tag("[hap") is True and _could_be_tag("[default]") is True
 # Обычная речь в скобках по-прежнему не тег.
 assert parse_mood_tag("[happiness] is") == ("", 0, "[happiness] is")
 
+# --- Эмоция реплики без тега: фолбэк Speaking Buddy -------------------------
+# Живой звонок 05.10.2026 на GPT-6 Sol: тег только в первых репликах, дальше
+# аватар Декстера гас в нейтральный. tagged отличает «ровный тег» от «забыл».
+from types import SimpleNamespace  # noqa: E402
+
+from agent import TutorAgent, _SpeechCleaner, buddy_default_mood  # noqa: E402
+
+assert buddy_default_mood("dexter") == ("anger", 2)
+assert buddy_default_mood("luna") is None, "ровная эмоция по умолчанию — публиковать нечего"
+
+ALLOWED = TUTOR_MOODS["jarvis"]
+
+
+def reply(agent, text):
+    """Прогнать реплику через чистильщик и вернуть решённую эмоцию."""
+    c = _SpeechCleaner(ALLOWED)
+    out = c.feed(text) + c.flush()
+    agent._spoke = bool(out.strip())
+    return TutorAgent._reply_mood(agent, c)
+
+
+buddy = SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False)
+assert reply(buddy, "Fine. What did you eat?") == ("anger", 2), "до первого тега — эмоция персоны"
+assert reply(buddy, "[sarcastic] Great plan.") == ("gloat", 2)
+assert reply(buddy, "And then?") == ("gloat", 2), "без тега — последняя явная"
+assert reply(buddy, "[sympathy] I'm so sorry about your dad.") == ("sadness", 2)
+assert reply(buddy, "Okay, something easy. What food do you like?") == ("sadness", 2), \
+    "после горя реплика без тега не становится злой"
+assert reply(buddy, "[default] Okay.") == ("", 0) and buddy._last_mood == ("", 0)
+assert reply(buddy, "Go on.") == ("", 0), "ровный тег — тоже явный выбор модели"
+
+# Без фолбэка (все остальные тьюторы) — как раньше: без тега эмоции нет.
+plain = SimpleNamespace(_fallback_mood=None, _last_mood=None, _spoke=False)
+assert reply(plain, "Fine. What did you eat?") == ("", 0)
+assert reply(plain, "[angry] No.") == ("anger", 2)
+assert reply(plain, "And then?") == ("", 0)
+
+# Пока голова не разобрана или текста не было — решения нет.
+c = _SpeechCleaner(ALLOWED)
+assert c.feed("[ang") == "" and not c.decided
+assert TutorAgent._reply_mood(SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False), c) is None
+tool_only = SimpleNamespace(_fallback_mood=("anger", 2), _last_mood=None, _spoke=False)
+c = _SpeechCleaner(ALLOWED)
+c.flush()
+assert TutorAgent._reply_mood(tool_only, c) is None, "ответ только тулом — лицо не трогаем"
+
+# --- Тег прошлых реплик в истории для мозга ---------------------------------
+# GPT-6 Sol без тега в своих прошлых репликах перестаёт его ставить (05.10.2026:
+# 103/151 против 189/189). В копию истории для мозга тег возвращается; настоящая
+# история (субтитры, выжимка звонка) остаётся без него.
+from livekit.agents.llm import ChatContext  # noqa: E402
+
+from agent import _mood_tag_label, _with_reply_tags  # noqa: E402
+
+assert _mood_tag_label(("anger", 2)) == "angry"
+assert _mood_tag_label(("anger", 3)) == "angry", "furious Декстеру запрещён — в историю не подсказываем"
+assert _mood_tag_label(("sadness", 2)) == "sympathy"
+assert _mood_tag_label(("gloat", 2)) == "sarcastic"
+assert _mood_tag_label(("", 0)) == "default"
+assert _mood_tag_label(("confused", 2)) == "confused"
+
+ctx = ChatContext.empty()
+ctx.add_message(role="system", content="persona")
+ctx.add_message(role="assistant", content="I'm Dexter. Cats or dogs—pick one!")
+ctx.add_message(role="user", content="Dogs.")
+ctx.add_message(role="assistant", content="Fine. Why dogs?")
+ctx.add_message(role="user", content="My grandmother died.")
+# Прерванная реплика лежит в истории обрезанной.
+ctx.add_message(role="assistant", content="I'm sorry about your")
+ctx.add_message(role="user", content="Thanks.")
+tags = [
+    ("I'm Dexter.  Cats or dogs — pick one!", "angry"),
+    ("Fine. Why dogs?", "angry"),
+    ("I'm sorry about your grandmother. Do you want to stop?", "sympathy"),
+]
+out = _with_reply_tags(ctx, tags)
+said = [m.text_content for m in out.messages() if m.role == "assistant"]
+assert said == [
+    "[angry] I'm Dexter. Cats or dogs—pick one!",
+    "[angry] Fine. Why dogs?",
+    "[sympathy] I'm sorry about your",
+], said
+assert [m.text_content for m in ctx.messages() if m.role == "assistant"][0] == "I'm Dexter. Cats or dogs—pick one!",     "настоящая история не меняется"
+assert out.messages()[-1].text_content == "Thanks." and out.messages()[0].text_content == "persona"
+
+# Порядок: две реплики с одинаковым началом не путаются, лишняя запись не мешает.
+ctx = ChatContext.empty()
+ctx.add_message(role="assistant", content="Wrong. Say it again.")
+ctx.add_message(role="user", content="a")
+ctx.add_message(role="assistant", content="Wrong. Say it again.")
+out = _with_reply_tags(ctx, [("Wrong. Say it again.", "angry"), ("Wrong. Say it again.", "default")])
+assert [m.text_content for m in out.messages() if m.role == "assistant"] == [
+    "[angry] Wrong. Say it again.", "[default] Wrong. Say it again."]
+
+# Реплика без записи (приветствие мимо llm_node, перезапуск) — как есть.
+ctx = ChatContext.empty()
+ctx.add_message(role="assistant", content="Hello there.")
+ctx.add_message(role="assistant", content="Next question.")
+out = _with_reply_tags(ctx, [("Next question.", "angry")])
+assert [m.text_content for m in out.messages()] == ["Hello there.", "[angry] Next question."]
+assert _with_reply_tags(ctx, []) is ctx, "записей нет — история та же"
+
 print("mood-парсер: все ассерты прошли")

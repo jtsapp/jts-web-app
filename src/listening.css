@@ -62,6 +62,10 @@
 }
 .lt-primary:hover:not(:disabled) { filter: brightness(1.06); }
 .lt-primary:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; }
+/* «Продолжить» сразу после ответа (защита от двойного клика, ListeningPage):
+   неактивна, но выглядит как обычно — иначе кнопка мигала бы бледной на
+   каждом задании. */
+.lt-primary.is-cooldown:disabled { background: var(--lt-purple); color: #fff; cursor: default; }
 .lt-ghost {
   display: block;
   margin: 12px auto 0;

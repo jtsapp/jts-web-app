@@ -10,7 +10,16 @@
 FROM node:20-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --force
+# Нативный SWC Next.js — опциональная зависимость под платформу. Если раннер CI её
+# молча пропускает (npm_config_omit=optional, сбой скачивания при --force), Next
+# падает на WASM-заглушке, а Turbopack на ней не работает: «native bindings are
+# not available». Поэтому optional включаем явно, проверяем, что модуль на месте,
+# и при его отсутствии доставляем ту же версию, что у next.
+RUN npm ci --force --include=optional \
+ && ( node -e "require('@next/swc-linux-x64-gnu')" \
+      || npm install --no-save --force --include=optional \
+           "@next/swc-linux-x64-gnu@$(node -p "require('next/package.json').version")" ) \
+ && node -e "require('@next/swc-linux-x64-gnu'); console.log('swc native ok')"
 
 FROM node:20-slim AS builder
 WORKDIR /app

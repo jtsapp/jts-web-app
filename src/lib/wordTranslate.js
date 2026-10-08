@@ -11,15 +11,31 @@
 // переведённое хоть кем-то, дальше отдаётся из памяти.
 
 import { loadToken } from './session.js'
+import { getPracticeToken } from '../api.js'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Разбивает текст на слова, чтобы навесить тап-перевод. Знаки препинания
 // остаются частью «токена», но для поиска перевода чистим их.
+//
+// Ревью 08.10.2026: типографский апостроф вырезался вместе с пунктуацией, и
+// «I’ll» уходило в переводчик как «Ill» («больной»); тире вырезалось и
+// склеивало соседние слова («sea—the» → «seathe»); буквы с диакритикой
+// пропадали («café» → «caf»). Буква теперь — любая (\p{L}), а не только
+// латиница и кириллица.
 export function cleanWord(w) {
   return String(w || '')
-    .replace(/[^A-Za-zА-Яа-яЁё'\-\s]/g, '')
+    // Диакритика бывает отдельным знаком (буква плюс знак ударения после неё):
+    // без склейки знак ушёл бы вместе с пунктуацией, и «café» стало бы «cafe».
+    .normalize('NFC')
+    .replace(/[\u2018\u2019\u02BC\u00B4`]/g, "'")
+    .replace(/[\u2010\u2011]/g, '-')
+    .replace(/[\u2012-\u2015\u2212]/g, ' ')
+    .replace(/[^\p{L}'\-\s]/gu, '')
     .replace(/\s+/g, ' ')
+    // Апостроф на краю слова — кавычка вокруг него (‘Hello’) или «dogs'».
+    .replace(/(^|\s)'+/g, '$1')
+    .replace(/'+(?=\s|$)/g, '')
     .trim()
 }
 
@@ -119,11 +135,16 @@ export function isTapSelection(raw) {
   return isPhraseSelection(raw)
 }
 
-const TR_CACHE_KEY = 'jts_word_tr_v2'
+// v3: ключ кэша — слово как есть, с регистром. В v2 он был в нижнем регистре,
+// и «May» (май) отдавало перевод «may» (может), «Turkey» — «turkey»
+// (ревью 08.10.2026). Записи v2 смешаны — выбрасываем их, а не доверяем.
+const TR_CACHE_KEY = 'jts_word_tr_v3'
+const TR_CACHE_OLD = 'jts_word_tr_v2'
 let _trCache = null
 function trCache() {
   if (_trCache) return _trCache
   try {
+    window.localStorage.removeItem(TR_CACHE_OLD)
     _trCache = JSON.parse(window.localStorage.getItem(TR_CACHE_KEY)) || {}
   } catch {
     _trCache = {}
@@ -131,12 +152,28 @@ function trCache() {
   return _trCache
 }
 
+// Отказ в демо-токене (стенд без демо-доступа, бэкенд не пустил) запоминаем на
+// минуту: getPracticeToken отказ не кэширует, и каждый тап гостя по
+// непереведённому слову слал бы вход демо-аккаунта на бэкенд.
+const DEMO_RETRY_MS = 60_000
+let demoRetryAt = 0
+async function guestToken() {
+  if (Date.now() < demoRetryAt) return null
+  const tok = await getPracticeToken(null).catch(() => null)
+  if (!tok) demoRetryAt = Date.now() + DEMO_RETRY_MS
+  return tok
+}
+
 export async function translateWord(word, tl = 'ru') {
-  const key = `${tl}:${word.toLowerCase()}`
+  const key = `${tl}:${word}`
   const cache = trCache()
   if (cache[key]) return cache[key]
 
-  const token = loadToken()
+  // У гостя своего токена нет, а без токена /translate отвечает 401 — гость
+  // не видел перевода нигде. В Практике он и так ходит с демо-токеном
+  // (getPracticeToken, тот же у Книг и Комиксов), а перевод ничего не пишет,
+  // так что общий демо-аккаунт здесь безопасен (ревью 08.10.2026).
+  const token = loadToken() || (await guestToken())
   const url = `${API_BASE}/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(word)}`
   const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   if (!res.ok) throw new Error(`translate ${res.status}`)

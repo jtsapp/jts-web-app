@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
-import { textMatch } from '../../../practice/writing/engine.js'
+import { textMatch, punctMatch, punctPrompt } from '../../../practice/writing/engine.js'
 import { analyseText } from '../../../practice/writing/localCheck.js'
 import TaskShell, { useTaskCtl, judgeFeedback, FbView, ItemBox, CheckCard } from '../TaskShell.jsx'
 
@@ -18,8 +18,12 @@ function TypedItem({ idx, item, ctl, meta, rows, placeholder, computeOk, childre
   const inputRef = useRef(null)
   const closed = ctl.state.answered[item.id] !== undefined
 
+  // Пустой ввод — не попытка: раньше «Проверить», Enter или «Go» на телефоне
+  // по пустому полю тратили одну из трёх попыток, и после трёх нажатий пункт
+  // закрывался «не решён», а верный ответ было уже не ввести.
+  const empty = !value.trim()
   const onCheck = () => {
-    if (closed) return
+    if (closed || empty) return
     const res = computeOk(value)
     // Разбор самого написанного — независимо от вердикта: ученик сразу видит
     // языковые огрехи в собственном предложении.
@@ -66,7 +70,7 @@ function TypedItem({ idx, item, ctl, meta, rows, placeholder, computeOk, childre
         />
       )}
       <div className="wr-row">
-        <button type="button" className="wr-primary wr-btn-sm" disabled={closed} onClick={onCheck}>
+        <button type="button" className="wr-primary wr-btn-sm" disabled={closed || empty} onClick={onCheck}>
           {t('writing.checkBtn')}
         </button>
       </div>
@@ -107,7 +111,6 @@ export function TransformTask({ genre, task, meta, onFirstTry }) {
 export function PunctuationTask({ genre, task, meta, onFirstTry }) {
   const { t } = useI18n()
   const ctl = useTaskCtl(genre, task, { onFirstTry })
-  const clean = (s) => String(s).replace(/\s+/g, ' ').trim()
   return (
     <TaskShell genre={genre} task={task} ctl={ctl}>
       {task.items.map((item, idx) => (
@@ -119,9 +122,12 @@ export function PunctuationTask({ genre, task, meta, onFirstTry }) {
           meta={meta}
           rows={2}
           placeholder={t('writing.punct.placeholder')}
-          computeOk={(v) => ({ ok: clean(v) === clean(item.answer), msg: item.why })}
+          computeOk={(v) => ({ ok: punctMatch(v, item.answer), msg: item.why })}
         >
-          <div className="wr-src">{item.raw}</div>
+          {/* Подсказка — из эталона, а не item.raw: raw посчитан stripPunct
+              прототипа (сверка buildGenre с оракулом), а тот резал знаки и
+              внутри чисел — «38.2» показывалось как «382». */}
+          <div className="wr-src">{punctPrompt(item.answer)}</div>
         </TypedItem>
       ))}
     </TaskShell>

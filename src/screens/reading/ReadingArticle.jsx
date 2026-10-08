@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { sentences, norm } from '../../practice/reading/engine.js'
 import { lookup, displayWord } from '../../practice/reading/dict.js'
@@ -36,7 +36,8 @@ export default function ReadingArticle({ text, dict, ensureDict, speakingIndex, 
       // после тапа — карточка не успевала показаться вовсе.
       const r = el.getBoundingClientRect()
       const h = host.getBoundingClientRect()
-      const at = { left: r.left - h.left, top: r.bottom - h.top + 8 }
+      // wordTop — на случай, если под словом карточке не хватит места (WordPop).
+      const at = { left: r.left - h.left, top: r.bottom - h.top + 8, wordTop: r.top - h.top }
 
       const local = lookup(raw, dict, text.words)
       setPop({ at, word: raw, entry: local, state: local ? 'ready' : 'loading' })
@@ -147,19 +148,54 @@ export default function ReadingArticle({ text, dict, ensureDict, speakingIndex, 
   )
 }
 
+/**
+ * Видимая полоса по вертикали, где должна поместиться карточка: окно, а на
+ * широком экране ещё и колонка текста — она прокручивается сама и обрезает
+ * всё, что ниже её края. Сверху полосу закрывает липкая панель читалки: у
+ * карточки z-index выше, и, перевернувшись вверх, она легла бы на кнопки.
+ */
+function visibleBand(node) {
+  let top = 0
+  let bottom = window.innerHeight
+  for (let p = node.parentElement; p; p = p.parentElement) {
+    const oy = getComputedStyle(p).overflowY
+    if (oy === 'auto' || oy === 'scroll' || oy === 'hidden') {
+      const r = p.getBoundingClientRect()
+      top = Math.max(top, r.top)
+      bottom = Math.min(bottom, r.bottom)
+    }
+  }
+  const bar = document.querySelector('.rd-toolbar')
+  if (bar) top = Math.max(top, bar.getBoundingClientRect().bottom)
+  return { top, bottom }
+}
+
 function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
   const ref = useRef(null)
-  // Стартуем от слова; влезает ли карточка по ширине — известно только после
-  // отрисовки, поэтому левый край доводим эффектом.
-  const [left, setLeft] = useState(pop.at.left)
+  // Стартуем от слова; влезает ли карточка — известно только после разметки,
+  // поэтому место доводим layout-эффектом: он успевает до кадра, и карточка не
+  // мигает внизу, когда перевод догружается и она вырастает.
+  const [pos, setPos] = useState({ left: pop.at.left, top: pop.at.top })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current
     const box = host.current
     if (!el || !box) return
     const max = Math.max(0, box.clientWidth - el.offsetWidth - 4)
-    setLeft(Math.max(0, Math.min(pop.at.left, max)))
+    const left = Math.max(0, Math.min(pop.at.left, max))
+    // Под словом не помещается — ставим над ним, как прототип (:684). Раньше
+    // карточка всегда шла вниз и у нижнего края уходила за экран или за край
+    // колонки текста (ревью 08.10.2026).
+    const band = visibleBand(box)
+    const hostTop = box.getBoundingClientRect().top
+    const ph = el.offsetHeight
+    const fitsBelow = hostTop + pop.at.top + ph <= band.bottom - 12
+    // Не влезает и над словом (низкий экран, телефон боком) — прижимаем к
+    // верху полосы, как max(12, …) прототипа: лучше накрыть само слово, чем
+    // обрезать карточку или спрятать её под панель.
+    const top = fitsBelow ? pop.at.top : Math.max(pop.at.wordTop - ph - 8, band.top + 12 - hostTop)
+    setPos({ left, top })
   }, [pop, host])
 
   const e = pop.entry
@@ -177,7 +213,7 @@ function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
     <div
       className="rd-pop"
       ref={ref}
-      style={{ left, top: pop.at.top }}
+      style={{ left: pos.left, top: pos.top }}
       role="dialog"
       aria-label={t('reading.translation')}
     >
