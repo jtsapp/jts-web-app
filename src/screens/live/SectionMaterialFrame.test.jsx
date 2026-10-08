@@ -394,7 +394,7 @@ describe('SectionMaterialFrame — новый документ в рамке', (
     const view = (reloadToken) => (
       <I18nProvider>
         <LoadsEarly>
-          <SectionMaterialFrame ref={ref} lessonId={14} token="t" material={MATERIAL} isStaff={false} follow reloadToken={reloadToken} />
+          <SectionMaterialFrame ref={ref} lessonId={14} token="t" material={MATERIAL} isStaff={false} reloadToken={reloadToken} />
         </LoadsEarly>
       </I18nProvider>
     )
@@ -418,11 +418,11 @@ describe('SectionMaterialFrame — новый документ в рамке', (
   // бы новую осевшей раньше времени — и ей стали бы писать до её загрузки.
   it('осадка прошлого документа новому не засчитывается', async () => {
     vi.useFakeTimers()
-    const { ref, container, rerender } = renderFrame({ follow: true })
+    const { ref, container, rerender } = renderFrame()
     const old = container.querySelector('iframe')
     await act(async () => { old.dispatchEvent(new Event('load')) })
 
-    rerender(frame({ ref, follow: true, reloadToken: 1 }))
+    rerender(frame({ ref, reloadToken: 1 }))
     const fresh = container.querySelector('iframe')
     const post = vi.spyOn(fresh.contentWindow, 'postMessage')
     await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
@@ -455,23 +455,30 @@ describe('SectionMaterialFrame — новый документ в рамке', (
 
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
   })
+})
 
-  // Поздний вход ученика включает страницу следования без перезагрузки: ответ
-  // на просьбу догнать класс, ушедший в прежний документ, пропал бы вместе с ним.
-  it('включилась страница следования — реплей ждёт загрузки новой страницы', async () => {
-    vi.useFakeTimers()
-    const { ref, container, rerender } = renderFrame({ follow: false })
-    await settle(container.querySelector('iframe'))
+// Когда рамка открывается заново. Страницу урока сервер отдаёт по занятию и материалу, и мост с
+// backend#222 одинаков в своём уроке и при следовании за классом. Новый документ — только когда
+// меняется сама страница: материал, урок файла, перезагрузка или ученик, чей экран смотрит
+// преподаватель. Дев 08.10.2026, урок 134: рамка ученика открывалась заново на каждом уходе от
+// класса и при переходе на плитку того же файла в другом разделе.
+describe('SectionMaterialFrame — когда рамка открывается заново', () => {
+  it('плитка того же материала в другом разделе — тот же документ', () => {
+    const { ref, container, rerender } = renderFrame()
+    const page = container.querySelector('iframe')
 
-    rerender(frame({ ref, follow: true }))
-    const followPage = container.querySelector('iframe')
-    const post = vi.spyOn(followPage.contentWindow, 'postMessage')
-    const events = [{ selector: '#a', eventType: 'click', value: null }]
-    act(() => { ref.current.replay(events) })
-    expect(post).not.toHaveBeenCalled()
+    rerender(frame({ ref, material: { ...MATERIAL, id: 2 } }))
 
-    await settle(followPage)
-    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+    expect(container.querySelector('iframe')).toBe(page)
+  })
+
+  it('другой урок того же файла — новая страница', () => {
+    const { ref, container, rerender } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 5 } })
+    const page = container.querySelector('iframe')
+
+    rerender(frame({ ref, material: { ...MATERIAL, id: 2, focusLessonNo: 6 } }))
+
+    expect(container.querySelector('iframe')).not.toBe(page)
   })
 })
 
@@ -484,7 +491,7 @@ describe('SectionMaterialFrame — урок файла открывается п
 
   it('реплей и стадия класса уходят после goto-lesson', async () => {
     vi.useFakeTimers()
-    const { ref, iframe } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 5 }, follow: true, stage: 3 })
+    const { ref, iframe } = renderFrame({ material: { ...MATERIAL, focusLessonNo: 5 }, stage: 3 })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     const events = [{ selector: '#a', eventType: 'click', value: null }]
     act(() => { ref.current.replay(events) })
@@ -507,7 +514,7 @@ describe('SectionMaterialFrame — урок файла открывается п
   // goto-lesson, достался бы уроку по умолчанию.
   it('показ, пришедший после загрузки, но до урока занятия, ждёт его', async () => {
     vi.useFakeTimers()
-    const { ref, iframe } = renderFrame({ material: LESSON_MATERIAL, follow: true })
+    const { ref, iframe } = renderFrame({ material: LESSON_MATERIAL })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     const events = [{ selector: '#a', eventType: 'click', value: null }]
 
@@ -562,10 +569,10 @@ describe('SectionMaterialFrame — урок файла открывается п
   // бы урок в ещё не загруженной новой.
   it('goto-lesson прошлой страницы в новую не уходит', async () => {
     vi.useFakeTimers()
-    const { ref, container, rerender } = renderFrame({ material: LESSON_MATERIAL, follow: true })
+    const { ref, container, rerender } = renderFrame({ material: LESSON_MATERIAL })
     await load(container.querySelector('iframe'))
 
-    rerender(frame({ ref, material: LESSON_MATERIAL, follow: true, reloadToken: 1 }))
+    rerender(frame({ ref, material: LESSON_MATERIAL, reloadToken: 1 }))
     const fresh = container.querySelector('iframe')
     const post = vi.spyOn(fresh.contentWindow, 'postMessage')
     await wait(GOTO_LESSON_MS)
@@ -608,7 +615,7 @@ describe('SectionMaterialFrame — лоадер', () => {
 
   it('пачка показа, дождавшаяся загрузки, — «Переходим к преподавателю…» до сигнала моста «свободен»', async () => {
     vi.useFakeTimers()
-    const { ref, container, iframe } = renderFrame({ follow: true })
+    const { ref, container, iframe } = renderFrame()
     act(() => { ref.current.replay(EVENTS) })
 
     await settle(iframe)
@@ -623,7 +630,7 @@ describe('SectionMaterialFrame — лоадер', () => {
 
   it('без сигнала моста (старый бэкенд) лоадер догона снимается сам, по длине пачки', async () => {
     vi.useFakeTimers()
-    const { ref, container, iframe } = renderFrame({ follow: true })
+    const { ref, container, iframe } = renderFrame()
     act(() => { ref.current.replay(EVENTS) })
     await settle(iframe)
     expect(shown(container)).toBe(true)
@@ -635,7 +642,7 @@ describe('SectionMaterialFrame — лоадер', () => {
 
   it('одиночное живое действие лоадер не показывает', async () => {
     vi.useFakeTimers()
-    const { container, iframe } = renderFrame({ follow: true })
+    const { container, iframe } = renderFrame()
     await settle(iframe)
 
     await replayState(true, 1)
@@ -646,7 +653,7 @@ describe('SectionMaterialFrame — лоадер', () => {
 
   it('снимок осевшей рамке («Слушаем вместе» включили) — лоадер на время проигрывания', async () => {
     vi.useFakeTimers()
-    const { container, iframe } = renderFrame({ follow: true })
+    const { container, iframe } = renderFrame()
     await settle(iframe)
 
     await replayState(true, 12)
@@ -673,11 +680,11 @@ describe('SectionMaterialFrame — лоадер', () => {
 
   it('перезагрузка рамки (указка) — лоадер снова', async () => {
     vi.useFakeTimers()
-    const { ref, container, rerender, iframe } = renderFrame({ follow: true })
+    const { ref, container, rerender, iframe } = renderFrame()
     await settle(iframe)
     expect(shown(container)).toBe(false)
 
-    rerender(frame({ ref, follow: true, reloadToken: 1 }))
+    rerender(frame({ ref, reloadToken: 1 }))
 
     expect(shown(container)).toBe(true)
     expect(cover(container).textContent).toContain('Загружаем урок')
@@ -706,7 +713,7 @@ describe('SectionMaterialFrame — стадии под лоадером', () => 
   it('проигрывание пачки — наверх только последняя стадия, когда лоадер ушёл', async () => {
     vi.useFakeTimers()
     const onStage = vi.fn()
-    const { iframe } = renderFrame({ follow: true, onStage })
+    const { iframe } = renderFrame({ onStage })
     await settle(iframe)
     onStage.mockClear()
 
@@ -726,7 +733,7 @@ describe('SectionMaterialFrame — стадии под лоадером', () => 
   it('пока рамка открыта, стадии уходят сразу, как раньше', async () => {
     vi.useFakeTimers()
     const onStage = vi.fn()
-    const { iframe } = renderFrame({ follow: true, onStage })
+    const { iframe } = renderFrame({ onStage })
     await settle(iframe)
     onStage.mockClear()
 

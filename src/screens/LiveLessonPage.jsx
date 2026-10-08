@@ -123,8 +123,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
   const [activeSectionId, setActiveSectionId] = useState(null)
-  // true пока открытый материал — «догоняющая» копия для follow-me: не
-  // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
+  // true, пока ученик идёт за классом: показ преподавателя проигрывается в его
+  // рамку. Сама страница та же, что и в своём уроке, — с backend#222 мост
+  // восстанавливает и сохраняет ответы в обоих режимах, и смена режима рамку не
+  // перезагружает (см. documentKey в SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
   // «Идти за преподавателем»: экран ученика повторяет его переходы по уроку.
   // Включено по умолчанию — на занятии смотрят туда же, куда и преподаватель, а
@@ -315,8 +317,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
-  // тянет только новая указка. Рамка снова своя, а не страница следования: на
-  // ней ученик работает, и ответы сохраняются. Указка на шаг, ждущая разбора
+  // тянет только новая указка, и показ класса в его рамку больше не идёт. Рамка
+  // остаётся той же: ученик продолжает с того места, где стоит, ответы
+  // сохраняются, как и при следовании. Указка на шаг, ждущая разбора
   // урока, — тоже переход с классом: на выбранный им материал она не переезжает.
   // Переключатель «Идти за преподавателем» гаснет вместе с уходом: он не должен
   // обещать следование, которого нет, и вернуться к классу — одно нажатие.
@@ -967,7 +970,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Ученик переключает «Идти за преподавателем». Выключение — тот же ручной
   // уход (§7): стадия класса больше не двигает рамку, отложенное отменяется, а
-  // рамка уходит со страницы следования, где мост ответов не сохраняет.
+  // показ класса в рамку больше не проигрывается.
   // Включённый, пока класс ведут, — сразу к классу, как на входе: ждать
   // следующей смены позиции значило бы стоять на месте неизвестно сколько.
   function toggleFollowTeacher() {
@@ -2099,7 +2102,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           material={activeMaterial}
                           isStaff={isStaff}
                           reviewStudentId={reviewStudentId}
-                          follow={followMode}
                           reloadToken={reloadToken}
                           presenting={presenting}
                           stage={isStaff || classStage.materialId !== activeMaterialKey ? null : classStage.index}
