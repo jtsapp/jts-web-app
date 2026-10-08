@@ -12,7 +12,7 @@
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { resolveProfileId, fetchContentQuota, verifyTokenStatus } from './auth-server.js'
+import { resolveProfileId, fetchContentQuota, verifyTokenStatus, checkStudentActivityAccess } from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
 const anonymous = () => new Request('https://app.test/api/x')
@@ -149,5 +149,55 @@ describe('verifyTokenStatus: признак аккаунта класса', () =
     const result = await verifyTokenStatus('TOK')
 
     expect(result.user.boothAccount).toBe(false)
+  })
+})
+
+// Вердикт «свой ли ученик» выносит бэкенд, здесь он лишь переводится в четыре
+// слова для роута. Ошибиться можно в обе стороны: лишнее «можно» открывает
+// чужого ученика, а сбой связи, принятый за «нельзя», врёт сотруднику про права.
+describe('checkStudentActivityAccess: «свой ли ученик» решает бэкенд', () => {
+  function stub(status) {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status }))
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('204 — можно; уходит токен того, кто спрашивает', async () => {
+    const fetchMock = stub(204)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('allowed')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toMatch(/\/admin\/students\/141\/activity\/access$/)
+    expect(init.headers.Authorization).toBe('Bearer TOK')
+    expect(init.cache).toBe('no-store')
+  })
+
+  it('403 и 404 — отказ: о чужих id подробностей не раздаём', async () => {
+    stub(403)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
+    stub(404)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
+  })
+
+  it('401 — токен протух', async () => {
+    stub(401)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unauthorized')
+  })
+
+  it('500 и сетевой обрыв — «спросить не удалось», а не отказ', async () => {
+    stub(500)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+  })
+
+  it('без токена бэкенд не спрашиваем', async () => {
+    const fetchMock = stub(204)
+    expect(await checkStudentActivityAccess('', 141)).toBe('unauthorized')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('200 вместо 204 — не разрешение: пускаем только по контракту бэкенда', async () => {
+    stub(200)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
   })
 })

@@ -209,6 +209,40 @@ export async function fetchContentQuota(token, contentType) {
 }
 
 /**
+ * Может ли владелец токена смотреть активность ученика (карточка «Мои студенты»
+ * в админке, /api/admin/student-activity). Решает бэкенд: «свой ли это ученик»
+ * знает только он (уроки, группа, карточка назначения), а своего списка здесь
+ * нет и заводить его нельзя — разошёлся бы с настоящим.
+ *
+ * Пускаем только по 204: так отвечает бэкенд, тело пустое. Любой другой ответ
+ * разрешением не считается — проверка прав не должна открываться от статуса,
+ * которого бэкенд не обещал (200 от прокси или заглушки на месте ручки).
+ *
+ * 404 («такого ученика нет») для вызывающего — тот же отказ: подробности о
+ * чужих id не раздаём. Сбой связи — не отказ, а «спросить не удалось»: сотрудник
+ * увидит «попробуйте позже», а не «нет доступа».
+ */
+export async function checkStudentActivityAccess(token, studentId) {
+  if (!token) return 'unauthorized'
+  try {
+    const res = await fetch(
+      `${BACKEND_URL}/admin/students/${encodeURIComponent(studentId)}/activity/access`,
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' },
+    )
+    if (res.status === 204) return 'allowed'
+    if (res.status === 401) return 'unauthorized'
+    if (res.status === 403 || res.status === 404) return 'forbidden'
+    return 'unavailable'
+  } catch (err) {
+    console.error(
+      '[auth] student-activity access check failed:',
+      err?.cause?.code || err?.cause?.message || err?.message || err,
+    )
+    return 'unavailable'
+  }
+}
+
+/**
  * Resolves the profile id a request is allowed to act on:
  * - With a valid Bearer token → the authenticated `user-<id>` (the client's
  *   deviceId is ignored, so a learner can't read/write someone else's data).
