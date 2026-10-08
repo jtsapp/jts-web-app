@@ -3,6 +3,7 @@
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
+import { reportUnauthorized } from './lib/session.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
@@ -84,6 +85,9 @@ async function authGet(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 404 у профильных полей означает «не заполнено»,
     // а не поломку — отличать это от сетевой осечки приходится по нему.
     const err = new Error(`Ошибка сервера (${res.status})`)
@@ -112,6 +116,9 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -158,6 +165,9 @@ async function authPost(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -182,6 +192,9 @@ async function authPatch(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -202,6 +215,9 @@ async function authDelete(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
