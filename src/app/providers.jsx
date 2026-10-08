@@ -6,6 +6,7 @@
 import { useEffect } from 'react'
 import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
+import ThemeSketchSwitch from '../components/ThemeSketchSwitch.jsx'
 
 // Запрет копирования для обычного пользователя: правый клик, copy/cut,
 // перетаскивание картинок, выделение мышью. Не мешает вводу — внутри
@@ -61,6 +62,7 @@ export default function Providers({ children }) {
       <LanguageProvider>
         <NoCopyGuard />
         {children}
+        <ThemeSketchSwitch />
       </LanguageProvider>
     </I18nProvider>
   )

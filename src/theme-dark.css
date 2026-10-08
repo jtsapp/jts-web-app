@@ -1,0 +1,109 @@
+/* Тёмная тема — НАБРОСОК. Значения токенов --dk-*, которыми пишет
+   src/theme-dark.generated.css (scripts/gen-dark-theme.js). Палитру правят
+   здесь, генератор при этом перезапускать не нужно.
+
+   Тема включается атрибутом data-theme="dark" на <html>; его ставит
+   загрузочный скрипт из layout.jsx до первой отрисовки (иначе экран мигает
+   белым). Акцент — фиолетовый бренда (оранжевый сравнили и отклонили 09.10). */
+
+/* Фиолетовый: нейтральные с холодным фиолетовым подтоном — от бренда
+   (--ink #171326), а не чистый серый: на нём фиолетовый акцент выглядит
+   родным, а не наклеенным. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --dk-page: #110f19;
+  --dk-card: #1b1826;
+  --dk-chip: #262236;
+  --dk-raised: #322d45;
+  --dk-ink-bg: #2c2740;
+  --dk-text: #f2f0f8;
+  --dk-text-2: #c8c4d6;
+  --dk-muted: #8f8aa3;
+  --dk-line: #2a2639;
+  --dk-line-strong: #453f5c;
+
+  --dk-acc: #9047ff;
+  --dk-acc-strong: #7a35ec;
+  --dk-acc-soft: #4d3388;
+  --dk-acc-tint: #221935;
+  --dk-acc-line: #3d2e63;
+  --dk-acc-text: #b996ff;
+  --dk-acc-on: #eadfff;
+  --dk-on-acc: #ffffff;
+}
+
+html[data-theme="dark"] body {
+  background: var(--dk-page);
+  color: var(--dk-text);
+}
+
+html[data-theme="dark"] ::selection {
+  background: color-mix(in oklab, var(--dk-acc) 45%, transparent);
+}
+
+/* ---------- Переключатель наброска ---------- */
+
+.theme-sketch {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 2147483000;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(23, 19, 38, 0.86);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: Manrope, sans-serif;
+}
+
+.theme-sketch__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: 600 12px/16px Manrope, sans-serif;
+  cursor: pointer;
+}
+
+.theme-sketch__btn[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.theme-sketch__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.theme-sketch__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* ---------- Правки поверх генератора ---------- */
+
+/* Карточки навыков в «Практике»: подложка — SVG с пастельными кругами,
+   генератор до неё не дотягивается (цвета внутри файла). multiply
+   умножает картинку на тёмный тон карточки (--sk-bg уже пересчитан):
+   формы остаются видны, но тёмными. */
+html[data-theme="dark"] .pk-skill {
+  background-blend-mode: multiply;
+}
+
+/* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
+   ни генератор, ни токены до него не достают. Белый вариант (на шапках)
+   не трогаем. */
+html[data-theme="dark"] .logo[style*="9047ff"],
+html[data-theme="dark"] .logo[style*="144, 71, 255"] {
+  color: var(--dk-acc) !important;
+}
