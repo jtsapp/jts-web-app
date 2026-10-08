@@ -338,7 +338,7 @@ export function WeekView({ data, n, onWeek, onStart, onMove }) {
           <div className="ih-wsel__info">
             <h3>{cap(dfmt(lang, sel.date, { weekday: 'long', day: 'numeric', month: 'long' }))}</h3>
             <div className="ih-wsel__task">
-              <span className={`ih-wsel__ring is-${sel.status}`} aria-hidden="true">{sel.status === 'completed' && <CheckIcon size={22} />}</span>
+              <span className={`ih-wsel__ring is-${sel.status}`} aria-hidden="true">{sel.status === 'completed' && <CheckIcon size={28} />}</span>
               <div>
                 <b>{taskLabel(t, sel)}</b>
                 <TeacherNote task={sel} />

@@ -10074,7 +10074,8 @@
   align-items: center;
   gap: 6px;
 }
-.ih-wsel__ring {
+/* та же специфичность, что у .ih-wsel__task span, иначе inline-flex перебивает центровку и галочка уезжает в угол */
+.ih-wsel__task .ih-wsel__ring {
   flex: none;
   display: grid;
   place-items: center;
@@ -10084,7 +10085,7 @@
   border: 5px solid var(--ih-violet);
   color: #fff;
 }
-.ih-wsel__ring.is-completed {
+.ih-wsel__task .ih-wsel__ring.is-completed {
   background: #22a55b;
   border-color: #22a55b;
 }
