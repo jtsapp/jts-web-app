@@ -2668,6 +2668,36 @@ textarea {
   color: var(--purple);
   font-size: 19px;
 }
+/* Строка логотипа: справа — кнопка темы (ThemeToggle). Когда логотип скрыт
+   (рейл, планшетная колонка), кнопка остаётся одна. */
+.sb__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sb__theme {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px 0;
+  border: none;
+  border-radius: 12px;
+  background: #f5f2fe;
+  color: var(--purple);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.sb__theme:hover {
+  background: #ebdeff;
+}
+.sb__theme:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
 .sb__profile {
   display: flex;
   align-items: center;
@@ -3425,6 +3455,15 @@ textarea {
     background: #f5f2fe;
     color: var(--purple);
     cursor: pointer;
+  }
+
+  /* В меню кнопка темы стоит прямо под крестиком: тот же размер — и они
+     читаются ровной парой; без отрицательного отступа между ними 8px, а не
+     впритык. */
+  .sb__theme {
+    width: 40px;
+    height: 40px;
+    margin: 0;
   }
 }
 
@@ -7671,6 +7710,11 @@ textarea {
      десктопную раскладку. */
 @media (min-width: 761px) and (max-width: 1023px),
        (min-width: 761px) and (hover: none) {
+  /* Вордмарк в колонке скрыт (см. ниже) — кнопка темы остаётся одна. */
+  .sb .sb__head {
+    justify-content: center;
+  }
+
   /* Десктопный рейл здесь не действует (его @media — от 1024px И только для
      устройств с указателем), но .learn--rail всё ещё висит на обёртке —
      снимаем его отступ. */

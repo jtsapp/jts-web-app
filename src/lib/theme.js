@@ -1,4 +1,4 @@
-// Ключ и загрузочный скрипт темы — отдельно от ThemeSketchSwitch: layout.jsx
+// Ключ и загрузочный скрипт темы — отдельно от ThemeToggle: layout.jsx
 // серверный, а импорт из 'use client'-модуля отдал бы ему не строку, а
 // клиентскую ссылку.
 export const THEME_KEY = 'jts_theme'
