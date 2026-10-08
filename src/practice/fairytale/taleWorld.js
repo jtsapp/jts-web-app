@@ -14,6 +14,7 @@ import { MARKUP } from './markup.js'
 import { CSS_BASE, CSS_SHELL } from './styles.js'
 import { saveStudentVocab } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
+import { dictCount, dictOwnerOf, scopeFairytaleDict } from './dictOwner.js'
 
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap'
@@ -129,9 +130,24 @@ function ensureWorld() {
 // иначе — на выбор персонажа. Неизвестный id откроет библиотеку движка.
 export function openTaleWorld(taleId, { onExit } = {}) {
   onExitCb = onExit || null
+  // До движка: при первом открытии он читает «Мои слова» уже при создании
+  // (счётчик на кнопке).
+  const existed = !!world
+  scopeFairytaleDict(dictOwnerOf(loadToken()))
   ensureFont()
   injectStyles()
   const w = ensureWorld()
+  // Движок живёт до перезагрузки и счётчик сам обновляет только на правке
+  // списка — после смены ученика он показывал бы число прежнего владельца.
+  // Разметка та же, что у vwRefreshBadge движка.
+  if (existed) {
+    const badge = document.getElementById('vwCount')
+    if (badge) {
+      const n = dictCount()
+      badge.textContent = n
+      badge.style.display = n ? 'inline-flex' : 'none'
+    }
+  }
   host.style.display = ''
   const pack = (w.TALES || []).find((p) => p.id === taleId)
   if (!pack) {
