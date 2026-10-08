@@ -652,12 +652,16 @@ export default function PracticePage({
   // Ref-страж, как у сказок: два быстрых клика по разным мемам иначе
   // открывали тот, чей ответ квоты пришёл позже.
   const reelLoadingRef = useRef(false)
+  // Потолок из последнего свежего ответа квоты — по нему лента проверяет
+  // каждый следующий ролик (watchReel).
+  const reelLimitRef = useRef(null)
   const tryOpenReel = async (index) => {
     if (reelLoadingRef.current) return
     reelLoadingRef.current = true
     try {
       const id = clips[index]?.id ?? index
       const fresh = await memesEntitlement.check()
+      reelLimitRef.current = fresh.limit
       if (!fresh.allowed || !canOpenSeen('memes', id, fresh.limit)) {
         setMemesBlocked(true)
         return
@@ -667,6 +671,21 @@ export default function PracticePage({
     } finally {
       reelLoadingRef.current = false
     }
+  }
+
+  // Лента листается дальше открытого ролика, а квота проверялась только на
+  // входе — демо-ученик с лимитом смотрел все мемы подряд (ревью 08.10.2026,
+  // #80). Теперь каждый новый ролик в кадре — та же проверка, что на входе:
+  // уже виденный лимит не тратит, сверх лимита — экран лимита.
+  const watchReel = (index) => {
+    const id = clips[index]?.id ?? index
+    if (canOpenSeen('memes', id, reelLimitRef.current)) {
+      markSeen('memes', id)
+      return true
+    }
+    setOpenReel(null)
+    setMemesBlocked(true)
+    return false
   }
 
   // Книги ограничивает сервер, а не этот экран: квота PRACTICE_BOOKS означает
@@ -728,7 +747,7 @@ export default function PracticePage({
   }
 
   if (openReel !== null) {
-    return layout(<ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />)
+    return layout(<ReelsViewer clips={clips} startIndex={openReel} onActive={watchReel} onBack={() => setOpenReel(null)} />)
   }
 
   if (openKaraoke) {
@@ -1217,13 +1236,20 @@ function Empty({ loading, text, skeleton }) {
 // играет, остальные стоят. На десктопе остаются кнопки/колесо/стрелки —
 // кнопки и клавиши мотают ленту плавным scrollTo; на мобиле кнопок нет
 // (спрятаны в CSS), сама лента — полноэкранный оверлей.
-function ReelsViewer({ clips, startIndex, onBack }) {
+// onActive(k) — ролик k встал в кадр; false — смотреть его нельзя (квота).
+function ReelsViewer({ clips, startIndex, onActive, onBack }) {
   const { t } = useI18n()
   const [i, setI] = useState(startIndex)
   const [hint, setHint] = useState(true)
   const [paused, setPaused] = useState(false)
   const feedRef = useRef(null)
   const iRef = useRef(startIndex)
+  // Наблюдатель создаётся один раз на ленту — свежий onActive берём из ref,
+  // а не из замыкания первого рендера.
+  const onActiveRef = useRef(onActive)
+  useEffect(() => {
+    onActiveRef.current = onActive
+  }, [onActive])
   // Тач-экран → в подсказке свайп, а не колесо (matchMedia безопасен и в SSR-гарде)
   const coarse =
     typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
@@ -1244,6 +1270,7 @@ function ReelsViewer({ clips, startIndex, onBack }) {
         entries.forEach((en) => {
           if (!en.isIntersecting) return
           const k = Number(en.target.dataset.idx)
+          if (k !== iRef.current && onActiveRef.current && !onActiveRef.current(k)) return
           iRef.current = k
           setI((cur) => {
             if (cur !== k) setHint(false)
