@@ -24,6 +24,18 @@ const CORS = {
 
 const STAFF = new Set(['ADMIN', 'MANAGER'])
 
+// Только десятичные цифры, без знака, пробелов и нулей впереди. Number() принял
+// бы и ' 12 ', и '0x10', и '1e3', и '00012', а числа от 2^53 молча округлил бы
+// до соседнего целого — и это уже другой ученик.
+const STUDENT_ID_RE = /^[1-9]\d*$/
+
+/** Id ученика из строки запроса или null, если это не положительное безопасное целое. */
+function parseStudentId(raw) {
+  if (!STUDENT_ID_RE.test(raw ?? '')) return null
+  const id = Number(raw)
+  return Number.isSafeInteger(id) ? id : null
+}
+
 export function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS })
 }
@@ -40,8 +52,11 @@ export async function GET(request) {
   if (status === 'unavailable') return json({ error: 'Backend unavailable.' }, 503)
   if (status !== 'ok' || !user) return json({ error: 'Unauthorized.' }, 401)
 
-  const studentId = Number(new URL(request.url).searchParams.get('studentId'))
-  if (!Number.isInteger(studentId) || studentId <= 0) {
+  // Id проверяем ДО роли и ростера, а не после: checkStudentActivityAccess
+  // строит из него адрес бэкенда (/admin/students/{id}/activity/access) и сам его
+  // не проверяет. Кривое значение не должно доходить до URL с токеном сотрудника.
+  const studentId = parseStudentId(new URL(request.url).searchParams.get('studentId'))
+  if (studentId === null) {
     return json({ error: 'studentId is required.' }, 400)
   }
 
