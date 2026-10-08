@@ -302,21 +302,45 @@ assert _pronunciation_lang(vp) == "", "казахский словарь про�
 luna = profile(tutor="gentle")
 assert buddy_voice_profile(luna) is luna
 
-# ── Мозг теста — свой (GPT-6 Sol, замер 05.10), живой Декстер не меняется ────
-from agent import BUDDY_BRAIN_MODEL, _brain_model_for, _brain_supports_prefill, session_brain_model  # noqa: E402
+# ── Мозг теста — свой (Haiku 5.5 с 09.10), живой Декстер не меняется ─────────
+from agent import (  # noqa: E402
+    BUDDY_BRAIN_MODEL,
+    _anthropic_brain_body,
+    _brain_model_for,
+    _brain_supports_prefill,
+    _is_anthropic_direct_brain,
+    _is_openai_brain,
+    session_brain_model,
+)
 
-assert BUDDY_BRAIN_MODEL == "gpt-6-sol" and session_brain_model(p) == "gpt-6-sol"
+assert BUDDY_BRAIN_MODEL == "gpt-6-sol", "общий мозг Buddy — у «Спарк теста»"
+assert session_brain_model(p) == "claude-haiku-5-5"
 for other in ("bro", "gentle", "hype", "aizere"):
     assert session_brain_model(profile(tutor=other)) == _brain_model_for(other), other
 os.environ["BRAIN_MODEL_BUDDY"] = "claude-haiku-4-5"
 assert session_brain_model(p) == "claude-haiku-4-5", "откат секретом воркера, без деплоя"
+os.environ["BRAIN_MODEL_BUDDY_JARVIS"] = "gpt-6-sol"
+assert session_brain_model(p) == "gpt-6-sol", "секрет стенда важнее общего"
+os.environ.pop("BRAIN_MODEL_BUDDY_JARVIS")
 os.environ.pop("BRAIN_MODEL_BUDDY")
 os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert session_brain_model(p) == _brain_model_for("jarvis"), "стенд на старой персоне — и мозг прежний"
 os.environ.pop("KZ_TEST_PROMPT")
-# Префилл «[» — только Haiku: Sonnet 5 отвечает на него 400, у OpenAI он ломает ход.
+# Haiku 5.5 — напрямую в Anthropic: шим его не знает и шлёт temperature.
+assert _is_anthropic_direct_brain("claude-haiku-5-5") and not _is_openai_brain("claude-haiku-5-5")
+for m in ("claude-haiku-4-5", "claude-sonnet-5", "jts-voice-router", "gpt-6-sol", ""):
+    assert not _is_anthropic_direct_brain(m), m
+body = _anthropic_brain_body()
+assert body == {"thinking": {"type": "disabled"}, "output_config": {"effort": "low"}}, body
+os.environ["ANTHROPIC_BRAIN_EFFORT"] = "xhigh"
+assert _anthropic_brain_body()["output_config"]["effort"] == "low", "с выключенным мышлением xhigh — 400"
+os.environ["ANTHROPIC_BRAIN_EFFORT"] = "medium"
+assert _anthropic_brain_body()["output_config"]["effort"] == "medium"
+os.environ.pop("ANTHROPIC_BRAIN_EFFORT")
+# Префилл «[» — только Haiku 4.5: Sonnet 5 и Haiku 5.5 отвечают на него 400,
+# у OpenAI он ломает ход. Без префикса тег держит история (tag_history).
 assert _brain_supports_prefill("jts-voice-router") and _brain_supports_prefill("claude-haiku-4-5")
-for m in ("claude-sonnet-5", "claude-sonnet-5-5", "gpt-6-sol", ""):
+for m in ("claude-sonnet-5", "claude-sonnet-5-5", "claude-haiku-5-5", "gpt-6-sol", ""):
     assert not _brain_supports_prefill(m), m
 
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
