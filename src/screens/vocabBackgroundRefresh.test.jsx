@@ -25,6 +25,13 @@ vi.mock('../api.js', () => ({
   saveStudentVocab: vi.fn(),
   deleteStudentVocabWord: vi.fn(),
   markVocabLearned: vi.fn(async () => {}),
+  // ученик не IELTS — полки IELTS Vocabulary нет, наборы не запрашиваются
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, onboarded: false })),
+  getIeltsTests: vi.fn(async () => []),
+  getIeltsTest: vi.fn(),
+  getVocabProgress: vi.fn(async () => ({})),
+  getVocabProgressWords: vi.fn(async () => ({})),
+  saveVocabProgress: vi.fn(async () => ({})),
 }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
 vi.mock('../practice/usePracticeEntitlement.js', () => ({

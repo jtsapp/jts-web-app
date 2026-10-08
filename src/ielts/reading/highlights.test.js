@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addHighlight, segments, findQuote } from './highlights.js'
+import { addHighlight, segments, findQuote, overlapsHighlight, removeHighlight } from './highlights.js'
 
 describe('маркер Reading', () => {
   it('новое выделение перекрывает старое только в пересечении', () => {
@@ -31,5 +31,23 @@ describe('маркер Reading', () => {
     const text = 'It is beaten in a machine for up to six hours, then dried.'
     expect(findQuote(text, 'beaten … for up to six hours')).toEqual({ start: 6, end: 45 })
     expect(findQuote(text, 'not here')).toBeNull()
+  })
+})
+
+describe('removeHighlight', () => {
+  it('убирает маркер с куска: середина делит выделение надвое, края обрезаются, чужой абзац не трогается', () => {
+    const list = [{ key: '0:0', start: 0, end: 20, color: 1 }, { key: '0:1', start: 0, end: 5, color: 1 }]
+    expect(removeHighlight(list, { key: '0:0', start: 5, end: 10 })).toEqual([
+      { key: '0:0', start: 0, end: 5, color: 1 },
+      { key: '0:0', start: 10, end: 20, color: 1 },
+      { key: '0:1', start: 0, end: 5, color: 1 },
+    ])
+    expect(removeHighlight(list, { key: '0:0', start: 0, end: 30 })).toEqual([{ key: '0:1', start: 0, end: 5, color: 1 }])
+  })
+  it('видит пересечение с маркером только в своём абзаце', () => {
+    const list = [{ key: '0:0', start: 4, end: 9, color: 1 }]
+    expect(overlapsHighlight(list, { key: '0:0', start: 8, end: 12 })).toBe(true)
+    expect(overlapsHighlight(list, { key: '0:0', start: 9, end: 12 })).toBe(false)
+    expect(overlapsHighlight(list, { key: '0:1', start: 4, end: 9 })).toBe(false)
   })
 })

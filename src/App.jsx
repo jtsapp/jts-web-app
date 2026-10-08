@@ -45,6 +45,7 @@ import IeltsListeningRunPage from './screens/IeltsListeningRunPage.jsx'
 import IeltsDictationPage from './screens/IeltsDictationPage.jsx'
 import IeltsWritingRunPage from './screens/IeltsWritingRunPage.jsx'
 import IeltsSpeakingRunPage from './screens/IeltsSpeakingRunPage.jsx'
+import IeltsMockPage from './screens/IeltsMockPage.jsx'
 import IeltsOnboardingPage from './screens/IeltsOnboardingPage.jsx'
 import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
 import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
@@ -84,7 +85,7 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
@@ -128,7 +129,7 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts', 'vocab', 'course-catalog', 'profile',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
-  'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route',
+  'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -281,6 +282,13 @@ export default function App() {
       const id = searchParams.get('ieltsAttempt')
       if (id) setIeltsReviewTarget({ attemptId: id })
     }
+    // ?screen=ielts-mock&ieltsMock=<id> — описание mock; &ieltsMockSession=<id> — идущая или сданная попытка
+    if (deepLink === 'ielts-mock') {
+      const sid = searchParams.get('ieltsMockSession')
+      const mid = searchParams.get('ieltsMock')
+      // &ieltsMockView=submitted — сданная попытка экраном «Экзамен сдан», а не итогом (проверка вида и ссылки из истории)
+      if (sid || mid) setIeltsMockTarget({ sessionId: sid || null, mockId: mid || null, view: searchParams.get('ieltsMockView') || undefined })
+    }
     if (deepLink === 'ielts-reading-review') {
       const id = searchParams.get('ieltsAttempt')
       if (id) setIeltsReviewTarget({ attemptId: id })
@@ -397,6 +405,26 @@ export default function App() {
   const [birthDateGate, setBirthDateGate] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
+  // Аккаунт IELTS (дизайн «IELTS new»): интерфейса General English у такого ученика нет — «Повторение» (тропа
+  // kingdom) недоступно и по диплинку, и как стартовый экран; вместо него открывается раздел IELTS. Сайдбар прячет
+  // пункт сам (Sidebar.jsx), здесь — защита от прямого адреса.
+  const [ieltsAccount, setIeltsAccount] = useState(false)
+  useEffect(() => {
+    if (!token) {
+      setIeltsAccount(false)
+      return
+    }
+    let alive = true
+    getIeltsMe(token).then((m) => {
+      if (alive) setIeltsAccount(!!m.ieltsAccount)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token])
+  useEffect(() => {
+    if (ieltsAccount && typeof screen === 'string' && screen.startsWith('kingdom')) setScreen('ielts')
+  }, [ieltsAccount, screen])
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
   // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
@@ -558,6 +586,7 @@ export default function App() {
   // IELTS: куда открыть хаб (вкладка/экран «Обучения»), какой тест проходить и какую попытку разбирать
   const [ieltsTarget, setIeltsTarget] = useState(null)
   const [ieltsRunTarget, setIeltsRunTarget] = useState(null)
+  const [ieltsMockTarget, setIeltsMockTarget] = useState(null)
   const [ieltsReviewTarget, setIeltsReviewTarget] = useState(null)
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
@@ -1298,6 +1327,7 @@ export default function App() {
     else if (key === 'ielts-listening-run' || key === 'ielts-dictation' || key === 'ielts-writing-run' || key === 'ielts-speaking-run') { if (payload?.testId) { setIeltsRunTarget(payload); setScreen(key) } }
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
+    else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -1855,6 +1885,22 @@ export default function App() {
       return <IeltsDiagnosticResultPage {...ieltsProps} target={ieltsReviewTarget} onRoute={() => handleNav('ielts-route')} />
     case 'ielts-route':
       return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} onPricing={() => handleNav('pricing')} />
+    case 'ielts-mock': {
+      const toMocks = () => handleNav('ielts', { tab: 'mocks' })
+      return (
+        <IeltsMockPage
+          token={token}
+          target={ieltsMockTarget}
+          onExit={toMocks}
+          onHistory={toMocks}
+          onToday={() => handleNav('ielts', { tab: 'today' })}
+          onPlan={() => handleNav('ielts', { tab: 'plan' })}
+          onTrain={(skill) => handleNav('ielts', skill ? { tab: 'learn', view: `skill-${skill}` } : { tab: 'learn' })}
+          onReviewAttempt={(attemptId) => handleNav('ielts-reading-review', { attemptId: String(attemptId), back: { tab: 'mocks' } })}
+          onWork={(skill, attemptId) => handleNav('ielts', { tab: 'learn', view: `${skill}-work`, attemptId: String(attemptId) })}
+        />
+      )
+    }
     case 'ielts-speaking-run':
       return (
         <IeltsSpeakingRunPage

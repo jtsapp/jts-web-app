@@ -3,7 +3,7 @@ import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
-import { getBalance, getDemoAccess } from '../api.js'
+import { getBalance, getDemoAccess, getIeltsMe } from '../api.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
@@ -19,6 +19,7 @@ import {
   ChevronRightIcon,
   CloseIcon,
   UserIcon,
+  SettingsIcon,
 } from './icons.jsx'
 
 // «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
@@ -52,6 +53,10 @@ const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.k
 // преподавателя при этом свои, пустые, — он раздел не проходит, а выдаёт из
 // него задания (см. AssignPracticeBar).
 const TEACHER_SECTIONS = ['lessons', 'practice']
+
+// Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке — без «Повторения» (курс
+// General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
+const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
@@ -95,8 +100,24 @@ export default function Sidebar({
   // «Главная» теперь у всех: сводка уровня, расписания и домашки нужна и
   // платящему. Раньше пункт был только у демо, потому что экран показывал
   // только демо-блоки.
+  // Аккаунт IELTS спрашиваем у бэкенда (ответ помнится по токену). До ответа — прежнее меню: у обычного ученика
+  // ничего не мигает, а у ученика IELTS «Повторение» пропадает с первым ответом.
+  const [ieltsAccount, setIeltsAccount] = useState(false)
+  useEffect(() => {
+    const authToken = token || loadToken()
+    if (!authToken || teacher) return
+    let alive = true
+    getIeltsMe(authToken).then((m) => {
+      if (alive) setIeltsAccount(!!m.ieltsAccount)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token, teacher])
+
   const base = [HOME_ITEM, ...NAV]
-  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : base
+  const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV_FULL.find((i) => i.key === k)).filter(Boolean)]
+  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -178,7 +199,14 @@ export default function Sidebar({
 
       <div className="sb__spacer" />
 
-      {!teacher && (
+      {ieltsAccount && !teacher && (
+        <button className="sb__item sb__item--settings" onClick={pick(onProfile)}>
+          <SettingsIcon size={24} />
+          <span>{t('nav.settings')}</span>
+        </button>
+      )}
+
+      {!teacher && !ieltsAccount && (
         <>
       <div className="sb__role">
         <img className="sb__role-ic" src={`/assets/world/roles/${role.key}.png`} alt="" />

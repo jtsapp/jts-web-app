@@ -74,6 +74,7 @@ export function useLiveAcoustics(stream, active) {
     let recognizer = null
     let finalWords = 0
     let stopped = false
+    let recFailed = false
     if (Recognition) {
       try {
         recognizer = new Recognition()
@@ -89,14 +90,29 @@ export function useLiveAcoustics(stream, active) {
           }
           words = finalWords + interim
         }
-        // распознаватель сам засыпает на паузах — пока идёт запись, будим снова
+        // Распознаватель сам засыпает на паузах — пока идёт запись, будим снова. Но если он падает сразу (нет сети,
+        // Brave, запрет сервиса), перезапуск крутился бы вхолостую всю запись: после трёх быстрых обрывов подряд
+        // или отказа сервиса слова просто не считаются (прочерк, а не выдумка).
+        let startedAt = performance.now()
+        let quickEnds = 0
+        recognizer.onerror = (e) => {
+          if (['not-allowed', 'service-not-allowed', 'network', 'audio-capture'].includes(e?.error)) {
+            stopped = true
+            recFailed = true
+          }
+        }
         recognizer.onend = () => {
-          if (!stopped) {
-            try {
-              recognizer.start()
-            } catch {
-              /* уже запущен или браузер не даёт — слова просто не посчитаются */
-            }
+          if (stopped) return
+          quickEnds = performance.now() - startedAt < 1000 ? quickEnds + 1 : 0
+          if (quickEnds >= 3) {
+            recFailed = true
+            return
+          }
+          try {
+            startedAt = performance.now()
+            recognizer.start()
+          } catch {
+            /* уже запущен или браузер не даёт — слова просто не посчитаются */
           }
         }
         recognizer.start()
@@ -127,7 +143,8 @@ export function useLiveAcoustics(stream, active) {
         levels: frames.current.slice(-WAVE_BARS).map((x) => ({ level: Math.min(1, x.level / peak), voiced: x.voiced })),
         hearing: now - lastVoiceAt < 3000,
         ...stats,
-        wpm: firstVoiceAt == null ? null : wordsPerMinute(words, (now - firstVoiceAt) / 1000),
+        // распознаватель отказал — темпа нет, а не «0 слов в минуту»
+        wpm: firstVoiceAt == null || !recognizer || recFailed ? null : wordsPerMinute(words, (now - firstVoiceAt) / 1000),
         device: stream.getAudioTracks()[0]?.label || '',
       })
     }, FRAME_MS)

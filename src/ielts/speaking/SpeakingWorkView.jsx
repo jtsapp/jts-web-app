@@ -16,7 +16,8 @@ const CRIT_KEY = { fluencyCoherence: 'fc', lexicalResource: 'lr', grammaticalRan
  * трём и об этом сказано), что получилось и над чем работать, по каждому вопросу — стенограмма, длительность и
  * темп, рядом модельный ответ с разбором. Записей здесь нет: они не хранятся.
  */
-export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWorks, onRetry }) {
+// embedded — внутри разбора полного mock (MockReview): без хлебных крошек раздела и без «Записать ещё раз»
+export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWorks, onRetry, embedded = false }) {
   const { t, lang } = useI18n()
   const authToken = token || loadToken()
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
@@ -41,7 +42,7 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
   if (state.status !== 'ready')
     return (
       <div className="ih-wwork">
-        <Breadcrumbs items={crumbs} />
+        {!embedded && <Breadcrumbs items={crumbs} />}
         {state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : <EmptyState icon={<MicIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
       </div>
     )
@@ -55,7 +56,7 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
 
   return (
     <div className="ih-wwork">
-      <Breadcrumbs items={crumbs} />
+      {!embedded && <Breadcrumbs items={crumbs} />}
       {r.status === 'done' ? (
         <section className="ih-card ih-wscore">
           <div className="ih-wscore__band">
@@ -72,9 +73,11 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
           </div>
           {r.criteria?.pronunciation == null && <p className="ih-wscore__fb ih-muted"><InfoIcon size={14} /> {t('ieltsSpeaking.noPron')}</p>}
           {r.feedback && <p className="ih-wscore__fb">{r.feedback}</p>}
-          <div className="ih-wscore__actions">
-            <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsSpeaking.again')}</PillButton>
-          </div>
+          {!embedded && (
+            <div className="ih-wscore__actions">
+              <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsSpeaking.again')}</PillButton>
+            </div>
+          )}
         </section>
       ) : (
         <section className="ih-wstatus is-bad" role="status">
@@ -83,7 +86,7 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
             <b>{t(r.status === 'grading' ? 'ieltsWriting.gradingTitle' : 'ieltsSpeaking.failedTitle')}</b>
             <p>{t(r.status === 'grading' ? 'ieltsWriting.gradingText' : 'ieltsSpeaking.failedText')}</p>
           </div>
-          <button type="button" className="ih-btn ih-btn--dark" onClick={() => onRetry(v.testId)}>{t('ieltsSpeaking.again')}</button>
+          {!embedded && <button type="button" className="ih-btn ih-btn--dark" onClick={() => onRetry(v.testId)}>{t('ieltsSpeaking.again')}</button>}
         </section>
       )}
 

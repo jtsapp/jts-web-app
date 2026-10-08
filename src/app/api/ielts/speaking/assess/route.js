@@ -95,6 +95,8 @@ export async function POST(request) {
   })
   if (!start.ok) return Response.json({ error: 'start_failed' }, { status: start.status === 400 || start.status === 404 ? start.status : 502 })
   const job = start.body
+  // attemptId в ответе об ошибке: работа уже создана и помечена failed — полный mock закрывает ею секцию («проверка не
+  // удалась», а не дыра в экзамене); вне mock экран его не читает
   const fail = (reason) => backend(`/mobile/ielts/attempts/${job.attemptId}/grading/fail`, token, { method: 'POST', body: JSON.stringify({ reason }) })
 
   const startedAt = Date.now()
@@ -107,7 +109,7 @@ export async function POST(request) {
   )
   if (!per.some((a) => a.transcript)) {
     await fail('no_speech')
-    return Response.json({ error: 'no_speech' }, { status: 422 })
+    return Response.json({ error: 'no_speech', attemptId: job.attemptId }, { status: 422 })
   }
 
   let graded
@@ -117,7 +119,7 @@ export async function POST(request) {
   } catch (e) {
     console.error('ielts/speaking/assess model failed:', e?.message || e)
     await fail('model')
-    return Response.json({ error: 'model_failed' }, { status: 502 })
+    return Response.json({ error: 'model_failed', attemptId: job.attemptId }, { status: 502 })
   }
 
   const engines = { stt: per.find((a) => a.stt)?.stt || null, pronunciation: per.some((a) => a.accuracy != null) ? 'azure' : null }
@@ -137,7 +139,7 @@ export async function POST(request) {
   })
   if (!saved.ok) {
     await fail('save')
-    return Response.json({ error: 'save_failed' }, { status: 502 })
+    return Response.json({ error: 'save_failed', attemptId: job.attemptId }, { status: 502 })
   }
 
   // квота IELTS считается по своей таблице (lib/db/ielts.js) — без этой строки оценка Speaking её не тратила бы

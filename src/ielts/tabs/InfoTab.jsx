@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import data from '../info/infoData.json'
 import { SectionTile } from '../sections.jsx'
 import { roundBand } from '../model/dashboard.js'
@@ -91,13 +90,14 @@ function BandTable({ rows, caption, x }) {
   )
 }
 
-export default function InfoTab({ track: profileTrack }) {
+/**
+ * Одна глава справочника (формат, Academic/GT, band, советы, регистрация, день экзамена, чек-листы, FAQ) — тексты
+ * методиста из infoData.json. Справочник «Об экзамене» по дизайну «IELTS new» встраивает главы в «Быстрые ответы».
+ */
+export function InfoChapter({ chapter, track }) {
   const { lang } = useI18n()
   const T = data.text[lang] || data.text.ru
   const E = EXTRA[lang] || EXTRA.ru
-  // Трек — по профилю, но справочник можно листать и по второму: чип переключает только эту вкладку
-  const [track, setTrack] = useState(profileTrack === 'general' ? 'general' : 'academic')
-  const [chapter, setChapter] = useState('format')
   const tr = track === 'general' ? 'gt' : 'ac'
   const trackName = TRACK_NAME[track]
   const L = data.links
@@ -189,7 +189,7 @@ export default function InfoTab({ track: profileTrack }) {
             </tbody>
           </table>
         </div>
-        <p className="ih-muted">{x('diff.mine', { track: TRACK_NAME[profileTrack === 'general' ? 'general' : 'academic'] })}</p>
+        <p className="ih-muted">{x('diff.mine', { track: TRACK_NAME[track === 'general' ? 'general' : 'academic'] })}</p>
       </>
     )
   } else if (chapter === 'band') {
@@ -320,25 +320,5 @@ export default function InfoTab({ track: profileTrack }) {
     )
   }
 
-  return (
-    <div className="ih-info">
-      <nav className="ih-info__nav" aria-label={E.toc}>
-        {CHAPTERS.map((c) => (
-          <button key={c} type="button" className={`ih-info__navitem ${chapter === c ? 'is-on' : ''}`} aria-current={chapter === c ? 'true' : undefined} onClick={() => setChapter(c)}>
-            {c === 'diff' ? E.navDiff : x(`sec.${c}`)}
-          </button>
-        ))}
-        <p className="ih-info__disclaimer"><InfoIcon size={16} /><span>{x('disclaimer')}</span></p>
-      </nav>
-      <div key={chapter} className="ih-info__body ih-enter">
-        <div className="ih-info__head">
-          <h2>{x(`sec.${chapter}`)}</h2>
-          <button type="button" className="ih-info__track" onClick={() => setTrack(track === 'general' ? 'academic' : 'general')} title={x('trackLabel')}>
-            {e('trackChip', { track: trackName })}
-          </button>
-        </div>
-        {body}
-      </div>
-    </div>
-  )
+  return body
 }

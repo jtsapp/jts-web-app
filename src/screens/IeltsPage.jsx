@@ -4,37 +4,40 @@ import { useI18n } from '../i18n.jsx'
 import IeltsHeader from '../ielts/IeltsHeader.jsx'
 import Tabs from '../ielts/ui/Tabs.jsx'
 import TodayTab from '../ielts/today/TodayTab.jsx'
-import LearnTab from '../ielts/tabs/LearnTab.jsx'
 import MockTestsTab from '../ielts/tabs/MockTestsTab.jsx'
-import ProgressTab from '../ielts/tabs/ProgressTab.jsx'
-import ComingSoonTab from '../ielts/tabs/ComingSoonTab.jsx'
-import InfoTab from '../ielts/tabs/InfoTab.jsx'
-import ReadingListView from '../ielts/reading/ReadingListView.jsx'
+import ProgressPage from '../ielts/progress/ProgressPage.jsx'
+import ExamGuide from '../ielts/info/ExamGuide.jsx'
+import PlanTab from '../ielts/plan/PlanTab.jsx'
+import { taskRoute } from '../ielts/plan/planModel.js'
+import { PracticeCatalog, SkillPage, TaskListPage } from '../ielts/practice/PracticeViews.jsx'
+import { RunTopBar } from '../ielts/mock/MockRunHeader.jsx'
+import { SKILL_TABS, skillTabOfView } from '../ielts/practice/practiceModel.js'
 import ReadingTaskView from '../ielts/reading/ReadingTaskView.jsx'
-import ListeningListView from '../ielts/listening/ListeningListView.jsx'
-import WritingListView from '../ielts/writing/WritingListView.jsx'
 import WritingTaskView from '../ielts/writing/WritingTaskView.jsx'
 import WritingWorkView from '../ielts/writing/WritingWorkView.jsx'
 import WritingWorksView from '../ielts/writing/WritingWorksView.jsx'
 import WritingGuideView from '../ielts/writing/WritingGuideView.jsx'
-import SpeakingListView from '../ielts/speaking/SpeakingListView.jsx'
 import SpeakingTaskView from '../ielts/speaking/SpeakingTaskView.jsx'
 import SpeakingWorkView from '../ielts/speaking/SpeakingWorkView.jsx'
 import SpeakingGuideView from '../ielts/speaking/SpeakingGuideView.jsx'
 import ShadowingView from '../ielts/speaking/ShadowingView.jsx'
-import { TranslateIcon } from '../ielts/icons.jsx'
-import { useIeltsDashboard, starterPlan } from '../ielts/model/useIeltsDashboard.js'
-import { planTaskView } from '../ielts/model/plan.js'
-import { rebuildIeltsPlan } from '../api.js'
+import { useIeltsDashboard } from '../ielts/model/useIeltsDashboard.js'
+import { getMyLessonOccurrences, getIeltsMe, markIeltsPlanTask } from '../api.js'
+import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { loadToken } from '../lib/session.js'
 import { useReadingCatalog, useListeningCatalog, useIeltsCatalog, useIeltsTrack } from '../ielts/reading/useReadingCatalog.js'
+import { studentBandOf } from '../ielts/model/levels.js'
 
 // Хаб раздела IELTS (?screen=ielts): шапка с серией и XP, вкладки и их содержимое. Макет — Figma «JTS-clone»
 // (Screen MS, «Обучение», «Пробные тесты», «5 · Reading — задание»).
 // Внутри «Обучения» свои экраны Reading: список (типы / дриллы / тексты) и задание; само прохождение и разбор —
 // отдельные экраны App без меню (IeltsReadingRunPage, IeltsReadingReviewPage).
-export const IELTS_TABS = ['today', 'learn', 'mocks', 'progress', 'vocab', 'info']
-const READING_LISTS = ['types', 'drills', 'texts']
+// ТЗ v4: пять вкладок в этом порядке; «Прогресс» — вложенный экран со «Сегодня» (вкладки нет, адрес есть), словарь —
+// общий раздел приложения (ссылка из «Практики»), своей вкладки у IELTS больше нет.
+export const IELTS_TABS = ['today', 'plan', 'learn', 'mocks', 'info']
+const HUB_TABS = [...IELTS_TABS, 'progress']
+// practice-list — выбор заданий одного набора по уровню (ключ набора — ?ieltsList=reading:drill:ng)
+const READING_LISTS = ['types', 'drills', 'texts', 'reading-full', 'skill-listening', 'skill-reading', 'skill-writing', 'skill-speaking', 'practice-list']
 // Списки Listening в адресе с префиксом: «types»/«drills» есть у обеих секций.
 const LISTENING_LISTS = ['listening-tasks', 'listening-types', 'listening-drills', 'listening-dictation', 'listening-spelling']
 const isListeningView = (view) => LISTENING_LISTS.includes(view)
@@ -45,6 +48,15 @@ const isWritingView = (view) => WRITING_VIEWS.includes(view)
 const SPEAKING_VIEWS = ['speaking-part1', 'speaking-part2', 'speaking-part3', 'speaking-shadowing', 'speaking-guide', 'speaking-works', 'speaking-work']
 const isSpeakingView = (view) => SPEAKING_VIEWS.includes(view)
 
+// Вид → страница навыка: «skill-<навык>» — первая вкладка, старые виды списков — своя вкладка
+function skillOfView(view) {
+  if (typeof view === 'string' && view.startsWith('skill-')) {
+    const skill = view.slice(6)
+    return SKILL_TABS[skill] ? { skill, tab: SKILL_TABS[skill][0].key } : null
+  }
+  return skillTabOfView(view)
+}
+
 // Состояние хаба живёт в адресе, чтобы F5 и ссылка возвращали туда же: ?ieltsTab=learn&ieltsView=texts&ieltsTest=…
 // Свои имена параметров, а не `tab`: ?screen= пишет App, и общий параметр путал бы другие экраны.
 function readHubUrl() {
@@ -53,17 +65,18 @@ function readHubUrl() {
     const tab = q.get('ieltsTab')
     const view = q.get('ieltsView')
     return {
-      tab: IELTS_TABS.includes(tab) ? tab : null,
+      tab: HUB_TABS.includes(tab) ? tab : null,
       view: READING_LISTS.includes(view) || isListeningView(view) || isWritingView(view) || isSpeakingView(view) ? view : null,
       testId: q.get('ieltsTest') || null,
       attemptId: q.get('ieltsWork') || null,
+      list: q.get('ieltsList') || null,
     }
   } catch {
     return {}
   }
 }
 
-function writeHubUrl({ tab, view, testId, attemptId }) {
+function writeHubUrl({ tab, view, testId, attemptId, list }) {
   try {
     const url = new URL(window.location.href)
     const set = (k, v) => (v ? url.searchParams.set(k, v) : url.searchParams.delete(k))
@@ -71,6 +84,7 @@ function writeHubUrl({ tab, view, testId, attemptId }) {
     set('ieltsView', tab === 'learn' ? view : null)
     set('ieltsTest', tab === 'learn' ? testId : null)
     set('ieltsWork', tab === 'learn' && (view === 'writing-work' || view === 'speaking-work') ? attemptId : null)
+    set('ieltsList', tab === 'learn' && view === 'practice-list' ? list : null)
     window.history.replaceState(window.history.state, '', url)
   } catch {
     /* без истории (тест, превью) состояние просто не запоминается */
@@ -86,13 +100,34 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   const writingCatalog = useIeltsCatalog(token, 'writing')
   const speakingCatalog = useIeltsCatalog(token, 'speaking')
   const [track, setTrack] = useIeltsTrack()
+  // Трек в шапке — метка профиля (ТЗ v4), а не переключатель: берём из /mobile/ielts/plan/me, без ответа — выбор списков
+  const [me, setMe] = useState(null)
+  // Ближайший живой урок — только у live; источник — общее расписание JTS, IELTS его не копирует
+  const [lesson, setLesson] = useState(null)
+  useEffect(() => {
+    const tk = token || loadToken()
+    if (!tk) return
+    let alive = true
+    getIeltsMe(tk).then((m) => {
+      if (!alive) return
+      setMe(m)
+      // расписание нужно только live: у Self Study уроков нет, а запрос шёл на каждом заходе в хаб
+      if (m?.studyMode !== 'live') return
+      getMyLessonOccurrences(tk)
+        .then((occ) => alive && setLesson(pickFeaturedOccurrence(Array.isArray(occ) ? occ : [])))
+        .catch(() => {})
+    })
+    return () => {
+      alive = false
+    }
+  }, [token])
 
   // Состояние из адреса или из перехода App (выход из прохождения/разбора) — после гидратации, как ?screen=.
   useEffect(() => {
     const fromUrl = readHubUrl()
     const next = target?.tab ? target : fromUrl
     if (next.tab) {
-      setHub({ tab: next.tab, view: next.view || null, testId: next.testId || null, attemptId: next.attemptId || null, autoGrade: !!next.autoGrade })
+      setHub({ tab: next.tab, view: next.view || null, testId: next.testId || null, attemptId: next.attemptId || null, list: next.list || null, autoGrade: !!next.autoGrade })
       // переход из App (сдали работу, вышли из теста) — в адрес, иначе F5 вернул бы на «Сегодня»
       if (target?.tab) writeHubUrl(next)
     }
@@ -109,38 +144,25 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   // хаба, иначе два появления складываются в одно затянутое.
   const [moved, setMoved] = useState(false)
   const go = (next) => {
-    const merged = { view: null, testId: null, attemptId: null, autoGrade: false, ...next }
+    const merged = { view: null, testId: null, attemptId: null, list: null, autoGrade: false, ...next }
     setMoved(true)
     setHub(merged)
     writeHubUrl(merged)
   }
 
-  // план дня строит бэкенд (по слабым типам, дате экзамена и маршруту); без ответа — стартовый план по секциям
-  // данные макета (?ieltsSample=1) несут план уже готовыми строками, бэкенд — сырыми задачами
-  const plan = useMemo(() => {
-    if (Array.isArray(data.plan)) return data.plan
-    return data.plan?.tasks?.length ? data.plan.tasks.map((x) => planTaskView(x, t)) : starterPlan(t)
-  }, [data.plan, t])
-  const startTask = (task) => {
-    const target = task.target
-    if (target?.screen) onNav?.(target.screen)
-    else if (target?.hub) go(target.hub)
-    else goTarget(target)
+  // задача программы → её место в разделе (planModel.taskRoute); словарь — общий раздел приложения
+  const startPlanTask = (task) => {
+    const r = taskRoute(task)
+    if (r.screen) onNav?.(r.screen, r.payload)
+    else go(r)
   }
-  const rebuildPlan = () => rebuildIeltsPlan(token || loadToken()).catch(() => null).then(reload)
-
-  // Цели задач и быстрых действий: экраны IELTS — App (onGo), разделы приложения — сайдбарная навигация (onNav).
-  const goTarget = (dest) => {
-    if (dest === 'vocab' || dest === 'lessons') onNav?.(dest)
-    else if (dest === 'ielts-reading') go({ tab: 'learn', view: 'texts' })
-    else onGo?.(dest)
+  // «Тренировать навык» из «Зоны роста»: туда, где этот навык тренируется; без основания — в план
+  const trainGrowth = (g) => {
+    if (!g) return go({ tab: 'plan' })
+    if (g.kind === 'criterion') return go({ tab: 'learn', view: g.skill === 'speaking' ? 'speaking-part2' : 'writing-task2' })
+    go({ tab: 'learn', view: g.skill === 'listening' ? 'listening-tasks' : 'types' })
   }
-  const onQuickAction = (key) => {
-    if (key === 'mock') go({ tab: 'mocks' })
-    else if (key === 'weak') go({ tab: 'progress' })
-    else if (key === 'vocab') onNav?.('vocab')
-    else if (key === 'spelling') onGo?.('ielts-listening')
-  }
+  const markPlanTask = (task, done) => markIeltsPlanTask(token || loadToken(), task.id, done).catch(() => null).then(reload)
 
   // Экран прохождения — по секции теста: у Listening свой плеер и фазы экзамена, у диктовки — свой тренажёр.
   const startRun = (testId, mode, kind) => {
@@ -152,6 +174,16 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   }
   const openReview = (attemptId) => onNav?.('ielts-reading-review', { attemptId, back: { tab: hub.tab, view: hub.view, testId: hub.testId } })
   const openTest = (testId) => go({ tab: 'learn', view: hub.tab === 'learn' ? hub.view : null, testId })
+  // строки «Практики»: задание открывается на своём экране, диктовка и правописание запускаются сразу
+  const lists = useMemo(() => ({ reading: catalog.items, listening: listeningCatalog.items, writing: writingCatalog.items, speaking: speakingCatalog.items }),
+    [catalog.items, listeningCatalog.items, writingCatalog.items, speakingCatalog.items])
+  // уровень ученика по навыкам — его кладёт в строки каталог (model/levels.js); списки делятся по нему на экране
+  const levelInfo = useMemo(() => ({ band: Object.fromEntries(Object.entries(lists).map(([k, v]) => [k, studentBandOf(v)])) }), [lists])
+  const openRow = (open) => {
+    if (!open) return
+    if (open.run) startRun(open.run.testId, 'practice', open.run.kind)
+    else go(open)
+  }
 
   const tabs = IELTS_TABS.map((key) => ({ key, label: t(`ieltsHub.tab.${key}`) }))
 
@@ -160,11 +192,14 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
     panel = (
       <TodayTab
         data={data}
-        plan={plan}
-        onStartTask={startTask}
-        onRebuild={rebuildPlan}
-        onQuickAction={onQuickAction}
-        onLessonReport={() => onNav?.('lessons')}
+        lesson={lesson}
+        onStartPlanTask={startPlanTask}
+        onMarkPlanTask={markPlanTask}
+        onOpenPlan={() => go({ tab: 'plan' })}
+        onOpenProgress={() => go({ tab: 'progress' })}
+        onEditGoal={() => onNav?.('ielts-onboarding')}
+        onTrain={trainGrowth}
+        onOpenLessons={() => onNav?.('lessons')}
         onStartStep={(step) => onNav?.(step === 'onboarding' ? 'ielts-onboarding' : step === 'diagnostic' ? 'ielts-diagnostic' : 'ielts-route')}
       />
     )
@@ -179,7 +214,16 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
       />
     )
   } else if (hub.tab === 'learn' && hub.testId && hub.view === 'speaking-shadowing') {
-    panel = <ShadowingView token={token} testId={hub.testId} onBack={() => go({ tab: 'learn' })} onBackToList={() => go({ tab: 'learn', view: 'speaking-shadowing' })} />
+    // shadowing — такой же экран задания, как Reading/Listening: на весь экран, только задание и шапка (правка в Figma)
+    const back = () => go({ tab: 'learn', view: 'speaking-shadowing' })
+    return (
+      <div className="ih-run ih-run--rl ih-shrun">
+        <RunTopBar chip="Speaking · Shadowing" mode={t('ieltsReading.modeChip', { mode: t('ieltsReading.mode.practice').toLowerCase() })} onExit={back} />
+        <div className="ih-shrun__body">
+          <ShadowingView token={token} testId={hub.testId} onBack={() => go({ tab: 'learn' })} onBackToList={back} embedded />
+        </div>
+      </div>
+    )
   } else if (hub.tab === 'learn' && hub.testId && isSpeakingView(hub.view)) {
     panel = (
       <SpeakingTaskView
@@ -191,15 +235,6 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         onStart={(testId, mode) => startRun(testId, mode)}
         onOpenWork={(attemptId) => go({ tab: 'learn', view: 'speaking-work', attemptId })}
         onGuide={() => go({ tab: 'learn', view: 'speaking-guide' })}
-      />
-    )
-  } else if (hub.tab === 'learn' && ['speaking-part1', 'speaking-part2', 'speaking-part3', 'speaking-shadowing'].includes(hub.view)) {
-    panel = (
-      <SpeakingListView
-        kind={hub.view.slice(9)}
-        catalog={speakingCatalog}
-        onOpenTest={(x) => go({ tab: 'learn', view: hub.view, testId: x.id })}
-        onBack={() => go({ tab: 'learn' })}
       />
     )
   } else if (hub.tab === 'learn' && hub.view === 'speaking-works') {
@@ -231,17 +266,6 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         onGuide={() => go({ tab: 'learn', view: 'writing-guide' })}
       />
     )
-  } else if (hub.tab === 'learn' && (hub.view === 'writing-task1' || hub.view === 'writing-task2')) {
-    panel = (
-      <WritingListView
-        kind={hub.view === 'writing-task2' ? 'task2' : 'task1'}
-        catalog={writingCatalog}
-        track={track}
-        onTrack={setTrack}
-        onOpenTest={(x) => go({ tab: 'learn', view: hub.view, testId: x.id })}
-        onBack={() => go({ tab: 'learn' })}
-      />
-    )
   } else if (hub.tab === 'learn' && hub.view === 'writing-works') {
     panel = (
       <WritingWorksView
@@ -269,35 +293,63 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         onReview={openReview}
       />
     )
-  } else if (hub.tab === 'learn' && isListeningView(hub.view)) {
+  } else if (hub.tab === 'learn' && hub.view === 'practice-list' && hub.list) {
     panel = (
-      <ListeningListView
-        list={hub.view.slice(10)}
-        catalog={listeningCatalog}
-        onOpenTest={(x) => (x.kind === 'dictation' || x.kind === 'spelling' ? startRun(x.id, 'practice', x.kind) : go({ tab: 'learn', view: hub.view, testId: x.id }))}
+      <TaskListPage
+        listKey={hub.list}
+        lists={lists}
+        track={track}
+        levelInfo={levelInfo}
+        onOpen={openRow}
         onBack={() => go({ tab: 'learn' })}
+        onSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })}
       />
     )
-  } else if (hub.tab === 'learn' && hub.view) {
+  } else if (hub.tab === 'learn' && !hub.testId && skillOfView(hub.view)) {
+    // страница навыка (дизайн «IELTS new», 3): вкладка — по виду списка, старые адреса ?ieltsView=types и т. п. ведут сюда же
+    const st = skillOfView(hub.view)
     panel = (
-      <ReadingListView
-        list={hub.view}
-        catalog={catalog}
+      <SkillPage
+        skill={st.skill}
+        tab={st.tab}
+        lists={lists}
+        levelInfo={levelInfo}
         track={track}
-        onTrack={setTrack}
-        onOpenTest={(id) => go({ tab: 'learn', view: hub.view, testId: id })}
+        onOpen={openRow}
+        onTab={(key) => go({ tab: 'learn', view: SKILL_TABS[st.skill].find((x) => x.key === key).view })}
         onBack={() => go({ tab: 'learn' })}
+        onOtherSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })}
       />
     )
   } else if (hub.tab === 'learn') {
-    panel = <LearnTab token={token} catalog={catalog} track={track} listeningCatalog={listeningCatalog} writingCatalog={writingCatalog} speakingCatalog={speakingCatalog} onOpenReading={(view) => go({ tab: 'learn', view })} onGo={onGo} />
+    panel = (
+      <PracticeCatalog
+        lists={lists}
+        track={track}
+        onOpen={openRow}
+        onOpenSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })}
+        onOpenVocab={() => onNav?.('vocab')}
+      />
+    )
   } else if (hub.tab === 'mocks') {
-    panel = <MockTestsTab catalog={catalog} listeningCatalog={listeningCatalog} track={track} onTrack={setTrack} onStart={startRun} onOpenTest={openTest} />
+    panel = (
+      <MockTestsTab
+        token={token}
+        track={me?.track || track}
+        onOpenMock={(mockId) => onNav?.('ielts-mock', { mockId })}
+        onOpenSession={(sessionId, view) => onNav?.('ielts-mock', { sessionId: String(sessionId), view })}
+      />
+    )
+  } else if (hub.tab === 'plan') {
+    panel = <PlanTab token={token || loadToken()} onStartTask={startPlanTask} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} />
   } else if (hub.tab === 'progress') {
     panel = (
-      <ProgressTab
+      <ProgressPage
         data={data}
-        token={token}
+        token={token || loadToken()}
+        programmeName={me?.programmeName}
+        onBack={() => go({ tab: 'today' })}
+        onTrain={(e) => (e.kind === 'criterion' ? trainGrowth(e) : go({ tab: 'learn', view: e.skill === 'listening' ? 'listening-tasks' : 'types' }))}
         onOpenAttempt={(a) => {
           // разбор — там, где у навыка свой экран работы
           if (a.skill === 'writing') go({ tab: 'learn', view: 'writing-work', attemptId: String(a.id) })
@@ -307,21 +359,13 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         }}
       />
     )
-  } else if (hub.tab === 'vocab') {
-    panel = (
-      <ComingSoonTab
-        tabKey="vocab"
-        icon={<TranslateIcon size={28} />}
-        action={{ label: t('ieltsHub.soon.vocab.cta'), onClick: () => onNav?.('vocab') }}
-      />
-    )
-  } else panel = <InfoTab track={track} />
+  } else panel = <ExamGuide track={me?.track || track} onOpenSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })} />
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ih">
-        <IeltsHeader streakDays={data.streakDays} streakBest={data.streakBest} xp={data.xp} level={data.level} />
-        <Tabs items={tabs} value={hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
+        <IeltsHeader track={me?.track || track} />
+        <Tabs items={tabs} value={hub.tab === 'progress' ? 'today' : hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
         {/* key — по вкладке и экрану внутри неё: новый экран монтируется заново и проигрывает короткое появление
             (.ih-enter, только opacity и transform). Внутри одного экрана обновления данных его не перезапускают. */}
         <div

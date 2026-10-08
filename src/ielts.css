@@ -1215,16 +1215,26 @@
    секций выше. Ниже 900px — одна колонка (ТЗ раздела §5.2). */
 
 .ih {
+  /* токены дизайна «IELTS new» (08.10.2026): текст #23202B, вторичный #656172, линии #E9E6F2 */
   --ih-violet: #9047ff;
-  --ih-ink: #181818;
-  --ih-ink-2: #4a4a55;
-  --ih-muted: #8a8a8a;
-  --ih-line: #ededf2;
+  --ih-ink: #23202b;
+  --ih-ink-2: #656172;
+  --ih-muted: #656172;
+  --ih-line: #e9e6f2;
   --ih-soft: #f4f4f4;
   --ih-green: #1f9d55;
 
+  /* по центру свободной области, как «Главная» и другие разделы: при широком окне или зуме страница не прилипает
+     к меню с пустой полосой справа */
   max-width: 1280px;
-  padding: 32px 40px 56px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 22px 32px 56px;
+  background: #faf9fd;
+  /* фон раздела — на всю ширину области, хотя сама страница по центру и не шире 1280 */
+  box-shadow: 0 0 0 100vmax #faf9fd;
+  clip-path: inset(0 -100vmax);
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -1239,13 +1249,7 @@
   max-width: none;
 }
 
-/* Угол «язык / колокольчик» стоял бы на чипах серии и XP: в макете его нет,
-   на десктопе прячем (как на «Практике»). В мобильной шапке он остаётся. */
-@media (min-width: 761px) {
-  .learn__main:has(.ih) .learn__bell {
-    display: none;
-  }
-}
+/* Колокольчик в углу — как в дизайне «IELTS new» (серии и XP в шапке больше нет, ставить его не на что). */
 
 /* ---- Шапка ---- */
 .ih-header {
@@ -1256,9 +1260,8 @@
 }
 .ih-header__title {
   margin: 0;
-  flex: 1;
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.2;
 }
 .ih-header__stats {
@@ -1379,7 +1382,7 @@
 .ih-tabs {
   display: flex;
   align-items: flex-end;
-  gap: 28px;
+  gap: 32px;
   border-bottom: 1px solid var(--ih-line);
   overflow-x: auto;
   scrollbar-width: none;
@@ -1405,7 +1408,7 @@
 }
 .ih-tabs__tab--active {
   font-weight: 700;
-  color: var(--ih-ink);
+  color: var(--ih-violet);
   border-bottom-color: var(--ih-violet);
 }
 
@@ -4367,79 +4370,236 @@
   text-align: left;
 }
 
-/* редактор */
+/* редактор — макет «IELTS new» (Writing Task 2): шапка с логотипом, карточка по центру, «Подсказки» справа */
+.ih-wrun {
+  background: #f7f6fb;
+}
+.ih-wrun__top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--ih-line);
+  background: #fff;
+}
+.ih-wrun__logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ih-violet);
+}
+.ih-wrun__pill {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #efe6ff;
+  color: #6d28d9;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ih-wrun__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-ink);
+  cursor: pointer;
+}
 .ih-wrun__body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
-}
-.ih-wrun__task {
-  overflow-y: auto;
+  grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 20px;
+  max-width: 1400px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
   padding: 24px;
-  background: #fff;
-  border-right: 1px solid var(--ih-line);
+}
+/* левая колонка: задание сверху, подсказки ниже; прокручивается сама, поле ответа справа остаётся на месте */
+.ih-wrun__left {
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: flex-start;
 }
-.ih-wrun__task .ih-wtask {
-  margin: 0;
-  width: 100%;
+.ih-wrun__left .ih-wrun__prompt {
+  padding: 20px 20px 10px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+  border-radius: 20px;
 }
-.ih-wrun__editor {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px 40px;
-  background: #f7f7fa;
-}
-.ih-wrun__text {
-  flex: 1;
-  min-height: 320px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 32px 40px;
+.ih-wrun__card,
+.ih-wrun__hints {
   border: 1px solid var(--ih-line);
   border-radius: 20px;
   background: #fff;
-  font-family: inherit;
-  font-size: 16px;
-  line-height: 1.75;
-  color: var(--ih-ink);
+}
+.ih-wrun__card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+}
+.ih-wrun__card .ih-wrun__text {
+  flex: 1;
+  min-height: 260px;
   resize: none;
 }
+.ih-wrun__prompt {
+  padding: 18px 18px 6px;
+  border-radius: 14px;
+  background: #f7f6fb;
+}
+.ih-wrun__meta {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-violet);
+}
+.ih-wrun__prompt .ih-wtask {
+  margin: 0;
+}
+/* вопрос уже лежит на сером поле подсказки — второй серой плашки внутри не нужно (как в макете: одна плашка) */
+.ih-wrun__prompt .ih-wtask__box {
+  padding: 0;
+  background: none;
+  font-size: 17px;
+  font-weight: 500;
+}
+.ih-wrun__text {
+  min-height: 260px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 2px solid #b48cff;
+  border-radius: 14px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ih-ink);
+  resize: vertical;
+}
 .ih-wrun__text:focus {
-  outline: 2px solid var(--ih-violet, #9047ff);
-  outline-offset: -1px;
+  outline: none;
+  border-color: var(--ih-violet, #9047ff);
+  box-shadow: 0 0 0 4px rgba(144, 71, 255, 0.12);
 }
 .ih-wrun__bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid var(--ih-line);
-  border-radius: 16px;
-  background: #fff;
-  font-size: 13px;
+  gap: 6px 8px;
+  font-size: 14px;
 }
 .ih-wrun__bar > b {
+  font-weight: 700;
+}
+.ih-wrun__bar > b.is-short {
+  color: #e8890c;
+}
+.ih-wrun__bar > b.is-ok {
+  color: #1f9d55;
+}
+.ih-wrun__draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ih-ink-2);
+}
+.ih-wrun__draft svg {
+  color: var(--ih-green, #22a55b);
+}
+.ih-wrun__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ih-wrun__actions .ih-btn2 {
+  min-height: 52px;
+  padding: 0 28px;
+}
+.ih-wrun__hints {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 22px;
+}
+.ih-wrun__hints h2 {
+  margin: 0;
   font-size: 20px;
+  font-weight: 800;
 }
-.ih-wrun__progress {
-  width: 140px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--ih-soft);
-  overflow: hidden;
+.ih-wrun__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.ih-wrun__progress span {
-  display: block;
-  height: 100%;
-  background: var(--ih-violet, #9047ff);
+.ih-wrun__steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ih-ink);
+}
+.ih-wrun__stepn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #efe6ff;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ih-wrun__steps li.is-done .ih-wrun__stepn {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-wrun__tip,
+.ih-wrun__ai {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ih-ink-2);
+}
+.ih-wrun__tip svg,
+.ih-wrun__ai svg {
+  flex: none;
+  color: var(--ih-violet);
+}
+.ih-wrun__ai {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f1eaff;
+  color: var(--ih-ink);
 }
 .ih-wrun__paste.is-flash {
   color: var(--ih-red, #e5484d);
@@ -4449,8 +4609,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: var(--ih-muted);
+  font-size: 14px;
+  color: var(--ih-ink-2);
 }
 .ih-wrun__saved svg {
   color: var(--ih-green);
@@ -4898,18 +5058,27 @@
 @media (max-width: 900px) {
   .ih-wrun__body {
     grid-template-columns: minmax(0, 1fr);
+    padding: 16px 12px 32px;
     overflow-y: auto;
   }
-  .ih-wrun__task {
-    border-right: 0;
-    border-bottom: 1px solid var(--ih-line);
+  .ih-wrun__left {
+    overflow: visible;
   }
-  .ih-wrun__editor {
+  .ih-wrun__top {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ih-wrun__logo,
+  .ih-wrun__saved {
+    display: none;
+  }
+  .ih-wrun__card {
     padding: 16px;
   }
   .ih-wrun__text {
-    padding: 16px;
-    min-height: 50vh;
+    padding: 14px;
+    min-height: 45vh;
   }
   .ih-wwork__grid,
   .ih-wscore {
@@ -8121,5 +8290,4707 @@
   }
   .ih-sstep li + li::before {
     display: none;
+  }
+}
+
+/* ===== Программа и план (ТЗ v4; backend docs/ielts/PROGRAMMES.md) =====
+   Фигмы под v4 нет — «Сегодня» (блок цели) и вкладка «План» собраны из кирпичей раздела: карточки, чипы, пилюли.
+   Цвета — токены .ih; статус всегда подписан словом, не только цветом. */
+.ih-back {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.ih-ptasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ih-ptask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 14px;
+  background: #fff;
+}
+.ih-ptask.is-control {
+  border-color: var(--ih-violet);
+  background: #faf6ff;
+}
+.ih-ptask.is-done .ih-ptask__main b {
+  color: var(--ih-muted);
+}
+.ih-ptask__main {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ih-ptask__main b {
+  font-size: 15px;
+  overflow-wrap: break-word;
+}
+.ih-ptask__meta {
+  font-size: 13px;
+  color: var(--ih-muted);
+}
+.ih-ptask__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ih-ptask__link {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  min-height: 32px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.ih-ptask__date {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--ih-line);
+  border-radius: 10px;
+}
+
+.ih-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ih-goal__top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ih-goal__top h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.ih-goal__deadline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.ih-goal__deadline b {
+  font-size: 18px;
+  color: var(--ih-violet);
+}
+.ih-journey {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  position: relative;
+}
+.ih-journey li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--ih-soft);
+}
+.ih-journey li.is-now {
+  background: #f1e8ff;
+}
+.ih-journey b {
+  font-size: 26px;
+}
+.ih-journey small {
+  font-size: 13px;
+}
+.ih-goal__say {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+.ih-goal__today {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--ih-line);
+  padding-top: 14px;
+}
+.ih-goal__today header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ih-goal__today h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.ih-goal__control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ih-planx {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ih-card.ih-planx__head {
+  /* .ih-card — колонка; шапке плана нужен ряд, иначе flex-basis заголовка становится высотой */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ih-planx__title {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ih-planx__title h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.ih-planx__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ih-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--ih-soft);
+}
+.ih-seg button {
+  border: 0;
+  background: none;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+  cursor: pointer;
+}
+.ih-seg button.is-on {
+  background: #fff;
+  color: var(--ih-violet);
+  box-shadow: 0 1px 3px rgba(24, 24, 24, 0.12);
+}
+.ih-road {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 18px;
+  border-left: 2px dashed var(--ih-line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-road__week {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ih-road__node {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px 8px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  margin-left: -32px;
+}
+.ih-road__dot {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  background: #fff;
+  border: 2px solid var(--ih-line);
+  color: var(--ih-ink-2);
+}
+.ih-road__week.is-done .ih-road__dot {
+  background: var(--ih-green);
+  border-color: var(--ih-green);
+  color: #fff;
+}
+.ih-road__week.is-now .ih-road__dot {
+  background: var(--ih-violet);
+  border-color: var(--ih-violet);
+  color: #fff;
+}
+.ih-road__label {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+}
+.ih-weekgrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.ih-weekgrid__day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--ih-soft);
+  min-width: 0;
+}
+.ih-weekgrid__day.is-today {
+  background: #f1e8ff;
+}
+.ih-weekgrid__day h3 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+.ih-weekgrid .ih-ptask {
+  padding: 8px;
+}
+.ih-weekgrid .ih-ptask__main b {
+  font-size: 13px;
+}
+.ih-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.ih-month__day {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--ih-line);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.ih-month__day span {
+  font-weight: 700;
+}
+.ih-month__day small {
+  font-size: 12px;
+  color: var(--ih-muted);
+}
+.ih-month__day.is-out {
+  opacity: 0.45;
+}
+.ih-month__day.is-today {
+  border-color: var(--ih-violet);
+}
+.ih-month__day.is-sel {
+  background: #f1e8ff;
+}
+.ih-month__flag {
+  color: var(--ih-violet) !important;
+}
+.ih-vocablink {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  border: 1px dashed var(--ih-violet);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-vocablink span {
+  color: var(--ih-ink-2);
+}
+/* телефон: неделя — список дней, а не семь нечитаемых колонок; путь цели — столбиком */
+@media (max-width: 720px) {
+  .ih-weekgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-journey {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-goal__deadline {
+    align-items: flex-start;
+  }
+  .ih-month__day {
+    min-height: 48px;
+    padding: 4px;
+  }
+  .ih-month__day small {
+    display: none;
+  }
+}
+
+/* ===== Дизайн «IELTS new» (Figma JTS-clone, раздел 1 «Сегодня»): шапка страницы, блок цели, задачи, зона роста,
+   контроль недели. Размеры и цвета — из макета (GoalJourney 325 px, карточки r20, кнопки r12 высотой 44). ===== */
+.ih-header__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.ih-ph {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ih-ph__text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ih-ph__title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ih-ink);
+}
+.ih-ph__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ih-ph__sub {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+.ih-ph__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.ih-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.ih-btn2 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ih-violet);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ih-btn2--primary {
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-btn2--outline {
+  background: #fff;
+  color: var(--ih-violet);
+}
+.ih-btn2:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ih-btn2:focus-visible,
+.ih-link:focus-visible {
+  outline: 3px solid #c9b3ff;
+  outline-offset: 2px;
+}
+/* плашка навыка: цвета навыков — акценты (ТЗ v4), основной цвет раздела — фиолетовый */
+.ih-plate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-plate--sm {
+  border-radius: 12px;
+}
+.ih-plate--reading {
+  background: #fff1dd;
+  color: #e57a12;
+}
+.ih-plate--listening {
+  background: #e7f0ff;
+  color: #2f6fde;
+}
+.ih-plate--speaking {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-plate--vocab {
+  background: #fdeaf3;
+  color: #d6408b;
+}
+
+.ih-today--v4 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ih-today__row {
+  display: grid;
+  grid-template-columns: minmax(0, 704fr) minmax(0, 376fr);
+  gap: 24px;
+  align-items: start;
+}
+
+/* блок цели */
+.ih-gb {
+  position: relative;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 40px;
+  min-height: 325px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ece6ff;
+}
+.ih-gb__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right bottom;
+}
+.ih-gb__mascot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+.ih-gb__mascot img {
+  display: block;
+  width: 300px;
+  height: auto;
+}
+.ih-gb__bubble {
+  position: absolute;
+  top: 28px;
+  left: 200px;
+  z-index: 1;
+  width: 266px;
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 16px 16px 16px 4px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(90, 60, 160, 0.12);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ih-ink);
+}
+.ih-gb__journey {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 28px 18px 0;
+}
+.ih-gb__exam {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.ih-gb__exam h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-gb__daterow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ih-gb__date {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+.ih-gb__edit {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+  color: var(--ih-violet);
+  cursor: pointer;
+}
+.ih-gb__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ih-violet);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ih-gb__track {
+  list-style: none;
+  margin: 0;
+  padding: 0 120px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 140px;
+}
+.ih-gb__node {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-gb__node--a {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border: 2px solid #e2d6fa;
+  font-size: 20px;
+}
+.ih-gb__line {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+}
+.ih-gb__line--done {
+  background: linear-gradient(90deg, #c9b3ff, #9047ff);
+}
+/* пунктир до цели — штрихами 8/6 px, как в макете: border dashed в 2 px сливался в сплошную линию */
+.ih-gb__line--todo {
+  height: 3px;
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, #c4b2f7 0 8px, transparent 8px 14px);
+}
+.ih-gb.is-clickable {
+  cursor: pointer;
+}
+.ih-gb.is-clickable:hover .ih-gb__node--now {
+  box-shadow: 0 8px 22px rgba(144, 71, 255, 0.5);
+}
+.ih-gb__now {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 32px;
+}
+.ih-gb__node--now {
+  width: 72px;
+  height: 72px;
+  background: var(--ih-violet);
+  border: 3px solid #fff;
+  box-shadow: 0 6px 16px rgba(144, 71, 255, 0.35);
+  color: #fff;
+  font-size: 24px;
+}
+.ih-gb__nowtag {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-gb__nowtag.is-checking {
+  background: #fff;
+  color: var(--ih-violet);
+  border: 1px solid #c9b3ff;
+}
+.ih-gb__nowtag.is-none {
+  background: transparent;
+  color: var(--ih-ink-2);
+}
+.ih-gb__track.is-empty .ih-gb__node--a,
+.ih-gb__track.is-empty .ih-gb__node--now {
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px dashed #c9b8f5;
+  box-shadow: none;
+  color: var(--ih-ink-2);
+}
+.ih-gb__track.is-empty .ih-gb__line--done {
+  height: 3px;
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, #c4b2f7 0 8px, transparent 8px 14px);
+}
+.ih-gb__track.is-reached .ih-gb__line--todo {
+  height: 6px;
+  border: 0;
+  background: linear-gradient(90deg, #9047ff, #ffb23d);
+}
+.ih-gb__star {
+  flex: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+/* звезда цели — объёмная со скруглёнными лучами (вектор макета 92:888), а не плоский многоугольник */
+.ih-gb__star::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url(/ielts/mascot/goal-star.svg) center / contain no-repeat;
+  filter: drop-shadow(0 6px 10px rgba(255, 170, 0, 0.35));
+}
+.ih-gb__star span {
+  position: relative;
+  padding-top: 6px;
+}
+.ih-gb__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+}
+
+/* задачи программы */
+.ih-tt,
+.ih-gz,
+.ih-wc {
+  background: #fff;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+}
+.ih-tt {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+}
+.ih-tt__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ih-tt__head h2,
+.ih-gz__head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-tt__sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-tt__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ih-tt__task,
+.ih-tt__lesson {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--ih-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.ih-tt__task.is-primary,
+.ih-tt__lesson {
+  background: #f6f1ff;
+  border-color: #e3d8fa;
+}
+.ih-tt__lesson.is-empty {
+  background: #faf9fd;
+}
+.ih-tt__task.is-done {
+  opacity: 0.7;
+}
+.ih-tt__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ih-tt__body b {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ih-ink);
+  overflow-wrap: break-word;
+}
+.ih-tt__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-tt__chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f0fa;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-tt__chip.is-late {
+  background: #fff1e3;
+  color: #c2560a;
+}
+.ih-tt__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ih-tt__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #22a55b;
+}
+.ih-tt__hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-tt__empty {
+  margin: 0;
+  color: var(--ih-ink-2);
+}
+
+/* зона роста */
+.ih-gz {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+}
+.ih-gz__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ih-gz__head .ih-plate {
+  width: 36px;
+  height: 36px;
+}
+.ih-gz__card {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff4f4;
+}
+.ih-gz__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #fff;
+  color: #e5484d;
+}
+.ih-gz__card b {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ih-gz__card p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ih-ink-2);
+}
+.ih-gz__btn {
+  align-self: flex-start;
+}
+
+/* контроль недели */
+.ih-wc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+}
+.ih-wc__plate {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+}
+.ih-wc__body {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ih-wc__body h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-wc__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-wc__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f3f0fa;
+  color: var(--ih-ink-2);
+}
+.ih-wc__chip.is-open,
+.ih-wc__chip.is-done {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-wc__chip.is-late {
+  background: #fff1e3;
+  color: #c2560a;
+}
+.ih-wc__btn {
+  min-height: 48px;
+  padding: 0 28px;
+}
+.ih-wc__sep {
+  width: 1px;
+  height: 44px;
+  background: var(--ih-line);
+}
+.ih-wc__note {
+  max-width: 200px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+
+@media (max-width: 1100px) {
+  .ih-today__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-gb__track {
+    padding: 0 24px;
+  }
+  /* узкий планшет: в две колонки облачко маскота (left: 200px) ложилось на заголовок «Дата экзамена…» —
+     маскот с облачком встают строкой над путём, как на телефоне */
+  .ih-gb {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ih-gb__mascot {
+    min-height: 170px;
+    flex-direction: row;
+    align-items: flex-end;
+  }
+  .ih-gb__mascot img {
+    width: 190px;
+  }
+  .ih-gb__bubble {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    max-width: 360px;
+    flex: 1;
+    margin: 16px 16px 70px 0;
+  }
+  .ih-gb__journey {
+    padding: 0 24px 16px;
+  }
+  /* контроль недели переносится строкой: разделитель повисал в конце первой строки, а заметка — под ним в 200px */
+  .ih-wc__sep {
+    display: none;
+  }
+  .ih-wc__note {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+/* телефон: маскот над путём, задачи — кнопка под текстом, контроль — столбиком */
+@media (max-width: 760px) {
+  .ih {
+    padding: 16px 16px 40px;
+  }
+  .ih-ph__title {
+    font-size: 30px;
+  }
+  .ih-gb {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ih-gb__mascot {
+    min-height: 150px;
+    flex-direction: row;
+    align-items: flex-end;
+  }
+  .ih-gb__mascot img {
+    width: 150px;
+  }
+  .ih-gb__bubble {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    flex: 1;
+    margin: 16px 16px 60px 0;
+    font-size: 14px;
+  }
+  .ih-gb__journey {
+    padding: 0 16px 8px;
+  }
+  .ih-gb__exam h2 {
+    font-size: 22px;
+  }
+  .ih-gb__track {
+    padding: 0;
+    min-height: 120px;
+  }
+  .ih-gb__node--now {
+    width: 60px;
+    height: 60px;
+    font-size: 20px;
+  }
+  .ih-tt__task,
+  .ih-tt__lesson {
+    flex-wrap: wrap;
+  }
+  .ih-tt__actions,
+  .ih-tt__lesson .ih-btn2 {
+    width: 100%;
+  }
+  .ih-tt__actions .ih-btn2 {
+    flex: 1;
+  }
+  .ih-wc__sep {
+    display: none;
+  }
+  .ih-wc__btn {
+    width: 100%;
+  }
+  /* «Сегодня по программе» и «Весь план» не делят строку в 300px: ссылка уходит под заголовок */
+  .ih-tt__head {
+    flex-wrap: wrap;
+  }
+  .ih-tt__head h2,
+  .ih-gz__head h2 {
+    font-size: 20px;
+  }
+  /* шапка роадмапа: стрелки по краям заголовка, «К текущему дню» — отдельной строкой во всю ширину (вылезала за
+     карточку) */
+  .ih-roadcard__head {
+    flex-wrap: wrap;
+  }
+  .ih-roadcard__head > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .ih-roadcard .ih-roadcard__head h2 {
+    font-size: 19px;
+  }
+  .ih-roadcard__head .ih-spacer {
+    display: none;
+  }
+  .ih-roadcard__head .ih-softbtn {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  /* переключатели вкладок навыка: одна строка с прокруткой вбок — «Тексты на время» в три строки ломали ряд */
+  .ih-practice .ih-seg2 {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ih-practice .ih-seg2 button {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+/* ===== Дизайн «IELTS new», раздел 2 «План»: роадмап (две недели дорогой + панель дня), неделя (семь колонок),
+   месяц (сетка + панель). Цвета статусов — как в легенде макета; статус везде подписан словом. ===== */
+.ih-planv {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ih-planv .ih-ph__sub {
+  font-size: 18px;
+  font-weight: 500;
+}
+.ih-seg2 {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f3f0fa;
+  border: 1px solid var(--ih-line);
+}
+.ih-seg2 button {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+  cursor: pointer;
+}
+.ih-seg2 button.is-on {
+  background: var(--ih-violet);
+  color: #fff;
+  font-weight: 700;
+}
+.ih-progline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ih-progline__bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: #ece8f5;
+  overflow: hidden;
+}
+.ih-progline__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--ih-violet);
+}
+.ih-progline b {
+  font-size: 15px;
+  white-space: nowrap;
+}
+.ih-planrow {
+  display: grid;
+  grid-template-columns: minmax(0, 700fr) minmax(0, 380fr);
+  gap: 24px;
+  align-items: start;
+}
+.ih-iconbtn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+  color: var(--ih-ink);
+  cursor: pointer;
+}
+.ih-iconbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ih-softbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ih-spacer {
+  flex: 1;
+}
+.ih-chip2 {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ih-chip2 b {
+  padding-right: 6px;
+  margin-right: 2px;
+  border-right: 1px solid #d9c8ff;
+}
+.ih-chip2.is-completed {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-chip2.is-missed {
+  background: #fff3dc;
+  color: #c2560a;
+}
+
+/* роадмап */
+.ih-roadcard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+}
+.ih-roadcard__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ih-roadcard__head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.ih-roadcard__head span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-road2 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 90px;
+  min-height: 520px;
+  padding: 24px 24px 140px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f1eaff, #f8f4ff);
+  overflow: hidden;
+}
+/* дорога целиком — SVG-лента под рядами (PlanViews: ROAD_W/ROAD_AXIS); на телефоне её нет (--road-svg: 0) */
+.ih-road2__svg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.ih-road2__band {
+  fill: none;
+  stroke: #e3d6ff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ih-road2__axis {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-dasharray: 10 8;
+}
+.ih-road2__week {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.ih-road2__tag {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  border-radius: 14px;
+  border: 1px solid #e3d8fa;
+  background: #fff;
+}
+.ih-road2__tag b {
+  font-size: 16px;
+  font-weight: 800;
+  color: #6d28d9;
+}
+.ih-road2__tag span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-road2__done {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #22a55b;
+}
+.ih-road2__lane {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 999px;
+  position: relative;
+}
+.ih-road2__day {
+  position: relative;
+  z-index: 1;
+}
+.ih-road2__day button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.ih-road2__dot {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  background: #e3ddf0;
+  color: #fff;
+}
+.ih-road2__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+}
+.ih-road2__day.is-done .ih-road2__dot {
+  background: #22a55b;
+}
+.ih-road2__day.is-current .ih-road2__dot {
+  width: 56px;
+  height: 56px;
+  margin-top: -8px;
+  background: #fff;
+  border: 4px solid var(--ih-violet);
+}
+.ih-road2__day.is-current .ih-road2__label {
+  font-weight: 700;
+  color: var(--ih-violet);
+}
+.ih-road2__day.is-started .ih-road2__dot {
+  background: #b38bff;
+}
+.ih-road2__day.is-missed .ih-road2__dot {
+  background: #f5a524;
+}
+.ih-road2__day.is-flag .ih-road2__dot {
+  width: 52px;
+  height: 52px;
+  margin-top: -6px;
+  background: #fff;
+  border: 2px solid #ffd9a8;
+  color: #f5a524;
+}
+.ih-road2__day.is-flag.is-completed .ih-road2__dot {
+  background: #fff3dc;
+}
+.ih-road2__day.is-sel .ih-road2__dot {
+  box-shadow: 0 0 0 4px rgba(144, 71, 255, 0.25);
+}
+.ih-road2__here {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: calc(100% + 14px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-road2__mascot {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+.ih-road2__mascot img {
+  width: 117px;
+  height: auto;
+}
+.ih-road2__mascot p {
+  max-width: 206px;
+  margin: 0 0 30px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.ih-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+.ih-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-legend__ic {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-legend__ic.is-done {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-legend__ic.is-planned {
+  background: #ede8f7;
+  color: var(--ih-ink-2);
+}
+.ih-legend__ic.is-missed,
+.ih-legend__ic.is-control {
+  background: #fff3dc;
+  color: #f5a524;
+}
+
+/* панель дня */
+.ih-dp {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+}
+.ih-dp__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ih-dp__head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+.ih-dp__head span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-dp__nav {
+  display: flex;
+  gap: 8px;
+}
+.ih-dp__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ih-dp__task {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+}
+.ih-dp__task.is-primary {
+  background: #f6f1ff;
+  border-color: #e3d8fa;
+}
+.ih-dp__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ih-dp__task .ih-btn2 {
+  width: 100%;
+}
+.ih-dp__sep {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--ih-line);
+}
+.ih-dp__ctl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ih-dp__ctl b {
+  display: block;
+  font-size: 18px;
+}
+.ih-dp__ctl span {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-dp__text,
+.ih-dp__rest {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-dp__evtitle {
+  font-size: 15px;
+}
+.ih-dp__events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-dp__events li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ih-dp__events b {
+  display: block;
+  font-size: 14px;
+}
+.ih-dp__events small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-plate--control-warm {
+  background: #fff3dc;
+  color: #f5a524;
+  border-radius: 14px;
+}
+
+/* неделя */
+.ih-weekv,
+.ih-monthv {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ih-navrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ih-navrow h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+.ih-week7 {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+.ih-week7__col {
+  min-width: 0;
+  border-right: 1px solid var(--ih-line);
+}
+.ih-week7__col:last-child {
+  border-right: 0;
+}
+.ih-week7__col header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 4px;
+  background: #faf9fd;
+  border-bottom: 1px solid var(--ih-line);
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-week7__col header b {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-week7__col header b svg {
+  color: #f5a524;
+}
+.ih-week7__col.is-today header {
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-week7__col.is-today header b {
+  color: #fff;
+}
+.ih-week7__col.is-today {
+  background: #f6f1ff;
+}
+.ih-week7__col ul {
+  list-style: none;
+  margin: 0;
+  padding: 10px 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 220px;
+}
+.ih-week7__rest {
+  align-self: stretch;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f3f0fa;
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-wcard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-wcard b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ih-wcard__st {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid #c9c4d6;
+  color: #fff;
+}
+.ih-wcard__sub,
+.ih-wcard__min,
+.ih-wcard__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ih-ink-2);
+  overflow-wrap: break-word;
+}
+.ih-wcard.is-done {
+  background: #ebf8f0;
+  border-color: #c3ead2;
+}
+.ih-wcard.is-done .ih-wcard__st {
+  background: #22a55b;
+  border-color: #22a55b;
+}
+.ih-wcard.is-current .ih-wcard__st {
+  border-color: var(--ih-violet);
+}
+.ih-wcard.is-control {
+  background: #fff3dc;
+  border-color: #ffd9a8;
+}
+.ih-wcard.is-control .ih-wcard__st {
+  border: 0;
+  color: #f5a524;
+}
+.ih-wcard.is-missed .ih-wcard__st {
+  border-color: #f5a524;
+}
+.ih-wcard.is-sel {
+  border: 2px solid var(--ih-violet);
+}
+/* панель выбранного задания недели: слева дата и задание, справа кнопки; обе колонки по центру по вертикали
+   (правка «Not centered, bad size») */
+.ih-wsel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  align-items: center;
+  gap: 20px 40px;
+  padding: 28px 32px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-wsel__info {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.ih-wsel h3 {
+  margin: 0 0 16px;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.ih-wsel__task {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ih-wsel__task div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  color: var(--ih-ink-2);
+}
+.ih-wsel__task b {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ih-ink);
+}
+.ih-wsel__task span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ih-wsel__ring {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 999px;
+  border: 5px solid var(--ih-violet);
+  color: #fff;
+}
+.ih-wsel__ring.is-completed {
+  background: #22a55b;
+  border-color: #22a55b;
+}
+.ih-wsel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-wsel__actions .ih-btn2 {
+  min-height: 48px;
+}
+@media (max-width: 760px) {
+  .ih-wsel {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 20px;
+  }
+}
+.ih-wsel__actions small {
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+
+/* месяц */
+/* ключи цветов месяца — фишками справа в шапке (макет 2 · Месяц) */
+.ih-monthwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ih-planrow--month {
+  grid-template-columns: minmax(0, 740fr) minmax(0, 340fr);
+}
+.ih-mkeys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ih-mkeys li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-mkeys i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+.ih-mkeys i.is-task {
+  background: var(--ih-violet);
+}
+.ih-mkeys i.is-control {
+  background: #f5a524;
+}
+.ih-mkeys i.is-mock {
+  background: #2f6fde;
+}
+.ih-month2 {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+.ih-month2__dow {
+  padding: 10px 12px;
+  background: #faf9fd;
+  border-bottom: 1px solid var(--ih-line);
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-month2__day {
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px;
+  border: 0;
+  border-right: 1px solid var(--ih-line);
+  border-bottom: 1px solid var(--ih-line);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.ih-month2__day:nth-child(7n) {
+  border-right: 0;
+}
+.ih-month2__day.is-out {
+  background: #faf9fd;
+  color: #b5b0c2;
+}
+.ih-month2__day.is-sel {
+  background: #f6f1ff;
+}
+.ih-month2__n {
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-month2__day.is-today .ih-month2__n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-month2__rest {
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+.ih-mchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f3f0fa;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ih-mchip.is-done {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-mchip.is-control {
+  background: #fff3dc;
+  color: #c2560a;
+}
+.ih-mchip.is-mock {
+  background: #e7f0ff;
+  color: #2f6fde;
+}
+.ih-mchip.is-more {
+  background: none;
+  color: var(--ih-violet);
+}
+
+@media (max-width: 1100px) {
+  .ih-planrow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* телефон: роадмап — столбик дней, неделя — список дней (а не семь нечитаемых колонок), месяц — компактная сетка */
+@media (max-width: 760px) {
+  .ih-planv .ih-ph__right {
+    width: 100%;
+  }
+  .ih-seg2 {
+    width: 100%;
+  }
+  .ih-seg2 button {
+    flex: 1;
+  }
+  .ih-road2 {
+    padding: 16px 16px 150px;
+    gap: 40px;
+  }
+  .ih-road2 {
+    --road-svg: 0;
+  }
+  .ih-road2__lane {
+    border-radius: 24px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    background: #e3d6ff;
+  }
+  .ih-week7 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-week7__col {
+    border-right: 0;
+    border-bottom: 1px solid var(--ih-line);
+  }
+  .ih-week7__col header {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .ih-week7__col ul {
+    min-height: 0;
+  }
+  .ih-wsel__actions {
+    width: 100%;
+  }
+  .ih-month2__day {
+    min-height: 52px;
+    padding: 4px;
+  }
+  .ih-mchip {
+    display: none;
+  }
+  .ih-month2__day .ih-mchip:first-of-type {
+    display: block;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    font-size: 0;
+    border-radius: 999px;
+  }
+}
+
+/* ===== Дизайн «IELTS new», раздел 3 «Практика IELTS»: поиск, карточки навыков, короткие тренировки, страница навыка,
+   пустые состояния. ===== */
+.ih-practice {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ih-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--ih-line);
+  border-radius: 14px;
+  background: #fff;
+  color: #8e8a9c;
+}
+.ih-search.is-active,
+.ih-search:focus-within {
+  border: 2px solid var(--ih-violet);
+}
+.ih-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ih-ink);
+}
+.ih-psec {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ih-psec + .ih-psec {
+  padding-top: 24px;
+  border-top: 1px solid var(--ih-line);
+}
+.ih-psec__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ih-psec__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+.ih-psec__sub {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-psec__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-seg2--sm button {
+  min-height: 34px;
+  padding: 0 14px;
+}
+.ih-skillgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-skillcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 172px;
+  padding: 22px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-skillcard:hover {
+  border-color: #d9c8ff;
+}
+.ih-skillcard .ih-plate {
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+.ih-skillcard b {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-skillcard > span:not(.ih-plate):not(.ih-link) {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-skillcard .ih-link {
+  margin-top: auto;
+  font-size: 14px;
+}
+.ih-shortgrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-prows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-prow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--ih-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.ih-prow.is-compact {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: #8e8a9c;
+}
+.ih-prow.is-compact:hover {
+  border-color: #d9c8ff;
+}
+/* «Скоро» — строка без материала: выключена и выглядит выключенной (сторож disabled-controls) */
+.ih-prow.is-compact:disabled,
+.ih-prow.is-soon {
+  background: #faf9fd;
+}
+.ih-prow.is-soon b {
+  color: #9b97a8;
+}
+.ih-prow.is-soon .ih-plate {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.ih-prow__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ih-prow__body b {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ih-prow.is-compact .ih-prow__body b {
+  font-size: 15px;
+}
+.ih-prow__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-stchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f3f0fa;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+}
+.ih-prow.is-compact .ih-stchip:not(.is-done):not(.is-started) {
+  padding: 0;
+  background: none;
+  font-weight: 500;
+}
+.ih-stchip.is-done {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ih-stchip.is-started {
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-stchip.is-soon {
+  background: #f3f0fa;
+  color: var(--ih-ink-2);
+}
+.ih-extragrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-extra {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ih-extra b {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-extra small {
+  display: block;
+  margin: 4px 0 6px;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ih-ink);
+}
+.ih-crumbs .ih-link {
+  font-weight: 500;
+  font-size: 14px;
+}
+.ih-crumbs svg {
+  color: var(--ih-ink-2);
+}
+.ih-pnote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f1eaff;
+  font-size: 14px;
+  color: var(--ih-ink);
+}
+.ih-pnote svg {
+  color: var(--ih-violet);
+  flex: none;
+}
+.ih-emptybox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 24px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+}
+.ih-emptybox h3 {
+  margin: 6px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.ih-emptybox p {
+  max-width: 520px;
+  margin: 0;
+  font-size: 15px;
+  color: var(--ih-ink-2);
+}
+.ih-emptybox__ic {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-emptybox__ic.is-orange {
+  background: #fff1dd;
+  color: #e5a00d;
+}
+.ih-emptybox__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+@media (max-width: 1100px) {
+  .ih-skillgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .ih-skillgrid,
+  .ih-shortgrid,
+  .ih-extragrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-psec__filter {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .ih-prow {
+    flex-wrap: wrap;
+  }
+  .ih-prow > .ih-btn2 {
+    width: 100%;
+  }
+}
+
+/* ===== Дизайн «IELTS new», «Подробный прогресс»: фильтры, общая оценка и навыки, динамика, частые ошибки, история ===== */
+.ih-pg {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ih-pg__back {
+  align-self: flex-start;
+  font-weight: 500;
+}
+.ih-pg .ih-ph__sub {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ih-pg__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.ih-pg__select select {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ih-ink);
+  min-height: 34px;
+  cursor: pointer;
+}
+.ih-pg__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-pg__overall,
+.ih-pg__skill,
+.ih-pg__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  min-width: 0;
+}
+.ih-pg__label {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__big {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+}
+.ih-pg__band {
+  font-size: 30px;
+  font-weight: 800;
+}
+.ih-pg__meta {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__overall small {
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__overall .ih-progline__bar {
+  flex: none;
+  height: 8px;
+}
+.ih-pg__skill header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+.ih-pg__skill .ih-stchip {
+  align-self: flex-start;
+}
+.ih-pg__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.ih-pg__panel h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.ih-pg__phead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ih-pg__phead span {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ih-pg__legend i {
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+}
+.ih-pg__legend i.is-diag {
+  background: #8e8a9c;
+}
+.ih-pg__legend i.is-full {
+  background: var(--ih-violet);
+}
+.ih-pg__legend i.is-goal {
+  background: #f5a524;
+}
+.ih-pg__chart {
+  padding: 12px;
+  border-radius: 14px;
+  background: #faf9fd;
+}
+.ih-pg__chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ih-pg__tick {
+  font-size: 10px;
+  fill: #8e8a9c;
+}
+.ih-pg__tick.is-goal {
+  fill: #e8890c;
+  font-weight: 700;
+}
+.ih-pg__val {
+  font-size: 12px;
+  font-weight: 800;
+  fill: var(--ih-ink);
+}
+.ih-pg__xl {
+  font-size: 10px;
+  fill: var(--ih-ink-2);
+}
+.ih-pg__xd {
+  font-size: 9px;
+  fill: #8e8a9c;
+}
+.ih-pg__empty {
+  margin: 0;
+  padding: 24px 0;
+}
+.ih-pg__errors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-pg__errors button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ih-line);
+  border-radius: 14px;
+  background: #faf9fd;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: #8e8a9c;
+}
+.ih-pg__errors button > span:not(.ih-plate) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ih-pg__errors b {
+  font-size: 14px;
+  color: var(--ih-ink);
+}
+.ih-pg__errors small {
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+.ih-pg__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ih-pg__table td {
+  padding: 12px 8px;
+  border-top: 1px solid var(--ih-line);
+  vertical-align: middle;
+}
+.ih-pg__d {
+  width: 80px;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+}
+.ih-pg__score {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.ih-pg__type {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f3f0fa;
+  color: var(--ih-ink-2);
+  white-space: nowrap;
+}
+.ih-pg__type.is-full {
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-pg__type.is-work {
+  background: #fff3dc;
+  color: #c2560a;
+}
+.ih-pg__type.is-partial {
+  background: #fff8e1;
+  color: #b7791f;
+}
+@media (max-width: 1100px) {
+  .ih-pg__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ih-pg__overall {
+    grid-column: 1 / -1;
+  }
+  .ih-pg__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  /* строка истории — карточкой: дата и тип сверху, название во всю ширину, балл и ссылка снизу. Таблица в пять
+     колонок сжимала название до 50px, и оно шло столбиком по слову */
+  .ih-pg__table tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    padding: 12px 0;
+    border-top: 1px solid var(--ih-line);
+  }
+  .ih-pg__table td {
+    padding: 0;
+    border: 0;
+  }
+  .ih-pg__table td:nth-child(1) {
+    grid-area: 1 / 1;
+  }
+  .ih-pg__table td:nth-child(3) {
+    grid-area: 1 / 2;
+  }
+  .ih-pg__table td:nth-child(2) {
+    grid-area: 2 / 1 / 3 / 4;
+  }
+  .ih-pg__table td:nth-child(4) {
+    grid-area: 3 / 1 / 4 / 2;
+  }
+  .ih-pg__table td:nth-child(5) {
+    grid-area: 3 / 2 / 4 / 4;
+    justify-self: end;
+  }
+}
+.ih-pg__more {
+  align-self: center;
+}
+
+/* ===== Дизайн «IELTS new», раздел 5 «Об экзамене»: навыки, раскрытая секция, быстрые ответы, FAQ ===== */
+.ih-eg {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ih-eg__track {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.ih-eg__track small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+.ih-eg__skills {
+  display: grid;
+  /* четыре навыка и пятая карточка «Вопросы об экзамене» (быстрые ответы и FAQ вместе) */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-eg__skill > .ih-eg__faqplate {
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-eg__faq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* в ряду пять карточек — стрелка у выбранной лишняя (рамка и так показывает выбор), текст без переносов по слову */
+@media (min-width: 1101px) {
+  .ih-eg__skill > svg:last-child {
+    display: none;
+  }
+  .ih-eg__skill {
+    gap: 12px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .ih-eg__skill.is-faq b {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+}
+.ih-eg__skill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--ih-line);
+  border-radius: 16px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: #8e8a9c;
+}
+.ih-eg__skill > span:not(.ih-plate) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ih-eg__skill b {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-eg__skill small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-eg__skill.is-on {
+  border: 2px solid var(--ih-violet);
+  background: #f6f1ff;
+}
+.ih-eg__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.ih-eg__main,
+.ih-eg__quick,
+.ih-eg__answer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-eg__main h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+}
+.ih-eg__main h2 span {
+  color: var(--ih-violet);
+}
+.ih-eg__parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-eg__parts li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f6f4fb;
+}
+.ih-eg__parts b {
+  display: block;
+  font-size: 18px;
+}
+.ih-eg__parts small {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-eg__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #e5dbff;
+  color: var(--ih-violet);
+  font-weight: 800;
+}
+.ih-acc {
+  border: 1px solid var(--ih-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.ih-acc.is-open {
+  border-color: #c9b3ff;
+}
+.ih-acc__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ih-violet);
+}
+.ih-acc__head b {
+  flex: 1;
+  font-size: 15px;
+  color: var(--ih-ink);
+}
+.ih-acc.is-open .ih-acc__head svg:last-child {
+  transform: rotate(180deg);
+}
+.ih-acc__body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--ih-line);
+}
+.ih-eg__crit {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.ih-eg__crit li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ih-eg__crit svg {
+  flex: none;
+  margin-top: 1px;
+  color: #22a55b;
+}
+.ih-eg__time {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ih-ink);
+}
+.ih-eg__quick h2,
+.ih-eg__answer h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.ih-eg__quick ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ih-eg__quick li + li {
+  border-top: 1px solid var(--ih-line);
+}
+.ih-eg__quick button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ih-violet);
+}
+.ih-eg__quick button span {
+  flex: 1;
+  color: var(--ih-ink);
+}
+.ih-eg__quick button.is-on span {
+  font-weight: 700;
+  color: var(--ih-violet);
+}
+.ih-eg__mascot {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ih-eg__mascot img {
+  width: 96px;
+  height: auto;
+}
+.ih-eg__mascot p {
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f6f1ff;
+  font-size: 14px;
+}
+.ih-eg__answer header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ih-eg > .ih-acc .ih-acc__head {
+  min-height: 60px;
+  padding: 0 20px;
+}
+.ih-eg > .ih-acc .ih-acc__head b {
+  font-size: 17px;
+}
+.ih-eg__disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+@media (max-width: 1100px) {
+  .ih-eg__skills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ih-eg__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .ih-eg__skills {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-eg__track {
+    align-items: flex-start;
+  }
+}
+
+/* ===== Дизайн «IELTS new», раздел 4 «Mock-тесты»: вкладка, экзамен (описание, проверка, секции, сдача, итог) ===== */
+.ih-mt {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ih-mt__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.ih-mt__hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 420px;
+  padding: 36px;
+  border-radius: 24px;
+  background: #6d4bf2 center / cover no-repeat;
+  color: #fff;
+  overflow: hidden;
+}
+.ih-mt__hero > * {
+  position: relative;
+  max-width: 62%;
+}
+.ih-mt__badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-mt__hero h2 {
+  margin: 4px 0 0;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.ih-mt__flow,
+.ih-mt__time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.ih-mt__flow span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ih-mt__time {
+  font-size: 18px;
+  font-weight: 700;
+}
+.ih-mt__fine {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+.ih-mt__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ih-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ih-mt__last {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--ih-line);
+  border-radius: 24px;
+  background: #fff;
+}
+.ih-mt__last h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.ih-mt__lastmeta {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mt__lastband {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px;
+  border-radius: 18px;
+  background: #f1eaff;
+}
+.ih-mt__lastband b {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+.ih-mt__lastband span {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+  text-align: center;
+}
+.ih-mt__skills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.ih-mt__skill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 4px;
+  border-radius: 14px;
+}
+.ih-mt__skill small {
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-mt__skill b {
+  font-size: 20px;
+  font-weight: 800;
+}
+.ih-mt__skill.is-listening {
+  background: #e8f1ff;
+  color: #2f6fe4;
+}
+.ih-mt__skill.is-reading {
+  background: #fff1e3;
+  color: #d9730d;
+}
+.ih-mt__skill.is-writing {
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mt__skill.is-speaking {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.ih-mt__skill b {
+  color: var(--ih-ink);
+}
+.ih-mt__h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+.ih-mt__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-mt__card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-mt__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mt__cardtext {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ih-mt__cardtext b {
+  font-size: 20px;
+  font-weight: 800;
+}
+.ih-mt__table {
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+  overflow-x: auto;
+}
+.ih-mt__table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ih-mt__table th {
+  padding: 14px 18px;
+  background: #faf9fd;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+  text-align: left;
+  white-space: nowrap;
+}
+.ih-mt__table td {
+  padding: 14px 18px;
+  border-top: 1px solid var(--ih-line);
+  white-space: nowrap;
+}
+.ih-mkchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-mkchip.is-green {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.ih-mkchip.is-violet {
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mkchip.is-amber {
+  background: #fff3dc;
+  color: #b7791f;
+}
+.ih-mkchip.is-red {
+  background: #fde8e8;
+  color: #d33;
+}
+.ih-mkchip.is-grey {
+  background: #f1f0f5;
+  color: var(--ih-ink-2);
+}
+
+/* экзамен: свой экран без меню платформы — токены раздела объявлены и здесь, как у .ih-run и .ih-ob */
+.ih-mock {
+  --ih-violet: #9047ff;
+  --ih-ink: #23202b;
+  --ih-ink-2: #656172;
+  --ih-muted: #656172;
+  --ih-line: #e9e6f2;
+  --ih-soft: #f4f4f4;
+  --ih-green: #1f9d55;
+
+  min-height: 100vh;
+  color: var(--ih-ink);
+  background: #faf9fd;
+}
+.ih-mockbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--ih-line);
+  background: #fff;
+}
+.ih-mockbar__chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-mockbar__clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mockbar__clock b {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ih-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ih-mockbar__clock small {
+  font-size: 12px;
+  color: var(--ih-ink-2);
+}
+.ih-mockbar__clock.is-low {
+  background: #fff3dc;
+  color: #b7791f;
+}
+.ih-mockbar__clock.is-low b {
+  color: #b7791f;
+}
+.ih-mockbar__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mockbar__saved.is-saved svg {
+  color: #1f9d55;
+}
+.ih-mockbar__saved.is-error {
+  color: #d33;
+}
+.ih-mockbar__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ih-mockbar__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 32px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff8e6;
+  color: #9a6b00;
+  font-size: 14px;
+}
+.ih-mock--run .ih-run {
+  min-height: 100vh;
+}
+.ih-mock__float {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+.ih-mock__loading {
+  padding: 48px;
+}
+.ih-mock__main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+.ih-mock__main--narrow {
+  max-width: 860px;
+}
+.ih-mock__main--center {
+  max-width: 760px;
+  padding-top: 64px;
+}
+.ih-mock__h1 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+}
+.ih-mock__sub {
+  margin: -8px 0 0;
+  font-size: 17px;
+  color: var(--ih-ink-2);
+}
+.ih-mock__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.ih-mock__card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-mock__card h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.ih-mock__secs,
+.ih-mock__rules,
+.ih-msub,
+.ih-mres__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-mock__secs li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f6f4fb;
+}
+.ih-mock__secs li > span:not(.ih-plate) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ih-mock__secs b {
+  font-size: 17px;
+}
+.ih-mock__secs small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-mock__secs strong {
+  font-size: 15px;
+  white-space: nowrap;
+}
+.ih-mock__fine {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-mock__rules li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ih-mock__rules li > span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mock__strict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff3dc;
+  color: #b7791f;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-mock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+/* кнопки шагов mock — крупные, как в макете (52 px, скругление 12, контур фиолетовый); общий .ih-btn — 36 px пилюля */
+.ih-mock__actions .ih-btn {
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.ih-mock__actions .ih-btn--outline {
+  border: 1.5px solid var(--ih-violet);
+  color: var(--ih-violet);
+  background: #fff;
+}
+.ih-mock__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 24px;
+  font-size: 16px;
+}
+.ih-mock__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f1eaff;
+  font-size: 14px;
+}
+.ih-mstep {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ih-mstep li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mstep li:last-child {
+  flex: none;
+}
+.ih-mstep li:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  margin-left: 4px;
+  background: var(--ih-line);
+}
+.ih-mstep li.is-done:not(:last-child)::after {
+  background: #1f9d55;
+}
+.ih-mstep__dot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #eceaf2;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ih-mstep li.is-on {
+  color: var(--ih-ink);
+  font-weight: 700;
+}
+.ih-mstep li.is-on .ih-mstep__dot {
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-mstep li.is-done .ih-mstep__dot {
+  background: #1f9d55;
+  color: #fff;
+}
+.ih-mcheck {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-mcheck__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ih-mcheck__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.ih-mcheck__icon.is-green {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.ih-mcheck__icon.is-red {
+  background: #fde8e8;
+  color: #d33;
+}
+.ih-mcheck__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ih-mcheck__text b {
+  font-size: 18px;
+}
+.ih-mcheck__text small {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mcheck__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f0f5;
+  color: var(--ih-ink-2);
+}
+.ih-mcheck__status.is-ok {
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.ih-mcheck__status.is-fail {
+  background: #fde8e8;
+  color: #d33;
+}
+.ih-mcheck__level {
+  height: 8px;
+  border-radius: 999px;
+  background: #eceaf2;
+  overflow: hidden;
+}
+.ih-mcheck__level span {
+  display: block;
+  height: 100%;
+  background: #1f9d55;
+  transition: width 0.08s linear;
+}
+.ih-mcheck__alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fde8e8;
+  color: #d33;
+}
+.ih-mcheck__alert span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  color: var(--ih-ink);
+}
+.ih-mcheck__alert small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-mcheck__agree {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.ih-mcheck__agree input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ih-violet);
+}
+.ih-mbetween {
+  align-items: center;
+  text-align: center;
+  padding: 32px;
+}
+.ih-mbetween h2 {
+  font-size: 30px;
+}
+.ih-mbetween p {
+  margin: 0;
+  max-width: 480px;
+  font-size: 16px;
+  color: var(--ih-ink-2);
+}
+.ih-mbetween__ok {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: #e6f6ec;
+  color: #1f9d55;
+}
+.ih-mbetween__warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #fff3dc;
+  color: #b7791f;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ih-msub li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f6f4fb;
+}
+.ih-msub__name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ih-msub__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e1f0;
+  overflow: hidden;
+}
+.ih-msub__bar span {
+  display: block;
+  height: 100%;
+  background: var(--ih-violet);
+}
+.ih-mres__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: -8px 0 0;
+  font-size: 15px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__partial {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+}
+.ih-mres__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.ih-mres__cell header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+}
+.ih-mres__cell strong {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+.ih-mres__cell small {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__cell .ih-mkchip {
+  align-self: flex-start;
+}
+.ih-mres__full {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+  gap: 16px;
+  align-items: start;
+}
+.ih-mres__overall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 20px;
+  border-radius: 20px;
+  background: #f1eaff;
+  text-align: center;
+}
+/* итог без overall — та же фиолетовая карточка, что у полного (макет «21»), только прочерк серый */
+.ih-mres__overall.is-empty {
+  background: #f1eaff;
+}
+.ih-mres__overall span {
+  font-size: 16px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__overall b {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.ih-mres__overall.is-empty b {
+  color: #8e8a9c;
+}
+.ih-mres__overall small {
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__list li {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+.ih-mres__list li > span:not(.ih-plate) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ih-mres__list b {
+  font-size: 17px;
+}
+.ih-mres__list small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__list strong {
+  font-size: 30px;
+  font-weight: 800;
+}
+.ih-mres__list strong.is-none {
+  color: #8e8a9c;
+}
+.ih-mres__list li > span .ih-mkchip {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.ih-mres__list .ih-link,
+.ih-mres__noreview {
+  min-width: 76px;
+  justify-content: flex-end;
+}
+.ih-mres__rec {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: #fff1ef;
+}
+.ih-mres__recicon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff;
+  color: #e5484d;
+}
+.ih-mres__rec > span:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ih-mres__rec small {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-mres__rec b {
+  font-size: 17px;
+}
+@media (max-width: 1100px) {
+  .ih-mt__top,
+  .ih-mock__cols,
+  .ih-mres__partial,
+  .ih-mres__full {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ih-mt__hero > * {
+    max-width: 100%;
+  }
+}
+@media (max-width: 760px) {
+  .ih-mt__cards,
+  .ih-mres__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* на телефоне текст ложится поверх маскота: под текстом — затемнение слева, иллюстрация остаётся справа */
+  .ih-mt__hero {
+    min-height: 0;
+    padding: 24px;
+    background-position: 70% center;
+  }
+  .ih-mt__hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(76, 47, 214, 0.92) 0%, rgba(96, 64, 230, 0.75) 55%, rgba(96, 64, 230, 0.1) 100%);
+  }
+  .ih-mt__table th,
+  .ih-mt__table td {
+    padding: 12px 10px;
+  }
+  .ih-mockbar__exit span {
+    display: none;
+  }
+  .ih-mt__hero h2 {
+    font-size: 32px;
+  }
+  .ih-mockbar {
+    padding: 12px 16px;
+  }
+  .ih-mock__h1 {
+    font-size: 30px;
+  }
+  .ih-mstep__label {
+    display: none;
+  }
+  .ih-mstep li.is-on .ih-mstep__label {
+    display: inline;
+  }
+  .ih-mcheck__row {
+    flex-wrap: wrap;
+  }
+  .ih-mres__list li {
+    flex-wrap: wrap;
+  }
+}
+
+/* итог диагностики на телефоне: плашка ловушки уходит под название типа, а не сжимает его до столбика в одно слово */
+@media (max-width: 760px) {
+  .ih-dres__wrow {
+    flex-wrap: wrap;
+  }
+  /* у текста flex: 1 с нулевой основой — ряд никогда не переносился; основа «вся строка без плашки иконки»
+     отправляет плашку ловушки на следующую строку */
+  .ih-dres__wtext {
+    flex-basis: calc(100% - 64px);
+  }
+  .ih-dres__trap {
+    margin-left: 50px;
+  }
+}
+
+/* ===== Задачи преподавателя в плане ученика: ДЗ — оранжевые, «добавлено преподавателем» — синие; везде, где видна
+   задача (Сегодня, панель дня, неделя, месяц), — один и тот же цвет и метка ===== */
+.ih-origin {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-origin.is-homework {
+  background: #fff1e3;
+  color: #c2560a;
+}
+.ih-origin.is-teacher {
+  background: #e6f0ff;
+  color: #2563eb;
+}
+.ih-tnote {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ih-ink-2);
+}
+.ih-tt__task.is-homework,
+.ih-dp__task.is-homework {
+  border-left: 4px solid #f08a24;
+}
+.ih-tt__task.is-teacher,
+.ih-dp__task.is-teacher {
+  border-left: 4px solid #3b82f6;
+}
+.ih-wcard.is-homework {
+  box-shadow: inset 4px 0 0 #f08a24;
+}
+.ih-wcard.is-teacher {
+  box-shadow: inset 4px 0 0 #3b82f6;
+}
+.ih-wcard .ih-origin {
+  font-size: 11px;
+  padding: 1px 7px;
+}
+.ih-mchip.is-homework {
+  background: #fff1e3;
+  color: #c2560a;
+}
+.ih-mchip.is-teacher {
+  background: #e6f0ff;
+  color: #2563eb;
+}
+.ih-mkeys i.is-homework {
+  background: #f08a24;
+}
+.ih-mkeys i.is-teacher {
+  background: #3b82f6;
+}
+
+/* страница выбора mock (Figma «Страница mock test», 110:1310): доступные тесты и история — карточками в две колонки */
+.ih-mt__back {
+  align-self: flex-start;
+}
+.ih-mtl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.ih-mtl__card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #e9e6f2;
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-mtl__top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.ih-mtl__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: #f1eaff;
+  color: var(--ih-violet);
+}
+.ih-mtl__name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ih-mtl__name b {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ih-mtl__top .ih-btn2 {
+  min-width: 128px;
+}
+.ih-mtl__top .ih-link {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.ih-mtl__info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--ih-ink-2);
+}
+.ih-mtl__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.ih-mtl__flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ih-mtl__flow span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ih-mtl__flow span + span {
+  margin-left: 8px;
+}
+.ih-mtl__result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f8f7fc;
+}
+.ih-mtl__result dt {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ih-mtl__result dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ih-mtl__result div:last-child dd {
+  font-size: 18px;
+  font-weight: 800;
+}
+.ih-mtl__result dd.is-none {
+  color: #8e8a9c;
+}
+@media (max-width: 900px) {
+  .ih-mtl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .ih-mtl__top {
+    flex-wrap: wrap;
+  }
+  .ih-mtl__top .ih-btn2 {
+    width: 100%;
+  }
+}
+
+/* ========================================================================= */
+/* ==  Reading / Listening — открытый тест в цветах «IELTS new» (92:2876, 92:3658)  == */
+/* ========================================================================= */
+/* Поведение тестов прежнее; меняется только вид: шапка как у экзамена (RunTopBar), лиловый фон, текст и вопросы —
+   белые карточки, вопросы — серые плашки с фиолетовым номером, выбранный ответ — фиолетовой заливкой (не чёрной). */
+
+/* маркер — один, жёлтый (старые цвета 2 и 3 из прежних попыток рисуются так же) */
+.ih-hl,
+.ih-hl--1,
+.ih-hl--2,
+.ih-hl--3 {
+  background: #fdeeb8 !important;
+  box-shadow: 0 0 0 1px #fdeeb8;
+}
+.ih-hl-dot--1 {
+  background: #fdd85c;
+}
+.ih-marker__hint {
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-selmenu {
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--ih-line);
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(64, 31, 128, 0.16);
+}
+.ih-selmenu__act,
+.ih-selmenu__vocab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ih-selmenu__act:hover,
+.ih-selmenu__vocab:hover {
+  background: #f3effc;
+}
+.ih-selmenu__act .ih-hl-dot {
+  width: 14px;
+  height: 14px;
+}
+.ih-selmenu__sep {
+  background: var(--ih-line);
+}
+
+.ih-run--rl,
+.ih-run--rl.ih-skin-listening {
+  --ih-violet: #9047ff;
+  --ih-accent-tint: #f1eaff;
+  background: #f7f6fb;
+}
+.ih-runbar__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #f1eaff;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ih-run--rl .ih-mockbar .ih-btn {
+  min-height: 40px;
+  border-radius: 12px;
+}
+
+/* Reading: текст и вопросы — две белые карточки */
+.ih-run--rl .ih-run__body {
+  gap: 20px;
+  padding: 20px 24px;
+}
+.ih-run--rl .ih-run__text,
+.ih-run--rl .ih-run__questions {
+  border: 1px solid var(--ih-line);
+  border-radius: 20px;
+  background: #fff;
+}
+.ih-run--rl .ih-run__text {
+  width: 56%;
+  overflow: hidden;
+}
+.ih-run--rl .ih-run__questions {
+  width: 44%;
+  padding: 24px;
+}
+.ih-run--rl .ih-run__body[data-notext] .ih-run__questions {
+  width: 100%;
+}
+.ih-run--rl .ih-passage {
+  /* слева место под номер вопроса на полях (mark::before) — с 32 px он вылезал за край карточки */
+  padding: 24px 32px 40px 52px;
+}
+.ih-run--rl .ih-run__texts {
+  padding: 16px 32px 0;
+}
+.ih-run--rl .ih-run__texts button[aria-selected='true'] {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+}
+.ih-run--rl .ih-marker {
+  border-radius: 12px;
+}
+
+/* вопросы */
+.ih-run--rl .ih-q {
+  border-color: transparent;
+  background: #f7f6fb;
+}
+.ih-run--rl .ih-q.is-current {
+  border-color: var(--ih-violet);
+  background: #fff;
+}
+.ih-run--rl .ih-q__num,
+.ih-run--rl .ih-paper__num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #ecebf3;
+  color: var(--ih-ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+.ih-run--rl .ih-q.is-current .ih-q__num,
+.ih-run--rl .ih-paper__row.is-current .ih-paper__num {
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-run--rl .ih-q:not(.is-current) .ih-q__num {
+  background: #efe6ff;
+  color: #6d28d9;
+}
+.ih-run--rl .ih-pill {
+  min-height: 34px;
+  border-radius: 10px;
+  color: var(--ih-ink-2);
+}
+.ih-run--rl .ih-pill.is-on {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-run--rl .ih-opt.is-on {
+  border-color: var(--ih-violet);
+  background: #f1eaff;
+}
+.ih-run--rl .ih-q__pills,
+.ih-run--rl .ih-q__opts {
+  padding-left: 40px;
+}
+
+/* нижняя навигация: отвечено — фиолетовая заливка, текущий — фиолетовая рамка, без ответа — серая плашка */
+.ih-run--rl .ih-num {
+  border-color: transparent;
+  background: #ecebf3;
+  color: var(--ih-ink-2);
+}
+.ih-run--rl .ih-num.is-answered {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-run--rl .ih-num.is-current {
+  border: 2px solid var(--ih-violet);
+  background: #fff;
+  color: var(--ih-violet);
+}
+.ih-run--rl .ih-num.is-ok {
+  border-color: var(--ih-green);
+  background: var(--ih-green);
+  color: #fff;
+}
+.ih-run--rl .ih-num.is-bad {
+  border-color: var(--ih-red);
+  background: var(--ih-red);
+  color: #fff;
+}
+
+/* Listening: плеер и бланк — белые карточки, кнопка записи фиолетовая */
+.ih-run--rl .ih-player {
+  padding: 16px 20px;
+  border-radius: 20px;
+}
+.ih-run--rl .ih-player__play {
+  width: 56px;
+  height: 56px;
+  background: var(--ih-violet);
+}
+.ih-run--rl .ih-lrun__form {
+  padding: 28px;
+  border-radius: 20px;
+}
+.ih-run--rl .ih-paper {
+  border-color: transparent;
+  background: #f7f6fb;
+}
+.ih-run--rl .ih-paper .ih-gap {
+  border-radius: 10px;
+  background: #fff;
+}
+.ih-run--rl .ih-paper .ih-gap:focus {
+  border-color: var(--ih-violet);
+  box-shadow: 0 0 0 3px rgba(144, 71, 255, 0.15);
+}
+.ih-run--rl .ih-lrun__parts button.is-on {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-run--rl .ih-dialog__box .ih-btn--primary {
+  background: var(--ih-violet);
+}
+
+@media (max-width: 900px) {
+  .ih-run--rl .ih-run__body {
+    padding: 12px;
+  }
+  .ih-run--rl .ih-run__text,
+  .ih-run--rl .ih-run__questions {
+    width: 100%;
+  }
+  .ih-runbar__mode {
+    display: none;
+  }
+  .ih-run--rl .ih-q__pills,
+  .ih-run--rl .ih-q__opts {
+    padding-left: 0;
+  }
+}
+
+/* итог mock: у секции без балла вместо «Разбор» — этап или проблема */
+.ih-mres__stage {
+  min-width: 76px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-mres__stage.is-checking {
+  color: var(--ih-violet);
+}
+.ih-mres__stage.is-failed {
+  color: #d93a4a;
+}
+.ih-mres__stage.is-missing,
+.ih-mres__stage.is-pending {
+  color: #8e8a9c;
+}
+
+/* разбор полного mock по навыкам: переключатель секций под шапкой */
+.ih-mrev__top {
+  flex: none;
+  position: relative;
+  z-index: 2;
+}
+.ih-mrev__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--ih-line);
+  background: #fff;
+}
+.ih-mrev__secs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ih-mrev__sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  padding: 8px 14px 8px 8px;
+  border: 1.5px solid var(--ih-line);
+  border-radius: 14px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  color: var(--ih-ink);
+  cursor: pointer;
+}
+.ih-mrev__sec span {
+  display: flex;
+  flex-direction: column;
+}
+.ih-mrev__sec b {
+  font-size: 14px;
+}
+.ih-mrev__sec small {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink);
+}
+.ih-mrev__sec small.is-checking {
+  color: var(--ih-violet);
+  font-weight: 600;
+}
+.ih-mrev__sec small.is-failed {
+  color: #d93a4a;
+  font-weight: 600;
+}
+.ih-mrev__sec small.is-missing,
+.ih-mrev__sec small.is-pending {
+  color: #8e8a9c;
+  font-weight: 600;
+}
+.ih-mrev__sec:hover {
+  border-color: #c9b3ff;
+}
+.ih-mrev__sec.is-on {
+  border-color: var(--ih-violet);
+  background: #f6f1ff;
+  box-shadow: 0 0 0 3px rgba(144, 71, 255, 0.12);
+}
+.ih-mrev__parts {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f3f0fa;
+}
+.ih-mrev__parts button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+  cursor: pointer;
+}
+.ih-mrev__parts button.is-on {
+  background: var(--ih-violet);
+  color: #fff;
+}
+.ih-mrev__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 32px 48px;
+}
+.ih-mrev__body > * {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.ih-mrev__empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+@media (max-width: 760px) {
+  .ih-mrev__tabs {
+    padding: 10px 12px;
+  }
+  .ih-mrev__secs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+  }
+  .ih-mrev__sec {
+    min-width: 130px;
+  }
+  .ih-mrev__body {
+    padding: 16px 12px 32px;
+  }
+}
+
+/* фильтр разбора внутри mock — фиолетовый, как остальной тест, а не чёрный */
+.ih-run--rl .ih-review__filters button.is-on {
+  border-color: var(--ih-violet);
+  background: var(--ih-violet);
+  color: #fff;
+}
+
+/* уровень ученика в навыке над списком «Практики» и фишка уровня задания (model/levels.js) */
+.ih-levelbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #f1eaff;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ih-levelbar svg {
+  color: var(--ih-violet);
+}
+.ih-levelbar b {
+  color: var(--ih-ink);
+}
+.ih-levelbar .ih-link {
+  margin-left: auto;
+}
+.ih-bandchip {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f3f0fa;
+  color: var(--ih-ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ih-bandchip.is-fit {
+  background: #efe6ff;
+  color: #6d28d9;
+}
+.ih-bandchip.is-above {
+  background: #fff1e3;
+  color: #c2560a;
+}
+.ih-bandchip.is-below {
+  background: #f1f0f5;
+  color: #8e8a9c;
+}
+.ih-skillcard__lvl {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d28d9;
+}
+
+/* выбор заданий набора по уровню: рекомендуемые, сложнее, неподходящие (внизу, приглушённо) */
+.ih-lvgroups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ih-lvgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-lvgroup__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+.ih-lvgroup__title::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+.ih-lvgroup__title.is-fit::before {
+  background: var(--ih-violet);
+}
+.ih-lvgroup__title.is-above::before {
+  background: #f5a524;
+}
+.ih-lvgroup__title.is-below::before {
+  background: #b9b5c6;
+}
+.ih-lvgroup__hint {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-lvgroup.is-unsuitable .ih-prow {
+  opacity: 0.6;
+}
+.ih-lvgroup.is-unsuitable .ih-prow:hover {
+  opacity: 1;
+}
+
+/* shadowing — экран задания на весь экран, как Reading/Listening */
+.ih-shrun__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+}
+.ih-shrun__body > * {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* подробный разбор Writing: по критериям, сильные стороны и шаги, лексика; замечания подсвечены в тексте ученика */
+.ih-wdet {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ih-wdet h3,
+.ih-wdet h4 {
+  margin: 0;
+}
+.ih-wdet h4 {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.ih-wdet__crits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-wdet__crit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f7f6fb;
+}
+.ih-wdet__crit header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ih-wdet__band {
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+.ih-wdet__crit p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ih-wdet__crit small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-wdet__next {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px dashed #c9b3ff;
+}
+.ih-wdet__two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ih-wdet__list {
+  padding: 16px;
+  border-radius: 14px;
+}
+.ih-wdet__list.is-good {
+  background: #eefaf2;
+}
+.ih-wdet__list.is-next {
+  background: #f6f1ff;
+}
+.ih-wdet__list ul,
+.ih-wdet__list ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ih-wdet__list li {
+  display: flex;
+  gap: 8px;
+}
+.ih-wdet__list.is-good svg {
+  flex: none;
+  color: #1f9d55;
+  margin-top: 2px;
+}
+.ih-wdet__list ol span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.ih-wdet__vocab {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ih-wdet__word {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f7f6fb;
+  font-size: 14px;
+}
+.ih-wdet__word s {
+  color: #d93a4a;
+}
+.ih-wdet__word span {
+  font-weight: 700;
+}
+.ih-wdet__word small {
+  flex-basis: 100%;
+  color: var(--ih-ink-2);
+}
+.ih-wmine__err {
+  border-radius: 4px;
+  background: #fde3e6;
+  box-shadow: inset 0 -2px 0 #e5484d;
+  color: inherit;
+  cursor: help;
+}
+.ih-wmine__note {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f6f1ff;
+  font-size: 13px;
+  color: var(--ih-ink-2);
+}
+.ih-wmine__note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ih-violet);
+}
+@media (max-width: 760px) {
+  .ih-wdet__crits,
+  .ih-wdet__two {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

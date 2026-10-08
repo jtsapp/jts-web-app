@@ -6,6 +6,7 @@ import { VOICE } from '../lib/ttsShared.js'
 import { useI18n } from '../i18n.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
+import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { CueCard } from '../ielts/speaking/SpeakingTaskView.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { TIMING, formatSec, speakingQuestions } from '../ielts/speaking/speaking.js'
@@ -63,11 +64,13 @@ function Ring({ value, max, children, live }) {
  * минута подготовки с заметками, монолог до двух минут и вопрос экзаменатора. «Экзамен» идёт сам: вопрос → запись →
  * следующий; «Тренировка» даёт переписать ответ и переслушать себя. В конце — свои записи, модельные ответы и
  * «Оценить ИИ»: записи уходят только в наш роут оценки и нигде не хранятся.
+ * mock — часть Speaking полного mock: только «Экзамен», без модельных ответов и «Ещё раз»; записанные ответы сразу
+ * уходят в mock.onRecorded — оценка идёт в фоне, пока ученик отвечает на следующую часть.
  */
-export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) {
+export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mock = null }) {
   const { t, lang } = useI18n()
   const testId = target?.testId
-  const mode = target?.mode === 'practice' ? 'practice' : 'exam'
+  const mode = target?.mode === 'practice' && !mock ? 'practice' : 'exam'
   const authToken = token || loadToken()
   const rec = useRecorder()
   const [state, setState] = useState({ status: 'loading' })
@@ -98,7 +101,7 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
   }, [authToken, testId])
 
   useEffect(() => {
-    if (!testId) return undefined
+    if (!testId || mock) return undefined
     setIeltsParams({ ieltsRun: testId, ieltsMode: mode, ieltsSkill: 'speaking' })
     return () => setIeltsParams({ ieltsRun: null, ieltsMode: null, ieltsSkill: null })
   }, [testId, mode])
@@ -122,7 +125,11 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
         onDone: (take) => {
           if (!alive.current) return
           if (take) {
-            setTakes((m) => ({ ...m, [itemId]: take }))
+            setTakes((m) => {
+              // переписанный ответ: запись прежнего дубля освобождается сразу
+              rec.drop(m[itemId]?.url)
+              return { ...m, [itemId]: take }
+            })
             setPrevDur(take.durationSec)
             if (kind) writeLast(kind, take.durationSec)
           }
@@ -202,8 +209,16 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
     record(q.id, timing.answerSec, () => alive.current && (mode === 'exam' ? goNextRef.current() : setPhase('review')))
   }
 
+  // mock: часть записана — ответы уходят наружу один раз, экран mock переходит дальше сам
+  const handedOver = useRef(false)
   useEffect(() => {
-    if (phase !== 'done' || models || !testId) return
+    if (!mock || phase !== 'done' || handedOver.current) return
+    handedOver.current = true
+    mock.onRecorded(qs.filter((x) => takes[x.id]).map((x) => ({ itemId: x.id, durationSec: takes[x.id].durationSec, wav: takes[x.id].wav })))
+  }, [mock, phase, qs, takes])
+
+  useEffect(() => {
+    if (mock || phase !== 'done' || models || !testId) return
     getIeltsWritingModel(authToken, testId).then((m) => alive.current && setModels(m)).catch(() => alive.current && setModels({}))
   }, [phase, models, authToken, testId])
 
@@ -243,6 +258,11 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
 
   return (
     <div className="ih-run ih-srun" data-mode={mode}>
+      {mock ? (
+        <MockRunHeader mock={mock} section="Speaking" part={`Part ${doc.kind.slice(4)}`} onExit={() => { rec.stop(); stopTts(); mock.onExit() }}>
+          {phase !== 'intro' && phase !== 'done' && !steps && <span className="ih-run__clock">{t('ieltsSpeaking.qOf', { n: String(idx + 1), total: String(qs.length) })}</span>}
+        </MockRunHeader>
+      ) : (
       <header className="ih-run__top">
         <button type="button" className="ih-round" onClick={() => { rec.stop(); stopTts(); onExit?.(testId) }} aria-label={t('ieltsReading.close')}>
           <CloseIcon size={20} />
@@ -272,6 +292,7 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
           </button>
         )}
       </header>
+      )}
 
       {phase === 'intro' && (
         <main className="ih-srun__intro">
@@ -400,7 +421,9 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone }) 
         </main>
       )}
 
-      {phase === 'done' && (
+      {phase === 'done' && mock && <div className="ih-run ih-run--empty"><p className="ih-muted">{t('ieltsMock.partSaved')}</p></div>}
+
+      {phase === 'done' && !mock && (
         <main className="ih-srun__done">
           <section className="ih-card">
             <h2>{t('ieltsSpeaking.doneTitle')}</h2>

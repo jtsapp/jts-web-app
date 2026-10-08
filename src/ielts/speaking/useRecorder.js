@@ -14,6 +14,9 @@ function pickMime() {
  * первый слог ответа. Потолок maxSec останавливает запись сам — как экзаменатор на Part 2.
  *
  * state: idle | recording | processing; error: 'unsupported' | 'denied' | 'failed' | null.
+ *
+ * Адрес записи (blob:) держит WAV в памяти, пока его не отозвать, — до закрытия вкладки, а это ~2 МБ на минуту речи.
+ * Поэтому все выданные адреса отзываются при уходе с экрана, а замену дубля экран отзывает сам (drop).
  */
 export function useRecorder() {
   const [state, setState] = useState('idle')
@@ -24,6 +27,8 @@ export function useRecorder() {
   const streamRef = useRef(null)
   const recRef = useRef(null)
   const timerRef = useRef(null)
+  const urlsRef = useRef(new Set())
+  const mountedRef = useRef(true)
 
   const release = useCallback(() => {
     clearInterval(timerRef.current)
@@ -32,7 +37,21 @@ export function useRecorder() {
     setStream(null)
   }, [])
 
-  useEffect(() => release, [release])
+  /** Отозвать адрес дубля, который больше не нужен (переписанный ответ). */
+  const drop = useCallback((url) => {
+    if (url && urlsRef.current.delete(url)) URL.revokeObjectURL(url)
+  }, [])
+
+  useEffect(() => {
+    mountedRef.current = true
+    const urls = urlsRef.current
+    return () => {
+      mountedRef.current = false
+      release()
+      urls.forEach((u) => URL.revokeObjectURL(u))
+      urls.clear()
+    }
+  }, [release])
 
   /** Начать запись. Конец — по stop() или потолку maxSec — приходит в onDone({ wav, url, durationSec }) или onDone(null). */
   const start = useCallback(async ({ maxSec = 120, onDone } = {}) => {
@@ -42,8 +61,14 @@ export function useRecorder() {
     }
     try {
       if (!streamRef.current) {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
-        setStream(streamRef.current)
+        const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+        // экран закрыли, пока висел запрос разрешения: такой поток уже никто не остановит — гасим сразу
+        if (!mountedRef.current) {
+          s.getTracks().forEach((t) => t.stop())
+          return false
+        }
+        streamRef.current = s
+        setStream(s)
       }
     } catch (e) {
       setError(e?.name === 'NotAllowedError' ? 'denied' : 'failed')
@@ -62,7 +87,10 @@ export function useRecorder() {
       let out = null
       try {
         const wav = await blobToWav16kMono(new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' }))
-        out = { wav, url: URL.createObjectURL(wav), durationSec: Math.round(durationSec * 10) / 10 }
+        // после ухода с экрана адрес не выдаём: отозвать его было бы уже некому
+        const url = mountedRef.current ? URL.createObjectURL(wav) : null
+        if (url) urlsRef.current.add(url)
+        out = { wav, url, durationSec: Math.round(durationSec * 10) / 10 }
       } catch {
         setError('failed')
       }
@@ -85,5 +113,5 @@ export function useRecorder() {
     if (recRef.current?.state === 'recording') recRef.current.stop()
   }, [])
 
-  return { state, error, elapsed, stream, start, stop, release }
+  return { state, error, elapsed, stream, start, stop, release, drop }
 }

@@ -8,7 +8,7 @@ import PassagePane from '../ielts/reading/PassagePane.jsx'
 import QuestionGroup from '../ielts/reading/QuestionGroup.jsx'
 import ConfirmDialog from '../ielts/ui/ConfirmDialog.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
-import { addHighlight } from '../ielts/reading/highlights.js'
+import { addHighlight, removeHighlight } from '../ielts/reading/highlights.js'
 import { locateAnswer, textIndex } from '../ielts/reading/anchor.js'
 import { mechanicOf } from '../ielts/reading/meta.js'
 import { partLabel } from '../ielts/reading/ReadingTaskView.jsx'
@@ -16,14 +16,18 @@ import {
   answeredCount, markTotal, createRun, dropDraft, flattenItems, formatClock, isAnswered, loadDraft, moveTo, remainingSec,
   resumeDraft, saveDraft, setAnswer, submitBody, toggleFlag,
 } from '../ielts/reading/run.js'
-import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, MenuBookIcon, TimerIcon } from '../ielts/icons.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, MenuBookIcon } from '../ielts/icons.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
+import { joinNumbers, unansweredNumbers, useMockAutosave } from '../ielts/mock/mockSession.js'
+import MockRunHeader, { RunTopBar } from '../ielts/mock/MockRunHeader.jsx'
 
 // Прохождение теста Reading (Figma «6 · Reading — экзамен»): режим фокуса без меню платформы — текст слева,
 // вопросы справа, сетка номеров снизу. Режим: exam — таймер, без подсказок, проверка только при сдаче;
 // practice — «Проверить» по одному вопросу; study — вердикт и место в тексте сразу после ответа.
 // Ключей у страницы нет: каждый вердикт приходит с сервера.
-export default function IeltsReadingRunPage({ token, target, onExit, onReview }) {
+// mock — секция полного mock-экзамена: часы по серверу (mock.deadline), черновик на сервере (mock.draft / onSave), после
+// сдачи — mock.onSubmitted(attemptIds) вместо разбора: разбор откроется в итоге mock.
+export default function IeltsReadingRunPage({ token, target, onExit, onReview, mock = null }) {
   const { t } = useI18n()
   const testId = target?.testId
   const [state, setState] = useState({ status: 'loading' })
@@ -47,6 +51,12 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
       .then((r) => {
         if (!alive) return
         const doc = r.document
+        if (mock) {
+          const saved = mock.draft?.run?.testId === doc.id ? mock.draft.run : null
+          setRun({ ...(saved || createRun(doc, 'exam')), mode: 'exam', endsAt: mock.deadline, shownAt: Date.now() })
+          setState({ status: 'ready', doc, test: r.test })
+          return
+        }
         const draft = loadDraft(testId)
         // черновик продолжаем только в том же режиме: сменил режим на экране задания — новая попытка
         const mode = target?.mode || draft?.mode || 'practice'
@@ -57,21 +67,22 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
     return () => {
       alive = false
     }
-  }, [authToken, testId, target?.mode])
+  }, [authToken, testId, target?.mode]) // eslint-disable-line react-hooks/exhaustive-deps -- mock читается один раз при загрузке
 
   const items = useMemo(() => (state.doc ? flattenItems(state.doc) : []), [state.doc])
 
   // тест и режим — в адресе: F5 посреди экзамена открывает тот же тест с тем же черновиком
   useEffect(() => {
-    if (!run) return
+    if (!run || mock) return
     setIeltsParams({ ieltsRun: run.testId, ieltsMode: run.mode })
     return () => setIeltsParams({ ieltsRun: null, ieltsMode: null })
   }, [run?.testId, run?.mode])
 
   // черновик на устройстве после каждого изменения — закрытая вкладка не теряет ответы
   useEffect(() => {
-    if (run && !submittedRef.current) saveDraft(run)
-  }, [run])
+    if (run && !submittedRef.current && !mock) saveDraft(run)
+  }, [run, mock])
+  const saveState = useMockAutosave(mock, mock && run && !submittedRef.current ? { run } : null)
 
   const submit = useCallback(async () => {
     if (!run || submittedRef.current) return
@@ -82,7 +93,8 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
       const device = window.innerWidth < 900 ? 'mobile' : 'desktop'
       const res = await submitIeltsAttempt(authToken, run.testId, submitBody(run, Date.now(), device))
       dropDraft(run.testId)
-      onReview?.(res.attempt.id)
+      if (mock) mock.onSubmitted([res.attempt.id])
+      else onReview?.(res.attempt.id)
     } catch {
       submittedRef.current = false
       setError(t('ieltsReading.submitFailed'))
@@ -90,7 +102,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
       setSubmitting(false)
       setConfirm(false)
     }
-  }, [run, authToken, onReview, t])
+  }, [run, authToken, onReview, t, mock])
 
   // часы экзамена: тикают раз в секунду; вышло время — сдаём сами (как на экзамене)
   useEffect(() => {
@@ -101,13 +113,15 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
   const left = run ? remainingSec(run, now) : null
   // Остаток экзамена «замораживается» по времени последнего сохранения черновика — поэтому сохраняем и на ходу
   // (раз в 10 секунд), и при уходе со страницы: иначе тишина без ответов вернулась бы ученику лишним временем.
+  // секция mock хранит черновик на сервере — в черновик устройства она не пишет
+  const isMock = useRef(!!mock)
   const runRef = useRef(run)
   runRef.current = run
   useEffect(() => {
-    if (run?.endsAt && left != null && left % 10 === 0 && !submittedRef.current) saveDraft(run)
+    if (run?.endsAt && left != null && left % 10 === 0 && !submittedRef.current && !mock) saveDraft(run)
   }, [left]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const flush = () => runRef.current && !submittedRef.current && saveDraft(runRef.current)
+    const flush = () => runRef.current && !submittedRef.current && !isMock.current && saveDraft(runRef.current)
     window.addEventListener('pagehide', flush)
     document.addEventListener('visibilitychange', flush)
     return () => {
@@ -191,28 +205,28 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
   const unanswered = markTotal(items) - done
 
   return (
-    <div className={`ih-run ${big ? 'ih-run--big' : ''}`} data-mode={mode}>
-      <header className="ih-run__top">
-        <button type="button" className="ih-round" onClick={() => onExit?.(run.testId)} aria-label={t('ieltsReading.close')}>
-          <CloseIcon size={20} />
-        </button>
-        <div className="ih-run__title">
-          <b>Reading{partLabel(test, doc) ? ` · ${partLabel(test, doc)}` : ''}</b>
-          <span>{t(`ieltsReading.mode.${mode}`)} · {test.title}</span>
-        </div>
-        <span className="ih-run__spacer" />
-        <span className={`ih-run__clock ${left != null && left <= 300 ? 'is-low' : ''}`} role="timer" aria-live="off">
-          <TimerIcon size={18} />
-          {left != null ? formatClock(left) : t('ieltsReading.noTimer')}
-        </span>
-        <span className="ih-run__spacer" />
-        <button type="button" className="ih-btn ih-btn--outline" onClick={() => setBig((v) => !v)} aria-pressed={big} title={t('ieltsReading.fontSize')}>
-          Aa
-        </button>
-        <button type="button" className="ih-btn ih-btn--dark" onClick={() => setConfirm(true)}>
-          {mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
-        </button>
-      </header>
+    <div className={`ih-run ih-run--rl ${big ? 'ih-run--big' : ''}`} data-mode={mode}>
+      {mock ? (
+        <MockRunHeader mock={mock} section="Reading" left={left} saveState={saveState} onExit={mock.onExit}>
+          <button type="button" className="ih-btn ih-btn--outline" onClick={() => setBig((v) => !v)} aria-pressed={big} title={t('ieltsReading.fontSize')}>Aa</button>
+          <button type="button" className="ih-btn ih-btn--primary" onClick={() => setConfirm(true)}>{t('ieltsMock.submitSection')}</button>
+        </MockRunHeader>
+      ) : (
+        <RunTopBar
+          chip={`Reading${partLabel(test, doc) ? ` · ${partLabel(test, doc)}` : ''} · ${test.title}`}
+          mode={t('ieltsReading.modeChip', { mode: t(`ieltsReading.mode.${mode}`).toLowerCase() })}
+          clock={left != null ? formatClock(left) : t('ieltsReading.noTimer')}
+          clockLow={left != null && left <= 300}
+          onExit={() => onExit?.(run.testId)}
+        >
+          <button type="button" className="ih-btn ih-btn--outline" onClick={() => setBig((v) => !v)} aria-pressed={big} title={t('ieltsReading.fontSize')}>
+            Aa
+          </button>
+          <button type="button" className="ih-btn ih-btn--primary" onClick={() => setConfirm(true)}>
+            {mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
+          </button>
+        </RunTopBar>
+      )}
 
       <div className="ih-run__switch" role="tablist" hidden={texts.length === 0}>
         <button type="button" role="tab" aria-selected={pane === 'text'} onClick={() => setPane('text')}>{t('ieltsReading.paneText')}</button>
@@ -238,6 +252,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
             keyBase={texts.length > 1 ? textTab : 0}
             highlights={run.highlights}
             onHighlight={(h) => setRun((r) => ({ ...r, highlights: addHighlight(r.highlights, h) }))}
+            onRemoveHighlight={(x) => setRun((r) => ({ ...r, highlights: removeHighlight(r.highlights, x) }))}
             onClearAll={() => setRun((r) => ({ ...r, highlights: r.highlights.filter((h) => texts.length > 1 && !h.key.startsWith(`${textTab}:`)) }))}
             // «В словарь» — во всех режимах, как в макете экзамена (Figma 6): слово уходит в общий «Словарь», не в ответ
             onSaveWord={saveWord}
@@ -299,10 +314,12 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview })
 
       <ConfirmDialog
         open={confirm}
-        title={t('ieltsReading.confirmTitle')}
-        text={unanswered ? t('ieltsReading.confirmUnanswered', { n: String(unanswered) }) : t('ieltsReading.confirmAll')}
-        confirmLabel={mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
-        cancelLabel={t('ieltsReading.cancel')}
+        title={mock ? t('ieltsMock.confirmTitle', { section: 'Reading' }) : t('ieltsReading.confirmTitle')}
+        text={mock
+          ? `${unanswered ? t('ieltsMock.confirmUnanswered', { n: String(unanswered), list: joinNumbers(unansweredNumbers(items, run.answers, isAnswered), t('ieltsMock.and'), 6, (k) => t('ieltsMock.more', { n: String(k) })) }) : t('ieltsReading.confirmAll')} ${t('ieltsMock.noReturn')}`
+          : unanswered ? t('ieltsReading.confirmUnanswered', { n: String(unanswered) }) : t('ieltsReading.confirmAll')}
+        confirmLabel={mock ? t('ieltsMock.submitSection') : mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
+        cancelLabel={mock ? t('ieltsMock.backToQuestions') : t('ieltsReading.cancel')}
         busy={submitting}
         onConfirm={submit}
         onCancel={() => setConfirm(false)}

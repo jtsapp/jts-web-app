@@ -24,6 +24,22 @@ const lines = new Map()
 const known = new Map()
 // уже скачанные — синхронно: на iPhone play() должен прозвучать в том же касании, ждать промис нельзя
 const resolved = new Map()
+// Потолок кэша: blob-адрес держит mp3 реплики, пока его не отозвать, а кэш живёт всю вкладку (части, разборы,
+// диагностика). Полный тест — ~150 реплик; старейшие сверх потолка отзываются. Длительность (known) — числа, её не
+// трогаем: перемотка по шкале остаётся точной и для вытесненных реплик.
+const MAX_LINES = 300
+
+function evictOld() {
+  while (lines.size > MAX_LINES) {
+    const oldest = lines.keys().next().value
+    lines.delete(oldest)
+    const r = resolved.get(oldest)
+    if (r) {
+      URL.revokeObjectURL(r.blobUrl)
+      resolved.delete(oldest)
+    }
+  }
+}
 
 function decodeDuration(buf) {
   const Ctx = typeof window !== 'undefined' && (window.OfflineAudioContext || window.webkitOfflineAudioContext)
@@ -46,6 +62,12 @@ export function loadLine(url) {
         return out
       })
     p.catch(() => lines.delete(url))
+    lines.set(url, p)
+    evictOld()
+  } else {
+    // недавно нужная реплика — в конец очереди, вытесняются давно не звучавшие
+    const p = lines.get(url)
+    lines.delete(url)
     lines.set(url, p)
   }
   return lines.get(url)

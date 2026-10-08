@@ -8,7 +8,7 @@ import ConfirmDialog from '../ielts/ui/ConfirmDialog.jsx'
 import DiagQuestion from '../ielts/diagnostic/DiagQuestion.jsx'
 import DiagClipPlayer from '../ielts/diagnostic/DiagClipPlayer.jsx'
 import PassagePane from '../ielts/reading/PassagePane.jsx'
-import { addHighlight } from '../ielts/reading/highlights.js'
+import { addHighlight, removeHighlight } from '../ielts/reading/highlights.js'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { formatSec } from '../ielts/speaking/speaking.js'
 import { countWords } from '../ielts/writing/writing.js'
@@ -326,7 +326,7 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone, use
   } else if (d.block === 'reading') {
     const task = form.reading[d.module === 'general' ? 'general' : 'academic']
     const items = cfg.reading.light ? task.items.filter((i) => task.lightItems.includes(i.id)) : task.items
-    // Текст — тем же PassagePane, что в тренажёре: маркер трёх цветов и выделение, как на компьютерном IELTS.
+    // Текст — тем же PassagePane, что в тренажёре: жёлтый маркер (выделить / убрать) и выделение, как на компьютерном IELTS.
     // У GT текстов несколько, строки «## …» — подзаголовки внутри текста, в абзац они идут жирной подписью.
     const texts = task.paragraphs
       ? [{ title: task.title, paragraphs: task.paragraphs }]
@@ -343,6 +343,7 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone, use
             texts={texts}
             highlights={highlights}
             onHighlight={(h) => update({ highlights: addHighlight(highlights, h) })}
+            onRemoveHighlight={(r) => update({ highlights: removeHighlight(highlights, r) })}
             onClearAll={() => update({ highlights: [] })}
             noCopy
           />

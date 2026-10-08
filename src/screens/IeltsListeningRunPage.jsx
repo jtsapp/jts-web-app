@@ -16,7 +16,9 @@ import {
   submitBody, toggleFlag,
 } from '../ielts/reading/run.js'
 import { setIeltsParams } from '../ielts/urlParams.js'
-import { CloseIcon, HeadphonesIcon, InfoIcon } from '../ielts/icons.jsx'
+import { joinNumbers, unansweredNumbers, useMockAutosave } from '../ielts/mock/mockSession.js'
+import MockRunHeader, { RunTopBar } from '../ielts/mock/MockRunHeader.jsx'
+import { HeadphonesIcon, InfoIcon } from '../ielts/icons.jsx'
 
 /**
  * Прохождение Listening (Figma «8 · Listening — тренировка»): плеер сверху, бланк вопросов части, транскрипт
@@ -25,8 +27,11 @@ import { CloseIcon, HeadphonesIcon, InfoIcon } from '../ielts/icons.jsx'
  *  - practice: пауза, ±5 с, 0.75×, транскрипт по кнопке, ответ проверяется сразу после ввода;
  *  - study: то же, транскрипт всегда открыт и подсвечивает реплику под записью, после ответа — объяснение.
  * Ключей у страницы нет: вердикт приходит с сервера (/check), итог — при сдаче (/attempts).
+ * mock — секция полного mock-экзамена: всегда exam, часы секции по серверу (mock.deadline), черновик (ответы и часть)
+ * на сервере. Вернувшись после обновления страницы, ученик продолжает с начала той части, где был: запись уже звучала,
+ * но ответы прошлых частей целы, а часы не сброшены.
  */
-export default function IeltsListeningRunPage({ token, target, onExit, onReview }) {
+export default function IeltsListeningRunPage({ token, target, onExit, onReview, mock = null }) {
   const { t } = useI18n()
   const testId = target?.testId
   const authToken = token || loadToken()
@@ -49,6 +54,14 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
       .then((r) => {
         if (!alive) return
         const doc = r.document
+        if (mock) {
+          const saved = mock.draft?.run?.testId === doc.id ? mock.draft : null
+          setRun(saved ? { ...saved.run, mode: 'exam', shownAt: Date.now() } : createRun(flatDoc(doc), 'exam'))
+          if (saved?.partIdx) setPartIdx(saved.partIdx)
+          setState({ status: 'ready', doc, test: r.test })
+          setPhase({ name: 'intro' })
+          return
+        }
         const mode = target?.mode || 'practice'
         const draft = loadDraft(testId)
         // экзамен Listening не продолжается с середины: запись уже прозвучала — честнее начать заново
@@ -61,10 +74,10 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
     return () => {
       alive = false
     }
-  }, [authToken, testId, target?.mode])
+  }, [authToken, testId, target?.mode]) // eslint-disable-line react-hooks/exhaustive-deps -- mock читается один раз при загрузке
 
   useEffect(() => {
-    if (!run) return
+    if (!run || mock) return
     setIeltsParams({ ieltsRun: run.testId, ieltsMode: run.mode, ieltsSkill: 'listening' })
     return () => setIeltsParams({ ieltsRun: null, ieltsMode: null, ieltsSkill: null })
   }, [run?.testId, run?.mode]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -97,7 +110,8 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
     try {
       const res = await submitIeltsAttempt(authToken, run.testId, submitBody(run, Date.now(), window.innerWidth < 900 ? 'mobile' : 'desktop'))
       dropDraft(run.testId)
-      onReview?.(res.attempt.id)
+      if (mock) mock.onSubmitted([res.attempt.id])
+      else onReview?.(res.attempt.id)
     } catch {
       submittedRef.current = false
       setError(t('ieltsReading.submitFailed'))
@@ -105,7 +119,20 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
       setSubmitting(false)
       setConfirm(false)
     }
-  }, [run, authToken, onReview, t])
+  }, [run, authToken, onReview, t, mock])
+
+  // секция mock: часы по серверу идут всё время секции; вышли — сдаём, что есть (как бланк на экзамене)
+  const [mockNow, setMockNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!mock?.deadline) return
+    const id = setInterval(() => setMockNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [mock?.deadline])
+  const mockLeft = mock?.deadline ? Math.max(0, Math.round((mock.deadline - mockNow) / 1000)) : undefined
+  useEffect(() => {
+    if (mockLeft === 0 && run) submit()
+  }, [mockLeft]) // eslint-disable-line react-hooks/exhaustive-deps
+  const saveState = useMockAutosave(mock, mock && run && !submittedRef.current ? { run, partIdx } : null)
 
   // экзамен: части играют подряд; кончилась последняя — 2 минуты на проверку
   const onEnded = useCallback(() => {
@@ -120,7 +147,10 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
   const playRef = useRef(player.play)
   playRef.current = player.play
   useEffect(() => {
-    if (mode === 'exam' && phase?.name === 'listen' && partIdx > 0) setTimeout(() => playRef.current(), 400)
+    if (mode !== 'exam' || phase?.name !== 'listen' || partIdx === 0) return undefined
+    // таймер снимается при уходе: иначе часть синтеза могла зазвучать уже на другом экране
+    const id = setTimeout(() => playRef.current(), 400)
+    return () => clearTimeout(id)
   }, [partIdx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // часы фаз экзамена
@@ -183,26 +213,32 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
   const examLocked = mode === 'exam' && phase?.name === 'intro'
 
   return (
-    <div className="ih-run ih-lrun ih-skin-listening" data-mode={mode}>
-      <header className="ih-run__top">
-        <button type="button" className="ih-round" onClick={() => { player.stop(); onExit?.(run.testId) }} aria-label={t('ieltsReading.close')}>
-          <CloseIcon size={20} />
-        </button>
-        <div className="ih-run__title">
-          <b>Listening · Part {part?.number || 1}{parts.length > 1 ? ` ${t('ieltsListening.of')} ${parts.length}` : ''}</b>
-          <span>{t(`ieltsReading.mode.${mode}`)} · {test.title}</span>
-        </div>
-        <span className="ih-run__spacer" />
-        {mode === 'exam' && phase && phase.name !== 'intro' && (
-          <span className={`ih-run__clock ${phaseLeft != null && phaseLeft <= 30 ? 'is-low' : ''}`} role="timer">
-            {t(`ieltsListening.phase.${phase.name}`)}{phaseLeft != null ? ` · ${formatClock(phaseLeft)}` : ''}
-          </span>
-        )}
-        {range && <Chip tone="neutral" className="ih-chip--soft-ink">{t('ieltsListening.questions', { range })}</Chip>}
-        <button type="button" className="ih-btn ih-btn--dark" onClick={() => setConfirm(true)}>
-          {mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
-        </button>
-      </header>
+    <div className="ih-run ih-run--rl ih-lrun ih-skin-listening" data-mode={mode}>
+      {mock ? (
+        <MockRunHeader mock={mock} section="Listening" part={`Part ${part?.number || 1}`} left={mockLeft} saveState={saveState} onExit={() => { player.stop(); mock.onExit() }}>
+          {phase && phase.name !== 'intro' && (
+            <span className="ih-run__clock" role="timer">
+              {t(`ieltsListening.phase.${phase.name}`)}{phaseLeft != null ? ` · ${formatClock(phaseLeft)}` : ''}
+            </span>
+          )}
+          <button type="button" className="ih-btn ih-btn--primary" onClick={() => setConfirm(true)}>{t('ieltsMock.submitSection')}</button>
+        </MockRunHeader>
+      ) : (
+        <RunTopBar
+          // у части название уже начинается с «Part 1: …» — номер второй раз не повторяем
+          chip={/^part/i.test(test.title || '') ? `Listening · ${test.title}` : `Listening · Part ${part?.number || 1}${parts.length > 1 ? ` ${t('ieltsListening.of')} ${parts.length}` : ''} · ${test.title}`}
+          mode={t('ieltsReading.modeChip', { mode: t(`ieltsReading.mode.${mode}`).toLowerCase() })}
+          clock={mode === 'exam' && phase && phase.name !== 'intro' ? `${t(`ieltsListening.phase.${phase.name}`)}${phaseLeft != null ? ` · ${formatClock(phaseLeft)}` : ''}` : null}
+          clockLow={phaseLeft != null && phaseLeft <= 30}
+          onExit={() => { player.stop(); onExit?.(run.testId) }}
+        >
+          {range && <Chip tone="neutral" className="ih-chip--soft-ink">{t('ieltsListening.questions', { range })}</Chip>}
+          <button type="button" className="ih-btn ih-btn--primary" onClick={() => setConfirm(true)}>
+            {mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
+          </button>
+        </RunTopBar>
+      )}
+      {mock && <p className="ih-mockbar__note"><InfoIcon size={16} />{t('ieltsMock.noHints')}</p>}
 
       <div className="ih-lrun__body">
         <AudioPlayerBar
@@ -293,8 +329,9 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
           <div className="ih-dialog__box" role="dialog" aria-modal="true" aria-labelledby="ih-exam-title">
             <h2 id="ih-exam-title">{t('ieltsListening.examTitle')}</h2>
             <p>{t('ieltsListening.examText', { read: String(EXAM.readSec), check: String(EXAM.checkSec / 60) })}</p>
+            {mock && partIdx > 0 && <p>{t('ieltsMock.resumePart', { part: String(part?.number || partIdx + 1) })}</p>}
             <div className="ih-dialog__actions">
-              <button type="button" className="ih-btn ih-btn--outline" onClick={() => onExit?.(run.testId)}>{t('ieltsReading.cancel')}</button>
+              <button type="button" className="ih-btn ih-btn--outline" onClick={() => (mock ? mock.onExit() : onExit?.(run.testId))}>{t('ieltsReading.cancel')}</button>
               {/* жест ученика здесь разрешает браузеру потом включить запись самому, без второго клика */}
               <button type="button" className="ih-btn ih-btn--primary" onClick={() => setPhase({ name: 'read', endsAt: Date.now() + EXAM.readSec * 1000 })}>
                 {t('ieltsListening.examStart')}
@@ -306,10 +343,12 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview 
 
       <ConfirmDialog
         open={confirm}
-        title={t('ieltsReading.confirmTitle')}
-        text={markTotal(items) - done ? t('ieltsReading.confirmUnanswered', { n: String(markTotal(items) - done) }) : t('ieltsReading.confirmAll')}
-        confirmLabel={mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
-        cancelLabel={t('ieltsReading.cancel')}
+        title={mock ? t('ieltsMock.confirmTitle', { section: 'Listening' }) : t('ieltsReading.confirmTitle')}
+        text={mock
+          ? `${markTotal(items) - done ? t('ieltsMock.confirmUnanswered', { n: String(markTotal(items) - done), list: joinNumbers(unansweredNumbers(items, run.answers, isAnswered), t('ieltsMock.and'), 6, (k) => t('ieltsMock.more', { n: String(k) })) }) : t('ieltsReading.confirmAll')} ${t('ieltsMock.noReturn')}`
+          : markTotal(items) - done ? t('ieltsReading.confirmUnanswered', { n: String(markTotal(items) - done) }) : t('ieltsReading.confirmAll')}
+        confirmLabel={mock ? t('ieltsMock.submitSection') : mode === 'exam' ? t('ieltsReading.submit') : t('ieltsReading.finish')}
+        cancelLabel={mock ? t('ieltsMock.backToQuestions') : t('ieltsReading.cancel')}
         busy={submitting}
         onConfirm={() => { player.stop(); submit() }}
         onCancel={() => setConfirm(false)}

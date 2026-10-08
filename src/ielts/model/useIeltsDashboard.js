@@ -129,6 +129,10 @@ export function dashboardFrom(dash, profile) {
     forecast: dash?.forecast ?? null,
     roadmap: dash?.roadmap ?? null,
     plan: dash?.plan ?? null,
+    // программа (назначение, срок до экзамена, задачи дня, контроль недели) и путь А → сейчас → В — docs/ielts/PROGRAMMES.md
+    programme: dash?.programme ?? null,
+    journey: dash?.journey ?? null,
+    growthZone: dash?.growthZone ?? null,
   }
 }
 

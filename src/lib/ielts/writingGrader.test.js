@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSystemPrompt, normalizeAssessment, userMessage } from './writingGrader.js'
+import { buildSystemPrompt, normalizeAssessment, userMessage, normalizeDetails } from './writingGrader.js'
 
 const text = 'The graph shows cycling. Northport rose sharply.'
 
@@ -35,5 +35,21 @@ describe('оценка Writing из банка', () => {
     expect(userMessage(job)).toContain(`<response>\n${text}\n</response>`)
     expect(buildSystemPrompt(job, 'ru')).toContain('this response has 108')
     expect(buildSystemPrompt(job, 'kk')).toContain('in Kazakh')
+  })
+})
+
+describe('normalizeDetails', () => {
+  it('оставляет разбор по критериям, абзацам и только те слова, что есть в работе', () => {
+    const d = normalizeDetails({
+      criteriaNotes: [{ criterion: 'taskResponse', why: 'Позиция ясна.', nextBand: 'Добавьте пример.' }, { criterion: 'nope', why: 'x', nextBand: '' }],
+      paragraphs: [{ index: 1, role: 'introduction', comment: 'Тезис есть.' }, { index: 2, role: 'body', comment: '' }],
+      vocabulary: [{ word: 'good', better: ['beneficial', 'valuable'], note: 'повтор' }, { word: 'nonexistent', better: ['x'], note: '' }],
+      strengths: ['Чёткая структура'],
+      nextSteps: ['a', 'b', 'c', 'd'],
+    }, 'It is good for people. Good things happen.')
+    expect(d.criteriaNotes).toEqual([{ criterion: 'taskResponse', why: 'Позиция ясна.', nextBand: 'Добавьте пример.' }])
+    expect(d.paragraphs).toHaveLength(1)
+    expect(d.vocabulary.map((v) => v.word)).toEqual(['good'])
+    expect(d.nextSteps).toHaveLength(3)
   })
 })

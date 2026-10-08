@@ -1,6 +1,8 @@
 // Маркер в тексте Reading: выделения хранятся смещениями в тексте абзаца, а не DOM-узлами — так их можно
 // сохранить в попытке и нарисовать в разборе тем же кодом. key абзаца — «<текст>:<абзац>».
-export const MARKER_COLORS = [1, 2, 3]
+// Маркер один — жёлтый (правка по макету «IELTS new»: один цвет, два действия — выделить и убрать). Старые выделения
+// попыток с цветами 2 и 3 рисуются тем же жёлтым: color в данных оставлен, чтобы черновики и разборы не ломались.
+export const MARKER_COLOR = 1
 
 // Новое выделение поверх старых: пересекающиеся куски того же абзаца заменяются (как маркер на бумаге).
 export function addHighlight(list, h) {
@@ -15,6 +17,26 @@ export function addHighlight(list, h) {
     if (x.end > h.end) rest.push({ ...x, start: h.end })
   }
   return [...rest, h].sort((a, b) => (a.key === b.key ? a.start - b.start : a.key < b.key ? -1 : 1))
+}
+
+// Убрать маркер с куска абзаца: пересекающиеся выделения обрезаются, кусок посередине делит выделение на два.
+export function removeHighlight(list, r) {
+  if (!r || r.end <= r.start) return list
+  const out = []
+  for (const x of list) {
+    if (x.key !== r.key || x.end <= r.start || x.start >= r.end) {
+      out.push(x)
+      continue
+    }
+    if (x.start < r.start) out.push({ ...x, end: r.start })
+    if (x.end > r.end) out.push({ ...x, start: r.end })
+  }
+  return out
+}
+
+/** Есть ли маркер на куске абзаца — показывать ли «Убрать выделение». */
+export function overlapsHighlight(list, r) {
+  return list.some((x) => x.key === r.key && x.start < r.end && x.end > r.start)
 }
 
 // Текст абзаца → куски для рендера: [{ text, color|null, mark|null }]. mark — подсветка ответа в разборе

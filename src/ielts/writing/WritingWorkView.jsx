@@ -7,7 +7,7 @@ import { assessIeltsWriting, getIeltsAttempt, getIeltsTest, getIeltsWritingModel
 import { loadToken } from '../../lib/session.js'
 import { formatDate } from '../format.js'
 import { formatClock } from '../reading/run.js'
-import { EditIcon, InfoIcon, TimerIcon } from '../icons.jsx'
+import { CheckCircleIcon, EditIcon, InfoIcon, TimerIcon } from '../icons.jsx'
 import WritingTaskBody from './WritingTaskBody.jsx'
 import { CRITERIA, countWords, kindKey, selfCheckFor } from './writing.js'
 import { categoryLabel } from './WritingListView.jsx'
@@ -39,7 +39,25 @@ function withLinkers(text, linkers, pick) {
  * модельный ответ с разбором и самопроверка. Только что сданная работа (autoGrade) отправляется на оценку сама;
  * не оценённая раньше — по кнопке: оценка тратит квоту IELTS, и без спроса её не запускаем.
  */
-export default function WritingWorkView({ token, attemptId, autoGrade, onBackToLearn, onWorks, onRetry, onGuide }) {
+// embedded — внутри разбора полного mock (MockReview): без хлебных крошек раздела и без «Написать ещё раз»
+/** Абзац с подсвеченными цитатами замечаний: первое вхождение каждой цитаты — <mark> с подсказкой «исправление». */
+function markQuotes(text, errors) {
+  const list = (errors || []).filter((e) => e?.quote && text.includes(e.quote))
+  if (!list.length) return text
+  const hits = list.map((e) => ({ at: text.indexOf(e.quote), e })).sort((a, b) => a.at - b.at)
+  const out = []
+  let pos = 0
+  for (const { at, e } of hits) {
+    if (at < pos) continue
+    if (at > pos) out.push(text.slice(pos, at))
+    out.push(<mark key={at} className="ih-wmine__err" title={`${e.issue} → ${e.correction}`}>{e.quote}</mark>)
+    pos = at + e.quote.length
+  }
+  out.push(text.slice(pos))
+  return out
+}
+
+export default function WritingWorkView({ token, attemptId, autoGrade, onBackToLearn, onWorks, onRetry, onGuide, embedded = false }) {
   const { t, lang } = useI18n()
   const authToken = token || loadToken()
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
@@ -98,7 +116,7 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
   if (state.status !== 'ready')
     return (
       <div className="ih-wwork">
-        <Breadcrumbs items={crumbs} />
+        {!embedded && <Breadcrumbs items={crumbs} />}
         {state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : <EmptyState icon={<EditIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
       </div>
     )
@@ -106,6 +124,8 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
   const v = state.view
   const doc = v.document
   const r = v.result || {}
+  // подробный разбор грейдера (по критериям, абзацам, лексика, шаги); у старых работ его нет — блок не рисуется
+  const det = r.details || null
   const text = String(v.answers?.text || '')
   const paras = text.split(/\n\s*\n+/).filter((p) => p.trim())
   const status = grading ? 'grading' : r.status
@@ -122,7 +142,7 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
 
   return (
     <div className="ih-wwork">
-      <Breadcrumbs items={crumbs} />
+      {!embedded && <Breadcrumbs items={crumbs} />}
       {/* без заголовка страница оценки не говорила, какое это эссе: у ученика их несколько на одну тему */}
       <div className="ih-rlist__head">
         <div>
@@ -146,9 +166,11 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
             ))}
           </div>
           {r.feedback && <p className="ih-wscore__fb">{r.feedback}</p>}
-          <div className="ih-wscore__actions">
-            <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsWriting.p.work.again')}</PillButton>
-          </div>
+          {!embedded && (
+            <div className="ih-wscore__actions">
+              <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsWriting.p.work.again')}</PillButton>
+            </div>
+          )}
         </section>
       ) : (
         <section className={`ih-wstatus ${status === 'failed' || gradeError ? 'is-bad' : ''}`} role="status">
@@ -159,6 +181,54 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
           </div>
           {status !== 'grading' && (
             <button type="button" className="ih-btn ih-btn--dark" onClick={grade}>{t('ieltsWriting.gradeNow')}</button>
+          )}
+        </section>
+      )}
+
+      {status === 'done' && det && (det.criteriaNotes?.length > 0 || det.nextSteps?.length > 0) && (
+        <section className="ih-card ih-wdet">
+          <h3>{t('ieltsWriting.d.title')}</h3>
+          {det.criteriaNotes?.length > 0 && (
+            <div className="ih-wdet__crits">
+              {det.criteriaNotes.map((c) => (
+                <article key={c.criterion} className="ih-wdet__crit">
+                  <header>
+                    <b>{t(`ieltsWriting.crit.${c.criterion}${c.criterion === 'taskResponse' && kind !== 't2' ? '1' : ''}`)}</b>
+                    <span className="ih-wdet__band">{r.criteria?.[c.criterion] != null ? Number(r.criteria[c.criterion]).toFixed(1) : '—'}</span>
+                  </header>
+                  <p><small>{t('ieltsWriting.d.why')}</small>{c.why}</p>
+                  {c.nextBand && <p className="ih-wdet__next"><small>{t('ieltsWriting.d.next')}</small>{c.nextBand}</p>}
+                </article>
+              ))}
+            </div>
+          )}
+          {(det.strengths?.length > 0 || det.nextSteps?.length > 0) && (
+            <div className="ih-wdet__two">
+              {det.strengths?.length > 0 && (
+                <div className="ih-wdet__list is-good">
+                  <h4>{t('ieltsWriting.d.strengths')}</h4>
+                  <ul>{det.strengths.map((s, i) => <li key={i}><CheckCircleIcon size={16} />{s}</li>)}</ul>
+                </div>
+              )}
+              {det.nextSteps?.length > 0 && (
+                <div className="ih-wdet__list is-next">
+                  <h4>{t('ieltsWriting.d.steps')}</h4>
+                  <ol>{det.nextSteps.map((s, i) => <li key={i}><span>{i + 1}</span>{s}</li>)}</ol>
+                </div>
+              )}
+            </div>
+          )}
+          {det.vocabulary?.length > 0 && (
+            <div className="ih-wdet__vocab">
+              <h4>{t('ieltsWriting.d.vocab')}</h4>
+              {det.vocabulary.map((v, i) => (
+                <div key={i} className="ih-wdet__word">
+                  <s lang="en">{v.word}</s>
+                  <span lang="en">→ {v.better.join(' · ')}</span>
+                  {v.note && <small>{v.note}</small>}
+                </div>
+              ))}
+            </div>
           )}
         </section>
       )}
@@ -194,12 +264,17 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
             <Chip tone="neutral" size="sm">{t('ieltsWriting.p.work.paragraphs', { n: String(paras.length) })}</Chip>
             {v.attempt.timeSec != null && <Chip tone="neutral" size="sm" icon={<TimerIcon size={14} />}>{t('ieltsWriting.timeOf', { time: formatClock(v.attempt.timeSec), n: String(Math.round((r.timeLimitSec || 2400) / 60)) })}</Chip>}
           </div>
-          {paras.map((p, i) => (
-            <div key={i} className="ih-wmine__para">
-              <span>{t('ieltsWriting.p.work.paragraph', { n: String(i + 1), words: t('ieltsWriting.wordsN', { n: String(countWords(p)) }) })}</span>
-              <p lang="en">{p}</p>
-            </div>
-          ))}
+          {paras.map((p, i) => {
+            const note = det?.paragraphs?.find((x) => x.index === i + 1)
+            return (
+              <div key={i} className="ih-wmine__para">
+                <span>{t('ieltsWriting.p.work.paragraph', { n: String(i + 1), words: t('ieltsWriting.wordsN', { n: String(countWords(p)) }) })}{note?.role ? ` · ${note.role}` : ''}</span>
+                {/* места замечаний подсвечены прямо в тексте — видно, где именно ошибка */}
+                <p lang="en">{markQuotes(p, status === 'done' ? r.errors : null)}</p>
+                {note?.comment && <p className="ih-wmine__note"><InfoIcon size={14} />{note.comment}</p>}
+              </div>
+            )
+          })}
           <details className="ih-wmine__task">
             <summary>{t('ieltsWriting.p.work.showTask')}</summary>
             <WritingTaskBody task={doc} />

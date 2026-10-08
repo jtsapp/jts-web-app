@@ -24,7 +24,9 @@ const STATUS_TONE = { ok: 'green', spelling: 'orange', partial: 'orange', wrong:
 // вопросы — у раскрытого «ваш ответ / правильный», почему, где ответ в тексте, ловушка и время на вопрос.
 // У Listening слева транскрипт части (реплика с ответом подсвечена) и кнопка «Переслушать отрезок», у диктовки —
 // пословный разбор фразы.
-export default function IeltsReadingReviewPage({ token, target, onExit, onRetry, onToday, onTrainType }) {
+// header — своя шапка вместо стандартной: разбор полного mock ставит сверху переключатель секций (MockReview), и
+// «Пройти ещё раз» / «К плану» там не к месту — попытка mock не перепроходится по одной секции.
+export default function IeltsReadingReviewPage({ token, target, onExit, onRetry, onToday, onTrainType, header = null }) {
   const { t, lang } = useI18n()
   const [state, setState] = useState({ status: 'loading' })
   const [filter, setFilter] = useState('all')
@@ -76,16 +78,21 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
   }, [openRow, doc, listening])
 
   if (state.status !== 'ready') {
-    return (
-      <div className="ih-run ih-run--empty">
-        {state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : (
-          <>
-            <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.review.missing')} text={t('ieltsReading.errorText')} />
-            <button type="button" className="ih-btn ih-btn--outline" onClick={() => onExit?.()}>{t('ieltsReading.back')}</button>
-          </>
-        )}
-      </div>
+    const inner = state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : (
+      <>
+        <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.review.missing')} text={t('ieltsReading.errorText')} />
+        {!header && <button type="button" className="ih-btn ih-btn--outline" onClick={() => onExit?.()}>{t('ieltsReading.back')}</button>}
+      </>
     )
+    if (header) {
+      return (
+        <div className="ih-run ih-run--rl">
+          {header}
+          <div className="ih-mrev__empty">{inner}</div>
+        </div>
+      )
+    }
+    return <div className="ih-run ih-run--empty">{inner}</div>
   }
 
   const a = state.a
@@ -97,7 +104,8 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
   const weak = weakCategories(rows)
 
   return (
-    <div className="ih-run ih-review">
+    <div className={`ih-run ih-review${header ? ' ih-run--rl' : ''}`}>
+      {header || (
       <header className="ih-run__top">
         <button type="button" className="ih-round" onClick={() => onExit?.(a.testId)} aria-label={t('ieltsReading.back')}>
           <ChevronLeftIcon size={20} />
@@ -113,6 +121,7 @@ export default function IeltsReadingReviewPage({ token, target, onExit, onRetry,
         </button>
         <button type="button" className="ih-btn ih-btn--dark" onClick={() => onToday?.()}>{t('ieltsReading.review.toPlan')}</button>
       </header>
+      )}
 
       <div className="ih-run__body ih-review__body">
         {listening ? (

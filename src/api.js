@@ -343,6 +343,8 @@ const CATALOG_LIVE_PREFIX = `${CATALOG_KEY_PREFIX}${CATALOG_CACHE_VER}:`
 // помещаются в localStorage — без Map повторный заход в том же табе снова
 // ждал бы сеть. localStorage остаётся для переживания перезагрузки.
 const memoryCatalogCache = new Map()
+// идущий фоновый запрос по ключу кэша (см. cachedAuthGet)
+const cachedInflight = new Map()
 
 // Пользовательская часть ключа: sub из JWT (стабилен между сессиями). Ключ
 // разделяет пользователей — у ситуативок есть per-user флаг completed — и
@@ -434,16 +436,25 @@ async function cachedAuthGet(path, token, onFresh) {
       /* битый кэш → обычный сетевой запрос */
     }
   }
-  const refresh = () =>
-    authGet(path, token).then((data) => {
-      memoryCatalogCache.set(key, data)
-      try {
-        window.localStorage.setItem(key, JSON.stringify(data))
-      } catch {
-        /* квота localStorage исчерпана — RAM-кэш всё равно держит ответ */
-      }
-      return data
-    })
+  // Один фоновый запрос на ключ за раз: сайдбар и главный экран IELTS спрашивают баланс в одном кадре, и каждый вызов
+  // запускал свой — два одинаковых ответа на каждый переход. Окна «свежести» нет намеренно: отзыв выдачи (403) должен
+  // замечаться на первом же следующем заходе (catalogCache.test).
+  const refresh = () => {
+    if (cachedInflight.has(key)) return cachedInflight.get(key)
+    const p = authGet(path, token)
+      .then((data) => {
+        memoryCatalogCache.set(key, data)
+        try {
+          window.localStorage.setItem(key, JSON.stringify(data))
+        } catch {
+          /* квота localStorage исчерпана — RAM-кэш всё равно держит ответ */
+        }
+        return data
+      })
+      .finally(() => cachedInflight.delete(key))
+    cachedInflight.set(key, p)
+    return p
+  }
   if (cached !== null) {
     refresh()
       .then((data) => onFresh?.(data))
@@ -1250,10 +1261,55 @@ export function getKaraokeTrack(token, id) {
 
 // IELTS (бэкенд, /mobile/ielts). Тест приходит без ключей,
 // проверяет только сервер: по одному вопросу (/check — «Тренировка» и «Разбор»)
-// или целиком при сдаче (/attempts). Кэша нет намеренно: последняя попытка на
-// карточке должна меняться сразу после сдачи.
+// или целиком при сдаче (/attempts).
+//
+// Короткий кэш в памяти вкладки: хаб IELTS перемонтируется после каждого прохождения и разбора и спрашивал четыре
+// каталога навыков заново, а вкладки «План» и «Mock-тесты» — свой список на каждом клике по вкладке. Последняя
+// попытка на карточке всё равно меняется сразу: любая сдача, оценка, правка плана или профиля чистит кэш
+// (ieltsChanged ниже), а кэшируется промис — два экрана в одном кадре делят один запрос.
+const _ieltsCache = new Map()
+const IELTS_TESTS_TTL = 2 * 60 * 1000
+const IELTS_LIST_TTL = 30 * 1000
+
+function ieltsCached(key, ttl, load) {
+  const hit = _ieltsCache.get(key)
+  if (hit && Date.now() - hit.at < ttl) return hit.p
+  const p = load()
+  // осечка не залипает: следующий заход спросит снова
+  p.catch(() => _ieltsCache.get(key)?.p === p && _ieltsCache.delete(key))
+  _ieltsCache.set(key, { at: Date.now(), p })
+  return p
+}
+
+/** Сбросить кэш IELTS (каталоги, план, mock, «кто я») — после любого действия, меняющего прогресс. */
+export function invalidateIeltsCache() {
+  _ieltsCache.clear()
+  _ieltsMe.clear()
+}
+
+// действие изменило прогресс: кэш сбрасывается и при успехе, и при ошибке (оценка Speaking создаёт работу даже
+// при отказе распознавания)
+function ieltsChanged(p) {
+  return p.finally(invalidateIeltsCache)
+}
+
 export function getIeltsTests(token, skill = 'reading') {
-  return authGet(`/mobile/ielts/tests?skill=${encodeURIComponent(skill)}`, token)
+  return ieltsCached(`tests|${token}|${skill}`, IELTS_TESTS_TTL, () => authGet(`/mobile/ielts/tests?skill=${encodeURIComponent(skill)}`, token))
+}
+
+// Прогресс слов «Словаря» на сервере (backend /mobile/vocab-progress, TEST_FORMAT.md §12): коробки Лейтнера по
+// наборам. Сейчас пишут наборы IELTS Vocabulary (scope 'ielts-<id>'); уровни и сферы пока считают «изучено» в
+// localStorage (vocabLearned.js).
+export function getVocabProgress(token, scopes) {
+  return authGet(`/mobile/vocab-progress?scopes=${encodeURIComponent(scopes.join(','))}`, token)
+}
+
+export function getVocabProgressWords(token, scope) {
+  return authGet(`/mobile/vocab-progress/${encodeURIComponent(scope)}`, token)
+}
+
+export function saveVocabProgress(token, scope, results) {
+  return authPost(`/mobile/vocab-progress/${encodeURIComponent(scope)}`, token, { results })
 }
 
 export function getIeltsTest(token, id) {
@@ -1265,7 +1321,7 @@ export function checkIeltsAnswer(token, testId, itemId, given) {
 }
 
 export function submitIeltsAttempt(token, testId, body) {
-  return authPost(`/mobile/ielts/tests/${encodeURIComponent(testId)}/attempts`, token, body)
+  return ieltsChanged(authPost(`/mobile/ielts/tests/${encodeURIComponent(testId)}/attempts`, token, body))
 }
 
 export function getIeltsAttempt(token, attemptId) {
@@ -1291,7 +1347,55 @@ export function getIeltsDashboard(token) {
 }
 
 export function rebuildIeltsPlan(token) {
-  return authPost('/mobile/ielts/dashboard/plan', token, {})
+  return ieltsChanged(authPost('/mobile/ielts/dashboard/plan', token, {}))
+}
+
+// Программа и план IELTS (backend docs/ielts/PROGRAMMES.md): одни задачи для роадмапа, недели и месяца; выполнение
+// считает бэкенд по сданным работам, отметку руками принимают только гид и словарь (completionRule: self_report).
+export function getIeltsPlan(token, { from, to } = {}) {
+  const q = new URLSearchParams()
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
+  const s = q.toString()
+  return ieltsCached(`plan|${token}|${s}`, IELTS_LIST_TTL, () => authGet('/mobile/ielts/plan' + (s ? '?' + s : ''), token))
+}
+
+export function moveIeltsPlanTask(token, id, date) {
+  return ieltsChanged(authPut(`/mobile/ielts/plan/tasks/${id}/date`, token, { date }))
+}
+
+export function markIeltsPlanTask(token, id, done) {
+  return ieltsChanged(authPut(`/mobile/ielts/plan/tasks/${id}/done`, token, { done }))
+}
+
+// Полный mock (backend TEST_FORMAT.md §11): серверные часы секций и автосохранение. Секции сдаются ручками отдельных
+// тестов, сессии уходят только id сданных попыток.
+export function getIeltsMocks(token, module) {
+  return ieltsCached(`mocks|${token}|${module || ''}`, IELTS_LIST_TTL, () => authGet('/mobile/ielts/mocks' + (module ? `?module=${encodeURIComponent(module)}` : ''), token))
+}
+
+export function startIeltsMock(token, mockId) {
+  return ieltsChanged(authPost(`/mobile/ielts/mocks/${encodeURIComponent(mockId)}/sessions`, token, {}))
+}
+
+export function getIeltsMockSession(token, id) {
+  return authGet(`/mobile/ielts/mocks/sessions/${id}`, token)
+}
+
+export function startIeltsMockSection(token, id, section) {
+  return authPost(`/mobile/ielts/mocks/sessions/${id}/sections/${section}/start`, token, {})
+}
+
+export function saveIeltsMockDraft(token, id, section, draft, { keepalive = false } = {}) {
+  return authPut(`/mobile/ielts/mocks/sessions/${id}/sections/${section}/draft`, token, draft, { keepalive })
+}
+
+export function finishIeltsMockSection(token, id, section, attemptIds) {
+  return ieltsChanged(authPost(`/mobile/ielts/mocks/sessions/${id}/sections/${section}/finish`, token, { attemptIds }))
+}
+
+export function abortIeltsMock(token, id) {
+  return ieltsChanged(authPost(`/mobile/ielts/mocks/sessions/${id}/abort`, token, {}))
 }
 
 export function getIeltsProgress(token) {
@@ -1303,11 +1407,11 @@ export function getIeltsProfile(token) {
 }
 
 export function saveIeltsProfile(token, body) {
-  return authPut('/mobile/ielts/profile', token, body)
+  return ieltsChanged(authPut('/mobile/ielts/profile', token, body))
 }
 
 export function setIeltsRoute(token, route) {
-  return authPut('/mobile/ielts/profile/route', token, { route })
+  return ieltsChanged(authPut('/mobile/ielts/profile/route', token, { route }))
 }
 
 export function startIeltsDiagnostic(token, { level, module } = {}) {
@@ -1322,7 +1426,7 @@ export function getIeltsDiagnosticPath(token, body) {
 }
 
 export function submitIeltsDiagnostic(token, body) {
-  return authPost('/mobile/ielts/diagnostic', token, body)
+  return ieltsChanged(authPost('/mobile/ielts/diagnostic', token, body))
 }
 
 export function getIeltsLastDiagnostic(token) {
@@ -1335,7 +1439,12 @@ export function getIeltsSpeakingWorks(token) {
 
 // Записи ответов Speaking — сразу нашему серверному роуту (распознавание, произношение и модель — там); бэкенд
 // получает только стенограммы и баллы. answers: [{ itemId, durationSec, wav: Blob }].
-export async function assessIeltsSpeaking(token, { testId, mode, uiLang, answers }) {
+// оценка меняет баллы и прогресс — кэш IELTS сбрасывается и при отказе (работа к тому времени уже создана)
+export function assessIeltsSpeaking(token, opts) {
+  return ieltsChanged(assessIeltsSpeakingRaw(token, opts))
+}
+
+async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers }) {
   const form = new FormData()
   form.append('testId', testId)
   form.append('mode', mode)
@@ -1344,7 +1453,7 @@ export async function assessIeltsSpeaking(token, { testId, mode, uiLang, answers
   answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
   const res = await fetch('/api/ielts/speaking/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw Object.assign(new Error(body?.error || `HTTP ${res.status}`), { status: res.status, code: body?.error })
+  if (!res.ok) throw Object.assign(new Error(body?.error || `HTTP ${res.status}`), { status: res.status, code: body?.error, attemptId: body?.attemptId ?? null })
   return body
 }
 
@@ -1357,7 +1466,12 @@ export function saveIeltsSelfCheck(token, attemptId, selfCheck) {
 }
 
 // Оценка — наш серверный роут (ключ модели и служебный ключ бэкенда живут только там). Отвечает попыткой с band.
-export async function assessIeltsWriting(token, attemptId, uiLang) {
+// оценка меняет баллы и прогресс — кэш IELTS сбрасывается и при отказе (работа к тому времени уже создана)
+export function assessIeltsWriting(token, attemptId, uiLang) {
+  return ieltsChanged(assessIeltsWritingRaw(token, attemptId, uiLang))
+}
+
+async function assessIeltsWritingRaw(token, attemptId, uiLang) {
   const res = await fetch('/api/ielts/writing/assess', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1369,7 +1483,7 @@ export async function assessIeltsWriting(token, attemptId, uiLang) {
 }
 
 export function submitIeltsWriting(token, id, body) {
-  return authPost(`/mobile/ielts/tests/${encodeURIComponent(id)}/writing`, token, body)
+  return ieltsChanged(authPost(`/mobile/ielts/tests/${encodeURIComponent(id)}/writing`, token, body))
 }
 
 export function getIeltsStats(token, skill = 'reading') {
@@ -1591,6 +1705,26 @@ export async function getDemoAccess(token) {
       return { isDemo: false, expiresAt: null }
     })
   _demoAccess.set(token, p)
+  return p
+}
+
+// Аккаунт IELTS (дизайн «IELTS new»): у такого ученика веб показывает только интерфейс IELTS — сайдбар без
+// «Повторения» и игровых счётчиков. Признак ставит админка (позже биллинг), бэкенд отдаёт его ручкой
+// /mobile/ielts/plan/me. Помним по токену, как демо-статус выше: сайдбар спрашивает на каждом экране.
+const _ieltsMe = new Map()
+const IELTS_ME_NONE = { ieltsAccount: false, studyMode: 'self_study', track: 'academic', programmeName: null, onboarded: false }
+
+export async function getIeltsMe(token) {
+  if (!token) return IELTS_ME_NONE
+  if (_ieltsMe.has(token)) return _ieltsMe.get(token)
+  const p = authGet('/mobile/ielts/plan/me', token)
+    .then((d) => ({ ...IELTS_ME_NONE, ...d, ieltsAccount: !!d?.ieltsAccount }))
+    .catch(() => {
+      // осечка не залипает; пока считаем аккаунт обычным — General English не пропадёт из-за сети
+      _ieltsMe.delete(token)
+      return IELTS_ME_NONE
+    })
+  _ieltsMe.set(token, p)
   return p
 }
 

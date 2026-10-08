@@ -14,7 +14,8 @@ import { useI18n } from '../../i18n.jsx'
  * свою запись с оригиналом. Всё локально: запись остаётся в браузере и пропадает с уходом с экрана. Темп 0.75× —
  * для первого прохода, как в прототипе. Нет записи диктора — фраза звучит голосом Soniox.
  */
-export default function ShadowingView({ token, testId, onBack, onBackToList }) {
+// embedded — внутри экрана прохождения (RunTopBar сверху, без меню раздела): хлебные крошки там лишние
+export default function ShadowingView({ token, testId, onBack, onBackToList, embedded = false }) {
   const { t } = useI18n()
   const rec = useRecorder()
   const [state, setState] = useState({ status: 'loading' })
@@ -39,7 +40,7 @@ export default function ShadowingView({ token, testId, onBack, onBackToList }) {
   if (state.status !== 'ready')
     return (
       <div className="ih-wguide">
-        <Breadcrumbs items={crumbs} />
+        {!embedded && <Breadcrumbs items={crumbs} />}
         {state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : <EmptyState icon={<MicIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
       </div>
     )
@@ -63,7 +64,11 @@ export default function ShadowingView({ token, testId, onBack, onBackToList }) {
 
   const record = (ph) => {
     if (rec.state === 'recording') return rec.stop()
-    rec.start({ maxSec: Math.ceil((ph.audio?.durationSec || 6) * 2 + 3), onDone: (take) => take && setTakes((m) => ({ ...m, [ph.id]: take })) })
+    rec.start({ maxSec: Math.ceil((ph.audio?.durationSec || 6) * 2 + 3), onDone: (take) => take && setTakes((m) => {
+      // прежний дубль этой фразы больше не нужен — его запись освобождается сразу, а не при закрытии вкладки
+      rec.drop(m[ph.id]?.url)
+      return { ...m, [ph.id]: take }
+    }) })
     setPlaying(`rec-${ph.id}`)
   }
 
@@ -71,7 +76,7 @@ export default function ShadowingView({ token, testId, onBack, onBackToList }) {
   const done = Object.keys(takes).length
   return (
     <div className="ih-wguide ih-shadow">
-      <Breadcrumbs items={[...crumbs, { label: state.test.title }]} />
+      {!embedded && <Breadcrumbs items={[...crumbs, { label: state.test.title }]} />}
       <div className="ih-rlist__head">
         <div>
           <h2>{state.test.title}</h2>
