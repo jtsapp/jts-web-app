@@ -47,6 +47,8 @@ from livekit.agents import (
     tokenize,
 )
 from livekit.agents import tts as lk_tts
+from livekit.agents.types import NOT_GIVEN
+from livekit.agents.utils import is_given
 from livekit.plugins import google
 from google.genai import types as genai_types
 
@@ -89,6 +91,15 @@ try:
     from livekit.plugins import openai as lk_openai
 except Exception:  # pragma: no cover
     lk_openai = None
+# Anthropic напрямую — мозг тех моделей Claude, которых не умеет шим (см.
+# ANTHROPIC_DIRECT_BRAINS). Без пакета такие звонки уходят в шим на
+# ANTHROPIC_BRAIN_FALLBACK, остальные тьюторы плагина не касаются.
+try:
+    from livekit.plugins import anthropic as lk_anthropic
+    from livekit.plugins.anthropic import llm as _lk_anthropic_llm
+except Exception:  # pragma: no cover
+    lk_anthropic = None
+    _lk_anthropic_llm = None
 # Fish Audio — голос Джарвиса (dev-only тьютор, JARVIS_ENABLED в src/config.js).
 # Импорт такой же необязательный, как у остальных: без пакета сессии остальных
 # трёх тьюторов должны подниматься как раньше.
@@ -5726,6 +5737,56 @@ def _is_openai_brain(model: str) -> bool:
     return (model or "").strip().lower().startswith("gpt-")
 
 
+# Модели Claude, которые агент тоже зовёт напрямую, мимо шима. Шим знает только
+# свой белый список (чужую модель молча меняет на Haiku 4.5), шлёт temperature
+# и держит префилл, а Haiku 5.5 на температуру не 1 и на хвостовую реплику
+# тьютора отвечает 400 — тьютор молчал бы. Править шим бесполезно: агент ходит
+# в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную и без SSH.
+ANTHROPIC_DIRECT_BRAINS = ("claude-haiku-5",)
+# Нет ключа или плагина — в шим на ближайшую модель, которую он умеет.
+ANTHROPIC_BRAIN_FALLBACK = "claude-haiku-4-5"
+# Мышление выключено: рассуждение перед первым токеном — это тишина в звонке,
+# и Haiku 5.5 по умолчанию думает. Усилие — на ответ без мышления (короче
+# реплики, меньше тулов); ANTHROPIC_BRAIN_EFFORT — подстройка без деплоя кода.
+# disabled API принимает только при усилии high и ниже.
+ANTHROPIC_BRAIN_EFFORT = "low"
+
+
+def _is_anthropic_direct_brain(model: str) -> bool:
+    return (model or "").strip().lower().startswith(ANTHROPIC_DIRECT_BRAINS)
+
+
+def _anthropic_api_key() -> str:
+    # BOM из Windows-пайпа ломает заголовок авторизации (см. CLAUDE.md, Env).
+    return (os.getenv("ANTHROPIC_API_KEY") or "").replace("﻿", "").strip()
+
+
+def _anthropic_brain_body() -> dict[str, Any]:
+    effort = (os.getenv("ANTHROPIC_BRAIN_EFFORT") or "").strip().lower()
+    if effort not in ("low", "medium", "high"):
+        effort = ANTHROPIC_BRAIN_EFFORT
+    return {"thinking": {"type": "disabled"}, "output_config": {"effort": effort}}
+
+
+if _lk_anthropic_llm is not None:
+    # Плагин 1.6.7 добавляет пустую реплику ученика после хвостовой реплики
+    # тьютора только для 4.6 — у Haiku 5.5 префилла тоже нет (400). Хвост
+    # бывает и без нашего «[»: generate_reply после реплики тьютора без ответа
+    # ученика.
+    _lk_anthropic_llm._NO_PREFILL_PATTERNS = (
+        tuple(_lk_anthropic_llm._NO_PREFILL_PATTERNS) + ANTHROPIC_DIRECT_BRAINS
+    )
+
+    class _AnthropicBrainLLM(lk_anthropic.LLM):
+        """Плагин не знает ни thinking, ни output_config — подкладываем их
+        в extra_body каждого запроса (поле SDK, его понимает любая версия)."""
+
+        def chat(self, *, extra_kwargs: Any = NOT_GIVEN, **kwargs: Any):
+            extra = dict(extra_kwargs) if is_given(extra_kwargs) else {}
+            extra["extra_body"] = {**(extra.get("extra_body") or {}), **_anthropic_brain_body()}
+            return super().chat(extra_kwargs=extra, **kwargs)
+
+
 def _brain_model_for(tutor: str) -> str:
     """Модель мозга по БАЗОВОМУ id: env BRAIN_MODEL_<PERSONA> → таблица → дефолт
     роута. Env — откат без деплоя кода (BRAIN_MODEL_AIZERE=claude-haiku-4-5)."""
@@ -5752,24 +5813,38 @@ def _brain_model_for(tutor: str) -> str:
 # на том же стенде проиграл задержкой: тулы до текста в 52/96, мед 2.5 с.
 # BRAIN_MODEL_BUDDY — откат без деплоя кода (например claude-haiku-4-5).
 BUDDY_BRAIN_MODEL = "gpt-6-sol"
+# Свой мозг отдельного стенда поверх BUDDY_BRAIN_MODEL. 09.10.2026 просьба
+# владельца: тестовому Декстеру (KZ TEST) — Haiku 5.5, вход/выход в 10 раз
+# дешевле Haiku 4.5 и в разы дешевле Sol. «Спарк тест» остаётся на Sol: менять
+# живого тьютора стенда без его замера нельзя. Откат без деплоя — секрет
+# BRAIN_MODEL_BUDDY_<КЛЮЧ> (BRAIN_MODEL_BUDDY_JARVIS=gpt-6-sol).
+BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
+    KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
+}
 
 
 def session_brain_model(profile: LearnerProfile) -> str:
     """Модель мозга звонка: у теста Speaking Buddy — своя, у остальных — по
-    тьютору, как раньше (buddy_voice_profile у них отдаёт профиль как есть)."""
+    тьютору, как раньше (buddy_voice_profile у них отдаёт профиль как есть).
+    У теста: секрет стенда → общий секрет Buddy → таблица стенда → общий мозг."""
     if buddy_test_on(profile):
-        return (os.getenv("BRAIN_MODEL_BUDDY") or "").strip() or BUDDY_BRAIN_MODEL
+        stand = _stand_key(profile)
+        for name in (f"BRAIN_MODEL_BUDDY_{stand.upper()}", "BRAIN_MODEL_BUDDY"):
+            env = (os.getenv(name) or "").strip()
+            if env:
+                return env
+        return BUDDY_STAND_BRAIN_MODEL.get(stand, BUDDY_BRAIN_MODEL)
     return _brain_model_for(buddy_voice_profile(profile).tutor)
 
 
 def _brain_supports_prefill(model: str) -> bool:
     """Префилл «[» (хвостовая реплика тьютора, которую модель продолжает) — только
-    Haiku. Sonnet 5 отвечает на него 400 «does not support assistant message
-    prefill» (проверено 05.10.2026) — тьютор молчал бы на каждой реплике; у
-    OpenAI хвостовая реплика читается как уже сказанная. Дефолт роута мозга —
-    Haiku (VOICE_BRAIN_MODEL на вебе)."""
+    Haiku 4.5. Sonnet 5 отвечает на него 400 «does not support assistant message
+    prefill» (проверено 05.10.2026) — тьютор молчал бы на каждой реплике, Haiku
+    5.5 тоже (справка API); у OpenAI хвостовая реплика читается как уже
+    сказанная. Дефолт роута мозга — Haiku 4.5 (VOICE_BRAIN_MODEL на вебе)."""
     model = (model or "").strip().lower()
-    return model == DEFAULT_BRAIN_MODEL or model.startswith("claude-haiku")
+    return model == DEFAULT_BRAIN_MODEL or model.startswith("claude-haiku-4")
 
 
 def _cascade_tts(profile: LearnerProfile):
@@ -6504,7 +6579,25 @@ def build_cascade_session(
             brain_model, OPENAI_BRAIN_FALLBACK,
         )
         brain_model = OPENAI_BRAIN_FALLBACK
-    if openai_key:
+    anthropic_key = _anthropic_api_key() if _is_anthropic_direct_brain(brain_model) else ""
+    if _is_anthropic_direct_brain(brain_model) and not (anthropic_key and lk_anthropic):
+        logger.error(
+            "[brain] %s needs ANTHROPIC_API_KEY and livekit-plugins-anthropic — "
+            "falling back to %s via the shim",
+            brain_model, ANTHROPIC_BRAIN_FALLBACK,
+        )
+        brain_model = ANTHROPIC_BRAIN_FALLBACK
+        anthropic_key = ""
+    if anthropic_key:
+        # temperature не передаём: Haiku 5.5 принимает только 1, остальное — 400.
+        # caching — системный промпт, тулы и история (минимум у модели 512 токенов).
+        body = _anthropic_brain_body()
+        logger.info(
+            "[brain] direct Anthropic %s (effort=%s, thinking off) for tutor=%s",
+            brain_model, body["output_config"]["effort"], guard_tutor or profile.tutor,
+        )
+        llm = _AnthropicBrainLLM(model=brain_model, api_key=anthropic_key, caching="ephemeral")
+    elif openai_key:
         # reasoning_effort="none": рассуждения перед первым токеном — это
         # секунды тишины в звонке, а замер выше снят именно в этом режиме.
         logger.info(
