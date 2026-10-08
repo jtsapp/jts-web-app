@@ -11,8 +11,8 @@ import {
   ZoomOutIcon,
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { saveWord } from '../api.js'
 import { translateWord, cleanWord } from '../lib/wordTranslate.js'
+import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
 import { usePinchZoom } from '../practice/comics/usePinchZoom.js'
@@ -266,23 +266,23 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
 
+  // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
+  // общий демо-токен) — см. saveTappedWord. Сбой виден на кнопке.
   const onSave = async () => {
-    if (!pop?.translation || pop.saving || pop.saved || !token) return
+    if (!pop?.translation || pop.saving || pop.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
-    try {
-      const saved = await saveWord(token, {
-        word: pop.word,
-        translation: pop.translation,
-        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
-        language: tl,
-        source: doc?.title || comic?.title,
-      })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
-      onWordSaved?.(saved)
-    } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    setPop((p) => p && { ...p, saving: true, failed: false })
+    const res = await saveTappedWord({
+      word: pop.word,
+      translation: pop.translation,
+      alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+      language: tl,
+      source: doc?.title || comic?.title,
+    })
+    if (seqRef.current === seq) {
+      setPop((p) => p && { ...p, saving: false, saved: res.status === 'saved', failed: res.status === 'failed' })
     }
+    if (res.status === 'saved') onWordSaved?.(res.saved)
   }
 
   const bar = (
@@ -514,15 +514,17 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
                 {pop.alternates.length > 0 && (
                   <div className="cr-pop__alt">{pop.alternates.join(', ')}</div>
                 )}
-                {token && (
+                {canSaveWords() ? (
                   <button
                     type="button"
                     className="cr-pop__save"
                     onClick={onSave}
                     disabled={pop.saving || pop.saved}
                   >
-                    {pop.saved ? t('comics.saved') : t('comics.save')}
+                    {pop.saved ? t('comics.saved') : pop.failed ? t('comics.saveFailed') : t('comics.save')}
                   </button>
+                ) : (
+                  <div className="cr-pop__hint">{t('comics.saveLogin')}</div>
                 )}
               </>
             ) : (
