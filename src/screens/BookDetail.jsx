@@ -54,7 +54,19 @@ function cacheOwner(token) {
 
 async function loadStaticContent(title, token) {
   if (!_bookIndexPromise) {
-    _bookIndexPromise = fetch('/api/books').then((r) => (r.ok ? r.json() : []))
+    // Сбой не запоминаем — ни отказ сети, ни ответ с ошибкой. Раньше первый
+    // оставался отклонённым промисом, второй — пустым каталогом до перезагрузки
+    // страницы, и текст книги из статики не находился больше никогда (ревью
+    // 08.10.2026, #59). Тот же приём, что у каталогов комиксов и караоке.
+    _bookIndexPromise = fetch('/api/books')
+      .then((r) => {
+        if (!r.ok) throw new Error(`bad status ${r.status} for /api/books`)
+        return r.json()
+      })
+      .catch((err) => {
+        _bookIndexPromise = null
+        throw err
+      })
   }
   const index = await _bookIndexPromise.catch(() => [])
   const want = normTitle(title)
@@ -551,10 +563,16 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           {/* Метка конца текста: прогресс главы не должен включать кнопку
               «следующая глава» и поля под ней. Пустой блок места не занимает. */}
           {text && <div ref={endRef} aria-hidden="true" />}
-          {ch < chapters.length - 1 && (
+          {/* Следующая глава закрыта демо-доступом — кнопка ничего бы не
+              открыла (openChapter закрытую пропускает), поэтому вместо неё
+              объяснение (ревью 08.10.2026, #62). */}
+          {ch < chapters.length - 1 && !chapters[ch + 1]?.locked && (
             <button className="bk-btn bk-btn--primary bk-read__next" onClick={onNext}>
               Перейти к следующей главе
             </button>
+          )}
+          {ch < chapters.length - 1 && chapters[ch + 1]?.locked && (
+            <p className="bk-read__locked">Следующие главы откроются с полным доступом к платформе.</p>
           )}
         </article>
 
@@ -563,9 +581,13 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           <button type="button" className="bk-read__close" onClick={() => setToc(false)} aria-label={t('common.close')} />
           <div className="bk-chapters">
             {chapters.map((t, i) => (
+              // Закрытая глава — как в содержании книги: неактивна и с замком.
+              // Раньше здесь она выглядела живой, а нажатие молча ничего не
+              // делало (ревью 08.10.2026, #62).
               <button
                 key={t.id || i}
-                className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}`}
+                className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}${t.locked ? ' bk-chapter--locked' : ''}`}
+                disabled={!!t.locked}
                 onClick={() => {
                   setToc(false)
                   onPick(i)
@@ -573,7 +595,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
               >
                 <span className="bk-chapter__idx">{i + 1}</span>
                 <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>
-                <span className="bk-chapter__dur">{t.durationLabel || ''}</span>
+                <span className="bk-chapter__dur">{t.locked ? '🔒' : t.durationLabel || ''}</span>
               </button>
             ))}
           </div>
