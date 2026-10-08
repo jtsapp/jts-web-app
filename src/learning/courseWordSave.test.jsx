@@ -81,6 +81,15 @@ describe('карточка слова — «В словарь»', () => {
     expect(bank.addVocabWords).toHaveBeenCalledWith([{ word: 'awkward', hint: B2_WORD.def }])
   })
 
+  it('пока запись идёт — «Сохраняю…», а не «В словаре» заранее', async () => {
+    api.saveWord.mockReturnValue(new Promise(() => {}))
+    const btn = play(A2_WORD, 'tok')
+    fireEvent.click(btn)
+    await waitFor(() => expect(bank.addVocabWords).toHaveBeenCalled())
+    expect(document.querySelector('.cp-word__save').textContent).toBe('Сохраняю…')
+    expect(document.querySelector('.cp-word__save').disabled).toBe(true)
+  })
+
   it('ни банк, ни словарь не приняли — кнопка возвращается', async () => {
     bank.addVocabWords.mockResolvedValue(false)
     api.saveWord.mockRejectedValue(new Error('500'))

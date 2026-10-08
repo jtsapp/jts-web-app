@@ -91,7 +91,7 @@ describe('useReadingVoice', () => {
     await act(() => vi.advanceTimersByTimeAsync(8000))
     expect(said.join(' ')).toContain('big too')
     expect(said.join(' ')).toContain('small car')
-    expect(said.some((x) => /toos*$/.test(x))).toBe(false)
+    expect(said.some((x) => /too\s*$/.test(x))).toBe(false)
   })
   it('тап по слову посреди чтения не оставляет «Слушать» зависшим', async () => {
     const { hook, voice } = await setup()

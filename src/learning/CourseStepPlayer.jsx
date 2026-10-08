@@ -1703,13 +1703,13 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
   // «Словарь»), 'bank' — только банк повторений тьютора. Кнопка после этого
   // показывает итог и больше не нажимается: повторный тап ничего бы не
   // изменил (в vocab_bank слово уникально по word_key), а студенту нужен
-  // именно видимый ответ «забрал». Пока запись идёт, кнопка уже показывает
-  // ожидаемый итог — иначе подпись мигала бы «В словаре» → «Сохранено».
+  // именно видимый ответ «забрал». 'saving' — запись идёт: подпись
+  // нейтральная, иначе «В словаре» горело бы и при сбое, и пока висит сеть.
   const [saved, setSaved] = useState({})
 
   const add = async (i, w) => {
     const tr = [w.ru, w.kk].filter(Boolean).join(' · ')
-    setSaved((s) => ({ ...s, [i]: token && tr ? 'dict' : 'bank' }))
+    setSaved((s) => ({ ...s, [i]: 'saving' }))
     // Подсказка банка — перевод, а где его нет (B2 весь на английском) —
     // определение слова: пустая подсказка в vocab_bank бесполезна.
     const [bankOk, lessonOk] = await Promise.all([
@@ -1802,13 +1802,19 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
               </span>
               <span className="cp-word__acts">
                 <button
-                  className={`cp-word__save ${saved[i] ? 'is-saved' : ''}`}
+                  className={`cp-word__save ${saved[i] && saved[i] !== 'saving' ? 'is-saved' : ''}`}
                   type="button"
                   disabled={!!saved[i]}
-                  title={saved[i] === 'bank' ? t('lesson.inBank') : saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+                  title={saved[i] === 'bank' ? t('lesson.inBank') : saved[i] === 'dict' ? t('lesson.inVocab') : t('lesson.addToVocab')}
                   onClick={() => add(i, w)}
                 >
-                  {saved[i] === 'bank' ? t('lesson.savedBank') : saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
+                  {saved[i] === 'bank'
+                    ? t('lesson.savedBank')
+                    : saved[i] === 'dict'
+                      ? t('lesson.savedVocab')
+                      : saved[i] === 'saving'
+                        ? t('lesson.savingVocab')
+                        : t('lesson.toVocab')}
                 </button>
                 {!silentFrame(w.en, w.audio) && (
                   <button
