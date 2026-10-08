@@ -63,10 +63,10 @@ vi.mock('../api.js', () => ({
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
   getLessonViewStages: vi.fn(async () => []),
-  // Как у настоящего адреса: в нём страница следования (follow), перезагрузка
-  // (_r) и ученик, чей экран смотрит преподаватель (studentId).
-  lessonMaterialRenderUrl: (lessonId, materialId, token, { follow, forceReload, studentId } = {}) =>
-    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render?follow=${follow ? 1 : 0}&_r=${forceReload ?? 0}${studentId != null ? `&studentId=${studentId}` : ''}`,
+  // Как у настоящего адреса: в нём перезагрузка (_r) и ученик, чей экран смотрит
+  // преподаватель (studentId). Страницы следования отдельным адресом нет (backend#222).
+  lessonMaterialRenderUrl: (lessonId, materialId, token, { forceReload, studentId } = {}) =>
+    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render?_r=${forceReload ?? 0}${studentId != null ? `&studentId=${studentId}` : ''}`,
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
@@ -569,6 +569,7 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11))
     const oldFrame = frameOf(container)
+    const oldSrc = oldFrame.getAttribute('src')
     const oldPost = await loadFrame(container)
     let frameAtRequest = null
     sendCatchUp.mockClear()
@@ -579,7 +580,7 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     expect(sendCatchUp).toHaveBeenCalledTimes(1)
     expect(sendCatchUp).toHaveBeenCalledWith(11)
     expect(frameAtRequest).not.toBe(oldFrame)
-    expect(frameAtRequest.getAttribute('src')).toContain('follow=1')
+    expect(frameAtRequest.getAttribute('src')).not.toBe(oldSrc)
 
     const events = [{ selector: '#a', eventType: 'click', value: null }]
     await act(async () => { socketHandlers.onPresent({ materialId: 11, events }) })
@@ -1359,7 +1360,6 @@ describe('LiveLessonPage — указка «Перенести ученика с
     fireEvent.click(container.querySelector('.ls-follow'))
     await flush()
     const frame = frameOf(container)
-    expect(frame.getAttribute('src')).toContain('follow=0')
     const post = await loadFrame(container)
     const srcBefore = frame.getAttribute('src')
     sendCatchUp.mockClear()
@@ -1388,7 +1388,6 @@ describe('LiveLessonPage — указка «Перенести ученика с
     await flush()
 
     expect(frameMaterial(container)).toBe(11)
-    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
     expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('false')
     const post = await loadFrame(container)
     expect(pointed(post)).toHaveLength(1)
@@ -1429,7 +1428,7 @@ describe('LiveLessonPage — указка «Перенести ученика с
   })
 
   // Следует за классом, но смотрит доску — рамки на экране нет, и указка раньше копилась мимо него.
-  it('следует, но открыта доска: возвращает на урок, указка — в страницу следования после загрузки', async () => {
+  it('следует, но открыта доска: возвращает на урок, указка — в рамку после загрузки', async () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11))
     fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
@@ -1439,7 +1438,7 @@ describe('LiveLessonPage — указка «Перенести ученика с
     await act(async () => { socketHandlers.onPresent({ materialId: 11, events: point() }) })
     await flush()
 
-    expect(frameOf(container).getAttribute('src')).toContain('follow=1')
+    expect(frameOf(container)).not.toBeNull()
     expect(container.querySelector('.ls-follow').getAttribute('aria-pressed')).toBe('true')
     const post = await loadFrame(container)
     expect(pointed(post)).toHaveLength(1)
@@ -1514,7 +1513,6 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05b' }))
     await flush()
     expect(frameMaterial(container)).toBe(13)
-    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
     expect(frameMaterial(container)).toBe(13)
@@ -1536,17 +1534,20 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     expect(frameMaterial(container)).toBe(12)
   })
 
-  // Выключение переключателя — тот же ручной уход (§7): на странице следования
-  // мост ответов не сохраняет, а ученик теперь работает сам.
-  it('выключил переключатель — рамка уходит со страницы следования', async () => {
+  // Выключение переключателя — тот же ручной уход (§7). С backend#222 мост сохраняет ответы и
+  // при следовании за классом, так что рамка остаётся той же: ученик продолжает с того места, где
+  // стоит, а не ждёт, пока урок откроется заново (дев 08.10.2026, урок 134).
+  it('выключил переключатель — рамка та же, без перезагрузки', async () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11))
-    expect(frameOf(container).getAttribute('src')).toContain('follow=1')
+    const page = frameOf(container)
+    const src = page.getAttribute('src')
 
     fireEvent.click(container.querySelector('.ls-follow'))
     await flush()
 
-    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
+    expect(frameOf(container)).toBe(page)
+    expect(frameOf(container).getAttribute('src')).toBe(src)
   })
 
   // Остался на материале класса, но уже на своей странице: поток показа
