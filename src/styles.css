@@ -6704,6 +6704,8 @@ textarea {
 }
 .bk-pop__save:disabled { background: #cbc6dd; cursor: default; }
 .bk-pop__save--on:disabled { background: #23b061; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.bk-pop__hint { margin-top: 10px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
 
 /* Аудио-плеер */
 .bk-audio {
@@ -9382,6 +9384,8 @@ textarea {
   cursor: pointer;
 }
 .cr-pop__save:disabled { opacity: 0.55; cursor: default; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.cr-pop__hint { margin-top: 9px; font-size: 12.5px; line-height: 1.35; color: #a6a5b2; }
 .cr-pop__close {
   position: absolute;
   top: 8px;

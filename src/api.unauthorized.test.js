@@ -17,6 +17,7 @@ import {
   uncompleteCatalogLesson, // authDelete
   submitHomework, // authPut
   editLessonMessage, // authPatch
+  saveWord, // свой fetch — «В словарь» из читалок
 } from './api.js'
 
 const TOKEN = 'tok-1'
@@ -40,6 +41,9 @@ const CALLS = {
   authDelete: () => uncompleteCatalogLesson(TOKEN, 1),
   authPut: () => submitHomework(TOKEN, 1),
   authPatch: () => editLessonMessage(TOKEN, 1, 2, 'текст'),
+  // Ревью 08.10.2026: с протухшим токеном «Сохранить в словарь» бесконечно
+  // показывало «Не сохранилось», а «Сессия истекла» не приходила.
+  saveWord: () => saveWord(TOKEN, { word: 'ghost', translation: 'призрак' }),
 }
 
 describe.each(Object.entries(CALLS))('%s', (_name, call) => {

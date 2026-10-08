@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeftIcon } from '../components/icons.jsx'
-import { saveWord, getAudiobook } from '../api.js'
+import { getAudiobook } from '../api.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
+import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { Dots } from './practice/PracticeCards.jsx'
 import { chapterProgress, splitSubtitles, subtitleAt, subtitleTextFor } from '../practice/books/readAlong.js'
 
@@ -418,23 +419,23 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
 
+  // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
+  // общий демо-токен) — см. saveTappedWord. Сбой виден на кнопке.
   const onSave = async () => {
     if (!pop?.translation || pop.saving || pop.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
-    try {
-      const saved = await saveWord(token, {
-        word: pop.word,
-        translation: pop.translation,
-        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
-        language: tl,
-        source: book.title,
-      })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
-      onWordSaved?.(saved)
-    } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    setPop((p) => p && { ...p, saving: true, failed: false })
+    const res = await saveTappedWord({
+      word: pop.word,
+      translation: pop.translation,
+      alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+      language: tl,
+      source: book.title,
+    })
+    if (seqRef.current === seq) {
+      setPop((p) => p && { ...p, saving: false, saved: res.status === 'saved', failed: res.status === 'failed' })
     }
+    if (res.status === 'saved') onWordSaved?.(res.saved)
   }
 
   // Раскладка попапа. Карточка лежит внутри .bk-read (position: absolute),
@@ -592,13 +593,23 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
             <div className="bk-pop__word">{pop.word}</div>
             <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
             {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
-            <button
-              className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
-              onClick={onSave}
-              disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
-            >
-              {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
-            </button>
+            {canSaveWords() ? (
+              <button
+                className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
+                onClick={onSave}
+                disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+              >
+                {pop.saved
+                  ? '✓ В словаре'
+                  : pop.saving
+                    ? 'Сохраняем…'
+                    : pop.failed
+                      ? 'Не сохранилось — ещё раз'
+                      : 'Сохранить в словарь'}
+              </button>
+            ) : (
+              <div className="bk-pop__hint">Войдите, чтобы сохранять слова в словарь</div>
+            )}
           </div>
         )}
       </div>

@@ -1422,7 +1422,15 @@ export async function saveWord(token, { word, translation, alternates, language 
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  if (!res.ok) {
+    // 401 с токеном — возможно, кончилась сессия: сообщаем, как authPost. Иначе с
+    // протухшим токеном «Сохранить в словарь» бесконечно показывало «Не
+    // сохранилось», а «Сессия истекла» не приходила (ревью 08.10.2026).
+    if (res.status === 401) reportUnauthorized(token)
+    const err = new Error(`Не удалось сохранить слово (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   dropCachedAuthGet('/mobile/lesson-vocab', token)
   // «Мой словарь» читает именно /saved: без сброса первым показывался старый
   // кэш, и слово из книги появлялось только после фонового обновления.
