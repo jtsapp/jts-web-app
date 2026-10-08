@@ -42,62 +42,32 @@ html[data-theme="dark"] ::selection {
   background: color-mix(in oklab, var(--dk-acc) 45%, transparent);
 }
 
-/* ---------- Переключатель наброска ---------- */
-
-.theme-sketch {
-  position: fixed;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
-  z-index: 2147483000;
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgba(23, 19, 38, 0.86);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  font-family: Manrope, sans-serif;
-}
-
-.theme-sketch__btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 0;
-  border-radius: 999px;
-  padding: 7px 12px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.72);
-  font: 600 12px/16px Manrope, sans-serif;
-  cursor: pointer;
-}
-
-.theme-sketch__btn[aria-pressed="true"] {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
-.theme-sketch__btn:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 1px;
-}
-
-.theme-sketch__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
-}
-
 /* ---------- Правки поверх генератора ---------- */
 
-/* Карточки навыков в «Практике»: подложка — SVG с пастельными кругами,
-   генератор до неё не дотягивается (цвета внутри файла). multiply
-   умножает картинку на тёмный тон карточки (--sk-bg уже пересчитан):
-   формы остаются видны, но тёмными. */
-html[data-theme="dark"] .pk-skill {
-  background-blend-mode: multiply;
+/* Карточки навыков в «Практике»: рисунок — SVG с пастельными фигурами,
+   генератор до цветов внутри файла не достаёт. Первый вариант (multiply по
+   тёмному тону) гасил фигуры почти до фона — рисунок пропадал. Поэтому у
+   каждого SVG тёмная копия: подложка тёмная, фигуры того же оттенка, но
+   заметно светлее подложки. */
+html[data-theme="dark"] .pk-skill--listening {
+  --sk-bg: #192230;
+  --sk-art: url('/practice/skills/listening-dark.svg');
+  --sk-line: #385681;
+}
+html[data-theme="dark"] .pk-skill--reading {
+  --sk-bg: #2c1f12;
+  --sk-art: url('/practice/skills/reading-dark.svg');
+  --sk-line: #744b20;
+}
+html[data-theme="dark"] .pk-skill--writing {
+  --sk-bg: #241e2e;
+  --sk-art: url('/practice/skills/writing-dark.svg');
+  --sk-line: #5c4a7b;
+}
+html[data-theme="dark"] .pk-skill--speaking {
+  --sk-bg: #14261d;
+  --sk-art: url('/practice/skills/speaking-dark.svg');
+  --sk-line: #256346;
 }
 
 /* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
