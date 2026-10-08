@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   ACTIVITY_DAYS,
   PRACTICE_AREA_BY_MODULE,
@@ -55,6 +55,27 @@ function voiceUsageRows(table) {
 }
 
 describe('windowStart', () => {
+  // Сутки считаются по UTC, а сервер живёт в любом поясе. Под TZ=UTC (CI,
+  // контейнер) локальные геттеры Date дают те же даты, что и UTC-шные, и тест
+  // «а не по часовому поясу» не отличил бы одно от другого. Поэтому пояс
+  // процесса сдвигаем на UTC+5 — там, где живут преподаватели, — и возвращаем.
+  const originalTz = process.env.TZ
+  beforeAll(() => {
+    process.env.TZ = 'Asia/Almaty'
+  })
+  afterAll(() => {
+    // Присвоение undefined записало бы строку 'undefined', поэтому — delete.
+    if (originalTz === undefined) delete process.env.TZ
+    else process.env.TZ = originalTz
+  })
+
+  it('предпосылка: пояс процесса сдвинут от UTC, иначе тесты ниже беззубые', () => {
+    // 21:00 UTC — в Алматы уже следующие сутки. Если подмена пояса не сработала
+    // (например, пул потоков: там process.env.TZ часов не переводит), красным
+    // станет этот тест, а не тихо потеряют силу остальные.
+    expect(new Date('2026-10-08T21:00:00Z').getDate()).toBe(9)
+  })
+
   it('сегодня и ещё 181 сутки назад, в UTC', () => {
     expect(ACTIVITY_DAYS).toBe(182)
     expect(windowStart(new Date('2026-10-08T03:00:00Z'))).toBe('2026-04-10')
