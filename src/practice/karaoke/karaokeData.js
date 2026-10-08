@@ -27,7 +27,12 @@ export function loadKaraokeIndex(token, onFresh) {
   if (!_indexPromise) {
     _indexPromise = getKaraokeTracks(token, (fresh) => onFresh?.(normalizeTracks(fresh)))
       .then(normalizeTracks)
-      .catch(() => [])
+      .catch((err) => {
+        // Пустой ответ при отказе запоминался до перезагрузки вкладки (см. то же
+        // место в comicsData.js): один сбой сети оставлял раздел без треков.
+        _indexPromise = null
+        throw err
+      })
   }
   return _indexPromise
 }

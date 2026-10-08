@@ -4780,6 +4780,21 @@ textarea {
   color: var(--muted);
   text-align: center;
 }
+/* Каталог не загрузился (гость без входа или сбой запроса) — не «пусто». Текст
+   чуть плотнее обычного пустого состояния и с кнопкой повтора под ним. */
+.pp-empty--issue { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pp-empty--issue p { margin: 0; line-height: 1.45; }
+.pp-empty__retry {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, #7c4dff);
+  cursor: pointer;
+}
+.pp-empty__retry:active { opacity: 0.85; }
 .pp-note { border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
 .pp-note--err { background: #fdecec; color: #c0392b; }
 
