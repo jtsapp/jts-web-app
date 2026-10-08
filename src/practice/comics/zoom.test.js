@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { IDENTITY, MAX_ZOOM, clampZoom, zoomAround, pinchZoom } from './zoom.js'
+import { IDENTITY, MAX_ZOOM, clampZoom, zoomAround, pinchZoom, wheelScale } from './zoom.js'
 
 // Страница 200×300 с центром в (500, 400) — так её кладёт раскладка; сцена
 // шире страницы (у комикса лист вписан по высоте).
@@ -74,5 +74,31 @@ describe('zoom — рамки', () => {
 
   it('сдвиг внутри рамок не трогает', () => {
     expect(clampZoom({ s: 2, x: 10, y: -20 }, box, view)).toEqual({ s: 2, x: 10, y: -20 })
+  })
+})
+
+describe('zoom — колесо с Ctrl и щипок тачпада', () => {
+  it('щипок тачпада повторяет нативный масштаб: exp(-deltaY/100)', () => {
+    // Хром шлёт щипок как wheel с ctrlKey и deltaY = -100·ln(шаг масштаба).
+    expect(wheelScale(1, -100 * Math.log(1.1))).toBeCloseTo(1.1, 6)
+    expect(wheelScale(2, 100 * Math.log(1.25))).toBeCloseTo(2 / 1.25, 6)
+  })
+
+  it('щелчок колеса мыши — умеренный шаг, а не скачок ×2.7', () => {
+    const s = wheelScale(1, -100)
+    expect(s).toBeGreaterThan(1.2)
+    expect(s).toBeLessThan(1.5)
+    // В обе стороны шаг одинаковый — щелчок туда и обратно возвращает масштаб.
+    expect(wheelScale(s, 100)).toBeCloseTo(1, 6)
+  })
+
+  it('строки Firefox (deltaMode 1) считаются пикселями, а не единицами', () => {
+    expect(wheelScale(1, -1, 1)).toBeCloseTo(wheelScale(1, -16), 6)
+    // Страница — это заведомо крупный шаг, а не крохотная единица.
+    expect(wheelScale(1, -1, 2)).toBeGreaterThan(1.2)
+  })
+
+  it('нулевая дельта масштаб не трогает', () => {
+    expect(wheelScale(2.5, 0)).toBe(2.5)
   })
 })
