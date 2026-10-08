@@ -20,12 +20,20 @@ import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
+// Уровня, которого у Аудирования нет, — ближайший из тех, что есть. Раньше
+// всё незнакомое сводилось к A1, и ученик C2 слушал задания для начинающих
+// (ревью 08.10.2026).
+const NEAREST = { a0: 'a1', c2: 'c1' }
 // Экспорт — для звезды уровня на баннере Практики: она обязана показывать
 // тот же уровень, на котором откроется тренажёр.
 export const normLevel = (lvl) => {
   const l = String(lvl || 'a1').toLowerCase()
-  return LEVELS.includes(l) ? l : 'a1'
+  return LEVELS.includes(l) ? l : NEAREST[l] || 'a1'
 }
+// Сколько после ответа «Продолжить» недоступна: не короче порога двойного
+// клика в Windows (500 мс по умолчанию), а прочитать разбор быстрее никто не
+// успеет.
+const NEXT_GUARD_MS = 500
 const audioUrl = (level, file) => `/practice/listening/audio/${level}/${file}`
 
 // Render an explanation string that may contain <b>…</b>.
@@ -302,6 +310,26 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const [stepsDone, setStepsDone] = useState(0)
   const [stepsTotal, setStepsTotal] = useState(0)
   const [exitOpen, setExitOpen] = useState(false)
+  // Разбор только что показан: «Продолжить» на месте «Проверить» на миг
+  // недоступна. Кнопка та же, и второй клик двойного нажатия (или двойной тап)
+  // иначе сразу листал разбор, не дав его увидеть (ревью 08.10.2026). Именно
+  // disabled, а не молчащий клик: на неактивную кнопку не нажмёшь ни мышью, ни
+  // пальцем, и видно, что она вот-вот оживёт.
+  const [cooldown, setCooldown] = useState(false)
+  const continueRef = useRef(null)
+  useEffect(() => {
+    if (!cooldown) return undefined
+    const id = setTimeout(() => setCooldown(false), NEXT_GUARD_MS)
+    return () => clearTimeout(id)
+  }, [cooldown])
+  // Неактивная кнопка теряет фокус. Когда «Продолжить» оживает, возвращаем его
+  // ей, если он никуда не ушёл: с клавиатуры «Enter — Проверить, Enter —
+  // Продолжить» иначе требовал бы искать кнопку через Tab.
+  useEffect(() => {
+    if (cooldown || !answered) return
+    const el = continueRef.current
+    if (el && (!document.activeElement || document.activeElement === document.body)) el.focus()
+  }, [cooldown, answered])
 
   // Счётчик пройденных заданий уровня — обновляется на отметку и на гидратацию
   // (событие LISTENING_PROGRESS_EVENT шлёт и локальная отметка, и синк при входе).
@@ -428,6 +456,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
         setQueue((q) => [...q, { ...current, _retry: true }])
       }
     }
+    setCooldown(true)
     setAnswered({ ok, body: feedbackBody(current, ok, requeued, t) })
   }, [current, answered, response, t])
 
@@ -548,7 +577,13 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
                 надо было домотать. */}
             <div className="lt-dock">
               {answered ? (
-                <button type="button" className="lt-primary" onClick={next}>
+                <button
+                  type="button"
+                  ref={continueRef}
+                  className={`lt-primary${cooldown ? ' is-cooldown' : ''}`}
+                  disabled={cooldown}
+                  onClick={next}
+                >
                   {t('listening.continue')}
                 </button>
               ) : (

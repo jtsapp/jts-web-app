@@ -24,7 +24,7 @@ vi.mock('../api.js', () => ({
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
 }))
 
-import ListeningPage from './ListeningPage.jsx'
+import ListeningPage, { normLevel } from './ListeningPage.jsx'
 
 // Одно задание на сессию: очередь пустеет с первого верного ответа, и экран
 // результата с кнопкой «Ещё раз» — это второй старт сессии.
@@ -98,9 +98,17 @@ async function playSession() {
   fireEvent.click(await screen.findByText('Начать тренировку'))
   fireEvent.click(await screen.findByText('In Shanghai'))
   fireEvent.click(screen.getByText('Проверить'))
-  fireEvent.click(await screen.findByText('Продолжить'))
+  // Ученик сначала читает разбор: «Продолжить» в первые доли секунды после
+  // ответа неактивна — защита от двойного клика (см. тесты ниже).
+  await readFeedback()
+  fireEvent.click(screen.getByText('Продолжить'))
   return screen.findByText('Попробовать ещё раз')
 }
+
+// Ждём, пока «Продолжить» оживёт, а не фиксированное время: под нагрузкой
+// таймер экрана и теста могут сработать в одной фазе, и клик ушёл бы в
+// ещё неактивную кнопку.
+const readFeedback = () => waitFor(() => expect(screen.getByText('Продолжить').disabled).toBe(false))
 
 beforeEach(() => {
   localStorage.setItem('jts_access_token', 'TOK')
@@ -196,5 +204,69 @@ describe('ListeningPage — уровень из домашней работы', 
     await waitFor(() => expect(
       fetchMock.calls.some((c) => c.includes('/practice/listening/content/a1.json')),
     ).toBe(true))
+  })
+})
+
+// Ревью 08.10.2026: «Проверить» и «Продолжить» — одна кнопка на одном месте, и
+// второй клик двойного нажатия попадал уже в «Продолжить»: разбор ответа
+// пролистывался, не успев показаться.
+describe('ListeningPage — двойной клик «Проверить»', () => {
+  async function answerFirst() {
+    vi.stubGlobal('fetch', mockServer({ limit: null }))
+    renderPage()
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+    fireEvent.click(await screen.findByText('In Shanghai'))
+    fireEvent.click(screen.getByText('Проверить'), { detail: 1 })
+  }
+
+  it('второй клик двойного нажатия не пролистывает разбор', async () => {
+    await answerFirst()
+    fireEvent.click(screen.getByText('Продолжить'), { detail: 2 })
+    expect(screen.getByText('Li живёт в Шанхае.')).toBeTruthy()
+    expect(screen.queryByText('Попробовать ещё раз')).toBeNull()
+  })
+
+  it('двойной тап тоже не пролистывает: «Продолжить» на миг неактивна', async () => {
+    // На телефоне второй тап приходит как обычный клик (detail 1).
+    await answerFirst()
+    const btn = screen.getByText('Продолжить')
+    expect(btn.disabled).toBe(true)
+    fireEvent.click(btn, { detail: 1 })
+    expect(screen.queryByText('Попробовать ещё раз')).toBeNull()
+  })
+
+  it('«Продолжить» после разбора работает как раньше', async () => {
+    await answerFirst()
+    await readFeedback()
+    fireEvent.click(screen.getByText('Продолжить'), { detail: 1 })
+    expect(await screen.findByText('Попробовать ещё раз')).toBeTruthy()
+  })
+
+  it('пауза дольше порога двойного клика в Windows (500 мс)', async () => {
+    await answerFirst()
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    expect(screen.getByText('Продолжить').disabled).toBe(true)
+  })
+
+  it('когда кнопка оживает, фокус на ней: с клавиатуры Enter — Проверить, Enter — Продолжить', async () => {
+    // Неактивная кнопка теряет фокус; без возврата клавиатуре пришлось бы
+    // искать «Продолжить» через Tab.
+    await answerFirst()
+    await readFeedback()
+    expect(document.activeElement).toBe(screen.getByText('Продолжить'))
+  })
+})
+
+// Ревью 08.10.2026: уровня, которого у Аудирования нет, normLevel сводил к A1 —
+// ученик C2 слушал задания для начинающих. Берём ближайший из тех, что есть.
+describe('normLevel — уровень вне A1–C1', () => {
+  it('C2 получает C1, а не A1', () => {
+    expect(normLevel('C2')).toBe('c1')
+  })
+
+  it('A0 получает A1; свои уровни и пустой — как раньше', () => {
+    expect(normLevel('A0')).toBe('a1')
+    expect(normLevel('B2')).toBe('b2')
+    expect(normLevel(undefined)).toBe('a1')
   })
 })
