@@ -220,8 +220,25 @@ function TypeTask({ task, response, setResponse, disabled, onEnter, verdict }) {
 // ───────────────────────── Feedback ─────────────────────────
 function Feedback({ ok, body }) {
   const { t } = useI18n()
+  const ref = useRef(null)
+  // На телефоне кнопка шага липнет к низу экрана (.lt-dock), и разбор,
+  // появившись под ответом, уходил под неё: конец пояснения было видно,
+  // только если прокрутить (ревью 08.10.2026). Докручиваем ровно настолько,
+  // чтобы разбор встал над полосой; nearest — если он и так виден, экран не
+  // дёргается. Запас под полосу — её настоящая высота: в ней ещё safe-bottom
+  // и поля, и посчитанная из CSS сумма на телефоне вышла на 26 px меньше.
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof el.scrollIntoView !== 'function') return
+    const dock = el.closest('.lt-task')?.querySelector('.lt-dock')
+    if (dock && getComputedStyle(dock).position === 'sticky') {
+      el.style.scrollMarginBottom = `${dock.offsetHeight + 12}px`
+    }
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    el.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' })
+  }, [])
   return (
-    <div className={`lt-fb ${ok ? 'lt-fb--ok' : 'lt-fb--no'}`}>
+    <div ref={ref} className={`lt-fb ${ok ? 'lt-fb--ok' : 'lt-fb--no'}`}>
       <div className="lt-fb__icon">{ok ? '✓' : '☹'}</div>
       <div className="lt-fb__text">
         <div className="lt-fb__title">{ok ? t('listening.good') : t('listening.bad')}</div>
