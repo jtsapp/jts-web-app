@@ -152,3 +152,256 @@ describe('clearLocalPractice', () => {
     for (const k of keys) expect(localStorage.getItem(k)).toBeNull()
   })
 })
+
+// Ревью 08.10.2026 (#78): ответ сервера не проверялся — 500 или обрыв сети
+// терялись молча, и раздел-объект при следующей загрузке проигрывал серверному.
+describe('pushModule — ответ сервера', () => {
+  const jwtFor = (sub) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`
+
+  function scriptedFetch(statuses) {
+    const fn = vi.fn(async (url, init) => {
+      const status = statuses.length ? statuses.shift() : 200
+      fn.bodies.push({ auth: init.headers.Authorization, body: JSON.parse(init.body) })
+      return { ok: status >= 200 && status < 300, status, json: async () => ({ ok: true }) }
+    })
+    fn.bodies = []
+    return fn
+  }
+
+  it('ack — только когда сервер принял', async () => {
+    vi.stubGlobal('fetch', scriptedFetch([200]))
+    const ack = vi.fn()
+    pushModule('writing', { tasks: { a: 1 } }, ack)
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    expect(ack).toHaveBeenCalledTimes(1)
+  })
+
+  it('500 — отправка повторяется сама, ack после успешной', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = scriptedFetch([500, 200])
+    vi.stubGlobal('fetch', fetchMock)
+    const ack = vi.fn()
+    pushModule('writing', { tasks: { a: 1 } }, ack)
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(ack).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.bodies[1].body).toEqual({ module: 'writing', state: { tasks: { a: 1 } } })
+    expect(ack).toHaveBeenCalledTimes(1)
+  })
+
+  it('обрыв сети — тоже повтор', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      calls += 1
+      if (calls === 1) throw new TypeError('Failed to fetch')
+      return { ok: true, status: 200, json: async () => ({}) }
+    }))
+    const ack = vi.fn()
+    pushModule('words', { scenes: {} }, ack)
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS + 60_000)
+    expect(calls).toBe(2)
+    expect(ack).toHaveBeenCalledTimes(1)
+  })
+
+  it('400 — не повторяется: такой же запрос получит тот же отказ', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = scriptedFetch([400])
+    vi.stubGlobal('fetch', fetchMock)
+    pushModule('writing', { tasks: {} })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS + 120_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('новая запись, пока ждёт повтор, — уходит она, а не старая', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = scriptedFetch([500, 200])
+    vi.stubGlobal('fetch', fetchMock)
+    pushModule('writing', { tasks: { a: 1 } })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    pushModule('writing', { tasks: { a: 1, b: 1 } })
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.bodies[1].body.state).toEqual({ tasks: { a: 1, b: 1 } })
+  })
+
+  it('повтор не уходит под токеном другого ученика', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    localStorage.setItem('jts_access_token', jwtFor('7'))
+    const fetchMock = scriptedFetch([500, 200])
+    vi.stubGlobal('fetch', fetchMock)
+    pushModule('writing', { tasks: { mine: 1 } })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    localStorage.setItem('jts_access_token', jwtFor('8'))
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('выход отменяет отложенную отправку и забывает неотправленное', async () => {
+    const fetchMock = scriptedFetch([])
+    vi.stubGlobal('fetch', fetchMock)
+    localStorage.setItem('jts_practice_unsynced', JSON.stringify({ owner: 'user:7', modules: { writing: {} } }))
+    pushModule('writing', { tasks: { mine: 1 } })
+    clearLocalPractice()
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS * 2)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(localStorage.getItem('jts_practice_unsynced')).toBeNull()
+  })
+})
+
+// Ревью 08.10.2026 (#36): загрузка с сервера затирала черновик «Чтения». В нём
+// лежат результаты, не долетевшие в прошлую загрузку (их «Чтение» досылает при
+// открытии) — после затирания досылать было уже нечего.
+describe('hydratePractice — черновик «Чтения»', () => {
+  const jwt = (sub) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`
+
+  it('серверное сливается с черновиком лучшим результатом, а не затирает его', async () => {
+    const token = jwt('7')
+    localStorage.setItem('jts_access_token', token)
+    localStorage.setItem(READING_KEY, JSON.stringify({ texts: {
+      t1: { ex: { 0: { score: 2, total: 2 } }, done: true },
+      t2: { ex: { 0: { score: 3, total: 4 } }, done: false },
+    } }))
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ state: { reading: { texts: {
+      t2: { ex: { 0: { score: 1, total: 4 } }, done: true },
+      t3: { ex: { 0: { score: 5, total: 5 } }, done: true },
+    } } } }) })))
+    await hydratePractice(token)
+    expect(JSON.parse(localStorage.getItem(READING_KEY))).toEqual({ texts: {
+      t1: { ex: { 0: { score: 2, total: 2 } }, done: true },
+      t2: { ex: { 0: { score: 3, total: 4 } }, done: true },
+      t3: { ex: { 0: { score: 5, total: 5 } }, done: true },
+    } })
+  })
+
+  it('черновик с битой записью задания не роняет гидратацию остальных разделов', async () => {
+    const token = jwt('7')
+    localStorage.setItem('jts_access_token', token)
+    localStorage.setItem(READING_KEY, JSON.stringify({ texts: { t1: { ex: { 0: null } } } }))
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ state: {
+      reading: { texts: { t1: { ex: { 0: { score: 1, total: 1 } }, done: true } } },
+      verbs: { saved: { go: true }, progress: {} },
+    } }) })))
+    await hydratePractice(token)
+    expect(JSON.parse(localStorage.getItem(VERBS_KEY))).toEqual({ saved: { go: true }, progress: {} })
+  })
+
+  it('битый черновик — просто серверное', async () => {
+    const token = jwt('7')
+    localStorage.setItem('jts_access_token', token)
+    localStorage.setItem(READING_KEY, '{не json')
+    const server = { texts: { t3: { ex: { 0: { score: 5, total: 5 } }, done: true } } }
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ state: { reading: server } }) })))
+    await hydratePractice(token)
+    expect(JSON.parse(localStorage.getItem(READING_KEY))).toEqual(server)
+  })
+})
+
+// Независимое ревью PR: повтор старой отправки мог уйти после новой, уже
+// принятой, — сервер хранит раздел заменой и откатился бы к старому.
+describe('pushModule — порядок отправок', () => {
+  function manualFetch() {
+    const calls = []
+    const fn = vi.fn((url, init) => new Promise((resolve, reject) => {
+      calls.push({ body: JSON.parse(init.body), ok: () => resolve({ ok: true, status: 200, json: async () => ({}) }), fail: () => reject(new TypeError('Failed to fetch')) })
+    }))
+    fn.calls = calls
+    return fn
+  }
+
+  it('старая упала, новая принята — старая больше не уходит', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = manualFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    pushModule('writing', { tasks: { a: 1 } })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    pushModule('writing', { tasks: { a: 1, b: 1 } })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    // Новая ждёт, пока старая ответит: две отправки раздела разом не летят.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    fetchMock.calls[0].fail()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.calls[1].body.state).toEqual({ tasks: { a: 1, b: 1 } })
+    fetchMock.calls[1].ok()
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('выход: отправка прошлой сессии в очереди не уходит, даже если вернулся тот же ученик', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = manualFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    pushModule('writing', { tasks: { a: 1 } })
+    await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
+    clearLocalPractice()
+    localStorage.setItem('jts_access_token', 'TOK')
+    fetchMock.calls[0].fail()
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('hydratePractice — сбой и чужой ответ', () => {
+  const jwt = (sub) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`
+
+  it('сбой загрузки повторяется сам', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const token = jwt('7')
+    localStorage.setItem('jts_access_token', token)
+    const store = createProgressStore({ module: 'grammar', key: 'test_hydr_retry', event: 'test-hydr-retry', ...doneListOptions })
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      calls += 1
+      if (calls === 1) return { ok: false, status: 502, json: async () => ({}) }
+      return { ok: true, status: 200, json: async () => ({ state: { grammar: { done: ['a1:3'] } } }) }
+    }))
+    await hydratePractice(token)
+    expect(store.read()).toEqual([])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(calls).toBe(2)
+    expect(store.read()).toEqual(['a1:3'])
+  })
+
+  it('ответ пришёл, когда вошёл другой ученик, — его прогресс не трогаем', async () => {
+    localStorage.setItem('jts_access_token', jwt('7'))
+    let answer
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => { answer = resolve })))
+    const done = hydratePractice(jwt('7'))
+    localStorage.setItem('jts_access_token', jwt('8'))
+    answer({ ok: true, status: 200, json: async () => ({ state: { reading: { texts: { his: { ex: {}, done: true } } } } }) })
+    await done
+    expect(localStorage.getItem(READING_KEY)).toBeNull()
+  })
+})
+
+// Повторное ревью PR: отправки идут по одной, и зависший запрос останавливал
+// раздел — вместе с проверкой права на сессию, которая ждёт flushModule.
+describe('pushModule — зависший запрос', () => {
+  it('обрывается по таймауту и повторяется; flushModule не ждёт вечно', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn((url, init) => {
+      calls += 1
+      if (calls === 1) {
+        return new Promise((resolve, reject) => {
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
+    }))
+    const ack = vi.fn()
+    pushModule('writing', { tasks: { a: 1 } }, ack)
+    const flushed = flushModule('writing')
+    let released = false
+    flushed.then(() => { released = true })
+    await vi.advanceTimersByTimeAsync(11_000)
+    expect(released).toBe(true)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(calls).toBe(2)
+    expect(ack).toHaveBeenCalledTimes(1)
+  })
+})

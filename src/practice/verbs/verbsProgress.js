@@ -22,8 +22,27 @@ function isObj(x) {
 
 // Своё «зеркало в памяти» у раздела было и раньше; теперь память общая
 // (progressStore.js) и вдобавок берёт ответ сервера, когда localStorage забит.
+// Лучший результат задания (best) только растёт — nextEntry держит максимум.
+// Запись, посчитанная от устаревшего черновика, при сведении с сервером не
+// должна его понижать (ревью PR, #78).
+function bestEntries(server, next) {
+  const progress = { ...next.progress }
+  for (const [mode, bucket] of Object.entries(progress)) {
+    const theirs = server.progress[mode]
+    if (!isObj(bucket) || !isObj(theirs)) continue
+    const out = { ...bucket }
+    for (const [id, mine] of Object.entries(out)) {
+      const t = theirs[id]
+      if (isObj(t) && isObj(mine) && (t.best || 0) > (mine.best || 0)) out[id] = { ...mine, best: t.best }
+    }
+    progress[mode] = out
+  }
+  return { ...next, progress }
+}
+
 const store = createProgressStore({
   module: 'verbs',
+  settle: bestEntries,
   key: KEY,
   event: EVENT,
   empty: () => ({ saved: {}, progress: {} }),

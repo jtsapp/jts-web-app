@@ -28,6 +28,9 @@ function obj(v) {
 
 const store = createProgressStore({
   module: 'workbook',
+  // Промахи экрана — список последней попытки (markAct перезаписывает его
+  // целиком): при сведении с сервером он берётся целиком, а не объединяется.
+  atomic: ['miss'],
   key: KEY,
   event: EVENT,
   empty: () => ({ prog: {}, miss: {}, sc: {} }),

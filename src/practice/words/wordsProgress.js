@@ -16,8 +16,28 @@
 import { WORDS_KEY as KEY, WORDS_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
 import { createProgressStore } from '../progressStore.js'
 
+// Найденное только копится, поэтому сведение с сервером — объединение по
+// сцене: найденные слова обеих сторон, «пройдена» — если хоть где-то. Без
+// него найденное на этом устройстве до ответа сервера заменяло сцену целиком и
+// стирало найденное на другом (ревью 08.10.2026, #78).
+function mergeScenes(server, local) {
+  const scenes = { ...server.scenes }
+  for (const [id, mine] of Object.entries(local.scenes)) {
+    const theirs = scenes[id]
+    if (!theirs) {
+      scenes[id] = mine
+      continue
+    }
+    const found = Array.isArray(theirs.found) ? theirs.found : []
+    const extra = (Array.isArray(mine.found) ? mine.found : []).filter((w) => !found.includes(w))
+    scenes[id] = { ...theirs, found: [...found, ...extra], done: !!(theirs.done || mine.done) }
+  }
+  return { scenes }
+}
+
 const store = createProgressStore({
   module: 'words',
+  merge: mergeScenes,
   key: KEY,
   event: EVENT,
   empty: () => ({ scenes: {} }),

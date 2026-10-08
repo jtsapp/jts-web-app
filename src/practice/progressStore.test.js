@@ -54,11 +54,12 @@ describe('progressStore — запись и чтение', () => {
 
   it('забитый localStorage: память держит всё, сервер получает всё', () => {
     login('7')
+    adoptHydratedState({}, ownerOf(jwt('7')))
     fillStorage()
     obj.write({ tasks: { a: 1 } })
     obj.write({ ...obj.read(), tasks: { ...obj.read().tasks, b: 2 } })
     expect(obj.read()).toEqual({ tasks: { a: 1, b: 2 } })
-    expect(pushModule).toHaveBeenLastCalledWith('writing', { tasks: { a: 1, b: 2 } })
+    expect(pushModule).toHaveBeenLastCalledWith('writing', { tasks: { a: 1, b: 2 } }, expect.any(Function))
   })
 
   it('sync:false — без отправки', () => {
@@ -135,13 +136,14 @@ describe('progressStore — сведение с сервером', () => {
     expect(pushModule).not.toHaveBeenCalled()
   })
 
-  it('объект с действиями до ответа сервера — память остаётся и отправляется', () => {
+  // Ревью 08.10.2026 (#78): раньше здесь побеждала память — серверное
+  // { server: 1 } стиралось, хотя ученик его не трогал.
+  it('объект с действиями до ответа сервера — серверное плюс правки ученика', () => {
     login('7')
     obj.write({ tasks: { mine: 1 } })
-    pushModule.mockClear()
     adoptHydratedState({ writing: { tasks: { server: 1 } } }, ownerOf(jwt('7')))
-    expect(obj.read()).toEqual({ tasks: { mine: 1 } })
-    expect(pushModule).toHaveBeenCalledWith('writing', { tasks: { mine: 1 } })
+    expect(obj.read()).toEqual({ tasks: { server: 1, mine: 1 } })
+    expect(pushModule).toHaveBeenLastCalledWith('writing', { tasks: { server: 1, mine: 1 } }, expect.any(Function))
   })
 
   it('забитый localStorage: серверное всё равно попадает в память', () => {
@@ -181,5 +183,166 @@ describe('progressStore — сведение с сервером', () => {
     vi.restoreAllMocks()
     resetPracticeStores()
     expect(list.read()).toEqual([])
+  })
+})
+
+// Ревью 08.10.2026 (#78). Разделы-объекты сервер хранит заменой: что пришло,
+// то и лежит. Запись до ответа сервера уходила целиком и стирала прогресс с
+// другого устройства, а неотправленное после перезагрузки молча проигрывало
+// серверному.
+describe('progressStore — разделы-объекты: правки не стирают серверное', () => {
+  const me = () => ownerOf(jwt('7'))
+
+  it('запись до ответа сервера на сервер не уходит', () => {
+    login('7')
+    obj.write({ tasks: { mine: 1 } })
+    expect(pushModule).not.toHaveBeenCalled()
+  })
+
+  it('снятое учеником до ответа сервера не воскресает', () => {
+    login('7')
+    localStorage.setItem(OBJ_KEY, JSON.stringify({ tasks: { a: 1 } }))
+    obj.write({ tasks: {} })
+    adoptHydratedState({ writing: { tasks: { a: 1, s: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { s: 1 } })
+  })
+
+  it('неотправленное переживает перезагрузку и ложится поверх серверного', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { mine: 1 } }) // отправка не дошла: ack не пришёл
+    resetPracticeStores() // перезагрузка страницы: память пуста, хранилище — нет
+    pushModule.mockClear()
+    adoptHydratedState({ writing: { tasks: { server: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { server: 1, mine: 1 } })
+    expect(pushModule).toHaveBeenCalledWith('writing', { tasks: { server: 1, mine: 1 } }, expect.any(Function))
+  })
+
+  it('принятое сервером больше не накладывается: сервер снова главный', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { mine: 1 } })
+    const ack = pushModule.mock.calls.at(-1)[2]
+    ack()
+    resetPracticeStores()
+    adoptHydratedState({ writing: { tasks: { other: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { other: 1 } })
+  })
+
+  it('ack старой отправки не снимает правку, сделанную после неё', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { a: 1 } })
+    const first = pushModule.mock.calls.at(-1)[2]
+    obj.write({ tasks: { a: 1, b: 1 } })
+    first() // сервер принял { a: 1 } — вторая отправка не дошла
+    resetPracticeStores()
+    adoptHydratedState({ writing: { tasks: { a: 1, s: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { a: 1, s: 1, b: 1 } })
+  })
+
+  it('раздела нет на сервере — отложенная запись уходит как есть', () => {
+    login('7')
+    localStorage.setItem(OBJ_KEY, JSON.stringify({ tasks: { old: 1 } }))
+    obj.write({ ...obj.read(), tasks: { old: 1, mine: 1 } })
+    adoptHydratedState({ grammar: { done: [] } }, me())
+    expect(pushModule).toHaveBeenCalledWith('writing', { tasks: { old: 1, mine: 1 } }, expect.any(Function))
+  })
+
+  it('чужая неотправленная правка не ложится на другого ученика', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { mine: 1 } })
+    resetPracticeStores()
+    localStorage.removeItem(OBJ_KEY)
+    login('8')
+    adoptHydratedState({ writing: { tasks: { his: 1 } } }, ownerOf(jwt('8')))
+    expect(obj.read()).toEqual({ tasks: { his: 1 } })
+  })
+
+  it('«галочки» по-прежнему уходят сразу: сервер их объединяет сам', () => {
+    login('7')
+    list.write(['a1:1'])
+    expect(pushModule.mock.calls.at(-1).slice(0, 2)).toEqual(['grammar', ['a1:1']])
+  })
+})
+
+// Независимое ревью PR: общий ключ неподтверждённого у вкладок, поздний ответ
+// прежнего ученика, битая запись патча.
+describe('progressStore — вкладки, чужие ответы, битый патч', () => {
+  const me = () => ownerOf(jwt('7'))
+  const stored = () => JSON.parse(localStorage.getItem('jts_practice_unsynced'))
+
+  it('подтверждение этой вкладки не стирает неподтверждённое соседней', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { a: 1 } })
+    const ack = pushModule.mock.calls.at(-1)[2]
+    // Соседняя вкладка тем временем положила свою правку в общий ключ.
+    const all = stored()
+    all.modules.writing.tasks.sub.b = { set: 1 }
+    localStorage.setItem('jts_practice_unsynced', JSON.stringify(all))
+    ack()
+    resetPracticeStores()
+    adoptHydratedState({ writing: { tasks: { a: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { a: 1, b: 1 } })
+  })
+
+  it('поздний ответ прежнего ученика не отнимает снимок у нового', () => {
+    login('8')
+    adoptHydratedState({ writing: { tasks: {} } }, ownerOf(jwt('8')))
+    adoptHydratedState({ writing: { tasks: { his: 1 } } }, me()) // ответ ученику 7 пришёл после выхода
+    obj.write({ tasks: { mine: 1 } })
+    expect(pushModule).toHaveBeenLastCalledWith('writing', { tasks: { mine: 1 } }, expect.any(Function))
+  })
+
+  it('битая запись неподтверждённого не роняет раздел', () => {
+    login('7')
+    localStorage.setItem('jts_practice_unsynced', JSON.stringify({ owner: me(), modules: { writing: { tasks: {} } } }))
+    adoptHydratedState({ writing: { tasks: { s: 1 } } }, me())
+    expect(obj.read()).toEqual({ tasks: { s: 1 } })
+  })
+
+  it('раздел не открывали, а неподтверждённое есть — уходит со снимком без строки на сервере', () => {
+    login('7')
+    localStorage.setItem(OBJ_KEY, JSON.stringify({ tasks: { mine: 1 } }))
+    localStorage.setItem('jts_practice_unsynced', JSON.stringify({ owner: me(), modules: { writing: { tasks: { sub: { mine: { set: 1 } } } } } }))
+    adoptHydratedState({ grammar: { done: [] } }, me())
+    expect(pushModule).toHaveBeenCalledWith('writing', { tasks: { mine: 1 } }, expect.any(Function))
+  })
+})
+
+// Повторное ревью PR: подтверждение могло не дойти, а патч — жить вечно;
+// поздний ответ прежнего ученика стирал неподтверждённое нового.
+describe('progressStore — потерянный ответ и чужой ack', () => {
+  const me = () => ownerOf(jwt('7'))
+
+  it('сервер уже принял правку, а ответ потерялся — патч не откатывает позднейшее', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { a: 1 } }) // ушло, ответа не было
+    resetPracticeStores()
+    pushModule.mockClear()
+    adoptHydratedState({ writing: { tasks: { a: 1 } } }, me()) // сервер уже знает
+    expect(pushModule).not.toHaveBeenCalled()
+    resetPracticeStores()
+    adoptHydratedState({ writing: { tasks: { a: 5 } } }, me()) // потом другое устройство
+    expect(obj.read()).toEqual({ tasks: { a: 5 } })
+  })
+
+  it('поздний ack прежнего ученика не стирает неподтверждённое нового', () => {
+    login('7')
+    adoptHydratedState({ writing: { tasks: {} } }, me())
+    obj.write({ tasks: { a: 1 } })
+    const lateAck = pushModule.mock.calls.at(-1)[2]
+    resetPracticeStores()
+    localStorage.removeItem('jts_practice_unsynced')
+    login('8')
+    adoptHydratedState({ writing: { tasks: {} } }, ownerOf(jwt('8')))
+    obj.write({ tasks: { b: 1 } })
+    lateAck()
+    const stored = JSON.parse(localStorage.getItem('jts_practice_unsynced'))
+    expect(stored.owner).toBe(ownerOf(jwt('8')))
+    expect(Object.keys(stored.modules)).toEqual(['writing'])
   })
 })

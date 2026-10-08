@@ -7,6 +7,8 @@ import { WORDS_KEY, WORDS_PROGRESS_EVENT } from '../practiceKeys.js'
 const pushModule = vi.fn()
 vi.mock('../practiceSync.js', () => ({ pushModule: (...a) => pushModule(...a) }))
 
+const { adoptHydratedState, ownerOf, resetPracticeStores } = await import('../progressStore.js')
+
 const {
   markSceneDone,
   markWordFound,
@@ -19,6 +21,7 @@ const {
 
 beforeEach(() => {
   localStorage.clear()
+  resetPracticeStores()
   pushModule.mockClear()
 })
 
@@ -124,5 +127,31 @@ describe('счётчики каталога', () => {
 
   it('секция без сцен не делит на ноль', () => {
     expect(sectionProgress([])).toBe(0)
+  })
+})
+
+// Ревью 08.10.2026 (#78): сервер хранит «Слова» заменой. Найденное на этом
+// устройстве до ответа сервера уходило целиком и стирало найденное на другом.
+describe('сведение с сервером', () => {
+  const jwt = (sub) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`
+
+  it('найденное до ответа сервера объединяется с серверным, а не заменяет его', () => {
+    localStorage.setItem('jts_access_token', jwt('7'))
+    markWordFound('farm', 'cow')
+    expect(pushModule).not.toHaveBeenCalled()
+    adoptHydratedState({ words: { scenes: { farm: { found: ['pig', 'dog'], done: true }, ocean: { found: ['fish'], done: false } } } }, ownerOf(jwt('7')))
+    expect(readState()).toEqual({
+      scenes: { farm: { found: ['pig', 'dog', 'cow'], done: true }, ocean: { found: ['fish'], done: false } },
+    })
+    expect(pushModule.mock.calls.at(-1)[1]).toEqual(readState())
+  })
+
+  it('черновик знает меньше сервера — серверное не урезается и не отправляется заново', () => {
+    localStorage.setItem('jts_access_token', jwt('7'))
+    localStorage.setItem(WORDS_KEY, JSON.stringify({ scenes: { farm: { found: ['pig'], done: false } } }))
+    readState()
+    adoptHydratedState({ words: { scenes: { farm: { found: ['pig', 'dog'], done: true } } } }, ownerOf(jwt('7')))
+    expect(readState()).toEqual({ scenes: { farm: { found: ['pig', 'dog'], done: true } } })
+    expect(pushModule).not.toHaveBeenCalled()
   })
 })
