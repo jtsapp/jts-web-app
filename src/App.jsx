@@ -1354,26 +1354,13 @@ export default function App() {
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'home') setScreen('home')
-    else if (key === 'pricing') setScreen('pricing')
-    else if (key === 'minutes') setScreen('minutes')
-    else if (key === 'learn' || key === 'learning') setScreen('kingdom')
-    else if (key === 'practice') setScreen('practice')
-    else if (key === 'listening') setScreen('listening')
-    else if (key === 'shadowing') setScreen('shadowing')
-    else if (key === 'writing') setScreen('writing')
-    else if (key === 'workbook') setScreen('workbook')
-    else if (key === 'reading') setScreen('reading')
-    else if (key === 'words') setScreen('words')
-    else if (key === 'verbs') setScreen('verbs')
-    else if (key === 'speakspin') setScreen('speakspin')
-    else if (key === 'listenchoose') setScreen('listenchoose')
-    else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
-    else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'lessons') setScreen('lessons')
-    else if (key === 'homework') setScreen('homework')
-    else if (key === 'ielts') setScreen('ielts')
-    else if (key === 'vocab') setScreen('vocab')
+    if (key === 'tutor') setScreen(tutorHome)
+    // Остальное — обычная навигация без адреса: она же сбрасывает цели
+    // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
+    // сбрасывает и не сбрасывала). Свой список переходов здесь целей не
+    // сбрасывал вовсе, и из зоны тьютора Практика снова открывала вчерашний
+    // юнит домашки (ревью 08.10.2026, #79).
+    else handleNav(key)
   }
 
   // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
