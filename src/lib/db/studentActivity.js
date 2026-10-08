@@ -53,29 +53,36 @@ export async function loadStudentAppActivity(profileId, now = new Date(), sql = 
     return { stats: null, goal: null, week: null, voice: [], trainer: [], tasks: [], practice: [] }
   }
   const from = windowStart(now)
-  const [stats, goal, week, voice, trainer, tasks, practice] = await Promise.all([
-    loadSkillStats(profileId, sql),
-    loadLevelGoal(profileId, sql),
-    loadEcosystemWeek(profileId, now, sql),
-    sql`
-      select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
-      from voice_usage
-      where device_id = ${profileId} and day >= ${from}
-      group by day
-    `,
-    sql`
-      select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
-      from activity_time
-      where profile_id = ${profileId} and day >= ${from}
-      group by day
-    `,
-    sql`
-      select to_char(day, 'YYYY-MM-DD') as day, tasks, first_try
-      from skill_day
-      where profile_id = ${profileId} and day >= ${from}
-    `,
-    sql`select module, updated_at from practice_state where profile_id = ${profileId}`,
-  ])
+  // Читаем ПО ОДНОМУ, а не одним Promise.all: postgres.js открывает новое
+  // соединение под каждый одновременный запрос, пока в пуле есть место, а пул
+  // (max 10, см. sql.js) общий с голосом, навыками и практикой самих учеников.
+  // Девять запросов разом на каждое открытие карточки занимали бы у них почти
+  // весь пул. Параллельность осталась только внутри loadEcosystemWeek (три
+  // запроса), поэтому карточка держит не больше трёх соединений. Запросы
+  // короткие, по первичным ключам, а карточку открывают не чаще раза в пять
+  // минут (кэш в браузере): лишние миллисекунды ожидания дешевле, чем нехватка
+  // соединений у живых учеников.
+  const stats = await loadSkillStats(profileId, sql)
+  const goal = await loadLevelGoal(profileId, sql)
+  const week = await loadEcosystemWeek(profileId, now, sql)
+  const voice = await sql`
+    select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
+    from voice_usage
+    where device_id = ${profileId} and day >= ${from}
+    group by day
+  `
+  const trainer = await sql`
+    select to_char(day, 'YYYY-MM-DD') as day, coalesce(sum(seconds), 0)::int as seconds
+    from activity_time
+    where profile_id = ${profileId} and day >= ${from}
+    group by day
+  `
+  const tasks = await sql`
+    select to_char(day, 'YYYY-MM-DD') as day, tasks, first_try
+    from skill_day
+    where profile_id = ${profileId} and day >= ${from}
+  `
+  const practice = await sql`select module, updated_at from practice_state where profile_id = ${profileId}`
   return { stats, goal, week, voice, trainer, tasks, practice }
 }
 
