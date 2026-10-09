@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import * as fabric from 'fabric'
 import { useI18n } from '../../i18n.jsx'
 import {
-  CursorIcon, PenIcon, RectIcon, EllipseIcon, TextToolIcon, UndoIcon, RedoIcon, TrashIcon, ImageIcon,
+  CursorIcon, HandIcon, FitIcon, PenIcon, RectIcon, EllipseIcon, TextToolIcon, UndoIcon, RedoIcon, TrashIcon, ImageIcon,
 } from '../../components/icons.jsx'
 import { getBoardObjects, getBoardSettings, updateBoardSettings, uploadMedia } from '../../api.js'
 import { useLessonBoard } from './useLessonBoard.js'
+import {
+  boundsOfRects, clampView, fitView, scrollMetrics, viewFromThumb, wheelAction, zoomAround,
+} from './boardViewport.js'
 
 // Live collaborative whiteboard for one lesson. Wire-compatible with web-admin's
 // lesson-workspace board: objects carry a custom `id`, are serialized as
@@ -22,6 +25,7 @@ import { useLessonBoard } from './useLessonBoard.js'
 // подписи текстом» — про это.
 const TOOLS = [
   { key: 'select', Icon: CursorIcon },
+  { key: 'hand', Icon: HandIcon },
   { key: 'pen', Icon: PenIcon },
   { key: 'rect', Icon: RectIcon },
   { key: 'ellipse', Icon: EllipseIcon },
@@ -52,7 +56,19 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
   const [cursors, setCursors] = useState({}) // userId -> { name, x, y }
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  // Вид листа: масштаб и сдвиг (viewportTransform) и полосы прокрутки. Лист бесконечный —
+  // всё, что преподаватель написал ниже и правее, достижимо прокруткой (boardViewport.js).
+  const [view, setView] = useState({ zoom: 1, tx: 0, ty: 0 })
+  const [scroll, setScroll] = useState({ horizontal: { start: 0, size: 1 }, vertical: { start: 0, size: 1 } })
+  const viewApiRef = useRef(null)
+  const trackVRef = useRef(null)
+  const trackHRef = useRef(null)
 
+  // Перетаскивание листа, зажатый пробел и курсор живут в обработчиках холста, а они навешены
+  // один раз — состояние они видели бы устаревшим (см. drawingBlockedRef ниже).
+  const panRef = useRef(null)
+  const spaceDownRef = useRef(false)
+  const cursorRef = useRef(null)
   const toolRef = useRef(tool)
   useEffect(() => { toolRef.current = tool }, [tool])
   // Запрет рисования читается ВНУТРИ обработчиков холста, а они навешиваются
@@ -161,6 +177,144 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     })
     canvasRef.current = canvas
 
+    // ── вид листа: масштаб, сдвиг, прокрутка ─────────────────────────────────
+    const sceneBounds = () => boundsOfRects(canvas.getObjects().map((o) => o.getBoundingRect()))
+    const readView = () => {
+      const v = canvas.viewportTransform || [1, 0, 0, 1, 0, 0]
+      return { zoom: v[0], tx: v[4], ty: v[5] }
+    }
+    const syncChrome = (bounds = sceneBounds()) => {
+      const v = readView()
+      setView(v)
+      setScroll(scrollMetrics(v, bounds, canvas.getWidth(), canvas.getHeight()))
+    }
+    const applyView = (next) => {
+      const bounds = sceneBounds()
+      const v = clampView(next, bounds, canvas.getWidth(), canvas.getHeight())
+      canvas.setViewportTransform([v.zoom, 0, 0, v.zoom, v.tx, v.ty])
+      canvas.requestRenderAll()
+      syncChrome(bounds)
+    }
+    const viewApi = { readView, setView: applyView, bounds: sceneBounds }
+    viewApiRef.current = viewApi
+
+    // Содержимое поменялось — полосы пересчитываем раз в кадр, а не на каждое событие fabric.
+    let chromeFrame = 0
+    const scheduleChrome = () => {
+      if (chromeFrame || typeof requestAnimationFrame !== 'function') return
+      chromeFrame = requestAnimationFrame(() => { chromeFrame = 0; syncChrome() })
+    }
+    canvas.on('object:added', scheduleChrome)
+    canvas.on('object:removed', scheduleChrome)
+    canvas.on('object:modified', scheduleChrome)
+    canvas.on('canvas:cleared', scheduleChrome)
+
+    // Левая кнопка двигает доску: «Рука», зажатый пробел, или рисование запрещено (ученику
+    // остаётся только смотреть). Колесо — всегда. Средняя кнопка — всегда.
+    // Вешаем на сцену в фазе перехвата: так нажатие до fabric не доходит, и он не начинает ни
+    // выделение, ни штрих.
+    const stageEl = stageRef.current
+    let panCleanup = null
+    let hovering = false
+    const pansOnLeft = () => toolRef.current === 'hand' || spaceDownRef.current || drawingBlockedRef.current
+    const applyCursor = () => {
+      const cursor = panRef.current ? 'grabbing' : pansOnLeft() ? 'grab' : 'default'
+      canvas.defaultCursor = cursor
+      canvas.setCursor?.(cursor)
+    }
+    cursorRef.current = applyCursor
+    const beginPan = (x, y) => {
+      const v = readView()
+      panCleanup?.()
+      panRef.current = { x, y, tx: v.tx, ty: v.ty }
+      applyCursor()
+    }
+    const movePan = (x, y) => {
+      const pan = panRef.current
+      if (!pan) return
+      applyView({ zoom: readView().zoom, tx: pan.tx + (x - pan.x), ty: pan.ty + (y - pan.y) })
+    }
+    const endPan = () => {
+      panCleanup?.()
+      panCleanup = null
+      panRef.current = null
+      applyCursor()
+    }
+    const onMouseDownCapture = (e) => {
+      const middle = e.button === 1
+      if (!middle && !(e.button === 0 && pansOnLeft())) return
+      if (e.target?.closest?.('.board__scroll')) return // полосы прокрутки — свои
+      e.preventDefault()
+      e.stopPropagation()
+      beginPan(e.clientX, e.clientY)
+      const move = (ev) => movePan(ev.clientX, ev.clientY)
+      window.addEventListener('mousemove', move)
+      window.addEventListener('mouseup', endPan)
+      panCleanup = () => {
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', endPan)
+      }
+    }
+    const onTouchStartCapture = (e) => {
+      if (e.touches.length !== 1 || !pansOnLeft()) return
+      if (e.target?.closest?.('.board__scroll')) return
+      e.preventDefault()
+      e.stopPropagation()
+      beginPan(e.touches[0].clientX, e.touches[0].clientY)
+      const move = (ev) => {
+        const point = ev.touches[0]
+        if (!point) return
+        ev.preventDefault()
+        movePan(point.clientX, point.clientY)
+      }
+      window.addEventListener('touchmove', move, { passive: false })
+      window.addEventListener('touchend', endPan)
+      window.addEventListener('touchcancel', endPan)
+      panCleanup = () => {
+        window.removeEventListener('touchmove', move)
+        window.removeEventListener('touchend', endPan)
+        window.removeEventListener('touchcancel', endPan)
+      }
+    }
+    const onWheel = (e) => {
+      e.preventDefault()
+      const v = readView()
+      const action = wheelAction(e)
+      if (action.kind === 'zoom') {
+        const rect = stageEl.getBoundingClientRect()
+        applyView(zoomAround(v, v.zoom * action.factor, e.clientX - rect.left - (stageEl.clientLeft || 0), e.clientY - rect.top - (stageEl.clientTop || 0)))
+      } else {
+        applyView({ zoom: v.zoom, tx: v.tx + action.dx, ty: v.ty + action.dy })
+      }
+    }
+    // Пробел — временная «Рука», как в графических редакторах. Только пока курсор над доской и
+    // не в поле ввода: иначе пробел перестал бы прокручивать страницу и печататься в чате.
+    const typingTarget = (el) => !!el?.closest?.('input, textarea, select, button, [contenteditable="true"]')
+    const onKeyDown = (e) => {
+      if (e.key !== ' ' || !hovering || typingTarget(e.target)) return
+      e.preventDefault()
+      spaceDownRef.current = true
+      applyCursor()
+    }
+    const releaseSpace = () => {
+      if (!spaceDownRef.current) return
+      spaceDownRef.current = false
+      applyCursor()
+    }
+    const onKeyUp = (e) => { if (e.key === ' ') releaseSpace() }
+    const onEnter = () => { hovering = true }
+    const onLeave = () => { hovering = false; releaseSpace() }
+    if (stageEl) {
+      stageEl.addEventListener('wheel', onWheel, { passive: false })
+      stageEl.addEventListener('mousedown', onMouseDownCapture, true)
+      stageEl.addEventListener('touchstart', onTouchStartCapture, { capture: true, passive: false })
+      stageEl.addEventListener('mouseenter', onEnter)
+      stageEl.addEventListener('mouseleave', onLeave)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', releaseSpace)
+
     // Доска подстраивается под экран и потом: поворот планшета, сворачивание
     // панели, открытие вкладки «Доска» уже после входа в урок. Раньше размер
     // брался один раз при создании — открытая скрытой, доска оставалась
@@ -174,6 +328,8 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
         // больше контейнера, и после поворота холст вылезал за сцену с
         // overflow: auto — вместо чистой перерисовки появлялась прокрутка.
         canvas.setDimensions({ width: Math.floor(box.width), height: Math.floor(box.height) })
+        // Окно стало другим — вид надо вернуть в допустимые пределы и пересчитать полосы.
+        viewApi.setView(viewApi.readView())
         canvas.requestRenderAll()
       })
       resizeObserver.observe(stageRef.current)
@@ -217,6 +373,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       if (drawingBlockedRef.current) return
       if (canvas.isDrawingMode || active === 'select') return
       const p = canvas.getScenePoint ? canvas.getScenePoint(opt.e) : canvas.getPointer(opt.e)
+      if (active === 'hand') return // «Рука» двигает лист, ничего не создаёт
       if (active === 'text') {
         const it = new fabric.IText(t('board.textPlaceholder'), { left: p.x, top: p.y, fontSize: 22, fill: '#111827' })
         it.id = crypto.randomUUID()
@@ -259,6 +416,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       .then(async (objs) => {
         for (const o of objs || []) { if (o?.json) await addRemote(o.objectId, o.json) }
         canvas.requestRenderAll()
+        syncChrome()
       })
       .catch(() => {})
     getBoardSettings(token, lessonId)
@@ -267,6 +425,19 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
 
     return () => {
       resizeObserver?.disconnect()
+      if (chromeFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(chromeFrame)
+      panCleanup?.()
+      if (stageEl) {
+        stageEl.removeEventListener('wheel', onWheel)
+        stageEl.removeEventListener('mousedown', onMouseDownCapture, true)
+        stageEl.removeEventListener('touchstart', onTouchStartCapture, true)
+        stageEl.removeEventListener('mouseenter', onEnter)
+        stageEl.removeEventListener('mouseleave', onLeave)
+      }
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', releaseSpace)
+      viewApiRef.current = null
       cursorTimers.forEach((id) => clearTimeout(id))
       cursorTimers.clear()
       canvas.dispose()
@@ -313,6 +484,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     }
     // When drawing is blocked for a student, lock selection/manipulation too.
     canvas.selection = !drawingBlocked && tool === 'select'
+    canvas.skipTargetFind = tool === 'hand' || drawingBlocked
     canvas.forEachObject((o) => { o.selectable = !drawingBlocked && tool === 'select'; o.evented = !drawingBlocked })
     // Уходя с «Курсора», снимаем выделение сами: fabric оставил бы рамку на
     // объекте, которым уже нельзя управлять.
@@ -320,6 +492,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       canvas.discardActiveObject()
       setHasSelection(false)
     }
+    cursorRef.current?.()
     canvas.requestRenderAll()
   }, [tool, drawingBlocked])
 
@@ -402,11 +575,15 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       const image = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
       // Вписываем в часть холста: снимок иначе накрывает доску целиком, и то,
       // что на ней уже нарисовано, становится не найти.
-      const limit = Math.min(canvas.getWidth(), canvas.getHeight()) * 0.6
+      // Размер и центр — в координатах листа: окно может быть сдвинуто и уменьшено, а фото
+      // должно лечь туда, куда сейчас смотрят.
+      const zoom = canvas.getZoom?.() || 1
+      const center = canvas.getVpCenter ? canvas.getVpCenter() : { x: canvas.getWidth() / 2, y: canvas.getHeight() / 2 }
+      const limit = (Math.min(canvas.getWidth(), canvas.getHeight()) / zoom) * 0.6
       const scale = Math.min(1, limit / Math.max(image.width || 1, image.height || 1))
       image.set({
-        left: canvas.getWidth() / 2 - ((image.width || 0) * scale) / 2,
-        top: canvas.getHeight() / 2 - ((image.height || 0) * scale) / 2,
+        left: center.x - ((image.width || 0) * scale) / 2,
+        top: center.y - ((image.height || 0) * scale) / 2,
         scaleX: scale,
         scaleY: scale,
       })
@@ -420,6 +597,54 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     }
   }
 
+  // ── масштаб и прокрутка из панели ──────────────────────────────────────────
+  function zoomBy(factor) {
+    const api = viewApiRef.current
+    const canvas = canvasRef.current
+    if (!api || !canvas) return
+    const v = api.readView()
+    api.setView(zoomAround(v, v.zoom * factor, canvas.getWidth() / 2, canvas.getHeight() / 2))
+  }
+
+  function resetZoom() {
+    const api = viewApiRef.current
+    const canvas = canvasRef.current
+    if (!api || !canvas) return
+    api.setView(zoomAround(api.readView(), 1, canvas.getWidth() / 2, canvas.getHeight() / 2))
+  }
+
+  // «Показать всё»: весь написанный лист целиком в окне — для тех, кто не знает, куда прокрутить.
+  function fitAll() {
+    const api = viewApiRef.current
+    const canvas = canvasRef.current
+    if (!api || !canvas) return
+    api.setView(fitView(api.bounds(), canvas.getWidth(), canvas.getHeight()))
+  }
+
+  function startThumbDrag(e, axis, track) {
+    const api = viewApiRef.current
+    const canvas = canvasRef.current
+    if (!api || !canvas || !track) return
+    e.preventDefault()
+    e.stopPropagation()
+    const horizontal = axis === 'horizontal'
+    const startPointer = horizontal ? e.clientX : e.clientY
+    const trackLength = Math.max(horizontal ? track.clientWidth : track.clientHeight, 1)
+    const startFraction = scroll[axis].start
+    const bounds = api.bounds()
+    const move = (ev) => {
+      const delta = (horizontal ? ev.clientX : ev.clientY) - startPointer
+      api.setView(viewFromThumb(
+        axis, startFraction + delta / trackLength, api.readView(), bounds, canvas.getWidth(), canvas.getHeight()))
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
   return (
     <section className="board" aria-label={t('board.title')}>
       <div className="board__toolbar" role="toolbar" aria-label={t('board.title')}>
@@ -431,7 +656,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
             aria-pressed={tool === key}
             aria-label={t(`board.tool.${key}`)}
             title={t(`board.tool.${key}`)}
-            disabled={drawingBlocked && key !== 'select'}
+            disabled={drawingBlocked && key !== 'select' && key !== 'hand'}
             onClick={() => setTool(key)}
           >
             <Icon />
@@ -463,6 +688,15 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
                 aria-label={t('board.undo')} title={t('board.undo')}><UndoIcon /></button>
         <button type="button" className="board__tool board__tool--icon" onClick={redo} disabled={!canRedo}
                 aria-label={t('board.redo')} title={t('board.redo')}><RedoIcon /></button>
+        <span className="board__sep" aria-hidden="true" />
+        <button type="button" className="board__tool board__tool--icon" onClick={() => zoomBy(1 / 1.1)}
+                aria-label={t('board.zoomOut')} title={t('board.zoomOut')}>−</button>
+        <button type="button" className="board__zoom" onClick={resetZoom}
+                aria-label={t('board.zoomReset')} title={t('board.zoomReset')}>{Math.round(view.zoom * 100)}%</button>
+        <button type="button" className="board__tool board__tool--icon" onClick={() => zoomBy(1.1)}
+                aria-label={t('board.zoomIn')} title={t('board.zoomIn')}>+</button>
+        <button type="button" className="board__tool board__tool--icon" onClick={fitAll}
+                aria-label={t('board.zoomFit')} title={t('board.zoomFit')}><FitIcon /></button>
         {isStaff && <button type="button" className="board__tool board__tool--danger" onClick={clearBoard}>{t('board.clear')}</button>}
         <span className="board__spacer" />
         {isStaff && (
@@ -485,11 +719,21 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       <div className="board__stage" ref={stageRef}>
         <canvas ref={canvasElRef} className="board__canvas" />
         {!settings.cursorsHidden && Object.entries(cursors).map(([userId, c]) => (
-          <span key={userId} className="board__cursor" style={{ left: c.x, top: c.y }}>
+          <span key={userId} className="board__cursor" style={{ left: c.x * view.zoom + view.tx, top: c.y * view.zoom + view.ty }}>
             <span className="board__cursor-dot" aria-hidden="true" />
             <span className="board__cursor-name">{c.name || `#${userId}`}</span>
           </span>
         ))}
+        {/* Полосы прокрутки: лист бесконечный, и без них не видно, где в нём окно. Они есть и у
+            ученика — всё, что преподаватель написал ниже или правее, ему доступно так же. */}
+        <div className="board__scroll board__scroll--v" ref={trackVRef} title={t('board.scrollHint')}>
+          <div className="board__thumb" onPointerDown={(e) => startThumbDrag(e, 'vertical', trackVRef.current)}
+               style={{ top: `${scroll.vertical.start * 100}%`, height: `${scroll.vertical.size * 100}%` }} />
+        </div>
+        <div className="board__scroll board__scroll--h" ref={trackHRef} title={t('board.scrollHint')}>
+          <div className="board__thumb" onPointerDown={(e) => startThumbDrag(e, 'horizontal', trackHRef.current)}
+               style={{ left: `${scroll.horizontal.start * 100}%`, width: `${scroll.horizontal.size * 100}%` }} />
+        </div>
       </div>
     </section>
   )
