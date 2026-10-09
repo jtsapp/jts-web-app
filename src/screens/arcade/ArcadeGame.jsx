@@ -17,7 +17,7 @@ import { formatNumber } from './format.js'
 import { CollapseIcon, ExpandIcon, MicIcon, StopIcon } from '../../components/icons.jsx'
 import { PkChevron } from '../practice/PracticeIcons.jsx'
 
-// Игра «Аркады» — порт javaTest src/components/Game.tsx. Разделение то же:
+// Игра «Аркады». Разделение:
 // правила раунда — engine.js, микрофон — microphone.js, «слова или звук» и
 // стенограмма — transcript.js, ИИ-разбор — reviewClient.js и роут
 // /api/practice/arcade/review, а здесь только жизненный цикл раунда и отрисовка.

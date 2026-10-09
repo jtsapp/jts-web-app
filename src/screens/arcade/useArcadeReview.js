@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestReview } from '../../practice/arcade/reviewClient.js'
 
-// Состояние ИИ-разбора текущего раунда (порт javaTest useSpeakingAnalysis):
+// Состояние ИИ-разбора текущего раунда:
 // idle → loading → done | error. Одновременно идёт не больше одного запроса;
 // reset() начинает новый раунд — запрос в полёте отменяется, его ответ
 // игнорируется. `budget` — последний известный остаток на сегодня.

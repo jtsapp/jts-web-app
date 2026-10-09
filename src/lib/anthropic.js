@@ -26,6 +26,12 @@ const DEFAULT_GRADING_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 export const SUMMARY_MODEL =
   process.env.CALL_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
 const MAX_OUTPUT_TOKENS = 4096;
+// Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
+// остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
+// способом вызова, а Sonnet 5.5 его не принимает — см. structuredViaOutputFormat ниже.
+// BOM из Windows-пайпа вырезаем, как у остальных env: с ним имя не совпало бы с NO_FORCED_TOOL_MODEL, вызов ушёл бы
+// старым путём с thinking:disabled и каждая оценка IELTS падала бы 400.
+export const IELTS_REVIEW_MODEL = (process.env.IELTS_REVIEW_MODEL || "").replace(/^\uFEFF/, "").trim() || "claude-sonnet-5-5";
 
 let cached = null;
 function getClient() {
@@ -257,6 +263,7 @@ function toJsonSchema(schema) {
  *           model?: string, maxOutputTokens?: number, timeoutMs?: number,
  *           maxRetries?: number }} args
  */
+// Structured outputs требуют additionalProperties:false у каждого объекта схемы.
 export async function structured(args) {
   const client = getClient();
   const model = args.model || DEFAULT_GRADING_MODEL;
@@ -358,15 +365,18 @@ async function structuredViaOutputFormat(client, model, args, content, inputSche
   // between_tools — самый низкий уровень мышления, но его понимает только
   // Sonnet 5.5; Opus 5.5 и Fable/Mythos мышление не выключают вовсе, им поле
   // не шлём (там оно адаптивное по умолчанию).
-  const thinking = /^claude-sonnet-5-5\b/.test(model) ? { thinking: { type: "between_tools" } } : {};
+  // effort — для разборов IELTS: им нужно рассуждение по дескрипторам и длинный ответ (подробный разбор Writing), поэтому
+  // мышление адаптивное с глубиной effort, а max_tokens с запасом — мышление тратит его же. Без effort — прежний путь.
+  const deep = Boolean(args.effort);
+  const thinking = !deep && /^claude-sonnet-5-5\b/.test(model) ? { thinking: { type: "between_tools" } } : {};
   const res = await client.messages.create(
     {
       model,
-      max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      max_tokens: deep ? Math.max(args.maxOutputTokens ?? MAX_OUTPUT_TOKENS, 16000) : args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
       ...thinking,
       system: args.systemPrompt,
       messages: [{ role: "user", content }],
-      output_config: { format: { type: "json_schema", schema: strictObjects(inputSchema) } },
+      output_config: { ...(deep ? { effort: args.effort } : {}), format: { type: "json_schema", schema: strictObjects(inputSchema) } },
     },
     Object.keys(reqOptions).length ? reqOptions : undefined,
   );

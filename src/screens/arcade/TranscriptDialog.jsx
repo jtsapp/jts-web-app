@@ -5,7 +5,7 @@ import { LONG_PAUSE, summarise } from '../../practice/arcade/speechSegments.js'
 import ArcadeReview from './ArcadeReview.jsx'
 import { formatNumber, formatOneDecimal } from './format.js'
 
-// Окно «Анализ» после раунда (порт javaTest TranscriptDialog): раунд читаемым
+// Окно «Анализ» после раунда: раунд читаемым
 // текстом, где паузы, заминки и возможные повторы помечены на своих местах.
 // Ничего не оценивается и не удаляется; оценку даёт только ИИ-разбор сверху,
 // и только по нажатию.

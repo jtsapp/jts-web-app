@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { openMicrophone } from './microphone.js'
 
-// Порт javaTest tests/microphone.test.ts: жизненный цикл микрофона на
+// Жизненный цикл микрофона на
 // подставном устройстве — калибровка, закрытие и отмена ожидания разрешения.
 
 function hardware() {

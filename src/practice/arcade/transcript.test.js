@@ -3,7 +3,7 @@ import { startTranscript } from './transcript.js'
 import { createVoiceActivity } from './voiceActivity.js'
 import { advance, initialState } from './engine.js'
 
-// Порт javaTest tests/transcript.test.ts: что считается речью, как копится
+// Что считается речью, как копится
 // стенограмма и как ведёт себя распознаватель в браузере.
 
 // Накопительный список результатов одной сессии, как его шлёт Chrome.

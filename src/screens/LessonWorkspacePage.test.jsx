@@ -7,6 +7,7 @@ vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
   getCatalogLessonAnswers: vi.fn(async () => ({ progressJson: null })),
   saveCatalogLessonAnswers: vi.fn(async () => ({})),
   getCourseCatalogLessonContent: vi.fn(async () => null),

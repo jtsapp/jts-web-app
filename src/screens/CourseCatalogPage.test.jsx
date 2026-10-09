@@ -12,6 +12,7 @@ vi.mock('../api.js', () => ({
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
   getCourseCatalog: vi.fn(async () => catalog.value),
 }))
 

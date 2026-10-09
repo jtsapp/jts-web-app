@@ -20,6 +20,7 @@ vi.mock('../api.js', () => ({
   saveStudentVocab: vi.fn(),
   deleteStudentVocabWord: vi.fn(),
   markVocabLearned: vi.fn(async () => {}),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
 }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
 vi.mock('../practice/usePracticeEntitlement.js', () => ({

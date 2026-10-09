@@ -210,7 +210,9 @@ function AnswerFeedback({ ok, note, word, lang, t, speak, token }) {
   return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} note={note} />
 }
 
-export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned }) {
+// onResults(answers) — каждый ответ тренировки ({ key, ok }): наборы IELTS Vocabulary двигают по ним коробки
+// повторения на сервере, а не только локальное «изучено»
+export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned, onResults }) {
   const { t } = useI18n()
   // Практика «Словаря» — «actual» модуля vocabulary_sr недельной сводки. Экран
   // смонтирован ровно пока идёт практика, поэтому считаем всё его время.
@@ -444,6 +446,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       // записи, а /saved/learned отмечает по слову, и номера там не находились.
       const okWords = okKeys.map((k) => byKey[k]?.word).filter(Boolean)
       if (okWords.length) onLearned?.(okWords)
+      onResults?.(answers.map((x) => ({ key: x.key, ok: !!x.ok })))
     }
 
     return (
