@@ -80,8 +80,8 @@ export function routeLanding({ host, pathname, search = '', landingHosts, appUrl
   return { action: 'next' }
 }
 
-// Кнопки «Войти» / «Начать обучение»: на домене лендинга относительная
-// ссылка «/?screen=chat» вернула бы на тот же лендинг, поэтому ведём на домен
+// «Войти» и переход после заявки: на домене лендинга относительная ссылка
+// «/?screen=…» вернула бы на тот же лендинг, поэтому ведём на домен
 // приложения. На самом приложении (и локально) — как было, относительно.
 export function appLink(path, { onLandingHost, appUrl }) {
   return onLandingHost && appUrl ? appUrl + path : path
