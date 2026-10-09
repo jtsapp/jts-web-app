@@ -793,6 +793,16 @@ img{-webkit-user-drag:none;user-drag:none;}
 .leavebtn:hover{ background:rgba(255,99,30,.92); border-color:transparent; }
 .leavebtn .lv-ic{ font-size:16px; line-height:1; }
 
+
+/* Обложки библиотеки из макета «новые обложки»: арт 16:9 и крупнее,
+   описание в две строки, чтобы карточки не разъезжались по высоте.
+   !important — не прихоть: брендовая шкура выше держит .tale-card и
+   .tale-cover с !important (360px / 172px), без него макет не встаёт. */
+#libGrid .tale-card{ width:min(94vw,440px) !important; }
+#libGrid .tale-card .tale-cover{ height:auto !important; aspect-ratio:16/9 !important; background-position:center !important; background-size:cover !important; }
+#libGrid .tale-card .tale-cover::after{ background:linear-gradient(0deg, rgba(27,22,48,.28), transparent 40%) !important; }
+#libGrid .tale-body .desc{ display:-webkit-box !important; -webkit-line-clamp:2 !important; -webkit-box-orient:vertical !important; overflow:hidden !important; }
+.lib-grid{ max-width:1120px !important; }
 </style>
 </head>
 <body>
@@ -1042,7 +1052,7 @@ const SNOW_ASSETS = {
   clockwork_chapel:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070115_7557f0a9-4820-4cef-b66c-da6de47409f8_min.webp"
  },
  art:{
-  title:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070345_41f96e09-a14f-454d-bb30-46084296bb1a_min.webp",
+  title:"/practice/covers/tales/snow_queen.webp",
   ever_rose:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070352_3b55ef3e-0df8-4605-8c22-4dffa7ac3ef8_min.webp",
   mirror_shard:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070359_516db958-0f5d-45b8-a01a-8506492b8c00_min.webp",
   ice_splinter:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070404_527724be-2eb8-4a6d-a0f3-752706b20f8c_min.webp",
@@ -3929,7 +3939,7 @@ const ALDAR_ASSETS = {
   shaitan_hollow:ALDAR_CDN+"hf_20260702_125121_2f4d627c-7829-4f72-b2be-c9f73b0ad430_min.webp",
   mausoleum:ALDAR_CDN+"hf_20260702_125124_ad422c2f-ccfb-47fc-a2b5-ee0dc960b9a4_min.webp"
  },
- art:{ title:ALDAR_CDN+"hf_20260702_125138_158e0c10-a888-42d8-a17e-5260cec63fbc_min.webp" },
+ art:{ title:"/practice/covers/tales/aldar_kose.webp" },
  chars:{
   aldar:ALDAR_CDN+"hf_20260702_125603_9a7fd2e2-ccec-45ef-bbfa-4da30821b69c.png",
   bai:ALDAR_CDN+"hf_20260702_125610_b5eb2a38-731e-48b5-8db4-f8d668f9cc47.png",
@@ -4538,7 +4548,7 @@ const SB_ASSETS = {
   chamber:SB_CDN+"hf_20260706_220458_3d3c9969-c462-43ba-9c44-01c11df2115e_min.webp"
  },
  art:{
-  title:SB_CDN+"hf_20260706_220501_c7612173-43a3-4917-8802-2a5a9129992c_min.webp",
+  title:"/practice/covers/tales/sleeping_beauty.webp",
   gold_spindle:SB_CDN+"hf_20260706_220621_512dec84-dc90-441c-b822-e3d95def87f2.png",
   fairy_wand:SB_CDN+"hf_20260706_220623_b2be8fe8-b668-442f-9cce-8e81734ea465.png",
   thorn_rose:SB_CDN+"hf_20260706_220625_2bb94ddf-cd00-4f54-86bd-94e1fd0db82e.png",
@@ -4812,7 +4822,7 @@ const ERT_ASSETS = {
   underworld:ERT_CDN+"hf_20260706_235633_c37bac4b-31f4-4476-89e4-3cbfd06b0332_min.webp",
  },
  art:{
-  title:ERT_CDN+"hf_20260706_235739_02391681-6f15-4673-90d1-1a6d50d80fd2_min.webp",
+  title:"/practice/covers/tales/er_tostik.webp",
   hero_bow:ERT_CDN+"hf_20260707_000058_cb019880-ce53-4728-a505-cd6b7554b46e.png",
   gold_feather:ERT_CDN+"hf_20260707_000100_cd5fd6b0-bdb8-47ca-aaec-3ad4a624660a.png",
   iron_file:ERT_CDN+"hf_20260707_000107_4b94a742-b987-48bf-b1b7-cad228ab890f.png",
@@ -5656,7 +5666,7 @@ const FROG_ASSETS = {
   carriage_road:FROG_CDN+"hf_20260708_124745_f36aaeaa-8bce-4b96-af29-0b573586e1ec_min.webp",
   princes_kingdom:FROG_CDN+"hf_20260708_124747_50c81787-f8d6-4aea-a328-152d351e2763_min.webp"
  },
- art:{ title:FROG_CDN+"hf_20260708_125112_dcbc8cef-0396-4f0f-83fb-71ea1e2799b8_min.webp" },
+ art:{ title:"/practice/covers/tales/frog_prince.webp" },
  chars:{
   princess:FROG_CDN+"hf_20260708_125132_98b73e9c-8f91-406e-be9b-43808ff174f5.png",
   king:FROG_CDN+"hf_20260708_125153_be5680e8-14d5-437f-a044-813ff7c57dcd.png",
@@ -6103,7 +6113,7 @@ const MERMAID_ASSETS = {
     sky_air:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220025_652b246e-bc18-47db-a230-0d6c3c254c3d_min.webp"
   },
   art:{
-    title:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220108_5772c0d8-4dd5-4d15-bea5-109580188fdc_min.webp",
+    title:"/practice/covers/tales/little_mermaid.webp",
     marble_boy:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220603_034dadd0-7c39-4f70-b051-235a8c9a51a6.png",
     pearl_lily:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220606_444975eb-13b2-4c59-97a5-0c1af43a1bf9.png",
     magic_draught:"https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220608_47b71910-5d45-4b09-9c26-2de41103c034.png",
@@ -6217,7 +6227,7 @@ const QANBAK_ASSETS = {
   "night":QANBAK_CDN+"hf_20260708_215036_23c4f68d-8d78-40bb-90d2-07fb15762605_min.webp",
   "home":QANBAK_CDN+"hf_20260708_215038_bf295028-308e-4910-8649-ffa077724777_min.webp"
  },
- art:{ title:QANBAK_CDN+"hf_20260708_215800_84886228-18ec-4317-8815-b310c9856de6_min.webp" },
+ art:{ title:"/practice/covers/tales/qanbaq_shal.webp" },
  chars:{
   "qanbaq":QANBAK_CDN+"hf_20260708_215747_5275f21f-20c1-48f7-ae55-5e0af80c255b.png",
   "tulki":QANBAK_CDN+"hf_20260708_215750_06a3ff28-86f6-4d94-b39f-ff9ab3605834.png",
@@ -6854,7 +6864,7 @@ const LRRH_ASSETS = {
   granny_house:LRRH_CDN+"hf_20260708_215330_af51591b-f841-4915-bb99-6f5e6debf618_min.webp",
   granny_room:LRRH_CDN+"hf_20260708_215333_8a3873a0-f32e-4f2a-892d-b5a8f3cc9271_min.webp"
  },
- art:{ title:LRRH_CDN+"hf_20260708_215336_814ac745-0404-4e04-a410-4e2e18cb56e3_min.webp" },
+ art:{ title:"/practice/covers/tales/little_red_riding_hood.webp" },
  chars:{
   red:LRRH_CDN+"hf_20260708_215538_4144ae29-5410-4c2b-b5a2-917c7d837904.png",
   mother:LRRH_CDN+"hf_20260708_215541_74d17d54-b218-4c45-8cba-23d5badc4d19.png",
@@ -7412,7 +7422,7 @@ const AYAZ_ASSETS = {
   mountain_pasture:AYAZ_CDN+"hf_20260708_213834_64187489-4609-4a7a-af18-38926c5e425b_min.webp"
  },
  art:{
-  title:AYAZ_CDN+"hf_20260708_213837_7881e551-604d-4b3f-8cf8-572528424359_min.webp",
+  title:"/practice/covers/tales/ayaz_bi.webp",
   torn_coat:AYAZ_CDN+"hf_20260708_213837_7881e551-604d-4b3f-8cf8-572528424359_min.webp",
   gauhar:AYAZ_CDN+"hf_20260708_213840_d7dcab30-f94c-43db-b77a-1271fde704dc_min.webp",
   riddle_gifts:AYAZ_CDN+"hf_20260708_213842_8da6d452-2d7c-4dac-928f-f61c64b4bfac_min.webp",
@@ -7751,7 +7761,7 @@ const ALTYN_ASSETS = {
   summer_jailau:ALTYN_CDN+"hf_20260708_220807_a4af366b-83d6-497e-b5df-6ffdad7eaff9_min.webp",
   night_steppe:ALTYN_CDN+"hf_20260708_220814_955e03b4-be57-4b83-b53c-165a3b17838b_min.webp"
  },
- art:{ title:ALTYN_CDN+"hf_20260708_220817_68445df2-74ce-412e-9db7-ffa50aca6ef3_min.webp" },
+ art:{ title:"/practice/covers/tales/altyn_saqa.webp" },
  chars:{
   bala:ALTYN_CDN+"hf_20260708_223743_320492f3-77cb-444b-a643-380b8ed6ddbc.png",
   bai:ALTYN_CDN+"hf_20260708_223746_3165878e-cda3-4d7a-883e-e0282d2c83c6.png",
