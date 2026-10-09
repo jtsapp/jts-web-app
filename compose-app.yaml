@@ -36,8 +36,26 @@ services:
       # общий на дев/прод агент по нему понимает, в какую базу писать память и
       # звонки. Пусто → агент пишет туда, куда смотрит его JTS_API_URL.
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+      # Домены лендинга через запятую (прод: justtostudy-english.kz,
+      # www.justtostudy-english.kz). На них корень отдаёт лендинг, а экраны
+      # приложения уводятся на APP_PUBLIC_URL; на остальных доменах /landing —
+      # 404 (src/proxy.js). Пусто → лендинг выключен везде, кроме локалки.
+      LANDING_HOSTS: ${LANDING_HOSTS:-}
+      # 1 → /landing открывается и на этом стенде (посмотреть на деве до домена).
+      LANDING_PREVIEW: ${LANDING_PREVIEW:-}
+      # LANDING_LEAD_KEY (ключ заявки в amoCRM) — ниже, в конце списка: его
+      # завели раньше лендинга, а второй такой же ключ compose не примет.
+      # Ключ шифрования имени и номера на пути «лендинг → регистрация». Пусто —
+      # берётся INTERNAL_API_KEY; нет и его — регистрация начнётся с начала.
+      LANDING_HANDOFF_SECRET: ${LANDING_HANDOFF_SECRET:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
+      # Служебный ключ грейдера IELTS: тот же, что IELTS_GRADER_KEY (ielts.grader.key)
+      # у JTS-бэкенда этого стенда. Без него /api/ielts/{writing,speaking}/assess
+      # отвечают 503 — оценка Writing/Speaking выключена, остальное IELTS работает.
+      IELTS_GRADER_KEY: ${IELTS_GRADER_KEY:-}
+      # Модель разбора IELTS; пусто → claude-sonnet-5-5 (дефолт в src/lib/anthropic.js)
+      IELTS_REVIEW_MODEL: ${IELTS_REVIEW_MODEL:-}
       # Кэш озвучки /api/tts — общий для dev и прода Redis из
       # compose-redis.yaml (имя tts-redis в сети jts-tts-redis). Не секрет,
       # поэтому дефолт здесь, а не в GitLab.

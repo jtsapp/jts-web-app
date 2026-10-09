@@ -5,15 +5,9 @@ import { JUDGEMENT_OPTIONS, mechanicOf, typeLabel } from './meta.js'
 import { isAnswered } from './run.js'
 import { paragraphChoices } from './anchor.js'
 import { useI18n } from '../../i18n.jsx'
+import { safeSvg } from '../safeSvg.js'
 
-// Схема к вопросам (diagram label) приходит SVG-строкой из банка. Банк заводит админ, но в браузер не пускаем
-// ни скриптов, ни обработчиков событий — рисунку они не нужны.
-export function safeSvg(svg) {
-  return String(svg || '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\son\w+\s*=\s*(".*?"|'.*?'|[^\s>]+)/gi, '')
-    .replace(/(href|xlink:href)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '')
-}
+// Схема к вопросам (diagram label) приходит SVG-строкой из банка — чистит её общий safeSvg (DOMPurify).
 
 const numLabel = (numbers) => (numbers.length > 1 ? `${numbers[0]}–${numbers.at(-1)}` : String(numbers[0]))
 

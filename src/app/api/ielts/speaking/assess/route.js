@@ -25,6 +25,23 @@ export const maxDuration = 120
 // 10 минут речи 16 кГц mono ≈ 19 МБ: больше на одну попытку экзамен не даёт (Part 2 — 2 минуты, Part 1/3 — 5–6 ответов)
 const MAX_TOTAL_BYTES = 20 * 1024 * 1024
 const MAX_ITEMS = 8
+// id задания идёт в путь запроса к бэкенду со служебным ключом: encodeURIComponent('..') остаётся '..', и путь
+// /tests/../speaking съехал бы на соседнюю ручку
+const TEST_ID_RE = /^[\w-]{1,64}$/
+
+// Прод за Cloudflare рвёт молчащий запрос через 100 с (см. «Аркаду»). Весь роут — не дольше 90 с: распознавание
+// не ждём дольше STT_DEADLINE_MS, модели отдаём остаток, но не меньше MIN_MODEL_MS — иначе честнее сразу fail,
+// чем 524 с оценкой, которую сервер всё равно допишет и оплатит.
+const TOTAL_BUDGET_MS = 90_000
+const STT_DEADLINE_MS = 40_000
+const MODEL_TIMEOUT_MS = 60_000
+const MIN_MODEL_MS = 20_000
+
+// Обещание с потолком: по истечении — fallback. Сама работа не отменяется, но роут её больше не ждёт.
+function withDeadline(promise, ms, fallback) {
+  let timer
+  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() => clearTimeout(timer))
+}
 
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
 
@@ -41,23 +58,27 @@ async function backend(path, token, init = {}) {
 // Текст ответа: быстрый путь Azure, без него — текст самой оценки произношения, затем Soniox (как в «Ситуациях»).
 async function transcribe(buf, pronP) {
   if (isAzureSpeechConfigured()) {
-    const fast = await transcribeWavFast(buf).catch(() => null)
+    const fast = await transcribeWavFast(buf, { timeoutMs: STT_DEADLINE_MS }).catch(() => null)
     if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
     const pron = await pronP
     const text = String(pron?.transcript || '').trim()
     if (text) return { text, stt: 'azure' }
   }
   if (isSonioxConfigured()) {
-    const text = await transcribeWavSoniox(buf, { lang: 'en' }).catch(() => '')
+    const text = await transcribeWavSoniox(buf, { lang: 'en', timeoutMs: STT_DEADLINE_MS }).catch(() => '')
     return { text: String(text || '').trim(), stt: 'soniox' }
   }
   return { text: '', stt: null }
 }
 
 export async function POST(request) {
+  const startedAt = Date.now()
   const token = bearerFromRequest(request)
   if (!token) return Response.json({ error: 'auth_required' }, { status: 401 })
   if (!graderKey() || !hasAnthropicKey()) return Response.json({ error: 'grading_unavailable' }, { status: 503 })
+  // Заведомо большое тело отсекаем до formData(): иначе до 20+ МБ читаются в память контейнера по любому «Bearer x»
+  const declared = Number(request.headers.get('content-length') || 0)
+  if (declared > MAX_TOTAL_BYTES + 64 * 1024) return Response.json({ error: 'too_large' }, { status: 413 })
 
   let form
   try {
@@ -74,7 +95,7 @@ export async function POST(request) {
   } catch {
     /* проверка ниже */
   }
-  if (!testId || !Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS) return Response.json({ error: 'bad_items' }, { status: 400 })
+  if (!TEST_ID_RE.test(testId) || !Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS || meta.some((m) => !m || typeof m !== 'object')) return Response.json({ error: 'bad_items' }, { status: 400 })
   const audio = []
   let total = 0
   for (let i = 0; i < meta.length; i++) {
@@ -99,10 +120,9 @@ export async function POST(request) {
   // удалась», а не дыра в экзамене); вне mock экран его не читает
   const fail = (reason) => backend(`/mobile/ielts/attempts/${job.attemptId}/grading/fail`, token, { method: 'POST', body: JSON.stringify({ reason }) })
 
-  const startedAt = Date.now()
   const per = await Promise.all(
     audio.map(async (buf, i) => {
-      const pronP = isAzureSpeechConfigured() ? assessPronunciationChunked(buf).catch(() => null) : Promise.resolve(null)
+      const pronP = isAzureSpeechConfigured() ? withDeadline(assessPronunciationChunked(buf).catch(() => null), STT_DEADLINE_MS, null) : Promise.resolve(null)
       const [{ text, stt }, pron] = await Promise.all([transcribe(buf, pronP), pronP])
       return { ...items[i], transcript: text, stt, wpm: wordsPerMinute(text, items[i].durationSec), accuracy: pron && !pron.mock ? pron.accuracy : null }
     }),
@@ -112,9 +132,16 @@ export async function POST(request) {
     return Response.json({ error: 'no_speech', attemptId: job.attemptId }, { status: 422 })
   }
 
+  const modelMs = Math.min(MODEL_TIMEOUT_MS, TOTAL_BUDGET_MS - (Date.now() - startedAt))
+  if (modelMs < MIN_MODEL_MS) {
+    console.error('ielts/speaking/assess: no time left for the model after STT,', Date.now() - startedAt, 'ms')
+    await fail('timeout')
+    return Response.json({ error: 'timeout', attemptId: job.attemptId }, { status: 504 })
+  }
+
   let graded
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: 80_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: modelMs, maxRetries: 0 })
     graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
   } catch (e) {
     console.error('ielts/speaking/assess model failed:', e?.message || e)

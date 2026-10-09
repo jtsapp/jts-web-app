@@ -1,0 +1,79 @@
+/* Тёмная тема — НАБРОСОК. Значения токенов --dk-*, которыми пишет
+   src/theme-dark.generated.css (scripts/gen-dark-theme.js). Палитру правят
+   здесь, генератор при этом перезапускать не нужно.
+
+   Тема включается атрибутом data-theme="dark" на <html>; его ставит
+   загрузочный скрипт из layout.jsx до первой отрисовки (иначе экран мигает
+   белым). Акцент — фиолетовый бренда (оранжевый сравнили и отклонили 09.10). */
+
+/* Фиолетовый: нейтральные с холодным фиолетовым подтоном — от бренда
+   (--ink #171326), а не чистый серый: на нём фиолетовый акцент выглядит
+   родным, а не наклеенным. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --dk-page: #110f19;
+  --dk-card: #1b1826;
+  --dk-chip: #262236;
+  --dk-raised: #322d45;
+  --dk-ink-bg: #2c2740;
+  --dk-text: #f2f0f8;
+  --dk-text-2: #c8c4d6;
+  --dk-muted: #8f8aa3;
+  --dk-line: #2a2639;
+  --dk-line-strong: #453f5c;
+
+  --dk-acc: #9047ff;
+  --dk-acc-strong: #7a35ec;
+  --dk-acc-soft: #4d3388;
+  --dk-acc-tint: #221935;
+  --dk-acc-line: #3d2e63;
+  --dk-acc-text: #b996ff;
+  --dk-acc-on: #eadfff;
+  --dk-on-acc: #ffffff;
+}
+
+html[data-theme="dark"] body {
+  background: var(--dk-page);
+  color: var(--dk-text);
+}
+
+html[data-theme="dark"] ::selection {
+  background: color-mix(in oklab, var(--dk-acc) 45%, transparent);
+}
+
+/* ---------- Правки поверх генератора ---------- */
+
+/* Карточки навыков в «Практике»: рисунок — SVG с пастельными фигурами,
+   генератор до цветов внутри файла не достаёт. Первый вариант (multiply по
+   тёмному тону) гасил фигуры почти до фона — рисунок пропадал. Поэтому у
+   каждого SVG тёмная копия: подложка тёмная, фигуры того же оттенка, но
+   заметно светлее подложки. */
+html[data-theme="dark"] .pk-skill--listening {
+  --sk-bg: #192230;
+  --sk-art: url('/practice/skills/listening-dark.svg');
+  --sk-line: #385681;
+}
+html[data-theme="dark"] .pk-skill--reading {
+  --sk-bg: #2c1f12;
+  --sk-art: url('/practice/skills/reading-dark.svg');
+  --sk-line: #744b20;
+}
+html[data-theme="dark"] .pk-skill--writing {
+  --sk-bg: #241e2e;
+  --sk-art: url('/practice/skills/writing-dark.svg');
+  --sk-line: #5c4a7b;
+}
+html[data-theme="dark"] .pk-skill--speaking {
+  --sk-bg: #14261d;
+  --sk-art: url('/practice/skills/speaking-dark.svg');
+  --sk-line: #256346;
+}
+
+/* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
+   ни генератор, ни токены до него не достают. Белый вариант (на шапках)
+   не трогаем. */
+html[data-theme="dark"] .logo[style*="9047ff"],
+html[data-theme="dark"] .logo[style*="144, 71, 255"] {
+  color: var(--dk-acc) !important;
+}

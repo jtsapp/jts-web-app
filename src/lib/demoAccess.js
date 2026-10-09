@@ -73,3 +73,17 @@ export function formatDemoLeft(t, left) {
   if (left.days === 0) parts.push(t('demo.left.m', { n: String(left.minutes) }))
   return t('demo.left.prefix', { rest: parts.join(' ') })
 }
+
+// Срок демо текущего аккаунта, как его последний раз отдал /user/me. Нужен
+// окнам, у которых нет доступа к состоянию App (DemoSubscriptionModal зовут из
+// трёх мест): после окончания демо им надо говорить «пробный доступ закончился»,
+// а не «вы используете демо-аккаунт». null — демо без срока или не демо вовсе.
+let currentDeadline = null
+
+export function rememberDemoDeadline(expiresAt) {
+  currentDeadline = expiresAt || null
+}
+
+export function isDemoExpiredNow(now = Date.now()) {
+  return currentDeadline != null && demoTimeLeft(currentDeadline, now).expired
+}

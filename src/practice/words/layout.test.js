@@ -19,7 +19,10 @@ function round2(n) {
 describe('оракул: координаты спрайтов', () => {
   for (const section of SECTIONS) {
     it(`${section}: расстановка первого раунда совпадает с прототипом`, () => {
-      const { scenes, words, confusable } = loadSection(section)
+      const { scenes, words, confusable: all, confusableOwn = [] } = loadSection(section)
+      // Оракул посчитан с парами прототипа — наши (#47) в сверку не берём.
+      const own = new Set(confusableOwn.map((p) => p.join('~')))
+      const confusable = all.filter((p) => !own.has(p.join('~')))
       const oracle = loadFixture(section)
       for (const scene of scenes) {
         const rng = makeRng(oracle.seed)

@@ -37,6 +37,16 @@ describe('clearAccountLeftovers', () => {
     expect(Object.keys(localStorage).filter((k) => k.startsWith('jts_catalog_'))).toEqual([])
   })
 
+  it('стирает черновики и ответы IELTS: они не привязаны к ученику', () => {
+    localStorage.setItem('jts_ielts_wr_draft_W1', '{"text":"my essay"}')
+    localStorage.setItem('jts_ielts_reading_draft_R1', '{}')
+    localStorage.setItem('jts_ielts_diag_draft', '{}')
+    localStorage.setItem('jts_ielts_sp_last_S1', '{}')
+    localStorage.setItem('jts_ielts_track', 'academic')
+    clearAccountLeftovers()
+    expect(Object.keys(localStorage).filter((k) => k.startsWith('jts_ielts_'))).toEqual([])
+  })
+
   it('не трогает чужие ключи: язык, устройство, сторонние *-done', () => {
     localStorage.setItem('jts_device_id', 'dev-1')
     localStorage.setItem('jts-lang', 'kk')

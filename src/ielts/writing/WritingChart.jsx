@@ -1,4 +1,5 @@
 import { describeChart } from './writing.js'
+import { safeSvg } from '../safeSvg.js'
 
 // Графики Task 1 Academic — порт chartView прототипа (30-writing.html): линии, столбцы, круг, таблица, пара графиков
 // и схема/карта (svg банка). Рисуем из данных, а не картинкой (§3): те же данные видит модель при оценке, и цифры на
@@ -162,15 +163,6 @@ function DataTable({ c }) {
   )
 }
 
-// svg схемы и карты — из банка (его заводит методист через админку), но всё равно без скриптов и обработчиков
-export function safeFigureSvg(svg) {
-  return String(svg || '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/(href\s*=\s*["'])\s*javascript:[^"']*/gi, '$1#')
-}
-
 export default function WritingChart({ chart }) {
   if (!chart) return null
   if (chart.type === 'multi')
@@ -185,7 +177,7 @@ export default function WritingChart({ chart }) {
   else if (chart.type === 'pie') body = <PieChart c={chart} />
   else if (chart.type === 'table') body = <DataTable c={chart} />
   else if (chart.type === 'figure')
-    body = <div className="ih-wchart__figure" role="img" aria-label={chart.alt || ''} dangerouslySetInnerHTML={{ __html: safeFigureSvg(chart.svg) }} />
+    body = <div className="ih-wchart__figure" role="img" aria-label={chart.alt || ''} dangerouslySetInnerHTML={{ __html: safeSvg(chart.svg) }} />
   return (
     <figure className="ih-wchart" data-chart={chart.type}>
       {chart.title && <figcaption lang="en">{chart.title}</figcaption>}

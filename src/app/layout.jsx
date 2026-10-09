@@ -32,7 +32,11 @@ import '../mobile/learning.css'
 import '../mobile/practice.css'
 import '../mobile/practice-grammar.css'
 import '../mobile/home.css'
+// Набросок тёмной темы — последним: перекрывает всё выше под html[data-theme=dark]
+import '../theme-dark.generated.css'
+import '../theme-dark.css'
 import Providers from './providers.jsx'
+import { THEME_BOOT } from '../lib/theme.js'
 
 // Тот же дефолт, что в src/api.js (BASE) — держать в синхроне.
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
@@ -49,8 +53,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <head>
+        {/* До гидратации: иначе тёмная тема мигает белым при каждой загрузке. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {/* Ранний preconnect к JTS-бэкенду срезает DNS+TLS перед первым fetch.
             Два линка не случайно: CORS-запросы (fetch с Authorization) и
             no-CORS (<img> обложек) используют разные соединения. */}

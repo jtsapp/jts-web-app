@@ -29,7 +29,9 @@ const MAX_OUTPUT_TOKENS = 4096;
 // Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
 // остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
 // способом вызова, а Sonnet 5.5 его не принимает — см. structuredViaOutputFormat ниже.
-export const IELTS_REVIEW_MODEL = process.env.IELTS_REVIEW_MODEL || "claude-sonnet-5-5";
+// BOM из Windows-пайпа вырезаем, как у остальных env: с ним имя не совпало бы с NO_FORCED_TOOL_MODEL, вызов ушёл бы
+// старым путём с thinking:disabled и каждая оценка IELTS падала бы 400.
+export const IELTS_REVIEW_MODEL = (process.env.IELTS_REVIEW_MODEL || "").replace(/^\uFEFF/, "").trim() || "claude-sonnet-5-5";
 
 let cached = null;
 function getClient() {
