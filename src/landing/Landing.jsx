@@ -36,7 +36,7 @@ function Header({ c, lang, links }) {
           </nav>
           <div className="ld-header__btns">
             <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
-            <a className="ld-btn ld-btn--primary" href={links.start}>{c.nav.start}</a>
+            <a className="ld-btn ld-btn--primary" href="#trial">{c.nav.start}</a>
           </div>
         </div>
       </div>
@@ -506,9 +506,10 @@ function Footer({ c }) {
   )
 }
 
-// links — куда ведут «Войти» и «Начать обучение»: на домене лендинга это
-// адрес приложения (см. appLink в hostRouting.js); langRu/langKz — ҚАЗ/РУС
-// с теми же метками рекламы.
+// links — куда ведёт «Войти»: на домене лендинга это адрес приложения (см.
+// appLink в hostRouting.js); langRu/langKz — ҚАЗ/РУС с теми же метками
+// рекламы. «Начать обучение» ведёт к форме заявки (#trial), как и
+// «Попробовать бесплатно 24 часа» (см. content.js).
 export default function Landing({ c, lang, links }) {
   return (
     // <html lang> задаёт общий layout приложения (ru) — язык страницы
@@ -531,7 +532,7 @@ export default function Landing({ c, lang, links }) {
           эти кнопки живут в шапке. */}
       <div className="ld-mbar">
         <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
-        <a className="ld-btn ld-btn--primary" href={links.start}>{c.nav.start}</a>
+        <a className="ld-btn ld-btn--primary" href="#trial">{c.nav.start}</a>
       </div>
     </div>
   )
