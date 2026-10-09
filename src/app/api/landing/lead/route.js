@@ -9,6 +9,7 @@ import { BACKEND_URL } from '../../../../lib/auth-server.js'
 import { sealHandoff, handoffSecret } from '../../../../landing/handoff.js'
 import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../../../landing/hostRouting.js'
 import { createRateLimiter, leadKey, maskPhone, sendLeadToCrm, validateLead } from '../../../../landing/leadServer.js'
+import { landingAppPath } from '../../../../lib/attribution.js'
 
 const allow = createRateLimiter()
 const LOOPBACK = /^(127\.|::1$|::ffff:127\.)/
@@ -50,8 +51,10 @@ export async function POST(request) {
 
   // Куда дальше: регистрация на шаге почты с кодом передачи. Нет секрета —
   // хотя бы в начало регистрации, без подстановки.
+  // from=landing и метки — и здесь: заявка в CRM могла не уйти (нет ключа,
+  // бэкенд лежит), и тогда регистрация сама принесёт тег «Лендинг».
   const token = sealHandoff(lead, handoffSecret())
-  const path = token ? `/?screen=reg-email&handoff=${token}` : '/?screen=chat'
+  const path = landingAppPath(token ? `/?screen=reg-email&handoff=${token}` : '/?screen=chat', lead.utm)
   const redirect = appLink(path, {
     onLandingHost: parseHosts(process.env.LANDING_HOSTS).has(requestHost(request.headers)),
     appUrl: normalizeAppUrl(process.env.APP_PUBLIC_URL),

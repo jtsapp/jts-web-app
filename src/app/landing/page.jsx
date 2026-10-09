@@ -10,6 +10,7 @@ import '../../landing.css'
 import Landing from '../../landing/Landing.jsx'
 import { APP_LOGIN_URL, APP_START_URL, pickContent } from '../../landing/content.js'
 import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../landing/hostRouting.js'
+import { landingAppPath, pickUtm } from '../../lib/attribution.js'
 
 // Язык — в адресе (?lang=kz), а не в localStorage: поисковик и ссылка из
 // рекламы должны получать казахскую страницу сразу, с сервера.
@@ -27,9 +28,13 @@ export default async function LandingPage({ searchParams }) {
   const lang = await langOf(searchParams)
   const onLandingHost = parseHosts(process.env.LANDING_HOSTS).has(requestHost(await headers()))
   const appUrl = normalizeAppUrl(process.env.APP_PUBLIC_URL)
+  // Кнопки уводят в приложение с from=landing и метками рекламы, что привела
+  // сюда: иначе зарегистрировавшийся там в amoCRM неотличим от пришедшего
+  // прямо в приложение (src/lib/attribution.js).
+  const utm = pickUtm(await searchParams)
   const links = {
-    start: appLink(APP_START_URL, { onLandingHost, appUrl }),
-    login: appLink(APP_LOGIN_URL, { onLandingHost, appUrl }),
+    start: appLink(landingAppPath(APP_START_URL, utm), { onLandingHost, appUrl }),
+    login: appLink(landingAppPath(APP_LOGIN_URL, utm), { onLandingHost, appUrl }),
   }
   return (
     <>

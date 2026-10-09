@@ -3,6 +3,7 @@
 // браузерный бандл формы.
 import { phoneDigits, isPhoneComplete } from './lead.js'
 import { cleanEnv } from './hostRouting.js'
+import { pickUtm, utmFields } from '../lib/attribution.js'
 
 export const NAME_MAX = 100
 export const GOAL_MAX = 64
@@ -15,7 +16,9 @@ export function validateLead(body) {
   if (!isPhoneComplete(digits)) return { ok: false, error: 'phone' }
   const goal = String(body?.goal ?? '').trim().slice(0, GOAL_MAX)
   const lang = body?.lang === 'kz' ? 'kz' : 'ru'
-  return { ok: true, lead: { name, digits, goal, lang } }
+  // Метки не проверяются, а чистятся: кривая метка не повод терять заявку.
+  const utm = pickUtm(body?.utm && typeof body.utm === 'object' ? body.utm : {})
+  return { ok: true, lead: { name, digits, goal, lang, utm } }
 }
 
 // Лимит заявок с одного адреса: форма открытая, и без него бот за минуту
@@ -50,7 +53,10 @@ export async function sendLeadToCrm(lead, { backendUrl, key, fetchImpl = fetch, 
     const res = await fetchImpl(`${backendUrl}/landing/leads`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Landing-Key': key },
-      body: JSON.stringify({ name: lead.name, phone: '7' + lead.digits, goal: lead.goal || null, lang: lead.lang }),
+      body: JSON.stringify({
+        name: lead.name, phone: '7' + lead.digits, goal: lead.goal || null, lang: lead.lang,
+        ...utmFields(lead.utm),
+      }),
       signal: AbortSignal.timeout(timeoutMs),
     })
     return res.ok ? { sent: true } : { sent: false, reason: 'status_' + res.status }

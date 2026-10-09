@@ -6,6 +6,7 @@
 // возвращает готовый адрес перехода.
 import { useState } from 'react'
 import { formatPhone, isPhoneComplete, phoneDigits } from './lead.js'
+import { pickUtm } from '../lib/attribution.js'
 
 export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
   const [name, setName] = useState('')
@@ -37,7 +38,11 @@ export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
       const res = await fetch('/api/landing/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone: digits, goal, lang, website }),
+        // Метки рекламы из адреса лендинга — в сделку amoCRM (src/lib/attribution.js).
+        body: JSON.stringify({
+          name: name.trim(), phone: digits, goal, lang, website,
+          utm: pickUtm(new URLSearchParams(window.location.search)),
+        }),
       })
       if (res.status === 429) return setStatus('too_many')
       const data = await res.json().catch(() => null)

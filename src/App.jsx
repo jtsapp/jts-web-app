@@ -86,6 +86,7 @@ import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
+import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -164,9 +165,15 @@ export default function App() {
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
     const handoffToken = searchParams.get('handoff')
-    if (handoffToken) {
+    // Пришёл с лендинга или с рекламы — запоминаем до регистрации: она уйдёт
+    // менеджеру с тегом «Лендинг» и UTM-метками (src/lib/attribution.js).
+    captureAttribution(window.location.search, safeStorage())
+    // from=landing тоже убираем: адрес, которым поделились, иначе метил бы
+    // «с лендинга» каждого, кто по нему пришёл.
+    if (handoffToken || searchParams.has('from')) {
       const cleanUrl = new URL(window.location.href)
       cleanUrl.searchParams.delete('handoff')
+      cleanUrl.searchParams.delete('from')
       window.history.replaceState(null, '', cleanUrl)
     }
     const inviteMatch = window.location.pathname.match(/^\/complete-registration\/([^/]+)/)

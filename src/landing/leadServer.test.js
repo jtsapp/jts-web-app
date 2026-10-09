@@ -5,8 +5,15 @@ import { sealHandoff, openHandoff, handoffSecret, HANDOFF_TTL_MS } from './hando
 describe('validateLead', () => {
   it('имя, номер целиком, цель и язык', () => {
     expect(validateLead({ name: ' Алия ', phone: '+7 (747) 163-41-18', goal: 'IELTS', lang: 'kz' })).toEqual({
-      ok: true, lead: { name: 'Алия', digits: '7471634118', goal: 'IELTS', lang: 'kz' },
+      ok: true, lead: { name: 'Алия', digits: '7471634118', goal: 'IELTS', lang: 'kz', utm: {} },
     })
+  })
+  it('UTM-метки чистятся, а не проверяются: кривая метка не повод терять заявку', () => {
+    const { lead } = validateLead({
+      name: 'Алия', phone: '7471634118', utm: { utm_source: ' instagram ', utm_medium: '', evil: 'x' },
+    })
+    expect(lead.utm).toEqual({ utm_source: 'instagram' })
+    expect(validateLead({ name: 'Алия', phone: '7471634118', utm: 'мусор' }).lead.utm).toEqual({})
   })
   it('без имени или с неполным номером — отказ с причиной', () => {
     expect(validateLead({ name: '', phone: '7471634118' })).toEqual({ ok: false, error: 'name' })
@@ -41,6 +48,13 @@ describe('sendLeadToCrm', () => {
     expect(calls[0][0]).toBe('https://api/landing/leads')
     expect(calls[0][1].headers['X-Landing-Key']).toBe('k')
     expect(JSON.parse(calls[0][1].body)).toEqual({ name: 'Алия', phone: '77471634118', goal: 'IELTS', lang: 'kz' })
+  })
+  it('метки рекламы уходят полями, которые ждёт бэкенд (LandingLeadRequest.utm*)', async () => {
+    const calls = []
+    const fetchImpl = async (url, init) => { calls.push([url, init]); return { ok: true, status: 204 } }
+    await sendLeadToCrm({ ...lead, utm: { utm_source: 'instagram', utm_campaign: 'autumn' } },
+      { backendUrl: 'https://api', key: 'k', fetchImpl })
+    expect(JSON.parse(calls[0][1].body)).toMatchObject({ utmSource: 'instagram', utmCampaign: 'autumn' })
   })
   it('без ключа не ходит вовсе', async () => {
     const fetchImpl = async () => { throw new Error('не должен звать') }

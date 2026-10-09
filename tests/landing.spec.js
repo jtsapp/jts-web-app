@@ -10,10 +10,45 @@ test.beforeEach(async ({ page }) => {
 test('первый экран и кнопки входа ведут в приложение', async ({ page }) => {
   await expect(page.locator('h1')).toContainText('по цене групповых')
   // На телефоне кнопки живут в нижней панели, на десктопе — в шапке.
+  // from=landing — чтобы регистрация в приложении ушла в amoCRM с тегом «Лендинг».
   const start = page.locator('a:visible', { hasText: 'Начать обучение' }).first()
-  await expect(start).toHaveAttribute('href', '/?screen=chat')
+  await expect(start).toHaveAttribute('href', '/?screen=chat&from=landing')
   const login = page.locator('a:visible', { hasText: 'Войти' }).first()
-  await expect(login).toHaveAttribute('href', '/?screen=login-password')
+  await expect(login).toHaveAttribute('href', '/?screen=login-password&from=landing')
+})
+
+test('кнопка «Начать обучение» → регистрация уходит с меткой лендинга и рекламы', async ({ page }) => {
+  // Бэкенд замокан: проверяем, что приложение донесло метку до запроса
+  // регистрации, а не то, что с ней сделает amoCRM.
+  let initiate = null
+  await page.route('**/registration/initiate', (r) => {
+    initiate = r.request().postDataJSON()
+    return r.fulfill({ status: 200, contentType: 'application/json', body: '{"messages":["OTP sent"]}' })
+  })
+
+  await page.goto('/landing?utm_source=instagram&utm_campaign=autumn')
+  const start = page.locator('a:visible', { hasText: 'Начать обучение' }).first()
+  await expect(start).toHaveAttribute('href', '/?screen=chat&from=landing&utm_source=instagram&utm_campaign=autumn')
+  await start.click()
+
+  // Метка запомнена, а из адреса убрана — поделись им человек, она метила бы других.
+  await expect(page.locator('.chat__input input')).toBeVisible({ timeout: 20000 })
+  expect(page.url()).not.toContain('from=')
+
+  await page.locator('.chat__input input').fill('Алия')
+  await page.locator('.chat__input input').press('Enter')
+  await page.locator('.auth-primary').click({ timeout: 15_000 })
+  await page.locator('.phone-field input').fill('7471634118')
+  await page.locator('.form-primary').click()
+  await page.locator('.email-field').fill('aliya@example.com')
+  await page.locator('.form-primary').click()
+  await page.locator('.dob-field__part--day').fill('15')
+  await page.locator('.dob-field__part--month').fill('03')
+  await page.locator('.dob-field__part--year').fill('2000')
+  await page.locator('.form-primary').click()
+
+  await expect.poll(() => initiate).not.toBeNull()
+  expect(initiate).toMatchObject({ from: 'landing', utmSource: 'instagram', utmCampaign: 'autumn' })
 })
 
 test('ҚАЗ переключает страницу на казахский с сервера', async ({ page }) => {
@@ -77,6 +112,10 @@ test('форма: маска, ошибки, заявка — и сразу ша�
   // передачи из адреса уже убран.
   await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 20000 })
   expect(page.url()).not.toContain('handoff')
+  // Заявка в CRM могла не уйти — тогда тег «Лендинг» принесёт сама регистрация.
+  expect(page.url()).not.toContain('from=')
+  const attribution = await page.evaluate(() => JSON.parse(localStorage.getItem('jts_attribution')))
+  expect(attribution?.from).toBe('landing')
 })
 
 test('битый код передачи — регистрация с начала', async ({ page }) => {
