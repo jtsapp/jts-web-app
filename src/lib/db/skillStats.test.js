@@ -1,24 +1,37 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { applySkillDeltas } from './skillStats.js'
 
 // Фейковый sql: запоминает запросы, параметры и то, КАКИМ соединением запрос
-// прошёл: `sql` — внешнее, `tx` — то, что sql.begin отдаёт внутрь транзакции.
-// Раньше begin отдавал ту же функцию, и тест не отличал запись в транзакции от
-// записи мимо неё. Точность SQL — на Postgres; здесь контракт: одна транзакция,
-// навыки по одному, затем одна строка суток с суммой пачки — всё через tx.
-function makeFakeSql() {
+// прошёл: `sql` — внешнее, `tx` — то, что sql.begin отдаёт внутрь транзакции,
+// `sp` — точка сохранения внутри неё (tx.savepoint). Раньше begin отдавал ту же
+// функцию, и тест не отличал запись в транзакции от записи мимо неё. Точность
+// SQL — на Postgres; здесь контракт: одна транзакция, навыки по одному, затем
+// одна строка суток с суммой пачки — в точке сохранения той же транзакции.
+// failDay — строка суток падает, как падает insert в таблицу, которой нет.
+function makeFakeSql({ failDay = null } = {}) {
   const log = []
   const record = (via) => async (strings, ...vals) => {
-    log.push({ via, q: strings.join('?').replace(/\s+/g, ' ').trim().toLowerCase(), vals })
+    const q = strings.join('?').replace(/\s+/g, ' ').trim().toLowerCase()
+    log.push({ via, q, vals })
+    if (failDay && q.startsWith('insert into skill_day')) throw failDay
     return []
   }
   const sql = record('sql')
   sql.begin = async (fn) => {
     log.push({ via: 'sql', q: 'begin', vals: [] })
-    return fn(record('tx'))
+    const tx = record('tx')
+    tx.savepoint = async (spFn) => {
+      log.push({ via: 'tx', q: 'savepoint', vals: [] })
+      return spFn(record('sp'))
+    }
+    return fn(tx)
   }
   return { sql, log }
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('applySkillDeltas', () => {
   it('в той же транзакции копит решённые задания за сутки', async () => {
@@ -36,9 +49,12 @@ describe('applySkillDeltas', () => {
     expect(skillRows).toHaveLength(2)
     const dayRows = log.filter((e) => e.q.startsWith('insert into skill_day'))
     expect(dayRows).toHaveLength(1)
-    // Строка суток обязана лечь через соединение транзакции, а не через внешний
-    // sql: иначе сбой между записями развёл бы skill_stat и skill_day.
-    expect([...skillRows, ...dayRows].map((e) => e.via)).toEqual(['tx', 'tx', 'tx'])
+    // Навыки — через соединение транзакции, строка суток — через точку
+    // сохранения, взятую у той же транзакции, а не через внешний sql: иначе сбой
+    // skill_stat оставил бы день в календаре без единого засчитанного задания.
+    expect(skillRows.map((e) => e.via)).toEqual(['tx', 'tx'])
+    expect(log.filter((e) => e.q === 'savepoint').map((e) => e.via)).toEqual(['tx'])
+    expect(dayRows.map((e) => e.via)).toEqual(['sp'])
     // Сутки ставит сервер БД, а не клиент: в параметрах даты нет.
     expect(dayRows[0].q).toContain("(now() at time zone 'utc')::date")
     expect(dayRows[0].vals).toEqual(['user-7', 5, 4])
@@ -77,6 +93,24 @@ describe('applySkillDeltas', () => {
     const dayRows = log.filter((e) => e.q.startsWith('insert into skill_day'))
     expect(dayRows).toHaveLength(1)
     expect(dayRows[0].vals).toEqual(['user-7', 2, 0])
+  })
+
+  it('упала строка суток (0016 не доехала) — навыки всё равно сохраняются', async () => {
+    // runMigrations глотает ошибки: инстанс без skill_day — штатная ситуация, а
+    // не авария. Ошибка строки суток не должна выйти из applySkillDeltas: иначе
+    // POST /api/skills отвечал бы 500, и прогресс «Практики» терялся у всех.
+    const missing = Object.assign(new Error('relation "skill_day" does not exist'), { code: '42P01' })
+    const { sql, log } = makeFakeSql({ failDay: missing })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(applySkillDeltas('user-7', { grammar: { done: 3, firstTry: 2 } }, sql)).resolves.toBeUndefined()
+
+    expect(log.filter((e) => e.q.startsWith('insert into skill_stat')).map((e) => e.via)).toEqual(['tx'])
+    // Упавший insert был внутри точки сохранения: Postgres откатит только её, и
+    // транзакция навыков дойдёт до commit (проверено на живом Postgres 15).
+    expect(log.filter((e) => e.q.startsWith('insert into skill_day')).map((e) => e.via)).toEqual(['sp'])
+    // Молча не глотаем: без строки в логе не доехавшую миграцию не заметить.
+    expect(errorSpy).toHaveBeenCalledWith('[skillStats] skill_day write failed', missing.message)
   })
 
   it('без БД — no-op', async () => {
