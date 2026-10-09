@@ -76,3 +76,14 @@ describe('demoTimeLeft', () => {
     expect(demoTimeLeft('не дата', NOW).endless).toBe(true)
   })
 })
+
+describe('isDemoExpiredNow', () => {
+  it('срок вышел — окно говорит «пробный доступ закончился»; без срока или после сброса — нет', async () => {
+    const { rememberDemoDeadline, isDemoExpiredNow } = await import('./demoAccess.js')
+    rememberDemoDeadline('2026-10-01T10:00:00')
+    expect(isDemoExpiredNow(new Date('2026-10-09T10:00:00+05:00').getTime())).toBe(true)
+    expect(isDemoExpiredNow(new Date('2026-09-30T10:00:00+05:00').getTime())).toBe(false)
+    rememberDemoDeadline(null)
+    expect(isDemoExpiredNow()).toBe(false)
+  })
+})

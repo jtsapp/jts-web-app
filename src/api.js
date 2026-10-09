@@ -4,6 +4,7 @@
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
 import { reportUnauthorized } from './lib/session.js'
+import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
@@ -1498,7 +1499,12 @@ export async function getDemoAccess(token) {
   if (!token) return { isDemo: false, expiresAt: null }
   if (_demoAccess.has(token)) return _demoAccess.get(token)
   const p = authGet('/user/me', token)
-    .then((data) => ({ isDemo: !!data?.isDemoAccount, expiresAt: data?.demoExpiresAt || null }))
+    .then((data) => {
+      const isDemo = !!data?.isDemoAccount
+      const expiresAt = data?.demoExpiresAt || null
+      rememberDemoDeadline(isDemo ? expiresAt : null)
+      return { isDemo, expiresAt }
+    })
     .catch(() => {
       // Сетевая осечка не должна залипать в памяти: следующий экран спросит
       // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —
