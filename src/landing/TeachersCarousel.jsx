@@ -46,16 +46,15 @@ export default function TeachersCarousel({ t, icons }) {
           <article key={p.name} className="ld-teacher">
             <div className="ld-teacher__photo">
               <img src={p.photo} width="294" height="280" alt={p.name} loading="lazy" />
-              <span className="ld-teacher__badge"><img src={icons.school} width="18" height="18" alt="" />{p.badge}</span>
+              {p.badge && <span className="ld-teacher__badge"><img src={icons.school} width="18" height="18" alt="" />{p.badge}</span>}
             </div>
             <div className="ld-teacher__body">
               <div>
                 <h3 className="ld-teacher__name">{p.name}</h3>
                 <div className="ld-teacher__exp">{p.exp}</div>
               </div>
-              <div className="ld-teacher__motto"><img src={icons.forum} width="16" height="16" alt="" />{p.motto}</div>
               <ul className="ld-teacher__facts">
-                {p.facts.map((f) => <li key={f}><img src={icons.check} width="16" height="16" alt="" />{f}</li>)}
+                {p.facts.map((f) => <li key={f.text}><img src={f.icon} width="16" height="16" alt="" />{f.text}</li>)}
               </ul>
             </div>
           </article>

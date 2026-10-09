@@ -1607,7 +1607,7 @@
   display: flex;
   flex: 0 0 296px;
   flex-direction: column;
-  min-height: 521px;
+  min-height: 590px;
   border: 1px solid #e8e5f0;
   border-radius: 32px;
   background: #fff;
@@ -1657,47 +1657,31 @@
 }
 
 .ld-teacher__exp {
-  margin-top: 2px;
-  font-size: 13px;
-  line-height: 17px;
-  color: var(--ld-muted);
-}
-
-.ld-teacher__motto {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 16px;
-  background: var(--ld-lilac);
-  color: var(--ld-deep);
+  margin-top: 4px;
   font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-.ld-teacher__motto img {
-  flex: none;
+  line-height: 18px;
+  color: var(--ld-muted);
 }
 
 .ld-teacher__facts {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .ld-teacher__facts li {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--ld-ink2);
 }
 
+/* Иконка 16 в квадрате 20 — вровень с первой строкой, как в макете. */
 .ld-teacher__facts img {
   flex: none;
-  margin-top: 1px;
+  margin: 2px;
 }
 
 .ld-teach__nav {

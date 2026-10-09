@@ -374,7 +374,7 @@ function Teachers({ c }) {
     <section className="ld-band ld-teachers" id="teachers">
       <Heading title={t.title} lead={t.lead} />
       <TeachersCarousel t={t} icons={{
-        school: IC + 'ic-school.svg', forum: IC + 'ic-forum.svg', check: IC + 'ic-check-circle-t.svg',
+        school: IC + 'ic-school.svg',
         prev: IC + 'ic-chevron-left.svg', next: IC + 'ic-chevron-right.svg',
       }} />
     </section>

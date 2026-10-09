@@ -14,6 +14,7 @@ export const APP_LOGIN_URL = '/?screen=login-password'
 
 const IMG = '/landing/img/'
 const IC = '/landing/icons/'
+const TF = IC + 'tf-' // иконки фактов в карточках преподавателей
 
 export const ru = {
   meta: {
@@ -180,12 +181,92 @@ export const ru = {
     lead: 'Выбирайте сами или с помощью менеджера',
     prev: 'Предыдущие преподаватели',
     next: 'Следующие преподаватели',
+    // Состав и факты — из макета 09.10 (реальные преподаватели вместо
+    // прежних пяти). Плашка IELTS не у всех: у кого балла в макете нет,
+    // badge не задан и плашка не рисуется. Иконка у каждого факта своя.
     items: [
-      { name: 'Жадыра Бурумбаева', exp: '1,5 года преподавания', badge: 'IELTS 7.5', photo: IMG + 't-zhadyra.webp', motto: 'From zero to eloquent', facts: ['60+ студентов · баллы 6.0–7.5', 'Доклад на международной научной конференции'] },
-      { name: 'Ертаева Улдана', exp: '1 год преподавания', badge: 'IELTS 8.0', photo: IMG + 't-uldana.webp', motto: 'Score higher, dream bigger', facts: ['Авторский курс по IELTS', 'Кейс: 6.0 за 2,5 месяца с уровня Intermediate'] },
-      { name: 'Каримова Дилноза', exp: '4 года преподавания', badge: 'IELTS 7.0', photo: IMG + 't-dilnoza.webp', motto: 'Keep calm and pass IELTS with band 7.0', facts: ['15+ студентов · баллы 6.0–7.5', 'Сертификат CELTA'] },
-      { name: 'Бакиева Нодира', exp: 'преподаватель IELTS', badge: '15 лет опыта', photo: IMG + 't-nodira.webp', motto: 'Success is 1% talent and 99% hard work', facts: ['300+ студентов · баллы 6.0–8.5', 'Авторская методика подготовки'] },
-      { name: 'Faruk Balaban', exp: 'IELTS tutor', badge: '10 лет опыта', photo: IMG + 't-faruk.webp', motto: 'Band 6+ in 3 months at level B1', facts: ['300+ студентов · баллы 6.0–8.5', 'Подготовка с нуля до уверенного Band 6+'] },
+      {
+        name: 'Софиябану Абдуманнапова', exp: '2 года опыта работы', photo: IMG + 't-sofiyabanu.webp',
+        facts: [
+          { icon: TF + 'emoji-events.svg', text: 'ITTI TEFL C2 — сертификат преподавателя (США)' },
+          { icon: TF + 'language.svg', text: 'Владеет 5 языками' },
+          { icon: TF + 'north-east.svg', text: 'Участник программы мобильности ORHUN в Турции' },
+        ],
+      },
+      {
+        name: 'Альбина Изжанова', exp: '5+ лет опыта работы', badge: 'IELTS 8.0', photo: IMG + 't-albina.webp',
+        facts: [
+          { icon: TF + 'emoji-events.svg', text: 'Ученики сдают IELTS на 6.5–7.5' },
+          { icon: TF + 'workspace-premium.svg', text: 'Ученик — дважды призёр национального конкурса по английскому' },
+          { icon: TF + 'workspace-premium.svg', text: 'Золотая медаль' },
+          { icon: TF + 'school.svg', text: 'Красный диплом' },
+        ],
+      },
+      {
+        name: 'Ботагоз Рахметова', exp: '3 года опыта работы', badge: 'IELTS 6.5', photo: IMG + 't-botagoz.webp',
+        facts: [
+          { icon: TF + 'school.svg', text: 'Грантница SDU (GPA 3.93)' },
+          { icon: TF + 'emoji-events.svg', text: '«Best Student of CIS 2026»' },
+          { icon: TF + 'groups.svg', text: 'Генеральный секретарь собственного MUN' },
+          { icon: TF + 'favorite.svg', text: 'Волонтёр UNICEF Kazakhstan' },
+        ],
+      },
+      {
+        name: 'Улдана Ертаева', exp: '3,5 года опыта работы', badge: 'IELTS 8.0', photo: IMG + 't-uldana.webp',
+        facts: [
+          { icon: TF + 'school.svg', text: 'Выпускница Mykolas Romeris University, Литва' },
+          { icon: TF + 'language.svg', text: 'Erasmus+ и международный опыт в 14+ странах' },
+          { icon: TF + 'trending-up.svg', text: 'Ученики сдают IELTS на 6.5–8.0; «Алтын белгі»' },
+        ],
+      },
+      {
+        name: 'Юсуф Исах', exp: '3+ года опыта работы', badge: 'IELTS 7.5', photo: IMG + 't-yusuf.webp',
+        facts: [
+          { icon: TF + 'school.svg', text: 'Студент NYU Shanghai на полном гранте' },
+          { icon: TF + 'bar-chart.svg', text: 'SAT 1490' },
+          { icon: TF + 'emoji-events.svg', text: 'Многократный победитель дебатов на английском языке' },
+        ],
+      },
+      {
+        name: 'Дилноза Каримова', exp: '5+ лет опыта работы', photo: IMG + 't-dilnoza.webp',
+        facts: [
+          { icon: TF + 'school.svg', text: 'Магистр педагогических наук, педагог-модератор' },
+          { icon: TF + 'emoji-events.svg', text: 'Призёр международных олимпиад и профконкурсов' },
+          { icon: TF + 'trending-up.svg', text: 'IELTS 6.5–7.5 у учеников' },
+          { icon: TF + 'language.svg', text: 'Ученики поступают в вузы Казахстана и зарубежья' },
+        ],
+      },
+      {
+        name: 'Нурбакыт Макина', exp: '8 лет опыта работы', badge: 'IELTS 7.5', photo: IMG + 't-nurbakyt.webp',
+        facts: [
+          { icon: TF + 'school.svg', text: 'TESOL Certificate — Arizona State University' },
+        ],
+      },
+      {
+        name: 'Зарема Мержоева', exp: '7 лет опыта работы', photo: IMG + 't-zarema.webp',
+        facts: [
+          { icon: TF + 'language.svg', text: 'Английский — уровень C2' },
+          { icon: TF + 'school.svg', text: 'Курс TESL — Arizona State University' },
+          { icon: TF + 'translate.svg', text: 'Также преподаёт китайский язык' },
+        ],
+      },
+      {
+        name: 'Айнұр Салимова', exp: '3+ года опыта работы', badge: 'IELTS 7.0', photo: IMG + 't-ainur.webp',
+        facts: [
+          { icon: TF + 'emoji-events.svg', text: 'Победитель WorldSkills-2022' },
+          { icon: TF + 'trending-up.svg', text: 'Ученики сдают IELTS на 5.5–7.5 и поступают в НИШ, БИЛ и вузы' },
+          { icon: TF + 'mic.svg', text: 'Главный организатор форума «From Kazakhstan to Harvard» (130+ участников)' },
+        ],
+      },
+      {
+        name: 'Сунекеш Сағынбай', exp: '3,5+ года опыта работы', photo: IMG + 't-sunekesh.webp',
+        facts: [
+          { icon: TF + 'emoji-events.svg', text: 'Победитель международного конкурса по английскому языку (2022)' },
+          { icon: TF + 'favorite.svg', text: 'Ученики продолжают обучение у неё годами' },
+          { icon: TF + 'menu-book.svg', text: 'Работает с детьми и взрослыми, от Beginner до Advanced' },
+          { icon: TF + 'school.svg', text: 'Прошла множество курсов по методике преподавания' },
+        ],
+      },
     ],
   },
 
