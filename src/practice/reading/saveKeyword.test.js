@@ -22,7 +22,7 @@ beforeEach(() => {
 
 describe('saveReadingKeyword', () => {
   it('кладёт слово в личный словарь на ru и kz и в vocab_bank', async () => {
-    await expect(saveReadingKeyword('tok', WORD, 'The Pill')).resolves.toBe(true)
+    await expect(saveReadingKeyword('tok', WORD, 'The Pill')).resolves.toBe('dict')
 
     expect(addVocabWords).toHaveBeenCalledWith([{ word: 'placebo', hint: 'плацебо · плацебо' }])
     expect(saveWord).toHaveBeenCalledWith('tok', {
@@ -40,7 +40,9 @@ describe('saveReadingKeyword', () => {
   })
 
   it('без токена всё равно пишет в vocab_bank — гость забирает слово на устройство', async () => {
-    await expect(saveReadingKeyword(null, WORD, 'The Pill')).resolves.toBe(true)
+    // Гостю «Словаря» нет — слово в банке повторений, и подпись должна это
+    // говорить, а не «Уже в словаре» (решение владельца 09.10.2026).
+    await expect(saveReadingKeyword(null, WORD, 'The Pill')).resolves.toBe('bank')
     expect(saveWord).not.toHaveBeenCalled()
     expect(addVocabWords).toHaveBeenCalled()
   })
@@ -65,7 +67,7 @@ describe('saveReadingKeyword', () => {
 
   it('личный словарь принял, банк тьютора упал — слово в словаре', async () => {
     addVocabWords.mockResolvedValue(false)
-    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(true)
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe('dict')
   })
 
   it('хватает одного языка: ru принят, kk упал', async () => {
@@ -73,7 +75,7 @@ describe('saveReadingKeyword', () => {
       if (language === 'kk') throw new Error('500')
       return {}
     })
-    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe(true)
+    await expect(saveReadingKeyword('tok', WORD, 't')).resolves.toBe('dict')
   })
 
   it('если оба пути не вышли — не врём, что сохранилось', async () => {

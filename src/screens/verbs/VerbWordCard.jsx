@@ -22,6 +22,8 @@ export default function VerbWordCard({ word, at, host, dict, token, onClose }) {
   const { t } = useI18n()
   const ref = useRef(null)
   const [net, setNet] = useState(null) // { state: 'ready'|'empty', ru } — ответ сети
+  // Куда ушло слово: 'dict' — личный словарь, 'bank' — только банк повторений
+  // (гость: «Словаря» у него нет, решение владельца 09.10.2026 — «Сохранено»).
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -86,9 +88,9 @@ export default function VerbWordCard({ word, at, host, dict, token, onClose }) {
   const onSave = async () => {
     if (!entry || saved || saving) return
     setSaving(true)
-    const ok = await saveReadingKeyword(token, { en: entry.en, ru: entry.ru, kk: entry.kk }, 'verbs')
+    const kind = await saveReadingKeyword(token, { en: entry.en, ru: entry.ru, kk: entry.kk }, 'verbs')
     setSaving(false)
-    if (ok) setSaved(true)
+    if (kind) setSaved(kind)
   }
 
   return (
@@ -116,7 +118,7 @@ export default function VerbWordCard({ word, at, host, dict, token, onClose }) {
           )}
           <div className="vb-pop__hint">{t(entry.source === 'net' ? 'verbs.netSource' : 'verbs.vocabSource')}</div>
           <button type="button" className={`vb-pop__save${saved ? ' is-saved' : ''}`} disabled={saved || saving} onClick={onSave}>
-            {saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
+            {saving ? t('lesson.savingVocab') : saved === 'bank' ? t('lesson.savedBank') : saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
           </button>
         </>
       )}

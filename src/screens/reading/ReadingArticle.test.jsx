@@ -119,3 +119,14 @@ describe('ReadingArticle — попап перевода', () => {
     expect(await findByRole('button', { name: 'Уже в словаре' })).toBeTruthy()
   })
 })
+
+describe('ReadingArticle — подпись гостю', () => {
+  it('гость: банк принял — в попапе «Сохранено»', async () => {
+    saveReadingKeyword.mockResolvedValue('bank')
+    const { getByText, findByRole, queryByRole } = mount()
+    fireEvent.click(getByText('Take'))
+    fireEvent.click(await findByRole('button', { name: 'Добавить в словарь' }))
+    expect(await findByRole('button', { name: 'Сохранено' })).toBeTruthy()
+    expect(queryByRole('button', { name: 'Уже в словаре' })).toBeNull()
+  })
+})

@@ -46,7 +46,15 @@ export function loadComic(token, comic) {
   if (!_comicCache[ref]) {
     _comicCache[ref] = getComic(token, ref)
       .then(normalizeComicDoc)
-      .catch(() => null)
+      .catch(() => {
+        // Сбой не запоминаем — как у каталога выше. Раньше null оседал в
+        // кэше до перезагрузки вкладки, и повторное открытие комикса сразу
+        // показывало «Не получилось загрузить», в сеть никто не ходил
+        // (ревью 08.10.2026, #60). Наружу по-прежнему null: читалка
+        // показывает сбой и «Повторить».
+        delete _comicCache[ref]
+        return null
+      })
   }
   return _comicCache[ref]
 }
