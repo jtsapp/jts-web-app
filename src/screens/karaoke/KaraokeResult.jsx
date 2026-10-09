@@ -20,10 +20,13 @@ import {
 // Разбор исполнения — макет Figma «Караоке», 3 · Результат. Живёт в раскладке
 // Практики (сайдбар на месте), в отличие от самого плеера.
 //
-// Метрик на экране три, хотя балл собирается из четырёх: темп в макет не
-// вынесен — он входит в итог, но отдельной карточки у него нет. «Произношение»
-// — это слова по распознаванию (lyricsScore): другого способа услышать, как
-// студент выговаривает текст, у караоке нет.
+// Карточек три — ровно то, что просили оценивать: ритм, произношение и сами
+// слова. С оценкой Azure они же и составляют балл (35/30/35, см. finalScore).
+// Без неё (сбой сервиса, гость) «Произношение» пустое, ритм — по маске
+// голоса, а в итог по-прежнему входят спетые строки и темп.
+//
+// До 27.09.2026 карточка «Произношение» показывала на самом деле слова по
+// распознаванию: оценки звуков у караоке тогда не было вовсе.
 
 const hint = (value) => (value >= 75 ? 'good' : value >= 50 ? 'mid' : 'low')
 
@@ -94,22 +97,31 @@ export default function KaraokeResult({ track, result, prev, repeats, onRepeat, 
       </span>
     )
 
-  const pronText =
-    result.lyrics == null
-      ? t('karaoke.res.noStt')
-      : result.hard.length
-        ? t('karaoke.res.hardWords', { words: joinWords(result.hard, t) })
-        : t(`karaoke.res.pron.${hint(result.lyrics)}`)
+  // `hard` — «сложнее всего дались». С оценкой Azure это слова с худшим
+  // произношением, и подпись стоит под «Произношением»; без неё — слова,
+  // которые не прозвучали, и место им под «Словами».
+  const hardText = result.hard.length ? t('karaoke.res.hardWords', { words: joinWords(result.hard, t) }) : null
+  const assessed = result.pron != null
 
+  const pronText = !assessed
+    ? t(result.lyrics == null ? 'karaoke.res.noStt' : 'karaoke.res.noPron')
+    : hardText || t(`karaoke.res.pron.${hint(result.pron)}`)
+
+  // «Слова»: пропущенные строки — первое, что стоит сказать; всё спето — тогда
+  // о том, насколько слова совпали с текстом.
   const missed = result.missed
-  const linesText =
-    missed.count === 0 ? (
-      t('karaoke.res.allLines')
-    ) : (
+  const wordsText =
+    missed.count > 0 ? (
       <>
         <Plural k="karaoke.res.missed" n={missed.count} />
         {missed.from != null && ` ${t('karaoke.res.missedAt', { from: fmtTime(missed.from), to: fmtTime(missed.to) })}`}
       </>
+    ) : !assessed && hardText ? (
+      hardText
+    ) : result.lyrics == null || hint(result.lyrics) === 'good' ? (
+      t('karaoke.res.allLines')
+    ) : (
+      t(`karaoke.res.words.${hint(result.lyrics)}`)
     )
 
   return (
@@ -182,17 +194,21 @@ export default function KaraokeResult({ track, result, prev, repeats, onRepeat, 
           icon={<HeadphonesIco size={20} />}
           tone="pron"
           label={t('karaoke.m.pron')}
-          value={result.lyrics ?? '—'}
-          fill={result.lyrics ?? 0}
+          value={result.pron ?? '—'}
+          fill={result.pron ?? 0}
           text={pronText}
         />
+        {/* Третья карточка — «Слова» (решение продукта 27.09.2026): оценивать
+            просили ритм, произношение и сами слова. Спетые строки не пропали —
+            пропуски пишутся подписью здесь же: пропущенная строка — это
+            пропущенные слова. Тон «lines» — от прежней карточки, цвет тот же. */}
         <Metric
           icon={<MicIco size={20} />}
           tone="lines"
-          label={t('karaoke.m.lines')}
-          value={`${result.sungLines} / ${result.totalLines}`}
-          fill={result.totalLines ? (result.sungLines / result.totalLines) * 100 : 0}
-          text={linesText}
+          label={t('karaoke.m.words')}
+          value={result.lyrics ?? '—'}
+          fill={result.lyrics ?? 0}
+          text={wordsText}
         />
       </section>
 
