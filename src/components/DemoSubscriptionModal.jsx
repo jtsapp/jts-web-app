@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useI18n } from '../i18n.jsx'
 import AssetImage from './AssetImage.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { isDemoExpiredNow } from '../lib/demoAccess.js'
 
 // Плашка «Данная функция доступна по подписке» — то, что видит ДЕМО-ученик,
 // упёршийся в свой демо-лимит: на тропе «Обучение» (KingdomInteriorPage,
@@ -19,6 +20,9 @@ import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 // экран под модалкой, где по требованию ничего нажимать нельзя.
 export default function DemoSubscriptionModal({ onClose, onBuy }) {
   const { t } = useI18n()
+  // Срок демо вышел — окно говорит об этом прямо и зовёт к менеджеру, а не
+  // объясняет, что «вы используете демо-аккаунт».
+  const expired = isDemoExpiredNow()
   const cardRef = useRef(null)
   const backRef = useRef(null)
 
@@ -75,12 +79,17 @@ export default function DemoSubscriptionModal({ onClose, onBuy }) {
             внешнюю в вёрстку нельзя, поэтому берём то, что уже есть и по смыслу
             принадлежит этому голосу. Декоративная: текст рядом полный. */}
         <AssetImage className="ds-art" src="/assets/demo/modal-london.webp" alt="" />
-        <h2 className="ds-title" id="ds-title">{t('demo.paywall.title')}</h2>
-        <p className="ds-body" id="ds-body">{t('demo.paywall.body')}</p>
+        <h2 className="ds-title" id="ds-title">{t(expired ? 'demo.expired.title' : 'demo.paywall.title')}</h2>
+        <p className="ds-body" id="ds-body">{t(expired ? 'demo.expired.body' : 'demo.paywall.body')}</p>
         <div className="ds-acts">
           <button type="button" className="ds-back" ref={backRef} onClick={onClose}>
             {t('demo.paywall.back')}
           </button>
+          {expired && (
+            <a className="ds-back" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+              {t('demo.expired.manager')}
+            </a>
+          )}
           {/* Теперь у покупки есть свой экран — витрина тарифов (PricingPage),
               и «Приобрести подписку» ведёт туда: это тот же шаг, что и «Открыть
               полный доступ» в плашке демо, и разводить их по разным маршрутам
