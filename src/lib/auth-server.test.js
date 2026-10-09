@@ -12,7 +12,9 @@
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { resolveProfileId, fetchContentQuota, verifyTokenStatus, checkStudentActivityAccess } from './auth-server.js'
+import {
+  resolveProfileId, fetchContentQuota, verifyTokenStatus, checkStudentActivityAccess, STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS,
+} from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
 const anonymous = () => new Request('https://app.test/api/x')
@@ -207,6 +209,23 @@ describe('checkStudentActivityAccess: «свой ли ученик» решае�
     expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
     // Токен не попадает в лог ни при статусе, ни при обрыве.
     expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('TOK')
+  })
+
+  it('бэкенд завис — по сроку «спросить не удалось», а не ожидание на минуты', async () => {
+    // fetch ждёт, пока его не оборвут, — так ведёт себя зависший бэкенд. Без срока
+    // этот тест висел бы до таймаута vitest.
+    vi.stubGlobal('fetch', vi.fn((url, init) => new Promise((_, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason))
+    })))
+    expect(await checkStudentActivityAccess('TOK', 141, { timeoutMs: 20 })).toBe('unavailable')
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access check failed:', expect.stringMatching(/timeout/i))
+  })
+
+  it('срок по умолчанию короче, чем админка ждёт кабинет (10 с)', async () => {
+    const fetchMock = stub(204)
+    await checkStudentActivityAccess('TOK', 141)
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+    expect(STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS).toBeLessThan(10_000)
   })
 
   it('без токена бэкенд не спрашиваем', async () => {

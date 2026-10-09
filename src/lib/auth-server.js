@@ -227,13 +227,26 @@ export async function fetchContentQuota(token, contentType) {
  * такой сегмент (/admin/students/../activity/access становится
  * /admin/activity/access), и запрос ушёл бы на чужой адрес бэкенда с токеном
  * сотрудника.
+ *
+ * Ждём не дольше timeoutMs: админка бросает весь запрос через 10 с
+ * (StudentActivityService.APP_TIMEOUT_MS), а зависший бэкенд без предела
+ * держал бы обработчик и сокет ещё минут пять — до headersTimeout undici,
+ * копясь с каждым открытием карточки. Не дождались — «спросить не удалось»,
+ * как при обрыве связи. Пять секунд оставляют время и на чтение базы.
  */
-export async function checkStudentActivityAccess(token, studentId) {
+export const STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS = 5000
+
+export async function checkStudentActivityAccess(token, studentId, { timeoutMs = STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS } = {}) {
   if (!token) return 'unauthorized'
   try {
     const res = await fetch(
       `${BACKEND_URL}/admin/students/${encodeURIComponent(studentId)}/activity/access`,
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' },
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(timeoutMs),
+      },
     )
     if (res.status === 204) return 'allowed'
     if (res.status === 401) return 'unauthorized'
