@@ -85,6 +85,8 @@ import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { openLandingHandoff } from './landing/handoffClient.js'
+import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -140,7 +142,7 @@ const BOOTH_SCREENS = new Set(['booth', 'live-lesson'])
 const BOOTH_ACCOUNT_RETRY_MS = 4000
 
 export default function App() {
-  const { t, lang } = useI18n()
+  const { t, lang, setLang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
   // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
   // достижимы для отладки/диплинков.
@@ -159,6 +161,21 @@ export default function App() {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
     const deepLink = searchParams.get('screen')
+    // Пришёл с лендинга после заявки: в адресе код с именем и номером
+    // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
+    // оставаться в истории, закладках и на скриншотах.
+    const handoffToken = searchParams.get('handoff')
+    // Пришёл с лендинга или с рекламы — запоминаем до регистрации: она уйдёт
+    // менеджеру с тегом «Лендинг» и UTM-метками (src/lib/attribution.js).
+    captureAttribution(window.location.search, safeStorage())
+    // from=landing тоже убираем: адрес, которым поделились, иначе метил бы
+    // «с лендинга» каждого, кто по нему пришёл.
+    if (handoffToken || searchParams.has('from')) {
+      const cleanUrl = new URL(window.location.href)
+      cleanUrl.searchParams.delete('handoff')
+      cleanUrl.searchParams.delete('from')
+      window.history.replaceState(null, '', cleanUrl)
+    }
     const inviteMatch = window.location.pathname.match(/^\/complete-registration\/([^/]+)/)
     const inviteToken = inviteMatch?.[1] || searchParams.get('invite')
     if (inviteToken) setInviteToken(inviteToken)
@@ -341,7 +358,24 @@ export default function App() {
         else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
           setPhoneGate(true)
           setScreen('reg-phone')
-        } else if (deepLink) {
+        }
+        // Заявка с лендинга: имя и номер человек уже дал там — сразу шаг
+        // почты, как решил владелец (04.10.2026). Код не открылся (просрочен,
+        // подделан) — регистрация с начала. Вошедшему регистрация не нужна:
+        // он идёт на свой экран, как обычно (ветка session ниже).
+        else if (handoffToken && !session) {
+          const lead = await openLandingHandoff(handoffToken)
+          if (cancelled) return
+          if (lead) {
+            setName(lead.name)
+            setPhone(lead.phone)
+            if (lead.lang === 'kz') setLang('kk')
+            setScreen('reg-email')
+          } else {
+            setScreen('chat')
+          }
+        }
+        else if (deepLink && !handoffToken) {
           setScreen(deepLink)
           // Гостю раздел открывается сразу, но стоит ему пойти логиниться — и
           // намерение пропадало: адрес чистит эффект синхронизации, а после
