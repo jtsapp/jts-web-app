@@ -211,7 +211,7 @@ export function ArcadeCard({ onOpen }) {
 // Обложка сказки: настоящий арт из библиотеки; при отсутствии — градиент + мотив.
 function TaleCover({ tale }) {
   const [ok, setOk] = useState(true)
-  const src = tale.cover || `/practice/covers/tales/${tale.id}.png`
+  const src = tale.cover || `/practice/covers/tales/${tale.id}.webp`
   if (ok) {
     return (
       <span className="pk-pic pk-tale__cover">
