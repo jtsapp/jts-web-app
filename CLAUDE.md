@@ -773,7 +773,7 @@ onboarding.js`: 160 часов на балл, 6 занятий в неделю, 
 режимы Drill и Full mock, ИИ-оценка Writing/Speaking из диагностики, интерактивные демо в инструкции о формате (сейчас текстом).
 
 **IELTS по дизайну «IELTS new» (Figma JTS-clone, страница «IELTS new», 08.10.2026).** Макет читается через Figma Desktop
-Bridge (`figma-console`, без лимита Starter). Аккаунт IELTS — явный признак `ielts_enrollments.ielts_account` (V304, ставит
+Bridge (`figma-console`, без лимита Starter). Аккаунт IELTS — явный признак `ielts_enrollments.ielts_account` (ставит
 web-admin «Ученики IELTS», позже биллинг; ручка `/mobile/ielts/plan/me`, клиент `getIeltsMe`): у него в сайдбаре ровно
 Главная · Практика · Speaking Buddy · Уроки · Домашняя работа · Словарь · IELTS · Настройки, без «Повторения», счётчиков и
 плашки уровня, а тропа kingdom уводит в IELTS. Тесты, мокающие `api.js` с `getDemoAccess`, обязаны мокать и `getIeltsMe`.
@@ -804,14 +804,14 @@ IELTS `skill: vocab, kind: set` (backend `TEST_FORMAT.md` §12; стартовы
 бэкенда, черновик для методиста), а не часть HTML-выгрузки общего каталога: та при каждой загрузке стирает всё, чего нет
 в файле. Полка сверху «Словаря» (`src/screens/vocab/IeltsVocab.jsx`) видна ученикам IELTS (`ieltsAccount` или
 `onboarded` из `getIeltsMe`); набор открывается своим экраном, тренировка — тот же `VocabPractice`, который по
-`onResults` отдаёт каждый ответ. Прогресс — на сервере (`/mobile/vocab-progress`, таблица `vocab_word_progress`, V307):
+`onResults` отдаёт каждый ответ. Прогресс — на сервере (`/mobile/vocab-progress`, таблица `vocab_word_progress`):
 коробки Лейтнера, «изучено» = коробка 3+, «к повторению» — наступил срок; правила очереди и подписи карточки —
 `src/screens/vocab/ieltsVocab.js`. Ключ слова — `vocabKey` (id слова в нижнем регистре), id слов в наборе менять нельзя.
 Уровни и сферы общего каталога по-прежнему считают «изучено» в localStorage (`vocabLearned.js`).
 
 **Полный mock IELTS (дизайн «IELTS new», раздел 4) — сессия на бэкенде, секции — прежние экраны.** Mock — документ банка
 `skill: mock, kind: full` со ссылками на задания секций (`TEST_FORMAT.md` §11; локальный набор — `scripts/ielts/make-mocks.js`
-бэкенда, по два на трек: полных Listening в банке два). Попытка — `ielts_mock_sessions` (V305): серверные часы секции
+бэкенда, по два на трек: полных Listening в банке два). Попытка — `ielts_mock_sessions`: серверные часы секции
 (L 40, R 60, W 60, S 20 мин), черновик и id сданных попыток; ручки `/mobile/ielts/mocks/**`, клиент `*IeltsMock*` в `api.js`.
 Экран — `?screen=ielts-mock&ieltsMock=<id>|&ieltsMockSession=<id>` (`src/screens/IeltsMockPage.jsx`, экраны —
 `src/ielts/mock/`): описание → проверка оборудования → секции → «Экзамен сдан» → итог. Секции рисуют те же

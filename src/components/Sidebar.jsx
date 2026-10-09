@@ -117,7 +117,8 @@ export default function Sidebar({
   }, [token, teacher])
 
   const base = [HOME_ITEM, ...NAV]
-  const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV_FULL.find((i) => i.key === k)).filter(Boolean)]
+  // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
+  const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
   const { t } = useI18n()
   const role = roleForLevel(userLevel)

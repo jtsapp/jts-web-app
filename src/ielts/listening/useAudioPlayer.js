@@ -137,6 +137,9 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
   const device = useRef({ on: false, line: -1, at: 0 })
   const listeners = useRef(new Set())
   const started = useRef(false)
+  // прослушивание засчитано в play(), но звук ещё не пошёл: если браузер не пустит автозапуск (Safari/iOS — экзамен
+  // стартует таймером, а не касанием), засчитанное возвращаем, иначе единственное прослушивание сгорало молча
+  const unspentPlay = useRef(false)
 
   const total = tts ? timeline.at(-1)?.end || 0 : state.duration
 
@@ -265,15 +268,17 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
         a.currentTime = within
       }
       if (autoplay) {
-        a.play().catch((e) => {
+        a.play().then(() => { unspentPlay.current = false }).catch((e) => {
           if (e?.name === 'AbortError') return
           // синтез не ответил (503 без ключа, лимит, сеть): элемент отвергает источник раньше, чем приходит error —
           // переходим на голос устройства здесь, иначе плеер красился в «ошибку» и молчал
           if (e?.name === 'NotSupportedError') return toDeviceRef.current(i)
           if (e?.name === 'NotAllowedError') {
-            // браузер не пустил звук без касания: стоим на месте, ▶ продолжит отсюда
+            // браузер не пустил звук без касания: стоим на месте, ▶ продолжит отсюда — и прослушивание не сгорает
             playingRef.current = false
-            set({ playing: false })
+            const refund = unspentPlay.current
+            unspentPlay.current = false
+            set(refund ? { playing: false, plays: Math.max(0, stateRef.current.plays - 1) } : { playing: false })
             return
           }
           set({ error: true, playing: false })
@@ -421,6 +426,7 @@ export function useAudioPlayer({ src, transcript, rules, onEnded }) {
     const fromStart = finished.current || t < 0.25
     if (fromStart && r?.maxPlays && stateRef.current.plays >= r.maxPlays) return
     if (fromStart) set({ plays: stateRef.current.plays + 1 })
+    unspentPlay.current = fromStart
     started.current = true
     playingRef.current = true
     set({ playing: true, error: false })

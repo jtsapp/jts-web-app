@@ -2603,6 +2603,20 @@ html[data-theme="dark"] .board__stage {
     border-top: 0;
     background: var(--dk-page)
 }
+html[data-theme="dark"] .board__zoom {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .board__zoom:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .board__scroll {
+    background: rgba(255, 255, 255, 0.04)
+}
+html[data-theme="dark"] .board__thumb {
+    background: var(--dk-raised)
+}
 html[data-theme="dark"] .board__cursor-dot {
     background: var(--dk-acc);
     border: 2px solid var(--dk-line);
@@ -4886,6 +4900,3786 @@ html[data-theme="dark"] .ie-hist__date {
 html[data-theme="dark"] .ie-chip {
     color: var(--ie-muted);
     background: var(--dk-page)
+}
+html[data-theme="dark"] .ih {
+    --ih-violet: var(--dk-acc);
+    --ih-ink: var(--dk-text);
+    --ih-ink-2: var(--dk-text-2);
+    --ih-muted: var(--dk-text-2);
+    --ih-line: var(--dk-line);
+    --ih-soft: var(--dk-page);
+    --ih-green: #1f9d55;
+    background: var(--dk-page);
+    box-shadow: 0 0 0 100vmax var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-chip {
+    border: none;
+    background: var(--ih-soft);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-chip--muted {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-chip--soft-ink {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-chip--violet {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-chip--orange {
+    background: var(--dk-page);
+    color: #ff9044
+}
+html[data-theme="dark"] .ih-chip--green {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-chip--solid {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-chip--action:hover {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-chip--action:focus-visible, html[data-theme="dark"] .ih-btn:focus-visible, html[data-theme="dark"] .ih-tabs__tab:focus-visible, html[data-theme="dark"] .ih-learn__card:focus-visible {
+    outline: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-btn {
+    border: 1px solid transparent
+}
+html[data-theme="dark"] .ih-btn--primary {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-btn--primary:hover {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .ih-btn--soft {
+    background: var(--ih-soft);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-btn--soft:hover {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-btn--outline {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-btn--outline:hover {
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .ih-tabs {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-tabs__tab {
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-tabs__tab:hover {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-tabs__tab--active {
+    color: var(--ih-violet);
+    border-bottom-color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-card {
+    background: var(--dk-card);
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-tile {
+    background: var(--ih-tint);
+    color: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-ring__track {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-ring__arc {
+    stroke: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-lesson {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-lesson__icon {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-lesson__body span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-lesson .ih-btn--outline {
+    border-color: var(--ih-line)
+}
+html[data-theme="dark"] .ih-plan__title span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-task {
+    border: 1px solid transparent
+}
+html[data-theme="dark"] .ih-task--rec {
+    background: var(--dk-page);
+    border-color: #534569
+}
+html[data-theme="dark"] .ih-task--done .ih-task__title {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-task__reason {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-task__min {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-task__check {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-band__overall span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-band__dot {
+    background: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-band__name {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-band__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-band__bar span {
+    background: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-band__val--none {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-band__forecast {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-band__forecast svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-phase__dot {
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-phase__line {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-phase--done .ih-phase__dot, html[data-theme="dark"] .ih-phase--done .ih-phase__line {
+    background: var(--ih-green);
+    color: #fff
+}
+html[data-theme="dark"] .ih-phase--current .ih-phase__dot {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-phase--current .ih-phase__line {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .ih-phase--upcoming .ih-phase__title {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-phase__text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-progress__more {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-progress__more p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-empty {
+    border: 1px dashed var(--dk-line)
+}
+html[data-theme="dark"] .ih-empty__icon {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-empty__text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-run {
+    --ih-violet: var(--dk-acc);
+    --ih-ink: var(--dk-text);
+    --ih-ink-2: var(--dk-text-2);
+    --ih-muted: var(--dk-muted);
+    --ih-line: var(--dk-line);
+    --ih-soft: var(--dk-page);
+    --ih-green: #1f9d55
+}
+html[data-theme="dark"] .ih, html[data-theme="dark"] .ih-run {
+    --ih-orange: #e57a12;
+    --ih-red: #e0364f;
+    --ih-hl-1: rgba(51, 42, 9, 0.8);
+    --ih-hl-2: #122b40;
+    --ih-hl-3: #14321f
+}
+html[data-theme="dark"] .ih-muted {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-chip--reading {
+    background: var(--dk-page);
+    color: var(--ih-orange, #e57a12)
+}
+html[data-theme="dark"] .ih-chip--red {
+    background: var(--dk-chip);
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-btn--dark {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-btn--dark:hover {
+    background: #000
+}
+html[data-theme="dark"] .ih-round {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-round:hover {
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .ih-round:focus-visible, html[data-theme="dark"] .ih-cta:focus-visible, html[data-theme="dark"] .ih-mode:focus-visible, html[data-theme="dark"] .ih-num:focus-visible, html[data-theme="dark"] .ih-pill:focus-visible, html[data-theme="dark"] .ih-opt:focus-visible, html[data-theme="dark"] .ih-skill__row:focus-visible, html[data-theme="dark"] .ih-testpill:focus-visible, html[data-theme="dark"] .ih-format:focus-visible {
+    outline: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-crumbs {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-crumbs button {
+    border: none;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .ih-crumbs button:hover {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-crumbs__current {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-bar span {
+    background: var(--ih-tone, var(--ih-violet))
+}
+html[data-theme="dark"] .ih-skill {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-skill__head {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-skill__sub {
+    color: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-skill__row {
+    border: none;
+    border-bottom: 1px solid var(--ih-line);
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-skill__row:last-child {
+    border-bottom: none
+}
+html[data-theme="dark"] .ih-skill__row-text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-skill__row-meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-skill__go {
+    background: var(--ih-tint);
+    color: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-skill__row--soon b, html[data-theme="dark"] .ih-skill__row--soon .ih-skill__row-text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rlist__head p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rlist__sub {
+    color: var(--ih-muted, #667085)
+}
+html[data-theme="dark"] .ih-seg {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-seg button {
+    border: none;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-seg button.is-on {
+    background: var(--dk-card);
+    color: var(--ih-ink);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16)
+}
+html[data-theme="dark"] .ih-rcard {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-rcard__text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rcard__meta {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-testpill {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-testpill:hover {
+    border-color: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-testpill.is-done {
+    background: var(--dk-page);
+    border-color: #654623
+}
+html[data-theme="dark"] .ih-testpill b {
+    color: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-trow {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-trow:hover {
+    border-color: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-trow .ih-tile {
+    --ih-tint: var(--dk-page)
+}
+html[data-theme="dark"] .ih-trow__body span, html[data-theme="dark"] .ih-trow__last {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rtask__title p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rtask__title .ih-tile, html[data-theme="dark"] .ih-rtask__last .ih-tile {
+    --ih-tint: var(--dk-page)
+}
+html[data-theme="dark"] .ih-rtask__types > span:not(.ih-chip) {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rtask__draft {
+    background: var(--dk-page);
+    color: #e8b365
+}
+html[data-theme="dark"] .ih-rtask__draft button {
+    border: none;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mode {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mode__icon {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mode__body span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-mode__radio {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mode.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mode.is-on .ih-mode__icon {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-mode.is-on .ih-mode__radio {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-cta {
+    border: none;
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-cta:hover {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .ih-rtask__tools {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-rtask__tools p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-rtask__tools svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-rtask__last p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rtask__score span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-mocks__draft {
+    background: var(--dk-page);
+    color: #e8b365
+}
+html[data-theme="dark"] .ih-mocks__draft b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mocks__draft span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-format {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-format.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-format.is-off b, html[data-theme="dark"] .ih-format.is-off .ih-format__meta {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-format__icon--reading {
+    background: var(--dk-page);
+    color: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-format__icon--listening {
+    background: var(--dk-page);
+    color: #82b2ff
+}
+html[data-theme="dark"] .ih-format__icon--mock {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-format__meta {
+    color: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-format__text {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-mtable th {
+    border-bottom: 1px solid var(--ih-line);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-mtable td {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-mtable tr:last-child td {
+    border-bottom: none
+}
+html[data-theme="dark"] .ih-mtable__name {
+    border: none;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mtable__topics {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mocks__note {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-run {
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-run__top {
+    border-bottom: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-run__title span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-run__clock {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-run__clock.is-low {
+    background: var(--dk-chip);
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-run__text {
+    border-right: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-run__texts button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-run__texts button[aria-selected='true'] {
+    border-color: var(--ih-ink);
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run__error {
+    background: var(--dk-chip);
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-marker {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-marker__chip {
+    border: 1px solid var(--ih-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-marker__clear {
+    border: none;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-marker__clear:disabled {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-hl-dot {
+    border: none
+}
+html[data-theme="dark"] .ih-hl-dot--1 {
+    background: #332a09
+}
+html[data-theme="dark"] .ih-hl-dot--2 {
+    background: #122b40
+}
+html[data-theme="dark"] .ih-hl-dot--3 {
+    background: #14321f
+}
+html[data-theme="dark"] .ih-passage__tlabel {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-para.is-focus {
+    background: var(--dk-page);
+    box-shadow: 0 0 0 8px var(--dk-page)
+}
+html[data-theme="dark"] .ih-para mark {
+    color: inherit;
+    background: none
+}
+html[data-theme="dark"] .ih-hl--1 {
+    background: var(--ih-hl-1) !important
+}
+html[data-theme="dark"] .ih-hl--2 {
+    background: var(--ih-hl-2) !important
+}
+html[data-theme="dark"] .ih-hl--3 {
+    background: var(--ih-hl-3) !important
+}
+html[data-theme="dark"] .ih-hl--answer {
+    background: var(--dk-chip) !important;
+    box-shadow: 0 0 0 2px var(--dk-chip)
+}
+html[data-theme="dark"] .ih-selmenu {
+    background: var(--ih-ink);
+    box-shadow: 0 8px 10px color-mix(in oklab, var(--dk-acc) 25%, transparent)
+}
+html[data-theme="dark"] .ih-selmenu__sep {
+    background: rgba(255, 255, 255, 0.2)
+}
+html[data-theme="dark"] .ih-selmenu__vocab {
+    border: none;
+    background: none;
+    color: #fff
+}
+html[data-theme="dark"] .ih-qgroup__ins {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-qlist {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-qlist > b {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-qlist i {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-qtable {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-qtable caption {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-qtable th, html[data-theme="dark"] .ih-qtable td {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-qsteps {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-qfigure {
+    --jts-ink: var(--dk-text);
+    --jts-muted: var(--dk-muted);
+    --jts-line: var(--dk-line);
+    --jts-bg: var(--dk-card);
+    --jts-bg-soft: var(--dk-page);
+    --jts-violet: var(--dk-acc);
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-q {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-q.is-current {
+    border: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-q__num {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-q__flag {
+    border: none;
+    background: none;
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-q__flag.is-on {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-pill {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pill.is-on {
+    border-color: var(--ih-ink);
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-opt {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-opt i {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-opt.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-q__hint {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-q__warn {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-select {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-select select {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-select.is-set select {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-select.is-set svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-gap {
+    border: none;
+    border-bottom: 2px solid var(--ih-violet);
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gap:focus {
+    outline: none;
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-fb p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-fb--ok {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-fb--wrong {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-fb--spelling {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-fb--ok .ih-fb__head > b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-fb--wrong .ih-fb__head > b {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-fb--spelling .ih-fb__head > b {
+    color: #e8b365
+}
+html[data-theme="dark"] .ih-fb__link {
+    border: none;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-run__nav {
+    border-top: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-num {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-num.is-answered {
+    border-color: var(--ih-ink);
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-num.is-ok {
+    border-color: var(--ih-green);
+    background: var(--ih-green);
+    color: #fff
+}
+html[data-theme="dark"] .ih-num.is-bad {
+    border-color: var(--ih-red);
+    background: var(--ih-red);
+    color: #fff
+}
+html[data-theme="dark"] .ih-num.is-current {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-num__flag {
+    background: var(--ih-red)
+}
+html[data-theme="dark"] .ih-run__answered {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-dialog {
+    background: rgba(24, 24, 24, 0.4)
+}
+html[data-theme="dark"] .ih-dialog__box {
+    background: var(--dk-card);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4)
+}
+html[data-theme="dark"] .ih-dialog__box p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-review__side {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-review__stats span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-review__stats .ih-ring__arc {
+    stroke: var(--ih-orange)
+}
+html[data-theme="dark"] .ih-review__note {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-review__filters button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-review__filters button.is-on {
+    border-color: var(--ih-ink);
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-rv {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-rv--row svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rv__num--green {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-rv__num--red {
+    background: var(--dk-chip);
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-rv__num--orange {
+    background: var(--dk-page);
+    color: #e8b365
+}
+html[data-theme="dark"] .ih-rv--open.ih-rv--red {
+    border-color: #693f48
+}
+html[data-theme="dark"] .ih-rv__answers span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-rv__yours {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-rv__yours b {
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-rv__right {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-rv__right b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-rv__why span, html[data-theme="dark"] .ih-rv__where span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-rv__where {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-rv__where button {
+    border: none;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-review__weak {
+    color: var(--ih-muted)
+}
+@media (max-width: 899px) {
+    html[data-theme="dark"] .ih-mtable tr {
+        border-bottom: 1px solid var(--ih-line)
+    }
+    html[data-theme="dark"] .ih-mtable td {
+        border: none
+    }
+    html[data-theme="dark"] .ih-run__switch {
+        border-bottom: 1px solid var(--ih-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .ih-run__switch button {
+        border: 1px solid var(--ih-line);
+        background: var(--dk-card);
+        color: var(--ih-ink-2)
+    }
+    html[data-theme="dark"] .ih-run__switch button[aria-selected='true'] {
+        border-color: var(--ih-ink);
+        background: var(--ih-ink);
+        color: #fff
+    }
+}
+html[data-theme="dark"] .ih-chip--listening {
+    background: var(--dk-page);
+    color: #82b2ff
+}
+html[data-theme="dark"] .ih-btn--soft-violet {
+    background: var(--dk-chip);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-btn--soft-violet:hover, html[data-theme="dark"] .ih-btn--soft-violet.is-on {
+    background: #2e233e
+}
+html[data-theme="dark"] .ih-player {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-player__play {
+    border: 0;
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-player__play i {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-player__tri {
+    border-color: transparent transparent transparent var(--dk-line)
+}
+html[data-theme="dark"] .ih-player__dur {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-player__track {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-player__fill {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-player__knob {
+    background: var(--dk-card);
+    box-shadow: 0 0 0 2px var(--ih-violet, #9047ff), 0 1px 3px rgba(0, 0, 0, 0.4)
+}
+html[data-theme="dark"] .ih-player__track:focus-visible {
+    outline: 2px solid var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-player__rates {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-player__rates button {
+    border: 0;
+    background: transparent;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-player__rates button.is-on {
+    background: var(--dk-card);
+    color: var(--ih-ink);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16)
+}
+html[data-theme="dark"] .ih-player__plays {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-player__err {
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-transcript {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-transcript > header {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-transcript__close {
+    border: 0;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-tline {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tline b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-tline.is-current {
+    background: var(--dk-chip);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-tline:not(.is-current):not(:disabled):hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-tline.is-mark {
+    box-shadow: inset 3px 0 0 var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-lrun__context {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-lrun__hint {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-lrun__parts button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-lrun__parts button.is-on {
+    background: var(--ih-ink);
+    border-color: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-paper__row.is-current {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-paper__num {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-gap--ok {
+    border-color: var(--ih-green) !important;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-gap--bad {
+    border-color: var(--ih-red, #e5484d) !important;
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-word--ok {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-word--spelling {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-word--wrong, html[data-theme="dark"] .ih-word--extra {
+    background: var(--dk-chip);
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-word--missing {
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-review__transcript .ih-transcript {
+    border: 0
+}
+html[data-theme="dark"] .ih-dict__progress {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-dict__progress span {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-dict__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-dict__input {
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dict__input:focus {
+    outline: 2px solid var(--ih-violet, #9047ff);
+    border-color: transparent
+}
+html[data-theme="dark"] .ih-dict__legend {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-qmap__mark {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-chip--neutral {
+    background: var(--ih-soft, #f4f4f4);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .ih-linkbtn {
+    border: 0;
+    background: none;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wtask__lead {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wtask__box {
+    background: var(--ih-soft, #f4f4f4)
+}
+html[data-theme="dark"] .ih-wtask__after {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wchart {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wchart__grid {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-wchart__axis {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-wchart__tick {
+    fill: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-wchart__table th, html[data-theme="dark"] .ih-wchart__table td {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-wrun {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wrun__top {
+    border-bottom: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wrun__logo {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wrun__pill {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-wrun__back {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wrun__left .ih-wrun__prompt {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wrun__card, html[data-theme="dark"] .ih-wrun__hints {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wrun__prompt {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wrun__meta {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wrun__prompt .ih-wtask__box {
+    background: none
+}
+html[data-theme="dark"] .ih-wrun__text {
+    border: 2px solid var(--dk-acc);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wrun__text:focus {
+    outline: none;
+    border-color: var(--ih-violet, #9047ff);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--dk-acc) 12%, transparent)
+}
+html[data-theme="dark"] .ih-wrun__bar > b.is-short {
+    color: #f79729
+}
+html[data-theme="dark"] .ih-wrun__bar > b.is-ok {
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-wrun__draft {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wrun__draft svg {
+    color: var(--ih-green, #22a55b)
+}
+html[data-theme="dark"] .ih-wrun__steps li {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wrun__stepn {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-wrun__steps li.is-done .ih-wrun__stepn {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-wrun__tip, html[data-theme="dark"] .ih-wrun__ai {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wrun__tip svg, html[data-theme="dark"] .ih-wrun__ai svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wrun__ai {
+    background: var(--dk-chip);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wrun__paste.is-flash {
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-wrun__saved {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wrun__saved svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wrun__overtime {
+    background: var(--dk-page);
+    color: #e8b36c
+}
+html[data-theme="dark"] .ih-run__clock small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wplan {
+    border: 1px solid #524666;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wplan__head {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .ih-wplan li.is-done {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wplan__n {
+    border: 1px solid #534372;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wplan li.is-done .ih-wplan__n {
+    border: 0
+}
+html[data-theme="dark"] .ih-wplan__note {
+    background: var(--dk-card);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wstatus {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wstatus.is-bad {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-wstatus p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wstatus__icon {
+    background: var(--dk-card);
+    color: #e7a04f
+}
+html[data-theme="dark"] .ih-wscore__band {
+    background: var(--dk-chip);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wscore__crit div {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wscore__crit span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wfix__row {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wfix__row s {
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-wmodel {
+    background: var(--dk-page);
+    border-color: #524666
+}
+html[data-theme="dark"] .ih-wmine__para {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wmine__para span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wmine__task summary {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wmodel__note {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-wlinker {
+    background: none;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-wmodel__strengths div {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wsc__crit {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wsc__ans button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wsc__ans button.is-yes {
+    background: var(--dk-page);
+    border-color: var(--ih-green);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-wsc__ans button.is-no {
+    background: var(--dk-chip);
+    border-color: var(--ih-red, #e5484d);
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-wsc__ans button.is-unsure {
+    background: var(--dk-page);
+    border-color: #d4a017;
+    color: #e8b36c
+}
+html[data-theme="dark"] .ih-wsc__tip {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wguide__card span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wguide__open {
+    color: var(--ih-violet, #9047ff) !important
+}
+html[data-theme="dark"] .ih-wguide__tabs button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wguide__tabs button.is-on {
+    background: var(--ih-ink);
+    border-color: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wguide__row, html[data-theme="dark"] .ih-wguide__pair {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-wguide__ex {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wgap {
+    background: var(--dk-chip);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-btn--rec {
+    background: #e5484d;
+    color: #fff
+}
+html[data-theme="dark"] .ih-btn--rec:hover {
+    background: #cf3a3f
+}
+html[data-theme="dark"] .ih-cue li::marker {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-srun__body, html[data-theme="dark"] .ih-srun__intro, html[data-theme="dark"] .ih-srun__done {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-sstep {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-sstep li.is-done {
+    background: var(--ih-soft);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-sstep li.is-on {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-snotes {
+    border: 1px solid #5a4d0e;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-snotes textarea {
+    border: 1px solid #5a4d0e;
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-srec__status {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-srec__status.is-rec {
+    color: #fd8b87
+}
+html[data-theme="dark"] .ih-srec__status.is-rec::before {
+    background: #e5484d
+}
+html[data-theme="dark"] .ih-sring__track {
+    fill: none;
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-sring__bar {
+    fill: none;
+    stroke: var(--ih-green)
+}
+html[data-theme="dark"] .ih-sring__body span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-srec__stats {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-srec__stats span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-sdone__item {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-sdone__item summary, html[data-theme="dark"] .ih-sanswer__model summary {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-slist.is-good {
+    background: var(--dk-page);
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .ih-sanswer {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-sanswer__tip {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-shadow__phrase.is-playing {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__n {
+    background: var(--dk-chip);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__group + .ih-shadow__group::before {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-ob {
+    --ih-violet: var(--dk-acc);
+    --ih-ink: var(--dk-text);
+    --ih-ink-2: var(--dk-text-2);
+    --ih-muted: var(--dk-muted);
+    --ih-line: var(--dk-line);
+    --ih-soft: var(--dk-page);
+    --ih-green: #1f9d55;
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-ob__logo {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-ob__exit {
+    border: 0;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ob__sub {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ob__progress span {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-ob__progress span.is-on {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-ob__step {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-obopt {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-obopt.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-obopt__icon {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obopt.is-on .ih-obopt__icon {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-obopt__head {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .ih-obopt__cal-icon {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obopt__body > .ih-obopt__date {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-info__navitem {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-info__navitem:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-info__navitem.is-on {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-info__disclaimer {
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-info__track {
+    border: 0;
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-info__lead {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-info__fmt {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-info__fmt-head {
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-info__fmt-row {
+    border-top: 1px solid var(--dk-line);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-info__skill {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .ih-info__total svg {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-info__card {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-info__card h3 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .ih-info__card--gold {
+    background: var(--dk-page);
+    border-color: #5e4b11
+}
+html[data-theme="dark"] .ih-info__card--violet {
+    background: var(--dk-page);
+    border-color: #524666
+}
+html[data-theme="dark"] .ih-info__example {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-info__ext {
+    border: 1px solid var(--dk-line);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .ih-info__ext:hover {
+    border-color: var(--dk-acc);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-info__warn {
+    background: var(--dk-page);
+    color: #f2ad67
+}
+html[data-theme="dark"] .ih-info__checks svg {
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-info__table {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-info__table th, html[data-theme="dark"] .ih-info__table td {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .ih-info__table thead th {
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-info__table tbody th {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .ih-info__table--band {
+    border: 0
+}
+@media (hover: hover) {
+    html[data-theme="dark"] .ih-obopt:not(.is-on):not(.ih-obopt--date):hover, html[data-theme="dark"] .ih-obcard:not(.is-on):hover, html[data-theme="dark"] .ih-obband:not(.is-on):hover, html[data-theme="dark"] .ih-obday:not(.is-on):hover, html[data-theme="dark"] .ih-dstart__level:not(.is-on):hover {
+        border-color: #534371
+    }
+}
+html[data-theme="dark"] .ih-obcard {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-obcard.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-obcard__hint {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-obcard__chip {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-obcard__note {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-obcard__note svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-obcard.is-on .ih-obcard__note {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-ob__hint {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-obday {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-obday.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-obday__icon {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obday.is-on .ih-obday__icon {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-obday__pace {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-obday.is-on .ih-obday__pace {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obday__term {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-obopt__body > span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-obopt__more {
+    color: var(--ih-ink-2) !important
+}
+html[data-theme="dark"] .ih-obopt__radio {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obopt__cal {
+    border: 1px solid var(--ih-violet);
+    background: var(--dk-page);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-obband {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-obband > span:last-child {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-obband.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-obband.is-on b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-ob__note.is-ok {
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-ob__note.is-ok svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-ob__note.is-warn {
+    background: var(--dk-page);
+    color: #f2ad67
+}
+html[data-theme="dark"] .ih-ob__summary {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-ob__summary > b {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ob__chip {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-cal {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-cal__head {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-cal__head b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-cal__head button {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .ih-cal__wd {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-cal__grid button {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .ih-cta:disabled {
+    box-shadow: none
+}
+html[data-theme="dark"] .ih-cal__day:disabled, html[data-theme="dark"] .ih-cal__grid button:disabled {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-cal__grid button.is-on {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-diag__body {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-diag__blocks li {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-diag__sq {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-dq {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dq__n {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-dq__ins {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-dq__choices button, html[data-theme="dark"] .ih-dq__options button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-dq__choices button.is-on, html[data-theme="dark"] .ih-dq__options button.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-dq__options button.is-right {
+    border-color: var(--ih-green);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-dq__options button.is-wrong {
+    border-color: var(--ih-red, #e5484d);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-dq__select {
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__wrow {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-dres__next {
+    background: var(--dk-page);
+    border-color: #524666
+}
+html[data-theme="dark"] .ih-dres__item {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__item.is-bad > b {
+    color: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-dres__item.is-ok > b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-route header p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-route__opt.is-rec {
+    border-color: var(--ih-violet, #9047ff);
+    box-shadow: 0 0 0 1px var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-route__opt li svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-start {
+    background: var(--dk-page);
+    border-color: #524666
+}
+html[data-theme="dark"] .ih-start p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-ptype small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptype__bar {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-ptype.is-high .ih-ptype__bar span {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .ih-ptype.is-mid .ih-ptype__bar span {
+    background: #634903
+}
+html[data-theme="dark"] .ih-ptype.is-low .ih-ptype__bar span {
+    background: var(--ih-red, #e5484d)
+}
+html[data-theme="dark"] .ih-progress__traps li, html[data-theme="dark"] .ih-progress__crit li {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-progress__recent button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-progress__recent button:hover {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-progress__rtitle small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-skin-listening {
+    --ih-violet: #2f7bf5;
+    --ih-accent-tint: var(--dk-page)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-player__play {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-num.is-current {
+    border-color: var(--ih-violet);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-paper {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-paper__row.is-current {
+    background: none
+}
+html[data-theme="dark"] .ih-skin-listening .ih-paper__num {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-skin-listening .ih-paper .ih-gap {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-paper .ih-gap:focus {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-gap--ok {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-gap--bad {
+    background: var(--dk-chip);
+    color: var(--ih-red)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-tline.is-current {
+    background: var(--ih-accent-tint)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-tline.is-current b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-lrun__parts button {
+    border: 0;
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-skin-listening .ih-lrun__parts button.is-on {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .ih-btn--soft-blue {
+    border: 0;
+    background: var(--dk-page);
+    color: #82b2ff
+}
+html[data-theme="dark"] .ih-btn--soft-blue:hover {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-diag__preview {
+    background: var(--ih-accent-tint);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-route__opt.is-rec {
+    background: var(--dk-page);
+    border: 2px solid var(--ih-violet, #9047ff);
+    box-shadow: none
+}
+html[data-theme="dark"] .ih-route__kicker {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-route__opt.is-rec .ih-route__kicker {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-route__rec {
+    background: var(--dk-chip);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-route__termline span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-route__opt.is-rec .ih-route__term {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-route__fit.is-ok {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-route__fit.is-bad {
+    background: var(--dk-chip);
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-route__opt ul {
+    border-top: 1px solid var(--ih-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-route__opt li svg {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-route__opt.is-rec > .ih-cta {
+    box-shadow: none
+}
+html[data-theme="dark"] .ih-dstart__head p {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .ih-dstart__level {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .ih-dstart__level.is-on {
+    border: 2px solid var(--dk-acc);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-dstart__level-top svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-dstart__level.is-on .ih-dstart__level-top svg {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-dstart__rec {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .ih-dstart__min {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-dstart__level.is-on .ih-dstart__min {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-dstart__hint {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-dstart__form {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-dstart__row {
+    border-top: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .ih-dstart__row-body span {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-dstart__chip {
+    background: var(--ih-tint);
+    color: var(--ih-tone)
+}
+html[data-theme="dark"] .ih-dstart__note {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .ih-dstart__note svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-route__why {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-route__why svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-dres__reviewbtn {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-dres__overall {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-dres__bar {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__bar > i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-dres__overall .ih-dres__bar {
+    background: rgba(255, 255, 255, 0.35)
+}
+html[data-theme="dark"] .ih-dres__overall .ih-dres__bar > i {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-dres__skill--listening .ih-dres__bar > i {
+    background: #2f7bf5
+}
+html[data-theme="dark"] .ih-dres__skill--reading .ih-dres__bar > i {
+    background: #724112
+}
+html[data-theme="dark"] .ih-dres__ai {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-dres__wrow {
+    background: none;
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__trap {
+    background: var(--dk-chip);
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-dres__next {
+    border: 0;
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-dres__next p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-progress__actions .ih-btn {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-pring__in small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-pring--overall .ih-ring__arc {
+    stroke: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pring--listening .ih-ring__arc {
+    stroke: #82b2ff
+}
+html[data-theme="dark"] .ih-pring--reading .ih-ring__arc {
+    stroke: #f08a24
+}
+html[data-theme="dark"] .ih-pring--writing .ih-ring__arc {
+    stroke: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-pring--speaking .ih-ring__arc {
+    stroke: #5acc81
+}
+html[data-theme="dark"] .ih-pbands__note {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-pbands__note svg {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-pchart__grid {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-pchart__tick {
+    fill: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-pchart__tick.is-target {
+    fill: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-pchart__line {
+    fill: none;
+    stroke: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-pchart__dot {
+    fill: #fff;
+    stroke: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-seg {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-seg button {
+    border: 0;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-seg button.is-on {
+    background: var(--dk-card);
+    color: var(--ih-ink);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16)
+}
+html[data-theme="dark"] .ih-ptile.is-high {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-mid {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-low {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-ptile.is-none {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-ptile.is-high .ih-ptile__val b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-ptile.is-mid .ih-ptile__val b {
+    color: #ec9e34
+}
+html[data-theme="dark"] .ih-ptile.is-low .ih-ptile__val b {
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-ptile__val small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptile__none {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptiles__legend {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptiles__legend .is-high {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .ih-ptiles__legend .is-mid {
+    background: #624500
+}
+html[data-theme="dark"] .ih-ptiles__legend .is-low {
+    background: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-pbars li.is-slow b {
+    color: #ec9e34
+}
+html[data-theme="dark"] .ih-pbars__bar {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-pbars__bar.is-red > i {
+    background: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-pbars__bar.is-yellow > i {
+    background: #624500
+}
+html[data-theme="dark"] .ih-pbars__bar.is-violet > i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-pgame__bolt {
+    background: var(--dk-page);
+    color: #f08a24
+}
+html[data-theme="dark"] .ih-ob__qprog {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ob__qprog > i {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-ob__qprog > i > i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-ob__qnum {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-qopt.is-on .ih-ob__qnum {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-ob__qans .is-wrong {
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-ob__qans .is-right {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-hl--answer[data-n]::before {
+    background: var(--ih-green, #1f9d55);
+    color: #fff
+}
+html[data-theme="dark"] .ih-ptile {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-ptile.is-high {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-mid {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-low {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-none {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptile.is-mid .ih-ptile__val b {
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-ptile.is-low .ih-ptile__val b {
+    color: #fd8a8f
+}
+html[data-theme="dark"] .ih-ptiles__legend .is-mid {
+    background: #614300
+}
+html[data-theme="dark"] .ih-cue li::before {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .ih-snotes {
+    border: 1px solid #5a4c0d;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-snotes header svg {
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-snotes header span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-snotes__chips li {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-snotes__chips li button {
+    border: 0;
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-snotes__chips li.ih-snotes__input {
+    background: none
+}
+html[data-theme="dark"] .ih-snotes__input input {
+    border: 1px dashed #5b4c0d;
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-snotes__input input:focus {
+    outline: none;
+    border-color: #b7791f
+}
+html[data-theme="dark"] .ih-snotes__chips li.ih-snotes__empty {
+    background: none;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-snotes > p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-srec__status.is-rec {
+    color: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-srec__status.is-rec::before {
+    background: var(--ih-red, #e0364f)
+}
+html[data-theme="dark"] .ih-sring__track {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-swave i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-swave i.is-voiced {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .ih-shear {
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-shear.is-on {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-srec__pause {
+    border: 2px solid var(--dk-line)
+}
+html[data-theme="dark"] .ih-srec__pause i {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-srec__stats {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-sstep li {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-sstep li + li::before {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-sstep li.is-done {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-sstep li.is-done svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-sstep li.is-on {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .ih-back {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-ptask {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-ptask.is-control {
+    border-color: var(--ih-violet);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ptask.is-done .ih-ptask__main b {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptask__meta {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ptask__link {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-ptask__date {
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-goal__deadline b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-journey li {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-journey li.is-now {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-goal__say {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-goal__today {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-seg {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-seg button {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-seg button.is-on {
+    background: var(--dk-card);
+    color: var(--ih-violet);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .ih-road {
+    border-left: 2px dashed var(--ih-line)
+}
+html[data-theme="dark"] .ih-road__node {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .ih-road__dot {
+    background: var(--dk-card);
+    border: 2px solid var(--ih-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-road__week.is-done .ih-road__dot {
+    background: var(--ih-green);
+    border-color: var(--ih-green);
+    color: #fff
+}
+html[data-theme="dark"] .ih-road__week.is-now .ih-road__dot {
+    background: var(--ih-violet);
+    border-color: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-weekgrid__day {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .ih-weekgrid__day.is-today {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-month__day {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-month__day small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-month__day.is-today {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-month__day.is-sel {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-month__flag {
+    color: var(--ih-violet) !important
+}
+html[data-theme="dark"] .ih-vocablink {
+    border: 1px dashed var(--ih-violet);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-vocablink span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-ph__title {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-ph__sub {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-ph__chip {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-link {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-btn2 {
+    border: 1.5px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-btn2--primary {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-btn2--outline {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-btn2:focus-visible, html[data-theme="dark"] .ih-link:focus-visible {
+    outline: 3px solid var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-plate {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-plate--reading {
+    background: var(--dk-page);
+    color: #fe9137
+}
+html[data-theme="dark"] .ih-plate--listening {
+    background: var(--dk-chip);
+    color: #84b1ff
+}
+html[data-theme="dark"] .ih-plate--speaking {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-plate--vocab {
+    background: var(--dk-chip);
+    color: #fe81b8
+}
+html[data-theme="dark"] .ih-gb {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-gb__bubble {
+    background: var(--dk-card);
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 12%, transparent);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gb__exam h2 {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gb__date {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-gb__edit {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-gb__pill {
+    border: 0;
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-gb__node {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gb__node--a {
+    background: var(--dk-card);
+    border: 2px solid #514765
+}
+html[data-theme="dark"] .ih-gb__line--done {
+    background: linear-gradient(90deg, var(--dk-acc-soft), var(--dk-acc))
+}
+html[data-theme="dark"] .ih-gb__line--todo {
+    background: repeating-linear-gradient(90deg, var(--dk-acc-soft) 0 8px, transparent 8px 14px)
+}
+html[data-theme="dark"] .ih-gb.is-clickable:hover .ih-gb__node--now {
+    box-shadow: 0 8px 22px color-mix(in oklab, var(--dk-acc) 50%, transparent)
+}
+html[data-theme="dark"] .ih-gb__node--now {
+    background: var(--ih-violet);
+    border: 3px solid var(--dk-line);
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 35%, transparent);
+    color: #fff
+}
+html[data-theme="dark"] .ih-gb__nowtag {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-gb__nowtag.is-checking {
+    background: var(--dk-card);
+    color: var(--ih-violet);
+    border: 1px solid var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-gb__nowtag.is-none {
+    background: transparent;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-gb__track.is-empty .ih-gb__node--a, html[data-theme="dark"] .ih-gb__track.is-empty .ih-gb__node--now {
+    background: color-mix(in oklab, var(--dk-card) 60%, transparent);
+    border: 2px dashed var(--dk-acc-line);
+    box-shadow: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-gb__track.is-empty .ih-gb__line--done {
+    background: repeating-linear-gradient(90deg, var(--dk-acc-soft) 0 8px, transparent 8px 14px)
+}
+html[data-theme="dark"] .ih-gb__track.is-reached .ih-gb__line--todo {
+    border: 0;
+    background: linear-gradient(90deg, var(--dk-acc), #5c3b02)
+}
+html[data-theme="dark"] .ih-gb__star {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gb__star::before {
+    background: url(/ielts/mascot/goal-star.svg) center / contain no-repeat
+}
+html[data-theme="dark"] .ih-tt, html[data-theme="dark"] .ih-gz, html[data-theme="dark"] .ih-wc {
+    background: var(--dk-card);
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-tt__head h2, html[data-theme="dark"] .ih-gz__head h2 {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-tt__sub {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tt__task, html[data-theme="dark"] .ih-tt__lesson {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-tt__task.is-primary, html[data-theme="dark"] .ih-tt__lesson {
+    background: var(--dk-page);
+    border-color: #514763
+}
+html[data-theme="dark"] .ih-tt__lesson.is-empty {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-tt__body b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-tt__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tt__chip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tt__chip.is-late {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-tt__done {
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-tt__hint {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tt__empty {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-gz__card {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-gz__icon {
+    background: var(--dk-card);
+    color: #fd8b87
+}
+html[data-theme="dark"] .ih-gz__card b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-gz__card p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wc__body h2 {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wc__row {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wc__chip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wc__chip.is-open, html[data-theme="dark"] .ih-wc__chip.is-done {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-wc__chip.is-late {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-wc__sep {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-wc__note {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-seg2 {
+    background: var(--dk-page);
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-seg2 button {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-seg2 button.is-on {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-progline__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-progline__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-iconbtn {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-softbtn {
+    border: 0;
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-chip2 {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-chip2 b {
+    border-right: 1px solid #534371
+}
+html[data-theme="dark"] .ih-chip2.is-completed {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-chip2.is-missed {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-roadcard {
+    background: var(--dk-card);
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-roadcard__head span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-road2 {
+    background: linear-gradient(180deg, var(--dk-chip), var(--dk-page))
+}
+html[data-theme="dark"] .ih-road2__band {
+    fill: none;
+    stroke: #e3d6ff
+}
+html[data-theme="dark"] .ih-road2__axis {
+    fill: none;
+    stroke: #fff
+}
+html[data-theme="dark"] .ih-road2__tag {
+    border: 1px solid #514763;
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-road2__tag b {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-road2__tag span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-road2__done {
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-road2__day button {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .ih-road2__dot {
+    border: 3px solid var(--dk-line);
+    background: var(--dk-chip);
+    color: #fff
+}
+html[data-theme="dark"] .ih-road2__label {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-road2__day.is-done .ih-road2__dot {
+    background: #22a55b
+}
+html[data-theme="dark"] .ih-road2__day.is-current .ih-road2__dot {
+    background: var(--dk-card);
+    border: 4px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-road2__day.is-current .ih-road2__label {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-road2__day.is-started .ih-road2__dot {
+    background: var(--dk-acc-soft)
+}
+html[data-theme="dark"] .ih-road2__day.is-missed .ih-road2__dot {
+    background: #633f01
+}
+html[data-theme="dark"] .ih-road2__day.is-flag .ih-road2__dot {
+    background: var(--dk-card);
+    border: 2px solid #664616;
+    color: #f5a524
+}
+html[data-theme="dark"] .ih-road2__day.is-flag.is-completed .ih-road2__dot {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-road2__day.is-sel .ih-road2__dot {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--dk-acc) 25%, transparent)
+}
+html[data-theme="dark"] .ih-road2__here {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-road2__mascot p {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-legend li {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-legend__ic {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-legend__ic.is-done {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-legend__ic.is-planned {
+    background: var(--dk-chip);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-legend__ic.is-missed, html[data-theme="dark"] .ih-legend__ic.is-control {
+    background: var(--dk-page);
+    color: #f5a524
+}
+html[data-theme="dark"] .ih-dp {
+    background: var(--dk-card);
+    border: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dp__head span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-dp__task {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-dp__task.is-primary {
+    background: var(--dk-page);
+    border-color: #514763
+}
+html[data-theme="dark"] .ih-dp__sep {
+    border: 0;
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dp__ctl span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-dp__text, html[data-theme="dark"] .ih-dp__rest {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-dp__events small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-plate--control-warm {
+    background: var(--dk-page);
+    color: #f5a524
+}
+html[data-theme="dark"] .ih-week7 {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-week7__col {
+    border-right: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-week7__col:last-child {
+    border-right: 0
+}
+html[data-theme="dark"] .ih-week7__col header {
+    background: var(--dk-page);
+    border-bottom: 1px solid var(--ih-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-week7__col header b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-week7__col header b svg {
+    color: #f5a524
+}
+html[data-theme="dark"] .ih-week7__col.is-today header {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-week7__col.is-today header b {
+    color: #fff
+}
+html[data-theme="dark"] .ih-week7__col.is-today {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-week7__rest {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wcard {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wcard b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wcard__st {
+    border: 2px solid var(--dk-line);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wcard__sub, html[data-theme="dark"] .ih-wcard__min, html[data-theme="dark"] .ih-wcard__mode {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wcard.is-done {
+    background: var(--dk-page);
+    border-color: #335642
+}
+html[data-theme="dark"] .ih-wcard.is-done .ih-wcard__st {
+    background: #22a55b;
+    border-color: #22a55b
+}
+html[data-theme="dark"] .ih-wcard.is-current .ih-wcard__st {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wcard.is-control {
+    background: var(--dk-page);
+    border-color: #664616
+}
+html[data-theme="dark"] .ih-wcard.is-control .ih-wcard__st {
+    border: 0;
+    color: #f5a524
+}
+html[data-theme="dark"] .ih-wcard.is-missed .ih-wcard__st {
+    border-color: #f5a524
+}
+html[data-theme="dark"] .ih-wcard.is-sel {
+    border: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-wsel {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-wsel__task div {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wsel__task b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-wsel__task .ih-wsel__ring {
+    border: 5px solid var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wsel__task .ih-wsel__ring.is-completed {
+    background: #22a55b;
+    border-color: #22a55b
+}
+html[data-theme="dark"] .ih-wsel__actions small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mkeys li {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mkeys i.is-task {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mkeys i.is-control {
+    background: #633f01
+}
+html[data-theme="dark"] .ih-mkeys i.is-mock {
+    background: #2f6fde
+}
+html[data-theme="dark"] .ih-month2 {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-month2__dow {
+    background: var(--dk-page);
+    border-bottom: 1px solid var(--ih-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-month2__day {
+    border: 0;
+    border-right: 1px solid var(--ih-line);
+    border-bottom: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-month2__day:nth-child(7n) {
+    border-right: 0
+}
+html[data-theme="dark"] .ih-month2__day.is-out {
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-month2__day.is-sel {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-month2__day.is-today .ih-month2__n {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-month2__rest {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mchip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mchip.is-done {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-mchip.is-control {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-mchip.is-mock {
+    background: var(--dk-chip);
+    color: #84b1ff
+}
+html[data-theme="dark"] .ih-mchip.is-more {
+    background: none;
+    color: var(--ih-violet)
+}
+@media (max-width: 760px) {
+    html[data-theme="dark"] .ih-road2__lane {
+        background: #2d233e
+    }
+    html[data-theme="dark"] .ih-week7__col {
+        border-right: 0;
+        border-bottom: 1px solid var(--ih-line)
+    }
+}
+html[data-theme="dark"] .ih-search {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-search.is-active, html[data-theme="dark"] .ih-search:focus-within {
+    border: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .ih-search input {
+    border: 0;
+    outline: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-psec + .ih-psec {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-psec__sub {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-psec__filter {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-skillcard {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-skillcard:hover {
+    border-color: #534371
+}
+html[data-theme="dark"] .ih-skillcard b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-skillcard > span:not(.ih-plate):not(.ih-link) {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-prow {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-prow.is-compact {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-prow.is-compact:hover {
+    border-color: #534371
+}
+html[data-theme="dark"] .ih-prow.is-compact:disabled, html[data-theme="dark"] .ih-prow.is-soon {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-prow.is-soon b {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-prow__body b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-prow__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-stchip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-prow.is-compact .ih-stchip:not(.is-done):not(.is-started) {
+    background: none
+}
+html[data-theme="dark"] .ih-stchip.is-done {
+    background: var(--dk-page);
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-stchip.is-started {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-stchip.is-soon {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-extra {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-extra b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-extra small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-crumbs {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-crumbs svg {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pnote {
+    background: var(--dk-chip);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pnote svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-emptybox {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-emptybox p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-emptybox__ic {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-emptybox__ic.is-orange {
+    background: var(--dk-page);
+    color: #e5a00d
+}
+html[data-theme="dark"] .ih-pg__filters {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__select {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-pg__select select {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pg__overall, html[data-theme="dark"] .ih-pg__skill, html[data-theme="dark"] .ih-pg__panel {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-pg__label {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__overall small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__phead span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__legend i.is-diag {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .ih-pg__legend i.is-full {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-pg__legend i.is-goal {
+    background: #633f01
+}
+html[data-theme="dark"] .ih-pg__chart {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-pg__tick {
+    fill: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-pg__tick.is-goal {
+    fill: #f79729
+}
+html[data-theme="dark"] .ih-pg__val {
+    fill: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pg__xl {
+    fill: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__xd {
+    fill: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-pg__errors button {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-pg__errors b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-pg__errors small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__table td {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-pg__d {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__type {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-pg__type.is-full {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-pg__type.is-work {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-pg__type.is-partial {
+    background: var(--dk-page);
+    color: #e3a250
+}
+@media (max-width: 760px) {
+    html[data-theme="dark"] .ih-pg__table tr {
+        border-top: 1px solid var(--ih-line)
+    }
+    html[data-theme="dark"] .ih-pg__table td {
+        border: 0
+    }
+}
+html[data-theme="dark"] .ih-eg__track small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-eg__skill > .ih-eg__faqplate {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-eg__skill {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-eg__skill b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-eg__skill small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-eg__skill.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-eg__main, html[data-theme="dark"] .ih-eg__quick, html[data-theme="dark"] .ih-eg__answer {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-eg__main h2 span {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-eg__parts li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-eg__parts small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-eg__num {
+    background: #2d253d;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-acc {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-acc.is-open {
+    border-color: var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-acc__head {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-acc__head b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-acc__body {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-eg__crit svg {
+    color: #55cd80
+}
+html[data-theme="dark"] .ih-eg__time {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-eg__quick li + li {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-eg__quick button {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-eg__quick button span {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-eg__quick button.is-on span {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-eg__mascot p {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-eg__disclaimer {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mt__hero {
+    background: var(--dk-acc) center / cover no-repeat;
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .ih-mt__badge {
+    background: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .ih-mt__cta {
+    border: 0;
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mt__last {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mt__lastmeta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mt__lastband {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mt__lastband span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mt__skill.is-listening {
+    background: var(--dk-page);
+    color: #86b1fd
+}
+html[data-theme="dark"] .ih-mt__skill.is-reading {
+    background: var(--dk-page);
+    color: #fc933e
+}
+html[data-theme="dark"] .ih-mt__skill.is-writing {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mt__skill.is-speaking {
+    background: var(--dk-page);
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mt__skill b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mt__card {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mt__icon {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mt__table {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mt__table th {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mt__table td {
+    border-top: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-mkchip.is-green {
+    background: var(--dk-page);
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mkchip.is-violet {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mkchip.is-amber {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-mkchip.is-red {
+    background: var(--dk-chip);
+    color: #fe8b81
+}
+html[data-theme="dark"] .ih-mkchip.is-grey {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mock {
+    --ih-violet: var(--dk-acc);
+    --ih-ink: var(--dk-text);
+    --ih-ink-2: var(--dk-text-2);
+    --ih-muted: var(--dk-text-2);
+    --ih-line: var(--dk-line);
+    --ih-soft: var(--dk-page);
+    --ih-green: #1f9d55;
+    color: var(--ih-ink);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mockbar {
+    border-bottom: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mockbar__chip {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mockbar__clock {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mockbar__clock b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mockbar__clock small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mockbar__clock.is-low {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-mockbar__clock.is-low b {
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-mockbar__saved {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mockbar__saved.is-saved svg {
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mockbar__saved.is-error {
+    color: #fe8b81
+}
+html[data-theme="dark"] .ih-mockbar__note {
+    background: var(--dk-page);
+    color: #daa854
+}
+html[data-theme="dark"] .ih-mock__sub {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mock__card {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mock__secs li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mock__secs small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mock__fine {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mock__rules li > span {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mock__strict {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-mock__actions .ih-btn--outline {
+    border: 1.5px solid var(--ih-violet);
+    color: var(--ih-violet);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mock__note {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mstep li {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mstep li:not(:last-child)::after {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-mstep li.is-done:not(:last-child)::after {
+    background: #1f9d55
+}
+html[data-theme="dark"] .ih-mstep__dot {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mstep li.is-on {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mstep li.is-on .ih-mstep__dot {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-mstep li.is-done .ih-mstep__dot {
+    background: #1f9d55;
+    color: #fff
+}
+html[data-theme="dark"] .ih-mcheck {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mcheck__icon.is-green {
+    background: var(--dk-page);
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mcheck__icon.is-red {
+    background: var(--dk-chip);
+    color: #fe8b81
+}
+html[data-theme="dark"] .ih-mcheck__text small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mcheck__status {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mcheck__status.is-ok {
+    background: var(--dk-page);
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mcheck__status.is-fail {
+    background: var(--dk-chip);
+    color: #fe8b81
+}
+html[data-theme="dark"] .ih-mcheck__level {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mcheck__level span {
+    background: #1f9d55
+}
+html[data-theme="dark"] .ih-mcheck__alert {
+    background: var(--dk-chip);
+    color: #fe8b81
+}
+html[data-theme="dark"] .ih-mcheck__alert span {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mcheck__alert small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mcheck__agree input {
+    accent-color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mbetween p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mbetween__ok {
+    background: var(--dk-page);
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-mbetween__warn {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .ih-msub li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-msub__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-msub__bar span {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mres__meta {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mres__cell small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mres__overall {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mres__overall.is-empty {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-mres__overall span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mres__overall.is-empty b {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mres__overall small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mres__list small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mres__list strong.is-none {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mres__rec {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mres__recicon {
+    background: var(--dk-card);
+    color: #fd8b87
+}
+html[data-theme="dark"] .ih-mres__rec small {
+    color: var(--ih-ink-2)
+}
+@media (max-width: 760px) {
+    html[data-theme="dark"] .ih-mt__hero::before {
+        background: linear-gradient(90deg, rgba(76, 47, 214, 0.92) 0%, color-mix(in oklab, var(--dk-acc) 75%, transparent) 55%, color-mix(in oklab, var(--dk-acc) 10%, transparent) 100%)
+    }
+}
+html[data-theme="dark"] .ih-origin.is-homework {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-origin.is-teacher {
+    background: var(--dk-chip);
+    color: #9cbeff
+}
+html[data-theme="dark"] .ih-tnote {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-tt__task.is-homework, html[data-theme="dark"] .ih-dp__task.is-homework {
+    border-left: 4px solid #f08a24
+}
+html[data-theme="dark"] .ih-tt__task.is-teacher, html[data-theme="dark"] .ih-dp__task.is-teacher {
+    border-left: 4px solid #3b82f6
+}
+html[data-theme="dark"] .ih-wcard.is-homework {
+    box-shadow: inset 4px 0 0 #724112
+}
+html[data-theme="dark"] .ih-wcard.is-teacher {
+    box-shadow: inset 4px 0 0 #3b82f6
+}
+html[data-theme="dark"] .ih-mchip.is-homework {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-mchip.is-teacher {
+    background: var(--dk-chip);
+    color: #9cbeff
+}
+html[data-theme="dark"] .ih-mkeys i.is-homework {
+    background: #724112
+}
+html[data-theme="dark"] .ih-mkeys i.is-teacher {
+    background: #3b82f6
+}
+html[data-theme="dark"] .ih-mtl__card {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mtl__icon {
+    background: var(--dk-chip);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mtl__name b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mtl__info {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mtl__result {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mtl__result dt {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mtl__result dd {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mtl__result dd.is-none {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-hl, html[data-theme="dark"] .ih-hl--1, html[data-theme="dark"] .ih-hl--2, html[data-theme="dark"] .ih-hl--3 {
+    background: #352c0b !important;
+    box-shadow: 0 0 0 1px #352c0b
+}
+html[data-theme="dark"] .ih-hl-dot--1 {
+    background: #312807
+}
+html[data-theme="dark"] .ih-marker__hint {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-selmenu {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card);
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--dk-acc) 16%, transparent)
+}
+html[data-theme="dark"] .ih-selmenu__act, html[data-theme="dark"] .ih-selmenu__vocab {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-selmenu__act:hover, html[data-theme="dark"] .ih-selmenu__vocab:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-selmenu__sep {
+    background: var(--ih-line)
+}
+html[data-theme="dark"] .ih-run--rl, html[data-theme="dark"] .ih-run--rl.ih-skin-listening {
+    --ih-violet: var(--dk-acc);
+    --ih-accent-tint: var(--dk-chip);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-runbar__mode {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-run--rl .ih-run__text, html[data-theme="dark"] .ih-run--rl .ih-run__questions {
+    border: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-run--rl .ih-run__texts button[aria-selected='true'] {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-run--rl .ih-q {
+    border-color: transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-run--rl .ih-q.is-current {
+    border-color: var(--ih-violet);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-run--rl .ih-q__num, html[data-theme="dark"] .ih-run--rl .ih-paper__num {
+    background: var(--dk-chip);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-run--rl .ih-q.is-current .ih-q__num, html[data-theme="dark"] .ih-run--rl .ih-paper__row.is-current .ih-paper__num {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-q:not(.is-current) .ih-q__num {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-run--rl .ih-pill {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-run--rl .ih-pill.is-on {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-opt.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-run--rl .ih-num {
+    border-color: transparent;
+    background: var(--dk-chip);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-run--rl .ih-num.is-answered {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-num.is-current {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-run--rl .ih-num.is-ok {
+    border-color: var(--ih-green);
+    background: var(--ih-green);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-num.is-bad {
+    border-color: var(--ih-red);
+    background: var(--ih-red);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-player__play {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-run--rl .ih-paper {
+    border-color: transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-run--rl .ih-paper .ih-gap {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-run--rl .ih-paper .ih-gap:focus {
+    border-color: var(--ih-violet);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--dk-acc) 15%, transparent)
+}
+html[data-theme="dark"] .ih-run--rl .ih-lrun__parts button.is-on {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-dialog__box .ih-btn--primary {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mres__stage.is-checking {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mres__stage.is-failed {
+    color: #fd8a8b
+}
+html[data-theme="dark"] .ih-mres__stage.is-missing, html[data-theme="dark"] .ih-mres__stage.is-pending {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mrev__tabs {
+    border-bottom: 1px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mrev__sec {
+    border: 1.5px solid var(--ih-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mrev__sec small {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-mrev__sec small.is-checking {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mrev__sec small.is-failed {
+    color: #fd8a8b
+}
+html[data-theme="dark"] .ih-mrev__sec small.is-missing, html[data-theme="dark"] .ih-mrev__sec small.is-pending {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mrev__sec:hover {
+    border-color: var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-mrev__sec.is-on {
+    border-color: var(--ih-violet);
+    background: var(--dk-page);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--dk-acc) 12%, transparent)
+}
+html[data-theme="dark"] .ih-mrev__parts {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mrev__parts button {
+    border: 0;
+    background: none;
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mrev__parts button.is-on {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-run--rl .ih-review__filters button.is-on {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-levelbar {
+    background: var(--dk-chip);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-levelbar svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-levelbar b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-bandchip {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-bandchip.is-fit {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-bandchip.is-above {
+    background: var(--dk-page);
+    color: #fe9056
+}
+html[data-theme="dark"] .ih-bandchip.is-below {
+    background: var(--dk-page);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-skillcard__lvl {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-lvgroup__title.is-fit::before {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-lvgroup__title.is-above::before {
+    background: #633f01
+}
+html[data-theme="dark"] .ih-lvgroup__title.is-below::before {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .ih-lvgroup__hint {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wdet__crit {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wdet__band {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wdet__crit small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wdet__next {
+    background: var(--dk-card);
+    border: 1px dashed var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-wdet__list.is-good {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wdet__list.is-next {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wdet__list.is-good svg {
+    color: #5acc81
+}
+html[data-theme="dark"] .ih-wdet__list ol span {
+    background: var(--ih-violet);
+    color: #fff
+}
+html[data-theme="dark"] .ih-wdet__word {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wdet__word s {
+    color: #fd8a8b
+}
+html[data-theme="dark"] .ih-wdet__word small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wmine__err {
+    background: var(--dk-chip);
+    box-shadow: inset 0 -2px 0 #e5484d;
+    color: inherit
+}
+html[data-theme="dark"] .ih-wmine__note {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wmine__note svg {
+    color: var(--ih-violet)
 }
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {
@@ -7473,6 +11267,66 @@ html[data-theme="dark"] .vp-pcard-mark.is-on {
 }
 html[data-theme="dark"] .vp-pcard.is-learned .vp-pcard__face {
     border-color: var(--vp-green)
+}
+html[data-theme="dark"] .vp-ielts-card {
+    color: inherit;
+    background: var(--dk-card);
+    border: 1px solid var(--vp-line);
+    box-shadow: 0 1px 2px rgba(24, 16, 40, 0.03)
+}
+html[data-theme="dark"] .vp-ielts-card:hover {
+    border-color: var(--dk-acc-line);
+    box-shadow: 0 8px 24px color-mix(in oklab, var(--dk-acc) 8%, transparent)
+}
+html[data-theme="dark"] .vp-ielts-card .nm {
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-ielts-card .meta {
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-ielts-card .meta.is-progress, html[data-theme="dark"] .vp-ielts-card .meta.is-done {
+    color: var(--vp-violet)
+}
+html[data-theme="dark"] .vp-ielts-card .meta.is-due {
+    color: #f09b47
+}
+html[data-theme="dark"] .vp-iset__kicker {
+    color: var(--vp-violet)
+}
+html[data-theme="dark"] .vp-iset__progress {
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-iset__bar {
+    background: var(--vp-violet-lt)
+}
+html[data-theme="dark"] .vp-iset__bar span {
+    background: var(--vp-violet)
+}
+html[data-theme="dark"] .vp-iset__hint {
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-iset__words li {
+    background: var(--dk-card);
+    border: 1px solid var(--vp-line)
+}
+html[data-theme="dark"] .vp-iset__w .ipa {
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-iset__st {
+    background: var(--dk-page);
+    color: var(--vp-muted)
+}
+html[data-theme="dark"] .vp-iset__st.is-learning {
+    background: var(--vp-violet-lt);
+    color: var(--vp-violet)
+}
+html[data-theme="dark"] .vp-iset__st.is-due {
+    background: var(--dk-page);
+    color: #e3a250
+}
+html[data-theme="dark"] .vp-iset__st.is-learned {
+    background: var(--vp-green-lt);
+    color: #77d68e
 }
 /*  listening.css  */
 html[data-theme="dark"] .lt {

@@ -16,6 +16,10 @@ export const runtime = 'nodejs'
 // оценка эссе Sonnet'ом — 20–40 с; запас под медленный ответ
 export const maxDuration = 120
 
+// Прод за Cloudflare рвёт молчащий запрос через 100 с. Без maxRetries SDK повторил бы зависший вызов ещё дважды
+// (до 3×90 с): ученик видит 524, а сервер дописывает оценку и платит. Один вызов с запасом под claim и сохранение.
+const MODEL_TIMEOUT_MS = 80_000
+
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
 
 async function backend(path, token, init = {}) {
@@ -55,7 +59,7 @@ export async function POST(request) {
 
   let assessment
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: 90_000 })
+    const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: MODEL_TIMEOUT_MS, maxRetries: 0 })
     assessment = normalizeAssessment(raw, job.text)
   } catch (e) {
     console.error('ielts/writing/assess model failed:', e?.message || e)

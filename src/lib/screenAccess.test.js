@@ -35,6 +35,14 @@ describe('ученические экраны закрыты преподава�
     for (const экран of тьюторские) expect(isStudentOnlyScreen(экран)).toBe(true)
   })
 
+  // Тот же приём для IELTS: прохождение, разбор, mock, онбординг и диагностика
+  // добавились десятком ielts-* разом, и список их не догнал.
+  it('вся зона IELTS закрыта префиксом', () => {
+    const ielts = ЭКРАНЫ.filter((s) => s.startsWith('ielts-'))
+    expect(ielts).toContain('ielts-reading-run')
+    for (const экран of ielts) expect(isStudentOnlyScreen(экран)).toBe(true)
+  })
+
   it('пустое и не-строка ничего не закрывают', () => {
     expect(isStudentOnlyScreen('')).toBe(false)
     expect(isStudentOnlyScreen(null)).toBe(false)

@@ -1496,7 +1496,9 @@ async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers }) 
   answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
   const res = await fetch('/api/ielts/speaking/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
   const body = await res.json().catch(() => null)
-  if (!res.ok) throw Object.assign(new Error(body?.error || `HTTP ${res.status}`), { status: res.status, code: body?.error, attemptId: body?.attemptId ?? null })
+  // 413 от nginx приходит HTML-страницей без JSON — без этого экран показал бы общую ошибку, а не «слишком длинно»
+  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
+  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code, attemptId: body?.attemptId ?? null })
   return body
 }
 
@@ -1771,6 +1773,7 @@ export async function getDemoAccess(token) {
 // «Повторения» и игровых счётчиков. Признак ставит админка (позже биллинг), бэкенд отдаёт его ручкой
 // /mobile/ielts/plan/me. Помним по токену, как демо-статус выше: сайдбар спрашивает на каждом экране.
 const _ieltsMe = new Map()
+const IELTS_ME_RETRY_MS = 10 * 60 * 1000
 const IELTS_ME_NONE = { ieltsAccount: false, studyMode: 'self_study', track: 'academic', programmeName: null, onboarded: false }
 
 export async function getIeltsMe(token) {
@@ -1778,9 +1781,13 @@ export async function getIeltsMe(token) {
   if (_ieltsMe.has(token)) return _ieltsMe.get(token)
   const p = authGet('/mobile/ielts/plan/me', token)
     .then((d) => ({ ...IELTS_ME_NONE, ...d, ieltsAccount: !!d?.ieltsAccount }))
-    .catch(() => {
-      // осечка не залипает; пока считаем аккаунт обычным — General English не пропадёт из-за сети
-      _ieltsMe.delete(token)
+    .catch((e) => {
+      // Сетевая осечка не залипает: следующий экран спросит снова, а пока аккаунт обычный — General English не
+      // пропадёт из-за сети. Ответ сервера (404 — ручки ещё нет на этом бэкенде, 5xx — она сломана) помним
+      // IELTS_ME_RETRY_MS: сайдбар спрашивает на каждом экране, и без этого каждый переход ученика стоил бы
+      // бэкенду ошибки со стеком в логе.
+      if (!e?.status) _ieltsMe.delete(token)
+      else setTimeout(() => _ieltsMe.get(token) === p && _ieltsMe.delete(token), IELTS_ME_RETRY_MS)
       return IELTS_ME_NONE
     })
   _ieltsMe.set(token, p)
