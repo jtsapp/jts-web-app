@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { genreOf } from '../../practice/reading/genres.js'
 import { loc } from '../../practice/reading/loc.js'
@@ -13,9 +13,26 @@ import useReadingVoice from './useReadingVoice.js'
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
 // экране две панели превращаются в вкладки — на телефоне читать текст в
 // половину ширины невозможно.
-export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish }) {
+export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish, initialTab, focusEx }) {
   const { t, lang } = useI18n()
-  const [tab, setTab] = useState('text')
+  const [tab, setTab] = useState(initialTab === 'ex' ? 'ex' : 'text')
+
+  // «Открыть» из итогов ведёт к конкретному заданию, как data-goto прототипа
+  // (:1115): вкладка заданий + прокрутка. Раньше вкладка не передавалась, и на
+  // телефоне ученик попадал на текст и искал задание сам (ревью 08.10.2026).
+  useEffect(() => {
+    if (focusEx == null) return
+    const el = document.getElementById(`rd-ex-${focusEx}`)
+    if (!el) return
+    // Задание не должно уйти под липкую панель читалки. Её высоту меряем, а не
+    // угадываем: на телефоне вкладки встают в две строки (94 px против 55), на
+    // A++ панель ещё выше.
+    const bar = document.querySelector('.rd-toolbar')
+    el.style.scrollMarginTop = `${Math.ceil(bar ? bar.getBoundingClientRect().height : 0) + 12}px`
+    el.scrollIntoView({ block: 'start' })
+    // Только при открытии: дальше читатель листает сам.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // Реестр заданий с непроверенным ответом: «Завершить» досдаёт их перед
   // итогом (см. checkUnchecked). Один объект на всю жизнь читалки.
   const [unchecked] = useState(() => new Map())

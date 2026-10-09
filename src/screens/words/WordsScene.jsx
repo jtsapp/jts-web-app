@@ -177,6 +177,11 @@ function WordsRound({
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== ' ' || e.repeat || lock) return
+      // Человек печатает — в чате ассистента или любом поле: пробел его, а не
+      // сцены. Раньше слушатель на document глушил его везде, и в чате
+      // ассистента нельзя было поставить пробел (ревью 08.10.2026, #48).
+      const el = e.target
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return
       e.preventDefault()
       if (document.activeElement && document.activeElement.tagName === 'BUTTON') document.activeElement.blur()
       if (target) voice.play(target)

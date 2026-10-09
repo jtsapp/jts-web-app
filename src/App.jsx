@@ -19,6 +19,7 @@ import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
 import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
 import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
+import SessionExpiredNotice from './components/SessionExpiredNotice.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
@@ -76,7 +77,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
@@ -279,6 +280,10 @@ export default function App() {
         // тропу и навыки. До проверки cancelled — это уборка, не стейт.
         if (!session && hadToken) forgetExpiredSession()
         if (cancelled) return
+        // Токен был, а сессии нет — человека сейчас встретит экран входа, и он
+        // должен понять, что это срок, а не сбой: без слова «Сессия истекла»
+        // это выглядело как «приложение само меня разлогинило».
+        if (!session && hadToken) setSessionExpired(true)
         if (session) {
           setToken(session.token)
           setBoothAccount(!!session.boothAccount)
@@ -414,6 +419,13 @@ export default function App() {
   // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
   // приложении нет, см. lib/purchaseCelebration.js.
   const [celebrate, setCelebrate] = useState(false)
+  // Сессия кончилась сама (токен протух), а не человек нажал «Выйти»: на экране
+  // входа ему нужно сказать, почему его туда вернуло. Гасится, как только он
+  // вошёл снова или закрыл плашку.
+  const [sessionExpired, setSessionExpired] = useState(false)
+  // Свежий handleLogout для подписки ниже: сама подписка ставится один раз, а
+  // функция пересоздаётся на каждый рендер.
+  const handleLogoutRef = useRef(null)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -1073,6 +1085,29 @@ export default function App() {
     return target ?? home
   }
 
+  // Сессия кончилась посреди работы: lib/session.js сообщает сюда, когда
+  // бэкенд отверг и access, и refresh. Выход тот же, что по кнопке «Выйти» —
+  // иначе следующий вошедший унаследовал бы чужие хвосты, — плюс слово о причине.
+  useEffect(() => {
+    handleLogoutRef.current = handleLogout
+  })
+  useEffect(() => {
+    setSessionHooks({
+      // Access протух, но refresh принят: человек даже не заметил, но состояние
+      // держит старый токен — без обновления каждый следующий запрос снова бы 401.
+      onRefreshed: (tok) => setToken(tok),
+      onExpired: () => {
+        handleLogoutRef.current?.()
+        setSessionExpired(true)
+      },
+    })
+    return () => setSessionHooks({})
+  }, [])
+  // Вошёл снова — плашка своё отработала.
+  useEffect(() => {
+    if (token) setSessionExpired(false)
+  }, [token])
+
   function handleLogout() {
     // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
     // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
@@ -1319,26 +1354,13 @@ export default function App() {
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'home') setScreen('home')
-    else if (key === 'pricing') setScreen('pricing')
-    else if (key === 'minutes') setScreen('minutes')
-    else if (key === 'learn' || key === 'learning') setScreen('kingdom')
-    else if (key === 'practice') setScreen('practice')
-    else if (key === 'listening') setScreen('listening')
-    else if (key === 'shadowing') setScreen('shadowing')
-    else if (key === 'writing') setScreen('writing')
-    else if (key === 'workbook') setScreen('workbook')
-    else if (key === 'reading') setScreen('reading')
-    else if (key === 'words') setScreen('words')
-    else if (key === 'verbs') setScreen('verbs')
-    else if (key === 'speakspin') setScreen('speakspin')
-    else if (key === 'listenchoose') setScreen('listenchoose')
-    else if (key === 'arcade') { setArcadeTarget(null); setScreen('arcade') }
-    else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'lessons') setScreen('lessons')
-    else if (key === 'homework') setScreen('homework')
-    else if (key === 'ielts') setScreen('ielts')
-    else if (key === 'vocab') setScreen('vocab')
+    if (key === 'tutor') setScreen(tutorHome)
+    // Остальное — обычная навигация без адреса: она же сбрасывает цели
+    // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
+    // сбрасывает и не сбрасывала). Свой список переходов здесь целей не
+    // сбрасывал вовсе, и из зоны тьютора Практика снова открывала вчерашний
+    // юнит домашки (ревью 08.10.2026, #79).
+    else handleNav(key)
   }
 
   // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
@@ -1420,6 +1442,18 @@ export default function App() {
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
       {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+      {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
+          не должна её перемонтировать и сбивать анимацию. Только гостю: у
+          вошедшего сообщать не о чем. */}
+      {sessionExpired && !token && (
+        <SessionExpiredNotice
+          onLogin={() => {
+            setSessionExpired(false)
+            setScreen('welcome')
+          }}
+          onClose={() => setSessionExpired(false)}
+        />
+      )}
       {/* Помощник по сайту — тоже вне обёртки с key: разговор переживает
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}

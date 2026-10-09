@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeftIcon } from '../components/icons.jsx'
-import { saveWord, getAudiobook } from '../api.js'
+import { getAudiobook } from '../api.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
+import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { Dots } from './practice/PracticeCards.jsx'
 import { chapterProgress, splitSubtitles, subtitleAt, subtitleTextFor } from '../practice/books/readAlong.js'
 
@@ -53,7 +54,19 @@ function cacheOwner(token) {
 
 async function loadStaticContent(title, token) {
   if (!_bookIndexPromise) {
-    _bookIndexPromise = fetch('/api/books').then((r) => (r.ok ? r.json() : []))
+    // Сбой не запоминаем — ни отказ сети, ни ответ с ошибкой. Раньше первый
+    // оставался отклонённым промисом, второй — пустым каталогом до перезагрузки
+    // страницы, и текст книги из статики не находился больше никогда (ревью
+    // 08.10.2026, #59). Тот же приём, что у каталогов комиксов и караоке.
+    _bookIndexPromise = fetch('/api/books')
+      .then((r) => {
+        if (!r.ok) throw new Error(`bad status ${r.status} for /api/books`)
+        return r.json()
+      })
+      .catch((err) => {
+        _bookIndexPromise = null
+        throw err
+      })
   }
   const index = await _bookIndexPromise.catch(() => [])
   const want = normTitle(title)
@@ -418,23 +431,23 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
 
+  // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
+  // общий демо-токен) — см. saveTappedWord. Сбой виден на кнопке.
   const onSave = async () => {
     if (!pop?.translation || pop.saving || pop.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
-    try {
-      const saved = await saveWord(token, {
-        word: pop.word,
-        translation: pop.translation,
-        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
-        language: tl,
-        source: book.title,
-      })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
-      onWordSaved?.(saved)
-    } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    setPop((p) => p && { ...p, saving: true, failed: false })
+    const res = await saveTappedWord({
+      word: pop.word,
+      translation: pop.translation,
+      alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+      language: tl,
+      source: book.title,
+    })
+    if (seqRef.current === seq) {
+      setPop((p) => p && { ...p, saving: false, saved: res.status === 'saved', failed: res.status === 'failed' })
     }
+    if (res.status === 'saved') onWordSaved?.(res.saved)
   }
 
   // Раскладка попапа. Карточка лежит внутри .bk-read (position: absolute),
@@ -550,10 +563,16 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           {/* Метка конца текста: прогресс главы не должен включать кнопку
               «следующая глава» и поля под ней. Пустой блок места не занимает. */}
           {text && <div ref={endRef} aria-hidden="true" />}
-          {ch < chapters.length - 1 && (
+          {/* Следующая глава закрыта демо-доступом — кнопка ничего бы не
+              открыла (openChapter закрытую пропускает), поэтому вместо неё
+              объяснение (ревью 08.10.2026, #62). */}
+          {ch < chapters.length - 1 && !chapters[ch + 1]?.locked && (
             <button className="bk-btn bk-btn--primary bk-read__next" onClick={onNext}>
               Перейти к следующей главе
             </button>
+          )}
+          {ch < chapters.length - 1 && chapters[ch + 1]?.locked && (
+            <p className="bk-read__locked">Следующие главы откроются с полным доступом к платформе.</p>
           )}
         </article>
 
@@ -562,9 +581,13 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
           <button type="button" className="bk-read__close" onClick={() => setToc(false)} aria-label={t('common.close')} />
           <div className="bk-chapters">
             {chapters.map((t, i) => (
+              // Закрытая глава — как в содержании книги: неактивна и с замком.
+              // Раньше здесь она выглядела живой, а нажатие молча ничего не
+              // делало (ревью 08.10.2026, #62).
               <button
                 key={t.id || i}
-                className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}`}
+                className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}${t.locked ? ' bk-chapter--locked' : ''}`}
+                disabled={!!t.locked}
                 onClick={() => {
                   setToc(false)
                   onPick(i)
@@ -572,7 +595,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
               >
                 <span className="bk-chapter__idx">{i + 1}</span>
                 <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>
-                <span className="bk-chapter__dur">{t.durationLabel || ''}</span>
+                <span className="bk-chapter__dur">{t.locked ? '🔒' : t.durationLabel || ''}</span>
               </button>
             ))}
           </div>
@@ -592,13 +615,23 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
             <div className="bk-pop__word">{pop.word}</div>
             <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
             {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
-            <button
-              className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
-              onClick={onSave}
-              disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
-            >
-              {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
-            </button>
+            {canSaveWords() ? (
+              <button
+                className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
+                onClick={onSave}
+                disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+              >
+                {pop.saved
+                  ? '✓ В словаре'
+                  : pop.saving
+                    ? 'Сохраняем…'
+                    : pop.failed
+                      ? 'Не сохранилось — ещё раз'
+                      : 'Сохранить в словарь'}
+              </button>
+            ) : (
+              <div className="bk-pop__hint">Войдите, чтобы сохранять слова в словарь</div>
+            )}
           </div>
         )}
       </div>

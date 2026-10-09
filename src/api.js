@@ -3,6 +3,7 @@
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
+import { reportUnauthorized } from './lib/session.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
@@ -84,6 +85,9 @@ async function authGet(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 404 у профильных полей означает «не заполнено»,
     // а не поломку — отличать это от сетевой осечки приходится по нему.
     const err = new Error(`Ошибка сервера (${res.status})`)
@@ -112,6 +116,9 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -158,6 +165,9 @@ async function authPost(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -182,6 +192,9 @@ async function authPatch(path, token, body) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -202,6 +215,9 @@ async function authDelete(path, token) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) {
+    // 401 у запроса с токеном — возможно, сессия кончилась (см. reportUnauthorized
+    // в lib/session.js: он сам отличит срок от прав и от гостевого токена).
+    if (res.status === 401) reportUnauthorized(token)
     // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
@@ -817,14 +833,15 @@ export function deleteLessonMessage(token, lessonId, messageId) {
 // GET идёт по iframe-навигации (не fetch), поэтому токен передаётся в query,
 // а не в заголовке — тот же приём, что и в web-admin (buildProgressRenderUrl).
 // forceReload добавляет nonce, чтобы iframe гарантированно перезагрузился
-// (нужно студенту, догоняющему учителя через follow=1). Nonce обязан быть
+// (нужно студенту, догоняющему учителя: снимок проигрывается в чистую страницу).
+// Страницы следования отдельным адресом больше нет — с backend#222 мост одинаков
+// в своём уроке и при следовании за классом. Nonce обязан быть
 // ДЕТЕРМИНИРОВАННЫМ от значения forceReload (а не Date.now()) - иначе src
 // меняется на каждый ре-рендер SectionMaterialFrame (например от полинга
 // "учитель начал урок" раз в 5с), и браузер молча перезагружает iframe весь
 // остаток урока, обнуляя непереживший дебаунс прогресс студента.
-export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload, studentId } = {}) {
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', forceReload, studentId } = {}) {
   const params = new URLSearchParams({ mode, access_token: token || '' })
-  if (follow) params.set('follow', '1')
   if (studentId != null) params.set('studentId', String(studentId))
   if (forceReload) params.set('_r', String(forceReload))
   return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
@@ -1405,7 +1422,15 @@ export async function saveWord(token, { word, translation, alternates, language 
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  if (!res.ok) {
+    // 401 с токеном — возможно, кончилась сессия: сообщаем, как authPost. Иначе с
+    // протухшим токеном «Сохранить в словарь» бесконечно показывало «Не
+    // сохранилось», а «Сессия истекла» не приходила (ревью 08.10.2026).
+    if (res.status === 401) reportUnauthorized(token)
+    const err = new Error(`Не удалось сохранить слово (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   dropCachedAuthGet('/mobile/lesson-vocab', token)
   // «Мой словарь» читает именно /saved: без сброса первым показывался старый
   // кэш, и слово из книги появлялось только после фонового обновления.

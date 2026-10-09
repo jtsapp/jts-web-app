@@ -30,16 +30,29 @@ export function demoTimeLeft(expiresAt, now = Date.now()) {
   }
 }
 
-// Бэкенд отдаёт LocalDateTime без зоны («2026-09-02T14:05:00»), и Safari такую
-// строку через new Date() разбирает как UTC, а Chrome — как местное время:
-// расхождение в 5 часов на одном и том же аккаунте. Достраиваем 'Z' сами, чтобы
-// обе платформы считали одинаково — сервер живёт в UTC.
+// Бэкенд отдаёт LocalDateTime без зоны («2026-10-19T03:48:24»), и это МЕСТНОЕ
+// время сервера, а не UTC: JVM живёт в Asia/Qyzylorda (-Duser.timezone в
+// compose-app.yaml), а в базе Hibernate хранит то же самое как UTC
+// (`hibernate.jdbc.time_zone: UTC`) и при чтении переводит обратно в пояс JVM.
+//
+// Safari такую строку через new Date() разбирает как UTC, а Chrome — как
+// местное время: расхождение на пять часов на одном и том же аккаунте.
+// Достраиваем смещение сами, чтобы обе платформы считали одинаково.
+//
+// ДО 08.10.2026 здесь стояло 'Z' с пометкой «сервер живёт в UTC» — это было
+// верно, пока пояс JVM не перевели на Qyzylorda (сентябрь), и с тех пор плашка
+// завышала остаток ровно на 5 часов: у Тилека в базе срок кончается 19.10 в
+// 03:48 по Казахстану, а плашка считала до 08:48. Смещение жёсткое, а не из
+// браузера, намеренно: школа в одном поясе (+05:00, без перехода на летнее
+// время), а считать нужно по поясу СЕРВЕРА, где бы ни сидел ученик.
+export const SERVER_UTC_OFFSET = '+05:00'
+
 function toMs(value) {
   if (value instanceof Date) return value.getTime()
   if (typeof value === 'number') return value
   const s = String(value).trim()
   if (!s) return null
-  const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? `${s}Z` : s
+  const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s) ? `${s}${SERVER_UTC_OFFSET}` : s
   const ms = new Date(iso).getTime()
   return Number.isNaN(ms) ? null : ms
 }

@@ -8,7 +8,7 @@
 // «Чтении»: секция и сцена держатся здесь, чтобы возврат приводил в тот же
 // срез каталога, а не в начало.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { WORDS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
@@ -99,12 +99,18 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
   }, [section, data, t])
 
   // Диплинк мог указать сцену чужой секции — подтягиваем её секцию, иначе
-  // сцена не найдётся в загруженных данных.
+  // сцена не найдётся в загруженных данных. Один раз на диплинк: эффект
+  // зависел от section и срабатывал на каждую смену секции — ученик,
+  // пришедший по ссылке, выбирал другую секцию чипом, а его возвращало
+  // обратно (ревью 08.10.2026, #50).
+  const deepLinkedRef = useRef(null)
   useEffect(() => {
     if (!meta || !initialTarget?.sceneId) return
+    if (deepLinkedRef.current === initialTarget.sceneId) return
+    deepLinkedRef.current = initialTarget.sceneId
     const owner = meta.sections.find((s) => s.scenes.some((x) => x.id === initialTarget.sceneId))
-    if (owner && owner.id !== section) setSection(owner.id)
-  }, [meta, initialTarget, section])
+    if (owner) setSection(owner.id)
+  }, [meta, initialTarget])
 
   const scene = useMemo(() => {
     if (!view.sceneId) return null

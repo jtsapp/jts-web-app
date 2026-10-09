@@ -30,10 +30,10 @@ const TEXT = {
   ],
 }
 
-function mount(onFinish = () => {}) {
+function mount(onFinish = () => {}, extra = {}) {
   return render(
     <I18nProvider>
-      <ReadingText text={TEXT} dict={null} ensureDict={() => Promise.resolve(null)} token="" onFont={() => {}} onSettings={() => {}} onFinish={onFinish} />
+      <ReadingText text={TEXT} dict={null} ensureDict={() => Promise.resolve(null)} token="" onFont={() => {}} onSettings={() => {}} onFinish={onFinish} {...extra} />
     </I18nProvider>,
   )
 }
@@ -99,5 +99,32 @@ describe('ReadingText — «Завершить» досдаёт непровер
     fireEvent.click(utils.getByRole('button', { name: /Завершить и увидеть результат/ }))
 
     expect(saved().ex[0]).toEqual({ score: 0, total: 2 })
+  })
+})
+
+// Ревью 08.10.2026: «Открыть» в «Что повторить» на телефоне вела на вкладку
+// текста — задание приходилось искать самому. Прототип открывал вкладку
+// заданий и прокручивал к нужному (data-goto, :1115).
+describe('ReadingText — переход к заданию из итогов', () => {
+  it('открывается на вкладке заданий и прокручивает к нужному', () => {
+    // В jsdom scrollIntoView нет вовсе — подставляем свой.
+    const scrolled = []
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function () {
+      scrolled.push(this.id)
+    }
+    try {
+      const utils = mount(undefined, { initialTab: 'ex', focusEx: 1 })
+      expect(utils.container.querySelector('.rd-grid2').dataset.tab).toBe('ex')
+      expect(utils.getByRole('tab', { name: /Задания/ }).getAttribute('aria-selected')).toBe('true')
+      expect(scrolled).toEqual(['rd-ex-1'])
+    } finally {
+      Element.prototype.scrollIntoView = orig
+    }
+  })
+
+  it('без перехода — как раньше, на тексте', () => {
+    const utils = mount()
+    expect(utils.container.querySelector('.rd-grid2').dataset.tab).toBe('text')
   })
 })

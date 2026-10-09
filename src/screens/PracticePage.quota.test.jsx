@@ -6,8 +6,8 @@
 // свежий ответ (check), как уже сделано в Listening и Shadowing. Но сервер
 // открытых сказок не считает — completed у них всегда 0, и свежий ответ
 // всегда «можно». Поэтому счёт ведёт сам экран (overlaySeen.js).
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, fireEvent, waitFor, act } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Всё API — пустыми ответами: экрану нужны только карточки сказок из статики.
@@ -73,5 +73,74 @@ describe('PracticePage — квота сказок проверяется в м�
     fireEvent.click(card)
     await waitFor(() => expect(openTaleWorld).toHaveBeenCalledTimes(2))
     expect(container.querySelector('.pl-limit')).toBeNull()
+  })
+})
+
+// Ревью 08.10.2026 (#80): квота мемов проверялась только на входе в ленту, а
+// лента листается дальше — демо-ученик с лимитом 1 смотрел все ролики подряд.
+describe('PracticePage — квота мемов на каждый ролик ленты', () => {
+  const CLIPS = [1, 2, 3].map((n) => ({ id: 'c' + n, mediaUrl: '/m' + n + '.mp4', thumbnailUrl: '/t' + n + '.jpg', title: 'Meme ' + n, views: 1 }))
+  let io
+
+  beforeEach(async () => {
+    const api = await import('../api.js')
+    api.getMediaClips.mockImplementation(async () => CLIPS)
+    // Ролик «в кадре» сообщает IntersectionObserver — подменяем его, чтобы
+    // листать ленту из теста.
+    io = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(cb) {
+        this.cb = cb
+        io = this
+      }
+      observe() {}
+      disconnect() {}
+    })
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve())
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  function scrollTo(container, k) {
+    const el = container.querySelector(`.rl__item[data-idx="${k}"]`)
+    act(() => io.cb([{ isIntersecting: true, target: el }]))
+  }
+
+  async function openFirstMeme() {
+    const view = render(
+      <I18nProvider>
+        <PracticePage userLevel="A1" userName="Тест" token="T" onNav={() => {}} onProfile={() => {}} />
+      </I18nProvider>,
+    )
+    const cards = await waitFor(() => {
+      const els = view.container.querySelectorAll('.pk-meme')
+      expect(els.length).toBe(3)
+      return els
+    })
+    fireEvent.click(cards[0])
+    await waitFor(() => expect(view.container.querySelector('.rl')).toBeTruthy())
+    return view
+  }
+
+  it('лимит 1: долистал до второго ролика — экран лимита', async () => {
+    const { container } = await openFirstMeme()
+    scrollTo(container, 0)
+    expect(container.querySelector('.pl-limit')).toBeNull()
+    scrollTo(container, 1)
+    await waitFor(() => expect(container.querySelector('.pl-limit')).toBeTruthy())
+    expect(container.querySelector('.rl')).toBeNull()
+  })
+
+  it('уже просмотренный ролик лимит не тратит', async () => {
+    localStorage.setItem('jts_memes_seen', JSON.stringify(['c2']))
+    check.mockResolvedValueOnce({ loading: false, allowed: true, limit: 2, completed: 0, source: 'PLAN' })
+    const { container } = await openFirstMeme()
+    scrollTo(container, 1)
+    expect(container.querySelector('.pl-limit')).toBeNull()
+    expect(container.querySelector('.rl')).toBeTruthy()
   })
 })

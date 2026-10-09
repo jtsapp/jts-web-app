@@ -79,4 +79,26 @@ describe('cleanWord / wordFromTap', () => {
     const el = { textContent: 'minutes,' }
     expect(wordFromTap(el)).toBe('minutes')
   })
+
+  // Ревью 08.10.2026: типографский апостроф вырезался, и «I’ll» уходило в
+  // переводчик как «Ill» («больной»); тире вырезалось и склеивало соседей.
+  it('типографский апостроф — тот же, что с клавиатуры: I’ll не превращается в Ill', () => {
+    expect(cleanWord('I’ll')).toBe("I'll")
+    expect(cleanWord('don’t.')).toBe("don't")
+  })
+
+  it('тире между словами — пробел, а не склейка; дефис в слове остаётся', () => {
+    expect(cleanWord('sea—the')).toBe('sea the')
+    expect(cleanWord('well-known,')).toBe('well-known')
+  })
+
+  it('кавычки вокруг слова срезаются, буквы с диакритикой остаются', () => {
+    expect(cleanWord('‘Hello’')).toBe('Hello')
+    expect(cleanWord('café,')).toBe('café')
+    expect(cleanWord("dogs'")).toBe('dogs')
+  })
+
+  it('диакритика отдельным знаком (NFD) не теряется: буква плюс знак ударения — это одна буква', () => {
+    expect(cleanWord('cafe\u0301,')).toBe('café')
+  })
 })

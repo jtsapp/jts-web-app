@@ -2668,6 +2668,36 @@ textarea {
   color: var(--purple);
   font-size: 19px;
 }
+/* Строка логотипа: справа — кнопка темы (ThemeToggle). Когда логотип скрыт
+   (рейл, планшетная колонка), кнопка остаётся одна. */
+.sb__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sb__theme {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -6px 0;
+  border: none;
+  border-radius: 12px;
+  background: #f5f2fe;
+  color: var(--purple);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.sb__theme:hover {
+  background: #ebdeff;
+}
+.sb__theme:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
 .sb__profile {
   display: flex;
   align-items: center;
@@ -3425,6 +3455,15 @@ textarea {
     background: #f5f2fe;
     color: var(--purple);
     cursor: pointer;
+  }
+
+  /* В меню кнопка темы стоит прямо под крестиком: тот же размер — и они
+     читаются ровной парой; без отрицательного отступа между ними 8px, а не
+     впритык. */
+  .sb__theme {
+    width: 40px;
+    height: 40px;
+    margin: 0;
   }
 }
 
@@ -4780,6 +4819,21 @@ textarea {
   color: var(--muted);
   text-align: center;
 }
+/* Каталог не загрузился (гость без входа или сбой запроса) — не «пусто». Текст
+   чуть плотнее обычного пустого состояния и с кнопкой повтора под ним. */
+.pp-empty--issue { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pp-empty--issue p { margin: 0; line-height: 1.45; }
+.pp-empty__retry {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, #7c4dff);
+  cursor: pointer;
+}
+.pp-empty__retry:active { opacity: 0.85; }
 .pp-note { border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
 .pp-note--err { background: #fdecec; color: #c0392b; }
 
@@ -6689,6 +6743,8 @@ textarea {
 }
 .bk-pop__save:disabled { background: #cbc6dd; cursor: default; }
 .bk-pop__save--on:disabled { background: #23b061; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.bk-pop__hint { margin-top: 10px; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
 
 /* Аудио-плеер */
 .bk-audio {
@@ -7654,6 +7710,11 @@ textarea {
      десктопную раскладку. */
 @media (min-width: 761px) and (max-width: 1023px),
        (min-width: 761px) and (hover: none) {
+  /* Вордмарк в колонке скрыт (см. ниже) — кнопка темы остаётся одна. */
+  .sb .sb__head {
+    justify-content: center;
+  }
+
   /* Десктопный рейл здесь не действует (его @media — от 1024px И только для
      устройств с указателем), но .learn--rail всё ещё висит на обёртке —
      снимаем его отступ. */
@@ -9148,6 +9209,8 @@ textarea {
 /* Глава за пределами ознакомительного доступа: кликать нечего — текста в
    ответе сервера нет (см. /api/books/[id]). */
 .bk-chapter--locked { opacity: 0.55; cursor: not-allowed; }
+/* Вместо «Перейти к следующей главе», когда она закрыта демо-доступом. */
+.bk-read__locked { margin: 24px 0 0; color: var(--muted, #6b6880); font-size: 15px; }
 .bk-ov__preview { margin: 8px 0 0; font-size: 13px; color: #6b6480; }
 
 /* ── Читалка комикса ── */
@@ -9278,6 +9341,20 @@ textarea {
   color: #8b8a97;
   font-weight: 600;
 }
+/* «Повторить» на экране сбоя загрузки комикса (ревью 08.10.2026, #60). */
+.cr__retry {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #874bf8;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cr__retry:focus-visible { outline: 2px solid #874bf8; outline-offset: 3px; }
 @media (max-width: 760px) {
   /* На телефоне стрелки мешают странице — листаем свайпом и тапом. */
   .cr__nav { display: none; }
@@ -9367,6 +9444,8 @@ textarea {
   cursor: pointer;
 }
 .cr-pop__save:disabled { opacity: 0.55; cursor: default; }
+/* Гостю вместо кнопки: своего словаря у него нет (см. saveTappedWord). */
+.cr-pop__hint { margin-top: 9px; font-size: 12.5px; line-height: 1.35; color: #a6a5b2; }
 .cr-pop__close {
   position: absolute;
   top: 8px;
@@ -9758,3 +9837,51 @@ textarea {
   padding: 14px 16px;
   background: var(--warn-bg, #fff8e8);
 }
+
+
+/* ── Плашка «Сессия истекла» (components/SessionExpiredNotice.jsx) ──
+   Поверх любого экрана, пока человек не войдёт или не закроет её сам. Янтарная,
+   а не красная: это не ошибка ввода, а объяснение, почему его снова просят войти. */
+.se-notice {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px 10px 14px;
+  border-radius: 14px;
+  background: #fff4e0;
+  color: #8a5300;
+  box-shadow: 0 8px 28px rgba(60, 40, 0, 0.18);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.se-notice__icon { flex: none; }
+.se-notice__text { flex: 1; min-width: 0; font-weight: 600; }
+.se-notice__cta {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: #8a5300;
+  cursor: pointer;
+}
+.se-notice__close {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.se-notice__close:hover { opacity: 1; }

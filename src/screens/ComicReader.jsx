@@ -11,8 +11,8 @@ import {
   ZoomOutIcon,
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { saveWord } from '../api.js'
 import { translateWord, cleanWord } from '../lib/wordTranslate.js'
+import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
 import { usePinchZoom } from '../practice/comics/usePinchZoom.js'
@@ -74,6 +74,9 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const [doc, setDoc] = useState(null)
   const [i, setI] = useState(0)
   const [failed, setFailed] = useState(false)
+  // Номер попытки загрузки: «Повторить» на экране сбоя увеличивает его и
+  // перезапускает загрузку (ревью 08.10.2026, #60).
+  const [attempt, setAttempt] = useState(0)
   // Раскрытые переводы реплик — индексы блоков на текущей странице.
   const [shown, setShown] = useState(() => new Set())
   // {word, translation, alternates, loading, saving, saved}
@@ -190,6 +193,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   useEffect(() => {
     let alive = true
+    setFailed(false)
     loadComic(token, comic).then((d) => {
       if (!alive) return
       if (!d?.pages?.length) {
@@ -203,7 +207,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     return () => {
       alive = false
     }
-  }, [token, comic, key])
+  }, [token, comic, key, attempt])
 
   const total = doc?.pages?.length || 0
   const go = useCallback(
@@ -266,23 +270,23 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
 
+  // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
+  // общий демо-токен) — см. saveTappedWord. Сбой виден на кнопке.
   const onSave = async () => {
-    if (!pop?.translation || pop.saving || pop.saved || !token) return
+    if (!pop?.translation || pop.saving || pop.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
-    try {
-      const saved = await saveWord(token, {
-        word: pop.word,
-        translation: pop.translation,
-        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
-        language: tl,
-        source: doc?.title || comic?.title,
-      })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
-      onWordSaved?.(saved)
-    } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    setPop((p) => p && { ...p, saving: true, failed: false })
+    const res = await saveTappedWord({
+      word: pop.word,
+      translation: pop.translation,
+      alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+      language: tl,
+      source: doc?.title || comic?.title,
+    })
+    if (seqRef.current === seq) {
+      setPop((p) => p && { ...p, saving: false, saved: res.status === 'saved', failed: res.status === 'failed' })
     }
+    if (res.status === 'saved') onWordSaved?.(res.saved)
   }
 
   const bar = (
@@ -321,7 +325,12 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     return (
       <div className="cr" ref={setRoot}>
         {bar}
-        <div className="cr__empty">{t('comics.failed')}</div>
+        <div className="cr__empty">
+          {t('comics.failed')}
+          <button type="button" className="cr__retry" onClick={() => setAttempt((n) => n + 1)}>
+            {t('comics.retry')}
+          </button>
+        </div>
       </div>
     )
   }
@@ -514,15 +523,17 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
                 {pop.alternates.length > 0 && (
                   <div className="cr-pop__alt">{pop.alternates.join(', ')}</div>
                 )}
-                {token && (
+                {canSaveWords() ? (
                   <button
                     type="button"
                     className="cr-pop__save"
                     onClick={onSave}
                     disabled={pop.saving || pop.saved}
                   >
-                    {pop.saved ? t('comics.saved') : t('comics.save')}
+                    {pop.saved ? t('comics.saved') : pop.failed ? t('comics.saveFailed') : t('comics.save')}
                   </button>
+                ) : (
+                  <div className="cr-pop__hint">{t('comics.saveLogin')}</div>
                 )}
               </>
             ) : (

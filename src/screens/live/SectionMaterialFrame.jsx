@@ -85,7 +85,7 @@ function scheduleCover(setCover, timerRef, key, phase, maxMs = CATCHUP_MAX_MS) {
 // отдельно от живых действий (onPresentEvent): кому его отдать — классу после
 // «Внимания» или одному догоняющему ученику — решает страница.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, stage = null, onMirror, onPresentEvent, onSnapshot, onStage, onStageList, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, reloadToken, presenting, stage = null, onMirror, onPresentEvent, onSnapshot, onStage, onStageList, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -148,19 +148,26 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // (стенд 04.10). Отдаётся одна, когда мост сообщит конец.
   const deferredStageRef = useRef(null)
   const coverTimerRef = useRef(null)
-  // Какой документ открыт в рамке. Адрес зависит не только от материала и
-  // перезагрузки: у ученика — от страницы следования, у преподавателя — от
-  // ученика, чей экран он смотрит (studentId в адресе). Сменилось любое из них —
-  // браузер грузит новую страницу, и отметки загрузки прошлой к ней не
-  // относятся: иначе действие преподавателя на прошлой странице засчитывалось бы
-  // новой, а реплей ушёл бы в перезагружающуюся страницу. Поэтому тот же ключ и
-  // у iframe, и у сброса ниже. Сброс — в эффекте раскладки: load новой страницы
-  // может прийти раньше обычных эффектов, и сброс после него снял бы её же
-  // таймер осадки.
+  // Какой документ открыт в рамке. Страницу урока сервер отдаёт по занятию и
+  // материалу, а урок файла (focusLessonNo/focusReview) рамка открывает в ней
+  // сама; у преподавателя — ещё и по ученику, чей экран он смотрит (studentId в
+  // адресе). Сменилось что-то из этого или пришла перезагрузка — браузер грузит
+  // новую страницу, и отметки загрузки прошлой к ней не относятся: иначе действие
+  // преподавателя на прошлой странице засчитывалось бы новой, а реплей ушёл бы в
+  // перезагружающуюся страницу. Поэтому тот же ключ и у iframe, и у сброса ниже.
+  // Сброс — в эффекте раскладки: load новой страницы может прийти раньше обычных
+  // эффектов, и сброс после него снял бы её же таймер осадки.
+  //
+  // Ни режима следования, ни плитки (id ссылки раздела) в ключе нет: с
+  // backend#222 мост сохраняет ответы и при следовании за классом, страница одна и
+  // та же, а та же страница у другой плитки — тот же документ. Дев 08.10.2026,
+  // урок 134: рамка открывалась заново на каждом уходе от класса и на переходе к
+  // плитке того же файла в другом разделе.
   const documentKey = [
-    material?.id,
+    material?.materialId,
+    material?.focusLessonNo ?? '',
+    material?.focusReview ? 'review' : '',
     reloadToken || 0,
-    !isStaff && follow ? 'follow' : 'own',
     isStaff ? (reviewStudentId ?? '') : '',
   ].join(':')
 
@@ -506,7 +513,6 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   const src = lessonMaterialRenderUrl(lessonId, material.materialId, token, {
     mode: isStaff ? 'review' : 'live',
-    follow: !isStaff && follow,
     forceReload: reloadToken || undefined,
     studentId: isStaff ? reviewStudentId : undefined,
   })

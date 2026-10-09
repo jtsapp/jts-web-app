@@ -3,17 +3,20 @@
 // что порт разъехался с исходником, и чинить надо порт.
 
 import { describe, expect, it } from 'vitest'
-import { ROUND_SIZE, buildSession, makeRng, poolFor, separateConfusables, shuffle } from './session.js'
+import { ROUND_SIZE, ROUND_SIZE_PORTRAIT, buildSession, makeRng, poolFor, separateConfusables, shuffle } from './session.js'
 import { SECTIONS, loadFixture, loadSection } from './__fixtures__/testData.js'
 
 describe('оракул: пул и раунды', () => {
   for (const section of SECTIONS) {
     it(`${section}: пул, раунды и их состав совпадают с прототипом`, () => {
-      const { scenes, words, confusable } = loadSection(section)
+      const { scenes, words, confusable, confusableOwn = [] } = loadSection(section)
+      // Оракул посчитан с парами прототипа — наши (#47) в сверку не берём.
+      const own = new Set(confusableOwn.map((p) => p.join('~')))
+      const proto = confusable.filter((p) => !own.has(p.join('~')))
       const oracle = loadFixture(section)
       for (const scene of scenes) {
         const rng = makeRng(oracle.seed)
-        const s = buildSession(scene, words, { rng, portrait: oracle.portrait, confusable })
+        const s = buildSession(scene, words, { rng, portrait: oracle.portrait, confusable: proto })
         expect(s.pool.map((w) => w.id), `${section}/${scene.id}: пул`).toEqual(oracle.scenes[scene.id].pool)
         expect(
           s.rounds.map((r) => r.map((w) => w.id)),
@@ -44,6 +47,25 @@ describe('нарезка на раунды', () => {
     // слова выглядит поломкой.
     const { rounds } = buildSession(scene, words(9), { seed: 1 })
     expect(rounds.map((r) => r.length)).toEqual([5, 4])
+  })
+
+  // Ревью 08.10.2026 (#51): в «Bird World» 31 слово, и на телефоне (по 6)
+  // нарезка давала 6/6/6/6/6/1 — последний раунд из одного слова.
+  it('«Bird World» на телефоне: последнего раунда из одного слова нет', () => {
+    const { rounds } = buildSession(scene, words(31), { seed: 1, portrait: true })
+    expect(rounds.map((r) => r.length)).toEqual([6, 5, 5, 5, 5, 5])
+  })
+
+  it('ни при каком размере пула раунд не короче половины самого длинного', () => {
+    for (const portrait of [false, true]) {
+      const size = portrait ? ROUND_SIZE_PORTRAIT : ROUND_SIZE
+      for (let n = 1; n <= 80; n++) {
+        const lens = buildSession(scene, words(n), { seed: 1, portrait }).rounds.map((r) => r.length)
+        expect(lens.reduce((a, b) => a + b, 0), `n=${n}`).toBe(n)
+        expect(Math.max(...lens), `n=${n} ${lens}`).toBeLessThanOrEqual(size)
+        expect(Math.min(...lens) * 2, `n=${n} ${lens}`).toBeGreaterThanOrEqual(Math.max(...lens))
+      }
+    }
   })
 
   it('пул меньше раунда остаётся одним раундом', () => {
@@ -128,5 +150,38 @@ describe('makeRng и shuffle', () => {
     const list = [1, 2, 3, 4, 5]
     shuffle(list, makeRng(1))
     expect(list).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+// Ревью 08.10.2026 (#47): в прототипе не было пар, которые на картинках
+// путают — утка и гусь, мука и рис в мешках, молоко и кефир в бутылках.
+describe('наши путаемые пары', () => {
+  const PAIRS = [['animals', 'duck', 'goose'], ['food', 'flour', 'rice'], ['food', 'milk', 'kefir']]
+
+  it('лежат в данных секции', () => {
+    for (const [section, a, b] of PAIRS) {
+      const { confusable } = loadSection(section)
+      expect(confusable.some((p) => p.includes(a) && p.includes(b)), `${a}~${b}`).toBe(true)
+    }
+  })
+
+  it('не попадают в один раунд ни при каком сиде и ориентации', () => {
+    let checked = 0
+    for (const [section, a, b] of PAIRS) {
+      const { scenes, words, confusable } = loadSection(section)
+      for (const scene of scenes) {
+        for (const portrait of [false, true]) {
+          for (let seed = 1; seed <= 30; seed++) {
+            const { rounds } = buildSession(scene, words, { seed, portrait, confusable })
+            const ra = rounds.findIndex((r) => r.some((x) => x.id === a))
+            const rb = rounds.findIndex((r) => r.some((x) => x.id === b))
+            if (ra < 0 || rb < 0 || rounds.length < 2) continue
+            checked += 1
+            expect(ra, `${section}/${scene.id} ${a}~${b} сид ${seed}`).not.toBe(rb)
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0)
   })
 })

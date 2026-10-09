@@ -14,6 +14,7 @@ import { MARKUP } from './markup.js'
 import { CSS_BASE, CSS_SHELL } from './styles.js'
 import { saveStudentVocab } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
+import { dictCount, dictOwnerOf, scopeFairytaleDict } from './dictOwner.js'
 
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap'
@@ -24,13 +25,18 @@ let styleEls = []
 let onExitCb = null
 let bridgeReady = false
 
-function ensureFairytaleVocabBridge() {
+// Ответ моста движку (vwAddCurrent в engine.js): true — слово в «Моём словаре»,
+// false — сбой (движок покажет «Не сохранилось» и снимет слово, чтобы можно было
+// нажать ещё раз), 'guest' — без входа «Моего словаря» нет, слово остаётся в
+// словаре сказки. Раньше гость тоже получал false, но движок ответ не смотрел и
+// всегда писал «Добавлено» (ревью 08.10.2026).
+export function ensureFairytaleVocabBridge() {
   if (bridgeReady || typeof window === 'undefined') return
   bridgeReady = true
   window.__jtsFairytaleSaveVocab = async (entry) => {
     if (!entry?.w) return false
     const token = loadToken()
-    if (!token) return false
+    if (!token) return 'guest'
     const hintRu = entry.ru || ''
     const hintKk = entry.kk || ''
     const body = {
@@ -124,9 +130,24 @@ function ensureWorld() {
 // иначе — на выбор персонажа. Неизвестный id откроет библиотеку движка.
 export function openTaleWorld(taleId, { onExit } = {}) {
   onExitCb = onExit || null
+  // До движка: при первом открытии он читает «Мои слова» уже при создании
+  // (счётчик на кнопке).
+  const existed = !!world
+  scopeFairytaleDict(dictOwnerOf(loadToken()))
   ensureFont()
   injectStyles()
   const w = ensureWorld()
+  // Движок живёт до перезагрузки и счётчик сам обновляет только на правке
+  // списка — после смены ученика он показывал бы число прежнего владельца.
+  // Разметка та же, что у vwRefreshBadge движка.
+  if (existed) {
+    const badge = document.getElementById('vwCount')
+    if (badge) {
+      const n = dictCount()
+      badge.textContent = n
+      badge.style.display = n ? 'inline-flex' : 'none'
+    }
+  }
   host.style.display = ''
   const pack = (w.TALES || []).find((p) => p.id === taleId)
   if (!pack) {

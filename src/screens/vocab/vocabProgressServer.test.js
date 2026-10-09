@@ -52,8 +52,12 @@ describe('«Словарь» при забитом localStorage', () => {
 describe('«Словарь» на сервере', () => {
   it('вошедший: отметка уходит на сервер модулем vocabLearned', () => {
     localStorage.setItem(TOKEN_KEY, jwt('7'))
+    // До ответа сервера раздел не отправляется: сервер хранит его заменой, и
+    // ранняя запись стёрла бы серверное (ревью 08.10.2026, #78).
     recordVocabLearned(jwt('7'), 'A0', ['like'])
-    expect(pushModule).toHaveBeenLastCalledWith('vocabLearned', { scopes: { A0: ['like'] } })
+    expect(pushModule).not.toHaveBeenCalled()
+    adoptHydratedState({}, ownerOf(jwt('7')))
+    expect(pushModule).toHaveBeenLastCalledWith('vocabLearned', { scopes: { A0: ['like'] } }, expect.any(Function))
   })
 
   it('ответ сервера попадает в счётчик', () => {
@@ -61,6 +65,17 @@ describe('«Словарь» на сервере', () => {
     adoptHydratedState({ vocabLearned: { scopes: { A1: ['go', 'be'] } }, vocabMisses: { words: { go: { word: 'go', misses: 3, at: 1 } } } }, ownerOf(jwt('7')))
     expect(learnedCount(jwt('7'), 'A1')).toBe(2)
     expect(topVocabMisses(jwt('7'), 1)[0]).toMatchObject({ key: 'go', misses: 3 })
+  })
+})
+
+// Независимое ревью PR: список «изучено» уровня заменялся целиком — новое
+// слово на новом устройстве стирало изученное на другом.
+describe('«Словарь» — новое устройство до ответа сервера', () => {
+  it('изученное на другом устройстве не стирается новым словом', () => {
+    localStorage.setItem(TOKEN_KEY, jwt('7'))
+    recordVocabLearned(jwt('7'), 'A0', ['like'])
+    adoptHydratedState({ vocabLearned: { scopes: { A0: ['go', 'run'] } } }, ownerOf(jwt('7')))
+    expect([...learnedKeys(jwt('7'), 'A0')].sort()).toEqual(['go', 'like', 'run'])
   })
 })
 
@@ -87,7 +102,7 @@ describe('перенос старого блоба', () => {
     localStorage.setItem(LEGACY_LEARNED, JSON.stringify({ 7: { A0: ['like'] } }))
     adoptHydratedState({ vocabLearned: { scopes: { A0: ['go'] } } }, ownerOf(token))
     expect([...learnedKeys(token, 'A0')].sort()).toEqual(['go', 'like'])
-    expect(pushModule).toHaveBeenLastCalledWith('vocabLearned', { scopes: { A0: ['go', 'like'] } })
+    expect(pushModule).toHaveBeenLastCalledWith('vocabLearned', { scopes: { A0: ['go', 'like'] } }, expect.any(Function))
     expect(localStorage.getItem(LEGACY_LEARNED)).toBeNull()
   })
 

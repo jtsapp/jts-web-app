@@ -4,7 +4,7 @@
 // следующего, а неудача — вернуть чужие дельты в буфер (их отправили бы уже
 // под новым токеном).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { recordSkill, flushSkillStats, clearLocalSkillStats } from './skillStats.js'
+import { recordSkill, flushSkillStats, clearLocalSkillStats, readLocalSkillStats } from './skillStats.js'
 
 const TOKEN_KEY = 'jts_access_token'
 
@@ -17,6 +17,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  clearLocalSkillStats()
 })
 
 function deferredFetch() {
@@ -115,6 +117,79 @@ describe('skillStats — смена пользователя во время о�
     clearLocalSkillStats()
     localStorage.setItem(TOKEN_KEY, 'TOK-B')
     await vi.advanceTimersByTimeAsync(2000)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+// Ревью 08.10.2026: хранилище домена забивает кэш каталогов, запись буфера
+// дельт молча падала, а флаш читал буфер оттуда же — прирост навыков не
+// доходил до сервера никогда.
+describe('skillStats — забитое хранилище', () => {
+  function fillStorage() {
+    return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+  }
+
+  it('дельты, не влезшие в хранилище, всё равно уходят на сервер', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ stats: null }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    const spy = fillStorage()
+    recordSkill('grammar', true)
+    recordSkill('grammar', false)
+    flushSkillStats()
+    spy.mockRestore()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.deltas.grammar).toEqual({ done: 2, firstTry: 1 })
+  })
+
+  it('отправленное из памяти второй раз не уходит', async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ stats: null }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    const spy = fillStorage()
+    recordSkill('grammar', true)
+    flushSkillStats()
+    await vi.runAllTimersAsync()
+    flushSkillStats()
+    spy.mockRestore()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('сбой отправки при забитом хранилище не теряет дельты', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let calls = 0
+    const fetchMock = vi.fn(async () => {
+      calls += 1
+      if (calls === 1) throw new Error('offline')
+      return { ok: true, json: async () => ({ stats: null }) }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    fillStorage()
+    recordSkill('grammar', true)
+    flushSkillStats()
+    await vi.runAllTimersAsync()
+    flushSkillStats()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).deltas.grammar).toEqual({ done: 1, firstTry: 1 })
+  })
+
+  it('прирост виден в сводке, даже когда зеркало не записалось', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+    fillStorage()
+    recordSkill('grammar', true)
+    expect(readLocalSkillStats().grammar).toMatchObject({ done: 1, firstTry: 1 })
+  })
+
+  it('выход забывает и то, что жило только в памяти', () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }))
+    vi.stubGlobal('fetch', fetchMock)
+    const spy = fillStorage()
+    recordSkill('grammar', true)
+    spy.mockRestore()
+    clearLocalSkillStats()
+    expect(readLocalSkillStats().grammar).toMatchObject({ done: 0 })
+    flushSkillStats()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })

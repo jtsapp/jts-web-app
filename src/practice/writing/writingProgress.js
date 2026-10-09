@@ -33,12 +33,25 @@ function normalize(val) {
   return { tasks: {}, seen: {} }
 }
 
+// Результат задания — лучший из попыток (markTask). Правка, посчитанная от
+// устаревшего черновика (сбой отправки, другое устройство), не должна понижать
+// лучший результат, который уже лежит на сервере (ревью PR, #78).
+function bestTasks(server, next) {
+  const tasks = { ...next.tasks }
+  for (const [k, mine] of Object.entries(tasks)) {
+    const theirs = server.tasks[k]
+    if (theirs && (theirs.correct || 0) > (mine?.correct || 0)) tasks[k] = theirs
+  }
+  return { ...next, tasks }
+}
+
 const store = createProgressStore({
   module: 'writing',
   key: KEY,
   event: EVENT,
   empty: () => ({ tasks: {}, seen: {} }),
   normalize,
+  settle: bestTasks,
 })
 
 // Состояние общее с памятью хранилища — только читать; писатели собирают новое.

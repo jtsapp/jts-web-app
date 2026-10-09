@@ -189,14 +189,18 @@ export function markExercise(textId, index, score, total) {
   commit({ texts: { [textId]: { ex: { [index]: { score, total } } } } })
 }
 
-/** Отметка «дошёл до экрана результата». Идемпотентна. */
+/** Отметка «дошёл до экрана результата». Состояние пишется один раз. */
 export function markTextDone(textId) {
   if (!textId) return
-  if (textState(textId)?.done) return
-  commit({ texts: { [textId]: { ex: {}, done: true } } })
+  if (!textState(textId)?.done) commit({ texts: { [textId]: { ex: {}, done: true } } })
   // Текст — единица домашней работы, и закрывается он целиком: отчёт без
   // чисел, сервер понимает его как «пройден». Уровень выводится из id
   // (a1-sci-honey), поэтому отдельно его тащить не нужно.
+  //
+  // И при повторном прохождении тоже: раньше отчёт стоял после раннего выхода
+  // «уже дочитан», и текст, прочитанный до того, как его задали на дом, в
+  // домашке не засчитывался никогда (ревью 08.10.2026). Бэкенд повтор
+  // игнорирует — так же устроена грамматика (markUnitDone).
   countUnitTowardsHomework('reading', String(textId).split('-')[0], textId)
 }
 

@@ -10,21 +10,77 @@
 
 import { norm } from './engine.js'
 
+// Слова, у которых догадка по окончанию находит в словаре не то: либо это вовсе
+// не форма (news → new «новый», Peter → pet, sheer → she), либо у основы в
+// словаре один смысл, и не этот (marks → «Марк», missed → «мисс», willing →
+// «(будущее время)»). Собраны прогоном всех слов текстов A1–C1 (08.10.2026);
+// уверенная ошибка хуже, чем ответ сетевого переводчика.
+const STEM_TRAPS = new Set([
+  'news', 'goods', 'sheer', 'peter', 'shower', 'drawer', 'willing',
+  'forester', 'counter', 'owner', 'marks', 'marker', 'missed', 'lays',
+])
+
+// w/x/y согласными не считаем: show·ing, fix·ing, play·ing немой e не теряли.
+const CONS = /[bcdfghjklmnpqrstvz]/
+const VOWEL = /[aeiouy]/
+
 /**
- * Формы, под которыми слово может лежать в словаре. Прототип складывал
- * окончания вручную (:657–665) — правила школьные, но словарь собран под них.
+ * Основа перед -ing, скорее всего, потеряла немую e, если кончается на
+ * «согласная + гласная + согласная» (car, shin, hop) или это «гласная +
+ * согласная» из двух букв (us): такую основу без e английский удвоил бы —
+ * hopping, а не hoping. У многосложных visit·ing, open·ing вариант с e тоже
+ * идёт первым, но visite и opene в словаре нет, так что ошибиться он не может.
+ */
+function lostSilentE(stem) {
+  const n = stem.length
+  return n >= 2 && CONS.test(stem[n - 1]) && VOWEL.test(stem[n - 2]) && (n === 2 || !VOWEL.test(stem[n - 3]))
+}
+
+/**
+ * Формы, под которыми слово может лежать в словаре. Окончания — школьные, как
+ * в прототипе (:657–665), но порядок другой: прототип пробовал КОРОТКУЮ основу
+ * первой, и она перехватывала верную — used/using → us «нас», times → tim
+ * «Тим», notes → not, Bees → be, as → артикль a (ревью 08.10.2026). Поэтому:
+ *   - -s раньше -es, а -es — только после шипящих и o (box·es, hero·es, но
+ *     не run·es → run);
+ *   - у -ed и -er сначала срезаем одну букву (use·d, late·r), потом две;
+ *   - у -ing основа с немой e первой, если без неё по правилу было бы удвоение;
+ *   - основа -s/-es/-ed/-er не короче трёх букв (as → a, toes → to), а у
+ *     -ing и 's хватает двух (being, doing, it's);
+ *   - снятое удвоение (planning → plan) — последней попыткой.
  */
 export function baseForms(word) {
   const w = norm(word)
   if (!w) return []
   const out = [w]
-  if (w.endsWith("'s")) out.push(w.slice(0, -2))
-  if (w.endsWith('ies')) out.push(w.slice(0, -3) + 'y')
-  if (w.endsWith('es')) out.push(w.slice(0, -2))
-  if (w.endsWith('s')) out.push(w.slice(0, -1))
-  if (w.endsWith('ing')) out.push(w.slice(0, -3), w.slice(0, -3) + 'e')
-  if (w.endsWith('ed')) out.push(w.slice(0, -2), w.slice(0, -1))
-  if (w.endsWith('er')) out.push(w.slice(0, -2))
+  if (STEM_TRAPS.has(w)) return out
+  const add = (stem, min = 3) => {
+    if (stem.length >= min && !out.includes(stem)) out.push(stem)
+  }
+  const doubled = []
+
+  if (w.endsWith("'s")) add(w.slice(0, -2), 2)
+  else if (w.endsWith('s')) {
+    add(w.slice(0, -1))
+    if (w.endsWith('ies')) add(w.slice(0, -3) + 'y')
+    if (/(s|x|z|ch|sh|o)es$/.test(w)) add(w.slice(0, -2))
+  }
+  if (w.endsWith('ing')) {
+    const stem = w.slice(0, -3)
+    if (lostSilentE(stem)) add(stem + 'e', 2)
+    add(stem, 2)
+    add(stem + 'e', 2)
+    doubled.push(stem)
+  }
+  for (const suf of ['ed', 'er']) {
+    if (!w.endsWith(suf)) continue
+    add(w.slice(0, -1))
+    add(w.slice(0, -2))
+    doubled.push(w.slice(0, -2))
+  }
+  for (const stem of doubled) {
+    if (/([bcdfghjklmnpqrstvz])\1$/.test(stem)) add(stem.slice(0, -1))
+  }
   return out
 }
 

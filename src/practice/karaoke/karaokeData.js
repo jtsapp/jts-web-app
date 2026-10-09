@@ -27,7 +27,12 @@ export function loadKaraokeIndex(token, onFresh) {
   if (!_indexPromise) {
     _indexPromise = getKaraokeTracks(token, (fresh) => onFresh?.(normalizeTracks(fresh)))
       .then(normalizeTracks)
-      .catch(() => [])
+      .catch((err) => {
+        // Пустой ответ при отказе запоминался до перезагрузки вкладки (см. то же
+        // место в comicsData.js): один сбой сети оставлял раздел без треков.
+        _indexPromise = null
+        throw err
+      })
   }
   return _indexPromise
 }
@@ -54,12 +59,21 @@ export async function loadLyrics(track, token) {
   if (!key) return null
   if (_lyricsCache.has(key)) return _lyricsCache.get(key)
 
-  const result = await (async () => {
-    if (track.lyrics) return normalizeLyrics(track.lyrics)
-    if (track.id == null) return null
-    const full = await loadKaraokeTrack(token, track.id)
-    return full?.lyrics ? normalizeLyrics(full.lyrics) : null
-  })()
+  let result
+  if (track.lyrics) result = normalizeLyrics(track.lyrics)
+  else if (track.id == null) result = null
+  else {
+    let full
+    try {
+      full = normalizeTrack(await getKaraokeTrack(token, track.id))
+    } catch {
+      // Сбой сети — не ответ «разметки нет»: не запоминаем, иначе песня не
+      // открывалась бы до перезагрузки вкладки (ревью 08.10.2026, #61). Тот
+      // же приём, что у каталога выше.
+      return null
+    }
+    result = full?.lyrics ? normalizeLyrics(full.lyrics) : null
+  }
 
   _lyricsCache.set(key, result)
   return result
