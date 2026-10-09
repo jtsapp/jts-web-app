@@ -5,6 +5,7 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance, getDemoAccess, getIeltsMe } from '../api.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
+import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
 import {
@@ -167,8 +168,11 @@ export default function Sidebar({
           <CloseIcon size={22} />
         </button>
 
-        <div className="sb__logo">
-          <Logo variant="dark" />
+        <div className="sb__head">
+          <div className="sb__logo">
+            <Logo variant="dark" />
+          </div>
+          <ThemeToggle />
         </div>
 
         <button className="sb__profile" onClick={pick(onProfile)}>

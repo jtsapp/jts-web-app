@@ -30,6 +30,15 @@ const DEFAULT_SRC = path.join(ROOT, 'data', 'jtswords.html')
 const OUT_DIR = path.join(ROOT, 'public', 'practice', 'words')
 const FIXTURES_DIR = path.join(ROOT, 'src', 'practice', 'words', '__fixtures__')
 
+// Пары, которых в прототипе нет, а на картинках их путают: утка и гусь, мука
+// и рис в одинаковых мешках, молоко и кефир в одинаковых бутылках (ревью
+// 08.10.2026, #47). Пишутся в данные рядом с прототипными.
+const OWN_CONFUSABLE = [
+  ['duck', 'goose'],
+  ['flour', 'rice'],
+  ['milk', 'kefir'],
+]
+
 const SECTION_IDS = ['animals', 'food', 'clothes', 'house', 'body']
 // Ожидаемый состав. Прототип может дополниться, но молча потерять половину
 // материала он не должен — поэтому нижние границы, а не «сколько получилось».
@@ -292,11 +301,15 @@ function main() {
     // Путаемые пары этой секции: разводить frog/toad по разным раундам умеет
     // движок, а какие именно пары путаются — данные, и живут они рядом с ними.
     const sectionIds = new Set(sectionWords.map((w) => w.id))
-    const confusable = CONFUSABLE.filter(([a, b]) => sectionIds.has(a) && sectionIds.has(b))
+    const inSection = ([a, b]) => sectionIds.has(a) && sectionIds.has(b)
+    const own = OWN_CONFUSABLE.filter(inSection)
+    const confusable = [...CONFUSABLE.filter(inSection), ...own]
 
     write(path.join(OUT_DIR, `${section.id}.json`), {
       section: section.id,
       confusable,
+      // Наши пары сверх прототипных — оракул сверяется без них.
+      confusableOwn: own,
       scenes: envs.map((e) => ({
         id: e.id,
         name: e.name,

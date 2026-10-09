@@ -4,7 +4,9 @@
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
 import { payloadOf } from './lib/jwt.js'
 import { reportUnauthorized } from './lib/session.js'
+import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
+import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
@@ -1038,6 +1040,9 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
       phone: normalizePhone(phone),
       email,
       birthDate,
+      // Откуда пришёл (лендинг, реклама) — для тега и меток сделки в amoCRM.
+      // Бэкенд игнорирует незнакомые поля, так что веб можно катить раньше.
+      ...registrationFields(readAttribution(safeStorage())),
     })
     return 'register'
   } catch (e) {
@@ -1052,13 +1057,18 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
 // больше не требуется.
 export async function verifyRegistrationOtp(name, phone, email, code, birthDate) {
   try {
-    return await post('/registration/verify', {
+    const res = await post('/registration/verify', {
       name: name || 'Гость',
       phone: normalizePhone(phone),
       email,
       birthDate,
       otp: code,
+      // Именно здесь бэкенд создаёт аккаунт и заявку менеджеру.
+      ...registrationFields(readAttribution(safeStorage())),
     })
+    // Метка своё отработала: следующий аккаунт с этого браузера уже не «с лендинга».
+    clearAttribution(safeStorage())
+    return res
   } catch (e) {
     // Гонка двух вкладок / повтор OTP после уже созданного аккаунта раньше
     // доезжала как 500 «не удалось выполнить операцию в базе данных».
@@ -1740,7 +1750,12 @@ export async function getDemoAccess(token) {
   if (!token) return { isDemo: false, expiresAt: null }
   if (_demoAccess.has(token)) return _demoAccess.get(token)
   const p = authGet('/user/me', token)
-    .then((data) => ({ isDemo: !!data?.isDemoAccount, expiresAt: data?.demoExpiresAt || null }))
+    .then((data) => {
+      const isDemo = !!data?.isDemoAccount
+      const expiresAt = data?.demoExpiresAt || null
+      rememberDemoDeadline(isDemo ? expiresAt : null)
+      return { isDemo, expiresAt }
+    })
     .catch(() => {
       // Сетевая осечка не должна залипать в памяти: следующий экран спросит
       // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —

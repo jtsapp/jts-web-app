@@ -313,3 +313,34 @@ test.describe('вход из Практики', () => {
     await expect(page.locator('.wd-hero h1')).toHaveText('Слова в картинках')
   })
 })
+
+// Ревью «Практики» 08.10.2026.
+test.describe('ревью 08.10.2026', () => {
+  test('#50: пришёл по ссылке на сцену — чип другой секции не отбрасывает обратно', async ({ page }) => {
+    await openScene(page)
+    await page.locator('.wd-back').click()
+    await expect(page.locator('.wd-hero h1')).toHaveText('Слова в картинках')
+    await page.locator('.wd-chip', { hasText: 'Еда' }).click()
+    const food = meta.sections.find((s) => s.id === 'food')
+    await expect(page.locator('.wd-card')).toHaveCount(food.scenes.length)
+    // Эффект диплинка раньше срабатывал на смену секции и возвращал «Животных».
+    await page.waitForTimeout(500)
+    await expect(page.locator('.wd-card')).toHaveCount(food.scenes.length)
+  })
+
+  test('#48: во время игры пробел в поле ввода печатается, а не глушится', async ({ page }) => {
+    test.slow()
+    await openScene(page)
+    await page.locator('.wd-preview__text .wd-btn').click()
+    await expect(page.locator('.wd-sprite').first()).toBeVisible()
+    // Поле ассистента живёт поверх любой страницы — ставим своё такое же.
+    await page.evaluate(() => {
+      const el = document.createElement('textarea')
+      el.id = 'chat-probe'
+      document.body.appendChild(el)
+    })
+    await page.locator('#chat-probe').click()
+    await page.keyboard.type('two words')
+    await expect(page.locator('#chat-probe')).toHaveValue('two words')
+  })
+})
