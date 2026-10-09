@@ -8,7 +8,7 @@
 import { headers } from 'next/headers'
 import '../../landing.css'
 import Landing from '../../landing/Landing.jsx'
-import { APP_LOGIN_URL, APP_START_URL, pickContent } from '../../landing/content.js'
+import { APP_LOGIN_URL, pickContent } from '../../landing/content.js'
 import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../landing/hostRouting.js'
 import { landingAppPath, pickUtm } from '../../lib/attribution.js'
 
@@ -28,12 +28,12 @@ export default async function LandingPage({ searchParams }) {
   const lang = await langOf(searchParams)
   const onLandingHost = parseHosts(process.env.LANDING_HOSTS).has(requestHost(await headers()))
   const appUrl = normalizeAppUrl(process.env.APP_PUBLIC_URL)
-  // Кнопки уводят в приложение с from=landing и метками рекламы, что привела
-  // сюда: иначе зарегистрировавшийся там в amoCRM неотличим от пришедшего
-  // прямо в приложение (src/lib/attribution.js).
+  // «Войти» уводит в приложение с from=landing и метками рекламы, что привела
+  // сюда: иначе пришедший отсюда в amoCRM неотличим от пришедшего прямо в
+  // приложение (src/lib/attribution.js). «Начать обучение» ведёт к форме
+  // на этой же странице — ссылка ей не нужна.
   const utm = pickUtm(await searchParams)
   const links = {
-    start: appLink(landingAppPath(APP_START_URL, utm), { onLandingHost, appUrl }),
     login: appLink(landingAppPath(APP_LOGIN_URL, utm), { onLandingHost, appUrl }),
     // ҚАЗ/РУС меняют только язык: голый «?lang=kz» стёр бы метки рекламы.
     langRu: '?' + new URLSearchParams({ lang: 'ru', ...utm }),

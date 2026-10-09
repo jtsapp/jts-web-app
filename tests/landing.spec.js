@@ -7,17 +7,24 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/landing')
 })
 
-test('первый экран и кнопки входа ведут в приложение', async ({ page }) => {
+test('первый экран: «Войти» ведёт в приложение, «Начать обучение» — к заявке', async ({ page }) => {
   await expect(page.locator('h1')).toContainText('по цене групповых')
   // На телефоне кнопки живут в нижней панели, на десктопе — в шапке.
-  // from=landing — чтобы регистрация в приложении ушла в amoCRM с тегом «Лендинг».
-  const start = page.locator('a:visible', { hasText: 'Начать обучение' }).first()
-  await expect(start).toHaveAttribute('href', '/?screen=chat&from=landing')
+  // from=landing — чтобы пришедший в приложение ушёл в amoCRM с тегом «Лендинг».
   const login = page.locator('a:visible', { hasText: 'Войти' }).first()
   await expect(login).toHaveAttribute('href', '/?screen=login-password&from=landing')
+  // «Начать обучение», как и «Попробовать бесплатно 24 часа», — к форме
+  // заявки на этой же странице, а не в регистрацию приложения.
+  const start = page.locator('a:visible', { hasText: 'Начать обучение' }).first()
+  await expect(start).toHaveAttribute('href', '#trial')
+  await start.click()
+  // Как и у «Попробовать бесплатно»: в экран встаёт начало секции заявки —
+  // на телефоне сама форма ниже её заголовка.
+  await expect(page.locator('#trial')).toBeInViewport()
+  expect(new URL(page.url()).pathname).toBe('/landing')
 })
 
-test('кнопка «Начать обучение» → регистрация уходит с меткой лендинга и рекламы', async ({ page }) => {
+test('регистрация, пришедшая с лендинга, уходит с меткой лендинга и рекламы', async ({ page }) => {
   // Бэкенд замокан: проверяем, что приложение донесло метку до запроса
   // регистрации, а не то, что с ней сделает amoCRM.
   let initiate = null
@@ -26,10 +33,9 @@ test('кнопка «Начать обучение» → регистрация 
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"messages":["OTP sent"]}' })
   })
 
-  await page.goto('/landing?utm_source=instagram&utm_campaign=autumn')
-  const start = page.locator('a:visible', { hasText: 'Начать обучение' }).first()
-  await expect(start).toHaveAttribute('href', '/?screen=chat&from=landing&utm_source=instagram&utm_campaign=autumn')
-  await start.click()
+  // Такой адрес даёт /api/landing/lead, когда код передачи не собрать (нет
+  // секрета): заявка ушла, а человек идёт в регистрацию с начала.
+  await page.goto('/?screen=chat&from=landing&utm_source=instagram&utm_campaign=autumn')
 
   // Метка запомнена, а из адреса убрана — поделись им человек, она метила бы других.
   await expect(page.locator('.chat__input input')).toBeVisible({ timeout: 20000 })
