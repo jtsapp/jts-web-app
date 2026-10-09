@@ -16,8 +16,13 @@ class FakeCanvas {
     this.isDrawingMode = false
     this.selection = false
     this.setDimensions = vi.fn()
+    this.viewportTransform = [1, 0, 0, 1, 0, 0]
     canvases.push(this)
   }
+  setViewportTransform(v) { this.viewportTransform = v }
+  setCursor() {}
+  getZoom() { return this.viewportTransform[0] }
+  getVpCenter() { return { x: this.opts.width / 2, y: this.opts.height / 2 } }
   on() {}
   off() {}
   add() {}

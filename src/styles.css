@@ -7935,8 +7935,19 @@ textarea {
 /* Высота — по остатку экрана, без верхнего потолка: доска и есть содержимое
    вкладки, и держать её в 860px на большом мониторе значило бы рисовать в
    верхней трети. */
-.board__stage { position: relative; overflow: auto; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; width: 100%; height: clamp(420px, calc(100vh - 210px), 1400px); }
-.board__canvas { display: block; }
+.board__stage { position: relative; overflow: hidden; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; width: 100%; height: clamp(420px, calc(100vh - 210px), 1400px); }
+.board__canvas { display: block; touch-action: none; }
+/* Лист бесконечный: холст по окну, а двигают его колесом, «Рукой» и полосами — родная прокрутка не нужна. */
+.board__zoom { min-width: 48px; height: 32px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.board__zoom:hover { background: #f3f4f6; }
+.board__scroll { position: absolute; z-index: 6; border-radius: 6px; background: rgba(0,0,0,.04); opacity: .55; transition: opacity .15s ease; }
+.board__scroll:hover { opacity: 1; }
+.board__scroll--v { top: 6px; right: 3px; bottom: 18px; width: 10px; }
+.board__scroll--h { left: 6px; bottom: 3px; right: 18px; height: 10px; }
+.board__thumb { position: absolute; border-radius: 6px; background: #8a8794; cursor: grab; touch-action: none; }
+.board__thumb:active { cursor: grabbing; }
+.board__scroll--v .board__thumb { left: 0; right: 0; min-height: 28px; }
+.board__scroll--h .board__thumb { top: 0; bottom: 0; min-width: 28px; }
 .board__cursor { position: absolute; transform: translate(-2px, -2px); pointer-events: none; z-index: 5; }
 .board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
 .board__cursor-name { position: absolute; left: 12px; top: -2px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #fff; background: #7a4dff; border-radius: 6px; padding: 1px 6px; }
