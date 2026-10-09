@@ -244,7 +244,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // position, and applying a stale one after a reload would be wrong, not late.
     mirror(event) {
       if (!loadedRef.current || (lessonNoRef.current != null && !settledRef.current)) return
-      post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
+      // seq — место события в потоке ответов ученика: по нему рамка замечает потерянное в пути и докачивает.
+      post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null, seq: event.seq ?? null })
     },
     // Переход на стадию файлового урока — свой, из «Тем»: признак «моя
     // стадия» взводится в момент отправки, и стадию классу отдаёт отчёт движка
@@ -355,6 +356,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   function handleLoad() {
     loadedRef.current = true
+    // Рамка преподавателя узнаёт, что страница передаёт номера событий ученика (seq): только тогда она докачивает
+    // потерянное из сохранённого потока. Без этого сообщения (страница старой сборки) зеркало идёт как раньше.
+    if (isStaff) post({ type: 'mirror-seq' })
     const lessonNo = lessonNoRef.current
     clearTimeout(lessonTimerRef.current)
     if (lessonNo != null) {
@@ -450,7 +454,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       }
       if (!isStaff) {
         if (data.type === 'mirror') {
-          onMirror?.({ selector: data.selector, eventType: data.eventType, value: data.value ?? null })
+          // seq есть у ответов (клик, ввод), у прокрутки и старых страниц его нет — тогда поле не уходит вовсе.
+          onMirror?.({
+            selector: data.selector, eventType: data.eventType, value: data.value ?? null,
+            seq: typeof data.seq === 'number' ? data.seq : undefined,
+          })
         }
         return
       }
