@@ -289,10 +289,15 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     }
     // Пробел — временная «Рука», как в графических редакторах. Только пока курсор над доской и
     // не в поле ввода: иначе пробел перестал бы прокручивать страницу и печататься в чате.
-    const typingTarget = (el) => !!el?.closest?.('input, textarea, select, button, [contenteditable="true"]')
+    // Кнопка панели полем ввода не считается: после выбора инструмента фокус остаётся на ней, и
+    // пробел «не работал бы» ровно тогда, когда его ждут. Зато пробел на кнопке нажимает её при
+    // отпускании — это мы гасим (swallowKeyUp), иначе «Рука» заодно нажала бы «Удалить».
+    const textEntry = (el) => !!el?.closest?.('input, textarea, select, [contenteditable="true"]')
+    let swallowKeyUp = false
     const onKeyDown = (e) => {
-      if (e.key !== ' ' || !hovering || typingTarget(e.target)) return
+      if (e.key !== ' ' || !hovering || textEntry(e.target)) return
       e.preventDefault()
+      swallowKeyUp = true
       spaceDownRef.current = true
       applyCursor()
     }
@@ -301,7 +306,11 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       spaceDownRef.current = false
       applyCursor()
     }
-    const onKeyUp = (e) => { if (e.key === ' ') releaseSpace() }
+    const onKeyUp = (e) => {
+      if (e.key !== ' ') return
+      if (swallowKeyUp) { e.preventDefault(); swallowKeyUp = false }
+      releaseSpace()
+    }
     const onEnter = () => { hovering = true }
     const onLeave = () => { hovering = false; releaseSpace() }
     if (stageEl) {

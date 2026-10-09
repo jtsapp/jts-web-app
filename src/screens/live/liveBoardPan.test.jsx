@@ -220,6 +220,31 @@ describe('LiveBoard — лист двигается во все стороны',
     expect(reachedCanvas).toHaveBeenCalled()
   })
 
+  it('пробел работает и когда фокус остался на кнопке панели, и не нажимает её при отпускании', async () => {
+    const { stage, surface, canvas } = await mount()
+    const select = screen.getByRole('button', { name: 'Курсор' })
+    select.focus()
+    await act(async () => { fireEvent.mouseEnter(stage) })
+    const clicked = vi.fn()
+    select.addEventListener('click', clicked)
+
+    const down = new KeyboardEvent('keydown', { key: ' ', cancelable: true, bubbles: true })
+    await act(async () => { select.dispatchEvent(down) })
+    expect(down.defaultPrevented).toBe(true)
+    await act(async () => {
+      fireEvent.mouseDown(surface, { button: 0, clientX: 300, clientY: 400 })
+      fireEvent.mouseMove(window, { clientX: 300, clientY: 340 })
+      fireEvent.mouseUp(window)
+    })
+    expect(ty(canvas)).toBe(-60)
+
+    // Курсор ушёл с доски, пока пробел зажат, — отпускание всё равно не нажимает кнопку.
+    await act(async () => { fireEvent.mouseLeave(stage) })
+    const up = new KeyboardEvent('keyup', { key: ' ', cancelable: true, bubbles: true })
+    await act(async () => { select.dispatchEvent(up) })
+    expect(up.defaultPrevented).toBe(true)
+  })
+
   it('пробел в поле ввода (чат) доску не двигает и печататься не мешает', async () => {
     const { stage } = await mount()
     await act(async () => { fireEvent.mouseEnter(stage) })

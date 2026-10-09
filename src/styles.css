@@ -7944,10 +7944,10 @@ textarea {
 .board__scroll:hover { opacity: 1; }
 .board__scroll--v { top: 6px; right: 3px; bottom: 18px; width: 10px; }
 .board__scroll--h { left: 6px; bottom: 3px; right: 18px; height: 10px; }
-.board__thumb { position: absolute; min-width: 28px; min-height: 28px; border-radius: 6px; background: #8a8794; cursor: grab; touch-action: none; }
+.board__thumb { position: absolute; border-radius: 6px; background: #8a8794; cursor: grab; touch-action: none; }
 .board__thumb:active { cursor: grabbing; }
-.board__scroll--v .board__thumb { left: 0; right: 0; }
-.board__scroll--h .board__thumb { top: 0; bottom: 0; }
+.board__scroll--v .board__thumb { left: 0; right: 0; min-height: 28px; }
+.board__scroll--h .board__thumb { top: 0; bottom: 0; min-width: 28px; }
 .board__cursor { position: absolute; transform: translate(-2px, -2px); pointer-events: none; z-index: 5; }
 .board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
 .board__cursor-name { position: absolute; left: 12px; top: -2px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #fff; background: #7a4dff; border-radius: 6px; padding: 1px 6px; }
