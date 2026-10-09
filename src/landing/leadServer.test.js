@@ -18,11 +18,13 @@ describe('validateLead', () => {
   it('без имени или с неполным номером — отказ с причиной', () => {
     expect(validateLead({ name: '', phone: '7471634118' })).toEqual({ ok: false, error: 'name' })
     expect(validateLead({ name: 'А'.repeat(101), phone: '7471634118' })).toEqual({ ok: false, error: 'name' })
+    // Одна буква дошла бы до регистрации и получила там 400 (бэкенд: от 2 символов).
+    expect(validateLead({ name: ' А ', phone: '7471634118' })).toEqual({ ok: false, error: 'name' })
     expect(validateLead({ name: 'Алия', phone: '+7 (747) 163' })).toEqual({ ok: false, error: 'phone' })
     expect(validateLead(null)).toEqual({ ok: false, error: 'name' })
   })
   it('незнакомый язык — русский, длинная цель обрезается', () => {
-    const { lead } = validateLead({ name: 'А', phone: '7471634118', lang: 'en', goal: 'x'.repeat(100) })
+    const { lead } = validateLead({ name: 'Ая', phone: '7471634118', lang: 'en', goal: 'x'.repeat(100) })
     expect(lead.lang).toBe('ru')
     expect(lead.goal).toHaveLength(64)
   })

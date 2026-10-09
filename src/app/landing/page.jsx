@@ -35,6 +35,9 @@ export default async function LandingPage({ searchParams }) {
   const links = {
     start: appLink(landingAppPath(APP_START_URL, utm), { onLandingHost, appUrl }),
     login: appLink(landingAppPath(APP_LOGIN_URL, utm), { onLandingHost, appUrl }),
+    // ҚАЗ/РУС меняют только язык: голый «?lang=kz» стёр бы метки рекламы.
+    langRu: '?' + new URLSearchParams({ lang: 'ru', ...utm }),
+    langKz: '?' + new URLSearchParams({ lang: 'kz', ...utm }),
   }
   return (
     <>

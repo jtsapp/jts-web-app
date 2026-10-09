@@ -118,6 +118,28 @@ test('форма: маска, ошибки, заявка — и сразу ша�
   expect(attribution?.from).toBe('landing')
 })
 
+test('номер, вставленный целиком, не дописывается к «+7 (»', async ({ page }) => {
+  const phone = page.locator('.ld-form input[name="phone"]')
+  await phone.scrollIntoViewIfNeeded()
+  await phone.click()
+  await expect(phone).toHaveValue('+7 (')
+  await phone.evaluate((el) => {
+    const dt = new DataTransfer()
+    dt.setData('text', '+77471634118')
+    el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+  })
+  await expect(phone).toHaveValue('+7 (747) 163-41-18')
+})
+
+test('ҚАЗ/РУС не теряют метки рекламы', async ({ page }) => {
+  await page.goto('/landing?utm_source=instagram')
+  await page.getByRole('link', { name: 'ҚАЗ' }).click()
+  await expect(page.locator('h1')).toContainText('топтық бағамен')
+  const url = new URL(page.url())
+  expect(url.searchParams.get('lang')).toBe('kz')
+  expect(url.searchParams.get('utm_source')).toBe('instagram')
+})
+
 test('битый код передачи — регистрация с начала', async ({ page }) => {
   await page.goto('/?screen=reg-email&handoff=broken')
   await expect(page.locator('.reg-header')).toBeVisible({ timeout: 20000 })

@@ -23,12 +23,23 @@ export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
     setPhone(formatPhone(phoneDigits(e.target.value)))
     if (errors.phone) setErrors((x) => ({ ...x, phone: null }))
   }
+  // Вставка — номер целиком. Без своего разбора он дописывался бы к уже
+  // стоящему «+7 (», и «+77471634118» или «87471634118» превращались бы в
+  // неверные десять цифр, которые к тому же проходят проверку.
+  const onPhonePaste = (e) => {
+    const text = e.clipboardData?.getData('text')
+    if (!text) return
+    e.preventDefault()
+    setPhone(formatPhone(phoneDigits(text)))
+    if (errors.phone) setErrors((x) => ({ ...x, phone: null }))
+  }
 
   const submit = async (e) => {
     e.preventDefault()
     if (status === 'sending' || status === 'sent') return
     const next = {
-      name: name.trim() ? null : f.errName,
+      // Не короче двух букв — как требует регистрация, куда имя уйдёт дальше.
+      name: name.trim().length >= 2 ? null : f.errName,
       phone: isPhoneComplete(digits) ? null : f.errPhone,
     }
     setErrors(next)
@@ -100,6 +111,7 @@ export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
             onFocus={() => { if (!phone) setPhone(formatPhone('')) }}
             onBlur={() => { if (!digits) setPhone('') }}
             onChange={onPhone}
+            onPaste={onPhonePaste}
           />
         </span>
         {errors.phone && <span className="ld-field__error">{errors.phone}</span>}

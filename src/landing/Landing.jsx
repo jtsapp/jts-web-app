@@ -31,8 +31,8 @@ function Header({ c, lang, links }) {
         </a>
         <div className="ld-header__right">
           <nav className="ld-lang" aria-label="Язык">
-            <a className={'ld-lang__opt' + (lang === 'ru' ? ' is-on' : '')} href="?lang=ru" hrefLang="ru">{c.nav.langRu}</a>
-            <a className={'ld-lang__opt' + (lang === 'kz' ? ' is-on' : '')} href="?lang=kz" hrefLang="kk">{c.nav.langKz}</a>
+            <a className={'ld-lang__opt' + (lang === 'ru' ? ' is-on' : '')} href={links.langRu} hrefLang="ru">{c.nav.langRu}</a>
+            <a className={'ld-lang__opt' + (lang === 'kz' ? ' is-on' : '')} href={links.langKz} hrefLang="kk">{c.nav.langKz}</a>
           </nav>
           <div className="ld-header__btns">
             <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
@@ -507,7 +507,8 @@ function Footer({ c }) {
 }
 
 // links — куда ведут «Войти» и «Начать обучение»: на домене лендинга это
-// адрес приложения (см. appLink в hostRouting.js).
+// адрес приложения (см. appLink в hostRouting.js); langRu/langKz — ҚАЗ/РУС
+// с теми же метками рекламы.
 export default function Landing({ c, lang, links }) {
   return (
     // <html lang> задаёт общий layout приложения (ru) — язык страницы

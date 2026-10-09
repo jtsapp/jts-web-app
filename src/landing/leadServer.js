@@ -5,13 +5,16 @@ import { phoneDigits, isPhoneComplete } from './lead.js'
 import { cleanEnv } from './hostRouting.js'
 import { pickUtm, utmFields } from '../lib/attribution.js'
 
+export const NAME_MIN = 2
 export const NAME_MAX = 100
 export const GOAL_MAX = 64
 
 /** Тело запроса формы → {ok, lead} или {ok:false, error}. */
 export function validateLead(body) {
   const name = String(body?.name ?? '').trim()
-  if (!name || name.length > NAME_MAX) return { ok: false, error: 'name' }
+  // Не короче двух букв: имя дальше уходит в регистрацию, а бэкенд там требует
+  // от 2 до 100 символов — «А» дошло бы до шага почты и получило 400.
+  if (name.length < NAME_MIN || name.length > NAME_MAX) return { ok: false, error: 'name' }
   const digits = phoneDigits(String(body?.phone ?? ''))
   if (!isPhoneComplete(digits)) return { ok: false, error: 'phone' }
   const goal = String(body?.goal ?? '').trim().slice(0, GOAL_MAX)

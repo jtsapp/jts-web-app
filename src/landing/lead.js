@@ -10,8 +10,13 @@
 export function phoneDigits(raw) {
   const s = String(raw || '').trim()
   let d = s.replace(/\D/g, '')
-  if (s.startsWith('+7')) d = d.slice(1)
-  else if (d.length === 11 && /^[78]/.test(d)) d = d.slice(1)
+  if (s.startsWith('+7')) {
+    d = d.slice(1)
+    // Набрал по привычке «8 747…» после готового «+7 (»: одиннадцатая цифра
+    // выдаёт лишнюю восьмёрку в начале. Только восьмёрку: лишняя цифра в конце
+    // номера на 7xx выглядит так же, как «7 747…», и угадать тут нельзя.
+    if (d.length === 11 && d[0] === '8') d = d.slice(1)
+  } else if (d.length === 11 && /^[78]/.test(d)) d = d.slice(1)
   return d.slice(0, 10)
 }
 
