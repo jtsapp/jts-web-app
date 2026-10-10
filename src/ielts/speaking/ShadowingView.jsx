@@ -165,6 +165,8 @@ export default function ShadowingView({ token, testId, onBack, onBackToList, bar
       {doc.phrases.map((ph, i) => {
         const recNow = rec.state === 'recording' && playing === `rec-${ph.id}`
         const has = !!takes[ph.id]
+        // сравнение вынесено из className: вложенный шаблон внутри `${…}` не читает проверка «немых контролов» (scripts/lib)
+        const mineOn = playing === `mine-${ph.id}`
         const cls = ['ih-card', 'ih-shadow__phrase', has && 'is-done', ph.id === currentId && 'is-current', (playing === ph.id || recNow) && 'is-playing'].filter(Boolean).join(' ')
         return (
           <section key={ph.id} className={cls}>
@@ -177,7 +179,7 @@ export default function ShadowingView({ token, testId, onBack, onBackToList, bar
               <button type="button" className={`ih-shadow__step ih-shadow__step--rec ${has ? 'is-ok' : ''} ${recNow ? 'is-rec' : ''}`} onClick={() => record(ph)} disabled={rec.state === 'recording' && !recNow}>
                 <MicIcon size={18} /><span><small>2</small>{recNow ? t('ieltsSpeaking.stop') : has ? t('ieltsSpeaking.shAgain') : t('ieltsSpeaking.repeatAfter')}</span>
               </button>
-              <button type="button" className={`ih-shadow__step ih-shadow__step--mine ${playing === `mine-${ph.id}` ? 'is-on' : ''}`} onClick={() => playMine(ph)} disabled={!has} title={has ? undefined : t('ieltsSpeaking.shMineHint')}>
+              <button type="button" className={`ih-shadow__step ih-shadow__step--mine ${mineOn ? 'is-on' : ''}`} onClick={() => playMine(ph)} disabled={!has} title={has ? undefined : t('ieltsSpeaking.shMineHint')}>
                 <PlayIcon size={16} /><span><small>3</small>{t('ieltsSpeaking.myTake')}</span>
               </button>
             </div>
