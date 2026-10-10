@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
+import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -69,6 +70,24 @@ afterEach(() => {
 })
 
 const cachedFiles = () => fs.readdirSync(dir).filter((f) => f.endsWith('.mp3'))
+
+// Два запроса одного текста, и к возврату второй ЗАВЕДОМО ждёт синтез первого.
+// Раньше оба уходили разом, а синтез отпускали через 20 мс сна. Под нагрузкой
+// полного прогона чтение кэша в них не укладывалось (develop, пайплайн
+// #2934668040): синтез ещё никто не заказал и open() не был назначен, или второй
+// дочитывал кэш раньше первого, и роли менялись. Поэтому ждём сами события:
+// первый заказал синтез (fetch позван, он в inflight), и только потом второй
+// дочитал кэш. От чтения кэша до проверки inflight в роуте нет ни одного await,
+// а мимо inflight он позвал бы fetch сразу — отсюда последняя проверка.
+async function secondJoinsFirst(qs) {
+  const first = GET(req(qs))
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  const cacheRead = vi.spyOn(fsp, 'readFile')
+  const second = GET(req(qs))
+  await vi.waitFor(() => expect(cacheRead.mock.settledResults).toHaveLength(1))
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+  return [first, second]
+}
 
 describe('GET /api/tts', () => {
   it('голос не из белого списка — 400, в Soniox не ходим', async () => {
@@ -165,9 +184,7 @@ describe('GET /api/tts', () => {
           open = () => resolve(new Response(streamOf(MP3), { status: 200 }))
         }),
     )
-    const first = GET(req('v=Grace&t=together'))
-    const second = GET(req('v=Grace&t=together'))
-    await new Promise((r) => setTimeout(r, 20))
+    const [first, second] = await secondJoinsFirst('v=Grace&t=together')
     open()
     const [a, b] = await Promise.all([first, second])
     expect(Buffer.from(await a.arrayBuffer()).equals(MP3)).toBe(true)
@@ -183,9 +200,7 @@ describe('GET /api/tts', () => {
           open = () => resolve(new Response('{"error_code":500}', { status: 500 }))
         }),
     )
-    const first = GET(req('v=Grace&t=retry'))
-    const second = GET(req('v=Grace&t=retry'))
-    await new Promise((r) => setTimeout(r, 20))
+    const [first, second] = await secondJoinsFirst('v=Grace&t=retry')
     open()
     expect((await first).status).toBe(502)
     expect((await second).status).toBe(200)
