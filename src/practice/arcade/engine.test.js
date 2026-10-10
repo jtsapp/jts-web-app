@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DIFFICULTIES, ROUND_SECONDS, advance, initialState, isLost, isOver } from './engine.js'
 import { createVoiceActivity } from './voiceActivity.js'
 
-// Порт javaTest tests/gameEngine.test.ts: правила раунда кадр за кадром.
+// Правила раунда кадр за кадром.
 
 describe('arcade engine', () => {
   it('шум комнаты после калибровки — это тишина: пила доходит до дерева за весь лимит', () => {

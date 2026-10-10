@@ -61,6 +61,8 @@ export function isStudentOnlyScreen(screen) {
   if (typeof screen !== 'string' || !screen) return false
   // Вся зона тьютора — префиксом, а не перечислением: экранов tutor-* два
   // десятка, они добавляются, и забытый в списке новый молча остался бы
-  // открытым. Тот же приём, что у persistsInUrl в App.jsx.
-  return STUDENT_ONLY_SCREENS.has(screen) || screen.startsWith('tutor-')
+  // открытым. Тот же приём, что у persistsInUrl в App.jsx. IELTS — так же:
+  // прохождение, разбор, mock, онбординг и диагностика — ielts-*, их уже
+  // десяток, и список выше их не догонял.
+  return STUDENT_ONLY_SCREENS.has(screen) || screen.startsWith('tutor-') || screen.startsWith('ielts-')
 }

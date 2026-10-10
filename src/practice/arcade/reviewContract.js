@@ -1,6 +1,5 @@
 // ИИ-разбор раунда «Аркады» — общий контракт клиента и роута
-// /api/practice/arcade/review. Порт javaTest (backend …/analysis/:
-// AnalysisRequest, AnalysisPrompt, SpeakingAnalysisService). Чистый модуль —
+// /api/practice/arcade/review. Чистый модуль —
 // ни сети, ни БД: и проверка запроса, и промпт, и проверка ответа модели
 // здесь, под тестами.
 //

@@ -4,7 +4,7 @@
 // только копились: снятия не было нигде, и слово, которое ученик уже
 // отвечает верно, висело в списке навсегда — сколько его ни повторяй.
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, fireEvent, screen } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import VocabPractice from './VocabPractice.jsx'
@@ -47,6 +47,23 @@ describe('VocabPractice: итог и «хуже всего запомненны�
     fireEvent.click(screen.getByRole('button', { name: /Продолжить/ }))
 
     expect(topVocabMisses(null).map((m) => m.key)).toEqual(['apple'])
+  })
+
+  // IELTS Vocabulary двигает коробки повторения на сервере по каждому ответу — ключ ответа совпадает с ключом
+  // прогресса набора (id слова в нижнем регистре)
+  it('каждый ответ уходит в onResults с ключом слова', () => {
+    const onResults = vi.fn()
+    render(
+      <I18nProvider>
+        <VocabPractice cards={[{ id: 'ENV-01', en: 'pollution', ru: 'загрязнение' }]} lang="ru" title="Environment" token={null} scopeId="ielts-VOC-ENV" onResults={onResults} onExit={() => {}} speak={() => {}} />
+      </I18nProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    fireEvent.click(screen.getByRole('button', { name: 'К практике' }))
+    fireEvent.click(screen.getByRole('button', { name: 'загрязнение' }))
+    fireEvent.click(screen.getByRole('button', { name: /Продолжить/ }))
+    expect(onResults).toHaveBeenCalledTimes(1)
+    expect(onResults.mock.calls[0][0]).toEqual([{ key: 'env-01', ok: true }])
   })
 })
 

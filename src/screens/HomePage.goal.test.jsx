@@ -21,6 +21,7 @@ vi.mock('../api.js', () => ({
   getMyHomework: vi.fn(async () => []),
   requestTrialLesson: vi.fn(async () => ({ requested: true })),
   getLevelProgress: vi.fn(async () => levelProgress.value),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
 }))
 
 vi.mock('../practice/skillStats.js', () => ({

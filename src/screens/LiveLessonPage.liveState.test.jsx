@@ -225,6 +225,7 @@ beforeEach(() => {
   sendStage.mockClear()
   api.getLessonById.mockClear()
   api.getLessonSections.mockClear()
+  sessionStorage.clear()
 })
 afterEach(() => vi.useRealTimers())
 
@@ -1686,5 +1687,95 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     await flush()
 
     expect(frameMaterial(container)).toBe(12)
+  })
+})
+
+// Пятница 09.10.2026, жалоба учителя Aii: «я просто наблюдала, потом выкинуло на самый верх платформы, смотрю —
+// ответы исчезли». После перезагрузки страницы (их жмут, когда «что-то не работает») ученик оказывался на ПЕРВОМ
+// разделе занятия, и это место тут же уходило преподавателю, смотрящему его экран: у того открывался первый
+// материал без ответов ученика. Теперь страница помнит, где ученик был, и возвращает его туда.
+describe('LiveLessonPage — ученик после перезагрузки возвращается на своё место', () => {
+  const POSITION_KEY = 'jts_live_pos_14'
+  const remember = (sectionId, materialId) => sessionStorage.setItem(POSITION_KEY, JSON.stringify({ sectionId, materialId }))
+
+  it('место запомнено — открыт тот раздел, где был, а не первый', async () => {
+    remember(4, 12)
+
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(12)
+  })
+
+  it('место не запомнено (первый вход) — первый раздел, как раньше', async () => {
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(11)
+  })
+
+  it('запомненного раздела уже нет (убрали, пока ученик был вне урока) — первый, без ошибки', async () => {
+    remember(99, 1)
+
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(11)
+  })
+
+  it('запомнен материал, которого в разделе больше нет, — раздел открывается на первом материале', async () => {
+    remember(3, 777)
+
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(11)
+  })
+
+  it('второй материал раздела тоже запоминается', async () => {
+    sections = TWO_MATERIALS
+    remember(3, 13)
+
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(13)
+  })
+
+  it('уход в другой раздел запоминается и переживает перезагрузку', async () => {
+    const first = await renderAsStudent()
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    expect(JSON.parse(sessionStorage.getItem(POSITION_KEY))).toEqual({ sectionId: 4, materialId: 12 })
+    first.unmount()
+
+    const second = await renderAsStudent()
+
+    expect(frameMaterial(second.container)).toBe(12)
+  })
+
+  it('класс ведут — ученик идёт за классом, запомненное место его не держит', async () => {
+    remember(4, 12)
+    const { container } = await renderAsStudent()
+    expect(frameMaterial(container)).toBe(12)
+
+    await connectWith(leadingAt(3, 11))
+
+    expect(frameMaterial(container)).toBe(11)
+  })
+
+  it('преподавателю место не подставляется и не записывается — это правило ученика', async () => {
+    remember(4, 12)
+
+    const { container } = await renderAsTeacher()
+
+    expect(frameMaterial(container)).toBe(11)
+    expect(JSON.parse(sessionStorage.getItem(POSITION_KEY))).toEqual({ sectionId: 4, materialId: 12 })
+  })
+
+  it('хранилище недоступно (приватное окно) — страница работает, место просто не помнит', async () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('denied') })
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('denied') })
+
+    const { container } = await renderAsStudent()
+
+    expect(frameMaterial(container)).toBe(11)
+    getItem.mockRestore()
+    setItem.mockRestore()
   })
 })

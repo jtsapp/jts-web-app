@@ -10,6 +10,7 @@ vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
   getBalance: vi.fn().mockResolvedValue({ coins: 0, streak: 0, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => demo.value),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
 }))
 
 function tokenFor(role = 'USER') {

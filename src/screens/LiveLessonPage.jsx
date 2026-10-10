@@ -32,6 +32,7 @@ import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { catalogLessonIdFor, shouldResolveCatalogLesson } from './live/catalogLessonByUrl.js'
 import { stageSteps, stageStatusById } from './live/lessonStages.js'
+import { rememberedPlace, saveLivePosition } from './live/livePosition.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -123,6 +124,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
   const [activeSectionId, setActiveSectionId] = useState(null)
+  // То же значение без ожидания рендера: loadSections решает, первый ли это вход, в момент ответа сервера.
+  const activeSectionIdRef = useRef(null)
+  activeSectionIdRef.current = activeSectionId
   // true, пока ученик идёт за классом: показ преподавателя проигрывается в его
   // рамку. Сама страница та же, что и в своём уроке, — с backend#222 мост
   // восстанавливает и сохраняет ответы в обоих режимах, и смена режима рамку не
@@ -224,6 +228,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const sectionMaterials = activeSection?.materials || []
   const [activeMaterialId, setActiveMaterialId] = useState(null)
   const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
+  // Запоминаем место ученика: после перезагрузки страницы он вернётся сюда, а не на первый раздел (livePosition.js).
+  useEffect(() => {
+    if (isStaff || activeSectionId == null) return
+    saveLivePosition(lessonId, { sectionId: activeSectionId, materialId: activeMaterial?.materialId ?? null })
+  }, [isStaff, lessonId, activeSectionId, activeMaterial?.materialId])
   // Кого из участников смотрит преподаватель — выбирается через
   // вкладкой «Группа» (несколько студентов в групповом уроке), по умолчанию
   // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
@@ -282,7 +291,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return getLessonSections(token, lessonId).then((list) => {
       setSections(list)
       setSectionsFailed(false)
-      setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (list[0]?.id ?? null))
+      // Первый вход после перезагрузки: ученик возвращается туда, где был, а не на первый раздел — иначе это
+      // «первое место» уходило преподавателю, смотрящему его экран, и тот «выкидывался наверх» (09.10.2026).
+      // Только ученику и только пока места ещё нет: живой переход и указка класса приходят своими путями.
+      const place = !isStaff && activeSectionIdRef.current == null ? rememberedPlace(lessonId, list) : null
+      if (place?.materialId != null) setActiveMaterialId(place.materialId)
+      setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (place?.sectionId ?? list[0]?.id ?? null))
       return list
     }).catch(() => {
       setSectionsFailed(true)

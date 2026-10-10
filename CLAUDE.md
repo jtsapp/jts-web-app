@@ -721,6 +721,154 @@ WebGL рисует SwiftShader на процессоре, параллельны
 вовсе. Шапка поля держит `data-options`/`data-correct`/`data-lane`/`data-pose`/
 `data-hits`/`data-obstacles` — для теста.
 
+**Хаб IELTS (`?screen=ielts`) — макет Figma «JTS-clone», Screen MS.** Экран
+`src/screens/IeltsPage.jsx` — шапка (серия, XP), вкладки (`?ieltsTab=today|learn|
+mocks|progress|vocab|info`) и их содержимое; всё остальное — в `src/ielts/`:
+`ui/` (Chip, PillButton, ProgressRing, Card, Tabs, EmptyState — общие для
+будущих экранов раздела), `today/` (карточки «Сегодня»), `tabs/`, `model/`.
+Прежний экран проверки уровня стал вкладкой «Пробные тесты»
+(`tabs/MockTestsTab.jsx`, замок квоты тот же). Счёт (округление band §17.3, XP,
+фазы roadmap) — чистый `model/dashboard.js` под тестами; данные —
+`model/useIeltsDashboard.js`: сейчас оттуда приходит только серия (общий
+баланс), остальные поля null, и экран показывает их отсутствие, а не нули.
+Эндпоинт раздела подключается в `fetchIeltsDashboard` там же, форма ответа
+описана в шапке файла. `?ieltsSample=1` — данные макета для проверки вида.
+Источник требований — ТЗ раздела v1.3 §11.
+
+**IELTS Reading — тесты на JTS-бэкенде, не в репозитории.** Тесты лежат в `ielts_tests` бэкенда (документ jsonb с ключами,
+формат — `backend/docs/ielts/TEST_FORMAT.md`), заводятся JSON-импортом в web-admin («Практика и тесты» → IELTS);
+ученик получает их через `/mobile/ielts/**` (`src/api.js`, функции `*Ielts*`). Ключей у клиента нет: вопрос проверяет
+`/check` (режимы «Тренировка»/«Разбор»), сдачу — `/attempts`. Экраны: вкладки хаба `src/ielts/tabs/` и `src/ielts/reading/`
+(список, задание), прохождение `src/screens/IeltsReadingRunPage.jsx` и разбор `IeltsReadingReviewPage.jsx` — отдельные
+экраны App без меню (`?screen=ielts-reading-run&ieltsRun=<id>&ieltsMode=exam`, `?screen=ielts-reading-review&ieltsAttempt=<id>`).
+Черновик попытки — на устройстве (`run.js`), часы экзамена стоят, пока тест закрыт (`pausedLeftSec`). Текст теста
+(`PassagePane`) помечен `data-selectable`: без него глобальный запрет выделения (styles.css) молча убивал маркер и «В
+словарь» — выделить текст было нельзя. Край маркера доводится до границы слова. Маркер один — жёлтый (правка по макету): меню над выделением и по правой кнопке мыши — «Выделить» и «Убрать выделение» (`removeHighlight`); старые выделения цветов 2/3 рисуются тем же жёлтым. Шапка открытого теста Reading/Listening — `RunTopBar` (`ielts/mock/MockRunHeader.jsx`), цвета теста — слой `.ih-run--rl` в `ielts.css`. Разбор полного mock — `ielts/mock/MockReview.jsx`: переключатель секций L·R·W·S (и Task/Part) поверх тех же экранов разбора. Прежние
+felix-экраны секций (`ielts-listening/-reading/-writing/-speaking`) ещё в коде, но из «Обучения» на них ссылок нет.
+
+**Старт IELTS — онбординг, диагностика, маршрут.** Онбординг (`?screen=ielts-onboarding`, Figma 1.1–1.6) пишет цель в
+профиль бэкенда (`/mobile/ielts/profile`); по знакомству с форматом дальше идут инструкция, квиз или сразу диагностика
+(`?screen=ielts-diagnostic`). Ключей у диагностики на экране нет, поэтому и адаптивный клип Listening экран спрашивает у
+сервера (`…/diagnostic/path`) — тем же расчётом, что и итог. Клип играет `DiagClipPlayer` как прототип: время прочитать вопросы (5 с на
+вопрос, 10–30 с), потом сам; в экзамене — один раз, без паузы; у Reading тот же `PassagePane` с маркером. Итог (`?screen=ielts-diagnostic-result`, Figma 2.1) — band
+L/R и предварительный overall, W/S ждут ИИ; маршрут (`?screen=ielts-route`, Figma 3) считает `src/ielts/onboarding/
+onboarding.js`: 160 часов на балл, 6 занятий в неделю, правила рекомендации §11.4. «Сегодня» берёт цель и баллы из профиля
+и показывает следующий шаг старта (`today/StartBanner.jsx`).
+
+Карточки онбординга 1.1–1.2 рисуются с иллюстрациями из слоя картинок макета (`public/ielts/onboarding/*.webp`, обрезаны
+и пережаты из PNG Figma); календарь 1.4 — внутри карточки «Уже знаю дату», поэтому сама карточка — блок, а выбирает её
+шапка (кнопки дней внутри кнопки — невалидный HTML).
+
+**Вкладка «Инфо» — статичный справочник** (`src/ielts/tabs/InfoTab.jsx`, Figma «Инфо об экзамене»): восемь глав, тексты
+методиста ru/kk/en, таблицы band §17 и официальные ссылки — в `src/ielts/info/infoData.json`, снятом с прототипа
+(`90-info.html`, ветка `inf.*`, `core.js`). Правки текста — в этот json. Цен и дат нет намеренно (ТЗ §22).
+
+**Главный экран и «Прогресс» считает бэкенд** (`/mobile/ielts/dashboard`, `/mobile/ielts/progress`, `TEST_FORMAT.md` §10):
+план дня, баллы, roadmap, прогноз, XP и серия дней (своя у IELTS; общий баланс — только запасной путь). Экран только подписывает задачи (`src/ielts/model/plan.js`: подпись, «почему» и
+куда ведёт «Начать») — правила плана живут в одном месте, в `IeltsPlanner` бэкенда. XP начисляется по фактам, ручной
+отметки задачи нет. `?ieltsSample=1` по-прежнему показывает данные макета.
+
+Что в IELTS ещё не сделано: модуль «Уроки» (расписание живых уроков, облегчённый план в день урока), бейджи и
+уведомления, SRS-повторение типов по ящикам (сейчас — «давно не тренировали»), полные mock-тесты Listening (нет записей), «Отправить преподавателю» и «Переписать» у Writing,
+режимы Drill и Full mock, ИИ-оценка Writing/Speaking из диагностики, интерактивные демо в инструкции о формате (сейчас текстом).
+
+**IELTS по дизайну «IELTS new» (Figma JTS-clone, страница «IELTS new», 08.10.2026).** Макет читается через Figma Desktop
+Bridge (`figma-console`, без лимита Starter). Аккаунт IELTS — явный признак `ielts_enrollments.ielts_account` (ставит
+web-admin «Ученики IELTS», позже биллинг; ручка `/mobile/ielts/plan/me`, клиент `getIeltsMe`): у него в сайдбаре ровно
+Главная · Практика · Speaking Buddy · Уроки · Домашняя работа · Словарь · IELTS · Настройки, без «Повторения», счётчиков и
+плашки уровня, а тропа kingdom уводит в IELTS. Тесты, мокающие `api.js` с `getDemoAccess`, обязаны мокать и `getIeltsMe`.
+Экраны: «Сегодня» — `today/GoalBanner.jsx` (состояния даты и оценки по доске макета, маскот `public/ielts/mascot/`) +
+`today/TodayCards.jsx` (задачи программы, «Зона роста» — `growthZone` дашборда, контроль недели); «План» —
+`plan/PlanViews.jsx` (роадмап двумя неделями, неделя, месяц, панель дня); «Практика IELTS» — `practice/` (каталог, страница
+навыка с вкладками, старые адреса ?ieltsView=types|texts|writing-task1… открывают её вкладку); «Подробный прогресс» —
+`progress/ProgressPage.jsx` (`/progress`: `skills`, `series`, `errors`, `completion`). Словарь из макета пока НЕ сделан.
+
+**Уровень материалов IELTS по навыкам.** У задания банка уровень — `band: {min, max}` или из `difficulty` ±0.5; у ученика —
+свой балл в каждом навыке (последний полный тест, оценённая работа, иначе диагностика). Каталог отдаёт `level`
+(fit · below · above · any) и `studentBand`; правила — backend `IeltsLevels`, на экране — `src/ielts/model/levels.js`.
+Списки «Практики» делятся на «Рекомендуемые», «Сложнее» и внизу «Неподходящие» (ниже уровня), рекомендуемый уровень
+виден только в списках заданий. Строка-набор (дрилл, тип вопроса, диктовка, Task 1, Part 1, shadowing) открывает выбор
+заданий — вид хаба `practice-list` с `?ieltsList=reading:drill:ng`. План под уровень собирает `IeltsLevelPlan` бэкенда
+(PROGRAMMES.md, «Уровень ученика»). Разделы IELTS Vocabulary с темой и картинкой ведутся в web-admin «IELTS · Словарь»
+(`/system/ielts-tests/vocab`), картинка — `imageUrl` каталога.
+
+**Задачи преподавателя в плане IELTS.** Преподаватель ставит их в web-admin («IELTS · ученики», backend
+`/admin/teacher-ielts`, `docs/ielts/PROGRAMMES.md` → «Кабинет преподавателя»); у ученика это строки того же плана с
+`origin: 'teacher'`: `mode: 'homework'` — «Домашнее задание · срок» (оранжевые), иначе «Добавлено преподавателем»
+(синие). Подпись, «куда ведёт Начать» и метка — `taskLabel`/`taskRoute`/`taskOrigin`/`originLabel` в
+`src/ielts/plan/planModel.js`, метка и комментарий — `OriginChip`/`TeacherNote` (`today/TodayCards.jsx`) во всех видах
+плана; в клетке месяца задачи преподавателя идут первыми.
+
+**IELTS Vocabulary в «Словаре» (дизайн «IELTS new», Figma 92:6134).** Наборы слов по темам экзамена — документы банка
+IELTS `skill: vocab, kind: set` (backend `TEST_FORMAT.md` §12; стартовые 8 × 40 — `scripts/ielts/make-vocab-sets.js`
+бэкенда, черновик для методиста), а не часть HTML-выгрузки общего каталога: та при каждой загрузке стирает всё, чего нет
+в файле. Полка сверху «Словаря» (`src/screens/vocab/IeltsVocab.jsx`) видна ученикам IELTS (`ieltsAccount` или
+`onboarded` из `getIeltsMe`); набор открывается своим экраном, тренировка — тот же `VocabPractice`, который по
+`onResults` отдаёт каждый ответ. Прогресс — на сервере (`/mobile/vocab-progress`, таблица `vocab_word_progress`):
+коробки Лейтнера, «изучено» = коробка 3+, «к повторению» — наступил срок; правила очереди и подписи карточки —
+`src/screens/vocab/ieltsVocab.js`. Ключ слова — `vocabKey` (id слова в нижнем регистре), id слов в наборе менять нельзя.
+Уровни и сферы общего каталога по-прежнему считают «изучено» в localStorage (`vocabLearned.js`).
+
+**Полный mock IELTS (дизайн «IELTS new», раздел 4) — сессия на бэкенде, секции — прежние экраны.** Mock — документ банка
+`skill: mock, kind: full` со ссылками на задания секций (`TEST_FORMAT.md` §11; локальный набор — `scripts/ielts/make-mocks.js`
+бэкенда, по два на трек: полных Listening в банке два). Попытка — `ielts_mock_sessions`: серверные часы секции
+(L 40, R 60, W 60, S 20 мин), черновик и id сданных попыток; ручки `/mobile/ielts/mocks/**`, клиент `*IeltsMock*` в `api.js`.
+Экран — `?screen=ielts-mock&ieltsMock=<id>|&ieltsMockSession=<id>` (`src/screens/IeltsMockPage.jsx`, экраны —
+`src/ielts/mock/`): описание → проверка оборудования → секции → «Экзамен сдан» → итог. Секции рисуют те же
+`Ielts*RunPage` с пропом `mock` (часы `mock.deadline` по серверу, черновик через `useMockAutosave`, сдача —
+`mock.onSubmitted`/`onRecorded` вместо разбора), поэтому балл секции в mock тот же, что вне его. Writing/Speaking —
+несколько заданий в секции: сданные до закрытия секции живут в черновике `{ idx, done, part }`. Speaking оценивается в
+фоне, пока ученик отвечает дальше; ошибка оценки отдаёт `attemptId` (роут создаёт работу до распознавания) — секция
+закрывается «проверка не удалась», часть без ответа — `null` («нет ответа»), overall тогда не считается вовсе. Writing
+оценку запускает сам экран mock (`assessIeltsWriting` для `pending_ai` при каждом заходе на «сдан»/итог). Вкладка
+«Mock-тесты» — `tabs/MockTestsTab.jsx` (последняя попытка, доступные, история); полные тесты секций — в «Практике IELTS»
+(Listening — вкладкой «Части»). Отдельные прохождения вне mock по-прежнему сохраняют черновик на устройстве.
+
+**IELTS по ТЗ v4 — пять вкладок, программа и план** (07.10.2026; пакет JTS_IELTS_Design_Frontend_v4 + ПЗ backend v1,
+Фигмы под v4 нет — собрано из кирпичей раздела). Вкладки: Сегодня → План → Практика IELTS → Mock-тесты → Об экзамене
+(`IELTS_TABS`); «Прогресс» — вложенный экран (`?ieltsTab=progress`, ссылка из блока цели), своей вкладки словаря нет —
+одна ссылка «IELTS Vocabulary» из «Практики» в общий «Словарь». На «Сегодня» нет быстрых действий и прогноза балла:
+блок цели `today/ProgrammeCard.jsx` (программа, А → сейчас → В с источником и датой, дни до экзамена, задачи программы,
+контроль недели). Программу (одну из десяти) назначает бэкенд (`backend/docs/ielts/PROGRAMMES.md`): Self Study — сам
+после диагностики, live и ручное назначение — web-admin «IELTS → Программы / Ученики». План — `ielts/plan/` (роадмап,
+неделя, месяц над одними задачами; подписи и «куда ведёт Начать» — `planModel.js`); выполнение считает бэкенд по сданным
+работам, руками отмечаются только гид и словарь.
+
+**IELTS Listening (часть 2) — тот же банк, свой плеер.** Списки хаба — `?ieltsView=listening-tasks|-dictation|-spelling`
+(префикс: `types`/`drills` есть у обеих секций), экран задания — общий `ReadingTaskView skill="listening"`. Прохождение —
+`?screen=ielts-listening-run` (`src/screens/IeltsListeningRunPage.jsx`, плеер `src/ielts/listening/useAudioPlayer.js`),
+диктовка и правописание — `?screen=ielts-dictation` (проверка пословная на сервере, `IeltsWordsChecker`). Разбор — тот
+же `IeltsReadingReviewPage`. Экзамен Listening не продолжается с середины: запись уже прозвучала. Цвет Listening — синий (Figma 8): корень
+прохождения, диктовки и плеера диагностики носит `ih-skin-listening`, который переопределяет акцент `--ih-violet`.
+Синтез части (`tts`) идёт через `/api/tts`; не ответил (локально ключа Soniox нет) — плеер дочитывает голосом устройства.
+Часть файлов прототипа — тишина-заглушки; `seed-local.js` их не грузит (см. `TEST_FORMAT.md` §6). Записи — в хранилище
+бэкенда (`audio.src` — имя по хэшу, ссылку `url` подставляет сервер); у части без записи `tts: true` — звучит транскрипт
+через `/api/tts`. Транскрипт до сдачи — только ручкой `/transcript` («Тренировка»/«Изучение»), в экзамене его нет.
+
+**IELTS Writing (часть 3) — задания в банке, оценка у нас, band у бэкенда.** Задания Task 1/Task 2, «Как писать»
+(`WR-GUIDE`) и самопроверка (`WR-SELFCHECK`) — документы `ielts_tests` (формат — `backend/docs/ielts/TEST_FORMAT.md` §7).
+Экраны: хаб `?ieltsView=writing-task1|writing-task2|writing-guide|writing-works|writing-work&ieltsWork=<id>`
+(`src/ielts/writing/`), редактор — `?screen=ielts-writing-run` (`src/screens/IeltsWritingRunPage.jsx`). Сданная работа
+ждёт оценки (`pending_ai`); оценивает `src/app/api/ielts/writing/assess/route.js`: текст и задание берёт у бэкенда
+(claim), модели отдаёт график ДАННЫМИ (`describeChart`, тот же источник, что рисует экран), результат пишет обратно со
+служебным ключом `IELTS_GRADER_KEY` (= `ielts.grader.key` бэкенда; без него оценка выключена — 503). Ключ только серверный:
+иначе ученик поставил бы себе band. Квота IELTS тратится только на оценку, вход в задания не заперт.
+
+**IELTS Speaking (часть 4) — записи не хранятся нигде.** Задания Part 1/2/3, стратегия (`SP-GUIDE`) и Shadowing —
+документы банка (`TEST_FORMAT.md` §8). Экраны: хаб `?ieltsView=speaking-part1|…|speaking-shadowing|speaking-guide|
+speaking-works|speaking-work&ieltsWork=<id>` (`src/ielts/speaking/`), прохождение `?screen=ielts-speaking-run`
+(`src/screens/IeltsSpeakingRunPage.jsx`, запись — `useRecorder`: WAV 16 кГц, микрофон один на визит экрана). Записи идут
+только в `src/app/api/ielts/speaking/assess/route.js` (тот же конвейер, что у «Ситуаций»: текст и произношение Azure
+параллельно, кусками; затем Sonnet) — бэкенд получает стенограммы и баллы, работу создаёт сам роут со служебным
+ключом. Без Azure/Soniox (локально в `.env.local` ключи пустые) роут честно отвечает `no_speech` и попытку помечает failed.
+Квоту тратит только оценка; вкладка «Обучение» ничего не запирает (замок квоты из неё убран вместе с `lockedRow`).
+Под записью — живая акустика (Figma 11, `src/ielts/speaking/liveAcoustics.js`): волна, доля речи, паузы дольше 2 с (порог
+голоса — тот же `voiceActivity.js`, что у Аркады) и слова в минуту по Web Speech API, если он есть (нет — прочерк, а не
+выдумка). Всё на устройстве тем же микрофоном (`useRecorder().stream`); звук никуда не уходит. Заметки Part 2 — фишками.
+Модель разбора Writing и Speaking — `IELTS_REVIEW_MODEL` (по умолчанию `claude-sonnet-5-5`, `src/lib/anthropic.js`). У неё
+нет выключенного мышления и принудительного `tool_choice` (оба — 400), поэтому `structured()` для таких моделей берёт JSON
+через structured outputs (`output_config.format`, effort `medium`); остальные грейдеры идут прежним путём.
+
 **Экосистема минут (Roadmap) — своей таблицы у сводки нет.** Недельная сводка
 `GET /api/profile/ecosystem` (`src/lib/db/ecosystem.js`) берёт каждое время там,
 где его уже пишут: тьютор — `voice_usage`, шэдоуинг — `shadowing_assess` (оценка

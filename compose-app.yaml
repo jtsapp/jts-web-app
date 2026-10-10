@@ -50,6 +50,12 @@ services:
       LANDING_HANDOFF_SECRET: ${LANDING_HANDOFF_SECRET:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
+      # Служебный ключ грейдера IELTS: тот же, что IELTS_GRADER_KEY (ielts.grader.key)
+      # у JTS-бэкенда этого стенда. Без него /api/ielts/{writing,speaking}/assess
+      # отвечают 503 — оценка Writing/Speaking выключена, остальное IELTS работает.
+      IELTS_GRADER_KEY: ${IELTS_GRADER_KEY:-}
+      # Модель разбора IELTS; пусто → claude-sonnet-5-5 (дефолт в src/lib/anthropic.js)
+      IELTS_REVIEW_MODEL: ${IELTS_REVIEW_MODEL:-}
       # Кэш озвучки /api/tts — общий для dev и прода Redis из
       # compose-redis.yaml (имя tts-redis в сети jts-tts-redis). Не секрет,
       # поэтому дефолт здесь, а не в GitLab.

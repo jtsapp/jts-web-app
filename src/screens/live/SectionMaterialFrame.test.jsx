@@ -74,6 +74,62 @@ describe('SectionMaterialFrame — стадии файлового урока', 
 // считается только сразу после его действия (stage-rule-exact.md): разовый
 // признак взводят доверенный клик или ввод (present-event) и свой переход по
 // стадиям, гасит первый же отчёт о стадии, и через 500 мс он истекает.
+// Живые события идут сокетом, а сокет теряет: ученик отвечал, у преподавателя пусто до «Обновить»
+// (жалоба учителей 09.10.2026). Номер события в потоке ответов доезжает до рамки преподавателя — по нему
+// страница замечает дыру и докачивает пропущенное из сохранённого потока.
+describe('SectionMaterialFrame — номер события в зеркале', () => {
+  it('ученик: действие в рамке уходит наверх вместе с номером', async () => {
+    const onMirror = vi.fn()
+    renderFrame({ onMirror })
+    await message({ source: 'jts-bridge', type: 'mirror', selector: '#a', eventType: 'click', value: null, seq: 4 })
+    expect(onMirror).toHaveBeenCalledWith({ selector: '#a', eventType: 'click', value: null, seq: 4 })
+  })
+
+  it('ученик: прокрутка (без номера) уходит без seq', async () => {
+    const onMirror = vi.fn()
+    renderFrame({ onMirror })
+    await message({ source: 'jts-bridge', type: 'mirror', selector: 'window', eventType: 'scroll', value: '120' })
+    expect(onMirror.mock.calls[0][0].seq).toBeUndefined()
+  })
+
+  it('преподаватель: событие ученика уходит в рамку вместе с номером', async () => {
+    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, LOAD_SETTLE_MS + 50)) })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => {
+      ref.current.mirror({ selector: '#a', eventType: 'click', value: null, seq: 9 })
+    })
+    expect(post).toHaveBeenCalledWith(
+      { source: 'jts-bridge-host', type: 'mirror', selector: '#a', eventType: 'click', value: null, seq: 9 }, '*')
+  })
+
+  it('преподаватель: загрузившейся рамке сообщают, что номера событий передаются (иначе она докачивать не станет)', async () => {
+    const { iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'mirror-seq' }, '*')
+  })
+
+  it('ученику такого сообщения не шлют — докачивает только рамка преподавателя', async () => {
+    const { iframe } = renderFrame({ isStaff: false })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    expect(post).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'mirror-seq' }), '*')
+  })
+
+  it('преподаватель: событие без номера уходит с пустым seq — как раньше, без поиска дыр', async () => {
+    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, LOAD_SETTLE_MS + 50)) })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => {
+      ref.current.mirror({ selector: 'window', eventType: 'scroll', value: '5' })
+    })
+    expect(post.mock.calls[0][0].seq).toBeNull()
+  })
+})
+
 describe('SectionMaterialFrame — стадия как действие преподавателя', () => {
   afterEach(() => vi.useRealTimers())
 
@@ -338,7 +394,7 @@ describe('SectionMaterialFrame — снимок и живой показ', () =>
     expect(post).not.toHaveBeenCalled()
 
     await settle(iframe)
-    expect(post).toHaveBeenCalledTimes(1)
+    expect(post.mock.calls.filter(([m]) => m.type !== 'mirror-seq')).toHaveLength(1)
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'request-snapshot' }, '*')
   })
 
@@ -508,7 +564,8 @@ describe('SectionMaterialFrame — урок файла открывается п
   const LESSON_MATERIAL = { ...MATERIAL, focusLessonNo: 5 }
   const load = (iframe) => act(async () => { iframe.dispatchEvent(new Event('load')) })
   const wait = (ms) => act(async () => { vi.advanceTimersByTime(ms) })
-  const types = (post) => post.mock.calls.map(([m]) => m.type)
+  // Сообщение mirror-seq (рамка преподавателя узнаёт, что номера событий передаются) — не про стадии и показ.
+  const types = (post) => post.mock.calls.map(([m]) => m.type).filter((type) => type !== 'mirror-seq')
 
   // Живой показ или ответ на «догоните», пришедший в загруженную рамку до
   // goto-lesson, достался бы уроку по умолчанию.

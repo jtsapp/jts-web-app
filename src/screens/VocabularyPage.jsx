@@ -11,7 +11,15 @@ import {
   saveStudentVocab,
   deleteStudentVocabWord,
   markVocabLearned,
+  getIeltsMe,
+  getIeltsTests,
+  getIeltsTest,
+  getVocabProgress,
+  getVocabProgressWords,
+  saveVocabProgress,
 } from '../api.js'
+import { IeltsSetScreen, IeltsShelf } from './vocab/IeltsVocab.jsx'
+import { ieltsScope, practiceCard, progressResults, sortIeltsSets } from './vocab/ieltsVocab.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { practiceCardsOf } from './vocab/practiceCards.js'
 import { topVocabMisses } from './vocab/vocabMisses.js'
@@ -99,6 +107,11 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [topMiss, setTopMiss] = useState([])
   const [learnedTick, setLearnedTick] = useState(0)
   const scopeReq = useRef(0)
+  // IELTS Vocabulary: наборы из банка IELTS и их прогресс на сервере — только у учеников IELTS (аккаунт IELTS или
+  // пройденный онбординг раздела); остальным «Словарь» остаётся прежним
+  const [ieltsSets, setIeltsSets] = useState([])
+  const [ieltsSummaries, setIeltsSummaries] = useState({})
+  const [ieltsSet, setIeltsSet] = useState(null) // { set, words, states, loading }
 
   const refreshTopMiss = useCallback(() => {
     setTopMiss(topVocabMisses(token, 3))
@@ -172,6 +185,52 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       alive = false
     }
   }, [token])
+
+  const refreshIeltsSummaries = useCallback((sets) => {
+    if (!token || !sets?.length) return
+    getVocabProgress(token, sets.map((x) => x.scope)).then(setIeltsSummaries).catch(() => {})
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return undefined
+    let alive = true
+    getIeltsMe(token)
+      .then((me) => (me?.ieltsAccount || me?.onboarded ? getIeltsTests(token, 'vocab') : []))
+      .then((list) => {
+        if (!alive) return
+        const sets = sortIeltsSets(Array.isArray(list) ? list : []).map((x) => ({ ...x, scope: ieltsScope(x.id) }))
+        setIeltsSets(sets)
+        refreshIeltsSummaries(sets)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token, refreshIeltsSummaries])
+
+  const openIeltsSet = (set) => {
+    if (!token) return
+    setIeltsSet({ set, words: [], states: {}, loading: true })
+    setScreen('ielts-set')
+    Promise.all([getIeltsTest(token, set.id), getVocabProgressWords(token, set.scope).catch(() => ({}))])
+      .then(([r, states]) => setIeltsSet({ set, words: Array.isArray(r?.document?.words) ? r.document.words : [], states: states || {}, loading: false }))
+      .catch(() => {
+        flash(t('vocab.lesson.error'))
+        setScreen('home')
+      })
+  }
+
+  // ответы тренировки набора IELTS — на сервер: коробки повторения и «изучено» на карточке набора
+  const saveIeltsResults = (scope, answers) => {
+    const results = progressResults(answers)
+    if (!results.length) return
+    saveVocabProgress(token, scope, results)
+      .then((changed) => {
+        setIeltsSet((cur) => (cur && cur.set.scope === scope ? { ...cur, states: { ...cur.states, ...changed } } : cur))
+        refreshIeltsSummaries(ieltsSets)
+      })
+      .catch(() => flash(t('vocab.ielts.saveError')))
+  }
 
   useEffect(() => {
     if (!token) return
@@ -286,6 +345,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
             markVocabLearned(token, keys).catch(() => {})
           }
         }}
+        onResults={String(practiceScopeId || '').startsWith('ielts-') ? (answers) => saveIeltsResults(practiceScopeId, answers) : undefined}
         onExit={() => {
           refreshTopMiss()
           setLearnedTick((n) => n + 1)
@@ -312,6 +372,22 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         speak={speak}
         onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'field-lessons' : 'levels')}
         onPractice={() => startPractice(practiceCardsOf(lesson), lesson.title, 'lesson', scopeMeta?.id || activeLevel || null)}
+      />,
+    )
+  }
+
+  if (screen === 'ielts-set' && ieltsSet) {
+    return shell(
+      <IeltsSetScreen
+        t={t}
+        lang={vlang}
+        set={ieltsSet.set}
+        words={ieltsSet.words}
+        states={ieltsSet.states}
+        loading={ieltsSet.loading}
+        speak={speak}
+        onBack={() => setScreen('home')}
+        onPractice={(queue) => startPractice(queue.map(practiceCard), ieltsSet.set.title, 'ielts-set', ieltsSet.set.scope)}
       />,
     )
   }
@@ -400,7 +476,9 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       <h1>{t('vocab.home.title')}</h1>
       <p className="vp-lead">{t('vocab.home.pickWay')}</p>
       {indexLoading && <p className="vp-state">…</p>}
-      {indexError && !levels.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
+      {indexError && !levels.length && !ieltsSets.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
+
+      <IeltsShelf t={t} lang={vlang} sets={ieltsSets} summaries={ieltsSummaries} onOpen={openIeltsSet} />
 
       <div className="vp-sec" id="vsec-levels">
         <div className="vp-sec-hd">

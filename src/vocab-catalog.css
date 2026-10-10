@@ -1031,3 +1031,48 @@
 @media (prefers-reduced-motion: reduce) {
   .vp-pcard__inner { transition: none; }
 }
+
+/* ── IELTS Vocabulary (Figma «IELTS new», «Словарь» 92:6134): карточка темы с иллюстрацией и прогрессом ── */
+.vp-ielts-card {
+  flex: none; width: min(236px, 76vw); min-height: 92px; display: flex; align-items: center; gap: 8px;
+  text-align: left; cursor: pointer; font: inherit; color: inherit;
+  background: #fff; border: 1px solid var(--vp-line); border-radius: var(--vp-r-lg); padding: 14px 10px 14px 16px;
+  box-shadow: 0 1px 2px rgba(24, 16, 40, 0.03);
+}
+.vp-ielts-card:hover { border-color: #cbb6ff; box-shadow: 0 8px 24px rgba(135,75,248,.08); }
+.vp-ielts-card__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.vp-ielts-card b { font-size: 19px; font-weight: 800; }
+.vp-ielts-card .nm { font-size: 13px; color: var(--vp-muted); }
+.vp-ielts-card .meta { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--vp-muted); }
+.vp-ielts-card .meta.is-progress, .vp-ielts-card .meta.is-done { color: var(--vp-violet); }
+.vp-ielts-card .meta.is-due { color: #c2700a; }
+.vp-ielts-card img { flex: none; width: 72px; height: 72px; object-fit: contain; }
+
+/* экран набора */
+/* иллюстрация — слева от заголовка: справа сверху у страницы свои кнопки (язык, уведомления), и картинка ложилась под них */
+.vp-iset__hd { display: flex; align-items: center; gap: 18px; }
+.vp-iset__hd img { flex: none; order: -1; width: 88px; height: 88px; object-fit: contain; }
+.vp-iset__kicker { color: var(--vp-violet); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.vp-iset .vp-lead { margin-bottom: 16px; }
+.vp-iset__progress { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; color: var(--vp-muted); }
+.vp-iset__bar { flex: 1 1 220px; max-width: 420px; height: 8px; border-radius: 999px; background: var(--vp-violet-lt); overflow: hidden; }
+.vp-iset__bar span { display: block; height: 100%; background: var(--vp-violet); border-radius: inherit; }
+.vp-iset__actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
+.vp-iset__hint { margin: 0 0 18px; font-size: 13px; color: var(--vp-muted); max-width: 70ch; }
+.vp-iset__words { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.vp-iset__words li {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  background: #fff; border: 1px solid var(--vp-line); border-radius: var(--vp-r);
+}
+.vp-iset__w { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vp-iset__w b { font-size: 16px; }
+.vp-iset__w .ipa { font-size: 12.5px; color: var(--vp-muted); }
+.vp-iset__w .tr { font-size: 14px; }
+.vp-iset__st { flex: none; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f1f0f5; color: var(--vp-muted); }
+.vp-iset__st.is-learning { background: var(--vp-violet-lt); color: var(--vp-violet); }
+.vp-iset__st.is-due { background: #fff3dc; color: #b7791f; }
+.vp-iset__st.is-learned { background: var(--vp-green-lt); color: #15803d; }
+@media (max-width: 560px) {
+  .vp-iset__hd img { width: 64px; height: 64px; }
+  .vp-iset__actions .vp-btn { flex: 1 1 100%; justify-content: center; }
+}

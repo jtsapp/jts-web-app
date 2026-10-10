@@ -276,12 +276,14 @@ export function LessonsIcon({ size = 24 }) {
   )
 }
 
+// IELTS — академическая шапочка (Material Symbols "school") из макета хаба
+// IELTS (Figma JTS-clone, NavItem/IELTS). Прежняя раскрытая книга здесь
+// нигде не использовалась.
 export function IeltsIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path
-        transform="translate(1 2)"
-        d="M20.625 14.0538C20.625 14.7745 19.9833 15.4052 19.25 15.4052H16.9583C15.3083 15.4052 13.6583 15.946 12.375 16.9369L11.8254 17.3874C11.5504 17.5675 11.275 17.6575 11 17.6575C10.725 17.6575 10.4496 17.5675 10.1746 17.3874L9.625 16.9369C8.34168 15.946 6.69163 15.4052 5.04167 15.4052H2.75C2.01667 15.4052 1.375 14.7745 1.375 14.0538V2.88309H0.916667C0.410406 2.88309 0 3.28644 0 3.784V16.3967C9.7911e-05 16.8942 0.410468 17.2976 0.916667 17.2976H3.66667C5.85819 17.2976 7.95261 17.9588 9.71098 19.2754L9.7163 19.2798L10.4504 19.82C10.7762 20.06 11.2239 20.06 11.5496 19.82L12.289 19.2754C14.0474 17.9588 16.1419 17.2976 18.3333 17.2976H21.0833C21.5895 17.2976 21.9999 16.8942 22 16.3967V3.784C22 3.28644 21.5896 2.88309 21.0833 2.88309H20.625V14.0538ZM16.9583 0C15.0333 0 13.108 0.630636 11.5496 1.80182L11 2.25227L10.4504 1.80182C8.89202 0.630636 6.96667 0 5.04167 0H3.66667C3.11667 0 2.75 0.360364 2.75 0.900909V14.0538H5.04167C6.96667 14.0538 8.89202 14.6845 10.4504 15.8556L11 16.3061L11.5496 15.8556C13.108 14.6845 15.0333 14.0538 16.9583 14.0538H19.25V0.900909C19.25 0.360364 18.8833 0 18.3333 0H16.9583Z"
+        d="M12 21L5 17.2V11.2L1 9L12 3L23 9V17H21V10.1L19 11.2V17.2L12 21ZM12 12.7L18.85 9L12 5.3L5.15 9L12 12.7ZM12 18.725L17 16.025V12.25L12 15L7 12.25V16.025L12 18.725Z"
         fill="currentColor"
       />
     </svg>
@@ -312,6 +314,20 @@ export function VocabIcon({ size = 24 }) {
         d="M7 2.5C5.34 2.5 4 3.84 4 5.5V18.5C4 20.16 5.34 21.5 7 21.5H19C19.55 21.5 20 21.05 20 20.5C20 19.95 19.55 19.5 19 19.5V17.5C19.55 17.5 20 17.05 20 16.5V3.5C20 2.95 19.55 2.5 19 2.5H7ZM17 19.5V17.5H7C6.45 17.5 6 17.95 6 18.5C6 19.05 6.45 19.5 7 19.5H17ZM8 7.5H16V9.5H8V7.5Z"
         fill="currentColor"
       />
+    </svg>
+  )
+}
+// Шестерёнка «Настройки» — нижний пункт сайдбара аккаунта IELTS (дизайн «IELTS new»)
+export function SettingsIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   )
 }
@@ -483,6 +499,29 @@ export function CursorIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M5 3l14 7-6 2-2 6-6-15z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// «Рука» — двигать доску. Нарисована отдельно: в наборе иконок доски для неё ничего нет.
+export function HandIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-.5V6a1.5 1.5 0 0 1 3 0v6m0-2.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.6a6 6 0 0 1-4.5-2L4.6 14.4a1.5 1.5 0 0 1 2.3-1.9L8 14"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+// «Показать всё» — рамка с уголками: весь лист в окне.
+export function FitIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   )
 }

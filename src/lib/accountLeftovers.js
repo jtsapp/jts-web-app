@@ -20,6 +20,25 @@ export function clearAccountLeftovers() {
   // Кэш каталогов — копия сервера, ключи по ученику: после выхода он только
   // занимал бы общую квоту localStorage (на ней же токен и черновики домашки).
   clearCatalogStorage()
+  clearIeltsLocal()
+}
+
+// IELTS держит на устройстве черновики эссе, ответы диагностики и Reading, последние ответы Speaking и трек
+// (jts_ielts_*) — без привязки к ученику. Оставленные после выхода, они доставались следующему: чужие эссе в «Моих
+// работах» и чужая диагностика, которую можно было досдать. Всё нужное после входа снова приходит с бэкенда.
+const IELTS_KEY_PREFIX = 'jts_ielts_'
+function clearIeltsLocal() {
+  try {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(IELTS_KEY_PREFIX)) keys.push(key)
+    }
+    // Вторым проходом: removeItem сдвигает индексы.
+    for (const key of keys) localStorage.removeItem(key)
+  } catch {
+    /* хранилище недоступно — убирать нечего */
+  }
 }
 
 // Сессия умерла сама (restoreSession: 401 и рефреш не прошёл) — это тот же

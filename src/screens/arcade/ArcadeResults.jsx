@@ -2,7 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { DIFFICULTIES } from '../../practice/arcade/engine.js'
 import { formatOneDecimal } from './format.js'
 
-// Итоги раунда — порт javaTest src/components/Statistics.tsx: время речи,
+// Итоги раунда: время речи,
 // время тишины, остановки и соотношение речи к тишине, плюс совет. Кнопки
 // «план подготовки» из исходника нет — в приложении ей некуда вести.
 // Это счёт игры, а не оценка языка: ничего сверх замеров здесь не выводим.
