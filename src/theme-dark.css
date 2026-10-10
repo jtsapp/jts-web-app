@@ -77,3 +77,9 @@ html[data-theme="dark"] .logo[style*="9047ff"],
 html[data-theme="dark"] .logo[style*="144, 71, 255"] {
   color: var(--dk-acc) !important;
 }
+
+/* номер подсписка AWL в «Словаре»: светлая плашка на тёмной карточке слепила */
+html[data-theme="dark"] .vp-ielts-card__num {
+  background: linear-gradient(135deg, #2a2140, var(--dk-acc-soft));
+  color: #e9dcff;
+}

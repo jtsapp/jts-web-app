@@ -11,7 +11,9 @@ const ILLUSTRATED = new Set(['environment', 'education', 'technology', 'health',
 
 function topicName(set, lang) {
   const tp = set?.topic && typeof set.topic === 'object' ? set.topic : null
-  return (tp && (lang === 'kk' ? tp.kk : tp.ru)) || ''
+  const name = (tp && (lang === 'kk' ? tp.kk : tp.ru)) || ''
+  // у подсписков AWL заголовок уже «AWL · Sublist 1» — второй «AWL · …» под ним лишний
+  return set?.category === 'awl' ? name.replace(/^AWL\s*·\s*/, '') : name
 }
 
 function metaText(t, meta, lang) {
@@ -27,16 +29,21 @@ function metaText(t, meta, lang) {
 // Картинка раздела: загруженная в web-admin (imageUrl каталога, MinIO), иначе — своя иллюстрация стартовых тем
 const coverOf = (x) => x?.imageUrl || (ILLUSTRATED.has(x?.category) ? `/ielts/vocab/${x.category}.webp` : null)
 
-export function IeltsShelf({ t, lang, sets, summaries, onOpen }) {
+/** Наборы Academic Word List (category «awl») — своя полка под темами: 10 подсписков не должны теснить 8 тем экзамена. */
+export const isAwlSet = (s) => s?.category === 'awl'
+
+export function IeltsShelf({ t, lang, sets, summaries, onOpen, kind = 'topics' }) {
   if (!sets?.length) return null
+  const awl = kind === 'awl'
+  const title = awl ? t('vocab.ielts.awl.title') : t('vocab.ielts.title')
   return (
-    <div className="vp-sec" id="vsec-ielts">
+    <div className="vp-sec" id={awl ? 'vsec-ielts-awl' : 'vsec-ielts'}>
       <div className="vp-sec-hd">
         <div>
-          <h2>{t('vocab.ielts.title')}</h2>
-          <p>{t('vocab.ielts.sub')}</p>
+          <h2>{title}</h2>
+          <p>{awl ? t('vocab.ielts.awl.sub') : t('vocab.ielts.sub')}</p>
         </div>
-        <button type="button" className="vp-sec-arrow" onClick={() => onOpen(sets[0])} aria-label={t('vocab.ielts.title')}>→</button>
+        <button type="button" className="vp-sec-arrow" onClick={() => onOpen(sets[0])} aria-label={title}>→</button>
       </div>
       <div className="vp-row">
         {sets.map((s) => {
@@ -48,7 +55,12 @@ export function IeltsShelf({ t, lang, sets, summaries, onOpen }) {
                 <span className="nm">{topicName(s, lang)}</span>
                 <span className={`meta is-${meta.kind}`}>{metaText(t, meta, lang)}</span>
               </span>
-              {coverOf(s) && <img src={coverOf(s)} alt="" aria-hidden="true" width="84" height="84" loading="lazy" />}
+              {coverOf(s) ? (
+                <img src={coverOf(s)} alt="" aria-hidden="true" width="84" height="84" loading="lazy" />
+              ) : isAwlSet(s) ? (
+                // картинки у подсписков нет — номер подсписка: по нему AWL и учат (1 — самые частотные слова)
+                <span className="vp-ielts-card__num" aria-hidden="true">{String(s.title || '').replace(/\D+/g, '') || '#'}</span>
+              ) : null}
             </button>
           )
         })}
