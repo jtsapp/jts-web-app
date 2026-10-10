@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   ACTIVITY_DAYS,
   PRACTICE_AREA_BY_MODULE,
+  SKILL_DAY_MIGRATION,
   windowStart,
   loadStudentAppActivity,
   buildStudentAppActivity,
@@ -27,11 +28,15 @@ function makeFakeSql(rowsByPrefix = {}) {
 // Отвечает по таблице, из которой читает запрос. Дневные запросы календаря
 // узнаются по to_char: недельная сводка (loadEcosystemWeek) читает те же
 // voice_usage и activity_time, но свои цифры здесь не подмешивает.
-// voice — строки или функция от текста запроса (см. voiceUsageRows).
-function makeTableSql({ stat = [], goal = [], voice = [], trainer = [], tasks = [], practice = [] }) {
+// voice — строки или функция от текста запроса (см. voiceUsageRows). since —
+// когда применилась 0016 (учёт по суткам); null — миграции нет.
+const TRACKED_SINCE = new Date('2026-09-01T06:00:00Z')
+
+function makeTableSql({ stat = [], goal = [], voice = [], trainer = [], tasks = [], practice = [], since = TRACKED_SINCE }) {
   return async (strings) => {
     const q = strings.join('?').replace(/\s+/g, ' ').toLowerCase()
     const daily = q.includes('to_char')
+    if (q.includes('from schema_migrations')) return since ? [{ applied_at: since }] : []
     if (q.includes('from skill_stat')) return stat
     if (q.includes('from level_goal')) return goal
     if (daily && q.includes('from voice_usage')) return typeof voice === 'function' ? voice(q) : voice
@@ -96,8 +101,12 @@ describe('windowStart', () => {
 
 describe('loadStudentAppActivity', () => {
   it('читает только узкие колонки по ключу ученика', async () => {
-    const { sql, log } = makeFakeSql()
+    const { sql, log } = makeFakeSql({ 'from schema_migrations': [{ applied_at: TRACKED_SINCE }] })
     await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
+
+    const since = log.find((e) => e.q.includes('from schema_migrations'))
+    expect(since.q).toContain('select applied_at')
+    expect(since.vals).toEqual([SKILL_DAY_MIGRATION])
 
     const practice = log.find((e) => e.q.includes('from practice_state'))
     expect(practice.q).toContain('select module, updated_at')
@@ -142,7 +151,7 @@ describe('loadStudentAppActivity', () => {
     let inFlight = 0
     let peak = 0
     let total = 0
-    const sql = async () => {
+    const sql = async (strings) => {
       total += 1
       inFlight += 1
       peak = Math.max(peak, inFlight)
@@ -150,13 +159,34 @@ describe('loadStudentAppActivity', () => {
       // бы до следующего, и пачка, выпущенная разом, пика не накопила бы.
       await Promise.resolve()
       inFlight -= 1
-      return []
+      // Учёт по суткам начат — иначе skill_day не читается и пачка была бы короче.
+      return strings.join('').includes('schema_migrations') ? [{ applied_at: TRACKED_SINCE }] : []
     }
     await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
 
-    // Девять запросов — бюджет из spec §6; тест не должен проходить вхолостую.
-    expect(total).toBe(9)
+    // Десять запросов — бюджет из spec §6; тест не должен проходить вхолостую.
+    expect(total).toBe(10)
     expect(peak).toBeLessThanOrEqual(3)
+  })
+
+  // runMigrations глотает ошибки: инстанс без 0016 — штатная ситуация. Читать
+  // таблицу, которой нет, значит уронить всю ручку с «relation does not exist».
+  it('учёт по суткам не начат (0016 нет) — skill_day не читается, момент учёта null', async () => {
+    const { sql, log } = makeFakeSql()
+    const raw = await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
+
+    expect(log.some((e) => e.q.includes('from skill_day'))).toBe(false)
+    expect(raw.tasks).toEqual([])
+    expect(buildStudentAppActivity(raw).practiceTrackedSince).toBeNull()
+  })
+
+  it('учёт по суткам начат — момент уходит в ответ ISO-строкой', async () => {
+    const sql = makeTableSql({ tasks: [{ day: '2026-10-06', tasks: 3, first_try: 2 }] })
+    const raw = await loadStudentAppActivity('user-141', new Date('2026-10-08T03:00:00Z'), sql)
+
+    const out = buildStudentAppActivity(raw)
+    expect(out.practiceTrackedSince).toBe('2026-09-01T06:00:00.000Z')
+    expect(out.days.map((d) => [d.date, d.practiceTasks])).toEqual([['2026-10-06', 3]])
   })
 
   // Купленные минуты тьютора пишутся в voice_usage.pool_seconds, а не в seconds
@@ -392,9 +422,11 @@ describe('buildStudentAppActivity', () => {
   it('без данных отдаёт полный каркас ответа, а не пропущенные поля', () => {
     const out = buildStudentAppActivity({})
     expect(Object.keys(out).sort()).toEqual(
-      ['configured', 'days', 'goal', 'practice', 'skills', 'strongest', 'weakest', 'week'],
+      ['configured', 'days', 'goal', 'practice', 'practiceTrackedSince', 'skills', 'strongest', 'weakest', 'week'],
     )
-    expect(out).toMatchObject({ configured: true, strongest: null, weakest: null, goal: null, week: null, days: [], practice: [] })
+    expect(out).toMatchObject({
+      configured: true, strongest: null, weakest: null, goal: null, week: null, days: [], practice: [], practiceTrackedSince: null,
+    })
     expect(out.skills).toHaveLength(6)
   })
 })

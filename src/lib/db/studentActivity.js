@@ -37,6 +37,22 @@ export const PRACTICE_AREA_BY_MODULE = {
   listenchoose: 'listenchoose',
 }
 
+/** Миграция, с которой кабинет считает решённые задания по суткам (skill_day). */
+export const SKILL_DAY_MIGRATION = '0016_skill_day.sql'
+
+/**
+ * Когда начался учёт заданий по суткам — время применения миграции 0016. Суток
+ * раньше этого момента нет, и неделя, начавшаяся до него, посчитана не целиком:
+ * карточка в такую неделю показывает не «за неделю», а всего решённого
+ * (решение владельца 10.10). null — миграции на инстансе нет (runMigrations
+ * глотает ошибки): тогда skill_day не читаем вовсе, иначе «relation does not
+ * exist» уронил бы всю ручку.
+ */
+async function loadSkillDaySince(sql) {
+  const rows = await sql`select applied_at from schema_migrations where name = ${SKILL_DAY_MIGRATION}`
+  return rows[0]?.applied_at ?? null
+}
+
 /** Первый день окна, 'YYYY-MM-DD' в UTC: сегодня и ещё ACTIVITY_DAYS − 1 суток назад. */
 export function windowStart(now = new Date()) {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
@@ -50,15 +66,15 @@ export function windowStart(now = new Date()) {
  */
 export async function loadStudentAppActivity(profileId, now = new Date(), sql = getSql()) {
   if (!sql) {
-    return { stats: null, goal: null, week: null, voice: [], trainer: [], tasks: [], practice: [] }
+    return { stats: null, goal: null, week: null, voice: [], trainer: [], tasks: [], practice: [], practiceSince: null }
   }
   const from = windowStart(now)
   // Читаем ПО ОДНОМУ, а не одним Promise.all: postgres.js открывает новое
   // соединение под каждый одновременный запрос, пока в пуле есть место, а пул
   // (max 10, см. sql.js) общий с голосом, навыками и практикой самих учеников.
-  // Девять запросов разом на каждое открытие карточки занимали бы у них почти
-  // весь пул. Параллельность осталась только внутри loadEcosystemWeek (три
-  // запроса), поэтому карточка держит не больше трёх соединений. Запросы
+  // Десять запросов разом на каждое открытие карточки заняли бы у них весь пул.
+  // Параллельность осталась только внутри loadEcosystemWeek (три запроса),
+  // поэтому карточка держит не больше трёх соединений. Запросы
   // короткие, по первичным ключам, а карточку открывают не чаще раза в пять
   // минут (кэш в браузере): лишние миллисекунды ожидания дешевле, чем нехватка
   // соединений у живых учеников.
@@ -83,13 +99,16 @@ export async function loadStudentAppActivity(profileId, now = new Date(), sql = 
     where profile_id = ${profileId} and day >= ${from}
     group by day
   `
-  const tasks = await sql`
-    select to_char(day, 'YYYY-MM-DD') as day, tasks, first_try
-    from skill_day
-    where profile_id = ${profileId} and day >= ${from}
-  `
+  const practiceSince = await loadSkillDaySince(sql)
+  const tasks = practiceSince
+    ? await sql`
+        select to_char(day, 'YYYY-MM-DD') as day, tasks, first_try
+        from skill_day
+        where profile_id = ${profileId} and day >= ${from}
+      `
+    : []
   const practice = await sql`select module, updated_at from practice_state where profile_id = ${profileId}`
-  return { stats, goal, week, voice, trainer, tasks, practice }
+  return { stats, goal, week, voice, trainer, tasks, practice, practiceSince }
 }
 
 /** Сутки из трёх таблиц — в одну строку на день; дни без активности не отдаём. */
@@ -152,12 +171,22 @@ function practiceAreas(rows) {
     .map(([area, at]) => ({ area, updatedAt: at.toISOString() }))
 }
 
+/** Момент как ISO-строка; непонятное значение — null, а не «Invalid Date» в ответе. */
+function isoOrNull(value) {
+  if (!value) return null
+  const at = new Date(value)
+  return Number.isNaN(at.getTime()) ? null : at.toISOString()
+}
+
 /**
  * Тело ответа ручки. Чистая функция — вся арифметика проверяема без БД.
  *
  * Навыки — тем же rankSkills и skillHighlights, что и у «Главной» ученика:
  * преподаватель и ученик видят одни и те же проценты. done едет рядом: «72%» на
  * трёх заданиях и на трёхстах — разные вещи, и карточке надо их различать.
+ *
+ * practiceTrackedSince — с какого момента задания считаются по суткам (null —
+ * учёта нет). По нему карточка решает, посчитана ли текущая неделя целиком.
  */
 export function buildStudentAppActivity(raw) {
   const stats = raw?.stats || {}
@@ -177,5 +206,6 @@ export function buildStudentAppActivity(raw) {
       : null,
     days: mergeDays(raw),
     practice: practiceAreas(raw?.practice),
+    practiceTrackedSince: isoOrNull(raw?.practiceSince),
   }
 }
