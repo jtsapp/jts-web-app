@@ -9922,3 +9922,31 @@ textarea {
   opacity: 0.7;
 }
 .se-notice__close:hover { opacity: 1; }
+
+/* Домашнее задание IELTS на экране «Домашняя работа» (IeltsHomeworkDetail): метка в списке, карточка задания,
+   комментарий преподавателя и ручная отметка для заданий без теста. */
+.hw-card__ielts { background: #fff1e3; color: #b85c00; }
+.hw-badge--done { background: #dcf3e2; color: #2c8a45; }
+.hw-ielts { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #eeeaf6; border-radius: 16px; background: #fbfaff; }
+.hw-ielts__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hw-ielts__body b { font-size: 16px; color: var(--ink); }
+.hw-ielts__body span { font-size: 13px; color: var(--muted); }
+.hw-ielts__note { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: #fff7e8; }
+.hw-ielts__note small { display: block; font-size: 12px; font-weight: 700; color: #a86200; }
+.hw-ielts__note p { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.hw-ielts__hint { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.hw-ielts__mark {
+  margin-top: 16px;
+  border: 1.5px solid var(--purple);
+  border-radius: 999px;
+  padding: 11px 20px;
+  background: #fff;
+  color: var(--purple);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hw-ielts__mark:hover:enabled { background: #f4eeff; }
+.hw-ielts__mark:disabled { opacity: .6; cursor: default; }
+.hw-actions .hw-ielts__mark { margin-top: 0; }

@@ -213,7 +213,8 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
         </MockRunHeader>
       ) : (
         <RunTopBar
-          chip={`Reading${partLabel(test, doc) ? ` · ${partLabel(test, doc)}` : ''} · ${test.title}`}
+          // у секции GT название уже начинается с «Section 1 · …» — подпись части второй раз не повторяем (как в Listening)
+          chip={`Reading${partLabel(test, doc) && !String(test.title || '').startsWith(partLabel(test, doc)) ? ` · ${partLabel(test, doc)}` : ''} · ${test.title}`}
           mode={t('ieltsReading.modeChip', { mode: t(`ieltsReading.mode.${mode}`).toLowerCase() })}
           clock={left != null ? formatClock(left) : t('ieltsReading.noTimer')}
           clockLow={left != null && left <= 300}

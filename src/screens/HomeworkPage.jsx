@@ -4,11 +4,13 @@ import { useI18n } from '../i18n.jsx'
 import {
   getMyHomework, getHomeworkById, uploadMedia,
   attachHomeworkAnswer, removeHomeworkAnswer, submitHomework, saveHomeworkAnswer,
-  getMyMaterialAssignments,
+  getMyMaterialAssignments, getIeltsPlan,
 } from '../api.js'
 import HomeworkList from './homework/HomeworkList.jsx'
 import HomeworkDetail from './homework/HomeworkDetail.jsx'
 import MaterialAssignmentDetail from './homework/MaterialAssignmentDetail.jsx'
+import IeltsHomeworkDetail from './homework/IeltsHomeworkDetail.jsx'
+import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
 import { isAllowedFile, keepMaterialParts, studentOrder } from './homework/homeworkFormat.js'
 import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
@@ -24,11 +26,15 @@ import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
  * файлами и оценками, поэтому карточка открывается без похода в сеть; заново
  * задание перечитывается только после действий, которые его меняют, —
  * загрузки файла, удаления и отправки на проверку.
+ *
+ * Третий источник — домашние задания IELTS: преподаватель задаёт их в web-admin, и живут они строками плана IELTS
+ * (/mobile/ielts/plan, ieltsHomework.js). Ученику IELTS «Домашняя работа» одна, поэтому они в том же списке.
  */
 export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile, tourKey }) {
   const { t } = useI18n()
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
+  const [ielts, setIelts] = useState([])
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error' (гость — см. view ниже)
   const [selectedId, setSelectedId] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -46,8 +52,10 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
       // Задания с уроков — best-effort: если назначений нет или право ещё не
       // раскатано, экран с обычными работами остаётся рабочим.
       getMyMaterialAssignments(token).catch(() => []),
+      // План IELTS есть только у ученика IELTS; у остальных ручка отвечает отказом — это не ошибка экрана.
+      getIeltsPlan(token).catch(() => null),
     ])
-      .then(([list, assignments]) => {
+      .then(([list, assignments, plan]) => {
         if (cancelled) return
         const rows = Array.isArray(list) ? list : []
         // Выдача с homeworkAssignmentId — теперь часть чьей-то домашней работы
@@ -57,9 +65,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         // задвоить одну и ту же выдачу на экране.
         const unattached = (Array.isArray(assignments) ? assignments : []).filter((a) => !a.homeworkAssignmentId)
         const cards = unattached.map(materialCard)
+        const ieltsCards = ieltsHomeworkCards(plan)
         setItems(rows)
         setMaterials(cards)
-        const first = [...rows, ...cards].sort((a, b) => studentOrder(a) - studentOrder(b))[0]
+        setIelts(ieltsCards)
+        const first = [...rows, ...cards, ...ieltsCards].sort((a, b) => studentOrder(a) - studentOrder(b))[0]
         setSelectedId((id) => id ?? first?.id ?? null)
         setState('ready')
       })
@@ -78,9 +88,14 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   // сданное и проверенное; внутри группы сохраняется порядок бэкенда
   // (новые сначала) — sort стабильный.
   const combined = useMemo(
-    () => [...items, ...materials].sort((a, b) => studentOrder(a) - studentOrder(b)),
-    [items, materials]
+    () => [...items, ...materials, ...ielts].sort((a, b) => studentOrder(a) - studentOrder(b)),
+    [items, materials, ielts]
   )
+
+  // Отметка «выполнено» у задания IELTS без теста меняет план — перечитываем его (кэш плана сбрасывает сам вызов).
+  const reloadIelts = useCallback(() => {
+    getIeltsPlan(token).then((plan) => setIelts(ieltsHomeworkCards(plan))).catch(() => {})
+  }, [token])
 
   // Ответ сервера на каждое действие — это уже свежая карточка задания,
   // поэтому список чинится на месте, без перезагрузки всего экрана. Части-
@@ -274,7 +289,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
               <div className="hw__col">
                 <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />
               </div>
-              {selected?.kind === 'material' ? (
+              {selected?.kind === 'ielts' ? (
+                <IeltsHomeworkDetail key={selected.id} card={selected} token={token} onNav={onNav} onChanged={reloadIelts} />
+              ) : selected?.kind === 'material' ? (
                 /* key по выдаче: выбрали в списке другую — рамка с материалом
                    прежней должна уйти вместе с ней, а не остаться на экране
                    задания, которое ученик уже не выбирал. */

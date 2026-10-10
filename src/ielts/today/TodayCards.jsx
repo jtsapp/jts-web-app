@@ -1,6 +1,14 @@
 import { useI18n } from '../../i18n.jsx'
 import { formatDate } from '../format.js'
 import { originLabel, taskLabel, taskOrigin } from '../plan/planModel.js'
+import { typeLabel } from '../reading/meta.js'
+
+function typeName(key) {
+  const name = typeLabel(key)
+  if (name !== key) return name
+  const words = String(key).replace(/_/g, ' ').trim()
+  return words ? words[0].toUpperCase() + words.slice(1) : ''
+}
 import {
   ArrowForwardIcon, CheckCircleIcon, EditIcon, FlagIcon, HeadphonesIcon, MenuBookIcon, MicIcon, ScheduleIcon,
   TargetIcon, TranslateIcon, VideoIcon,
@@ -149,7 +157,8 @@ export function GrowthCard({ growth, onTrain }) {
   const { t } = useI18n()
   const title = !growth ? t('ieltsToday.growth.noneTitle')
     : growth.kind === 'criterion' ? (t(`ieltsToday.crit.${growth.key}`) === `ieltsToday.crit.${growth.key}` ? growth.key : t(`ieltsToday.crit.${growth.key}`))
-    : String(growth.key).replace(/_/g, ' ')
+    // тип вопроса — его экзаменационным именем («Sentence completion»), как в «Практике», а не ключом в нижнем регистре
+    : typeName(growth.key)
   const text = !growth ? t('ieltsToday.growth.noneText')
     : growth.kind === 'criterion' ? t('ieltsToday.growth.criterion', { skill: growth.skill === 'writing' ? 'Writing' : 'Speaking' })
     : t('ieltsToday.growth.type', { skill: growth.skill === 'reading' ? 'Reading' : 'Listening', correct: String(growth.correct), total: String(growth.total) })

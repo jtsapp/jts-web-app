@@ -67,7 +67,8 @@ function Axes({ o }) {
       ))}
       <line x1={o.L} x2={o.L} y1={o.T} y2={o.H - o.B} className="ih-wchart__axis" />
       <line x1={o.L} x2={o.W - o.R} y1={o.H - o.B} y2={o.H - o.B} className="ih-wchart__axis" />
-      {o.unit && <text x={o.L - 6} y={o.T - 6} textAnchor="end" className="ih-wchart__tick">{o.unit}</text>}
+      {/* единица — справа от оси: над столбцом подписей она ложилась на верхнюю отметку («%» поверх «20») */}
+      {o.unit && <text x={o.L + 4} y={o.T - 6} textAnchor="start" className="ih-wchart__tick">{o.unit}</text>}
     </>
   )
 }

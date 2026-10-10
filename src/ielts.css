@@ -5003,9 +5003,10 @@
   font-size: 14px;
   cursor: pointer;
 }
+/* активная вкладка — фиолетовая, как переключатели раздела, а не чёрная */
 .ih-wguide__tabs button.is-on {
-  background: var(--ih-ink);
-  border-color: var(--ih-ink);
+  background: var(--ih-violet);
+  border-color: var(--ih-violet);
   color: #fff;
 }
 .ih-wguide__skeleton {
@@ -13225,7 +13226,9 @@
   opacity: 0.45;
   cursor: default;
 }
-.ih-diag__recbtn.is-on {
+/* во время записи кнопка остаётся красной и под курсором: иначе :hover перекрашивал её в бледно-зелёный */
+.ih-diag__recbtn.is-on,
+.ih-diag__recbtn.is-on:hover:not(:disabled) {
   border-color: #e5484d;
   background: #e5484d;
   color: #fff;
@@ -13382,4 +13385,134 @@
   display: contents;
   font-size: 17px;
   font-weight: 800;
+}
+
+/* ===== Правки сквозной проверки 10.10.2026 (телефон, вёрстка) ===== */
+
+/* Writing на телефоне: колонки становятся одной лентой. Сетка с одной колонкой делила высоту экрана между заданием
+   и полем ответа — колонка задания получала 321 px, её содержимое (таблица, подсказки) уезжало под карточку ответа, и
+   кнопки «Отправить» ложились поверх подсказок. Колонкой flex у каждого блока — своя высота, прокручивается лента. */
+@media (max-width: 900px) {
+  .ih-wrun__body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ih-wrun__body > * {
+    flex: none;
+    min-height: auto;
+  }
+}
+
+/* Образец графика в гиде «Как писать»: svg тянется на ширину карточки (1000+ px), и подписи осей вырастали втрое.
+   Своя ширина — как в редакторе задания. */
+.ih-wguide__sample .ih-wchart {
+  max-width: 560px;
+}
+
+/* Буква абзаца не выделяется: двойной щелчок по первому слову захватывал её («CGardeners»), и меню маркера не
+   появлялось. */
+.ih-para__label {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Флажки на экранах IELTS — в цвет раздела, а не серый флажок браузера (согласие в проверке mock и т. п.) */
+.ih-mcheck__agree input[type='checkbox'],
+.ih input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ih-violet);
+  cursor: pointer;
+}
+
+/* Плавающая кнопка ассистента (assistant.css, 60 px в правом нижнем углу) закрывала последние строки разделов —
+   кнопки «Подробнее», ссылки и радио. Даём ленте запас снизу, чтобы до последнего элемента можно было докрутить. */
+.ih {
+  padding-bottom: 88px;
+}
+
+/* Баннер «Проверь свой уровень»: мелкая строка про таймер и ИИ-проверку заходила на маскота и флаг */
+.ih-mt__fine {
+  max-width: 50% !important;
+}
+
+@media (max-width: 600px) {
+  /* Вопрос со списком (Matching information / headings): текст и выбор — в две строки, иначе формулировка
+     сжималась в колонку по слову («opposition / to a / scheme…») рядом с выпадающим списком */
+  .ih-q--select .ih-q__row {
+    flex-wrap: wrap;
+  }
+  .ih-q--select .ih-q__prompt {
+    flex-basis: calc(100% - 40px);
+  }
+  .ih-q--select .ih-select {
+    margin-left: 26px;
+  }
+
+  /* Строка «Практики»: чипы уровня и статуса и кнопка — второй строкой, название остаётся в одну-две строки */
+  .ih-prow {
+    flex-wrap: wrap;
+  }
+  .ih-prow__body {
+    flex-basis: calc(100% - 62px);
+  }
+  .ih-prow > .ih-btn2 {
+    flex: 1 1 100%;
+  }
+
+  /* Шапка прохождения Reading/Listening: логотип прячем — без него таймер, «Aa», «Завершить» и закрытие
+     помещаются в одну строку, а не роняют «×» на отдельную */
+  .ih-runbar .ih-ob__logo {
+    display: none;
+  }
+  .ih-runbar {
+    gap: 8px;
+  }
+
+  /* Вкладки хаба и навыков прокручиваются вбок — край гаснет, чтобы было видно, что дальше есть ещё вкладки */
+  .ih-tabs,
+  .ih-seg {
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent);
+    mask-image: linear-gradient(to right, #000 82%, transparent);
+    padding-right: 24px;
+  }
+
+  /* Баннер mock на телефоне: текст на всю ширину поверх затемнения, маскот остаётся фоном справа */
+  .ih-mt__hero > * {
+    max-width: 100%;
+  }
+  .ih-mt__fine {
+    max-width: 100% !important;
+  }
+  .ih-mt__hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(76, 29, 149, 0.78) 0%, rgba(76, 29, 149, 0.45) 70%, rgba(76, 29, 149, 0.2) 100%);
+  }
+}
+@media (max-width: 600px) {
+  /* таймер в шапке прохождения на телефоне — компактнее, чтобы «×» не уходил на отдельную строку */
+  .ih-runbar .ih-mockbar__clock {
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .ih-runbar .ih-mockbar__clock b {
+    font-size: 15px;
+  }
+  .ih-runbar .ih-btn {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Полоса номеров вопросов (40 у полного теста) прокручивается вбок — край гаснет, чтобы было видно, что номера идут
+   дальше; запас справа даёт докрутить последний номер из-под тени */
+.ih-run__nums {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  padding-right: 40px;
 }

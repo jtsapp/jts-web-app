@@ -44,6 +44,8 @@ export default function HomeworkList({ items, selectedId, onSelect }) {
                 {/* Задание с живого урока (назначенный материал) помечается отдельно:
                     у него другой сценарий — решать в самом материале, без файлов ответа. */}
                 {hw.kind === 'material' && <span className="hw-card__lesson">{t('homework.lessonTask')}</span>}
+                {/* Домашнее задание IELTS — из плана IELTS: проходится на своём экране, отмечается сдачей теста. */}
+                {hw.kind === 'ielts' && <span className="hw-card__lesson hw-card__ielts">IELTS</span>}
                 {partsCount > 1 && <span className="hw-card__parts">{t('homework.partsCount', { n: String(partsCount) })}</span>}
                 {due && <span className="hw-card__due">{t('homework.dueShort', { date: due })}</span>}
                 {hw.grade != null && <span className="hw-card__grade">{hw.grade}</span>}

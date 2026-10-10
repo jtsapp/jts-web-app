@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { plural } from '../../lib/plural.js'
 import { IconPlay, IconSpeaker } from './VocabIcons.jsx'
 import { vocabKey } from './vocabLearned.js'
 import { practiceQueue, setCardMeta, wordStatus } from './ieltsVocab.js'
@@ -13,9 +14,10 @@ function topicName(set, lang) {
   return (tp && (lang === 'kk' ? tp.kk : tp.ru)) || ''
 }
 
-function metaText(t, meta) {
+function metaText(t, meta, lang) {
   if (meta.kind === 'done') return t('vocab.ielts.done', { n: String(meta.n), total: String(meta.total) })
-  if (meta.kind === 'due') return t('vocab.ielts.due', { n: String(meta.n) })
+  // «2 слова к повторению», а не «2 слов»: число склоняет слово (lib/plural.js)
+  if (meta.kind === 'due') return plural(t, lang, 'vocab.ielts.due', meta.n)
   if (meta.kind === 'progress') return t('vocab.ielts.learnedOf', { n: String(meta.n), total: String(meta.total) })
   return t('vocab.home.words', { n: meta.total })
 }
@@ -44,7 +46,7 @@ export function IeltsShelf({ t, lang, sets, summaries, onOpen }) {
               <span className="vp-ielts-card__txt">
                 <b lang="en">{s.title}</b>
                 <span className="nm">{topicName(s, lang)}</span>
-                <span className={`meta is-${meta.kind}`}>{metaText(t, meta)}</span>
+                <span className={`meta is-${meta.kind}`}>{metaText(t, meta, lang)}</span>
               </span>
               {coverOf(s) && <img src={coverOf(s)} alt="" aria-hidden="true" width="84" height="84" loading="lazy" />}
             </button>

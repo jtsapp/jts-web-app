@@ -315,7 +315,9 @@ export function WeekView({ data, n, onWeek, onStart, onMove }) {
               </header>
               <ul>
                 {list.length ? list.map((task) => {
-                  const st = task.origin === 'weekly_control' ? 'control' : task.status === 'completed' ? 'done' : task.date === today ? 'current' : task.overdue ? 'missed' : 'planned'
+                  // контроль недели засчитывается любой проверочной работой недели (completionRule control:any) — сделанный показываем
+                  // сделанным, как и в роадмапе, а не вечным флажком
+                  const st = task.status === 'completed' ? 'done' : task.origin === 'weekly_control' ? 'control' : task.date === today ? 'current' : task.overdue ? 'missed' : 'planned'
                   return (
                     <li key={task.id}>
                       <button type="button" className={`ih-wcard is-${st}${sel?.id === task.id ? ' is-sel' : ''}${taskOrigin(task) ? ` is-${taskOrigin(task)}` : ''}`} onClick={() => { setSelId(task.id); setMoving(false) }}>
