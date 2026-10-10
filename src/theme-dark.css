@@ -83,3 +83,39 @@ html[data-theme="dark"] .vp-ielts-card__num {
   background: linear-gradient(135deg, #2a2140, var(--dk-acc-soft));
   color: #e9dcff;
 }
+
+/* баннер цели IELTS («Сегодня»): фон-иллюстрация (облака, гора) — картинка, тема её не перекрашивает, а текст поверх уже
+   светлый; приглушаем фон до ночной сцены, маскот (отдельная картинка) остаётся ярким */
+html[data-theme="dark"] .ih-gb__bg {
+  filter: brightness(0.32) saturate(1.15);
+}
+
+/* дорога роадмапа плана IELTS — SVG-обводка: генератор тёмной темы stroke не перекрашивает, и светлая лавандовая лента
+   слепила на тёмной карточке. Форма та же, тон — тёмный фиолетовый, разметка — приглушённая */
+html[data-theme="dark"] .ih-road2__band {
+  stroke: #352a52;
+}
+html[data-theme="dark"] .ih-road2__axis {
+  stroke: rgba(255, 255, 255, 0.28);
+}
+
+/* то же для прочих SVG раздела IELTS: светлые дорожки колец прогресса и сетка графиков (Writing Task 1, «Прогресс»)
+   светились на тёмных карточках; цвета данных (линии, столбцы) не трогаем */
+html[data-theme="dark"] .ih-ring__track,
+html[data-theme="dark"] .ih-sring__track {
+  stroke: var(--dk-line);
+}
+html[data-theme="dark"] .ih-wchart__grid,
+html[data-theme="dark"] .ih-pchart__grid {
+  stroke: #2c2740;
+}
+html[data-theme="dark"] .ih-wchart__axis {
+  stroke: #5a5470;
+}
+html[data-theme="dark"] .ih-pchart__gridline {
+  stroke: #2c2740;
+}
+/* разделители долей круговой диаграммы — цветом карточки, а не белым */
+html[data-theme="dark"] .ih-wchart__slice {
+  stroke: var(--dk-card);
+}

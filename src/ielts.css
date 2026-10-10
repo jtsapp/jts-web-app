@@ -13726,3 +13726,11 @@
   mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
   padding-right: 40px;
 }
+
+/* линии, которые раньше были цветом прямо в JSX (stroke="#…"): классом, чтобы тёмная тема могла их перекрасить */
+.ih-pchart__gridline {
+  stroke: #ece8f5;
+}
+.ih-wchart__slice {
+  stroke: #fff;
+}

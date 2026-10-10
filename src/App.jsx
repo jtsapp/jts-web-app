@@ -2483,7 +2483,16 @@ export default function App() {
       return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     }
     default:
-      return null
+      // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал
+      // пустую страницу без единой кнопки. Уводим на «Главную», а без входа — на приветствие.
+      return <ScreenFallback to={token ? 'home' : 'welcome'} onGo={setScreen} />
   }
   }
+}
+
+function ScreenFallback({ to, onGo }) {
+  useEffect(() => {
+    onGo(to)
+  }, [to, onGo])
+  return null
 }

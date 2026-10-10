@@ -135,7 +135,7 @@ function PieChart({ c }) {
     const a1 = a0 + (Number(s.value) / total) * 2 * Math.PI
     const d = `M${cx},${cx} L${p(a0)} A${r},${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${p(a1)} Z`
     a0 = a1
-    return <path key={s.label} d={d} fill={COLORS[i % COLORS.length]} stroke="#fff" strokeWidth="2" />
+    return <path key={s.label} d={d} fill={COLORS[i % COLORS.length]} className="ih-wchart__slice" strokeWidth="2" />
   })
   return (
     <>
