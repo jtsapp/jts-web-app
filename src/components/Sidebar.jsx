@@ -4,6 +4,7 @@ import { useI18n } from '../i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance, getDemoAccess, getIeltsMe } from '../api.js'
+import { ieltsHidden } from '../lib/ieltsGate.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
@@ -119,7 +120,9 @@ export default function Sidebar({
   const base = [HOME_ITEM, ...NAV]
   // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
   const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
-  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
+  const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
+  // IELTS скрыт на проде (lib/ieltsGate.js).
+  const nav = ieltsHidden() ? navAll.filter((item) => item.key !== 'ielts') : navAll
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()

@@ -109,6 +109,7 @@ import { resolveHomeLevel } from './lib/homeLevel.js'
 import { placementSummary } from './lib/placement.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
+import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -174,7 +175,9 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
-    const deepLink = searchParams.get('screen')
+    // IELTS скрыт на проде (lib/ieltsGate.js): диплинк на него там не открывает ничего.
+    const rawDeepLink = searchParams.get('screen')
+    const deepLink = isIeltsScreen(rawDeepLink) && ieltsHidden() ? null : rawDeepLink
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
@@ -1395,6 +1398,7 @@ export default function App() {
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if (isIeltsScreen(key) && ieltsHidden()) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
