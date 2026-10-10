@@ -38,6 +38,25 @@ export function rankSkills(stats) {
     .sort((a, b) => b.percent - a.percent || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill))
 }
 
+/**
+ * Сильнейший и слабейший навык из рейтинга (rankSkills). Одна формула на
+ * «Главную» ученика и карточку ученика у преподавателя (/api/admin/student-activity):
+ * две карточки об одном человеке не должны расходиться.
+ *
+ * У новичка без заданий сильной стороны нет — «сильнее всего: 0%» читалось бы
+ * издевкой. Слабая появляется, только когда она правда слабее сильной.
+ */
+export function skillHighlights(ranked) {
+  const list = Array.isArray(ranked) ? ranked : []
+  if (!list.length) return { strongest: null, weakest: null }
+  const first = list[0]
+  const last = list[list.length - 1]
+  return {
+    strongest: first.percent ? first : null,
+    weakest: last.percent < first.percent ? last : null,
+  }
+}
+
 // Шкала «Главной» начинается с A0: сервер считает A0 отдельным уровнем курса.
 // LEVELS из cefr.js не расширяем — по нему рисуется шкала теста, где A0 нет.
 export const COURSE_LEVELS = ['A0', ...LEVELS]
@@ -83,10 +102,7 @@ export function levelSummary(userLevel, stats, progress = null) {
     next,
     percent,
     ranked,
-    strongest: ranked[0]?.percent ? ranked[0] : null,
-    weakest: ranked.length && ranked[ranked.length - 1].percent < ranked[0].percent
-      ? ranked[ranked.length - 1]
-      : null,
+    ...skillHighlights(ranked),
     done: progress?.done ?? null,
     total: progress?.total ?? null,
     remaining: typeof progress?.remaining === 'number' ? progress.remaining : null,

@@ -11,8 +11,10 @@
 // verifyToken стабим транспортом (fetch к бэкендовому /user/me) — так под
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { resolveProfileId, fetchContentQuota, verifyTokenStatus } from './auth-server.js'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+  resolveProfileId, fetchContentQuota, verifyTokenStatus, checkStudentActivityAccess, STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS,
+} from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
 const anonymous = () => new Request('https://app.test/api/x')
@@ -149,5 +151,93 @@ describe('verifyTokenStatus: признак аккаунта класса', () =
     const result = await verifyTokenStatus('TOK')
 
     expect(result.user.boothAccount).toBe(false)
+  })
+})
+
+// Вердикт «свой ли ученик» выносит бэкенд, здесь он лишь переводится в четыре
+// слова для роута. Ошибиться можно в обе стороны: лишнее «можно» открывает
+// чужого ученика, а сбой связи, принятый за «нельзя», врёт сотруднику про права.
+describe('checkStudentActivityAccess: «свой ли ученик» решает бэкенд', () => {
+  function stub(status) {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status }))
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  // Лог ловим сами: так он не шумит в выводе прогона и его можно проверить.
+  let errorSpy
+  beforeEach(() => {
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    errorSpy.mockRestore()
+  })
+
+  it('204 — можно; уходит токен того, кто спрашивает', async () => {
+    const fetchMock = stub(204)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('allowed')
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toMatch(/\/admin\/students\/141\/activity\/access$/)
+    // Проверка прав ничего не меняет у бэкенда: только GET.
+    expect(init.method).toBe('GET')
+    expect(init.headers.Authorization).toBe('Bearer TOK')
+    expect(init.cache).toBe('no-store')
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('403 и 404 — отказ: о чужих id подробностей не раздаём', async () => {
+    stub(403)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
+    stub(404)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('forbidden')
+    // Отказ — обычный вердикт, а не сбой: логом он не засоряется.
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('401 — токен протух', async () => {
+    stub(401)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unauthorized')
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('500 и сетевой обрыв — «спросить не удалось», а не отказ', async () => {
+    stub(500)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Неожиданный статус — в лог, иначе 5xx бэкенда не отличить от обрыва связи.
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access: unexpected status', 500)
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Токен не попадает в лог ни при статусе, ни при обрыве.
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('TOK')
+  })
+
+  it('бэкенд завис — по сроку «спросить не удалось», а не ожидание на минуты', async () => {
+    // fetch ждёт, пока его не оборвут, — так ведёт себя зависший бэкенд. Без срока
+    // этот тест висел бы до таймаута vitest.
+    vi.stubGlobal('fetch', vi.fn((url, init) => new Promise((_, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason))
+    })))
+    expect(await checkStudentActivityAccess('TOK', 141, { timeoutMs: 20 })).toBe('unavailable')
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access check failed:', expect.stringMatching(/timeout/i))
+  })
+
+  it('срок по умолчанию короче, чем админка ждёт кабинет (10 с)', async () => {
+    const fetchMock = stub(204)
+    await checkStudentActivityAccess('TOK', 141)
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+    expect(STUDENT_ACTIVITY_ACCESS_TIMEOUT_MS).toBeLessThan(10_000)
+  })
+
+  it('без токена бэкенд не спрашиваем', async () => {
+    const fetchMock = stub(204)
+    expect(await checkStudentActivityAccess('', 141)).toBe('unauthorized')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('200 вместо 204 — не разрешение: пускаем только по контракту бэкенда', async () => {
+    stub(200)
+    expect(await checkStudentActivityAccess('TOK', 141)).toBe('unavailable')
+    // Заглушка или прокси на месте ручки должны быть видны в логе.
+    expect(errorSpy).toHaveBeenCalledWith('[auth] student-activity access: unexpected status', 200)
   })
 })
