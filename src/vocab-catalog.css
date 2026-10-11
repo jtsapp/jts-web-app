@@ -1042,6 +1042,8 @@
 .vp-ielts-card:hover { border-color: #cbb6ff; box-shadow: 0 8px 24px rgba(135,75,248,.08); }
 .vp-ielts-card__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .vp-ielts-card b { font-size: 19px; font-weight: 800; }
+/* номер подсписка AWL на месте обложки — у подсписков картинок нет */
+.vp-ielts-card__num { flex: none; width: 84px; height: 84px; border-radius: 18px; display: grid; place-items: center; background: linear-gradient(135deg, #f3ecff, #e4d6ff); color: #7b3cff; font-size: 34px; font-weight: 800; }
 .vp-ielts-card .nm { font-size: 13px; color: var(--vp-muted); }
 .vp-ielts-card .meta { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--vp-muted); }
 .vp-ielts-card .meta.is-progress, .vp-ielts-card .meta.is-done { color: var(--vp-violet); }

@@ -2496,3 +2496,16 @@ button.hm-level__goal:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
+
+/* «Главная» ученика IELTS (IeltsHomeCard): тот же блок, что приглашение на тест, плюс чип трека */
+.hm-ielts__chip {
+  align-self: flex-start;
+  display: inline-flex;
+  margin-bottom: 4px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #f2ebff;
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 700;
+}

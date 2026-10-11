@@ -5,6 +5,7 @@ import { JUDGEMENT_OPTIONS, mechanicOf, typeLabel } from './meta.js'
 import { isAnswered } from './run.js'
 import { paragraphChoices } from './anchor.js'
 import { useI18n } from '../../i18n.jsx'
+import { plural } from '../../lib/plural.js'
 import { safeSvg } from '../safeSvg.js'
 
 // Схема к вопросам (diagram label) приходит SVG-строкой из банка — чистит её общий safeSvg (DOMPurify).
@@ -115,7 +116,7 @@ function PaperGroup({ group, entries, run, mode, onAnswer, onCheck, onFocus, sho
 }
 
 export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer, onFlag, onCheck, onShowInText, onFocus, checking, paper }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const mech = mechanicOf(group.type)
   const first = entries[0]?.numbers[0]
   const last = entries.at(-1)?.numbers.at(-1)
@@ -209,7 +210,7 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
           const picked = mech === 'multi' ? value || [] : value ? [value] : []
           control = (
             <div className="ih-q__opts">
-              {mech === 'multi' && <span className="ih-q__hint">{t('ieltsReading.chooseN', { n: String(need) })}</span>}
+              {mech === 'multi' && <span className="ih-q__hint">{plural(t, lang, 'ieltsReading.chooseN', need)}</span>}
               {(it.options || []).map((o) => {
                 const on = picked.includes(o.key)
                 const toggle = () => {

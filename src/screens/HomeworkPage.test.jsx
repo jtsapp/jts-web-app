@@ -36,6 +36,9 @@ vi.mock('../api.js', () => ({
   saveHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   // Задания с живых уроков (назначенные материалы) — по умолчанию их нет.
   getMyMaterialAssignments: vi.fn(async () => []),
+  // План IELTS: домашние задания преподавателя из web-admin — по умолчанию ученик не IELTS (отказ).
+  getIeltsPlan: vi.fn(async () => { throw Object.assign(new Error('404'), { status: 404 }) }),
+  markIeltsPlanTask: vi.fn(async () => ({})),
   attachMaterialAnswer: vi.fn(async () => ({})),
   removeMaterialAnswer: vi.fn(async () => ({})),
   startMaterialAssignment: vi.fn(async () => ({ id: 77 })),
@@ -563,5 +566,52 @@ describe('HomeworkPage: причина отказа в сдаче', () => {
     fireEvent.click(await screen.findByRole('button', { name: /отправить на проверку/i }))
     expect(await screen.findByText('Не удалось отправить работу на проверку')).toBeTruthy()
     expect(screen.queryByText('An unexpected error occurred')).toBeNull()
+  })
+})
+
+/* Домашние задания IELTS (web-admin «IELTS · ученики» → «Дать задание» → домашнее задание) живут строками плана IELTS,
+   но ученик видит их в той же «Домашней работе». Задачи «в план» без срока сюда не попадают. */
+describe('Домашние задания IELTS', () => {
+  const PLAN = {
+    tasks: [
+      { id: 646, date: '2026-10-09', sec: 'mock', kind: 'teacher', origin: 'teacher', mode: 'homework', minutes: 165, status: 'available',
+        completionRule: 'test:MOCK-AC-01', extra: { title: 'Mock 01', testId: 'MOCK-AC-01', testKind: 'full', dueDate: '2099-10-11', createdByName: 'Айгерим', createdAt: '2026-10-09T03:02' } },
+      { id: 569, date: '2026-10-08', sec: 'writing', kind: 'teacher', origin: 'teacher', mode: 'homework', minutes: 15, status: 'available',
+        completionRule: 'self_report', extra: { title: 'Выписать 10 связок для эссе', note: 'Принесите на урок', dueDate: '2099-10-12', createdAt: '2026-10-08T18:06' } },
+      { id: 647, date: '2026-10-09', sec: 'reading', kind: 'teacher', origin: 'teacher', mode: 'self_study', minutes: 60, status: 'available',
+        completionRule: 'test:RM-AC-F38', extra: { title: 'Full test 38 · Academic', testId: 'RM-AC-F38', testKind: 'test' } },
+    ],
+  }
+
+  it('показывает домашние задания IELTS в общем списке, а задачи «в план» — нет', async () => {
+    api.getIeltsPlan.mockResolvedValueOnce(PLAN)
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getAllByText('Mock 01').length).toBeGreaterThan(0))
+    expect(screen.getAllByText('Выписать 10 связок для эссе').length).toBeGreaterThan(0)
+    // метка «IELTS» — у двух домашних заданий (ещё одна «IELTS» на странице — пункт сайдбара)
+    expect(container.querySelectorAll('.hw-card__ielts').length).toBe(2)
+    expect(screen.queryByText('Full test 38 · Academic')).toBeNull()
+    // обычная домашка на месте
+    expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
+  })
+
+  it('«Начать» ведёт туда же, куда план IELTS: полный mock — на его экран', async () => {
+    api.getIeltsPlan.mockResolvedValueOnce(PLAN)
+    const onNav = vi.fn()
+    renderPage({ onNav })
+    await waitFor(() => expect(screen.getAllByText('Mock 01').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getAllByText('Mock 01')[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Начать' }))
+    expect(onNav).toHaveBeenCalledWith('ielts-mock', { mockId: 'MOCK-AC-01' })
+  })
+
+  it('задание без теста отмечается выполненным руками', async () => {
+    api.getIeltsPlan.mockResolvedValueOnce(PLAN)
+    renderPage()
+    await waitFor(() => expect(screen.getAllByText('Выписать 10 связок для эссе').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getAllByText('Выписать 10 связок для эссе')[0])
+    expect(await screen.findByText('Принесите на урок')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Отметить выполненным' }))
+    await waitFor(() => expect(api.markIeltsPlanTask).toHaveBeenCalledWith('TOK', 569, true))
   })
 })

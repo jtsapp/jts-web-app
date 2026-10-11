@@ -18,7 +18,7 @@ import {
   getVocabProgressWords,
   saveVocabProgress,
 } from '../api.js'
-import { IeltsSetScreen, IeltsShelf } from './vocab/IeltsVocab.jsx'
+import { IeltsSetScreen, IeltsShelf, isAwlSet } from './vocab/IeltsVocab.jsx'
 import { ieltsScope, practiceCard, progressResults, sortIeltsSets } from './vocab/ieltsVocab.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { practiceCardsOf } from './vocab/practiceCards.js'
@@ -478,7 +478,8 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       {indexLoading && <p className="vp-state">…</p>}
       {indexError && !levels.length && !ieltsSets.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
 
-      <IeltsShelf t={t} lang={vlang} sets={ieltsSets} summaries={ieltsSummaries} onOpen={openIeltsSet} />
+      <IeltsShelf t={t} lang={vlang} sets={ieltsSets.filter((s) => !isAwlSet(s))} summaries={ieltsSummaries} onOpen={openIeltsSet} />
+      <IeltsShelf t={t} lang={vlang} kind="awl" sets={ieltsSets.filter(isAwlSet)} summaries={ieltsSummaries} onOpen={openIeltsSet} />
 
       <div className="vp-sec" id="vsec-levels">
         <div className="vp-sec-hd">

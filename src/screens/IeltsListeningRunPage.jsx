@@ -198,11 +198,8 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview,
 
   const answer = (id, v) => {
     setRun((r) => setAnswer(r, id, v))
-    // выбор варианта проверяется в момент клика (пропуск — когда ученик ушёл из поля, см. PaperGroup)
-    const entry = items.find((x) => x.id === id)
-    const mech = entry && mechanicOf(entry.type)
-    if (mode !== 'exam' && mech && mech !== 'gap' && mech !== 'multi' && isAnswered(v)) check(id, v)
-    if (mode !== 'exam' && mech === 'multi' && Array.isArray(v) && v.length === entry.numbers.length) check(id, v)
+    // Выбор варианта проверяется кнопкой «Проверить», как в Reading (решение владельца 10.10.2026: промах мышью можно
+    // исправить до проверки). Пропуск по-прежнему проверяется, когда ученик ушёл из поля (PaperGroup, бланк без кнопок).
   }
 
   const groupsFlat = flat.groups

@@ -59,6 +59,8 @@ export function homeworkStateKey(hw, now = new Date()) {
   // «Проверено» на работе, которую ученик не сдавал, — неправда: его ответа
   // никто не открывал. Преподаватель закрыл её, и подписано это так и есть.
   if (status === 'COMPLETED' && hw?.closedWithoutSubmission) return 'closedNoSubmission'
+  // Задание IELTS (ieltsHomework.js) закрывает сама сдача теста, а не преподаватель: оно «выполнено», не «проверено».
+  if (hw?.kind === 'ielts' && hw.done) return 'done'
   if (Object.hasOwn(STATE_KEY, status ?? '')) return STATE_KEY[status]
   // Пустой статус — не чужой: так приходит работа, которой ещё нет, и
   // синтезированные карточки. Их читаем как раньше, включая просрочку.

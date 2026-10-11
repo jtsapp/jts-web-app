@@ -110,6 +110,13 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   const qs = speakingQuestions(doc)
   const q = qs[idx]
   const timing = doc ? TIMING[doc.kind] : null
+  // Проходятся только части экзамена. Shadowing и стратегия открываются своими видами хаба — диплинк сюда с их id
+  // падал на timing.answerSec; уводим туда, где они живут.
+  const notRunnable = !!doc && !timing
+  useEffect(() => {
+    if (!notRunnable || mock) return
+    onExit?.(testId, { tab: 'learn', view: doc.kind === 'shadowing' ? 'speaking-shadowing' : 'speaking-guide', testId: doc.kind === 'shadowing' ? testId : null })
+  }, [notRunnable]) // eslint-disable-line react-hooks/exhaustive-deps -- один раз, когда задание загрузилось
   const part2 = doc?.kind === 'part2'
 
   const kind = doc?.kind
@@ -254,6 +261,7 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   // до старта ни один этап не начат и не пройден
   const stepIndex = part2 ? (phase === 'intro' ? -1 : phase === 'prep' ? 0 : phase === 'followup' || phase === 'done' ? 2 : 1) : null
   const answered = qs.filter((x) => takes[x.id]).length
+  if (notRunnable) return null
   const maxSec = phase === 'followup' ? TIMING.part2.followUpSec : timing.answerSec
 
   return (
