@@ -30,6 +30,45 @@ function StatusChip({ status }) {
   return <span className={`ih-mkchip is-${tone}`}><Icon size={13} />{t(`ieltsMt.status.${status}`)}</span>
 }
 
+// Секции последней попытки этого mock на карточке: «L ✓ R ✓ W — S —». done — сдана и оценена, checking — ИИ проверяет,
+// failed/missing — проверка не удалась или ответа нет, pending — ещё не начата (backend MockCard.sections).
+function SectionMarks({ sections }) {
+  const { t } = useI18n()
+  if (!sections || !Object.keys(sections).length) return null
+  return (
+    <span className="ih-mtsec" aria-label={t('ieltsMt.sections')}>
+      {MOCK_ORDER.map((name) => {
+        const st = sections[name] || 'pending'
+        return (
+          <span key={name} className={`ih-mtsec__s is-${st}`} title={`${name[0].toUpperCase() + name.slice(1)} · ${t(`ieltsMt.sec.${st}`)}`}>
+            {SHORT[name]}{st === 'done' ? ' ✓' : st === 'checking' ? ' …' : ''}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
+// «Актуальные» — mock моложе порога из web-admin (backend ielts.mock.fresh_days), «Устаревшие» — старше. Пустая вкладка
+// не показывается: переключатель нужен, только когда есть что разделять.
+function FreshSwitch({ mocks, value, onChange, days }) {
+  const { t } = useI18n()
+  const fresh = mocks.filter((m) => m.fresh !== false).length
+  const old = mocks.length - fresh
+  if (!old) return null
+  return (
+    <div className="ih-mtfresh" role="tablist" aria-label={t('ieltsMt.fresh.label')}>
+      <button type="button" role="tab" aria-selected={value === 'fresh'} className={value === 'fresh' ? 'is-on' : ''} onClick={() => onChange('fresh')}>
+        {t('ieltsMt.fresh.fresh')} <i>{fresh}</i>
+      </button>
+      <button type="button" role="tab" aria-selected={value === 'old'} className={value === 'old' ? 'is-on' : ''} onClick={() => onChange('old')}>
+        {t('ieltsMt.fresh.old')} <i>{old}</i>
+      </button>
+      <span className="ih-mtfresh__hint">{t('ieltsMt.fresh.hint', { n: String(days || 30) })}</span>
+    </div>
+  )
+}
+
 // «Выбрать mock-тест» ведёт на страницу выбора (Figma «Страница mock test», 110:1310): доступные тесты и история
 // карточками. Открыта ли она — в адресе (?ieltsMockList=1), чтобы F5 и «назад» из описания mock возвращали сюда же.
 const listFromUrl = () => {
@@ -45,6 +84,7 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
   const authToken = token || loadToken()
   const [data, setData] = useState({ status: 'loading' })
   const [list, setList] = useState(listFromUrl)
+  const [age, setAge] = useState('fresh')
   useEffect(() => {
     setIeltsParams({ ieltsMockList: list ? '1' : null })
     return () => setIeltsParams({ ieltsMockList: null })
@@ -68,12 +108,17 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
   const trackName = trackModule === 'general' ? 'General Training' : 'Academic'
   const date = (d) => (d ? new Date(d).toLocaleDateString(lang === 'en' ? 'en-GB' : lang === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'long' }) : '')
   const ready = data.status === 'ready'
-  const mocks = ready ? data.mocks || [] : []
+  const allMocks = ready ? data.mocks || [] : []
+  const hasOld = allMocks.some((m) => m.fresh === false)
+  // актуальных нет вовсе — открываем «Устаревшие», а не пустой список
+  const shownAge = age === 'fresh' && hasOld && !allMocks.some((m) => m.fresh !== false) ? 'old' : age
+  const mocks = hasOld ? allMocks.filter((m) => (shownAge === 'old' ? m.fresh === false : m.fresh !== false)) : allMocks
+  const added = (m) => (m.createdAt ? t('ieltsPractice.added', { date: date(m.createdAt) }) : null)
   const history = ready ? (data.history || []).filter((s) => s.module === trackModule) : []
   const last = history.find((s) => s.status === 'submitted')
   const open = ready ? data.open : null
   // «Выбрать mock-тест»: незаконченный — продолжить, иначе — страница выбора теста
-  const pick = open ? () => onOpenSession(open.id) : mocks.length ? () => setList(true) : null
+  const pick = open ? () => onOpenSession(open.id) : allMocks.length ? () => setList(true) : null
   const openMock = (m) => (m.status === 'in_progress' && m.sessionId ? onOpenSession(m.sessionId) : onOpenMock(m.id))
   const openAttempt = (s, st) => onOpenSession(s.id, st === 'in_progress' || st === 'checking' ? undefined : 'result')
 
@@ -83,6 +128,7 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
         <button type="button" className="ih-link ih-mt__back" onClick={() => setList(false)}><ChevronLeftIcon size={18} /> {t('ieltsMt.title')}</button>
         <PageHeader title={t('ieltsMt.title')} sub={t('ieltsMt.sub', { track: trackName })} />
         <h2 className="ih-mt__h2">{t('ieltsMt.available')}</h2>
+        <FreshSwitch mocks={allMocks} value={shownAge} onChange={setAge} days={data.freshDays} />
         {mocks.length === 0 ? <p className="ih-muted">{t('ieltsMt.empty')}</p> : (
           <div className="ih-mtl">
             {mocks.map((m) => (
@@ -96,6 +142,8 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
                 </div>
                 <div className="ih-mtl__info">
                   <span className="ih-mtl__time"><ScheduleIcon size={20} />{t('ieltsMt.hero.time')}</span>
+                  {added(m) && <span className="ih-mtl__added">{added(m)}</span>}
+                  <SectionMarks sections={m.sections} />
                   <span className="ih-mtl__flow">{MOCK_ORDER.map((x, i) => <span key={x}>{i > 0 && <ArrowForwardIcon size={14} />}{x[0].toUpperCase() + x.slice(1)}</span>)}</span>
                 </div>
               </article>
@@ -176,6 +224,7 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
       {ready && (
         <>
           <h2 className="ih-mt__h2">{t('ieltsMt.available')}</h2>
+          <FreshSwitch mocks={allMocks} value={shownAge} onChange={setAge} days={data.freshDays} />
           {mocks.length === 0 ? <p className="ih-muted">{t('ieltsMt.empty')}</p> : (
             <div className="ih-mt__cards">
               {mocks.map((m) => (
@@ -184,6 +233,8 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
                   <span className="ih-mt__cardtext">
                     <b>{m.title}</b>
                     <StatusChip status={m.status === 'submitted' ? 'submitted' : m.status} />
+                    {added(m) && <small className="ih-mt__added">{added(m)}</small>}
+                    <SectionMarks sections={m.sections} />
                   </span>
                   <button type="button" className="ih-btn ih-btn--outline" onClick={() => (m.status === 'in_progress' && m.sessionId ? onOpenSession(m.sessionId) : onOpenMock(m.id))}>
                     {m.status === 'in_progress' ? t('ieltsMt.continue') : t('ieltsMt.more')}
