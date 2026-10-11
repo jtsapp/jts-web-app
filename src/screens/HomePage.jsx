@@ -8,8 +8,10 @@ import { plural } from '../lib/plural.js'
 import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
 import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
+import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
-import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress } from '../api.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress, getIeltsPlan } from '../api.js'
+import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
 import { pickRecommendation } from '../lib/assistant/recommend.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
@@ -33,6 +35,8 @@ export default function HomePage({
   // App ведёт на 'test-intro' после входа). Показывать вместо него карточку с
   // 'A1' нельзя: человек читал бы её как свой определённый уровень.
   levelUnknown = false,
+  // Аккаунт IELTS (App: getIeltsMe, на проде IELTS скрыт — тогда false): вместо уровня General English — старт IELTS.
+  ieltsAccount = false,
   onNav,
   onProfile,
   onOpenPricing,
@@ -143,9 +147,12 @@ export default function HomePage({
     // Ни один из запросов не критичен: не ответил — соответствующая карточка
     // показывает «пусто», а экран остаётся целым. Это честнее пустого места.
     getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
-    getMyHomework(token)
-      .then((hw) => { if (alive) setHomework(Array.isArray(hw) ? hw : []) })
-      .catch(() => {})
+    // Домашние задания IELTS (преподаватель задаёт их в web-admin) живут в плане IELTS, а не в /admin/homework/my —
+    // у ученика IELTS «Главная» иначе писала бы «Заданий нет» при открытом задании (то же, что в «Домашней работе»).
+    Promise.all([
+      getMyHomework(token).then((hw) => (Array.isArray(hw) ? hw : [])).catch(() => []),
+      ieltsAccount ? getIeltsPlan(token).then(ieltsHomeworkCards).catch(() => []) : Promise.resolve([]),
+    ]).then(([hw, ielts]) => { if (alive) setHomework([...hw, ...ielts]) })
     getMyLessonOccurrences(token)
       .then((occ) => {
         if (!alive) return
@@ -155,7 +162,7 @@ export default function HomePage({
       })
       .catch(() => {})
     return () => { alive = false }
-  }, [token])
+  }, [token, ieltsAccount])
 
   const book = async () => {
     if (sending) return
@@ -222,7 +229,9 @@ export default function HomePage({
 
         {/* Уровня нет — тест не пройден. Вместо карточки с чужими цифрами
             зовём пройти тест: это единственный способ её наполнить. */}
-        {levelUnknown ? (
+        {ieltsAccount ? (
+          <IeltsHomeCard token={token} onNav={onNav} />
+        ) : levelUnknown ? (
           <section className="hm-card hm-placement">
             <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>
             <p className="hm-placement__sub">{t('home.level.unknown.sub')}</p>
@@ -327,7 +336,7 @@ export default function HomePage({
           <div className="hm-col">
           {/* Сильные и слабые стороны. Без пройденного теста профиль навыков
               не показываем: считать его не от чего, и на макете его там нет. */}
-          {!levelUnknown && (
+          {!levelUnknown && !ieltsAccount && (
           <section className="hm-card hm-skills">
             <h2 className="hm-card__title">{t('home.skills.title')}</h2>
             {hasData ? (

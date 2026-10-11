@@ -42,8 +42,19 @@ export function loadCourseLesson(level, n) {
 // Шаги урока для пошагового плеера (генератор — scripts/extract-selfstudy-course.js).
 const stepsCache = new Map()
 export function loadCourseSteps(level, n) {
-  const key = `${level}:${n}`
-  if (!stepsCache.has(key)) stepsCache.set(key, getJson(`${base(level)}/steps-${n}.json`))
+  // Ключ в нижнем регистре: kingdom.level приходит как «A0», а URL — /course/a0/.
+  const key = `${String(level || '').toLowerCase()}:${n}`
+  if (!stepsCache.has(key)) {
+    // Отказ не кэшируем: иначе один 404/обрыв сети навсегда глушил бы клик по узлу
+    // («Повторение» — тропа не открывает урок, пока не перезагрузят вкладку).
+    stepsCache.set(
+      key,
+      getJson(`${base(level)}/steps-${n}.json`).catch((e) => {
+        stepsCache.delete(key)
+        throw e
+      }),
+    )
+  }
   return stepsCache.get(key)
 }
 

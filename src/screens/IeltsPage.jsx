@@ -216,13 +216,15 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   } else if (hub.tab === 'learn' && hub.testId && hub.view === 'speaking-shadowing') {
     // shadowing — такой же экран задания, как Reading/Listening: на весь экран, только задание и шапка (правка в Figma)
     const back = () => go({ tab: 'learn', view: 'speaking-shadowing' })
+    // шапку рисует сам экран: в ней «?» тура shadowing
     return (
-      <div className="ih-run ih-run--rl ih-shrun">
-        <RunTopBar chip="Speaking · Shadowing" mode={t('ieltsReading.modeChip', { mode: t('ieltsReading.mode.practice').toLowerCase() })} onExit={back} />
-        <div className="ih-shrun__body">
-          <ShadowingView token={token} testId={hub.testId} onBack={() => go({ tab: 'learn' })} onBackToList={back} embedded />
-        </div>
-      </div>
+      <ShadowingView
+        token={token}
+        testId={hub.testId}
+        onBack={() => go({ tab: 'learn' })}
+        onBackToList={back}
+        bar={{ chip: 'Speaking · Shadowing', mode: t('ieltsReading.modeChip', { mode: t('ieltsReading.mode.practice').toLowerCase() }), onExit: back }}
+      />
     )
   } else if (hub.tab === 'learn' && hub.testId && isSpeakingView(hub.view)) {
     panel = (

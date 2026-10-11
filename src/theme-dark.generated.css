@@ -3535,6 +3535,44 @@ html[data-theme="dark"] .se-notice__close {
     background: transparent;
     color: inherit
 }
+html[data-theme="dark"] .hw-card__ielts {
+    background: var(--dk-page);
+    color: #f79550
+}
+html[data-theme="dark"] .hw-badge--done {
+    background: var(--dk-chip);
+    color: #6ec980
+}
+html[data-theme="dark"] .hw-ielts {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .hw-ielts__body b {
+    color: var(--ink)
+}
+html[data-theme="dark"] .hw-ielts__body span {
+    color: var(--muted)
+}
+html[data-theme="dark"] .hw-ielts__note {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .hw-ielts__note small {
+    color: #e99e53
+}
+html[data-theme="dark"] .hw-ielts__note p {
+    color: var(--ink)
+}
+html[data-theme="dark"] .hw-ielts__hint {
+    color: var(--muted)
+}
+html[data-theme="dark"] .hw-ielts__mark {
+    border: 1.5px solid var(--purple);
+    background: var(--dk-card);
+    color: var(--purple)
+}
+html[data-theme="dark"] .hw-ielts__mark:hover:enabled {
+    background: var(--dk-page)
+}
 /*  tutor.css  */
 html[data-theme="dark"] .t-app {
     --t-purple: var(--dk-acc);
@@ -6160,8 +6198,8 @@ html[data-theme="dark"] .ih-wguide__tabs button {
     background: var(--dk-card)
 }
 html[data-theme="dark"] .ih-wguide__tabs button.is-on {
-    background: var(--ih-ink);
-    border-color: var(--ih-ink);
+    background: var(--ih-violet);
+    border-color: var(--ih-violet);
     color: #fff
 }
 html[data-theme="dark"] .ih-wguide__row, html[data-theme="dark"] .ih-wguide__pair {
@@ -6248,12 +6286,80 @@ html[data-theme="dark"] .ih-sanswer {
 html[data-theme="dark"] .ih-sanswer__tip {
     background: var(--dk-card)
 }
+html[data-theme="dark"] .ih-shadow__head p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-shadow__how {
+    background: var(--dk-page);
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .ih-shadow__how small {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-shadow__how-n {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-shadow__track {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .ih-shadow__track i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__speed {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-shadow__phrase.is-current {
+    border-color: var(--dk-acc-line);
+    box-shadow: 0 4px 18px color-mix(in oklab, var(--dk-acc) 8%, transparent)
+}
 html[data-theme="dark"] .ih-shadow__phrase.is-playing {
     border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__phrase.is-done {
+    background: var(--dk-card)
 }
 html[data-theme="dark"] .ih-shadow__n {
     background: var(--dk-chip);
     color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__phrase.is-done .ih-shadow__n {
+    background: #22a35a;
+    color: #fff
+}
+html[data-theme="dark"] .ih-shadow__step {
+    border: 1.5px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .ih-shadow__step > svg {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .ih-shadow__step small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-shadow__step:hover:not(:disabled) {
+    border-color: var(--dk-acc-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-shadow__step.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-shadow__step.is-ok > svg {
+    color: #57cc81
+}
+html[data-theme="dark"] .ih-shadow__step--rec.is-rec {
+    border-color: #e5484d;
+    background: var(--dk-page);
+    color: #fda298
+}
+html[data-theme="dark"] .ih-shadow__step--rec.is-rec > svg {
+    color: #fd8b87
+}
+html[data-theme="dark"] .ih-shadow__finish {
+    background: var(--dk-page);
+    border-color: #375542
 }
 html[data-theme="dark"] .ih-shadow__group + .ih-shadow__group::before {
     color: var(--dk-acc-text)
@@ -8680,6 +8786,145 @@ html[data-theme="dark"] .ih-wmine__note {
 }
 html[data-theme="dark"] .ih-wmine__note svg {
     color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-dres__group h3 {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__group h3 small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-dres__item {
+    border-bottom: 1px solid var(--ih-line)
+}
+html[data-theme="dark"] .ih-dres__item:last-child {
+    border-bottom: 0
+}
+html[data-theme="dark"] .ih-dres__item.is-ok .ih-dres__num {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-dres__item.is-bad .ih-dres__num {
+    background: var(--dk-page);
+    color: #fd8a8b
+}
+html[data-theme="dark"] .ih-dres__item p.ih-dres__prompt {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-dres__ans.is-ok {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-dres__ans.is-bad {
+    background: var(--dk-page);
+    color: #fda19f
+}
+html[data-theme="dark"] .ih-dres__ans.is-right {
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-dres__tag {
+    background: var(--dk-page);
+    color: #e99e53
+}
+html[data-theme="dark"] .ih-dres__item p.ih-dres__quote, html[data-theme="dark"] .ih-dres__item p.ih-dres__why {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-dres__quote small, html[data-theme="dark"] .ih-dres__why small {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-diag__spchip {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-diag__speaking .ih-diag__sq {
+    border: 1.5px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-diag__speaking .ih-diag__sq.is-rec {
+    border-color: #e5484d;
+    box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.12)
+}
+html[data-theme="dark"] .ih-diag__speaking .ih-diag__sq.is-done {
+    border-color: #335643
+}
+html[data-theme="dark"] .ih-diag__sqn {
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ih-diag__sq.is-done .ih-diag__sqn {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-diag__recbtn {
+    border: 1.5px solid #1c8a4c;
+    background: var(--dk-card);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-diag__recbtn:hover:not(:disabled) {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-diag__recbtn.is-on, html[data-theme="dark"] .ih-diag__recbtn.is-on:hover:not(:disabled) {
+    border-color: #e5484d;
+    background: #e5484d;
+    color: #fff
+}
+html[data-theme="dark"] .ih-diag__recbtn.is-on i {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-diag__cue {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-diag__sphint {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-diag__sphint svg {
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-diag__sphint.is-quiet svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .ih-ob__card {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-ob__card p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-ob__score.is-pass {
+    border-color: #335643;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-ob__score.is-pass .ih-obopt__icon {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-ob__dots i.is-ok {
+    background: #22a55b
+}
+html[data-theme="dark"] .ih-ob__dots i.is-bad {
+    background: #6b2e38
+}
+html[data-theme="dark"] .ih-ob__qres .ih-ob__qans .is-wrong {
+    background: var(--dk-page);
+    color: #fda19f
+}
+html[data-theme="dark"] .ih-ob__qres .ih-ob__qans .is-right {
+    background: var(--dk-page);
+    color: #66ca87
+}
+html[data-theme="dark"] .ih-ob__link {
+    border: 0;
+    background: none;
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .ih-mcheck__agree input[type='checkbox'], html[data-theme="dark"] .ih input[type='checkbox'] {
+    accent-color: var(--ih-violet)
+}
+@media (max-width: 600px) {
+    html[data-theme="dark"] .ih-mt__hero::before {
+        background: linear-gradient(90deg, color-mix(in oklab, var(--dk-acc) 78%, transparent) 0%, color-mix(in oklab, var(--dk-acc) 45%, transparent) 70%, color-mix(in oklab, var(--dk-acc) 20%, transparent) 100%)
+    }
 }
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {
@@ -11277,6 +11522,10 @@ html[data-theme="dark"] .vp-ielts-card {
 html[data-theme="dark"] .vp-ielts-card:hover {
     border-color: var(--dk-acc-line);
     box-shadow: 0 8px 24px color-mix(in oklab, var(--dk-acc) 8%, transparent)
+}
+html[data-theme="dark"] .vp-ielts-card__num {
+    background: linear-gradient(135deg, var(--dk-chip), #2d233e);
+    color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .vp-ielts-card .nm {
     color: var(--vp-muted)
@@ -19747,6 +19996,10 @@ html[data-theme="dark"] .pr-load__retry:hover {
 }
 html[data-theme="dark"] .pr-load__retry:focus-visible {
     outline: 2px solid var(--purple)
+}
+html[data-theme="dark"] .hm-ielts__chip {
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
 }
 /*  assistant.css  */
 html[data-theme="dark"] .asst {

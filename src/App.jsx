@@ -475,6 +475,10 @@ export default function App() {
   }, [token])
   useEffect(() => {
     if (ieltsAccount && typeof screen === 'string' && screen.startsWith('kingdom')) setScreen('ielts')
+    // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
+    // его старт — онбординг и диагностика IELTS, их зовёт «Главная» (IeltsHomeCard). Признак аккаунта приходит
+    // после входа отдельным запросом, поэтому поправляем уже открытый экран.
+    if (ieltsAccount && screen === 'test-intro') setScreen('home')
   }, [ieltsAccount, screen])
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
@@ -1750,6 +1754,7 @@ export default function App() {
           // Тот же признак, по которому вход ведёт на 'test-intro': без уровня
           // «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
+          ieltsAccount={ieltsAccount && !ieltsHidden()}
           onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
           tourKey={homeTourKey}
           onNav={handleNav}
@@ -1804,6 +1809,7 @@ export default function App() {
           // Гостю тест из профиля не предлагаем: уровня у него нет по
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
+          ieltsAccount={ieltsAccount && !ieltsHidden()}
           onLevelTest={token ? () => openLevelTestFrom('profile') : undefined}
         />
       )
@@ -1993,7 +1999,7 @@ export default function App() {
         <IeltsReadingRunPage
           token={token}
           target={ieltsRunTarget}
-          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onExit={(testId, hub) => handleNav('ielts', hub || ieltsRunTarget?.back || { tab: 'learn', testId })}
           onReview={(attemptId) => handleNav('ielts-reading-review', { attemptId, back: ieltsRunTarget?.back })}
         />
       )
@@ -2002,7 +2008,7 @@ export default function App() {
         <IeltsListeningRunPage
           token={token}
           target={ieltsRunTarget}
-          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onExit={(testId, hub) => handleNav('ielts', hub || ieltsRunTarget?.back || { tab: 'learn', testId })}
           onReview={(attemptId) => handleNav('ielts-reading-review', { attemptId, back: ieltsRunTarget?.back })}
         />
       )
@@ -2045,7 +2051,7 @@ export default function App() {
         <IeltsSpeakingRunPage
           token={token}
           target={ieltsRunTarget}
-          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onExit={(testId, hub) => handleNav('ielts', hub || ieltsRunTarget?.back || { tab: 'learn', testId })}
           onDone={(attemptId) => handleNav('ielts', { tab: 'learn', view: 'speaking-work', attemptId: String(attemptId) })}
         />
       )
@@ -2054,7 +2060,7 @@ export default function App() {
         <IeltsWritingRunPage
           token={token}
           target={ieltsRunTarget}
-          onExit={(testId) => handleNav('ielts', ieltsRunTarget?.back || { tab: 'learn', testId })}
+          onExit={(testId, hub) => handleNav('ielts', hub || ieltsRunTarget?.back || { tab: 'learn', testId })}
           onDone={(attemptId) => handleNav('ielts', { tab: 'learn', view: 'writing-work', attemptId: String(attemptId), autoGrade: true })}
         />
       )
@@ -2477,7 +2483,16 @@ export default function App() {
       return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     }
     default:
-      return null
+      // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал
+      // пустую страницу без единой кнопки. Уводим на «Главную», а без входа — на приветствие.
+      return <ScreenFallback to={token ? 'home' : 'welcome'} onGo={setScreen} />
   }
   }
+}
+
+function ScreenFallback({ to, onGo }) {
+  useEffect(() => {
+    onGo(to)
+  }, [to, onGo])
+  return null
 }

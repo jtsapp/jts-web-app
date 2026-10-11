@@ -139,8 +139,11 @@ export function dashboardFrom(dash, profile) {
 // ?ieltsSample=1 — экран с данными макета: показать, как он выглядит у
 // ученика с историей, пока бэкенда нет. Читается в эффекте, а не при рендере,
 // иначе SSR и клиент разойдутся (см. диплинк ?screen= в App.jsx).
+// Только на локалке и дев-стендах (тот же признак адреса, что у переключателя темы): на проде любой ученик, дописав
+// параметр, увидел бы чужие выдуманные баллы как свои.
 function wantsSample() {
   try {
+    if (!/^(localhost|127\.0\.0\.1|dev-)/.test(window.location.hostname)) return false
     return new URLSearchParams(window.location.search).get('ieltsSample') === '1'
   } catch {
     return false

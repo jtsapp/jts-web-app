@@ -94,6 +94,14 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, mode, pasteBlocked, state.status])
 
+  // Пишутся только Task 1 и Task 2. Гид «Как писать» и самопроверка — страницы хаба: диплинк сюда с их id рисовал
+  // пустой редактор с таймером. Уводим в гид.
+  const notRunnable = state.status === 'ready' && !['task1', 'task2'].includes(state.doc?.kind)
+  useEffect(() => {
+    if (notRunnable && !mock) onExit?.(testId, { tab: 'learn', view: 'writing-guide' })
+  }, [notRunnable]) // eslint-disable-line react-hooks/exhaustive-deps -- один раз, когда задание загрузилось
+  if (notRunnable) return null
+
   if (!testId || state.status === 'missing' || state.status === 'error')
     return (
       <div className="ih-run ih-run--empty">
@@ -183,6 +191,8 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
             <span className="ih-wrun__meta">{t('ieltsWriting.w2.meta', { task: doc.kind === 'task2' ? 'Task 2' : 'Task 1', n: String(min), m: String(Math.round(limit / 60)) })}</span>
             <WritingTaskBody task={doc} />
           </section>
+          {/* В полном mock — условия экзамена: подсказок по плану работы на настоящем IELTS нет (как и транскрипта в Listening) */}
+          {!mock && (
           <section className="ih-wrun__hints">
             <h2>{t('ieltsWriting.w2.hints')}</h2>
             <ol className="ih-wrun__steps">
@@ -194,8 +204,9 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
               ))}
             </ol>
             <p className="ih-wrun__tip"><InfoIcon size={16} />{t(`ieltsWriting.p.plan.${kind}.note`)}</p>
-            {!mock && <p className="ih-wrun__ai"><SparkleIcon size={18} />{t('ieltsWriting.w2.aiNote')}</p>}
+            <p className="ih-wrun__ai"><SparkleIcon size={18} />{t('ieltsWriting.w2.aiNote')}</p>
           </section>
+          )}
         </aside>
 
         <main className="ih-wrun__card">

@@ -184,8 +184,13 @@ describe('GET /api/tts', () => {
         }),
     )
     const first = GET(req('v=Grace&t=retry'))
+    // Ждём, пока первый повиснет на Soniox и займёт inflight. Иначе на CI
+    // второй успевает пройти await readCached раньше и сам становится
+    // «первым»: падающий mockImplementationOnce уходит ему, а first получает
+    // успешный повтор → 200 вместо 502.
+    await vi.waitFor(() => expect(typeof open).toBe('function'))
     const second = GET(req('v=Grace&t=retry'))
-    await new Promise((r) => setTimeout(r, 20))
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     open()
     expect((await first).status).toBe(502)
     expect((await second).status).toBe(200)

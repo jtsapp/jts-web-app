@@ -7,10 +7,91 @@ import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { SectionTile } from '../ielts/sections.jsx'
 import { bandGap, estimateTerm } from '../ielts/onboarding/onboarding.js'
 import { formatDate, formatDuration, formatMonths } from '../ielts/format.js'
-import { ArrowForwardIcon, DescriptionIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
+import { ArrowForwardIcon, CheckIcon, CloseIcon, DescriptionIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 
 const SKILLS = ['listening', 'reading', 'writing', 'speaking']
+const REVIEW_SKILLS = ['listening', 'reading']
+
+/**
+ * Разбор ответов по секциям: Listening — по частям записи (часть у вопроса своя), Reading — одним текстом. Нумерация
+ * сквозная внутри секции, как на экзамене.
+ */
+function DiagReview({ r, v, byId, readingTitle, P, t, lang }) {
+  const rows = r.items || []
+  const skills = REVIEW_SKILLS.filter((k) => rows.some((x) => x.skill === k))
+  const [sec, setSec] = useState(skills[0] || 'listening')
+  const list = rows.filter((x) => x.skill === sec)
+  const groups = []
+  for (const row of list) {
+    const it = byId[row.itemId] || {}
+    const key = sec === 'listening' ? `Part ${it.part ?? 1}` : readingTitle || 'Reading'
+    let g = groups.find((x) => x.key === key)
+    if (!g) groups.push((g = { key, rows: [] }))
+    g.rows.push(row)
+  }
+  let n = 0
+  return (
+    <>
+      <div className="ih-mrev__secs ih-dres__secs" role="tablist">
+        {skills.map((k) => {
+          const raw = r.raw?.[k]
+          return (
+            <button key={k} type="button" role="tab" aria-selected={k === sec} className={`ih-mrev__sec${k === sec ? ' is-on' : ''}`} onClick={() => setSec(k)}>
+              <SectionTile section={k} size={32} iconSize={16} />
+              <span>
+                <b>{P(`block.${k}`)}</b>
+                <small>{raw ? t('ieltsOb.rawOf', { n: String(raw.correct), total: String(raw.total) }) : r.bands?.[k]?.toFixed(1)}</small>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {groups.map((g) => (
+        <div key={g.key} className="ih-dres__group">
+          <h3>
+            <span>{g.key}</span>
+            <small>{t('ieltsOb.rawOf', { n: String(g.rows.filter((x) => x.correct).length), total: String(g.rows.length) })}</small>
+          </h3>
+          {g.rows.map((row) => {
+            const it = byId[row.itemId] || {}
+            const mine = v.answers?.items?.[row.itemId]
+            n += 1
+            return (
+              <div key={row.itemId} className={`ih-dres__item ${row.correct ? 'is-ok' : 'is-bad'}`}>
+                <span className="ih-dres__num" aria-label={P(row.correct ? 'result.correct' : 'result.wrong')}>
+                  {row.correct ? <CheckIcon size={14} /> : <CloseIcon size={14} />}{n}
+                </span>
+                <div className="ih-dres__itembody">
+                  <p className="ih-dres__prompt" lang="en">{it.prompt}</p>
+                  <div className="ih-dres__answers">
+                    <span className={`ih-dres__ans ${row.correct ? 'is-ok' : 'is-bad'}`}>
+                      <small>{P('result.yours')}</small>
+                      <b lang="en">{mine != null && String(mine).trim() !== '' ? String(mine) : P('result.noAnswer')}</b>
+                    </span>
+                    {!row.correct && (
+                      <span className="ih-dres__ans is-right">
+                        <small>{P('result.right')}</small>
+                        <b lang="en">{(it.answer || []).join(' / ')}</b>
+                      </span>
+                    )}
+                    {row.spellingOnly && <span className="ih-dres__tag">{P('result.spellingOnly')}</span>}
+                  </div>
+                  {!row.correct && it.quote && (
+                    <p className="ih-dres__quote"><small>{P('result.where')}</small><span lang="en">«{it.quote}»</span></p>
+                  )}
+                  {!row.correct && it.explanation && (
+                    <p className="ih-dres__why"><small>{P('result.why')}</small>{it.explanation[lang] || it.explanation.ru}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </>
+  )
+}
 
 /**
  * Итог диагностики (Figma 2.1 «Твой стартовый уровень»): общий band — предварительный, по Listening и Reading
@@ -60,6 +141,9 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
     const all = [...(doc.listening?.slots || []).flatMap((s) => s.clips.flatMap((c) => c.items)), ...(doc.reading?.academic?.items || []), ...(doc.reading?.general?.items || [])]
     const byId = Object.fromEntries(all.map((i) => [i.id, i]))
     const rawOf = (k) => r.raw?.[k]
+    // текст Reading — тот трек, из которого вопросы в ответах (у формы их два)
+    const readIds = new Set((r.items || []).filter((x) => x.skill === 'reading').map((x) => x.itemId))
+    const readingTitle = [doc.reading?.academic, doc.reading?.general].find((blk) => blk?.items?.some((i) => readIds.has(i.id)))?.title
     const daily = p.dailyMinutes || 60
     const form = String(v.testId || '').replace(/^DG-/, '')
     const taken = v.attempt?.finishedAt ? formatDate(v.attempt.finishedAt, lang) : ''
@@ -156,18 +240,7 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
         </div>
         <details className="ih-card ih-dres__review" open={review} ref={reviewRef} onToggle={(e) => setReview(e.currentTarget.open)}>
           <summary>{P('result.review')}</summary>
-          {(r.items || []).map((row, i) => {
-            const it = byId[row.itemId] || {}
-            return (
-              <div key={row.itemId} className={`ih-dres__item ${row.correct ? 'is-ok' : 'is-bad'}`}>
-                <b>{i + 1}. </b><span lang="en">{it.prompt}</span>
-                <p>
-                  {P('result.yours')}: <b lang="en">{String(v.answers?.items?.[row.itemId] ?? '—')}</b> · {P('result.right')}: <b lang="en">{(it.answer || []).join(' / ')}</b>
-                </p>
-                {!row.correct && it.explanation && <p className="ih-muted">{it.explanation[lang] || it.explanation.ru}</p>}
-              </div>
-            )
-          })}
+          {review && <DiagReview r={r} v={v} byId={byId} readingTitle={readingTitle} P={P} t={t} lang={lang} />}
         </details>
       </div>
     )

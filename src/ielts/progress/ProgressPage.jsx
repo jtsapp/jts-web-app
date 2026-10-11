@@ -49,7 +49,7 @@ function ScoreChart({ points, target }) {
       <svg viewBox={`-30 0 ${W + 40} ${H + 44}`} role="img" aria-label={t('ieltsProgressV.chartAria')}>
         {ticks.map((v) => (
           <g key={v}>
-            <line x1="0" x2={W} y1={y(v)} y2={y(v)} stroke="#ece8f5" />
+            <line x1="0" x2={W} y1={y(v)} y2={y(v)} className="ih-pchart__gridline" />
             {(target == null || Math.abs(v - target) > 0.24) && <text x="-8" y={y(v) + 4} textAnchor="end" className="ih-pg__tick">{v.toFixed(1)}</text>}
           </g>
         ))}

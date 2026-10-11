@@ -383,36 +383,39 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone, use
   } else if (d.block === 'speaking') {
     const sp = form.speaking
     const qs = sp.part1.slice(0, cfg.speaking.part1)
-    const row = (id, label, maxSec) => {
+    // Вопрос — карточка как у Writing: номер, текст, справа кнопка записи; после записи — плеер и длительность
+    const row = (id, n, label, maxSec, lang) => {
       const on = rec.state === 'recording' && recId === id
+      const done = !!d.speakingSec[id]
       return (
-        <div key={id} className="ih-diag__sq">
-          <p lang="en">{label}</p>
-          <div className="ih-srec__row">
-            <button type="button" className={`ih-btn ${on ? 'ih-btn--dark' : 'ih-btn--rec'}`} onClick={() => record(id, maxSec)} disabled={rec.state !== 'idle' && !on}>
-              <MicIcon size={16} />{on ? `${t('ieltsSpeaking.stop')} · ${formatSec(rec.elapsed)} / ${formatSec(maxSec)}` : d.speakingSec[id] ? t('ieltsSpeaking.retake') : t('ieltsSpeaking.answer')}
-            </button>
-            {takes.current[id] && <audio controls src={takes.current[id].url} />}
-            {!takes.current[id] && d.speakingSec[id] && <span className="ih-muted">{formatSec(d.speakingSec[id])}</span>}
+        <div key={id} className={`ih-diag__sq${on ? ' is-rec' : done ? ' is-done' : ''}`}>
+          <span className="ih-diag__sqn">{done && !on ? <CheckCircleIcon size={18} /> : n}</span>
+          <div className="ih-diag__sqbody">
+            <p lang={lang}>{label}</p>
+            {takes.current[id] && !on && <audio controls src={takes.current[id].url} />}
+            {!takes.current[id] && done && !on && <span className="ih-muted">{formatSec(d.speakingSec[id])}</span>}
           </div>
+          <button type="button" className={`ih-diag__recbtn${on ? ' is-on' : ''}`} onClick={() => record(id, maxSec)} disabled={rec.state !== 'idle' && !on}>
+            {on ? <><i aria-hidden="true" />{`${t('ieltsSpeaking.stop')} · ${formatSec(rec.elapsed)} / ${formatSec(maxSec)}`}</> : <><MicIcon size={16} />{done ? t('ieltsSpeaking.retake') : t('ieltsSpeaking.answer')}</>}
+          </button>
         </div>
       )
     }
     body = (
       <section className="ih-card ih-diag__speaking">
-        <h3>Part 1</h3>
-        {qs.map((q) => row(q.id, q.text, cfg.speaking.answerSec))}
-        <h3>Part 2</h3>
-        <div className="ih-cue" lang="en">
+        <span className="ih-diag__spchip">Speaking · Part 1</span>
+        {qs.map((q, i) => row(q.id, i + 1, q.text, cfg.speaking.answerSec, 'en'))}
+        <span className="ih-diag__spchip">Speaking · Part 2</span>
+        <div className="ih-cue ih-diag__cue" lang="en">
           <h3>{sp.cueCard.topic}</h3>
           <p className="ih-muted">You should say:</p>
           <ul>{sp.cueCard.points.map((x) => <li key={x}>{x}</li>)}</ul>
           <p>{sp.cueCard.explain}</p>
         </div>
-        <p className="ih-muted">{P('speaking.prepHint', { n: String(cfg.speaking.prepSec) })}</p>
-        {row(sp.cueCard.id, P('speaking.mono'), cfg.speaking.monologueSec)}
+        <p className="ih-diag__sphint"><TimerIcon size={16} />{P('speaking.prepHint', { n: String(cfg.speaking.prepSec) })}</p>
+        {row(sp.cueCard.id, qs.length + 1, P('speaking.mono'), cfg.speaking.monologueSec)}
         {rec.error && <p className="ih-run__error" role="alert">{t(`ieltsSpeaking.micError.${rec.error}`)}</p>}
-        <p className="ih-muted">{t('ieltsSpeaking.privacyLocal')}</p>
+        <p className="ih-diag__sphint is-quiet"><InfoIcon size={16} />{t('ieltsSpeaking.privacyLocal')}</p>
         <div className="ih-diag__next">
           <button type="button" className="ih-cta" onClick={() => setConfirm(true)} disabled={rec.state !== 'idle'}>{P('block.finish')}</button>
         </div>

@@ -25,6 +25,8 @@ function offsetIn(container, node, offset) {
 export default function PassagePane({ texts, keyBase = 0, highlights = [], onHighlight, onRemoveHighlight, onClearAll, onSaveWord, mark, focusKey, noCopy, showMarkerBar = true }) {
   const { t } = useI18n()
   const paneRef = useRef(null)
+  // на телефоне мыши и правой кнопки нет — подсказка про палец (меню и снятие выделения по нажатию работают и там)
+  const [touch] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches)
   const [menu, setMenu] = useState(null)
   const [saved, setSaved] = useState(null)
 
@@ -114,7 +116,7 @@ export default function PassagePane({ texts, keyBase = 0, highlights = [], onHig
       {showMarkerBar && onHighlight && (
         <div className="ih-marker">
           <span className="ih-marker__chip"><i className="ih-hl-dot ih-hl-dot--1" />{t('ieltsReading.marker.label')}</span>
-          <span className="ih-marker__hint">{t('ieltsReading.marker.hint')}</span>
+          <span className="ih-marker__hint">{t(touch ? 'ieltsReading.marker.hintTouch' : 'ieltsReading.marker.hint')}</span>
           <button type="button" className="ih-marker__clear" onClick={onClearAll} disabled={!highlights.some((h) => h.key.startsWith(`${keyBase}:`))}>
             {t('ieltsReading.marker.clear')}
           </button>

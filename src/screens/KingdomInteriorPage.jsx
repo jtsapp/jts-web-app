@@ -120,6 +120,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
   const [busy, setBusy] = useState(false) // грузим данные урока
+  // Отказ загрузки урока по клику: раньше openLesson глотал ошибку, и зелёная
+  // печенька «молчала» — ученик думал, что «Повторение» ничего не открывает.
+  const [openError, setOpenError] = useState(null)
+  // Подсказка при тапе по закрытому узлу: disabled-кнопка на телефоне не даёт
+  // title, поэтому без этого клик по серой печеньке выглядит как «ничего нет».
+  const [trailHint, setTrailHint] = useState(null)
+  const trailHintTimer = useRef(null)
   const [end, setEnd] = useState(null) // { outcome, correct, wrong, accuracy, points }
   // Урок засчитывается: итоги уже на экране, а markDone ещё в сети. До его
   // ответа следующий узел тропы заперт — и goNext принимал это за исчерпанную
@@ -232,34 +239,55 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
+  const showTrailHint = useCallback((text) => {
+    setTrailHint(text)
+    if (trailHintTimer.current) clearTimeout(trailHintTimer.current)
+    trailHintTimer.current = setTimeout(() => setTrailHint(null), 2800)
+  }, [])
+
+  useEffect(
+    () => () => {
+      if (trailHintTimer.current) clearTimeout(trailHintTimer.current)
+    },
+    [],
+  )
+
   const openLesson = useCallback(
     async (code) => {
       // Урок рендерится из статики (public/learning/<level>.json), а не с
       // бэкенда, поэтому 403 на модуле сам по себе его не закрывает —
       // проверяем здесь, иначе диплинк/гонка загрузки откроют закрытый урок.
-      // Кнопка узла тропы уже disabled при !unlocked — эта проверка на случай
+      // Кнопка узла тропы уже не disabled при замке — эта проверка на случай
       // прямого вызова (goNext, диплинк) в обход клика по узлу.
       if (moduleLocked) return
       const i = lessons.findIndex((l) => l.code === code)
-      if (i >= 0 && !isUnlocked(i)) return
+      if (i >= 0 && !isUnlocked(i)) {
+        showTrailHint(t('lesson.locked'))
+        return
+      }
       // Экзамен уже загружен вместе с тропой — это свой экран, не шаги плеера.
       if (code === EXAM_CODE) {
         if (!exam) return
         setEnd(null)
         setRestricted(false)
+        setOpenError(null)
         setOpen({ code, attempt: 0, exam })
         return
       }
       setBusy(true)
       setEnd(null)
       setRestricted(false)
+      setOpenError(null)
       try {
         // Урок курса — очередь шагов, собранная из его же контента
         // (scripts/build-course-steps.js). L<n> — урок, T<u> — тест юнита,
         // X<id> — большой тест уровня (B2: четыре штуки на весь курс).
         if (course) {
           const m = /^([LTX])([a-z0-9]+)$/i.exec(code)
-          if (!m) return
+          if (!m) {
+            setOpenError(t('lessons.error'))
+            return
+          }
           // Раньше здесь A0/A1 подменяли содержимое урока нативными данными
           // (public/learning/<level>.json): разбор курса из разметки терял
           // True/False, соединение пар и вопросы к записи, и уроки выходили
@@ -272,14 +300,19 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           // True/False курс хранит вопросом на экран; к одному тексту их по
           // пять-шесть подряд, и в макете это одна таблица утверждений с общей
           // «Проверить» (шаг rows), а не пять одинаковых экранов.
-          if (data) {
-            const steps = groupBinary(data.steps || [], { withMaterial: true })
-            setOpen({ code, attempt: 0, steps: { ...data, steps, title: stripStageTail(data.title, steps) } })
+          if (!data) {
+            setOpenError(t('lessons.error'))
+            return
           }
+          const steps = groupBinary(data.steps || [], { withMaterial: true })
+          setOpen({ code, attempt: 0, steps: { ...data, steps, title: stripStageTail(data.title, steps) } })
           return
         }
         const data = await loadLesson(level, code)
-        if (!data) return
+        if (!data) {
+          setOpenError(t('lessons.error'))
+          return
+        }
         // A0/A1 хранят урок уже по одному заданию на экран — отдаём их новому
         // плееру; B2/C1 остаются на старом (у них свои типы chips/watch).
         if (isStepLevel(level)) {
@@ -290,11 +323,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           return
         }
         setOpen({ code, data, attempt: 0 })
+      } catch (e) {
+        console.error('[kingdom] openLesson', code, e)
+        setOpenError(t('lessons.error'))
       } finally {
         setBusy(false)
       }
     },
-    [level, moduleLocked, lessons, isUnlocked, course, lang, exam],
+    [level, moduleLocked, lessons, isUnlocked, course, lang, exam, t, showTrailHint],
   )
 
   const retry = () => {
@@ -496,6 +532,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           </div>
 
           <div className="kt-body">
+            {(openError || trailHint) && (
+              <p className={`kt-hint${openError ? ' is-error' : ''}`} role="status">
+                {openError || trailHint}
+              </p>
+            )}
             <div className="kt-hero" style={{ background: k.ring }}>
               <div className="kt-hero__text">
                 <div className="kt-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
@@ -550,7 +591,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                           <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
                             <button
                               className={cls}
-                              disabled={!unlocked || busy}
+                              // Замок не через disabled: на тач-экране disabled
+                              // глотает тап без подсказки, и «Повторение» кажется
+                              // сломанным. busy — единственная причина disabled.
+                              disabled={busy}
+                              aria-disabled={!unlocked || busy}
                               onClick={() => openLesson(l.code)}
                               title={!unlocked ? lockedTitle : label}
                               aria-label={label}

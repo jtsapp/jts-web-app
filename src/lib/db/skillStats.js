@@ -23,6 +23,12 @@ export async function loadSkillStats(profileId, sql = getSql()) {
 // поэтому синк с разных устройств не теряется (в отличие от записи абсолютов).
 // Все навыки в одной транзакции: при сбое посреди батча ничего не применяется,
 // значит повторная отправка клиентом не пере-считает уже успевшие навыки.
+//
+// Там же — строка суток skill_day с суммой пачки: календарь активности ученика
+// у преподавателя иначе не знал бы, в какие дни шла практика. Отрицательные
+// дельты в сутки не идут: «решено за день» не уменьшается. Строка суток нужна
+// только карточке преподавателя, поэтому её сбой навыки ученика не откатывает
+// (см. recordSkillDay).
 export async function applySkillDeltas(profileId, deltas, sql = getSql()) {
   if (!sql) return
   const entries = []
@@ -33,6 +39,8 @@ export async function applySkillDeltas(profileId, deltas, sql = getSql()) {
     entries.push({ skill, done, firstTry })
   }
   if (!entries.length) return
+  const dayTasks = entries.reduce((n, e) => n + Math.max(0, Number(e.done) || 0), 0)
+  const dayFirstTry = entries.reduce((n, e) => n + Math.max(0, Number(e.firstTry) || 0), 0)
   await sql.begin(async (tx) => {
     for (const { skill, done, firstTry } of entries) {
       await tx`
@@ -44,5 +52,30 @@ export async function applySkillDeltas(profileId, deltas, sql = getSql()) {
               updated_at = now()
       `
     }
+    if (dayTasks > 0 || dayFirstTry > 0) {
+      await recordSkillDay(tx, profileId, dayTasks, dayFirstTry)
+    }
   })
+}
+
+// Строка суток — в своей точке сохранения внутри транзакции навыков. Упала —
+// откатывается только она, а skill_stat фиксируется: runMigrations глотает
+// ошибки, и если 0016 не доехала на инстанс, ошибка «relation skill_day does
+// not exist» без точки сохранения откатила бы всю пачку и POST /api/skills
+// отвечал бы 500 каждому ученику. Ошибку только логируем, как
+// markSummaryStatus в calls.js: потеряем день в календаре, но не прогресс.
+async function recordSkillDay(tx, profileId, tasks, firstTry) {
+  try {
+    await tx.savepoint(async (sp) => {
+      await sp`
+        insert into skill_day (profile_id, day, tasks, first_try)
+        values (${profileId}, (now() at time zone 'utc')::date, ${tasks}, ${firstTry})
+        on conflict (profile_id, day) do update
+          set tasks = skill_day.tasks + excluded.tasks,
+              first_try = skill_day.first_try + excluded.first_try
+      `
+    })
+  } catch (err) {
+    console.error('[skillStats] skill_day write failed', err?.message || err)
+  }
 }

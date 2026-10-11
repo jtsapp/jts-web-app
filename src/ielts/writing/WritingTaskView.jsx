@@ -114,7 +114,7 @@ export default function WritingTaskView({ token, testId, onBackToLearn, onBackTo
             {last ? (
               <>
                 <div className="ih-rtask__score">
-                  <b>{last.band != null ? `band ${last.band.toFixed(1)}` : t('ieltsWriting.status.pending')}</b>
+                  <b>{last.band != null ? `band ${last.band.toFixed(1)}` : last.status === 'failed' ? t('ieltsMock.result.cell.failed') : t('ieltsWriting.status.pending')}</b>
                 </div>
                 <p>{formatDate(last.finishedAt, lang)}</p>
                 <button type="button" className="ih-btn ih-btn--outline" onClick={() => onOpenWork(last.id)}>{t('ieltsWriting.openWork')}</button>
