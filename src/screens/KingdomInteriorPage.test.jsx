@@ -116,6 +116,10 @@ const renderPage = (props) =>
 
 const PAYWALL = 'Данная функция доступна по подписке'
 
+// Замок тропы — через aria-disabled (не disabled): иначе тап по серой печеньке
+// на телефоне молчит без подсказки «сначала пройди предыдущий».
+const trailLocked = (btn) => btn.getAttribute('aria-disabled') === 'true'
+
 /** Пройти первый урок тропы и упереться в отказ бэкенда по квоте. */
 async function finishLessonWithQuotaRefusal(view) {
   await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
@@ -140,11 +144,11 @@ describe('KingdomInteriorPage — квота модуля не отнимает 
     // Пройденные узлы 0–19 не должны запираться квотой задним числом — иначе
     // студент увидит замки на уроках, которые уже прошёл.
     buttons.slice(0, 20).forEach((btn, i) => {
-      expect(btn.disabled, `узел ${i} должен быть открыт (уже пройден)`).toBe(false)
+      expect(trailLocked(btn), `узел ${i} должен быть открыт (уже пройден)`).toBe(false)
     })
 
     // Узел 20 — новый, не пройден и за пределами квоты (3): заблокирован.
-    expect(buttons[20].disabled).toBe(true)
+    expect(trailLocked(buttons[20])).toBe(true)
   })
 })
 
@@ -313,30 +317,36 @@ describe('KingdomInteriorPage — тропа идёт подряд (как пр�
   it('ничего не пройдено — открыт первый урок, остальные ждут своей очереди', async () => {
     const buttons = await stepsOf()
 
-    expect(buttons[0].disabled).toBe(false)
-    expect(buttons.slice(1).every((b) => b.disabled)).toBe(true)
+    expect(trailLocked(buttons[0])).toBe(false)
+    expect(buttons.slice(1).every(trailLocked)).toBe(true)
     expect(buttons[1].title).toBe('Сначала пройди предыдущий урок')
+  })
+
+  it('тап по закрытому узлу показывает подсказку, а не молчит', async () => {
+    const buttons = await stepsOf()
+    fireEvent.click(buttons[1])
+    expect(await screen.findByText('Сначала пройди предыдущий урок')).toBeTruthy()
   })
 
   it('пройден юнит 1 целиком — открывается первый урок юнита 2, и через границу юнита', async () => {
     loadDone.mockResolvedValue(new Set(['m0', 'm1']))
     const buttons = await stepsOf()
 
-    expect(buttons[2].disabled).toBe(false)
-    expect(buttons[3].disabled).toBe(true)
+    expect(trailLocked(buttons[2])).toBe(false)
+    expect(trailLocked(buttons[3])).toBe(true)
   })
 
   it('ученик B1 в тропе A2 идёт подряд так же: ни уровень, ни каталог тропу не открывают', async () => {
     const buttons = await stepsOf()
 
-    expect(buttons[0].disabled).toBe(false)
-    expect(buttons[2].disabled).toBe(true)
+    expect(trailLocked(buttons[0])).toBe(false)
+    expect(trailLocked(buttons[2])).toBe(true)
   })
 
   it('unlockAll (?unlock=1, только dev) снимает последовательность — тропу можно посмотреть целиком', async () => {
     const { container } = renderPage({ unlockAll: true })
     await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
-    expect([...container.querySelectorAll('.kt-step')].every((b) => !b.disabled)).toBe(true)
+    expect([...container.querySelectorAll('.kt-step')].every((b) => !trailLocked(b))).toBe(true)
   })
 
   it('unlockAll не снимает блокировку модуля админом — это не «посмотреть контент», а запрет', async () => {
@@ -394,7 +404,7 @@ describe('KingdomInteriorPage — финальный экзамен уровня
     expect(units[units.length - 1].querySelector('.kt-unit__title').textContent).toBe('Финальный экзамен')
     const node = lastNode(container)
     // Последний урок курса пройден — экзамен открыт (тропа идёт подряд).
-    expect(node.disabled).toBe(false)
+    expect(trailLocked(node)).toBe(false)
     expect(node.getAttribute('aria-label')).toBe('Финальный экзамен')
 
     fireEvent.click(node)
@@ -410,7 +420,7 @@ describe('KingdomInteriorPage — финальный экзамен уровня
   it('последний урок курса не пройден — экзамен заперт', async () => {
     const { container } = await renderWithExam()
     const node = lastNode(container)
-    expect(node.disabled).toBe(true)
+    expect(trailLocked(node)).toBe(true)
     expect(node.title).toBe('Сначала пройди предыдущий урок')
   })
 

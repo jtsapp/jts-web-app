@@ -7096,11 +7096,28 @@ textarea {
   cursor: pointer;
   transition: transform 0.12s ease;
 }
-.kt-step:disabled {
+.kt-step:disabled,
+.kt-step[aria-disabled='true'] {
   cursor: default;
 }
-.kt-step:not(:disabled):hover {
+.kt-step:not(:disabled):not([aria-disabled='true']):hover {
   transform: translateX(-50%) translateY(-2px);
+}
+/* Подсказка тропы: отказ загрузки урока или тап по закрытому узлу. */
+.kt-hint {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #ebdeff;
+  color: #504b4b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+.kt-hint.is-error {
+  background: #ffe5e5;
+  color: #b42318;
 }
 /* Печенька урока */
 .kt-step.is-active {
