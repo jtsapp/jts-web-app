@@ -11673,6 +11673,7 @@
 }
 .ih-mt__card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
@@ -13920,31 +13921,66 @@
   font-size: 12px;
   color: #8a8697;
 }
+/* Секции mock на карточке: четыре плашки по порядку экзамена, у каждой — «Выполнено» или «Не выполнено» */
 .ih-mtsec {
-  display: inline-flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.ih-mtsec__sum {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-mtsec ul {
+  display: grid;
+  /* в карточке на полстраницы четыре в ряд не влезают — переносятся по две */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ih-mt__card .ih-mtsec {
+  flex-basis: 100%;
 }
 .ih-mtsec__s {
-  min-width: 26px;
-  padding: 2px 7px;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.ih-mtsec__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ih-mtsec__txt b {
+  font-size: 13px;
+}
+.ih-mtsec__txt small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-  background: #f1f0f5;
-  color: #9a97a6;
+  font-weight: 600;
+  color: #8e8a9c;
 }
 .ih-mtsec__s.is-done {
-  background: #e7f7ee;
+  border-color: #b7e4c7;
+  background: #effaf3;
+}
+.ih-mtsec__s.is-done small {
   color: #15803d;
 }
-.ih-mtsec__s.is-checking {
-  background: #f3ecff;
+.ih-mtsec__s.is-checking small {
   color: #6d28d9;
 }
-.ih-mtsec__s.is-failed,
-.ih-mtsec__s.is-missing {
-  background: #fdecec;
+.ih-mtsec__s.is-bad small {
   color: #b42318;
 }

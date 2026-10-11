@@ -6,6 +6,7 @@ import { useI18n } from '../../i18n.jsx'
 import PageHeader from '../ui/PageHeader.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import { MOCK_ORDER } from '../mock/mockSession.js'
+import { SectionTile } from '../sections.jsx'
 import { ArrowForwardIcon, CheckCircleIcon, ChevronLeftIcon, QuizIcon, RadioOffIcon, ScheduleIcon, TimerIcon, CloseIcon } from '../icons.jsx'
 
 // Вкладка «Mock-тесты» (дизайн «IELTS new», Figma 92:3267): полный экзамен, последняя попытка, доступные mock трека
@@ -30,22 +31,37 @@ function StatusChip({ status }) {
   return <span className={`ih-mkchip is-${tone}`}><Icon size={13} />{t(`ieltsMt.status.${status}`)}</span>
 }
 
-// Секции последней попытки этого mock на карточке: «L ✓ R ✓ W — S —». done — сдана и оценена, checking — ИИ проверяет,
-// failed/missing — проверка не удалась или ответа нет, pending — ещё не начата (backend MockCard.sections).
+// Секции mock на карточке — четыре плашки по порядку экзамена: что уже выполнено, а что нет (backend MockCard.sections).
+// done — сдана в этом mock; practiced — все её задания ученик уже сдал вне mock («Практика» или другой mock), это тоже
+// «Выполнено»; checking — ИИ проверяет; failed/missing — проверка не удалась или ответа нет; иначе — не выполнено.
+const SEC_TONE = { done: 'done', practiced: 'done', checking: 'checking', failed: 'bad', missing: 'bad' }
+
 function SectionMarks({ sections }) {
   const { t } = useI18n()
-  if (!sections || !Object.keys(sections).length) return null
+  const all = sections || {}
+  const doneN = MOCK_ORDER.filter((n) => all[n] === 'done' || all[n] === 'practiced').length
   return (
-    <span className="ih-mtsec" aria-label={t('ieltsMt.sections')}>
-      {MOCK_ORDER.map((name) => {
-        const st = sections[name] || 'pending'
-        return (
-          <span key={name} className={`ih-mtsec__s is-${st}`} title={`${name[0].toUpperCase() + name.slice(1)} · ${t(`ieltsMt.sec.${st}`)}`}>
-            {SHORT[name]}{st === 'done' ? ' ✓' : st === 'checking' ? ' …' : ''}
-          </span>
-        )
-      })}
-    </span>
+    <div className="ih-mtsec" aria-label={t('ieltsMt.sections')}>
+      <span className="ih-mtsec__sum">{t('ieltsMt.secDone', { n: String(doneN), total: String(MOCK_ORDER.length) })}</span>
+      <ul>
+        {MOCK_ORDER.map((name) => {
+          const st = all[name] || 'pending'
+          const tone = SEC_TONE[st] || 'todo'
+          return (
+            <li key={name} className={`ih-mtsec__s is-${tone}`}>
+              <SectionTile section={name} size={28} iconSize={14} />
+              <span className="ih-mtsec__txt">
+                <b>{name[0].toUpperCase() + name.slice(1)}</b>
+                <small>
+                  {tone === 'done' && <CheckCircleIcon size={13} />}
+                  {t(`ieltsMt.sec.${st in SEC_TONE ? st : 'pending'}`)}
+                </small>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -144,7 +160,6 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
                   <span className="ih-mtl__time"><ScheduleIcon size={20} />{t('ieltsMt.hero.time')}</span>
                   {added(m) && <span className="ih-mtl__added">{added(m)}</span>}
                   <SectionMarks sections={m.sections} />
-                  <span className="ih-mtl__flow">{MOCK_ORDER.map((x, i) => <span key={x}>{i > 0 && <ArrowForwardIcon size={14} />}{x[0].toUpperCase() + x.slice(1)}</span>)}</span>
                 </div>
               </article>
             ))}
@@ -234,11 +249,11 @@ export default function MockTestsTab({ token, track, onOpenMock, onOpenSession }
                     <b>{m.title}</b>
                     <StatusChip status={m.status === 'submitted' ? 'submitted' : m.status} />
                     {added(m) && <small className="ih-mt__added">{added(m)}</small>}
-                    <SectionMarks sections={m.sections} />
                   </span>
                   <button type="button" className="ih-btn ih-btn--outline" onClick={() => (m.status === 'in_progress' && m.sessionId ? onOpenSession(m.sessionId) : onOpenMock(m.id))}>
                     {m.status === 'in_progress' ? t('ieltsMt.continue') : t('ieltsMt.more')}
                   </button>
+                  <SectionMarks sections={m.sections} />
                 </article>
               ))}
             </div>
