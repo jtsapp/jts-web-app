@@ -158,3 +158,7 @@ html[data-theme="dark"] .ih-locked__steps li {
   background: #221e31;
   color: #e8e4f3;
 }
+
+html[data-theme="dark"] .ih-dres__crit span {
+  background: rgba(255, 255, 255, 0.06);
+}
