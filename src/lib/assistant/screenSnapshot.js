@@ -51,12 +51,17 @@ function isHidden(el) {
   return false
 }
 
-// Плееры помечают проверенное поле классами is-wrong / is-correct (так же их
-// красит CSS). Помощнику это важно: «неверным» отмечено именно это поле.
+// Плееры помечают проверенный ответ классами is-wrong / is-right / is-correct
+// (так же их красит CSS) — и у полей ввода, и у кнопок-вариантов (курс A0:
+// `.cp-choice.is-wrong`). Без пометки на кнопке снимок выглядел бы как три
+// одинаковых «favourite / like / don't like», и помощник путал выбор ученика
+// с текстом объяснения в плашке.
 function verdictOf(el) {
   const cls = typeof el.className === 'string' ? el.className : ''
   if (/\bis-wrong\b/.test(cls)) return ' (отмечено как неверное)'
-  if (/\bis-correct\b/.test(cls)) return ' (отмечено как верное)'
+  if (/\bis-right\b/.test(cls) || /\bis-correct\b/.test(cls)) return ' (отмечено как верное)'
+  if (/\bis-missed\b/.test(cls)) return ' (верный вариант, не выбран)'
+  if (/\bis-sel\b/.test(cls) || /\bis-on\b/.test(cls)) return ' (выбрано)'
   return ''
 }
 
@@ -106,7 +111,10 @@ function walk(node, out) {
   }
   if (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') {
     const label = squash(el.textContent) || squash(el.getAttribute('aria-label') || el.getAttribute('title'))
-    if (label) out.push(` [кнопка «${clip(label, 80)}»${el.disabled ? ' неактивна' : ''}] `)
+    if (label) {
+      const idle = el.disabled ? ' неактивна' : ''
+      out.push(` [кнопка «${clip(label, 80)}»${idle}${verdictOf(el)}] `)
+    }
     return
   }
   if (el.tagName === 'IMG') {

@@ -79,6 +79,34 @@ describe('снимок экрана', () => {
     expect(snap).toContain('[кнопка «Проверить» неактивна]')
   })
 
+  // Курс (A0 «I ___ rain.»): варианты — кнопки с is-wrong / is-right, а не <input>.
+  // Без пометки на кнопке помощник путал выбор ученика с текстом «why» в плашке.
+  it('видит выбранный вариант-кнопку после проверки', () => {
+    const root = mount(`
+      <h2>Выберите правильное слово.</h2>
+      <p>I ___ rain.</p>
+      <button class="cp-choice" disabled>favourite</button>
+      <button class="cp-choice is-wrong" disabled>like</button>
+      <button class="cp-choice" disabled>don't like</button>
+      <div class="cp-fb is-no"><b>Неверный ответ</b>
+        <span>Rain в этом уроке — пример для don't like (не нравится).</span></div>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «like» неактивна (отмечено как неверное)]')
+    expect(snap).toContain('[кнопка «favourite» неактивна]')
+    expect(snap).toContain('[кнопка «don\'t like» неактивна]')
+    expect(snap).not.toMatch(/кнопка «don't like»[^\n]*отмечено как неверное/)
+    expect(snap).toContain('пример для don\'t like')
+  })
+
+  it('помечает верную кнопку is-right и пропущенный is-missed', () => {
+    const root = mount(`
+      <button class="cp-choice is-right" disabled>I like music.</button>
+      <button class="cp-choice is-missed" disabled>People spend nothing for a day.</button>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «I like music.» неактивна (отмечено как верное)]')
+    expect(snap).toContain('[кнопка «People spend nothing for a day.» неактивна (верный вариант, не выбран)]')
+  })
+
   it('без корня — пустая строка', () => {
     expect(snapshotScreen(null)).toBe('')
   })
