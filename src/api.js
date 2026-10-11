@@ -1527,6 +1527,28 @@ async function assessIeltsWritingRaw(token, attemptId, uiLang) {
   return body
 }
 
+// Оценка Writing/Speaking диагностики — наш серверный роут (`/api/ielts/diagnostic/assess`); отвечает result попытки.
+// answers — только для Speaking: [{ itemId, durationSec, wav }]
+export function assessIeltsDiagnostic(token, { attemptId, skill, uiLang, answers }) {
+  return ieltsChanged(assessIeltsDiagnosticRaw(token, { attemptId, skill, uiLang, answers }))
+}
+
+async function assessIeltsDiagnosticRaw(token, { attemptId, skill, uiLang, answers }) {
+  const form = new FormData()
+  form.append('attemptId', String(attemptId))
+  form.append('skill', skill)
+  form.append('uiLang', uiLang || 'ru')
+  if (answers?.length) {
+    form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
+    answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
+  }
+  const res = await fetch('/api/ielts/diagnostic/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  const body = await res.json().catch(() => null)
+  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
+  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code })
+  return body
+}
+
 export function submitIeltsWriting(token, id, body) {
   return ieltsChanged(authPost(`/mobile/ielts/tests/${encodeURIComponent(id)}/writing`, token, body))
 }

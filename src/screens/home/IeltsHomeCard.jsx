@@ -20,16 +20,19 @@ export default function IeltsHomeCard({ token, onNav }) {
   }, [token])
 
   const started = !!me?.onboarded
+  // онбординг пройден, а материалы ещё закрыты (backend V324): заявка у менеджера — до диагностики можно дойти и сейчас
+  const waiting = started && me?.access === false
   const track = me?.track === 'general' ? 'General Training' : 'Academic'
+  const key = waiting ? 'Wait' : started ? 'Go' : 'Start'
   return (
     <section className="hm-card hm-placement hm-ielts">
       <span className="hm-ielts__chip">IELTS · {track}</span>
-      <h1 className="hm-placement__title">{t(started ? 'home.ielts.titleGo' : 'home.ielts.titleStart')}</h1>
+      <h1 className="hm-placement__title">{t(`home.ielts.title${key}`)}</h1>
       <p className="hm-placement__sub">
-        {started ? t('home.ielts.subGo', { programme: me?.programmeName || 'IELTS' }) : t('home.ielts.subStart')}
+        {key === 'Go' ? t('home.ielts.subGo', { programme: me?.programmeName || 'IELTS' }) : t(`home.ielts.sub${key}`)}
       </p>
-      <button type="button" className="hm-placement__cta" onClick={() => onNav?.(started ? 'ielts' : 'ielts-onboarding')}>
-        {t(started ? 'home.ielts.ctaGo' : 'home.ielts.ctaStart')}
+      <button type="button" className="hm-placement__cta" onClick={() => onNav?.(waiting ? 'ielts-diagnostic' : started ? 'ielts' : 'ielts-onboarding')}>
+        {t(`home.ielts.cta${key}`)}
       </button>
     </section>
   )

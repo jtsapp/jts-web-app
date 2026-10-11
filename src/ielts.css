@@ -7640,6 +7640,77 @@
   font-size: 12px;
   font-weight: 600;
 }
+.ih-dres__skill--writing .ih-dres__bar > i {
+  background: #12a37f;
+}
+.ih-dres__skill--speaking .ih-dres__bar > i {
+  background: #d9468f;
+}
+.ih-dres__retry {
+  align-self: flex-start;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+/* Разбор ИИ по Writing и Speaking диагностики: критерии плитками, отзыв, списки */
+.ih-dres__ai-review {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 20px;
+}
+.ih-dres__ai-review h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.ih-dres__aisec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-dres__aisec h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+}
+.ih-dres__ainame {
+  flex: 1;
+}
+.ih-dres__aisec h3 b {
+  font-size: 22px;
+}
+.ih-dres__aisec p,
+.ih-dres__aisec ul {
+  margin: 0;
+  line-height: 1.5;
+}
+.ih-dres__aisec ul {
+  padding-left: 20px;
+}
+.ih-dres__crit {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.ih-dres__crit span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ih-surface-2, #f4f5f9);
+}
+.ih-dres__crit small {
+  color: var(--ih-muted, #6b7280);
+  font-size: 12px;
+}
+@media (max-width: 560px) {
+  .ih-dres__crit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .ih-dres__bottom {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -11602,6 +11673,7 @@
 }
 .ih-mt__card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
@@ -12842,7 +12914,8 @@
   color: var(--ih-ink);
   cursor: pointer;
 }
-.ih-mrev__sec span {
+/* только подпись: иконка секции (.ih-plate / .ih-tile) тоже span, и колонка сбивала её с центра плашки */
+.ih-mrev__sec > span:not(.ih-plate):not(.ih-tile) {
   display: flex;
   flex-direction: column;
 }
@@ -13733,4 +13806,181 @@
 }
 .ih-wchart__slice {
   stroke: #fff;
+}
+
+/* материалы IELTS закрыты до доступа от менеджера (IeltsLockedView): что произошло и что делать дальше */
+.ih-locked {
+  max-width: 620px;
+  margin: 32px auto;
+  padding: 32px 28px;
+  border-radius: 24px;
+  background: var(--ih-card, #fff);
+  border: 1px solid #ece6f8;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.ih-locked__mascot {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+}
+.ih-locked h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.ih-locked p {
+  margin: 0;
+  color: #6b6b80;
+  line-height: 1.5;
+}
+.ih-locked__steps {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+  counter-reset: lk;
+}
+.ih-locked__steps li {
+  counter-increment: lk;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f7f4fd;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ih-locked__steps li::before {
+  content: counter(lk);
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ih-violet, #9047ff);
+  color: #fff;
+  font-size: 12px;
+}
+.ih-locked__steps li.is-done::before {
+  content: '✓';
+  background: #22a35a;
+}
+.ih-locked__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Mock-тесты: «Актуальные / Устаревшие» (порог — web-admin), дата добавления и секции последней попытки на карточке */
+.ih-mtfresh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.ih-mtfresh button {
+  padding: 7px 14px;
+  border: 1px solid #e2dcf0;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ih-mtfresh button i {
+  font-style: normal;
+  color: #8a8697;
+  font-weight: 500;
+  margin-left: 2px;
+}
+.ih-mtfresh button.is-on {
+  border-color: var(--ih-violet, #9047ff);
+  background: #f3ecff;
+  color: #4c1d95;
+}
+.ih-mtfresh__hint {
+  font-size: 12px;
+  color: #8a8697;
+}
+.ih-mt__added,
+.ih-mtl__added {
+  font-size: 12px;
+  color: #8a8697;
+}
+/* Секции mock на карточке: четыре плашки по порядку экзамена, у каждой — «Выполнено» или «Не выполнено» */
+.ih-mtsec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.ih-mtsec__sum {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-mtsec ul {
+  display: grid;
+  /* в карточке на полстраницы четыре в ряд не влезают — переносятся по две */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ih-mt__card .ih-mtsec {
+  flex-basis: 100%;
+}
+.ih-mtsec__s {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.ih-mtsec__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ih-mtsec__txt b {
+  font-size: 13px;
+}
+.ih-mtsec__txt small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8e8a9c;
+}
+.ih-mtsec__s.is-done {
+  border-color: #b7e4c7;
+  background: #effaf3;
+}
+.ih-mtsec__s.is-done small {
+  color: #15803d;
+}
+.ih-mtsec__s.is-checking small {
+  color: #6d28d9;
+}
+.ih-mtsec__s.is-bad small {
+  color: #b42318;
 }

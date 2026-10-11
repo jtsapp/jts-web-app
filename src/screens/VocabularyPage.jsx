@@ -195,7 +195,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     if (!token) return undefined
     let alive = true
     getIeltsMe(token)
-      .then((me) => (me?.ieltsAccount || me?.onboarded ? getIeltsTests(token, 'vocab') : []))
+      .then((me) => ((me?.ieltsAccount || me?.onboarded) && me?.access !== false ? getIeltsTests(token, 'vocab') : []))
       .then((list) => {
         if (!alive) return
         const sets = sortIeltsSets(Array.isArray(list) ? list : []).map((x) => ({ ...x, scope: ieltsScope(x.id) }))

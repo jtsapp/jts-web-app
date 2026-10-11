@@ -9,9 +9,59 @@ import { bandGap, estimateTerm } from '../ielts/onboarding/onboarding.js'
 import { formatDate, formatDuration, formatMonths } from '../ielts/format.js'
 import { ArrowForwardIcon, CheckIcon, CloseIcon, DescriptionIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
+import { gradeDiagnostic, isGrading } from '../ielts/onboarding/diagGrading.js'
 
 const SKILLS = ['listening', 'reading', 'writing', 'speaking']
 const REVIEW_SKILLS = ['listening', 'reading']
+const AI_SKILLS = ['writing', 'speaking']
+const CRITERIA = {
+  writing: ['taskResponse', 'coherenceCohesion', 'lexicalResource', 'grammaticalRange'],
+  speaking: ['fluencyCoherence', 'lexicalResource', 'grammaticalRange', 'pronunciation'],
+}
+
+/** Разбор ИИ по Writing и Speaking: критерии, отзыв, сильные стороны и что улучшить. */
+function AiReview({ r, t }) {
+  const done = AI_SKILLS.filter((k) => r[k]?.status === 'done')
+  if (!done.length) return null
+  return (
+    <section className="ih-card ih-dres__ai-review">
+      <h2>{t('ieltsOb.aiReview')}</h2>
+      {done.map((k) => {
+        const sec = r[k]
+        return (
+          <div key={k} className="ih-dres__aisec">
+            <h3>
+              <SectionTile section={k} size={28} iconSize={14} />
+              <span className="ih-dres__ainame">{k === 'writing' ? 'Writing' : 'Speaking'}</span>
+              <b>{Number(sec.band).toFixed(1)}</b>
+            </h3>
+            <div className="ih-dres__crit">
+              {CRITERIA[k].map((c) => (
+                <span key={c}>
+                  <small>{t(`ieltsOb.crit.${c}`)}</small>
+                  <b>{sec.criteria?.[c] != null ? Number(sec.criteria[c]).toFixed(1) : '—'}</b>
+                </span>
+              ))}
+            </div>
+            {sec.feedback && <p>{sec.feedback}</p>}
+            {sec.strengths?.length > 0 && (
+              <>
+                <small className="ih-muted">{t('ieltsOb.strengths')}</small>
+                <ul>{sec.strengths.map((x, i) => <li key={i}>{typeof x === 'string' ? x : x?.text || JSON.stringify(x)}</li>)}</ul>
+              </>
+            )}
+            {sec.improvements?.length > 0 && (
+              <>
+                <small className="ih-muted">{t('ieltsOb.improvements')}</small>
+                <ul>{sec.improvements.map((x, i) => <li key={i}>{typeof x === 'string' ? x : x?.text || JSON.stringify(x)}</li>)}</ul>
+              </>
+            )}
+          </div>
+        )
+      })}
+    </section>
+  )
+}
 
 /**
  * Разбор ответов по секциям: Listening — по частям записи (часть у вопроса своя), Reading — одним текстом. Нумерация
@@ -123,6 +173,32 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
     }
   }, [authToken, target?.attemptId])
 
+  // Writing и Speaking оцениваются здесь, после сдачи: ждут оценки — запускаем, по готовности перечитываем попытку.
+  // Состояние секции на экране: run — идёт оценка, err — не удалась (повторить можно кнопкой)
+  const [grading, setGrading] = useState({})
+  const attemptId = state.v?.attempt?.id
+  const runGrade = (k) => {
+    const p = gradeDiagnostic(authToken, attemptId, k, lang)
+    if (!p) return false
+    setGrading((g) => ({ ...g, [k]: 'run' }))
+    p.then(() => getIeltsAttempt(authToken, attemptId))
+      .then((v) => {
+        setState((cur) => (cur.v?.attempt?.id === attemptId ? { ...cur, v } : cur))
+        setGrading((g) => ({ ...g, [k]: null }))
+      })
+      .catch(() => setGrading((g) => ({ ...g, [k]: 'err' })))
+    return true
+  }
+  useEffect(() => {
+    if (state.status !== 'ready' || !attemptId) return
+    for (const k of AI_SKILLS) {
+      const st = state.v.result?.[k]?.status
+      if (grading[k] || (st !== 'pending_ai' && !(st === 'grading' && isGrading(attemptId, k)))) continue
+      runGrade(k)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status, attemptId])
+
   let body
   if (state.status !== 'ready') {
     body =
@@ -166,7 +242,7 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
         </header>
         <div className="ih-dres__top">
           <section className="ih-dres__overall">
-            <span>{t('ieltsOb.overallPrelim')}</span>
+            <span>{b.overallPrelim === false ? t('ieltsOb.overallFinal') : t('ieltsOb.overallPrelim')}</span>
             <div className="ih-dres__big">
               <b>{b.overall?.toFixed(1) ?? '—'}</b>
               {target != null && <span>{t('ieltsDash.goalShort', { n: Number(target).toFixed(1) })}</span>}
@@ -194,7 +270,16 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                     {b[k] != null ? (
                       <strong>{b[k].toFixed(1)}</strong>
                     ) : (
-                      <span className="ih-dres__ai"><TimerIcon size={14} />{pending?.status === 'skipped' ? P('result.skipped') : t('ieltsOb.waitsAiShort')}</span>
+                      <span className="ih-dres__ai">
+                        <TimerIcon size={14} />
+                        {pending?.status === 'skipped'
+                          ? P('result.skipped')
+                          : grading[k] === 'run'
+                            ? t('ieltsOb.grading')
+                            : grading[k] === 'err' || pending?.status === 'failed'
+                              ? t('ieltsOb.gradeFailed')
+                              : t('ieltsOb.waitsAiShort')}
+                      </span>
                     )}
                   </div>
                   <i className="ih-dres__bar"><i style={{ width: `${share(b[k], 9) * 100}%` }} /></i>
@@ -205,6 +290,12 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                         ? t('ieltsOb.essaySaved', { n: String(pending?.words ?? 0) })
                         : t('ieltsOb.speakingSaved', { n: String(pending?.answers ?? 0), sec: String(pending?.seconds ?? 0) })}
                   </span>
+                  {b[k] == null && pending && pending.status !== 'skipped' && grading[k] !== 'run' && (grading[k] === 'err' || pending.status === 'failed') && (
+                    <button type="button" className="ih-btn ih-btn--outline ih-dres__retry" onClick={() => runGrade(k) || setGrading((g) => ({ ...g, [k]: 'lost' }))}>
+                      {t('ieltsOb.gradeRetry')}
+                    </button>
+                  )}
+                  {grading[k] === 'lost' && <small className="ih-muted">{t('ieltsOb.gradeLost')}</small>}
                 </section>
               )
             })}
@@ -238,6 +329,7 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
             <small className="ih-muted">{t('ieltsOb.bandNote')}</small>
           </section>
         </div>
+        <AiReview r={r} t={t} />
         <details className="ih-card ih-dres__review" open={review} ref={reviewRef} onToggle={(e) => setReview(e.currentTarget.open)}>
           <summary>{P('result.review')}</summary>
           {review && <DiagReview r={r} v={v} byId={byId} readingTitle={readingTitle} P={P} t={t} lang={lang} />}
