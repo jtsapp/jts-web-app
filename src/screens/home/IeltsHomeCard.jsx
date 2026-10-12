@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getIeltsMe } from '../../api.js'
+import { getIeltsMe, getIeltsProfile } from '../../api.js'
 
 /**
  * Верх «Главной» у ученика с аккаунтом IELTS — вместо уровня General English. Курса General English у такого ученика
@@ -22,8 +22,21 @@ export default function IeltsHomeCard({ token, onNav }) {
   const started = !!me?.onboarded
   // онбординг пройден, а материалы ещё закрыты (backend V324): заявка у менеджера — до диагностики можно дойти и сейчас
   const waiting = started && me?.access === false
+  // Пройдена ли диагностика, plan/me не говорит — смотрим баллы в профиле, и только пока ждём менеджера: раньше карточка
+  // звала «Пройти диагностику» и после неё, и ученик проходил её заново вместо того, чтобы увидеть результат.
+  const [diagnosed, setDiagnosed] = useState(false)
+  useEffect(() => {
+    if (!waiting) return undefined
+    let alive = true
+    getIeltsProfile(token)
+      .then((p) => alive && setDiagnosed(p?.bands?.overall != null))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token, waiting])
   const track = me?.track === 'general' ? 'General Training' : 'Academic'
-  const key = waiting ? 'Wait' : started ? 'Go' : 'Start'
+  const key = waiting ? (diagnosed ? 'WaitDone' : 'Wait') : started ? 'Go' : 'Start'
   return (
     <section className="hm-card hm-placement hm-ielts">
       <span className="hm-ielts__chip">IELTS · {track}</span>
@@ -31,7 +44,7 @@ export default function IeltsHomeCard({ token, onNav }) {
       <p className="hm-placement__sub">
         {key === 'Go' ? t('home.ielts.subGo', { programme: me?.programmeName || 'IELTS' }) : t(`home.ielts.sub${key}`)}
       </p>
-      <button type="button" className="hm-placement__cta" onClick={() => onNav?.(waiting ? 'ielts-diagnostic' : started ? 'ielts' : 'ielts-onboarding')}>
+      <button type="button" className="hm-placement__cta" onClick={() => onNav?.(waiting ? (diagnosed ? 'ielts-diagnostic-result' : 'ielts-diagnostic') : started ? 'ielts' : 'ielts-onboarding')}>
         {t(`home.ielts.cta${key}`)}
       </button>
     </section>
