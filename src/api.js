@@ -7,6 +7,7 @@ import { reportUnauthorized } from './lib/session.js'
 import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
+import { ieltsHidden } from './lib/ieltsGate.js'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
@@ -1818,6 +1819,11 @@ const IELTS_ME_NONE = { ieltsAccount: false, studyMode: 'self_study', track: 'ac
 
 export async function getIeltsMe(token) {
   if (!token) return IELTS_ME_NONE
+  // Там, где IELTS скрыт (прод), аккаунта IELTS нет ни для кого: менеджер может поставить признак в web-admin, но
+  // раздела, ради которого ученику прячут General English, на проде нет. Гейт здесь, а не у каждого потребителя:
+  // эффекты App, сайдбар и «Словарь» читали признак как есть, и такой ученик получал полуинтерфейс без раздела IELTS
+  // и не мог пройти тест уровня — App возвращал его с test-intro на «Главную».
+  if (ieltsHidden()) return IELTS_ME_NONE
   if (_ieltsMe.has(token)) return _ieltsMe.get(token)
   const p = authGet('/mobile/ielts/plan/me', token)
     .then((d) => ({ ...IELTS_ME_NONE, ...d, ieltsAccount: !!d?.ieltsAccount }))
