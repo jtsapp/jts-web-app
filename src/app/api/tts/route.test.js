@@ -38,6 +38,10 @@ function streamOf(buf) {
   })
 }
 
+// Запись в кэш (диск, Redis) идёт в фоне, после того как ответ уже ушёл. Секунды по умолчанию у vi.waitFor хватает в
+// одиночном прогоне, а в полном (сотни файлов параллельно) фоновая запись опаздывала, и тест падал без вины кода.
+const BG = { timeout: 5000 }
+
 let dir
 let fetchMock
 let GET
@@ -104,12 +108,12 @@ describe('GET /api/tts', () => {
       audio_format: 'mp3',
     })
 
-    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1))
+    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1), BG)
   })
 
   it('попадание в кэш: Soniox не зовём, Range отдаёт 206', async () => {
     await (await GET(req('v=Grace&t=apple'))).arrayBuffer()
-    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1))
+    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1), BG)
     fetchMock.mockClear()
 
     const full = await GET(req('v=Grace&t=%20apple%20'))
@@ -188,9 +192,9 @@ describe('GET /api/tts', () => {
     // второй успевает пройти await readCached раньше и сам становится
     // «первым»: падающий mockImplementationOnce уходит ему, а first получает
     // успешный повтор → 200 вместо 502.
-    await vi.waitFor(() => expect(typeof open).toBe('function'))
+    await vi.waitFor(() => expect(typeof open).toBe('function'), BG)
     const second = GET(req('v=Grace&t=retry'))
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), BG)
     open()
     expect((await first).status).toBe(502)
     expect((await second).status).toBe(200)
@@ -218,7 +222,7 @@ describe('GET /api/tts с Redis', () => {
     const first = await GET(req('v=Grace&l=en&s=0.9&t=apple'))
     expect(first.headers.get('x-tts-cache')).toBe('miss')
     await first.arrayBuffer()
-    await vi.waitFor(() => expect(redis.set).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(redis.set).toHaveBeenCalledTimes(1), BG)
     const [key, , mode, sec] = redis.set.mock.calls[0]
     expect(key).toMatch(/^tts:[0-9a-f]{40}$/)
     expect(mode).toBe('EX')
@@ -235,7 +239,7 @@ describe('GET /api/tts с Redis', () => {
   it('срок жизни берётся из TTS_CACHE_TTL_DAYS', async () => {
     vi.stubEnv('TTS_CACHE_TTL_DAYS', '1')
     await (await GET(req('v=Grace&t=ttl'))).arrayBuffer()
-    await vi.waitFor(() => expect(redis.set).toHaveBeenCalled())
+    await vi.waitFor(() => expect(redis.set).toHaveBeenCalled(), BG)
     expect(redis.set.mock.calls[0][3]).toBe(86400)
   })
 
@@ -286,7 +290,7 @@ describe('DELETE /api/tts — снести брак синтеза', () => {
     await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
     await (await GET(req('v=Freya&s=0.7&t=apple'))).arrayBuffer()
     await (await GET(req('v=Grace&s=0.9&t=pear'))).arrayBuffer()
-    await vi.waitFor(() => expect(redis.store.size).toBe(3))
+    await vi.waitFor(() => expect(redis.store.size).toBe(3), BG)
 
     // Пробелы нормализуются, регистр — нет: «Apple» был бы другим текстом.
     const res = await DELETE(del('t=%20apple%20', key))
@@ -304,7 +308,7 @@ describe('DELETE /api/tts — снести брак синтеза', () => {
   it('с голосом и темпом — только этот вариант', async () => {
     await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
     await (await GET(req('v=Freya&s=0.9&t=apple'))).arrayBuffer()
-    await vi.waitFor(() => expect(redis.store.size).toBe(2))
+    await vi.waitFor(() => expect(redis.store.size).toBe(2), BG)
     const res = await DELETE(del('v=Grace&s=0.9&t=apple', key))
     expect(await res.json()).toEqual({ deleted: 1 })
     expect(redis.store.size).toBe(1)
@@ -319,7 +323,7 @@ describe('DELETE /api/tts — снести брак синтеза', () => {
   it('без Redis удаляет файл записи', async () => {
     redisBox.client = null
     await (await GET(req('v=Grace&s=0.9&t=apple'))).arrayBuffer()
-    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1))
+    await vi.waitFor(() => expect(cachedFiles()).toHaveLength(1), BG)
     const res = await DELETE(del('t=apple', key))
     expect(await res.json()).toEqual({ deleted: 1 })
     expect(cachedFiles()).toHaveLength(0)
