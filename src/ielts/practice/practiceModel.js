@@ -10,6 +10,8 @@ export const SKILLS = ['listening', 'reading', 'writing', 'speaking']
 // Вкладки страницы навыка: ключ, вид хаба (старый адрес списка — диплинки и «Начать» из плана ведут сюда же)
 export const SKILL_TABS = {
   listening: [
+    // полные тесты (4 части, режим экзамена) отдельно от отдельных частей — правка владельца 11.10.2026
+    { key: 'full', view: 'listening-full' },
     { key: 'parts', view: 'listening-tasks' },
     { key: 'types', view: 'listening-types' },
     { key: 'dictation', view: 'listening-dictation' },
@@ -61,17 +63,22 @@ function rangeLabel(tests) {
   return bandLabel({ bandMin: Math.min(...list.map((x) => x.bandMin)), bandMax: Math.max(...list.map((x) => x.bandMax)) })
 }
 
+const ADDED_KINDS = new Set(['test', 'task1', 'task2', 'part1', 'part2', 'part3'])
+
 function testRow(t, skill, view, mode = 'practice') {
   return {
     id: t.id,
     skill,
     title: t.title,
-    minutes: minutesOf(t),
+    // полный Listening без лимита в документе — 30 минут записи + 10 на перенос ответов, а не 60 минут полного Reading
+    minutes: skill === 'listening' && t.kind === 'test' && !t.timeLimitSec ? 40 : minutesOf(t),
     mode,
     status: statusOf([t]),
     // уровень задания для фишки «Band 6.0–7.0» (model/levels.js); level above — «на вырост»
     band: bandLabel(t),
     level: t.level,
+    // «добавлен 8 окт» — у полных тестов, заданий Writing и частей Speaking: новое видно сразу (правка владельца 11.10.2026)
+    added: ADDED_KINDS.has(t.kind) ? t.createdAt || null : null,
     open: t.kind === 'dictation' || t.kind === 'spelling' ? { run: { testId: t.id, kind: t.kind } } : { tab: 'learn', view, testId: t.id },
   }
 }
@@ -92,8 +99,9 @@ export function skillRows(skill, tab, lists, track) {
     return singleTexts(L, track).map((t) => testRow(t, skill, 'texts', 'exam'))
   }
   if (skill === 'listening') {
-    // полный тест Listening (4 части) — вкладкой «Части»: с новыми «Mock-тестами» он идёт ещё и секцией полного mock
-    const kind = { parts: ['part', 'test'], types: ['types'], dictation: ['dictation'], spelling: ['spelling'] }[tab] || ['part']
+    // полный тест (4 части, ~30 минут) — своя вкладка в режиме экзамена, как «Полные тесты» Reading; части — отдельно
+    if (tab === 'full') return L.filter((t) => t.kind === 'test').map((t) => testRow(t, skill, 'listening-tasks', 'exam'))
+    const kind = { parts: ['part'], types: ['types'], dictation: ['dictation'], spelling: ['spelling'] }[tab] || ['part']
     const view = { parts: 'listening-tasks', types: 'listening-types', dictation: 'listening-dictation', spelling: 'listening-spelling' }[tab]
     return L.filter((t) => kind.includes(t.kind)).map((t) => testRow(t, skill, view))
   }

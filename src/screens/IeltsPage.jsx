@@ -21,6 +21,7 @@ import SpeakingTaskView from '../ielts/speaking/SpeakingTaskView.jsx'
 import SpeakingWorkView from '../ielts/speaking/SpeakingWorkView.jsx'
 import SpeakingGuideView from '../ielts/speaking/SpeakingGuideView.jsx'
 import ShadowingView from '../ielts/speaking/ShadowingView.jsx'
+import IeltsLockedView from '../ielts/tabs/IeltsLockedView.jsx'
 import { useIeltsDashboard } from '../ielts/model/useIeltsDashboard.js'
 import { getMyLessonOccurrences, getIeltsMe, markIeltsPlanTask } from '../api.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
@@ -39,7 +40,7 @@ const HUB_TABS = [...IELTS_TABS, 'progress']
 // practice-list — выбор заданий одного набора по уровню (ключ набора — ?ieltsList=reading:drill:ng)
 const READING_LISTS = ['types', 'drills', 'texts', 'reading-full', 'skill-listening', 'skill-reading', 'skill-writing', 'skill-speaking', 'practice-list']
 // Списки Listening в адресе с префиксом: «types»/«drills» есть у обеих секций.
-const LISTENING_LISTS = ['listening-tasks', 'listening-types', 'listening-drills', 'listening-dictation', 'listening-spelling']
+const LISTENING_LISTS = ['listening-full', 'listening-tasks', 'listening-types', 'listening-drills', 'listening-dictation', 'listening-spelling']
 const isListeningView = (view) => LISTENING_LISTS.includes(view)
 // Writing: списки Task 1 / Task 2, «Мои работы», «Как писать» и работа (её id — ?ieltsWork=)
 const WRITING_VIEWS = ['writing-task1', 'writing-task2', 'writing-works', 'writing-guide', 'writing-work']
@@ -188,6 +189,18 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   const tabs = IELTS_TABS.map((key) => ({ key, label: t(`ieltsHub.tab.${key}`) }))
 
   let panel
+  // Материалы закрыты, пока менеджер не открыл доступ (backend V324): любая вкладка — экран «доступ откроет менеджер».
+  // Ждём ответ /plan/me: до него вкладка рисуется как обычно, иначе у ученика с доступом мигал бы замок.
+  if (me && me.access === false) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
+        <div className="ih">
+          <IeltsHeader track={me?.track || track} />
+          <IeltsLockedView onboarded={!!me.onboarded} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} />
+        </div>
+      </LearningLayout>
+    )
+  }
   if (hub.tab === 'today') {
     panel = (
       <TodayTab

@@ -10,6 +10,7 @@ import DiagClipPlayer from '../ielts/diagnostic/DiagClipPlayer.jsx'
 import PassagePane from '../ielts/reading/PassagePane.jsx'
 import { addHighlight, removeHighlight } from '../ielts/reading/highlights.js'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
+import { keepSpeakingTakes } from '../ielts/onboarding/diagGrading.js'
 import { formatSec } from '../ielts/speaking/speaking.js'
 import { countWords } from '../ielts/writing/writing.js'
 import { ArrowForwardIcon, CheckCircleIcon, CloseIcon, HeadphonesIcon, InfoIcon, MicIcon, RadioOffIcon, TimerIcon } from '../ielts/icons.jsx'
@@ -60,8 +61,8 @@ function dropDraft() {
 /**
  * Диагностика (ТЗ §10, прототип 02-diagnostic): четыре блока подряд — Listening (клип слота выбирает сервер по
  * ответам на предыдущие слоты), Reading своего трека, Writing (эссе) и Speaking (ответы Part 1 и монолог). Проверяет
- * бэкенд; Writing и Speaking в диагностике не оцениваются (ждут ИИ), записи Speaking остаются в браузере — на сервер
- * уходит только длительность ответов. Черновик — на устройстве: перезагрузка не сбрасывает пройденное.
+ * бэкенд; Writing и Speaking оценивает ИИ уже на экране итога (`diagGrading.js`): записи Speaking уходят только в роут
+ * оценки, на бэкенд — длительности и стенограммы. Черновик — на устройстве: перезагрузка не сбрасывает пройденное.
  */
 export default function IeltsDiagnosticPage({ token, target, onExit, onDone, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useI18n()
@@ -179,6 +180,13 @@ export default function IeltsDiagnosticPage({ token, target, onExit, onDone, use
         device: typeof window !== 'undefined' && window.innerWidth < 760 ? 'mobile' : 'desktop',
       })
       dropDraft()
+      // записи — экрану итога: он отправит их на оценку (бэкенд их не хранит)
+      keepSpeakingTakes(
+        v.attempt.id,
+        Object.entries(takes.current)
+          .filter(([id, take]) => take?.wav && d.speakingSec[id])
+          .map(([itemId, take]) => ({ itemId, durationSec: take.durationSec, wav: take.wav })),
+      )
       onDone?.(v.attempt.id)
     } catch (e) {
       setError(e?.message || t('ieltsReading.submitError'))

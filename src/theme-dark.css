@@ -119,3 +119,52 @@ html[data-theme="dark"] .ih-pchart__gridline {
 html[data-theme="dark"] .ih-wchart__slice {
   stroke: var(--dk-card);
 }
+/* Mock-тесты: переключатель актуальности и отметки секций — светлые плашки на тёмной карточке */
+html[data-theme="dark"] .ih-mtfresh button {
+  background: var(--dk-card);
+  border-color: var(--dk-line-strong);
+  color: #e8e4f3;
+}
+html[data-theme="dark"] .ih-mtfresh button.is-on {
+  background: var(--dk-acc-soft);
+  border-color: var(--dk-acc);
+  color: #fff;
+}
+html[data-theme="dark"] .ih-mtsec__s {
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .ih-mtsec__txt b {
+  color: #fff;
+}
+html[data-theme="dark"] .ih-mtsec__txt small {
+  color: #8f8aa3;
+}
+html[data-theme="dark"] .ih-mtsec__s.is-done {
+  background: #163a26;
+  border-color: #23603d;
+}
+html[data-theme="dark"] .ih-mtsec__s.is-done small {
+  color: #6ee7a0;
+}
+html[data-theme="dark"] .ih-mtsec__s.is-checking small {
+  color: #c4a8ff;
+}
+html[data-theme="dark"] .ih-mtsec__s.is-bad small {
+  color: #fca5a5;
+}
+html[data-theme="dark"] .ih-locked {
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .ih-locked p {
+  color: #a8a3bb;
+}
+html[data-theme="dark"] .ih-locked__steps li {
+  background: #221e31;
+  color: #e8e4f3;
+}
+
+html[data-theme="dark"] .ih-dres__crit span {
+  background: rgba(255, 255, 255, 0.06);
+}

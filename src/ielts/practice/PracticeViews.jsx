@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { formatDate } from '../format.js'
 import { useI18n } from '../../i18n.jsx'
 import PageHeader from '../ui/PageHeader.jsx'
 import { SecPlate } from '../today/TodayCards.jsx'
@@ -125,10 +126,11 @@ export function TaskListPage({ listKey, lists, track, onOpen, onBack, onSkill, l
 
 /** Строка задания: плашка навыка, название, «N мин · режим», статус и действие. «Скоро» — без кнопки. */
 export function PracticeRow({ row, onOpen, compact = false }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const title = row.title || t(row.titleKey)
   const soon = row.status === 'soon' || !row.open
-  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}`
+  const added = row.added ? ` · ${t('ieltsPractice.added', { date: formatDate(row.added, lang, true) })}` : ''
+  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}${added}`
   if (compact) {
     return (
       <li>

@@ -18,6 +18,8 @@
 export const SNAPSHOT_MAX_CHARS = 6000
 // Одно поле ввода не должно съесть весь снимок (сочинение в «Письме»).
 const FIELD_MAX_CHARS = 600
+// Эталон задания (data-assistant-expected): у «разложи по колонкам» и «соедини пары» он длинный.
+const EXPECTED_MAX_CHARS = 400
 
 const SKIP_TAGS = new Set([
   'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'SVG', 'CANVAS', 'IFRAME', 'VIDEO', 'AUDIO', 'OBJECT',
@@ -29,6 +31,10 @@ const BLOCK_TAGS = new Set([
 ])
 // Поля, значение которых помощнику не нужно и светить его незачем.
 const PRIVATE_INPUT_TYPES = new Set(['password', 'hidden', 'file', 'email', 'tel'])
+
+// Блоком элемент бывает и по стилю: у плашки разбора <span class="cp-fb__why"> — display:block, и без перевода строки
+// «Неверный ответ» склеивался с объяснением в «Неверный ответRain в этом уроке…».
+const BLOCK_DISPLAYS = new Set(['block', 'flex', 'grid', 'list-item', 'table', 'table-row', 'flow-root'])
 
 const squash = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n)}…` : s)
@@ -61,8 +67,18 @@ function verdictOf(el) {
   if (/\bis-wrong\b/.test(cls)) return ' (отмечено как неверное)'
   if (/\bis-right\b/.test(cls) || /\bis-correct\b/.test(cls)) return ' (отмечено как верное)'
   if (/\bis-missed\b/.test(cls)) return ' (верный вариант, не выбран)'
-  if (/\bis-sel\b/.test(cls) || /\bis-on\b/.test(cls)) return ' (выбрано)'
+  if (/\bis-sel\b/.test(cls) || /\bis-on\b/.test(cls) || /\bis-set\b/.test(cls)) return ' (выбрано)'
   return ''
+}
+
+function isBlockByStyle(el) {
+  const view = el.ownerDocument?.defaultView
+  if (!view?.getComputedStyle) return false
+  try {
+    return BLOCK_DISPLAYS.has(view.getComputedStyle(el).display)
+  } catch {
+    return false
+  }
 }
 
 function describeField(el) {
@@ -79,11 +95,17 @@ function describeField(el) {
   if (tag === 'INPUT' && ['button', 'submit', 'reset'].includes(type)) {
     return `[кнопка «${squash(el.value)}»]`
   }
-  const value = clip(squash(el.value), FIELD_MAX_CHARS)
+  // После неверного ответа плеер подставляет в поле ВЕРНЫЙ ответ (так ученик его видит), а то, что он ввёл на самом
+  // деле, кладёт в data-assistant-entered. Без этого снимок говорил «ученик ввёл «understand» (отмечено как неверное)»
+  // про верное слово — и помощник переворачивал ответ ровно так же, как раньше с like / don't like.
+  const entered = el.getAttribute('data-assistant-entered')
+  const shown = clip(squash(el.value), FIELD_MAX_CHARS)
+  const value = entered !== null ? clip(squash(entered), FIELD_MAX_CHARS) : shown
   const label = squash(el.getAttribute('aria-label') || el.getAttribute('placeholder'))
   const named = label ? ` ${label}` : ''
+  const substituted = entered !== null && shown && shown !== value ? `; в поле сайт показал верный ответ «${shown}»` : ''
   return value
-    ? `[поле${named}: ученик ввёл «${value}»${verdictOf(el)}]`
+    ? `[поле${named}: ученик ввёл «${value}»${verdictOf(el)}${substituted}]`
     : `[пустое поле${named}]`
 }
 
@@ -123,9 +145,13 @@ function walk(node, out) {
     return
   }
 
-  const block = BLOCK_TAGS.has(el.tagName)
+  const block = BLOCK_TAGS.has(el.tagName) || isBlockByStyle(el)
   if (block) out.push('\n')
   for (const child of el.childNodes) walk(child, out)
+  // Плеер кладёт на плашку неверного ответа то, что задание считало верным (у половины шагов курса разбора нет, и
+  // помощник иначе угадывал верный вариант — и называл верным «like» для «I ___ rain.»). Только после проверки.
+  const expected = squash(el.getAttribute('data-assistant-expected'))
+  if (expected) out.push(`\n [верный ответ по заданию: «${clip(expected, EXPECTED_MAX_CHARS)}»] \n`)
   if (block) out.push('\n')
 }
 
