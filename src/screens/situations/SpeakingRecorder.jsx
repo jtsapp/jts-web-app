@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n.jsx'
 import { blobToWav16kMono, isMediaRecordingSupported } from '../../lib/ielts-audio.js'
 import { assessAnswer, fetchBudget } from '../../practice/situations/assessClient.js'
 import { deleteTake, getTake, saveTake } from '../../practice/situations/recordings.js'
+import { reportUnauthorized } from '../../lib/session.js'
 import SituationFeedback from './SituationFeedback.jsx'
 
 // Запись устного ответа + разбор.
@@ -32,6 +33,17 @@ function pickMime() {
   return ''
 }
 
+// Отказы разбора, у которых есть свой текст. Сервер присылает и другие —
+// 401 и проверки формы отвечают человеческой фразой по-английски («Invalid or
+// expired access token.», «Audio file is empty.»), — и раньше экран выводил
+// их сырым ключом «situations.error.…».
+const ASSESS_ERRORS = new Set(['too_short', 'recording_too_long', 'daily_limit_reached', 'not_configured', 'assess_failed'])
+
+function assessErrorKey(e) {
+  if (e?.status === 401) return 'auth'
+  return ASSESS_ERRORS.has(e?.code) ? e.code : 'failed'
+}
+
 function fmt(sec) {
   const s = Math.max(0, Math.floor(sec))
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
@@ -47,6 +59,12 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
   const [assessing, setAssessing] = useState(false)
   const [result, setResult] = useState(null)
   const [budget, setBudget] = useState(null)
+  // Идёт запрос микрофона. Браузер в это время показывает окно разрешения, а
+  // кнопка оставалась «Записать» — второй тап заводил второй поток и второй
+  // рекордер; первый писал в никуда, и его микрофон не гас.
+  const [starting, setStarting] = useState(false)
+  const startingRef = useRef(false)
+  const mountedRef = useRef(true)
 
   const blobRef = useRef(null)
   const recRef = useRef(null)
@@ -97,15 +115,19 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
   }, [])
 
   // Уходя со сценария, гасим и таймер, и микрофон: иначе индикатор записи в
-  // браузере остаётся гореть на уже закрытом экране.
-  useEffect(
-    () => () => {
+  // браузере остаётся гореть на уже закрытом экране. Флаг «смонтирован»
+  // ставим в теле эффекта, а не только начальным значением: в dev React
+  // прогоняет эффект дважды (монтирование → уборка → монтирование), и после
+  // пробной уборки запись считала бы экран закрытым.
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
       clearInterval(timerRef.current)
       if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop()
       stopTracks()
-    },
-    [stopTracks],
-  )
+    }
+  }, [stopTracks])
 
   const stop = useCallback(() => {
     clearInterval(timerRef.current)
@@ -114,14 +136,23 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
   }, [])
 
   const start = useCallback(async () => {
+    if (startingRef.current) return
     setError('')
     setResult(null)
     if (!supported) {
       setError('unsupported')
       return
     }
+    startingRef.current = true
+    setStarting(true)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // Ушли со сценария, пока браузер спрашивал разрешение: уборка экрана уже
+      // прошла и про этот поток не знает — гасим сами.
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       streamRef.current = stream
       chunksRef.current = []
       const mime = pickMime()
@@ -157,6 +188,9 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
     } catch {
       stopTracks()
       setError('denied')
+    } finally {
+      startingRef.current = false
+      if (mountedRef.current) setStarting(false)
     }
   }, [level, onRecorded, situation, stop, stopTracks, supported])
 
@@ -198,7 +232,8 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
       }
     } catch (e) {
       if (e?.budget) setBudget(e.budget)
-      setError(e?.code || 'failed')
+      if (e?.status === 401) reportUnauthorized(token)
+      setError(assessErrorKey(e))
     } finally {
       setAssessing(false)
     }
@@ -227,7 +262,7 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
           type="button"
           className="sit-rec__tool sit-rec__tool--danger"
           onClick={remove}
-          disabled={phase !== 'recorded'}
+          disabled={phase !== 'recorded' || assessing}
         >
           {t('situations.recorder.delete')}
         </button>
@@ -235,6 +270,8 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
           type="button"
           className={`sit-rec__mic${phase === 'recording' ? ' is-live' : ''}`}
           onClick={phase === 'recording' ? stop : start}
+          // Пока идёт разбор, новая запись получила бы разбор старой.
+          disabled={starting || assessing}
         >
           {t(phase === 'recording' ? 'situations.recorder.stop' : 'situations.recorder.record')}
         </button>
