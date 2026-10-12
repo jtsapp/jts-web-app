@@ -5,8 +5,8 @@
 // сборке шагов он потерялся — и ученица, любящая дождь, не могла знать, какое слово ждёт задание.
 //
 // Здесь сторожим сами данные: у каждого шага этого урока, где верный ответ — like / don't like, в условии стоит значок,
-// согласованный с ключом. Файл собирает scripts/extract-selfstudy-course.js из внешнего HTML курса; пересборка вернёт
-// шаги без значков — тест тогда упадёт, а не промолчит.
+// согласованный с ключом. Файл собирает scripts/extract-selfstudy-course.js из внешнего HTML курса: знак он берёт из
+// поля cue (CUE_SIGNS в scripts/selfstudy/steps.js). Потеряет его пересборка — тест упадёт, а не промолчит.
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it, expect, afterEach } from 'vitest'
@@ -94,5 +94,16 @@ describe('A0, урок 1: значок 👍/👎 в условии задани�
     const coffee = lesson.steps.find((s) => s.type === 'gap' && (s.answers || [])[0] === 'like')
     play(coffee)
     expect(document.querySelector('.cp-step__prompt').textContent).toBe(`${UP} I ___ coffee.`)
+  })
+})
+
+// Та же беда в A1, урок 1: «I ___ at university in 2015.» с банком was / were / wasn't. Задание про was при I, но про
+// себя честно и wasn't. В файле курса знака нет — его ставит таблица scripts/selfstudy/cue-fixes.js.
+describe("A1, урок 1: значок 👍 в «I ___ at university in 2015.»", () => {
+  it('ученик видит значок в строке условия', () => {
+    const a1 = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/course/a1/steps-1.json'), 'utf8'))
+    const step = a1.steps.find((s) => s.type === 'gap' && /at university in 2015/.test(s.after || ''))
+    play(step)
+    expect(document.querySelector('.cp-step__prompt').textContent).toBe(`${UP} I ___ at university in 2015.`)
   })
 })

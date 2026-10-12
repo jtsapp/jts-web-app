@@ -42,6 +42,7 @@ function readingSource(level, lang = 'ru') {
   return (no) => (lessons[String(no)] ? readingSteps(lessons[String(no)].html, { stage }) : null)
 }
 const { clipFixer, clipFixFiles, FIX_ROOT } = require('./selfstudy/clip-fixes')
+const { cueFixer } = require('./selfstudy/cue-fixes')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const ROOT = path.join(__dirname, '..')
@@ -115,6 +116,8 @@ function build(file) {
     fileUrl: (rel) => byKey.get(`fix:${rel}`) || null,
     sayUrl: wordAudio,
   })
+  // Знак «да / нет» у заданий, где файл курса его не ставит, — selfstudy/cue-fixes.js.
+  const cues = cueFixer(course.level)
 
   // Видео B2 в файл курса не вшито — оно ссылается на внешний ролик
   // (videos/nav_B2_report_unit7_olb.mp4). Те же ролики уже лежат в репозитории
@@ -140,6 +143,7 @@ function build(file) {
     // Картинки вариантов «выберите картинку» — иконки самого курса.
     icon: (name) => course.icons[name] || null,
     wordAudio,
+    cueFix: (sc) => cues.cue(lessonKey, sc),
   })
 
   // Шаги копятся в памяти и ложатся на диск только после сверки правок записей:
@@ -222,6 +226,10 @@ function build(file) {
   const broken = [...fixReport.stale, ...fixReport.unused.map((id) => `${id}: клип не встретился ни в одном задании`)]
   if (broken.length) {
     throw new Error(`${course.level}: правки записей не сходятся с файлом курса (scripts/selfstudy/clip-fixes.js):\n  ${broken.join('\n  ')}`)
+  }
+  const lostCues = cues.unused()
+  if (lostCues.length) {
+    throw new Error(`${course.level}: знаки «да / нет» не сходятся с файлом курса (scripts/selfstudy/cue-fixes.js):\n  ${lostCues.join('\n  ')}`)
   }
   for (const [name, content] of pending) fs.writeFileSync(path.join(outDir, name), content)
 
