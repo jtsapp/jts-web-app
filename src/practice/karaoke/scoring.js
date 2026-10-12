@@ -134,7 +134,26 @@ const CONTRACTIONS = new Map(Object.entries({
   "there's": 'there is',
   "what's": 'what is',
   "who's": 'who is',
+  // В тексте песни «okay», распознавание пишет «OK» (и «O.K.» — его ловит
+  // замена до чистки пунктуации в normalizeWords).
+  ok: 'okay',
 }))
+
+// Числа до 999 — словами: в тексте песни «seven», а распознавание пишет «7»
+// (и наоборот). Длинные числа не трогаем: «1999» поют «nineteen ninety-nine»,
+// и «one thousand nine hundred…» было бы той же ошибкой с другой стороны.
+const ONES = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+]
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+
+function numberWords(n) {
+  if (n < 20) return [ONES[n]]
+  if (n < 100) return n % 10 ? [TENS[Math.floor(n / 10)], ONES[n % 10]] : [TENS[n / 10]]
+  const rest = n % 100
+  return [ONES[Math.floor(n / 100)], 'hundred', ...(rest ? numberWords(rest) : [])]
+}
 
 /** Текст → массив слов в сравнимом виде. */
 export function normalizeWords(text) {
@@ -142,11 +161,24 @@ export function normalizeWords(text) {
     .toLowerCase()
     // апострофы бывают трёх видов, приводим к одному до всех замен
     .replace(/[’ʼ`]/g, "'")
+    // «O.K.» — до чистки пунктуации, иначе от него останутся «o» и «k»
+    .replace(/\bo\.\s?k\b\.?/g, ' okay ')
     .replace(/[^a-z0-9'\s]+/g, ' ')
   const out = []
   for (const raw of s.split(/\s+/)) {
+    // «runnin'», «nothin'» — проглоченное g, в песнях оно сплошь и рядом, а
+    // распознавание пишет полное слово. Только с апострофом: «cabin» и
+    // «begin» оканчиваются на «in» сами по себе.
+    if (/^[a-z]+in'$/.test(raw)) {
+      out.push(raw.slice(0, -1) + 'g')
+      continue
+    }
     const w = raw.replace(/^'+|'+$/g, '')
     if (!w) continue
+    if (/^\d+$/.test(w) && Number(w) <= 999) {
+      out.push(...numberWords(Number(w)))
+      continue
+    }
     const mapped = CONTRACTIONS.get(w)
     if (mapped) {
       out.push(...mapped.split(' '))
@@ -331,11 +363,20 @@ export function weakestLines(perLine, lines, limit = 3) {
  * в распознанном тексте неизвестны, и построчное сравнение засчитывало бы
  * слово из соседней строки.
  *
+ * Повторы в песне (припев) выравнивание само не различит: «hold me close»
+ * в распознанном тексте подходит и первому припеву, и последнему, а обратный
+ * ход LCS отдавал совпадение последнему. Студент, спевший начало песни и
+ * замолчавший, видел «повторите первый припев» — тот, что он как раз спел.
+ * Поэтому `voiced` (доля строки, где микрофон слышал голос, — perLine.ratio
+ * из coverageScore) решает ничьи: из выравниваний с одинаковым числом
+ * совпавших слов берём то, где слова легли на строки с голосом. Число слов
+ * важнее голоса всегда — вес совпадения больше суммы всех надбавок.
+ *
  * Возвращает по строке `{ id, ratio, missed }`: доля совпавших слов и слова,
  * которые не прозвучали (короче трёх букв не берём — артикли и предлоги
  * распознавание глотает у всех, «сложным» такое слово не назовёшь).
  */
-export function lineWordMatches(lines, recognizedText) {
+export function lineWordMatches(lines, recognizedText, voiced = null) {
   const ref = []
   const lineOf = []
   ;(lines || []).forEach((line, li) => {
@@ -349,20 +390,32 @@ export function lineWordMatches(lines, recognizedText) {
   const m = hyp.length
   const hit = new Uint8Array(n)
   if (n && m) {
+    // Вес совпадения слова: BIG за само слово плюс надбавка 0–10 за голос на
+    // его строке. BIG больше суммы всех надбавок, так что число совпавших
+    // слов остаётся главным, а голос только выбирает между равными.
+    const BIG = 10 * n + 1
+    const gain = new Float64Array(n)
+    for (let k = 0; k < n; k++) {
+      const v = voiced ? Number(voiced[lineOf[k]]) : 0
+      gain[k] = BIG + Math.round(Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0)) * 10)
+    }
     // Полная матрица, а не две строки, как в wordDistance: обратному ходу она
-    // нужна целиком. Песня — это сотни слов, так что это сотни килобайт.
+    // нужна целиком. Песня — это сотни слов, так что это пара мегабайт.
     const w = m + 1
-    const L = new Uint32Array((n + 1) * w)
+    const L = new Float64Array((n + 1) * w)
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {
-        L[i * w + j] =
-          ref[i - 1] === hyp[j - 1] ? L[(i - 1) * w + j - 1] + 1 : Math.max(L[(i - 1) * w + j], L[i * w + j - 1])
+        let best = Math.max(L[(i - 1) * w + j], L[i * w + j - 1])
+        if (ref[i - 1] === hyp[j - 1]) best = Math.max(best, L[(i - 1) * w + j - 1] + gain[i - 1])
+        L[i * w + j] = best
       }
     }
     let i = n
     let j = m
     while (i > 0 && j > 0) {
-      if (ref[i - 1] === hyp[j - 1]) {
+      // Совпадение берём, только если через него и шёл лучший путь: с
+      // надбавками ближайшее совпадение уже не обязательно лучшее.
+      if (ref[i - 1] === hyp[j - 1] && L[i * w + j] === L[(i - 1) * w + j - 1] + gain[i - 1]) {
         hit[i - 1] = 1
         i--
         j--
