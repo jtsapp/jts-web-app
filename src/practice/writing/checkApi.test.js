@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { runCheck } from './checkApi.js'
+import { CHECK_CLIENT_TIMEOUT_MS } from './assessContract.js'
 
 // Достаточно слов (>=5) и пара связок — офлайн-фолбэк отрабатывает без жанра.
 const PAYLOAD = {
@@ -96,5 +97,41 @@ describe('checkApi.runCheck', () => {
     const { assessment, mode } = await promise
     expect(mode).toBe('offline')
     expect(assessment.mode).toBe('offline')
+  })
+
+  it('по умолчанию не бросает живую проверку через 20 с, как прототип', async () => {
+    // Баг 15: AI-проверка идёт 11–15 с и дольше, а клиент через 20 с уходил в
+    // офлайн — сервер же доделывал разбор и списывал кредит.
+    vi.useFakeTimers()
+    let signal = null
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url, opts) => {
+        signal = opts.signal
+        return new Promise(() => {})
+      }),
+    )
+    let settled = false
+    const promise = runCheck(PAYLOAD, { token: 'tok' }).then((r) => {
+      settled = true
+      return r
+    })
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(settled).toBe(false)
+    expect(signal.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(CHECK_CLIENT_TIMEOUT_MS - 60000)
+    const { mode } = await promise
+    expect(mode).toBe('offline')
+    // Брошенный запрос закрыт, а не висит до ответа сервера.
+    expect(signal.aborted).toBe(true)
+  })
+
+  it('ответ, вставший посреди тела, тоже обрубается таймаутом', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => new Promise(() => {}) }))
+    const promise = runCheck(PAYLOAD, { token: 'tok', timeoutMs: 1000 })
+    await vi.advanceTimersByTimeAsync(1000)
+    const { mode } = await promise
+    expect(mode).toBe('offline')
   })
 })
