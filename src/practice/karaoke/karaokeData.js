@@ -119,17 +119,24 @@ export function karaokeStreak() {
   return read().streak || { days: 0, lastDate: '' }
 }
 
-function today() {
-  return new Date().toISOString().slice(0, 10)
+// День ученика — по его часам, а не по UTC: в Казахстане (UTC+5) песня в
+// 03:00 по UTC была бы ещё вчерашней, и «ночью и на следующий вечер» рвало
+// серию, а «в 23:00 и в 01:00» шло одним днём. Формат прежний — YYYY-MM-DD.
+function localDay(date) {
+  const pad = (v) => String(v).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 // Стрик: любой завершённый режим засчитывает день. Продлеваем только если
 // прошлый засчитанный день — вчерашний; тот же день ничего не меняет, разрыв
 // начинает счёт заново.
 function bumpStreak(streak) {
-  const d = today()
+  const now = new Date()
+  const d = localDay(now)
   if (streak?.lastDate === d) return streak
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  // Вчера — календарным днём, а не «минус 24 часа»: в день перевода часов
+  // сутки бывают 23 и 25 часов.
+  const yesterday = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
   const days = streak?.lastDate === yesterday ? (streak.days || 0) + 1 : 1
   return { days, lastDate: d }
 }

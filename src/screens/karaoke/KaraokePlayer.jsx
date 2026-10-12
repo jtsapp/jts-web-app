@@ -34,6 +34,7 @@ import {
   activeWordIndex,
   linesPassed,
 } from '../../practice/karaoke/timeline.js'
+import { introAt } from '../../practice/karaoke/singingGate.js'
 import { CloseIco, MicIco, Replay5Ico, Forward5Ico, PlayCircleIco, ReplayIco } from './KaraokeIcons.jsx'
 
 // Экран исполнения — макет Figma «Караоке» (1 · Плеер, 2 · Пауза).
@@ -98,7 +99,9 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRa
     hasLyrics: Boolean(text),
     instrumental,
   })
-  const matches = text ? lineWordMatches(lines, text) : null
+  // Голос по строкам решает, какому из одинаковых припевов отдать спетые
+  // слова (см. lineWordMatches).
+  const matches = text ? lineWordMatches(lines, text, perLine.map((l) => l.ratio)) : null
   const repeat = linesToRepeat({ lines, perLine, matches })
   // «Сложнее всего дались …» — сначала сложные слова тех строк, что в списке
   // на повтор (их студент видит подчёркнутыми ниже), потом остальные
@@ -164,6 +167,11 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   // дать старому start() доиграть до play() — он сверяет номер после каждого
   // await и молча сходит с дистанции.
   const runRef = useRef(0)
+  // Идёт запрос микрофона. Фаза в это время ещё «ready» (браузер показывает
+  // окно разрешения, а сцена ждёт), и второй тап по ▶ запускал второй старт:
+  // два запроса микрофона, и поток первого оставался без хозяина — запись в
+  // браузере горела до перезагрузки вкладки, даже после выхода из караоке.
+  const askingMicRef = useRef(false)
   const goRef = useRef(null)
   const trackElRef = useRef(null)
 
@@ -292,6 +300,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   }
 
   const start = async () => {
+    if (askingMicRef.current) return
     setNote('')
     const audio = audioRef.current
     if (!audio || !doc) return
@@ -310,19 +319,38 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
         ctx?.close?.().catch(() => {})
         return
       }
-      try {
-        streamRef.current = streamRef.current || (await requestMic())
-      } catch {
-        setNote(t('karaoke.micDenied'))
-        ctx?.close?.().catch(() => {})
-        return
+      if (!streamRef.current) {
+        let stream
+        askingMicRef.current = true
+        try {
+          stream = await requestMic()
+        } catch {
+          setNote(t('karaoke.micDenied'))
+          ctx?.close?.().catch(() => {})
+          return
+        } finally {
+          askingMicRef.current = false
+        }
+        // Пока браузер спрашивал, студент вышел или начал заново: поток
+        // никому не нужен — гасим сразу, иначе запись так и горела бы.
+        if (run !== runRef.current) {
+          stopStream(stream)
+          ctx?.close?.().catch(() => {})
+          return
+        }
+        streamRef.current = stream
       }
-      if (run !== runRef.current) return
       setPhase('calibrating')
       // Калибровка фона идёт ДО первой ноты — стартуем трек только после неё,
       // иначе полторы секунды песни улетают в «тишину» и портят и маску, и
       // порог.
-      const take = await startTake({ stream: streamRef.current, durationSec: duration, positionSec, ctx })
+      const take = await startTake({
+        stream: streamRef.current,
+        durationSec: duration,
+        positionSec,
+        introAt: introAt(lines),
+        ctx,
+      })
       if (run !== runRef.current) {
         take.stop().catch(() => {})
         return
