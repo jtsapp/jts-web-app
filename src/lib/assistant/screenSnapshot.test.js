@@ -107,6 +107,63 @@ describe('снимок экрана', () => {
     expect(snap).toContain('[кнопка «People spend nothing for a day.» неактивна (верный вариант, не выбран)]')
   })
 
+  // Шаг «впиши пропуск» (A0: «I don't ___.», слова в банке): после неверного ответа плеер подставляет в поле ВЕРНЫЙ
+  // ответ, а выбранное ученицей слово остаётся в data-assistant-entered. Без него снимок говорил «ученик ввёл
+  // «understand» (отмечено как неверное)» про верное слово, и помощник переворачивал ответ, как раньше с like / don't like.
+  it('поле с подставленным верным ответом: ученик ввёл своё, эталон — отдельно', () => {
+    const root = mount(`
+      <p>I don't ___ .</p>
+      <input class="cp-field cp-gap__in is-wrong" aria-label="Введите ответ" disabled data-assistant-entered="answer" />`)
+    root.querySelector('input').value = 'understand'
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[поле Введите ответ: ученик ввёл «answer» (отмечено как неверное); в поле сайт показал верный ответ «understand»]')
+    expect(snap).not.toContain('ученик ввёл «understand»')
+  })
+
+  it('ввод совпадает с тем, что показано в поле, — пояснения про подстановку нет', () => {
+    const root = mount('<input class="is-wrong" aria-label="Ваш ответ" data-assistant-entered="Is Cleare reading?" />')
+    root.querySelector('input').value = 'Is Cleare reading?'
+    const snap = snapshotScreen(root)
+    expect(snap).toBe('[поле Ваш ответ: ученик ввёл «Is Cleare reading?» (отмечено как неверное)]')
+  })
+
+  it('слово из банка, выбранное в пропуск, помечено «выбрано»', () => {
+    const root = mount(`
+      <button class="cp-chip" disabled>understand</button>
+      <button class="cp-chip is-set" disabled>answer</button>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «answer» неактивна (выбрано)]')
+    expect(snap).toContain('[кнопка «understand» неактивна]')
+  })
+
+  // В реальной разметке между «Неверный ответ» и разбором нет пробела, а разбор — span с display:block (course.css):
+  // снимок склеивал их в «Неверный ответRain в этом уроке…».
+  it('блок по стилю даёт перевод строки: плашка не склеивается с разбором', () => {
+    const root = mount('<div class="cp-fb"><b>Неверный ответ<span style="display:block">Rain в этом уроке — пример для don\'t like.</span></b></div>')
+    expect(snapshotScreen(root)).toBe('Неверный ответ\nRain в этом уроке — пример для don\'t like.')
+  })
+
+  it('строчные элементы по-прежнему не рвут фразу', () => {
+    const root = mount('<p>I <span style="display:inline-block">like</span> <b>coffee</b>.</p>')
+    expect(snapshotScreen(root)).toBe('I like coffee.')
+  })
+
+  // У 56% оцениваемых шагов курса разбора (why) нет, а верный вариант после ошибки на экране не раскрывается — помощник
+  // угадывал его и на видео назвал верным «like» для «I ___ rain.» (ключ — «don't like»). Плеер кладёт эталон на плашку.
+  it('эталон задания с плашки идёт отдельной строкой', () => {
+    const root = mount('<div class="cp-fb" data-assistant-expected="don\'t like"><b>Неверный ответ</b></div><button>Продолжить</button>')
+    expect(snapshotScreen(root)).toBe('Неверный ответ\n[верный ответ по заданию: «don\'t like»]\n[кнопка «Продолжить»]')
+  })
+
+  it('длинный эталон подрезается, пустой не выводится', () => {
+    const long = mount(`<div data-assistant-expected="${'слово '.repeat(200)}">x</div>`)
+    const snap = snapshotScreen(long)
+    expect(snap).toContain('[верный ответ по заданию: «слово слово')
+    expect(snap).toContain('…»]')
+    expect(snap.length).toBeLessThan(500)
+    expect(snapshotScreen(mount('<div data-assistant-expected="  ">Неверный ответ</div>'))).toBe('Неверный ответ')
+  })
+
   it('без корня — пустая строка', () => {
     expect(snapshotScreen(null)).toBe('')
   })

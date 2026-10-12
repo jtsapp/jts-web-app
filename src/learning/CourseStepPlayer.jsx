@@ -428,6 +428,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           onWord={openWord}
           token={token}
           catalogLessonId={catalogLessonId}
+          exam={exam}
         />
       </div>
 
@@ -535,7 +536,7 @@ function DictSheet({ tab, words, onTab, onClose, onVocab, t }) {
 
 // Один экран задания: тело по типу шага, снизу кнопка «Проверить»/«Продолжить»
 // и, после проверки, плашка результата.
-function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalogLessonId }) {
+function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalogLessonId, exam = false }) {
   const graded = isGraded(step)
   const [picked, setPicked] = useState(null)
   const [checked, setChecked] = useState(false)
@@ -686,6 +687,10 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
             неё подпись некуда деть — она стоит мелкой строкой под инструкцией. */}
         {step.type === 'rows' && step.sub && <p className="cp-step__sub">{step.sub}</p>}
 
+        {/* Колонки: как действовать, в данных курса не сказано. Ученица спрашивала «что здесь надо делать?» — банк слов
+            и две колонки не подсказывают, что сначала нажимают слово, а потом колонку. */}
+        {step.type === 'cols' && <p className="cp-step__sub">{t('lesson.cols.hint')}</p>}
+
         {/* Запись стадии стоит над заданием, а не отдельным экраном перед ним
             (см. spreadAudio): иначе послушать заново на самом задании нечем.
             Шаг listen рисует свой плеер сам, в теле задания (см. StepBody). */}
@@ -722,7 +727,11 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
           4023:33924): кружок 42 с белым знаком, справа — монета в белой
           пилюле. Раньше знак был текстовым глифом в белом кружке 28. */}
       {checked && (
-        <div className={`cp-fb ${isRight ? 'is-ok' : 'is-no'}`}>
+        <div
+          className={`cp-fb ${isRight ? 'is-ok' : 'is-no'}`}
+          // Эталон для помощника — только после неверного ответа и не на тесте юнита (там ответы не подсказывают).
+          data-assistant-expected={!isRight && !exam ? expectedAnswer(step) || undefined : undefined}
+        >
           <span className="cp-fb__ic" aria-hidden="true">
             {isRight ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -777,6 +786,7 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
           <input
             className={`cp-field cp-gap__in ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}
             value={checked && !isRight ? step.answers[0] : text}
+            data-assistant-entered={checked && !isRight ? text : undefined}
             onChange={(e) => setText(e.target.value)}
             disabled={checked}
             autoComplete="off"
@@ -849,6 +859,7 @@ function StepBody({ step, options, optionIcons, picked, setPicked, checked, text
                 <input
                   className={`cp-field cp-group__in ${checked ? (ok ? 'is-right' : 'is-wrong') : ''}`}
                   value={checked && !ok ? (it.answers || [''])[0] : value}
+                  data-assistant-entered={checked && !ok ? value : undefined}
                   onChange={(e) => setFills((s) => ({ ...s, [i]: e.target.value }))}
                   disabled={checked}
                   autoComplete="off"
@@ -1068,6 +1079,37 @@ export function mistakeBad(step) {
   return (Array.isArray(step.bad) ? step.bad : [step.bad]).filter((i) => Number.isInteger(i))
 }
 
+// Что задание считало верным — для помощника и только после проверки (data-assistant-expected на плашке). У 56%
+// оцениваемых шагов курса разбора (`why`) нет, а верный вариант на экране после ошибки не раскрывается, и помощнику
+// оставалось угадывать: на видео Алии он назвал верным «like» для «I ___ rain.», хотя ключ — «don't like».
+export function expectedAnswer(step) {
+  if (!step) return ''
+  const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim()
+  const first = (a) => clean(Array.isArray(a) ? a[0] : a)
+  switch (step.type) {
+    case 'gap':
+      return (step.answers || []).slice(0, 3).map(first).filter(Boolean).join(' / ')
+    case 'group':
+      return (step.items || []).map((it) => `${gapSentence(it)} → ${first(it.answers)}`).join('; ')
+    case 'rows':
+      return (step.items || []).map((it) => `${clean(it.q)} → ${clean(it.answer)}`).join('; ')
+    case 'order':
+      return clean(Array.isArray(step.answer) ? step.answer.join(' ') : step.answer)
+    case 'match':
+      return (step.pairs || []).map((p) => `${clean(p.left)} → ${clean(p.right)}`).join('; ')
+    case 'mistake':
+      return mistakeBad(step).map((i) => clean((step.tokens || [])[i])).filter(Boolean).join(', ')
+    case 'cloze':
+      return (step.answers || []).map((a, i) => `${i + 1}) ${first(a)}`).join('; ')
+    case 'cols':
+      return (step.items || []).map((it) => `${clean(it.text)} → ${clean((step.columns || [])[it.col])}`).join('; ')
+    case 'multi':
+      return (step.answers || []).map(clean).join(', ')
+    default:
+      return typeof step.answer === 'string' ? clean(step.answer) : ''
+  }
+}
+
 // Строка с ошибкой. После проверки неверные слова подсвечены всегда — иначе
 // студент, ткнувший наугад, не узнает, где была ошибка.
 function MistakeLine({ step, picks, setPicks, checked }) {
@@ -1154,6 +1196,7 @@ function ClozeText({ step, fills, setFills, checked, t, onWord }) {
               <input
                 className={`cp-field cp-group__in ${checked ? (ok ? 'is-right' : 'is-wrong') : ''}`}
                 value={checked && !ok ? accepted[0] : value}
+                data-assistant-entered={checked && !ok ? value : undefined}
                 onChange={(e) => setFills((s) => ({ ...s, [i]: e.target.value }))}
                 disabled={checked}
                 autoComplete="off"
