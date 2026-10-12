@@ -11,7 +11,7 @@ test.describe('Демо-лимит: замок на контенте, не на 
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
     await page.route('**/api/auth/me', (r) =>
-      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A1' } })))
+      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A1', phone: '77001234567' } })))
     // Лимит исчерпан для любого модуля практики: allowed=false при limit=8, completed=8.
     await page.route('**/api/practice/entitlement**', (r) =>
       r.fulfill(json({ configured: true, allowed: false, limit: 8, completed: 8 })))

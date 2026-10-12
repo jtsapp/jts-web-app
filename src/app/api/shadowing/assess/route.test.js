@@ -24,12 +24,12 @@ vi.mock('postgres', () => ({
 
 // Azure отвечает настоящими баллами — mock-оценка в учёт не идёт (платы не было),
 // и на ней было бы нечего проверять. fail — Azure не ответил.
-const azure = vi.hoisted(() => ({ fail: false }))
+const azure = vi.hoisted(() => ({ fail: false, configured: true }))
 
 vi.mock('@/lib/ielts/azure-pronunciation.js', () => {
   const score = { overall: 82, accuracy: 85, fluency: 80, prosody: 78, completeness: 90 }
   return {
-    isAzureSpeechConfigured: () => true,
+    isAzureSpeechConfigured: () => azure.configured,
     assessAgainstReference: async () => (azure.fail ? null : { ...score, words: [], transcript: 'hello there' }),
     assessPronunciation: async () => (azure.fail ? null : { ...score }),
     mockPronunciation: () => ({ overall: 70, accuracy: 70, fluency: 70, prosody: 70, completeness: 75, mock: true }),
@@ -101,6 +101,7 @@ beforeEach(() => {
   db.used.clear()
   db.failWrites = false
   azure.fail = false
+  azure.configured = true
   vi.stubEnv('DATABASE_URL', 'postgres://fake/jts') // учёт включён
   vi.stubEnv('ANTHROPIC_API_KEY', '') // совет Claude не зовём — он не про лимит
 })
@@ -134,9 +135,9 @@ describe('POST /api/shadowing/assess — лимита нет', () => {
 })
 
 describe('POST /api/shadowing/assess — учёт кредитов для Roadmap', () => {
-  it('mock-оценка (Azure не ответил) в учёт не попадает: платы не было', async () => {
+  it('mock-оценка (Azure не настроен, локалка) в учёт не попадает: платы не было', async () => {
     signedInAs({ demo: false })
-    azure.fail = true
+    azure.configured = false
 
     const body = await (await POST(takeRequest(6))).json()
 
@@ -154,5 +155,33 @@ describe('POST /api/shadowing/assess — учёт кредитов для Roadma
     expect(res.status).toBe(200)
     expect((await res.json()).overall).toBe(82)
     quiet.mockRestore()
+  })
+})
+
+// Баг ревью #64: тишина в записи (или сбой Azure) превращалась в «оценочные»
+// 70 баллов. Экран сохранял их лучшим баллом фразы и засчитывал в навык речи —
+// молчание выглядело как «почти освоено».
+describe('POST /api/shadowing/assess — Azure не разобрал речь', () => {
+  it('отвечает no_speech, а не выдуманными 70', async () => {
+    signedInAs({ demo: false })
+    azure.fail = true
+
+    const res = await POST(takeRequest(6))
+    const body = await res.json()
+
+    expect(res.status).toBe(422)
+    expect(body.error).toBe('no_speech')
+    expect(body.overall).toBeUndefined()
+    expect(usedToday()).toBe(0)
+  })
+
+  it('то же для целого отрывка', async () => {
+    signedInAs({ demo: false })
+    azure.fail = true
+
+    const res = await POST(takeRequest(40, 'whole'))
+
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toBe('no_speech')
   })
 })
