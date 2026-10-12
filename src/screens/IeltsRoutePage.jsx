@@ -4,7 +4,7 @@ import { getIeltsProfile, setIeltsRoute } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
-import { bandGap, recommendRoute, routeOptions } from '../ielts/onboarding/onboarding.js'
+import { TARGET_DEFAULT, bandGap, recommendRoute, routeOptions } from '../ielts/onboarding/onboarding.js'
 import { formatDate, formatDuration, formatMonths } from '../ielts/format.js'
 import { CheckCircleIcon, CheckIcon, InfoIcon, StarIcon, TrendingUpIcon } from '../ielts/icons.jsx'
 
@@ -49,7 +49,7 @@ export default function IeltsRoutePage({ token, onChosen, onPricing, userName, u
     body = state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : <EmptyState icon={<TrendingUpIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />
   } else {
     const p = state.p
-    const target = Number(p.targetBand) || 7
+    const target = Number(p.targetBand) || TARGET_DEFAULT
     const overall = p.bands?.overall
     const gap = bandGap(target, overall)
     const rec = recommendRoute(p)

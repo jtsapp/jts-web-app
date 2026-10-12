@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { estimateTerm, fitsExam, onboardingBody, recommendRoute, routeOptions } from './onboarding.js'
+import { TARGET_DEFAULT, assumedGap, estimateTerm, fitsExam, onboardingBody, recommendRoute, routeOptions } from './onboarding.js'
 
 const today = new Date('2026-10-01T10:00:00')
 
@@ -37,5 +37,24 @@ describe('онбординг и маршрут IELTS', () => {
     expect(onboardingBody({ track: 'general', window: '3-6m', examDate: '2026-12-12', daily: 90 })).toEqual({
       purpose: null, track: 'general', targetBand: 6.5, examDate: null, examWindow: '3-6m', dailyMinutes: 90, familiarity: null,
     })
+  })
+})
+
+// До диагностики анкета (шаг «время в день») и экран маршрута показывали одному ученику разные сроки: анкета брала
+// разрыв от средней точки 5.5, маршрут — 1.5 при любой цели. И цель по умолчанию у маршрута была 7, а у анкеты 6.5.
+describe('разрыв до диагностики — один на все экраны', () => {
+  it('от средней точки 5.5, в пределах 0.5–1.5', () => {
+    expect(assumedGap(6.5)).toBe(1)
+    expect(assumedGap(5.5)).toBe(0.5)
+    expect(assumedGap(8)).toBe(1.5)
+    expect(assumedGap(undefined)).toBe(1)
+  })
+  it('маршрут без диагностики считает тот же срок, что анкета', () => {
+    const [platform] = routeOptions({ targetBand: 6.5, dailyMinutes: 60 })
+    expect(platform.term).toEqual(estimateTerm(assumedGap(6.5), 60))
+  })
+  it('без цели в профиле маршрут берёт цель анкеты по умолчанию', () => {
+    const [noTarget] = routeOptions({ dailyMinutes: 60 })
+    expect(noTarget.term).toEqual(estimateTerm(assumedGap(TARGET_DEFAULT), 60))
   })
 })

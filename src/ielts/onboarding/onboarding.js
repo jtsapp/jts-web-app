@@ -24,8 +24,16 @@ export const STEPS = ['purpose', 'track', 'target', 'date', 'daily', 'familiarit
 // §11.4: часы = разрыв × 160; занятий 6 в неделю. С преподавателем быстрее: 2 урока в неделю — в 1.6 раза,
 // курс (3 урока и индивидуальная программа) — в 2 раза. Больше 2 баллов разрыва или 18 месяцев — срок не называем.
 export const EST = { hoursPerBand: 160, weekDays: 6, mixSpeedup: 1.6, teacherSpeedup: 2, longGap: 2, longMonths: 18, weeksBelowMonths: 3 }
-// Пока диагностики нет, разрыв неизвестен: считаем его как у неизмеренной секции (§10)
+// Пока диагностики нет, разрыв неизвестен: не больше, чем у неизмеренной секции (§10)
 export const GAP_UNMEASURED = 1.5
+// Средняя стартовая точка до диагностики. Разрыв от неё — один на анкету (шаг «время в день») и экран маршрута: раньше
+// анкета считала так, а маршрут брал 1.5 при любой цели, и один ученик видел два разных срока.
+export const ASSUMED_START = 5.5
+
+/** Разрыв до цели, пока диагностики нет: от 5.5, в пределах 0.5–1.5. */
+export function assumedGap(target) {
+  return Math.max(0.5, Math.min(GAP_UNMEASURED, (Number(target) || TARGET_DEFAULT) - ASSUMED_START))
+}
 
 /** Срок до цели: недели и месяцы при данном разрыве и времени в день; long — срок не называем. */
 export function estimateTerm(gap, dailyMinutes, speedup = 1) {
@@ -60,7 +68,7 @@ export function bandGap(target, overall) {
 export function recommendRoute(profile, today = new Date()) {
   const b = profile?.bands
   if (!b || b.overall == null) return null
-  const target = Number(profile.targetBand) || 7
+  const target = Number(profile.targetBand) || TARGET_DEFAULT
   const o = Number(b.overall)
   const gap = bandGap(target, o)
   const weeksLeft = profile.examDate ? Math.ceil((new Date(`${profile.examDate}T00:00:00`) - new Date(today.toDateString())) / 86400000 / 7) : null
@@ -75,7 +83,8 @@ export function recommendRoute(profile, today = new Date()) {
 
 /** Три маршрута экрана «Как дойти до цели» (Figma 3) со сроком каждого и тем, успевают ли они к экзамену. */
 export function routeOptions(profile, today = new Date()) {
-  const gap = bandGap(Number(profile?.targetBand) || 7, profile?.bands?.overall) ?? GAP_UNMEASURED
+  const target = Number(profile?.targetBand) || TARGET_DEFAULT
+  const gap = bandGap(target, profile?.bands?.overall) ?? assumedGap(target)
   const daily = profile?.dailyMinutes || 60
   return [
     { id: 'platform', speedup: 1 },

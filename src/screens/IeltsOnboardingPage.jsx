@@ -3,8 +3,8 @@ import { getIeltsProfile, saveIeltsProfile } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import {
-  DAILY, DAILY_DEFAULT, FAMILIARITY, GAP_UNMEASURED, PURPOSES, QUIZ, QUIZ_PASS, STEPS, TARGETS, TARGET_DEFAULT, TRACKS, WINDOWS,
-  estimateTerm, fitsExam, onboardingBody,
+  DAILY, DAILY_DEFAULT, FAMILIARITY, PURPOSES, QUIZ, QUIZ_PASS, STEPS, TARGETS, TARGET_DEFAULT, TRACKS, WINDOWS,
+  assumedGap, estimateTerm, fitsExam, onboardingBody,
 } from '../ielts/onboarding/onboarding.js'
 import {
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, CloseIcon, EventIcon, HelpIcon, InfoIcon, MenuBookIcon, QuizIcon, RadioOffIcon, ScheduleIcon, TaskAltIcon,
@@ -294,7 +294,7 @@ export default function IeltsOnboardingPage({ token, onExit, onDiagnostic }) {
         </>
       )
     else if (key === 'daily') {
-      const gap = Math.max(0.5, Math.min(GAP_UNMEASURED, target - 5.5))
+      const gap = assumedGap(target)
       options = (
         <>
           <div className="ih-obdaily">
