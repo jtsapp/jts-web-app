@@ -24,17 +24,37 @@ vi.mock('postgres', () => ({
 
 // Azure отвечает настоящими баллами — mock-оценка в учёт не идёт (платы не было),
 // и на ней было бы нечего проверять. fail — Azure не ответил.
-const azure = vi.hoisted(() => ({ fail: false, configured: true }))
+const azure = vi.hoisted(() => ({ fail: false, configured: true, hang: false, calls: [] }))
 
 vi.mock('@/lib/ielts/azure-pronunciation.js', () => {
   const score = { overall: 82, accuracy: 85, fluency: 80, prosody: 78, completeness: 90 }
   return {
     isAzureSpeechConfigured: () => azure.configured,
     assessAgainstReference: async () => (azure.fail ? null : { ...score, words: [], transcript: 'hello there' }),
-    assessPronunciation: async () => (azure.fail ? null : { ...score }),
+    assessPronunciation: async () => {
+      azure.calls.push('stream')
+      return azure.fail ? null : { ...score }
+    },
+    assessPronunciationChunked: async () => {
+      azure.calls.push('chunked')
+      azure.startedAt = Date.now()
+      if (azure.hang) return new Promise(() => {})
+      return azure.fail ? null : { ...score }
+    },
     mockPronunciation: () => ({ overall: 70, accuracy: 70, fluency: 70, prosody: 70, completeness: 75, mock: true }),
   }
 })
+
+// Совет Claude: по умолчанию ключа нет; где нужен — включается и пишет, с
+// какими потолками его звали.
+const tip = vi.hoisted(() => ({ key: false, calls: [] }))
+vi.mock('@/lib/anthropic.js', () => ({
+  hasAnthropicKey: () => tip.key,
+  structured: async (args) => {
+    tip.calls.push(args)
+    return { tip: 'Slow down a little.' }
+  },
+}))
 
 import { POST } from './route.js'
 import { dayKey } from '@/lib/db/shadowingBudget.js'
@@ -102,6 +122,10 @@ beforeEach(() => {
   db.failWrites = false
   azure.fail = false
   azure.configured = true
+  azure.hang = false
+  azure.calls = []
+  tip.key = false
+  tip.calls = []
   vi.stubEnv('DATABASE_URL', 'postgres://fake/jts') // учёт включён
   vi.stubEnv('ANTHROPIC_API_KEY', '') // совет Claude не зовём — он не про лимит
 })
@@ -183,5 +207,45 @@ describe('POST /api/shadowing/assess — Azure не разобрал речь', 
 
     expect(res.status).toBe(422)
     expect((await res.json()).error).toBe('no_speech')
+  })
+})
+
+// Баг ревью #65: «Весь текст» оценивался одним потоком Azure — 12 минут речи
+// шли ~3 минуты, и на проде запрос рвал Cloudflare (524 после 100 с).
+describe('POST /api/shadowing/assess — целый отрывок укладывается во время', () => {
+  it('целый отрывок идёт кусками, фраза — эталон-режимом', async () => {
+    signedInAs({ demo: false })
+    expect((await POST(takeRequest(40, 'whole'))).status).toBe(200)
+    expect(azure.calls).toEqual(['chunked'])
+  })
+
+  it('Azure повис — 504 timeout к потолку, а не ожидание до обрыва; в учёт не пишем', async () => {
+    signedInAs({ demo: false })
+    azure.hang = true
+    // Только таймеры и часы: разбор multipart и fetch идут своим ходом.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      let res = null
+      POST(takeRequest(40, 'whole')).then((r) => (res = r))
+      for (let i = 0; i < 100 && !res; i++) await vi.advanceTimersByTimeAsync(1_000)
+      // Ответ — ровно к потолку Azure, а не раньше (не бросили рабочую оценку)
+      // и не позже (до 100 с Cloudflare остаётся запас).
+      const waited = Date.now() - azure.startedAt
+      expect(waited).toBeGreaterThanOrEqual(70_000)
+      expect(waited).toBeLessThanOrEqual(71_000)
+      expect(res.status).toBe(504)
+      expect((await res.json()).error).toBe('timeout')
+      expect(usedToday()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('совет — с потолком и без ретраев SDK', async () => {
+    signedInAs({ demo: false })
+    tip.key = true
+    const body = await (await POST(takeRequest(40, 'whole'))).json()
+    expect(body.tip).toBe('Slow down a little.')
+    expect(tip.calls[0]).toMatchObject({ timeoutMs: 10_000, maxRetries: 0 })
   })
 })
