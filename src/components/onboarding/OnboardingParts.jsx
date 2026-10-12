@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon, InfoIcon, RadioOffIcon } from '../../ielts/icons.jsx'
 
-// Кирпичи онбординга (дизайн «IELTS new», Figma 1.1–1.6): карточка-ответ с радио, большая карточка с иллюстрацией и
-// календарь месяца. Общие для анкеты IELTS и анкеты General English на «Главной» (спека 2026-10-12): макета у второй
-// нет, она нарочно выглядит так же.
+// Кирпичи анкеты General English на «Главной» (спека 2026-10-12): карточка-ответ с радио, большая карточка с
+// иллюстрацией и календарь месяца. Это копия кирпичей онбординга IELTS (IeltsOnboardingPage.jsx, дизайн «IELTS new»):
+// макета у анкеты нет, она нарочно выглядит так же. Копия, а не общий модуль, — раздел IELTS не трогаем (решение
+// владельца 12.10.2026), поэтому правки вида здесь до IELTS не доходят и наоборот.
 
 export const Radio = ({ on }) => <span className="ih-obopt__radio">{on ? <CheckCircleIcon size={22} /> : <RadioOffIcon size={22} />}</span>
 
