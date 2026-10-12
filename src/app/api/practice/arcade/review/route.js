@@ -19,6 +19,7 @@ import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { budgetPayload, consume, dayKey, getUsed, refund } from '@/lib/db/arcadeBudget.js'
 import {
+  REVIEW_DEADLINE_MS,
   REVIEW_SCHEMA,
   REVIEW_SYSTEM,
   buildReviewMessage,
@@ -26,15 +27,17 @@ import {
   normaliseReview,
   validateReviewRequest,
 } from '@/practice/arcade/reviewContract.js'
+import { isRetryableLlmError } from '@/lib/llmRetry.js'
 
 export const runtime = 'nodejs'
 
-// Прод стоит за Cloudflare, который рвёт молчащий запрос через 100 с: один
-// вызов не дольше 45 с, оба вместе — не дольше 90, а на повтор идём, только
-// если на него осталось хотя бы 30 с.
-const CALL_TIMEOUT_MS = 45000
-const TOTAL_BUDGET_MS = 90000
-const MIN_RETRY_MS = 30000
+// Один вызов не дольше 40 с (обычный разбор 18–25 с), оба вместе — не дольше
+// REVIEW_DEADLINE_MS, который клиент ждёт с запасом; на повтор идём, только
+// если на него осталось хотя бы 20 с. Ретраи SDK выключены (maxRetries: 0):
+// с ними один вызов шёл бы до 40 × 3 с, мимо и клиента, и Cloudflare.
+const CALL_TIMEOUT_MS = 40000
+const TOTAL_BUDGET_MS = REVIEW_DEADLINE_MS
+const MIN_RETRY_MS = 20000
 // ARCADE_REVIEW_DEBUG=1 — писать в лог и сырой ответ модели (для разбора).
 const DEBUG = /^(1|true|yes)$/i.test(String(process.env.ARCADE_REVIEW_DEBUG || '').replace(/^﻿/, '').trim())
 
@@ -112,8 +115,9 @@ export async function POST(request) {
     }
   }
 
-  // Ответ, из которого нечего показать, — ещё одна попытка, если по времени
-  // успеваем уложиться до 100 с Cloudflare. Попытка ученика списана один раз.
+  // Ответ, из которого нечего показать, или сбой сети/перегрузка модели — ещё
+  // одна попытка, если по времени успеваем до потолка. Попытка ученика
+  // списана один раз.
   const startedAt = Date.now()
   for (let attempt = 1; ; attempt++) {
     let raw
@@ -124,9 +128,19 @@ export async function POST(request) {
         schema: REVIEW_SCHEMA,
         model: MODEL,
         maxOutputTokens: 3000,
+        // Строгая схема: без неё модель отдавала критерии строкой вместо
+        // объекта (2 разбора из 3 на замере 12.10.2026), а то и один summary —
+        // и ученик получал разбор без баллов за списанную попытку.
+        strict: true,
         timeoutMs: Math.min(CALL_TIMEOUT_MS, TOTAL_BUDGET_MS - (Date.now() - startedAt)),
+        maxRetries: 0,
       })
     } catch (e) {
+      const left = TOTAL_BUDGET_MS - (Date.now() - startedAt)
+      if (attempt < 2 && isRetryableLlmError(e) && left >= MIN_RETRY_MS) {
+        console.warn('[arcade.review] model call failed, retrying', e?.status ?? e?.name ?? 'Error')
+        continue
+      }
       await giveBack()
       const timeout = /timeout|timed out/i.test(`${e?.name} ${e?.message}`)
       // Причина — только имя ошибки, без текста ученика.

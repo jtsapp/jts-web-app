@@ -5,10 +5,13 @@
 // 'review_failed', 'timeout') — пробрасываем их полем code, экран сам
 // показывает понятный текст на языке интерфейса.
 
+import { REVIEW_CLIENT_TIMEOUT_MS } from './reviewContract.js'
+
 export { MIN_WORDS } from './reviewContract.js'
 
-// Дольше серверного таймаута модели (45 с), чтобы его ответ успел раньше.
-const TIMEOUT_MS = 60000
+// Дольше потолка роута (REVIEW_DEADLINE_MS), чтобы его ответ — или его отказ
+// с возвратом попытки — всегда успевал раньше.
+const TIMEOUT_MS = REVIEW_CLIENT_TIMEOUT_MS
 
 async function readJson(res) {
   try {
