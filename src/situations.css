@@ -452,11 +452,16 @@
   font-weight: 800;
   cursor: pointer;
 }
-.sit-rec__mic:hover {
+.sit-rec__mic:hover:not(:disabled) {
   background: var(--sit-purple-dark);
 }
 .sit-rec__mic.is-live {
   background: var(--sit-red);
+}
+/* Выключена, пока браузер спрашивает микрофон и пока идёт разбор. */
+.sit-rec__mic:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .sit-rec__tool {
   padding: 10px 16px;
