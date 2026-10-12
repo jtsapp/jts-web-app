@@ -5,10 +5,13 @@
 // непоказанные). Форма — как у прототипа, только без его localStorage.
 //
 // Хранение — общее хранилище «Практики» (память + черновик + сервер, replace,
-// см. progressStore.js) со сведением merge: сервер хранит заменой, и раунд,
-// пройденный на телефоне, не должен «распройтись» от ноутбука, где его ещё нет.
-// Пока снимка с сервера нет, запись не уходит вовсе — хранилище сведёт её с
-// ответом и отправит сведённое.
+// см. progressStore.js) со сведением merge. Сводит хранилище в момент, когда
+// приходит снимок сервера (загрузка, вход): раунд, пройденный на телефоне, не
+// «распроходится» черновиком ноутбука, где его ещё нет, — пройденное где угодно
+// остаётся пройденным. Пока снимка нет, запись не уходит вовсе — уйдёт сведённой.
+// После снимка запись уходит как есть (replace): если два устройства открыты
+// одновременно, раунд, пройденный на одном, другое затрёт своей записью до
+// следующей загрузки, — тот же компромисс, что у остальных разделов-объектов.
 //
 // Движок не держит у себя копию: читает перед каждым экраном и пишет через
 // updateNumbers — читать-менять-писать по свежему состоянию, иначе снимок,
@@ -18,13 +21,12 @@
 
 import { NUMBERS_KEY as KEY, NUMBERS_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
 import { createProgressStore } from '../progressStore.js'
+import { MAX_ROUNDS, SECTION_ID } from './logic.js'
 
 const emptyState = () => ({ sections: {}, bestCombo: 0, totalCorrect: 0, seen: {} })
 const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x)
 const num = (x, lo, hi) => (typeof x === 'number' && Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : lo)
 const int = (x, hi) => Math.round(num(x, 0, hi))
-// id разделов прототипа: basic, teens, boss1, lab…
-const SECTION_ID = /^[a-z][a-z0-9]{0,23}$/
 
 function normRound(r) {
   if (!isObj(r)) return null
@@ -33,7 +35,7 @@ function normRound(r) {
 
 function normSection(s) {
   return {
-    rounds: Array.isArray(s.rounds) ? s.rounds.slice(0, 10).map(normRound) : [],
+    rounds: Array.isArray(s.rounds) ? s.rounds.slice(0, MAX_ROUNDS).map(normRound) : [],
     stars: int(s.stars, 3),
     best: num(s.best, 0, 1),
     bestCr: int(s.bestCr, 1e6),

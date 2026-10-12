@@ -9,6 +9,12 @@
 
 export const GEN_ROUND = 16          // заданий в раунде босса и Lab
 export const PASS = { topic: 0.7, boss: 0.8 }
+// Рамки прогресса (numbersProgress.js normalize): id разделов прототипа — basic,
+// teens, boss1, lab… Запас нужен потому, что прогресс раздела с id или числом
+// раундов за рамками молча терялся бы на первой записи; data.test.js сверяет,
+// что данные в них укладываются.
+export const SECTION_ID = /^[a-z][a-z0-9_-]{0,31}$/
+export const MAX_ROUNDS = 20
 
 const BOSS_SRC = {
   boss1: ['basic', 'teens', 'ordinals', 'phone', 'time', 'money'],

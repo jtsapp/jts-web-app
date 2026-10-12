@@ -50,7 +50,9 @@ export function mountNumbers(root, cfg) {
     return id
   }
 
-function setPose(p){ const d=$('#dex'); if(!d) return; $$('img',d).forEach(i=>i.classList.toggle('on', i.dataset.p===p)); d.dataset.pose=p; }
+// d — Декстер, с которым начали анимацию: поиск «живого» #dex в хвосте прыжка,
+// пережившего уход из раунда, поставил бы позу Декстеру уже нового раунда.
+function setPose(p, d=$('#dex')){ if(!d || !d.isConnected) return; $$('img',d).forEach(i=>i.classList.toggle('on', i.dataset.p===p)); d.dataset.pose=p; }
 const WORLDS = {
   /* fy = vertical focus of the in-game background (0 top … 1 bottom), chosen so each world's magic numerals stay in frame;
      zoom = extra scale over "cover"; numerals sit at the far left/right edges of every painting (see sizeSky) */
@@ -480,9 +482,9 @@ function jumpDex(to, {peak=0.2, dur=620, back=false, land=true}={}){
   const quick = R && R.fast;
   const top=Math.min(y0,y1) - g.H*peak; const frames=[]; const N=18; const off=g.dh*0.6;
   d.classList.remove('idle');
-  setPose('crouch');
+  setPose('crouch', d);
   return sleep(quick?0:120).then(()=>{
-    setPose('jump');
+    setPose('jump', d);
     for(let i=0;i<=N;i++){ const t=i/N; const x=x0+(x1-x0)*t; const y=(1-t)*(1-t)*y0 + 2*(1-t)*t*(top) + t*t*y1;
       const sx = i===0?0.94: i===N?1.04: 1, sy = i===0?1.08: i===N?0.96: 1;
       const rot = (x1>x0?1:-1)*(t<.5?6:-3)*(back?-1:1);
@@ -490,15 +492,15 @@ function jumpDex(to, {peak=0.2, dur=620, back=false, land=true}={}){
     return d.animate(frames,{duration:quick?20:dur,easing:'linear'}).finished;
   }).then(()=>{ d._x=x1; d._y=y1; d.style.transform=`translate(${x1-off}px, ${y1-g.dh+4}px)`;
     if(!land) return;
-    setPose('crouch');
+    setPose('crouch', d);
     return d.animate([{transform:d.style.transform+' scale(1.06,.94)'},{transform:d.style.transform}],{duration:quick?10:200,easing:'ease-out'}).finished; })
-    .then(()=>{ if(land){ setPose('idle'); d.classList.add('idle'); } });
+    .then(()=>{ if(land){ setPose('idle', d); d.classList.add('idle'); } });
 }
 function celebrateDex(){
-  const d=$('#dex'); const t=d.style.transform; d.classList.remove('idle'); setPose('win');
-  return d.animate([{transform:t},{transform:t+' translateY(-34px)'},{transform:t+' translateY(0)'},{transform:t+' translateY(-14px)'},{transform:t}],{duration:R&&R.fast?20:760,easing:'ease-in-out'}).finished.then(()=>{ setPose('idle'); d.classList.add('idle'); });
+  const d=$('#dex'); const t=d.style.transform; d.classList.remove('idle'); setPose('win', d);
+  return d.animate([{transform:t},{transform:t+' translateY(-34px)'},{transform:t+' translateY(0)'},{transform:t+' translateY(-14px)'},{transform:t}],{duration:R&&R.fast?20:760,easing:'ease-in-out'}).finished.then(()=>{ setPose('idle', d); d.classList.add('idle'); });
 }
-function dizzyDex(){ const d=$('#dex'); if(!d) return Promise.resolve(); d.classList.remove('idle'); setPose('oops'); d.classList.add('dizzy'); return sleep(1100).then(()=>{ if(!d.isConnected) return; d.classList.remove('dizzy'); if(d.dataset.pose==='oops') setPose('idle'); d.classList.add('idle');}); }
+function dizzyDex(){ const d=$('#dex'); if(!d) return Promise.resolve(); d.classList.remove('idle'); setPose('oops', d); d.classList.add('dizzy'); return sleep(1100).then(()=>{ if(!d.isConnected) return; d.classList.remove('dizzy'); if(d.dataset.pose==='oops') setPose('idle', d); d.classList.add('idle');}); }
 
 /* ---- effects ---- */
 function burst(x,y,n=16){
@@ -637,7 +639,7 @@ async function choose(el){
       R.revealed=true;
       const right=R.isles.find(x=>x.dataset.v===ans); right.classList.add('glow');
       if(!R.shown){ R.shown=true; renderPrompt(); }
-    } else if(R.mode==='listen') later(()=>sayRound(), R.fast?0:250);
+    } else if(R.mode==='listen'){ const again=R; later(()=>{ if(R===again) sayRound(); }, R.fast?0:250); }   // ушли из раунда — молчим
     R.busy=false;
     dizzyDex();
   }
@@ -669,6 +671,9 @@ async function finishLevel(){
   R.finished=true; R.busy=true; hideMessage();
   const acc = R.score / R.rounds.length;
   const pass = acc >= passMark(R.s);
+  // Записать раунд СРАЗУ, до анимации портала: «назад» на финише не спрашивает
+  // подтверждения, и уход за эти ~2.5 с терял бы пройденный раунд.
+  const saved = saveRound(acc, pass);
   const need = Math.round(passMark(R.s)*100);
   $('#prompt').innerHTML = `<div class="pill"><small>${pass?'Portal unlocked':'Almost there'}</small>${pass?'Jump through!':`You need ${need}%`}</div>`;
   $('#gShow').classList.add('hidden');
@@ -686,11 +691,14 @@ async function finishLevel(){
   }
   await sleep(300);
   if(R!==my) return;
-  showResults(acc, pass);
+  showResults(acc, pass, saved);
 }
 
 function gameKeys(e){
   if(!R || !$('#scene')) return;
+  // Зажатый пробел — автоповтор: каждый повтор обрывал фразу с начала, и она не
+  // звучала до конца. Ctrl/Alt/Cmd+цифра — сочетание браузера, а не ответ.
+  if(e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   // Событие из Shadow DOM перенацелено на хост — настоящая цель в composedPath.
   const t = (e.composedPath && e.composedPath()[0]) || e.target;
   if(t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||''))) return;
@@ -699,9 +707,10 @@ function gameKeys(e){
 }
 
 /* =========================================================
-   Results: the round is written once, read-modify-write on the fresh store state
+   Results: the round is written once (saveRound, at the finish line), read-modify-write
+   on the fresh store state; showResults only draws
    ========================================================= */
-function showResults(acc, passed){
+function saveRound(acc, passed){
   const s=R.s, run=R, k=run.rk, n=roundCount(s.id);
   const stars = starsFor(acc, passed);
   const bonusCr = passed ? (s.boss?8:4) : 0;
@@ -719,6 +728,10 @@ function showResults(acc, passed){
     // «уже было» нужно только выбору заданий боссов и Lab
     if(s.boss || s.lab){ const seen = st.seen[s.id] = st.seen[s.id] || {}; run.rounds.forEach(it=>{ const key=itemKey(it); seen[key]=(seen[key]||0)+1; }); }
   });
+  return {stars, cr, wasDone};
+}
+function showResults(acc, passed, {stars, cr, wasDone}){
+  const s=R.s, run=R, k=run.rk, n=roundCount(s.id);
   const done = isDone(s.id);
   const finishedNow = done && !wasDone;
   const worldMsg = finishedNow && s.boss && s.stage<3 ? `<p class="res-note">World ${s.stage} conquered! Next: ${esc(WORLDS[s.stage+1].name)}.</p>` : finishedNow ? `<p class="res-note">All ${n} rounds passed!</p>` : '';

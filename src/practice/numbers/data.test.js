@@ -6,7 +6,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { spokenOf, withGeneratedTours } from './logic.js'
+import { MAX_ROUNDS, SECTION_ID, spokenOf, withGeneratedTours } from './logic.js'
 
 const data = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/practice/numbers/data.json'), 'utf8'))
 const tours = withGeneratedTours(data.sections, data.tours)
@@ -35,6 +35,13 @@ describe('данные «Чисел»', () => {
     for (const { where, it } of allItems) {
       if (it[5] === 'R') expect(it[6] && it[7], where).toBeTruthy()
       expect(spokenOf(it).trim(), where).toBeTruthy()
+    }
+  })
+
+  it('id разделов и число раундов укладываются в рамки прогресса — иначе он терялся бы на записи', () => {
+    for (const s of data.sections) {
+      expect(s.id, s.id).toMatch(SECTION_ID)
+      expect(tours[s.id].length, s.id).toBeLessThanOrEqual(MAX_ROUNDS)
     }
   })
 

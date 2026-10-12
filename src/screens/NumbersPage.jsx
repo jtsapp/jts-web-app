@@ -22,6 +22,7 @@ import { NUMBERS_MARKUP } from '../practice/numbers/markup.js'
 import { NUMBERS_CSS } from '../practice/numbers/styles.js'
 import { createNumbersVoice } from '../practice/numbers/voice.js'
 import { readNumbers, updateNumbers } from '../practice/numbers/numbersProgress.js'
+import { ownerOf } from '../practice/progressStore.js'
 import { NUMBERS_LANG_KEY } from '../practice/practiceKeys.js'
 import { recordSkill } from '../practice/skillStats.js'
 
@@ -67,6 +68,11 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  // Чей прогресс, а не сам токен: тихое обновление access (App → onRefreshed →
+  // setToken) меняет строку токена каждые несколько минут, и пересоздание по
+  // ней обрывало бы живой раунд и выкидывало на карту. ownerOf стабилен, пока
+  // ученик тот же (sub из JWT), и меняется на входе и выходе.
+  const owner = ownerOf(token)
   useDocumentFonts()
 
   useEffect(() => {
@@ -101,8 +107,8 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
       destroy()
       shadow.innerHTML = ''
     }
-    // token: вошёл или вышел — прогресс уже другого ученика, игра перечитывает его
-  }, [data, token])
+    // owner: вошёл или вышел — прогресс уже другого ученика, игра перечитывает его
+  }, [data, owner])
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
