@@ -227,6 +227,113 @@ test('скорость переключается ступенями и пере
   await expect(page.locator('.kk-play audio')).toHaveJSProperty('playbackRate', 0.75)
 })
 
+// Микрофон подставной: ровный тон из AudioContext вместо голоса. VAD его
+// слышит, MediaRecorder пишет, а что «спето», решает замоканная оценка.
+async function fakeMic(page) {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ac = new AudioContext()
+      const osc = ac.createOscillator()
+      const gain = ac.createGain()
+      gain.gain.value = 0.3
+      const dest = ac.createMediaStreamDestination()
+      osc.connect(gain)
+      gain.connect(dest)
+      osc.start()
+      return dest.stream
+    }
+  })
+}
+
+// Две строки через проигрыш в четыре секунды — два отдельных куска записи.
+const SCORED = {
+  version: 1,
+  duration: 13,
+  lines: [
+    { id: 1, start: 1, end: 3, text: 'I woke up on a rainy Monday' },
+    { id: 2, start: 7, end: 9, text: 'And the bus was late again' },
+  ],
+}
+
+// Куски из тела запроса: JSON-поле идёт в multipart после WAV.
+const segmentsOf = (route) =>
+  JSON.parse(route.request().postDataBuffer().toString('utf8').match(/name="segments"\r\n\r\n([\s\S]*?)\r\n--/)[1])
+
+async function singTake(page) {
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(13) }))
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await page.getByRole('button', { name: 'Играть' }).click()
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run', { timeout: 10_000 })
+  // Обе строки позади (вторая кончается на 0:09, поле окна — ещё 0,9 с).
+  await expect(page.locator('.kk-tl__now')).toHaveText('0:10', { timeout: 20_000 })
+  await page.getByRole('button', { name: 'Закончить' }).click()
+  await expect(page.locator('.kk-res')).toBeVisible({ timeout: 20_000 })
+}
+
+const metric = (page, label) => page.locator('.kk-met').filter({ has: page.locator('.kk-met__label', { hasText: label }) })
+
+test('оценка по эталону: три карточки — ритм, произношение, слова', async ({ page }) => {
+  test.setTimeout(60_000)
+  await fakeMic(page)
+  await signIn(page, [TRACK], SCORED)
+  let asked = null
+  await page.route('**/api/karaoke/assess', async (route) => {
+    asked = route.request().headers().authorization
+    const segs = segmentsOf(route)
+    // Каждое слово «спето» вовремя: кусок начинается за 0,6 с до своей строки,
+    // значит первое слово строки звучит через 0,6 с после начала куска.
+    const segments = segs.map((s) => ({
+      id: s.id,
+      transcript: s.text,
+      words: s.text.split(' ').map((w, i) => ({
+        word: w,
+        accuracy: 80,
+        error: 'None',
+        start: s.from + 0.6 + i * 0.25,
+        end: s.from + 0.8 + i * 0.25,
+      })),
+    }))
+    await route.fulfill(json({ mode: 'assessed', segments, transcript: segs.map((s) => s.text).join(' ') }))
+  })
+  let transcribed = false
+  await page.route('**/api/transcribe', (r) => {
+    transcribed = true
+    return r.fulfill(json({ text: '' }))
+  })
+
+  await singTake(page)
+
+  // Две строки через проигрыш — два куска, каждый со своим текстом.
+  expect(asked).toBe('Bearer test-token')
+  // Запись ушла один раз: обычного распознавания следом не было.
+  expect(transcribed).toBe(false)
+  await expect(page.locator('.kk-met__label')).toHaveText(['Ритм', 'Произношение', 'Слова'])
+  await expect(metric(page, 'Ритм').locator('.kk-met__value')).toHaveText('100')
+  await expect(metric(page, 'Произношение').locator('.kk-met__value')).toHaveText('80')
+  await expect(metric(page, 'Слова').locator('.kk-met__value')).toHaveText('100')
+  // Пропуски — по словам Azure, а не по громкости. Ровный тон звучит и во
+  // время калибровки, поэтому маска голоса у подставного микрофона не слышит
+  // ничего — ровно как у тихого певца. Раньше здесь стояло «Пропущены 2 строки».
+  await expect(metric(page, 'Слова')).toContainText('Спеты все строки')
+  // 35 × 100 + 35 × 100 + 30 × 80 = 94 — золото.
+  await expect(page.locator('.kk-res__num b')).toHaveText('94')
+})
+
+test('сервис оценки не ответил — произношение пустое, слова из распознавания', async ({ page }) => {
+  test.setTimeout(60_000)
+  await fakeMic(page)
+  await signIn(page, [TRACK], SCORED)
+  await page.route('**/api/karaoke/assess', (route) =>
+    route.fulfill(json({ mode: 'transcript', transcript: 'I woke up on a rainy Monday and the bus was late again' })))
+
+  await singTake(page)
+
+  await expect(metric(page, 'Произношение').locator('.kk-met__value')).toHaveText('—')
+  await expect(metric(page, 'Произношение')).toContainText('Произношение в этот раз не оценивалось')
+  await expect(metric(page, 'Слова').locator('.kk-met__value')).toHaveText('100')
+})
+
 test('трек без разметки помечается недоступным, а не грузится вечно', async ({ page }) => {
   await signIn(page, [TRACK], null)
   await page.goto('/?screen=practice')

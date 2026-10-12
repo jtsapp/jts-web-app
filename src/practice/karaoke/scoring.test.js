@@ -174,6 +174,21 @@ describe('итоговый балл', () => {
     expect(without.score).toBe(100) // слова просто не участвуют
   })
 
+  it('с оценкой Azure — ритм 35, слова 35, произношение 30', () => {
+    // Покрытие и темп в этой формуле не участвуют: пропуск строки уже в
+    // словах, а темп ловит ритм по словам. Нули им — и балл не меняется.
+    const r = finalScore({ lyrics: 100, rhythm: 0, pron: 0, coverage: 0, pace: 0, hasLyrics: true })
+    expect(r.score).toBe(35)
+    expect(finalScore({ lyrics: 0, rhythm: 100, pron: 0, hasLyrics: true }).score).toBe(35)
+    expect(finalScore({ lyrics: 0, rhythm: 0, pron: 100, hasLyrics: true }).score).toBe(30)
+    expect(finalScore({ lyrics: 80, rhythm: 80, pron: 80, hasLyrics: true, instrumental: true }).score).toBe(92)
+  })
+
+  it('без произношения — прежняя формула', () => {
+    const legacy = finalScore({ lyrics: 50, rhythm: 50, coverage: 50, pace: 50, hasLyrics: true })
+    expect(finalScore({ lyrics: 50, rhythm: 50, coverage: 50, pace: 50, hasLyrics: true, pron: null })).toEqual(legacy)
+  })
+
   it('минус поднимает балл', () => {
     const plain = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false })
     const inst = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false, instrumental: true })

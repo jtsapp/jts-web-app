@@ -23,9 +23,13 @@ import {
   stopStream,
   startTake,
   transcribeTake,
+  transcribeTakeWav,
+  takeToWav,
+  assessTake,
   unlockPlayback,
   createAudioContext,
 } from '../../practice/karaoke/mic.js'
+import { lineWindows, planSegments, scoreAssessment, transcriptInLineOrder } from '../../practice/karaoke/alignment.js'
 import {
   fmtTime,
   lineAt,
@@ -79,15 +83,22 @@ function applyRate(audio, rate) {
 }
 
 /** Разбор дубля целиком: метрики, медаль, строки для повтора. */
-function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRate }) {
+function buildResult({ lines, duration, mask, sungSec, text, detail, instrumental, offRate }) {
   const ref = referenceMask(lines, duration)
-  const rhythm = rhythmScore(ref, mask)
+  // `detail` — разбор Azure по словам (scoreAssessment). С ним ритм — это
+  // попадание слов во время, а не совпадение маски голоса со строками; маска
+  // остаётся запасным ритмом, когда оценки не было.
+  const rhythm = detail ? detail.rhythm : rhythmScore(ref, mask)
   const { score: coverage, perLine } = coverageScore(lines, mask)
-  const lyr = text ? lyricsScore(fullText(lines), text) : null
+  // С оценкой Azure слова считаем и по пустому тексту: «пел, но ни слова не
+  // разобрать» — это ноль за слова, а не «слова не оценивались».
+  const hasText = Boolean(detail) || Boolean(text)
+  const said = text || ''
+  const lyr = hasText ? lyricsScore(fullText(lines), said) : null
   const pace = paceScore({
     refSyllables: syllablesIn(fullText(lines)),
     refSungSec: sungSeconds(lines),
-    userSyllables: text ? syllablesIn(text) : null,
+    userSyllables: said ? syllablesIn(said) : null,
     userSungSec: sungSec,
   })
   const { score, medal } = finalScore({
@@ -95,29 +106,38 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRa
     rhythm,
     coverage,
     pace,
-    hasLyrics: Boolean(text),
+    hasLyrics: hasText,
     instrumental,
+    pron: detail ? detail.pron : null,
   })
-  const matches = text ? lineWordMatches(lines, text) : null
+  const matches = hasText ? lineWordMatches(lines, said) : null
   const repeat = linesToRepeat({ lines, perLine, matches })
-  // «Сложнее всего дались …» — сначала сложные слова тех строк, что в списке
-  // на повтор (их студент видит подчёркнутыми ниже), потом остальные
-  // непрозвучавшие.
-  const hard = []
-  for (const w of [...repeat.map((r) => r.hard), ...(lyr?.missed || [])]) {
-    if (w && !hard.includes(w)) hard.push(w)
-    if (hard.length === 3) break
+  // «Сложнее всего дались …». С оценкой Azure это слова с худшим
+  // произношением — подпись стоит под карточкой «Произношение». Без неё —
+  // сложные слова строк на повтор (их студент видит подчёркнутыми ниже), потом
+  // остальные непрозвучавшие.
+  // Какие строки спеты: с оценкой Azure — по услышанным словам, без неё — по
+  // маске голоса. Громкость врёт у тихого певца и в шумной комнате, и экран
+  // писал «пропущено 4 строки» рядом с высоким баллом за слова.
+  const sungByLine = detail ? detail.perLine : perLine
+  const hard = detail ? [...detail.hard] : []
+  if (!detail) {
+    for (const w of [...repeat.map((r) => r.hard), ...(lyr?.missed || [])]) {
+      if (w && !hard.includes(w)) hard.push(w)
+      if (hard.length === 3) break
+    }
   }
   return {
     score,
     medal,
     rhythm: Math.round(rhythm),
     lyrics: lyr ? Math.round(lyr.score) : null,
+    pron: detail ? detail.pron : null,
     coverage: Math.round(coverage),
     pace: Math.round(pace),
-    sungLines: perLine.filter((l) => l.sung).length,
+    sungLines: sungByLine.filter((l) => l.sung).length,
     totalLines: lines.length,
-    missed: missedSpan(perLine, lines),
+    missed: missedSpan(sungByLine, lines),
     hard,
     repeat,
     // Дубль на нестандартной скорости: балл показываем, но в рекорд трека он
@@ -127,7 +147,34 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRa
   }
 }
 
-export default function KaraokePlayer({ track, doc, failed, range, onResult, onLineResult, onExit }) {
+/**
+ * Разбор дубля для калибровки порогов: включается ключом `jts_karaoke_debug`
+ * = '1' в localStorage. Всё, из чего собран балл, кладётся в
+ * `window.__jtsKaraoke` и скачивается тем же файлом
+ * `karaoke-<трек>-<время>.json`: из консоли стометровый JSON не скопировать,
+ * а из «Загрузок» его забрать просто.
+ *
+ * Пороги ритма и произношения подбираются по живым дублям, и слушать записи
+ * для этого незачем — хватает цифр. Поэтому аудио в файле НЕТ: только текст,
+ * время слов и баллы, обещание про запись в силе.
+ */
+function debugTake(data) {
+  try {
+    if (localStorage.getItem('jts_karaoke_debug') !== '1') return
+    window.__jtsKaraoke = data
+    console.info('[karaoke] разбор дубля', data)
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `karaoke-${data.track || 'take'}-${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  } catch {
+    /* localStorage закрыт (приватное окно) — калибровать всё равно нечем */
+  }
+}
+
+export default function KaraokePlayer({ track, doc, failed, range, token, onResult, onLineResult, onExit }) {
   const { t, lang } = useI18n()
   const lines = doc?.lines || []
   const duration = doc?.duration || 0
@@ -265,30 +312,66 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
       return
     }
     setPhase('scoring')
-    const { mask, sungSec, blob } = await take.stop()
+    const { mask, sungSec, blob, timeMap } = await take.stop()
     releaseMic()
-    const text = await transcribeTake(blob)
-    if (run !== runRef.current) return
     if (range) {
+      // Повтор строки меряет одно — совпали ли слова, — и обходится обычным
+      // распознаванием.
+      const text = await transcribeTake(blob)
+      if (run !== runRef.current) return
       const { perLine } = coverageScore([range.line], mask)
       const m = text ? lineWordMatches([range.line], text)[0] : null
       onLineResult({ id: range.line.id, ratio: m ? m.ratio : perLine[0].ratio })
       return
     }
-    onResult(
-      buildResult({
-        lines,
-        duration,
-        mask,
-        sungSec,
-        text,
-        // Бонус минуса — только если вокал не включали ни разу за дубль:
-        // иначе его можно было бы получить, спев всё под певца и щёлкнув
-        // тумблер на последней строке.
-        instrumental: Boolean(track.instrumentalUrl) && !vocalUsedRef.current,
-        offRate: offRateRef.current,
-      }),
-    )
+    // Запись уходит с устройства один раз. Залогиненному — на оценку по
+    // эталону: слова, произношение и время каждого слова для ритма. Гостю
+    // платная оценка закрыта — ему обычное распознавание, только слова.
+    const wav = await takeToWav(blob)
+    const plan = planSegments(lines, lineWindows(lines, timeMap))
+    let text = null
+    let detail = null
+    let response = null
+    if (token) {
+      response = plan.length ? await assessTake(wav, plan, token) : null
+      if (response?.mode === 'assessed') {
+        text = transcriptInLineOrder(lines, plan, response.segments)
+        detail = scoreAssessment({ lines, plan, segments: response.segments, timeMap })
+      } else if (response?.mode === 'transcript') {
+        text = response.transcript || null
+      }
+    } else {
+      text = await transcribeTakeWav(wav)
+    }
+    if (run !== runRef.current) return
+    const result = buildResult({
+      lines,
+      duration,
+      mask,
+      sungSec,
+      text,
+      detail,
+      // Бонус минуса — только если вокал не включали ни разу за дубль:
+      // иначе его можно было бы получить, спев всё под певца и щёлкнув
+      // тумблер на последней строке.
+      instrumental: Boolean(track.instrumentalUrl) && !vocalUsedRef.current,
+      offRate: offRateRef.current,
+    })
+    debugTake({
+      track: track.slug,
+      rate,
+      instrumental,
+      lines: lines.map(({ id, start, end, text, words }) => ({ id, start, end, text, words })),
+      // Карта и маска — чтобы пересчитать ритм с другими порогами без нового
+      // дубля. Карта в [секунда записи, секунда трека], по миллисекундам.
+      timeMap: (timeMap || []).map((s) => [+s.rec.toFixed(3), +s.track.toFixed(3)]),
+      mask: Array.from(mask || []).join(''),
+      plan,
+      response,
+      detail,
+      result,
+    })
+    onResult(result)
   }
 
   const start = async () => {

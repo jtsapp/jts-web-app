@@ -269,6 +269,12 @@ export function paceScore({ refSyllables, refSungSec, userSyllables, userSungSec
 // уходит в ритм, потому что именно он остаётся содержательной метрикой.
 export const WEIGHTS_FULL = { lyrics: 0.35, rhythm: 0.3, coverage: 0.2, pace: 0.15 }
 export const WEIGHTS_NO_STT = { rhythm: 0.55, coverage: 0.3, pace: 0.15 }
+// Полная оценка через Azure — три метрики, которые просили оценивать
+// (решение продукта 27.09.2026). Произношение чуть легче: пение Azure слышит
+// хуже речи, и до калибровки на живых дублях его шум не должен решать медаль.
+// Покрытия и темпа тут нет: пропущенная строка уже вычтена из слов, а
+// затянутый или скомканный темп ловит ритм по словам.
+export const WEIGHTS_ASSESSED = { rhythm: 0.35, lyrics: 0.35, pron: 0.3 }
 
 // Пороги медалей. Отдельной таблицей, потому что экран результата пишет их
 // словами («от 60 баллов», «до золота — 7 баллов») — числа в тексте обязаны
@@ -290,10 +296,16 @@ export function medalFor(score) {
  * ноль за слова (спел не то) и отсутствие оценки — разные вещи, и на экране
  * результата они выглядят по-разному.
  */
-export function finalScore({ lyrics, rhythm, coverage, pace, hasLyrics, instrumental }) {
-  const w = hasLyrics ? WEIGHTS_FULL : WEIGHTS_NO_STT
-  let score = w.rhythm * rhythm + w.coverage * coverage + w.pace * pace
-  if (hasLyrics) score += w.lyrics * lyrics
+export function finalScore({ lyrics, rhythm, coverage, pace, hasLyrics, instrumental, pron = null }) {
+  let score
+  if (hasLyrics && Number.isFinite(pron)) {
+    const w = WEIGHTS_ASSESSED
+    score = w.rhythm * rhythm + w.lyrics * lyrics + w.pron * pron
+  } else {
+    const w = hasLyrics ? WEIGHTS_FULL : WEIGHTS_NO_STT
+    score = w.rhythm * rhythm + w.coverage * coverage + w.pace * pace
+    if (hasLyrics) score += w.lyrics * lyrics
+  }
   // Минусовка сложнее: вести мелодию не за кем.
   if (instrumental) score *= 1.15
   // Медаль считаем от того же числа, которое увидит студент. От исходного 89.6
