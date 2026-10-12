@@ -24,7 +24,7 @@ const jwt = (role) => {
 
 async function signIn(page, role) {
   await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), jwt(role))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 1, name: 'U', role, languageLevel: 'A1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 1, name: 'U', role, phone: '77001234567', languageLevel: 'A1' } })))
   // Экран «Уроки» — домашний у преподавателя, и он гейтит рендер на Promise.all
   // из трёх запросов. Без заглушек тест ждал бы живой бэкенд (тот же приём и
   // та же причина, что в tests/live-lesson.spec.js).

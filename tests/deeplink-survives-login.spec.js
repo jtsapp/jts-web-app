@@ -20,7 +20,7 @@ const TOKEN = (() => {
   return `${b64({ alg: 'HS256' })}.${b64({ role: 'STUDENT', userId: 900, exp: Math.floor(Date.now() / 1000) + 3600 })}.s`
 })()
 
-const УЧЕНИК = { id: 900, name: 'Ученик', role: 'STUDENT', languageLevel: 'B1' }
+const УЧЕНИК = { id: 900, name: 'Ученик', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' }
 
 /** Гость: токена нет, восстанавливать нечего; вход по паролю отвечает успехом. */
 async function гостьСВходом(page) {

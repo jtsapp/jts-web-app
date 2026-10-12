@@ -17,8 +17,16 @@ const jwt = (role) => {
 const FILE_A = 'https://files-dev.justtostudy.kz/course-catalog/L01.html?mode=self'
 const FILE_B = 'https://files-dev.justtostudy.kz/course-catalog/L02.html?mode=self'
 
+// Время урока — от «сейчас», а не датой: с 01.10.2026 урок «идёт», чей конец больше трёх часов назад, считается
+// забытым (liveNow.js, LIVE_STALE_AFTER_MS) и «Войти в класс» не держит — фикстуры с датами из августа протухли.
+const at = (minutes) => {
+  const d = new Date(Date.now() + minutes * 60000)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`
+}
+
 const OCC = [
-  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: '2026-08-02T03:00:00', durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'IN_PROGRESS', participantStatus: 'SCHEDULED' },
+  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: at(-10), durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'IN_PROGRESS', participantStatus: 'SCHEDULED' },
 ]
 
 const SECTIONS = [
@@ -76,7 +84,7 @@ const PROGRESS_A = JSON.stringify({
 
 async function openLesson(page) {
   await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), jwt('STUDENT'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', languageLevel: 'A1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCC)))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json({ conducted: 0, remaining: 1, cancelled: 0, rescheduled: 0 })))
   await page.route('**/mobile/trial-request', (r) => r.fulfill(json({ requested: false, requestedAt: null, teacherAssigned: true, managerAssigned: false })))

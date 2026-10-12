@@ -61,7 +61,7 @@ const LYRICS = {
 async function signIn(page, tracks, lyrics = LYRICS) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
-    r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A2' } })))
+    r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })))
   await page.route('**/mobile/karaoke', (r) => r.fulfill(json(tracks)))
   // Карточка каталога разметку не несёт — она приезжает только по одному треку.
   await page.route('**/mobile/karaoke/1', (r) => r.fulfill(json({ ...TRACK, lyrics })))

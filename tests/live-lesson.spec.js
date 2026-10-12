@@ -8,8 +8,16 @@ const jwt = (role) => {
   return `h.${p}.s`
 }
 
+// Время урока — от «сейчас», а не датой: с 01.10.2026 урок «идёт», чей конец больше трёх часов назад, считается
+// забытым (liveNow.js, LIVE_STALE_AFTER_MS) и «Войти в класс» не держит — фикстуры с датами из августа протухли.
+const at = (minutes) => {
+  const d = new Date(Date.now() + minutes * 60000)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`
+}
+
 const OCC = (status) => ([
-  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: '2026-08-02T03:00:00', durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: status, participantStatus: 'SCHEDULED' },
+  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: at(-10), durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: status, participantStatus: 'SCHEDULED' },
 ])
 const SUMMARY = { conducted: 0, remaining: 1, cancelled: 0, rescheduled: 0 }
 
@@ -20,7 +28,7 @@ const SUMMARY = { conducted: 0, remaining: 1, cancelled: 0, rescheduled: 0 }
 // request, so there is no race with an already-loaded lesson.
 async function enterLesson(page, { role, lessonStatus, liveStatus = lessonStatus }) {
   await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), jwt(role))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 1, name: 'U', role, languageLevel: 'A1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 1, name: 'U', role, phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCC(lessonStatus))))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
   // Экран расписания с недавних пор спрашивает ещё и состояние заявки на пробный

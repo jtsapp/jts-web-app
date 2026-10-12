@@ -37,7 +37,7 @@ test.describe('Шэдоуинг: двойной тап по микрофону',
       })
     })
     await page.route('**/api/auth/me', (r) =>
-      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A1' } })))
+      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
     await page.route('**/api/practice/state', (r) => r.fulfill(json({ configured: true, ok: true })))
     // Право есть, но ответ медленный — это и есть окно между двумя тапами.
     let asked = 0
