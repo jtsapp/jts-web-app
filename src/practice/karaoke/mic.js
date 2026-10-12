@@ -251,26 +251,50 @@ export async function startTake({ stream, durationSec, positionSec, introAt = nu
   }
 }
 
+// Сколько ждать распознавание дубля. Обычно оно идёт 8–12 с на песне до пяти
+// минут (Fast Transcription, замер 12.10.2026) плюс отправка записи; дольше —
+// значит, сервер ушёл в потоковое распознавание (минуты) или сеть встала.
+// Раньше ожидание было бесконечным, а выход с экрана «Считаем…» закрыт, и
+// ученик сидел перед ним до обрыва запроса — дубль терялся. Теперь по таймауту
+// слова просто не оцениваются, и экран результата честно об этом пишет.
+export const TRANSCRIBE_TIMEOUT_MS = 60000
+
 /**
  * Распознаёт дубль собственным STT приложения.
  *
  * Возвращает текст либо `null`, если распознавание недоступно: нет сети, роут
- * не настроен (503), тело не прошло прокси (413). Ноль вместо `null` вернуть
- * нельзя — «слова не оценивались» и «спел не те слова» дают разные веса в
- * итоговом балле (см. finalScore).
+ * не настроен (503), тело не прошло прокси (413), ответа нет дольше
+ * `timeoutMs`, или ожидание отменили сигналом (ученик вышел). Ноль вместо
+ * `null` вернуть нельзя — «слова не оценивались» и «спел не те слова» дают
+ * разные веса в итоговом балле (см. finalScore).
  */
-export async function transcribeTake(blob) {
-  if (!blob || blob.size === 0) return null
+export async function transcribeTake(blob, { signal, timeoutMs = TRANSCRIBE_TIMEOUT_MS } = {}) {
+  if (!blob || blob.size === 0 || signal?.aborted) return null
+  // Свой контроллер: и таймаут, и отмена снаружи закрывают запрос, а ответ
+  // возвращается сразу — не дожидаясь, как fetch отработает abort.
+  const ctrl = new AbortController()
+  const onAbort = () => ctrl.abort()
+  signal?.addEventListener('abort', onAbort, { once: true })
+  const timer = setTimeout(onAbort, timeoutMs)
+  const gaveUp = new Promise((resolve) => ctrl.signal.addEventListener('abort', () => resolve(null), { once: true }))
+  const work = async () => {
+    try {
+      const wav = await blobToWav16kMono(blob)
+      const form = new FormData()
+      form.append('audio', wav, 'take.wav')
+      const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal: ctrl.signal })
+      if (!res.ok) return null
+      const data = await res.json()
+      const text = typeof data?.text === 'string' ? data.text.trim() : ''
+      return text || null
+    } catch {
+      return null
+    }
+  }
   try {
-    const wav = await blobToWav16kMono(blob)
-    const form = new FormData()
-    form.append('audio', wav, 'take.wav')
-    const res = await fetch('/api/transcribe', { method: 'POST', body: form })
-    if (!res.ok) return null
-    const data = await res.json()
-    const text = typeof data?.text === 'string' ? data.text.trim() : ''
-    return text || null
-  } catch {
-    return null
+    return await Promise.race([work(), gaveUp])
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', onAbort)
   }
 }

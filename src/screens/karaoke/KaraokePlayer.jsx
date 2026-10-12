@@ -172,6 +172,9 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   // два запроса микрофона, и поток первого оставался без хозяина — запись в
   // браузере горела до перезагрузки вкладки, даже после выхода из караоке.
   const askingMicRef = useRef(false)
+  // Идёт распознавание дубля: выход с «Считаем…» его отменяет, а не оставляет
+  // висеть до ответа сервера.
+  const transcribeRef = useRef(null)
   const goRef = useRef(null)
   const trackElRef = useRef(null)
 
@@ -210,6 +213,8 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   /** Бросить дубль без результата: трек стоп, запись в корзину, микрофон отпустить. */
   const abandon = useCallback(() => {
     runRef.current++
+    transcribeRef.current?.abort()
+    transcribeRef.current = null
     cancelAnimationFrame(rafRef.current)
     audioRef.current?.pause()
     const take = takeRef.current
@@ -275,7 +280,12 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     setPhase('scoring')
     const { mask, sungSec, blob } = await take.stop()
     releaseMic()
-    const text = await transcribeTake(blob)
+    // Вышли, пока дописывалась запись, — распознавать уже некому.
+    if (run !== runRef.current) return
+    const ctrl = new AbortController()
+    transcribeRef.current = ctrl
+    const text = await transcribeTake(blob, { signal: ctrl.signal })
+    if (transcribeRef.current === ctrl) transcribeRef.current = null
     if (run !== runRef.current) return
     if (range) {
       const { perLine } = coverageScore([range.line], mask)
@@ -418,9 +428,11 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     onExit()
   }
 
+  // С «Считаем…» тоже выходят: распознавание ждёт сеть, и если она встала,
+  // кнопка — единственный выход, кроме перезагрузки вкладки.
   const onExitClick = () => {
     if (phase === 'run') pause()
-    else if (phase === 'ready' || phase === 'calibrating') quit()
+    else if (phase === 'ready' || phase === 'calibrating' || phase === 'scoring') quit()
   }
 
   const onPlayClick = () => {
@@ -550,7 +562,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
       {doc && <audio ref={audioRef} src={src} preload="auto" onEnded={callFinish} onLoadedMetadata={onMeta} />}
 
       <header className="kk-top">
-        <button type="button" className="kk-pill kk-top__exit" onClick={onExitClick} disabled={phase === 'scoring'}>
+        <button type="button" className="kk-pill kk-top__exit" onClick={onExitClick}>
           <CloseIco size={20} />
           {t('karaoke.exit')}
         </button>
