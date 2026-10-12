@@ -13,7 +13,6 @@ import {
   catalogFrontier,
   catalogUnitsDone,
   isOpenedByCatalog,
-  isReviewLevelFullyOpen,
   pickGeneralCourse,
 } from '../lib/reviewUnlock.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
@@ -253,10 +252,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // "сколько уроков этого модуля можно пройти" (moduleQuota=null — без лимита), и при этом:
   // - это первый урок или предыдущий пройден — тропа идёт подряд по всему уровню, как в прежнем
   //   «Обучении», и проходится без живых занятий;
-  // - ИЛИ его уже открыли «Уроки» (lib/reviewUnlock.js): уровень ниже CEFR ученика — целиком, свой — до
-  //   самой дальней точки, пройденной на занятии или в «Самостоятельно». 07.10.2026 это правило убрали
-  //   совсем, и у учеников, учившихся в «Уроках», «Повторение» закрылось обратно до первого урока —
-  //   выглядело как пропавший прогресс (жалоба 12.10). Каталог только добавляет открытое, ничего не запирает.
+  // - ИЛИ его уже открыли «Уроки» (lib/reviewUnlock.js): до самой дальней точки этого уровня, пройденной
+  //   на занятии или в «Самостоятельно», включительно; следующий за ней урок ждёт, пока её не пройдут
+  //   здесь. 07.10.2026 это правило убрали совсем, и у учеников, учившихся в «Уроках», «Повторение»
+  //   закрылось обратно до первого урока — выглядело как пропавший прогресс (жалоба 12.10). Каталог
+  //   только добавляет открытое, ничего не запирает. Уровень ниже своего CEFR целиком не открывается
+  //   (решение 13.10: каждый уровень — постепенно).
   //
   // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done: квота на модуль появилась
   // позже прогресса учеников (до неё в базе не было строк lesson_modules, лимит не запрашивался — тропа
@@ -272,9 +273,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       if (moduleQuota != null && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))) return false
       if (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))) return true
       const meta = unitByLessonIndex.get(i)
-      return Boolean(meta) && isOpenedByCatalog(meta, { ...catalogOpen, fullyOpen: isReviewLevelFullyOpen(level, userLevel) })
+      return Boolean(meta) && isOpenedByCatalog(meta, catalogOpen)
     },
-    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogOpen, level, userLevel],
+    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogOpen],
   )
 
   const showTrailHint = useCallback((text) => {
