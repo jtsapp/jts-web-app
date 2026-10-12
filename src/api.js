@@ -596,6 +596,34 @@ export function getLevelProgress(token) {
   return authGet('/mobile/level-progress', token)
 }
 
+// Профиль General English — анкета «Главной», цель, срок и формат (бэкенд /mobile/ge, спека 2026-10-12). Ответ без
+// булевого onboarded — не профиль (старый бэкенд без ручки, заглушка e2e, отдающая {} на всё): тогда «Главная» прежняя.
+export function geProfileShape(raw) {
+  return raw && typeof raw === 'object' && typeof raw.onboarded === 'boolean' ? raw : null
+}
+
+/** null — ручки нет или она не ответила: экран остаётся прежним, а не рушится. */
+export async function getGeProfile(token) {
+  if (!token) return null
+  try {
+    return geProfileShape(await authGet('/mobile/ge/profile', token))
+  } catch {
+    return null
+  }
+}
+
+export async function saveGeProfile(token, body) {
+  return geProfileShape(await authPut('/mobile/ge/profile', token, body))
+}
+
+export async function setGeRoute(token, route) {
+  return geProfileShape(await authPut('/mobile/ge/profile/route', token, { route }))
+}
+
+export async function importLegacyGoal(token, goal) {
+  return geProfileShape(await authPost('/mobile/ge/profile/legacy-goal', token, goal))
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради

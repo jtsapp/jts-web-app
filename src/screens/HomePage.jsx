@@ -9,6 +9,10 @@ import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapsho
 import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
 import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
+import GeGoalBanner from './home/GeGoalBanner.jsx'
+import GePlanInvite from './home/GePlanInvite.jsx'
+import { homeTopState } from '../ge/homeState.js'
+import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress, getIeltsPlan } from '../api.js'
 import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
@@ -37,6 +41,13 @@ export default function HomePage({
   levelUnknown = false,
   // Аккаунт IELTS (App: getIeltsMe, на проде IELTS скрыт — тогда false): вместо уровня General English — старт IELTS.
   ieltsAccount = false,
+  // Профиль General English (App: getGeProfile; null — ручки нет, IELTS-аккаунт или гость): анкета, цель и формат.
+  // Есть профиль — сверху приглашение или блок цели вместо прежней карточки уровня (спека 2026-10-12, секция 3).
+  geProfile = null,
+  onGeStart,
+  onGeEdit,
+  onGeRoute,
+  onGeTest,
   onNav,
   onProfile,
   onOpenPricing,
@@ -112,19 +123,40 @@ export default function HomePage({
   // Выбранная цель, если она ещё впереди, — её и подсвечиваем в выборе.
   const goalValue = track.mode === 'goal' ? track.goal : null
 
+  // Верхний блок General English. У IELTS-аккаунта свой (IeltsHomeCard) — профиль General English ему не показываем.
+  const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel })
+  const geMode = geTop !== 'legacy'
+  // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
+  // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
+  const geCur = geProfile?.journey?.current || {}
+  const geOption =
+    geTop === 'goal'
+      ? routeOptions(
+          { targetLevel: geProfile.targetLevel, dailyMinutes: geProfile.dailyMinutes, deadlineIso: geProfile.deadline?.date },
+          { level: geCur.level || summary.level, percent: geCur.percent ?? summary.percent ?? 0 },
+        ).find((o) => o.id === geProfile.route) || null
+      : null
+
   // Тур «Главной»: первым шагом — выбор цели. Без пройденного теста карточки
   // уровня нет, и цель выбирать не от чего — тур ждёт, пока уровень появится.
   const tour = useScreenTour(levelUnknown ? null : tourKey)
   const tourSteps = [
-    {
-      selector: '.hm-level',
-      title: t('tour.home.goal.title'),
-      text: t('tour.home.goal.text'),
-      content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
-      // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
-      // целиком можно всегда, тогда дорожка остаётся прежней.
-      canNext: !options.length || !!goalValue,
-    },
+    geMode
+      ? {
+          // Цель теперь задаёт анкета — тур только показывает блок
+          selector: '.ge-goal, .ge-invite',
+          title: t('tour.home.ge.title'),
+          text: t('tour.home.ge.text'),
+        }
+      : {
+          selector: '.hm-level',
+          title: t('tour.home.goal.title'),
+          text: t('tour.home.goal.text'),
+          content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
+          // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
+          // целиком можно всегда, тогда дорожка остаётся прежней.
+          canNext: !options.length || !!goalValue,
+        },
     { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
     { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
     { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
@@ -231,6 +263,18 @@ export default function HomePage({
             зовём пройти тест: это единственный способ её наполнить. */}
         {ieltsAccount ? (
           <IeltsHomeCard token={token} onNav={onNav} />
+        ) : geTop === 'goal' ? (
+          <GeGoalBanner
+            profile={geProfile}
+            option={geOption}
+            planLine={planLine}
+            week={week}
+            onEdit={() => onGeEdit?.()}
+            onOpenRoute={() => onGeRoute?.()}
+            onBuy={() => onOpenPricing?.()}
+          />
+        ) : geMode ? (
+          <GePlanInvite state={geTop} level={summary.level} percent={summary.percent} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
         ) : levelUnknown ? (
           <section className="hm-card hm-placement">
             <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>

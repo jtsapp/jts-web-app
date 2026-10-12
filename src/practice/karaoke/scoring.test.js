@@ -318,3 +318,73 @@ describe('пороги медалей', () => {
     expect(medalFor(MEDAL_MIN.bronze - 1)).toBe(null)
   })
 })
+
+// ── Ревью Практики 08.10.2026 ───────────────────────────────────────────────
+
+describe('слова: одно и то же, записанное по-разному (#74)', () => {
+  it('число цифрами и словом — одно слово', () => {
+    // В тексте песни «seven», распознавание пишет «7» — и наоборот.
+    expect(normalizeWords('7 days')).toEqual(['seven', 'days'])
+    expect(lyricsScore('Seven days a week', 'seven days a week').score).toBe(100)
+    expect(lyricsScore('Seven days a week', '7 days a week').score).toBe(100)
+    expect(lyricsScore('I was 21', 'I was twenty-one').score).toBe(100)
+    expect(lyricsScore('one hundred', '100').score).toBe(100)
+  })
+
+  it('OK, okay и O.K. — одно слово', () => {
+    expect(lyricsScore("It's gonna be okay", "it's gonna be OK").score).toBe(100)
+    expect(lyricsScore("It's gonna be okay", "it's gonna be O.K.").score).toBe(100)
+  })
+
+  it('проглоченное «g» с апострофом — то же слово: runnin\' = running', () => {
+    expect(normalizeWords("runnin' nothin'")).toEqual(['running', 'nothing'])
+    expect(lyricsScore("Keep runnin' down the road", 'keep running down the road').score).toBe(100)
+    // Без апострофа слово не трогаем: «in» в конце — не всегда проглоченное g.
+    expect(normalizeWords('cabin begin')).toEqual(['cabin', 'begin'])
+  })
+
+  it('годы и длинные числа не превращаются в «тысячу девятьсот…»', () => {
+    // Год поют «nineteen ninety-nine»; перевод «1999» в one thousand nine
+    // hundred ninety nine сделал бы ровно ту ошибку, которую мы чиним.
+    expect(normalizeWords('1999')).toEqual(['1999'])
+  })
+})
+
+describe('слова по строкам: повтор припева (#75)', () => {
+  // Куплет, припев, куплет, тот же припев. Студент спел первую половину песни
+  // и замолчал — микрофон слышал голос на строках 1–2 и тишину на 3–4.
+  const SONG = [
+    { id: 1, start: 0, end: 3, text: 'walking down the empty street' },
+    { id: 2, start: 3, end: 6, text: 'hold me close and let me go' },
+    { id: 3, start: 6, end: 9, text: 'lights are fading in the rain' },
+    { id: 4, start: 9, end: 12, text: 'hold me close and let me go' },
+  ]
+  const sung = 'walking down the empty street hold me close and let me go'
+
+  it('спетый первый припев засчитывается первому, когда голос был там', () => {
+    const m = lineWordMatches(SONG, sung, [1, 1, 0, 0])
+    expect(m.map((x) => x.ratio)).toEqual([1, 1, 0, 0])
+  })
+
+  it('и наоборот: начал со второго куплета — припев засчитан последнему', () => {
+    const late = 'lights are fading in the rain hold me close and let me go'
+    const m = lineWordMatches(SONG, late, [0, 0, 1, 1])
+    expect(m.map((x) => x.ratio)).toEqual([0, 0, 1, 1])
+  })
+
+  it('голос не перевешивает число совпавших слов', () => {
+    // Голос «был» на строке 1, но спета строка 2 — засчитываем строку 2.
+    const lines = [
+      { id: 1, start: 0, end: 3, text: 'one two three' },
+      { id: 2, start: 3, end: 6, text: 'four five six' },
+    ]
+    const m = lineWordMatches(lines, 'four five six', [1, 0])
+    expect(m.map((x) => x.ratio)).toEqual([0, 1])
+  })
+
+  it('без сведений о голосе считает, как раньше', () => {
+    const m = lineWordMatches(LINES, 'I woke up on a rainy Monday and the was again')
+    expect(m[0]).toEqual({ id: 1, ratio: 1, missed: [] })
+    expect(m[1].missed).toEqual(['bus', 'late'])
+  })
+})

@@ -51,7 +51,7 @@ test.describe('Шэдоуинг: оценка без лимита', () => {
       })
     })
     await page.route('**/api/auth/me', (r) =>
-      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
+      r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A1', phone: '77001234567' } })))
     await page.route('**/api/practice/state', (r) => r.fulfill(json({ configured: true, ok: true })))
     await page.route('**/api/practice/entitlement**', (r) =>
       r.fulfill(json({ configured: true, allowed: true, limit: null, completed: 0 })))

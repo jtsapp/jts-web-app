@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { homeScreenFor } from './homeScreen.js'
+import { homeScreenFor, testExitScreen } from './homeScreen.js'
 
 // Роль читается из payload JWT (lib/jwt.js), подпись никто не проверяет —
 // собираем токен руками, как в screens/LessonsPage.test.jsx.
@@ -61,5 +61,18 @@ describe('домашний экран в режиме «только тьюто�
     expect(inTutorOnly({ token: STUDENT })).toBe('tutor-welcome')
     expect(inTutorOnly({ token: STUDENT, tutorOnboarded: true })).toBe('tutor-dashboard')
     expect(inTutorOnly({ token: STUDENT, boothAccount: true })).toBe('booth')
+  })
+})
+
+describe('выход с теста уровня', () => {
+  // С 09.09.2026 первым экраном ученика стала «Главная», а выход с теста остался «как было» — в королевство: новичок
+  // после регистрации и теста видел карту, а не «Главную» с туром и целью.
+  it('без адреса возврата — на «Главную», как после входа', () => {
+    expect(testExitScreen({ testReturn: null })).toBe('home')
+  })
+
+  it('пришёл из профиля или по ссылке — туда и возвращается', () => {
+    expect(testExitScreen({ testReturn: 'profile' })).toBe('profile')
+    expect(testExitScreen({ testReturn: 'homework' })).toBe('homework')
   })
 })

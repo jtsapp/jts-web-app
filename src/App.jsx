@@ -52,6 +52,9 @@ import IeltsOnboardingPage from './screens/IeltsOnboardingPage.jsx'
 import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
 import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
 import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
+import GeOnboardingPage from './screens/GeOnboardingPage.jsx'
+import GeRoutePage from './screens/GeRoutePage.jsx'
+import { syncLegacyGoal } from './ge/legacyGoal.js'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
@@ -87,10 +90,10 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
-import { homeScreenFor } from './lib/homeScreen.js'
+import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
@@ -135,6 +138,8 @@ const PERSISTABLE_SCREENS = new Set([
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
+  // Анкета и маршрут General English (спека 2026-10-12): данные берут у бэкенда сами, параметров в адресе не нужно
+  'ge-onboarding', 'ge-route',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -533,6 +538,36 @@ export default function App() {
   // не меняет — см. PlacementTestPage).
   const [testReturn, setTestReturn] = useState(null)
   const [testRetake, setTestRetake] = useState(false)
+  // Профиль General English (анкета «Главной», цель, формат — бэкенд /mobile/ge). null — ручки нет (старый бэкенд),
+  // аккаунт IELTS (у него своя анкета) или гость: тогда «Главная» прежняя.
+  const [geProfile, setGeProfile] = useState(null)
+  // Тест уровня запущен из анкеты или со следующего шага «Главной»: конец теста — маршрут, «позже» — «Главная».
+  const [geTestFlow, setGeTestFlow] = useState(false)
+  const [geEdit, setGeEdit] = useState(false)
+  // Куда «назад» из тарифов, если пришли не из сайдбара (маршрут General English)
+  const [pricingBack, setPricingBack] = useState(null)
+  useEffect(() => {
+    if (!token) {
+      setGeProfile(null)
+      return undefined
+    }
+    let alive = true
+    getIeltsMe(token)
+      .then((m) => (m.ieltsAccount ? null : getGeProfile(token)))
+      .then((p) => syncLegacyGoal(token, p))
+      .then((p) => {
+        if (alive) setGeProfile(p)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token])
+  // Новый ученик после входа попадает на тест уровня ('test-intro', homeScreenFor). С ручкой профиля сначала анкета —
+  // цель и срок, потом тест. Тест из профиля (testReturn 'profile') и тест, запущенный самой анкетой, не перехватываем.
+  useEffect(() => {
+    if (screen === 'test-intro' && geProfile && !geProfile.onboarded && !geTestFlow && testReturn !== 'profile') setScreen('ge-onboarding')
+  }, [screen, geProfile, geTestFlow, testReturn])
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
@@ -1103,14 +1138,14 @@ export default function App() {
     }
   }
 
-  // Куда уходить с теста уровня: туда, откуда в него пришли (профиль, ссылка,
-  // по которой человек логинился), иначе — как было, в королевство. Функция, а
+  // Куда уходить с теста уровня — см. testExitScreen (lib/homeScreen.js). Функция, а
   // не константа: tutorHome объявлен ниже по телу компонента.
   function testExit() {
-    return testReturn || (TUTOR_ONLY ? tutorHome : 'kingdom')
+    return testExitScreen({ testReturn, tutorHome })
   }
 
   async function handleTestDone(res) {
+    setGeTestFlow(false)
     await saveTestLevel(res?.level)
     setTestReturn(null)
     setScreen(testExit())
@@ -1124,6 +1159,38 @@ export default function App() {
     setTestReturn(returnTo)
     setTestRetake(!needsLevelTest)
     setScreen(needsLevelTest ? 'test-intro' : 'test')
+  }
+
+  // Тест уровня из анкеты General English и со следующего шага «Главной»: в конце — маршрут, «позже» — «Главная».
+  function openGeTest() {
+    setGeTestFlow(true)
+    setTestReturn('ge-route')
+    setTestRetake(false)
+    setScreen('test-intro')
+  }
+
+  // Ответы анкеты сохранены. «С нуля» бэкенд сам поставил A0 — App узнаёт уровень из ответа, без перечитывания профиля.
+  function handleGeSaved(p, next) {
+    if (p) {
+      setGeProfile(p)
+      syncLegacyGoal(token, p)
+      const lv = p.journey?.current?.level
+      if (lv && needsLevelTest) {
+        setUserLevel(lv)
+        setNeedsLevelTest(false)
+      }
+    }
+    setGeEdit(false)
+    if (next === 'test') openGeTest()
+    else setScreen('ge-route')
+  }
+
+  function leaveTestIntro() {
+    if (geTestFlow) {
+      setGeTestFlow(false)
+      setTestReturn(null)
+      setScreen('home')
+    } else setScreen(testExit())
   }
 
   function leaveRetake() {
@@ -1714,10 +1781,10 @@ export default function App() {
           // Сюда попадают уже залогиненными — «назад» и «позже» ведут не на
           // экран входа, а туда, откуда пришли (профиль, ссылка), иначе в
           // королевство.
-          onBack={() => setScreen(testExit())}
+          onBack={leaveTestIntro}
           // Интро — только у обычного теста: у пересдачи его нет.
           onStart={() => { setTestRetake(false); setScreen('test') }}
-          onLater={() => setScreen(testExit())}
+          onLater={leaveTestIntro}
         />
       )
     case 'test':
@@ -1756,6 +1823,11 @@ export default function App() {
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
           onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
+          geProfile={ieltsAccount ? null : geProfile}
+          onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
+          onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
+          onGeRoute={() => setScreen('ge-route')}
+          onGeTest={openGeTest}
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
@@ -1778,7 +1850,14 @@ export default function App() {
       // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него
       // обратно в разделы посреди выбора тарифа не нужно. Возврат — стрелкой.
       return (
-        <PricingPage token={token} onBack={() => setScreen(isDemoAccount ? 'home' : 'kingdom')} />
+        <PricingPage
+          token={token}
+          onBack={() => {
+            const back = pricingBack
+            setPricingBack(null)
+            setScreen(back || (isDemoAccount ? 'home' : 'kingdom'))
+          }}
+        />
       )
     case 'kingdom':
       return (
@@ -2015,6 +2094,31 @@ export default function App() {
     // Редактор Writing (Figma 9). Сданная работа открывается в хабе («Мои работы», Figma 10) и сразу уходит на ИИ-проверку.
     // Прохождение Speaking (Figma 11). Оценённый ответ открывается в хабе — как работа Writing.
     // Онбординг и диагностика (Figma 1.1–1.6) — режим фокуса без меню; итог (Figma 2.1) и маршрут (Figma 3) — в меню.
+    case 'ge-onboarding':
+      return (
+        <GeOnboardingPage
+          token={token}
+          level={needsLevelTest ? null : userLevel}
+          edit={geEdit}
+          onExit={() => { setGeEdit(false); setScreen('home') }}
+          onSaved={handleGeSaved}
+        />
+      )
+    case 'ge-route':
+      return (
+        <GeRoutePage
+          token={token}
+          userName={name}
+          userLevel={userLevel}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onLoaded={setGeProfile}
+          onChosen={(p) => { if (p) setGeProfile(p); setScreen('home') }}
+          onPricing={(p) => { if (p) setGeProfile(p); setPricingBack('ge-route'); setScreen('pricing') }}
+          onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
+          onTest={openGeTest}
+        />
+      )
     case 'ielts-onboarding':
       return <IeltsOnboardingPage token={token} onExit={() => handleNav('ielts', { tab: 'today' })} onDiagnostic={() => handleNav('ielts-diagnostic')} />
     case 'ielts-diagnostic':

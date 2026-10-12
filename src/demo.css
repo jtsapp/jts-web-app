@@ -2509,3 +2509,47 @@ button.hm-level__goal:focus-visible {
   font-size: 13px;
   font-weight: 700;
 }
+
+/* ── «Главная» General English по образцу IELTS (спека 2026-10-12) ──
+   Анкета и маршрут рисуются классами раздела IELTS (ih-ob*, ih-route*), блок цели — ih-gb. Токены раздела объявлены на
+   .ih / .ih-ob; блок цели живёт на «Главной» вне них, поэтому обёртка .ge-skin повторяет токены. */
+.ge-skin {
+  --ih-violet: #9047ff;
+  --ih-ink: #23202b;
+  --ih-ink-2: #656172;
+  --ih-muted: #656172;
+  --ih-line: #e9e6f2;
+  --ih-soft: #f4f4f4;
+  --ih-green: #1f9d55;
+  --ih-orange: #e57a12;
+  --ih-red: #e0364f;
+  color: var(--ih-ink);
+}
+/* плитка цели не выше текущего уровня видна, но выбрать её нельзя */
+.ge-obtile:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ge-obtile .ih-obcard__chip {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+/* у IELTS в подвале одна ссылка; здесь ещё строка про материалы — разводим их, а не склеиваем в одну строку */
+.ge-skin .ih-gb__foot {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+}
+.ge-goal__plan {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ge-route__edit {
+  align-self: center;
+}

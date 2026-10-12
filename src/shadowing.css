@@ -63,7 +63,14 @@
   place-items: center;
   flex: 0 0 20px;
 }
-.pp-chip--on .sh-tab__n { background: rgba(255, 255, 255, 0.25); color: #fff; }
+/* Активная вкладка на десктопе светлая (.pp-chip--on: #f1ebfe, фиолетовая
+   подпись), и белый номер на полупрозрачном белом в ней пропадал — номер
+   ставим фиолетовым кружком. До 760px активный чип сам фиолетовый с белой
+   подписью (styles.css), там прежний полупрозрачный кружок. */
+.pp-chip--on .sh-tab__n { background: var(--sh-purple); color: #fff; }
+@media (max-width: 760px) {
+  .pp-chip--on .sh-tab__n { background: rgba(255, 255, 255, 0.25); color: #fff; }
+}
 
 .sh-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; margin: 4px 0 14px; background: var(--sh-soft); color: var(--sh-ink-sub); }
 .sh-note--err { background: var(--sh-red-bg); color: var(--sh-red); }
@@ -177,6 +184,8 @@
 .sh-seg__body { flex: 1; min-width: 0; padding-top: 2px; }
 .sh-seg__txt { display: block; font-size: 16px; line-height: 1.4; font-weight: 500; color: var(--ink, #171326); }
 .sh-seg__time { display: block; font-size: 11px; color: var(--sh-ink-mute); margin-top: 3px; font-variant-numeric: tabular-nums; }
+/* «Не расслышали» / «не получилось оценить» под фразой */
+.sh-seg__err { margin-top: 8px; font-size: 13px; line-height: 18px; color: var(--sh-red); }
 .sh-seg__mine {
   display: flex;
   align-items: center;

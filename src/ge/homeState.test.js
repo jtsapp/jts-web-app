@@ -1,0 +1,44 @@
+import { describe, it, expect } from 'vitest'
+import { goalBannerState, homeTopState, sayKey } from './homeState.js'
+
+describe('homeTopState', () => {
+  const p = (x) => ({ onboarded: false, route: null, ...x })
+  it('нет профиля — прежняя «Главная»', () => {
+    expect(homeTopState({ geProfile: null, levelUnknown: false, level: 'A2' })).toBe('legacy')
+  })
+  it('до анкеты: без уровня — start, с уровнем — invite, C1+ — прежняя', () => {
+    expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1' })).toBe('start')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2' })).toBe('invite')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1' })).toBe('legacy')
+  })
+  it('после анкеты: тест, формат, блок цели', () => {
+    expect(homeTopState({ geProfile: p({ onboarded: true }), levelUnknown: true, level: 'A1' })).toBe('needTest')
+    expect(homeTopState({ geProfile: p({ onboarded: true }), levelUnknown: false, level: 'A2' })).toBe('needRoute')
+    expect(homeTopState({ geProfile: p({ onboarded: true, route: 'group' }), levelUnknown: false, level: 'A2' })).toBe('goal')
+  })
+})
+
+describe('goalBannerState', () => {
+  it('цель достигнута важнее срока', () => {
+    expect(goalBannerState({ deadline: { state: 'passed' }, journey: { reached: true }, fit: 'late' })).toEqual({
+      reached: true,
+      say: 'reached',
+      title: 'reached',
+    })
+  })
+  it('реплика по сроку и темпу', () => {
+    expect(goalBannerState({ deadline: { state: 'none' }, journey: {}, fit: null }).say).toBe('noDate')
+    expect(goalBannerState({ deadline: { state: 'tomorrow' }, journey: {}, fit: 'fits' }).say).toBe('tomorrow')
+    expect(goalBannerState({ deadline: { state: 'days' }, journey: {}, fit: 'late' }).say).toBe('late')
+    expect(goalBannerState({ deadline: { state: 'days' }, journey: {}, fit: 'spare' }).say).toBe('onTrack')
+  })
+  it('срок окном — заголовок «≈ месяц год»', () => {
+    expect(goalBannerState({ deadline: { state: 'days', approximate: true }, journey: {}, fit: null }).title).toBe('approx')
+    expect(goalBannerState({ deadline: { state: 'days', approximate: false }, journey: {}, fit: null }).title).toBe('days')
+  })
+  it('варианты реплики', () => {
+    expect(sayKey('onTrack', 0)).toBe('geGoal.say.onTrack')
+    expect(sayKey('onTrack', 0.99)).toBe('geGoal.say.onTrack.3')
+    expect(sayKey('today', 0.99)).toBe('geGoal.say.today')
+  })
+})
