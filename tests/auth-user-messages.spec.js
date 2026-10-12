@@ -81,9 +81,22 @@ test('вход незарегистрированным номером: «Пол
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
+  // Вход теперь начинается с пароля; по коду — ссылкой под формой
+  await page.getByRole('link', { name: 'Войти по коду из сообщения' }).click()
   await page.locator('.phone-field input').fill('7770000000')
   await page.locator('.form-primary').click()
 
   await expect(page.locator('.form-error')).toContainText('не существует')
   await expect(page.locator('.otp-box')).toHaveCount(0)
+})
+
+// На телефоне правило мобильного слоя прятало «Войти по коду из сообщения» под формой пароля (в ней тоже .email-field):
+// входа по СМС на телефоне не было вовсе. Ссылка обязана быть видна и когда пароль показан — поле тогда type=text.
+test('экран пароля: ссылка «Войти по коду» видна, и с показанным паролем тоже', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  const link = page.getByRole('link', { name: 'Войти по коду из сообщения' })
+  await expect(link).toBeVisible()
+  await page.getByLabel('Показать пароль').check()
+  await expect(link).toBeVisible()
 })
