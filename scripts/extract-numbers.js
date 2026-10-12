@@ -53,6 +53,10 @@ function topicTours(sections, tours) {
 }
 
 function extract(html) {
+  // Выкачанный на Windows прототип приходит с CRLF (core.autocrlf), а метки
+  // блока данных ищутся с переводом строки LF — приводим, иначе срез не найдётся
+  // (так падал тест SpeakSpin, #595).
+  html = html.replace(/\r\n/g, '\n')
   const game = runData(html)
   const files = {}   // относительный путь → Buffer
 

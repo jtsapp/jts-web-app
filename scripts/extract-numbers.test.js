@@ -16,7 +16,11 @@ describe('extract-numbers', () => {
     for (const [rel, buf] of Object.entries(files)) {
       const p = path.join(DEFAULT_OUT, rel)
       expect(fs.existsSync(p), `${rel} — перезапусти node scripts/extract-numbers.js`).toBe(true)
-      expect(fs.readFileSync(p).equals(buf), `${rel} устарел — перезапусти экстрактор`).toBe(true)
+      // Текстовые файлы на Windows выкачиваются с CRLF (core.autocrlf) — сверяем без них.
+      const same = /\.(json|css)$/.test(rel)
+        ? fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') === buf.toString('utf8')
+        : fs.readFileSync(p).equals(buf)
+      expect(same, `${rel} устарел — перезапусти экстрактор`).toBe(true)
     }
   })
 
@@ -33,6 +37,11 @@ describe('extract-numbers', () => {
       // JSON с обеих сторон: дыры массивов прототипа (c[8] = тема) становятся null.
       expect(JSON.parse(JSON.stringify(ours[id])), id).toEqual(JSON.parse(JSON.stringify(game.TOURS[id])))
     }
+  })
+
+  it('CRLF в прототипе не меняет результат', () => {
+    const crlf = extract(html.replace(/\n/g, '\r\n')).files
+    expect(crlf['data.json'].equals(files['data.json'])).toBe(true)
   })
 
   it('картинки и шрифты: 11 картинок, 8 начертаний', () => {
