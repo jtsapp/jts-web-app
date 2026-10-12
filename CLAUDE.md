@@ -937,6 +937,20 @@ speaking-works|speaking-work&ieltsWork=<id>` (`src/ielts/speaking/`), прохо
 сценарии тьютора и старый «План уроков», а прогресс «Обучения» держит
 JTS-бэкенд (`src/learning/lessonProgress.js`).
 
+**Анкета и роадмап «Главной» (General English) — по образцу IELTS, профиль на бэкенде.** Спека —
+`docs/superpowers/specs/2026-10-12-ge-onboarding-roadmap-design.md` (часть 1 из трёх; план по дням и админка —
+следующие). Профиль `/mobile/ge/profile` (backend `ge_profiles`, V327): анкета (зачем, цель A1–C1, срок датой или
+окном, минут в день, как начинает), формат (`self_study|group|individual`), `deadline` и `journey` для блока цели. Без
+ручки (404) или с ответом без булевого `onboarded` «Главная» прежняя — так прод-веб переживает старый прод-бэкенд.
+Экраны: `?screen=ge-onboarding` (вид — онбординг IELTS, кирпичи `src/components/onboarding/OnboardingParts.jsx`),
+`?screen=ge-route` (три формата со сроком), блок `src/screens/home/GeGoalBanner.jsx`. Срок считает веб —
+`src/ge/route.js` поверх `roadmap.js` (силлабус минус пройденная доля уровня, 2 занятия в неделю у группы и
+индивидуальных, 5 дней × минуты ÷ 90 у самостоятельного). Новый ученик после входа идёт в анкету, а не сразу на тест
+уровня (эффект в App.jsx перехватывает `test-intro`); тест, запущенный анкетой, в конце ведёт на маршрут. Цель уровня до
+12.10.2026 жила в `level_goal` базы веба: `src/ge/legacyGoal.js` разово переносит её в профиль и зеркалит цель профиля
+обратно — карточка преподавателя в web-admin (`/api/admin/student-activity`) читает её оттуда до части 3; форму
+`{target, from}` не менять.
+
 **Внешние сервисы:**
 - JTS-бэкенд: `NEXT_PUBLIC_API_URL` / `BACKEND_URL`, дефолт
   `https://dev-server.justtostudy.kz`. Верификация токена делегируется бэкенду
