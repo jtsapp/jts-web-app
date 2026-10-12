@@ -13,6 +13,14 @@ import { TOPICS } from './topics.js'
 
 // Короче этого разбирать нечего — сервер отказывает ДО платного вызова.
 export const MIN_WORDS = 20
+
+// Время разбора — одно на клиента и роут, поэтому здесь. Роут обязан ответить
+// РАНЬШЕ, чем клиент сдастся: при 60 с у клиента и 90 с (плюс ретраи SDK) у
+// роута ученик видел «не дождались», а разбор доезжал до сервера и списывался.
+// Разбор идёт 18–25 с (замер 12.10.2026); потолок — с запасом на повтор после
+// быстрого сбоя, и всё ниже 100 с Cloudflare на проде.
+export const REVIEW_DEADLINE_MS = 55000
+export const REVIEW_CLIENT_TIMEOUT_MS = 70000
 const MAX_TEXT = 20000
 const LANGUAGES = { en: 'English', ru: 'Russian', kk: 'Kazakh' }
 const LEVEL_NAMES = { easy: 'Easy', medium: 'Medium', hard: 'Hard', veryHard: 'Very Hard' }
