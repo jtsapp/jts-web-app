@@ -32,3 +32,13 @@ export function homeScreenFor({
   // один способ учиться, а не про весь кабинет.
   return needsLevelTest ? 'test-intro' : 'home'
 }
+
+/**
+ * Куда уходить с теста уровня: туда, откуда в него пришли (профиль, ссылка, по которой человек логинился), иначе —
+ * домой, ровно как после входа. Раньше здесь стояло «как было, в королевство»: новичок после регистрации и теста
+ * попадал на карту, хотя с 09.09.2026 первым экраном ученика стала «Главная» (её тур и выбор цели он так и не видел).
+ */
+export function testExitScreen({ testReturn = null, tutorHome = 'tutor-dashboard' } = {}) {
+  if (testReturn) return testReturn
+  return TUTOR_ONLY ? tutorHome : 'home'
+}
