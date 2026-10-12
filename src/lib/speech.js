@@ -113,7 +113,7 @@ export function stopTts() {
  * Сказать text голосом Soniox.
  *
  * @param {string} text
- * @param {{ voice?: string, lang?: string, speed?: number, volume?: number,
+ * @param {{ voice?: string, lang?: string, speed?: number, rate?: number, volume?: number,
  *   onStart?: () => void, onEnd?: () => void,
  *   onFail?: (reason: 'empty'|'error'|'timeout'|'blocked') => void }} [opts]
  *   onFail приходит, только если звук так и не начался: сеть, 429/503 от
@@ -122,7 +122,7 @@ export function stopTts() {
  * @returns {boolean} false — озвучивать нечего (onFail('empty') уже вызван)
  */
 export function playTts(text, opts = {}) {
-  const { voice, lang, speed, volume, onStart, onEnd, onFail } = opts
+  const { voice, lang, speed, rate, volume, onStart, onEnd, onFail } = opts
   const url = typeof window === 'undefined' ? null : ttsUrl({ text, voice, lang, speed })
   if (!url) {
     onFail?.('empty')
@@ -163,8 +163,13 @@ export function playTts(text, opts = {}) {
   a.src = url
   // load() (его зовёт смена src) сбрасывает playbackRate в defaultPlaybackRate
   // — ставим оба, иначе темп предыдущей записи прилип бы к этой.
-  a.defaultPlaybackRate = 1
-  a.playbackRate = 1
+  // rate — темп на устройстве, а не в синтезе: адрес /api/tts от него не
+  // зависит, и игра, гоняющая одну фразу на пяти темпах («Числа»), платит за
+  // синтез и кэш один раз. Высота голоса при этом сохраняется.
+  const r = rate > 0 ? rate : 1
+  a.defaultPlaybackRate = r
+  a.playbackRate = r
+  a.preservesPitch = true
   if (volume != null) a.volume = Math.max(0, Math.min(1, volume))
   else a.volume = 1
   watchdog = setTimeout(() => fail('timeout'), START_TIMEOUT_MS)

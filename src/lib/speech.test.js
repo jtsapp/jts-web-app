@@ -154,6 +154,20 @@ describe('playTts', () => {
     expect(a.playbackRate).toBe(1)
     expect(a.defaultPlaybackRate).toBe(1)
   })
+
+  it('rate — темп на устройстве: адрес /api/tts тот же, синтез один на все темпы', () => {
+    speech.playTts('Thirteen', { voice: 'Freya', speed: 1, rate: 0.85 })
+    const a = elements[0]
+    expect(a.src).toBe('/api/tts?v=Freya&l=en&s=1&t=Thirteen')
+    expect(a.playbackRate).toBe(0.85)
+    expect(a.defaultPlaybackRate).toBe(0.85)
+    expect(a.preservesPitch).toBe(true)
+    speech.playTts('Thirteen', { voice: 'Freya', speed: 1, rate: 1.15 })
+    expect(a.src).toBe('/api/tts?v=Freya&l=en&s=1&t=Thirteen')
+    expect(a.playbackRate).toBe(1.15)
+    speech.playTts('Thirteen', { voice: 'Freya', speed: 1 })
+    expect(a.playbackRate).toBe(1)
+  })
 })
 
 describe('stopTts / пауза', () => {
