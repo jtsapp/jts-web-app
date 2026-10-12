@@ -16,6 +16,7 @@ import { markTask, markSeen, genreDoneCount, stepDone } from './writing/writingP
 import { markWordFound, markSceneDone, sceneState } from './words/wordsProgress.js'
 import { toggleSaved, recordResult, savedCount, scoresFor } from './verbs/verbsProgress.js'
 import { writeSeen, readSeen } from './listenchoose/listenchooseProgress.js'
+import { readNumbers, updateNumbers } from './numbers/numbersProgress.js'
 
 function fillStorage() {
   return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -100,5 +101,12 @@ describe('забитый localStorage не прячет пройденное', (
     writeSeen('medium', ['b'])
     expect(readSeen('easy')).toEqual(['a'])
     expect(readSeen('medium')).toEqual(['b'])
+  })
+
+  it('«Числа»', () => {
+    updateNumbers((s) => { s.sections.basic = { rounds: [{ passed: true, best: 0.9, stars: 2, plays: 1 }] } })
+    updateNumbers((s) => { s.totalCorrect = 14 })
+    expect(readNumbers().sections.basic.rounds[0].passed).toBe(true)
+    expect(readNumbers().totalCorrect).toBe(14)
   })
 })
