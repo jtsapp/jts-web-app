@@ -2,7 +2,8 @@
 // lang } → баллы произношения + послово-карта + короткий совет Claude.
 //
 // Azure Pronunciation Assessment в эталон-режиме (assessAgainstReference); без
-// ключей или при сбое — mock (200, mock:true), чтобы тренажёр работал всегда.
+// ключей — mock (200, mock:true), чтобы тренажёр работал и на локалке. Речи не
+// нашлось или Azure не ответил — 422 no_speech, а не выдуманный балл.
 // Совет Claude — best-effort и ТОЛЬКО по реальным баллам. Гостю оценка закрыта,
 // лимита на количество оценок нет (см. lib/db/shadowingBudget.js).
 
@@ -87,7 +88,8 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
 
-  // Оценка: реальная Azure, иначе mock (без падения).
+  // Оценка: реальная Azure. Mock — только когда Azure не настроен вовсе
+  // (локалка без ключей), чтобы тренажёр там работал.
   let score = null
   if (isAzureSpeechConfigured()) {
     const buf = Buffer.from(await file.arrayBuffer())
@@ -99,6 +101,12 @@ export async function POST(request) {
       console.error('[shadowing.assess] azure failed', e)
       return null
     })
+    // Azure настроен, но речи не нашёл (тишина, шум) или не ответил. Раньше и
+    // это уходило в mock: молчание получало «оценочные» 70, экран сохранял их
+    // лучшим баллом фразы и засчитывал в навык речи. Отличить тишину от сбоя
+    // по null нельзя, поэтому ответ один — «речь не разобрана, запишите ещё
+    // раз»; платы не было, в учёт не пишем.
+    if (!score) return Response.json({ error: 'no_speech' }, { status: 422 })
   }
   if (!score) {
     score = { ...mockPronunciation(), words: [], transcript: '' }

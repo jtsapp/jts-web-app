@@ -17,7 +17,7 @@ import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon, PlayIcon, MicIcon, StopIcon, RepeatIcon } from '../components/icons.jsx'
 import { getLesson, hasLesson, isRemoteLessonId, useShadowingCatalog } from '../practice/shadowing/catalog.js'
 import { loadLessonFile } from '../practice/shadowing/lessonContent.js'
-import { fmt, parseCaptions, segmentId } from '../practice/shadowing/engine.js'
+import { autoStopMs, fmt, parseCaptions, segmentId } from '../practice/shadowing/engine.js'
 import {
   getLessonDone,
   markSegmentDone,
@@ -25,6 +25,7 @@ import {
   SHADOWING_PROGRESS_EVENT,
 } from '../practice/shadowing/shadowingProgress.js'
 import { blobToWav16kMono } from '../lib/ielts-audio.js'
+import { reportUnauthorized } from '../lib/session.js'
 import { assessTake } from '../practice/shadowing/assessClient.js'
 import { saveTake, getTakeBlob, getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery, isPhraseMastered, MASTERY_THRESHOLD } from '../practice/shadowing/mastery.js'
@@ -66,6 +67,14 @@ function pickMime() {
 }
 
 const SPEEDS = [0.5, 0.75, 1]
+
+// Копия объекта без ключа (сброс ошибки оценки одной фразы).
+function dropKey(obj, key) {
+  if (!(key in obj)) return obj
+  const next = { ...obj }
+  delete next[key]
+  return next
+}
 
 // Урок из админки, открытый по адресу (домашняя работа, диплинк), до загрузки списка уроков не найти: показывать
 // вместо него первый вшитый урок значило бы подсунуть ученику чужое задание. Ждём ответ каталога и только потом
@@ -140,6 +149,10 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
   // IndexedDB), из него считается мастерство.
   const [results, setResults] = useState({}) // segIndex → assessTake-результат
   const [assessingIdx, setAssessingIdx] = useState(-1)
+  // Почему оценка не вышла: segIndex → 'no_speech' | 'failed'. Раньше сбой
+  // уходил только в консоль, и нажатие «Оценить» заканчивалось ничем.
+  const [assessErr, setAssessErr] = useState({})
+  const [wholeErr, setWholeErr] = useState('')
   const [scores, setScores] = useState(() => new Map())
 
   // Режимы тренировки. syncMode — говорить ПОВЕРХ играющей фразы (настоящий
@@ -180,6 +193,14 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
   const recStartingRef = useRef(false)
   const autoStopRef = useRef(null)
   const takesRef = useRef({}) // takes[segIndex] = objectURL (в памяти, per lesson)
+  // Поколение урока и версии записей. Запись и оценка асинхронны и
+  // переживают тап по соседней вкладке или новую запись той же фразы: без
+  // сверки поздний ответ ложился на чужое — запись прошлого урока становилась
+  // «Твоей записью» фразы нового, а балл старой записи приклеивался к новой и
+  // затирал её в IndexedDB. Каждое продолжение сверяет, что всё ещё своё.
+  const lessonGenRef = useRef(0)
+  const takeVerRef = useRef({}) // segIndex → номер последней записи фразы
+  const wholeVerRef = useRef(0)
   const audioRef = useRef(null) // проигрывание своей записи
 
   // Пока файл с фразами летит по сети, считаем по segCount из индекса — иначе
@@ -201,6 +222,25 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
 
   useEffect(() => {
     let alive = true
+    // Всё, что ещё летит от прошлого урока, — уже чужое (см. lessonGenRef).
+    // Запись обрываем: её onstop увидит новое поколение и выбросит дубль.
+    lessonGenRef.current += 1
+    takeVerRef.current = {}
+    clearTimeout(autoStopRef.current)
+    stopRec()
+    setRecSeg(null)
+    setWholeRec(false)
+    stopTakeAudio()
+    setWholeUrl((prev) => {
+      if (prev) { try { URL.revokeObjectURL(prev) } catch {} }
+      return null
+    })
+    wholeBlobRef.current = null
+    wholeVerRef.current += 1
+    setWholeResult(null)
+    setWholeAssessing(false)
+    setWholeErr('')
+    setAssessErr({})
     setSegments([])
     setFileMeta(null)
     setSegLoading(true)
@@ -403,6 +443,16 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
     return streamRef.current
   }
 
+  // Микрофон держим открытым только на время записи. Раньше поток жил до ухода
+  // с экрана: после первой фразы индикатор записи в браузере горел, пока ученик
+  // смотрел видео и слушал себя. Повторный getUserMedia при выданном праве
+  // ничего не спрашивает — так же отпускает поток запись «Ситуаций».
+  function releaseStream() {
+    const st = streamRef.current
+    streamRef.current = null
+    try { st && st.getTracks().forEach((tr) => tr.stop()) } catch {}
+  }
+
   function stopRec() {
     const r = recorderRef.current
     if (r && r.state !== 'inactive') r.stop()
@@ -420,6 +470,7 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
     // ухода с экрана, плюс лишний round-trip к /api/practice/entitlement.
     if (recStartingRef.current) return false
     recStartingRef.current = true
+    const gen = lessonGenRef.current
     try {
       // Право на запись проверяем СВЕЖИМ ответом сервера в момент старта — для
       // шэдоуинга запись и есть «сессия»: пройденной считается записанная фраза
@@ -430,12 +481,15 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
       // экраном лимита.
       const fresh = await checkEntitlement()
       if (!fresh.allowed) return false
+      // Пока ждали ответа, ученик переключил урок — эта запись уже не нужна.
+      if (gen !== lessonGenRef.current) return false
       if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
         setDenied(true)
         return false
       }
       try {
         const st = await getStream()
+        if (gen !== lessonGenRef.current) { releaseStream(); return false }
         setDenied(false)
         chunksRef.current = []
         const mt = pickMime()
@@ -444,6 +498,9 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
         rec.onstop = () => {
           clearTimeout(autoStopRef.current)
           recTargetRef.current = null
+          releaseStream()
+          // Запись оборвана сменой урока — она про другой урок, не сохраняем.
+          if (gen !== lessonGenRef.current) return
           const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
           onDone(blob)
         }
@@ -461,6 +518,7 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
         // не делал, onstop не случался — и так до ухода с экрана.
         recTargetRef.current = null
         recorderRef.current = null
+        releaseStream()
         setDenied(true)
         return false
       }
@@ -485,6 +543,8 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
       const prev = takesRef.current[i]
       if (prev?.url) { try { URL.revokeObjectURL(prev.url) } catch {} }
       takesRef.current[i] = { url: URL.createObjectURL(blob), blob }
+      takeVerRef.current[i] = (takeVerRef.current[i] || 0) + 1
+      setAssessErr((m) => dropKey(m, i))
       // Попытка засчитана сразу (синкается в аккаунт), балл придёт от оценки.
       markSegmentDone(segmentId(curId, i))
       // Урок — единица выдачи, внутри него фразы: шлём долю. Мастерство для
@@ -511,32 +571,35 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
     if (!ok) return
     setRecSeg(i)
     const s = segments[i]
-    if (sync) {
-      // играем фразу (видео стопнется на её конце самим трекингом), а запись
-      // обрываем чуть позже — чтобы поймать хвост речи ученика.
-      playSegment(i, true)
-      const dur = ((s[1] - s[0]) / rateRef.current + 0.6) * 1000
-      autoStopRef.current = setTimeout(() => {
-        if (recTargetRef.current?.type === 'seg' && recTargetRef.current.i === i) stopRec()
-      }, dur)
-    } else {
-      const dur = Math.min(20, s[1] - s[0] + 3) * 1000
-      autoStopRef.current = setTimeout(() => {
-        if (recTargetRef.current?.type === 'seg' && recTargetRef.current.i === i) stopRec()
-      }, dur)
-    }
+    // Синхрон: играем фразу (видео стопнется на её конце самим трекингом), а
+    // запись обрываем чуть позже — чтобы поймать хвост речи ученика. По
+    // очереди — даём договорить медленнее спикера (см. autoStopMs).
+    if (sync) playSegment(i, true)
+    autoStopRef.current = setTimeout(() => {
+      if (recTargetRef.current?.type === 'seg' && recTargetRef.current.i === i) stopRec()
+    }, autoStopMs(s, rateRef.current, sync))
   }
 
   // Оценка записанной фразы: webm → 16кГц WAV → Azure (эталон = текст фразы) →
   // балл/послово/совет. Результат в памяти сессии; blob + лучший балл — в
   // IndexedDB (переживут перезагрузку). Осечки не критичны — без падения экрана.
   async function assessAndStore(i, blob) {
+    const gen = lessonGenRef.current
+    const ver = takeVerRef.current[i]
+    // Ответ про ту запись, которой уже нет: урок сменили или фразу
+    // переписали, пока шла оценка.
+    const stale = () => gen !== lessonGenRef.current || ver !== takeVerRef.current[i]
     setAssessingIdx(i)
+    setAssessErr((m) => dropKey(m, i))
     try {
       const wav = await blobToWav16kMono(blob)
-      if (!wav) return
+      if (!wav || stale()) return
       const res = await assessTake(wav, segments[i][2], lang, 'phrase', token)
+      if (stale()) return
       setResults((r) => ({ ...r, [i]: res }))
+      // Заглушка (Azure не настроен — локалка) помечена «оценочно» и ничего не
+      // мерила: показываем, но в лучший балл, мастерство и навык не пишем.
+      if (res.mock) return
       const segId = segmentId(curId, i)
       if (!scores.has(segId)) recordSkill('speaking', res.overall >= MASTERY_THRESHOLD)
       saveTake(segId, blob, res.overall) // best-effort persist (max балла внутри)
@@ -547,8 +610,11 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
       })
     } catch (e) {
       console.warn('[shadowing] assess failed', e)
+      if (stale()) return
+      if (e?.status === 401) reportUnauthorized(token)
+      setAssessErr((m) => ({ ...m, [i]: e?.code === 'no_speech' ? 'no_speech' : 'failed' }))
     } finally {
-      setAssessingIdx(-1)
+      if (gen === lessonGenRef.current) setAssessingIdx(-1)
     }
   }
 
@@ -611,6 +677,8 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
     const ok = await startRec({ type: 'whole' }, (blob) => {
       setWholeRec(false)
       wholeBlobRef.current = blob
+      wholeVerRef.current += 1
+      setWholeErr('')
       setWholeResult(null) // новая запись → прошлая оценка неактуальна
       setWholeUrl((prev) => {
         if (prev) { try { URL.revokeObjectURL(prev) } catch {} }
@@ -625,16 +693,24 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
   async function assessWhole() {
     if (wholeAssessing || wholeResult || !wholeBlobRef.current) return
     if (!token) return // гостю оценка недоступна
+    const gen = lessonGenRef.current
+    const ver = wholeVerRef.current
+    const stale = () => gen !== lessonGenRef.current || ver !== wholeVerRef.current
     setWholeAssessing(true)
+    setWholeErr('')
     try {
       const wav = await blobToWav16kMono(wholeBlobRef.current)
-      if (!wav) return
+      if (!wav || stale()) return
       const res = await assessTake(wav, '', lang, 'whole', token)
+      if (stale()) return
       setWholeResult(res)
     } catch (e) {
       console.warn('[shadowing] assess failed', e)
+      if (stale()) return
+      if (e?.status === 401) reportUnauthorized(token)
+      setWholeErr(e?.code === 'no_speech' ? 'no_speech' : 'failed')
     } finally {
-      setWholeAssessing(false)
+      if (gen === lessonGenRef.current) setWholeAssessing(false)
     }
   }
 
@@ -868,6 +944,11 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
                         </span>
                       )}
                     </span>
+                    {assessErr[i] && !result && !assessing && (
+                      <div className="sh-seg__err" role="status">
+                        {t(assessErr[i] === 'no_speech' ? 'shadowing.noSpeech' : 'shadowing.assessFailed')}
+                      </div>
+                    )}
                     {hasTake && !result && !assessing && (
                       <div className="sh-seg__mine">
                         {token && (
@@ -971,7 +1052,13 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
                   <button
                     type="button"
                     className="sh-take__again"
-                    onClick={() => { setWholeUrl(null); setWholeResult(null); wholeBlobRef.current = null }}
+                    onClick={() => {
+                      setWholeUrl(null)
+                      setWholeResult(null)
+                      setWholeErr('')
+                      wholeBlobRef.current = null
+                      wholeVerRef.current += 1
+                    }}
                   >
                     <RepeatIcon size={18} /> {t('shadowing.again')}
                   </button>
@@ -984,6 +1071,11 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
                   >
                     ★ {t('shadowing.assess')}
                   </button>
+                )}
+                {wholeErr && !wholeResult && !wholeAssessing && (
+                  <div className="sh-note sh-note--err" role="status">
+                    {t(wholeErr === 'no_speech' ? 'shadowing.noSpeech' : 'shadowing.assessFailed')}
+                  </div>
                 )}
                 {(wholeResult || wholeAssessing) && (
                   <div className="sh-whole-score">
