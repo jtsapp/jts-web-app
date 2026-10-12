@@ -96,8 +96,8 @@
 **Как писать срок:** до 18 месяцев — месяцами (шаг полмесяца), дальше — годами с шагом полгода
 («≈ 2,5 года»). Длинный срок не прячем: путь A0→C1 длинный, это нормально.
 
-**Успеваете ли:** дата задана — сравниваем с ней; окно — с его верхней границей от даты анкеты
-(1-3m → +3 мес, 3-6m → +6, 6-12m → +12); `none` — чипа нет. Чипы как в IELTS: «Успеваете» /
+**Успеваете ли:** дата задана — сравниваем с ней; окно — с его верхней границей от дня сохранения
+(1-3m → +3 мес, 3-6m → +6, 6-12m → +12; дату считает бэкенд, `deadline.date`); `none` — чипа нет. Чипы как в IELTS: «Успеваете» /
 «С запасом» (остаётся ≥ 21 дня) / «Не успеваете к …».
 
 **Рекомендация** (звезда на одной карточке), по порядку:
@@ -174,8 +174,9 @@ CREATE TABLE ge_profiles (
   `{ onboarded, purpose, targetLevel, fromLevel, deadlineDate, deadlineWindow, dailyMinutes, startMode,
   route, onboardedAt, deadline: { state, date, daysRemaining, approximate }, journey: { start, current:
   { level, percent }, target, reached } }`.
-  - `deadline.state`: `none | today | tomorrow | days | passed`; для окна `date` = дата анкеты + верхняя
-    граница окна, `approximate: true`.
+  - `deadline.state`: `none | today | tomorrow | days | passed`. Окно при сохранении переводится в дату
+    (день сохранения + верхняя граница окна) и хранится в `deadline_date` рядом с самим окном;
+    `approximate: true`, если окно не `date`. Так правка срока считает от дня правки, а не от первой анкеты.
   - `journey.current.level` — `users.language_level`, `percent` — `LevelProgressService.summaryFor`.
     `reached` = уровень ≥ цели. `fromLevel` пуст, а уровень появился (тест после анкеты) — заполняется
     текущим и сохраняется.
