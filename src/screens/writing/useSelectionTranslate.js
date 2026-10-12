@@ -4,6 +4,7 @@ import { buildGloss, glossLookup, wordByWord } from '../../practice/writing/glos
 import { wordsOf } from '../../practice/writing/engine.js'
 import { addMyWord, cachedTranslation, rememberTranslation } from '../../practice/writing/writingStore.js'
 import { translateWord } from '../../lib/wordTranslate.js'
+import { TRANSLATE_CLIENT_TIMEOUT_MS } from '../../practice/writing/translateTimeouts.js'
 
 // Максимум выделения — как в прототипе и на сервере (/api/writing/translate):
 // переводим фразу из урока, а не главу; больше — сигнал скрипта.
@@ -207,11 +208,13 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
         return
       }
 
-      // 12 сек — таймаут прототипа (translateRemote, 10215); AbortController
-      // вместо флага done: hide() и новое show() ещё и рвут сам запрос.
+      // 12 сек — таймаут прототипа (translateRemote, 10215); роут обязан
+      // уложиться раньше, поэтому число общее с ним (translateTimeouts.js).
+      // AbortController вместо флага done: hide() и новое show() ещё и рвут
+      // сам запрос.
       abortCtl = new AbortController()
       const ctl = abortCtl
-      const timer = setTimeout(() => ctl.abort(), 12000)
+      const timer = setTimeout(() => ctl.abort(), TRANSLATE_CLIENT_TIMEOUT_MS)
       fetch('/api/writing/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
