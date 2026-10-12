@@ -2534,6 +2534,13 @@ button.hm-level__goal:focus-visible {
   align-self: flex-start;
   margin-top: 6px;
 }
+/* у IELTS в подвале одна ссылка; здесь ещё строка про материалы — разводим их, а не склеиваем в одну строку */
+.ge-skin .ih-gb__foot {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+}
 .ge-goal__plan {
   margin: 0;
   display: flex;
