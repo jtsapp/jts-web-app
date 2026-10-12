@@ -12,6 +12,7 @@
 // токена у бэкенда; БД нет — лимит разборов тут не участвует.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import Anthropic from '@anthropic-ai/sdk'
 
 const ext = vi.hoisted(() => ({
   azure: true,
@@ -19,6 +20,9 @@ const ext = vi.hoisted(() => ({
   fast: null,
   pa: null,
   graded: null,
+  // script — по шагу на вызов грейдера (ошибка бросается); пусто — graded.
+  script: [],
+  graderArgs: [],
   calls: [],
 }))
 
@@ -54,9 +58,12 @@ vi.mock('@/lib/soniox-stt.js', () => ({
 
 vi.mock('@/lib/anthropic.js', () => ({
   hasAnthropicKey: () => true,
-  structured: vi.fn(async () => {
+  structured: vi.fn(async (args) => {
     ext.calls.push('grader')
-    return ext.graded
+    ext.graderArgs.push(args)
+    const step = ext.script.length ? ext.script.shift() : ext.graded
+    if (step instanceof Error) throw step
+    return typeof step === 'function' ? step() : step
   }),
 }))
 
@@ -104,8 +111,13 @@ function post(file) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  Object.assign(ext, { azure: true, soniox: false, fast: 'fast text', pa: PA, graded: GRADED, calls: [] })
+  Object.assign(ext, { azure: true, soniox: false, fast: 'fast text', pa: PA, graded: GRADED, script: [], graderArgs: [], calls: [] })
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
 })
+
+const overloaded = () => new Anthropic.InternalServerError(529, { type: 'overloaded_error' }, 'Overloaded', new Headers())
 
 describe('длина ответа', () => {
   it('принимает пятиминутный ответ', async () => {
@@ -176,5 +188,77 @@ describe('статус', () => {
     ext.soniox = true
     const off = await (await GET(new Request('http://x/api/practice/situations/assess'))).json()
     expect(off).toMatchObject({ configured: true, azure: false })
+  })
+})
+
+// Каждое звено раньше ждало сколько угодно: Fast Transcription — 120 с,
+// произношение — пока не ответит, грейдер — дефолт SDK (10 минут × 3 попытки).
+// Любое повисшее звено держало запрос до 524 Cloudflare, а попытка уже списана.
+describe('время разбора ограничено', () => {
+  it('грейдер — строгая схема, без ретраев SDK, со своим потолком; распознавание — тоже', async () => {
+    expect((await post(wavOf(60))).status).toBe(200)
+    expect(ext.graderArgs[0]).toMatchObject({ strict: true, maxRetries: 0 })
+    expect(ext.graderArgs[0].timeoutMs).toBeLessThanOrEqual(30_000)
+    expect(transcribeWavFast.mock.calls[0][1]).toEqual({ timeoutMs: 45_000 })
+  })
+
+  it('перегрузка модели — один повтор, разбор приходит', async () => {
+    ext.script = [overloaded()]
+    const res = await post(wavOf(60))
+    expect(res.status).toBe(200)
+    expect(ext.graderArgs).toHaveLength(2)
+  })
+
+  it('два сбоя подряд — отказ assess_failed, третьей попытки нет', async () => {
+    ext.script = [overloaded(), overloaded(), GRADED]
+    const res = await post(wavOf(60))
+    expect(res.status).toBe(502)
+    expect((await res.json()).error).toBe('assess_failed')
+    expect(ext.graderArgs).toHaveLength(2)
+  })
+
+  it('ошибка запроса к модели не повторяется', async () => {
+    ext.script = [new Anthropic.BadRequestError(400, { type: 'invalid_request_error' }, 'bad', new Headers()), GRADED]
+    expect((await post(wavOf(60))).status).toBe(502)
+    expect(ext.graderArgs).toHaveLength(1)
+  })
+
+  it('произношение повисло — разбор приходит без него к потолку распознавания', async () => {
+    let paStarted = 0
+    ext.pa = () => {
+      paStarted = Date.now()
+      return new Promise(() => {})
+    }
+    // Только таймеры и часы: разбор multipart и fetch идут своим ходом.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      let res = null
+      post(wavOf(60)).then((r) => (res = r))
+      for (let i = 0; i < 120 && !res; i++) await vi.advanceTimersByTimeAsync(1_000)
+      const waited = Date.now() - paStarted
+      expect(waited).toBeGreaterThanOrEqual(45_000)
+      expect(waited).toBeLessThanOrEqual(46_000)
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.engines).toEqual({ stt: 'azure-fast', pronunciation: null })
+      expect(body.axes.pronunciation).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('на грейдер не осталось времени — отказ сразу, модель не зовётся', async () => {
+    const now = vi.spyOn(Date, 'now')
+    let t = 1_000_000
+    now.mockImplementation(() => t)
+    // Распознавание «шло» 85 с: до потолка роута меньше, чем нужно грейдеру.
+    ext.fast = () => {
+      t += 85_000
+      return 'fast text'
+    }
+    const res = await post(wavOf(60))
+    now.mockRestore()
+    expect(res.status).toBe(502)
+    expect(ext.calls).not.toContain('grader')
   })
 })
