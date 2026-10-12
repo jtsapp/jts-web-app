@@ -90,7 +90,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
-import { homeScreenFor } from './lib/homeScreen.js'
+import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
@@ -1103,11 +1103,10 @@ export default function App() {
     }
   }
 
-  // Куда уходить с теста уровня: туда, откуда в него пришли (профиль, ссылка,
-  // по которой человек логинился), иначе — как было, в королевство. Функция, а
+  // Куда уходить с теста уровня — см. testExitScreen (lib/homeScreen.js). Функция, а
   // не константа: tutorHome объявлен ниже по телу компонента.
   function testExit() {
-    return testReturn || (TUTOR_ONLY ? tutorHome : 'kingdom')
+    return testExitScreen({ testReturn, tutorHome })
   }
 
   async function handleTestDone(res) {
