@@ -127,16 +127,15 @@ export default function HomePage({
   const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel })
   const geMode = geTop !== 'legacy'
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
-  const geOption = useMemo(() => {
-    if (geTop !== 'goal') return null
-    const cur = geProfile.journey?.current || {}
-    return (
-      routeOptions(
-        { targetLevel: geProfile.targetLevel, dailyMinutes: geProfile.dailyMinutes, deadlineIso: geProfile.deadline?.date },
-        { level: cur.level || summary.level, percent: cur.percent ?? summary.percent ?? 0 },
-      ).find((o) => o.id === geProfile.route) || null
-    )
-  }, [geTop, geProfile, summary.level, summary.percent])
+  // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
+  const geCur = geProfile?.journey?.current || {}
+  const geOption =
+    geTop === 'goal'
+      ? routeOptions(
+          { targetLevel: geProfile.targetLevel, dailyMinutes: geProfile.dailyMinutes, deadlineIso: geProfile.deadline?.date },
+          { level: geCur.level || summary.level, percent: geCur.percent ?? summary.percent ?? 0 },
+        ).find((o) => o.id === geProfile.route) || null
+      : null
 
   // Тур «Главной»: первым шагом — выбор цели. Без пройденного теста карточки
   // уровня нет, и цель выбирать не от чего — тур ждёт, пока уровень появится.
