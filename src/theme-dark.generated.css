@@ -1215,6 +1215,9 @@ html[data-theme="dark"] .pk-banner--words {
 html[data-theme="dark"] .pk-banner--speakspin {
     background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
 }
+html[data-theme="dark"] .pk-banner--numbers {
+    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
+}
 html[data-theme="dark"] .pk-arcade {
     color: #fff;
     background: radial-gradient(ellipse at 88% 18%, rgba(55, 38, 8, 0.35) 0, transparent 34%),
@@ -21847,4 +21850,18 @@ html[data-theme="dark"] .asst-ask {
     html[data-theme="dark"] .hm-placement__sub {
         color: var(--dk-text)
     }
+}
+/*  numbers.css  */
+html[data-theme="dark"] .nmb-back {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .nmb-state {
+    color: #beb7e1
+}
+html[data-theme="dark"] .nmb-retry {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
 }

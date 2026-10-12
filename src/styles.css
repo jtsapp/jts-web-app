@@ -4503,6 +4503,8 @@ textarea {
 .pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
 /* SpeakSpin в макете тоже нет — фиолетовый прототипа (#6651d6 → #4e3bac). */
 .pk-banner--speakspin { background: linear-gradient(99.4deg, #6651d6 17%, #4e3bac 95.5%); }
+/* «Числа» в макете тоже нет — фиолетовый игры (#874bf8) в тёмный индиго её миров. */
+.pk-banner--numbers { background: linear-gradient(99.4deg, #874bf8 17%, #3b2a8f 95.5%); }
 
 /* «Аркада» во вкладках «Говорение» и «Чтение» — зал из двух игр. В макете её
    нет — геометрия и кнопка от широкого баннера (поля 24, r20, белая пилюля),
