@@ -1,13 +1,12 @@
 // Что «Уроки» (живое занятие и «Самостоятельно») открывают в «Повторении».
-// Тропа сама по себе идёт подряд (KingdomInteriorPage) — здесь только то, что
-// каталог открывает СВЕРХ этого: общий курс против специализированного,
-// фронтир, финальный экзамен, уровень ниже своего CEFR.
+// Тропа сама по себе идёт подряд на любом уровне (KingdomInteriorPage) — здесь
+// только то, что каталог открывает СВЕРХ этого: общий курс против
+// специализированного, фронтир, финальный экзамен.
 import { describe, it, expect } from 'vitest'
 import {
   catalogFrontier,
   catalogUnitsDone,
   isOpenedByCatalog,
-  isReviewLevelFullyOpen,
   pickGeneralCourse,
 } from './reviewUnlock.js'
 
@@ -70,15 +69,6 @@ describe('пройденные юниты курса', () => {
   it('без курса — пустой массив, а не падение', () => {
     expect(catalogUnitsDone(null, new Set())).toStrictEqual([])
     expect(catalogUnitsDone({ units: undefined }, new Set())).toStrictEqual([])
-  })
-})
-
-describe('уровень ниже своего CEFR', () => {
-  it('A2 для B1 — открыт; B1 для B1 — нет; B2 для B1 — нет', () => {
-    expect(isReviewLevelFullyOpen('A2', 'B1')).toBe(true)
-    expect(isReviewLevelFullyOpen('A0', 'B1')).toBe(true)
-    expect(isReviewLevelFullyOpen('B1', 'B1')).toBe(false)
-    expect(isReviewLevelFullyOpen('B2', 'B1')).toBe(false)
   })
 })
 
@@ -159,11 +149,6 @@ describe('isOpenedByCatalog — что «Уроки» открывают в «П
     expect(isOpenedByCatalog(node(0, 1), { frontier: null, unitsDone: [] })).toBe(false)
   })
 
-  it('уровень ниже CEFR ученика открыт целиком, даже без каталога, вместе с экзаменом', () => {
-    expect(isOpenedByCatalog(node(1, 1), { fullyOpen: true })).toBe(true)
-    expect(isOpenedByCatalog(node(5, 7), { fullyOpen: true })).toBe(true)
-    expect(isOpenedByCatalog(node(0, 1), { fullyOpen: true })).toBe(true)
-  })
 
   it('номер юнита меньше нуля открытым не бывает', () => {
     expect(isOpenedByCatalog(node(-1, 1), opts)).toBe(false)
