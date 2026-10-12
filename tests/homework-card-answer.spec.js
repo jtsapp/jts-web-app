@@ -13,8 +13,14 @@ import { test, expect } from '@playwright/test'
  */
 const json = (body) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
 
-/** Срок в прошлом: без вложения такая карточка обязана быть просроченной. */
+/**
+ * Срок в прошлом: без вложения такая карточка обязана быть просроченной. Статус и просрочку с 21.09.2026 считает
+ * сервер (MaterialAssignmentService: status по отметкам, isOverdue) — фикстуры отдают их так же, как он: без этих
+ * полей клиент читал карточку «Задано», и тесты краснели не по делу.
+ */
 const КАРТОЧКА = {
+  status: 'ASSIGNED',
+  isOverdue: true,
   id: 5,
   materialId: 12,
   materialTitle: 'Unit 3 · Seasons',
@@ -30,7 +36,7 @@ const ВЛОЖЕНИЕ = { id: 77, fileName: 'answer.pdf', url: 'https://files.e
 
 async function openHomework(page, { assignment = КАРТОЧКА } = {}) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'A2' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json([])))
   await page.route('**/student/assignments', (r) => r.fulfill(json([assignment])))
   await page.goto('/?screen=homework')
@@ -54,7 +60,7 @@ test('приложенный файл снимает просрочку и ух�
   await page.route('**/media/upload', (r) => r.fulfill(json({ url: ВЛОЖЕНИЕ.url, fileId: 'f1' })))
   await page.route('**/student/assignments/5/files', (r) => {
     телоЗапроса = r.request().postDataJSON()
-    return r.fulfill(json({ ...КАРТОЧКА, files: [ВЛОЖЕНИЕ] }))
+    return r.fulfill(json({ ...КАРТОЧКА, files: [ВЛОЖЕНИЕ], status: 'SUBMITTED', isOverdue: false }))
   })
 
   await page.locator('.hw-upload__input').setInputFiles({
@@ -69,7 +75,7 @@ test('приложенный файл снимает просрочку и ух�
 })
 
 test('свой файл можно снять, пока работу не проверили', async ({ page }) => {
-  await openHomework(page, { assignment: { ...КАРТОЧКА, files: [ВЛОЖЕНИЕ] } })
+  await openHomework(page, { assignment: { ...КАРТОЧКА, files: [ВЛОЖЕНИЕ], status: 'SUBMITTED', isOverdue: false } })
 
   await page.route('**/student/assignments/5/files/77', (r) => r.fulfill(json({ ...КАРТОЧКА, files: [] })))
   await page.locator('.hw-file__remove').click()
@@ -84,7 +90,7 @@ test('свой файл можно снять, пока работу не про
  */
 test('проверенную работу ученик не дополняет', async ({ page }) => {
   await openHomework(page, {
-    assignment: { ...КАРТОЧКА, files: [ВЛОЖЕНИЕ], teacherScore: 5, gradedAt: '2026-09-11T10:00:00' },
+    assignment: { ...КАРТОЧКА, files: [ВЛОЖЕНИЕ], teacherScore: 5, gradedAt: '2026-09-11T10:00:00', status: 'COMPLETED', isOverdue: false },
   })
 
   await expect(page.locator('.hw-file__name')).toHaveText('answer.pdf')
@@ -95,7 +101,7 @@ test('проверенную работу ученик не дополняет',
 /** У материала целиком свой цикл — вложения ему не предлагаем. */
 test('у материала без карточки вложений не спрашивают', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'A2' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json([])))
   await page.route('**/student/assignments', (r) => r.fulfill(json([
     { ...КАРТОЧКА, cardId: null, cardTitle: null, catalogLessonId: null },

@@ -18,7 +18,7 @@ const BOOTH_NAME = 'Класс · Айгуль'
 // поля «логин» в системе не существует — вход ищет по телефону, потом по почте.
 const BOOTH_LOGIN = 'class-7@jts.local'
 const BOOTH_PASSWORD = 'class-7-pass'
-const BOOTH_USER = { id: 501, name: BOOTH_NAME, email: BOOTH_LOGIN, role: 'STUDENT', languageLevel: 'A1', boothAccount: true }
+const BOOTH_USER = { id: 501, name: BOOTH_NAME, email: BOOTH_LOGIN, role: 'STUDENT', phone: '77001234567', languageLevel: 'A1', boothAccount: true }
 const LESSON = { id: 77, status: 'IN_PROGRESS', lessonType: 'TRIAL', teacherName: 'Айгуль', participants: [] }
 // Полное тело ответа входа. sessionId и resumed клиент не читает (см. «Контракт
 // с бэкендом»), но фикстура обязана быть настоящей: иначе лишние поля живого
@@ -31,7 +31,7 @@ async function stubAccount(page) {
   await page.route('**/user/me', (r) => r.fulfill(json(BOOTH_USER)))
   // Наш серверный роут восстановления сессии (src/lib/session.js).
   await page.route('**/api/auth/me', (r) =>
-    r.fulfill(json({ user: { userId: 501, name: BOOTH_NAME, email: BOOTH_LOGIN, role: 'STUDENT', languageLevel: 'A1', boothAccount: true } })))
+    r.fulfill(json({ user: { userId: 501, name: BOOTH_NAME, email: BOOTH_LOGIN, role: 'STUDENT', phone: '77001234567', languageLevel: 'A1', boothAccount: true } })))
   await page.route('**/user/language-level', (r) => r.fulfill(json('A1')))
   // Профиль тьютора восстановление сессии ЖДЁТ — без заглушки первый экран
   // упирается в живую сеть.
@@ -43,9 +43,9 @@ async function stubAccount(page) {
 
 /** Обычный ученик — контраст к stubAccount(): boothAccount в ответах нет. */
 async function stubRegularStudent(page) {
-  await page.route('**/user/me', (r) => r.fulfill(json({ id: 900, name: 'Ученик', role: 'STUDENT', languageLevel: 'A1' })))
+  await page.route('**/user/me', (r) => r.fulfill(json({ id: 900, name: 'Ученик', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' })))
   await page.route('**/api/auth/me', (r) =>
-    r.fulfill(json({ user: { userId: 900, name: 'Ученик', role: 'STUDENT', languageLevel: 'A1' } })))
+    r.fulfill(json({ user: { userId: 900, name: 'Ученик', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/user/language-level', (r) => r.fulfill(json('A1')))
   await page.route('**/api/profile?**', (r) => r.fulfill(json({ configured: true, profile: null })))
 }
@@ -248,11 +248,9 @@ test('обычный ученик диплинком ?screen=booth не захо
 
   await page.goto('/?screen=booth')
 
-  // Домашний экран ученика — королевства (уровень в профиле уже есть, теста
-  // не просит). Карта уровней — по .lp-node, как и в соседних спеках
-  // LearningPage (learning-lesson.spec.js): заголовок острова на мобилке
-  // не всегда в зоне видимости, а карта — всегда.
-  await expect(page.locator('.lp-node').first()).toBeVisible({ timeout: 15_000 })
+  // Домашний экран ученика — «Главная» (с 09.09.2026, lib/homeScreen.js; раньше здесь была карта королевств):
+  // уровень в профиле уже есть, теста не просит.
+  await expect(page.locator('.hm').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Класс закрыт')).toHaveCount(0)
   expect(enterCalled).toBe(false)
   // И диплинк не остался в адресе — 'booth' не входит в персистируемые экраны.

@@ -75,12 +75,16 @@ test('повторная регистрация на verify (ошибка БД) 
 })
 
 test('вход незарегистрированным номером: «Пользователь не существует»', async ({ page }) => {
+  // Вход теперь по почте и паролю (пароль при необходимости выдаёт менеджер). Вход по коду остался ссылкой под формой
+  // на десктопе, а на телефоне её нет намеренно — там проверять нечего.
+  test.skip(test.info().project.name === 'mobile', 'на телефоне входа по коду нет')
   await page.route('**/auth/otp/request', (r) =>
     r.fulfill(json({ messages: ['User with this phone not found'] }, 400)),
   )
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
+  await page.getByRole('link', { name: 'Войти по коду из сообщения' }).click()
   await page.locator('.phone-field input').fill('7770000000')
   await page.locator('.form-primary').click()
 

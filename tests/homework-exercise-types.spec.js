@@ -42,7 +42,7 @@ const РАБОТА = {
 
 async function openHomework(page) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json([РАБОТА])))
   await page.route('**/student/assignments', (r) => r.fulfill(json([])))
   // Ответы уходят на сервер по «Проверить» — принимаем и возвращаем работу как есть.

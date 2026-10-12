@@ -2,9 +2,17 @@ import { test, expect } from '@playwright/test'
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
+// Время урока — от «сейчас», а не датой: с 01.10.2026 урок «идёт», чей конец больше трёх часов назад, считается
+// забытым (liveNow.js, LIVE_STALE_AFTER_MS) и «Войти в класс» не держит — фикстуры с датами из августа протухли.
+const at = (minutes) => {
+  const d = new Date(Date.now() + minutes * 60000)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`
+}
+
 const OCCURRENCES = [
-  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: '2026-08-01T03:09:00', durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'IN_PROGRESS', participantStatus: 'SCHEDULED' },
-  { lessonId: 13, participantId: 13, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: '2026-08-10T11:30:00', durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'SCHEDULED', participantStatus: 'SCHEDULED' },
+  { lessonId: 14, participantId: 14, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: at(-10), durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'IN_PROGRESS', participantStatus: 'SCHEDULED' },
+  { lessonId: 13, participantId: 13, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: at(2 * 24 * 60), durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'SCHEDULED', participantStatus: 'SCHEDULED' },
 ]
 const SUMMARY = { conducted: 3, remaining: 2, cancelled: 1, rescheduled: 0 }
 const MEET = 'https://meet.google.com/abc-defg-hij'
@@ -12,7 +20,7 @@ const MEET = 'https://meet.google.com/abc-defg-hij'
 test('schedule renders in Уроки and an in-progress lesson opens the live screen', async ({ page }) => {
   // Logged-in session: token in storage + /api/auth/me returns a student user.
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', languageLevel: 'A1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCCURRENCES)))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
   // Экран сначала спрашивает, есть ли у человека преподаватель: без него вместо
@@ -52,8 +60,7 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
 
-  // Идущий урок открывается прямо из карточки — какой бы день ни был выбран
-  // в календаре (урок начался 1 августа, а открыт сегодняшний день).
+  // Идущий урок открывается прямо из карточки «Мой график», а не только из дня в календаре.
   await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 })

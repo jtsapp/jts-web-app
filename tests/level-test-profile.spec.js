@@ -19,7 +19,8 @@ const TOKEN = (() => {
   return `${b64({ alg: 'HS256' })}.${b64({ role: 'STUDENT', userId: 901, exp: Math.floor(Date.now() / 1000) + 3600 })}.s`
 })()
 
-const УЧЕНИК = { id: 901, name: 'Ученик', role: 'STUDENT' }
+// Номер обязателен: без него вход (и восстановленная сессия) уводит ученика на шаг «Укажите номер» (07.10.2026).
+const УЧЕНИК = { id: 901, name: 'Ученик', role: 'STUDENT', phone: '77001234567' }
 
 /**
  * Заглушки бэкенда. Сначала — общая для всех чужих хостов (иначе экраны ходили
@@ -51,7 +52,7 @@ async function гостьСВходом(page, { level }) {
   await page.addInitScript(() => localStorage.removeItem('jts_access_token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({})))
   await page.route('**/auth/login', (r) => r.fulfill(json({
-    accessToken: TOKEN, refreshToken: 'r', userId: 901, name: 'Ученик', role: 'STUDENT',
+    accessToken: TOKEN, refreshToken: 'r', userId: 901, name: 'Ученик', role: 'STUDENT', phone: УЧЕНИК.phone,
   })))
 }
 

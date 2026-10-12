@@ -37,7 +37,7 @@ const РАБОТА = {
 
 async function openHomework(page, работа = РАБОТА) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json([работа])))
   // Часть привязана (homeworkAssignmentId=7) — /student/assignments её тоже
   // отдаёт (совместимость со старым кабинетом, spec §7.1), но новый список её
