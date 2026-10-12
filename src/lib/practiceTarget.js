@@ -16,7 +16,7 @@
 // уверен, что решает заданное, а решает чужое. Поэтому адрес, которого в
 // разделе нет, не превращается в переход вовсе — карточка остаётся без кнопки.
 
-import { LESSONS } from '../practice/shadowing/lessons.js'
+import { lessonAvailable } from '../practice/shadowing/catalog.js'
 
 /** Уровни, которые физически есть в каждом разделе. */
 const LEVELS = {
@@ -62,9 +62,14 @@ export function addressLevel(level, key, levels) {
   return byPrefix ?? null
 }
 
-/** Есть ли такой урок шэдоуинга: чужой id экран молча заменит первым в списке. */
+/**
+ * Есть ли такой урок шэдоуинга: чужой id экран молча заменит первым в списке.
+ *
+ * Уроки бывают вшитые в сайт и добавленные через админку; вторые приезжают с сервера, поэтому до загрузки списка
+ * адрес из админки (он всегда с дефисом) считается существующим — решение примет экран урока, когда уроки доедут.
+ */
 function shadowingLessonExists(key) {
-  return LESSONS.some((lesson) => lesson.id === key)
+  return lessonAvailable(key)
 }
 
 /**

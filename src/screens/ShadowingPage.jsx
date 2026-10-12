@@ -15,7 +15,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon, PlayIcon, MicIcon, StopIcon, RepeatIcon } from '../components/icons.jsx'
-import { LESSONS, getLesson } from '../practice/shadowing/lessons.js'
+import { getLesson, hasLesson, isRemoteLessonId, useShadowingCatalog } from '../practice/shadowing/catalog.js'
 import { loadLessonFile } from '../practice/shadowing/lessonContent.js'
 import { fmt, parseCaptions, segmentId } from '../practice/shadowing/engine.js'
 import {
@@ -67,8 +67,36 @@ function pickMime() {
 
 const SPEEDS = [0.5, 0.75, 1]
 
-export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount }) {
+// Урок из админки, открытый по адресу (домашняя работа, диплинк), до загрузки списка уроков не найти: показывать
+// вместо него первый вшитый урок значило бы подсунуть ученику чужое задание. Ждём ответ каталога и только потом
+// открываем экран; если урока нет и после ответа, экран, как и раньше, откроет первый в списке.
+export default function ShadowingPage(props) {
+  const { t } = useI18n()
+  const { settled } = useShadowingCatalog(props.token)
+  if (isRemoteLessonId(props.lessonId) && !hasLesson(props.lessonId) && !settled) {
+    return (
+      <LearningLayout
+        userName={props.userName}
+        userLevel={props.userLevel}
+        active="practice"
+        token={props.token}
+        onNav={props.onNav}
+        onProfile={props.onProfile}
+      >
+        <div className="sh">
+          <div className="sh-note">{t('shadowing.lessonLoading')}</div>
+        </div>
+      </LearningLayout>
+    )
+  }
+  return <ShadowingScreen {...props} />
+}
+
+function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount }) {
   const { t, lang } = useI18n()
+  // Вшитые уроки и добавленные через админку. Подписка нужна, чтобы вкладки обновились, когда список доедет;
+  // сами уроки ниже берутся из того же реестра через getLesson.
+  const { lessons } = useShadowingCatalog(token)
 
   // Текущий урок: стартовый id из пропса (диплинк-выбор карточки), дальше —
   // переключение табами. getLesson с фолбэком не даст упасть на битом id.
@@ -177,7 +205,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     setFileMeta(null)
     setSegLoading(true)
     setSegError('')
-    loadLessonFile(curId)
+    loadLessonFile(curId, token)
       .then((file) => {
         if (!alive) return
         setFileMeta(file)
@@ -655,7 +683,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 
         {/* Табы уроков — классы .pp-chip как в остальной Практике */}
         <div className="sh-tabs">
-          {LESSONS.map((l, i) => (
+          {lessons.map((l, i) => (
             <button
               key={l.id}
               type="button"

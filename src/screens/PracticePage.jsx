@@ -19,7 +19,7 @@ import {
   readBooksAudioMode,
   writeBooksAudioMode,
 } from '../practice/books/audioFilter.js'
-import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
+import { useShadowingLessons } from '../practice/shadowing/catalog.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery } from '../practice/shadowing/mastery.js'
@@ -597,10 +597,12 @@ export default function PracticePage({
   // async, не блокирует рендер лент). Возврат из урока перемонтирует
   // страницу, поэтому подгружаем при монтировании.
   const [shadowMastered, setShadowMastered] = useState({})
+  // Вшитые уроки и добавленные через админку: список дополняется, когда доедет с сервера.
+  const shadowingLessons = useShadowingLessons(token)
   useEffect(() => {
     let alive = true
     Promise.all(
-      SHADOWING_LESSONS.map((l) =>
+      shadowingLessons.map((l) =>
         getLessonScores(l.id).then((m) => [l.id, lessonMastery(m, l.segCount).mastered]),
       ),
     )
@@ -609,7 +611,7 @@ export default function PracticePage({
     return () => {
       alive = false
     }
-  }, [])
+  }, [shadowingLessons])
 
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
@@ -884,7 +886,7 @@ export default function PracticePage({
           <section key={sec.id} id="sec-shadowing" className="pk-sec">
             {head(sec, t('shadowing.title'))}
             <Rail grid={grid}>
-              {SHADOWING_LESSONS.map((l) => (
+              {shadowingLessons.map((l) => (
                 <ShadowCard
                   key={l.id}
                   lesson={l}

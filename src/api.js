@@ -1295,6 +1295,24 @@ export function getKaraokeTracks(token, onFresh) {
   return cachedAuthGet('/mobile/karaoke', token, onFresh)
 }
 
+// Уроки «Практика → Шэдоуинг», добавленные методистом через админку
+// (GET /mobile/shadowing). Вшитые в сайт уроки (public/shadowing/*.json) не
+// трогаем — это дополнение к ним. Каталог: [{id,slug,title,speaker,video,
+// sourceChannel,sourceUrl,level,segCount,orderIndex,active,updatedAt}], фраз в
+// нём нет. Кэш — тот же stale-while-revalidate, что у караоке и комиксов: список
+// меняется редко, а открывают его каждый заход; показанное и скрытое в админке
+// подтянется фоновым обновлением.
+export function getShadowingLessons(token, onFresh) {
+  return cachedAuthGet('/mobile/shadowing', token, onFresh)
+}
+
+// Один урок с фразами: те же поля плюс segments: [[начало, конец, текст], …] в
+// секундах, как в файлах public/shadowing/<id>.json. Без кэша: правка фраз в
+// админке должна доехать при следующем открытии урока.
+export function getShadowingLesson(token, slug) {
+  return authGet(`/mobile/shadowing/${encodeURIComponent(slug)}`, token)
+}
+
 // Один караоке-трек (GET /mobile/karaoke/{id}). Нужен на случай диплинка и
 // перезагрузки экрана исполнения: карточка каталога к этому моменту может быть
 // уже не в памяти.

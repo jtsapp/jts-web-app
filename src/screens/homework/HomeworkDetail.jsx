@@ -80,7 +80,7 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
         onPartTouched={onPartTouched}
         onOpenCard={onOpenCard}
       />
-      <HomeworkPracticeList hw={hw} onOpen={onOpenPractice} />
+      <HomeworkPracticeList hw={hw} token={token} onOpen={onOpenPractice} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>

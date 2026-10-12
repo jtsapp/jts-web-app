@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { addressLevel, practiceNavTarget } from './practiceTarget.js'
+import { resetLessonsForTests, setRemoteLessons } from '../practice/shadowing/catalog.js'
 
 /**
  * Куда ведёт задание «Практики» из домашней работы.
@@ -62,6 +63,8 @@ describe('practiceNavTarget — по разделу свой экран и св�
  * работы это худший исход: ученик уверен, что решает заданное, а решает чужое.
  */
 describe('practiceNavTarget — молча не уводит не туда', () => {
+  beforeEach(() => resetLessonsForTests())
+
   it('чужой урок шэдоуинга не открывается вовсе', () => {
     // 'dream' лежит в public/shadowing, но в индексе уроков его нет: экран
     // подставил бы 'sg' — Selena Gomez вместо заданного.
@@ -91,6 +94,40 @@ describe('practiceNavTarget — молча не уводит не туда', () 
     expect(practiceNavTarget(задание({
       practiceArea: 'reading', practiceUnitId: null, practiceUnitKey: '   ',
     }))).toBeNull()
+  })
+})
+
+/**
+ * Уроки, добавленные через админку, приезжают с сервера, и к моменту показа домашней работы список мог ещё не доехать.
+ * Прятать кнопку «Открыть» у такого урока нельзя (ученик решил бы, что задание пропало), а подсовывать вместо
+ * удалённого — первый вшитый урок, как раньше, тем более.
+ */
+describe('practiceNavTarget — шэдоуинг: урок из админки', () => {
+  const lesson = (over = {}) => ({
+    id: 5, slug: 'calm-talk-ab3k9', title: 'Calm Talk', speaker: 'Noa', video: 'CqgmozFr_GM', segCount: 31, ...over,
+  })
+  const homework = (key) => задание({ practiceArea: 'shadowing', practiceLevel: 'all', practiceUnitId: null, practiceUnitKey: key })
+
+  beforeEach(() => resetLessonsForTests())
+
+  it('пока список уроков не доехал, адрес из админки ведёт на экран урока — тот дождётся списка', () => {
+    expect(practiceNavTarget(homework('calm-talk-ab3k9'))).toEqual({ key: 'shadowing', payload: 'calm-talk-ab3k9' })
+  })
+
+  it('список доехал, урок в нём есть — открывается', () => {
+    setRemoteLessons([lesson()])
+
+    expect(practiceNavTarget(homework('calm-talk-ab3k9'))).toEqual({ key: 'shadowing', payload: 'calm-talk-ab3k9' })
+  })
+
+  it('список доехал, а урока в нём нет (скрыли или удалили) — кнопки нет, подмены первым вшитым нет', () => {
+    setRemoteLessons([lesson()])
+
+    expect(practiceNavTarget(homework('gone-talk-zz9zz'))).toBeNull()
+  })
+
+  it('вшитые уроки открываются и без списка', () => {
+    expect(practiceNavTarget(homework('sg'))).toEqual({ key: 'shadowing', payload: 'sg' })
   })
 })
 

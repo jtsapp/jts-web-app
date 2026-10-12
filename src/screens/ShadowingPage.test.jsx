@@ -21,6 +21,13 @@ const doneIds = new Set()
 // Локальные баллы = записи в IndexedDB этого устройства.
 let lessonScores = new Map()
 
+// Уроки из админки приезжают с бэкенда; настоящей сети в тесте нет.
+const getShadowingLessons = vi.fn(() => new Promise(() => {}))
+vi.mock('../api.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getShadowingLessons: (...a) => getShadowingLessons(...a),
+}))
+
 vi.mock('../practice/shadowing/lessonContent.js', () => ({
   loadLessonFile: vi.fn(() => Promise.resolve({ segments: SEGMENTS, source: 'test', level: 'A2' })),
 }))
@@ -49,14 +56,16 @@ vi.mock('../practice/skillStats.js', () => ({ recordSkill: vi.fn() }))
 vi.mock('../practice/practiceHomework.js', () => ({ countUnitTowardsHomework: vi.fn() }))
 
 const { default: ShadowingPage } = await import('./ShadowingPage.jsx')
+const { loadLessonFile } = await import('../practice/shadowing/lessonContent.js')
+const { resetLessonsForTests } = await import('../practice/shadowing/catalog.js')
 const { segmentId } = await import('../practice/shadowing/engine.js')
 const { LESSONS } = await import('../practice/shadowing/lessons.js')
 const LID = LESSONS[0].id
 
-function renderPage() {
+function renderPage(lessonId) {
   return render(
     <I18nProvider>
-      <ShadowingPage userLevel="A2" userName="U" token="tok" onNav={() => {}} onProfile={() => {}} />
+      <ShadowingPage userLevel="A2" userName="U" token="tok" lessonId={lessonId} onNav={() => {}} onProfile={() => {}} />
     </I18nProvider>,
   )
 }
@@ -74,6 +83,10 @@ const mineRow = (i) => rows()[i]?.querySelector('.sh-seg__mine')
 const assessBtn = (i) => rows()[i]?.querySelector('.sh-seg__assess')
 
 beforeEach(() => {
+  resetLessonsForTests()
+  getShadowingLessons.mockReset()
+  getShadowingLessons.mockImplementation(() => new Promise(() => {}))
+  loadLessonFile.mockClear()
   doneIds.clear()
   lessonScores = new Map()
   storedBlobs = new Set()
@@ -187,5 +200,61 @@ describe('Shadowing — упавший rec.start() не запирает мик�
     // оставляла счётчик на единице.
     fireEvent.click(micButtons()[0])
     await waitFor(() => expect(built).toBe(2))
+  })
+})
+
+describe('Shadowing — уроки, добавленные через админку', () => {
+  const REMOTE = {
+    id: 5, slug: 'calm-talk-ab3k9', title: 'Calm Talk', speaker: 'Ann Remote', video: 'CqgmozFr_GM', segCount: 2,
+  }
+  const tabs = () => [...document.querySelectorAll('.sh-tabs .pp-chip')]
+  const activeTab = () => document.querySelector('.sh-tabs .pp-chip--on')?.textContent
+
+  it('вкладка урока стоит после вшитых, а его фразы читаются по адресу с токеном', async () => {
+    getShadowingLessons.mockResolvedValue([REMOTE])
+    renderPage()
+
+    await waitFor(() => expect(tabs().length).toBe(LESSONS.length + 1))
+    const tab = tabs().find((b) => b.textContent.endsWith('Ann Remote'))
+    expect(tab).toBe(tabs()[tabs().length - 1])
+    expect(tabs().length).toBe(LESSONS.length + 1)
+
+    fireEvent.click(tab)
+
+    await waitFor(() => expect(loadLessonFile).toHaveBeenCalledWith('calm-talk-ab3k9', 'tok'))
+    await waitFor(() => expect(activeTab()).toContain('Ann Remote'))
+    await showAllPhrases()
+  })
+
+  it('урок по ссылке, пока список не доехал, не подменяется первым вшитым: показана загрузка', async () => {
+    renderPage('calm-talk-ab3k9')
+
+    expect(document.body.textContent).toContain('Загружаем урок')
+    expect(loadLessonFile).not.toHaveBeenCalled()
+    expect(tabs().length).toBe(0)
+  })
+
+  it('список доехал — открывается именно этот урок', async () => {
+    getShadowingLessons.mockResolvedValue([REMOTE])
+    renderPage('calm-talk-ab3k9')
+
+    await waitFor(() => expect(loadLessonFile).toHaveBeenCalledWith('calm-talk-ab3k9', 'tok'))
+    expect(loadLessonFile).not.toHaveBeenCalledWith(LID, 'tok')
+    expect(activeTab()).toContain('Ann Remote')
+  })
+
+  it('урока нет и после загрузки списка (скрыли или удалили) — открывается первый вшитый, как раньше', async () => {
+    getShadowingLessons.mockResolvedValue([])
+    renderPage('gone-talk-zz9zz')
+
+    await waitFor(() => expect(loadLessonFile).toHaveBeenCalledWith(LID, 'tok'))
+  })
+
+  it('сеть недоступна — вшитые уроки работают, ожидание не виснет', async () => {
+    getShadowingLessons.mockRejectedValue(new Error('Нет связи с сервером.'))
+    renderPage('calm-talk-ab3k9')
+
+    await waitFor(() => expect(loadLessonFile).toHaveBeenCalledWith(LID, 'tok'))
+    expect(tabs().length).toBe(LESSONS.length)
   })
 })
