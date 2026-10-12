@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Тропа из 21 узла (индексы 0–20), первые 20 (l0..l19) уже пройдены — как у
@@ -375,11 +375,24 @@ describe('KingdomInteriorPage — тропа идёт подряд, «Уроки
     expect(buttons.every((b) => !trailLocked(b))).toBe(true)
   })
 
-  it('уровень ниже CEFR ученика открыт целиком — повторять можно в любом порядке, без занятий', async () => {
+  // Решение 13.10: на любом уровне — постепенно. Правило «уровень ниже своего CEFR открыт целиком»
+  // (28.09–07.10) не возвращаем: открыто только то, до чего ученик дошёл.
+  it('уровень ниже CEFR ученика идёт так же по порядку — целиком не открывается', async () => {
     const buttons = await stepsOf({ userLevel: 'B2' })
 
-    expect(buttons.every((b) => !trailLocked(b))).toBe(true)
-    expect(getCatalogProgress).toHaveBeenCalled()
+    expect(trailLocked(buttons[0])).toBe(false)
+    expect(buttons.slice(1).every(trailLocked)).toBe(true)
+  })
+
+  it('урок, до которого дошёл в «Уроках», открыт, следующий закрыт, пока этот не пройден', async () => {
+    getCatalogProgress.mockResolvedValue({ completedLessonIds: [11] }) // в «Уроках» — юнит 1, урок 1
+    let buttons = await stepsOf()
+    expect(buttons.map(trailLocked)).toEqual([false, true, true, true])
+
+    cleanup()
+    loadDone.mockResolvedValue(new Set(['m0'])) // прошёл его в «Повторении» — открылся следующий
+    buttons = await stepsOf()
+    expect(buttons.map(trailLocked)).toEqual([false, false, true, true])
   })
 
   // Гость ходит под общим демо-токеном (getPracticeToken): спроси экран каталог под ним — гостю открылись бы
