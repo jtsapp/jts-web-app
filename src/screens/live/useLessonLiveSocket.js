@@ -8,7 +8,8 @@ const PRESENCE_REJOIN_MS = 15000
 // Живая координация урока помимо доски: состояние занятия (state — где класс,
 // ведёт ли преподаватель, стадия, таймер, статус), зеркалирование действий
 // студента внутри материала (mirror), проигрывание потока действий учителя
-// студенту (present), сигнал «список разделов изменился» (sectionsChanged).
+// студенту (present), сигналы «список разделов изменился» (sectionsChanged) и
+// «переписка урока изменилась» (chatChanged).
 // Порт web-admin'овского LessonLiveSocketService на голый @stomp/stompjs — тот
 // же brokerURL/connectHeaders, что и в useLessonPresence.js. Колбэки передаются
 // параметром (как в useLessonBoard), чтобы не плодить лишний React-стейт здесь —
@@ -24,7 +25,7 @@ const PRESENCE_REJOIN_MS = 15000
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onChatChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Соединение нужно знать снаружи: publish до CONNECT молча теряется, и
   // вызывающему приходится ждать связи, чтобы отправить состояние (см.
@@ -36,8 +37,8 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
   // onVocabSaved здесь не было вовсе: подписка на канал слова вызывала
   // handlersRef.current.onVocabSaved, которого в объекте не существовало, — и
   // ученик не узнавал о слове, которое ему только что положили.
-  const handlersRef = useRef({ onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved })
-  useEffect(() => { handlersRef.current = { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved } })
+  const handlersRef = useRef({ onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onChatChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved })
+  useEffect(() => { handlersRef.current = { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onChatChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -88,6 +89,12 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
         client.subscribe(`/topic/lesson/${lessonId}/present`, onPresentMessage)
         client.subscribe(`/topic/lesson/${lessonId}/sections-changed`, () => {
           handlersRef.current.onSectionsChanged?.()
+        })
+        // Сервер шлёт его после отправки, правки и удаления сообщения — чат
+        // перечитывается по нему, а не опросом раз в 5 с. Эхо не глушим: в сигнале
+        // нет отправителя, а своё сообщение из другой вкладки тоже надо увидеть.
+        client.subscribe(`/topic/lesson/${lessonId}/chat-changed`, () => {
+          handlersRef.current.onChatChanged?.()
         })
         // Учитель транслирует аудио всему классу ("Транслировать классу") — лесson-wide
         // топик, как и позиция учителя в step-progress. Своё эхо глушим тем же приёмом,
