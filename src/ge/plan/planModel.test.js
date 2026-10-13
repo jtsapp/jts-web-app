@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  courseTitles, dayMinutes, dayStatus, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskRoute, taskTitle,
-  todayView, weekNumber,
+  courseTitles, dayMinutes, dayStatus, isTeacherTask, minutesLabel, monthGrid, mondayOf, plateOf, roadWeek, shiftMonth, taskAction,
+  taskRoute, taskTitle, todayView, weekNumber,
 } from './planModel.js'
 import { openNodes } from './courseFrontier.js'
 import { gePlanShape } from '../../api.js'
@@ -114,5 +114,41 @@ describe('gePlanShape', () => {
     expect(gePlanShape({})).toBe(null)
     expect(gePlanShape(null)).toBe(null)
     expect(gePlanShape({ state: 'ready', tasks: [] })).toEqual({ state: 'ready', tasks: [] })
+  })
+})
+
+describe('задачи преподавателя', () => {
+  const teacher = (over) => ({ id: 9, date: '2026-10-14', status: 'available', origin: 'teacher', extra: {}, ...over })
+
+  it('урок преподавателя ведёт в тропу своего уровня, а не текущего', () => {
+    expect(taskRoute(teacher({ kind: 'course', extra: { level: 'A1' } }), 'A2')).toEqual({ to: 'course', payload: { level: 'A1' } })
+  })
+
+  it('материал Практики — тем же адресом, что юнит в домашке', () => {
+    expect(taskRoute(teacher({ kind: 'unit', extra: { area: 'grammar', level: 'a1', unitId: 3 } }))).toEqual({ to: 'practice', payload: { level: 'a1', unitId: 3 } })
+    expect(taskAction(teacher({ kind: 'unit', extra: { area: 'nope' } }))).toBeNull()
+  })
+
+  it('своё задание — отметка, выполненное — без кнопки', () => {
+    expect(taskAction(teacher({ kind: 'custom' }))).toEqual({ type: 'done' })
+    expect(taskAction(teacher({ kind: 'custom', status: 'completed' }))).toBeNull()
+    expect(taskAction({ kind: 'practice', module: 'ai_tutor', status: 'available' }, 'A2')).toEqual({ type: 'nav', to: 'tutor' })
+  })
+
+  it('подписи', () => {
+    expect(isTeacherTask(teacher({}))).toBe(true)
+    expect(isTeacherTask({ origin: 'programme' })).toBe(false)
+    expect(taskTitle(t, teacher({ kind: 'custom', extra: { title: 'Сериал' } }))).toBe('Сериал')
+    expect(taskTitle(t, teacher({ kind: 'course', extra: { lessonTitle: 'Famous people' } }))).toBe('gePlan.course.named:{"title":"Famous people"}')
+    expect(taskTitle(t, teacher({ kind: 'unit', extra: { unitTitle: 'Present Simple' } }))).toBe('Present Simple')
+  })
+
+  it('подписи тропы — только урокам программы', () => {
+    const tasks = [
+      { id: 1, kind: 'course', date: '2026-10-13', status: 'available' },
+      teacher({ id: 2, kind: 'course', date: '2026-10-12', extra: { lessonTitle: 'X' } }),
+      { id: 3, kind: 'course', date: '2026-10-14', status: 'available' },
+    ]
+    expect(courseTitles(tasks, [{ title: 'A' }, { title: 'B' }])).toEqual({ 1: 'A', 3: 'B' })
   })
 })
