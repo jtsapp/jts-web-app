@@ -59,6 +59,7 @@ import SatMockPage from './screens/SatMockPage.jsx'
 import SatMockReviewPage from './screens/SatMockReviewPage.jsx'
 import SatUnitPage from './screens/SatUnitPage.jsx'
 import SatOnboardingPage from './screens/SatOnboardingPage.jsx'
+import ExamPricingPage from './screens/ExamPricingPage.jsx'
 import IeltsDiagnosticPage from './screens/IeltsDiagnosticPage.jsx'
 import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
 import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
@@ -165,6 +166,8 @@ const PERSISTABLE_SCREENS = new Set([
   'sat-mock-review',
   // юнит курса держит код в ?satUnit=
   'sat-unit',
+  // тарифы экзаменов: свои у SAT и IELTS, отдельно от витрины General English
+  'sat-pricing', 'ielts-pricing',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -1549,7 +1552,7 @@ export default function App() {
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
-    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit') setScreen(key)
+    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -2174,6 +2177,10 @@ export default function App() {
       return <SatStudyPage token={token} onNav={handleNav} />
     case 'sat-diagnostic':
       return <SatDiagnosticPage token={token} onNav={handleNav} />
+    case 'sat-pricing':
+    case 'ielts-pricing':
+      // витрина без сайдбара, как общая: шаг покупки, «назад» — в свой раздел
+      return <ExamPricingPage product={view === 'sat-pricing' ? 'sat' : 'ielts'} onBack={() => handleNav(view === 'sat-pricing' ? 'sat' : 'ielts')} />
     case 'sat-onboarding':
       return <SatOnboardingPage token={token} onExit={() => handleNav('sat')} onDiagnostic={() => handleNav('sat-diagnostic')} />
     case 'ielts-diagnostic':

@@ -61,6 +61,13 @@
   gap: 12px;
   margin-bottom: 8px;
 }
+/* Справа сверху висит группа кабинета «язык + колокольчик» (.learn__bell, absolute) — серия, дата и цель в шапке SAT
+   уходили под неё. Шапка опускается ниже группы (просьба владельца 13.10.2026: «контент SAT чуть ниже»). */
+@media (min-width: 761px) {
+  .st-header {
+    margin-top: 44px;
+  }
+}
 .st-header h1 {
   margin: 0;
   font-size: 32px;
@@ -2123,6 +2130,27 @@ mark.st-hl {
 .st-ref__name {
   font-size: 12px;
   color: var(--ih-muted);
+}
+/* Дроби и корни в тексте вопросов банка: разметка прототипа (`<span class="frac"><span>3</span><span>4</span></span>`).
+   Без этих правил дробь печаталась слитно — «34» вместо 3/4 (диагностика, вопрос m-trg-07). */
+.st .frac {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: -0.45em;
+  margin: 0 0.12em;
+  font-size: 0.92em;
+  line-height: 1.06;
+  text-align: center;
+}
+.st .frac > span:first-child {
+  padding: 0 0.3em;
+  border-bottom: 1.2px solid currentColor;
+}
+.st .frac > span:last-child {
+  padding: 0 0.3em;
+}
+.st .sqrt::before {
+  content: "A";
 }
 .st-frac {
   display: inline-flex;
@@ -8969,4 +8997,23 @@ mark.st-hl {
   .st-dg__head {
     flex-direction: column;
   }
+}
+
+/* Старт SAT до доступа (SatStartView): карточка замка IELTS (.ih-locked), но вместо маскота IELTS — плашка шага */
+.st-start__icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #ede4ff, #f6f1ff);
+  color: var(--ih-violet, #9047ff);
+}
+.st-start__icon.is-access {
+  background: linear-gradient(135deg, #fff1db, #fff8ec);
+  color: #c2770a;
+}
+.st-start .ih-locked__steps li.is-now {
+  background: #efe6ff;
+  box-shadow: inset 0 0 0 1.5px var(--ih-violet, #9047ff);
 }

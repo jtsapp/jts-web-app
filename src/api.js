@@ -1494,6 +1494,25 @@ export function getIeltsProgress(token) {
 }
 
 // ---- SAT (бэкенд /mobile/sat/**, docs/sat/TEST_FORMAT.md): профиль, таксономия, вопрос без ключа, проверка
+// Шаги старта и доступ к материалам SAT (backend V336): { access, onboarded, diagnosticDone } — открыто без доступа
+export function getSatMe(token) {
+  return authGet('/mobile/sat/me', token)
+}
+
+// Сайдбар спрашивает доступ SAT на каждом экране — ответ помним по токену; осечку не помним (доступа нет до
+// следующего экрана, меню просто останется прежним).
+const _satMe = new Map()
+export function getSatMeCached(token) {
+  if (!token) return Promise.resolve(null)
+  if (!_satMe.has(token)) {
+    _satMe.set(token, getSatMe(token).catch(() => {
+      _satMe.delete(token)
+      return null
+    }))
+  }
+  return _satMe.get(token)
+}
+
 export function getSatProfile(token) {
   return authGet('/mobile/sat/profile', token)
 }

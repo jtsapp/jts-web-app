@@ -196,7 +196,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
       <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
         <div className="ih">
           <IeltsHeader track={me?.track || track} />
-          <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} />
+          <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} onOpenPricing={() => onNav?.('ielts-pricing')} />
         </div>
       </LearningLayout>
     )

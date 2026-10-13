@@ -6,7 +6,7 @@ import { useI18n } from '../../i18n.jsx'
  * диагностика открыты: по ним строится план и менеджер видит заявку. Замок стоит и на сервере — экран лишь объясняет,
  * что происходит и что делать дальше, вместо пустых вкладок с ошибками.
  */
-export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboarding, onOpenDiagnostic, onOpenResult }) {
+export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboarding, onOpenDiagnostic, onOpenResult, onOpenPricing }) {
   const { t } = useI18n()
   return (
     <div className="ih-locked">
@@ -27,6 +27,7 @@ export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboa
         ) : (
           <button type="button" className="ih-btn ih-btn--primary" onClick={onOpenOnboarding}>{t('ieltsLocked.onboarding')}</button>
         )}
+        {onboarded && onOpenPricing && <button type="button" className="ih-btn ih-btn--outline" onClick={onOpenPricing}>{t('ieltsLocked.pricing')}</button>}
         <a className="ih-btn ih-btn--outline" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer">{t('ieltsLocked.contact')}</a>
       </div>
     </div>

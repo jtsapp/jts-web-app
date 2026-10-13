@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import Sidebar from './Sidebar.jsx'
+import { getIeltsMe, getSatMeCached } from '../api.js'
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -10,6 +11,7 @@ vi.mock('../api.js', async (importOriginal) => ({
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   // аккаунт IELTS ставит админка (V304) — сайдбар узнаёт о нём ручкой /mobile/ielts/plan/me
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: true })),
+  getSatMeCached: vi.fn(async () => ({ access: false })),
 }))
 
 function tokenFor(role) {
@@ -29,11 +31,26 @@ describe('Sidebar — аккаунт IELTS', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS'])
+    expect(items).toEqual(['Главная', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT'])
     expect(screen.queryByText('Повторение')).toBeNull()
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
     expect(onProfile).toHaveBeenCalled()
+  })
+
+  it('доступ к одному SAT даёт то же меню — без «Повторения», с IELTS и SAT', async () => {
+    getIeltsMe.mockResolvedValueOnce({ ieltsAccount: false, access: false })
+    getSatMeCached.mockResolvedValueOnce({ access: true })
+    render(
+      <I18nProvider>
+        <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
+      </I18nProvider>
+    )
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
+    const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
+    expect(items).toContain('IELTS')
+    expect(items).toContain('SAT')
+    expect(screen.queryByText('Повторение')).toBeNull()
   })
 })

@@ -13983,3 +13983,161 @@
 .ih-mtsec__s.is-bad small {
   color: #b42318;
 }
+
+/* Тарифы экзамена — свои у SAT и IELTS (ExamPricingPage): шапка, три карточки, «как оформить» */
+/* экран без сайдбара: фон свой, иначе под ним тёмная подложка приложения и заголовок не читается */
+.exam-pr {
+  min-height: 100vh;
+  padding: 28px max(24px, calc((100% - 1080px) / 2)) 48px;
+  background: #f7f5fc;
+  color: #1d1730;
+}
+.exam-pr__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.exam-pr__top h1 {
+  margin: 4px 0 6px;
+  font-size: 30px;
+}
+.exam-pr__top p {
+  margin: 0;
+  max-width: 680px;
+  color: #5f5a6e;
+  line-height: 1.5;
+}
+.exam-pr__kicker {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c3aed;
+}
+.exam-pr--sat .exam-pr__kicker {
+  color: #2563eb;
+}
+.exam-pr__back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e6e1f0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.exam-pr__plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.exam-pr__plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 22px;
+  border: 1.5px solid #ece6f8;
+  border-radius: 20px;
+  background: #fff;
+}
+.exam-pr__plan.is-featured {
+  border-color: #9047ff;
+  box-shadow: 0 10px 30px rgba(144, 71, 255, 0.12);
+}
+.exam-pr__badge {
+  position: absolute;
+  top: -12px;
+  left: 22px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #9047ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.exam-pr__plan h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.exam-pr__desc {
+  margin: 0;
+  color: #5f5a6e;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.exam-pr__price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  border-top: 1px solid #f0ecf7;
+  border-bottom: 1px solid #f0ecf7;
+}
+.exam-pr__price b {
+  font-size: 26px;
+}
+.exam-pr__price b.is-soon {
+  font-size: 17px;
+  color: #7c3aed;
+}
+.exam-pr__price s,
+.exam-pr__price small {
+  color: #8a8597;
+  font-size: 13px;
+}
+.exam-pr__plan ul {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.exam-pr__plan li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.exam-pr__plan li svg {
+  flex: none;
+  margin-top: 2px;
+  color: #22a35a;
+}
+.exam-pr__cta {
+  padding: 12px 16px;
+  border: 1.5px solid #9047ff;
+  border-radius: 14px;
+  background: #fff;
+  color: #6d28d9;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.exam-pr__cta.is-primary {
+  background: #9047ff;
+  color: #fff;
+}
+.exam-pr__how {
+  margin-top: 28px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: #f7f4fd;
+}
+.exam-pr__how h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.exam-pr__how ol {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+@media (max-width: 860px) {
+  .exam-pr__plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

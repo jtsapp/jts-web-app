@@ -172,3 +172,35 @@ html[data-theme="dark"] .ih-pg__est {
   background: rgba(245, 165, 36, 0.15);
   color: #f5c76a;
 }
+html[data-theme="dark"] .exam-pr {
+  background: var(--dk-bg, #120f1c);
+  color: #f1eef8;
+}
+html[data-theme="dark"] .exam-pr__plan,
+html[data-theme="dark"] .exam-pr__back,
+html[data-theme="dark"] .exam-pr__cta {
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+  color: inherit;
+}
+html[data-theme="dark"] .exam-pr__plan.is-featured {
+  border-color: #9047ff;
+}
+html[data-theme="dark"] .exam-pr__cta.is-primary {
+  background: #9047ff;
+  color: #fff;
+}
+html[data-theme="dark"] .exam-pr__how,
+html[data-theme="dark"] .st-start .ih-locked__steps li.is-now {
+  background: rgba(144, 71, 255, 0.16);
+}
+html[data-theme="dark"] .exam-pr__top p,
+html[data-theme="dark"] .exam-pr__desc {
+  color: #b9b3c9;
+}
+html[data-theme="dark"] .exam-pr__price {
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .st-start__icon {
+  background: rgba(144, 71, 255, 0.2);
+}

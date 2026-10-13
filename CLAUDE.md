@@ -874,6 +874,14 @@ web-admin «Ученики IELTS», позже биллинг; ручка `/mobi
 «ждёт ИИ». Анкету и итог видят web-admin «IELTS · ученики», кабинет преподавателя (вкладка «Диагностика») и «IELTS ·
 доступ» (теперь кнопка в «Учениках» / «Моих студентах», не пункт меню).
 
+**SAT — тот же замок, что у IELTS (backend V336).** `/mobile/sat/me` отдаёт `{access, onboarded, diagnosticDone}`; пока
+хоть один шаг не пройден, хаб SAT рисует вместо вкладок `src/sat/tabs/SatStartView.jsx` (главы → диагностика → доступ от
+менеджера, без маскота IELTS). Замок на сервере — `SatAccessInterceptor` (открыты me, profile, taxonomy, diagnostic/**,
+plan и plan/rebuild); менеджер открывает доступ в web-admin «Ученики → SAT · доступ». Тарифы экзаменов — свои у SAT и
+IELTS: `?screen=sat-pricing|ielts-pricing` (`src/screens/ExamPricingPage.jsx`, состав и цены — `src/data/examPricing.js`;
+цены пока null — «уточнит менеджер», кнопка пишет менеджеру). Банк SAT грузится выгрузкой прототипа
+(`scripts/sat/export-sat.js`): с 13.10.2026 в неё входят и материалы College Board (лицензия), метка `licensed`.
+
 **Доступ к IELTS открывает менеджер (backend V324).** Материалы IELTS закрыты, пока менеджер не откроет доступ в
 web-admin «IELTS · доступ» (оплаты пока нет): `getIeltsMe` отдаёт `access`, и без него хаб на любой вкладке рисует
 `tabs/IeltsLockedView.jsx` (анкета → диагностика → «доступ откроет менеджер», кнопка «Написать менеджеру»), карточка

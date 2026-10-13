@@ -12,7 +12,8 @@ import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import VocabTab from '../sat/tabs/VocabTab.jsx'
-import { getSatDiagnostic, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
+import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
+import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { loadToken } from '../lib/session.js'
 import { plural } from '../lib/plural.js'
 import { daysUntil } from '../sat/model/profile.js'
@@ -62,6 +63,8 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [busy, setBusy] = useState(false)
   const [today, setToday] = useState(null)
   const [error, setError] = useState(null)
+  // шаги старта и доступ (V336): пока что-то не пройдено, вместо вкладок — экран старта
+  const [me, setMe] = useState(null)
 
   // вкладку из адреса читаем после монтирования: иначе сервер и клиент нарисуют разное (как у IELTS)
   useEffect(() => {
@@ -72,6 +75,10 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
 
   useEffect(() => {
     let alive = true
+    // без ответа «me» считаем, что старт пройден: экран просто покажет ошибки вкладок, а не запрёт ученика с доступом
+    getSatMe(authToken)
+      .then((m) => alive && setMe(m))
+      .catch(() => alive && setMe({ access: true, onboarded: true, diagnosticDone: true }))
     getSatProfile(authToken)
       .then((p) => alive && setProfile(p))
       .catch(() => alive && setProfile({ exists: false }))
@@ -81,13 +88,22 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     getSatDiagnostic(authToken)
       .then((d) => alive && setDiagnostic(d))
       .catch(() => alive && setDiagnostic({ status: 'none' }))
+    return () => {
+      alive = false
+    }
+  }, [authToken])
+
+  // «Сегодня» закрыто замком — спрашиваем, только когда доступ есть (иначе 403 на каждый заход)
+  useEffect(() => {
+    if (!me?.access) return
+    let alive = true
     getSatToday(authToken)
       .then((d) => alive && setToday(d))
       .catch(() => alive && setToday({}))
     return () => {
       alive = false
     }
-  }, [authToken])
+  }, [authToken, me?.access])
 
   const go = (next) => {
     setMoved(true)
@@ -269,6 +285,31 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onPlan={() => go('plan')}
         onVocab={() => go('vocab')}
       />
+    )
+  }
+
+  // Старт обязателен: без глав об экзамене, диагностики и доступа от менеджера вкладок нет вовсе (просьба владельца
+  // 13.10.2026). Пока «me» не пришёл — рисуем шапку без вкладок, а не мигаем вкладками перед замком.
+  const started = me && me.access && me.onboarded && me.diagnosticDone
+  if (!started) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>
+        <div className="ih st">
+          <header className="st-header">
+            <h1>SAT</h1>
+            <span className="st-header__kind">{t('sat.digital')}</span>
+          </header>
+          {me && (
+            <SatStartView
+              me={me}
+              onOnboarding={() => onNav?.('sat-onboarding')}
+              onDiagnostic={() => toDiagnostic(null)}
+              onResults={() => toDiagnostic('report')}
+              onPricing={() => onNav?.('sat-pricing')}
+            />
+          )}
+        </div>
+      </LearningLayout>
     )
   }
 
