@@ -2043,6 +2043,14 @@ html[data-theme="dark"] .kt-step {
     border: none;
     background: transparent no-repeat bottom center
 }
+html[data-theme="dark"] .kt-hint {
+    background: #2f253c;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .kt-hint.is-error {
+    background: var(--dk-chip);
+    color: #ffa192
+}
 html[data-theme="dark"] .kt-step.is-active {
     background-image: url('/assets/learning/step-active.webp')
 }
@@ -2849,6 +2857,47 @@ html[data-theme="dark"] .hw-assigned {
 html[data-theme="dark"] .hw-frame__iframe {
     border: 1px solid var(--line, #e6e6ef);
     background: var(--dk-card)
+}
+html[data-theme="dark"] .hw-frame__title {
+    color: var(--ink)
+}
+html[data-theme="dark"] .hw-frame__toggle {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--purple)
+}
+html[data-theme="dark"] .hw-frame__toggle:hover {
+    background: var(--dk-page);
+    border-color: var(--purple)
+}
+html[data-theme="dark"] .hw-frame__toggle:focus-visible {
+    outline: 2px solid var(--ink)
+}
+html[data-theme="dark"] .hw-frame--full {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .hw-frame--full .hw-frame__bar {
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .hw-frame--full .hw-frame__iframe {
+    border: 0
+}
+@media (max-width: 900px) {
+    html[data-theme="dark"] .hw__back {
+        border: 0;
+        background: var(--dk-card);
+        color: var(--ink)
+    }
+    html[data-theme="dark"] .hw__back:hover {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .hw__back:focus-visible {
+        outline: 2px solid var(--ink)
+    }
+    html[data-theme="dark"] .hw__back-count {
+        background: var(--dk-chip);
+        color: var(--purple)
+    }
 }
 html[data-theme="dark"] .hw__section-title {
     color: var(--ink)
@@ -6948,6 +6997,18 @@ html[data-theme="dark"] .ih-dres__ai {
     background: var(--dk-page);
     color: #e3a250
 }
+html[data-theme="dark"] .ih-dres__skill--writing .ih-dres__bar > i {
+    background: #12a37f
+}
+html[data-theme="dark"] .ih-dres__skill--speaking .ih-dres__bar > i {
+    background: #d9468f
+}
+html[data-theme="dark"] .ih-dres__crit span {
+    background: var(--ih-surface-2, #f4f5f9)
+}
+html[data-theme="dark"] .ih-dres__crit small {
+    color: var(--ih-muted, #6b7280)
+}
 html[data-theme="dark"] .ih-dres__wrow {
     background: none;
     border-top: 1px solid var(--ih-line)
@@ -8928,6 +8989,70 @@ html[data-theme="dark"] .ih-mcheck__agree input[type='checkbox'], html[data-them
     html[data-theme="dark"] .ih-mt__hero::before {
         background: linear-gradient(90deg, color-mix(in oklab, var(--dk-acc) 78%, transparent) 0%, color-mix(in oklab, var(--dk-acc) 45%, transparent) 70%, color-mix(in oklab, var(--dk-acc) 20%, transparent) 100%)
     }
+}
+html[data-theme="dark"] .ih-pchart__gridline {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-wchart__slice {
+    stroke: #fff
+}
+html[data-theme="dark"] .ih-locked {
+    background: var(--ih-card, #fff);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .ih-locked p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .ih-locked__steps li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-locked__steps li::before {
+    background: var(--ih-violet, #9047ff);
+    color: #fff
+}
+html[data-theme="dark"] .ih-locked__steps li.is-done::before {
+    background: #22a35a
+}
+html[data-theme="dark"] .ih-mtfresh button {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mtfresh button i {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mtfresh button.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-chip);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-mtfresh__hint {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mt__added, html[data-theme="dark"] .ih-mtl__added {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mtsec__sum {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-mtsec__s {
+    border: 1.5px solid var(--ih-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .ih-mtsec__txt small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .ih-mtsec__s.is-done {
+    border-color: #2f573f;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-mtsec__s.is-done small {
+    color: #77d68e
+}
+html[data-theme="dark"] .ih-mtsec__s.is-checking small {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ih-mtsec__s.is-bad small {
+    color: #ffa192
 }
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {
@@ -11957,8 +12082,14 @@ html[data-theme="dark"] .sh-tab__n {
     color: var(--sh-purple)
 }
 html[data-theme="dark"] .pp-chip--on .sh-tab__n {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--sh-purple);
     color: #fff
+}
+@media (max-width: 760px) {
+    html[data-theme="dark"] .pp-chip--on .sh-tab__n {
+        background: rgba(255, 255, 255, 0.25);
+        color: #fff
+    }
 }
 html[data-theme="dark"] .sh-note {
     background: var(--sh-soft);
@@ -12045,6 +12176,9 @@ html[data-theme="dark"] .sh-seg__txt {
 }
 html[data-theme="dark"] .sh-seg__time {
     color: var(--sh-ink-mute)
+}
+html[data-theme="dark"] .sh-seg__err {
+    color: var(--sh-red)
 }
 html[data-theme="dark"] .sh-seg__mine {
     background: var(--sh-green-bg)
@@ -14286,7 +14420,7 @@ html[data-theme="dark"] .sit-rec__mic {
     background: var(--sit-purple);
     color: #fff
 }
-html[data-theme="dark"] .sit-rec__mic:hover {
+html[data-theme="dark"] .sit-rec__mic:hover:not(:disabled) {
     background: var(--sit-purple-dark)
 }
 html[data-theme="dark"] .sit-rec__mic.is-live {
@@ -14372,6 +14506,20 @@ html[data-theme="dark"] .spsp-back {
     border: 0;
     background: none;
     color: var(--dk-acc-text)
+}
+/*  numbers.css  */
+html[data-theme="dark"] .nmb-back {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .nmb-state {
+    color: #beb7e1
+}
+html[data-theme="dark"] .nmb-retry {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
 }
 /*  words.css  */
 html[data-theme="dark"] .wd {
@@ -20004,6 +20152,21 @@ html[data-theme="dark"] .hm-ielts__chip {
     background: var(--dk-chip);
     color: var(--dk-acc-text)
 }
+html[data-theme="dark"] .ge-skin {
+    --ih-violet: var(--dk-acc);
+    --ih-ink: var(--dk-text);
+    --ih-ink-2: var(--dk-text-2);
+    --ih-muted: var(--dk-text-2);
+    --ih-line: var(--dk-line);
+    --ih-soft: var(--dk-page);
+    --ih-green: #1f9d55;
+    --ih-orange: #e57a12;
+    --ih-red: #e0364f;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .ge-goal__plan {
+    color: var(--ih-ink-2)
+}
 /*  assistant.css  */
 html[data-theme="dark"] .asst {
     --asst-bg: var(--dk-card);
@@ -21850,18 +22013,4 @@ html[data-theme="dark"] .asst-ask {
     html[data-theme="dark"] .hm-placement__sub {
         color: var(--dk-text)
     }
-}
-/*  numbers.css  */
-html[data-theme="dark"] .nmb-back {
-    border: 0;
-    background: none;
-    color: var(--dk-acc-text)
-}
-html[data-theme="dark"] .nmb-state {
-    color: #beb7e1
-}
-html[data-theme="dark"] .nmb-retry {
-    border: 0;
-    background: var(--dk-acc);
-    color: var(--dk-on-acc)
 }

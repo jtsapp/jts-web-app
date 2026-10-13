@@ -5,6 +5,7 @@ import { ALLOWED_EXTENSIONS, homeworkStateKey, isAllowedFile } from './homeworkF
 import { assignmentScope, isMaterialGraded, materialCard, needsAnswerFile } from './materialAssignments.js'
 import useMaterialOpen from './useMaterialOpen.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
+import HomeworkFrame from './HomeworkFrame.jsx'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 
@@ -119,11 +120,7 @@ export default function HomeworkMaterialPart({ part, token, editable, onOpenCard
       </div>
 
       {frameSrc ? (
-        <div className="hw-frame">
-          {/* allow="autoplay" — разрешение выдаётся документу, а материал живёт
-              в своём iframe; у заданий на слух без этого молчала бы запись. */}
-          <iframe ref={frameRef} src={frameSrc} title={card.title} className="hw-frame__iframe" allow="autoplay" />
-        </div>
+        <HomeworkFrame src={frameSrc} title={card.title} frameRef={frameRef} />
       ) : (
         <button type="button" className="hw-submit hw-submit--batch" disabled={opening || lookingUp} onClick={open}>
           {opening ? t('homework.opening') : t('homework.open')}
