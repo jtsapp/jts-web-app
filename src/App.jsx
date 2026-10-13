@@ -1182,7 +1182,6 @@ export default function App() {
   function handleGeSaved(p, next) {
     if (p) {
       setGeProfile(p)
-      syncLegacyGoal(token, p)
       const lv = p.journey?.current?.level
       if (lv && needsLevelTest) {
         setUserLevel(lv)
