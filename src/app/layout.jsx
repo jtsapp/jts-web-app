@@ -33,11 +33,14 @@ import '../mobile/learning.css'
 import '../mobile/practice.css'
 import '../mobile/practice-grammar.css'
 import '../mobile/home.css'
+// Казахский интерфейс — на Inter: перекрывает шрифты разделов и мобильного слоя
+import '../kk-font.css'
 // Набросок тёмной темы — последним: перекрывает всё выше под html[data-theme=dark]
 import '../theme-dark.generated.css'
 import '../theme-dark.css'
 import Providers from './providers.jsx'
 import { THEME_BOOT } from '../lib/theme.js'
+import { UI_LANG_BOOT } from '../lib/uiLang.js'
 
 // Тот же дефолт, что в src/api.js (BASE) — держать в синхроне.
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
@@ -58,6 +61,8 @@ export default function RootLayout({ children }) {
       <head>
         {/* До гидратации: иначе тёмная тема мигает белым при каждой загрузке. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        {/* Тоже до гидратации: казахский интерфейс иначе мигал бы Manrope. */}
+        <script dangerouslySetInnerHTML={{ __html: UI_LANG_BOOT }} />
         {/* Ранний preconnect к JTS-бэкенду срезает DNS+TLS перед первым fetch.
             Два линка не случайно: CORS-запросы (fetch с Authorization) и
             no-CORS (<img> обложек) используют разные соединения. */}
@@ -66,7 +71,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Manrope:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>

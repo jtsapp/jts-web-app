@@ -1,0 +1,46 @@
+/* ======================================================================
+   Казахский интерфейс — на Inter, во всех разделах и на всех ширинах.
+
+   Атрибут data-ui-lang на <html> ставит I18nProvider (src/lib/uiLang.js),
+   до гидратации — загрузочный скрипт в layout.jsx. Inter грузится той же
+   ссылкой Google Fonts, что и Manrope: файлы шрифта браузер качает, только
+   когда гарнитура реально нужна, поэтому русский и английский интерфейсы
+   за Inter не платят.
+
+   Правила стоят над каждым местом, где гарнитура задана явно, а не одним
+   `*`: всё остальное наследует её от body (кнопки и поля — тоже, см.
+   button/input в styles.css), а моноширинные подписи «Глаголов» (--vb-mono) —
+   стиль, а не язык, их оставляем. Префикс html[data-ui-lang] даёт правилам
+   вес выше, чем у перекрываемых, поэтому порядок подключения им не важен.
+
+   В Shadow DOM эти правила не доходят: «Мир чисел» держит своё правило в
+   src/practice/numbers/styles.js (казахский там — только перевод с
+   lang="kk"), SpeakSpin и так на Inter. Сторож — src/kkFont.test.js.
+   ====================================================================== */
+
+html[data-ui-lang='kk'] {
+  --kk-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* «Сказки» (src/practice/fairytale/styles.js) держат свою гарнитуру в
+     переменных на :root — перекрываем их, иначе сказка осталась бы наполовину
+     на Onest: body и .screen ниже ловят и её разметку. */
+  --ui: var(--kk-font);
+  --body: var(--kk-font);
+}
+
+html[data-ui-lang='kk'] body,
+/* Вход, регистрация, тест уровня — PT Root UI (styles.css) */
+html[data-ui-lang='kk'] .screen,
+/* «Главная» на телефоне — Manrope поверх PT Root UI мобильного слоя */
+html[data-ui-lang='kk'] .hm,
+/* Пробный урок /trial — своя гарнитура под .trial */
+html[data-ui-lang='kk'] .trial {
+  font-family: var(--kk-font);
+}
+
+/* Лендинг живёт со своим языком из адреса (?lang=kz), а не из настроек
+   приложения, — поэтому смотрит на lang своего корня. */
+.ld[lang='kk'],
+.ld[lang='kk'] .ld-tear,
+.ld[lang='kk'] .ld-footer {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
