@@ -29,7 +29,7 @@
 - Транспорт фактов — **вариант 1**: бэкенд держит копию минут по дням (`ge_activity_days`). Сервер веба шлёт
   итог дня служебным ключом после каждой записи минут. Отвергнуты: веб-посредник при чтении плана (бэкенд и
   админка части 3 не видели бы практику) и запись минут клиентом прямо на бэкенд (накрутка).
-- Ключ — **`ge.activity.key`, по умолчанию равный `ielts.grader.key`**. Переменная `IELTS_GRADER_KEY` уже
+- Ключ — **`ge.activity.key` (`GE_ACTIVITY_KEY`), по умолчанию — значение `IELTS_GRADER_KEY`**. Переменная `IELTS_GRADER_KEY` уже
   заведена на обоих стендах, своя (`GE_ACTIVITY_KEY`) включается без правки кода.
 - **Урок курса в плане ≈ 30 минут** (`COURSE_LESSON_MINUTES`). Формула части 1 считает «урок» как 90 минут
   учёбы вместе с закреплением. Значит, урок курса занимает треть бюджета самостоятельного, практика — две трети.
@@ -85,7 +85,7 @@ CREATE TABLE ge_plan_tasks (
     original_date  DATE        NOT NULL,
     kind           VARCHAR(10) NOT NULL CHECK (kind IN ('course', 'practice')),
     module         VARCHAR(20) CHECK (module IS NULL OR module IN ('ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr')),
-    minutes        SMALLINT    NOT NULL,
+    minutes        INT         NOT NULL CHECK (minutes > 0),
     moved_by       BIGINT,
     created_at     TIMESTAMP   NOT NULL DEFAULT NOW(),
     UNIQUE (user_id, task_key)
@@ -133,7 +133,8 @@ ALTER TABLE ge_profiles ADD COLUMN plan_start DATE, ADD COLUMN plan_key VARCHAR(
 
 **Ручки** (`/mobile/ge/plan`, любой вошедший):
 - `GET /mobile/ge/plan?from&to` → `{ today, state, route, dailyMinutes, planStart, tasks: [TaskView], liveMissing,
-  completion: { done, total, percent } }`. `TaskView`: `{ id, key, date, originalDate, kind:
+  week: { start, done, total, percent } }` — `week` — свои задачи текущей недели (горизонт скользящий, «доля всего
+  плана» смысла не имеет). `TaskView`: `{ id, key, date, originalDate, kind:
   course|practice|live|homework, module, minutes, got, status, overdue, movable, title, extra }`. Для `live`
   — `{ lessonId, lessonType, teacherName, scheduledAt, durationMinutes }`, для `homework` — `{ homeworkId,
   dueDate, status }`. У подмешанных задач `id` = `live:<lessonId>` / `hw:<id>`, `movable = false`.
@@ -142,7 +143,8 @@ ALTER TABLE ge_profiles ADD COLUMN plan_start DATE, ADD COLUMN plan_key VARCHAR(
   дальше `plan_until`, не выполненные.
 - `PUT /integrations/web/ge-activity` (permitAll, заголовок `X-Ge-Activity-Key`) `{ userId, day, minutes:
   { ai_tutor, workbooks, shadowing, media_practice, vocabulary_sr } }`. Итог дня, а не прибавка: повтор
-  безопасен. Ключ не задан — 503, неверный — 403. Неизвестный ученик — 404. Отрицательное и мусор — 400.
+  безопасен. Ключ не задан или не совпал — 404, как у заявок лендинга (`LandingLeadController`): снаружи не видно, что
+  ручка есть. Неизвестный ученик — 404, отрицательное и мусор — 400.
 
 Бэкенд строгий к лишним полям JSON — веб с новыми ручками катится после бэкенда.
 
