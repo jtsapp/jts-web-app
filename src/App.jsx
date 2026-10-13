@@ -55,6 +55,7 @@ import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
 import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
 import GeOnboardingPage from './screens/GeOnboardingPage.jsx'
 import GeRoutePage from './screens/GeRoutePage.jsx'
+import GePlanPage from './screens/GePlanPage.jsx'
 import { syncLegacyGoal } from './ge/legacyGoal.js'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
@@ -139,8 +140,8 @@ const PERSISTABLE_SCREENS = new Set([
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
-  // Анкета и маршрут General English (спека 2026-10-12): данные берут у бэкенда сами, параметров в адресе не нужно
-  'ge-onboarding', 'ge-route',
+  // Анкета, маршрут и план General English (спеки 2026-10-12 и 2026-10-13): данные берут у бэкенда сами
+  'ge-onboarding', 'ge-route', 'ge-plan',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -1475,6 +1476,15 @@ export default function App() {
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
+    // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
+    else if (key === 'course') {
+      const k = KINGDOMS.find((x) => x.level === String(payload?.level || userLevel || '').toUpperCase())
+      if (k) {
+        setKingdom(k)
+        setScreen('kingdom-interior')
+      } else setScreen('kingdom')
+    }
+    else if (key === 'ge-plan') setScreen('ge-plan')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
@@ -2129,6 +2139,20 @@ export default function App() {
           onPricing={(p) => { if (p) setGeProfile(p); setPricingBack('ge-route'); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={openGeTest}
+        />
+      )
+    case 'ge-plan':
+      return (
+        <GePlanPage
+          token={token}
+          userName={name}
+          userLevel={userLevel}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
+          onGeRoute={() => setScreen('ge-route')}
+          onGeTest={openGeTest}
+          onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
         />
       )
     case 'ielts-onboarding':

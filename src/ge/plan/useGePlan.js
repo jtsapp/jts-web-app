@@ -11,11 +11,9 @@ export function useGePlan(token, { enabled = true, level = null } = {}) {
   const [state, setState] = useState({ status: 'loading', plan: null, frontier: [] })
   const [n, setN] = useState(0)
 
+  const off = !enabled || !token
   useEffect(() => {
-    if (!enabled || !token) {
-      setState({ status: 'none', plan: null, frontier: [] })
-      return undefined
-    }
+    if (off) return undefined
     let alive = true
     ;(async () => {
       const plan = await getGePlan(token)
@@ -25,8 +23,9 @@ export function useGePlan(token, { enabled = true, level = null } = {}) {
     return () => {
       alive = false
     }
-  }, [token, enabled, level, n])
+  }, [token, off, level, n])
 
   const reload = useCallback(() => setN((x) => x + 1), [])
-  return { ...state, reload }
+  // выключенный план — сразу «нет», без setState в эффекте
+  return { ...(off ? { status: 'none', plan: null, frontier: [] } : state), reload }
 }
