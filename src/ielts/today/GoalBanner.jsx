@@ -108,11 +108,11 @@ export default function GoalBanner({ deadline, journey, growthSkill, onEditGoal,
         </div>
         <ol className={`ih-gb__track${noScore ? ' is-empty' : ''}${s.reached ? ' is-reached' : ''}`}>
           <li className="ih-gb__node ih-gb__node--a" aria-label={t('ieltsGoal.start')}>
-            <span>{s.base ? s.base.score.toFixed(1) : '—'}</span>
+            <span title={s.base?.estimate ? t('ieltsOb.shortEstimateShort') : undefined}>{s.base ? `${s.base.estimate ? '≈' : ''}${s.base.score.toFixed(1)}` : '—'}</span>
           </li>
           <li className="ih-gb__line ih-gb__line--done" aria-hidden="true" />
           <li className="ih-gb__now" aria-label={t('ieltsGoal.now')}>
-            <span className="ih-gb__node ih-gb__node--now">{s.cur ? s.cur.score.toFixed(1) : '—'}</span>
+            <span className="ih-gb__node ih-gb__node--now" title={s.cur?.estimate ? t('ieltsOb.shortEstimateShort') : undefined}>{s.cur ? `${s.cur.estimate ? '≈' : ''}${s.cur.score.toFixed(1)}` : '—'}</span>
             <span className={`ih-gb__nowtag${journey?.checking ? ' is-checking' : ''}${noScore ? ' is-none' : ''}`}>
               {noScore ? t('ieltsGoal.noScore') : journey?.checking ? t('ieltsGoal.checking') : t('ieltsGoal.now')}
             </span>
