@@ -2010,6 +2010,34 @@ def _with_reply_tags(chat_ctx: Any, tags: list[tuple[str, str]]) -> Any:
     return ctx
 
 
+def asr_note(words: list[str]) -> str:
+    """Пометка мозгу: в каких словах реплики распознавание не уверено.
+
+    Имя флага — из пакета Speaking Buddy v3 (latest_input.asr_uncertain): пакет
+    уже знает, что с ним делать — не ругать «ошибку», а переспросить догадкой
+    (пример в Dexter.md: «Didn't catch that properly. Did you buy a new phone
+    yesterday?»). Остальным промптам хватает самой пометки — она объясняет
+    себя, и править промпты ради неё не нужно."""
+    listed = ", ".join(f'"{w}"' for w in words)
+    return f"[asr_uncertain: {listed} — speech recognition may have misheard these words]"
+
+
+def _with_asr_note(chat_ctx: Any, words: list[str]) -> Any:
+    """Копия истории, где к последней реплике ученика дописана asr_note.
+
+    Только в копии для мозга, как _with_reply_tags: в настоящей истории (а с
+    ней в субтитрах, выжимке звонка и следующих ходах) пометки нет — она про
+    один ход, а следующий ход будет услышан заново."""
+    if not words or not _last_is_user_message(chat_ctx):
+        return chat_ctx
+    ctx = chat_ctx.copy()
+    items = list(ctx.items)
+    last = items[-1]
+    items[-1] = last.model_copy(update={"content": [*last.content, asr_note(words)]})
+    ctx.items = items
+    return ctx
+
+
 class _SpeechCleaner:
     """Всё служебное, что модель пишет в поток реплики, снимается здесь, до
     озвучки, субтитров и истории: сначала рассуждение текстом, потом тег эмоции
@@ -2380,6 +2408,10 @@ class TutorAgent(Agent):
         # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
         # когда фильтр включён; tts_node кормит его текстом реплик.
         self._echo = None
+        # Обёртка Soniox (noise_guard.GuardedSonioxSTT) — ставит entrypoint:
+        # llm_node отдаёт ей реплику тьютора (контекст распознавания) и берёт
+        # сомнительные слова ученика.
+        self._stt_guard = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
         # Эмоция реплики, которую модель оставила без тега (см. _reply_mood).
@@ -2557,6 +2589,11 @@ class TutorAgent(Agent):
         said: list[str] = []
         if self._tag_history:
             chat_ctx = _with_reply_tags(chat_ctx, self._reply_tags)
+        chat_ctx = self._mark_uncertain(chat_ctx)
+        if self._stt_guard is not None:
+            # Новый ответ — прежний несказанный (отменённая предварительная
+            # генерация) в контекст распознавания уже не пойдёт.
+            self._stt_guard.begin_reply()
         prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
         if prefill:
             chat_ctx = chat_ctx.copy()
@@ -2602,6 +2639,10 @@ class TutorAgent(Agent):
             self._publish_reply_mood(cleaner)
         if self._tag_history and self._shown_mood is not None and "".join(said).strip():
             self._reply_tags.append(("".join(said), _mood_tag_label(self._shown_mood)))
+        reply = "".join(said).strip()
+        if reply and self._stt_guard is not None:
+            # Уже без рассуждения и тега — ровно то, что услышит ученик.
+            self._stt_guard.set_tutor_reply(reply)
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
             # видно, как часто модель думает вслух на живых звонках.
@@ -2642,6 +2683,20 @@ class TutorAgent(Agent):
 
         async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
             yield frame
+
+    def _mark_uncertain(self, chat_ctx):
+        """Копия истории с пометкой сомнительных слов к реплике ученика — или
+        та же история, если помечать нечего (выключено, последней стоит не
+        реплика ученика, Soniox во всём уверен)."""
+        confidence = getattr(self._stt_guard, "confidence", None)
+        if confidence is None or not _last_is_user_message(chat_ctx):
+            return chat_ctx
+        words = confidence.uncertain(chat_ctx.items[-1].text_content or "")
+        if not words:
+            return chat_ctx
+        # Только число: слова — это речь ученика.
+        logger.info("ASR uncertain: %d сомнительных слов в реплике ученика", len(words))
+        return _with_asr_note(chat_ctx, words)
 
     def _ack(self) -> str | None:
         """Ответ тихого тула памяти модели.
@@ -6414,16 +6469,21 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     finalize = noise_guard.soniox_finalize_enabled(tutor)
     echo = noise_guard.echo_guard_enabled(tutor)
     vad_finalize = noise_guard.vad_finalize_enabled(tutor)
+    dialog = noise_guard.dialog_context_enabled(tutor)
+    uncertain_conf = noise_guard.asr_uncertain_conf() if noise_guard.asr_uncertain_enabled(tutor) else None
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
     echo_tail, vad_delay = noise_guard.echo_tail_sec(), noise_guard.vad_finalize_delay_sec()
     logger.info(
-        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, tutor=%s",
+        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, "
+        "dialog context %s, ASR uncertain %s, tutor=%s",
         f"on (ratio {ratio:.2f}, keep {keep:.2f})" if lock else "off",
         "on" if finalize else "off",
         f"on (tail {echo_tail:.1f}s)" if echo else "off",
         f"on (+{vad_delay:.1f}s)" if vad_finalize else "off",
+        "on" if dialog else "off",
+        f"on (conf < {uncertain_conf:.2f})" if uncertain_conf is not None else "off",
         tutor or "<none>",
     )
     # Обёртка стоит и при выключенном замке: через неё рация закрывает фразу у
@@ -6449,6 +6509,8 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         echo_debug=echo and noise_guard.echo_guard_debug(),
         vad_finalize=vad_finalize,
         vad_finalize_sec=vad_delay,
+        dialog=dialog,
+        uncertain_conf=uncertain_conf,
     )
 
 
@@ -7251,6 +7313,12 @@ async def entrypoint(ctx: JobContext):
     noise_guard.attach_echo_and_vad_finalize(
         session, session.stt, is_auto=lambda: turn_auto["on"]
     )
+    # Контекст разговора и сомнительные слова (noise_guard, 13.10.2026): мозг
+    # отдаёт распознаванию свою реплику и берёт у него пометку к реплике
+    # ученика. Без обёртки Soniox (Azure, урезанное окружение) — ничего.
+    if callable(getattr(session.stt, "set_tutor_reply", None)):
+        agent._stt_guard = session.stt
+    noise_guard.attach_dialog_context(session, session.stt, is_auto=lambda: turn_auto["on"])
     await session.start(**start_kwargs)
 
     # ── Рация: ход открывает и закрывает ученик ──────────────────────────────
