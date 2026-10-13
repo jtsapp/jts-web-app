@@ -18,6 +18,7 @@ import {
   WORDS_KEY,
   VERBS_KEY,
   LISTENCHOOSE_KEY,
+  NUMBERS_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
@@ -29,12 +30,13 @@ import {
   WORDS_PROGRESS_EVENT,
   VERBS_PROGRESS_EVENT,
   LISTENCHOOSE_PROGRESS_EVENT,
+  NUMBERS_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'vocabLearned', 'vocabMisses']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'vocabLearned', 'vocabMisses']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {
@@ -107,5 +109,9 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
   if (serverState.listenchoose && typeof serverState.listenchoose === 'object') {
     setItem(LISTENCHOOSE_KEY, JSON.stringify(serverState.listenchoose))
     dispatch(LISTENCHOOSE_PROGRESS_EVENT)
+  }
+  if (serverState.numbers && typeof serverState.numbers === 'object') {
+    setItem(NUMBERS_KEY, JSON.stringify(serverState.numbers))
+    dispatch(NUMBERS_PROGRESS_EVENT)
   }
 }

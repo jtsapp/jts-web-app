@@ -133,6 +133,28 @@ function acceptedList(sc) {
     .filter(Boolean)
 }
 
+// Знак «да / нет» у задания, где ключ зависит от отношения к предмету: «I ___
+// rain.» с вариантами like / don't like. Курс пишет его полем cue (A0, урок 1),
+// а движок рисует над строкой галочку или крестик. Без знака ученица, которая
+// любит дождь, честно отвечает «like» и получает «Неверный ответ» — «Разминка»
+// перед этим прямо спрашивает про её вкусы. Плеер значков курса над строкой не
+// рисует, поэтому знак встаёт первым в саму строку условия.
+//
+// cue: favourite не переносим: «Tea is my ___ drink.» решается грамматикой, а
+// не вкусом. yes / no — значения таблицы cue-fixes.js для заданий, где знака в
+// файле курса нет.
+const CUE_SIGNS = { like: '\u{1F44D}', yes: '\u{1F44D}', dislike: '\u{1F44E}', no: '\u{1F44E}' } // 👍 / 👎
+function cueSign(sc, ctx) {
+  return CUE_SIGNS[sc.cue || (ctx.cueFix ? ctx.cueFix(sc) : null)] || ''
+}
+const withSign = (sign, text) => (sign ? `${sign} ${text || ''}`.trim() : text)
+// «Выберите предложение» без строки: в курсе предмет — картинка (art: "cat"),
+// а её плеер не рисует. Предмет берём словом из ответа: «I like cats.» → «cats».
+const cueSubject = (answer) =>
+  String(answer || '')
+    .replace(/^I (?:don['’]t )?like\s+/i, '')
+    .replace(/[.!]$/, '')
+
 /** Подпись «начните с…» — на языке инструкции задания. */
 const startLabel = (lang) => (lang === 'kk' ? 'Бастаңыз:' : lang === 'en' ? 'Start with:' : 'Начните так:')
 
@@ -329,9 +351,10 @@ function screenToStep(sc, ctx) {
       }
 
     case 'mcq': {
-      const prompt = plain(sc.q, lang) || splitGapPrompt(sc.line)
       // Варианты у B1 многоязычные ({en,ru,kk}), у остальных — строки.
       const opts = (sc.opts || []).map((o) => plain(o, lang))
+      const sign = cueSign(sc, ctx)
+      const prompt = withSign(sign, plain(sc.q, lang) || splitGapPrompt(sc.line) || (sign ? cueSubject(opts[sc.a]) : ''))
       return {
         ...base,
         type: 'choice',
@@ -432,7 +455,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'gap',
-        before,
+        before: withSign(cueSign(sc, ctx), before),
         after,
         answers: acceptedList(sc),
         bank: sc.bank ? shuffle(sc.bank, seed) : [],

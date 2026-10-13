@@ -272,3 +272,44 @@ test('двойной ▶, пока браузер спрашивает микр�
     .poll(() => page.evaluate(() => window.__tracks.filter((t) => t.readyState === 'live').length))
     .toBe(0)
 })
+
+// Распознавание дубля висело без таймаута, а «Выйти» на «Считаем…» было
+// выключено: если сеть или сервер вставали, ученик сидел перед экраном до
+// обрыва запроса. Теперь выход работает и с этого экрана.
+test('«Считаем…»: распознавание не отвечает — выйти можно, запрос отменяется', async ({ page }) => {
+  await signIn(page, [TRACK])
+  // Песня на 3 с: дубль кончается сам, и плеер уходит в «Считаем…».
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(3) }))
+  // Распознавание не отвечает никогда.
+  await page.route('**/api/transcribe', () => {})
+  await page.addInitScript(() => {
+    window.__tracks = []
+    // Живой тон, а не тишина: из пустого потока MediaRecorder отдаёт пустой
+    // дубль, и распознавание не зовётся вовсе.
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ctx = new AudioContext()
+      const osc = ctx.createOscillator()
+      const dest = ctx.createMediaStreamDestination()
+      osc.connect(dest)
+      osc.start()
+      window.__tracks.push(...dest.stream.getTracks())
+      return dest.stream
+    }
+  })
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await page.getByRole('button', { name: 'Играть' }).click()
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'scoring', { timeout: 20000 })
+  await expect(page.getByText('Считаем результат…').first()).toBeVisible()
+
+  const transcribe = page.waitForEvent('requestfailed', (req) => req.url().includes('/api/transcribe'))
+  const exit = page.getByRole('button', { name: 'Выйти' })
+  await expect(exit).toBeEnabled()
+  await exit.click()
+  await expect(page.locator('.kk-play')).toHaveCount(0)
+  // Брошенный запрос закрыт, а не висит до ответа сервера.
+  await transcribe
+  await expect
+    .poll(() => page.evaluate(() => window.__tracks.filter((t) => t.readyState === 'live').length))
+    .toBe(0)
+})

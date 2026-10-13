@@ -8,6 +8,8 @@ import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
+import { isRetryableLlmError } from '@/lib/llmRetry.js'
+import { TRANSLATE_DEADLINE_MS } from '@/practice/writing/translateTimeouts.js'
 import {
   translateBudget,
   translateBudgetPayload,
@@ -20,6 +22,15 @@ export const runtime = 'nodejs'
 // 240 символов ≈ два предложения: ученик переводит фразу из своего текста, а не
 // главу. Больший фрагмент — сигнал скрипта, а не урока.
 const MAX_CHARS = 240
+
+// Один вызов — не дольше 5 с (обычный перевод 0.8–1.9 с), повтор — только если
+// до TRANSLATE_DEADLINE_MS осталось хотя бы 3 с: на меньшем остатке перевод не
+// успеет, а ответ, пришедший после ухода клиента, — списанный впустую лимит.
+const CALL_TIMEOUT_MS = 5000
+const MIN_RETRY_MS = 3000
+// Нижняя граница таймаута вызова: 0 (или минус, если вход в бэкенд затянулся)
+// structured() читает как «таймаута нет» — и SDK ждал бы свои 10 минут.
+const MIN_CALL_MS = 1000
 
 const TRANSLATE_SCHEMA = {
   type: 'OBJECT',
@@ -36,6 +47,9 @@ async function safeBudget(profileId, isDemoAccount) {
 }
 
 export async function POST(request) {
+  // Потолок считается от входа в роут: клиент ждёт 12 с с момента отправки,
+  // и проверка токена у бэкенда и списание лимита тоже идут в этот счёт.
+  const startedAt = Date.now()
   const denied = unauthorizedIfNoBearer(request)
   if (denied) return denied
 
@@ -91,27 +105,40 @@ export async function POST(request) {
     }
   }
 
+  // Свой цикл вместо ретраев SDK (см. lib/llmRetry.js): повтор — только на
+  // сбой сети/перегрузку и только если до TRANSLATE_DEADLINE_MS на него хватает
+  // времени. Так роут отвечает раньше, чем клиент уйдёт в подстрочник.
   let raw
-  try {
-    raw = await structured({
-      systemPrompt:
-        'Translate this English fragment (a learner selected it in a writing lesson) into Russian and Kazakh. Natural, concise, the most common learner-relevant sense. No commentary.',
-      userMessage: text,
-      schema: TRANSLATE_SCHEMA,
-      model: 'claude-haiku-4-5-20251001',
-      maxOutputTokens: 300,
-      timeoutMs: 10000,
-    })
-  } catch (e) {
-    console.error('[writing.translate] failed', e)
-    if (charged) {
-      try {
-        await refundTranslate(profileId)
-      } catch (re) {
-        console.error('[writing.translate] budget refund failed', re)
+  for (let attempt = 1; ; attempt++) {
+    const left = TRANSLATE_DEADLINE_MS - (Date.now() - startedAt)
+    try {
+      raw = await structured({
+        systemPrompt:
+          'Translate this English fragment (a learner selected it in a writing lesson) into Russian and Kazakh. Natural, concise, the most common learner-relevant sense. No commentary.',
+        userMessage: text,
+        schema: TRANSLATE_SCHEMA,
+        model: 'claude-haiku-4-5-20251001',
+        maxOutputTokens: 300,
+        timeoutMs: Math.max(MIN_CALL_MS, Math.min(CALL_TIMEOUT_MS, left)),
+        maxRetries: 0,
+      })
+      break
+    } catch (e) {
+      const leftNow = TRANSLATE_DEADLINE_MS - (Date.now() - startedAt)
+      if (attempt < 2 && isRetryableLlmError(e) && leftNow >= MIN_RETRY_MS) {
+        console.warn('[writing.translate] failed, retrying', e?.status ?? e?.name)
+        continue
       }
+      console.error('[writing.translate] failed', e)
+      if (charged) {
+        try {
+          await refundTranslate(profileId)
+        } catch (re) {
+          console.error('[writing.translate] budget refund failed', re)
+        }
+      }
+      return Response.json({ error: 'Translation failed. Try again.' }, { status: 502 })
     }
-    return Response.json({ error: 'Translation failed. Try again.' }, { status: 502 })
   }
 
   const ru = String(raw?.ru || '').trim().slice(0, 500)

@@ -6,11 +6,15 @@
    результат, а не ошибку. Модуль чистый (без React), гоняется в vitest. */
 
 import { localAssess } from './localCheck.js'
-import { validateAssessment } from './assessContract.js'
+import { CHECK_CLIENT_TIMEOUT_MS, validateAssessment } from './assessContract.js'
 
-// 20 секунд — из прототипа: дольше ждать бессмысленно, офлайн-проверка
-// мгновенная и даёт тот же формат ответа.
-const DEFAULT_TIMEOUT_MS = 20000
+// В прототипе ждали 20 с: «офлайн-проверка мгновенная». Но AI-проверка идёт
+// 11–15 с, а на длинном тексте и под нагрузкой дольше — и на 20-й секунде
+// клиент уводил в офлайн, хотя сервер продолжал, списывал кредит и писал
+// разбор в журнал. Теперь ждём дольше, чем роут может работать вообще
+// (CHECK_DEADLINE_MS < CHECK_CLIENT_TIMEOUT_MS, оба в assessContract.js), и
+// офлайн остаётся для настоящих сбоев: нет сети, 5xx, кривой ответ.
+const DEFAULT_TIMEOUT_MS = CHECK_CLIENT_TIMEOUT_MS
 
 function offline(payload, ctx) {
   // localAssess сам ставит mode:'offline', но перекладываем явно: это
@@ -27,27 +31,35 @@ export async function runCheck(payload, { token, endpoint = '/api/writing/check'
   // прождал бы таймаут ради того же офлайн-результата.
   if (!token) return offline(payload, ctx)
   try {
-    // Гонка fetch/таймер вместо AbortController: прототип жил на setTimeout,
-    // и нам важен только «не ждать дольше N», а не отмена самого запроса.
-    const res = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('timeout')), timeoutMs)
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify(payload),
-      }).then(
-        (r) => {
-          clearTimeout(timer)
-          resolve(r)
-        },
-        (e) => {
-          clearTimeout(timer)
-          reject(e)
-        },
-      )
+    // Брошенный запрос ещё и закрываем (AbortController) — в прототипе он
+    // висел до ответа сервера. Но ждём всё равно гонкой с таймером: вернуться
+    // к ученику вовремя нельзя доверять тому, как fetch отработает abort.
+    // Таймер живёт и на чтении тела — ответ мог встать посреди потока.
+    const controller = new AbortController()
+    let timer
+    const expired = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort()
+        reject(new Error('timeout'))
+      }, timeoutMs)
     })
-    if (!res.ok) throw new Error('http ' + res.status)
-    const data = await res.json()
+    expired.catch(() => {})
+    let data
+    try {
+      const res = await Promise.race([
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        }),
+        expired,
+      ])
+      if (!res.ok) throw new Error('http ' + res.status)
+      data = await Promise.race([res.json(), expired])
+    } finally {
+      clearTimeout(timer)
+    }
     // Роут может отдать {assessment}, {result} (как сервер прототипа) или
     // голый объект оценки — принимаем все три формы.
     const raw = data && typeof data === 'object' ? (data.assessment ?? data.result ?? data) : null

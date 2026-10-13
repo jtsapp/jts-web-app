@@ -258,10 +258,16 @@ function toJsonSchema(schema) {
  * `maxRetries` overrides the SDK default (2) when the caller has a hard wall
  * clock (Cloudflare drops a request after 100 s of silence on prod).
  *
+ * `strict` — строгий инструмент (`strict: true`): ответ обязан пройти схему,
+ * все required на месте. Без него claude-sonnet-5 (прод-дефолт) на длинной
+ * схеме иногда молча роняет поле: замер 12.10.2026 — Письмо без nextSteps в
+ * 3 из 12 проверок, разбор «Аркады» строкой вместо объектов в 2 из 3.
+ * Включается по месту: промпты остальных грейдеров мерили без него.
+ *
  * @param {{ systemPrompt: string, userMessage: string, schema: object,
  *           images?: {mimeType: string, dataBase64: string}[],
  *           model?: string, maxOutputTokens?: number, timeoutMs?: number,
- *           maxRetries?: number }} args
+ *           maxRetries?: number, strict?: boolean }} args
  */
 // Structured outputs требуют additionalProperties:false у каждого объекта схемы.
 export async function structured(args) {
@@ -311,7 +317,10 @@ export async function structured(args) {
           name: "record_result",
           description:
             "Record the structured result. Call this exactly once with the full result.",
-          input_schema: inputSchema,
+          // Строгой схеме нужен additionalProperties:false на каждом объекте —
+          // тот же strictObjects, что и у structured outputs ниже.
+          input_schema: args.strict ? strictObjects(inputSchema) : inputSchema,
+          ...(args.strict ? { strict: true } : {}),
         },
       ],
       // Force the model to answer through the tool so we always get JSON.

@@ -10,6 +10,15 @@ import { wordsOf } from "./textStats.js";
 
 export const CHECK_LEVELS = ["A1", "A2", "A2P", "B1", "B2", "C1"];
 
+/* Время AI-проверки — одно на клиента и роут, поэтому здесь. Роут обязан
+   ответить РАНЬШЕ, чем клиент сдастся: иначе кредит списан и разбор записан,
+   а ученик уже смотрит офлайн-проверку по правилам (так было при 20 с у
+   клиента и 60 с × 3 попытки у сервера). Проверка идёт 11–15 с (замер
+   12.10.2026), потолок роута — с запасом на один повтор, и всё ниже 100 с
+   Cloudflare на проде. */
+export const CHECK_DEADLINE_MS = 60000;
+export const CHECK_CLIENT_TIMEOUT_MS = 75000;
+
 export function validateAssessment(raw, text) {
   if (!raw || typeof raw !== "object" || !raw.scores) return null;
   function s5(v) { var n = parseFloat(v); if (!isFinite(n)) return 0; return Math.max(0, Math.min(5, Math.round(n * 2) / 2)); }
