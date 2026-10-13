@@ -48,6 +48,9 @@ const OVERRIDES = {
   'midday / noon': 'midday, or noon',
   'two–nil': 'two nil',
   'fifteen–love': 'fifteen love',
+  // Без паузы «thirds» смазывается: распознавание слышит «1.2» (сверено на пяти
+  // синтезах); с запятой стабильно «1, and 2/3».
+  'one and two thirds': 'one, and two thirds',
 }
 
 const fileOf = (input) => crypto.createHash('sha1').update(`${VOICE}|${SPEED}|${BITRATE}|${input}`).digest('hex').slice(0, 12)
