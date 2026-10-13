@@ -123,3 +123,56 @@ describe('HomePage — General English', () => {
     expect(screen.getByText('Сегодня задач нет.')).toBeTruthy()
   })
 })
+
+// Тур «Главной» общего курса: профиль анкеты приезжает асинхронно (App: getIeltsMe → getGeProfile), и пока он в пути,
+// null читался как «ручки нет» — экран рисовал старую карточку уровня, а тур успевал стартовать по старым шагам
+// (выбор цели на старой дорожке) и больше не перерешал.
+describe('HomePage — тур общего курса', () => {
+  const plan = {
+    today: '2026-10-14',
+    state: 'ready',
+    route: 'self_study',
+    week: { done: 0, total: 4 },
+    liveMissing: false,
+    tasks: [{ id: 1, date: '2026-10-14', kind: 'practice', module: 'ai_tutor', minutes: 15, got: 0, status: 'available', overdue: false }],
+  }
+  const tree = (props) => (
+    <I18nProvider>
+      <LanguageProvider>
+        <HomePage userLevel="A2" userName="Сакен" token={TOKEN} tourKey="jts_tour_home:user-7" {...props} />
+      </LanguageProvider>
+    </I18nProvider>
+  )
+  const next = (dialog) => fireEvent.click(within(dialog).getByRole('button', { name: /ОК|Далее|Готово/ }))
+
+  beforeEach(() => {
+    localStorage.removeItem('jts_tours_off')
+  })
+
+  it('пока профиль грузится — ни старой карточки уровня, ни тура', async () => {
+    render(tree({ geProfile: null, geLoaded: false }))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(document.querySelector('.hm-level')).toBe(null)
+    expect(screen.queryByRole('dialog')).toBe(null)
+  })
+
+  it('профиль приехал после монтирования — тур идёт по новым шагам: цель, навыки, «План на сегодня»', async () => {
+    getGePlan.mockResolvedValue(plan)
+    const { rerender } = render(tree({ geProfile: null, geLoaded: false }))
+    await new Promise((r) => setTimeout(r, 30))
+    rerender(tree({ geProfile: goal, geLoaded: true }))
+    const first = await screen.findByRole('dialog', { name: 'Ваша цель и срок' })
+    expect(within(first).queryAllByRole('radio')).toHaveLength(0)
+    next(first)
+    next(await screen.findByRole('dialog', { name: 'Сильные и слабые стороны' }))
+    const today = await screen.findByRole('dialog', { name: 'План на сегодня' })
+    expect(within(today).getByText(/Весь план/)).toBeTruthy()
+    getGePlan.mockReset().mockResolvedValue(null)
+  })
+
+  it('видевший старый тур увидит обновлённый один раз', async () => {
+    localStorage.setItem('jts_tour_home:user-7', '1')
+    render(tree({ geProfile: goal, geLoaded: true }))
+    expect(await screen.findByRole('dialog', { name: 'Ваша цель и срок' })).toBeTruthy()
+  })
+})

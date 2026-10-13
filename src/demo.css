@@ -2703,6 +2703,22 @@ button.hm-level__goal:focus-visible {
   background: #eef0ff;
   color: #4f5bd5;
 }
+/* заглушка верхнего блока «Главной», пока профиль анкеты в пути: высота — как у блока цели, чтобы экран не прыгал */
+.ge-skel {
+  min-height: 300px;
+  background: linear-gradient(100deg, #f4f1fb 30%, #ece6fa 50%, #f4f1fb 70%) 0 0 / 200% 100%;
+  animation: ge-skel 1.4s ease-in-out infinite;
+}
+@keyframes ge-skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ge-skel {
+    animation: none;
+  }
+}
 /* экран «План» */
 /* переключатель видов — строкой под заголовком, а не справа: правый верх экрана занят кнопками языка и уведомлений */
 .ge-plan__head {

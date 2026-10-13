@@ -543,6 +543,10 @@ export default function App() {
   // Профиль General English (анкета «Главной», цель, формат — бэкенд /mobile/ge). null — ручки нет (старый бэкенд),
   // аккаунт IELTS (у него своя анкета) или гость: тогда «Главная» прежняя.
   const [geProfile, setGeProfile] = useState(null)
+  // Для какого токена профиль уже спросили (ответил он или нет). Без этого null значил и «ручки нет», и «ещё не
+  // ответила»: «Главная» на время запроса рисовала старую карточку уровня, а тур успевал стартовать по старым шагам.
+  const [geLoadedFor, setGeLoadedFor] = useState(undefined)
+  const geLoaded = !token || geLoadedFor === token
   // Тест уровня запущен из анкеты или со следующего шага «Главной»: конец теста — маршрут, «позже» — «Главная».
   const [geTestFlow, setGeTestFlow] = useState(false)
   const [geEdit, setGeEdit] = useState(false)
@@ -561,6 +565,9 @@ export default function App() {
         if (alive) setGeProfile(p)
       })
       .catch(() => {})
+      .finally(() => {
+        if (alive) setGeLoadedFor(token)
+      })
     return () => {
       alive = false
     }
@@ -1836,6 +1843,7 @@ export default function App() {
           ieltsAccount={ieltsAccount && !ieltsHidden()}
           onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
           geProfile={ieltsAccount ? null : geProfile}
+          geLoaded={geLoaded}
           onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onGeRoute={() => setScreen('ge-route')}
