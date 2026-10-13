@@ -136,6 +136,21 @@ describe('кэш каталога и отзыв выдачи курса', () => 
 
       expect(catalogKeys()).toHaveLength(1)
     })
+
+    it('каталог «Книжек» доносит свежий ответ колбэком: добавленная книга видна со второго захода, а не с третьего', async () => {
+      const old = [{ id: 1, title: 'Old book' }]
+      const fresh = [{ id: 1, title: 'Old book' }, { id: 2, title: 'New book' }]
+      globalThis.fetch.mockResolvedValueOnce(ok(old))
+      await api.getAudiobooks(TOKEN)
+
+      // Второй заход отдаётся из кэша сразу, а новая книга приезжает фоном — и
+      // должна дойти до экрана через onFresh, иначе её выбрасывали.
+      globalThis.fetch.mockResolvedValueOnce(ok(fresh))
+      const onFresh = vi.fn()
+      expect(await api.getAudiobooks(TOKEN, onFresh)).toEqual(old)
+
+      await vi.waitFor(() => expect(onFresh).toHaveBeenCalledWith(fresh))
+    })
   })
 
   // Кого кэш считает хозяином ответа. Ключ разделяет учеников, и пока разбор

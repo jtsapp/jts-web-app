@@ -969,8 +969,13 @@ export async function completeLesson(token, moduleId, code, xp = 0) {
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
-export function getAudiobooks(token) {
-  return cachedAuthGet('/mobile/audio-lessons', token)
+//
+// onFresh обязателен для SWR-кэша: каталог отдаётся из памяти/localStorage сразу, а
+// свежий ответ приходит позже и без этого колбэка просто выбрасывался. Книгу,
+// которую админ добавил или включил, ученик видел только со второго захода в
+// «Практику» — со стороны это выглядело как «то книги есть, то нет».
+export function getAudiobooks(token, onFresh) {
+  return cachedAuthGet('/mobile/audio-lessons', token, onFresh)
 }
 
 // Одна книга целиком (GET /mobile/audio-lessons/{id}). В отличие от списка выше
