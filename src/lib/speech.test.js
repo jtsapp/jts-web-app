@@ -170,6 +170,33 @@ describe('playTts', () => {
   })
 })
 
+describe('playUrl', () => {
+  it('готовая запись играет ТЕМ ЖЕ элементом (разрешение iOS), с темпом и обрывом прежней реплики', () => {
+    const ended = vi.fn()
+    speech.playTts('One', { onEnd: ended })
+    const a = elements[0]
+    a.onplaying()
+    speech.playUrl('/practice/numbers/audio/abc.mp3', { rate: 0.85 })
+    expect(elements).toHaveLength(1)
+    expect(a.src).toBe('/practice/numbers/audio/abc.mp3')
+    expect(a.playbackRate).toBe(0.85)
+    expect(ended).toHaveBeenCalledTimes(1)
+  })
+
+  it('файл не загрузился до старта — onFail, чтобы вызывающий взял синтез', () => {
+    const onFail = vi.fn()
+    speech.playUrl('/practice/numbers/audio/missing.mp3', { onFail })
+    elements[0].onerror()
+    expect(onFail).toHaveBeenCalledWith('error')
+  })
+
+  it('пустой адрес — onFail("empty") и false', () => {
+    const onFail = vi.fn()
+    expect(speech.playUrl('', { onFail })).toBe(false)
+    expect(onFail).toHaveBeenCalledWith('empty')
+  })
+})
+
 describe('stopTts / пауза', () => {
   it('стоп звучавшей реплики зовёт onEnd — индикатор «играет» гаснет', () => {
     const onEnd = vi.fn()

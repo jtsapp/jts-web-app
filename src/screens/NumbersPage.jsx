@@ -32,15 +32,19 @@ const FONT_LINKS = [
   'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap',
 ]
 
+const RECORDS_URL = '/practice/numbers/audio/index.json'
+
 // Один запрос на вкладку; провал не кэшируется — «ещё раз» спросит заново.
+// Список записей не обязателен: без него игра звучит синтезом тем же голосом.
 let dataPromise = null
 function loadData() {
   if (!dataPromise) {
-    dataPromise = fetch(DATA_URL)
-      .then((r) => {
-        if (!r.ok) throw new Error(`data.json ${r.status}`)
-        return r.json()
-      })
+    const json = (url) => fetch(url).then((r) => {
+      if (!r.ok) throw new Error(`${url} ${r.status}`)
+      return r.json()
+    })
+    dataPromise = Promise.all([json(DATA_URL), json(RECORDS_URL).catch(() => ({}))])
+      .then(([game, records]) => ({ game, records }))
       .catch((e) => {
         dataPromise = null
         throw e
@@ -95,9 +99,9 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
     shadow.innerHTML = `<style>${NUMBERS_CSS}</style><main class="nw" id="jts-numbers">${NUMBERS_MARKUP}</main>`
     const root = shadow.getElementById('jts-numbers')
     const destroy = mountNumbers(root, {
-      data,
+      data: data.game,
       progress: { read: readNumbers, update: updateNumbers },
-      voice: createNumbersVoice(),
+      voice: createNumbersVoice(data.records),
       onSkill: (firstTry) => recordSkill('listening', firstTry),
       langKey: NUMBERS_LANG_KEY,
       // e2e: прыжки и анимации за миллисекунды (addInitScript ставит флаг до загрузки)

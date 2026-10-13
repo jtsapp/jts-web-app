@@ -122,8 +122,22 @@ export function stopTts() {
  * @returns {boolean} false — озвучивать нечего (onFail('empty') уже вызван)
  */
 export function playTts(text, opts = {}) {
-  const { voice, lang, speed, rate, volume, onStart, onEnd, onFail } = opts
-  const url = typeof window === 'undefined' ? null : ttsUrl({ text, voice, lang, speed })
+  const { voice, lang, speed } = opts
+  return playSrc(typeof window === 'undefined' ? null : ttsUrl({ text, voice, lang, speed }), opts)
+}
+
+/**
+ * Сыграть готовую запись (файл из public) тем же элементом и по тем же
+ * правилам, что playTts: одна реплика на приложение, onFail — только если звук
+ * так и не начался. Отдельный new Audio() на iPhone молчал бы без жеста — а
+ * разрешение живёт на этом элементе. Опции — как у playTts, кроме voice/lang/speed.
+ */
+export function playUrl(src, opts = {}) {
+  return playSrc(typeof window === 'undefined' ? null : src || null, opts)
+}
+
+function playSrc(url, opts) {
+  const { rate, volume, onStart, onEnd, onFail } = opts
   if (!url) {
     onFail?.('empty')
     return false
@@ -238,8 +252,13 @@ export function isTtsActive() {
  * текущая, и пауза между репликами не вырастет до секунды на каждую.
  */
 export function prefetchTts(text, opts = {}) {
+  if (typeof window === 'undefined') return
+  prefetchUrl(ttsUrl({ text, ...opts }))
+}
+
+/** Прогреть HTTP-кэш готовой записи (следующее задание), один раз на адрес. */
+export function prefetchUrl(url) {
   if (typeof window === 'undefined' || typeof fetch !== 'function') return
-  const url = ttsUrl({ text, ...opts })
   if (!url || prefetched.has(url)) return
   prefetched.add(url)
   if (prefetched.size > 300) prefetched.delete(prefetched.values().next().value)
