@@ -18,6 +18,7 @@ import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { recordSkill } from '../practice/skillStats.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 // Уровня, которого у Аудирования нет, — ближайший из тех, что есть. Раньше
@@ -317,6 +318,9 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const [content, setContent] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token, enabled: phase !== 'intro' })
 
   const [queue, setQueue] = useState([])
   const [response, setResponse] = useState(null)

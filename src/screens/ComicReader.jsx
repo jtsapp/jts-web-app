@@ -23,6 +23,7 @@ import {
   getFullscreenElement,
   onFullscreenChange,
 } from '../lib/elementFullscreen.js'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 // Читалка комикса: одна страница на экран, вперёд-назад стрелками, свайпом и
 // клавишами. Пролистывание, а не вертикальная лента — так страница целиком
@@ -67,6 +68,8 @@ const ZOOM_OUT_KEYS = new Set(['-', '_'])
 const IDLE_MS = 2600
 
 export default function ComicReader({ comic, token, onBack, onWordSaved }) {
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token })
   const { t, lang } = useI18n()
   const tl = lang === 'kk' ? 'kk' : 'ru'
   // Ключ закладки, а не адрес запроса: адресуется комикс по id (см. loadComic).

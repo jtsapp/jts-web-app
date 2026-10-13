@@ -1,6 +1,8 @@
 // Запись активного времени в тренажёрах, которые сами его не пишут: воркбук
-// (workbooks) и практика «Словаря» (vocabulary_sr). Считает клиент — хук
-// src/lib/useTimeOnTask.js, сюда приходят пачки секунд.
+// (workbooks), практика «Словаря» (vocabulary_sr) и медиа (media_practice —
+// книги, аудирование, чтение, комиксы, караоке; с 13.10.2026, для плана по
+// дням общего курса). Считает клиент — хук src/lib/useTimeOnTask.js, сюда
+// приходят пачки секунд.
 //
 // Тьютор и шэдоуинг от клиента НЕ принимаем: их время уже лежит в voice_usage
 // и shadowing_assess, и приём тех же модулей дал бы двойной счёт, а заодно
@@ -15,7 +17,7 @@
 
 import { getSql } from './sql.js'
 
-export const CLIENT_TRACKED_MODULES = ['workbooks', 'vocabulary_sr']
+export const CLIENT_TRACKED_MODULES = ['workbooks', 'vocabulary_sr', 'media_practice']
 
 export const MAX_BATCH_SEC = 300 // потолок одной пачки
 export const DAY_CAP_SEC = 6 * 3600 // потолок на модуль в сутки

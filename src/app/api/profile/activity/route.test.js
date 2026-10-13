@@ -66,7 +66,7 @@ describe('POST /api/profile/activity', () => {
   // Время тьютора и шэдоуинга сервер считает сам — принять их от клиента значит
   // дать накрутить норматив по речи без единого звонка.
   it('тьютора, шэдоуинг и прочее от клиента не принимает', async () => {
-    for (const moduleKey of ['ai_tutor', 'shadowing', 'media_practice', '', 42]) {
+    for (const moduleKey of ['ai_tutor', 'shadowing', 'karaoke', '', 42]) {
       const res = await POST(req({ module: moduleKey, seconds: 60 }))
       expect(`${moduleKey} → ${res.status}`).toBe(`${moduleKey} → 400`)
     }

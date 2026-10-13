@@ -11,6 +11,9 @@ import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GePlanInvite from './home/GePlanInvite.jsx'
+import GeTodayCard from './home/GeTodayCard.jsx'
+import { useGePlan } from '../ge/plan/useGePlan.js'
+import { todayView } from '../ge/plan/planModel.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -44,6 +47,9 @@ export default function HomePage({
   // Профиль General English (App: getGeProfile; null — ручки нет, IELTS-аккаунт или гость): анкета, цель и формат.
   // Есть профиль — сверху приглашение или блок цели вместо прежней карточки уровня (спека 2026-10-12, секция 3).
   geProfile = null,
+  // Ответил ли запрос профиля (App). false — ещё в пути: null профиля тогда не значит «ручки нет», и ни старую карточку,
+  // ни тур показывать нельзя. По умолчанию true — для вызовов без анкеты (тесты прежней «Главной»).
+  geLoaded = true,
   onGeStart,
   onGeEdit,
   onGeRoute,
@@ -126,6 +132,10 @@ export default function HomePage({
   // Верхний блок General English. У IELTS-аккаунта свой (IeltsHomeCard) — профиль General English ему не показываем.
   const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel })
   const geMode = geTop !== 'legacy'
+  // План по дням (спека 2026-10-13): есть блок цели — есть и план; его «Сегодня» встаёт вместо «Что сделать сегодня».
+  // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
+  const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
+  const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
   // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
   const geCur = geProfile?.journey?.current || {}
@@ -137,30 +147,65 @@ export default function HomePage({
         ).find((o) => o.id === geProfile.route) || null
       : null
 
-  // Тур «Главной»: первым шагом — выбор цели. Без пройденного теста карточки
-  // уровня нет, и цель выбирать не от чего — тур ждёт, пока уровень появится.
-  const tour = useScreenTour(levelUnknown ? null : tourKey)
-  const tourSteps = [
-    geMode
-      ? {
-          // Цель теперь задаёт анкета — тур только показывает блок
-          selector: '.ge-goal, .ge-invite',
-          title: t('tour.home.ge.title'),
-          text: t('tour.home.ge.text'),
-        }
-      : {
-          selector: '.hm-level',
-          title: t('tour.home.goal.title'),
-          text: t('tour.home.goal.text'),
-          content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
-          // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
-          // целиком можно всегда, тогда дорожка остаётся прежней.
-          canNext: !options.length || !!goalValue,
-        },
-    { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-    { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
-    { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
-  ]
+  // Тур решает один раз за заход (useScreenTour), поэтому ждёт, пока станет ясно, какая «Главная» на экране: ответил
+  // запрос профиля анкеты, а у блока цели — ещё и план (иначе шаг «План на сегодня» нечего подсвечивать). Раньше тур
+  // стартовал, пока профиль был в пути, и вёл по прежней «Главной» — с выбором цели на старой дорожке. Без пройденного
+  // теста карточки уровня нет, и прежний тур ждёт, пока уровень появится.
+  const tourReady = !levelUnknown && geLoaded && !(geTop === 'goal' && gePlan.status === 'loading')
+  // Тур общего курса — другой (анкета, план), поэтому и отметка своя: видевшие прежний увидят обновлённый один раз.
+  const tourStorageKey = tourKey && geMode ? `${tourKey}:ge` : tourKey
+  const tour = useScreenTour(tourReady ? tourStorageKey : null)
+  // Тур новой «Главной» — по каждому блоку сверху вниз. Шаги собираются по тому, что на экране (приглашение или блок
+  // цели, «Сегодня» или прежняя подсказка, кабинет демо без практики и расписания): шаг без элемента тур пропустил бы
+  // и сам, но счётчик «2/11» на первом шаге выглядел бы сломанным. Функцией, а не значением: домашка и расписание
+  // объявлены ниже, а шаги нужны только открытому туру.
+  const tourSteps = () => {
+    const todayTasks = geToday ? todayView(gePlan.plan) : null
+    return geMode
+      ? [
+          ...(geTop === 'goal'
+            ? [
+                { selector: '.ge-goal', title: t('tour.home.goal2.title'), text: t('tour.home.goal2.text') },
+                { selector: '.ge-goal .ih-gb__journey', title: t('tour.home.journey.title'), text: t('tour.home.journey.text') },
+              ]
+            : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
+          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+          ...(isDemoAccount
+            ? []
+            : geToday
+              ? [
+                  { selector: '.ge-today', title: t('tour.home.plan.title'), text: t('tour.home.plan.text') },
+                  ...(todayTasks.tasks.length || todayTasks.ahead.length
+                    ? [{ selector: '.ge-today .ge-task', title: t('tour.home.task.title'), text: t('tour.home.task.text') }]
+                    : []),
+                  { selector: '.ge-today__all', title: t('tour.home.allPlan.title'), text: t('tour.home.allPlan.text') },
+                ]
+              : pickRecommendation({ summary, homework, occurrences })
+                ? [{ selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.ge.recommend.text') }]
+                : []),
+          ...(isDemoAccount
+            ? []
+            : [
+                { selector: '.hm-prac', title: t('tour.home.prac.title'), text: t('tour.home.prac.text') },
+                { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.ge.schedule.text') },
+                { selector: '.hm-hw', title: t('tour.home.hw.title'), text: t('tour.home.hw.text') },
+              ]),
+        ]
+      : [
+          {
+            selector: '.hm-level',
+            title: t('tour.home.goal.title'),
+            text: t('tour.home.goal.text'),
+            content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
+            // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
+            // целиком можно всегда, тогда дорожка остаётся прежней.
+            canNext: !options.length || !!goalValue,
+          },
+          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+          { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
+          { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
+        ]
+  }
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
   // занятие (расписание), оставленная заявка (/mobile/trial-request) и ничего.
@@ -263,6 +308,9 @@ export default function HomePage({
             зовём пройти тест: это единственный способ её наполнить. */}
         {ieltsAccount ? (
           <IeltsHomeCard token={token} onNav={onNav} />
+        ) : !geLoaded ? (
+          // профиль анкеты ещё в пути: заглушка вместо прежней карточки уровня, иначе она мелькала до блока цели
+          <section className="hm-card ge-skel" aria-busy="true" aria-label={t('gePlan.loading')} />
         ) : geTop === 'goal' ? (
           <GeGoalBanner
             profile={geProfile}
@@ -426,9 +474,12 @@ export default function HomePage({
           {/* Практика, расписание и домашка — кабинет оплаченного ученика.
               У демо на их месте пусто по макету: там разговор про доступ, а не
               про сегодняшние занятия, которых у него ещё нет. */}
-          {!isDemoAccount && (
+          {!isDemoAccount && (geToday ? (
+            <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} onNav={onNav} />
+          ) : (geTop === 'goal' && gePlan.status === 'loading') || !geLoaded ? null : (
+            // план или профиль ещё в пути — пусто, а не прежняя подсказка, которая через секунду сменится на «Сегодня»
             <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
-          )}
+          ))}
           {!isDemoAccount && <PracticeToday t={t} onNav={onNav} />}
           </div>
 
@@ -489,7 +540,7 @@ export default function HomePage({
           </div>
         </div>
       </div>
-      {tour.open && <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />}
+      {tour.open && <OnboardingTour steps={tourSteps()} storageKey={tourStorageKey} onFinish={tour.finish} />}
       {goalOpen && (
         <GoalDialog options={options} value={goalValue} onPick={pickGoal} onClose={() => setGoalOpen(false)} />
       )}
