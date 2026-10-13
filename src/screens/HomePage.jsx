@@ -11,6 +11,8 @@ import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GePlanInvite from './home/GePlanInvite.jsx'
+import GeTodayCard from './home/GeTodayCard.jsx'
+import { useGePlan } from '../ge/plan/useGePlan.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -126,6 +128,10 @@ export default function HomePage({
   // Верхний блок General English. У IELTS-аккаунта свой (IeltsHomeCard) — профиль General English ему не показываем.
   const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel })
   const geMode = geTop !== 'legacy'
+  // План по дням (спека 2026-10-13): есть блок цели — есть и план; его «Сегодня» встаёт вместо «Что сделать сегодня».
+  // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
+  const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
+  const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
   // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
   const geCur = geProfile?.journey?.current || {}
@@ -158,7 +164,7 @@ export default function HomePage({
           canNext: !options.length || !!goalValue,
         },
     { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-    { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
+    { selector: '.hm-recommend, .ge-today', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
     { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
   ]
 
@@ -426,9 +432,11 @@ export default function HomePage({
           {/* Практика, расписание и домашка — кабинет оплаченного ученика.
               У демо на их месте пусто по макету: там разговор про доступ, а не
               про сегодняшние занятия, которых у него ещё нет. */}
-          {!isDemoAccount && (
+          {!isDemoAccount && (geToday ? (
+            <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} onNav={onNav} />
+          ) : (
             <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
-          )}
+          ))}
           {!isDemoAccount && <PracticeToday t={t} onNav={onNav} />}
           </div>
 

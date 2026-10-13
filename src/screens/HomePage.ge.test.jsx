@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
 import HomePage from './HomePage.jsx'
+import { getGePlan } from '../api.js'
 
 // «Главная» General English (спека 2026-10-12, секция 3): верхний блок по профилю — прежняя карточка без профиля,
 // приглашение, следующий шаг и блок цели.
@@ -19,6 +20,9 @@ vi.mock('../api.js', () => ({
   getLevelProgress: vi.fn(async () => ({ level: 'A2', next: 'B1', percent: 40, done: 14, total: 36, remaining: 22 })),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
   getIeltsPlan: vi.fn(async () => null),
+  getGePlan: vi.fn(async () => null),
+  getLessonModules: vi.fn(async () => []),
+  getLessonProgress: vi.fn(async () => ({ done: [] })),
 }))
 vi.mock('../practice/skillStats.js', () => ({ readLocalSkillStats: () => ({}), loadSkillStatsRemote: vi.fn(async () => null) }))
 globalThis.ResizeObserver ??= class {
@@ -87,5 +91,35 @@ describe('HomePage — General English', () => {
     expect([...document.querySelectorAll('.ge-goal .ih-gb__track li span')].map((n) => n.textContent)).toEqual(['A2', 'A2', 'Сейчас · 40%', 'B2'])
     fireEvent.click(screen.getByRole('button', { name: /Указать срок/ }))
     expect(onGeEdit).toHaveBeenCalled()
+  })
+  it('план собран — «Сегодня» вместо «Что сделать сегодня», «Начать» ведёт в раздел', async () => {
+    getGePlan.mockResolvedValueOnce({
+      today: '2026-10-14',
+      state: 'ready',
+      route: 'self_study',
+      week: { done: 1, total: 6 },
+      liveMissing: false,
+      tasks: [
+        { id: 11, date: '2026-10-14', kind: 'practice', module: 'ai_tutor', minutes: 15, got: 6, status: 'in_progress', overdue: false },
+        { id: 12, date: '2026-10-14', kind: 'practice', module: 'vocabulary_sr', minutes: 15, got: 0, status: 'available', overdue: false },
+      ],
+    })
+    const onNav = vi.fn()
+    renderHome({ geProfile: goal, onNav })
+    await waitFor(() => expect(document.querySelector('.ge-today')).toBeTruthy())
+    expect(document.querySelector('.hm-recommend')).toBe(null)
+    expect(screen.getByText('Неделя: 1 из 6')).toBeTruthy()
+    expect(screen.getByText('6 / 15 мин')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Продолжить' }))
+    expect(onNav).toHaveBeenCalledWith('tutor')
+    fireEvent.click(screen.getByRole('button', { name: /Весь план/ }))
+    expect(onNav).toHaveBeenCalledWith('ge-plan')
+  })
+
+  it('группа без занятий — плашка «запишитесь», план без ручки — прежняя карточка', async () => {
+    getGePlan.mockResolvedValueOnce({ today: '2026-10-14', state: 'ready', route: 'group', week: null, liveMissing: true, tasks: [] })
+    renderHome({ geProfile: { ...goal, route: 'group' } })
+    await waitFor(() => expect(screen.getByText(/Занятий с преподавателем пока нет/)).toBeTruthy())
+    expect(screen.getByText('Сегодня задач нет.')).toBeTruthy()
   })
 })
