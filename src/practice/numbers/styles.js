@@ -461,4 +461,9 @@ svg.ic{width:20px;height:20px;flex:none}
   .world h2{font-size:20px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* Только в приложении, в прототипе этого нет: казахский текст — на Inter, как
+   во всём приложении (src/kk-font.css). Перевод объяснений и кнопка «+ Қазақша»
+   несут lang="kk"; .nw в селекторе — чтобы перебить шорткат font у .ls-seg button.
+   Сам Inter грузит документ (layout.jsx) — шрифты документа внутрь тени видны. */
+.nw [lang="kk"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 `
