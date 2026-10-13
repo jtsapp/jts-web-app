@@ -2,23 +2,21 @@ import { useMemo } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { ArrowForwardIcon } from '../../ielts/icons.jsx'
 import GeTaskRow from '../../ge/plan/GeTaskRow.jsx'
-import { courseTitles, taskRoute, todayView } from '../../ge/plan/planModel.js'
+import { courseTitles, todayView } from '../../ge/plan/planModel.js'
+import { useGeTaskStart } from '../../ge/plan/useGeTaskStart.js'
 
 /**
  * «Сегодня» на «Главной» общего курса (спека 2026-10-13, секция 4): задачи дня из плана бэкенда вместо прежней
  * «Что сделать сегодня». Сверху — просроченное этой недели; открытого нет — «на сегодня всё» и две ближайшие задачи.
  * «Весь план» — экран «План». Плашка «запишитесь на занятия» — группе и индивидуальным без занятий в расписании.
+ * token и onReload — для «Отметить выполненным» у своего задания преподавателя (часть 3).
  */
-export default function GeTodayCard({ plan, frontier, level, onNav }) {
+export default function GeTodayCard({ plan, frontier, level, token, onReload, onNav }) {
   const { t } = useI18n()
   const titles = useMemo(() => courseTitles(plan.tasks, frontier), [plan.tasks, frontier])
   const { tasks, ahead } = todayView(plan)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
-  const start = (task) => {
-    const r = taskRoute(task, level)
-    if (r.payload) onNav?.(r.to, r.payload)
-    else onNav?.(r.to)
-  }
+  const start = useGeTaskStart({ token, level, onNav, reload: onReload })
   return (
     <section className="hm-card ge-today ge-skin" aria-labelledby="ge-today-title">
       <header className="ge-today__head">

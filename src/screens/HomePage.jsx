@@ -475,7 +475,7 @@ export default function HomePage({
               У демо на их месте пусто по макету: там разговор про доступ, а не
               про сегодняшние занятия, которых у него ещё нет. */}
           {!isDemoAccount && (geToday ? (
-            <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} onNav={onNav} />
+            <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} token={token} onReload={gePlan.reload} onNav={onNav} />
           ) : (geTop === 'goal' && gePlan.status === 'loading') || !geLoaded ? null : (
             // план или профиль ещё в пути — пусто, а не прежняя подсказка, которая через секунду сменится на «Сегодня»
             <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />

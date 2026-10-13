@@ -5,7 +5,8 @@ import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import { ArrowForwardIcon } from '../ielts/icons.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
-import { courseTitles, mondayOf, taskRoute } from '../ge/plan/planModel.js'
+import { courseTitles, mondayOf } from '../ge/plan/planModel.js'
+import { useGeTaskStart } from '../ge/plan/useGeTaskStart.js'
 import { MonthView, RoadmapView, WeekView } from '../ge/plan/GePlanViews.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 
@@ -87,11 +88,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     setAt(a)
     writeUrl(v, a)
   }
-  const start = (task) => {
-    const r = taskRoute(task, level)
-    if (r.payload) onNav?.(r.to, r.payload)
-    else onNav?.(r.to)
-  }
+  const start = useGeTaskStart({ token: authToken, level, onNav, reload })
   const move = (task, date) => {
     setMoveError(false)
     moveGeTask(authToken, task.id, date).then(reload).catch(() => setMoveError(true))

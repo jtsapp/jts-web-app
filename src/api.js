@@ -649,6 +649,11 @@ export function moveGeTask(token, id, date) {
   return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/date`, token, { date })
 }
 
+/** Ученик отмечает своё задание преподавателя («Своё задание», kind custom) выполненным или снимает отметку. */
+export function markGeTaskDone(token, id, done) {
+  return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради

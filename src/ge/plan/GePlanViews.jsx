@@ -3,10 +3,10 @@ import { useI18n } from '../../i18n.jsx'
 import {
   CheckIcon, ChevronLeftIcon, ChevronRightIcon, EventIcon, PlayIcon, RadioOffIcon, ReplayIcon, ScheduleIcon, TargetIcon,
 } from '../../ielts/icons.jsx'
-import GeTaskRow, { taskMeta } from './GeTaskRow.jsx'
+import GeTaskRow, { startLabel, taskMeta } from './GeTaskRow.jsx'
 import {
-  addDays, byDate, dayMinutes, dayStatus, mondayOf, monthGrid, plateOf, roadWeek, shiftMonth, taskShort, taskTitle, weekDates,
-  weekNumber,
+  addDays, byDate, dayMinutes, dayStatus, isTeacherTask, mondayOf, monthGrid, plateOf, roadWeek, shiftMonth, taskAction, taskShort,
+  taskTitle, weekDates, weekNumber,
 } from './planModel.js'
 
 // Три вида плана общего курса (спека 2026-10-13, секция 4) — роадмап на две недели, неделя, месяц — над одними задачами
@@ -242,7 +242,7 @@ export function RoadmapView({ plan, titles, onStart }) {
 // Вторая строка карточки недели: заголовок карточки — уже короткое имя раздела, повторять его («Воркбук / Воркбук»,
 // «Урок / Урок: …») незачем. Уроку — название шага тропы, ДЗ — его название, практике — полное имя раздела.
 function cardSub(t, task, courseTitle) {
-  if (task.kind === 'course') return courseTitle || ''
+  if (task.kind === 'course') return isTeacherTask(task) ? task.extra?.lessonTitle || '' : courseTitle || ''
   if (task.kind === 'live') return task.extra?.teacherName || ''
   const full = taskTitle(t, task, courseTitle)
   return full === taskShort(t, task) ? '' : full
@@ -260,6 +260,8 @@ export function WeekView({ plan, titles, monday, onWeek, onStart, onMove, moveEr
   const [selId, setSelId] = useState(firstOpen?.id ?? null)
   const sel = inWeek.find((x) => x.id === selId) || firstOpen
   const [moving, setMoving] = useState(false)
+  // кнопка выбранной задачи: переход, отметка своего задания преподавателя или ничего (материал с неизвестным адресом)
+  const selAction = sel ? taskAction(sel, null) : null
   const range = `${dfmt(lang, dates[0], { day: 'numeric' })}–${dfmt(lang, dates[6], { day: 'numeric', month: 'long' })}`
   return (
     <div className="ih-weekv">
@@ -283,7 +285,7 @@ export function WeekView({ plan, titles, monday, onWeek, onStart, onMove, moveEr
                   const st = task.status === 'completed' ? 'done' : task.date === today ? 'current' : task.overdue ? 'missed' : 'planned'
                   return (
                     <li key={task.id}>
-                      <button type="button" className={`ih-wcard is-${st} ge-wcard--${plateOf(task)}${sel?.id === task.id ? ' is-sel' : ''}`} onClick={() => { setSelId(task.id); setMoving(false) }}>
+                      <button type="button" className={`ih-wcard is-${st} ge-wcard--${plateOf(task)}${isTeacherTask(task) ? ' ge-wcard--teacher' : ''}${sel?.id === task.id ? ' is-sel' : ''}`} onClick={() => { setSelId(task.id); setMoving(false) }}>
                         <span className="ih-wcard__st" aria-hidden="true">{st === 'done' ? <CheckIcon size={12} /> : null}</span>
                         <b>{taskShort(t, task)}</b>
                         {cardSub(t, task, titles?.[task.id]) && <span className="ih-wcard__sub">{cardSub(t, task, titles?.[task.id])}</span>}
@@ -311,9 +313,11 @@ export function WeekView({ plan, titles, monday, onWeek, onStart, onMove, moveEr
           </div>
           {sel.status !== 'completed' && (
             <div className="ih-wsel__actions">
-              <button type="button" className="ih-btn2 ih-btn2--primary" onClick={() => onStart?.(sel)}>
-                {sel.status === 'in_progress' ? t('gePlan.continue') : t('gePlan.start')}
-              </button>
+              {selAction && (
+                <button type="button" className="ih-btn2 ih-btn2--primary" onClick={() => onStart?.(sel)}>
+                  {startLabel(t, sel, selAction)}
+                </button>
+              )}
               {sel.movable && (moving ? (
                 <input type="date" className="ih-ptask__date" min={today} max={plan.planUntil || undefined} defaultValue={sel.date} aria-label={t('gePlan.moveTo')} autoFocus
                   onChange={(e) => { if (e.target.value) { setMoving(false); onMove?.(sel, e.target.value) } }} onBlur={() => setMoving(false)} />
@@ -342,7 +346,8 @@ export function MonthView({ plan, titles, month, onMonth, onStart }) {
   const tasksOf = byDate(plan.tasks)
   const monthTitle = `${cap(dfmt(lang, month, { month: 'long' }))} ${month.slice(0, 4)}`
   // занятия и ДЗ — первыми: в клетке видно два чипа, и они не должны прятаться за «+N» под практикой
-  const rank = (x) => (x.kind === 'live' ? 0 : x.kind === 'homework' ? 1 : x.kind === 'course' ? 2 : 3)
+  // как у бэкенда (GePlanViews.ORDER): занятие, ДЗ, задача преподавателя, урок курса, практика
+  const rank = (x) => (x.kind === 'live' ? 0 : x.kind === 'homework' ? 1 : isTeacherTask(x) ? 2 : x.kind === 'course' ? 3 : 4)
   const beyond = plan.planUntil && `${month.slice(0, 7)}-01` > plan.planUntil
   return (
     <div className="ih-monthwrap">
@@ -364,7 +369,7 @@ export function MonthView({ plan, titles, month, onMonth, onStart }) {
                 <button key={date} type="button" className={`ih-month2__day${inMonth ? '' : ' is-out'}${date === today ? ' is-today' : ''}${date === sel ? ' is-sel' : ''}`} onClick={() => setSel(date)}>
                   <span className="ih-month2__n">{Number(date.slice(8))}</span>
                   {shown.map((x) => (
-                    <span key={x.id} className={`ih-mchip ge-mchip--${plateOf(x)}${x.status === 'completed' ? ' is-done' : ''}${x.kind === 'homework' ? ' is-homework' : ''}`} title={taskTitle(t, x, titles?.[x.id])}>
+                    <span key={x.id} className={`ih-mchip ge-mchip--${plateOf(x)}${x.status === 'completed' ? ' is-done' : ''}${x.kind === 'homework' ? ' is-homework' : ''}${isTeacherTask(x) ? ' ge-mchip--teacher' : ''}`} title={taskTitle(t, x, titles?.[x.id])}>
                       {x.status === 'completed' && <CheckIcon size={11} />} {taskShort(t, x)}
                     </span>
                   ))}

@@ -2655,6 +2655,28 @@ button.hm-level__goal:focus-visible {
   background: #fff1e3;
   color: #c2560a;
 }
+/* задача преподавателя (часть 3): синяя метка «Добавлено преподавателем» и полоса слева — цвета IELTS (.ih-origin.is-teacher) */
+.ge-task.is-teacher {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+.ge-task__chip.is-teacher {
+  background: #e6f0ff;
+  color: #2563eb;
+}
+.ge-task__note {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ih-ink-2);
+  overflow-wrap: break-word;
+}
+.ge-plate--unit {
+  background: #eef0ff;
+  color: #4f5bd5;
+}
+.ge-plate--custom {
+  background: #e6f0ff;
+  color: #2563eb;
+}
 .ge-task__done {
   display: inline-flex;
   align-items: center;
@@ -2788,6 +2810,11 @@ button.hm-level__goal:focus-visible {
 .ge-wcard--course,
 .ge-mchip--course {
   box-shadow: inset 3px 0 0 #7c3aed;
+}
+/* после правил разделов: у задачи преподавателя полоса синяя, какого бы вида она ни была */
+.ge-wcard--teacher,
+.ge-mchip--teacher {
+  box-shadow: inset 3px 0 0 #3b82f6;
 }
 .ge-move {
   display: flex;
