@@ -21,15 +21,12 @@ describe('syncLegacyGoal', () => {
     expect(d.importLegacyGoal).toHaveBeenCalledWith('tok', { targetLevel: 'C1', fromLevel: 'B1' })
     expect(p.targetLevel).toBe('C1')
   })
-  it('цель в профиле есть — зеркалит её в level_goal для карточки преподавателя', async () => {
+  it('цель в профиле есть — level_goal больше не трогается: web-admin читает цель с бэкенда (часть 3)', async () => {
     const d = deps({ readCachedGoal: vi.fn(() => ({ target: 'B1', from: 'A2' })) })
-    await syncLegacyGoal('tok', { onboarded: true, targetLevel: 'B2', fromLevel: 'A2' }, d)
-    expect(d.saveLevelGoal).toHaveBeenCalledWith('tok', { target: 'B2', from: 'A2' })
-  })
-  it('зеркало уже совпадает — не пишет', async () => {
-    const d = deps({ readCachedGoal: vi.fn(() => ({ target: 'B2', from: 'A2' })) })
-    await syncLegacyGoal('tok', { onboarded: true, targetLevel: 'B2', fromLevel: 'A2' }, d)
+    const profile = { onboarded: true, targetLevel: 'B2', fromLevel: 'A2' }
+    expect(await syncLegacyGoal('tok', profile, d)).toBe(profile)
     expect(d.saveLevelGoal).not.toHaveBeenCalled()
+    expect(d.loadLevelGoal).not.toHaveBeenCalled()
   })
   it('перенос упал — профиль остаётся прежним', async () => {
     const d = deps({

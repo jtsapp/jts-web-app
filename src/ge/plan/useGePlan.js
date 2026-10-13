@@ -18,8 +18,13 @@ export function useGePlan(token, { enabled = true, level = null } = {}) {
     ;(async () => {
       const plan = await getGePlan(token)
       if (!alive) return
-      // план показываем сразу: подписи уроков — украшение, и медленный прогресс курса не должен держать экран
-      setState((prev) => ({ status: plan ? 'ready' : 'none', plan, frontier: plan ? prev.frontier : [] }))
+      // план показываем сразу: подписи уроков — украшение, и медленный прогресс курса не должен держать экран. Пустой
+      // ответ на ПЕРЕчитывании (после переноса или отметки) — сетевая осечка, а не «ручки нет»: прежний план остаётся,
+      // иначе «Сегодня» подменялось бы прежней карточкой, а экран «План» — ошибкой
+      setState((prev) => {
+        if (plan) return { status: 'ready', plan, frontier: prev.frontier }
+        return prev.plan ? prev : { status: 'none', plan: null, frontier: [] }
+      })
       if (!plan?.tasks?.some((x) => x.kind === 'course')) return
       const frontier = await loadCourseFrontier(level, token)
       if (alive) setState((prev) => (prev.plan === plan ? { ...prev, frontier } : prev))

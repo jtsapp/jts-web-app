@@ -1,17 +1,20 @@
 import { useI18n } from '../../i18n.jsx'
 import { formatDate } from '../../ielts/format.js'
 import {
-  CheckCircleIcon, EditIcon, MenuBookIcon, MicIcon, SchoolIcon, TaskAltIcon, TranslateIcon, VideoIcon, VolumeIcon,
+  CheckCircleIcon, EditIcon, FlagIcon, MenuBookIcon, MicIcon, QuizIcon, SchoolIcon, TaskAltIcon, TranslateIcon, VideoIcon, VolumeIcon,
 } from '../../ielts/icons.jsx'
-import { minutesLabel, plateOf, taskTitle } from './planModel.js'
+import { isTeacherTask, minutesLabel, plateOf, taskAction, taskTitle } from './planModel.js'
 
 // Строка задачи плана — общая для «Сегодня» на «Главной» и панели дня экрана «План»: значок раздела, название, минуты
-// (у начатой практики — «6 / 15 мин»), срок ДЗ или время занятия, «Начать» или «Выполнено».
+// (у начатой практики — «6 / 15 мин»), срок ДЗ или время занятия, «Начать» или «Выполнено». У задачи преподавателя —
+// синяя метка «Добавлено преподавателем», его комментарий и, у своего задания, «Отметить выполненным».
 
 const ICON = {
   course: SchoolIcon,
   live: VideoIcon,
   homework: TaskAltIcon,
+  unit: QuizIcon,
+  custom: FlagIcon,
   ai_tutor: MicIcon,
   workbooks: EditIcon,
   shadowing: VolumeIcon,
@@ -48,28 +51,44 @@ export function taskMeta(t, lang, task, { showDate = false } = {}) {
   return parts.join(' · ')
 }
 
+/** Подпись кнопки: отметка своего задания, «Продолжить» начатого, «Открыть» занятия и ДЗ, иначе «Начать». */
+export function startLabel(t, task, action) {
+  if (action?.type === 'done') return t('gePlan.markDone')
+  if (task.status === 'in_progress') return t('gePlan.continue')
+  return task.kind === 'live' || task.kind === 'homework' ? t('gePlan.open') : t('gePlan.start')
+}
+
 export default function GeTaskRow({ task, title, primary = false, showDate = false, onStart }) {
   const { t, lang } = useI18n()
   const done = task.status === 'completed'
+  const teacher = isTeacherTask(task)
+  // уровень для кнопки не нужен: от него зависит только адрес перехода, а не то, есть ли переход
+  const action = taskAction(task, null)
   return (
-    <li className={`ge-task is-${task.kind}${primary ? ' is-primary' : ''}${done ? ' is-done' : ''}`}>
+    <li className={`ge-task is-${task.kind}${teacher ? ' is-teacher' : ''}${primary ? ' is-primary' : ''}${done ? ' is-done' : ''}`}>
       <GePlate task={task} />
       <div className="ge-task__body">
         <b>{taskTitle(t, task, title)}</b>
         <span className="ge-task__meta">
           {taskMeta(t, lang, task, { showDate })}
+          {teacher && (
+            <span className="ge-task__chip is-teacher" title={task.extra?.createdByName || undefined}>
+              {t('gePlan.origin.teacher')}
+            </span>
+          )}
           {task.overdue && !done && <span className="ge-task__chip is-late">{t('gePlan.overdue')}</span>}
         </span>
+        {teacher && task.extra?.note && <span className="ge-task__note">{task.extra.note}</span>}
       </div>
       {done ? (
         <span className="ge-task__done">
           <CheckCircleIcon size={18} /> {t('gePlan.done')}
         </span>
-      ) : (
+      ) : action ? (
         <button type="button" className={`ih-btn2 ${primary ? 'ih-btn2--primary' : 'ih-btn2--outline'}`} onClick={() => onStart?.(task)}>
-          {task.status === 'in_progress' ? t('gePlan.continue') : task.kind === 'live' || task.kind === 'homework' ? t('gePlan.open') : t('gePlan.start')}
+          {startLabel(t, task, action)}
         </button>
-      )}
+      ) : null}
     </li>
   )
 }

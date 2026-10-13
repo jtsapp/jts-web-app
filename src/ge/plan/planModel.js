@@ -5,6 +5,11 @@
 //
 // Виды — по образцу IELTS (src/ielts/plan/planModel.js), но кодом своего раздела: IELTS не трогаем (решение владельца
 // 12.10.2026). Недели здесь календарные пн–вс — учебные дни пн–пт, а не «семь дней от старта программы», как у IELTS.
+//
+// Часть 3 (спека 2026-10-13-ge-teacher-plan): в плане бывают задачи преподавателя (origin = teacher) — урок курса,
+// практика, материал Практики (kind unit) и своё задание (kind custom). Подписи у них свои, из extra.
+
+import { practiceNavTarget } from '../../lib/practiceTarget.js'
 
 export const MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 
@@ -17,19 +22,53 @@ const MODULE_ROUTE = {
   vocabulary_sr: { to: 'vocab' },
 }
 
-/** Куда ведёт «Начать»: ключ handleNav App и его payload. Урок курса — в тропу уровня, который ученик проходит. */
+/** Задача преподавателя (бэкенд V330, origin = teacher): синяя метка и комментарий; день выбрал он, ученик её не переносит. */
+export function isTeacherTask(task) {
+  return task?.origin === 'teacher'
+}
+
+/**
+ * Куда ведёт «Начать»: ключ handleNav App и его payload; null — переходить некуда. Урок курса — в тропу уровня, который
+ * ученик проходит.
+ */
 export function taskRoute(task, level) {
   switch (task?.kind) {
     case 'course':
-      return { to: 'course', payload: { level: level || null } }
+      // урок, заданный преподавателем, — в тропу его уровня: ученик мог уже перейти на следующий
+      return { to: 'course', payload: { level: (isTeacherTask(task) && task.extra?.level) || level || null } }
     case 'live':
       return { to: 'lessons' }
     case 'homework':
       return { to: 'homework' }
+    case 'unit': {
+      // адрес юнита — тот же, каким его выдают в домашке, и разбирает его тот же practiceNavTarget: неизвестный адрес не
+      // превращается в переход (экран раздела молча открыл бы чужой юнит)
+      const x = task.extra || {}
+      const target = practiceNavTarget({
+        practiceArea: x.area,
+        practiceLevel: x.level,
+        practiceUnitId: x.unitId ?? null,
+        practiceUnitKey: x.unitKey ?? null,
+      })
+      return target ? { to: target.key, payload: target.payload } : null
+    }
+    case 'custom':
+      return null
     default:
       if (task?.module === 'workbooks') return { to: 'workbook', payload: level ? { level: String(level).toLowerCase() } : null }
       return MODULE_ROUTE[task?.module] || { to: 'practice' }
   }
+}
+
+/**
+ * Что делает кнопка задачи: переход ({ type: 'nav', to, payload }), отметка своего задания преподавателя ({ type: 'done' })
+ * или ничего (null — кнопки нет). У выполненной задачи кнопки нет.
+ */
+export function taskAction(task, level) {
+  if (!task || task.status === 'completed') return null
+  if (task.kind === 'custom') return isTeacherTask(task) ? { type: 'done' } : null
+  const r = taskRoute(task, level)
+  return r ? { type: 'nav', ...r } : null
 }
 
 /** Ключ значка и цвета: раздел практики или вид задачи. */
@@ -40,6 +79,12 @@ export function plateOf(task) {
 
 /** Подпись задачи. courseTitle — название шага тропы для урока курса (см. courseTitles). */
 export function taskTitle(t, task, courseTitle) {
+  if (isTeacherTask(task)) {
+    const x = task.extra || {}
+    if (x.title) return x.title
+    if (task.kind === 'course') return x.lessonTitle ? t('gePlan.course.named', { title: x.lessonTitle }) : t('gePlan.course')
+    if (task.kind === 'unit') return x.unitTitle || t('gePlan.unit')
+  }
   switch (task?.kind) {
     case 'course':
       return courseTitle ? t('gePlan.course.named', { title: courseTitle }) : t('gePlan.course')
@@ -79,7 +124,8 @@ export function courseTitles(tasks, frontier) {
   const out = {}
   if (!Array.isArray(frontier) || !frontier.length) return out
   let k = 0
-  for (const task of (tasks || []).filter((x) => x.kind === 'course').sort(byDateThenId)) {
+  // урок преподавателя — конкретный урок со своей подписью, а не «следующий шаг тропы»: его в счёт не берём
+  for (const task of (tasks || []).filter((x) => x.kind === 'course' && !isTeacherTask(x)).sort(byDateThenId)) {
     if (task.status === 'completed') continue
     const node = frontier[k++]
     if (!node) break

@@ -42,12 +42,15 @@ function planWith(tasks) {
 async function setup(page) {
   const state = {
     moves: [],
+    dones: [],
     tasks: [
       { id: 1, date: today, kind: 'course', module: null, minutes: 30, got: 0, status: 'available', overdue: false, movable: true },
       { id: 2, date: today, kind: 'practice', module: 'ai_tutor', minutes: 15, got: 6, status: 'in_progress', overdue: false, movable: true },
       { id: 3, date: today, kind: 'practice', module: 'vocabulary_sr', minutes: 15, got: 15, status: 'completed', overdue: false, movable: false },
       { id: 'hw:9', date: today, kind: 'homework', module: null, minutes: 0, got: 0, status: 'available', overdue: false, movable: false, title: 'Unit 3 · Past Simple', extra: { dueDate: today } },
       { id: 4, date: add(1), kind: 'practice', module: 'workbooks', minutes: 15, got: 0, status: 'planned', overdue: false, movable: true },
+      // задача преподавателя (часть 3): своё задание с комментарием — ученик отмечает его сам
+      { id: 5, date: today, kind: 'custom', origin: 'teacher', module: null, minutes: 20, got: 0, status: 'available', overdue: false, movable: false, title: 'Посмотри серию', extra: { title: 'Посмотри серию', note: 'Без субтитров', createdByName: 'Айгерим' } },
     ],
   }
   await page.addInitScript((token) => {
@@ -64,6 +67,13 @@ async function setup(page) {
       state.moves.push({ id: moved[1], date })
       state.tasks = state.tasks.map((x) => (String(x.id) === moved[1] ? { ...x, date } : x))
       return route.fulfill(json({ id: Number(moved[1]), date }))
+    }
+    const marked = /\/mobile\/ge\/plan\/tasks\/([^/]+)\/done/.exec(url)
+    if (marked && req.method() === 'PUT') {
+      const { done } = JSON.parse(req.postData())
+      state.dones.push({ id: marked[1], done })
+      state.tasks = state.tasks.map((x) => (String(x.id) === marked[1] ? { ...x, status: done ? 'completed' : 'available', got: done ? 1 : 0 } : x))
+      return route.fulfill(json({ id: Number(marked[1]), status: done ? 'completed' : 'available' }))
     }
     if (url.includes('/mobile/ge/plan')) return route.fulfill(json(planWith(state.tasks)))
     if (url.includes('/mobile/ge/profile')) return route.fulfill(json(profile))
@@ -124,4 +134,17 @@ test('без ручки плана (старый бэкенд отвечает {
   await page.goto('/?screen=home')
   await expect(page.locator('.ge-goal')).toBeVisible({ timeout: 20000 })
   await expect(page.locator('.ge-today')).toHaveCount(0)
+})
+
+test('задача преподавателя: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
+  const state = await setup(page)
+  await page.goto('/?screen=home')
+  const row = page.locator('.ge-today .ge-task.is-teacher')
+  await expect(row).toBeVisible({ timeout: 20000 })
+  await expect(row).toContainText('Посмотри серию')
+  await expect(row).toContainText('Добавлено преподавателем')
+  await expect(row).toContainText('Без субтитров')
+  await row.getByRole('button', { name: 'Отметить выполненным' }).click()
+  await expect.poll(() => state.dones).toEqual([{ id: '5', done: true }])
+  await expect(row).toContainText('Выполнено')
 })
