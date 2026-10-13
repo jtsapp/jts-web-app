@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { RuFlagIcon, GbFlagIcon, KzFlagIcon } from './components/icons.jsx'
+import { applyUiLang } from './lib/uiLang.js'
 
 // `short` — для мест, где на подпись нет ширины (шапка кабинета рядом с
 // колокольчиком). `KZ`, а не `KK`: код языка казахский — `kk`, но на флаге и в
@@ -16308,6 +16309,10 @@ export function I18nProvider({ children }) {
       /* ignore */
     }
   }, [])
+
+  // Язык — атрибутом на <html>: по нему казахский интерфейс целиком идёт на
+  // Inter (src/kk-font.css). До гидратации его ставит UI_LANG_BOOT в layout.
+  useEffect(() => applyUiLang(lang), [lang])
 
   const t = useCallback(
     (key, vars) => {
