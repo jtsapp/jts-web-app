@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import MaterialAssignmentDetail from './MaterialAssignmentDetail.jsx'
 
@@ -122,15 +122,25 @@ describe('MaterialAssignmentDetail — задание делается прям�
   })
 
   // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
-  // рендера, что у рамки, — с токеном ученика в строке запроса.
-  it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {
+  // рендера, что у рамки, — с токеном ученика в строке запроса, и новая вкладка уносила
+  // его в адресную строку и историю браузера. Нынешнее «Во весь экран» (HomeworkFrame) —
+  // не ссылка: та же рамка разворачивается на странице, адрес никуда не уходит.
+  it('«Во весь экран» разворачивает рамку на месте — адрес рендера с токеном наружу не выносится', async () => {
     const { container } = показать()
 
     кнопкаОткрыть().click()
 
-    await waitFor(() => expect(container.querySelector('.hw-frame__iframe')).not.toBeNull())
-    expect(screen.queryByText(/во весь экран/i)).toBeNull()
+    const frame = await waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Во весь экран' }))
+
+    expect(container.querySelector('.hw-frame--full')).not.toBeNull()
+    expect(container.querySelector('.hw-frame__iframe')).toBe(frame)
     expect(container.querySelector('a[href*="/render"]')).toBeNull()
+    expect(открытыеВкладки).toEqual([])
   })
 
   /* Заданиям на слух нужен autoplay: разрешение выдаётся документу, а материал

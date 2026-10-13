@@ -4,6 +4,16 @@ import { useT } from '../i18n/LanguageContext.jsx'
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 
+// Элемент или кто-то из предков спрятан display: none (медиазапросом). По
+// стилю, а не по getClientRects: в jsdom боксов нет ни у кого, и тур в
+// юнит-тестах пропускал бы все шаги подряд.
+function isDisplayNone(el) {
+  for (let node = el; node; node = node.parentElement) {
+    if (getComputedStyle(node).display === 'none') return true
+  }
+  return false
+}
+
 // Раскладка поповера: у элемента справа — слева от него, иначе снизу/сверху.
 // Если элемент такой высокий, что поповер не помещается ни там, ни там (частый
 // случай на телефоне), прибиваем поповер к низу экрана — раньше он ложился
@@ -139,8 +149,11 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
     const el = document.querySelector(selector)
     // Шаг без своего элемента на экране пропускаем: в Практике секции зависят от
     // контента и выбранного чипа, и подсветка несуществующего узла показала бы
-    // «дырку» в пустоте (у тьютора это раньше отсеивал сам экран).
-    if (!el) {
+    // «дырку» в пустоте (у тьютора это раньше отсеивал сам экран). Скрытый
+    // элемент (display: none под медиазапросом — список домашних работ на
+    // телефоне, кнопка «Все задания» на десктопе) — то же самое: боксов у него
+    // нет, и прожектор встал бы в левый верхний угол нулевой точкой.
+    if (!el || isDisplayNone(el)) {
       if (i + 1 < steps.length) setI(i + 1)
       else finish()
       return undefined

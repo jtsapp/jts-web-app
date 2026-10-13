@@ -79,7 +79,9 @@ test.describe('онбординг-тур «Домашней работы»', () 
     await page.unroute('**/admin/homework/my')
     await page.route('**/admin/homework/my', (route) => route.fulfill(json(HOMEWORK)))
     await page.goto('/?screen=homework')
-    await expect(page.locator('.hw-list')).toBeVisible({ timeout: 15000 })
+    // Не .hw-list: на телефоне сразу открыто задание, а список — за «Все задания»
+    // (тур тогда показывает эту кнопку вместо списка).
+    await expect(page.locator('.hw__layout')).toBeVisible({ timeout: 15000 })
     await walkTour(page, viewport)
   })
 })

@@ -10,6 +10,7 @@ import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkF
 import { assignmentScope, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
 import useMaterialOpen from './useMaterialOpen.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
+import HomeworkFrame from './HomeworkFrame.jsx'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 
@@ -137,17 +138,7 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
             сырой текст выданного блока не показывается никогда. */}
         {scope && <p className="hw-assigned">{scope.key ? t(scope.key) : scope.text}</p>}
         {frameSrc ? (
-          <div className="hw-frame">
-            {/* allow="autoplay" — по той же причине, что и у рамки живого урока:
-                разрешение выдаётся документу, а материал живёт в своём iframe;
-                у заданий на слух без этого молчала бы запись. */}
-            <iframe
-              src={frameSrc}
-              title={card.title}
-              className="hw-frame__iframe"
-              allow="autoplay"
-            />
-          </div>
+          <HomeworkFrame src={frameSrc} title={card.title} />
         ) : (
           // lookingUp — пока ищем урок каталога по ссылке (см. useMaterialOpen):
           // нажатие до ответа увело бы ученика открывать файл, а не урок.

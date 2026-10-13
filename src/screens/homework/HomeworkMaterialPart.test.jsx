@@ -100,15 +100,24 @@ describe('HomeworkMaterialPart — «Открыть задание», та же 
 
   // Владелец 29.09: «убери кнопку открыть во весь экран». Ссылка вела на тот же адрес
   // рендера, что у рамки, — с токеном ученика в строке запроса, и новая вкладка уносила
-  // его в адресную строку и историю браузера.
-  it('у рамки нет ссылки «Открыть во весь экран» — адрес рендера с токеном наружу не выносится', async () => {
+  // его в адресную строку и историю браузера. Нынешнее «Во весь экран» (HomeworkFrame) —
+  // не ссылка: та же рамка разворачивается на странице, адрес никуда не уходит.
+  it('«Во весь экран» разворачивает рамку на месте — адрес рендера с токеном наружу не выносится', async () => {
     const { container } = показать()
 
     fireEvent.click(screen.getByRole('button', { name: 'Открыть задание' }))
 
-    await waitFor(() => expect(container.querySelector('.hw-frame__iframe')).not.toBeNull())
-    expect(screen.queryByText(/во весь экран/i)).toBeNull()
+    const frame = await waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Во весь экран' }))
+
+    expect(container.querySelector('.hw-frame--full')).not.toBeNull()
+    expect(container.querySelector('.hw-frame__iframe')).toBe(frame)
     expect(container.querySelector('a[href*="/render"]')).toBeNull()
+    expect(открытыеВкладки).toEqual([])
   })
 
   it('карточка живого урока открывается сам урок в кабинете, а не файл', () => {

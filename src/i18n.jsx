@@ -696,6 +696,10 @@ const dict = {
     // Задания с живых уроков — материалы, назначенные преподавателем как ДЗ.
     'homework.lessonTask': 'Задание с урока',
     'homework.open': 'Открыть задание',
+    // Рамка задания во весь экран (HomeworkFrame) и возврат к списку на телефоне.
+    'homework.frameFull': 'Во весь экран',
+    'homework.frameExit': 'Свернуть',
+    'homework.backToList': 'Все задания',
     'homework.ieltsTask': 'Задание IELTS',
     'homework.status.done': 'Выполнено',
     'homework.ielts.start': 'Начать',
@@ -1253,6 +1257,8 @@ const dict = {
     'tour.hw.submit.title': 'Отправить на проверку',
     'tour.hw.submit.text':
       'Работа уходит преподавателю; оценка и комментарий вернутся в эту же карточку.',
+    'tour.hw.back.title': 'Все задания',
+    'tour.hw.back.text': 'Отсюда — назад к списку: там остальные домашние работы, сданные и проверенные.',
     'tour.vocab.levels.title': 'Основная лексика',
     'tour.vocab.levels.text':
       'Базовые слова по уровням английского. Открыт твой уровень и всё, что ниже.',
@@ -6129,6 +6135,9 @@ const dict = {
     'homework.entryDone': 'all handed in',
     'homework.lessonTask': 'Lesson task',
     'homework.open': 'Open the task',
+    'homework.frameFull': 'Fullscreen',
+    'homework.frameExit': 'Collapse',
+    'homework.backToList': 'All assignments',
     'homework.ieltsTask': 'IELTS task',
     'homework.status.done': 'Done',
     'homework.ielts.start': 'Start',
@@ -6670,6 +6679,8 @@ const dict = {
     'tour.hw.submit.title': 'Send for review',
     'tour.hw.submit.text':
       'The work goes to the teacher; the grade and the comment come back to this same card.',
+    'tour.hw.back.title': 'All assignments',
+    'tour.hw.back.text': 'Back to the list from here: the rest of your homework is there, submitted and graded too.',
     'tour.vocab.levels.title': 'Core vocabulary',
     'tour.vocab.levels.text':
       'Base words by English level. Your level is open, and everything below it.',
@@ -11539,6 +11550,9 @@ const dict = {
     'homework.entryDone': 'бәрі тапсырылды',
     'homework.lessonTask': 'Сабақтағы тапсырма',
     'homework.open': 'Тапсырманы ашу',
+    'homework.frameFull': 'Толық экран',
+    'homework.frameExit': 'Жию',
+    'homework.backToList': 'Барлық тапсырмалар',
     'homework.ieltsTask': 'IELTS тапсырмасы',
     'homework.status.done': 'Орындалды',
     'homework.ielts.start': 'Бастау',
@@ -12080,6 +12094,8 @@ const dict = {
     'tour.hw.submit.title': 'Тексеруге жіберу',
     'tour.hw.submit.text':
       'Жұмыс мұғалімге кетеді; баға мен пікір осы карточкаға қайта оралады.',
+    'tour.hw.back.title': 'Барлық тапсырмалар',
+    'tour.hw.back.text': 'Осы жерден тізімге орал: қалған үй жұмыстары сонда, тапсырылғаны мен тексерілгені де.',
     'tour.vocab.levels.title': 'Негізгі лексика',
     'tour.vocab.levels.text':
       'Ағылшын деңгейі бойынша негізгі сөздер. Өз деңгейің және одан төмені ашық.',
