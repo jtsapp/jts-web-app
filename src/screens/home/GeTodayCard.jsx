@@ -16,7 +16,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
   const titles = useMemo(() => courseTitles(plan.tasks, frontier), [plan.tasks, frontier])
   const { tasks, ahead } = todayView(plan)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
-  const start = useGeTaskStart({ token, level, onNav, reload: onReload })
+  const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload })
   return (
     <section className="hm-card ge-today ge-skin" aria-labelledby="ge-today-title">
       <header className="ge-today__head">
@@ -43,6 +43,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
           ))}
         </ul>
       )}
+      {markFailed && <p className="ge-move__error" role="alert">{t('gePlan.markFail')}</p>}
       {firstOpen < 0 && (
         <>
           <p className="ge-today__rest">{t(tasks.length ? 'gePlan.today.done' : 'gePlan.today.rest')}</p>

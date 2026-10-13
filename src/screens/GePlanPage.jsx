@@ -88,7 +88,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     setAt(a)
     writeUrl(v, a)
   }
-  const start = useGeTaskStart({ token: authToken, level, onNav, reload })
+  const { start, markFailed } = useGeTaskStart({ token: authToken, level, onNav, reload })
   const move = (task, date) => {
     setMoveError(false)
     moveGeTask(authToken, task.id, date).then(reload).catch(() => setMoveError(true))
@@ -121,6 +121,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     const month = at || plan.today
     body = (
       <>
+        {markFailed && <p className="ge-move__error" role="alert">{t('gePlan.markFail')}</p>}
         {view === 'road' && <RoadmapView key={plan.today} plan={plan} titles={titles} onStart={start} />}
         {view === 'week' && (
           <WeekView key={monday} plan={plan} titles={titles} monday={monday} onWeek={(m) => pick('week', m)} onStart={start} onMove={move} moveError={moveError} />
