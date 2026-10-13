@@ -12,12 +12,19 @@ import { MonthView, RoadmapView, WeekView } from '../ge/plan/GePlanViews.jsx'
 // выбранная неделя/месяц живут в адресе (?gePlanView=, &gePlanAt=), как у плана IELTS: F5 и «Назад» возвращают туда же.
 const VIEWS = ['road', 'week', 'month']
 
+// 2026-13-45 проходит регэксп, но toISOString на нём бросает — и роняет экран у того, кому прислали ссылку
+function realDay(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return false
+  const d = new Date(`${s}T00:00:00Z`)
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s
+}
+
 function readUrl() {
   try {
     const q = new URLSearchParams(window.location.search)
     const v = q.get('gePlanView')
     const at = q.get('gePlanAt')
-    return { view: VIEWS.includes(v) ? v : 'road', at: /^\d{4}-\d{2}-\d{2}$/.test(at || '') ? at : null }
+    return { view: VIEWS.includes(v) ? v : 'road', at: realDay(at) ? at : null }
   } catch {
     return { view: 'road', at: null }
   }

@@ -17,7 +17,7 @@ describe('куда ведёт «Начать»', () => {
     expect(taskRoute({ kind: 'live' })).toEqual({ to: 'lessons' })
     expect(taskRoute({ kind: 'homework' })).toEqual({ to: 'homework' })
     expect(taskRoute({ kind: 'practice', module: 'ai_tutor' })).toEqual({ to: 'tutor' })
-    expect(taskRoute({ kind: 'practice', module: 'workbooks' })).toEqual({ to: 'workbook' })
+    expect(taskRoute({ kind: 'practice', module: 'workbooks' }, 'B1')).toEqual({ to: 'workbook', payload: { level: 'b1' } })
     expect(taskRoute({ kind: 'practice', module: 'shadowing' })).toEqual({ to: 'practice', payload: { filter: 'shadowing' } })
     expect(taskRoute({ kind: 'practice', module: 'media_practice' })).toEqual({ to: 'practice', payload: { skill: 'reading' } })
     expect(taskRoute({ kind: 'practice', module: 'vocabulary_sr' })).toEqual({ to: 'vocab' })

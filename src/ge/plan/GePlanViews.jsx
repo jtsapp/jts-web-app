@@ -181,17 +181,25 @@ export function RoadmapView({ plan, titles, onStart }) {
     }
   }, [first, plan])
 
+  // окно сдвинулось — выбранный день должен оказаться в нём, иначе панель показывает невидимый день и стрелки мертвы
+  const moveWindow = (next) => {
+    setFirst(next)
+    const days = [next, addDays(next, 7)]
+      .filter((m) => m <= lastMonday)
+      .flatMap((m) => roadWeek(plan.tasks, m, today).days.map((d) => d.date))
+    setSel(days.includes(today) ? today : days[0] || next)
+  }
   const say = selDay && selDay.status === 'current' ? 'gePlan.say.today' : 'gePlan.say.keep'
   const n1 = weekNumber(first, plan.planStart || today)
   return (
     <div className="ih-planrow">
       <section className="ih-roadcard">
         <header className="ih-roadcard__head">
-          <button type="button" className="ih-iconbtn" disabled={first <= startMonday} onClick={() => setFirst(addDays(first, -14) < startMonday ? startMonday : addDays(first, -14))} aria-label={t('gePlan.prev')}><ChevronLeftIcon size={20} /></button>
+          <button type="button" className="ih-iconbtn" disabled={first <= startMonday} onClick={() => moveWindow(addDays(first, -14) < startMonday ? startMonday : addDays(first, -14))} aria-label={t('gePlan.prev')}><ChevronLeftIcon size={20} /></button>
           <div>
             <h2>{mondays.length > 1 ? t('gePlan.weeks', { a: String(n1), b: String(n1 + 1) }) : t('gePlan.week.n', { n: String(n1) })}</h2>
           </div>
-          <button type="button" className="ih-iconbtn" disabled={addDays(first, 7) >= lastMonday} onClick={() => setFirst(addDays(first, 14) > lastMonday ? lastMonday : addDays(first, 14))} aria-label={t('gePlan.next')}><ChevronRightIcon size={20} /></button>
+          <button type="button" className="ih-iconbtn" disabled={addDays(first, 7) >= lastMonday} onClick={() => moveWindow(addDays(first, 14) > lastMonday ? lastMonday : addDays(first, 14))} aria-label={t('gePlan.next')}><ChevronRightIcon size={20} /></button>
           <span className="ih-spacer" />
           <button type="button" className="ih-softbtn" onClick={() => { setFirst(initial); setSel(today) }}>
             <TargetIcon size={18} /> {t('gePlan.toToday')}

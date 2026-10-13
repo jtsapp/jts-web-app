@@ -8,10 +8,10 @@
 
 export const MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 
-// Раздел практики → экран. Шэдоуинг — секция Практики, медиа — вкладка «Чтение» (книги, тексты, комиксы).
+// Раздел практики → экран. Шэдоуинг — секция Практики, медиа — вкладка «Чтение» (книги, тексты, комиксы). Воркбук без
+// уровня в payload открывается на A0 (WorkbookPage), поэтому уровень ученика ему передаётся всегда.
 const MODULE_ROUTE = {
   ai_tutor: { to: 'tutor' },
-  workbooks: { to: 'workbook' },
   shadowing: { to: 'practice', payload: { filter: 'shadowing' } },
   media_practice: { to: 'practice', payload: { skill: 'reading' } },
   vocabulary_sr: { to: 'vocab' },
@@ -27,6 +27,7 @@ export function taskRoute(task, level) {
     case 'homework':
       return { to: 'homework' }
     default:
+      if (task?.module === 'workbooks') return { to: 'workbook', payload: level ? { level: String(level).toLowerCase() } : null }
       return MODULE_ROUTE[task?.module] || { to: 'practice' }
   }
 }
@@ -168,9 +169,10 @@ export function roadWeek(tasks, monday, today) {
  */
 export function todayView(plan, maxOverdue = 3) {
   const today = plan?.today
-  const tasks = plan?.tasks || []
   if (!today) return { tasks: [], ahead: [] }
   const monday = mondayOf(today)
+  // только по дате: sort стабилен, и порядок бэкенда внутри дня (занятие, ДЗ, урок, практика) сохраняется
+  const tasks = [...(plan?.tasks || [])].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   const overdue = tasks.filter((x) => x.date < today && x.date >= monday && x.overdue && x.status !== 'completed').slice(0, maxOverdue)
   const list = [...overdue, ...tasks.filter((x) => x.date === today)]
   if (list.some((x) => x.status !== 'completed')) return { tasks: list, ahead: [] }

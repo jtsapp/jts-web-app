@@ -17,8 +17,12 @@ export function useGePlan(token, { enabled = true, level = null } = {}) {
     let alive = true
     ;(async () => {
       const plan = await getGePlan(token)
-      const frontier = plan?.tasks?.some((x) => x.kind === 'course') ? await loadCourseFrontier(level, token) : []
-      if (alive) setState({ status: plan ? 'ready' : 'none', plan, frontier })
+      if (!alive) return
+      // план показываем сразу: подписи уроков — украшение, и медленный прогресс курса не должен держать экран
+      setState((prev) => ({ status: plan ? 'ready' : 'none', plan, frontier: plan ? prev.frontier : [] }))
+      if (!plan?.tasks?.some((x) => x.kind === 'course')) return
+      const frontier = await loadCourseFrontier(level, token)
+      if (alive) setState((prev) => (prev.plan === plan ? { ...prev, frontier } : prev))
     })()
     return () => {
       alive = false

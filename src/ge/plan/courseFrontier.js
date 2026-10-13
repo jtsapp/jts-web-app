@@ -20,7 +20,10 @@ export async function loadCourseFrontier(level, token) {
     const [index, mods] = await Promise.all([getCourseIndex(level), getLessonModules(token).catch(() => [])])
     if (!index) return []
     const mod = pickLevelModule(mods, level)
-    return openNodes(courseTrail(index), await loadDone(level, token, mod ? mod.id : null))
+    // без модуля пройденное знает только локальное зеркало — на чистом устройстве тропа начнётся с первого урока, и
+    // задача двадцатого урока подписалась бы первым. Лучше общее «Урок курса», чем чужое название
+    if (!mod) return []
+    return openNodes(courseTrail(index), await loadDone(level, token, mod.id))
   } catch {
     return []
   }

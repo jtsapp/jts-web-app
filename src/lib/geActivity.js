@@ -112,9 +112,25 @@ export async function pushGeActivity(profileId, day, { sql = getSql(), fetchImpl
  * Отправить после ответа: в роуте — через after(), чтобы ученик не ждал бэкенд. Вне запроса (вызов из хелпера,
  * тест) after() бросает — тогда просто фоном. Аноним отсекается сразу, без лишней работы.
  */
+// Отправки одного ученика за один день идут по очереди: «прочитал итог → отправил» двух параллельных записей (пачка
+// медиа и оценка шэдоуинга) иначе могли бы прийти на бэкенд в обратном порядке, и до следующей записи там остался бы
+// устаревший итог. Очередь — в пределах процесса; хвост забывается, когда отработал.
+const chains = new Map()
+
+function serialized(key, job) {
+  const next = (chains.get(key) || Promise.resolve()).then(job, job)
+  chains.set(key, next)
+  next
+    .finally(() => {
+      if (chains.get(key) === next) chains.delete(key)
+    })
+    .catch(() => {})
+  return next
+}
+
 export function queueGeActivity(profileId, day, deps) {
   if (!backendUserId(profileId)) return
-  const run = () => pushGeActivity(profileId, day, deps).catch(() => {})
+  const run = () => serialized(`${profileId}|${day}`, () => pushGeActivity(profileId, day, deps)).catch(() => {})
   try {
     after(run)
   } catch {
