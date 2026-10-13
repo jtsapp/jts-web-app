@@ -19,6 +19,17 @@ import { SECONDS_PER_CREDIT } from './db/shadowingBudget.js'
 
 export const GE_MODULES = ['ai_tutor', 'workbooks', 'shadowing', 'media_practice', 'vocabulary_sr']
 export const PUSH_TIMEOUT_MS = 5000
+// Бэкенд без ручки (веб выкатили раньше) отвечает 404 на каждую отправку — а она раз в минуту на каждого активного
+// ученика. В лог — первый отказ, повторы того же кода молчат 10 минут.
+const QUIET_MS = 10 * 60 * 1000
+const quiet = new Map()
+
+function warnOnce(reason, detail) {
+  const now = Date.now()
+  if ((quiet.get(reason) || 0) > now) return
+  quiet.set(reason, now + QUIET_MS)
+  console.warn(`[ge-activity] ${reason}`, detail ?? '')
+}
 
 // env с Windows может прийти с BOM — как у остальных ключей веба
 export function geActivityKey(env = process.env) {
@@ -87,12 +98,12 @@ export async function pushGeActivity(profileId, day, { sql = getSql(), fetchImpl
       signal: AbortSignal.timeout(timeoutMs),
     })
     if (!res.ok) {
-      console.warn('[ge-activity] backend answered', res.status)
+      warnOnce(`http_${res.status}`, 'backend refused the day totals')
       return { sent: false, reason: `http_${res.status}` }
     }
     return { sent: true }
   } catch (e) {
-    console.warn('[ge-activity] push failed', e?.message || e)
+    warnOnce(e?.name === 'TimeoutError' ? 'timeout' : 'network', e?.message || e)
     return { sent: false, reason: e?.name === 'TimeoutError' ? 'timeout' : 'network' }
   }
 }
