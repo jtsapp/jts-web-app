@@ -2704,11 +2704,12 @@ button.hm-level__goal:focus-visible {
   color: #4f5bd5;
 }
 /* экран «План» */
+/* переключатель видов — строкой под заголовком, а не справа: правый верх экрана занят кнопками языка и уведомлений */
 .ge-plan__head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .ge-plan__head h1 {
@@ -2750,6 +2751,14 @@ button.hm-level__goal:focus-visible {
 }
 .ge-plan .ge-tasks {
   margin-top: 8px;
+}
+/* панель дня узкая (~350px): кнопка под названием во всю ширину, как в панели дня IELTS, иначе название рвётся по буквам */
+.ih-dp .ge-task {
+  flex-wrap: wrap;
+}
+.ih-dp .ge-task > .ih-btn2,
+.ih-dp .ge-task > .ge-task__done {
+  flex-basis: 100%;
 }
 /* карточка недели и чип месяца — цвет раздела полоской слева: у IELTS там навык, у нас раздел практики */
 .ge-wcard--live,

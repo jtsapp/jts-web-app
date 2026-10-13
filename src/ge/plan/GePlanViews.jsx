@@ -95,7 +95,7 @@ function RoadNode({ day, selected, onPick }) {
   )
 }
 
-function RoadWeek({ week, n, selected, onPick, flip, laneRef }) {
+function RoadWeek({ week, n, today, selected, onPick, flip, laneRef }) {
   const { t, lang } = useI18n()
   const range = `${dfmt(lang, week.monday, { day: 'numeric' })}–${dfmt(lang, addDays(week.monday, 6), { day: 'numeric', month: 'long' })}`
   return (
@@ -109,7 +109,8 @@ function RoadWeek({ week, n, selected, onPick, flip, laneRef }) {
         {week.days.length ? (
           week.days.map((d) => <RoadNode key={d.date} day={d} selected={selected === d.date} onPick={onPick} />)
         ) : (
-          <li className="ih-road2__day is-planned"><span className="ih-road2__label">{t('gePlan.beyond')}</span></li>
+          // пустая неделя впереди — горизонт плана ещё не дошёл; позади — задач тогда не было (до старта плана)
+          <li className="ih-road2__day is-planned"><span className="ih-road2__label">{t(week.monday > today ? 'gePlan.beyond' : 'gePlan.noTasks')}</span></li>
         )}
       </ol>
     </div>
@@ -198,7 +199,7 @@ export function RoadmapView({ plan, titles, onStart }) {
         </header>
         <div className="ih-road2" ref={mapRef}>
           {weeks.map((w, i) => (
-            <RoadWeek key={w.monday} week={w} n={n1 + i} selected={sel} onPick={setSel} flip={i === 1} laneRef={(el) => (lanes.current[i] = el)} />
+            <RoadWeek key={w.monday} week={w} n={n1 + i} today={today} selected={sel} onPick={setSel} flip={i === 1} laneRef={(el) => (lanes.current[i] = el)} />
           ))}
           {road && (
             <svg className="ih-road2__svg" width={road.w} height={road.h} viewBox={`0 0 ${road.w} ${road.h}`} aria-hidden="true">
@@ -229,6 +230,15 @@ export function RoadmapView({ plan, titles, onStart }) {
 }
 
 // ---------------------------------------------------------------- неделя
+
+// Вторая строка карточки недели: заголовок карточки — уже короткое имя раздела, повторять его («Воркбук / Воркбук»,
+// «Урок / Урок: …») незачем. Уроку — название шага тропы, ДЗ — его название, практике — полное имя раздела.
+function cardSub(t, task, courseTitle) {
+  if (task.kind === 'course') return courseTitle || ''
+  if (task.kind === 'live') return task.extra?.teacherName || ''
+  const full = taskTitle(t, task, courseTitle)
+  return full === taskShort(t, task) ? '' : full
+}
 
 export function WeekView({ plan, titles, monday, onWeek, onStart, onMove, moveError }) {
   const { t, lang } = useI18n()
@@ -268,7 +278,7 @@ export function WeekView({ plan, titles, monday, onWeek, onStart, onMove, moveEr
                       <button type="button" className={`ih-wcard is-${st} ge-wcard--${plateOf(task)}${sel?.id === task.id ? ' is-sel' : ''}`} onClick={() => { setSelId(task.id); setMoving(false) }}>
                         <span className="ih-wcard__st" aria-hidden="true">{st === 'done' ? <CheckIcon size={12} /> : null}</span>
                         <b>{taskShort(t, task)}</b>
-                        <span className="ih-wcard__sub">{taskTitle(t, task, titles?.[task.id])}</span>
+                        {cardSub(t, task, titles?.[task.id]) && <span className="ih-wcard__sub">{cardSub(t, task, titles?.[task.id])}</span>}
                         <span className="ih-wcard__min"><ScheduleIcon size={12} /> {taskMeta(t, lang, task)}</span>
                       </button>
                     </li>

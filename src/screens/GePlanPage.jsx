@@ -133,7 +133,6 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
               ))}
             </div>
           )}
-          <button type="button" className="ih-link" onClick={() => onNav?.('home')}>{t('gePlan.back')}</button>
         </header>
         {plan?.state === 'ready' && plan.liveMissing && (
           <p className="ge-today__note">
