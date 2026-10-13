@@ -107,8 +107,9 @@ ALTER TABLE ge_plan_tasks
 
 - `GET /admin/teacher-ge/students/{id}/profile` → `{ profile }`. Лёгкая ручка для карточки «Обзор»: цель и анкета без
   сборки плана. `profile` = `{ purpose, targetLevel, fromLevel, deadlineDate, deadlineWindow, dailyMinutes,
-  startMode, route, onboardedAt, routeAt }` или `null`.
-- `GET /admin/teacher-ge/students/{id}?from&to` → `{ user: { id, name, languageLevel }, profile, plan }`. `plan` — тот
+  startMode, route, onboardedAt, deadline, journey }` — `GeProfileService.ProfileView`; без анкеты `onboarded = false`.
+- `GET /admin/teacher-ge/students/{id}?from&to` → `{ user: { id, name, languageLevel }, profile, plan, courseDone }`.
+  `courseDone` — пройденные уроки по уровням (`{ "A1": ["L1", "T1"] }`): диалог выключает их в выборе. `plan` — тот
   же ответ, что у `/mobile/ge/plan`, плюс `editable` у каждой строки: `teacher` — правка целиком, `programme` —
   только дата, подмешанные — нет.
 - `POST /admin/teacher-ge/students/{id}/tasks` — тело `{ type: course|practice|unit|custom, date, minutes, title,
@@ -145,7 +146,7 @@ request)`. Он закрывает открытые задачи `unit` учен
 
 **Компоненты** — новая папка `src/app/feature/system/ge-plan/`:
 - `GeProfileCardComponent` (`app-ge-profile-card`, `@Input() profile`) — анкета: цель «A1 → B1», зачем, срок
-  (дата или окно), минут в день, старт, формат обучения, когда заполнена и когда выбран формат. Пусто — «Ученик ещё не
+  (дата или окно), минут в день, старт, формат обучения, когда заполнена. Пусто — «Ученик ещё не
   заполнил анкету». Глупый компонент, как `ielts-diagnostic-card`.
 - `GeStudentPlanComponent` (`app-ge-student-plan`, `@Input() studentId`) — шапка «Неделя: 7 из 12», кнопки «Дать
   задание» и «Домашнее задание», виды «День / Неделя / Месяц» с переходом по датам (как вкладка «План» у
@@ -154,9 +155,9 @@ request)`. Он закрывает открытые задачи `unit` учен
   комментарий. Меню строки: «Изменить» (своя) или «Перенести» (программа), «Отметить выполненной» / «Снять отметку»
   (`unit`, `custom`), «Удалить» (своя). План не `ready` — текст по состоянию (`no_onboarding` «не прошёл анкету»,
   `no_route` «не выбрал формат», `no_level` «нет уровня», `reached` «цель достигнута»), «Дать задание» выключено.
-- `GeTaskDialogComponent` — три шага, как диалог IELTS. (1) Вид: урок курса, практика по минутам, материал Практики,
-  своё задание. (2) Содержимое: для урока — уровень (по умолчанию уровень ученика) и список уроков тропы, пройденные
-  выключены; для практики — раздел; для материала — раздел, уровень и юнит из `/api/practice/catalog`; для своего —
+- `GeTaskDialogComponent` — одна форма в три блока (у IELTS это шаги; здесь полей меньше, и шаги только прятали бы
+  их). (1) Вид: урок курса, практика по минутам, материал Практики, своё задание. (2) Содержимое: для урока — уровень
+  (по умолчанию уровень ученика) и список уроков тропы, пройденные (`courseDone`) выключены; для практики — раздел; для материала — раздел, уровень и юнит из `/api/practice/catalog`; для своего —
   название. (3) Когда: дата с быстрыми кнопками (сегодня, +1, +3, +7), минуты (по умолчанию по виду), комментарий.
   Правка задачи программы открывает диалог только с датой.
 - «Домашнее задание» открывает `CreateHomeworkDialogComponent` с `{ studentId }`. После закрытия план перечитывается.
