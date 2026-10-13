@@ -13,9 +13,10 @@ import {
 
 describe('белый список модулей', () => {
   it('принимает только то, что сервер сам не меряет', () => {
-    expect(CLIENT_TRACKED_MODULES).toEqual(['workbooks', 'vocabulary_sr'])
+    expect(CLIENT_TRACKED_MODULES).toEqual(['workbooks', 'vocabulary_sr', 'media_practice'])
     expect(isClientTrackedModule('workbooks')).toBe(true)
     expect(isClientTrackedModule('vocabulary_sr')).toBe(true)
+    expect(isClientTrackedModule('media_practice')).toBe(true)
   })
 
   // Время тьютора и шэдоуинга уже лежит в своих таблицах: запись от клиента
@@ -23,7 +24,6 @@ describe('белый список модулей', () => {
   it('не принимает тьютора и шэдоуинг', () => {
     expect(isClientTrackedModule('ai_tutor')).toBe(false)
     expect(isClientTrackedModule('shadowing')).toBe(false)
-    expect(isClientTrackedModule('media_practice')).toBe(false)
     expect(isClientTrackedModule('')).toBe(false)
   })
 })

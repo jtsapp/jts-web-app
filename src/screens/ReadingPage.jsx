@@ -12,6 +12,7 @@ import ReadingText from './reading/ReadingText.jsx'
 import ReadingResult from './reading/ReadingResult.jsx'
 import ReadingSettings from './reading/ReadingSettings.jsx'
 import { stopAudio } from '../practice/workbook/voice.js'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 export const READING_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 
@@ -45,6 +46,8 @@ function fetchLevel(level) {
 export default function ReadingPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const [view, setView] = useState({ name: 'library' })
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token, enabled: view.name !== 'library' })
   // Уровень каталога живёт отдельно от view: возврат из текста должен вернуть
   // в тот же уровень и жанр, где читатель был.
   const [level, setLevel] = useState(() => (READING_LEVELS.includes(String(userLevel || '').toLowerCase()) ? String(userLevel).toLowerCase() : 'a1'))

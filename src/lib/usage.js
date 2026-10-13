@@ -21,6 +21,7 @@
 // Общий клиент из sql.js — раньше здесь был свой neon() (дубль + новый клиент на
 // каждый вызов). Теперь единый пул postgres, isDbConfigured тоже оттуда.
 import { getSql, isDbConfigured } from "./db/sql.js";
+import { queueGeActivity } from "./geActivity.js";
 
 export { isDbConfigured };
 
@@ -315,6 +316,7 @@ export async function recordSession(room, fallbackSeconds = 0) {
   const rows = await db`
     SELECT device_id,
            COALESCE(armed_at, started_at)::date AS day,
+           to_char(COALESCE(armed_at, started_at)::date, 'YYYY-MM-DD') AS day_key,
            armed_at,
            from_pool,
            ${billable} AS billable
@@ -340,6 +342,9 @@ export async function recordSession(room, fallbackSeconds = 0) {
       DO UPDATE SET seconds = voice_usage.seconds + ${toLimits},
                     pool_seconds = voice_usage.pool_seconds + ${toPool}
     `;
+    // минуты тьютора — в план по дням общего курса на бэкенде. Строкой из базы, а не Date: день сессии — дата
+    // столбца, и пересчёт через часовой пояс процесса сдвинул бы её на сутки.
+    queueGeActivity(s.device_id, s.day_key);
   }
   await db`DELETE FROM voice_session WHERE room = ${room}`;
   return true;
