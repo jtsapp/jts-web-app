@@ -41,7 +41,7 @@ function withLinkers(text, linkers, pick) {
  */
 // embedded — внутри разбора полного mock (MockReview): без хлебных крошек раздела и без «Написать ещё раз»
 /** Абзац с подсвеченными цитатами замечаний: первое вхождение каждой цитаты — <mark> с подсказкой «исправление». */
-function markQuotes(text, errors) {
+export function markQuotes(text, errors) {
   const list = (errors || []).filter((e) => e?.quote && text.includes(e.quote))
   if (!list.length) return text
   const hits = list.map((e) => ({ at: text.indexOf(e.quote), e })).sort((a, b) => a.at - b.at)

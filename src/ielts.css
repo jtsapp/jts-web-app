@@ -7651,65 +7651,54 @@
   padding: 6px 14px;
   font-size: 13px;
 }
-/* Разбор ИИ по Writing и Speaking диагностики: критерии плитками, отзыв, списки */
-.ih-dres__ai-review {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px;
-  border-radius: 20px;
-}
-.ih-dres__ai-review h2 {
-  margin: 0;
-  font-size: 18px;
-}
-.ih-dres__aisec {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ih-dres__aisec h3 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 16px;
-}
-.ih-dres__ainame {
-  flex: 1;
-}
-.ih-dres__aisec h3 b {
-  font-size: 22px;
-}
-.ih-dres__aisec p,
-.ih-dres__aisec ul {
-  margin: 0;
-  line-height: 1.5;
-}
-.ih-dres__aisec ul {
-  padding-left: 20px;
-}
 .ih-dres__crit {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .ih-dres__crit span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 8px;
   background: var(--ih-surface-2, #f4f5f9);
+  font-size: 12px;
 }
 .ih-dres__crit small {
   color: var(--ih-muted, #6b7280);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
 }
-@media (max-width: 560px) {
-  .ih-dres__crit {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.ih-dres__open {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.ih-dres__estimate {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+.ih-dres__estimate svg {
+  flex: none;
+  margin-top: 1px;
+}
+.ih-dai {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+.ih-dai__q {
+  margin: 0 0 8px;
+  font-weight: 600;
 }
 .ih-dres__bottom {
   display: grid;
@@ -10989,6 +10978,16 @@
 .ih-pg__band {
   font-size: 30px;
   font-weight: 800;
+}
+/* «≈ примерно: короткий тест» — балл короткой диагностики */
+.ih-pg__est {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #fff4d6;
+  color: #a86b00;
+  font-size: 11px;
+  font-weight: 700;
 }
 .ih-pg__meta {
   font-size: 13px;

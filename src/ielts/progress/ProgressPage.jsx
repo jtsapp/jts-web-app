@@ -138,8 +138,9 @@ export default function ProgressPage({ token, data, programmeName, onBack, onOpe
           <div className="ih-pg__cards">
             <section className="ih-pg__overall">
               <span className="ih-pg__label">{t('ieltsProgressV.overall')}</span>
-              <b className="ih-pg__big">{cur ? cur.score.toFixed(1) : '—'}</b>
+              <b className="ih-pg__big" title={cur?.estimate ? t('ieltsOb.shortEstimateShort') : undefined}>{cur ? `${cur.estimate ? '≈' : ''}${cur.score.toFixed(1)}` : '—'}</b>
               <span className="ih-pg__meta">{cur ? `${t(`ieltsGoal.src.${cur.source?.startsWith('full_') ? 'full' : cur.source === 'diagnostic' ? 'diagnostic' : 'sections'}`)} · ${dfmt(lang, cur.date, { day: 'numeric', month: 'long' })} · ${t('ieltsProgressV.platform')}` : t('ieltsGoal.say.noScore')}</span>
+              {cur?.estimate && <small className="ih-pg__est">{t('ieltsOb.shortEstimateShort')}</small>}
               {completion && (
                 <>
                   <span className="ih-progline__bar"><i style={{ width: `${completion.percent}%` }} /></span>
@@ -152,10 +153,11 @@ export default function ProgressPage({ token, data, programmeName, onBack, onOpe
               return (
                 <section key={s} className="ih-pg__skill">
                   <header><SecPlate sec={s} size={36} /> <b>{SKILL_NAME[s]}</b></header>
-                  <b className="ih-pg__band">{c.band != null ? Number(c.band).toFixed(1) : '—'}</b>
+                  <b className="ih-pg__band" title={c.estimate ? t('ieltsOb.shortEstimateShort') : undefined}>{c.band != null ? `${c.estimate ? '≈' : ''}${Number(c.band).toFixed(1)}` : '—'}</b>
                   <span className="ih-pg__meta">
                     {c.checking && c.band == null ? t('ieltsGoal.checking') : c.source ? `${t(`ieltsProgressV.src.${c.source}`)} · ${dfmt(lang, c.date)}` : t('ieltsProgressV.noScore')}
                   </span>
+                  {c.estimate && <small className="ih-pg__est">{t('ieltsOb.shortEstimateShort')}</small>}
                   {c.checking ? (
                     <span className="ih-stchip is-started"><TimerIcon size={12} /> {t('ieltsGoal.checking')}</span>
                   ) : c.delta != null ? (
