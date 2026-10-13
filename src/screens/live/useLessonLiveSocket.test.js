@@ -29,6 +29,7 @@ describe('useLessonLiveSocket', () => {
       '/topic/lesson/7/material-mirror',
       '/topic/lesson/7/present',
       '/topic/lesson/7/sections-changed',
+      '/topic/lesson/7/chat-changed',
       '/topic/lesson/7/step-progress',
       '/topic/lesson/7/audio',
     ]))
@@ -231,6 +232,18 @@ describe('useLessonLiveSocket', () => {
 
   // Канал персональный: только сам ученик на него подписан, преподаватель — нет
   // (он шлёт, но не слушает; см. LessonLiveSocketController.answerCorrection).
+  /* Чат урока перечитывается по сигналу сервера, а не опросом раз в 5 с. Эхо не
+     глушится: в сигнале нет отправителя, а своё сообщение, отправленное из другой
+     вкладки, этой вкладке тоже нужно увидеть. */
+  it('сигнал «чат изменился» доходит до обработчика', () => {
+    const onChatChanged = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onChatChanged }))
+
+    act(() => { lastClient.subs['/topic/lesson/7/chat-changed']({ body: JSON.stringify({ lessonId: 7 }) }) })
+
+    expect(onChatChanged).toHaveBeenCalledTimes(1)
+  })
+
   it('на канал поправки ответа подписан только сам ученик', () => {
     renderHook(() => useLessonLiveSocket(7, 'TOK', 9, {}))
     expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/answer-correction/9')
