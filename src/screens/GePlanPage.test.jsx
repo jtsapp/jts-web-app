@@ -24,6 +24,7 @@ globalThis.ResizeObserver ??= class {
   observe() {}
   disconnect() {}
 }
+Element.prototype.scrollIntoView ??= function () {}
 
 const TOKEN = `h.${btoa(JSON.stringify({ userId: 7 }))}.s`
 const plan = {
@@ -91,6 +92,17 @@ describe('GePlanPage', () => {
     fireEvent.change(screen.getByLabelText('Перенести на'), { target: { value: '2026-10-16' } })
     await waitFor(() => expect(moveGeTask).toHaveBeenCalledWith(TOKEN, 3, '2026-10-16'))
     await waitFor(() => expect(getGePlan).toHaveBeenCalledTimes(2))
+  })
+
+  it('первый заход — тур экрана: виды, дорога, задачи дня, перенос', async () => {
+    localStorage.removeItem('jts_tours_off')
+    renderPage({ tourKey: 'jts_tour_ge-plan:user-7' })
+    const next = (d) => fireEvent.click(within(d).getByRole('button', { name: /ОК|Далее|Готово/ }))
+    next(await screen.findByRole('dialog', { name: 'Три вида плана' }))
+    next(await screen.findByRole('dialog', { name: 'Дорога по дням' }))
+    next(await screen.findByRole('dialog', { name: 'Задачи дня' }))
+    const move = await screen.findByRole('dialog', { name: 'Перенос задачи' })
+    expect(within(move).getByText(/Перенести/)).toBeTruthy()
   })
 
   it('месяц: сетка с короткими подписями задач', async () => {

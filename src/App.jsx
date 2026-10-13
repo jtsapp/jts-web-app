@@ -1366,6 +1366,7 @@ export default function App() {
   const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
   const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
   const homeTourKey = tourKeyFor(profileId || getDeviceId(), 'home')
+  const gePlanTourKey = tourKeyFor(profileId || getDeviceId(), 'ge-plan')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -2161,6 +2162,7 @@ export default function App() {
           onGeRoute={() => setScreen('ge-route')}
           onGeTest={openGeTest}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
+          tourKey={gePlanTourKey}
         />
       )
     case 'ielts-onboarding':

@@ -13,6 +13,7 @@ import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GePlanInvite from './home/GePlanInvite.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
+import { todayView } from '../ge/plan/planModel.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -154,30 +155,57 @@ export default function HomePage({
   // Тур общего курса — другой (анкета, план), поэтому и отметка своя: видевшие прежний увидят обновлённый один раз.
   const tourStorageKey = tourKey && geMode ? `${tourKey}:ge` : tourKey
   const tour = useScreenTour(tourReady ? tourStorageKey : null)
-  const tourSteps = geMode
-    ? [
-        // цель задаёт анкета — тур только показывает блок
-        { selector: '.ge-goal, .ge-invite', title: t('tour.home.ge.title'), text: t('tour.home.ge.text') },
-        { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-        // есть план — «Сегодня», нет (старый бэкенд, план не собран) — прежняя подсказка; лишний шаг тур пропустит сам
-        { selector: '.ge-today', title: t('tour.home.plan.title'), text: t('tour.home.plan.text') },
-        { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.ge.recommend.text') },
-        { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.ge.schedule.text') },
-      ]
-    : [
-        {
-          selector: '.hm-level',
-          title: t('tour.home.goal.title'),
-          text: t('tour.home.goal.text'),
-          content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
-          // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
-          // целиком можно всегда, тогда дорожка остаётся прежней.
-          canNext: !options.length || !!goalValue,
-        },
-        { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-        { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
-        { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
-      ]
+  // Тур новой «Главной» — по каждому блоку сверху вниз. Шаги собираются по тому, что на экране (приглашение или блок
+  // цели, «Сегодня» или прежняя подсказка, кабинет демо без практики и расписания): шаг без элемента тур пропустил бы
+  // и сам, но счётчик «2/11» на первом шаге выглядел бы сломанным. Функцией, а не значением: домашка и расписание
+  // объявлены ниже, а шаги нужны только открытому туру.
+  const tourSteps = () => {
+    const todayTasks = geToday ? todayView(gePlan.plan) : null
+    return geMode
+      ? [
+          ...(geTop === 'goal'
+            ? [
+                { selector: '.ge-goal', title: t('tour.home.goal2.title'), text: t('tour.home.goal2.text') },
+                { selector: '.ge-goal .ih-gb__journey', title: t('tour.home.journey.title'), text: t('tour.home.journey.text') },
+              ]
+            : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
+          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+          ...(isDemoAccount
+            ? []
+            : geToday
+              ? [
+                  { selector: '.ge-today', title: t('tour.home.plan.title'), text: t('tour.home.plan.text') },
+                  ...(todayTasks.tasks.length || todayTasks.ahead.length
+                    ? [{ selector: '.ge-today .ge-task', title: t('tour.home.task.title'), text: t('tour.home.task.text') }]
+                    : []),
+                  { selector: '.ge-today__all', title: t('tour.home.allPlan.title'), text: t('tour.home.allPlan.text') },
+                ]
+              : pickRecommendation({ summary, homework, occurrences })
+                ? [{ selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.ge.recommend.text') }]
+                : []),
+          ...(isDemoAccount
+            ? []
+            : [
+                { selector: '.hm-prac', title: t('tour.home.prac.title'), text: t('tour.home.prac.text') },
+                { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.ge.schedule.text') },
+                { selector: '.hm-hw', title: t('tour.home.hw.title'), text: t('tour.home.hw.text') },
+              ]),
+        ]
+      : [
+          {
+            selector: '.hm-level',
+            title: t('tour.home.goal.title'),
+            text: t('tour.home.goal.text'),
+            content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
+            // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
+            // целиком можно всегда, тогда дорожка остаётся прежней.
+            canNext: !options.length || !!goalValue,
+          },
+          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+          { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
+          { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
+        ]
+  }
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
   // занятие (расписание), оставленная заявка (/mobile/trial-request) и ничего.
@@ -512,7 +540,7 @@ export default function HomePage({
           </div>
         </div>
       </div>
-      {tour.open && <OnboardingTour steps={tourSteps} storageKey={tourStorageKey} onFinish={tour.finish} />}
+      {tour.open && <OnboardingTour steps={tourSteps()} storageKey={tourStorageKey} onFinish={tour.finish} />}
       {goalOpen && (
         <GoalDialog options={options} value={goalValue} onPick={pickGoal} onClose={() => setGoalOpen(false)} />
       )}

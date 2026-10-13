@@ -7,6 +7,7 @@ import { ArrowForwardIcon } from '../ielts/icons.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { courseTitles, mondayOf, taskRoute } from '../ge/plan/planModel.js'
 import { MonthView, RoadmapView, WeekView } from '../ge/plan/GePlanViews.jsx'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 // Экран «План» общего курса (?screen=ge-plan, спека 2026-10-13, секция 4): три вида над одними задачами бэкенда. Вид и
 // выбранная неделя/месяц живут в адресе (?gePlanView=, &gePlanAt=), как у плана IELTS: F5 и «Назад» возвращают туда же.
@@ -43,7 +44,7 @@ function writeUrl(view, at) {
   }
 }
 
-export default function GePlanPage({ token, userName, userLevel, onNav, onProfile, onGeStart, onGeRoute, onGeTest, onGeEdit }) {
+export default function GePlanPage({ token, userName, userLevel, onNav, onProfile, onGeStart, onGeRoute, onGeTest, onGeEdit, tourKey }) {
   const { t } = useI18n()
   const authToken = token || loadToken()
   // уровень курса — тот, что ученик проходит (может быть выше CEFR после покупки): по нему подписи уроков и «Начать»
@@ -70,6 +71,16 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
     setAt(u.at)
   }, [])
   const titles = useMemo(() => (plan ? courseTitles(plan.tasks, frontier) : {}), [plan, frontier])
+  // Тур экрана — при первом заходе, когда план уже на экране (решает один раз за заход, как на «Главной»). Шаг про
+  // дорогу — только в её виде; открыли неделю по ссылке — тур его пропустит.
+  const tour = useScreenTour(status === 'ready' && plan?.state === 'ready' ? tourKey : null)
+  const tourSteps = [
+    { selector: '.ge-plan .ih-seg2', title: t('tour.plan.views.title'), text: t('tour.plan.views.text') },
+    // дорога есть только в своём виде, панель дня — в дороге и месяце (по ссылке могли открыть неделю)
+    ...(view === 'road' ? [{ selector: '.ge-plan .ih-road2', title: t('tour.plan.road.title'), text: t('tour.plan.road.text') }] : []),
+    ...(view !== 'week' ? [{ selector: '.ge-plan .ih-dp', title: t('tour.plan.day.title'), text: t('tour.plan.day.text') }] : []),
+    { selector: '.ge-plan .ih-seg2 [role="tab"]:nth-child(2)', title: t('tour.plan.move.title'), text: t('tour.plan.move.text') },
+  ]
 
   const pick = (v, a = null) => {
     setView(v)
@@ -124,7 +135,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
 
   const sub = plan?.state === 'ready' && plan.route ? t(`gePlan.sub.${plan.route}`, { n: String(plan.dailyMinutes || 30) }) : null
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} token={token} onNav={onNav} onProfile={onProfile} active="home">
+    <LearningLayout userName={userName} userLevel={userLevel} token={token} onNav={onNav} onProfile={onProfile} active="home" onHelp={plan?.state === 'ready' ? tour.start : undefined}>
       <div className="ih ge-plan">
         <header className="ge-plan__head">
           <div className="ge-plan__titles">
@@ -149,6 +160,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
         )}
         {body}
       </div>
+      {tour.open && <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />}
     </LearningLayout>
   )
 }

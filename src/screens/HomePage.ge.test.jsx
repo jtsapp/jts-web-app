@@ -156,17 +156,23 @@ describe('HomePage — тур общего курса', () => {
     expect(screen.queryByRole('dialog')).toBe(null)
   })
 
-  it('профиль приехал после монтирования — тур идёт по новым шагам: цель, навыки, «План на сегодня»', async () => {
+  it('профиль приехал после монтирования — тур идёт по новой «Главной»: цель, путь, навыки, «Сегодня», задача, весь план', async () => {
     getGePlan.mockResolvedValue(plan)
     const { rerender } = render(tree({ geProfile: null, geLoaded: false }))
     await new Promise((r) => setTimeout(r, 30))
     rerender(tree({ geProfile: goal, geLoaded: true }))
     const first = await screen.findByRole('dialog', { name: 'Ваша цель и срок' })
     expect(within(first).queryAllByRole('radio')).toHaveLength(0)
+    // шаги — только под блоки на экране: цель, путь, навыки, «Сегодня», задача, весь план, практика, расписание, домашка
+    expect(within(first).getByText('1/9')).toBeTruthy()
     next(first)
+    next(await screen.findByRole('dialog', { name: 'Путь до цели' }))
     next(await screen.findByRole('dialog', { name: 'Сильные и слабые стороны' }))
-    const today = await screen.findByRole('dialog', { name: 'План на сегодня' })
-    expect(within(today).getByText(/Весь план/)).toBeTruthy()
+    next(await screen.findByRole('dialog', { name: 'План на сегодня' }))
+    const task = await screen.findByRole('dialog', { name: 'Задача' })
+    expect(within(task).getByText(/6 \/ 15 мин/)).toBeTruthy()
+    next(task)
+    expect(await screen.findByRole('dialog', { name: 'Весь план' })).toBeTruthy()
     getGePlan.mockReset().mockResolvedValue(null)
   })
 
