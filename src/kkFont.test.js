@@ -58,6 +58,19 @@ function explicitFonts() {
   return found
 }
 
+// Перенесённые прототипы носят CSS строкой (src/practice/<раздел>/styles.js), и
+// сканер выше их не видит. В Shadow DOM правило html[data-ui-lang] не
+// дотягивается, поэтому у каждого движка своё решение — и проверка своя.
+const PRACTICE = path.join(SRC, 'practice')
+const ENGINES = {
+  // Стили сказки вставляются в документ, а гарнитура — переменными на :root.
+  fairytale: () => expect(KK).toMatch(/--ui:\s*var\(--kk-font\)[\s\S]*--body:\s*var\(--kk-font\)/),
+  // Игра английская; казахский — только перевод с lang="kk", его и ловим.
+  numbers: (css) => expect(css).toContain(`.nw [lang="kk"]{font-family:'Inter'`),
+  // Прототип и так на Inter.
+  speakspin: (css) => expect(css).toMatch(/font-family:Inter\b/),
+}
+
 describe('казахский интерфейс на Inter', () => {
   it('каждая явная гарнитура перекрыта в kk-font.css', () => {
     const missing = explicitFonts().filter((key) => !COVERED[key])
@@ -66,5 +79,18 @@ describe('казахский интерфейс на Inter', () => {
 
   it('перекрытия из списка на месте в kk-font.css', () => {
     for (const selector of Object.values(COVERED)) expect(KK).toContain(selector)
+  })
+
+  it('каждый движок-прототип со своей гарнитурой знает про казахский', () => {
+    const engines = fs
+      .readdirSync(PRACTICE, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .filter((name) => {
+        const file = path.join(PRACTICE, name, 'styles.js')
+        return fs.existsSync(file) && /font-family\s*:/.test(fs.readFileSync(file, 'utf8'))
+      })
+    expect(engines.filter((name) => !ENGINES[name])).toEqual([])
+    for (const name of engines) ENGINES[name](fs.readFileSync(path.join(PRACTICE, name, 'styles.js'), 'utf8'))
   })
 })
