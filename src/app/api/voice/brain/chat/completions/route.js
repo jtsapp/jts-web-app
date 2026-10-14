@@ -19,7 +19,15 @@ export const runtime = 'nodejs'
 // общий секрет агента не открывал любую, в том числе самую дорогую, модель.
 // Старый роут поле `model` игнорирует — агент с новой таблицей на нём просто
 // останется на Haiku, поэтому порядок выкатки роута и агента не важен.
-const BRAIN_MODELS = new Set(['claude-haiku-4-5', 'claude-haiku-4-5-20251001', 'claude-sonnet-5'])
+// Haiku 5.5 (14.10.2026) — живой Декстер на пакете Speaking Buddy, когда агент
+// ведёт его через шим, а не напрямую (ANTHROPIC_VIA_SHIM в agent.py). Через шим
+// тулы уходят без strict — с ним первый токен на 0.6 с дольше.
+const BRAIN_MODELS = new Set([
+  'claude-haiku-4-5',
+  'claude-haiku-4-5-20251001',
+  'claude-haiku-5-5',
+  'claude-sonnet-5',
+])
 
 function brainModel(requested) {
   return typeof requested === 'string' && BRAIN_MODELS.has(requested) ? requested : undefined

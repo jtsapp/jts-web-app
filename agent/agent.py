@@ -5807,8 +5807,9 @@ def _is_openai_brain(model: str) -> bool:
 # Модели Claude, которые агент тоже зовёт напрямую, мимо шима. Шим знает только
 # свой белый список (чужую модель молча меняет на Haiku 4.5), шлёт temperature
 # и держит префилл, а Haiku 5.5 на температуру не 1 и на хвостовую реплику
-# тьютора отвечает 400 — тьютор молчал бы. Править шим бесполезно: агент ходит
-# в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную и без SSH.
+# тьютора отвечает 400 — тьютор молчал бы. Шим с 14.10.2026 Haiku 5.5 умеет,
+# но агент ходит в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную,
+# поэтому путь через шим включается секретом — см. _anthropic_via_shim.
 ANTHROPIC_DIRECT_BRAINS = ("claude-haiku-5",)
 # Нет ключа или плагина — в шим на ближайшую модель, которую он умеет.
 ANTHROPIC_BRAIN_FALLBACK = "claude-haiku-4-5"
@@ -5821,6 +5822,26 @@ ANTHROPIC_BRAIN_EFFORT = "low"
 
 def _is_anthropic_direct_brain(model: str) -> bool:
     return (model or "").strip().lower().startswith(ANTHROPIC_DIRECT_BRAINS)
+
+
+# 14.10.2026 решение владельца: живого Декстера (Haiku 5.5) вести через brain-us,
+# как остальных тьюторов. Шим научили Haiku 5.5 (белый список, effort low, «.» на
+# хвост тьютора), а доступ к серверу brain-us у владельца теперь есть. Почему
+# шим быстрее прямого вызова: плагин livekit-anthropic шлёт тулы со strict:
+# true, а шим — без него; замер того же промпта с тулами — Haiku 5.5 1.34 → 0.76
+# с до первого токена, Haiku 4.5 1.98 → 0.65 с (без тулов оба ~0.56 с).
+#
+# Секрет воркера ANTHROPIC_VIA_SHIM — список ключей тьюторов (bro,jarvis) или
+# on — всем. Пусто — напрямую, как раньше. Включать ТОЛЬКО после выкатки шима на
+# brain-us: старый шим Haiku 5.5 не знает и молча ответит Haiku 4.5 (звонок не
+# сломается, но модель будет не та — смотреть строку `model=` в логах brain-us).
+def _anthropic_via_shim(tutor: str) -> bool:
+    raw = (os.getenv("ANTHROPIC_VIA_SHIM") or "").replace("﻿", "").strip().lower()
+    if not raw or raw in ("off", "0", "false", "no"):
+        return False
+    if raw in ("on", "1", "true", "yes", "all"):
+        return True
+    return (tutor or "").strip().lower() in {t.strip() for t in raw.split(",") if t.strip()}
 
 
 def _anthropic_api_key() -> str:
@@ -6657,8 +6678,18 @@ def build_cascade_session(
             brain_model, OPENAI_BRAIN_FALLBACK,
         )
         brain_model = OPENAI_BRAIN_FALLBACK
-    anthropic_key = _anthropic_api_key() if _is_anthropic_direct_brain(brain_model) else ""
-    if _is_anthropic_direct_brain(brain_model) and not (anthropic_key and lk_anthropic):
+    # Через шим — тот же brain_model, его отдаёт шиму OpenAI-поле model (ветка
+    # else ниже); ключ Anthropic и плагин тогда не нужны.
+    direct = _is_anthropic_direct_brain(brain_model) and not _anthropic_via_shim(
+        guard_tutor or profile.tutor
+    )
+    if _is_anthropic_direct_brain(brain_model) and not direct:
+        logger.info(
+            "[brain] %s via the shim at %s (ANTHROPIC_VIA_SHIM) for tutor=%s",
+            brain_model, brain_url or api_url, guard_tutor or profile.tutor,
+        )
+    anthropic_key = _anthropic_api_key() if direct else ""
+    if direct and not (anthropic_key and lk_anthropic):
         logger.error(
             "[brain] %s needs ANTHROPIC_API_KEY and livekit-plugins-anthropic — "
             "falling back to %s via the shim",

@@ -89,4 +89,23 @@ os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert buddy_test_on(dexter), "откат стенда живого Декстера не трогает"
 os.environ.pop("KZ_TEST_PROMPT")
 
+# ── Haiku 5.5 через brain-us — секретом, по тьютору ─────────────────────────
+from agent import _anthropic_via_shim, _brain_supports_prefill  # noqa: E402
+
+os.environ.pop("ANTHROPIC_VIA_SHIM", None)
+assert not _anthropic_via_shim("bro"), "без секрета — напрямую, как раньше"
+for raw, bro, jarvis in (
+    ("bro", True, False),
+    ("bro,jarvis", True, True),
+    (" BRO , jarvis ", True, True),
+    ("on", True, True),
+    ("off", False, False),
+    ("﻿bro", True, False),
+):
+    os.environ["ANTHROPIC_VIA_SHIM"] = raw
+    assert _anthropic_via_shim("bro") is bro and _anthropic_via_shim("jarvis") is jarvis, raw
+os.environ.pop("ANTHROPIC_VIA_SHIM")
+# Через шим модель та же — значит, и префилла нет (шим сам закрывает хвост «.»).
+assert not _brain_supports_prefill(session_brain_model(dexter))
+
 print("test_dexter_live: ok")
