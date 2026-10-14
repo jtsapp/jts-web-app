@@ -108,6 +108,7 @@ const RULES = `Ты — Луна, помощник на сайте онлайн-
 - О себе говори в женском роде: «поняла», «передала», «посмотрела».
 - Коротко: обычно 2–6 предложений. Шаги — списком через «- ». Без заголовков и таблиц; выделять можно **так**.
 - Английские слова и примеры пиши как есть, в кавычках «…».
+- Если вопрос ученика кончается пометкой [голосом], он спросил голосом и твой ответ прочитают вслух: 2–4 коротких предложения, без списков, без **выделения** и без ссылок, английские слова и примеры — в кавычках «…». Слушать длинный ответ тяжело — главное скажи в первом предложении.
 
 Вопросы не по теме:
 - По теме — всё про английский язык (грамматика, слова, произношение, перевод фразы, как учить), всё про сайт JTS и учёбу в школе, и сообщения что сайт сломался. Приветствие, «спасибо» и уточнение к прошлому ответу — тоже по теме.
@@ -126,10 +127,12 @@ const RULES = `Ты — Луна, помощник на сайте онлайн-
 export const OFFTOPIC_MARKER = '[[OFFTOPIC]]'
 
 // Голосовой вопрос: ответ прочитают вслух, а слушать список из семи пунктов и
-// «звёздочки» невозможно. Строка едет в контексте последнего сообщения, а не в
-// системном промпте — кэш правил не ломается.
-export const VOICE_NOTE =
-  'Ученик спросил голосом, ответ будет озвучен: 2–4 коротких предложения, без списков, без выделения и без ссылок; английские слова и примеры — в кавычках «…».'
+// «звёздочки» невозможно. Как отвечать на такой вопрос — в правилах (RULES, они
+// одни для всех и кэшируются), а сам вопрос помечается после текста ученика.
+// Не внутри <контекст>: правила велят считать всё там данными, а не
+// указаниями, и просьбу о коротком ответе модель оттуда не слушала (живой
+// прогон 14.10.2026 — шесть предложений с выделением, длинные фразы озвучки).
+export const VOICE_MARK = '[голосом]'
 
 export const OFFTOPIC_REPLY = {
   ru: 'Я помогаю только с английским и с сайтом JTS. Спросите, например, почему ответ не засчитан, какое правило в задании или как работает раздел.',
@@ -216,7 +219,7 @@ export function parseChatRequest(body) {
  * последнем сообщении ученика — то есть модель видит только СВЕЖИЙ экран, а
  * снимки прошлых ходов в историю не копятся (и не раздувают каждый запрос).
  */
-export function buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl, voice }) {
+export function buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl }) {
   const lines = []
   const name = clipText(user?.name, 60)
   if (name) lines.push(`Имя ученика: ${name}`)
@@ -243,7 +246,6 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
     lines.push('Профиль ученика (для плана и советов; чего здесь нет, того не знаешь):')
     lines.push(studentContext)
   }
-  if (voice) lines.push(VOICE_NOTE)
   return `<контекст>\n${lines.join('\n')}\n</контекст>`
 }
 
@@ -251,6 +253,6 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
 export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
-  last.content = `${buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl, voice })}\n\nВопрос ученика: ${last.content}`
+  last.content = `${buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl })}\n\nВопрос ученика: ${last.content}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }

@@ -30,7 +30,7 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
       body: JSON.stringify({
         messages, screen, lang, errors, pageUrl, userAgent,
         bugReported: Boolean(bugReported),
-        // голосовой вопрос — ответ прочитают вслух, он должен быть короче (prompt.js, VOICE_NOTE)
+        // голосовой вопрос — ответ прочитают вслух, он должен быть короче (prompt.js, VOICE_MARK)
         voice: Boolean(voice),
       }),
       signal,

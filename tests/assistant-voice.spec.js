@@ -8,7 +8,7 @@ test.use({
   launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] },
 })
 
-const json = (body) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
 // 0.3 с тишины WAV 8 кГц — валидная запись для <audio>.
 function silentWav() {
@@ -29,7 +29,7 @@ function silentWav() {
   return b
 }
 
-async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ' } = {}) {
+async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ', speakStatus = 200 } = {}) {
   await page.addInitScript(() => {
     localStorage.setItem('jts_access_token', 'test-token')
     // Что реально заиграло: адрес и состояние play().
@@ -49,7 +49,7 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )
-  const calls = { stt: [], chat: [], speak: [] }
+  const calls = { stt: [], chat: [], speak: [], tts: [] }
   await page.route('**/api/assistant/transcribe', async (r) => {
     const req = r.request()
     calls.stt.push({ auth: req.headers().authorization, size: req.postDataBuffer()?.length || 0, body: req.postDataBuffer()?.toString('latin1') || '' })
@@ -61,6 +61,12 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
   })
   await page.route('**/api/assistant/speak', async (r) => {
     calls.speak.push(JSON.parse(r.request().postData()))
+    if (speakStatus !== 200) return r.fulfill(json({ error: 'tts_failed' }, speakStatus))
+    await r.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() })
+  })
+  // Потоковый Soniox — казахский ответ и запасной голос.
+  await page.route('**/api/tts?**', async (r) => {
+    calls.tts.push(Object.fromEntries(new URL(r.request().url()).searchParams))
     await r.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() })
   })
   return calls
@@ -79,7 +85,10 @@ async function askByVoice(page) {
   if (await stop.isVisible()) await stop.click()
 }
 
-test('голосовой вопрос по-казахски: запись → текст → ответ звучит голосом с lang kk', async ({ page }) => {
+const playedStates = (page, prefix) =>
+  page.evaluate((pre) => window.__played.filter((p) => new URL(p.src, location.href).pathname.startsWith(pre) || p.src.startsWith(pre)).map((p) => p.state), prefix)
+
+test('голосовой вопрос по-казахски: запись → текст → казахский ответ звучит потоком /api/tts', async ({ page }) => {
   const calls = await setup(page)
   await askByVoice(page)
 
@@ -97,13 +106,37 @@ test('голосовой вопрос по-казахски: запись → т
   expect(calls.chat[0].messages.at(-1)).toEqual({ role: 'user', content: 'Үй жұмысы қайда?' })
   await expect(page.locator('.asst__msg--bot').last()).toContainText('сол жақ мәзірдегі')
 
-  await expect.poll(() => calls.speak.length).toBe(1)
-  expect(calls.speak[0]).toEqual({ text: 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде.', lang: 'kk' })
-  await expect
-    .poll(() => page.evaluate(() => window.__played.filter((p) => p.src.startsWith('blob:')).map((p) => p.state)))
-    .toContain('playing')
+  // У Gemini казахского нет — фраза сразу идёт потоком Soniox «Grace».
+  await expect.poll(() => calls.tts.length).toBe(1)
+  expect(calls.tts[0]).toMatchObject({ v: 'Grace', l: 'kk', t: 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде.' })
+  expect(calls.speak).toHaveLength(0)
+  await expect.poll(() => playedStates(page, '/api/tts')).toContain('playing')
   // Кнопка «звук» появилась после голосового вопроса.
   await expect(page.getByRole('button', { name: 'Выключить озвучку ответов' })).toBeVisible()
+})
+
+test('русский ответ — голос Луны (/api/assistant/speak)', async ({ page }) => {
+  const calls = await setup(page, {
+    sttText: 'Где моя домашка?',
+    reply: 'Домашняя работа — в меню слева, раздел «Домашняя работа». ',
+  })
+  await askByVoice(page)
+  await expect.poll(() => calls.speak.length).toBe(1)
+  expect(calls.speak[0]).toEqual({ text: 'Домашняя работа — в меню слева, раздел «Домашняя работа».', lang: 'ru' })
+  await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
+  expect(calls.tts).toHaveLength(0)
+})
+
+test('Gemini не ответил — фраза звучит запасным голосом, а не пропадает', async ({ page }) => {
+  const calls = await setup(page, {
+    sttText: 'Где моя домашка?',
+    reply: 'Домашняя работа — в меню слева, раздел «Домашняя работа». ',
+    speakStatus: 502,
+  })
+  await askByVoice(page)
+  await expect.poll(() => calls.tts.length).toBe(1)
+  expect(calls.tts[0]).toMatchObject({ v: 'Grace', l: 'ru' })
+  await expect.poll(() => playedStates(page, '/api/tts')).toContain('playing')
 })
 
 test('набранный вопрос — ответ только текстом, озвучки нет', async ({ page }) => {
@@ -116,4 +149,5 @@ test('набранный вопрос — ответ только текстом
   expect(calls.chat[0].voice).toBe(false)
   await page.waitForTimeout(500)
   expect(calls.speak).toHaveLength(0)
+  expect(calls.tts).toHaveLength(0)
 })

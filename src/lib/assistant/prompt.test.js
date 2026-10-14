@@ -13,7 +13,7 @@ import {
   buildSystemPrompt,
   buildTurns,
   parseChatRequest,
-  VOICE_NOTE,
+  VOICE_MARK,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -293,15 +293,28 @@ describe('голосовой вопрос', () => {
     expect(parseChatRequest(ask('где домашка', { voice: 'yes' })).voice).toBe(true)
   })
 
-  it('строка про озвучку — только у голосового вопроса', () => {
-    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru', voice: true })).toContain(VOICE_NOTE)
-    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru' })).not.toContain(VOICE_NOTE)
+  // Пометка — ВНЕ блока <контекст>: правила велят считать всё внутри него
+  // данными, а не указаниями, и модель законно игнорировала просьбу о коротком
+  // ответе (живой прогон 14.10.2026: шесть предложений с выделением).
+  it('пометка голоса — после вопроса, вне блока данных', () => {
+    const turns = buildTurns({ ...parseChatRequest(ask('где домашка', { voice: true })), user: null })
+    const last = turns.at(-1).content
+    expect(last.endsWith(`Вопрос ученика: где домашка
+
+${VOICE_MARK}`)).toBe(true)
+    expect(last.slice(0, last.indexOf('</контекст>'))).not.toContain(VOICE_MARK)
   })
 
-  it('доезжает до последнего сообщения, системный промпт не меняется', () => {
-    const turns = buildTurns({ ...parseChatRequest(ask('где домашка', { voice: true })), user: null })
-    expect(turns.at(-1).content).toContain(VOICE_NOTE)
-    expect(buildSystemPrompt()).not.toContain(VOICE_NOTE)
+  it('у набранного вопроса пометки нет', () => {
+    const turns = buildTurns({ ...parseChatRequest(ask('где домашка')), user: null })
+    expect(turns.at(-1).content).not.toContain(VOICE_MARK)
+  })
+
+  it('правило о голосовом ответе — в системном промпте (он один для всех и кэшируется)', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toContain(VOICE_MARK)
+    expect(rules).toMatch(/2–4 коротких предложения/)
+    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru', voice: true })).not.toContain(VOICE_MARK)
   })
 
   it('помощника зовут Луна', () => {

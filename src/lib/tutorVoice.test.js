@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { synthTutor } from './tutorVoice.js'
+import { generateKeyPairSync } from 'node:crypto'
+import { synthGemini, synthTutor } from './tutorVoice.js'
 
 // Синтез тьюторов вынесен из /api/tutor-tts в общий модуль — проверяем, что
 // откат Луны остался прежним: без ключа Google она звучит Soniox «Grace», а не
@@ -37,5 +38,37 @@ describe('synthTutor', () => {
     delete process.env.SONIOX_API_KEY
     vi.stubGlobal('fetch', okFetch())
     expect(await synthTutor('luna', 'Привет', 'ru')).toEqual({ status: 503 })
+  })
+})
+
+describe('synthGemini — голос Луны для помощника', () => {
+  const env = { ...process.env }
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    process.env = { ...env }
+  })
+
+  it('язык фразы уходит в Cloud TTS, голос — Aoede', async () => {
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
+    process.env.GOOGLE_CREDENTIALS_JSON = JSON.stringify({
+      client_email: 'tts@test.iam',
+      private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }),
+      project_id: 'p',
+    })
+    const fetchMock = vi.fn(async (url) =>
+      String(url).includes('oauth2')
+        ? Response.json({ access_token: 'at', expires_in: 3600 })
+        : Response.json({ audioContent: Buffer.from(new Uint8Array(480)).toString('base64') }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const r = await synthGemini('У вас там 0%.', { languageCode: 'ru-RU' })
+    expect(r.contentType).toBe('audio/wav')
+    const call = fetchMock.mock.calls.find(([u]) => String(u).includes('text:synthesize'))
+    expect(JSON.parse(call[1].body).voice).toMatchObject({ languageCode: 'ru-RU', name: 'Aoede' })
+  })
+
+  it('без ключа Google — 503, вызывающий уходит в запасной голос', async () => {
+    delete process.env.GOOGLE_CREDENTIALS_JSON
+    expect(await synthGemini('Привет', { languageCode: 'ru-RU' })).toEqual({ status: 503 })
   })
 })

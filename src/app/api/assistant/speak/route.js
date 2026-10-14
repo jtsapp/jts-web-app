@@ -2,23 +2,34 @@
 // Cloud TTS, «Aoede»): помощник на сайте — это Луна. Синтез общий с
 // /api/tutor-tts (lib/tutorVoice.js), чтобы голос не разъехался с тьютором.
 //
-// Казахского у Gemini нет — казахская фраза сразу идёт в Soniox «Grace» (тот
-// же откатный голос Луны, что у агента). Любой сбой Gemini — тоже в Soniox:
-// квота Gemini общая со звонками Луны, и ответ помощника не должен молчать
-// из-за того, что её съел звонок.
+// Язык Gemini — по фразе (ru-RU / en-US), а не зашитый en-us тьюторов: иначе
+// «0%» в русском ответе звучит «zero percent».
+//
+// Запасного голоса здесь нет — его берёт клиент (voiceQueue.js) потоковым
+// /api/tts. Раньше сервер сам подставлял Soniox, но в этом пути Soniox собирает
+// фразу целиком: 10–12 с на 190 символов (замер на дев-стенде 14.10.2026), и
+// посреди ответа вставала долгая тишина, а следом звучал чужой голос. Казахская
+// фраза (у Gemini казахского нет) сюда обычно не доходит — клиент сразу играет
+// её потоком; путь Soniox оставлен на случай, когда казахские буквы попали в
+// ответ, начатый по-русски.
 //
 // Только для вошедшего ученика и с лимитом: синтез платный, а ответ на один
 // вопрос — 2–4 фразы (чат пускает 20 вопросов за 10 минут).
 
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
-import { synth } from '@/lib/tutorVoice.js'
+import { synth, synthGemini } from '@/lib/tutorVoice.js'
 import { createRateLimiter } from '@/lib/assistant/rateLimit.js'
 
 export const runtime = 'nodejs'
 export const MAX_TEXT = 600
-// Зависший синтез — тоже сбой: фраза Gemini приходит за 1–2 с, и ждать дольше
-// значит держать паузу посреди ответа. После срока — запасной голос.
-export const SYNTH_TIMEOUT_MS = 8000
+// Gemini не потоковый: фраза приходит целиком, примерно 1.5 с + 40 мс на
+// символ (75 символов — 4.4 с, 190 — 8–10 с, замер 14.10.2026). Срок — на
+// настоящее зависание, а не на длинную фразу: прежние 8 с выбрасывали готовый
+// звук за секунду до конца.
+export const SYNTH_TIMEOUT_MS = 20_000
+
+const LUNA_VOICE = 'Aoede'
+const GEMINI_LOCALE = { ru: 'ru-RU', en: 'en-US' }
 
 const takeQuota = createRateLimiter({ windowLimit: 100, dayLimit: 800 })
 const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
@@ -33,16 +44,16 @@ export function voiceLang(text, lang) {
   return lang === 'en' ? 'en' : 'ru'
 }
 
-async function trySynth(provider, text, lang) {
+async function withTimeout(promise, label) {
   let timer
   try {
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`timeout ${SYNTH_TIMEOUT_MS} ms`)), SYNTH_TIMEOUT_MS)
+      timer = setTimeout(() => reject(new Error(`${label}: timeout ${SYNTH_TIMEOUT_MS} ms`)), SYNTH_TIMEOUT_MS)
     })
-    const r = await Promise.race([synth(provider, text, 'luna', lang), timeout])
+    const r = await Promise.race([promise, timeout])
     return r?.audio ? r : null
   } catch (e) {
-    console.warn(`[assistant-speak] ${provider} failed:`, e?.message || e)
+    console.warn('[assistant-speak]', e?.message || e)
     return null
   } finally {
     clearTimeout(timer)
@@ -72,13 +83,11 @@ export async function POST(request) {
   }
 
   const lang = voiceLang(text, body?.lang)
-  let voice = 'soniox'
-  let result = null
-  if (lang !== 'kk') {
-    result = await trySynth('gemini', text, lang)
-    if (result) voice = 'gemini'
-  }
-  result ??= await trySynth('soniox', text, lang)
+  const voice = lang === 'kk' ? 'soniox' : 'gemini'
+  const result =
+    lang === 'kk'
+      ? await withTimeout(synth('soniox', text, 'luna', 'kk'), 'soniox')
+      : await withTimeout(synthGemini(text, { voice: LUNA_VOICE, languageCode: GEMINI_LOCALE[lang] }), 'gemini')
   if (!result) {
     // Звука не было — и фраза не должна съесть лимит ученика.
     takeQuota.refund(key)
