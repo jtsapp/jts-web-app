@@ -54,19 +54,33 @@ export function numberToRu(n) {
   return words.join(' ')
 }
 
-const NOT_LATIN = '(?<![A-Za-z0-9.,:])'
-const TIME_RE = new RegExp(`${NOT_LATIN}(\\d{1,2}):(\\d{2})(?![0-9])`, 'g')
-const PERCENT_RE = new RegExp(`${NOT_LATIN}(\\d+)\\s?%`, 'g')
-const DECIMAL_RE = new RegExp(`${NOT_LATIN}(\\d+)[.,](\\d+)(?![0-9A-Za-z])`, 'g')
-const INT_RE = new RegExp(`${NOT_LATIN}(\\d+)(?![0-9A-Za-z])`, 'g')
+const TIME_RE = /(\d{1,2}):(\d{2})(?![0-9])/g
+const PERCENT_RE = /(\d+)\s?%/g
+const DECIMAL_RE = /(\d+)[.,](\d+)(?![0-9A-Za-z])/g
+const INT_RE = /(\d+)(?![0-9A-Za-z])/g
+
+// Сосед слева, при котором число не трогаем (A2, v1.5). Не lookbehind
+// `(?<!…)`: Safari до 16.4 такой литерал не разбирает и роняет весь модуль
+// (safariSyntax.test.js), поэтому соседа смотрим в колбэке по смещению. Пропуск
+// совпадения целиком ничего не теряет: левее любой его внутренней позиции стоит
+// цифра, «:», «.» или «,» — lookbehind отверг бы и её.
+const STUCK = /[A-Za-z0-9.,:]/
+
+function spellAll(text, re, say) {
+  return text.replace(re, (...m) => {
+    const offset = m[m.length - 2]
+    const whole = m[m.length - 1]
+    return offset > 0 && STUCK.test(whole[offset - 1]) ? m[0] : say(...m.slice(1, -2))
+  })
+}
 
 const minutes = (mm) => (mm === '00' ? 'ноль ноль' : mm[0] === '0' ? `ноль ${ONES[Number(mm[1])]}` : numberToRu(Number(mm)))
 
 /** Русская фраза с числами словами — для синтеза голосом Луны. */
 export function spellNumbersRu(text) {
-  return String(text ?? '')
-    .replace(TIME_RE, (_, h, mm) => `${numberToRu(Number(h))} ${minutes(mm)}`)
-    .replace(PERCENT_RE, (_, n) => `${numberToRu(Number(n))} ${plural(Number(n), ['процент', 'процента', 'процентов'])}`)
-    .replace(DECIMAL_RE, (_, a, b) => `${numberToRu(Number(a))} и ${numberToRu(Number(b))}`)
-    .replace(INT_RE, (_, n) => numberToRu(Number(n)))
+  let s = String(text ?? '')
+  s = spellAll(s, TIME_RE, (h, mm) => `${numberToRu(Number(h))} ${minutes(mm)}`)
+  s = spellAll(s, PERCENT_RE, (n) => `${numberToRu(Number(n))} ${plural(Number(n), ['процент', 'процента', 'процентов'])}`)
+  s = spellAll(s, DECIMAL_RE, (a, b) => `${numberToRu(Number(a))} и ${numberToRu(Number(b))}`)
+  return spellAll(s, INT_RE, (n) => numberToRu(Number(n)))
 }
