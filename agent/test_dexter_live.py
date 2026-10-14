@@ -4,9 +4,9 @@
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
 
 14.10.2026 решение владельца: тестовый Декстер (KZ TEST, ключ jarvis) заменяет
-живого. Звонок с карточки Декстера обязан собираться так же, как с KZ TEST:
-промпт, приветствие, сессия и мозг — побайтно. Прежняя персона остаётся
-откатом секретом DEXTER_PROMPT=legacy.
+живого — у bro сборка пакета Speaking Buddy и мозг Haiku 5.5. Прежняя персона
+остаётся откатом секретом DEXTER_PROMPT=legacy. В тот же день KZ TEST отдан
+новой Луне.
 """
 import io
 import os
@@ -55,21 +55,22 @@ for temper in ("", "calm", "harsh"):
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
 
-# ── Звонок с карточки Декстера = звонок с KZ TEST ────────────────────────────
+# ── Сборка — пакет с персоной Декстера, сессия — его же ──────────────────────
+# До 14.10.2026 здесь была побайтная сверка с KZ TEST, где Декстер обкатывался;
+# теперь KZ TEST — новая Луна (test_luna_stand.py), а сборку Декстера целиком
+# проверяет test_buddy_prompt.py.
 for lvl in ("A0", "A2", "B1", "C1"):
-    for age in ("adult", "teen", "child", ""):
-        d, k = profile(level=lvl, age_group=age), profile(tutor="jarvis", level=lvl, age_group=age)
-        assert build_buddy_instructions(d, buddy_persona_for(d)) == build_buddy_instructions(
-            k, buddy_persona_for(k)
-        ), (lvl, age)
-assert build_buddy_greeting(dexter) == build_buddy_greeting(kz_test)
-# Сессия (голос, распознавание, детектор) — живого Декстера у обоих.
-assert buddy_voice_profile(dexter) == buddy_voice_profile(kz_test)
+    text = build_buddy_instructions(profile(level=lvl), buddy_persona_for(dexter))
+    assert "# DEXTER" in text.partition("==== PERSONA")[2], lvl
+    assert "# LUNA" not in text, lvl
+assert "SESSION_START" in build_buddy_greeting(dexter)
+# Сессия (голос, распознавание, детектор) — живого Декстера.
 assert buddy_voice_profile(dexter).tutor == "bro"
 assert buddy_guard_tutor(dexter) == "bro", "замок и фильтр эха — по своим спискам секретов"
+assert buddy_voice_profile(kz_test).tutor == "gentle", "KZ TEST — уже Луна"
 
 # ── Мозг — тот же Haiku 5.5 ──────────────────────────────────────────────────
-assert session_brain_model(dexter) == session_brain_model(kz_test) == "claude-haiku-5-5"
+assert session_brain_model(dexter) == "claude-haiku-5-5"
 os.environ["BRAIN_MODEL_BRO"] = "claude-haiku-4-5"
 assert session_brain_model(dexter) == "claude-haiku-5-5", "BRAIN_MODEL_BRO — мозг прежней персоны"
 os.environ.pop("BRAIN_MODEL_BRO")

@@ -1,4 +1,6 @@
-"""Ассерты для сборки промпта Speaking Buddy v3 на стенде KZ TEST. pytest в
+"""Ассерты для сборки промпта Speaking Buddy v3 у Декстера: обкатывался на стенде
+KZ TEST, с 14.10.2026 это живой Декстер (bro), а KZ TEST отдан новой Луне
+(test_luna_stand.py). pytest в
 проекте нет — файл запускается напрямую:
     agent/venv/Scripts/python.exe agent/test_buddy_prompt.py
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
@@ -28,6 +30,7 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 os.environ["VOICE_STACK"] = "cascade"
 os.environ.pop("KZ_TEST_PROMPT", None)
+os.environ.pop("DEXTER_PROMPT", None)
 
 from agent import (  # noqa: E402
     BUDDY_CORE,
@@ -54,7 +57,7 @@ PERSONA_HEADER = "==== PERSONA"
 
 def profile(**kw) -> LearnerProfile:
     base = dict(
-        tutor="jarvis", level="A2", lang="ru", explanation_lang="ru",
+        tutor="bro", level="A2", lang="ru", explanation_lang="ru",
         user_name="Айгерим", interests=["music"], facts=["works as a nurse"],
         topics=["weekend plans"], mistakes=["she go -> she goes"],
         due_reviews=["I go yesterday -> I went yesterday"], due_vocab=["schedule"],
@@ -91,10 +94,10 @@ for other in ("gentle", "hype", "aizere"):
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
 # Откат секретом воркера, без деплоя кода.
-os.environ["KZ_TEST_PROMPT"] = "legacy"
+os.environ["DEXTER_PROMPT"] = "legacy"
 assert not buddy_test_on(p)
 assert persona_key("jarvis", "") in STANDALONE_PROMPT_PERSONAS  # старый путь цел
-os.environ.pop("KZ_TEST_PROMPT")
+os.environ.pop("DEXTER_PROMPT")
 # Вне каскада тег эмоции некому снять — стенд остаётся на прежней персоне.
 os.environ["VOICE_STACK"] = "gemini-live"
 assert not buddy_test_on(p)
@@ -277,14 +280,14 @@ for pid, head in (("luna", "# LUNA"), ("spark", "# SPARK"), ("aizere", "# AIZERE
     assert context_of(t)["selection"]["persona_id"] == pid
 
 # ── Без памяти промпт не врёт про прошлое ────────────────────────────────────
-fresh = build_buddy_instructions(LearnerProfile(tutor="jarvis", level="B1", lang="ru"))
+fresh = build_buddy_instructions(LearnerProfile(tutor="bro", level="B1", lang="ru"))
 assert "First call with this learner" in fresh
 assert context_of(fresh)["learner"]["name"] == ""
 
 # ── Эмоции: набор Декстера пакета весь ложится на разрешённые стенду ─────────
 from agent import MOOD_ALIASES  # noqa: E402
 
-allowed = TUTOR_MOODS["jarvis"]
+allowed = TUTOR_MOODS["bro"]
 for name in ("default", "happy", "surprised", "sarcastic", "sympathy", "confused", "angry"):
     mood = MOOD_ALIASES.get(name, (name, 2))[0]
     assert mood == "" or mood in allowed, (name, mood)
@@ -292,7 +295,7 @@ for name in ("default", "happy", "surprised", "sarcastic", "sympathy", "confused
 # ── Голос, распознавание, мозг — Декстера ────────────────────────────────────
 vp = buddy_voice_profile(p)
 assert vp.tutor == BUDDY_VOICE_TUTOR == "bro"
-assert p.tutor == "jarvis", "исходный профиль не трогаем: по нему пишется история звонков"
+assert p.tutor == "bro", "исходный профиль не трогаем: по нему пишется история звонков"
 assert _tts_provider_for(vp) == _tts_provider_for(LearnerProfile(tutor="bro"))
 assert _eleven_session_voice(vp) == _eleven_session_voice(LearnerProfile(tutor="bro"))
 assert _eleven_session_voice(buddy_voice_profile(profile(eleven_voice_id="xxx"))) == _eleven_session_voice(LearnerProfile(tutor="bro")), \
@@ -319,13 +322,13 @@ for other in ("gentle", "hype", "aizere"):
     assert session_brain_model(profile(tutor=other)) == _brain_model_for(other), other
 os.environ["BRAIN_MODEL_BUDDY"] = "claude-haiku-4-5"
 assert session_brain_model(p) == "claude-haiku-4-5", "откат секретом воркера, без деплоя"
-os.environ["BRAIN_MODEL_BUDDY_JARVIS"] = "gpt-6-sol"
+os.environ["BRAIN_MODEL_BUDDY_BRO"] = "gpt-6-sol"
 assert session_brain_model(p) == "gpt-6-sol", "секрет стенда важнее общего"
-os.environ.pop("BRAIN_MODEL_BUDDY_JARVIS")
+os.environ.pop("BRAIN_MODEL_BUDDY_BRO")
 os.environ.pop("BRAIN_MODEL_BUDDY")
-os.environ["KZ_TEST_PROMPT"] = "legacy"
-assert session_brain_model(p) == _brain_model_for("jarvis"), "стенд на старой персоне — и мозг прежний"
-os.environ.pop("KZ_TEST_PROMPT")
+os.environ["DEXTER_PROMPT"] = "legacy"
+assert session_brain_model(p) == _brain_model_for("bro"), "на старой персоне — и мозг прежний"
+os.environ.pop("DEXTER_PROMPT")
 # Haiku 5.5 — напрямую в Anthropic: шим его не знает и шлёт temperature.
 assert _is_anthropic_direct_brain("claude-haiku-5-5") and not _is_openai_brain("claude-haiku-5-5")
 for m in ("claude-haiku-4-5", "claude-sonnet-5", "jts-voice-router", "gpt-6-sol", ""):

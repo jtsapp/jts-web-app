@@ -4,7 +4,7 @@
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
 
 05.10.2026: второе место для тестов Speaking Buddy на dev-стенде. Тот же бот,
-что KZ TEST (сборка пакета v3.4, мозг GPT-6 Sol), но персона — новый Спарк, а
+что KZ TEST (сборка пакета v3.4; мозг с 14.10.2026 — Haiku 5.5), но персона — новый Спарк, а
 сессия — живого Спарка (Soniox, Owen). Карточка с лицом, чтобы видеть эмоции:
 у KZ TEST вместо лица шар.
 """
@@ -58,7 +58,7 @@ p = profile()
 assert SPARK_TEST_STAND == "sparktest", "ключ зашит в token route и tutors.js"
 assert buddy_test_on(p)
 assert buddy_persona_for(p) == "spark"
-assert buddy_persona_for(LearnerProfile(tutor="jarvis")) == "dexter", "KZ TEST остаётся Декстером"
+assert buddy_persona_for(LearnerProfile(tutor="jarvis")) == "luna", "KZ TEST с 14.10 — новая Луна"
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
 assert not buddy_test_on(profile(mode="placement"))
 # Откат KZ TEST секретом — только ему: у «Спарк теста» прежней персоны нет.
@@ -111,7 +111,7 @@ assert scen.tutor == "hype" and scen.tts_lang == ""
 luna = LearnerProfile(tutor="gentle")
 assert buddy_voice_profile(luna) is luna
 kz_test = LearnerProfile(tutor="jarvis", lang="ru")
-assert buddy_voice_profile(kz_test).tutor == "bro"
+assert buddy_voice_profile(kz_test).tutor == "gentle"
 os.environ["KZ_TEST_PROMPT"] = "legacy"
 assert buddy_voice_profile(kz_test) is kz_test, "KZ TEST вне Buddy — со своими таблицами"
 os.environ.pop("KZ_TEST_PROMPT")
@@ -125,8 +125,11 @@ A._cascade_tts_soniox(LearnerProfile(tutor="hype", lang="ru"))
 assert calls[0]["language"] == "ru" and calls[0]["voice"] == calls[1]["voice"], calls
 assert calls[1]["language"] == "kk", "живой Спарк — как был"
 
-# ── Мозг — как у KZ TEST, замок и фильтр эха — Спарка ────────────────────────
-assert session_brain_model(p) == "gpt-6-sol"
+# ── Мозг — Haiku 5.5 (с 14.10, был GPT-6 Sol), замок и фильтр эха — Спарка ───
+assert session_brain_model(p) == "claude-haiku-5-5"
+os.environ["BRAIN_MODEL_BUDDY_SPARKTEST"] = "gpt-6-sol"
+assert session_brain_model(p) == "gpt-6-sol", "откат на Sol секретом, без деплоя"
+os.environ.pop("BRAIN_MODEL_BUDDY_SPARKTEST")
 assert session_brain_model(profile(mode="scenario", scenario_id="x")) == _brain_model_for("hype")
 assert buddy_guard_tutor(p) == "hype", "в канарейках секретов стенда нет — защиты живого Спарка"
 assert buddy_guard_tutor(kz_test) == "jarvis", "у KZ TEST канарейки свои"
