@@ -381,6 +381,39 @@ describe('LiveLessonPage — ученик следует за классом', (
   })
 })
 
+/** ▶/■ плеера урока: мост кладёт в value намерение преподавателя. */
+const audio = (selector, intent = 'play') => [{ selector, eventType: 'click', value: `jts-audio:${intent}` }]
+
+// «Слушать вместе» (владелец 14.10.2026): ▶/■ преподавателя звучат у всего класса,
+// следует ученик за классом или нет. Обычный показ — по-прежнему только следующему.
+describe('LiveLessonPage — «Слушать вместе»', () => {
+  it('следование выключено — ▶ и ■ преподавателя всё равно уходят в рамку, обычный клик нет', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    const post = await loadFrame(container)
+    fireEvent.click(container.querySelector('.ls-follow'))
+    post.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: audio('#play') }) })
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#rail') }) })
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: audio('#play', 'stop') }) })
+
+    expect(replayedIn(post)).toEqual(['#play', '#play'])
+  })
+
+  it('▶ про другой материал — в рамку не идёт и потом не догоняет', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    const post = await loadFrame(container)
+    post.mockClear()
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: audio('#play') }) })
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(replayedIn(post)).toEqual([])
+  })
+})
+
 describe('LiveLessonPage — статус занятия из состояния', () => {
   const badge = (container) => container.querySelector('.live-badge').textContent
 

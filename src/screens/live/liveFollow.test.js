@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPointEvent, isPointerBatch, nextFollow, positionChanged } from './liveFollow.js'
+import { isAudioBatch, isAudioCommand, isPointEvent, isPointerBatch, nextFollow, positionChanged } from './liveFollow.js'
 
 /**
  * Правило следования (спека §4.3) — одно на оба клиента: ученик в web-admin
@@ -189,3 +189,24 @@ describe('isPointerBatch — указка, а не показ класса', () 
   })
 })
 
+
+describe('isAudioCommand / isAudioBatch — ▶/■ плеера урока', () => {
+  const play = { selector: '#a', eventType: 'click', value: 'jts-audio:play' }
+  const stop = { selector: '#a', eventType: 'click', value: 'jts-audio:stop' }
+  const click = { selector: '#b', eventType: 'click', value: null }
+
+  it('клик с намерением ▶ или ■ — звуковой, обычный клик и ввод — нет', () => {
+    expect(isAudioCommand(play)).toBe(true)
+    expect(isAudioCommand(stop)).toBe(true)
+    expect(isAudioCommand(click)).toBe(false)
+    expect(isAudioCommand({ eventType: 'input', value: 'jts-audio:play' })).toBe(false)
+    expect(isAudioCommand(undefined)).toBe(false)
+  })
+
+  it('пачка — звуковая, только если в ней одни ▶/■', () => {
+    expect(isAudioBatch([play, stop])).toBe(true)
+    expect(isAudioBatch([play, click])).toBe(false)
+    expect(isAudioBatch([])).toBe(false)
+    expect(isAudioBatch(null)).toBe(false)
+  })
+})
