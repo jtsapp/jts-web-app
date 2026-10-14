@@ -9019,154 +9019,18 @@ mark.st-hl {
 }
 
 /* =====================================================================
-   TeenTech SAT (SAT-SYNC-PLAN 14.10.2026, D1 / B1–B12): своя навигация с группами «Study / Tools», крошки и крупный
-   заголовок, недельный тест, статистика на дашборде, журнал ошибок, «Результаты» с ручными баллами, past papers.
-   Тёмная тема — по умолчанию (src/sat/theme.js), акцент жёлтый; светлая остаётся по кнопке темы.
+   Синхронизация SAT с прототипом (SAT-SYNC-PLAN 14.10.2026, B1–B11): недельный тест, статистика на дашборде, журнал
+   ошибок, «Результаты» с ручными баллами, past papers. Стиль JTS: тема платформы, фиолетовый акцент.
    ===================================================================== */
 
-/* ---- хаб: колонка навигации SAT + содержимое ---- */
-.ih.st-hub {
-  display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
-}
-.st-hub__main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.st-nav {
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.st-nav__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.st-nav__theme {
-  margin-left: auto;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  border: 1px solid var(--st-line);
-  background: transparent;
-  color: var(--ih-ink);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.st-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.st-brand__mark {
-  width: 36px;
-  height: 36px;
-  flex: none;
-  border-radius: 11px;
-  background: #111;
-  color: #ffd400;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.st-brand__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-.st-brand__text b {
-  font-size: 15px;
+/* заголовок отдельного экрана (Past papers) */
+.st-head__title {
+  margin: 2px 0 0;
+  font-size: 28px;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.15;
 }
-.st-brand__text small {
-  font-size: 11px;
-  color: var(--ih-muted);
-  white-space: nowrap;
-}
-.st-nav__list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.st-nav__group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.st-nav__label {
-  padding: 0 12px 4px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ih-muted);
-}
-.st-nav__item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ih-ink-2, #656172);
-  cursor: pointer;
-  text-align: left;
-}
-.st-nav__item:hover {
-  background: var(--st-tint);
-  color: var(--ih-ink);
-}
-.st-nav__item.is-on {
-  background: var(--ih-violet);
-  color: #fff;
-}
-.st-head {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.st-crumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--ih-muted);
-}
-.st-crumbs button {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-.st-crumbs b {
-  color: var(--ih-ink);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 12px;
-}
-.st-head__row {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+/* подпись над заголовком блока (дашборд, дорога курса) */
 .st-head__eyebrow {
   display: block;
   font-size: 12px;
@@ -9175,63 +9039,6 @@ mark.st-hl {
   text-transform: uppercase;
   color: var(--ih-muted);
   margin: 0;
-}
-.st-head__title {
-  margin: 2px 0 0;
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-.st-head__chips {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.st-header__brand {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-}
-@media (max-width: 1023px) {
-  .ih.st-hub {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .st-nav {
-    position: static;
-    gap: 10px;
-  }
-  .st-nav__list {
-    flex-direction: row;
-    overflow-x: auto;
-    scrollbar-width: none;
-    gap: 6px;
-  }
-  .st-nav__list::-webkit-scrollbar {
-    display: none;
-  }
-  .st-nav__group {
-    flex-direction: row;
-    gap: 6px;
-  }
-  .st-nav__label {
-    display: none;
-  }
-  .st-nav__item {
-    white-space: nowrap;
-    padding: 8px 12px;
-    font-size: 14px;
-  }
-  /* Past papers на телефоне и планшете — без вкладки: туда ведёт кнопка из «Пробников» (B6) */
-  .st-nav__item.is-wide-only {
-    display: none;
-  }
-  .st-head__title {
-    font-size: 26px;
-  }
 }
 
 /* ---- демо-версия и исчерпанная квота (E2): общие для SAT и IELTS ---- */
@@ -9242,16 +9049,16 @@ mark.st-hl {
   gap: 10px 14px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #fff7d6;
-  border: 1px solid #f3dc7a;
-  color: #4a3b00;
+  background: #f2ebff;
+  border: 1px solid #dccbff;
+  color: #3d2470;
   font-size: 14px;
 }
 .exam-demo__tag {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #ffd400;
-  color: #111;
+  background: #9047ff;
+  color: #fff;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -9265,7 +9072,7 @@ mark.st-hl {
   border: 0;
   border-radius: 999px;
   padding: 8px 14px;
-  background: #111;
+  background: #9047ff;
   color: #fff;
   font: inherit;
   font-size: 13px;

@@ -11671,61 +11671,22 @@ html[data-theme="dark"] .st-start .ih-locked__steps li.is-now {
     background: var(--dk-acc-tint);
     box-shadow: inset 0 0 0 1.5px var(--ih-violet, #9047ff)
 }
-html[data-theme="dark"] .st-nav__theme {
-    border: 1px solid var(--st-line);
-    background: transparent;
-    color: var(--ih-ink)
-}
-html[data-theme="dark"] .st-brand__mark {
-    background: #111;
-    color: #ffd400
-}
-html[data-theme="dark"] .st-brand__text small {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-nav__label {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-nav__item {
-    border: 0;
-    background: transparent;
-    color: var(--ih-ink-2, #656172)
-}
-html[data-theme="dark"] .st-nav__item:hover {
-    background: var(--st-tint);
-    color: var(--ih-ink)
-}
-html[data-theme="dark"] .st-nav__item.is-on {
-    background: var(--ih-violet);
-    color: var(--dk-on-acc)
-}
-html[data-theme="dark"] .st-crumbs {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-crumbs button {
-    border: 0;
-    background: none;
-    color: inherit
-}
-html[data-theme="dark"] .st-crumbs b {
-    color: var(--ih-ink)
-}
 html[data-theme="dark"] .st-head__eyebrow {
     color: var(--ih-muted)
 }
 html[data-theme="dark"] .exam-demo {
-    background: var(--dk-yellow-tint);
-    border: 1px solid var(--dk-yellow-line);
-    color: var(--dk-yellow)
+    background: var(--dk-acc-tint);
+    border: 1px solid var(--dk-acc-line);
+    color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .exam-demo__tag {
-    background: var(--dk-yellow);
-    color: var(--dk-text)
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
 }
 html[data-theme="dark"] .exam-demo__btn {
     border: 0;
-    background: #111;
-    color: #fff
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
 }
 html[data-theme="dark"] .exam-quota {
     background: var(--dk-card);

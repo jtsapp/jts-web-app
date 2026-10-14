@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
+import Tabs from '../ielts/ui/Tabs.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import PillButton from '../ielts/ui/PillButton.jsx'
 import GuideTab from '../sat/tabs/GuideTab.jsx'
@@ -19,14 +20,12 @@ import { useI18n } from '../i18n.jsx'
 import { EventIcon, MenuBookIcon, QuizIcon } from '../ielts/icons.jsx'
 import { FireIcon, TargetIcon } from '../sat/icons.jsx'
 import { fmtDate } from '../sat/model/dates.js'
-import SatNav, { SAT_TABS, SatPageHead } from '../sat/ui/SatNav.jsx'
-import { useSatTheme } from '../sat/theme.js'
 import ExamDemoBanner from '../components/ExamDemoBanner.jsx'
 import { errorText } from '../lib/examQuota.js'
 
-// Вкладки хаба — группы «Study / Tools» навигации TeenTech SAT (SAT-SYNC-PLAN B12, src/sat/ui/SatNav.jsx). «Прогресс»
-// убран (B4): его меры — на дашборде «Сегодня»; старый адрес ?satTab=progress открывает «Сегодня».
-export { SAT_TABS }
+// Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» убран (B4): его меры —
+// на дашборде «Сегодня»; старый адрес ?satTab=progress открывает «Сегодня». Past papers — свой экран, вход — из «Пробников».
+export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'vocab', 'guide', 'materials', 'errors']
 const SOON_ICON = {}
 
 function readTab() {
@@ -56,7 +55,6 @@ function writeTab(tab) {
  */
 export default function SatPage({ token, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useI18n()
-  const { theme, toggle: toggleTheme } = useSatTheme()
   const authToken = token || loadToken()
   const [tab, setTab] = useState('today')
   const [moved, setMoved] = useState(false)
@@ -304,7 +302,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     )
   }
 
-  // Старт обязателен: без глав об экзамене, диагностики и доступа от менеджера вкладок нет вовсе (просьба владельца
+  // Старт обязателен: без глав об экзамене и диагностики (после них доступ открывается сам) вкладок нет вовсе (просьба владельца
   // 13.10.2026). Пока «me» не пришёл — рисуем шапку без вкладок, а не мигаем вкладками перед замком.
   const started = me && me.access && me.onboarded && me.diagnosticDone
   if (!started) {
@@ -312,7 +310,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>
         <div className="ih st">
           <header className="st-header">
-            <SatBrandTitle />
+            <h1>SAT</h1>
             <span className="st-header__kind">{t('sat.digital')}</span>
           </header>
           <ExamDemoBanner exam="sat" token={authToken} demo={me?.demo} onPricing={() => onNav?.('sat-pricing')} />
@@ -330,37 +328,28 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     )
   }
 
-  // Хаб «TeenTech SAT»: сайдбар платформы свёрнут в рейл, слева своя навигация SAT (группы Study / Tools с иконками),
-  // сверху крошки и крупный заголовок раздела (B12, прототип a4f6a9e1).
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile} rail>
-      <div className="ih st st-hub">
-        <SatNav value={tab} onChange={go} theme={theme} onTheme={toggleTheme} />
-        <div className="st-hub__main">
-          <ExamDemoBanner exam="sat" token={authToken} demo={me?.demo} onPricing={() => onNav?.('sat-pricing')} />
-          <SatPageHead tab={tab} onHome={() => go('today')}>
-            <div className="st-head__chips">
-              {profile?.targetTotal != null && (
-                <span className="ih-chip ih-chip--violet ih-chip--md"><span><TargetIcon size={16} />{t('sat.goalChip', { n: String(profile.targetTotal) })}</span></span>
-              )}
-              {dateChip && <span className="st-header__date"><EventIcon size={16} />{dateChip}</span>}
-              {today?.streak?.current > 0 && (
-                <span className="st-header__streak"><FireIcon size={16} />{plural(t, lang, 'sat.streakChip', today.streak.current)}</span>
-              )}
-            </div>
-          </SatPageHead>
-          {error && <p className="st-error" role="alert">{error}</p>}
-          <div key={tab} role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className={moved ? 'st__panel ih-enter' : 'st__panel'}>
-            {panel}
-          </div>
+    <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>
+      <div className="ih st">
+        <header className="st-header">
+          <h1>SAT</h1>
+          <span className="st-header__kind">{t('sat.digital')}</span>
+          <span className="st-spacer" />
+          {profile?.targetTotal != null && (
+            <span className="ih-chip ih-chip--violet ih-chip--md"><span><TargetIcon size={16} />{t('sat.goalChip', { n: String(profile.targetTotal) })}</span></span>
+          )}
+          {dateChip && <span className="st-header__date"><EventIcon size={16} />{dateChip}</span>}
+          {today?.streak?.current > 0 && (
+            <span className="st-header__streak"><FireIcon size={16} />{plural(t, lang, 'sat.streakChip', today.streak.current)}</span>
+          )}
+        </header>
+        <ExamDemoBanner exam="sat" token={authToken} demo={me?.demo} onPricing={() => onNav?.('sat-pricing')} />
+        <Tabs items={SAT_TABS.map((k) => ({ key: k, label: t(`sat.tab.${k}`) }))} value={tab} onChange={go} idBase="st" label="SAT" />
+        {error && <p className="st-error" role="alert">{error}</p>}
+        <div key={tab} role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className={moved ? 'st__panel ih-enter' : 'st__panel'}>
+          {panel}
         </div>
       </div>
     </LearningLayout>
   )
-}
-
-/** Заголовок экрана старта: знак TeenTech SAT вместо голого «SAT». */
-function SatBrandTitle() {
-  const { t } = useI18n()
-  return <h1 className="st-header__brand">{t('sat.brand')}</h1>
 }

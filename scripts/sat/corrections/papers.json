@@ -1,0 +1,14 @@
+{
+  "corrections": [
+    { "id": "jts-1.rw-m2-21", "set": { "options": ["1714 and", "1714", "1714,", "1714:"] }, "reason": "Option D was spreadsheet-corrupted to \"1714:00:00\"; restored to \"1714:\" (key D unchanged)" },
+    { "id": "jts-2.rw-m2-24", "set": { "answer": "C" }, "reason": "Contrast: 'did not perform this analysis on all ungulates; however, they focused exclusively on elk' - 'for instance' is illogical" },
+    { "id": "jts-2.rw-m2-27", "set": { "answer": "D" }, "reason": "Goal is the snow depth at the start of March 2021; only option D (50 inches at start of March) states it" },
+    { "id": "jts-2.math-m1-20", "set": { "answer": ["9/17", ".5294", "0.529", ".529"] }, "reason": "v = 9/17 = 0.52941...; added the fraction and the full-width .5294 form" },
+    { "id": "jts-2.math-m1-15", "set": { "answer": ["8.912", "8.913"] }, "reason": "Stem shows circumference 28 cm, so diameter = 28/pi = 8.9127; old key 28 assumes a lost pi (28pi)" },
+    { "id": "jts-3.rw-m2-16", "set": { "answer": "C" }, "reason": "'...while improvising. Which chord is a given chord's opposite can be determined...' - noun-clause subject; D creates a comma splice" },
+    { "id": "rw-m2-27", "set": { "answer": "D", "explanation": { "en": "The goal is a similarity: both authors had works enter the public domain recently. Only D states that; A stresses a difference." } }, "reason": "Goal is a similarity between Frost and Lewis; D states it, A emphasizes a difference" },
+    { "id": "math-m1-08", "set": { "answer": "A", "explanation": { "en": "The two histograms are identical, so the two data sets could contain exactly the same integers; the smallest possible difference between the means is 0." } }, "reason": "Histograms shown are identical (3,4,7,9), so the data sets can be identical and the minimum difference is 0" },
+    { "id": "math-m1-21", "exclude": true, "reason": "Options A and C have identical standard deviation (sum of squared deviations 88 each); no unique answer, original option text unknown" },
+    { "id": "ch12f4-math-m1-10", "set": { "answer": ["5/9", ".5555", ".5556", "0.555", "0.556"] }, "reason": "Dropped 6-character forms 0.5555/0.5556 that cannot be entered" }
+  ]
+}

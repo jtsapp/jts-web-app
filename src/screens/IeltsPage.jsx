@@ -190,7 +190,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   const tabs = IELTS_TABS.map((key) => ({ key, label: t(`ieltsHub.tab.${key}`) }))
 
   let panel
-  // Материалы закрыты, пока менеджер не открыл доступ (backend V324): любая вкладка — экран «доступ откроет менеджер».
+  // Материалы закрыты до двух стартовых шагов (анкета + диагностика, затем доступ открывается сам): любая вкладка — шаги старта.
   // Ждём ответ /plan/me: до него вкладка рисуется как обычно, иначе у ученика с доступом мигал бы замок.
   if (me && me.access === false) {
     return (

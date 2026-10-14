@@ -51,7 +51,7 @@ The README says «300 questions» — outdated; the data holds 3 123.
 | B | **«Добавить результат»** (35) | ~~Not built~~ **Replaced 14.10.2026 (D2, `SAT-SYNC-PLAN.md`):** manual Bluebook / official SAT scores are back — «Результаты» table in «Пробники» (phase 11). Old prototype entries are not imported. |
 | C | **Navigation** | Figma's 7 tabs + **Материалы** and **Ошибки**. Roadmap = a view of «План», Desmos guide inside «Гайд». |
 | D | **Screens without a Figma design** | Built in the platform style from the prototype layouts, and **marked for your design review** (see 3.1). |
-| E | **Visual style** | ~~Figma: Manrope, rounded corners, violet accent; no dark theme.~~ **Replaced 14.10.2026 (D1):** «TeenTech SAT» as in the prototype — dark theme by default (one-time switch of stored settings, `src/sat/theme.js`), yellow accent, nav icons in «Study / Tools» groups, breadcrumbs, graduation-cap logo. |
+| E | **Visual style** | Figma «JTS clone»: Manrope, rounded corners, violet accent, R&W blue / Math pink; SAT follows the platform theme (light by default) and keeps the platform sidebar and the hub tabs. The «TeenTech SAT» brand of 14.10.2026 (D1: forced dark theme, yellow accent, own nav, breadcrumbs, cap logo) was **removed on 15.10.2026** — SAT is back to JTS style; the new screens are reached from the hub tabs and buttons. |
 | F | **Plan default view** | Month first, then Week; Roadmap as the third view. |
 | G | **Accounts** | Platform accounts; no import of prototype local profiles. |
 
@@ -334,7 +334,7 @@ Plan: `C:\GitHub\work\jts\SAT-SYNC-PLAN.md` (decisions D1–D4, sections A, B, E
   (`?screen=sat-papers`, no phone tab); full-screen simulation, result 400–1600 vs goal, lost skills, hard simulations
   I/II (CH11/CH12); course road (months fold, topics → unit, diagnostic = Bluebook PT6, month-2 checkpoint = PT9); error
   log as cards, 10 per page; vocabulary «Next» (= Good) and «Words today»; Desmos guide video | calculator.
-- **Phase 12 — brand, i18n, access.** TeenTech SAT (decision E above), new keys en/ru/kk in `src/sat/i18nSync.js`.
+- **Phase 12 — brand, i18n, access.** ~~TeenTech SAT~~ — brand removed on 15.10.2026, SAT is back to JTS style (decision E above); new keys en/ru/kk in `src/sat/i18nSync.js`.
   Access to IELTS / SAT is opened by an admin in the user card (managers' pages removed); demo accounts get SAT/IELTS
   within demo quotas with a «демо-версия» banner and a clear message when a quota runs out (`TEST_FORMAT.md` §15).
 - Not checked yet: the screens in a browser against the prototype (dark theme especially), the seed against a live DB.

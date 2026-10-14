@@ -10,8 +10,6 @@ import { ArrowForwardIcon, ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx
 import { LaptopIcon, NAV_ICONS } from '../sat/icons.jsx'
 import { MOCK_MIN_WIDTH } from '../sat/model/mock.js'
 import { fmtDate } from '../sat/model/dates.js'
-import { useSatTheme } from '../sat/theme.js'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
 import { enterFullWindow, leaveFullWindow } from '../sat/fullWindow.js'
 
 function setParams(patch) {
@@ -41,7 +39,6 @@ function scoreLine(r) {
  */
 export default function SatPapersPage({ token, onNav }) {
   const { t, lang } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const [hub, setHub] = useState(null)
@@ -120,7 +117,6 @@ export default function SatPapersPage({ token, onNav }) {
         <div className="st-papers__head">
           <span className="st-mocks__simIcon">{NAV_ICONS.papers(24)}</span>
           <div>
-            <span className="st-head__eyebrow">{t('sat.nav.tools')}</span>
             <h1 className="st-head__title">{t('sat.papers.title')}</h1>
             <p className="st-muted">{t('sat.papers.pageLead')}</p>
           </div>
@@ -177,7 +173,7 @@ export default function SatPapersPage({ token, onNav }) {
     <div className="ih st st-ob st-full">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={() => toHub()} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <SatBrand />
+        <b className="st-ob__logo">just to study</b>
         <span className="ih-chip ih-chip--sm"><span>{t('sat.papers.title')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
