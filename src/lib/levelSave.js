@@ -44,8 +44,7 @@ export function syncProfileLevel(token, level) {
 }
 
 /**
- * Пишет уровень в профиль на бэкенде и в Neon-профиль тьютора (туда же —
- * [options.summary], снимок прохождения).
+ * Пишет уровень в профиль на бэкенде и в Neon-профиль тьютора.
  * @returns {Promise<{ok: boolean, level?: string, anonymous?: boolean, error?: Error}>}
  *   level — уровень, который в итоге записан: вердикт сервера, если он его
  *   прислал, иначе то, что посчитал клиент.
@@ -55,15 +54,13 @@ export function syncProfileLevel(token, level) {
 export async function persistPlacementLevel(token, level, options = {}) {
   const {
     attempts = DEFAULT_ATTEMPTS, sleep = wait, delay = (n) => 400 * n,
-    summary, session, sessionToken,
   } = options
   if (!level) return { ok: false, error: new Error('Нет уровня для сохранения.') }
 
   // Neon-профиль читает голосовой тьютор; он и у анонима свой, по deviceId.
-  // Туда же уезжает снимок прохождения (θ, SE, флаги качества) и журнал
-  // ответов, по которому сервер пересчитывает уровень сам. Его вердикт и есть
-  // итоговый: клиентский уровень — утверждение, серверный — измерение.
-  const verdict = await savePlacementLevel(token, level, summary, session, sessionToken).catch(() => null)
+  // Сервер отвечает уровнем, который записал (A0 у него — A1, см. profileLevel), —
+  // его же пишем и на бэкенд, чтобы сторы не разошлись.
+  const verdict = await savePlacementLevel(token, level).catch(() => null)
   const finalLevel = typeof verdict?.level === 'string' && verdict.level ? verdict.level : level
 
   // Без токена профиля на бэкенде нет: сохранять нечего и подтверждать нечем.

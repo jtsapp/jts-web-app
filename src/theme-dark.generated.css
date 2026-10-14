@@ -342,14 +342,6 @@ html[data-theme="dark"] .otp-box::placeholder {
 html[data-theme="dark"] .otp-box:focus {
     box-shadow: inset 0 0 0 2px var(--dk-acc)
 }
-html[data-theme="dark"] .btn-later {
-    border: none;
-    background: var(--blue-soft);
-    color: var(--dk-blue)
-}
-html[data-theme="dark"] .btn-later:hover {
-    background: var(--blue-soft-2)
-}
 html[data-theme="dark"] .success-badge {
     color: var(--dk-on-bright);
     background: linear-gradient(135deg, var(--dk-green) 0%, var(--dk-green) 100%);
@@ -411,46 +403,6 @@ html[data-theme="dark"] .screen > .footer .footer-copy {
         background: url(/assets/reg/ig.svg) center / 24px 24px no-repeat
     }
 }
-html[data-theme="dark"] .test-close {
-    border: none;
-    background: var(--dk-blue-tint);
-    color: var(--dk-blue)
-}
-html[data-theme="dark"] .test-close:hover {
-    background: var(--dk-blue-soft)
-}
-html[data-theme="dark"] .test-title {
-    color: var(--ink)
-}
-html[data-theme="dark"] .test-count {
-    color: var(--purple)
-}
-html[data-theme="dark"] .meter-track {
-    background: var(--dk-chip)
-}
-html[data-theme="dark"] .meter-fill {
-    background: var(--dk-acc)
-}
-html[data-theme="dark"] .meter-thumb {
-    background: var(--dk-acc);
-    border: 3px solid var(--dk-line);
-    box-shadow: 0 2px 8px color-mix(in oklab, var(--dk-acc) 50%, transparent)
-}
-html[data-theme="dark"] .meter-labels span {
-    color: var(--dk-muted)
-}
-html[data-theme="dark"] .test-passage__label {
-    color: var(--ink)
-}
-html[data-theme="dark"] .test-passage p {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .test-prompt {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .test-question {
-    color: var(--ink)
-}
 html[data-theme="dark"] .option {
     border: 1.5px solid var(--dk-line);
     background: var(--dk-card);
@@ -475,17 +427,6 @@ html[data-theme="dark"] .option--wrong {
     color: var(--dk-on-bright);
     border-color: transparent
 }
-html[data-theme="dark"] .test-check {
-    border: none;
-    background: var(--dk-acc);
-    color: var(--dk-on-acc);
-    box-shadow: 0 10px 24px color-mix(in oklab, var(--dk-acc) 30%, transparent)
-}
-html[data-theme="dark"] .test-check:disabled {
-    background: var(--dk-acc-tint);
-    color: var(--dk-acc-text);
-    box-shadow: none
-}
 html[data-theme="dark"] .spinner {
     border: 4px solid var(--dk-line);
     border-top-color: var(--dk-acc)
@@ -494,43 +435,6 @@ html[data-theme="dark"] .result-badge {
     color: var(--dk-on-acc);
     background: var(--dk-acc);
     box-shadow: 0 14px 32px color-mix(in oklab, var(--dk-acc) 40%, transparent)
-}
-html[data-theme="dark"] .result-card {
-    background: var(--dk-acc);
-    color: var(--dk-on-acc);
-    box-shadow: 0 24px 60px color-mix(in oklab, var(--dk-acc) 35%, transparent)
-}
-html[data-theme="dark"] .result-level {
-    color: var(--purple)
-}
-html[data-theme="dark"] .rstat {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .rstat-ic--red {
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .rstat-ic--green {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .rstat-num--red {
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .rstat-num--green {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .rstat-label--red {
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .rstat-label--green {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .result-continue {
-    border: none;
-    background: var(--dk-card);
-    color: var(--purple)
-}
-html[data-theme="dark"] .result-continue:hover {
-    background: var(--dk-acc-tint)
 }
 html[data-theme="dark"] .kd-bg {
     background: linear-gradient(180deg, var(--dk-acc-tint) 0%, var(--dk-page) 40%, var(--dk-card) 100%)
@@ -3090,27 +2994,11 @@ html[data-theme="dark"] .hw-batch__date, html[data-theme="dark"] .hw-part__scope
         background: none
     }
 }
-html[data-theme="dark"] .plc-card {
-    background: var(--dk-card);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12)
-}
-html[data-theme="dark"] .plc-h1 {
-    color: var(--ink)
-}
 html[data-theme="dark"] .plc-hint {
-    color: var(--muted)
-}
-html[data-theme="dark"] .plc-step {
     color: var(--muted)
 }
 html[data-theme="dark"] .plc-count {
     color: var(--muted)
-}
-html[data-theme="dark"] .plc-bar {
-    background: var(--dk-acc-tint)
-}
-html[data-theme="dark"] .plc-bar__fill {
-    background: var(--purple)
 }
 html[data-theme="dark"] .plc-passage {
     background: var(--dk-page);
@@ -3133,12 +3021,6 @@ html[data-theme="dark"] .plc-opt.on {
 }
 html[data-theme="dark"] .plc-opt:focus-visible {
     outline: 2px solid var(--purple)
-}
-html[data-theme="dark"] .plc-opt__sub {
-    color: var(--muted)
-}
-html[data-theme="dark"] .plc-opt__time {
-    color: var(--purple)
 }
 html[data-theme="dark"] .plc-input, html[data-theme="dark"] .plc-textarea {
     border: 1.5px solid var(--line, #e6e8ef);
@@ -3172,19 +3054,6 @@ html[data-theme="dark"] .plc-tile.on {
     background: var(--purple);
     border-color: var(--purple);
     color: var(--dk-on-acc)
-}
-html[data-theme="dark"] .plc-rtext {
-    border: 1.5px solid var(--line, #e6e8ef);
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .plc-rtext summary {
-    color: var(--muted)
-}
-html[data-theme="dark"] .plc-rtext[open] summary {
-    border-bottom: 1px solid var(--line, #e6e8ef)
-}
-html[data-theme="dark"] .plc-rtext__body {
-    color: var(--ink)
 }
 html[data-theme="dark"] .plc-q {
     border-top: 1px solid var(--dk-line)
@@ -3242,57 +3111,10 @@ html[data-theme="dark"] .plc-slots__empty {
 html[data-theme="dark"] .plc-video {
     background: var(--dk-ink-bg)
 }
-html[data-theme="dark"] .plc-rec__light {
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .plc-rec__ok {
-    color: var(--dk-green)
-}
-html[data-theme="dark"] .plc-primary {
-    border: 0;
-    background: var(--purple);
-    color: var(--dk-on-acc)
-}
 html[data-theme="dark"] .plc-ghost {
     border: 0;
     background: var(--dk-acc-tint);
     color: var(--purple)
-}
-html[data-theme="dark"] .plc-idk {
-    background: transparent;
-    box-shadow: none;
-    color: var(--purple)
-}
-html[data-theme="dark"] .plc-idk.on {
-    background: var(--dk-acc-tint);
-    box-shadow: inset 0 0 0 1.5px var(--purple)
-}
-html[data-theme="dark"] .plc-note {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .plc-note--warn {
-    color: var(--dk-yellow)
-}
-html[data-theme="dark"] .plc-level {
-    color: var(--purple)
-}
-html[data-theme="dark"] .plc-band {
-    background: var(--dk-acc-tint)
-}
-html[data-theme="dark"] .plc-band__fill {
-    background: var(--purple)
-}
-html[data-theme="dark"] .plc-band__ticks {
-    color: var(--muted)
-}
-html[data-theme="dark"] .plc-row {
-    border-bottom: 1px solid var(--dk-line)
-}
-html[data-theme="dark"] .plc-row:last-child {
-    border-bottom: 0
-}
-html[data-theme="dark"] .plc-row b {
-    color: var(--ink)
 }
 html[data-theme="dark"] .bk-read__locked {
     color: var(--muted, #6b6880)

@@ -32,33 +32,17 @@ describe('persistPlacementLevel', () => {
     expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'B1')
     // 2xx сам по себе ничего не доказывает — уровень перечитывается.
     expect(getLanguageLevel).toHaveBeenCalledWith('TOK')
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined, undefined)
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1')
   })
 
-  it('уровень берётся от сервера, а не от клиента', async () => {
-    // Сервер пересчитал журнал и вернул свой вердикт — записываем его.
+  it('на бэкенд уходит уровень, который записал сервер (A0 → A1)', async () => {
     savePlacementLevel.mockResolvedValue({ level: 'A1', measured: 'A0' })
     getLanguageLevel.mockResolvedValue('A1')
 
-    const res = await persistPlacementLevel('TOK', 'C2', { ...noSleep, session: { log: [] } })
+    const res = await persistPlacementLevel('TOK', 'A0', noSleep)
 
     expect(res).toMatchObject({ ok: true, level: 'A1' })
     expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'A1')
-  })
-
-  it('журнал прохождения уезжает на сервер', async () => {
-    const session = { log: [{ id: 'rt-a2-01', optIndex: 1 }] }
-
-    await persistPlacementLevel('TOK', 'B1', { ...noSleep, session })
-
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, session, undefined)
-  })
-
-  it('токен прогона уезжает вместе с уровнем', async () => {
-    // По записи прогона сервер и считает итог: журнал клиента — запасной путь.
-    await persistPlacementLevel('TOK', 'B1', { ...noSleep, sessionToken: 'run-1' })
-
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined, 'run-1')
   })
 
   it('сервер молчит о уровне — остаётся клиентский', async () => {
@@ -114,7 +98,7 @@ describe('persistPlacementLevel', () => {
     const res = await persistPlacementLevel(null, 'A2', noSleep)
 
     expect(res).toEqual({ ok: true, anonymous: true, level: 'A2' })
-    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined, undefined, undefined)
+    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2')
     expect(saveLanguageLevel).not.toHaveBeenCalled()
   })
 })
