@@ -15,12 +15,27 @@ export const MAX_CHUNK = 300
 // может быть «5.5» или ещё не дописанное «…». Перевод строки — тоже конец.
 const SENTENCE_END = /[.!?…]+[»"”)]*(?=\s)|\n/g
 
+// Эмодзи синтез читает вслух («smiling face» — живой прогон 14.10.2026).
+// Последовательность целиком: цифра-клавиша (1️⃣), флаг из двух букв-регионов,
+// пиктограмма с оттенком кожи и склейки через ZWJ (👨‍👩‍👧). Флаг /v с вычитанием
+// классов не берём — старый Safari на нём падает при загрузке модуля; ©, ® и ™
+// Юникод тоже относит к пиктограммам, их оставляем проверкой в колбэке.
+const EMOJI_RE =
+  /[0-9#*]️?⃣|[\u{1F1E6}-\u{1F1FF}]{2}|\p{Extended_Pictographic}[️\u{1F3FB}-\u{1F3FF}]*(?:‍\p{Extended_Pictographic}[️\u{1F3FB}-\u{1F3FF}]*)*|[️‍]/gu
+const KEEP_SYMBOLS = new Set(['©', '®', '™'])
+
+export function stripEmoji(text) {
+  return String(text ?? '').replace(EMOJI_RE, (m) => (KEEP_SYMBOLS.has(m) ? m : ''))
+}
+
 export function cleanForSpeech(text) {
-  return String(text ?? '')
+  return stripEmoji(text)
     .replace(/\[\[[A-Z_]+\]\]/g, '')
     .replace(/\*\*/g, '')
     .replace(/^[ \t]*[-•][ \t]+/gm, '')
     .replace(/[ \t]+/g, ' ')
+    // эмодзи перед точкой оставлял «работа» .» — пробел перед знаком убираем
+    .replace(/ ([.,!?:;…])/g, '$1')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)

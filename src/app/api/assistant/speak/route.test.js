@@ -51,18 +51,32 @@ describe('POST /api/assistant/speak', () => {
     expect(synthGemini).not.toHaveBeenCalled()
   })
 
-  it('русский — голос Луны (Gemini «Aoede») с ru-RU: «0%» читается по-русски', async () => {
+  // Голос — ровно как у Луны в звонке: Gemini «Aoede» с en-US (плагин google
+  // агента по умолчанию). С ru-RU Gemini звучал другим диктором (живой прогон
+  // 14.10.2026: «голос не как у Луны»), поэтому язык один, а цифры русской
+  // фразы уходят словами — иначе «0%» звучит «zero percent».
+  it('русский — голос Луны как в звонке (Aoede, en-US), числа словами', async () => {
     const res = await post({ text: 'У вас там 0%.', lang: 'ru' })
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('audio/wav')
     expect(res.headers.get('x-assistant-voice')).toBe('gemini')
     expect(res.headers.get('cache-control')).toBe('no-store')
-    expect(synthGemini).toHaveBeenCalledWith('У вас там 0%.', { voice: 'Aoede', languageCode: 'ru-RU' })
+    expect(synthGemini).toHaveBeenCalledWith('У вас там ноль процентов.', { voice: 'Aoede', languageCode: 'en-US' })
   })
 
-  it('английский — en-US', async () => {
-    await post({ text: 'Open the Practice section.', lang: 'en' })
-    expect(synthGemini.mock.calls[0][1].languageCode).toBe('en-US')
+  it('английский — тот же голос, цифры как есть', async () => {
+    await post({ text: 'Open lesson 3.', lang: 'en' })
+    expect(synthGemini).toHaveBeenCalledWith('Open lesson 3.', { voice: 'Aoede', languageCode: 'en-US' })
+  })
+
+  it('эмодзи вслух не читаются — и на сервере тоже', async () => {
+    await post({ text: 'Отлично! 😊 Так держать 👍', lang: 'ru' })
+    expect(synthGemini.mock.calls[0][0]).toBe('Отлично! Так держать')
+  })
+
+  it('фраза из одних эмодзи — 400, синтез не зовётся', async () => {
+    expect((await post({ text: '😊👍', lang: 'ru' })).status).toBe(400)
+    expect(synthGemini).not.toHaveBeenCalled()
   })
 
   it('казахский — Soniox «Grace» (у Gemini казахского нет)', async () => {
