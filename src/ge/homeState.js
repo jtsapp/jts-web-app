@@ -4,15 +4,16 @@
 import { canSetGoal } from './route.js'
 
 /**
- * Верхний блок: 'legacy' — прежняя карточка уровня (ручки профиля нет или цель ставить некуда), 'start' — ни уровня,
- * ни анкеты, 'invite' — уровень есть, анкеты нет, 'needTest' / 'needRoute' — анкета есть, шаг не сделан, 'goal' — блок
- * цели.
+ * Верхний блок: 'legacy' — прежняя карточка уровня (ручки профиля нет или цель ставить некуда), 'locked' — анкеты
+ * нет: роадмап под блюром ждёт тест уровня v16 (его анкета заменила нашу, спека 2026-10-14; раньше здесь были
+ * 'start' — ни уровня, ни анкеты — и 'invite' — уровень есть, анкеты нет), 'needTest' / 'needRoute' — анкета есть,
+ * шаг не сделан, 'goal' — блок цели.
  */
 export function homeTopState({ geProfile, levelUnknown, level }) {
   if (!geProfile) return 'legacy'
   if (!geProfile.onboarded) {
-    if (levelUnknown) return 'start'
-    return canSetGoal(level) ? 'invite' : 'legacy'
+    if (levelUnknown) return 'locked'
+    return canSetGoal(level) ? 'locked' : 'legacy'
   }
   if (levelUnknown) return 'needTest'
   if (!geProfile.route) return 'needRoute'

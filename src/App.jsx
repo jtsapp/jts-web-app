@@ -12,8 +12,7 @@ import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import CompleteRegistrationPage from './screens/CompleteRegistrationPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
-import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
-import PlacementTestPage from './screens/PlacementTestPage.jsx'
+import PlacementPage from './screens/PlacementPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
@@ -92,11 +91,11 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
-import { isTeacher } from './lib/jwt.js'
+import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
@@ -113,7 +112,10 @@ import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftov
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
 import { resolveHomeLevel } from './lib/homeLevel.js'
-import { placementSummary } from './lib/placement.js'
+import { levelFromEnvelope } from './placement/envelope.js'
+import { geProfileBody } from './placement/geMapping.js'
+import { navForActivity, navForSection } from './placement/activityRoutes.js'
+import { saveAttempt } from './placement/api.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
@@ -144,6 +146,8 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
   // Анкета, маршрут и план General English (спеки 2026-10-12 и 2026-10-13): данные берут у бэкенда сами
   'ge-onboarding', 'ge-route', 'ge-plan',
+  // Тест уровня v16: прогон тест хранит сам (localStorage с пространством профиля), F5 продолжает с того же места
+  'placement',
 ])
 
 // Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
@@ -579,12 +583,9 @@ export default function App() {
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
-  // Тест уровня открывается не только после входа, но и из профиля. Куда
-  // вернуть человека после теста или «Пройду позже» (null — как раньше, в
-  // королевство) и пересдача ли это (уровень в аккаунте уже есть, и прогон его
-  // не меняет — см. PlacementTestPage).
+  // Тест уровня (v16) открывается с «Главной», из профиля и плана. Куда вернуть человека по «назад» с теста (null —
+  // на «Главную»). Пересдачи как отдельного режима больше нет: уровень тест пишет только в пустой аккаунт.
   const [testReturn, setTestReturn] = useState(null)
-  const [testRetake, setTestRetake] = useState(false)
   // Профиль General English (анкета «Главной», цель, формат — бэкенд /mobile/ge). null — ручки нет (старый бэкенд),
   // аккаунт IELTS (у него своя анкета) или гость: тогда «Главная» прежняя.
   const [geProfile, setGeProfile] = useState(null)
@@ -592,8 +593,6 @@ export default function App() {
   // ответила»: «Главная» на время запроса рисовала старую карточку уровня, а тур успевал стартовать по старым шагам.
   const [geLoadedFor, setGeLoadedFor] = useState(undefined)
   const geLoaded = !token || geLoadedFor === token
-  // Тест уровня запущен из анкеты или со следующего шага «Главной»: конец теста — маршрут, «позже» — «Главная».
-  const [geTestFlow, setGeTestFlow] = useState(false)
   const [geEdit, setGeEdit] = useState(false)
   // Словарь открыт ссылкой из урока или раздела (а не из меню) — у него есть
   // «Назад» туда, см. handleNav('vocab').
@@ -628,11 +627,6 @@ export default function App() {
       alive = false
     }
   }, [token])
-  // Новый ученик после входа попадает на тест уровня ('test-intro', homeScreenFor). С ручкой профиля сначала анкета —
-  // цель и срок, потом тест. Тест из профиля (testReturn 'profile') и тест, запущенный самой анкетой, не перехватываем.
-  useEffect(() => {
-    if (screen === 'test-intro' && geProfile && !geProfile.onboarded && !geTestFlow && testReturn !== 'profile') setScreen('ge-onboarding')
-  }, [screen, geProfile, geTestFlow, testReturn, setScreen])
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
@@ -1159,48 +1153,28 @@ export default function App() {
     }
   }
 
-  // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
-  // открываем королевство. Уровень пишем в оба стора: backend — источник правды
-  // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
-  // записи они расходились.
-  // Сохранение уровня отделено от перехода: тест отдаёт уровень дважды —
-  // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
-  // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
-  // сеть не шлём: второй вызов приходит через секунды с тем же значением.
-  // Запомнить успешную запись, чтобы повтор того же уровня не гонял сеть
-  // второй раз; неудачную — не запоминаем, иначе «Повторить» ничего не сделает.
+  // Уровень, поставленный тестом, пишем в оба стора (persistPlacementLevel): backend — источник правды при входе,
+  // Neon-профиль — то, что читает голосовой тьютор. Только в пустой аккаунт: тарифный уровень тест не трогает
+  // (решение владельца 30.09.2026, подтверждено 14.10 для теста v16). Тест отдаёт итог несколько раз (показан,
+  // «продолжить», переход в задание) — уже записанный уровень второй раз в сеть не шлём.
   const lastSavedTestLevel = useRef(null)
-  const [levelSaveState, setLevelSaveState] = useState('idle') // idle | saving | saved | error
-  const pendingTestLevel = useRef(null)
 
-  async function saveTestLevel(level, summary, session, sessionToken) {
-    if (!level || lastSavedTestLevel.current === level) return
-    pendingTestLevel.current = { level, summary, session, sessionToken }
+  async function saveTestLevel(level) {
+    if (!level) return null
+    if (lastSavedTestLevel.current === level) return level
     // Уровень показываем сразу: экраны читают его из стейта, ждать сети незачем.
     setUserLevel(level)
-    setLevelSaveState('saving')
-    const res = await persistPlacementLevel(token, level, { summary, session, sessionToken })
-    // Итоговый уровень считает сервер по журналу ответов; его вердикт может
-    // отличаться от клиентского (в том числе полом A1 вместо A0).
+    const res = await persistPlacementLevel(token, level)
     if (res.level && res.level !== level) setUserLevel(res.level)
-    if (res.ok) {
-      lastSavedTestLevel.current = level
-      // Снимаем «нужен тест» только когда уровень действительно лёг в профиль:
-      // иначе следующий вход должен предложить тест снова, а не считать его
-      // пройденным по несохранённому результату.
-      setNeedsLevelTest(false)
-      setLevelSaveState('saved')
-    } else {
+    if (!res.ok) {
       console.warn('Не удалось сохранить уровень:', res.error)
-      setLevelSaveState('error')
+      return null
     }
-  }
-
-  function retrySaveTestLevel() {
-    const pending = pendingTestLevel.current
-    if (pending?.level) {
-      saveTestLevel(pending.level, pending.summary, pending.session, pending.sessionToken)
-    }
+    lastSavedTestLevel.current = level
+    // Снимаем «нужен тест» только когда уровень действительно лёг в профиль: иначе «Главная» должна звать на тест
+    // снова, а не считать его пройденным по несохранённому результату.
+    setNeedsLevelTest(false)
+    return res.level || level
   }
 
   // Куда уходить с теста уровня — см. testExitScreen (lib/homeScreen.js). Функция, а
@@ -1209,32 +1183,66 @@ export default function App() {
     return testExitScreen({ testReturn, tutorHome })
   }
 
-  async function handleTestDone(res) {
-    setGeTestFlow(false)
-    await saveTestLevel(res?.level)
-    setTestReturn(null)
-    setScreen(testExit())
-  }
-
-  // Тест из профиля. Уровня в аккаунте нет — обычный тест, он уровень и
-  // поставит (ровно то, чего не хватало тем, кто пропустил его после
-  // регистрации). Уровень есть — пересдача: результат покажем, уровень в
-  // аккаунте не тронем (решение владельца, 30.09.2026).
-  function openLevelTestFrom(returnTo) {
+  // Тест уровня v16 — откуда бы его ни открыли (закрытый блок «Главной», профиль, план, старые адреса test-intro и
+  // test). returnTo — куда вернуть по «назад».
+  function openPlacement(returnTo = null) {
     setTestReturn(returnTo)
-    setTestRetake(!needsLevelTest)
-    setScreen(needsLevelTest ? 'test-intro' : 'test')
+    setScreen('placement')
   }
 
-  // Тест уровня из анкеты General English и со следующего шага «Главной»: в конце — маршрут, «позже» — «Главная».
-  function openGeTest() {
-    setGeTestFlow(true)
-    setTestReturn('ge-route')
-    setTestRetake(false)
-    setScreen('test-intro')
+  // Мост теста ставит колбэки в iframe один раз на загрузку, а между событиями итога (показан → «продолжить») App
+  // успевает перерисоваться: колбэки читают свежее состояние отсюда, иначе второе событие увидело бы старый профиль
+  // GE и записало бы анкету дважды.
+  const placementState = useRef({})
+  useEffect(() => {
+    placementState.current = { token, needsLevelTest, userLevel, geProfile }
+  })
+  const placementChain = useRef(Promise.resolve())
+  // Растёт с каждым сохранённым итогом — «Главная» по нему перечитывает отчёт.
+  const [placementVersion, setPlacementVersion] = useState(0)
+
+  // Итог теста v16 (спека 2026-10-14): конверт — в базу (отчёт «Главной»), уровень — в пустой аккаунт, ответы анкеты —
+  // в профиль General English, если анкета ещё не заполнялась (анкета теста заменила нашу). События идут цепочкой.
+  function finalizePlacement(env) {
+    const run = async () => {
+      const st = placementState.current
+      if (!st.token || !env) return
+      if (await saveAttempt(st.token, env)) setPlacementVersion((v) => v + 1)
+      let level = st.needsLevelTest ? null : st.userLevel
+      const tested = levelFromEnvelope(env)
+      if (st.needsLevelTest && tested) level = await saveTestLevel(tested)
+      const ge = placementState.current.geProfile
+      if (!level || !ge || ge.onboarded) return
+      const body = geProfileBody(env, level)
+      const p = body ? await saveGeProfile(st.token, body).catch(() => null) : null
+      if (p) {
+        placementState.current = { ...placementState.current, geProfile: p }
+        setGeProfile(p)
+      }
+    }
+    placementChain.current = placementChain.current.then(run, run)
+    return placementChain.current
+  }
+
+  // «Продолжить» на итоге теста: анкета только что легла в профиль GE и формат не выбран — на маршрут (формат
+  // обучения спрашивает он, решение 14.10); иначе туда, откуда пришли.
+  async function continueAfterPlacement(env) {
+    await finalizePlacement(env)
+    const ge = placementState.current.geProfile
+    const next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    setTestReturn(null)
+    setScreen(next)
+  }
+
+  // Задание из рекомендаций или раздел с экрана итога: итог сохраняем до ухода — iframe с ним сейчас размонтируется.
+  async function leavePlacementTo(nav, env) {
+    await finalizePlacement(env)
+    setTestReturn(null)
+    handleNav(nav.key, nav.payload)
   }
 
   // Ответы анкеты сохранены. «С нуля» бэкенд сам поставил A0 — App узнаёт уровень из ответа, без перечитывания профиля.
+  // Анкету теперь открывают только правкой цели с «Главной» и маршрута; «нужен тест» — это тест v16.
   function handleGeSaved(p, next) {
     if (p) {
       setGeProfile(p)
@@ -1245,23 +1253,8 @@ export default function App() {
       }
     }
     setGeEdit(false)
-    if (next === 'test') openGeTest()
+    if (next === 'test') openPlacement('home')
     else setScreen('ge-route')
-  }
-
-  function leaveTestIntro() {
-    if (geTestFlow) {
-      setGeTestFlow(false)
-      setTestReturn(null)
-      // Тест открывают с «Главной», маршрута и плана — «позже» ведёт туда же.
-      goBack(() => setScreen('home'))
-    } else setScreen(testExit())
-  }
-
-  function leaveRetake() {
-    setTestRetake(false)
-    setTestReturn(null)
-    setScreen(testExit())
   }
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
@@ -1307,16 +1300,8 @@ export default function App() {
       // ссылки адресу — см. pendingScreenAfterLogin.
       hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
     })
-    // Уровня нет — сначала тест, и только потом ссылка. Раньше ссылка
-    // перебивала тест: пришедший по ней (в том числе обновивший вкладку на
-    // разделе, открытом гостем) регистрировался и попадал сразу в раздел, а
-    // тест так и не видел — жалоба «после регистрации теста не было». Ссылку
-    // не теряем: «Пройду позже» и конец теста ведут туда, куда он шёл.
-    if (home === 'test-intro') {
-      setTestReturn(target)
-      setTestRetake(false)
-      return home
-    }
+    // Теста при входе больше нет (14.10.2026): ученик попадает на «Главную», где тест ждёт в закрытом блоке
+    // роадмапа, — поэтому и ссылка, по которой он пришёл, открывается сразу.
     return target ?? home
   }
 
@@ -1396,7 +1381,6 @@ export default function App() {
     setProfession('')
     setNeedsLevelTest(false)
     setTestReturn(null)
-    setTestRetake(false)
     setScreen('welcome')
   }
 
@@ -1932,39 +1916,27 @@ export default function App() {
           onDone={() => setScreen(screenAfterLogin())}
         />
       )
+    // Тест уровня v16 методиста (спека 2026-10-14-placement-v16-first-login-design.md): страница теста в iframe, итог —
+    // через мост (finalizePlacement). Прежние экраны теста ('test-intro', 'test') ведут сюда же: их адреса остались в
+    // закладках и стеке «назад» старых версий.
     case 'test-intro':
-      return (
-        <LevelTestIntroPage
-          // Сюда попадают уже залогиненными — «назад» и «позже» ведут не на
-          // экран входа, а туда, откуда пришли (профиль, ссылка), иначе в
-          // королевство.
-          onBack={leaveTestIntro}
-          // Интро — только у обычного теста: у пересдачи его нет.
-          onStart={() => { setTestRetake(false); setScreen('test') }}
-          onLater={leaveTestIntro}
-        />
-      )
     case 'test':
-      // Тест на определение уровня: движок школы, перенесённый в проект
-      // (src/practice/placement/), экран — в оформлении приложения. Он же
-      // определяет A0, которого прежний адаптивный тест выдать не мог.
-      // Уровень сохраняем сразу по подсчёту, не дожидаясь кнопки: иначе
-      // пройденный тест пропадёт, если закрыть вкладку на экране результата.
+    case 'placement':
       return (
-        <PlacementTestPage
-          lang={lang}
+        <PlacementPage
           token={token}
-          saveState={levelSaveState}
-          onRetrySave={retrySaveTestLevel}
-          // Вместе с уровнем сохраняем снимок прохождения: θ, SE и флаги
-          // качества, по которым видно, насколько оценке можно верить.
-          onLevel={(level, result, session, sessionToken) =>
-            saveTestLevel(level, placementSummary(result), session, sessionToken)}
-          // Пересдача из профиля: уровень не пишется, «назад» есть.
-          retake={testRetake}
-          currentLevel={testRetake ? userLevel : null}
-          onExit={testRetake ? leaveRetake : undefined}
-          onDone={(level) => (testRetake ? leaveRetake() : handleTestDone({ level }))}
+          // Пространство прогона в localStorage — аккаунт из токена: profileId приходит из /api/profile позже и на
+          // первом кадре ещё пуст, а прогон «guest» был бы общим у всех учеников устройства.
+          profileId={userIdFromToken(token) ? `user-${userIdFromToken(token)}` : profileId}
+          backLabel={backLabel(testReturn || 'home')}
+          onExit={() => {
+            setTestReturn(null)
+            goBack(() => setScreen(testExit()))
+          }}
+          onResult={finalizePlacement}
+          onContinue={continueAfterPlacement}
+          onActivity={(rec, env) => leavePlacementTo(navForActivity(rec), env)}
+          onSection={(section, env) => leavePlacementTo(navForSection(section), env)}
         />
       )
     case 'home':
@@ -1975,17 +1947,18 @@ export default function App() {
           token={token}
           isDemoAccount={isDemoAccount}
           demoExpiresAt={demoExpiresAt}
-          // Тот же признак, по которому вход ведёт на 'test-intro': без уровня
-          // «Главная» показывает приглашение на тест, а не чужие цифры.
+          // Без уровня «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
-          onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
+          onStartLevelTest={() => openPlacement('home')}
           geProfile={ieltsAccount ? null : geProfile}
           geLoaded={geLoaded}
-          onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
+          // Анкета «Главной» заменена анкетой теста v16 (14.10.2026): «начать» — это тест, правка цели — прежний экран.
+          onGeStart={() => openPlacement('home')}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onGeRoute={() => setScreen('ge-route')}
-          onGeTest={openGeTest}
+          onGeTest={() => openPlacement('home')}
+          placementVersion={placementVersion}
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
@@ -2045,7 +2018,7 @@ export default function App() {
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
-          onLevelTest={token ? () => openLevelTestFrom('profile') : undefined}
+          onLevelTest={token ? () => openPlacement('profile') : undefined}
           // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
           onBack={popNav(navStack, screen) ? () => goBack() : undefined}
           backLabel={backLabel('home')}
@@ -2299,7 +2272,7 @@ export default function App() {
           onChosen={(p) => { if (p) setGeProfile(p); goBack(() => setScreen('home')) }}
           onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
-          onTest={openGeTest}
+          onTest={() => openPlacement('ge-route')}
           onBack={() => goBack(() => setScreen('home'))}
           backLabel={backLabel('home')}
         />
@@ -2312,9 +2285,9 @@ export default function App() {
           userLevel={userLevel}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
+          onGeStart={() => openPlacement('ge-plan')}
           onGeRoute={() => setScreen('ge-route')}
-          onGeTest={openGeTest}
+          onGeTest={() => openPlacement('ge-plan')}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           tourKey={gePlanTourKey}
           onBack={() => goBack(() => setScreen('home'))}

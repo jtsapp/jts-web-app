@@ -11,6 +11,8 @@ import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
 import GePlanInvite from './home/GePlanInvite.jsx'
+import GeLockedRoadmap from './home/GeLockedRoadmap.jsx'
+import PlacementReport from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { todayView } from '../ge/plan/planModel.js'
@@ -38,9 +40,8 @@ export default function HomePage({
   token,
   isDemoAccount = false,
   demoExpiresAt = null,
-  // Уровня в профиле нет — тест ещё не пройден (тот же признак, по которому
-  // App ведёт на 'test-intro' после входа). Показывать вместо него карточку с
-  // 'A1' нельзя: человек читал бы её как свой определённый уровень.
+  // Уровня в профиле нет — тест ещё не пройден. Показывать вместо него карточку
+  // с 'A1' нельзя: человек читал бы её как свой определённый уровень.
   levelUnknown = false,
   // Аккаунт IELTS (App: getIeltsMe, на проде IELTS скрыт — тогда false): вместо уровня General English — старт IELTS.
   ieltsAccount = false,
@@ -62,6 +63,8 @@ export default function HomePage({
   onStartLevelTest,
   // Ключ отметки «тур показан» — из App, в нём id профиля (tourKeyFor).
   tourKey,
+  // Счётчик сохранённых итогов теста уровня v16 (App): вырос — отчёт теста перечитывается.
+  placementVersion = 0,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -151,7 +154,9 @@ export default function HomePage({
   // запрос профиля анкеты, а у блока цели — ещё и план (иначе шаг «План на сегодня» нечего подсвечивать). Раньше тур
   // стартовал, пока профиль был в пути, и вёл по прежней «Главной» — с выбором цели на старой дорожке. Без пройденного
   // теста карточки уровня нет, и прежний тур ждёт, пока уровень появится.
-  const tourReady = !levelUnknown && geLoaded && !(geTop === 'goal' && gePlan.status === 'loading')
+  // Исключение — закрытый роадмап (спека 2026-10-14): новый ученик сначала проходит тур, и только потом тест, так что
+  // тур здесь идёт и без уровня.
+  const tourReady = (geTop === 'locked' || !levelUnknown) && geLoaded && !(geTop === 'goal' && gePlan.status === 'loading')
   // Тур общего курса — другой (анкета, план), поэтому и отметка своя: видевшие прежний увидят обновлённый один раз.
   const tourStorageKey = tourKey && geMode ? `${tourKey}:ge` : tourKey
   const tour = useScreenTour(tourReady ? tourStorageKey : null)
@@ -168,8 +173,11 @@ export default function HomePage({
                 { selector: '.ge-goal', title: t('tour.home.goal2.title'), text: t('tour.home.goal2.text') },
                 { selector: '.ge-goal .ih-gb__journey', title: t('tour.home.journey.title'), text: t('tour.home.journey.text') },
               ]
-            : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
-          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
+            : geTop === 'locked'
+              ? [{ selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }]
+              : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
+          // Без уровня карточки навыков нет — и шага про неё тоже.
+          ...(levelUnknown ? [] : [{ selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') }]),
           ...(isDemoAccount
             ? []
             : geToday
@@ -321,6 +329,8 @@ export default function HomePage({
             onOpenRoute={() => onGeRoute?.()}
             onBuy={() => onOpenPricing?.()}
           />
+        ) : geTop === 'locked' ? (
+          <GeLockedRoadmap onStart={onGeStart} />
         ) : geMode ? (
           <GePlanInvite state={geTop} level={summary.level} percent={summary.percent} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
         ) : levelUnknown ? (
@@ -422,6 +432,11 @@ export default function HomePage({
             </div>
           ))}
         </section>
+        )}
+
+        {/* Подробный отчёт теста уровня v16 — под роадмапом, который тест открыл. Нет пройденного теста — нет и блока. */}
+        {!ieltsAccount && (
+          <PlacementReport token={token} version={placementVersion} onNav={onNav} onRetake={onStartLevelTest} />
         )}
 
         <div className="hm-row">

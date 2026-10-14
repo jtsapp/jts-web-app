@@ -50,7 +50,7 @@ describe('Google-вход: номер обязателен', () => {
   })
 
   it('свежая пара токенов после смены номера подменяет старую', () => {
-    const save = body(app, 'async function handleGooglePhoneSubmit', '// Завершение письменного CEFR-теста')
+    const save = body(app, 'async function handleGooglePhoneSubmit', '// Уровень, поставленный тестом, пишем в оба стора')
     expect(save).toContain('updateUser(token, { name: name || \'User\', phone: fullPhone })')
     expect(save).toContain('saveToken(tok, saved.refreshToken || null)')
     expect(save).toContain('setPhoneGate(false)')

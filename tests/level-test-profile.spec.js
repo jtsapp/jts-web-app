@@ -1,15 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { routeFakeBank } from './helpers/placement-bank.js'
+import fs from 'node:fs'
+import path from 'node:path'
 
-// Тест на уровень: после входа и из профиля.
+// Тест на уровень из профиля и после входа.
 //
-// Жалоба (30.09.2026): «у некоторых после регистрации теста не было». Одна из
-// причин — присланная ссылка перебивала тест: пришедший по ней после входа
-// попадал сразу в раздел, а пройти тест потом было неоткуда, кроме карточки на
-// «Главной». Теперь тест идёт первым (ссылка не теряется — «Пройду позже» ведёт
-// туда), и он же живёт в профиле. Там, где уровень в аккаунте уже есть, это
-// пересдача: результат показываем, уровень НЕ меняем (решение владельца —
-// уровень открывает контент, а у оплативших его ставит тариф).
+// С 14.10.2026 тест — v16 методиста (спека placement-v16-first-login): после входа его нет, он ждёт в закрытом
+// роадмапе «Главной», поэтому присланная ссылка открывается сразу. Из профиля тест открывается тем же экраном. Где
+// уровень в аккаунте уже есть, тест его НЕ меняет (решение владельца 30.09 — уровень открывает контент, а у оплативших
+// его ставит тариф).
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -66,41 +64,16 @@ async function войти(page) {
 
 const строкаТеста = (page) => page.locator('.pf-row', { hasText: 'Тест на уровень' })
 
-// Интро Декстера печатает реплики по очереди (~4 с), кнопки — после них.
-const ИНТРО = 15_000
+const ENVELOPE = JSON.parse(fs.readFileSync(path.resolve('src/placement/__fixtures__/envelope-b1.json'), 'utf8'))
 
-/**
- * Самый короткий путь до результата — провал разминки и моста (A0).
- * Ждём смены экрана после каждого «Далее»: последний ответ разминки уходит на
- * проверку сервером, и слепой цикл успевал щёлкнуть «Начать» уже в мосту.
- */
-async function доРезультатаA0(page) {
-  await page.locator('.plc-opt').first().click() // экспресс
-  await page.locator('.plc-opt').nth(2).click() // самооценка
-  await page.locator('.plc-primary').click() // старт разминки
-
-  const мост = page.locator('.plc-h1', { hasText: 'Стартовый блок' })
-  const номер = async () => (await page.locator('.plc-count').allTextContents())[0] ?? null
-  for (let i = 0; i < 10 && !(await мост.count()); i++) {
-    const был = await номер()
-    await page.locator('.plc-opt', { hasText: 'WRONG-1' }).click()
-    await page.locator('.plc-primary:not([disabled])').click()
-    await expect(async () => {
-      expect((await мост.count()) > 0 || (await номер()) !== был).toBe(true)
-    }).toPass()
-  }
-  await expect(мост).toBeVisible()
-  await page.locator('.plc-primary').click()
-
-  for (let i = 1; i <= 2; i++) {
-    await expect(page.locator('.plc-count')).toHaveText(`${i} / 2`)
-    await page.locator('.plc-input').fill('zz')
-    await page.locator('.plc-primary:not([disabled])').click()
-  }
-  await expect(page.locator('.plc-level')).toHaveText('A0')
+/** Итог теста v16 тем же крючком, которым его отдаёт сам тест («продолжить» на экране итога). */
+async function итогТеста(page) {
+  const f = await (await page.locator('.pl-page__frame').elementHandle()).contentFrame()
+  await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30_000 })
+  return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, {}), ENVELOPE)
 }
 
-test('без уровня после входа по ссылке — сначала тест, «позже» ведёт по ссылке', async ({ page }) => {
+test('без уровня после входа по ссылке — ссылка открывается сразу, тест ждёт на «Главной»', async ({ page }) => {
   await гостьСВходом(page, { level: null })
 
   // Гость открыл присланную ссылку, а войти пошёл с главной.
@@ -108,13 +81,12 @@ test('без уровня после входа по ссылке — снача
   await expect(page).toHaveURL(/screen=homework/)
   await войти(page)
 
-  // Раньше здесь сразу открывалась домашка, и теста человек не видел вовсе.
-  await expect(page.getByText('Начать тестирование сейчас')).toBeVisible({ timeout: ИНТРО })
-  await page.getByText('Пройду позже').click()
-  await expect(page).toHaveURL(/screen=homework/)
+  // С 14.10.2026 теста при входе нет: он ждёт в закрытом роадмапе «Главной».
+  await expect(page).toHaveURL(/screen=homework/, { timeout: 20_000 })
+  await expect(page.locator('.pl-page')).toHaveCount(0)
 })
 
-test('профиль без уровня: «Не пройден», тест ставит уровень, «позже» — обратно в профиль', async ({ page }) => {
+test('профиль без уровня: «Не пройден», тест открывается, «назад» — обратно в профиль', async ({ page }) => {
   await вошедший(page, { level: null })
 
   await page.goto('/?screen=profile')
@@ -123,60 +95,32 @@ test('профиль без уровня: «Не пройден», тест ст
   await expect(page.locator('.pf-rank__cefr')).toHaveCount(0)
 
   await строкаТеста(page).click()
-  await expect(page.getByText('Начать тестирование сейчас')).toBeVisible({ timeout: ИНТРО })
-  await page.getByText('Пройду позже').click()
+  await expect(page.locator('.pl-page__frame')).toBeVisible()
+  await page.locator('.pl-page__back').click()
   await expect(page).toHaveURL(/screen=profile/)
 })
 
-test.describe('пересдача из профиля', () => {
-  const запросы = { putLevel: 0, complete: 0, session: [] }
-
-  test.beforeEach(async ({ page }) => {
-    Object.assign(запросы, { putLevel: 0, complete: 0, session: [] })
-    await вошедший(page, { level: 'B1' })
-    await routeFakeBank(page)
-    // Регистрируем после вошедший(): частный обработчик должен стоять выше.
-    await page.route('**/user/language-level', (r) => {
-      if (r.request().method() !== 'GET') запросы.putLevel++
-      return r.request().method() === 'GET' ? r.fulfill(json('B1')) : r.fulfill(json({ ok: true }))
-    })
-    await page.route('**/api/placement/complete', (r) => { запросы.complete++; return r.fulfill(json({ ok: true })) })
-    await page.route('**/api/placement/session', (r) => {
-      if (r.request().method() === 'POST') запросы.session.push(r.request().postDataJSON())
-      return r.fulfill(json({ configured: false, token: null }))
-    })
+test('пересдача из профиля: итог сохранён, уровень в аккаунте не тронут', async ({ page }) => {
+  const запросы = { putLevel: 0, attempts: 0 }
+  await вошедший(page, { level: 'B1' })
+  // Регистрируем после вошедший(): частный обработчик должен стоять выше.
+  await page.route('**/user/language-level', (r) => {
+    if (r.request().method() !== 'GET') запросы.putLevel++
+    return r.request().method() === 'GET' ? r.fulfill(json('B1')) : r.fulfill(json({ ok: true }))
+  })
+  await page.route('**/api/placement/attempts', (r) => {
+    if (r.request().method() === 'POST') запросы.attempts++
+    return r.fulfill(json({ configured: true, saved: true, envelope: null }))
   })
 
-  test('результат показан, уровень в аккаунте не тронут', async ({ page }) => {
-    await page.goto('/?screen=profile')
-    await expect(строкаТеста(page)).toContainText('B1', { timeout: 20_000 })
-    await строкаТеста(page).click()
+  await page.goto('/?screen=profile')
+  await expect(строкаТеста(page)).toContainText('B1', { timeout: 20_000 })
+  await строкаТеста(page).click()
+  expect(await итогТеста(page)).toMatchObject({ persisted: true })
 
-    // Предупреждаем ДО теста, а не только на результате.
-    await expect(page.locator('.plc-h1')).toHaveText('Выберите вариант теста')
-    await expect(page.locator('.plc-card')).toContainText('уровень в аккаунте (B1) не изменится')
-
-    await доРезультатаA0(page)
-    await expect(page.locator('.plc-card')).toContainText('в аккаунте остаётся B1')
-    // «Начнём с A1» — обещание про профиль, а в профиль ничего не уезжает.
-    await expect(page.locator('.plc-card')).not.toContainText('Начнём с A1')
-
-    expect(запросы.session.at(-1)).toMatchObject({ retake: true })
-    expect(запросы.putLevel).toBe(0)
-    expect(запросы.complete).toBe(0)
-
-    await page.getByText('Вернуться в профиль').click()
-    await expect(page).toHaveURL(/screen=profile/)
-    await expect(строкаТеста(page)).toContainText('B1')
-  })
-
-  test('пересдачу можно бросить стрелкой «назад»', async ({ page }) => {
-    await page.goto('/?screen=profile')
-    await строкаТеста(page).click({ timeout: 20_000 })
-    await expect(page.locator('.plc-h1')).toHaveText('Выберите вариант теста')
-
-    await page.locator('.back-btn').click()
-    await expect(page).toHaveURL(/screen=profile/)
-    expect(запросы.putLevel).toBe(0)
-  })
+  // Уровень в аккаунте ставит тариф — тест его не меняет (решение 30.09, подтверждено 14.10).
+  await expect(page).toHaveURL(/screen=profile/)
+  expect(запросы.attempts).toBeGreaterThan(0)
+  expect(запросы.putLevel).toBe(0)
+  await expect(строкаТеста(page)).toContainText('B1')
 })

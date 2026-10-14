@@ -26,8 +26,9 @@ describe('домашний экран после входа', () => {
     expect(homeScreenFor({ token: TEACHER })).toBe('lessons')
   })
 
-  it('ученик без уровня в профиле — на тест уровня', () => {
-    expect(homeScreenFor({ token: STUDENT, needsLevelTest: true })).toBe('test-intro')
+  it('ученик без уровня в профиле — тоже на «Главную»', () => {
+    // С 14.10.2026 тест ждёт на «Главной» в закрытом блоке роадмапа, а не отдельным экраном после входа.
+    expect(homeScreenFor({ token: STUDENT, needsLevelTest: true })).toBe('home')
   })
 
   it('ученик с уровнем — на «Главную»', () => {

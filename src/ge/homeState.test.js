@@ -6,9 +6,9 @@ describe('homeTopState', () => {
   it('нет профиля — прежняя «Главная»', () => {
     expect(homeTopState({ geProfile: null, levelUnknown: false, level: 'A2' })).toBe('legacy')
   })
-  it('до анкеты: без уровня — start, с уровнем — invite, C1+ — прежняя', () => {
-    expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1' })).toBe('start')
-    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2' })).toBe('invite')
+  it('до анкеты роадмап закрыт до теста — и без уровня, и с уровнем; C1+ — прежняя', () => {
+    expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1' })).toBe('locked')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2' })).toBe('locked')
     expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1' })).toBe('legacy')
   })
   it('после анкеты: тест, формат, блок цели', () => {

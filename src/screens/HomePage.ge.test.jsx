@@ -44,7 +44,7 @@ const goal = {
   journey: { start: 'A2', current: { level: 'A2', percent: 40 }, target: 'B2', reached: false },
 }
 function renderHome(props) {
-  render(
+  return render(
     <I18nProvider>
       <LanguageProvider>
         <HomePage userLevel="A2" userName="Сакен" token={TOKEN} {...props} />
@@ -66,13 +66,21 @@ describe('HomePage — General English', () => {
     expect(document.querySelector('.ge-invite')).toBe(null)
   })
 
-  it('уровень есть, анкеты нет — приглашение', async () => {
-    const onGeStart = vi.fn()
-    renderHome({ geProfile: { onboarded: false }, onGeStart })
-    await waitFor(() => expect(screen.getByText('Составим ваш план')).toBeTruthy())
-    expect(document.querySelector('.hm-level')).toBe(null)
-    fireEvent.click(within(document.querySelector('.ge-invite')).getByRole('button'))
-    expect(onGeStart).toHaveBeenCalled()
+  // С 14.10.2026 анкету «Главной» заменила анкета теста v16: до него роадмап закрыт блюром и зовёт на тест.
+  it('анкеты нет — роадмап закрыт и зовёт на тест (с уровнем и без)', async () => {
+    for (const levelUnknown of [false, true]) {
+      const onGeStart = vi.fn()
+      const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
+      await waitFor(() => expect(screen.getByText('Пройдите тест — построим ваш маршрут')).toBeTruthy())
+      expect(document.querySelector('.hm-level')).toBe(null)
+      // образец маршрута под блюром недоступен ни скринридеру, ни клавиатуре
+      const preview = document.querySelector('.ge-locked__preview')
+      expect(preview.getAttribute('aria-hidden')).toBe('true')
+      expect(preview.hasAttribute('inert')).toBe(true)
+      fireEvent.click(within(document.querySelector('.ge-locked__veil')).getByRole('button', { name: 'Пройти тест' }))
+      expect(onGeStart).toHaveBeenCalled()
+      unmount()
+    }
   })
 
   it('анкета есть, формата нет — шаг «выберите формат»', async () => {
