@@ -249,8 +249,9 @@ async function getAccessToken(creds) {
 }
 
 // languageCode у тьюторов — en-us, как у агента (плагин google по умолчанию):
-// превью обязано звучать как живой звонок. Помощник по сайту говорит
-// по-русски и передаёт ru-RU — иначе «0%» Gemini читает «zero percent».
+// превью обязано звучать как живой звонок. Помощник по сайту (Луна) тоже
+// идёт с en-US: с ru-RU Gemini звучал другим диктором (14.10.2026), поэтому
+// цифры русской фразы роут помощника пишет словами, а язык не меняет.
 async function geminiTts(text, voice, languageCode = 'en-us') {
   const creds = loadServiceAccount()
   if (!creds) return { status: 503 }

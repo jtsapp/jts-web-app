@@ -2,8 +2,12 @@
 // Cloud TTS, «Aoede»): помощник на сайте — это Луна. Синтез общий с
 // /api/tutor-tts (lib/tutorVoice.js), чтобы голос не разъехался с тьютором.
 //
-// Язык Gemini — по фразе (ru-RU / en-US), а не зашитый en-us тьюторов: иначе
-// «0%» в русском ответе звучит «zero percent».
+// Голос — ровно как у Луны в звонке: Gemini «Aoede», модель тьютора, язык
+// en-US (плагин google агента по умолчанию, секретов-переопределений у агента
+// нет — проверено 14.10.2026). С ru-RU Gemini звучал другим диктором («голос
+// не как у Луны», живой прогон 14.10.2026). Цифры en-US читает по-английски
+// («0%» — «zero percent»), поэтому у русской фразы они идут словами
+// (numbersRu.js), а эмодзи вырезаются — синтез читал их вслух.
 //
 // Запасного голоса здесь нет — его берёт клиент (voiceQueue.js) потоковым
 // /api/tts. Раньше сервер сам подставлял Soniox, но в этом пути Soniox собирает
@@ -19,6 +23,8 @@
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { synth, synthGemini } from '@/lib/tutorVoice.js'
 import { createRateLimiter } from '@/lib/assistant/rateLimit.js'
+import { spellNumbersRu } from '@/lib/assistant/numbersRu.js'
+import { stripEmoji } from '@/lib/assistant/speechChunks.js'
 
 export const runtime = 'nodejs'
 export const MAX_TEXT = 600
@@ -29,7 +35,7 @@ export const MAX_TEXT = 600
 export const SYNTH_TIMEOUT_MS = 20_000
 
 const LUNA_VOICE = 'Aoede'
-const GEMINI_LOCALE = { ru: 'ru-RU', en: 'en-US' }
+const LUNA_LANGUAGE = 'en-US'
 
 const takeQuota = createRateLimiter({ windowLimit: 100, dayLimit: 800 })
 const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
@@ -71,7 +77,8 @@ export async function POST(request) {
   } catch {
     return json(400, { error: 'bad_request' })
   }
-  const text = typeof body?.text === 'string' ? body.text.trim().slice(0, MAX_TEXT) : ''
+  const raw = typeof body?.text === 'string' ? body.text.slice(0, MAX_TEXT) : ''
+  const text = stripEmoji(raw).replace(/\s+/g, ' ').trim()
   if (!text) return json(400, { error: 'bad_request' })
 
   const key = `user-${auth.user.userId}`
@@ -87,7 +94,10 @@ export async function POST(request) {
   const result =
     lang === 'kk'
       ? await withTimeout(synth('soniox', text, 'luna', 'kk'), 'soniox')
-      : await withTimeout(synthGemini(text, { voice: LUNA_VOICE, languageCode: GEMINI_LOCALE[lang] }), 'gemini')
+      : await withTimeout(
+          synthGemini(lang === 'ru' ? spellNumbersRu(text) : text, { voice: LUNA_VOICE, languageCode: LUNA_LANGUAGE }),
+          'gemini',
+        )
   if (!result) {
     // Звука не было — и фраза не должна съесть лимит ученика.
     takeQuota.refund(key)

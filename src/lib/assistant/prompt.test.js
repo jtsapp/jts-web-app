@@ -321,3 +321,15 @@ ${VOICE_MARK}`)).toBe(true)
     expect(buildSystemPrompt()).toMatch(/^Ты — Луна, помощник на сайте/)
   })
 })
+
+describe('голос и тон Луны', () => {
+  it('голосовой ответ — без эмодзи (синтез читал их вслух)', () => {
+    expect(buildSystemPrompt()).toMatch(/\[голосом\][^\n]*без эмодзи/)
+  })
+
+  it('тон — как у Луны в звонке: спокойно, ясно, без дежурных похвал', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toMatch(/Тон — как у Луны в звонке/)
+    expect(rules).toMatch(/без дежурных похвал/)
+  })
+})
