@@ -15,12 +15,12 @@ test('раздел, открытый с «Главной», возвращает
   await expect(tile).toBeVisible({ timeout: 60_000 })
   await tile.click()
   await expect(page).toHaveURL(/screen=listening/)
-  const back = page.locator('.lt-back')
-  await expect(back).toContainText('На главную')
+  // Крестик полосы раздела подписан «Назад» по макету — проверяем, куда он ведёт.
+  await expect(page.locator('.lt-back')).toBeVisible()
 
   // Путь живёт в sessionStorage вкладки: перезагрузка (и возврат с оплаты) его не теряет.
   await page.reload()
-  await expect(page.locator('.lt-back')).toContainText('На главную', { timeout: 60_000 })
+  await expect(page.locator('.lt-back')).toBeVisible({ timeout: 60_000 })
   await page.locator('.lt-back').click()
   await expect(page).toHaveURL(/screen=home/)
 })
