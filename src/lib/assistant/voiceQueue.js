@@ -1,8 +1,15 @@
-// Очередь озвучки ответа помощника: фраза → /api/assistant/speak → blob →
-// общий <audio> из speech.js (разрешение iPhone играть звук живёт на нём, и его
-// выдал тап по микрофону). Следующая фраза запрашивается, пока звучит
-// текущая, — между фразами нет паузы на синтез; дальше одной вперёд не
+// Очередь озвучки ответа помощника: фраза → /api/assistant/speak (голос Луны,
+// Gemini) → blob → общий <audio> из speech.js (разрешение iPhone играть звук
+// живёт на нём, и его выдал тап по микрофону). Пока звучит текущая фраза,
+// готовятся LOOKAHEAD следующих: Gemini не потоковый и медленнее, чем кажется
+// (190 символов — 8–10 с, замер 14.10.2026), и с одной фразой вперёд длинная
+// фраза после короткой не успевала — ответ замолкал посередине. Дальше не
 // забегаем: ученик может оборвать ответ, и синтез остального был бы впустую.
+//
+// Запасной голос — потоковый /api/tts (Soniox «Grace», откатный голос Луны у
+// агента): первый звук через ~0.6 с. Им же сразу идёт казахский ответ — у
+// Gemini казахского нет. Раньше запасной Soniox собирал сервер, целиком: 10–12 с
+// на фразу, и ответ вставал.
 //
 // Голос один на весь ответ, и выбирает его язык САМОГО ответа, а не
 // интерфейса: Луна отвечает на языке вопроса, и русский ответ в казахском
@@ -15,6 +22,10 @@
 // замолкает целиком, а не перебивает чужой звук следующей фразой.
 
 import { playUrl, stopTts } from '../speech.js'
+import { ttsUrl } from '../ttsShared.js'
+
+export const LOOKAHEAD = 2
+const FALLBACK_VOICE = 'Grace'
 
 const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
 const CYRILLIC = /[а-яё]/i
@@ -58,8 +69,16 @@ export function createVoiceQueue({
     if (u && urls.delete(u)) URL.revokeObjectURL(u)
   }
 
+  // Потоковая запись той же фразы запасным голосом.
+  const streamUrl = (text) => ttsUrl({ text, voice: FALLBACK_VOICE, lang: voiceLang })
+
   function load(item) {
-    item.url ??= fetchImpl('/api/assistant/speak', {
+    if (item.url) return item.url
+    if (voiceLang === 'kk') {
+      item.url = Promise.resolve(streamUrl(item.text))
+      return item.url
+    }
+    item.url = fetchImpl('/api/assistant/speak', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify({ text: item.text, lang: voiceLang }),
@@ -67,12 +86,14 @@ export function createVoiceQueue({
     })
       .then((r) => (r.ok ? r.blob() : null))
       .then((b) => {
-        if (!b || stopped) return null
+        if (stopped) return null
+        if (!b) return streamUrl(item.text)
         const u = URL.createObjectURL(b)
         urls.add(u)
         return u
       })
-      .catch(() => null)
+      // Сеть упала — тоже запасной поток; оборвали сами (stop) — ничего.
+      .catch((e) => (stopped || e?.name === 'AbortError' ? null : streamUrl(item.text)))
     return item.url
   }
 
@@ -99,7 +120,7 @@ export function createVoiceQueue({
     }
     busy = true
     const item = items[idx]
-    if (items[idx + 1]) load(items[idx + 1])
+    for (let k = 1; k <= LOOKAHEAD && items[idx + k]; k++) load(items[idx + k])
     const url = await load(item)
     if (stopped) return
     if (url) {
@@ -135,8 +156,9 @@ export function createVoiceQueue({
       if (!t || stopped) return
       voiceLang ??= phraseLang(t)
       items.push({ text: t, url: null })
-      // Фраза пришла, пока звучит предыдущая, — готовим её сразу.
-      if (busy && items.length - 1 === idx + 1) load(items[idx + 1])
+      // Фраза пришла, пока звучит предыдущая, — готовим её сразу, если она в
+      // пределах LOOKAHEAD.
+      if (busy && items.length - 1 <= idx + LOOKAHEAD) load(items[items.length - 1])
       pump()
     },
     end() {

@@ -1,11 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createVoiceQueue } from './voiceQueue.js'
+import { LOOKAHEAD, createVoiceQueue, phraseLang } from './voiceQueue.js'
 
 // Даём отработать цепочкам промисов (fetch → blob → play).
-const settle = async (n = 6) => {
+const settle = async (n = 8) => {
   for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0))
 }
+const isStream = (src) => src.startsWith('/api/tts?')
+
+describe('язык фразы', () => {
+  it('казахские буквы — kk, кириллица — ru, иначе en', () => {
+    expect(phraseLang('Тәжірибе бөлімін ашыңыз.')).toBe('kk')
+    expect(phraseLang('Откройте «Практику».')).toBe('ru')
+    expect(phraseLang('Open the Practice section.')).toBe('en')
+  })
+})
 
 describe('очередь озвучки', () => {
   let played, fetchMock, play
@@ -15,21 +24,22 @@ describe('очередь озвучки', () => {
     URL.createObjectURL = vi.fn(() => `blob:${++n}`)
     URL.revokeObjectURL = vi.fn()
     fetchMock = vi.fn(async () => new Response(new Blob([new Uint8Array([1])]), { status: 200 }))
-    // «Звук»: стартует сразу, кончается по команде теста (play.finish).
-    play = vi.fn((src, { onStart, onEnd, onCancel }) => {
+    // «Звук»: стартует сразу, кончается по команде теста.
+    play = vi.fn((src, { onStart, onEnd, onCancel, onFail }) => {
       played.push(src)
       onStart?.()
       play.finish = () => onEnd('ended')
       play.interrupt = () => onEnd('stopped')
       play.cancel = onCancel
+      play.fail = onFail
       return true
     })
   })
 
-  const queue = (extra = {}) =>
-    createVoiceQueue({ token: 't', lang: 'ru', fetchImpl: fetchMock, play, stopSound: vi.fn(), ...extra })
+  const queue = (extra = {}) => createVoiceQueue({ token: 't', fetchImpl: fetchMock, play, stopSound: vi.fn(), ...extra })
+  const bodies = () => fetchMock.mock.calls.map((c) => JSON.parse(c[1].body))
 
-  it('играет фразы по порядку и готовит следующую, пока звучит текущая', async () => {
+  it('играет фразы голосом Луны по порядку', async () => {
     const onFinish = vi.fn()
     const q = queue({ onFinish })
     q.say('Первая фраза.')
@@ -37,9 +47,8 @@ describe('очередь озвучки', () => {
     q.end()
     await settle()
     expect(played).toEqual(['blob:1'])
-    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/assistant/speak')
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ text: 'Первая фраза.', lang: 'ru' })
+    expect(bodies()[0]).toEqual({ text: 'Первая фраза.', lang: 'ru' })
     expect(fetchMock.mock.calls[0][1].headers.authorization).toBe('Bearer t')
     play.finish()
     await settle()
@@ -52,72 +61,128 @@ describe('очередь озвучки', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:2')
   })
 
-  it('фраза, пришедшая во время звучания, запрашивается сразу, а не после', async () => {
+  // Синтез Gemini медленнее, чем кажется (190 символов — 8–10 с): с одной
+  // фразой вперёд длинная фраза после короткой не успевала, и ответ замолкал.
+  it(`готовит ${LOOKAHEAD} фразы вперёд, не больше`, async () => {
+    const q = queue()
+    ;['Раз.', 'Два.', 'Три.', 'Четыре.', 'Пять.'].forEach((t) => q.say(t))
+    await settle()
+    expect(fetchMock).toHaveBeenCalledTimes(1 + LOOKAHEAD)
+    play.finish()
+    await settle()
+    expect(fetchMock).toHaveBeenCalledTimes(2 + LOOKAHEAD)
+  })
+
+  it('фраза, пришедшая во время звучания, запрашивается сразу', async () => {
     const q = queue()
     q.say('Первая фраза.')
     await settle()
     expect(fetchMock).toHaveBeenCalledTimes(1)
     q.say('Вторая фраза.')
+    q.say('Третья фраза.')
     await settle()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(played).toEqual(['blob:1'])
   })
 
-  it('не забегает вперёд больше чем на одну фразу', async () => {
-    const q = queue()
-    ;['Раз.', 'Два.', 'Три.', 'Четыре.'].forEach((t) => q.say(t))
-    await settle()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('язык — по буквам ответа, а не по интерфейсу: русский ответ в казахском интерфейсе читает Луна', async () => {
+  it('язык — по буквам ответа, а не по интерфейсу', async () => {
     const q = queue({ lang: 'kk' })
     q.say('Откройте раздел «Домашняя работа».')
     await settle()
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lang).toBe('ru')
+    expect(bodies()[0].lang).toBe('ru')
   })
 
-  it('латиница без кириллицы — en', async () => {
-    const q = queue({ lang: 'ru' })
-    q.say('Open the Practice section.')
-    await settle()
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lang).toBe('en')
-  })
-
-  it('казахская первая фраза — весь ответ идёт с lang kk', async () => {
+  it('казахский ответ — сразу потоком /api/tts голосом Grace, без Gemini', async () => {
     const q = queue()
     q.say('Тәжірибе бөлімін ашыңыз.')
     q.say('Потом нажмите «Проверить».')
     await settle()
-    expect(fetchMock.mock.calls.map((c) => JSON.parse(c[1].body).lang)).toEqual(['kk', 'kk'])
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(played).toHaveLength(1)
+    const url = new URL(played[0], 'http://x')
+    expect(url.pathname).toBe('/api/tts')
+    expect(url.searchParams.get('v')).toBe('Grace')
+    expect(url.searchParams.get('l')).toBe('kk')
+    expect(url.searchParams.get('t')).toBe('Тәжірибе бөлімін ашыңыз.')
+    play.finish()
+    await settle()
+    // весь ответ — тем же голосом, хотя вторая фраза без казахских букв
+    expect(new URL(played[1], 'http://x').searchParams.get('l')).toBe('kk')
   })
 
-  it('фраза не синтезировалась — пропускается, очередь идёт дальше', async () => {
+  it('Gemini не ответил — та же фраза потоком /api/tts, а не тишина', async () => {
     fetchMock.mockResolvedValueOnce(new Response('x', { status: 502 }))
+    const onFinish = vi.fn()
+    const q = queue({ onFinish })
+    q.say('Первая фраза.')
+    q.say('Вторая фраза.')
+    q.end()
+    await settle()
+    expect(isStream(played[0])).toBe(true)
+    expect(new URL(played[0], 'http://x').searchParams.get('l')).toBe('ru')
+    play.finish()
+    await settle()
+    expect(played[1]).toBe('blob:1')
+    play.finish()
+    await settle()
+    expect(onFinish).toHaveBeenCalledWith({ played: 2, failed: 0 })
+  })
+
+  it('сеть упала — тоже запасной поток', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    const q = queue()
+    q.say('Первая фраза.')
+    await settle()
+    expect(isStream(played[0])).toBe(true)
+  })
+
+  it('не зазвучал и запасной — фраза пропущена, очередь идёт дальше', async () => {
     const onFinish = vi.fn()
     const q = queue({ onFinish })
     q.say('Первая.')
     q.say('Вторая.')
     q.end()
     await settle()
-    expect(played).toEqual(['blob:1'])
+    play.fail('error')
+    await settle()
+    expect(played).toEqual(['blob:1', 'blob:2'])
     play.finish()
     await settle()
     expect(onFinish).toHaveBeenCalledWith({ played: 1, failed: 1 })
   })
 
-  it('звук не начался (onFail) — тоже считается провалом', async () => {
-    play = vi.fn((src, { onFail }) => {
-      played.push(src)
-      onFail('blocked')
-      return true
-    })
+  it('чужой звук оборвал фразу («послушать» у слова) — очередь замолкает и чужое не трогает', async () => {
+    const stopSound = vi.fn()
     const onFinish = vi.fn()
-    const q = queue({ onFinish })
+    const q = queue({ stopSound, onFinish })
     q.say('Первая.')
+    q.say('Вторая.')
     q.end()
     await settle()
-    expect(onFinish).toHaveBeenCalledWith({ played: 0, failed: 1 })
+    play.interrupt()
+    await settle()
+    expect(played).toEqual(['blob:1'])
+    expect(onFinish).not.toHaveBeenCalled()
+    q.stop()
+    expect(stopSound).not.toHaveBeenCalled()
+  })
+
+  it('чужой звук оборвал фразу до её старта — очередь не зависает, а замолкает', async () => {
+    play = vi.fn((src, { onCancel }) => {
+      played.push(src)
+      play.cancel = onCancel
+      return true
+    })
+    const stopSound = vi.fn()
+    const q = queue({ stopSound })
+    q.say('Первая.')
+    q.say('Вторая.')
+    await settle()
+    play.cancel()
+    await settle()
+    expect(played).toEqual(['blob:1'])
+    q.stop()
+    expect(stopSound).not.toHaveBeenCalled()
   })
 
   it('stop обрывает звук и всё, что ещё не прозвучало', async () => {
@@ -140,39 +205,19 @@ describe('очередь озвучки', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('чужой звук оборвал фразу (ученик нажал «послушать») — очередь замолкает и чужое не трогает', async () => {
-    const stopSound = vi.fn()
-    const onFinish = vi.fn()
-    const q = queue({ stopSound, onFinish })
+  it('оборванный stop запрос не уходит в запасной поток', async () => {
+    let reject
+    fetchMock.mockImplementationOnce((url, init) => new Promise((_, rej) => {
+      reject = rej
+      init.signal.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')))
+    }))
+    const q = queue()
     q.say('Первая.')
-    q.say('Вторая.')
-    q.end()
     await settle()
-    play.interrupt()
-    await settle()
-    expect(played).toEqual(['blob:1'])
-    expect(stopSound).not.toHaveBeenCalled()
-    expect(onFinish).not.toHaveBeenCalled()
     q.stop()
-    expect(stopSound).not.toHaveBeenCalled()
-  })
-
-  it('чужой звук оборвал фразу до её старта — очередь не зависает, а замолкает', async () => {
-    play = vi.fn((src, { onCancel }) => {
-      played.push(src)
-      play.cancel = onCancel
-      return true
-    })
-    const stopSound = vi.fn()
-    const q = queue({ stopSound })
-    q.say('Первая.')
-    q.say('Вторая.')
     await settle()
-    play.cancel()
-    await settle()
-    expect(played).toEqual(['blob:1'])
-    q.stop()
-    expect(stopSound).not.toHaveBeenCalled()
+    expect(played).toEqual([])
+    expect(reject).toBeTypeOf('function')
   })
 
   it('stop до первой фразы чужую реплику не трогает', () => {

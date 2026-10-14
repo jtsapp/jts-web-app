@@ -248,7 +248,10 @@ async function getAccessToken(creds) {
   return tokenCache.token
 }
 
-async function geminiTts(text, voice) {
+// languageCode у тьюторов — en-us, как у агента (плагин google по умолчанию):
+// превью обязано звучать как живой звонок. Помощник по сайту говорит
+// по-русски и передаёт ru-RU — иначе «0%» Gemini читает «zero percent».
+async function geminiTts(text, voice, languageCode = 'en-us') {
   const creds = loadServiceAccount()
   if (!creds) return { status: 503 }
   const token = await getAccessToken(creds)
@@ -261,7 +264,7 @@ async function geminiTts(text, voice) {
     },
     body: JSON.stringify({
       input: { text },
-      voice: { languageCode: 'en-us', name: voice, model_name: GEMINI_MODEL },
+      voice: { languageCode, name: voice, model_name: GEMINI_MODEL },
       audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: 24000 },
     }),
   })
@@ -421,4 +424,12 @@ export function providerStatus() {
     fish: Boolean(process.env.FISH_AUDIO_API_KEY),
     openai: Boolean(OPENAI_KEY()),
   }
+}
+
+/**
+ * Голос Gemini напрямую, с языком фразы — для помощника по сайту (Луна,
+ * «Aoede»). Без ключа Google — { status: 503 }, сбой провайдера — исключение.
+ */
+export function synthGemini(text, { voice = GEMINI_VOICE.luna, languageCode = 'en-us' } = {}) {
+  return geminiTts(text, voice, languageCode)
 }
