@@ -9,10 +9,14 @@ import { reportView } from '../../placement/reportModel.js'
  * Причины и пояснения пишет сам тест на языке прохождения — показываем их как есть.
  *
  * version — счётчик сохранённых итогов из App: тест сохранил новый итог — отчёт перечитывается.
+ * showMissing — теста ещё нет, а сверху на него никто не зовёт (ученик учился до теста v16, его блок цели на месте):
+ * тогда вместо отчёта — отметка «Тест уровня · Не пройден» с кнопкой (решение владельца 14.10: не заставлять, но на
+ * «Главной» тест должен числиться непройденным).
  */
-export default function PlacementReport({ token, version = 0, onNav, onRetake }) {
+export default function PlacementReport({ token, version = 0, onNav, onRetake, showMissing = false }) {
   const { t, lang } = useI18n()
-  const [env, setEnv] = useState(null)
+  // undefined — запрос ещё в пути: отметку «не пройден» до ответа не рисуем, иначе она мигала бы у прошедших тест.
+  const [env, setEnv] = useState(undefined)
 
   useEffect(() => {
     if (!token) return undefined
@@ -26,7 +30,26 @@ export default function PlacementReport({ token, version = 0, onNav, onRetake })
   }, [token, version])
 
   const view = useMemo(() => reportView(env, lang), [env, lang])
-  if (!view || !view.overall) return null
+  if (env === undefined) return null
+  if (!view || !view.overall) {
+    if (!showMissing) return null
+    return (
+      <section className="hm-card pl-report pl-report--missing" aria-labelledby="pl-missing-title">
+        <div className="pl-report__head">
+          <h2 id="pl-missing-title" className="hm-card__title">
+            {t('placement.report.missingTitle')}
+          </h2>
+          <span className="pl-report__tag">{t('placement.report.missingStatus')}</span>
+        </div>
+        <p className="pl-report__muted">{t('placement.report.missingSub')}</p>
+        {onRetake && (
+          <button type="button" className="hm-placement__cta pl-report__missingCta" onClick={onRetake}>
+            {t('placement.report.missingCta')}
+          </button>
+        )}
+      </section>
+    )
+  }
 
   const date = view.completedAt ? new Date(view.completedAt) : null
   const when = date && !Number.isNaN(date.getTime())

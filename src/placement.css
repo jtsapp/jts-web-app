@@ -463,3 +463,16 @@
     padding: 22px 18px;
   }
 }
+
+/* отметка «Тест уровня · Не пройден» у учившихся до теста v16 (решение владельца 14.10) */
+.pl-report--missing {
+  gap: 12px;
+}
+.pl-report--missing .pl-report__muted {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pl-report__missingCta {
+  align-self: flex-start;
+}

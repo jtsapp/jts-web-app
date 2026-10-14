@@ -2116,21 +2116,23 @@ export async function getIsDemoAccount(token) {
 const _demoAccess = new Map()
 
 export async function getDemoAccess(token) {
-  if (!token) return { isDemo: false, expiresAt: null }
+  if (!token) return { isDemo: false, expiresAt: null, createdAt: null }
   if (_demoAccess.has(token)) return _demoAccess.get(token)
   const p = authGet('/user/me', token)
     .then((data) => {
       const isDemo = !!data?.isDemoAccount
       const expiresAt = data?.demoExpiresAt || null
       rememberDemoDeadline(isDemo ? expiresAt : null)
-      return { isDemo, expiresAt }
+      // Дата создания аккаунта — тем же ответом: по ней «Главная» отличает учившихся до теста v16 от новых
+      // (src/placement/existingStudent.js).
+      return { isDemo, expiresAt, createdAt: typeof data?.createdAt === 'string' ? data.createdAt : null }
     })
     .catch(() => {
       // Сетевая осечка не должна залипать в памяти: следующий экран спросит
       // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —
       // это безопаснее, чем показать её платящему).
       _demoAccess.delete(token)
-      return { isDemo: false, expiresAt: null }
+      return { isDemo: false, expiresAt: null, createdAt: null }
     })
   _demoAccess.set(token, p)
   return p

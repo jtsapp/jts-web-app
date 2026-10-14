@@ -129,6 +129,7 @@ import { levelFromEnvelope } from './placement/envelope.js'
 import { geProfileBody } from './placement/geMapping.js'
 import { navForActivity, navForSection } from './placement/activityRoutes.js'
 import { saveAttempt } from './placement/api.js'
+import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
@@ -443,6 +444,7 @@ export default function App() {
         if (cancelled) return
         setIsDemoAccount(demo.isDemo)
         setDemoExpiresAt(demo.expiresAt)
+        setAccountCreatedAt(demo.createdAt ?? null)
         if (session && trackDemoState(demo.isDemo)) setCelebrate(true)
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
         // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
@@ -601,6 +603,8 @@ export default function App() {
   // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
   // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
   const [demoExpiresAt, setDemoExpiresAt] = useState(null)
+  // Когда заведён аккаунт (/user/me): учившимся до теста v16 он не навязывается (src/placement/existingStudent.js).
+  const [accountCreatedAt, setAccountCreatedAt] = useState(null)
   // «Поздравляем с покупкой!»: окно показывается один раз, когда аккаунт
   // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
   // приложении нет, см. lib/purchaseCelebration.js.
@@ -1413,6 +1417,7 @@ export default function App() {
     setProfession('')
     setNeedsLevelTest(false)
     setTestReturn(null)
+    setAccountCreatedAt(null)
     setScreen('welcome')
   }
 
@@ -1546,6 +1551,7 @@ export default function App() {
     getDemoAccess(tok).then((d) => {
       setIsDemoAccount(d.isDemo)
       setDemoExpiresAt(d.expiresAt)
+      setAccountCreatedAt(d.createdAt ?? null)
       if (trackDemoState(d.isDemo)) setCelebrate(true)
     })
   }
@@ -1992,6 +1998,7 @@ export default function App() {
           onGeRoute={() => setScreen('ge-route')}
           onGeTest={() => openPlacement('home')}
           placementVersion={placementVersion}
+          existingStudent={isExistingStudent(accountCreatedAt)}
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}

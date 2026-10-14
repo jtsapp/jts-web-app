@@ -11,6 +11,13 @@ describe('homeTopState', () => {
     expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2' })).toBe('locked')
     expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1' })).toBe('legacy')
   })
+  it('учившийся до теста v16: без блюра — карточка «тест не пройден»', () => {
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2', existing: true })).toBe('notTested')
+    expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1', existing: true })).toBe('notTested')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1', existing: true })).toBe('legacy')
+    // анкета заполнена — его блок цели не трогаем
+    expect(homeTopState({ geProfile: p({ onboarded: true, route: 'group' }), levelUnknown: false, level: 'A2', existing: true })).toBe('goal')
+  })
   it('после анкеты: тест, формат, блок цели', () => {
     expect(homeTopState({ geProfile: p({ onboarded: true }), levelUnknown: true, level: 'A1' })).toBe('needTest')
     expect(homeTopState({ geProfile: p({ onboarded: true }), levelUnknown: false, level: 'A2' })).toBe('needRoute')
