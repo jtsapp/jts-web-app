@@ -171,6 +171,48 @@ describe('голос в помощнике', () => {
     expect(screen.getByRole('button', { name: 'Закончить вопрос' })).toBeTruthy()
   })
 
+  it('«Повторить» после сбоя голосового вопроса — снова голосом', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('x', { status: 502 }))
+    renderWidget()
+    openPanel()
+    await askByVoice()
+    const retry = await screen.findByRole('button', { name: 'Повторить' }, WAIT)
+    expect(queue.stopped).toBe(1)
+    queue.opts = null
+    fireEvent.click(retry)
+    await screen.findByText(/Откройте её в меню слева/, {}, WAIT)
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).voice).toBe(true)
+    expect(queue.opts).not.toBeNull()
+    expect(speech.unlockSpeech).toHaveBeenCalled()
+  })
+
+  it('пока идёт запись, подсказки неактивны — голосовой вопрос не потеряется', () => {
+    voice.state = 'starting'
+    renderWidget()
+    openPanel()
+    expect(screen.getByRole('button', { name: 'Дай план на неделю' }).disabled).toBe(true)
+    expect(screen.getByRole('button', { name: 'Спросить голосом' }).disabled).toBe(true)
+  })
+
+  it('«Спросить помощника» из урока отменяет недоговорённую запись', async () => {
+    voice.state = 'recording'
+    renderWidget()
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('jts:assistant-open', { detail: { prompt: 'Почему неверно?' } }))
+    })
+    expect(voice.cancel).toHaveBeenCalled()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), WAIT)
+  })
+
+  it('виджет снят (выход из аккаунта) — поздний распознанный вопрос не уходит', async () => {
+    const view = renderWidget()
+    openPanel()
+    const onText = voice.props.onText
+    view.unmount()
+    await act(async () => onText('где домашка'))
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('ошибка микрофона показывается текстом', () => {
     voice.error = 'not_heard'
     renderWidget()

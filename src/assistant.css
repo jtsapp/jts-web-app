@@ -128,6 +128,8 @@
 .asst__chip:hover { border-color: var(--asst-accent); color: var(--asst-accent); }
 .asst__chip--bug { border-color: #e8c9a8; background: #fff8f0; }
 .asst__chip--bug:hover { border-color: #c47a3a; color: #9a4f12; }
+/* Пока задаётся голосовой вопрос, другие не отправить. */
+.asst__chip:disabled, .asst__ghost:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 
 .asst__reported {
   margin-top: 8px !important;

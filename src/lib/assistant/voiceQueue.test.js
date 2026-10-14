@@ -16,10 +16,12 @@ describe('очередь озвучки', () => {
     URL.revokeObjectURL = vi.fn()
     fetchMock = vi.fn(async () => new Response(new Blob([new Uint8Array([1])]), { status: 200 }))
     // «Звук»: стартует сразу, кончается по команде теста (play.finish).
-    play = vi.fn((src, { onStart, onEnd }) => {
+    play = vi.fn((src, { onStart, onEnd, onCancel }) => {
       played.push(src)
       onStart?.()
-      play.finish = onEnd
+      play.finish = () => onEnd('ended')
+      play.interrupt = () => onEnd('stopped')
+      play.cancel = onCancel
       return true
     })
   })
@@ -66,6 +68,20 @@ describe('очередь озвучки', () => {
     ;['Раз.', 'Два.', 'Три.', 'Четыре.'].forEach((t) => q.say(t))
     await settle()
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('язык — по буквам ответа, а не по интерфейсу: русский ответ в казахском интерфейсе читает Луна', async () => {
+    const q = queue({ lang: 'kk' })
+    q.say('Откройте раздел «Домашняя работа».')
+    await settle()
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lang).toBe('ru')
+  })
+
+  it('латиница без кириллицы — en', async () => {
+    const q = queue({ lang: 'ru' })
+    q.say('Open the Practice section.')
+    await settle()
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lang).toBe('en')
   })
 
   it('казахская первая фраза — весь ответ идёт с lang kk', async () => {
@@ -122,6 +138,41 @@ describe('очередь озвучки', () => {
     q.say('Третья.')
     await settle()
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('чужой звук оборвал фразу (ученик нажал «послушать») — очередь замолкает и чужое не трогает', async () => {
+    const stopSound = vi.fn()
+    const onFinish = vi.fn()
+    const q = queue({ stopSound, onFinish })
+    q.say('Первая.')
+    q.say('Вторая.')
+    q.end()
+    await settle()
+    play.interrupt()
+    await settle()
+    expect(played).toEqual(['blob:1'])
+    expect(stopSound).not.toHaveBeenCalled()
+    expect(onFinish).not.toHaveBeenCalled()
+    q.stop()
+    expect(stopSound).not.toHaveBeenCalled()
+  })
+
+  it('чужой звук оборвал фразу до её старта — очередь не зависает, а замолкает', async () => {
+    play = vi.fn((src, { onCancel }) => {
+      played.push(src)
+      play.cancel = onCancel
+      return true
+    })
+    const stopSound = vi.fn()
+    const q = queue({ stopSound })
+    q.say('Первая.')
+    q.say('Вторая.')
+    await settle()
+    play.cancel()
+    await settle()
+    expect(played).toEqual(['blob:1'])
+    q.stop()
+    expect(stopSound).not.toHaveBeenCalled()
   })
 
   it('stop до первой фразы чужую реплику не трогает', () => {

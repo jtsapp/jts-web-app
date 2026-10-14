@@ -124,7 +124,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   const [messages, setMessages] = useState([]) // {role, content, voice?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(null) // {text, retry: string|null}
+  const [error, setError] = useState(null) // {text, retry: {text, voice}|null}
   // Выбор «без озвучки» запоминается на устройстве. Читаем сразу: на сервере
   // выйдет false, но расхождения при гидратации нет — кнопка звука рисуется
   // только после голосового вопроса, а в первой разметке окно закрыто.
@@ -134,6 +134,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   const inputRef = useRef(null)
   // Озвучка текущего ответа: её обрывают печать, новый вопрос, закрытие окна.
   const voiceRef = useRef(null)
+  // Виджет снят (выход из аккаунта): распознавание, вернувшееся позже, не
+  // должно задать вопрос от имени вышедшего ученика и заговорить на экране входа.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
   // Вопрос в пути. Отдельно от busy: два клика подряд успевают до перерисовки,
   // и по одному busy ушли бы два одинаковых вопроса.
   const inFlightRef = useRef(false)
@@ -196,7 +205,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   const send = useCallback(async (raw, { voice = false } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
-    if (!text || !cur?.token || inFlightRef.current) return
+    if (!text || !cur?.token || inFlightRef.current || !mountedRef.current) return
     inFlightRef.current = true
     stopVoice()
 
@@ -293,7 +302,9 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
               ? t('assistant.err.auth')
               : t('assistant.err.generic'),
         // Повтор сразу после паузы или лимита снова упрётся в них — кнопки нет.
-        retry: kind === 'auth' || kind === 'cooldown' ? null : text,
+        // Голосовой вопрос и повторяется голосовым: ответ снова прозвучит
+        // (нажатие «Повторить» — тоже жест, iPhone звук разрешит).
+        retry: kind === 'auth' || kind === 'cooldown' ? null : { text, voice },
       })
     } finally {
       if (abortRef.current === controller) {
@@ -311,6 +322,11 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     onText: (text) => send(text, { voice: true }),
   })
   const { cancel: cancelRecording } = voiceQ
+  // Для обработчика события открытия: он подписан один раз на send.
+  const cancelRecordingRef = useRef(cancelRecording)
+  useLayoutEffect(() => {
+    cancelRecordingRef.current = cancelRecording
+  })
 
   // Закрыть окно — замолчать и бросить недоговорённую запись.
   const close = useCallback(() => {
@@ -333,7 +349,11 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
       if (!stateRef.current?.enabled) return
       setOpen(true)
       const prompt = e.detail?.prompt
-      if (prompt) send(prompt)
+      if (!prompt) return
+      // Готовый вопрос из урока важнее недоговорённого голосового: иначе тот,
+      // вернувшись из распознавания, молча потерялся бы за занятым чатом.
+      cancelRecordingRef.current?.()
+      send(prompt)
     }
     window.addEventListener(OPEN_EVENT, onOpen)
     return () => window.removeEventListener(OPEN_EVENT, onOpen)
@@ -369,7 +389,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
-      send(input)
+      if (voiceQ.state === 'idle') send(input)
     }
   }
 
@@ -384,6 +404,9 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   const waitingFirstChunk = busy && last?.role === 'assistant' && !last.content
   const recording = voiceQ.state === 'recording'
   const transcribing = voiceQ.state === 'transcribing'
+  // Пока вопрос голосом не задан до конца, другой вопрос не отправляем: чат
+  // занят одним вопросом, и голосовой потерялся бы молча.
+  const voiceBusy = voiceQ.state !== 'idle'
   const voiceError = voiceQ.error === 'rate'
     ? t('assistant.err.rate', { min: Math.max(1, Math.ceil((voiceQ.retryAfterSec || 60) / 60)) })
     : voiceQ.error
@@ -442,6 +465,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                       key={s.text}
                       type="button"
                       className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
+                      disabled={voiceBusy}
                       onClick={() => send(s.text)}
                     >
                       {s.text}
@@ -477,7 +501,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
               <div className="asst__err" role="alert">
                 <span>{error.text}</span>
                 {error.retry && (
-                  <button type="button" className="asst__ghost" onClick={() => send(error.retry)}>
+                  <button
+                    type="button"
+                    className="asst__ghost"
+                    disabled={voiceBusy}
+                    onClick={() => {
+                      if (error.retry.voice) unlockSpeech()
+                      send(error.retry.text, { voice: error.retry.voice })
+                    }}
+                  >
                     {t('assistant.retry')}
                   </button>
                 )}
@@ -493,7 +525,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
             className="asst__form"
             onSubmit={(e) => {
               e.preventDefault()
-              send(input)
+              if (!voiceBusy) send(input)
             }}
           >
             {recording || transcribing ? (
@@ -523,14 +555,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                 className={`asst__mic${recording ? ' is-rec' : ''}`}
                 aria-label={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
                 title={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
-                disabled={busy || transcribing}
+                disabled={busy || transcribing || voiceQ.state === 'starting'}
                 onClick={onMic}
               >
                 <MicIcon />
               </button>
             )}
             {!recording && !transcribing && (
-              <button type="submit" className="asst__send" disabled={busy || !input.trim()} aria-label={t('assistant.send')}>
+              <button type="submit" className="asst__send" disabled={busy || voiceBusy || !input.trim()} aria-label={t('assistant.send')}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
                 </svg>

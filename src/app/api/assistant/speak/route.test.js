@@ -12,7 +12,7 @@ vi.mock('@/lib/tutorVoice.js', () => ({
   synth: vi.fn(async (provider) => impl[provider]()),
 }))
 const { synth } = await import('@/lib/tutorVoice.js')
-const { POST, voiceLang } = await import('./route.js')
+const { POST, SYNTH_TIMEOUT_MS, voiceLang } = await import('./route.js')
 
 const audio = (type) => async () => ({ audio: Buffer.from([1, 2]), contentType: type })
 const post = (body, token = 'tok') =>
@@ -72,6 +72,18 @@ describe('POST /api/assistant/speak', () => {
     expect((await post({ text: 'Привет', lang: 'ru' })).headers.get('x-assistant-voice')).toBe('soniox')
     impl.gemini = async () => ({ status: 503 })
     expect((await post({ text: 'Привет', lang: 'ru' })).headers.get('x-assistant-voice')).toBe('soniox')
+  })
+
+  it('Gemini завис — после срока звучит Soniox', async () => {
+    vi.useFakeTimers()
+    try {
+      impl.gemini = () => new Promise(() => {})
+      const pending = post({ text: 'Привет', lang: 'ru' })
+      await vi.advanceTimersByTimeAsync(SYNTH_TIMEOUT_MS + 10)
+      expect((await pending).headers.get('x-assistant-voice')).toBe('soniox')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('оба упали — 502', async () => {

@@ -16,24 +16,36 @@ import { createRateLimiter } from '@/lib/assistant/rateLimit.js'
 
 export const runtime = 'nodejs'
 export const MAX_TEXT = 600
+// Зависший синтез — тоже сбой: фраза Gemini приходит за 1–2 с, и ждать дольше
+// значит держать паузу посреди ответа. После срока — запасной голос.
+export const SYNTH_TIMEOUT_MS = 8000
 
 const takeQuota = createRateLimiter({ windowLimit: 100, dayLimit: 800 })
 const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
 const json = (status, body, headers = {}) => Response.json(body, { status, headers })
 
-/** Язык фразы для голоса: казахские буквы или казахский интерфейс — kk. */
+/**
+ * Язык фразы для голоса: казахские буквы — kk; lang 'kk' — клиент закрепил
+ * казахский за всем ответом (его первая фраза была казахской, voiceQueue.js).
+ */
 export function voiceLang(text, lang) {
   if (lang === 'kk' || KK_LETTERS.test(String(text || ''))) return 'kk'
   return lang === 'en' ? 'en' : 'ru'
 }
 
 async function trySynth(provider, text, lang) {
+  let timer
   try {
-    const r = await synth(provider, text, 'luna', lang)
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`timeout ${SYNTH_TIMEOUT_MS} ms`)), SYNTH_TIMEOUT_MS)
+    })
+    const r = await Promise.race([synth(provider, text, 'luna', lang), timeout])
     return r?.audio ? r : null
   } catch (e) {
     console.warn(`[assistant-speak] ${provider} failed:`, e?.message || e)
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
