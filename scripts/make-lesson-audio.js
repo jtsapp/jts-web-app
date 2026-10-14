@@ -86,7 +86,7 @@ const SONIOX_SPEED = 0.85
 // Голоса чередуются по той же причине, что и у Gemini: в L01-7 о себе
 // рассказывают три РАЗНЫХ человека, и одним голосом задание «кто из них
 // работал в кафе» не решается. Три английских голоса — те же, что у тьютора
-// (src/app/api/tutor-tts/route.js).
+// (src/lib/tutorVoice.js).
 const SONIOX_NARRATION_VOICES = ['Grace', 'Noah', 'Owen']
 // Связный кусок — не карточка словаря: его слушают целиком, и словарные 0.85
 // растягивают полминуты текста до неприятного. Берём чуть медленнее обычной
@@ -116,7 +116,7 @@ async function synthesizeSoniox(text, { voice = SONIOX_VOICE, speed = SONIOX_SPE
 
   let res
   try {
-    // Хост именно tts-rt (realtime), как в app/api/tutor-tts/route.js —
+    // Хост именно tts-rt (realtime), как в lib/tutorVoice.js —
     // api.soniox.com отдаёт на этот путь 404.
     res = await fetch('https://tts-rt.soniox.com/tts', {
       method: 'POST',

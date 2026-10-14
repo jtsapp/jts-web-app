@@ -219,6 +219,30 @@ describe('stopTts / пауза', () => {
     expect(onFail).not.toHaveBeenCalled()
   })
 
+  it('onEnd говорит, дозвучала реплика или её оборвали', () => {
+    const onEnd = vi.fn()
+    speech.playTts('Hi', { onEnd })
+    elements[0].onplaying()
+    elements[0].onended()
+    expect(onEnd).toHaveBeenCalledWith('ended')
+    const onEnd2 = vi.fn()
+    speech.playTts('Hi again', { onEnd: onEnd2 })
+    elements[0].onplaying()
+    speech.stopTts()
+    expect(onEnd2).toHaveBeenCalledWith('stopped')
+  })
+
+  it('стоп до старта — onCancel тем, кто его ждёт (очередь помощника не зависает)', async () => {
+    playImpl = () => new Promise(() => {})
+    const onCancel = vi.fn()
+    const onFail = vi.fn()
+    speech.playUrl('blob:1', { onCancel, onFail })
+    speech.playTts('слово', {})
+    expect(onCancel).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(speech.START_TIMEOUT_MS + 10)
+    expect(onFail).not.toHaveBeenCalled()
+  })
+
   it('стоп без реплики не обрывает тишину разблокировки', () => {
     speech.unlockSpeech()
     const a = elements[0]

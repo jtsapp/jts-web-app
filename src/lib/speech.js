@@ -32,7 +32,7 @@ export const START_TIMEOUT_MS = 8000
 
 let el = null
 let seq = 0
-let current = null // { my, onEnd, started, settled, fail }
+let current = null // { my, onEnd, onCancel, started, settled, fail }
 let watchdog = null
 const prefetched = new Set()
 
@@ -89,9 +89,10 @@ export function unlockSpeech() {
 }
 
 /**
- * Остановить текущую реплику. Если она уже звучала — её onEnd вызывается, как
- * это делал speechSynthesis.cancel(): индикатор «играет» на кнопке должен
- * погаснуть.
+ * Остановить текущую реплику. Если она уже звучала — её onEnd('stopped')
+ * вызывается, как это делал speechSynthesis.cancel(): индикатор «играет» на
+ * кнопке должен погаснуть. Если ещё не зазвучала — onCancel (кто его просил):
+ * очередь фраз помощника иначе ждала бы старта, которого уже не будет.
  */
 export function stopTts() {
   clearWatchdog()
@@ -103,10 +104,10 @@ export function stopTts() {
   // тап только что выдал.
   if (!cur) return
   if (el) detach(el)
-  if (cur.started && !cur.settled) {
-    cur.settled = true
-    cur.onEnd?.()
-  }
+  if (cur.settled) return
+  cur.settled = true
+  if (cur.started) cur.onEnd?.('stopped')
+  else cur.onCancel?.()
 }
 
 /**
@@ -114,11 +115,12 @@ export function stopTts() {
  *
  * @param {string} text
  * @param {{ voice?: string, lang?: string, speed?: number, rate?: number, volume?: number,
- *   onStart?: () => void, onEnd?: () => void,
+ *   onStart?: () => void, onEnd?: (reason: 'ended'|'stopped') => void, onCancel?: () => void,
  *   onFail?: (reason: 'empty'|'error'|'timeout'|'blocked') => void }} [opts]
  *   onFail приходит, только если звук так и не начался: сеть, 429/503 от
  *   сервера, отказ браузера без жеста. После onStart провала уже не бывает —
- *   обрыв посреди реплики считается её концом (onEnd).
+ *   обрыв посреди реплики считается её концом (onEnd('stopped')), обрыв до
+ *   старта — onCancel.
  * @returns {boolean} false — озвучивать нечего (onFail('empty') уже вызван)
  */
 export function playTts(text, opts = {}) {
@@ -137,7 +139,7 @@ export function playUrl(src, opts = {}) {
 }
 
 function playSrc(url, opts) {
-  const { rate, volume, onStart, onEnd, onFail } = opts
+  const { rate, volume, onStart, onEnd, onCancel, onFail } = opts
   if (!url) {
     onFail?.('empty')
     return false
@@ -145,7 +147,7 @@ function playSrc(url, opts) {
   stopTts()
   const my = ++seq
   const a = element()
-  const cur = { my, onEnd, started: false, settled: false }
+  const cur = { my, onEnd, onCancel, started: false, settled: false }
   current = cur
   const live = () => my === seq && current === cur
 
@@ -163,7 +165,7 @@ function playSrc(url, opts) {
     cur.settled = true
     clearWatchdog()
     current = null
-    onEnd?.()
+    onEnd?.('ended')
   }
 
   a.onplaying = () => {
@@ -203,8 +205,8 @@ export function speakTts(text, opts = {}) {
   return new Promise((resolve) => {
     playTts(text, {
       ...opts,
-      onEnd: () => {
-        opts.onEnd?.()
+      onEnd: (reason) => {
+        opts.onEnd?.(reason)
         resolve('played')
       },
       onFail: (reason) => {
