@@ -45,13 +45,15 @@ function selfStudyUrl(fileUrl) {
  * негде прочитать: у материала оно внутри iframe, а у документа — только во
  * вкладках шагов.
  */
-function DocBar({ title, onExit, stepNo, stepTotal }) {
+// backLabel — куда ведёт выход (домашка, каталог, уроки; App, lib/navStack.js):
+// прежнее «К урокам» стояло и тогда, когда урок открыли из домашней работы.
+function DocBar({ title, onExit, stepNo, stepTotal, backLabel }) {
   const { t } = useI18n()
   return (
     <div className="lw-doc__bar">
       <button type="button" className="lw-doc__back" onClick={onExit}>
         <ChevronLeftIcon size={18} />
-        <span>{t('lesson.ws.back')}</span>
+        <span>{backLabel || t('lesson.ws.back')}</span>
       </button>
       {title && <h1 className="lw-doc__title">{title}</h1>}
       {/* «Шаг 2 из 7» — единственное на экране, что отвечает «сколько ещё».
@@ -129,6 +131,7 @@ export default function LessonWorkspacePage({
   onNav,
   onProfile,
   onVocab,
+  backLabel,
 }) {
   const { t } = useI18n()
   const [lesson, setLesson] = useState(() => (lessonId ? null : SAMPLE_LESSON))
@@ -385,7 +388,7 @@ export default function LessonWorkspacePage({
             // `.lw-doc` снаружи не для вида: на нём объявлены токены `--lw-*`,
             // и без него рамка материала осталась бы без фона и скруглений.
             <div className="lw-doc">
-              <DocBar title={lesson.title} onExit={exitLesson} />
+              <DocBar title={lesson.title} onExit={exitLesson} backLabel={backLabel} />
               {cardGone && <SystemBanner icon="!" tone="attention" text={t('lesson.ws.cardGone')} />}
               <div className="lw-material-frame">
                 <iframe
@@ -403,6 +406,7 @@ export default function LessonWorkspacePage({
             // вместо очереди экранов.
             <div className="lw-doc">
               <DocBar
+                backLabel={backLabel}
                 title={lesson.title}
                 onExit={exitLesson}
                 stepNo={Math.max(1, lesson.steps.findIndex((s) => s.id === docStep?.id) + 1)}

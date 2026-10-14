@@ -128,6 +128,8 @@
 .asst__chip:hover { border-color: var(--asst-accent); color: var(--asst-accent); }
 .asst__chip--bug { border-color: #e8c9a8; background: #fff8f0; }
 .asst__chip--bug:hover { border-color: #c47a3a; color: #9a4f12; }
+/* Пока задаётся голосовой вопрос, другие не отправить. */
+.asst__chip:disabled, .asst__ghost:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 
 .asst__reported {
   margin-top: 8px !important;
@@ -168,6 +170,41 @@
   background: var(--asst-accent); color: #fff; display: grid; place-items: center; cursor: pointer;
 }
 .asst__send:disabled { opacity: 0.4; cursor: default; }
+
+/* Голос (14.10.2026): микрофон рядом с «Отправить». Во время записи и
+   распознавания строка заменяет поле ввода — печатать в этот момент некуда. */
+.asst__mic {
+  width: 42px; height: 42px; flex: none; border-radius: 50%;
+  border: 1.5px solid var(--asst-accent); background: var(--asst-bg); color: var(--asst-accent);
+  display: grid; place-items: center; cursor: pointer; padding: 0;
+}
+.asst__mic:hover:not(:disabled) { background: var(--asst-bubble); }
+.asst__mic:disabled { opacity: 0.4; cursor: default; }
+.asst__mic.is-rec {
+  border-color: var(--asst-err); background: var(--asst-err); color: #fff;
+  animation: asst-pulse 1.2s ease-in-out infinite;
+}
+@keyframes asst-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 58, 74, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(217, 58, 74, 0); }
+}
+.asst__listening {
+  flex: 1; min-height: 42px; display: flex; align-items: center; gap: 8px;
+  padding: 0 12px; border: 1px solid var(--asst-line); border-radius: 14px;
+  font-size: 14px; color: var(--asst-muted); font-variant-numeric: tabular-nums;
+}
+.asst__rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--asst-err); flex: none; }
+.asst__sound {
+  width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; padding: 0;
+  background: transparent; color: var(--asst-accent); display: grid; place-items: center; cursor: pointer;
+}
+.asst__sound:hover { background: var(--asst-bubble); }
+.asst__sound.is-muted { color: var(--asst-muted); }
+.asst__voice-tag { display: inline-flex; vertical-align: -2px; margin-right: 5px; opacity: 0.85; }
+.asst__voice-failed { margin-top: 6px !important; font-size: 12px; color: var(--asst-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .asst__mic.is-rec { animation: none; }
+}
 .asst__privacy { margin: 0; padding: 0 14px 10px; font-size: 11px; line-height: 1.35; color: var(--asst-muted); }
 
 /* Телефон: окно на всю ширину снизу, кнопка выше — над кнопкой шага урока

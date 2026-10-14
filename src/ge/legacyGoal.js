@@ -1,22 +1,16 @@
 // Цель уровня до 12.10.2026 жила в базе веба (level_goal). Теперь источник — профиль бэкенда (/mobile/ge), и здесь
-// две вещи: разовый перенос старой цели в профиль и зеркало цели профиля обратно в level_goal — карточка ученика у
-// преподавателя в web-admin до части 3 читает цель оттуда (/api/admin/student-activity) и держит копию levelTrack.
+// только разовый перенос старой цели в профиль. Зеркало цели обратно в level_goal снято в части 3 (13.10.2026):
+// карточка преподавателя в web-admin читает цель из профиля бэкенда (/admin/teacher-ge/students/{id}/profile), а
+// level_goal остаётся ей запасным источником — для тех, кто анкету не проходил.
 
-import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
-import { sanitizeGoal } from '../lib/levelProgress.js'
+import { loadLevelGoal, readCachedGoal } from '../lib/levelGoal.js'
 import { importLegacyGoal } from '../api.js'
 
-const DEPS = { loadLevelGoal, readCachedGoal, saveLevelGoal, importLegacyGoal }
+const DEPS = { loadLevelGoal, readCachedGoal, importLegacyGoal }
 
 /** Возвращает профиль — тот же или с перенесённой целью. Ошибки сети глотает: это не повод ронять «Главную». */
 export async function syncLegacyGoal(token, profile, deps = DEPS) {
-  if (!token || !profile) return profile
-  if (profile.targetLevel) {
-    const goal = sanitizeGoal({ target: profile.targetLevel, from: profile.fromLevel })
-    const cached = deps.readCachedGoal(token)
-    if (goal && (cached?.target !== goal.target || cached?.from !== goal.from)) await deps.saveLevelGoal(token, goal)
-    return profile
-  }
+  if (!token || !profile || profile.targetLevel) return profile
   const legacy = (await deps.loadLevelGoal(token)) ?? deps.readCachedGoal(token)
   if (!legacy) return profile
   const target = legacy.target === 'C2' ? 'C1' : legacy.target

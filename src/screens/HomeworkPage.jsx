@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
@@ -16,6 +16,8 @@ import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import { ChevronLeftIcon } from '../components/icons.jsx'
+import { rememberPlace, resumeOf } from '../lib/navStack.js'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -30,13 +32,17 @@ import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
  * Третий источник — домашние задания IELTS: преподаватель задаёт их в web-admin, и живут они строками плана IELTS
  * (/mobile/ielts/plan, ieltsHomework.js). Ученику IELTS «Домашняя работа» одна, поэтому они в том же списке.
  */
-export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile, tourKey }) {
+export default function HomeworkPage({ userLevel = 'A1', userName, token, initialId = null, onNav, onProfile, tourKey }) {
   const { t } = useI18n()
+  // Вернулись «назад» из урока или раздела, открытого из работы, — та же работа
+  // и тот же вид (на телефоне — задание или список). Раньше экран монтировался
+  // заново и выбирал первую по порядку: ученик оказывался в чужой работе.
+  const resumed = resumeOf('homework')
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
   const [ielts, setIelts] = useState([])
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error' (гость — см. view ниже)
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState(() => resumed?.selectedId ?? initialId)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   // Сообщение уровня экрана, а не карточки: работа, которую отменили, из списка
@@ -70,7 +76,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         setMaterials(cards)
         setIelts(ieltsCards)
         const first = [...rows, ...cards, ...ieltsCards].sort((a, b) => studentOrder(a) - studentOrder(b))[0]
-        setSelectedId((id) => id ?? first?.id ?? null)
+        // Запрошенная работа (возврат, карточка «Главной») могла уйти из списка — тогда первая.
+        const all = [...rows, ...cards, ...ieltsCards]
+        setSelectedId((id) => (id != null && all.some((hw) => String(hw.id) === String(id)) ? all.find((hw) => String(hw.id) === String(id)).id : first?.id ?? null))
         setState('ready')
       })
       .catch(() => { if (!cancelled) setState('error') })
@@ -141,6 +149,32 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
 
   const selected = combined.find((hw) => hw.id === selectedId) || null
 
+  // Телефон и узкий планшет (≤900px, где колонки складываются в одну): список
+  // и задание — два экрана, а не простыня «весь список, под ним задание». В
+  // столбик ученик листал всю историю работ, чтобы дойти до задания, а рамка с
+  // уроком оказывалась где-то внизу страницы. Сразу открыто задание — то же, что
+  // выбрано на десктопе (сверху — ждущее ученика), к списку ведёт «Все задания».
+  // На широком экране флаг ни на что не влияет: колонки видны обе (стили).
+  // Без выбранной работы (список пуст, работу отменили) показываем список.
+  const [paneOpen, setPaneOpen] = useState(() => resumed?.paneOpen ?? true)
+  useEffect(() => {
+    rememberPlace('homework', { selectedId, paneOpen })
+  }, [selectedId, paneOpen])
+  const showPane = paneOpen && selected != null
+  const rootRef = useRef(null)
+  // Смена экрана на телефоне — к началу: иначе новый экран открывался бы на
+  // прокрутке прежнего, посреди длинного списка или урока.
+  const toTop = () => rootRef.current?.scrollIntoView?.({ block: 'start' })
+  const pick = (id) => {
+    setSelectedId(id)
+    setPaneOpen(true)
+    toTop()
+  }
+  const backToList = () => {
+    setPaneOpen(false)
+    toTop()
+  }
+
   // Карточка урока (её задают одну, без остального материала) открывается сам
   // урок в кабинете, а не файл в новой вкладке — общий переход что у
   // непривязанной выдачи (MaterialAssignmentDetail), что у части-материала
@@ -155,6 +189,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   // файла, ни кнопки отправки нет — тур такие шаги пропускает сам.
   const tourSteps = [
     { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text') },
+    // На телефоне список спрятан за кнопкой — показываем её; на десктопе кнопки
+    // нет (display: none), и тур шаг пропускает.
+    { selector: '.hw__back', title: t('tour.hw.back.title'), text: t('tour.hw.back.text') },
     { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text') },
     { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text') },
   ]
@@ -274,7 +311,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
       onProfile={onProfile}
       onHelp={view === 'ready' ? tour.start : undefined}
     >
-      <div className="hw">
+      <div className="hw" ref={rootRef}>
         <header className="hw__head">
           <h1 className="hw__title">{t('nav.homework')}</h1>
         </header>
@@ -285,44 +322,53 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
           {view === 'error' && <p className="hw__error">{t('homework.loadError')}</p>}
           {notice && <p className="hw__notice" role="status">{notice}</p>}
           {view === 'ready' && (
-            <div className="hw__layout">
+            <div className={`hw__layout${showPane ? ' hw__layout--pane' : ''}`}>
               <div className="hw__col">
-                <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />
+                <HomeworkList items={combined} selectedId={selectedId} onSelect={pick} />
               </div>
-              {selected?.kind === 'ielts' ? (
-                <IeltsHomeworkDetail key={selected.id} card={selected} token={token} onNav={onNav} onChanged={reloadIelts} />
-              ) : selected?.kind === 'material' ? (
-                /* key по выдаче: выбрали в списке другую — рамка с материалом
-                   прежней должна уйти вместе с ней, а не остаться на экране
-                   задания, которое ученик уже не выбирал. */
-                <MaterialAssignmentDetail
-                  key={selected.id}
-                  card={selected}
-                  token={token}
-                  onOpenCard={onOpenCard}
-                  onSaved={replaceMaterial}
-                />
-              ) : (
-                /* onOpenPractice получает готовый переход из карты разделов
-                   (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки
-                   живут на своих экранах, а не внутри «Практики». */
-                <HomeworkDetail
-                  hw={selected}
-                  token={token}
-                  busy={busy}
-                  error={error}
-                  onUpload={handleUpload}
-                  onRemoveFile={handleRemove}
-                  onSubmit={handleSubmit}
-                  onSaved={replace}
-                  onAnswered={setDraft}
-                  onPartTouched={markPartTouched}
-                  onOpenPractice={(target) => onNav?.(target.key, target.payload)}
-                  onOpenCard={onOpenCard}
-                  draftAnswered={draftAnswered}
-                  touchedPartIds={touchedPartIds}
-                />
-              )}
+              <div className="hw__pane">
+                {showPane && (
+                  <button type="button" className="hw__back" onClick={backToList}>
+                    <ChevronLeftIcon size={18} />
+                    <span>{t('homework.backToList')}</span>
+                    <span className="hw__back-count">{combined.length}</span>
+                  </button>
+                )}
+                {selected?.kind === 'ielts' ? (
+                  <IeltsHomeworkDetail key={selected.id} card={selected} token={token} onNav={onNav} onChanged={reloadIelts} />
+                ) : selected?.kind === 'material' ? (
+                  /* key по выдаче: выбрали в списке другую — рамка с материалом
+                     прежней должна уйти вместе с ней, а не остаться на экране
+                     задания, которое ученик уже не выбирал. */
+                  <MaterialAssignmentDetail
+                    key={selected.id}
+                    card={selected}
+                    token={token}
+                    onOpenCard={onOpenCard}
+                    onSaved={replaceMaterial}
+                  />
+                ) : (
+                  /* onOpenPractice получает готовый переход из карты разделов
+                     (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки
+                     живут на своих экранах, а не внутри «Практики». */
+                  <HomeworkDetail
+                    hw={selected}
+                    token={token}
+                    busy={busy}
+                    error={error}
+                    onUpload={handleUpload}
+                    onRemoveFile={handleRemove}
+                    onSubmit={handleSubmit}
+                    onSaved={replace}
+                    onAnswered={setDraft}
+                    onPartTouched={markPartTouched}
+                    onOpenPractice={(target) => onNav?.(target.key, target.payload)}
+                    onOpenCard={onOpenCard}
+                    draftAnswered={draftAnswered}
+                    touchedPartIds={touchedPartIds}
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>

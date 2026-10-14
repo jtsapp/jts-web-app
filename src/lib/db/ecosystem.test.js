@@ -51,9 +51,9 @@ describe('buildWeeklySummary', () => {
     expect(m.vocabulary_sr).toMatchObject({ actualMinutes: 0, tracked: 'measured' })
   })
 
-  it('медиа не меряется — ноль и честный флаг', () => {
-    const m = buildWeeklySummary({ activitySeconds: { media_practice: 9999 } })
-    expect(m.media_practice).toMatchObject({ actualMinutes: 0, tracked: 'none' })
+  it('медиа меряется по времени на экране (с 13.10.2026)', () => {
+    const m = buildWeeklySummary({ activitySeconds: { media_practice: 600 } })
+    expect(m.media_practice).toMatchObject({ actualMinutes: 10, tracked: 'measured' })
   })
 
   it('без плана целей нет — дефицит показывать не от чего', () => {

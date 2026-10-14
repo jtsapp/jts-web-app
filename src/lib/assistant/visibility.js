@@ -9,6 +9,7 @@
 const HIDDEN_SCREENS = new Set([
   'test-intro',
   'test',
+  'placement',
   'speaking-test',
   'ielts-listening',
   'ielts-reading',

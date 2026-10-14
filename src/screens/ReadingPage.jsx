@@ -12,6 +12,7 @@ import ReadingText from './reading/ReadingText.jsx'
 import ReadingResult from './reading/ReadingResult.jsx'
 import ReadingSettings from './reading/ReadingSettings.jsx'
 import { stopAudio } from '../practice/workbook/voice.js'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 export const READING_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 
@@ -42,9 +43,11 @@ function fetchLevel(level) {
 // Экран «Чтение»: внутренняя view-машина (как S.screen в прототипе) —
 // библиотека → читалка → результат. Отдельных Next-роутов нет намеренно:
 // навигация всего приложения — state-машина App.jsx.
-export default function ReadingPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
+export default function ReadingPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount, onBack, backLabel: exitLabel }) {
   const { t } = useI18n()
   const [view, setView] = useState({ name: 'library' })
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token, enabled: view.name !== 'library' })
   // Уровень каталога живёт отдельно от view: возврат из текста должен вернуть
   // в тот же уровень и жанр, где читатель был.
   const [level, setLevel] = useState(() => (READING_LEVELS.includes(String(userLevel || '').toLowerCase()) ? String(userLevel).toLowerCase() : 'a1'))
@@ -117,6 +120,9 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
   // грамматики (PracticePage) — цель отрабатывается один раз на адрес, но
   // выход «Назад» из текста не возвращает в него же.
   const appliedTargetRef = useRef(null)
+  // Текст, который открыли целью (домашка): «назад» из него — туда, откуда
+  // пришли, а не в библиотеку, которой ученик не видел.
+  const [entryText, setEntryText] = useState(null)
   useEffect(() => {
     if (!initialTarget) return
     // Уровень приходит с бэкенда как есть: «A1» здесь чужой уровень.
@@ -129,6 +135,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
     if (!initialTarget.textId) return
     loadLevel(lv).then((data) => {
       if (data && data.texts.some((x) => x.id === initialTarget.textId)) {
+        setEntryText(initialTarget.textId)
         setView({ name: 'read', textId: initialTarget.textId })
       }
     })
@@ -153,16 +160,21 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [])
 
+  const exit = useCallback(() => (onBack ? onBack() : onNav?.('practice')), [onBack, onNav])
+  const atEntry = view.name === 'read' && entryText != null && view.textId === entryText
   const goBack = useCallback(() => {
-    if (view.name === 'read') goLibrary()
+    if (atEntry) exit()
+    else if (view.name === 'read') goLibrary()
     else if (view.name === 'result') setView({ name: 'read', textId: view.textId })
-    else onNav?.('practice')
-  }, [view, goLibrary, onNav])
+    else exit()
+  }, [view, atEntry, goLibrary, exit])
 
+  const exitText = exitLabel || t('reading.back.practice')
   const backLabel =
-    view.name === 'read' ? t('reading.back.library')
-      : view.name === 'result' ? t('reading.back.text')
-        : t('reading.back.practice')
+    atEntry ? exitText
+      : view.name === 'read' ? t('reading.back.library')
+        : view.name === 'result' ? t('reading.back.text')
+          : exitText
 
   const crumbSpan =
     view.name === 'library' ? t('reading.hero.crumb')
@@ -179,7 +191,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
       return (
         <PracticeLimitScreen
           limit={entitlement.limit}
-          onBack={() => onNav?.('practice')}
+          onBack={exit}
           isDemoAccount={isDemoAccount}
           source={entitlement.source}
           sourceName={entitlement.sourceName}

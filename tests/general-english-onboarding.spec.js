@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-// Анкета General English на «Главной» (спека 2026-10-12): учащийся без анкеты видит приглашение, проходит анкету,
-// выбирает формат и попадает на блок цели; правка цели — три шага. Бэкенд подменён — проверяем экраны и запросы.
+// Анкета General English на «Главной» (спека 2026-10-12): правка цели — три шага и снова маршрут. Бэкенд подменён —
+// проверяем экраны и запросы.
 
 const jwt = ['eyJhbGciOiJIUzI1NiJ9', Buffer.from(JSON.stringify({ role: 'USER', sub: '7', userId: 7 })).toString('base64url'), 'sig'].join('.')
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -58,34 +58,8 @@ async function setup(page, initial) {
   return state
 }
 
-test('учащийся без анкеты: приглашение → анкета → маршрут → блок цели', async ({ page }) => {
-  const state = await setup(page, { onboarded: false })
-  await page.goto('/?screen=home')
-  const invite = page.locator('.ge-invite')
-  await expect(invite).toContainText('Составим ваш план', { timeout: 20000 })
-  await invite.getByRole('button').click()
-
-  await expect(page.getByText('Шаг 1 из 4')).toBeVisible()
-  await page.getByRole('radio', { name: /Работа и карьера/ }).click()
-  await page.locator('.ih-ob__cta').click()
-  await expect(page.getByRole('radio', { name: /^A2/ })).toBeDisabled()
-  await page.getByRole('radio', { name: /^B2/ }).click()
-  await page.locator('.ih-ob__cta').click()
-  await page.getByRole('radio', { name: /Без срока/ }).click()
-  await page.locator('.ih-ob__cta').click()
-  await expect(page.locator('.ih-obday__term').first()).toContainText('до цели')
-  await page.locator('.ih-ob__cta').click()
-
-  await expect(page.getByRole('heading', { name: 'Как дойти до B2' })).toBeVisible()
-  await expect(page.locator('.ih-route__opt')).toHaveCount(3)
-  await expect(page.locator('.ih-route__opt.is-rec h2')).toHaveText('В группе')
-  await page.getByRole('button', { name: 'Учиться самостоятельно' }).click()
-
-  await expect(page.locator('.ge-goal')).toBeVisible()
-  await expect(page.locator('.ge-goal')).toContainText('Срок не указан')
-  expect(state.puts).toEqual([{ purpose: 'work', targetLevel: 'B2', deadlineDate: null, deadlineWindow: 'none', dailyMinutes: 30, startMode: null }])
-  expect(state.profile.route).toBe('self_study')
-})
+// Первый проход (закрытый роадмап → тест v16 → маршрут) — в placement-v16.spec.js: с 14.10.2026 анкета теста
+// заменила анкету «Главной», здесь осталась её правка.
 
 test('правка цели с «Главной» — три шага и снова маршрут', async ({ page }) => {
   await setup(page, profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineDate: null, deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'self_study'))

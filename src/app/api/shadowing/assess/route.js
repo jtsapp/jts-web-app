@@ -18,6 +18,7 @@ import { buildTipPrompt } from '@/lib/shadowing/tipPrompt.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { wavSeconds, creditsForSeconds, dayKey, recordCredits } from '@/lib/db/shadowingBudget.js'
+import { queueGeActivity } from '@/lib/geActivity.js'
 
 export const runtime = 'nodejs'
 
@@ -154,7 +155,10 @@ export async function POST(request) {
   // строка учёта, студент своё получает.
   if (!score.mock) {
     try {
-      await recordCredits(resolved.id, dayKey(new Date()), creditsForSeconds(wavSeconds(file.size)))
+      const day = dayKey(new Date())
+      await recordCredits(resolved.id, day, creditsForSeconds(wavSeconds(file.size)))
+      // минуты шэдоуинга — в план по дням общего курса на бэкенде (после ответа, ученик не ждёт)
+      queueGeActivity(resolved.id, day)
     } catch (e) {
       console.error('[shadowing.assess] usage record failed', e)
     }

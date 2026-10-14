@@ -368,7 +368,9 @@ export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120
 // replaces felix's Gemini STT here — this app has no Gemini key, and the Speech
 // SDK is already a dependency for the pronunciation path. Returns "" when
 // unconfigured or nothing was recognized; the caller advances either way.
-export async function transcribeWav(wav) {
+// locale — язык речи: тест уровня и IELTS английские, а помощника по сайту
+// спрашивают по-русски и по-казахски (ru-RU / kk-KZ).
+export async function transcribeWav(wav, { locale = 'en-US' } = {}) {
   const key = process.env.AZURE_SPEECH_KEY
   const region = process.env.AZURE_SPEECH_REGION
   if (!key || !region) return ''
@@ -396,7 +398,7 @@ export async function transcribeWav(wav) {
     }
     try {
       const speechConfig = sdk.SpeechConfig.fromSubscription(key, region)
-      speechConfig.speechRecognitionLanguage = 'en-US'
+      speechConfig.speechRecognitionLanguage = locale
       const format = sdk.AudioStreamFormat.getWaveFormatPCM(parsed.sampleRate, 16, 1)
       const pushStream = sdk.AudioInputStream.createPushStream(format)
       pushStream.write(

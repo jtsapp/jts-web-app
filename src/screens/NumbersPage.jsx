@@ -27,20 +27,19 @@ import { NUMBERS_LANG_KEY } from '../practice/practiceKeys.js'
 import { recordSkill } from '../practice/skillStats.js'
 
 const DATA_URL = '/practice/numbers/data.json'
-const FONT_LINKS = [
-  '/practice/numbers/fonts/fonts.css',
-  'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap',
-]
+const RECORDS_URL = '/practice/numbers/audio/index.json'
 
 // Один запрос на вкладку; провал не кэшируется — «ещё раз» спросит заново.
+// Список записей не обязателен: без него игра звучит синтезом тем же голосом.
 let dataPromise = null
 function loadData() {
   if (!dataPromise) {
-    dataPromise = fetch(DATA_URL)
-      .then((r) => {
-        if (!r.ok) throw new Error(`data.json ${r.status}`)
-        return r.json()
-      })
+    const json = (url) => fetch(url).then((r) => {
+      if (!r.ok) throw new Error(`${url} ${r.status}`)
+      return r.json()
+    })
+    dataPromise = Promise.all([json(DATA_URL), json(RECORDS_URL).catch(() => ({}))])
+      .then(([game, records]) => ({ game, records }))
       .catch((e) => {
         dataPromise = null
         throw e
@@ -49,22 +48,19 @@ function loadData() {
   return dataPromise
 }
 
-function useDocumentFonts() {
-  useEffect(() => {
-    for (const href of FONT_LINKS) {
-      if ([...document.head.querySelectorAll('link[data-numbers-font]')].some((l) => l.dataset.numbersFont === href)) continue
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = href
-      link.dataset.numbersFont = href
-      document.head.appendChild(link)
-    }
-  }, [])
-}
-
-export default function NumbersPage({ userName, userLevel, token, onNav, onProfile }) {
+export default function NumbersPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
   const { t } = useI18n()
   const hostRef = useRef(null)
+  // Кнопка «назад» на экране одна — оболочки: своих у игры нет (см. back в
+  // engine.js). Она шагает назад внутри игры (итоги и раунд → урок → карта),
+  // а с карты уводит туда, откуда открыли раздел.
+  const gameRef = useRef(null)
+  const [gameView, setGameView] = useState('map')
+  const goBack = () => {
+    if (gameRef.current?.back()) return
+    if (onBack) onBack()
+    else onNav?.('practice', { skill: 'listening' })
+  }
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -73,7 +69,6 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   // ней обрывало бы живой раунд и выкидывало на карту. ownerOf стабилен, пока
   // ученик тот же (sub из JWT), и меняется на входе и выходе.
   const owner = ownerOf(token)
-  useDocumentFonts()
 
   useEffect(() => {
     let alive = true
@@ -94,18 +89,22 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     shadow.innerHTML = `<style>${NUMBERS_CSS}</style><main class="nw" id="jts-numbers">${NUMBERS_MARKUP}</main>`
     const root = shadow.getElementById('jts-numbers')
-    const destroy = mountNumbers(root, {
-      data,
+    const game = mountNumbers(root, {
+      data: data.game,
       progress: { read: readNumbers, update: updateNumbers },
-      voice: createNumbersVoice(),
+      voice: createNumbersVoice(data.records),
       onSkill: (firstTry) => recordSkill('listening', firstTry),
+      onView: setGameView,
       langKey: NUMBERS_LANG_KEY,
       // e2e: прыжки и анимации за миллисекунды (addInitScript ставит флаг до загрузки)
       fast: typeof window !== 'undefined' && !!window.__NUMBERS_FAST,
     })
+    gameRef.current = game
     return () => {
-      destroy()
+      gameRef.current = null
+      game.destroy()
       shadow.innerHTML = ''
+      setGameView('map')
     }
     // owner: вошёл или вышел — прогресс уже другого ученика, игра перечитывает его
   }, [data, owner])
@@ -113,8 +112,8 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="nmb-top">
-        <button type="button" className="nmb-back" onClick={() => onNav?.('practice', { skill: 'listening' })}>
-          ← {t('numbers.toPractice')}
+        <button type="button" className="nmb-back" onClick={goBack}>
+          ← {gameView === 'map' ? backLabel || t('numbers.toPractice') : t('numbers.toMap')}
         </button>
       </div>
       {failed ? (

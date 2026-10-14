@@ -23,6 +23,8 @@ workflow:
     - if: $CI_COMMIT_BRANCH == "develop"
       variables:
         APP_ENV: development
+        # Дев ходит на свой раннер на новом сервере (docs/DEV_MIGRATION.md); прод и прочие ветки — на прежний.
+        GITLAB_RUNNER_TAG: jts-dev
 
 # Тесты идут ДО деплоя и деплой блокируют.
 #

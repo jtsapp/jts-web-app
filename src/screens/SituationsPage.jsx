@@ -30,7 +30,7 @@ import SituationView from './situations/SituationView.jsx'
 
 export const SITUATION_LEVEL_CODES = ['a1', 'a2', 'b1', 'b2', 'c1']
 
-export default function SituationsPage({ userName, userLevel, token, initialTarget, onNav, onProfile }) {
+export default function SituationsPage({ userName, userLevel, token, initialTarget, onNav, onProfile, onBack, backLabel, canReturn = false }) {
   const { t } = useI18n()
   const level = SITUATION_LEVEL_CODES.includes(String(initialTarget?.level || '').toLowerCase())
     ? String(initialTarget.level).toLowerCase()
@@ -39,6 +39,13 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
   const [items, setItems] = useState(null)
   const [error, setError] = useState('')
   const [openId, setOpenId] = useState(() => Number(initialTarget?.id) || null)
+  // Сценарий, открытый прямо с карточки Практики: «назад» из него — туда,
+  // откуда пришли, а не в список уровня, которого ученик не видел. По
+  // диплинку (?item=) прийти неоткуда — тогда в список, как раньше.
+  const entryId = canReturn ? Number(initialTarget?.id) || null : null
+  // «Ситуации» в Практике живут во вкладке «Говорение»: без навыка возврат
+  // без истории вёл бы на вкладку по умолчанию, где раздела нет.
+  const exit = () => (onBack ? onBack() : onNav?.('practice', { skill: 'speaking' }))
   const [done, setDone] = useState([])
 
   // Прогресс читаем после монтирования: localStorage на сервере нет, а чтение
@@ -113,9 +120,8 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
               setOpenId(id)
               window.scrollTo({ top: 0 })
             }}
-            // «Ситуации» в Практике живут во вкладке «Говорение»: без навыка
-            // возврат вёл бы на вкладку по умолчанию, где раздела нет.
-            onBack={() => onNav?.('practice', { skill: 'speaking' })}
+            onBack={exit}
+            backLabel={backLabel}
           />
         )}
 
@@ -126,9 +132,11 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
             token={token}
             done={done.includes(current.id)}
             onBack={() => {
+              if (current.id === entryId) return exit()
               setOpenId(null)
               window.scrollTo({ top: 0 })
             }}
+            backLabel={current.id === entryId ? backLabel : undefined}
             onDone={() => handleDone(current.id)}
           />
         )}

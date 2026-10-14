@@ -5828,6 +5828,21 @@ textarea {
   margin: 0 auto;
   padding: 28px 24px 60px;
 }
+/* «Назад» туда, откуда открыли профиль (App, lib/navStack.js): своей кнопки у
+   профиля не было, а открывается он аватаром с любого экрана. Цвет — токеном,
+   тёмная тема подменяет его сама. */
+.pf-back {
+  display: block;
+  margin: -12px 0 8px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
 
 /* Hero: сцена уровня + белый лист + аватар */
 .pf-hero {
@@ -8148,8 +8163,13 @@ textarea {
 }
 
 /* --- Домашняя работа (ученик) --- */
+/* min-height: 100% у .hw не срабатывал: у .learn__main задана только
+   min-height, и проценты от неё не считаются. Под коротким экраном (пустой
+   список, список работ на телефоне) оставалась белая полоса фона main. Тянем
+   экран флексом — та же высота, без процентов. */
+.learn__main:has(> .hw) { display: flex; flex-direction: column; }
 .hw {
-  min-height: 100%;
+  flex: 1 0 auto;
   background: #f8f8f8;
   display: flex;
   flex-direction: column;
@@ -8352,20 +8372,119 @@ textarea {
   border-radius: 14px;
   background: #fff;
 }
-
-@media (max-width: 900px) {
-  /* В одну колонку рамке достаётся вся высота экрана минус шапка со списком. */
-  .hw-frame__iframe { height: clamp(360px, calc(100vh - 220px), 900px); }
+/* Над рамкой — только «Во весь экран» справа: название задания уже стоит в
+   шапке карточки, повторять его здесь незачем. */
+.hw-frame__bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.hw-frame__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+/* Тот же вторичный вид, что у .hw-btn: главное действие на экране — сдать
+   работу, а развернуть рамку — служебное. */
+.hw-frame__toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #e6e3ef;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--purple);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.hw-frame__toggle:hover { background: #f4f1ff; border-color: var(--purple); }
+.hw-frame__toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* «Во весь экран»: та же рамка встаёт fixed поверх кабинета (HomeworkFrame —
+   почему не портал и не Fullscreen API). z-index — как у оверлея читалки
+   комиксов (.cr--overlay): выше сайдбара, шапки и мобильного меню. */
+.hw-frame--full {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  height: 100vh;
+  height: 100dvh;
+  gap: 0;
+  background: #fff;
+  overscroll-behavior: contain;
+}
+.hw-frame--full .hw-frame__bar {
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  border-bottom: 1px solid #eeeeee;
+}
+.hw-frame--full .hw-frame__iframe {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+/* «Все задания» — возврат к списку; нужен только там, где список и задание —
+   два экрана (≤900px, см. ниже). */
+.hw__back { display: none; }
 
 @media (max-width: 900px) {
   .hw__layout { grid-template-columns: 1fr; }
+  /* Список и задание — два экрана (HomeworkPage, paneOpen): виден один из них. */
+  .hw__layout--pane > .hw__col { display: none; }
+  .hw__layout:not(.hw__layout--pane) > .hw__pane { display: none; }
+  .hw__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    margin-bottom: 12px;
+    padding: 8px 14px 8px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .hw__back:hover { background: #f4f1ff; }
+  .hw__back:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .hw__back-count {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #f0e9ff;
+    color: var(--purple);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Списка рядом больше нет — рамке достаётся вся высота экрана минус шапка. */
+  .hw-frame__iframe { height: clamp(360px, calc(100vh - 200px), 900px); height: clamp(360px, calc(100dvh - 200px), 900px); }
 }
 @media (max-width: 560px) {
   .hw__head { padding: 16px; }
-  .hw__body { padding: 16px 16px 32px; }
-  .hw-detail { padding: 18px; }
+  /* Вложенные карточки (страница → работа → часть) съедали по 16–18px с каждого
+     края, и урок в рамке получал меньше 300px из 390. */
+  .hw__body { padding: 12px 12px 32px; }
+  .hw-detail { padding: 16px; }
+  .hw-block--material, .hw-block--exercises { padding: 12px; }
+  .hw-frame--full .hw-frame__bar { padding-left: 12px; padding-right: 12px; }
 }
+@media (prefers-reduced-motion: reduce) { .hw-frame__toggle { transition: none; } }
 
 /* Проверка домашних работ (вкладка преподавателя в «Уроках») */
 .hw__section-title { font-size: 20px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }

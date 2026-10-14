@@ -1,10 +1,10 @@
-// «Числа» (Dexter's Number World): данные, картинки и шрифты из прототипа
+// «Числа» (Dexter's Number World): данные и картинки из прототипа
 // data/jtsnumbers.html → public/practice/numbers/.
 //
 // Прототип — один html на 2 МБ, почти всё в нём base64: три фона миров, позы
 // Декстера, остров, портал, кристалл и шрифты объяснений (Literata, Golos Text).
-// В бандл приложения это не кладём: картинки и шрифты ложатся файлами и грузятся
-// только при входе в раздел.
+// В бандл приложения это не кладём: картинки ложатся файлами и грузятся только
+// при входе в раздел, а шрифты не нужны вовсе — игра на шрифте сайта.
 //
 // Данные не режутся регулярками: раунды собираются кодом (L(...), R(...),
 // X(topic, group, …) дописывает задания в группу), поэтому блок данных
@@ -72,20 +72,8 @@ function extract(html) {
     files[`img/${m[1]}.${EXT[mime]}`] = buf
   }
 
-  // Шрифты объяснений. @font-face внутри Shadow DOM не применяется надёжно —
-  // экран подключает fonts.css к документу, а шрифты документа внутрь видны.
-  const faces = []
-  const seen = {}
-  for (const m of html.matchAll(/@font-face\{font-family:'([^']+)';font-style:(\w+);font-display:(\w+);font-weight:([\d ]+);src:url\((data:font\/woff2;base64,[A-Za-z0-9+/=]+)\) format\('woff2'\);unicode-range:([^}]+)\}/g)) {
-    const [, family, style, display, weight, uri, range] = m
-    const slug = family.toLowerCase().replace(/\s+/g, '-')
-    seen[slug] = (seen[slug] || 0) + 1
-    const file = `fonts/${slug}-${seen[slug]}.woff2`
-    files[file] = decode(uri).buf
-    faces.push(`@font-face{font-family:'${family}';font-style:${style};font-display:${display};font-weight:${weight};src:url(/practice/numbers/${file}) format('woff2');unicode-range:${range}}`)
-  }
-  if (faces.length !== 8) throw new Error(`ожидалось 8 начертаний шрифтов, нашлось ${faces.length}`)
-  files['fonts/fonts.css'] = Buffer.from('/* Сгенерировано scripts/extract-numbers.js из data/jtsnumbers.html */\n' + faces.join('\n') + '\n')
+  // Шрифты прототипа (Literata, Golos Text) не выгружаем: игра в приложении
+  // на шрифте сайта (src/practice/numbers/styles.js).
 
   const data = {
     sections: game.SECTIONS,

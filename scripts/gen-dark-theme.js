@@ -17,12 +17,12 @@
  *
  * Цвет пересчитывается в OKLCH и по роли свойства:
  *   фон     — белое → поверхность карточки, почти белое → фон страницы,
- *             пастель → тёмный тон того же оттенка, яркое — как есть;
- *   текст   — тёмное → светлое, белое и яркое — как есть;
+ *             пастель → тинт своего семейства бренда, яркое → цвет бренда;
+ *   текст   — тёмное → светлое, цветное → цвет бренда;
  *   граница — светлое → тонкая светлая линия на тёмном.
- * Нейтральные и фиолетовые цвета бренда (оттенок ~282–310°) выходят токенами
- * --dk-* (значения — в src/theme-dark.css), поэтому палитра правится в
- * одном месте, без перегенерации.
+ * Серые и пять семейств бренда (scripts/lib/dark-palette.js) выходят ТОЛЬКО
+ * токенами --dk-* (значения — в src/theme-dark.css), поэтому палитра
+ * правится в одном месте, без перегенерации.
  *
  * Запуск: node scripts/gen-dark-theme.js
  */
@@ -59,106 +59,12 @@ const NAMED = {
   whitesmoke: [245, 245, 245],
 }
 
-const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-const unlin = (c) => 255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)
-
-function toOklch([r, g, b]) {
-  r = lin(r); g = lin(g); b = lin(b)
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
-  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s
-  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
-  return { L, C: Math.hypot(A, B), H: ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360 }
-}
-
-function toRgb({ L, C, H }) {
-  const a = C * Math.cos((H * Math.PI) / 180)
-  const b = C * Math.sin((H * Math.PI) / 180)
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
-  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
-  const rgb = [
-    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-  ]
-  return rgb.map((c) => Math.round(Math.min(255, Math.max(0, unlin(Math.min(1, Math.max(0, c)))))))
-}
-
-const lerp = (x, x0, x1, y0, y1) => y0 + ((Math.min(Math.max(x, x0), x1) - x0) / (x1 - x0)) * (y1 - y0)
-const NEUTRAL_C = 0.045
-const isAccent = ({ C, H }) => C >= 0.08 && H >= 282 && H <= 310
-
-// Нейтральные и фиолетовые цвета квантуются в токены --dk-* (их значения —
-// в src/theme-dark.css): так палитра темы правится в одном месте, и сменить
-// акцент — значит переписать несколько токенов. Прочие цветные
-// (зелёный «верно», красный «ошибка», пастель карточек) считаются по месту:
-// токенов на каждый оттенок не напасёшься. Функции возвращают имя токена,
-// {L,C,H} или null — «оставить как есть».
-function bgOf({ L, C, H }) {
-  if (C < NEUTRAL_C) {
-    if (L >= 0.99) return 'card'
-    if (L >= 0.955) return 'page'
-    if (L >= 0.85) return 'chip'
-    if (L >= 0.55) return 'raised'
-    if (L >= 0.18) return 'ink-bg'
-    return null // почти чёрное — видео, тёмные секции, оверлеи
-  }
-  if (isAccent({ C, H })) {
-    if (L >= 0.86) return 'acc-tint'
-    if (L >= 0.7) return 'acc-soft'
-    if (L >= 0.5) return 'acc'
-    return 'acc-strong'
-  }
-  if (L >= 0.86) return { L: lerp(L, 0.86, 1, 0.27, 0.31), C: Math.min(C * 0.9, 0.05), H }
-  if (L >= 0.7) return { L: lerp(L, 0.7, 0.86, 0.44, 0.36), C: Math.min(C, 0.09), H }
-  return null
-}
-
-function textOf({ L, C, H }) {
-  if (C < NEUTRAL_C) {
-    if (L < 0.35) return 'text'
-    if (L < 0.6) return 'text-2'
-    if (L < 0.97) return 'muted'
-    return null
-  }
-  if (isAccent({ C, H })) return L >= 0.85 ? 'acc-on' : 'acc-text'
-  if (L < 0.55) return { L: 0.8, C: Math.min(C, 0.14), H }
-  if (L < 0.72) return { L: 0.76, C, H }
-  return null
-}
-
-function lineOf({ L, C, H }) {
-  if (C < NEUTRAL_C) return L >= 0.8 ? 'line' : 'line-strong'
-  if (isAccent({ C, H })) return L >= 0.8 ? 'acc-line' : 'acc'
-  if (L >= 0.8) return { L: 0.42, C: Math.min(C, 0.08), H }
-  return null
-}
-
+// Куда уходит каждый цвет (семейства бренда, ступени, токены) — в
+// scripts/lib/dark-palette.js, там же почему.
+const { NEUTRAL_C, toOklch, toRgb, inGamut, familyOf, bgOf, textOf, lineOf, solidOf } = require('./lib/dark-palette')
 const ROLE = { bg: bgOf, text: textOf, border: lineOf }
 
 const r3 = (x) => +x.toFixed(3)
-
-// Пересчитанный цвет может выйти за sRGB (тёмный насыщенный голубой) —
-// тогда снижаем насыщенность, а не режем каналы: обрезка уводит оттенок.
-function inGamut({ L, C, H }) {
-  for (let c = C; c > 0; c -= 0.005) {
-    const a = c * Math.cos((H * Math.PI) / 180)
-    const b = c * Math.sin((H * Math.PI) / 180)
-    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
-    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
-    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
-    const rgb = [
-      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-    ]
-    if (rgb.every((v) => v >= -0.001 && v <= 1.001)) return { L, C: c, H }
-  }
-  return { L, C: 0, H }
-}
 
 function fmt(target, alpha) {
   if (target == null) return null
@@ -198,7 +104,7 @@ function mapColor(str, role, prop) {
   const lch = toOklch(c.rgb)
   const isShadow = prop === 'box-shadow' || prop === 'text-shadow'
   if (c.a < 1) {
-    if (lch.C < NEUTRAL_C) {
+    if (!familyOf(lch)) {
       if (isShadow) return lch.L < 0.5 ? `rgba(0, 0, 0, ${r3(Math.min(c.a * 2, 0.6))})` : str
       if (lch.L < 0.5) {
         if (role === 'text') return fmt(textOf(lch), c.a) || str
@@ -209,13 +115,12 @@ function mapColor(str, role, prop) {
       if (role === 'bg' && c.a >= 0.6) return fmt(bgOf(lch), c.a) || str
       return str
     }
-    if (isAccent(lch)) {
-      if (role === 'text') return fmt(textOf(lch), c.a)
-      if (role === 'border') return fmt('acc', c.a)
-      return fmt(lch.L >= 0.86 ? 'acc-tint' : 'acc', c.a)
-    }
+    // Цветная дымка (свечение, обводка, заливка с прозрачностью) — тот же
+    // цвет бренда с той же прозрачностью: поверх тёмного она работает так же.
+    // Плотная пастель — ступень фона, как у сплошного цвета.
+    if (role === 'text' && !isShadow) return fmt(textOf(lch), c.a) || str
     if (role === 'bg' && !isShadow && lch.L >= 0.86) return fmt(bgOf(lch), c.a) || str
-    return str
+    return fmt(solidOf(lch), c.a)
   }
   if (isShadow) {
     // Сплошная обводка-кольцо (0 0 0 4px #fff) отделяет элемент от фона —
@@ -332,14 +237,24 @@ function convertContainer(src, dst) {
     // Белый текст на заливке акцентом — отдельный токен: на светлом акценте
     // (оранжевый так и сравнивали) белый не дотягивает по контрасту, и
     // подпись нужно перекрасить вместе с заливкой.
-    const onAccent = decls.some(
-      (d) => /^background(-color)?$/.test(d.prop) && /^var\(--dk-acc(-strong)?\)|^linear-gradient\([^,]*,\s*var\(--dk-acc/.test(d.value),
-    )
-    if (onAccent) {
+    // Из цветов бренда белую подпись держит только фиолетовый (4.8:1). На
+    // неоновых зелёном, голубом, оранжевом, жёлтом и красном белый текст
+    // даёт 2–3:1 (плашка «верно» не читалась), поэтому на них подпись тёмная
+    // (--dk-on-bright). Заливка бывает и локальной переменной
+    // (.wb-tok.is-ok { background: var(--wb-green) }) — её раскрываем по
+    // предпроходу.
+    const fill = resolveVar(decls.find((d) => /^background(-color)?$/.test(d.prop))?.value || '')
+    const BRIGHT = '(?:green|blue|orange|yellow|red)'
+    const onToken = /^var\(--dk-acc(-strong)?\)|^linear-gradient\([^,]*,\s*var\(--dk-acc/.test(fill)
+      ? 'on-acc'
+      : new RegExp(`^var\\(--dk-${BRIGHT}\\)|^linear-gradient\\([^,]*,\\s*var\\(--dk-${BRIGHT}\\)`).test(fill)
+        ? 'on-bright'
+        : null
+    if (onToken) {
       decls.forEach((d) => {
         if (d.prop !== 'color') return
         const c = parseColor(d.value.trim())
-        if (c && c.a === 1 && toOklch(c.rgb).L >= 0.97) d.value = 'var(--dk-on-acc)'
+        if (c && c.a === 1 && toOklch(c.rgb).L >= 0.97) d.value = `var(--dk-${onToken})`
       })
     }
     let selectors
@@ -356,11 +271,29 @@ function convertContainer(src, dst) {
   })
 }
 
+const parsed = files.map((f) => [f, postcss.parse(fs.readFileSync(path.join(ROOT, 'src', f), 'utf8'), { from: f })])
+
+// Предпроход: во что в тёмной теме превращается каждая цветовая переменная
+// (--wb-green: #22c55e → var(--dk-green)). Нужен только для выбора цвета
+// подписи на заливке; одноимённые переменные разных разделов здесь
+// склеиваются (последняя побеждает) — для этой цели достаточно.
+const VARS = new Map()
+for (const [, root] of parsed) {
+  root.walkDecls((d) => {
+    if (!d.prop.startsWith('--') || !hasColor(d.value)) return
+    let role = roleOf(d.prop.toLowerCase())
+    if (role === 'auto') role = autoRole(d.value)
+    VARS.set(d.prop, mapValue(d.value, role, d.prop.toLowerCase()).trim())
+  })
+}
+function resolveVar(value) {
+  const m = /^var\((--[\w-]+)\s*(?:,[^)]*)?\)$/.exec(value.trim())
+  return m && VARS.has(m[1]) ? VARS.get(m[1]) : value
+}
+
 const out = postcss.root()
 out.append(postcss.comment({ text: ' СГЕНЕРИРОВАНО scripts/gen-dark-theme.js — не править руками ' }))
-for (const f of files) {
-  const css = fs.readFileSync(path.join(ROOT, 'src', f), 'utf8')
-  const root = postcss.parse(css, { from: f })
+for (const [f, root] of parsed) {
   const block = postcss.root()
   convertContainer(root, block)
   if (!block.nodes.length) continue

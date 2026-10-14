@@ -20,6 +20,22 @@ export function isSonioxConfigured() {
   return Boolean(process.env.SONIOX_API_KEY)
 }
 
+/**
+ * Первое сообщение сокета. lang — один код или список: помощнику по сайту
+ * нужны сразу казахский, русский и английский (ученик говорит по-русски и
+ * вставляет английское слово из задания). context — подсказка Soniox
+ * (general/terms): без неё казахские формы распознаются заметно хуже (#499).
+ */
+export function sonioxConfig({ key, lang = 'en', context } = {}) {
+  return {
+    api_key: key,
+    model: MODEL,
+    audio_format: 'auto', // WAV с заголовком — Soniox определит формат сам
+    language_hints: Array.isArray(lang) ? lang : [lang],
+    ...(context ? { context } : {}),
+  }
+}
+
 function joinTokens(tokens) {
   return tokens.join('').replace(/\s+/g, ' ').trim()
 }
@@ -33,7 +49,7 @@ export function sonioxBudgetMs(wav) {
   return Math.min(600_000, 30_000 + durationSec * 1000)
 }
 
-export async function transcribeWavSoniox(wav, { lang = 'en', timeoutMs } = {}) {
+export async function transcribeWavSoniox(wav, { lang = 'en', context, timeoutMs } = {}) {
   const key = process.env.SONIOX_API_KEY
   if (!key) return ''
   if (!wav || wav.length === 0) return ''
@@ -74,14 +90,7 @@ export async function transcribeWavSoniox(wav, { lang = 'en', timeoutMs } = {}) 
 
     ws.onopen = () => {
       try {
-        ws.send(
-          JSON.stringify({
-            api_key: key,
-            model: MODEL,
-            audio_format: 'auto', // WAV с заголовком — Soniox определит формат сам
-            language_hints: [lang],
-          }),
-        )
+        ws.send(JSON.stringify(sonioxConfig({ key, lang, context })))
         // Весь WAV — бинарными кусками, затем "" как признак конца потока.
         const CHUNK = 48 * 1024
         for (let i = 0; i < wav.length; i += CHUNK) {

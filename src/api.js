@@ -637,6 +637,36 @@ export async function importLegacyGoal(token, goal) {
   return geProfileShape(await authPost('/mobile/ge/profile/legacy-goal', token, goal))
 }
 
+// План по дням общего курса (бэкенд /mobile/ge/plan, спека 2026-10-13). Ответ без строкового state и массива задач — не
+// план (старый бэкенд без ручки, заглушка e2e с {} на всё): тогда на «Главной» остаётся прежняя «Что сделать сегодня».
+export function gePlanShape(raw) {
+  return raw && typeof raw === 'object' && typeof raw.state === 'string' && Array.isArray(raw.tasks) ? raw : null
+}
+
+/** null — ручки нет или она не ответила: экраны остаются прежними, а не рушатся. */
+export async function getGePlan(token, { from, to } = {}) {
+  if (!token) return null
+  const q = new URLSearchParams()
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
+  const qs = q.toString()
+  try {
+    return gePlanShape(await authGet(`/mobile/ge/plan${qs ? `?${qs}` : ''}`, token))
+  } catch {
+    return null
+  }
+}
+
+/** Перенос своей задачи плана (урок курса, практика) на другой день: сегодня или позже, в пределах плана. */
+export function moveGeTask(token, id, date) {
+  return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/date`, token, { date })
+}
+
+/** Ученик отмечает своё задание преподавателя («Своё задание», kind custom) выполненным или снимает отметку. */
+export function markGeTaskDone(token, id, done) {
+  return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради
@@ -982,8 +1012,13 @@ export async function completeLesson(token, moduleId, code, xp = 0) {
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
-export function getAudiobooks(token) {
-  return cachedAuthGet('/mobile/audio-lessons', token)
+//
+// onFresh обязателен для SWR-кэша: каталог отдаётся из памяти/localStorage сразу, а
+// свежий ответ приходит позже и без этого колбэка просто выбрасывался. Книгу,
+// которую админ добавил или включил, ученик видел только со второго захода в
+// «Практику» — со стороны это выглядело как «то книги есть, то нет».
+export function getAudiobooks(token, onFresh) {
+  return cachedAuthGet('/mobile/audio-lessons', token, onFresh)
 }
 
 // Одна книга целиком (GET /mobile/audio-lessons/{id}). В отличие от списка выше

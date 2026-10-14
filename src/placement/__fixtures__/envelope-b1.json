@@ -1,0 +1,1215 @@
+{
+ "schemaVersion": 1,
+ "source": "jts_general_english_placement",
+ "assessment": {
+  "attemptId": "jts_fixture_b1_travel",
+  "completedAt": null,
+  "resultsViewedAt": null,
+  "overallCEFR": "B1",
+  "overallStatus": "partial",
+  "skillResults": {
+   "LU": {
+    "label": "B1",
+    "level": "B1",
+    "confirmed": true,
+    "total": 12,
+    "correct": 9,
+    "cap": null,
+    "ceiling": false
+   },
+   "R": {
+    "label": "B1",
+    "level": "B1",
+    "confirmed": true,
+    "total": 10,
+    "correct": 6,
+    "cap": null,
+    "ceiling": false
+   },
+   "L": {
+    "label": "B1",
+    "level": "B1",
+    "confirmed": true,
+    "total": 12,
+    "correct": 6,
+    "cap": "B2",
+    "ceiling": false
+   },
+   "S": {
+    "status": "not_assessed"
+   }
+  },
+  "speakingStatus": "not_assessed",
+  "flags": [],
+  "rawResult": {
+   "appId": "jts_fixture_b1_travel",
+   "id": "jts_fixture_b1_travel",
+   "overall": {
+    "level": "B1",
+    "preliminary": true,
+    "partial": true
+   },
+   "levels": {
+    "LU": "B1",
+    "R": "B1",
+    "L": "B1",
+    "S": null
+   },
+   "skills": {
+    "LU": {
+     "label": "B1",
+     "level": "B1",
+     "confirmed": true,
+     "total": 12,
+     "correct": 9,
+     "cap": null,
+     "ceiling": false
+    },
+    "R": {
+     "label": "B1",
+     "level": "B1",
+     "confirmed": true,
+     "total": 10,
+     "correct": 6,
+     "cap": null,
+     "ceiling": false
+    },
+    "L": {
+     "label": "B1",
+     "level": "B1",
+     "confirmed": true,
+     "total": 12,
+     "correct": 6,
+     "cap": "B2",
+     "ceiling": false
+    },
+    "S": {
+     "status": "not_assessed"
+    }
+   },
+   "flags": []
+  }
+ },
+ "goals": {
+  "primaryGoal": "travel_independent",
+  "secondaryGoals": [],
+  "selectedCategories": [
+   "travel"
+  ],
+  "selectedSubcategories": [
+   {
+    "id": "travel_independent",
+    "categoryId": "travel"
+   }
+  ],
+  "customAnswers": [],
+  "followUpAnswers": {
+   "deadline": {
+    "value": "3_6_months",
+    "customText": ""
+   }
+  },
+  "targetDeadline": {
+   "optionId": "3_6_months",
+   "customText": ""
+  },
+  "personalExpectations": "",
+  "questionnaireCompleted": true,
+  "originalQuestionnaire": {
+   "version": 1,
+   "source": "general_english_placement",
+   "selectedCategories": [
+    "travel"
+   ],
+   "selectedSubcategories": [
+    {
+     "id": "travel_independent",
+     "categoryId": "travel"
+    }
+   ],
+   "primaryGoal": "travel_independent",
+   "secondaryGoals": [],
+   "customGoals": [],
+   "followUpAnswers": {
+    "deadline": {
+     "value": "3_6_months",
+     "customText": ""
+    }
+   },
+   "motivationFactors": [
+    "progress"
+   ],
+   "preferredActivities": [
+    "games",
+    "reading"
+   ],
+   "studyAvailability": "daily_20_30",
+   "feedbackPreference": "gentle",
+   "preferenceCustomAnswers": {},
+   "personalExpectations": "",
+   "desiredDeadline": {
+    "optionId": "3_6_months",
+    "customText": ""
+   },
+   "completed": true,
+   "updatedAt": "2026-10-14T10:00:00.000Z"
+  },
+  "preservedOnboardingDrafts": {
+   "step": 5,
+   "selections": {
+    "travel": [
+     "travel_independent"
+    ]
+   },
+   "customText": {},
+   "followUpDrafts": {
+    "deadline": {
+     "value": "3_6_months",
+     "customText": ""
+    }
+   },
+   "returnScreen": null
+  }
+ },
+ "preferences": {
+  "motivation": [
+   "progress"
+  ],
+  "preferredActivities": [
+   "games",
+   "reading"
+  ],
+  "availableStudyTime": "daily_20_30",
+  "feedbackStyle": "gentle",
+  "customAnswers": {}
+ },
+ "recommendations": {
+  "goalId": "travel_independent",
+  "targetCEFR": "B1",
+  "targetStatus": "indicative",
+  "ruleId": "travel_independent_v1",
+  "targetExplanation": "Самостоятельные разговоры на знакомые темы: ориентир B1.",
+  "priorities": [
+   "speaking",
+   "listening",
+   "vocabulary"
+  ],
+  "demandEvidence": [],
+  "secondaryTargets": [],
+  "targetAlreadyMet": true,
+  "prioritySkills": [
+   {
+    "id": "speaking",
+    "goalId": "travel_independent",
+    "title": "Speaking",
+    "reason": "Для цели «Путешествовать без переводчика»: тренировать свои ответы и поддерживать диалог.",
+    "assessedLevel": null,
+    "basis": "goal_requirement",
+    "note": "Это потребность цели, а не выявленная тестом слабость."
+   },
+   {
+    "id": "listening",
+    "goalId": "travel_independent",
+    "title": "Listening",
+    "reason": "Для цели «Путешествовать без переводчика»: понимать вопросы, детали и ответы собеседника.",
+    "assessedLevel": "B1",
+    "basis": "goal_and_assessment",
+    "note": ""
+   },
+   {
+    "id": "vocabulary",
+    "goalId": "travel_independent",
+    "title": "Словарный запас",
+    "reason": "Для цели «Путешествовать без переводчика»: собрать и применять полезные фразы для выбранных ситуаций.",
+    "assessedLevel": null,
+    "basis": "goal_requirement",
+    "note": "Это потребность цели, а не выявленная тестом слабость."
+   }
+  ],
+  "sourceReferences": [
+   "https://www.coe.int/en/web/common-european-framework-reference-languages/table-1-cefr-3.3-common-reference-levels-global-scale",
+   "https://rm.coe.int/common-european-framework-of-reference-for-languages-learning-teaching/16809ea0d4"
+  ],
+  "recommendedActivities": [
+   {
+    "id": "jts-observed:reading-b1-4373d032",
+    "activityId": "jts-observed:reading-b1-4373d032",
+    "platformActivityId": null,
+    "title": "The Town of Books",
+    "assessmentRef": "SELFTEST_B1_2_1",
+    "currentCEFR": "B1",
+    "practiceLevel": "B1",
+    "recommendedDifficulty": "B1",
+    "targetSkill": "reading",
+    "prioritySkillIds": [
+     "reading"
+    ],
+    "competencyFocus": [
+     "reading_comprehension"
+    ],
+    "goalRelevance": {
+     "primaryGoal": "travel_independent",
+     "category": "travel",
+     "matched": true,
+     "basis": "editorial content-to-goal mapping"
+    },
+    "reason": "В Чтение были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "explanation": "В Чтение были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "instruction": "Прочитай текст, затем выполни задания на понимание.",
+    "topic": [
+     "culture_travel"
+    ],
+    "minutes": 5,
+    "durationScope": "displayed reading estimate, excludes tasks",
+    "suggestedBudgetMinutes": 10,
+    "preferenceMatch": true,
+    "evidenceBasis": "observed_skill_errors",
+    "unassessedNote": "",
+    "priorityOrder": 1,
+    "navigation": {
+     "identifier": "reading",
+     "route": "https://dev-tutor.justtostudy.kz/?screen=reading",
+     "launchParams": {},
+     "selectionPath": [
+      "B1",
+      "The Town of Books"
+     ],
+     "directExerciseLink": false,
+     "mode": "host_adapter_or_manual_selection"
+    },
+    "scoreBreakdown": {
+     "assessment": 0.75,
+     "goal": 1,
+     "level": 1,
+     "competency": 0,
+     "preference": 1,
+     "time": 1
+    },
+    "rankingScore": 0.825,
+    "scoreMeaning": "configurable product heuristic, not learning effectiveness",
+    "catalogVersion": "2026-10-14-observed-1"
+   },
+   {
+    "id": "jts-observed:numbers-15",
+    "activityId": "jts-observed:numbers-15",
+    "platformActivityId": null,
+    "title": "Numbers in Real Life",
+    "assessmentRef": "SELFTEST_B1_2_1",
+    "currentCEFR": "B1",
+    "practiceLevel": "B1",
+    "recommendedDifficulty": "B1",
+    "targetSkill": "listening",
+    "prioritySkillIds": [
+     "listening"
+    ],
+    "competencyFocus": [
+     "travel_numbers"
+    ],
+    "goalRelevance": {
+     "primaryGoal": "travel_independent",
+     "category": "travel",
+     "matched": true,
+     "basis": "editorial content-to-goal mapping"
+    },
+    "reason": "В Аудирование были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "explanation": "В Аудирование были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "instruction": "Тренируй понимание чисел на слух: Numbers in Real Life.",
+    "topic": [
+     "travel_numbers"
+    ],
+    "minutes": null,
+    "durationScope": null,
+    "suggestedBudgetMinutes": 10,
+    "preferenceMatch": true,
+    "evidenceBasis": "observed_skill_errors",
+    "unassessedNote": "",
+    "priorityOrder": 2,
+    "navigation": {
+     "identifier": "numbers",
+     "route": "https://dev-tutor.justtostudy.kz/?screen=numbers",
+     "launchParams": {},
+     "selectionPath": [
+      "Numbers in Real Life"
+     ],
+     "directExerciseLink": false,
+     "mode": "host_adapter_or_manual_selection"
+    },
+    "scoreBreakdown": {
+     "assessment": 0.75,
+     "goal": 1,
+     "level": 1,
+     "competency": 0,
+     "preference": 1,
+     "time": 0.5
+    },
+    "rankingScore": 0.8,
+    "scoreMeaning": "configurable product heuristic, not learning effectiveness",
+    "catalogVersion": "2026-10-14-observed-1"
+   },
+   {
+    "id": "jts-observed:grammar-b1-49",
+    "activityId": "jts-observed:grammar-b1-49",
+    "platformActivityId": null,
+    "title": "Questions 1",
+    "assessmentRef": "SELFTEST_B1_2_1",
+    "currentCEFR": "B1",
+    "practiceLevel": "B1",
+    "recommendedDifficulty": "B1",
+    "targetSkill": "grammar",
+    "prioritySkillIds": [
+     "grammar"
+    ],
+    "competencyFocus": [
+     "questions"
+    ],
+    "goalRelevance": {
+     "primaryGoal": "travel_independent",
+     "category": "travel",
+     "matched": true,
+     "basis": "editorial content-to-goal mapping"
+    },
+    "reason": "В Грамматика и лексика были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "explanation": "В Грамматика и лексика были ошибки. Задание даёт практику этого навыка; конкретная тема ошибки не установлена. Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "instruction": "Разбери правило и выполни практику: Questions 1.",
+    "topic": [
+     "questions"
+    ],
+    "minutes": 11,
+    "durationScope": "platform estimate",
+    "suggestedBudgetMinutes": 11,
+    "preferenceMatch": false,
+    "evidenceBasis": "observed_skill_errors",
+    "unassessedNote": "",
+    "priorityOrder": 3,
+    "navigation": {
+     "identifier": "practice",
+     "route": "https://dev-tutor.justtostudy.kz/?screen=practice",
+     "launchParams": {},
+     "selectionPath": [
+      "Письмо",
+      "Грамматика",
+      "Посмотреть все",
+      "Уровень B1",
+      "Unit 49: Questions 1"
+     ],
+     "directExerciseLink": false,
+     "mode": "host_adapter_or_manual_selection"
+    },
+    "scoreBreakdown": {
+     "assessment": 0.75,
+     "goal": 1,
+     "level": 1,
+     "competency": 0,
+     "preference": 0,
+     "time": 1
+    },
+    "rankingScore": 0.725,
+    "scoreMeaning": "configurable product heuristic, not learning effectiveness",
+    "catalogVersion": "2026-10-14-observed-1"
+   },
+   {
+    "id": "jts-observed:speakspin-b1",
+    "activityId": "jts-observed:speakspin-b1",
+    "platformActivityId": null,
+    "title": "SpeakSpin",
+    "assessmentRef": "SELFTEST_B1_2_1",
+    "currentCEFR": "B1",
+    "practiceLevel": "B1",
+    "recommendedDifficulty": "B1",
+    "targetSkill": "speaking",
+    "prioritySkillIds": [
+     "speaking"
+    ],
+    "competencyFocus": [
+     "spoken_response"
+    ],
+    "goalRelevance": {
+     "primaryGoal": "travel_independent",
+     "category": "travel",
+     "matched": true,
+     "basis": "editorial content-to-goal mapping"
+    },
+    "reason": "Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "explanation": "Это практика для выбранной цели: «Путешествовать без переводчика».",
+    "instruction": "Выбери свой уровень, подготовься 30 секунд и говори 60 секунд с опорами.",
+    "topic": [
+     "everyday"
+    ],
+    "minutes": null,
+    "durationScope": "30s preparation + 60s response; review time unknown",
+    "suggestedBudgetMinutes": 10,
+    "preferenceMatch": false,
+    "evidenceBasis": "goal_requirement",
+    "unassessedNote": "Этот навык отдельно не оценён; уровень выбран по общему результату, без вывода о слабости.",
+    "priorityOrder": 4,
+    "navigation": {
+     "identifier": "speakspin",
+     "route": "https://dev-tutor.justtostudy.kz/?screen=speakspin",
+     "launchParams": {},
+     "selectionPath": [
+      "Средний B1",
+      "С опорами",
+      "1"
+     ],
+     "directExerciseLink": false,
+     "mode": "host_adapter_or_manual_selection"
+    },
+    "scoreBreakdown": {
+     "assessment": 0,
+     "goal": 1,
+     "level": 1,
+     "competency": 0,
+     "preference": 0,
+     "time": 0.5
+    },
+    "rankingScore": 0.475,
+    "scoreMeaning": "configurable product heuristic, not learning effectiveness",
+    "catalogVersion": "2026-10-14-observed-1"
+   }
+  ],
+  "firstAction": {
+   "activityId": "jts-observed:reading-b1-4373d032",
+   "practiceLevel": "B1",
+   "minutes": 10,
+   "text": "The Town of Books — Прочитай текст, затем выполни задания на понимание.",
+   "timeAdvice": "Предлагаемый бюджет: 10 мин. Это не длительность упражнения."
+  },
+  "timeAdvice": "Это варианты для следующих занятий, не обязательный список на один день.",
+  "recommendationVersion": "3.1",
+  "catalogVersion": "2026-10-14-observed-1",
+  "locale": "ru",
+  "studyPlan": [
+   {
+    "activityId": "jts-observed:reading-b1-4373d032",
+    "allocatedMinutes": 10,
+    "allocationType": "suggested_study_budget",
+    "wholeActivityPromised": false
+   },
+   {
+    "activityId": "jts-observed:numbers-15",
+    "allocatedMinutes": 10,
+    "allocationType": "suggested_study_budget",
+    "wholeActivityPromised": false
+   }
+  ],
+  "customGoalNeedsReview": false,
+  "coverageGaps": [],
+  "ranking": {
+   "weights": {
+    "assessment": 0.3,
+    "goal": 0.25,
+    "level": 0.2,
+    "competency": 0.1,
+    "preference": 0.1,
+    "time": 0.05
+   },
+   "historyUsed": false,
+   "eligibleCandidates": 26,
+   "excluded": [
+    {
+     "activityId": "jts-observed:grammar-a0-1",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a0-2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a0-15",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a0-19",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a1-5",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a1-11",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a1-34",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a1-116",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a2-3",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a2-6",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a2-67",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a2-69",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-a2-70",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-b2-4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-b2-26",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-b2-33",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-b2-34",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-c1-27",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-c1-36",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:grammar-c1-87",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-1b918206",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-7764c460",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-9cf5b30c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-2fb7f4da",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-f6f01d45",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-e1997ca4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-c694f63f",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-aaf2ec7f",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-b7f9cf2e",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-a1aca8ed",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-bb91c9db",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-ec705647",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-b7e6bfe0",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-5cc117d0",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-3eeff34f",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a1-a54014af",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-8bd4ca0c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-2c58f59d",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-829ca488",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-c53c4f55",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-f4cc8705",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-d2f1e90f",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-99d747a6",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-ff0eef46",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-c552c183",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-5e4c1622",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-d58401e2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-6a073a09",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-d20e9b1c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-74a24254",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-7631c4a2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-a2-491bd89e",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-2b76245d",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-35a8bead",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-45a98c0e",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-ad10994c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-80edd7cf",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-3b47538a",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-4a4d7c5c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-7a561933",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-d41857a4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-a883cc2b",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-4ffd7112",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-9dda83e5",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-b805d745",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-f7b6e7b0",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-b24ef8c9",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-b2-d1b5ab9b",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-03b6e383",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-f90beeeb",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-9f724770",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-464cb12e",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-021a7e3c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-428bb33f",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-c20ece1a",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-03a6bbf9",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-b45502d4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-71f09fbe",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-ae17f85c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-8d40df18",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-6726f97b",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-7db5ea57",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-c382759c",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:reading-c1-bbdee7ed",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-1",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-3",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-5",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-6",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-7",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-8",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-9",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-10",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-11",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:numbers-17",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:speakspin-a1",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:speakspin-a2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:speakspin-b2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-1",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-2",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-3",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-4",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-5",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-6",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-7",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-8",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-9",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-10",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-11",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-12",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-13",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-14",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-15",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-16",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-17",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-18",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-19",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-20",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-21",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-22",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-23",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-24",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-25",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-26",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-27",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-28",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-29",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:writing-a2-30",
+     "reason": "level_mismatch"
+    },
+    {
+     "activityId": "jts-observed:module-listening",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-listenchoose",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-words",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-verbs",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-shadowing",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-memes",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-situations",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-books",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-comics",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-fairytales",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-workbooks",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-word-rush",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:module-speak-or-die",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-1",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-2",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-3",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-4",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-5",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-6",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-7",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-8",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-9",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-10",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-11",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-12",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-13",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-14",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-15",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-16",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-17",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-18",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-19",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-20",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-21",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:shadow-22",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-1",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-2",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-3",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-4",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-5",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-6",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-7",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-8",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-9",
+     "reason": "unverified_level_or_content"
+    },
+    {
+     "activityId": "jts-observed:fairytale-10",
+     "reason": "unverified_level_or_content"
+    }
+   ]
+  },
+  "preferences": {
+   "feedbackStyle": "gentle",
+   "motivation": [
+    "progress"
+   ],
+   "customAnswers": {}
+  }
+ }
+}

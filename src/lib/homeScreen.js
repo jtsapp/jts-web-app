@@ -16,7 +16,6 @@ import { TUTOR_ONLY } from '../config.js'
 export function homeScreenFor({
   token,
   boothAccount = false,
-  needsLevelTest = false,
   tutorOnboarded = false,
 } = {}) {
   if (boothAccount) return 'booth'
@@ -30,7 +29,12 @@ export function homeScreenFor({
   // (уровень, сильные и слабые стороны, ближайшие занятия), из которой видно,
   // куда идти дальше. Карта королевств осталась разделом «Обучение»: она про
   // один способ учиться, а не про весь кабинет.
-  return needsLevelTest ? 'test-intro' : 'home'
+  //
+  // Тест уровня с 14.10.2026 — тоже там: новый ученик проходит тур «Главной», а
+  // тест ждёт его в закрытом блоке роадмапа (спека placement-v16-first-login).
+  // Поэтому «нужен ли тест» (needsLevelTest, его по-прежнему передают пути
+  // входа) экран входа больше не меняет.
+  return 'home'
 }
 
 /**

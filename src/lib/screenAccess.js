@@ -35,6 +35,7 @@ export const STUDENT_ONLY_SCREENS = new Set([
   // Тест уровня во всех видах.
   'test-intro',
   'test',
+  'placement',
   'speaking-test',
   // IELTS-модуль.
   'ielts',

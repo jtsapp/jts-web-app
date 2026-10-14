@@ -2553,3 +2553,276 @@ button.hm-level__goal:focus-visible {
 .ge-route__edit {
   align-self: center;
 }
+
+/* ── План по дням общего курса (спека 2026-10-13): «Сегодня» на «Главной» и экран «План» ──
+   Виды плана рисуются классами IELTS (ih-dp, ih-road2, ih-week7, ih-month2…) под токенами .ih; здесь — своё: строка
+   задачи, плашки разделов (у IELTS их нет — там навыки экзамена) и карточка «Сегодня» вне .ih (токены — .ge-skin). */
+.ge-today__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 12px;
+}
+.ge-today__head .hm-card__title {
+  margin: 0;
+}
+.ge-today__week {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-ink-2);
+}
+.ge-today__all {
+  margin-left: auto;
+}
+.ge-today__note {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fff6ea;
+  font-size: 14px;
+  line-height: 20px;
+  color: #8a4b0f;
+}
+.ge-today__rest {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ih-ink);
+}
+.ge-today__ahead {
+  margin: 14px 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ge-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ge-task {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--ih-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.ge-task.is-primary {
+  background: #f6f1ff;
+  border-color: #e3d8fa;
+}
+.ge-task.is-homework {
+  border-color: #f6d9b8;
+}
+.ge-task.is-done {
+  opacity: 0.7;
+}
+.ge-task__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ge-task__body b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ih-ink);
+  overflow-wrap: break-word;
+}
+.ge-task__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ge-task__chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ge-task__chip.is-late {
+  background: #fff1e3;
+  color: #c2560a;
+}
+/* задача преподавателя (часть 3): синяя метка «Добавлено преподавателем» и полоса слева — цвета IELTS (.ih-origin.is-teacher) */
+.ge-task.is-teacher {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+.ge-task__chip.is-teacher {
+  background: #e6f0ff;
+  color: #2563eb;
+}
+.ge-task__note {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ih-ink-2);
+  overflow-wrap: break-word;
+}
+.ge-plate--unit {
+  background: #eef0ff;
+  color: #4f5bd5;
+}
+.ge-plate--custom {
+  background: #e6f0ff;
+  color: #2563eb;
+}
+.ge-task__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #22a55b;
+}
+.ge-plate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #f1eaff;
+  color: var(--ih-violet, #9047ff);
+}
+.ge-plate--course {
+  background: #f1eaff;
+  color: #7c3aed;
+}
+.ge-plate--live {
+  background: #e7f0ff;
+  color: #2f6fde;
+}
+.ge-plate--homework {
+  background: #fff1dd;
+  color: #e57a12;
+}
+.ge-plate--ai_tutor {
+  background: #e3f6ea;
+  color: #22a55b;
+}
+.ge-plate--workbooks {
+  background: #fff7d6;
+  color: #b7791f;
+}
+.ge-plate--shadowing {
+  background: #e6f7f8;
+  color: #0f8c95;
+}
+.ge-plate--media_practice {
+  background: #fdeaf3;
+  color: #d6408b;
+}
+.ge-plate--vocabulary_sr {
+  background: #eef0ff;
+  color: #4f5bd5;
+}
+/* заглушка верхнего блока «Главной», пока профиль анкеты в пути: высота — как у блока цели, чтобы экран не прыгал */
+.ge-skel {
+  min-height: 300px;
+  background: linear-gradient(100deg, #f4f1fb 30%, #ece6fa 50%, #f4f1fb 70%) 0 0 / 200% 100%;
+  animation: ge-skel 1.4s ease-in-out infinite;
+}
+@keyframes ge-skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ge-skel {
+    animation: none;
+  }
+}
+/* экран «План» */
+/* переключатель видов — строкой под заголовком, а не справа: правый верх экрана занят кнопками языка и уведомлений */
+.ge-plan__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ge-plan__head h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ih-ink);
+}
+.ge-plan__sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ih-ink-2);
+}
+.ge-plan__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+.ge-plan__beyond {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ih-ink-2);
+}
+.ge-plan__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--ih-line);
+  border-radius: 24px;
+  background: #fff;
+}
+.ge-plan__empty p {
+  margin: 0;
+  font-size: 16px;
+  color: var(--ih-ink);
+}
+.ge-plan .ge-tasks {
+  margin-top: 8px;
+}
+/* панель дня узкая (~350px): кнопка под названием во всю ширину, как в панели дня IELTS, иначе название рвётся по буквам */
+.ih-dp .ge-task {
+  flex-wrap: wrap;
+}
+.ih-dp .ge-task > .ih-btn2,
+.ih-dp .ge-task > .ge-task__done {
+  flex-basis: 100%;
+}
+/* карточка недели и чип месяца — цвет раздела полоской слева: у IELTS там навык, у нас раздел практики */
+.ge-wcard--live,
+.ge-mchip--live {
+  box-shadow: inset 3px 0 0 #2f6fde;
+}
+.ge-wcard--homework,
+.ge-mchip--homework {
+  box-shadow: inset 3px 0 0 #e57a12;
+}
+.ge-wcard--course,
+.ge-mchip--course {
+  box-shadow: inset 3px 0 0 #7c3aed;
+}
+/* после правил разделов: у задачи преподавателя полоса синяя, какого бы вида она ни была */
+.ge-wcard--teacher,
+.ge-mchip--teacher {
+  box-shadow: inset 3px 0 0 #3b82f6;
+}
+.ge-move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ge-move__error {
+  font-size: 13px;
+  color: #c2560a;
+}

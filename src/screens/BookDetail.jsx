@@ -9,6 +9,7 @@ import { cleanWord, translateWord } from '../lib/wordTranslate.js'
 import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { Dots } from './practice/PracticeCards.jsx'
 import { chapterProgress, splitSubtitles, subtitleAt, subtitleTextFor } from '../practice/books/readAlong.js'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // У читалки два источника глав, в порядке приоритета:
@@ -173,6 +174,8 @@ function fmtTime(sec) {
 }
 
 export default function BookDetail({ book, token, onBack, onWordSaved }) {
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token })
   const [mode, setMode] = useState('overview') // overview | read | audio
   const [ch, setCh] = useState(0)
   const [visited, setVisited] = useState(() => new Set())

@@ -8,7 +8,9 @@ import { useI18n } from '../i18n.jsx'
 // «ещё раз» опускается до текстовой кнопки.
 // Стили lt-res-* живут в listening.css и берут палитру с контейнера .lt —
 // рендерить только внутри <div className="lt">.
-export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHome, onNext, nextLabel }) {
+// homeLabel — подпись выхода по месту назначения (lib/navStack.js): прежнее
+// «На главную» вело в Практику, а не на «Главную».
+export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHome, homeLabel, onNext, nextLabel }) {
   const { t } = useI18n()
   const answered = correct + wrong
   const pct = answered ? Math.round((correct / answered) * 100) : 0
@@ -55,7 +57,7 @@ export default function TrainerResult({ correct, wrong, coins = 0, onAgain, onHo
         >
           {t('listening.again')}
         </button>
-        <button type="button" className="lt-ghost" onClick={onHome}>{t('listening.home')}</button>
+        <button type="button" className="lt-ghost" onClick={onHome}>{homeLabel || t('listening.home')}</button>
       </div>
     </div>
   )

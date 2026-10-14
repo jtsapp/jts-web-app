@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -12,8 +12,7 @@ import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import CompleteRegistrationPage from './screens/CompleteRegistrationPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
-import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
-import PlacementTestPage from './screens/PlacementTestPage.jsx'
+import PlacementPage from './screens/PlacementPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
@@ -67,6 +66,7 @@ import IeltsDiagnosticResultPage from './screens/IeltsDiagnosticResultPage.jsx'
 import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
 import GeOnboardingPage from './screens/GeOnboardingPage.jsx'
 import GeRoutePage from './screens/GeRoutePage.jsx'
+import GePlanPage from './screens/GePlanPage.jsx'
 import { syncLegacyGoal } from './ge/legacyGoal.js'
 import { ieltsAccountRedirect } from './lib/ieltsAccountRedirect.js'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
@@ -104,11 +104,11 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
-import { isTeacher } from './lib/jwt.js'
+import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
@@ -117,13 +117,18 @@ import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
+import { pushNav, popNav, readNavStack, writeNavStack, placeOf, setResume, resumeOf, isReturnable, backLabelKey } from './lib/navStack.js'
+import { restoreScroll } from './lib/scrollRestore.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { flushSkillStats } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
 import { resolveHomeLevel } from './lib/homeLevel.js'
-import { placementSummary } from './lib/placement.js'
+import { levelFromEnvelope } from './placement/envelope.js'
+import { geProfileBody } from './placement/geMapping.js'
+import { navForActivity, navForSection } from './placement/activityRoutes.js'
+import { saveAttempt } from './placement/api.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
@@ -152,8 +157,10 @@ const PERSISTABLE_SCREENS = new Set([
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
-  // Анкета и маршрут General English (спека 2026-10-12): данные берут у бэкенда сами, параметров в адресе не нужно
-  'ge-onboarding', 'ge-route',
+  // Анкета, маршрут и план General English (спеки 2026-10-12 и 2026-10-13): данные берут у бэкенда сами
+  'ge-onboarding', 'ge-route', 'ge-plan',
+  // Тест уровня v16: прогон тест хранит сам (localStorage с пространством профиля), F5 продолжает с того же места
+  'placement',
   // SAT: хаб держит вкладку в ?satTab= сам (docs/sat/PLAN.md)
   'sat', 'sat-onboarding',
   // образец экрана вопроса (фаза 3): режим — в ?satSample=, черновик — на устройстве
@@ -194,6 +201,16 @@ const BOOTH_SCREENS = new Set(['booth', 'live-lesson'])
 // мгновенный повтор: та же секунда сети, скорее всего, ещё не отпустила.
 const BOOTH_ACCOUNT_RETRY_MS = 4000
 
+// sessionStorage вкладки или null: на сервере window нет, а в приватном режиме
+// Safari сам доступ к хранилищу бросает.
+function sessionStore() {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const { t, lang, setLang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -204,7 +221,40 @@ export default function App() {
   // SSR отрисовал бы 'welcome', а первый рендер клиента — экран из query, и
   // React ронял бы hydration mismatch. Поэтому первый рендер везде одинаковый
   // ('welcome'), а диплинк применяется эффектом уже после гидратации.
-  const [screen, setScreen] = useState('welcome')
+  const [screen, setScreenState] = useState('welcome')
+  // Стек «откуда пришли» (lib/navStack.js): по нему «Назад» ведёт туда, откуда
+  // экран открыли, а не в зашитое место. Читается сразу, а не эффектом: эффект
+  // записи ниже на первом проходе стёр бы сохранённый стек раньше, чем его
+  // прочли. Гидратации это не мешает — стек ничего не рисует, пока
+  // восстанавливается сессия (первый экран всё равно 'welcome').
+  const [navStack, setNavStack] = useState(() => readNavStack(sessionStore()))
+  useEffect(() => {
+    writeNavStack(sessionStore(), navStack)
+  }, [navStack])
+  const screenRef = useRef('welcome')
+  // «Назад», которому некуда вернуться, идёт своим запасным переходом — и
+  // этот переход не должен класть в стек экран, из которого как раз вышли.
+  const skipPushRef = useRef(false)
+  // Контекст экранов, который держит сам App (королевство тропы, id урока),
+  // снимается в момент ухода: «назад» откроет тот же урок, даже если состояние
+  // успели переписать. Функцию обновляет эффект ниже, у goBack.
+  const appPlaceRef = useRef(() => undefined)
+  // Все переходы идут через эту обёртку — так стек видит каждый, а не только
+  // те, что прошли через handleNav (их больше ста, и половина — прямые
+  // setScreen в пропсах экранов).
+  const setScreen = useCallback((next) => {
+    const prev = screenRef.current
+    const skip = skipPushRef.current
+    skipPushRef.current = false
+    if (next === prev) return
+    screenRef.current = next
+    setResume(null)
+    const place = !skip && isReturnable(prev)
+      ? { ...appPlaceRef.current(prev), ...placeOf(prev), scrollY: window.scrollY }
+      : undefined
+    setNavStack((st) => (skip ? pushNav(st, null, next) : pushNav(st, prev, next, place)))
+    setScreenState(next)
+  }, [])
   // Пока проверяем сохранённый токен, не рисуем ни welcome, ни kingdom — иначе
   // у вернувшегося пользователя мелькнёт экран входа. Стартовое значение true
   // одинаково на сервере и клиенте, так что гидратация не ломается.
@@ -517,7 +567,7 @@ export default function App() {
     // после входа отдельным запросом, поэтому поправляем уже открытый экран. Правило — lib/ieltsAccountRedirect.js.
     const to = ieltsAccountRedirect(ieltsAccount, screen)
     if (to) setScreen(to)
-  }, [ieltsAccount, screen])
+  }, [ieltsAccount, screen, setScreen])
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
   // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
@@ -565,20 +615,30 @@ export default function App() {
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
-  // Тест уровня открывается не только после входа, но и из профиля. Куда
-  // вернуть человека после теста или «Пройду позже» (null — как раньше, в
-  // королевство) и пересдача ли это (уровень в аккаунте уже есть, и прогон его
-  // не меняет — см. PlacementTestPage).
+  // Тест уровня (v16) открывается с «Главной», из профиля и плана. Куда вернуть человека по «назад» с теста (null —
+  // на «Главную»). Пересдачи как отдельного режима больше нет: уровень тест пишет только в пустой аккаунт.
   const [testReturn, setTestReturn] = useState(null)
-  const [testRetake, setTestRetake] = useState(false)
   // Профиль General English (анкета «Главной», цель, формат — бэкенд /mobile/ge). null — ручки нет (старый бэкенд),
   // аккаунт IELTS (у него своя анкета) или гость: тогда «Главная» прежняя.
   const [geProfile, setGeProfile] = useState(null)
-  // Тест уровня запущен из анкеты или со следующего шага «Главной»: конец теста — маршрут, «позже» — «Главная».
-  const [geTestFlow, setGeTestFlow] = useState(false)
+  // Для какого токена профиль уже спросили (ответил он или нет). Без этого null значил и «ручки нет», и «ещё не
+  // ответила»: «Главная» на время запроса рисовала старую карточку уровня, а тур успевал стартовать по старым шагам.
+  const [geLoadedFor, setGeLoadedFor] = useState(undefined)
+  const geLoaded = !token || geLoadedFor === token
   const [geEdit, setGeEdit] = useState(false)
-  // Куда «назад» из тарифов, если пришли не из сайдбара (маршрут General English)
-  const [pricingBack, setPricingBack] = useState(null)
+  // Словарь открыт ссылкой из урока или раздела (а не из меню) — у него есть
+  // «Назад» туда, см. handleNav('vocab').
+  const [vocabReturn, setVocabReturn] = useState(false)
+  // Работа, которую открыть в «Домашней работе» (карточка «Главной»); null — первая по порядку.
+  const [homeworkTarget, setHomeworkTarget] = useState(null)
+  // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
+  // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
+  // прекращается, иначе она крутила бы уже следующий экран.
+  const [scrollBack, setScrollBack] = useState(null)
+  useEffect(
+    () => (scrollBack && scrollBack.screen === screen ? restoreScroll(scrollBack.y) : undefined),
+    [scrollBack, screen],
+  )
   useEffect(() => {
     if (!token) {
       setGeProfile(null)
@@ -592,15 +652,13 @@ export default function App() {
         if (alive) setGeProfile(p)
       })
       .catch(() => {})
+      .finally(() => {
+        if (alive) setGeLoadedFor(token)
+      })
     return () => {
       alive = false
     }
   }, [token])
-  // Новый ученик после входа попадает на тест уровня ('test-intro', homeScreenFor). С ручкой профиля сначала анкета —
-  // цель и срок, потом тест. Тест из профиля (testReturn 'profile') и тест, запущенный самой анкетой, не перехватываем.
-  useEffect(() => {
-    if (screen === 'test-intro' && geProfile && !geProfile.onboarded && !geTestFlow && testReturn !== 'profile') setScreen('ge-onboarding')
-  }, [screen, geProfile, geTestFlow, testReturn])
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
@@ -1127,48 +1185,28 @@ export default function App() {
     }
   }
 
-  // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
-  // открываем королевство. Уровень пишем в оба стора: backend — источник правды
-  // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
-  // записи они расходились.
-  // Сохранение уровня отделено от перехода: тест отдаёт уровень дважды —
-  // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
-  // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
-  // сеть не шлём: второй вызов приходит через секунды с тем же значением.
-  // Запомнить успешную запись, чтобы повтор того же уровня не гонял сеть
-  // второй раз; неудачную — не запоминаем, иначе «Повторить» ничего не сделает.
+  // Уровень, поставленный тестом, пишем в оба стора (persistPlacementLevel): backend — источник правды при входе,
+  // Neon-профиль — то, что читает голосовой тьютор. Только в пустой аккаунт: тарифный уровень тест не трогает
+  // (решение владельца 30.09.2026, подтверждено 14.10 для теста v16). Тест отдаёт итог несколько раз (показан,
+  // «продолжить», переход в задание) — уже записанный уровень второй раз в сеть не шлём.
   const lastSavedTestLevel = useRef(null)
-  const [levelSaveState, setLevelSaveState] = useState('idle') // idle | saving | saved | error
-  const pendingTestLevel = useRef(null)
 
-  async function saveTestLevel(level, summary, session, sessionToken) {
-    if (!level || lastSavedTestLevel.current === level) return
-    pendingTestLevel.current = { level, summary, session, sessionToken }
+  async function saveTestLevel(level) {
+    if (!level) return null
+    if (lastSavedTestLevel.current === level) return level
     // Уровень показываем сразу: экраны читают его из стейта, ждать сети незачем.
     setUserLevel(level)
-    setLevelSaveState('saving')
-    const res = await persistPlacementLevel(token, level, { summary, session, sessionToken })
-    // Итоговый уровень считает сервер по журналу ответов; его вердикт может
-    // отличаться от клиентского (в том числе полом A1 вместо A0).
+    const res = await persistPlacementLevel(token, level)
     if (res.level && res.level !== level) setUserLevel(res.level)
-    if (res.ok) {
-      lastSavedTestLevel.current = level
-      // Снимаем «нужен тест» только когда уровень действительно лёг в профиль:
-      // иначе следующий вход должен предложить тест снова, а не считать его
-      // пройденным по несохранённому результату.
-      setNeedsLevelTest(false)
-      setLevelSaveState('saved')
-    } else {
+    if (!res.ok) {
       console.warn('Не удалось сохранить уровень:', res.error)
-      setLevelSaveState('error')
+      return null
     }
-  }
-
-  function retrySaveTestLevel() {
-    const pending = pendingTestLevel.current
-    if (pending?.level) {
-      saveTestLevel(pending.level, pending.summary, pending.session, pending.sessionToken)
-    }
+    lastSavedTestLevel.current = level
+    // Снимаем «нужен тест» только когда уровень действительно лёг в профиль: иначе «Главная» должна звать на тест
+    // снова, а не считать его пройденным по несохранённому результату.
+    setNeedsLevelTest(false)
+    return res.level || level
   }
 
   // Куда уходить с теста уровня — см. testExitScreen (lib/homeScreen.js). Функция, а
@@ -1177,36 +1215,69 @@ export default function App() {
     return testExitScreen({ testReturn, tutorHome })
   }
 
-  async function handleTestDone(res) {
-    setGeTestFlow(false)
-    await saveTestLevel(res?.level)
-    setTestReturn(null)
-    setScreen(testExit())
-  }
-
-  // Тест из профиля. Уровня в аккаунте нет — обычный тест, он уровень и
-  // поставит (ровно то, чего не хватало тем, кто пропустил его после
-  // регистрации). Уровень есть — пересдача: результат покажем, уровень в
-  // аккаунте не тронем (решение владельца, 30.09.2026).
-  function openLevelTestFrom(returnTo) {
+  // Тест уровня v16 — откуда бы его ни открыли (закрытый блок «Главной», профиль, план, старые адреса test-intro и
+  // test). returnTo — куда вернуть по «назад».
+  function openPlacement(returnTo = null) {
     setTestReturn(returnTo)
-    setTestRetake(!needsLevelTest)
-    setScreen(needsLevelTest ? 'test-intro' : 'test')
+    setScreen('placement')
   }
 
-  // Тест уровня из анкеты General English и со следующего шага «Главной»: в конце — маршрут, «позже» — «Главная».
-  function openGeTest() {
-    setGeTestFlow(true)
-    setTestReturn('ge-route')
-    setTestRetake(false)
-    setScreen('test-intro')
+  // Мост теста ставит колбэки в iframe один раз на загрузку, а между событиями итога (показан → «продолжить») App
+  // успевает перерисоваться: колбэки читают свежее состояние отсюда, иначе второе событие увидело бы старый профиль
+  // GE и записало бы анкету дважды.
+  const placementState = useRef({})
+  useEffect(() => {
+    placementState.current = { token, needsLevelTest, userLevel, geProfile }
+  })
+  const placementChain = useRef(Promise.resolve())
+  // Растёт с каждым сохранённым итогом — «Главная» по нему перечитывает отчёт.
+  const [placementVersion, setPlacementVersion] = useState(0)
+
+  // Итог теста v16 (спека 2026-10-14): конверт — в базу (отчёт «Главной»), уровень — в пустой аккаунт, ответы анкеты —
+  // в профиль General English, если анкета ещё не заполнялась (анкета теста заменила нашу). События идут цепочкой.
+  function finalizePlacement(env) {
+    const run = async () => {
+      const st = placementState.current
+      if (!st.token || !env) return
+      if (await saveAttempt(st.token, env)) setPlacementVersion((v) => v + 1)
+      let level = st.needsLevelTest ? null : st.userLevel
+      const tested = levelFromEnvelope(env)
+      if (st.needsLevelTest && tested) level = await saveTestLevel(tested)
+      const ge = placementState.current.geProfile
+      if (!level || !ge || ge.onboarded) return
+      const body = geProfileBody(env, level)
+      const p = body ? await saveGeProfile(st.token, body).catch(() => null) : null
+      if (p) {
+        placementState.current = { ...placementState.current, geProfile: p }
+        setGeProfile(p)
+      }
+    }
+    placementChain.current = placementChain.current.then(run, run)
+    return placementChain.current
+  }
+
+  // «Продолжить» на итоге теста: анкета только что легла в профиль GE и формат не выбран — на маршрут (формат
+  // обучения спрашивает он, решение 14.10); иначе туда, откуда пришли.
+  async function continueAfterPlacement(env) {
+    await finalizePlacement(env)
+    const ge = placementState.current.geProfile
+    const next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    setTestReturn(null)
+    setScreen(next)
+  }
+
+  // Задание из рекомендаций или раздел с экрана итога: итог сохраняем до ухода — iframe с ним сейчас размонтируется.
+  async function leavePlacementTo(nav, env) {
+    await finalizePlacement(env)
+    setTestReturn(null)
+    handleNav(nav.key, nav.payload)
   }
 
   // Ответы анкеты сохранены. «С нуля» бэкенд сам поставил A0 — App узнаёт уровень из ответа, без перечитывания профиля.
+  // Анкету теперь открывают только правкой цели с «Главной» и маршрута; «нужен тест» — это тест v16.
   function handleGeSaved(p, next) {
     if (p) {
       setGeProfile(p)
-      syncLegacyGoal(token, p)
       const lv = p.journey?.current?.level
       if (lv && needsLevelTest) {
         setUserLevel(lv)
@@ -1214,22 +1285,8 @@ export default function App() {
       }
     }
     setGeEdit(false)
-    if (next === 'test') openGeTest()
+    if (next === 'test') openPlacement('home')
     else setScreen('ge-route')
-  }
-
-  function leaveTestIntro() {
-    if (geTestFlow) {
-      setGeTestFlow(false)
-      setTestReturn(null)
-      setScreen('home')
-    } else setScreen(testExit())
-  }
-
-  function leaveRetake() {
-    setTestRetake(false)
-    setTestReturn(null)
-    setScreen(testExit())
   }
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
@@ -1275,16 +1332,8 @@ export default function App() {
       // ссылки адресу — см. pendingScreenAfterLogin.
       hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
     })
-    // Уровня нет — сначала тест, и только потом ссылка. Раньше ссылка
-    // перебивала тест: пришедший по ней (в том числе обновивший вкладку на
-    // разделе, открытом гостем) регистрировался и попадал сразу в раздел, а
-    // тест так и не видел — жалоба «после регистрации теста не было». Ссылку
-    // не теряем: «Пройду позже» и конец теста ведут туда, куда он шёл.
-    if (home === 'test-intro') {
-      setTestReturn(target)
-      setTestRetake(false)
-      return home
-    }
+    // Теста при входе больше нет (14.10.2026): ученик попадает на «Главную», где тест ждёт в закрытом блоке
+    // роадмапа, — поэтому и ссылка, по которой он пришёл, открывается сразу.
     return target ?? home
   }
 
@@ -1324,6 +1373,11 @@ export default function App() {
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
+    // Путь «откуда пришли» — тоже его: «назад» следующего ученика в этой
+    // вкладке не должен вести по чужим экранам. skipPush — и экран, с которого
+    // вышли, в новый путь не кладём.
+    setNavStack([])
+    skipPushRef.current = true
     setToken(null)
     setName('')
     setPhone('')
@@ -1359,7 +1413,6 @@ export default function App() {
     setProfession('')
     setNeedsLevelTest(false)
     setTestReturn(null)
-    setTestRetake(false)
     setScreen('welcome')
   }
 
@@ -1390,6 +1443,7 @@ export default function App() {
   const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
   const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
   const homeTourKey = tourKeyFor(profileId || getDeviceId(), 'home')
+  const gePlanTourKey = tourKeyFor(profileId || getDeviceId(), 'ge-plan')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1469,7 +1523,7 @@ export default function App() {
     else if (!boothAccount && screen === 'booth') {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   // Тот же страж для преподавателя: ученические разделы ему не положены, а
   // `?screen=` до сих пор клался в состояние без сверки с ролью — и в меню, из
@@ -1481,7 +1535,7 @@ export default function App() {
     if (isStudentOnlyScreen(screen)) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -1507,6 +1561,15 @@ export default function App() {
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
+    // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
+    else if (key === 'course') {
+      const k = KINGDOMS.find((x) => x.level === String(payload?.level || userLevel || '').toUpperCase())
+      if (k) {
+        setKingdom(k)
+        setScreen('kingdom-interior')
+      } else setScreen('kingdom')
+    }
+    else if (key === 'ge-plan') setScreen('ge-plan')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
@@ -1525,7 +1588,12 @@ export default function App() {
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
     // Уровень приносит карточка Практики — она же и списала квоту.
-    else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
+    // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
+    else if (key === 'situations') {
+      setSituationsTarget(payload || null)
+      if (payload?.replace) skipPushRef.current = true
+      setScreen('situations')
+    }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
@@ -1535,7 +1603,8 @@ export default function App() {
         setScreen('live-lesson')
       } else setScreen('lessons')
     }
-    else if (key === 'homework') setScreen('homework')
+    // payload.id — конкретная работа (карточка «Главной»): открыть её, а не первую в списке.
+    else if (key === 'homework') { setHomeworkTarget(payload?.id ?? null); setScreen('homework') }
     // Урок, заданный на дом: домашка зовёт с адресом урока каталога и адресом
     // карточки — или без карточки, если задан весь урок. Без урока никуда не
     // идём — экран без id открылся бы демонстрационным уроком, то есть чужим
@@ -1559,7 +1628,77 @@ export default function App() {
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
     else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
-    else if (key === 'vocab') setScreen('vocab')
+    // back: словарь открыт ссылкой изнутри урока или раздела — у него появляется
+    // «Назад» туда. Из меню словарь — раздел верхнего уровня, кнопки нет.
+    else if (key === 'vocab') { setVocabReturn(Boolean(payload?.back)); setScreen('vocab') }
+  }
+
+  // ── «Назад» по стеку (lib/navStack.js) ──────────────────────────────────
+  // Контекст экранов, который держит App: уходя с тропы, урока или рабочего
+  // листа, запоминаем, какой это был, — «назад» откроет его же.
+  useEffect(() => {
+    appPlaceRef.current = (from) => {
+      if (from === 'kingdom-interior' && kingdom) return { level: kingdom.level }
+      if (from === 'live-lesson' && liveLessonId != null) return { lessonId: liveLessonId }
+      if (from === 'lesson-workspace' && liveWorkspaceId != null) {
+        return { workspaceId: liveWorkspaceId, workspaceSource, workspaceCardId }
+      }
+      if (from === 'vocab') return { vocabReturn }
+      return undefined
+    }
+  }, [kingdom, liveLessonId, liveWorkspaceId, workspaceSource, workspaceCardId, vocabReturn])
+
+  function restoreAppPlace(to, place) {
+    // Цель перехода в Практику (книги с «Главной», юнит домашки) уже отыграла:
+    // вернувшись, Практика открывается на своём месте — вкладке и разделе,
+    // где её оставили, — а не снова по цели.
+    if (to === 'practice') setPracticeTarget(null)
+    else if (to === 'kingdom-interior' && place.level) {
+      const k = KINGDOMS.find((x) => x.level === place.level)
+      if (k) setKingdom(k)
+    } else if (to === 'live-lesson' && place.lessonId != null) setLiveLessonId(place.lessonId)
+    else if (to === 'lesson-workspace' && place.workspaceId != null) {
+      setLiveWorkspaceId(place.workspaceId)
+      setWorkspaceSource(place.workspaceSource || 'live')
+      setWorkspaceCardId(place.workspaceCardId ?? null)
+    } else if (to === 'vocab') setVocabReturn(Boolean(place.vocabReturn))
+  }
+
+  // Куда ведёт «назад» с текущего экрана: туда, откуда пришли, а без истории
+  // (диплинк, F5 на первом экране вкладки) — по запасному переходу экрана.
+  function goBack(fallback) {
+    const hit = popNav(navStack, screen)
+    if (!hit) {
+      skipPushRef.current = true
+      fallback?.()
+      skipPushRef.current = false
+      return
+    }
+    const { entry, rest } = hit
+    const place = entry.place || {}
+    restoreAppPlace(entry.screen, place)
+    screenRef.current = entry.screen
+    setResume(entry.screen, place)
+    setNavStack(rest)
+    setScreenState(entry.screen)
+    if (place.scrollY > 0) setScrollBack({ y: place.scrollY, screen: entry.screen })
+  }
+
+  // Подпись кнопки называет место назначения («На главную», «В Практику»).
+  function backLabel(fallbackScreen) {
+    return t(backLabelKey(popNav(navStack, screen)?.entry.screen || fallbackScreen))
+  }
+
+  // «Назад» раздела Практики: туда, откуда открыли, иначе — во вкладку
+  // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
+  // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
+  // назад целиком (пришли с карточки) или в список раздела (диплинк).
+  function sectionBack(skill) {
+    return {
+      onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
+      backLabel: backLabel('practice'),
+      canReturn: Boolean(popNav(navStack, screen)),
+    }
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -1810,39 +1949,27 @@ export default function App() {
           onDone={() => setScreen(screenAfterLogin())}
         />
       )
+    // Тест уровня v16 методиста (спека 2026-10-14-placement-v16-first-login-design.md): страница теста в iframe, итог —
+    // через мост (finalizePlacement). Прежние экраны теста ('test-intro', 'test') ведут сюда же: их адреса остались в
+    // закладках и стеке «назад» старых версий.
     case 'test-intro':
-      return (
-        <LevelTestIntroPage
-          // Сюда попадают уже залогиненными — «назад» и «позже» ведут не на
-          // экран входа, а туда, откуда пришли (профиль, ссылка), иначе в
-          // королевство.
-          onBack={leaveTestIntro}
-          // Интро — только у обычного теста: у пересдачи его нет.
-          onStart={() => { setTestRetake(false); setScreen('test') }}
-          onLater={leaveTestIntro}
-        />
-      )
     case 'test':
-      // Тест на определение уровня: движок школы, перенесённый в проект
-      // (src/practice/placement/), экран — в оформлении приложения. Он же
-      // определяет A0, которого прежний адаптивный тест выдать не мог.
-      // Уровень сохраняем сразу по подсчёту, не дожидаясь кнопки: иначе
-      // пройденный тест пропадёт, если закрыть вкладку на экране результата.
+    case 'placement':
       return (
-        <PlacementTestPage
-          lang={lang}
+        <PlacementPage
           token={token}
-          saveState={levelSaveState}
-          onRetrySave={retrySaveTestLevel}
-          // Вместе с уровнем сохраняем снимок прохождения: θ, SE и флаги
-          // качества, по которым видно, насколько оценке можно верить.
-          onLevel={(level, result, session, sessionToken) =>
-            saveTestLevel(level, placementSummary(result), session, sessionToken)}
-          // Пересдача из профиля: уровень не пишется, «назад» есть.
-          retake={testRetake}
-          currentLevel={testRetake ? userLevel : null}
-          onExit={testRetake ? leaveRetake : undefined}
-          onDone={(level) => (testRetake ? leaveRetake() : handleTestDone({ level }))}
+          // Пространство прогона в localStorage — аккаунт из токена: profileId приходит из /api/profile позже и на
+          // первом кадре ещё пуст, а прогон «guest» был бы общим у всех учеников устройства.
+          profileId={userIdFromToken(token) ? `user-${userIdFromToken(token)}` : profileId}
+          backLabel={backLabel(testReturn || 'home')}
+          onExit={() => {
+            setTestReturn(null)
+            goBack(() => setScreen(testExit()))
+          }}
+          onResult={finalizePlacement}
+          onContinue={continueAfterPlacement}
+          onActivity={(rec, env) => leavePlacementTo(navForActivity(rec), env)}
+          onSection={(section, env) => leavePlacementTo(navForSection(section), env)}
         />
       )
     case 'home':
@@ -1853,16 +1980,18 @@ export default function App() {
           token={token}
           isDemoAccount={isDemoAccount}
           demoExpiresAt={demoExpiresAt}
-          // Тот же признак, по которому вход ведёт на 'test-intro': без уровня
-          // «Главная» показывает приглашение на тест, а не чужие цифры.
+          // Без уровня «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
-          onStartLevelTest={() => { setTestReturn(null); setScreen('test-intro') }}
+          onStartLevelTest={() => openPlacement('home')}
           geProfile={ieltsAccount ? null : geProfile}
-          onGeStart={() => { setGeEdit(false); setScreen('ge-onboarding') }}
+          geLoaded={geLoaded}
+          // Анкета «Главной» заменена анкетой теста v16 (14.10.2026): «начать» — это тест, правка цели — прежний экран.
+          onGeStart={() => openPlacement('home')}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onGeRoute={() => setScreen('ge-route')}
-          onGeTest={openGeTest}
+          onGeTest={() => openPlacement('home')}
+          placementVersion={placementVersion}
           tourKey={homeTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
@@ -1887,11 +2016,9 @@ export default function App() {
       return (
         <PricingPage
           token={token}
-          onBack={() => {
-            const back = pricingBack
-            setPricingBack(null)
-            setScreen(back || (isDemoAccount ? 'home' : 'kingdom'))
-          }}
+          // Туда, откуда пришли за тарифом: стек переживает и перезагрузку,
+          // которой оплата возвращает на ?screen=pricing.
+          onBack={() => goBack(() => setScreen(isDemoAccount ? 'home' : 'kingdom'))}
         />
       )
     case 'kingdom':
@@ -1924,7 +2051,10 @@ export default function App() {
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
-          onLevelTest={token ? () => openLevelTestFrom('profile') : undefined}
+          onLevelTest={token ? () => openPlacement('profile') : undefined}
+          // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
+          onBack={popNav(navStack, screen) ? () => goBack() : undefined}
+          backLabel={backLabel('home')}
         />
       )
     case 'practice':
@@ -1935,6 +2065,8 @@ export default function App() {
           token={token}
           openTarget={practiceTarget}
           tourKey={practiceTourKey}
+          onLeave={popNav(navStack, screen) ? () => goBack() : undefined}
+          leaveLabel={backLabel('home')}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
@@ -1943,6 +2075,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1955,6 +2088,7 @@ export default function App() {
     case 'shadowing':
       return (
         <ShadowingPage
+          {...sectionBack(null)}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1967,6 +2101,7 @@ export default function App() {
     case 'writing':
       return (
         <WritingPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1979,6 +2114,7 @@ export default function App() {
     case 'workbook':
       return (
         <WorkbookPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1991,6 +2127,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2002,6 +2139,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2012,6 +2150,7 @@ export default function App() {
     case 'speakspin':
       return (
         <SpeakSpinPage
+          {...sectionBack('speaking')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2022,6 +2161,7 @@ export default function App() {
     case 'verbs':
       return (
         <VerbsPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2033,6 +2173,7 @@ export default function App() {
     case 'situations':
       return (
         <SituationsPage
+          {...sectionBack('speaking')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2044,6 +2185,7 @@ export default function App() {
     case 'listenchoose':
       return (
         <ListenChoosePage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2055,6 +2197,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
+          {...sectionBack(arcadeTarget?.skill || 'speaking')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}
@@ -2066,6 +2209,7 @@ export default function App() {
     case 'reading':
       return (
         <ReadingPage
+          {...sectionBack('reading')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2076,11 +2220,11 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={resumeOf('lessons')?.tab} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
-      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':
-      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => goBack(() => setScreen('lessons'))} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':
       return (
         <BoothEntryPage
@@ -2111,7 +2255,7 @@ export default function App() {
       // проп не получают, и их сценарий не меняется ни на йоту.
       // key — урок: следование за классом, очередь снимков и буфер показа живут
       // в ref-ах экрана и не должны переживать смену занятия.
-      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
+      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
@@ -2145,7 +2289,7 @@ export default function App() {
           token={token}
           level={needsLevelTest ? null : userLevel}
           edit={geEdit}
-          onExit={() => { setGeEdit(false); setScreen('home') }}
+          onExit={() => { setGeEdit(false); goBack(() => setScreen('home')) }}
           onSaved={handleGeSaved}
         />
       )
@@ -2158,10 +2302,29 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onLoaded={setGeProfile}
-          onChosen={(p) => { if (p) setGeProfile(p); setScreen('home') }}
-          onPricing={(p) => { if (p) setGeProfile(p); setPricingBack('ge-route'); setScreen('pricing') }}
+          onChosen={(p) => { if (p) setGeProfile(p); goBack(() => setScreen('home')) }}
+          onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
-          onTest={openGeTest}
+          onTest={() => openPlacement('ge-route')}
+          onBack={() => goBack(() => setScreen('home'))}
+          backLabel={backLabel('home')}
+        />
+      )
+    case 'ge-plan':
+      return (
+        <GePlanPage
+          token={token}
+          userName={name}
+          userLevel={userLevel}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onGeStart={() => openPlacement('ge-plan')}
+          onGeRoute={() => setScreen('ge-route')}
+          onGeTest={() => openPlacement('ge-plan')}
+          onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
+          tourKey={gePlanTourKey}
+          onBack={() => goBack(() => setScreen('home'))}
+          backLabel={backLabel('home')}
         />
       )
     case 'ielts-onboarding':
@@ -2284,6 +2447,9 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
           tourKey={vocabTourKey}
+          // «Назад» — только если словарь открыли ссылкой из урока или раздела.
+          onBack={vocabReturn ? () => goBack(() => setScreen('home')) : undefined}
+          backLabel={backLabel('home')}
         />
       )
     case 'kingdom-interior':
@@ -2296,7 +2462,9 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('kingdom')}
+          // Тропу открывают и с карты, и из плана дня («Урок курса»): назад — туда же.
+          onBack={() => goBack(() => setScreen('kingdom'))}
+          backLabel={backLabel('kingdom')}
           isDemoAccount={isDemoAccount}
         />
       )
@@ -2311,7 +2479,9 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => goAfterTutorEdit('home')}
+          // Из «Управления» — обратно туда; иначе — откуда открыли тьютора
+          // (Главная, Практика, план дня), а не всегда на «Главную».
+          onBack={() => (tutorEditFrom === 'manage' ? goAfterTutorEdit('home') : goBack(() => setScreen('home')))}
           tutorKey={tutorKey}
           temper={temper}
           selected={tutorEditFrom === 'manage' ? tutorKey : ''}
@@ -2396,10 +2566,10 @@ export default function App() {
           profession={profession}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          // После онбординга разговор запускается с dashboard — «Назад» и финиш
-          // возвращают туда же. Экран результата уровня остался только в
-          // placement-цепочке (voice-intro), достижимой диплинком.
-          onBack={() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro')}
+          // «Назад» — туда, откуда начали разговор: сценарии, дашборд, разбор
+          // ошибок. Без истории — на дашборд, а до онбординга в placement-цепочку
+          // (voice-intro), достижимую диплинком.
+          onBack={() => goBack(() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro'))}
           onTopUpMinutes={() => setScreen('minutes')}
           tutor={tutor}
           temper={temper}
@@ -2575,7 +2745,8 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-dashboard')}
+          // План открывают из итогов практики и разбора ошибок — назад туда же.
+          onBack={() => goBack(() => setScreen('tutor-dashboard'))}
         />
       )
     case 'tutor-manage':
@@ -2584,7 +2755,8 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-dashboard')}
+          // Из отчёта о звонке («История») — обратно в отчёт, с дашборда — на него.
+          onBack={() => goBack(() => setScreen('tutor-dashboard'))}
           tutor={tutor}
           onChangeTutor={() => {
             setTutorEditFrom('manage')
@@ -2655,7 +2827,7 @@ export default function App() {
     case 'lesson-workspace': {
       const catalogSource = workspaceSource === 'catalog' || workspaceSource === 'self' || workspaceSource === 'homework'
       const fromHomework = workspaceSource === 'homework' || Boolean(workspaceCardId)
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => handleNav('vocab', { back: true })} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => goBack(() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons'))} backLabel={backLabel(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     }
     default:
       // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал

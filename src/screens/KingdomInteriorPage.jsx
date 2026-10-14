@@ -5,16 +5,10 @@ import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota, getCourseCatalog, getCatalogProgress } from '../api.js'
+import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
 import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
-import {
-  catalogFrontier,
-  catalogUnitsDone,
-  isOpenedByCatalog,
-  pickGeneralCourse,
-} from '../lib/reviewUnlock.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
@@ -89,7 +83,8 @@ const KT_OFFSET = [50, 0, 100, 50]
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, isDemoAccount }) {
+// backLabel — куда ведёт «назад» с тропы (карта, «Главная», план дня — App, lib/navStack.js).
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
   const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -105,10 +100,6 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // уровня без исходника экзамена (B1, C1) узла на тропе нет.
   const [exam, setExam] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
-  // Что открывает каталог «Уроков» на этом уровне: самая дальняя пройденная
-  // точка и юниты, пройденные целиком (lib/reviewUnlock.js). Только добавляет
-  // открытое к порядку тропы — пусто, пока не ответил или ученик не вошёл.
-  const [catalogOpen, setCatalogOpen] = useState({ frontier: null, unitsDone: [] })
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
   const [moduleLocked, setModuleLocked] = useState(false)
@@ -124,8 +115,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Токен, под которым читались модули (practice-токен, если он выдался):
   // повторный запрос обязан идти под тем же, иначе бэкенд ответит иначе.
   const authTokenRef = useRef(token)
-  // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
-  // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
+  // Лимит модуля («N из M» из админки, тариф, демо) и два его вида — тексты у них разные:
+  // 'refused' — бэкенд отдал 403 на завершении урока: урок НЕ засчитан, показываем это на экране итогов
+  // вместо тихой синхронизации; 'limit' — урок засчитан, но следующий узел заперт лимитом (goNext).
+  // false — ограничения нет.
   const [restricted, setRestricted] = useState(false)
 
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
@@ -193,24 +186,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         // тяжёлым <level>.json, чтобы первый клик по уроку не ждал ~700KB.
         // С курсом этот файл не нужен вовсе: урок приходит своим steps-<n>.
         if (!courseIndex && isStepLevel(level)) loadLevel(level).catch(() => null)
-        // Каталог «Уроков» — только у вошедшего: гость ходит под общим
-        // демо-токеном, и спроси мы под ним — гостю открылись бы отметки
-        // демо-аккаунта. Отказ каталога тропу не роняет: она идёт по порядку.
-        const [quota, d, catalog, catalogProgress] = await Promise.all([
+        const [quota, d] = await Promise.all([
           mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
           loadDone(level, authToken, mid),
-          token ? getCourseCatalog(authToken).catch(() => []) : [],
-          token ? getCatalogProgress(authToken).catch(() => null) : null,
         ])
         if (!alive) return
         setModuleQuota(quota)
         setDone(new Set(d))
-        const general = pickGeneralCourse(catalog, level)
-        const completed = catalogProgress?.completedLessonIds
-        setCatalogOpen({
-          frontier: catalogFrontier(general, completed),
-          unitsDone: catalogUnitsDone(general, completed),
-        })
         setState({ loading: false, error: trail.length ? null : 'empty' })
       } catch (e) {
         if (alive) setState({ loading: false, error: e.message || 'error' })
@@ -240,24 +222,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return out
   }, [lessons])
 
-  // Юнит узла и его номер в юните по глобальному индексу — то, чем каталог
-  // «Уроков» адресует открытое (юнит N курса ↔ юнит N тропы, см. reviewUnlock).
-  const unitByLessonIndex = useMemo(() => {
-    const map = new Map()
-    for (const g of units) g.items.forEach(({ gi }, j) => map.set(gi, { unit: g.unit, lessonInUnit: j + 1 }))
-    return map
-  }, [units])
-
-  // Урок разблокирован, если модуль не закрыт админом целиком, индекс урока не упирается в квоту
-  // "сколько уроков этого модуля можно пройти" (moduleQuota=null — без лимита), и при этом:
-  // - это первый урок или предыдущий пройден — тропа идёт подряд по всему уровню, как в прежнем
-  //   «Обучении», и проходится без живых занятий;
-  // - ИЛИ его уже открыли «Уроки» (lib/reviewUnlock.js): до самой дальней точки этого уровня, пройденной
-  //   на занятии или в «Самостоятельно», включительно; следующий за ней урок ждёт, пока её не пройдут
-  //   здесь. 07.10.2026 это правило убрали совсем, и у учеников, учившихся в «Уроках», «Повторение»
-  //   закрылось обратно до первого урока — выглядело как пропавший прогресс (жалоба 12.10). Каталог
-  //   только добавляет открытое, ничего не запирает. Уровень ниже своего CEFR целиком не открывается
-  //   (решение 13.10: каждый уровень — постепенно).
+  // Урок разблокирован, если это первый урок или предыдущий пройден (тропа идёт подряд по всему уровню,
+  // через границу юнитов тоже, как в прежнем разделе «Обучение»), модуль не закрыт админом целиком, и
+  // индекс урока не упирается в квоту "сколько уроков этого модуля можно пройти" (moduleQuota=null — без
+  // лимита).
+  //
+  // Больше НИЧЕГО не проверяется: ни занятия с преподавателем, ни «Самостоятельно», ни то, какие материалы
+  // каталога «Уроков» пройдены. Прошёл узел — следующий открылся сам. Сверка с «Уроками» была здесь
+  // 23.09–06.10 и 13–14.10 (lib/reviewUnlock.js) — по решению владельца 14.10 убрана насовсем, не возвращать.
+  // Экран «🔒 …напишите менеджеру» (goNext) рисуется при ЛЮБОМ запертом следующем узле, так что по тексту одному
+  // причину не понять: квота, блокировка модуля или (раньше) сверка с «Уроками» — 29.09 она выглядела как «лимит».
   //
   // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done: квота на модуль появилась
   // позже прогресса учеников (до неё в базе не было строк lesson_modules, лимит не запрашивался — тропа
@@ -268,14 +242,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ ограничения админа: блокировку
   // модуля и квоту не обходит даже просмотр контента.
   const isUnlocked = useCallback(
-    (i) => {
-      if (moduleLocked) return false
-      if (moduleQuota != null && !(i < moduleQuota || (lessons[i] && done.has(lessons[i].code)))) return false
-      if (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))) return true
-      const meta = unitByLessonIndex.get(i)
-      return Boolean(meta) && isOpenedByCatalog(meta, catalogOpen)
-    },
-    [lessons, done, moduleLocked, moduleQuota, unlockAll, unitByLessonIndex, catalogOpen],
+    (i) =>
+      !moduleLocked &&
+      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
+      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
   const showTrailHint = useCallback((text) => {
@@ -383,18 +354,19 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     const next = i >= 0 ? lessons[i + 1] : null
     // Квота исчерпана ровно на границе (только что прошли последний доступный
     // урок): следующий уже заблокирован isUnlocked. Не открываем его молча —
-    // остаёмся на экране итогов, переключая на тот же "🔒 квота" вид, что и
-    // при отказе бэкенда на завершении (см. onDone/ContentRestrictedError).
+    // остаёмся на экране итогов, в том же "🔒" виде, что и при отказе бэкенда
+    // на завершении (см. onDone/ContentRestrictedError), но с другим текстом:
+    // этот урок как раз засчитан, а не засчитан — следующий.
     if (next && !isUnlocked(i + 1)) {
-      // Экзамен заперт своим правилом (весь курс уровня в каталоге), а не
-      // квотой: «урок не засчитан, лимит» после засчитанного последнего урока
-      // было бы неправдой, а демо-ученику ещё и продавало подписку. На тропу.
+      // Заперт экзамен — ведём на тропу, а не в «лимит»: «урок не засчитан,
+      // лимит» после засчитанного последнего урока было бы неправдой, а
+      // демо-ученику ещё и продавало подписку.
       if (next.code === EXAM_CODE) {
         setEnd(null)
         setOpen(null)
         return
       }
-      setRestricted(true)
+      setRestricted('limit')
       return
     }
     setEnd(null)
@@ -457,7 +429,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                 return kept
               })
             }
-            setRestricted(true)
+            setRestricted('refused')
             return
           }
           throw e
@@ -507,7 +479,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         <div className="li-top">
           <button className="li-back" onClick={handleBack}>
             <ChevronLeftIcon size={18} />
-            {t('common.back')}
+            {(!open && backLabel) || t('common.back')}
           </button>
           <div className="li-crumb">
             <b>{t('kingdom.title', { name: k.name })}</b>
@@ -544,7 +516,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           <div className="li-top">
             <button className="li-back" onClick={onBack}>
               <ChevronLeftIcon size={18} />
-              {t('common.back')}
+              {backLabel || t('common.back')}
             </button>
           </div>
           <div className="li-empty__title">🔒 {t('learn.moduleLocked')}</div>
@@ -559,7 +531,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           <div className="kt-bar">
             <button className="kt-bar__back" onClick={handleBack}>
               <ChevronLeftIcon size={18} />
-              {t('common.back')}
+              {backLabel || t('common.back')}
             </button>
             <span className="kt-bar__castle" aria-hidden="true">
               <CastleIcon size={18} />
@@ -687,7 +659,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               // первой попытке: «Пройти снова» начинает с нуля осознанно.
               resumeKey={open.attempt === 0 ? `${level}:${open.code}` : undefined}
               onExit={handleBack}
-              onVocab={onNav ? () => onNav('vocab') : null}
+              // back: из словаря — «назад» сюда, к тропе уровня
+              onVocab={onNav ? () => onNav('vocab', { back: true }) : null}
               onDone={onDone}
             />
           ) : (
@@ -741,8 +714,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                     <span>{t('lesson.result.right')}</span>
                   </div>
                 </div>
-                {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
-                    «следующий урок» — он всё равно упрётся в тот же отказ. */}
+                {/* Лимит от админа. Либо урок решён верно, но не засчитан (restricted
+                    === 'refused'), либо засчитан, а следующий заперт лимитом ('limit') —
+                    текст у них разный. Прячем «следующий урок» — он всё равно упрётся
+                    в тот же отказ. */}
                 {restricted ? (
                   <div className="le-acts">
                     {/* У демо-ученика тот же отказ живёт в модалке про подписку
@@ -753,7 +728,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         модалке. Лимит от админа (не демо) виден как раньше. */}
                     {!isDemoAccount && (
                       <div className="le-restricted" role="status">
-                        🔒 {t('learn.quotaReached')}
+                        🔒 {t(restricted === 'limit' ? 'learn.limitAfterDone' : 'learn.quotaReached')}
                       </div>
                     )}
                     <button className="le-btn" onClick={exitLesson}>

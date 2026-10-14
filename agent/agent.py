@@ -1659,13 +1659,12 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     "gentle": _LESSON_MOODS,       # Луна
     "hype": _LESSON_MOODS,         # Спарк
     "aizere": _LESSON_MOODS,       # Айзере
-    # KZ TEST, пока на нём обкатывается Speaking Buddy, — новый Декстер (см.
-    # build_buddy_instructions). Набор Декстера без «подбодрить»: тёплой эмоции в
-    # его характере нет. В HARSH_TUTORS стенд НЕ добавлен намеренно: та строка
-    # («мат в каждой реплике») — тон старого злого Декстера, а у нового тон и
-    # мат целиком в md пакета v3. Теги v3 ([happy], [sarcastic]…) сюда приходят
-    # уже нашими именами — см. MOOD_ALIASES.
-    "jarvis": frozenset(MOOD_NAMES) - {"encourage"},
+    # KZ TEST («Луна тест» на карточке) с 14.10.2026 — новая Луна из пакета v3.4
+    # (до того — новый Декстер, который теперь живой bro). Набор — allowed_emotions
+    # из Luna.md нашими именами (см. MOOD_ALIASES): happy, excited, surprised,
+    # sympathy, confused. Злости и сарказма в её характере нет — такой тег
+    # снимется и не уйдёт на лицо.
+    "jarvis": frozenset({"joy", "celebrate", "surprised", "sadness", "confused"}),
     # «Спарк тест» — allowed_emotions из Spark.md пакета, нашими именами (см.
     # MOOD_ALIASES): happy, excited, surprised, sarcastic, sympathy, confused.
     # Злости в его характере нет — [angry] снимется и не уйдёт на лицо.
@@ -2006,6 +2005,34 @@ def _with_reply_tags(chat_ctx: Any, tags: list[tuple[str, str]]) -> Any:
                 items[i] = item.model_copy(update={"content": content})
                 j = k + 1
                 break
+    ctx.items = items
+    return ctx
+
+
+def asr_note(words: list[str]) -> str:
+    """Пометка мозгу: в каких словах реплики распознавание не уверено.
+
+    Имя флага — из пакета Speaking Buddy v3 (latest_input.asr_uncertain): пакет
+    уже знает, что с ним делать — не ругать «ошибку», а переспросить догадкой
+    (пример в Dexter.md: «Didn't catch that properly. Did you buy a new phone
+    yesterday?»). Остальным промптам хватает самой пометки — она объясняет
+    себя, и править промпты ради неё не нужно."""
+    listed = ", ".join(f'"{w}"' for w in words)
+    return f"[asr_uncertain: {listed} — speech recognition may have misheard these words]"
+
+
+def _with_asr_note(chat_ctx: Any, words: list[str]) -> Any:
+    """Копия истории, где к последней реплике ученика дописана asr_note.
+
+    Только в копии для мозга, как _with_reply_tags: в настоящей истории (а с
+    ней в субтитрах, выжимке звонка и следующих ходах) пометки нет — она про
+    один ход, а следующий ход будет услышан заново."""
+    if not words or not _last_is_user_message(chat_ctx):
+        return chat_ctx
+    ctx = chat_ctx.copy()
+    items = list(ctx.items)
+    last = items[-1]
+    items[-1] = last.model_copy(update={"content": [*last.content, asr_note(words)]})
     ctx.items = items
     return ctx
 
@@ -2380,6 +2407,10 @@ class TutorAgent(Agent):
         # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
         # когда фильтр включён; tts_node кормит его текстом реплик.
         self._echo = None
+        # Обёртка Soniox (noise_guard.GuardedSonioxSTT) — ставит entrypoint:
+        # llm_node отдаёт ей реплику тьютора (контекст распознавания) и берёт
+        # сомнительные слова ученика.
+        self._stt_guard = None
         # Начинать ли ответ модели с «[» (см. TAG_PREFILL).
         self._prefill_tag = prefill_tag
         # Эмоция реплики, которую модель оставила без тега (см. _reply_mood).
@@ -2557,6 +2588,11 @@ class TutorAgent(Agent):
         said: list[str] = []
         if self._tag_history:
             chat_ctx = _with_reply_tags(chat_ctx, self._reply_tags)
+        chat_ctx = self._mark_uncertain(chat_ctx)
+        if self._stt_guard is not None:
+            # Новый ответ — прежний несказанный (отменённая предварительная
+            # генерация) в контекст распознавания уже не пойдёт.
+            self._stt_guard.begin_reply()
         prefill = self._prefill_tag and _last_is_user_message(chat_ctx)
         if prefill:
             chat_ctx = chat_ctx.copy()
@@ -2602,6 +2638,10 @@ class TutorAgent(Agent):
             self._publish_reply_mood(cleaner)
         if self._tag_history and self._shown_mood is not None and "".join(said).strip():
             self._reply_tags.append(("".join(said), _mood_tag_label(self._shown_mood)))
+        reply = "".join(said).strip()
+        if reply and self._stt_guard is not None:
+            # Уже без рассуждения и тега — ровно то, что услышит ученик.
+            self._stt_guard.set_tutor_reply(reply)
         if cleaner.reasoning_cut:
             # Только размер, без текста: это разговор ученика. По этой строке
             # видно, как часто модель думает вслух на живых звонках.
@@ -2642,6 +2682,20 @@ class TutorAgent(Agent):
 
         async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
             yield frame
+
+    def _mark_uncertain(self, chat_ctx):
+        """Копия истории с пометкой сомнительных слов к реплике ученика — или
+        та же история, если помечать нечего (выключено, последней стоит не
+        реплика ученика, Soniox во всём уверен)."""
+        confidence = getattr(self._stt_guard, "confidence", None)
+        if confidence is None or not _last_is_user_message(chat_ctx):
+            return chat_ctx
+        words = confidence.uncertain(chat_ctx.items[-1].text_content or "")
+        if not words:
+            return chat_ctx
+        # Только число: слова — это речь ученика.
+        logger.info("ASR uncertain: %d сомнительных слов в реплике ученика", len(words))
+        return _with_asr_note(chat_ctx, words)
 
     def _ack(self) -> str | None:
         """Ответ тихого тула памяти модели.
@@ -3457,13 +3511,30 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # 05.10.2026 к нему добавился «Спарк тест» (SPARK_TEST_STAND) — та же сборка и
 # тот же мозг, но персона Спарка и сессия живого Спарка. Ему откатываться
 # некуда: прежней персоны у ключа нет, поэтому KZ_TEST_PROMPT его не трогает.
+#
+# 14.10.2026 решение владельца: тестовый Декстер заменяет живого — у bro та же
+# сборка, что у KZ TEST, на дев и на проде сразу (агент у них один). Голос и
+# сессия у bro и так свои, поэтому звонок с карточки Декстера побайтно тот же,
+# что с KZ TEST. Откат на прежнюю персону — секрет DEXTER_PROMPT=legacy, без
+# деплоя; KZ TEST при этом остаётся на пакете (у него свой KZ_TEST_PROMPT).
+#
+# В тот же день KZ TEST отдан новой Луне (карточка «Луна тест»): персона Luna.md
+# пакета, сессия — живой Луны (gentle: голос, распознавание, детектор). Замки и
+# канарейки шума по-прежнему по ключу jarvis (buddy_guard_tutor) — это стенд
+# для их обкатки.
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
 # голос, распознавание, детектор конца речи, температура).
 BUDDY_STANDS: dict[str, tuple[str, str]] = {
-    KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+    KZ_DEV_STAND_PERSONA: ("luna", "gentle"),
     SPARK_TEST_STAND: ("spark", "hype"),
+    BUDDY_VOICE_TUTOR: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+}
+# Секрет воркера, который возвращает ключ на прежнюю персону (у кого она есть).
+BUDDY_LEGACY_SWITCH: dict[str, str] = {
+    KZ_DEV_STAND_PERSONA: "KZ_TEST_PROMPT",
+    BUDDY_VOICE_TUTOR: "DEXTER_PROMPT",
 }
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
@@ -3512,15 +3583,15 @@ def buddy_persona_for(p: LearnerProfile) -> str:
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
-    свои. Оба нрава KZ TEST — Декстер v3: тумблера 18+ в новой схеме нет."""
+    свои. Оба нрава Декстера (и KZ TEST, и живого) — Декстер v3: тумблера 18+
+    в новой схеме нет."""
     stand = BUDDY_STANDS.get(_stand_key(p))
     if stand is None:
         return False
     if p.mode != "tutor" or p.scenario:
         return False
-    if _stand_key(p) == KZ_DEV_STAND_PERSONA and (
-        (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false")
-    ):
+    switch = BUDDY_LEGACY_SWITCH.get(_stand_key(p))
+    if switch and (os.getenv(switch) or "").strip().lower() in ("legacy", "off", "0", "false"):
         return False
     # Ядро требует тег эмоции в начале КАЖДОЙ реплики (core §13), а снимает его
     # только llm_node каскада. У realtime-модели свой тракт — там тег прозвучал
@@ -3533,7 +3604,7 @@ def buddy_test_on(p: LearnerProfile) -> bool:
 def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
     """Профиль для сборки СЕССИИ — распознавание, мозг, синтез, детектор конца
     речи, словарь произношения: у теста всё это живого тьютора стенда (у KZ TEST
-    — Декстера, у «Спарк теста» — Спарка).
+    — Луны, у «Спарк теста» — Спарка, у bro — его самого).
 
     Исходный профиль не трогаем: по нему идут промпт, эмоции и история звонков,
     и там стенд должен остаться стендом. eleven_voice_id сбрасываем, чтобы голос
@@ -5740,8 +5811,9 @@ def _is_openai_brain(model: str) -> bool:
 # Модели Claude, которые агент тоже зовёт напрямую, мимо шима. Шим знает только
 # свой белый список (чужую модель молча меняет на Haiku 4.5), шлёт temperature
 # и держит префилл, а Haiku 5.5 на температуру не 1 и на хвостовую реплику
-# тьютора отвечает 400 — тьютор молчал бы. Править шим бесполезно: агент ходит
-# в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную и без SSH.
+# тьютора отвечает 400 — тьютор молчал бы. Шим с 14.10.2026 Haiku 5.5 умеет,
+# но агент ходит в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную,
+# поэтому путь через шим включается секретом — см. _anthropic_via_shim.
 ANTHROPIC_DIRECT_BRAINS = ("claude-haiku-5",)
 # Нет ключа или плагина — в шим на ближайшую модель, которую он умеет.
 ANTHROPIC_BRAIN_FALLBACK = "claude-haiku-4-5"
@@ -5754,6 +5826,26 @@ ANTHROPIC_BRAIN_EFFORT = "low"
 
 def _is_anthropic_direct_brain(model: str) -> bool:
     return (model or "").strip().lower().startswith(ANTHROPIC_DIRECT_BRAINS)
+
+
+# 14.10.2026 решение владельца: живого Декстера (Haiku 5.5) вести через brain-us,
+# как остальных тьюторов. Шим научили Haiku 5.5 (белый список, effort low, «.» на
+# хвост тьютора), а доступ к серверу brain-us у владельца теперь есть. Почему
+# шим быстрее прямого вызова: плагин livekit-anthropic шлёт тулы со strict:
+# true, а шим — без него; замер того же промпта с тулами — Haiku 5.5 1.34 → 0.76
+# с до первого токена, Haiku 4.5 1.98 → 0.65 с (без тулов оба ~0.56 с).
+#
+# Секрет воркера ANTHROPIC_VIA_SHIM — список ключей тьюторов (bro,jarvis) или
+# on — всем. Пусто — напрямую, как раньше. Включать ТОЛЬКО после выкатки шима на
+# brain-us: старый шим Haiku 5.5 не знает и молча ответит Haiku 4.5 (звонок не
+# сломается, но модель будет не та — смотреть строку `model=` в логах brain-us).
+def _anthropic_via_shim(tutor: str) -> bool:
+    raw = (os.getenv("ANTHROPIC_VIA_SHIM") or "").replace("﻿", "").strip().lower()
+    if not raw or raw in ("off", "0", "false", "no"):
+        return False
+    if raw in ("on", "1", "true", "yes", "all"):
+        return True
+    return (tutor or "").strip().lower() in {t.strip() for t in raw.split(",") if t.strip()}
 
 
 def _anthropic_api_key() -> str:
@@ -5800,9 +5892,9 @@ def _brain_model_for(tutor: str) -> str:
     return DEFAULT_BRAIN_MODEL
 
 
-# Мозг стенда KZ TEST (Speaking Buddy) — свой, отдельно от живого Декстера. Голос,
-# распознавание и детектор у теста Декстера (buddy_voice_profile → "bro"), и через
-# BRAIN_MODEL_BRO мозг переехал бы заодно у прода. Замер 05.10.2026 (длинные
+# Мозг стенда Speaking Buddy — свой, отдельно от живого тьютора, чью сессию берёт
+# стенд (buddy_voice_profile): через BRAIN_MODEL_<ТЬЮТОР> мозг переехал бы заодно
+# у прода. Замер 05.10.2026 (длинные
 # реплики ученика, 16 ситуаций × 6, судья Sonnet 5.5 вслепую; ступени возраста и
 # стражи — 34 ситуации × 8; оба мозга — на промпте с блоком лимитов реплики):
 #   длиннее лимита по словам 14/96 → 0/91, 2+ исправлений за ход 23/96 → 6/91,
@@ -5818,8 +5910,18 @@ BUDDY_BRAIN_MODEL = "gpt-6-sol"
 # дешевле Haiku 4.5 и в разы дешевле Sol. «Спарк тест» остаётся на Sol: менять
 # живого тьютора стенда без его замера нельзя. Откат без деплоя — секрет
 # BRAIN_MODEL_BUDDY_<КЛЮЧ> (BRAIN_MODEL_BUDDY_JARVIS=gpt-6-sol).
+# 14.10.2026 живой Декстер стал тестовым целиком — и мозг его же. Откат мозга
+# отдельно от персоны — BRAIN_MODEL_BUDDY_BRO (BRAIN_MODEL_BRO у пакета не
+# читается: он про прежнюю персону и вернётся вместе с DEXTER_PROMPT=legacy).
+# Тогда же владелец перевёл на Haiku 5.5 через brain-us и оба теста: KZ TEST
+# (теперь новая Луна) и «Спарк тест» — с GPT-6 Sol. Через шим и без strict-тулов
+# Haiku 5.5 отвечает быстрее Sol (~0.5 с против ~1.0 с до первого слова).
+# BUDDY_BRAIN_MODEL (Sol) остался мозгом по умолчанию для нового стенда без
+# своей строки; откат «Спарк теста» — BRAIN_MODEL_BUDDY_SPARKTEST=gpt-6-sol.
 BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
+    SPARK_TEST_STAND: "claude-haiku-5-5",
+    BUDDY_VOICE_TUTOR: "claude-haiku-5-5",
 }
 
 
@@ -6414,16 +6516,21 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
     finalize = noise_guard.soniox_finalize_enabled(tutor)
     echo = noise_guard.echo_guard_enabled(tutor)
     vad_finalize = noise_guard.vad_finalize_enabled(tutor)
+    dialog = noise_guard.dialog_context_enabled(tutor)
+    uncertain_conf = noise_guard.asr_uncertain_conf() if noise_guard.asr_uncertain_enabled(tutor) else None
     if noise_guard.GuardedSonioxSTT is None:
         return soniox.STT(api_key=key, params=params)
     ratio, keep = noise_guard.speaker_lock_ratio(), noise_guard.speaker_lock_keep()
     echo_tail, vad_delay = noise_guard.echo_tail_sec(), noise_guard.vad_finalize_delay_sec()
     logger.info(
-        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, tutor=%s",
+        "Speaker lock: %s, finalize %s, echo guard %s, VAD finalize %s, "
+        "dialog context %s, ASR uncertain %s, tutor=%s",
         f"on (ratio {ratio:.2f}, keep {keep:.2f})" if lock else "off",
         "on" if finalize else "off",
         f"on (tail {echo_tail:.1f}s)" if echo else "off",
         f"on (+{vad_delay:.1f}s)" if vad_finalize else "off",
+        "on" if dialog else "off",
+        f"on (conf < {uncertain_conf:.2f})" if uncertain_conf is not None else "off",
         tutor or "<none>",
     )
     # Обёртка стоит и при выключенном замке: через неё рация закрывает фразу у
@@ -6449,6 +6556,8 @@ def _cascade_stt_soniox(profile: LearnerProfile, guard_tutor: str = ""):
         echo_debug=echo and noise_guard.echo_guard_debug(),
         vad_finalize=vad_finalize,
         vad_finalize_sec=vad_delay,
+        dialog=dialog,
+        uncertain_conf=uncertain_conf,
     )
 
 
@@ -6570,7 +6679,7 @@ def build_cascade_session(
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
     # brain_model приходит от session_brain_model: у теста Speaking Buddy мозг
-    # свой, а profile здесь — уже профиль живого Декстера (buddy_voice_profile).
+    # свой, а profile здесь — уже профиль живого тьютора стенда (buddy_voice_profile).
     brain_model = brain_model or _brain_model_for(profile.tutor)
     openai_key = _openai_api_key() if _is_openai_brain(brain_model) else ""
     if _is_openai_brain(brain_model) and not openai_key:
@@ -6579,8 +6688,18 @@ def build_cascade_session(
             brain_model, OPENAI_BRAIN_FALLBACK,
         )
         brain_model = OPENAI_BRAIN_FALLBACK
-    anthropic_key = _anthropic_api_key() if _is_anthropic_direct_brain(brain_model) else ""
-    if _is_anthropic_direct_brain(brain_model) and not (anthropic_key and lk_anthropic):
+    # Через шим — тот же brain_model, его отдаёт шиму OpenAI-поле model (ветка
+    # else ниже); ключ Anthropic и плагин тогда не нужны.
+    direct = _is_anthropic_direct_brain(brain_model) and not _anthropic_via_shim(
+        guard_tutor or profile.tutor
+    )
+    if _is_anthropic_direct_brain(brain_model) and not direct:
+        logger.info(
+            "[brain] %s via the shim at %s (ANTHROPIC_VIA_SHIM) for tutor=%s",
+            brain_model, brain_url or api_url, guard_tutor or profile.tutor,
+        )
+    anthropic_key = _anthropic_api_key() if direct else ""
+    if direct and not (anthropic_key and lk_anthropic):
         logger.error(
             "[brain] %s needs ANTHROPIC_API_KEY and livekit-plugins-anthropic — "
             "falling back to %s via the shim",
@@ -7058,9 +7177,13 @@ async def entrypoint(ctx: JobContext):
     # у SLIM_OUT_SECTIONS). Делаем это ПОСЛЕ сборки, а не гейтами внутри неё:
     # так правка не размазывается по гигантскому выражению и одинаково работает
     # для всех четырёх режимов промпта.
-    instructions = (
-        slim_prompt_for_persona(instructions, persona_key(profile.tutor, profile.temper))
-    )
+    # Пакет Buddy не трогаем: его тон в самом пакете, а bro стоит в
+    # TONE_SELF_DEFINED_PERSONAS ради прежней персоны — без этой проверки живой
+    # Декстер на пакете расходился бы с KZ TEST.
+    if not is_buddy:
+        instructions = slim_prompt_for_persona(
+            instructions, persona_key(profile.tutor, profile.temper)
+        )
     # Мозг на GPT без живых log_topic/log_fact (см. POST_CALL_MEMORY_TOOLS). Только
     # обычный урок: выжимка пишет темы и факты для режима free, а у сценариев,
     # дебатов, проверки уровня и своих промптов (Джарвис, Buddy) блок тулов иной.
@@ -7251,6 +7374,12 @@ async def entrypoint(ctx: JobContext):
     noise_guard.attach_echo_and_vad_finalize(
         session, session.stt, is_auto=lambda: turn_auto["on"]
     )
+    # Контекст разговора и сомнительные слова (noise_guard, 13.10.2026): мозг
+    # отдаёт распознаванию свою реплику и берёт у него пометку к реплике
+    # ученика. Без обёртки Soniox (Azure, урезанное окружение) — ничего.
+    if callable(getattr(session.stt, "set_tutor_reply", None)):
+        agent._stt_guard = session.stt
+    noise_guard.attach_dialog_context(session, session.stt, is_auto=lambda: turn_auto["on"])
     await session.start(**start_kwargs)
 
     # ── Рация: ход открывает и закрывает ученик ──────────────────────────────

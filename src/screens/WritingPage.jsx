@@ -60,7 +60,7 @@ function fetchMeta() {
 // Экран «Письмо»: внутренняя view-машина (как State.screen в прототипе) —
 // каталог уровней → жанры → тренажёр из 6 шагов → Блокнот → разбор. Отдельных
 // Next-роутов нет намеренно: навигация всего приложения — state-машина App.jsx.
-export default function WritingPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
+export default function WritingPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount, onBack, backLabel: exitLabel }) {
   const { t } = useI18n()
   const [view, setView] = useState({ name: 'levels' })
   const [meta, setMeta] = useState(null)
@@ -124,6 +124,9 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
   // Ключ, а не флаг: экран не перемонтируется при переходе с уже открытого
   // «Письма», и вторая выданная тема подряд не открылась бы вовсе.
   const appliedTargetRef = useRef(null)
+  // Вид, на котором раздел открыли целью (тема из домашки): «назад» с него —
+  // сразу туда, откуда пришли, а не по уровням и жанрам, которых ученик не видел.
+  const [entryView, setEntryView] = useState(null)
   useEffect(() => {
     if (!initialTarget) return
     // Уровень с бэкенда приходит как есть — сверка идёт точным совпадением.
@@ -135,8 +138,10 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     loadLevel(level).then((data) => {
       if (!data) return
       if (initialTarget.genreId && data.seeds.some((s) => s.id === initialTarget.genreId)) {
+        setEntryView({ name: 'trainer', level, genreId: initialTarget.genreId })
         setView({ name: 'trainer', level, genreId: initialTarget.genreId, step: 1 })
       } else {
+        setEntryView({ name: 'genres', level })
         setView({ name: 'genres', level })
       }
     })
@@ -182,16 +187,19 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
   // Назад — зеркало цепочки прототипа: levels ← genres ← trainer; pad
   // возвращает в тренажёр своего жанра (или в уровни для свободного письма);
   // result — в Блокнот.
+  const exit = useCallback(() => (onBack ? onBack() : onNav?.('practice')), [onBack, onNav])
+  const atEntry = Boolean(entryView && entryView.name === view.name && entryView.level === view.level && (entryView.genreId ?? null) === (view.genreId ?? null))
   const goBack = useCallback(() => {
-    if (view.name === 'genres') setView({ name: 'levels' })
+    if (atEntry) exit()
+    else if (view.name === 'genres') setView({ name: 'levels' })
     else if (view.name === 'trainer') setView({ name: 'genres', level: view.level })
     else if (view.name === 'pad') {
       if (view.genreId) setView({ name: 'trainer', level: view.level, genreId: view.genreId, step: 6 })
       else setView({ name: 'levels' })
     } else if (view.name === 'result') {
       setView({ name: 'pad', level: view.level, genreId: view.genreId, seedText: null, withTimer: false, draftId: view.draftId })
-    } else onNav?.('practice')
-  }, [view, onNav])
+    } else exit()
+  }, [view, atEntry, exit])
 
   const crumbSpan = useMemo(() => {
     if (view.name === 'genres' && LEVEL_TITLES[view.level]) return LEVEL_TITLES[view.level][0]
@@ -211,12 +219,13 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
   // «нет механики выйти из задания»; безликое «Назад» из глубины тренажёра
   // читалось как «шаг назад», а не выход.
   const backLabel = useMemo(() => {
+    if (atEntry) return exitLabel || t('writing.back.practice')
     if (view.name === 'genres') return t('writing.back.levels')
     if (view.name === 'trainer') return LEVEL_TITLES[view.level] ? LEVEL_TITLES[view.level][0] : t('writing.back.levels')
     if (view.name === 'pad') return view.genreId ? t('writing.back.tasks') : t('writing.back.levels')
     if (view.name === 'result') return t('writing.back.pad')
-    return t('writing.back.practice')
-  }, [view, t])
+    return exitLabel || t('writing.back.practice')
+  }, [view, t, atEntry, exitLabel])
 
   const body = () => {
     if (!entitlement.loading && !entitlement.allowed) {
@@ -224,7 +233,7 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
         <PracticeLimitScreen
           onBuy={() => onNav?.('pricing')}
           limit={entitlement.limit}
-          onBack={() => onNav?.('practice')}
+          onBack={exit}
           isDemoAccount={isDemoAccount}
           source={entitlement.source}
           sourceName={entitlement.sourceName}

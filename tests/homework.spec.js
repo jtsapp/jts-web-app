@@ -78,10 +78,16 @@ test('задание с живого урока видно в списке и о
 
   await page.goto('/?screen=homework')
 
+  // На телефоне сразу открыто задание, а список — за «Все задания».
+  await expect(page.locator('.hw__layout')).toBeVisible()
+  const кСписку = page.getByRole('button', { name: /Все задания/ })
+  if (await кСписку.isVisible()) await кСписку.click()
+
   // Назначенный материал стоит выше проверенной работы (ждёт действий ученика).
-  await expect(page.getByText('Present Perfect · practice test').first()).toBeVisible()
-  await expect(page.getByText('Задание с урока').first()).toBeVisible()
-  await page.getByText('Present Perfect · practice test').first().click()
+  const карточка = page.locator('.hw-card').first()
+  await expect(карточка).toContainText('Present Perfect · practice test')
+  await expect(карточка.getByText('Задание с урока')).toBeVisible()
+  await карточка.click()
   await expect(page.getByRole('button', { name: 'Открыть задание' })).toBeVisible()
 })
 
