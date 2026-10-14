@@ -198,6 +198,7 @@ describe('isAudioCommand / isAudioBatch — ▶/■ плеера урока', ()
   it('клик с намерением ▶ или ■ — звуковой, обычный клик и ввод — нет', () => {
     expect(isAudioCommand(play)).toBe(true)
     expect(isAudioCommand(stop)).toBe(true)
+    expect(isAudioCommand({ selector: '#a', eventType: 'audio-seek', value: '12.5' })).toBe(true)
     expect(isAudioCommand(click)).toBe(false)
     expect(isAudioCommand({ eventType: 'input', value: 'jts-audio:play' })).toBe(false)
     expect(isAudioCommand(undefined)).toBe(false)
