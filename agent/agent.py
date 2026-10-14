@@ -1659,13 +1659,12 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     "gentle": _LESSON_MOODS,       # Луна
     "hype": _LESSON_MOODS,         # Спарк
     "aizere": _LESSON_MOODS,       # Айзере
-    # KZ TEST, пока на нём обкатывается Speaking Buddy, — новый Декстер (см.
-    # build_buddy_instructions). Набор Декстера без «подбодрить»: тёплой эмоции в
-    # его характере нет. В HARSH_TUTORS стенд НЕ добавлен намеренно: та строка
-    # («мат в каждой реплике») — тон старого злого Декстера, а у нового тон и
-    # мат целиком в md пакета v3. Теги v3 ([happy], [sarcastic]…) сюда приходят
-    # уже нашими именами — см. MOOD_ALIASES.
-    "jarvis": frozenset(MOOD_NAMES) - {"encourage"},
+    # KZ TEST («Луна тест» на карточке) с 14.10.2026 — новая Луна из пакета v3.4
+    # (до того — новый Декстер, который теперь живой bro). Набор — allowed_emotions
+    # из Luna.md нашими именами (см. MOOD_ALIASES): happy, excited, surprised,
+    # sympathy, confused. Злости и сарказма в её характере нет — такой тег
+    # снимется и не уйдёт на лицо.
+    "jarvis": frozenset({"joy", "celebrate", "surprised", "sadness", "confused"}),
     # «Спарк тест» — allowed_emotions из Spark.md пакета, нашими именами (см.
     # MOOD_ALIASES): happy, excited, surprised, sarcastic, sympathy, confused.
     # Злости в его характере нет — [angry] снимется и не уйдёт на лицо.
@@ -3518,12 +3517,17 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # сессия у bro и так свои, поэтому звонок с карточки Декстера побайтно тот же,
 # что с KZ TEST. Откат на прежнюю персону — секрет DEXTER_PROMPT=legacy, без
 # деплоя; KZ TEST при этом остаётся на пакете (у него свой KZ_TEST_PROMPT).
+#
+# В тот же день KZ TEST отдан новой Луне (карточка «Луна тест»): персона Luna.md
+# пакета, сессия — живой Луны (gentle: голос, распознавание, детектор). Замки и
+# канарейки шума по-прежнему по ключу jarvis (buddy_guard_tutor) — это стенд
+# для их обкатки.
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
 # голос, распознавание, детектор конца речи, температура).
 BUDDY_STANDS: dict[str, tuple[str, str]] = {
-    KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+    KZ_DEV_STAND_PERSONA: ("luna", "gentle"),
     SPARK_TEST_STAND: ("spark", "hype"),
     BUDDY_VOICE_TUTOR: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
 }
@@ -3600,7 +3604,7 @@ def buddy_test_on(p: LearnerProfile) -> bool:
 def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
     """Профиль для сборки СЕССИИ — распознавание, мозг, синтез, детектор конца
     речи, словарь произношения: у теста всё это живого тьютора стенда (у KZ TEST
-    — Декстера, у «Спарк теста» — Спарка).
+    — Луны, у «Спарк теста» — Спарка, у bro — его самого).
 
     Исходный профиль не трогаем: по нему идут промпт, эмоции и история звонков,
     и там стенд должен остаться стендом. eleven_voice_id сбрасываем, чтобы голос
@@ -5888,9 +5892,9 @@ def _brain_model_for(tutor: str) -> str:
     return DEFAULT_BRAIN_MODEL
 
 
-# Мозг стенда KZ TEST (Speaking Buddy) — свой, отдельно от живого Декстера. Голос,
-# распознавание и детектор у теста Декстера (buddy_voice_profile → "bro"), и через
-# BRAIN_MODEL_BRO мозг переехал бы заодно у прода. Замер 05.10.2026 (длинные
+# Мозг стенда Speaking Buddy — свой, отдельно от живого тьютора, чью сессию берёт
+# стенд (buddy_voice_profile): через BRAIN_MODEL_<ТЬЮТОР> мозг переехал бы заодно
+# у прода. Замер 05.10.2026 (длинные
 # реплики ученика, 16 ситуаций × 6, судья Sonnet 5.5 вслепую; ступени возраста и
 # стражи — 34 ситуации × 8; оба мозга — на промпте с блоком лимитов реплики):
 #   длиннее лимита по словам 14/96 → 0/91, 2+ исправлений за ход 23/96 → 6/91,
@@ -5909,8 +5913,14 @@ BUDDY_BRAIN_MODEL = "gpt-6-sol"
 # 14.10.2026 живой Декстер стал тестовым целиком — и мозг его же. Откат мозга
 # отдельно от персоны — BRAIN_MODEL_BUDDY_BRO (BRAIN_MODEL_BRO у пакета не
 # читается: он про прежнюю персону и вернётся вместе с DEXTER_PROMPT=legacy).
+# Тогда же владелец перевёл на Haiku 5.5 через brain-us и оба теста: KZ TEST
+# (теперь новая Луна) и «Спарк тест» — с GPT-6 Sol. Через шим и без strict-тулов
+# Haiku 5.5 отвечает быстрее Sol (~0.5 с против ~1.0 с до первого слова).
+# BUDDY_BRAIN_MODEL (Sol) остался мозгом по умолчанию для нового стенда без
+# своей строки; откат «Спарк теста» — BRAIN_MODEL_BUDDY_SPARKTEST=gpt-6-sol.
 BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
+    SPARK_TEST_STAND: "claude-haiku-5-5",
     BUDDY_VOICE_TUTOR: "claude-haiku-5-5",
 }
 
@@ -6669,7 +6679,7 @@ def build_cascade_session(
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
     # brain_model приходит от session_brain_model: у теста Speaking Buddy мозг
-    # свой, а profile здесь — уже профиль живого Декстера (buddy_voice_profile).
+    # свой, а profile здесь — уже профиль живого тьютора стенда (buddy_voice_profile).
     brain_model = brain_model or _brain_model_for(profile.tutor)
     openai_key = _openai_api_key() if _is_openai_brain(brain_model) else ""
     if _is_openai_brain(brain_model) and not openai_key:

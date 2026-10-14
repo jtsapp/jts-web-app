@@ -75,26 +75,20 @@ export const DICT = {
       'Тот же Спарк, только злой. Матерится по-казахски, орёт за халтуру и за отговорки, добрых слов не жди. По-русски всё так же не говорит — ругается тоже на казахском.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
-    // KZ тест — dev-only тьютор (JARVIS_ENABLED в src/config.js). Ключи лежат
-    // во всех трёх языках: на проде карточки нет, но словарь общий, и «дырка»
-    // в kz/en вылезла бы сырым ключом, если флаг включат.
-    // Ключ остался jarvis, имя на карточке — «KZ тест»: см. комментарий у
+    // «Луна тест» — dev-only место для тестов Speaking Buddy (JARVIS_ENABLED в
+    // src/config.js), до 14.10.2026 — «KZ тест». Ключи лежат во всех трёх
+    // языках: на проде карточки нет, но словарь общий, и «дырка» в kz/en вылезла
+    // бы сырым ключом, если флаг включат. Ключ остался jarvis: см. комментарий у
     // JARVIS в src/tutor/tutors.js.
-    'tutor.jarvis.trait1': 'Ассистент',
-    'tutor.jarvis.trait2': 'Тестируется',
-    'tutor.jarvis.trait3': 'Живой қазақша',
+    'tutor.jarvis.trait1': 'Тестируется',
+    'tutor.jarvis.trait2': 'Эмоции',
+    'tutor.jarvis.trait3': 'Speaking Buddy',
     'tutor.jarvis.desc':
-      'Стенд казахского голоса. Ассистент, а не тьютор: урок по методичке не ведёт, отвечает на то, что спрашиваешь. Говорит по-казахски и по-английски, обращается на «сіз», держится спокойно и коротко — обычной живой речью, без книжных оборотов. Доступен только на тестовом стенде.',
-    // Жёсткий нрав остался прежним дворецким и переписку спокойного не
-    // проходил: выучка на месте, «сіз» и «мырза» никуда не делись, и именно
-    // поэтому его презрение режет.
-    'tutor.jarvis.desc18':
-      'Тот же голос, но дворецкий, которому надоело. Всё так же на «сіз» и всё так же «мырза» — только вежливость теперь работает как оружие: холодно, коротко, с матом там, где вы его заслужили. Плану вашему он скажет, что о нём думает. Отвечает при этом ровно так же точно.',
-    'tutor.jarvis.listen': 'Послушать KZ тест',
-    'tutor.jarvis.choose': 'Выбрать KZ тест',
+      'Стенд новой Луны из пакета Speaking Buddy v3.4: спокойная и внимательная, говорит по-английски, по-русски и по-казахски, голосом живой Луны. В звонке видно лицо с эмоциями. Доступен только на тестовом стенде.',
+    'tutor.jarvis.choose': 'Выбрать Луна тест',
     // «Спарк тест» — второе dev-only место для тестов Speaking Buddy (тот же
     // JARVIS_ENABLED): новый Спарк из пакета v3.4 с лицом и эмоциями. Ключи во
-    // всех трёх языках по той же причине, что у KZ теста.
+    // всех трёх языках по той же причине, что у Луна теста.
     'tutor.sparktest.trait1': 'Тестируется',
     'tutor.sparktest.trait2': 'Эмоции',
     'tutor.sparktest.trait3': 'Speaking Buddy',
@@ -492,15 +486,12 @@ export const DICT = {
       'Сол Спарк, бірақ ашулы. Қазақша боқтайды, салғырттық пен сылтау үшін айқайлайды, жылы сөз күтпе. Орысша бәрібір сөйлемейді — ұрысатыны да қазақша.',
     'tutor.spark.listen': 'Спарк дауысын тыңдау',
     'tutor.spark.choose': 'Спарк таңдау',
-    'tutor.jarvis.trait1': 'Ассистент',
-    'tutor.jarvis.trait2': 'Сынақтан өтуде',
-    'tutor.jarvis.trait3': 'Тірі қазақша',
+    'tutor.jarvis.trait1': 'Сынақтан өтуде',
+    'tutor.jarvis.trait2': 'Эмоциялар',
+    'tutor.jarvis.trait3': 'Speaking Buddy',
     'tutor.jarvis.desc':
-      'Қазақ дауысының сынақ стенді. Тьютор емес, ассистент: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Қазақша және ағылшынша сөйлейді, «сіз» деп қаратады, байсалды әрі қысқа сөйлейді — кітаби емес, тірі тілмен. Тек сынақ стендінде қолжетімді.',
-    'tutor.jarvis.desc18':
-      'Сол дауыс, бірақ шыдамы таусылған дворецкий. Бәрібір «сіз» деп, «мырза» деп қаратады — тек сыпайылығы енді қару: суық, қысқа, лайық жерінде боқтап та жібереді. Жоспарыңыз туралы ойын тура айтады. Жауабының дәлдігі сол күйі қалады.',
-    'tutor.jarvis.listen': 'KZ тестті тыңдау',
-    'tutor.jarvis.choose': 'KZ тестті таңдау',
+      'Speaking Buddy v3.4 пакетіндегі жаңа Лунаның стенді: байсалды әрі зейінді, ағылшынша, орысша және қазақша сөйлейді, тірі Лунаның дауысымен. Қоңырауда эмоциясы бар бет көрінеді. Тек сынақ стендінде қолжетімді.',
+    'tutor.jarvis.choose': 'Луна тестті таңдау',
     'tutor.sparktest.trait1': 'Сынақтан өтуде',
     'tutor.sparktest.trait2': 'Эмоциялар',
     'tutor.sparktest.trait3': 'Speaking Buddy',
@@ -879,15 +870,12 @@ export const DICT = {
       'The same Spark, angry. Swears in Kazakh, shouts at half-hearted answers and excuses, and hands out no kind words. He still refuses to speak Russian — even the swearing stays Kazakh.',
     'tutor.spark.listen': "Listen to Spark's voice",
     'tutor.spark.choose': 'Choose Spark',
-    'tutor.jarvis.trait1': 'Assistant',
-    'tutor.jarvis.trait2': 'In testing',
-    'tutor.jarvis.trait3': 'Living Kazakh',
+    'tutor.jarvis.trait1': 'In testing',
+    'tutor.jarvis.trait2': 'Emotions',
+    'tutor.jarvis.trait3': 'Speaking Buddy',
     'tutor.jarvis.desc':
-      'A Kazakh voice test bench. An assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks Kazakh and English, keeps to the polite "сіз", stays calm and brief — everyday spoken Kazakh, not the language of textbooks. Available on the test build only.',
-    'tutor.jarvis.desc18':
-      'The same voice, but a butler out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
-    'tutor.jarvis.listen': 'Listen to KZ test',
-    'tutor.jarvis.choose': 'Choose KZ test',
+      'Test stand for the new Luna from the Speaking Buddy v3.4 pack: calm and attentive, speaks English, Russian and Kazakh, in the live Luna voice. The call shows a face with emotions. Available on the test stand only.',
+    'tutor.jarvis.choose': 'Choose Luna test',
     'tutor.sparktest.trait1': 'In testing',
     'tutor.sparktest.trait2': 'Emotions',
     'tutor.sparktest.trait3': 'Speaking Buddy',

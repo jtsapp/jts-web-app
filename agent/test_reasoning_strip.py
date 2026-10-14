@@ -3,7 +3,7 @@
     VOICE_STACK=cascade agent/venv/Scripts/python.exe agent/test_reasoning_strip.py
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
 
-Фикстуры — живые ответы Haiku на промпте KZ TEST (Speaking Buddy v3.4, A0),
+Фикстуры — живые ответы Haiku на промпте Декстера (Speaking Buddy v3.4, A0; снято на KZ TEST),
 снятые прогоном 02.10.2026: модель без extended thinking пишет рассуждение
 текстом в <thinking>…</thinking>, а реплику — после него.
 """
@@ -22,7 +22,7 @@ LEAKED = (
 SPOKEN = "I'm Dexter. Do you like your job?"
 
 
-def run(text: str, chunks: list[int] | None = None, allowed=TUTOR_MOODS["jarvis"]):
+def run(text: str, chunks: list[int] | None = None, allowed=TUTOR_MOODS["bro"]):
     """Прогнать текст через очиститель кусками заданной длины — как стрим LLM."""
     c = _SpeechCleaner(allowed)
     out, i = [], 0
@@ -74,7 +74,7 @@ assert spoken.strip() == SPOKEN, spoken
 assert c.mood == ""
 
 # --- обычная речь проходит нетронутой и без задержки ------------------------
-c = _SpeechCleaner(TUTOR_MOODS["jarvis"])
+c = _SpeechCleaner(TUTOR_MOODS["bro"])
 long_text = "You work in a bank. Do you like it there, or is it just a job for now?"
 assert c.feed(long_text) == long_text
 assert c.feed(" Tell me.") == " Tell me."
@@ -89,7 +89,7 @@ assert c.reasoning_cut == 0
 assert parse_mood_tag("<[default]> Good. I like music?") == ("", 0, "Good. I like music?")
 assert parse_mood_tag("<[sarcastic]> Five years.") == ("gloat", 2, "Five years.")
 assert parse_mood_tag("<[mood:joy:2]>Hi") == ("joy", 2, "Hi")
-s = _MoodStripper(TUTOR_MOODS["jarvis"])
+s = _MoodStripper(TUTOR_MOODS["bro"])
 assert s.feed("<") == ""
 assert s.feed("[def") == ""
 assert s.feed("ault]> I speak English and Russian.") == "I speak English and Russian."
