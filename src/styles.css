@@ -5828,6 +5828,21 @@ textarea {
   margin: 0 auto;
   padding: 28px 24px 60px;
 }
+/* «Назад» туда, откуда открыли профиль (App, lib/navStack.js): своей кнопки у
+   профиля не было, а открывается он аватаром с любого экрана. Цвет — токеном,
+   тёмная тема подменяет его сама. */
+.pf-back {
+  display: block;
+  margin: -12px 0 8px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
 
 /* Hero: сцена уровня + белый лист + аватар */
 .pf-hero {

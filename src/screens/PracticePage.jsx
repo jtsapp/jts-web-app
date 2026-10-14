@@ -66,6 +66,7 @@ import { canOpenSeen, markSeen } from '../practice/overlaySeen.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { loadModule } from '../lib/lazyModule.js'
+import { rememberPlace, resumeOf } from '../lib/navStack.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -160,6 +161,10 @@ export default function PracticePage({
   // Ключ отметки «тур показан» приходит из App: в нём id профиля, поэтому
   // «один раз» считается на аккаунт, а не на браузер (см. tourKeyFor).
   tourKey,
+  // Практику открыли целью (юнит из домашки, ситуации из плана) — onLeave
+  // уводит туда, откуда пришли (App, lib/navStack.js); без истории — нет.
+  onLeave,
+  leaveLabel,
 }) {
   const { t, lang } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
@@ -226,7 +231,12 @@ export default function PracticePage({
   // домашней работы) — тогда экран открывается сразу на его навыке, а у
   // раздела-списка ещё и развёрнутым. Незнакомый ключ игнорируем: вкладка по
   // умолчанию лучше пустого экрана.
+  // «Назад» из раздела (lib/navStack.js) возвращает ровно туда, где Практику
+  // оставили: вкладка и раскрытый раздел («Посмотреть все»). Прокрутку
+  // возвращает App.
+  const resumed = resumeOf('practice')
   const [tab, setTab] = useState(() => {
+    if (SKILL_KEYS.includes(resumed?.tab)) return resumed.tab
     // `skill` — возврат из раздела, который помнит свою вкладку («Ситуации»).
     const fromTarget =
       skillOfModule(openTarget?.filter) ||
@@ -239,9 +249,17 @@ export default function PracticePage({
   })
   // Развёрнутый раздел («Посмотреть все»): вместо ленты — только он, сеткой,
   // с поиском и фильтрами. null — обзор навыка.
-  const [expanded, setExpanded] = useState(() =>
-    EXPANDABLE.has(openTarget?.filter) ? openTarget.filter : null,
-  )
+  const [expanded, setExpanded] = useState(() => {
+    if (resumed) return EXPANDABLE.has(resumed.expanded) ? resumed.expanded : null
+    return EXPANDABLE.has(openTarget?.filter) ? openTarget.filter : null
+  })
+  // Вкладка, открытая целью перехода (книги с «Главной», ситуации из домашки),
+  // тоже запоминается: раньше в сессию писал только клик по вкладке, и раздел,
+  // открытый с такой вкладки, возвращал на прошлую — на «Аудирование».
+  useEffect(() => {
+    writeSession(TAB_KEY, tab)
+    rememberPlace('practice', { tab, expanded })
+  }, [tab, expanded])
   // Уровень, выбранный переключателем. Пока ученик его не трогал, стоит его
   // собственный уровень — и следует за ним: профиль доезжает позже первого
   // рендера, и запомнить стартовое «A1» значило бы застрять на нём.
@@ -507,7 +525,7 @@ export default function PracticePage({
   //
   // Уровень в квоте отмечает уже сам экран, когда он открылся: так
   // сорвавшийся переход не списывает уровень впустую.
-  const openSituationsLevel = (code, id) => {
+  const openSituationsLevel = (code, id, { replace = false } = {}) => {
     // Карточек закрытого уровня на экране нет — это доп. защита на случай
     // прямого вызова (deep link и т.п.).
     if (levelLocked.has(code)) return
@@ -519,7 +537,7 @@ export default function PracticePage({
       setSituationsBlocked(true)
       return
     }
-    onNav?.('situations', id ? { level: code, id } : { level: code })
+    onNav?.('situations', { level: code, ...(id ? { id } : {}), ...(replace ? { replace } : {}) })
   }
 
   /**
@@ -542,7 +560,9 @@ export default function PracticePage({
     openedSituationsRef.current = key
     setTab('speaking')
     setExpanded('situations')
-    openSituationsLevel(String(openTarget.level).toLowerCase())
+    // replace: Практика здесь — пересадка, а не место. «Назад» из ситуаций
+    // ведёт сразу в домашку, а не на эту промежуточную Практику.
+    openSituationsLevel(String(openTarget.level).toLowerCase(), undefined, { replace: true })
   }, [openTarget, situationsEntitlement.loading, state.loading])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Сценарии «Ситуаций» выбранного уровня — карточками, как в макете, а не
@@ -730,9 +750,16 @@ export default function PracticePage({
 
   // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
   if (openUnit) {
+    // Юнит, открытый целью (домашка, план дня): «назад» из него — туда,
+    // откуда пришли, а не в каталог Практики, которого ученик не видел.
+    const unitIsTarget =
+      openTarget?.level != null && openTarget.unitId != null &&
+      String(openTarget.level) === String(openUnit.level) && String(openTarget.unitId) === String(openUnit.unit.id)
+    const leaveUnit = unitIsTarget && onLeave ? onLeave : () => setOpenUnit(null)
+    const unitExitLabel = unitIsTarget && onLeave ? leaveLabel : t('nav.back.practice')
     if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
       return layout(
-        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />,
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={grammarEntitlement.limit} onBack={leaveUnit} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />,
       )
     }
     const lvl = grammarIndex && grammarIndex[openUnit.level]
@@ -742,7 +769,8 @@ export default function PracticePage({
         units={lvl ? lvl.units : null}
         unit={openUnit.unit}
         token={token}
-        onExit={() => setOpenUnit(null)}
+        onExit={leaveUnit}
+        exitLabel={unitExitLabel}
         onOpenUnit={(u) => setOpenUnit({ level: openUnit.level, unit: u })}
       />,
     )

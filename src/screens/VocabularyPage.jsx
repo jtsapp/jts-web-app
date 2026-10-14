@@ -86,7 +86,10 @@ function trOf(card, lang) {
 
 const CAT_ORDER = ['tech', 'biz', 'health', 'science']
 
-export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount, tourKey }) {
+// onBack — словарь открыли ссылкой из урока или раздела (App, handleNav('vocab',
+// { back: true })): на главном экране словаря появляется «назад» туда. Из меню
+// словарь — раздел верхнего уровня, и кнопки нет.
+export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount, tourKey, onBack: onExit, backLabel }) {
   const { lang, t } = useI18n()
   const vlang = vocabLang(lang)
   const [screen, setScreen] = useState('home')
@@ -329,7 +332,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   if (!entitlement.loading && !entitlement.allowed) {
-    return shell(<PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
+    return shell(<PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={() => (onExit ? onExit() : onNav?.('home'))} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
   }
 
   if (screen === 'practice' && practiceCards) {
@@ -473,6 +476,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   return shell(
     <section className="vp-pad">
+      {onExit && <button type="button" className="vp-back" onClick={onExit}>← {backLabel || t('vocab.back')}</button>}
       <h1>{t('vocab.home.title')}</h1>
       <p className="vp-lead">{t('vocab.home.pickWay')}</p>
       {indexLoading && <p className="vp-state">…</p>}

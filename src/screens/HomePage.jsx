@@ -768,7 +768,7 @@ function HomeworkCard({ t, lang, items, onNav }) {
             const count = h.exerciseCount ?? (hasCounts ? (h.exercises?.length ?? 0) + (h.materialParts?.length ?? 0) : null)
             return (
               <li key={h.id}>
-                <button type="button" className="hm-hw__item" onClick={() => onNav?.('homework')}>
+                <button type="button" className="hm-hw__item" onClick={() => onNav?.('homework', { id: h.id })}>
                   <b>{h.title}</b>
                   <span>
                     {h.dueDate && (

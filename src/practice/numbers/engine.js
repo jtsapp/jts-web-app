@@ -34,7 +34,7 @@ const SLOW_RATE = 0.7
  * @returns {() => void} destroy
  */
 export function mountNumbers(root, cfg) {
-  const { data, progress, voice, onSkill = () => {}, langKey = null, fast = false } = cfg
+  const { data, progress, voice, onSkill = () => {}, onView = () => {}, langKey = null, fast = false } = cfg
   const SECTIONS = data.sections
   const TOURS = withGeneratedTours(data.sections, data.tours)
   const LESSONS = data.lessons
@@ -147,8 +147,30 @@ function cardHTML(s, nextId){
     <span class="card-body"><span class="card-title">${esc(s.title)}</span><span class="card-desc">${esc(s.desc)}</span>
       <span class="card-foot">${pipsHTML(s.id)}<span class="cta">${done?'Play again':roundsPassed(s.id)?`Round ${currentRound(s.id)+1}`:s.id===nextId?'Start here':'Play'}</span></span></span></button>`;
 }
+// Где сейчас игра — для единственной кнопки «назад» оболочки (NumbersPage).
+// У прототипа своих кнопок было три («Back to the map» в уроке, стрелка в игре,
+// «World map» в итогах) плюс «В Практику» оболочки рядом: две кнопки «назад»
+// вели в разные места. Теперь «назад» одна, и шаг у неё — туда, откуда пришли:
+// из игры и итогов — в урок раздела, если раунд запускали из него, иначе на
+// карту; из урока — на карту; с карты — из игры вон (решает оболочка).
+let view = 'map';
+let lessonOpen = null;
+function setView(v){ view = v; onView(v); }
+function back(){
+  if(view==='game' && R && R.idx>0 && !R.finished && !confirm('Leave this level? Your progress in it will be lost.')) return true;
+  if((view==='game' || view==='results') && lessonOpen){
+    showLesson(lessonOpen);
+    const st=$('.ls-start'); if(st) st.scrollIntoView({block:'end'});
+    return true;
+  }
+  if(view!=='map'){ showDashboard(); return true; }
+  return false;
+}
+
 function showDashboard(){
   stopGame();
+  lessonOpen = null;
+  setView('map');
   renderHeader();
   const nx = nextSection();
   const doneCount = SECTIONS.filter(s=>isDone(s.id)).length;
@@ -218,6 +240,8 @@ let LANG = (()=>{ try{ const v=langKey && localStorage.getItem(langKey); return 
 function startSection(id){ showLesson(id); }
 function showLesson(id){
   stopGame();
+  lessonOpen = id;
+  setView('lesson');
   const s = byId(id), L = LESSONS[id], w = WORLDS[s.stage||2];
   const answered = {}; let cur = currentRound(id);
   const render = () => {
@@ -241,10 +265,6 @@ function showLesson(id){
     const level = s.lab ? 'All levels' : (s.boss ? `Boss review, ${w.lv}` : w.lv);
     const tour = toursOf(id)[cur];
     $('#view').innerHTML = `<div class="lesson" lang="en">
-      <div class="ls-top">
-        <button class="icon-btn" id="lsBack" aria-label="Back to the map" title="Back to the map">${IC.back}</button>
-        <span class="crumb">Back to the map</span>
-      </div>
       <header class="ls-head" style="background-image:${w.bg}"><div>
         <p class="ls-world">${esc(kicker)}</p><h1>${esc(s.title)}</h1><span class="ls-level">${esc(level)}</span>
       </div></header>
@@ -288,7 +308,6 @@ function showLesson(id){
         <span>${tour&&tour.name?`<b>${esc(tour.name)}.</b> ${esc(tour.goal)} `:''}${roundSize(id,cur)} ${esc(UI.jumps)}. You need ${Math.round(passMark(s)*100)}% ${esc(UI.need)}.</span></div>
       <details class="ls-src"><summary>${esc(UI.sources)}</summary><ul>${L.src.map(k=>{const [t,u]=SOURCES[k]; return `<li>${u?`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`:esc(t)}</li>`;}).join('')}</ul></details>
     </div>`;
-    $('#lsBack').onclick = showDashboard;
     $$('[data-tr]').forEach(b=>b.onclick=()=>{ LANG=b.dataset.tr; try{ if(langKey) localStorage.setItem(langKey,LANG); }catch(e){ /* хранилище недоступно: язык живёт до ухода с экрана */ } const y=window.scrollY; render(); window.scrollTo(0,y); const nb=$(`[data-tr="${LANG}"]`); if(nb) nb.focus({preventScroll:true}); });
     $$('[data-say]').forEach(b=>b.onclick=()=>{ voice.unlock(); talk(b.dataset.say,.85); });
     $$('.qc').forEach(q=>{ const qi=+q.dataset.q, c=L.check[qi];
@@ -308,9 +327,12 @@ function startGame(id, k){
   if(k==null || !toursOf(id)[k]) k = currentRound(id);
   const items = buildRound(s, toursOf(id)[k], (S().seen||{})[id]||{});
   R = {s, rk:k, rounds:items, plan:positionPlan(items.length), idx:0, crystals:0, combo:0, bestCombo:0, score:0, correct:0, results:[], busy:true, dead:false, fast};
+  // Раунд из урока другого раздела («Next: …» в итогах уже открыл его урок) —
+  // урок этого; с карты («Continue») урока за спиной нет.
+  if(lessonOpen && lessonOpen!==id) lessonOpen = null;
+  setView('game');
   $('#view').innerHTML = `
   <div class="g-top">
-    <button class="icon-btn" id="gBack" aria-label="Back to the map" title="Back to the map">${IC.back}</button>
     <h1 class="g-title">${esc(s.title)}: round ${k+1} of ${roundCount(id)}${toursOf(id)[k].name?` · ${esc(toursOf(id)[k].name)}`:''}</h1>
     <div class="path" role="img" aria-label="Progress through this round">${R.rounds.map((_,i)=>`<span class="stone" data-st="${i}"></span>`).join('')}<img id="pathPortal" src="${ASSET.portal}" alt="Portal"></div>
   </div>
@@ -333,7 +355,6 @@ function startGame(id, k){
     <p class="g-note" id="gNote"></p>
   </div>`;
   renderNote();
-  $('#gBack').onclick = ()=>{ if(R && R.idx>0 && !R.finished && !confirm('Leave this level? Your progress in it will be lost.')) return; showDashboard(); };
   $('#gShow').onclick = showWord;
   const motes=$('#motes'); for(let i=0;i<16;i++){const m=document.createElement('span');m.className='mote';m.style.left=Math.random()*100+'%';m.style.top=(30+Math.random()*65)+'%';m.style.animationDuration=(5+Math.random()*6)+'s';m.style.animationDelay=(-Math.random()*8)+'s';motes.appendChild(m);}
   on(window, 'keydown', gameKeys);
@@ -736,6 +757,7 @@ function showResults(acc, passed, {stars, cr, wasDone}){
   const finishedNow = done && !wasDone;
   const worldMsg = finishedNow && s.boss && s.stage<3 ? `<p class="res-note">World ${s.stage} conquered! Next: ${esc(WORLDS[s.stage+1].name)}.</p>` : finishedNow ? `<p class="res-note">All ${n} rounds passed!</p>` : '';
   stopGame(); renderHeader();
+  setView('results');
   const nx = nextSection();
   const missed = run.results.filter(r=>r.kind!=='gold');
   const nextK = passed && k+1<n ? k+1 : null;
@@ -770,12 +792,15 @@ function showResults(acc, passed, {stars, cr, wasDone}){
 
   showDashboard();
 
-  return function destroy() {
-    dead = true;
-    stopGame();
-    ac.abort();
-    for (const id of timers) clearTimeout(id);
-    timers.clear();
-    root.innerHTML = '';
+  return {
+    back,
+    destroy() {
+      dead = true;
+      stopGame();
+      ac.abort();
+      for (const id of timers) clearTimeout(id);
+      timers.clear();
+      root.innerHTML = '';
+    },
   };
 }

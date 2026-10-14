@@ -15,7 +15,8 @@ const FEATURES = 3
  * цели при выбранном времени в день и пометкой, успевают ли они к сроку. Рекомендуемый — по правилам route.js.
  * Выбор ложится в профиль; группа и индивидуально ведут в тарифы, кроме формата, в котором ученик уже занимается.
  */
-export default function GeRoutePage({ token, userName, userLevel, onNav, onProfile, onLoaded, onChosen, onPricing, onEdit, onTest }) {
+// onBack/backLabel — «назад» туда, откуда открыли маршрут (App, lib/navStack.js).
+export default function GeRoutePage({ token, userName, userLevel, onNav, onProfile, onLoaded, onChosen, onPricing, onEdit, onTest, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const authToken = token || loadToken()
   const [state, setState] = useState({ status: 'loading' })
@@ -173,7 +174,14 @@ export default function GeRoutePage({ token, userName, userLevel, onNav, onProfi
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} token={token} onNav={onNav} onProfile={onProfile} active="home">
-      <div className="ih">{body}</div>
+      <div className="ih">
+        {onBack && (
+          <button type="button" className="ih-back" onClick={onBack}>
+            ← {backLabel}
+          </button>
+        )}
+        {body}
+      </div>
     </LearningLayout>
   )
 }

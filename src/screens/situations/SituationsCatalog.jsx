@@ -17,7 +17,7 @@ export function pickLang(node, lang) {
   return node[lang] || (lang === 'kk' ? node.kz : '') || node.ru || node.en || ''
 }
 
-export default function SituationsCatalog({ level, items, done, onOpen, onBack }) {
+export default function SituationsCatalog({ level, items, done, onOpen, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const doneSet = new Set(done)
   const pct = items.length ? Math.round((doneSet.size / items.length) * 100) : 0
@@ -26,7 +26,7 @@ export default function SituationsCatalog({ level, items, done, onOpen, onBack }
     <div className="sit-cat">
       <div className="sit-top">
         <button type="button" className="sit-back" onClick={onBack}>
-          ← {t('situations.toPractice')}
+          ← {backLabel || t('situations.toPractice')}
         </button>
         <span className="sit-level">{level.toUpperCase()}</span>
       </div>

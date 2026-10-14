@@ -89,7 +89,8 @@ const KT_OFFSET = [50, 0, 100, 50]
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, isDemoAccount }) {
+// backLabel — куда ведёт «назад» с тропы (карта, «Главная», план дня — App, lib/navStack.js).
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
   const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -507,7 +508,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         <div className="li-top">
           <button className="li-back" onClick={handleBack}>
             <ChevronLeftIcon size={18} />
-            {t('common.back')}
+            {(!open && backLabel) || t('common.back')}
           </button>
           <div className="li-crumb">
             <b>{t('kingdom.title', { name: k.name })}</b>
@@ -544,7 +545,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           <div className="li-top">
             <button className="li-back" onClick={onBack}>
               <ChevronLeftIcon size={18} />
-              {t('common.back')}
+              {backLabel || t('common.back')}
             </button>
           </div>
           <div className="li-empty__title">🔒 {t('learn.moduleLocked')}</div>
@@ -559,7 +560,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           <div className="kt-bar">
             <button className="kt-bar__back" onClick={handleBack}>
               <ChevronLeftIcon size={18} />
-              {t('common.back')}
+              {backLabel || t('common.back')}
             </button>
             <span className="kt-bar__castle" aria-hidden="true">
               <CastleIcon size={18} />
@@ -687,7 +688,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               // первой попытке: «Пройти снова» начинает с нуля осознанно.
               resumeKey={open.attempt === 0 ? `${level}:${open.code}` : undefined}
               onExit={handleBack}
-              onVocab={onNav ? () => onNav('vocab') : null}
+              // back: из словаря — «назад» сюда, к тропе уровня
+              onVocab={onNav ? () => onNav('vocab', { back: true }) : null}
               onDone={onDone}
             />
           ) : (

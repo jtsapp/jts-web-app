@@ -72,6 +72,9 @@ export default function ProfilePage({
   // userLevel тогда — стартовый 'A1' из стейта App, а не измерение.
   levelUnknown = false,
   onLevelTest,
+  // «Назад» туда, откуда открыли профиль (App, lib/navStack.js).
+  onBack,
+  backLabel,
 }) {
   const { t, lang, setLang } = useI18n()
   const fileRef = useRef(null)
@@ -328,6 +331,11 @@ export default function ProfilePage({
   return (
     <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="pf">
+        {onBack && (
+          <button type="button" className="pf-back" onClick={onBack}>
+            ← {backLabel || t('common.back')}
+          </button>
+        )}
         {/* ── Hero ── */}
         <section className="pf-hero">
           <div

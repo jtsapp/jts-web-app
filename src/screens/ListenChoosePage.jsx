@@ -24,7 +24,7 @@ import LcMain, { LcDifficulty } from './listenchoose/LcMain.jsx'
 const DEVICE = { read: readDevice, write: writeDevice }
 const PROGRESS = { readSeen, writeSeen }
 
-export default function ListenChoosePage({ userName, userLevel, token, onNav, onProfile, initialTarget }) {
+export default function ListenChoosePage({ userName, userLevel, token, onNav, onProfile, initialTarget, onBack, backLabel }) {
   const { t } = useI18n()
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -64,8 +64,8 @@ export default function ListenChoosePage({ userName, userLevel, token, onNav, on
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lc">
         <div className="lc-top">
-          <button type="button" className="lc-back" onClick={() => onNav?.('practice')}>
-            ← {t('listenchoose.toPractice')}
+          <button type="button" className="lc-back" onClick={() => (onBack ? onBack() : onNav?.('practice'))}>
+            ← {backLabel || t('listenchoose.toPractice')}
           </button>
           <div className="lc-crumb">
             <b>{t('practice.listenchoose.title')}</b>
