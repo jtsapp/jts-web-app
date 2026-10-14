@@ -69,14 +69,16 @@ function Scene({ scene }) {
   )
 }
 
-export default function SituationView({ level, item, token, done, onBack, onDone }) {
+// backLabel — когда сценарий открыт прямо с карточки Практики, «назад» ведёт
+// туда, откуда пришли, и называет это место, а не список ситуаций.
+export default function SituationView({ level, item, token, done, onBack, backLabel, onDone }) {
   const { t, lang } = useI18n()
 
   return (
     <article className="sit-view">
       <div className="sit-top">
         <button type="button" className="sit-back" onClick={onBack}>
-          ← {t('situations.toCatalog')}
+          ← {backLabel || t('situations.toCatalog')}
         </button>
         {/* Название и раздел в шапке есть только в мобильном макете (кадр
             4302:17814: крестик + «Подготовка к… / Ситуации»); на десктопе их

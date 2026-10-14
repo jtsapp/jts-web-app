@@ -28,7 +28,7 @@ const HEADS = {
   runner: { eyebrow: 'arcade.run.eyebrow', title: 'arcade.run.title', subtitle: 'arcade.run.subtitle', beta: true },
 }
 
-export default function ArcadePage({ userName, userLevel, token, onNav, onProfile, initialTarget = null }) {
+export default function ArcadePage({ userName, userLevel, token, onNav, onProfile, initialTarget = null, onBack, backLabel, canReturn = false }) {
   const { t } = useI18n()
   const [game, setGame] = useState(() => (ARCADE_GAMES.includes(initialTarget?.game) ? initialTarget.game : null))
   const fromSkill = SKILL_KEYS.includes(initialTarget?.skill) ? initialTarget.skill : 'speaking'
@@ -39,13 +39,19 @@ export default function ArcadePage({ userName, userLevel, token, onNav, onProfil
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [game])
   const head = HEADS[game || 'hub']
-  const back = () => (game ? setGame(null) : onNav?.('practice', { skill: fromSkill }))
+  // Игра, открытая прямо с карточки Практики: «назад» из неё — туда, откуда
+  // пришли, а не в зал, которого ученик не видел. По диплинку (&game=)
+  // прийти неоткуда — тогда в зал, как раньше.
+  const entryGame = canReturn && ARCADE_GAMES.includes(initialTarget?.game) ? initialTarget.game : null
+  const exit = () => (onBack ? onBack() : onNav?.('practice', { skill: fromSkill }))
+  const inHub = !game || game === entryGame
+  const back = () => (inHub ? exit() : setGame(null))
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ar">
         <div className="ar-top">
           <button type="button" className="ar-back" onClick={back}>
-            ← {t(game ? 'arcade.toHub' : 'arcade.toPractice')}
+            ← {inHub ? backLabel || t('arcade.toPractice') : t('arcade.toHub')}
           </button>
           <div className="ar-crumb">
             <b>{t('practice.chip.arcade')}</b>

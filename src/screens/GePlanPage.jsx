@@ -45,7 +45,9 @@ function writeUrl(view, at) {
   }
 }
 
-export default function GePlanPage({ token, userName, userLevel, onNav, onProfile, onGeStart, onGeRoute, onGeTest, onGeEdit, tourKey }) {
+// onBack/backLabel — «назад» туда, откуда открыли план (App, lib/navStack.js):
+// своей кнопки у экрана не было вовсе, уйти можно было только меню.
+export default function GePlanPage({ token, userName, userLevel, onNav, onProfile, onGeStart, onGeRoute, onGeTest, onGeEdit, tourKey, onBack, backLabel }) {
   const { t } = useI18n()
   const authToken = token || loadToken()
   // уровень курса — тот, что ученик проходит (может быть выше CEFR после покупки): по нему подписи уроков и «Начать»
@@ -135,6 +137,11 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
   return (
     <LearningLayout userName={userName} userLevel={userLevel} token={token} onNav={onNav} onProfile={onProfile} active="home" onHelp={plan?.state === 'ready' ? tour.start : undefined}>
       <div className="ih ge-plan">
+        {onBack && (
+          <button type="button" className="ih-back" onClick={onBack}>
+            ← {backLabel}
+          </button>
+        )}
         <header className="ge-plan__head">
           <div className="ge-plan__titles">
             <h1>{t('gePlan.title')}</h1>

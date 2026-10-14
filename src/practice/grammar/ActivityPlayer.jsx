@@ -77,6 +77,8 @@ export default function ActivityPlayer({
   level,
   unitId,
   onExit,
+  // Подпись выхода с итогов — по месту назначения (прежнее «На главную» вело в Практику).
+  exitLabel,
   onNextLesson,
 }) {
   // Расхождения выгрузки с плеером (формат categorize B1, задания без ошибки,
@@ -112,6 +114,7 @@ export default function ActivityPlayer({
             setPoints(0)
           }}
           onHome={onExit}
+          homeLabel={exitLabel}
           onNext={onNextLesson}
           nextLabel={uiStr(lang, 'btn_next_lesson')}
         />

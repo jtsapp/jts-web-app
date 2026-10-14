@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
@@ -6,6 +6,7 @@ import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
+import { rememberPlace } from '../lib/navStack.js'
 
 // Спикинг-клабы скрыты: офлайн-группы в админке так и не завели, и вкладка
 // открывала заглушку «Страница в разработке» — на живом сайте это читается как
@@ -29,6 +30,11 @@ const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
  * кнопка «К урокам» приводила его на расписание, и вкладку приходилось искать
  * заново каждый раз. Значение только начальное — дальше вкладку выбирает сам
  * ученик, и перерисовка родителя его выбор не сбрасывает.
+ *
+ * Приходит из места, которое экран оставил при уходе (lib/navStack.js), — то
+ * есть только при «назад». Раньше App выводил вкладку из источника последнего
+ * открытого урока и не сбрасывал его: после одного урока «Самостоятельно» эта
+ * вкладка открывалась при каждом заходе, в том числе из живого урока.
  */
 export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab, tourKey }) {
   const { t } = useI18n()
@@ -38,6 +44,9 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const teacher = isTeacher(token)
   const tabs = teacher ? [...TABS, TEACHER_TAB] : TABS
   const [tab, setTab] = useState(() => (tabs.some((x) => x.key === initialTab) ? initialTab : 'online'))
+  useEffect(() => {
+    rememberPlace('lessons', { tab })
+  }, [tab])
 
   // Тур — ученический: он рассказывает, как заходить на свой урок и сдавать
   // работы. Преподаватель этот экран использует как рабочее место (каталог,

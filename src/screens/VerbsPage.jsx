@@ -26,7 +26,7 @@ import VerbsTable from './verbs/VerbsTable.jsx'
 
 const EMPTY_FILTERS = { query: '', pattern: 'all', group: 'all', onlySaved: false, hide: false }
 
-export default function VerbsPage({ userName, userLevel, token, onNav, onProfile, initialTarget }) {
+export default function VerbsPage({ userName, userLevel, token, onNav, onProfile, initialTarget, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -206,8 +206,8 @@ export default function VerbsPage({ userName, userLevel, token, onNav, onProfile
     >
       <div className="vb">
         <div className="vb-top">
-          <button type="button" className="vb-back" onClick={() => onNav?.('practice')}>
-            ← {t('verbs.toPractice')}
+          <button type="button" className="vb-back" onClick={() => (onBack ? onBack() : onNav?.('practice'))}>
+            ← {backLabel || t('verbs.toPractice')}
           </button>
           <div className="vb-crumb">
             <b>{t('practice.verbs.title')}</b>

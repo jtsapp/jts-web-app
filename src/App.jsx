@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -105,6 +105,8 @@ import { openLandingHandoff } from './landing/handoffClient.js'
 import { captureAttribution, safeStorage } from './lib/attribution.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
+import { pushNav, popNav, readNavStack, writeNavStack, placeOf, setResume, resumeOf, isReturnable, backLabelKey } from './lib/navStack.js'
+import { restoreScroll } from './lib/scrollRestore.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { flushSkillStats } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
@@ -163,6 +165,16 @@ const BOOTH_SCREENS = new Set(['booth', 'live-lesson'])
 // мгновенный повтор: та же секунда сети, скорее всего, ещё не отпустила.
 const BOOTH_ACCOUNT_RETRY_MS = 4000
 
+// sessionStorage вкладки или null: на сервере window нет, а в приватном режиме
+// Safari сам доступ к хранилищу бросает.
+function sessionStore() {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const { t, lang, setLang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -173,7 +185,40 @@ export default function App() {
   // SSR отрисовал бы 'welcome', а первый рендер клиента — экран из query, и
   // React ронял бы hydration mismatch. Поэтому первый рендер везде одинаковый
   // ('welcome'), а диплинк применяется эффектом уже после гидратации.
-  const [screen, setScreen] = useState('welcome')
+  const [screen, setScreenState] = useState('welcome')
+  // Стек «откуда пришли» (lib/navStack.js): по нему «Назад» ведёт туда, откуда
+  // экран открыли, а не в зашитое место. Читается сразу, а не эффектом: эффект
+  // записи ниже на первом проходе стёр бы сохранённый стек раньше, чем его
+  // прочли. Гидратации это не мешает — стек ничего не рисует, пока
+  // восстанавливается сессия (первый экран всё равно 'welcome').
+  const [navStack, setNavStack] = useState(() => readNavStack(sessionStore()))
+  useEffect(() => {
+    writeNavStack(sessionStore(), navStack)
+  }, [navStack])
+  const screenRef = useRef('welcome')
+  // «Назад», которому некуда вернуться, идёт своим запасным переходом — и
+  // этот переход не должен класть в стек экран, из которого как раз вышли.
+  const skipPushRef = useRef(false)
+  // Контекст экранов, который держит сам App (королевство тропы, id урока),
+  // снимается в момент ухода: «назад» откроет тот же урок, даже если состояние
+  // успели переписать. Функцию обновляет эффект ниже, у goBack.
+  const appPlaceRef = useRef(() => undefined)
+  // Все переходы идут через эту обёртку — так стек видит каждый, а не только
+  // те, что прошли через handleNav (их больше ста, и половина — прямые
+  // setScreen в пропсах экранов).
+  const setScreen = useCallback((next) => {
+    const prev = screenRef.current
+    const skip = skipPushRef.current
+    skipPushRef.current = false
+    if (next === prev) return
+    screenRef.current = next
+    setResume(null)
+    const place = !skip && isReturnable(prev)
+      ? { ...appPlaceRef.current(prev), ...placeOf(prev), scrollY: window.scrollY }
+      : undefined
+    setNavStack((st) => (skip ? pushNav(st, null, next) : pushNav(st, prev, next, place)))
+    setScreenState(next)
+  }, [])
   // Пока проверяем сохранённый токен, не рисуем ни welcome, ни kingdom — иначе
   // у вернувшегося пользователя мелькнёт экран входа. Стартовое значение true
   // одинаково на сервере и клиенте, так что гидратация не ломается.
@@ -486,7 +531,7 @@ export default function App() {
     // его старт — онбординг и диагностика IELTS, их зовёт «Главная» (IeltsHomeCard). Признак аккаунта приходит
     // после входа отдельным запросом, поэтому поправляем уже открытый экран.
     if (ieltsAccount && screen === 'test-intro') setScreen('home')
-  }, [ieltsAccount, screen])
+  }, [ieltsAccount, screen, setScreen])
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
   // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
@@ -550,8 +595,19 @@ export default function App() {
   // Тест уровня запущен из анкеты или со следующего шага «Главной»: конец теста — маршрут, «позже» — «Главная».
   const [geTestFlow, setGeTestFlow] = useState(false)
   const [geEdit, setGeEdit] = useState(false)
-  // Куда «назад» из тарифов, если пришли не из сайдбара (маршрут General English)
-  const [pricingBack, setPricingBack] = useState(null)
+  // Словарь открыт ссылкой из урока или раздела (а не из меню) — у него есть
+  // «Назад» туда, см. handleNav('vocab').
+  const [vocabReturn, setVocabReturn] = useState(false)
+  // Работа, которую открыть в «Домашней работе» (карточка «Главной»); null — первая по порядку.
+  const [homeworkTarget, setHomeworkTarget] = useState(null)
+  // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
+  // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
+  // прекращается, иначе она крутила бы уже следующий экран.
+  const [scrollBack, setScrollBack] = useState(null)
+  useEffect(
+    () => (scrollBack && scrollBack.screen === screen ? restoreScroll(scrollBack.y) : undefined),
+    [scrollBack, screen],
+  )
   useEffect(() => {
     if (!token) {
       setGeProfile(null)
@@ -576,7 +632,7 @@ export default function App() {
   // цель и срок, потом тест. Тест из профиля (testReturn 'profile') и тест, запущенный самой анкетой, не перехватываем.
   useEffect(() => {
     if (screen === 'test-intro' && geProfile && !geProfile.onboarded && !geTestFlow && testReturn !== 'profile') setScreen('ge-onboarding')
-  }, [screen, geProfile, geTestFlow, testReturn])
+  }, [screen, geProfile, geTestFlow, testReturn, setScreen])
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
@@ -1197,7 +1253,8 @@ export default function App() {
     if (geTestFlow) {
       setGeTestFlow(false)
       setTestReturn(null)
-      setScreen('home')
+      // Тест открывают с «Главной», маршрута и плана — «позже» ведёт туда же.
+      goBack(() => setScreen('home'))
     } else setScreen(testExit())
   }
 
@@ -1299,6 +1356,11 @@ export default function App() {
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
+    // Путь «откуда пришли» — тоже его: «назад» следующего ученика в этой
+    // вкладке не должен вести по чужим экранам. skipPush — и экран, с которого
+    // вышли, в новый путь не кладём.
+    setNavStack([])
+    skipPushRef.current = true
     setToken(null)
     setName('')
     setPhone('')
@@ -1445,7 +1507,7 @@ export default function App() {
     else if (!boothAccount && screen === 'booth') {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   // Тот же страж для преподавателя: ученические разделы ему не положены, а
   // `?screen=` до сих пор клался в состояние без сверки с ролью — и в меню, из
@@ -1457,7 +1519,7 @@ export default function App() {
     if (isStudentOnlyScreen(screen)) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -1510,7 +1572,12 @@ export default function App() {
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
     // Уровень приносит карточка Практики — она же и списала квоту.
-    else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
+    // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
+    else if (key === 'situations') {
+      setSituationsTarget(payload || null)
+      if (payload?.replace) skipPushRef.current = true
+      setScreen('situations')
+    }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
@@ -1520,7 +1587,8 @@ export default function App() {
         setScreen('live-lesson')
       } else setScreen('lessons')
     }
-    else if (key === 'homework') setScreen('homework')
+    // payload.id — конкретная работа (карточка «Главной»): открыть её, а не первую в списке.
+    else if (key === 'homework') { setHomeworkTarget(payload?.id ?? null); setScreen('homework') }
     // Урок, заданный на дом: домашка зовёт с адресом урока каталога и адресом
     // карточки — или без карточки, если задан весь урок. Без урока никуда не
     // идём — экран без id открылся бы демонстрационным уроком, то есть чужим
@@ -1543,7 +1611,77 @@ export default function App() {
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
-    else if (key === 'vocab') setScreen('vocab')
+    // back: словарь открыт ссылкой изнутри урока или раздела — у него появляется
+    // «Назад» туда. Из меню словарь — раздел верхнего уровня, кнопки нет.
+    else if (key === 'vocab') { setVocabReturn(Boolean(payload?.back)); setScreen('vocab') }
+  }
+
+  // ── «Назад» по стеку (lib/navStack.js) ──────────────────────────────────
+  // Контекст экранов, который держит App: уходя с тропы, урока или рабочего
+  // листа, запоминаем, какой это был, — «назад» откроет его же.
+  useEffect(() => {
+    appPlaceRef.current = (from) => {
+      if (from === 'kingdom-interior' && kingdom) return { level: kingdom.level }
+      if (from === 'live-lesson' && liveLessonId != null) return { lessonId: liveLessonId }
+      if (from === 'lesson-workspace' && liveWorkspaceId != null) {
+        return { workspaceId: liveWorkspaceId, workspaceSource, workspaceCardId }
+      }
+      if (from === 'vocab') return { vocabReturn }
+      return undefined
+    }
+  }, [kingdom, liveLessonId, liveWorkspaceId, workspaceSource, workspaceCardId, vocabReturn])
+
+  function restoreAppPlace(to, place) {
+    // Цель перехода в Практику (книги с «Главной», юнит домашки) уже отыграла:
+    // вернувшись, Практика открывается на своём месте — вкладке и разделе,
+    // где её оставили, — а не снова по цели.
+    if (to === 'practice') setPracticeTarget(null)
+    else if (to === 'kingdom-interior' && place.level) {
+      const k = KINGDOMS.find((x) => x.level === place.level)
+      if (k) setKingdom(k)
+    } else if (to === 'live-lesson' && place.lessonId != null) setLiveLessonId(place.lessonId)
+    else if (to === 'lesson-workspace' && place.workspaceId != null) {
+      setLiveWorkspaceId(place.workspaceId)
+      setWorkspaceSource(place.workspaceSource || 'live')
+      setWorkspaceCardId(place.workspaceCardId ?? null)
+    } else if (to === 'vocab') setVocabReturn(Boolean(place.vocabReturn))
+  }
+
+  // Куда ведёт «назад» с текущего экрана: туда, откуда пришли, а без истории
+  // (диплинк, F5 на первом экране вкладки) — по запасному переходу экрана.
+  function goBack(fallback) {
+    const hit = popNav(navStack, screen)
+    if (!hit) {
+      skipPushRef.current = true
+      fallback?.()
+      skipPushRef.current = false
+      return
+    }
+    const { entry, rest } = hit
+    const place = entry.place || {}
+    restoreAppPlace(entry.screen, place)
+    screenRef.current = entry.screen
+    setResume(entry.screen, place)
+    setNavStack(rest)
+    setScreenState(entry.screen)
+    if (place.scrollY > 0) setScrollBack({ y: place.scrollY, screen: entry.screen })
+  }
+
+  // Подпись кнопки называет место назначения («На главную», «В Практику»).
+  function backLabel(fallbackScreen) {
+    return t(backLabelKey(popNav(navStack, screen)?.entry.screen || fallbackScreen))
+  }
+
+  // «Назад» раздела Практики: туда, откуда открыли, иначе — во вкладку
+  // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
+  // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
+  // назад целиком (пришли с карточки) или в список раздела (диплинк).
+  function sectionBack(skill) {
+    return {
+      onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
+      backLabel: backLabel('practice'),
+      canReturn: Boolean(popNav(navStack, screen)),
+    }
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -1872,11 +2010,9 @@ export default function App() {
       return (
         <PricingPage
           token={token}
-          onBack={() => {
-            const back = pricingBack
-            setPricingBack(null)
-            setScreen(back || (isDemoAccount ? 'home' : 'kingdom'))
-          }}
+          // Туда, откуда пришли за тарифом: стек переживает и перезагрузку,
+          // которой оплата возвращает на ?screen=pricing.
+          onBack={() => goBack(() => setScreen(isDemoAccount ? 'home' : 'kingdom'))}
         />
       )
     case 'kingdom':
@@ -1910,6 +2046,9 @@ export default function App() {
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount && !ieltsHidden()}
           onLevelTest={token ? () => openLevelTestFrom('profile') : undefined}
+          // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
+          onBack={popNav(navStack, screen) ? () => goBack() : undefined}
+          backLabel={backLabel('home')}
         />
       )
     case 'practice':
@@ -1920,6 +2059,8 @@ export default function App() {
           token={token}
           openTarget={practiceTarget}
           tourKey={practiceTourKey}
+          onLeave={popNav(navStack, screen) ? () => goBack() : undefined}
+          leaveLabel={backLabel('home')}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
@@ -1928,6 +2069,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1940,6 +2082,7 @@ export default function App() {
     case 'shadowing':
       return (
         <ShadowingPage
+          {...sectionBack(null)}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1952,6 +2095,7 @@ export default function App() {
     case 'writing':
       return (
         <WritingPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1964,6 +2108,7 @@ export default function App() {
     case 'workbook':
       return (
         <WorkbookPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1976,6 +2121,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1987,6 +2133,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -1997,6 +2144,7 @@ export default function App() {
     case 'speakspin':
       return (
         <SpeakSpinPage
+          {...sectionBack('speaking')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2007,6 +2155,7 @@ export default function App() {
     case 'verbs':
       return (
         <VerbsPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2018,6 +2167,7 @@ export default function App() {
     case 'situations':
       return (
         <SituationsPage
+          {...sectionBack('speaking')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2029,6 +2179,7 @@ export default function App() {
     case 'listenchoose':
       return (
         <ListenChoosePage
+          {...sectionBack('listening')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2040,6 +2191,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
+          {...sectionBack(arcadeTarget?.skill || 'speaking')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}
@@ -2051,6 +2203,7 @@ export default function App() {
     case 'reading':
       return (
         <ReadingPage
+          {...sectionBack('reading')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2061,11 +2214,11 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={resumeOf('lessons')?.tab} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
-      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':
-      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => goBack(() => setScreen('lessons'))} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':
       return (
         <BoothEntryPage
@@ -2096,7 +2249,7 @@ export default function App() {
       // проп не получают, и их сценарий не меняется ни на йоту.
       // key — урок: следование за классом, очередь снимков и буфер показа живут
       // в ref-ах экрана и не должны переживать смену занятия.
-      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
+      return <LiveLessonPage key={liveLessonId} lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => (boothAccount ? setScreen('booth') : goBack(() => setScreen('lessons')))} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
@@ -2130,7 +2283,7 @@ export default function App() {
           token={token}
           level={needsLevelTest ? null : userLevel}
           edit={geEdit}
-          onExit={() => { setGeEdit(false); setScreen('home') }}
+          onExit={() => { setGeEdit(false); goBack(() => setScreen('home')) }}
           onSaved={handleGeSaved}
         />
       )
@@ -2143,10 +2296,12 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onLoaded={setGeProfile}
-          onChosen={(p) => { if (p) setGeProfile(p); setScreen('home') }}
-          onPricing={(p) => { if (p) setGeProfile(p); setPricingBack('ge-route'); setScreen('pricing') }}
+          onChosen={(p) => { if (p) setGeProfile(p); goBack(() => setScreen('home')) }}
+          onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={openGeTest}
+          onBack={() => goBack(() => setScreen('home'))}
+          backLabel={backLabel('home')}
         />
       )
     case 'ge-plan':
@@ -2162,6 +2317,8 @@ export default function App() {
           onGeTest={openGeTest}
           onGeEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           tourKey={gePlanTourKey}
+          onBack={() => goBack(() => setScreen('home'))}
+          backLabel={backLabel('home')}
         />
       )
     case 'ielts-onboarding':
@@ -2258,6 +2415,9 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
           tourKey={vocabTourKey}
+          // «Назад» — только если словарь открыли ссылкой из урока или раздела.
+          onBack={vocabReturn ? () => goBack(() => setScreen('home')) : undefined}
+          backLabel={backLabel('home')}
         />
       )
     case 'kingdom-interior':
@@ -2270,7 +2430,9 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('kingdom')}
+          // Тропу открывают и с карты, и из плана дня («Урок курса»): назад — туда же.
+          onBack={() => goBack(() => setScreen('kingdom'))}
+          backLabel={backLabel('kingdom')}
           isDemoAccount={isDemoAccount}
         />
       )
@@ -2285,7 +2447,9 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => goAfterTutorEdit('home')}
+          // Из «Управления» — обратно туда; иначе — откуда открыли тьютора
+          // (Главная, Практика, план дня), а не всегда на «Главную».
+          onBack={() => (tutorEditFrom === 'manage' ? goAfterTutorEdit('home') : goBack(() => setScreen('home')))}
           tutorKey={tutorKey}
           temper={temper}
           selected={tutorEditFrom === 'manage' ? tutorKey : ''}
@@ -2370,10 +2534,10 @@ export default function App() {
           profession={profession}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          // После онбординга разговор запускается с dashboard — «Назад» и финиш
-          // возвращают туда же. Экран результата уровня остался только в
-          // placement-цепочке (voice-intro), достижимой диплинком.
-          onBack={() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro')}
+          // «Назад» — туда, откуда начали разговор: сценарии, дашборд, разбор
+          // ошибок. Без истории — на дашборд, а до онбординга в placement-цепочку
+          // (voice-intro), достижимую диплинком.
+          onBack={() => goBack(() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro'))}
           onTopUpMinutes={() => setScreen('minutes')}
           tutor={tutor}
           temper={temper}
@@ -2549,7 +2713,8 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-dashboard')}
+          // План открывают из итогов практики и разбора ошибок — назад туда же.
+          onBack={() => goBack(() => setScreen('tutor-dashboard'))}
         />
       )
     case 'tutor-manage':
@@ -2558,7 +2723,8 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-dashboard')}
+          // Из отчёта о звонке («История») — обратно в отчёт, с дашборда — на него.
+          onBack={() => goBack(() => setScreen('tutor-dashboard'))}
           tutor={tutor}
           onChangeTutor={() => {
             setTutorEditFrom('manage')
@@ -2629,7 +2795,7 @@ export default function App() {
     case 'lesson-workspace': {
       const catalogSource = workspaceSource === 'catalog' || workspaceSource === 'self' || workspaceSource === 'homework'
       const fromHomework = workspaceSource === 'homework' || Boolean(workspaceCardId)
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => handleNav('vocab', { back: true })} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => goBack(() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons'))} backLabel={backLabel(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     }
     default:
       // Неизвестный экран (опечатка в диплинке ?screen=, старая закладка, экран, которого больше нет) раньше давал

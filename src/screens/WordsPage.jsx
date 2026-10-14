@@ -27,7 +27,7 @@ export const WORDS_SECTIONS = ['animals', 'food', 'clothes', 'house', 'body']
 // Ниже этой ширины сцена становится портретной: раунды короче, спрайты крупнее.
 const PORTRAIT_MAX = 720
 
-export default function WordsPage({ userName, userLevel, token, onNav, onProfile, initialTarget }) {
+export default function WordsPage({ userName, userLevel, token, onNav, onProfile, initialTarget, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const { voice, failedAt: voiceFailedAt } = useWordsVoice()
 
@@ -154,7 +154,8 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
 
   const goBack = useCallback(() => {
     if (view.name === 'catalog') {
-      onNav?.('practice')
+      if (onBack) onBack()
+      else onNav?.('practice')
       return
     }
     if (view.name === 'preview') {
@@ -163,7 +164,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
     }
     setView({ name: 'preview', sceneId: view.sceneId })
     voice.stop()
-  }, [view, onNav, goCatalog, voice])
+  }, [view, onNav, onBack, goCatalog, voice])
 
   const pickLang = useCallback((next) => {
     setWordLang(next)
@@ -251,7 +252,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
       <div className="wd">
         <div className="wd-top">
           <button type="button" className="wd-back" onClick={goBack}>
-            ← {view.name === 'catalog' ? t('words.toPractice') : t('words.back')}
+            ← {view.name === 'catalog' ? backLabel || t('words.toPractice') : t('words.back')}
           </button>
           <div className="wd-crumb">
             <b>{t('practice.words.title')}</b>

@@ -17,6 +17,7 @@ import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
+import { rememberPlace, resumeOf } from '../lib/navStack.js'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -31,13 +32,17 @@ import { ChevronLeftIcon } from '../components/icons.jsx'
  * Третий источник — домашние задания IELTS: преподаватель задаёт их в web-admin, и живут они строками плана IELTS
  * (/mobile/ielts/plan, ieltsHomework.js). Ученику IELTS «Домашняя работа» одна, поэтому они в том же списке.
  */
-export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile, tourKey }) {
+export default function HomeworkPage({ userLevel = 'A1', userName, token, initialId = null, onNav, onProfile, tourKey }) {
   const { t } = useI18n()
+  // Вернулись «назад» из урока или раздела, открытого из работы, — та же работа
+  // и тот же вид (на телефоне — задание или список). Раньше экран монтировался
+  // заново и выбирал первую по порядку: ученик оказывался в чужой работе.
+  const resumed = resumeOf('homework')
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
   const [ielts, setIelts] = useState([])
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error' (гость — см. view ниже)
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState(() => resumed?.selectedId ?? initialId)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   // Сообщение уровня экрана, а не карточки: работа, которую отменили, из списка
@@ -71,7 +76,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         setMaterials(cards)
         setIelts(ieltsCards)
         const first = [...rows, ...cards, ...ieltsCards].sort((a, b) => studentOrder(a) - studentOrder(b))[0]
-        setSelectedId((id) => id ?? first?.id ?? null)
+        // Запрошенная работа (возврат, карточка «Главной») могла уйти из списка — тогда первая.
+        const all = [...rows, ...cards, ...ieltsCards]
+        setSelectedId((id) => (id != null && all.some((hw) => String(hw.id) === String(id)) ? all.find((hw) => String(hw.id) === String(id)).id : first?.id ?? null))
         setState('ready')
       })
       .catch(() => { if (!cancelled) setState('error') })
@@ -149,7 +156,10 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   // выбрано на десктопе (сверху — ждущее ученика), к списку ведёт «Все задания».
   // На широком экране флаг ни на что не влияет: колонки видны обе (стили).
   // Без выбранной работы (список пуст, работу отменили) показываем список.
-  const [paneOpen, setPaneOpen] = useState(true)
+  const [paneOpen, setPaneOpen] = useState(() => resumed?.paneOpen ?? true)
+  useEffect(() => {
+    rememberPlace('homework', { selectedId, paneOpen })
+  }, [selectedId, paneOpen])
   const showPane = paneOpen && selected != null
   const rootRef = useRef(null)
   // Смена экрана на телефоне — к началу: иначе новый экран открывался бы на

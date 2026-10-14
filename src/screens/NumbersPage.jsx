@@ -48,9 +48,19 @@ function loadData() {
   return dataPromise
 }
 
-export default function NumbersPage({ userName, userLevel, token, onNav, onProfile }) {
+export default function NumbersPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
   const { t } = useI18n()
   const hostRef = useRef(null)
+  // Кнопка «назад» на экране одна — оболочки: своих у игры нет (см. back в
+  // engine.js). Она шагает назад внутри игры (итоги и раунд → урок → карта),
+  // а с карты уводит туда, откуда открыли раздел.
+  const gameRef = useRef(null)
+  const [gameView, setGameView] = useState('map')
+  const goBack = () => {
+    if (gameRef.current?.back()) return
+    if (onBack) onBack()
+    else onNav?.('practice', { skill: 'listening' })
+  }
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -79,18 +89,22 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     shadow.innerHTML = `<style>${NUMBERS_CSS}</style><main class="nw" id="jts-numbers">${NUMBERS_MARKUP}</main>`
     const root = shadow.getElementById('jts-numbers')
-    const destroy = mountNumbers(root, {
+    const game = mountNumbers(root, {
       data: data.game,
       progress: { read: readNumbers, update: updateNumbers },
       voice: createNumbersVoice(data.records),
       onSkill: (firstTry) => recordSkill('listening', firstTry),
+      onView: setGameView,
       langKey: NUMBERS_LANG_KEY,
       // e2e: прыжки и анимации за миллисекунды (addInitScript ставит флаг до загрузки)
       fast: typeof window !== 'undefined' && !!window.__NUMBERS_FAST,
     })
+    gameRef.current = game
     return () => {
-      destroy()
+      gameRef.current = null
+      game.destroy()
       shadow.innerHTML = ''
+      setGameView('map')
     }
     // owner: вошёл или вышел — прогресс уже другого ученика, игра перечитывает его
   }, [data, owner])
@@ -98,8 +112,8 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="nmb-top">
-        <button type="button" className="nmb-back" onClick={() => onNav?.('practice', { skill: 'listening' })}>
-          ← {t('numbers.toPractice')}
+        <button type="button" className="nmb-back" onClick={goBack}>
+          ← {gameView === 'map' ? backLabel || t('numbers.toPractice') : t('numbers.toMap')}
         </button>
       </div>
       {failed ? (

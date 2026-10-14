@@ -101,7 +101,7 @@ export default function ShadowingPage(props) {
   return <ShadowingScreen {...props} />
 }
 
-function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount }) {
+function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount, onBack, backLabel }) {
   const { t, lang } = useI18n()
   // Вшитые уроки и добавленные через админку. Подписка нужна, чтобы вкладки обновились, когда список доедет;
   // сами уроки ниже берутся из того же реестра через getLesson.
@@ -739,7 +739,8 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
     }
   }
 
-  const back = () => onNav?.('practice')
+  // Туда, откуда открыли: карточка Практики (обе вкладки, раскрытый раздел), домашка, план дня.
+  const back = () => (onBack ? onBack() : onNav?.('practice'))
 
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0
   const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
@@ -749,7 +750,7 @@ function ShadowingScreen({ userLevel, userName, token, onNav, onProfile, lessonI
       <div className={`sh ${blind ? 'sh--blind' : ''}`}>
         <div className="sh-top">
           <button type="button" className="sh-back" onClick={back}>
-            <ChevronLeftIcon size={16} /> {t('common.back')}
+            <ChevronLeftIcon size={16} /> {backLabel || t('common.back')}
           </button>
           <div className="sh-crumb">
             <b>{t('shadowing.title')}</b>

@@ -61,6 +61,8 @@ export default function WorkbookPage({
   onNav,
   onProfile,
   isDemoAccount,
+  onBack,
+  backLabel: exitLabel,
 }) {
   const { t } = useI18n()
   const level = (initialTarget?.level || 'a0').toLowerCase()
@@ -192,16 +194,18 @@ export default function WorkbookPage({
     }
   }, [levelCount, level])
 
+  // Из списка юнитов — туда, откуда открыли тетрадь (Практика, домашка, план дня).
+  const exit = () => (onBack ? onBack() : onNav?.('practice'))
   const goBack = () => {
     if (view.name === 'units') {
-      onNav?.('practice')
+      exit()
       return
     }
     setView({ name: 'units' })
   }
 
   const backLabel =
-    view.name === 'units' ? t('workbook.back.practice') : levelMeta.label + ' · ' + t('workbook.back.units')
+    view.name === 'units' ? exitLabel || t('workbook.back.practice') : levelMeta.label + ' · ' + t('workbook.back.units')
 
   const crumb = () => {
     if (view.name === 'act' || view.name === 'wrap') return lessons[view.n]?.title || ''
@@ -215,7 +219,7 @@ export default function WorkbookPage({
         <PracticeLimitScreen
           onBuy={() => onNav?.('pricing')}
           limit={entitlement.limit}
-          onBack={() => onNav?.('practice')}
+          onBack={exit}
           isDemoAccount={isDemoAccount}
           source={entitlement.source}
           sourceName={entitlement.sourceName}
