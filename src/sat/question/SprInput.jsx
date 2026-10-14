@@ -34,7 +34,7 @@ export default function SprInput({ value, onChange, disabled, autoFocus }) {
             autoComplete="off"
             autoCapitalize="off"
             spellCheck="false"
-            maxLength={8}
+            maxLength={10}
             value={raw}
             disabled={disabled}
             autoFocus={autoFocus}

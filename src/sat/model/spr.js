@@ -34,7 +34,8 @@ export function validate(raw) {
   if (/[%$,]/.test(s)) return { ok: false, code: 'symbol' }
   if (/\d\s+\d/.test(s)) return { ok: false, code: 'mixed' }
   const n = normalize(s)
-  const limit = n[0] === '-' ? 6 : 5
+  // дробь (a/b) принимаем длиннее сетки Bluebook: ученик пишет её как есть — решение школы 2026-10
+  const limit = (n[0] === '-' ? 1 : 0) + (n.includes('/') ? 9 : 5)
   if (n.length > limit) return { ok: false, code: 'length' }
   if (value(n) === null) return { ok: false, code: 'format' }
   return { ok: true, normalized: n, value: value(n) }

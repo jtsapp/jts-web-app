@@ -1,0 +1,590 @@
+{
+  "corrections": [
+    {
+      "id": "ch1-15",
+      "set": {
+        "stem": "<p>To understand how temperature change affects microorganism-mediated cycling of soil nutrients in alpine ecosystems, Eva Kastovska et al. collected plant-soil cores in the Tatra Mountains at elevations around 2,100 meters and transplanted them to elevations of 1,700–1,800 meters, where the mean air temperature was warmer by 2°C. Microorganism-mediated nutrient cycling was accelerated in the transplanted cores; crucially, microorganism community composition was unchanged, allowing Kastovska et al. to attribute the acceleration to temperature-induced increases in microorganism activity.</p><p class=\"question\"><b>It can most reasonably be inferred from the text that the finding about the microorganism community composition was important for which reason?</b></p>"
+      },
+      "reason": "Stem typo: transplant elevation range \"1,700–1,400 meters\" restored to \"1,700–1,800 meters\" (as in the original item / u4-12)."
+    },
+    {
+      "id": "ch1-08",
+      "set": {
+        "stem": "<p style=\"text-align:center\"><b>Ranking of Environmental and Sociocultural Benefits of Urban Agriculture (scale of 1 to 25; 1=highest)</b></p><table class=\"sat-table\" style=\"border-collapse:collapse;margin:8px auto\"><tr><th style=\"border:1px solid #444;padding:4px 10px\">Social or ecological service</th><th style=\"border:1px solid #444;padding:4px 10px\">Project leaders</th><th style=\"border:1px solid #444;padding:4px 10px\">Stakeholders</th><th style=\"border:1px solid #444;padding:4px 10px\">General public</th></tr><tr><td style=\"border:1px solid #444;padding:4px 10px\">improvement of attitudes and outlooks</td><td style=\"border:1px solid #444;padding:4px 10px\">8</td><td style=\"border:1px solid #444;padding:4px 10px\">1</td><td style=\"border:1px solid #444;padding:4px 10px\">4</td></tr><tr><td style=\"border:1px solid #444;padding:4px 10px\">provision of food</td><td style=\"border:1px solid #444;padding:4px 10px\">4</td><td style=\"border:1px solid #444;padding:4px 10px\">15</td><td style=\"border:1px solid #444;padding:4px 10px\">8</td></tr><tr><td style=\"border:1px solid #444;padding:4px 10px\">provision of raw materials</td><td style=\"border:1px solid #444;padding:4px 10px\">22</td><td style=\"border:1px solid #444;padding:4px 10px\">25</td><td style=\"border:1px solid #444;padding:4px 10px\">15</td></tr><tr><td style=\"border:1px solid #444;padding:4px 10px\">improvement of physical health</td><td style=\"border:1px solid #444;padding:4px 10px\">5</td><td style=\"border:1px solid #444;padding:4px 10px\">4</td><td style=\"border:1px solid #444;padding:4px 10px\">7</td></tr><tr><td style=\"border:1px solid #444;padding:4px 10px\">enhancement of pollination</td><td style=\"border:1px solid #444;padding:4px 10px\">1</td><td style=\"border:1px solid #444;padding:4px 10px\">7</td><td style=\"border:1px solid #444;padding:4px 10px\">12</td></tr></table><p>Esther Sanyé-Mengual, Kathrin Specht, and their team surveyed three groups of people in Bologna, Italy—leaders of urban agriculture projects, stakeholders in urban agriculture (e.g., food researchers and urban farming associations), and the general public—to compare their views about the extent to which urban agriculture contributes to 25 social or ecological services that the team identified. The researchers used these ratings to rank the services for each group, with a conclusion that both stakeholders and the general public regard the improvement of attitudes and outlooks as an important benefit of urban agriculture.</p><p class=\"question\"><b>Which choice best describes data in the table that support the researchers&#x27; conclusion?</b></p>",
+        "explanation": {
+          "en": "<p>For the general public, attitudes and outlooks is ranked 4, better than the other four services shown (8, 15, 7, 12), which shows that group values it highly. C is a true statement (1 vs. 4) but only compares the two groups rather than showing the benefit is regarded as important; B is false.</p>",
+          "ru": "<p>For the general public, attitudes and outlooks is ranked 4, better than the other four services shown (8, 15, 7, 12), which shows that group values it highly. C is a true statement (1 vs. 4) but only compares the two groups rather than showing the benefit is regarded as important; B is false.</p>",
+          "kk": "<p>For the general public, attitudes and outlooks is ranked 4, better than the other four services shown (8, 15, 7, 12), which shows that group values it highly. C is a true statement (1 vs. 4) but only compares the two groups rather than showing the benefit is regarded as important; B is false.</p>"
+        }
+      },
+      "reason": "Question referred to a \"city planner\" absent from the passage; changed to \"the researchers\" and dropped the explanation note about it."
+    },
+    {
+      "id": "ch2-01",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-02",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-03",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-04",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-05",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-06",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-07",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-08",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-09",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-10",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-11",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-12",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-13",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-14",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-15",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-16",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-17",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-18",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-19",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-20",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-21",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch2-22",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-01",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-02",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-03",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-04",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-05",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-06",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-07",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-08",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-09",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-10",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-11",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-12",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-13",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-14",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-15",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-16",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-17",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-18",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-19",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-20",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-21",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch4-22",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-01",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-02",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-03",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-04",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-05",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-06",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-07",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-08",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-09",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-10",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-11",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-12",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-13",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-14",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-15",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-16",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-17",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-18",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-19",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-20",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-21",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch6-22",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-01",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-02",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-03",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-04",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-05",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-06",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-07",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-08",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-09",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-10",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-11",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-12",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-13",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-14",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-15",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-16",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-17",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-18",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-19",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-20",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-21",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch8-22",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-01",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-02",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-03",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-04",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-05",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-06",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-07",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-08",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-09",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-10",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-11",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-12",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-13",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-14",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-15",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-16",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-17",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-18",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-19",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-20",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-21",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "ch10-22",
+      "exclude": true,
+      "reason": "Challenge Math image mismatch: the stem image is question #N of a different sequential pool (CH2=1-22 ... CH10=89-110) with its own problem/choices, while options/answer/type come from a different question set; the key cannot be matched to what the student sees."
+    },
+    {
+      "id": "e1391dd6",
+      "set": {
+        "answer": "B"
+      },
+      "reason": "Answer was \"see explanation below\"; 275,000*2^(x/2)=1.1M gives x=4, i.e. 1989 = choice B (explanation also says B)."
+    },
+    {
+      "id": "52e589f9",
+      "exclude": true,
+      "reason": "Stem function and units lost (garbled \"g g i k k l m o r s\"), options B/C duplicate and D is an image; cannot be reliably repaired with text."
+    },
+    {
+      "id": "m-alg-36f068e2",
+      "exclude": true,
+      "reason": "Graph question: options B and D are empty (graph images missing) and the key is B; not repairable with text."
+    }
+  ]
+}

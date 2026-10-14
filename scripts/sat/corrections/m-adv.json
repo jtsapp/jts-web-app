@@ -1,0 +1,100 @@
+{
+ "corrections": [
+  {
+   "id": "137cc6fd",
+   "set": {
+    "answer": [
+     "4/225",
+     ".0177",
+     ".0178",
+     "0.017",
+     "0.018"
+    ]
+   },
+   "reason": "Add equivalent forms 0.017/0.018 listed in the explanation (4/225)."
+  },
+  {
+   "id": "565428e1",
+   "set": {
+    "answer": [
+     "41/81",
+     ".5061",
+     ".5062",
+     "0.506"
+    ]
+   },
+   "reason": "Add equivalent form 0.506 listed in the explanation (41/81)."
+  },
+  {
+   "id": "c6e85cd7",
+   "set": {
+    "answer": [
+     "7/24",
+     ".2916",
+     ".2917",
+     "0.291",
+     "0.292"
+    ]
+   },
+   "reason": "Add equivalent forms 0.291/0.292 for 7/24."
+  },
+  {
+   "id": "5edc8c98",
+   "set": {
+    "answer": [
+     "1/16",
+     ".0625",
+     "0.062",
+     "0.063"
+    ]
+   },
+   "reason": "Add equivalent forms 0.062/0.063 listed in the explanation (1/16)."
+  },
+  {
+   "id": "0536ad4f",
+   "set": {
+    "stem": "<div class=\"stem\"><p>Which expression is equivalent to <math alttext=\"20w - (4w + 3w)\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mn>20</mn><mi>w</mi><mo>-</mo><mo>(</mo><mn>4</mn><mi>w</mi><mo>+</mo><mn>3</mn><mi>w</mi><mo>)</mo></mrow></math>?</p></div>"
+   },
+   "reason": "MathML dropped parentheses: stem rendered 20w-3w+4w (=21w, a distractor) instead of 20w-(4w+3w); rebuilt from alttext/explanation. Key unchanged."
+  },
+  {
+   "id": "03ff48d2",
+   "set": {
+    "stem": "<div class=\"stem\"><div class=\"disp c\"><math alttext=\"x(kx - 56) = -16\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>x</mi><mo>(</mo><mi>k</mi><mi>x</mi><mo>-</mo><mn>56</mn><mo>)</mo><mo>=</mo><mo>-</mo><mn>16</mn></mrow></math></div><p>In the given equation, <math alttext=\"k\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>k</mi></math> is an integer constant. If the equation has no real solution, what is the least possible value of <math alttext=\"k\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>k</mi></math>?</p></div>"
+   },
+   "reason": "Garbled equation x(ka-56)=-16; explanation shows x(kx-56)=-16. Key 50 verified."
+  },
+  {
+   "id": "9833d0e3",
+   "set": {
+    "stem": "<div class=\"stem\"><p>According to a model, the estimated volume of a certain tree in a forest increases by 13.9% for every increase of 100 centimeters in the tree's height. The equation <math alttext=\"y=ab^(x/100)\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>y</mi><mo>=</mo><mi>a</mi><msup><mi>b</mi><mfrac><mi>x</mi><mn>100</mn></mfrac></msup></mrow></math> represents this model, where <math alttext=\"y\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>y</mi></math> represents the estimated volume, in cubic centimeters, of this tree in the forest, <math alttext=\"x\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math> represents the tree's height, in centimeters, and <math alttext=\"a\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>a</mi></math> and <math alttext=\"b\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>b</mi></math> are constants. In this equation, what is the value of <math alttext=\"b\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>b</mi></math>?</p></div>"
+   },
+   "reason": "Garbled equation 'y = abiw'; explanation shows y=ab^(x/100). Key C (1.139) verified."
+  },
+  {
+   "id": "cec36caf",
+   "set": {
+    "stem": "<div class=\"stem\"><div class=\"disp c\"><math alttext=\"8x^2 - 40 = 32\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mn>8</mn><msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>40</mn><mo>=</mo><mn>32</mn></mrow></math></div><p>What is the positive solution to the given equation?</p></div>"
+   },
+   "reason": "Stem rendered '82x - 40 = 32' (exponent lost); explanation shows 8x^2-40=32. Key A (3) verified."
+  },
+  {
+   "id": "128c75e2",
+   "set": {
+    "stem": "<div class=\"stem\"><p>The function <math alttext=\"g\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>g</mi></math> is defined by <math alttext=\"g(x)=abs(x)/a-14\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>g</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>=</mo><mfrac><mrow><mo>|</mo><mi>x</mi><mo>|</mo></mrow><mi>a</mi></mfrac><mo>-</mo><mn>14</mn></mrow></math>, where <math alttext=\"a&lt;0\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>a</mi><mo>&lt;</mo><mn>0</mn></mrow></math>. What is the product of <math alttext=\"g(15a)\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>g</mi><mo>(</mo><mn>15</mn><mi>a</mi><mo>)</mo></mrow></math> and <math alttext=\"g(7a)\" class=\"sat-mathml\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mrow><mi>g</mi><mo>(</mo><mn>7</mn><mi>a</mi><mo>)</mo></mrow></math>?</p></div>"
+   },
+   "reason": "Stem OCR errors: function named '9' and equation rendered '-14 mn 1 + |x|/a'; rebuilt. Key 609 verified ((-29)(-21))."
+  },
+  {
+   "id": "29ed5d39",
+   "set": {
+    "explanation": {
+     "en": "<div class=\"rat\"><p>Choice D is correct. Subtracting 20 from both sides of p = 20 + 16/n gives p − 20 = 16/n. Since n ≠ 0, multiplying both sides by n gives n(p − 20) = 16. Since p &gt; 20, p − 20 ≠ 0, so dividing both sides by p − 20 gives n = 16/(p − 20).</p></div>",
+     "ru": "<div class=\"rat\"><p>Верный ответ — D. Вычтем 20 из обеих частей p = 20 + 16/n: p − 20 = 16/n. Так как n ≠ 0, умножим обе части на n: n(p − 20) = 16. Так как p &gt; 20, p − 20 ≠ 0, поэтому n = 16/(p − 20).</p></div>",
+     "kk": "<div class=\"rat\"><p>Дұрыс жауап — D. p = 20 + 16/n теңдігінің екі жағынан 20-ны азайтсақ: p − 20 = 16/n. n ≠ 0 болғандықтан, екі жағын n-ге көбейтеміз: n(p − 20) = 16. p &gt; 20 болғандықтан p − 20 ≠ 0, сондықтан n = 16/(p − 20).</p></div>"
+    }
+   },
+   "reason": "Explanation solved a different equation (p = 9 + 14/n); replaced with text solution for p = 20 + 16/n. Key D unchanged."
+  }
+ ]
+}

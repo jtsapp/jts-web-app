@@ -1,26 +1,41 @@
 {
-  "corrections": [
-    {
-      "id": "m-alg-1e11190a",
-      "set": {
-        "explanation": {
-          "en": "<p>Choice B is correct. Let r be the number of pints of raspberries and b the number of pints of blackberries. Store A: 5.50r + 3.00b = 37.00. Store B: 6.50r + 8.00b = 66.00. Multiplying the first equation by 6.5 and the second by 5.5 gives 35.75r + 19.5b = 240.5 and 35.75r + 44b = 363. Subtracting yields 24.5b = 122.5, so b = 5 (and r = 4). Thus 5 pints of blackberries are in the purchase.</p><p>Choice A is incorrect. This is the number of pints of raspberries, not blackberries. Choices C and D are incorrect and may result from conceptual or calculation errors.</p>",
-          "ru": "<p>Правильный ответ — B. Пусть r — число пинт малины, b — число пинт ежевики. Магазин A: 5,50r + 3,00b = 37,00. Магазин B: 6,50r + 8,00b = 66,00. Умножив первое уравнение на 6,5, а второе на 5,5, получаем 35,75r + 19,5b = 240,5 и 35,75r + 44b = 363. Вычитая, получаем 24,5b = 122,5, откуда b = 5 (а r = 4). Значит, в покупке 5 пинт ежевики.</p><p>Вариант A неверен: это число пинт малины, а не ежевики. Варианты C и D неверны и могут быть результатом концептуальных или вычислительных ошибок.</p>",
-          "kk": "<p>Дұрыс жауап — B. r — таңқурай пинталарының саны, b — бүлдірген пинталарының саны болсын. A дүкені: 5,50r + 3,00b = 37,00. B дүкені: 6,50r + 8,00b = 66,00. Бірінші теңдеуді 6,5-ке, екіншісін 5,5-ке көбейтсек: 35,75r + 19,5b = 240,5 және 35,75r + 44b = 363. Азайтқанда 24,5b = 122,5, яғни b = 5 (ал r = 4). Демек, сатып алуда 5 пинта бүлдірген бар.</p><p>A нұсқасы қате: бұл бүлдірген емес, таңқурай пинталарының саны. C және D нұсқалары қате, олар ұғымдық немесе есептеу қателерінен шығуы мүмкін.</p>"
-        }
-      },
-      "reason": "Key B (5) is correct (b=5, r=4 satisfies both equations), but the explanation said 'Choice C is correct', called A and B incorrect and D the raspberry count (letters from a different option order). Replaced explanation with a consistent one."
-    },
-    {
-      "id": "m-alg-bf5f80c6",
-      "set": {
-        "explanation": {
-          "en": "<p>Choice A is correct. A point (x, y) is a solution to y &lt; -4x + 4 if its y-coordinate is less than -4x + 4. For (-4, 0): -4(-4) + 4 = 20, and 0 &lt; 20, so (-4, 0) is a solution.</p><p>Choices B, C, and D are incorrect. For (0, 5): 5 &lt; 4 is false. For (2, 1): 1 &lt; -4 is false. For (2, -1): -1 &lt; -4 is false.</p>",
-          "ru": "<p>Правильный ответ — A. Точка (x, y) является решением неравенства y &lt; -4x + 4, если её координата y меньше -4x + 4. Для (-4, 0): -4(-4) + 4 = 20, и 0 &lt; 20, значит, (-4, 0) — решение.</p><p>Варианты B, C и D неверны. Для (0, 5): 5 &lt; 4 — неверно. Для (2, 1): 1 &lt; -4 — неверно. Для (2, -1): -1 &lt; -4 — неверно.</p>",
-          "kk": "<p>Дұрыс жауап — A. (x, y) нүктесі y &lt; -4x + 4 теңсіздігінің шешімі болады, егер оның y координатасы -4x + 4-тен кіші болса. (-4, 0) үшін: -4(-4) + 4 = 20, және 0 &lt; 20, демек (-4, 0) — шешім.</p><p>B, C және D нұсқалары қате. (0, 5) үшін: 5 &lt; 4 — жалған. (2, 1) үшін: 1 &lt; -4 — жалған. (2, -1) үшін: -1 &lt; -4 — жалған.</p>"
-        }
-      },
-      "reason": "Key A (-4, 0) is correct (0 < 20; the other points fail), but the explanation began 'Choice D is correct' and called A incorrect. Replaced explanation with a consistent one."
+ "corrections": [
+  {
+   "id": "m-alg-1e11190a",
+   "set": {
+    "explanation": {
+     "en": "<p>Choice B is correct. Let r be the number of pints of raspberries and b the number of pints of blackberries. Store A: 5.50r + 3.00b = 37.00. Store B: 6.50r + 8.00b = 66.00. Multiplying the first equation by 6.5 and the second by 5.5 gives 35.75r + 19.5b = 240.5 and 35.75r + 44b = 363. Subtracting yields 24.5b = 122.5, so b = 5 (and r = 4). Thus 5 pints of blackberries are in the purchase.</p><p>Choice A is incorrect. This is the number of pints of raspberries, not blackberries. Choices C and D are incorrect and may result from conceptual or calculation errors.</p>",
+     "ru": "<p>Правильный ответ — B. Пусть r — число пинт малины, b — число пинт ежевики. Магазин A: 5,50r + 3,00b = 37,00. Магазин B: 6,50r + 8,00b = 66,00. Умножив первое уравнение на 6,5, а второе на 5,5, получаем 35,75r + 19,5b = 240,5 и 35,75r + 44b = 363. Вычитая, получаем 24,5b = 122,5, откуда b = 5 (а r = 4). Значит, в покупке 5 пинт ежевики.</p><p>Вариант A неверен: это число пинт малины, а не ежевики. Варианты C и D неверны и могут быть результатом концептуальных или вычислительных ошибок.</p>",
+     "kk": "<p>Дұрыс жауап — B. r — таңқурай пинталарының саны, b — бүлдірген пинталарының саны болсын. A дүкені: 5,50r + 3,00b = 37,00. B дүкені: 6,50r + 8,00b = 66,00. Бірінші теңдеуді 6,5-ке, екіншісін 5,5-ке көбейтсек: 35,75r + 19,5b = 240,5 және 35,75r + 44b = 363. Азайтқанда 24,5b = 122,5, яғни b = 5 (ал r = 4). Демек, сатып алуда 5 пинта бүлдірген бар.</p><p>A нұсқасы қате: бұл бүлдірген емес, таңқурай пинталарының саны. C және D нұсқалары қате, олар ұғымдық немесе есептеу қателерінен шығуы мүмкін.</p>"
     }
-  ]
+   },
+   "reason": "Key B (5) is correct (b=5, r=4 satisfies both equations), but the explanation said 'Choice C is correct', called A and B incorrect and D the raspberry count (letters from a different option order). Replaced explanation with a consistent one."
+  },
+  {
+   "id": "m-alg-bf5f80c6",
+   "set": {
+    "explanation": {
+     "en": "<p>Choice A is correct. A point (x, y) is a solution to y &lt; -4x + 4 if its y-coordinate is less than -4x + 4. For (-4, 0): -4(-4) + 4 = 20, and 0 &lt; 20, so (-4, 0) is a solution.</p><p>Choices B, C, and D are incorrect. For (0, 5): 5 &lt; 4 is false. For (2, 1): 1 &lt; -4 is false. For (2, -1): -1 &lt; -4 is false.</p>",
+     "ru": "<p>Правильный ответ — A. Точка (x, y) является решением неравенства y &lt; -4x + 4, если её координата y меньше -4x + 4. Для (-4, 0): -4(-4) + 4 = 20, и 0 &lt; 20, значит, (-4, 0) — решение.</p><p>Варианты B, C и D неверны. Для (0, 5): 5 &lt; 4 — неверно. Для (2, 1): 1 &lt; -4 — неверно. Для (2, -1): -1 &lt; -4 — неверно.</p>",
+     "kk": "<p>Дұрыс жауап — A. (x, y) нүктесі y &lt; -4x + 4 теңсіздігінің шешімі болады, егер оның y координатасы -4x + 4-тен кіші болса. (-4, 0) үшін: -4(-4) + 4 = 20, және 0 &lt; 20, демек (-4, 0) — шешім.</p><p>B, C және D нұсқалары қате. (0, 5) үшін: 5 &lt; 4 — жалған. (2, 1) үшін: 1 &lt; -4 — жалған. (2, -1) үшін: -1 &lt; -4 — жалған.</p>"
+    }
+   },
+   "reason": "Key A (-4, 0) is correct (0 < 20; the other points fail), but the explanation began 'Choice D is correct' and called A incorrect. Replaced explanation with a consistent one."
+  },
+  {
+   "id": "m-alg-ca452900",
+   "set": {
+    "answer": [
+     "5/13",
+     ".3846",
+     
+     "0.384",
+     "0.385",
+     ".384",
+     ".385"
+    ]
+   },
+   "reason": "5/13 = 0.3846…; the explanation accepts 0.384 and 0.385 but the key list lacked them; added with other grid-valid forms"
+  }
+ ]
 }
