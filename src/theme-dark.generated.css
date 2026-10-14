@@ -8072,6 +8072,10 @@ html[data-theme="dark"] .ih-pg__overall, html[data-theme="dark"] .ih-pg__skill, 
 html[data-theme="dark"] .ih-pg__label {
     color: var(--ih-ink-2)
 }
+html[data-theme="dark"] .ih-pg__est {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
 html[data-theme="dark"] .ih-pg__meta {
     color: var(--ih-ink-2)
 }
@@ -9057,6 +9061,3087 @@ html[data-theme="dark"] .ih-mtsec__s.is-checking small {
     color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .ih-mtsec__s.is-bad small {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .exam-pr {
+    background: var(--dk-page);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .exam-pr__top p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .exam-pr__kicker {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .exam-pr--sat .exam-pr__kicker {
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .exam-pr__back {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .exam-pr__plan {
+    border: 1.5px solid var(--dk-acc-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .exam-pr__plan.is-featured {
+    border-color: var(--dk-acc);
+    box-shadow: 0 10px 30px color-mix(in oklab, var(--dk-acc) 12%, transparent)
+}
+html[data-theme="dark"] .exam-pr__badge {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .exam-pr__desc {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .exam-pr__price {
+    border-top: 1px solid var(--dk-line);
+    border-bottom: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .exam-pr__price b.is-soon {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .exam-pr__price s, html[data-theme="dark"] .exam-pr__price small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .exam-pr__plan li svg {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .exam-pr__cta {
+    border: 1.5px solid var(--dk-acc);
+    background: var(--dk-card);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .exam-pr__cta.is-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .exam-pr__how {
+    background: var(--dk-page)
+}
+/*  sat.css  */
+html[data-theme="dark"] .st {
+    --st-bg: var(--dk-page);
+    --st-edge: var(--dk-chip);
+    --st-tint: var(--dk-acc-tint);
+    --st-orange: var(--dk-orange);
+    --st-orange-tint: var(--dk-yellow-tint);
+    --st-red: var(--dk-red);
+    --st-red-tint: var(--dk-page);
+    --st-rw: var(--dk-blue);
+    --st-rw-tint: var(--dk-blue-tint);
+    --st-math: var(--dk-red);
+    --st-math-tint: var(--dk-red-tint);
+    --st-line: var(--dk-line)
+}
+html[data-theme="dark"] .st-muted {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-error {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-card {
+    background: var(--dk-card);
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-link {
+    border: 0;
+    background: none;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-header__kind {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-header__date {
+    background: var(--dk-page);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-ob {
+    background: var(--dk-page);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-ob__logo {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-ob__exit {
+    border: 0;
+    background: none;
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-ob__progress span {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-ob__progress span.is-on {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-ob__step {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-ob__chip {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-ob__chip--rw {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-ob__chip--math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-ob__lead {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-ob__lead--left {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-ob__actions {
+    background: linear-gradient(to top, var(--dk-page) 70%, rgba(250, 250, 252, 0))
+}
+html[data-theme="dark"] .st-point__icon {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-point__icon.is-blue {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-point__icon.is-green {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-point__icon.is-orange {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-stat {
+    background: var(--dk-card);
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-stat > span:last-child {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-point {
+    background: var(--dk-card);
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-point p {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-point--accent {
+    background: var(--st-tint, #f2ebff);
+    border-color: transparent
+}
+html[data-theme="dark"] .st-point--accent .st-point__icon {
+    background: var(--dk-card);
+    color: var(--st-tone, var(--ih-violet))
+}
+html[data-theme="dark"] .st-section .st-point__icon {
+    background: var(--st-tint);
+    color: var(--st-tone)
+}
+html[data-theme="dark"] .st-timeline__head {
+    border-bottom: 2px solid var(--st-tone);
+    color: var(--st-tone)
+}
+html[data-theme="dark"] .st-timeline__head::before {
+    background: var(--st-tone)
+}
+html[data-theme="dark"] .st-module {
+    background: var(--st-tint);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-module b {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-module__adaptive {
+    background: var(--dk-card);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-module__min {
+    color: var(--st-tone)
+}
+html[data-theme="dark"] .st-timeline__break {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-statchips span {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-domain__pct {
+    color: var(--st-tone)
+}
+html[data-theme="dark"] .st-bar {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-bar > i {
+    background: var(--st-tone)
+}
+html[data-theme="dark"] .st-chips span {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-step__row {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-step__row button {
+    border: 0;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-step__row button:last-child {
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-step__row input {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .st-goal__total {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-goal__total > span {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-goal__total div span {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-goal__presets button {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-goal__presets button.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-goal__reach {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-goal__scale {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-college {
+    border: 1px solid transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-college.is-top {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-college__name > span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-band--in {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-band--above {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-band--near {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-band--below {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-college__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-range--in {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-range--above {
+    background: var(--dk-blue)
+}
+html[data-theme="dark"] .st-range--near {
+    background: var(--dk-yellow-soft)
+}
+html[data-theme="dark"] .st-range--below {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-you {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-goal__legend {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-goal__legend i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-note {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-note svg {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-date, html[data-theme="dark"] .st-undecided {
+    border: 2px solid var(--st-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .st-date.is-on, html[data-theme="dark"] .st-undecided.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-date.is-closed .st-date__body > b, html[data-theme="dark"] .st-date.is-closed .st-sheet b {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-sheet {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-sheet__month {
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-date.is-closed .st-sheet__month {
+    background: var(--dk-raised)
+}
+html[data-theme="dark"] .st-sheet__year {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-date__body {
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-date__body > b {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-reg--open {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-reg--late {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-reg--closed, html[data-theme="dark"] .st-reg--expected {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-radio {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-date:not(.is-on) .st-radio, html[data-theme="dark"] .st-undecided:not(.is-on) .st-radio {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-howto__head {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .st-steps li::before {
+    background: var(--ih-ink, #181818);
+    color: #fff
+}
+html[data-theme="dark"] .st-bring__ok {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-bring__ok b {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-bring__no {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-bring__no b {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-links a {
+    border: 1px solid var(--dk-line);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-links a:hover {
+    border-color: var(--ih-violet, #9047ff);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-guide__retold {
+    background: var(--dk-page);
+    color: var(--ih-ink-2, #4a4a55)
+}
+html[data-theme="dark"] .st-guide__item {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-guide__item span span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-guide__item.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-guide__num {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-guide__item.is-on .st-guide__num {
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-guide__next {
+    border: 0;
+    background: var(--dk-page)
+}
+@media (hover: hover) {
+    html[data-theme="dark"] .st-date:not(.is-on):hover, html[data-theme="dark"] .st-undecided:not(.is-on):hover, html[data-theme="dark"] .st-guide__item:not(.is-on):hover {
+        border-color: var(--dk-acc-line)
+    }
+}
+html[data-theme="dark"] .ih.st.st-run {
+    background: var(--st-bg)
+}
+html[data-theme="dark"] .st-run__top {
+    background: var(--dk-card);
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-run__close {
+    border: 0;
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-run__title span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-timer {
+    background: var(--ih-soft);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-timer__note {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-timer.is-low {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-tool {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-tool:hover {
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .st-tool.is-on {
+    border-color: var(--st-tint);
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-q__passage {
+    background: var(--dk-card);
+    border-right: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-q__text th, html[data-theme="dark"] .st-q__text td {
+    border: 1px solid var(--st-edge)
+}
+html[data-theme="dark"] .st-q__text th {
+    background: var(--st-bg)
+}
+html[data-theme="dark"] .st-q__num {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-mark {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-mark.is-on {
+    border-color: var(--st-orange-tint);
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-q__skill {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] mark.st-hl {
+    background: var(--dk-yellow-tint);
+    color: inherit
+}
+html[data-theme="dark"] .st-opt {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-opt__pick {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-opt__key {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-opt__strike {
+    border: 0;
+    background: none;
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-opt__strike:hover {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-opt:hover {
+    border-color: var(--st-edge)
+}
+html[data-theme="dark"] .st-opt.is-on {
+    border-color: var(--ih-violet);
+    box-shadow: inset 0 0 0 1px var(--ih-violet);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-opt.is-on .st-opt__key {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-opt.is-struck .st-opt__text {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-opt.is-struck .st-opt__key {
+    border-color: var(--dk-line);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-opt.is-struck .st-opt__strike {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-opt.is-right {
+    border-color: var(--ih-green);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-opt.is-right .st-opt__key {
+    border-color: var(--ih-green);
+    background: var(--ih-green);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-opt.is-wrong {
+    border-color: var(--st-red);
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-opt.is-wrong .st-opt__key {
+    border-color: var(--st-red);
+    background: var(--st-red);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-opt.is-rest .st-opt__text, html[data-theme="dark"] .st-opt.is-rest .st-opt__key {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-opt.is-right .st-opt__mark {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-opt.is-wrong .st-opt__mark {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-spr__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-spr__field {
+    border: 2px solid var(--ih-violet)
+}
+html[data-theme="dark"] .st-spr__field.is-bad {
+    border-color: var(--st-red)
+}
+html[data-theme="dark"] .st-spr__field input {
+    border: 0;
+    outline: none;
+    background: none;
+    color: var(--ih-ink);
+    caret-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-spr__count {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-spr__reads {
+    background: var(--st-tint);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-spr__reads svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-spr__reads b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-spr__rules li {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-spr__rules li svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-spr__rules li.is-no svg {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-spr__err {
+    background: var(--st-red-tint);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-spr__err svg {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-run__paused {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-run--done .ih-empty {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-desmos {
+    background: var(--dk-card);
+    border-left: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-desmos.is-expanded {
+    border: 1px solid var(--st-line);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4)
+}
+html[data-theme="dark"] .st-desmos__icon {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-desmos__btn {
+    border: 0;
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-desmos__calc {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-desmos__calc iframe {
+    border: 0
+}
+html[data-theme="dark"] .st-desmos__blocked {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-desmos__note {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-desmos__note svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-run__bottom {
+    background: var(--dk-card);
+    border-top: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-pos {
+    border: 0;
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-rail__n {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-rail__n.is-done {
+    border-color: var(--ih-ink-2);
+    background: var(--ih-ink-2);
+    color: #fff
+}
+html[data-theme="dark"] .st-rail__n.is-marked {
+    border-color: var(--st-orange-tint);
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-rail__n.is-here {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-rail__legend {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-run__primary {
+    border: 0;
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-navdlg__box, html[data-theme="dark"] .st-modal {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4)
+}
+html[data-theme="dark"] .st-navdlg__head p {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-navdlg__close {
+    border: 0;
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-chip i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-chip--done {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-chip--empty {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-chip--marked {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-navdlg__n {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-navdlg__n.is-done {
+    border-color: var(--ih-ink-2);
+    background: var(--ih-ink-2);
+    color: #fff
+}
+html[data-theme="dark"] .st-navdlg__n.is-marked {
+    border-color: var(--dk-yellow-line);
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-navdlg__n.is-gap {
+    border: 1.5px dashed var(--st-red);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-navdlg__n.is-here {
+    box-shadow: 0 0 0 2px var(--dk-card), 0 0 0 4px var(--ih-violet)
+}
+html[data-theme="dark"] .st-navdlg__warn {
+    background: var(--st-red-tint);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-navdlg__warn svg {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-navdlg__finish {
+    border: 0;
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-ref__grid figure {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-ref__name {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st .frac > span:first-child {
+    border-bottom: 1.2px solid currentColor
+}
+html[data-theme="dark"] .st-frac span:first-child {
+    border-bottom: 1px solid currentColor
+}
+html[data-theme="dark"] .st-ref__facts {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-scratch {
+    border: 1px solid var(--st-edge)
+}
+@media (max-width: 900px) {
+    html[data-theme="dark"] .st-q__passage {
+        border-right: 0;
+        border-bottom: 1px solid var(--st-line)
+    }
+    html[data-theme="dark"] .st-desmos:not(.is-expanded) {
+        border-left: 0;
+        border-top: 1px solid var(--st-line)
+    }
+}
+html[data-theme="dark"] .st-dot {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-dot.is-math {
+    background: var(--st-math)
+}
+html[data-theme="dark"] .st-run__toast {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3)
+}
+html[data-theme="dark"] .st-dx__icon {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-dx__lead {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-dx__sec span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-dx__sec strong {
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-dx__sec strong.is-math {
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-dx__secicon {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-dx__secicon.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-dx__getgrid p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-dx__geticon {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-dx__note {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-dx__note svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-rep__notscore {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-rep__ringbox small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-rep__seclabel {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-rep__seclabel i {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-rep__sec.is-math .st-rep__seclabel i, html[data-theme="dark"] .st-rep__sec.is-math .st-rep__bar i {
+    background: var(--st-math)
+}
+html[data-theme="dark"] .st-rep__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-rep__bar i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-rep__sec .st-rep__bar i {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-rep__focus {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-rep__eyebrow {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-rep__chip {
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-rep__bandchip i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-rep__bandchip.is-weak {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-rep__bandchip.is-shaky {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-rep__bandchip.is-strong {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-rep__advice {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-rep__band li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-rep__band li.is-focus {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-rep__band li > svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-rep__dots i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-rep__dots i.is-on {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-rep__pct {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-rep__paper, html[data-theme="dark"] .st-plan__note {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-rep__paper svg, html[data-theme="dark"] .st-plan__note svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-rep__stale {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-time__lead {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-time__day {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-time__day b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-time__day.is-on {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-time__day.is-on b {
+    color: #fff
+}
+html[data-theme="dark"] .st-time__min {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-time__min.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-time__sum {
+    background: var(--dk-ink-bg);
+    color: #fff
+}
+html[data-theme="dark"] .st-time__eyebrow, html[data-theme="dark"] .st-time__scalelabel {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-time__sum > p {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-time__tiles span {
+    background: var(--dk-ink-bg);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-time__tiles b {
+    color: #fff
+}
+html[data-theme="dark"] .st-time__scale span {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-time__scale i {
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .st-time__scale span.is-on {
+    color: #fff
+}
+html[data-theme="dark"] .st-time__scale span.is-on i {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-time__prov {
+    background: var(--dk-ink-bg);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-how li {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-how b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-road__map {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-road__nav {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-road__arrow {
+    border: 0
+}
+html[data-theme="dark"] .st-road__node circle {
+    fill: #fff;
+    stroke: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-road__node circle.is-done {
+    fill: var(--ih-green);
+    stroke: #fff
+}
+html[data-theme="dark"] .st-road__node circle.is-here {
+    fill: var(--ih-violet);
+    stroke: #fff
+}
+html[data-theme="dark"] .st-road__node.is-open circle.is-next {
+    stroke: var(--ih-violet)
+}
+html[data-theme="dark"] .st-road__node:focus-visible {
+    outline: none
+}
+html[data-theme="dark"] .st-road__node:focus-visible circle {
+    stroke: var(--ih-ink)
+}
+html[data-theme="dark"] .st-road__num {
+    fill: var(--ih-violet)
+}
+html[data-theme="dark"] .st-road__num.is-here {
+    fill: #fff
+}
+html[data-theme="dark"] .st-road__star {
+    fill: var(--dk-muted)
+}
+html[data-theme="dark"] .st-road__star.is-on {
+    fill: #f5a524
+}
+html[data-theme="dark"] .st-road__here {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-road__exam {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-road__exam small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-road__examicon {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-road__eyebrow {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-road__chip {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-road__lead {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-road__boxes > div {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-road__boxes b svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-road__boxes p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-road__done {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-phases__tile {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-phases__tile small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-phases__tile.is-done {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-phases__tile.is-done b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-phases__tile.is-here {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-phases__tile.is-here b {
+    color: #fff
+}
+html[data-theme="dark"] .st-phases__tile.is-here small {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-phases__prog {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-week__nav {
+    border: 0;
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-week__now {
+    border: 0;
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-week__day {
+    border: 2px solid transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-week__day.is-today {
+    border-color: var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-week__dayhead small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-week__dayhead em {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-week__day.is-today .st-week__dayhead small, html[data-theme="dark"] .st-week__day.is-today .st-week__dayhead b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-lesson {
+    border: 1.5px solid var(--ih-ink);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-lesson__sec {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-lesson__acts {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-lesson__st {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-lesson.is-done {
+    border-color: transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-lesson.is-done .st-lesson__st {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-lesson.is-next {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-lesson.is-next .st-lesson__st {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-lesson.is-skipped {
+    border-color: var(--dk-line);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-lesson.is-skipped .st-lesson__st {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-lesson.is-moved {
+    border-color: var(--dk-yellow-line)
+}
+html[data-theme="dark"] .st-lesson.is-moved .st-lesson__st {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-legend {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-legend i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-legend.is-done {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-legend.is-next {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-legend.is-skipped {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-legend.is-moved {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-lmenu {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+    outline: none
+}
+html[data-theme="dark"] .st-lmenu__goal {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-lmenu__item {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-lmenu__item:hover:not(:disabled) {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-lmenu__item.is-start {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-lmenu__move input {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .st-month__badge {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-month__wd span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-month__label {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-month__label i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-month__label.is-deep {
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-month__label.is-timed {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-month__label.is-mocks {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-month__label.is-refinement {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-month__cell {
+    border: 1px solid transparent;
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-month__cell.is-past {
+    border-color: var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-month__cell.is-past .st-month__num {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-month__cell.is-today {
+    border: 1.5px solid var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-month__num em {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-mlesson {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mlesson.is-done {
+    border-color: transparent;
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-mlesson.is-next {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-mlesson.is-skipped {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-month__exam {
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-month__mark small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-month__markicon {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-month__markicon.is-violet {
+    background: var(--dk-acc-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-month__markicon.is-gold {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-side {
+    background: var(--dk-card);
+    border-left: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-hint {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+    outline: none
+}
+html[data-theme="dark"] .st-hint__head small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-hint__icon {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-hint__warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-hint__warn svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-hint__more {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-verdict {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-verdict.is-wrong {
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-verdict.is-wrong b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-verdict.is-right {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-verdict.is-right b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-similar-note {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-xp__answer {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-xp__others li {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-xp__others li.is-mine {
+    border: 1px solid var(--dk-red-line);
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-xp__key {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-xp__others li.is-mine .st-xp__key {
+    border-color: var(--st-red);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-xp__tag {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-xp__method {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-xp__gate p {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-xp__gate p svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-xp__similar small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-ai__limit {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-ai__limit svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-ai__me {
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-ai__bot {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-ai__bot b {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-ai__chip {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-ai__input input {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-ai__foot {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-etype__opt {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-etype__opt small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-etype__opt.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-etype__opt.is-on > svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-etype__sug {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-etype__why {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-sum__icon {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-sum__sub {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-sum__card small, html[data-theme="dark"] .st-sum__skill small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-sum__mastery {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-mchip {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-mchip i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-mchip.is-learning {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mchip.is-developing {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mchip.is-mastered {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-sum__due {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-sum__tile {
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-sum__tile.is-right {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-sum__tile.is-help {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-sum__tile.is-wrong {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-study__err {
+    background: var(--dk-card)
+}
+@media (max-width: 900px) {
+    html[data-theme="dark"] .st-side {
+        border-left: 0;
+        border-top: 1px solid var(--st-line)
+    }
+}
+html[data-theme="dark"] .st-header__streak {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-resume {
+    border: 1px solid var(--dk-acc-line);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-resume span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-resume__icon {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-resume__btn {
+    border: 0;
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-next__chip {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-next__chip.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-next__icon {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-next__icon.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-next__act {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-next__acthead {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-next__acthead small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-next__act > span {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-next__act > small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-next__foot > svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-next__foot p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-where__bar span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-where__bar i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-where__bar .is-done i {
+    background: var(--ih-green)
+}
+html[data-theme="dark"] .st-where__bar .is-here i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-where__bar .is-here small {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-where__bar em {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-where__bar em .is-on {
+    color: #f5a524
+}
+html[data-theme="dark"] .st-where p {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-exam {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-exam__nums span {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-exam__nums b {
+    color: #fff
+}
+html[data-theme="dark"] .st-due__n {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-due li span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-side-card {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-side-card small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-side-card > svg {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-side-card__icon {
+    background: var(--ih-soft)
+}
+html[data-theme="dark"] .st-side-card__icon.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-side-card__icon.is-orange {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-side-card__icon.is-green {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-reco {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-reco span {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-reco .st-reco__icon {
+    background: var(--dk-card);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-reco__btn {
+    border: 0;
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-prac__note {
+    background: var(--ih-soft);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-prac__mode {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-prac__mode small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-prac__mode.is-on {
+    border: 2px solid var(--ih-violet);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-prac__mode.is-on > svg {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-tree__dom {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-tree__dom.is-open {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-tree__head {
+    border: 0;
+    background: none;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-tree__picked {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-tree__bank {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-tree li label.is-empty {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-tree li input {
+    accent-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-sess dt, html[data-theme="dark"] .st-sess__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-sess__sec {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-sess__sec i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-sess__sec.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-sess__chip {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-sess__filters button {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-sess__filters button.is-on {
+    border-color: var(--ih-ink);
+    background: var(--ih-ink);
+    color: #fff
+}
+html[data-theme="dark"] .st-sess__fit {
+    border-top: 1px solid var(--st-line);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-pstat small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-stat__icon.is-green {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-stat__icon.is-gold {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-stat__icon.is-orange {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-stat__icon.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-map__sec {
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-map__sec i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-map__sec.is-math {
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-map__dom > small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-map__skill {
+    border: 0;
+    background: var(--dk-page);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-map__skill small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-map__skill.is-mastered {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-map__skill.is-mastered small {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-map__skill.is-developing {
+    background: var(--dk-yellow-tint)
+}
+html[data-theme="dark"] .st-map__skill.is-developing small {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-map__skill.is-learning {
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-map__skill.is-learning small {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-map__skill:hover {
+    outline: 2px solid var(--st-tint)
+}
+html[data-theme="dark"] .st-acc__row.is-math .st-rep__bar i {
+    background: var(--st-math)
+}
+html[data-theme="dark"] .st-acc__row.is-rw .st-rep__bar i {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-pace__tiles span {
+    background: var(--dk-page);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-pace__tiles b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-pace__row small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-pace__chip.is-fast {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-pace__chip.is-slow {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-heat__grid i {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-heat__grid i.is-1 {
+    background: var(--dk-acc-soft)
+}
+html[data-theme="dark"] .st-heat__grid i.is-2 {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-heat__grid i.is-3 {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-heat__grid i.is-4 {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-badge small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-badge__icon {
+    background: var(--ih-soft);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-badge.is-done .st-badge__icon {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-err__stem {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-err__type {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-sum__icon.is-amber {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-daily__item.is-right {
+    border-left: 4px solid var(--ih-green)
+}
+html[data-theme="dark"] .st-daily__item.is-wrong {
+    border-left: 4px solid var(--st-red)
+}
+html[data-theme="dark"] .st-daily__item.is-right .st-daily__head > svg {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-daily__item.is-wrong .st-daily__head > svg {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-daily__ans {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-daily__xp {
+    background: var(--dk-page);
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .st-strip__b {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-strip__b small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-strip__b.is-rw {
+    background: var(--st-rw-tint)
+}
+html[data-theme="dark"] .st-strip__b.is-math {
+    background: var(--st-math-tint)
+}
+html[data-theme="dark"] .st-strip__b.is-now.is-rw {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-strip__b.is-now.is-math {
+    background: var(--st-math)
+}
+html[data-theme="dark"] .st-strip__b.is-now.is-break {
+    background: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-strip__b.is-now b, html[data-theme="dark"] .st-strip__b.is-now small {
+    color: #fff
+}
+html[data-theme="dark"] .st-strip__b.is-done {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-strip__b.is-done b {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mock__head p {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mock__icon {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mock__icon.is-violet {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mock__route {
+    background: linear-gradient(100deg, var(--dk-acc) 0%, var(--dk-acc) 100%);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-mock__route.is-easier {
+    background: linear-gradient(100deg, var(--dk-ink-bg) 0%, var(--dk-ink-bg) 100%)
+}
+html[data-theme="dark"] .st-mock__routeIcon {
+    background: var(--dk-card);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mock__route.is-easier .st-mock__routeIcon {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mock__route p {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-mock__untimed {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mock__narrow {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-break__track, html[data-theme="dark"] .st-break__arc {
+    fill: none
+}
+html[data-theme="dark"] .st-break__track {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .st-break__arc {
+    stroke: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-break__ring small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-break__card > span {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-break__card p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-res__total {
+    background: var(--ih-ink, #181818);
+    color: #fff
+}
+html[data-theme="dark"] .st-res__eyebrow {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-res__flag {
+    background: var(--dk-ink-bg);
+    color: #ffc960
+}
+html[data-theme="dark"] .st-res__track {
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .st-res__band {
+    background: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-res__goal {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .st-res__goalLabel {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .st-res__tick {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-res__total p {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-res__secHead {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-res__route {
+    background: var(--dk-page);
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-res__route.is-harder {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-res__nums small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-res__sec.is-rw .st-res__secRange {
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-res__sec.is-math .st-res__secRange {
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-res__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-res__sec.is-rw .st-res__bar i {
+    background: var(--st-rw)
+}
+html[data-theme="dark"] .st-res__sec.is-math .st-res__bar i {
+    background: var(--st-math)
+}
+html[data-theme="dark"] .st-res__mod {
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-res__mod:last-child {
+    border-bottom: 0
+}
+html[data-theme="dark"] .st-res__weak li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-res__weak li b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-res__practice {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mocks__simIcon {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mocks__block small {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mocks__block.is-rw {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-mocks__block.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-mocks__block.is-break {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mocks__rules li {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mocks__rules svg {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__mode {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__mode.is-on {
+    border: 2px solid var(--ih-violet, #9047ff);
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mocks__mode b {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-mocks__mode small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__width {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__width.is-short {
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-mocks__notice {
+    background: var(--dk-yellow-tint)
+}
+html[data-theme="dark"] .st-mocks__notice > div:first-child {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__warn svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-traj__grid {
+    stroke: var(--dk-muted)
+}
+html[data-theme="dark"] .st-traj__tick {
+    fill: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-traj__goal {
+    stroke: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-traj__goalText {
+    fill: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-traj__line {
+    fill: none;
+    stroke: #f2a516
+}
+html[data-theme="dark"] .st-traj__band {
+    fill: #f2a516
+}
+html[data-theme="dark"] .st-traj__dot {
+    fill: #f2a516;
+    stroke: #fff
+}
+html[data-theme="dark"] .st-traj__month {
+    fill: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__src i {
+    background: currentColor
+}
+html[data-theme="dark"] .st-mocks__src.is-sim {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__src.is-paper {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-mocks__papers li {
+    border-top: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mocks__tr {
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mocks__tr.is-head {
+    border: 0;
+    background: var(--dk-page);
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mocks__est {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__tag {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mocks__tr .is-up {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mocks__tr .is-down {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mocks__note {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mocks__note svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .ih.st.st-mrev {
+    background: var(--st-bg);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-mrev__top {
+    background: var(--dk-card);
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mrev__left span {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mrev__mod {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-mrev__list {
+    background: var(--dk-card);
+    border-right: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mrev__group h3 {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mrev__row {
+    border: 1px solid transparent;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-mrev__row.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-mrev__row svg {
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mrev__n.is-wrong {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mrev__n.is-blank {
+    background: var(--dk-card);
+    border: 1px solid var(--st-red);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mrev__n.is-right {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mrev__none {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mrev__num {
+    background: var(--ih-ink, #181818);
+    color: #fff
+}
+html[data-theme="dark"] .st-mrev__marked {
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-mrev__where {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mrev__spr {
+    border: 2px solid var(--st-red);
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-mrev__spr.is-right {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-mrev__side {
+    background: var(--dk-card);
+    border-left: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mrev__tiles > div {
+    background: var(--dk-page);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-mrev__tiles small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mrev__tiles .is-wrong {
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-mrev__tiles .is-wrong small, html[data-theme="dark"] .st-mrev__tiles .is-wrong b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mrev__tiles .is-right {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-mrev__tiles .is-right small, html[data-theme="dark"] .st-mrev__tiles .is-right b {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mrev__why {
+    background: var(--st-red-tint);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mrev__why b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-mrev__paperNote {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mrev__ai {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-soon {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-mrev__bottom {
+    background: var(--dk-card);
+    border-top: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-mrev__bottom b {
+    color: var(--dk-text-2)
+}
+@media (max-width: 1000px) {
+    html[data-theme="dark"] .st-mrev__list {
+        border-right: 0;
+        border-bottom: 1px solid var(--st-line)
+    }
+    html[data-theme="dark"] .st-mrev__side {
+        border-left: 0;
+        border-top: 1px solid var(--st-line)
+    }
+}
+@media (max-width: 760px) {
+    html[data-theme="dark"] .st-mocks__tr > span[data-label]::before {
+        color: var(--ih-muted, #8a8a8a)
+    }
+}
+html[data-theme="dark"] .st-mat__eyebrow, html[data-theme="dark"] .st-unit__eyebrow > span:first-child {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mat__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-mat__bar i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-mat__unit {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .st-mat__unit:hover {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mat__unit.is-current {
+    border: 2px solid var(--ih-violet, #9047ff);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-mat__unit > svg:last-child {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mat__state {
+    border: 1.5px solid var(--st-edge)
+}
+html[data-theme="dark"] .st-mat__unit.is-done .st-mat__state {
+    border: 0;
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-mat__unit.is-current .st-mat__state {
+    border: 0;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-mat__code {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mat__code.is-rw {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-mat__code.is-math {
+    background: var(--st-math-tint);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-mat__code.is-both {
+    background: var(--dk-yellow-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-mat__text small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-mat__now {
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-mat__rec {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-mat__test {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-mat__testIcon {
+    background: var(--dk-card);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .ih.st.st-unit {
+    background: var(--dk-page);
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-unit__top {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-unit__side {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-unit__tool {
+    border: 0;
+    background: none;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-unit__tool:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-unit__tool[aria-pressed='true'] {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-unit__hard span {
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-unit__must small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-unit__note {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-unit__lead {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-unit__step {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-unit__step:hover {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-unit__stepN {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-unit__step.is-done .st-unit__stepN {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-unit__step.is-on {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-unit__step.is-on .st-unit__stepN {
+    background: var(--dk-card);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-unit__part {
+    border: 1px solid var(--st-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-unit__partHead {
+    border-bottom: 2px solid var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-unit__partHead > span {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-unit__partHead small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-unit__partNav {
+    border-top: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-unit__home li {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-unit__home li b {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-unit__home li small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-unit__calc {
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-unit__calc .st-desmos {
+    border: 0
+}
+html[data-theme="dark"] .st-lw blockquote {
+    border: 1px solid var(--st-line);
+    border-left: 4px solid var(--st-rw);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-lw code {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-lw th, html[data-theme="dark"] .st-lw td {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-lw th {
+    background: var(--dk-card);
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-lw .lw-note {
+    border: 1px solid
+}
+html[data-theme="dark"] .st-lw .lw-tip {
+    background: var(--dk-green-tint);
+    border-color: var(--dk-green)
+}
+html[data-theme="dark"] .st-lw .lw-tip > b:first-child {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-lw .lw-mistake {
+    background: var(--st-red-tint);
+    border-color: var(--st-red)
+}
+html[data-theme="dark"] .st-lw .lw-mistake > b:first-child {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-lw .lw-info {
+    background: var(--st-rw-tint);
+    border-color: var(--st-rw)
+}
+html[data-theme="dark"] .st-lw .lw-opts li {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-lw .lw-opts b {
+    border: 1.5px solid var(--st-edge)
+}
+html[data-theme="dark"] .st-lw .lw-work > div {
+    border-left: 3px solid var(--ih-violet, #9047ff);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-wb {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4)
+}
+html[data-theme="dark"] .st-wb__head {
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-wb__status {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-wb__tools {
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-wb__tool, html[data-theme="dark"] .st-wb__text {
+    border: 1px solid transparent;
+    background: none;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-wb__tool:hover, html[data-theme="dark"] .st-wb__text:hover {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-wb__tool[aria-pressed='true'] {
+    border-color: var(--ih-violet, #9047ff);
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-wb__tool:disabled, html[data-theme="dark"] .st-wb__text:disabled {
+    background: none
+}
+html[data-theme="dark"] .st-wb__swatch {
+    border: 2px solid var(--dk-line);
+    box-shadow: 0 0 0 1px var(--st-edge)
+}
+html[data-theme="dark"] .st-wb__swatch[aria-pressed='true'] {
+    box-shadow: 0 0 0 2px var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-wb__dot {
+    background: currentColor
+}
+html[data-theme="dark"] .st-wb__stage {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-wb__canvas {
+    background: var(--dk-card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16)
+}
+html[data-theme="dark"] .st-wb__input {
+    border: 1px dashed var(--st-edge);
+    background: color-mix(in oklab, var(--dk-card) 90%, transparent);
+    outline: none
+}
+html[data-theme="dark"] .st-vc__status {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-vc__status.is-learning {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-vc__status.is-mastered {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-vc__bar {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .st-vc__bar i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vc__left {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vc__card {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12)
+}
+html[data-theme="dark"] .st-vc__card:focus-visible {
+    outline: 2px solid var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vc__state.is-review {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-vc__state.is-new {
+    background: var(--st-rw-tint);
+    color: var(--st-rw)
+}
+html[data-theme="dark"] .st-vc__say {
+    border: 0;
+    background: none;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vc__say:hover {
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-vc__word small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vc__ru {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vc__ex {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-vc__ex svg {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vc__hint {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vc__grade {
+    border: 0
+}
+html[data-theme="dark"] .st-vc__grade small {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-vc__grade.is-again {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-vc__grade.is-hard {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-vc__grade.is-good {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-vc__grade.is-easy {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vocab__plus {
+    border: 0;
+    background: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-vocab__mine li small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vocab__fab {
+    border: 0;
+    background: var(--ih-ink, #181818);
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.44)
+}
+html[data-theme="dark"] .st-wl__search {
+    border: 1px solid var(--st-edge)
+}
+html[data-theme="dark"] .st-wl__bar select {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-wl__row {
+    border-bottom: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-wl__word small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-aw label {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-aw input, html[data-theme="dark"] .st-aw textarea {
+    border: 1px solid var(--st-edge)
+}
+html[data-theme="dark"] .st-vg__card {
+    color: inherit
+}
+html[data-theme="dark"] .st-vg__card:hover {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vg__card span:not(.st-vg__icon) {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-vg__card small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vg__icon {
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vg__clock {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-vg__tile {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-vg__tile.is-on {
+    border: 2px solid var(--ih-violet, #9047ff);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-vg__tile.is-done, html[data-theme="dark"] .st-vg__tile:disabled {
+    border-color: var(--dk-green-line);
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-vg__tile.is-miss {
+    border-color: var(--st-red);
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-vg__done {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-vg__done b {
+    color: var(--ih-ink, #181818)
+}
+html[data-theme="dark"] .st-vg__reg p {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-vg__reg small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-vg__opt {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-vg__opt:hover:not(:disabled) {
+    border-color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-vg__opt:disabled {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-vg__opt.is-right {
+    border: 2px solid var(--dk-green);
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-vg__opt.is-wrong {
+    border: 2px solid var(--st-red);
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-vg__note {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-vg__note.is-wrong {
+    background: var(--st-red-tint)
+}
+html[data-theme="dark"] .st-vg__note p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-dg__count {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-dg__item {
+    border: 1px solid var(--st-line);
+    background: var(--dk-card);
+    color: inherit
+}
+html[data-theme="dark"] .st-dg__item svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .st-dg__item.is-on {
+    border: 2px solid var(--ih-violet, #9047ff);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-dg__item.is-done svg {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-dg__lesson {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-dg__mark {
+    border: 0;
+    background: var(--st-tint);
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-dg__mark.is-on {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-dg__steps li {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-dg__steps li > span {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-dg__steps code, html[data-theme="dark"] .st-dg__expr code {
+    background: var(--dk-card);
+    color: var(--st-math)
+}
+html[data-theme="dark"] .st-dg__note {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-dg__expr {
+    border: 1px solid var(--st-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-dg__expr small {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-dg__video iframe {
+    border: 0
+}
+html[data-theme="dark"] .st-dg__poster {
+    border: 0;
+    background: var(--ih-ink, #181818);
+    color: #fff
+}
+html[data-theme="dark"] .st-dg__credit a {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-dg__calc {
+    border: 1px solid var(--st-line);
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-dg__calc iframe {
+    border: 0
+}
+html[data-theme="dark"] .st-dg__load {
+    border: 0;
+    background: none;
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-dg__load small {
+    color: var(--ih-muted, #8a8a8a)
+}
+html[data-theme="dark"] .st-dg__ex {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .st-start__icon {
+    background: linear-gradient(135deg, var(--dk-acc-tint), var(--dk-page));
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-start__icon.is-access {
+    background: linear-gradient(135deg, var(--dk-yellow-tint), var(--dk-page));
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .st-start .ih-locked__steps li.is-now {
+    background: var(--dk-acc-tint);
+    box-shadow: inset 0 0 0 1.5px var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-nav__theme {
+    border: 1px solid var(--st-line);
+    background: transparent;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-brand__mark {
+    background: #111;
+    color: #ffd400
+}
+html[data-theme="dark"] .st-brand__text small {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-nav__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-nav__item {
+    border: 0;
+    background: transparent;
+    color: var(--ih-ink-2, #656172)
+}
+html[data-theme="dark"] .st-nav__item:hover {
+    background: var(--st-tint);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-nav__item.is-on {
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-crumbs {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-crumbs button {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-crumbs b {
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-head__eyebrow {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .exam-demo {
+    background: var(--dk-yellow-tint);
+    border: 1px solid var(--dk-yellow-line);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .exam-demo__tag {
+    background: var(--dk-yellow);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .exam-demo__btn {
+    border: 0;
+    background: #111;
+    color: #fff
+}
+html[data-theme="dark"] .exam-quota {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .exam-quota p {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-wk__icon {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-wk__badge {
+    background: var(--st-line)
+}
+html[data-theme="dark"] .st-wk__badge.is-done {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-wk__badge.is-inProgress {
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-wk__chip {
+    border: 1px solid var(--st-line)
+}
+html[data-theme="dark"] .st-wkp__rules {
+    background: var(--st-bg)
+}
+html[data-theme="dark"] .st-wkr__head {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-wkr__n {
+    background: var(--st-bg)
+}
+html[data-theme="dark"] .st-wkr__verdict.is-right {
+    background: var(--dk-page);
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-wkr__verdict.is-wrong {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-wkr__verdict.is-skipped {
+    background: var(--st-line);
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-wkr__passage {
+    background: var(--st-bg)
+}
+html[data-theme="dark"] .st-wkr__xp {
+    border-left: 3px solid var(--ih-violet);
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-dash__btn {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-dash__btn:hover .st-dash__tile {
+    border-color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-dash__label {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-heat__grid i.is-pad {
+    background: transparent
+}
+html[data-theme="dark"] .st-acc__row.is-low strong {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-acc__row.is-ok strong {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-stat__icon.is-red {
+    background: var(--st-red-tint);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-psum__ring {
+    background: conic-gradient(var(--ih-violet) calc(var(--p) * 1%), var(--st-line) 0)
+}
+html[data-theme="dark"] .st-psum__ring::before {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-psum__kpis span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-tool--log {
+    border-color: var(--st-red);
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-tool--log.is-on {
+    border-color: var(--ih-green);
+    color: var(--ih-green);
+    background: transparent
+}
+html[data-theme="dark"] .st-field > span {
+    color: var(--ih-ink-2, #656172)
+}
+html[data-theme="dark"] .st-field input, html[data-theme="dark"] .st-field select, html[data-theme="dark"] .st-field textarea {
+    border: 1px solid var(--st-edge);
+    background: var(--dk-card);
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-field__err {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-logerr__type {
+    border: 1px solid var(--st-edge);
+    background: transparent;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-logerr__type.is-on {
+    border-color: var(--ih-violet);
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-errs__tile {
+    color: inherit
+}
+html[data-theme="dark"] .st-errs__tile span {
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-errs__tile.is-on {
+    border-color: var(--ih-violet);
+    box-shadow: 0 0 0 1px var(--ih-violet) inset
+}
+html[data-theme="dark"] .st-errs__tile.is-due b {
+    color: var(--st-red)
+}
+html[data-theme="dark"] .st-errs__tile.is-resolved b {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-errs__kind {
+    border: 1px solid var(--st-edge);
+    background: transparent;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-errs__kind.is-on {
+    border-color: var(--ih-violet);
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-err__logged {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-err__type.is-none {
+    border-color: var(--st-orange);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-errs__pages button {
+    border: 1px solid var(--st-edge);
+    background: transparent;
+    color: var(--ih-ink)
+}
+html[data-theme="dark"] .st-errs__pages button.is-on {
+    background: var(--ih-violet);
+    border-color: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-iconbtn {
+    border: 1px solid var(--st-line);
+    background: transparent;
+    color: var(--ih-muted)
+}
+html[data-theme="dark"] .st-iconbtn:hover {
+    color: var(--st-red);
+    border-color: var(--st-red)
+}
+html[data-theme="dark"] .st-mocks__src.is-simulation i {
+    background: var(--ih-violet)
+}
+html[data-theme="dark"] .st-mocks__src.is-bluebook i {
+    background: var(--dk-blue)
+}
+html[data-theme="dark"] .st-mocks__src.is-official i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-traj__dot.is-simulation {
+    fill: var(--ih-violet)
+}
+html[data-theme="dark"] .st-traj__dot.is-bluebook {
+    fill: var(--dk-blue)
+}
+html[data-theme="dark"] .st-traj__dot.is-official {
+    fill: var(--dk-green)
+}
+html[data-theme="dark"] .st-papers__row {
+    border: 0;
+    border-bottom: 1px solid var(--st-line);
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-unit__module.is-done {
+    border-color: var(--ih-green)
+}
+html[data-theme="dark"] .st-croad__stop:not(:last-child)::after {
+    background: var(--st-line)
+}
+html[data-theme="dark"] .st-croad__pin {
+    background: var(--st-tint);
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-croad__stop.is-checkpoint .st-croad__pin, html[data-theme="dark"] .st-croad__stop.is-diagnostic .st-croad__pin {
+    background: var(--st-orange-tint);
+    color: var(--st-orange)
+}
+html[data-theme="dark"] .st-croad__stop.is-here .st-croad__pin {
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-croad__fold {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-croad__topic {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .st-croad__topic:hover {
+    background: var(--st-tint)
+}
+html[data-theme="dark"] .st-croad__state {
+    color: var(--ih-green)
+}
+html[data-theme="dark"] .st-croad__topic.is-current .st-croad__state {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .exam-demo__chip {
+    background: rgba(255, 255, 255, 0.06)
+}
+html[data-theme="dark"] .exam-demo__chip.is-out {
+    background: var(--dk-page);
     color: var(--dk-red)
 }
 /*  grammar.css  */
@@ -20538,6 +23623,40 @@ html[data-theme="dark"] .asst__send {
     border: 0;
     background: var(--asst-accent);
     color: #fff
+}
+html[data-theme="dark"] .asst__mic {
+    border: 1.5px solid var(--asst-accent);
+    background: var(--asst-bg);
+    color: var(--asst-accent)
+}
+html[data-theme="dark"] .asst__mic:hover:not(:disabled) {
+    background: var(--asst-bubble)
+}
+html[data-theme="dark"] .asst__mic.is-rec {
+    border-color: var(--asst-err);
+    background: var(--asst-err);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .asst__listening {
+    border: 1px solid var(--asst-line);
+    color: var(--asst-muted)
+}
+html[data-theme="dark"] .asst__rec-dot {
+    background: var(--asst-err)
+}
+html[data-theme="dark"] .asst__sound {
+    border: 0;
+    background: transparent;
+    color: var(--asst-accent)
+}
+html[data-theme="dark"] .asst__sound:hover {
+    background: var(--asst-bubble)
+}
+html[data-theme="dark"] .asst__sound.is-muted {
+    color: var(--asst-muted)
+}
+html[data-theme="dark"] .asst__voice-failed {
+    color: var(--asst-muted)
 }
 html[data-theme="dark"] .asst__privacy {
     color: var(--asst-muted)

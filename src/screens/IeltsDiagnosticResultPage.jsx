@@ -7,71 +7,36 @@ import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { SectionTile } from '../ielts/sections.jsx'
 import { bandGap, estimateTerm } from '../ielts/onboarding/onboarding.js'
 import { formatDate, formatDuration, formatMonths } from '../ielts/format.js'
-import { ArrowForwardIcon, CheckIcon, CloseIcon, DescriptionIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
+import { ArrowForwardIcon, CheckIcon, CloseIcon, DescriptionIcon, InfoIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 import { gradeDiagnostic, isGrading } from '../ielts/onboarding/diagGrading.js'
+import { DiagSpeakingReview, DiagWritingReview } from '../ielts/onboarding/DiagAiReview.jsx'
 
 const SKILLS = ['listening', 'reading', 'writing', 'speaking']
 const REVIEW_SKILLS = ['listening', 'reading']
 const AI_SKILLS = ['writing', 'speaking']
-const CRITERIA = {
+// подписи критериев на карточке навыка — коротко, полное название в подсказке
+const CRIT_ABBR = { taskResponse: 'TR', coherenceCohesion: 'CC', lexicalResource: 'LR', grammaticalRange: 'GRA', fluencyCoherence: 'FC', pronunciation: 'P' }
+const CRIT_ORDER = {
   writing: ['taskResponse', 'coherenceCohesion', 'lexicalResource', 'grammaticalRange'],
   speaking: ['fluencyCoherence', 'lexicalResource', 'grammaticalRange', 'pronunciation'],
 }
-
-/** Разбор ИИ по Writing и Speaking: критерии, отзыв, сильные стороны и что улучшить. */
-function AiReview({ r, t }) {
-  const done = AI_SKILLS.filter((k) => r[k]?.status === 'done')
-  if (!done.length) return null
-  return (
-    <section className="ih-card ih-dres__ai-review">
-      <h2>{t('ieltsOb.aiReview')}</h2>
-      {done.map((k) => {
-        const sec = r[k]
-        return (
-          <div key={k} className="ih-dres__aisec">
-            <h3>
-              <SectionTile section={k} size={28} iconSize={14} />
-              <span className="ih-dres__ainame">{k === 'writing' ? 'Writing' : 'Speaking'}</span>
-              <b>{Number(sec.band).toFixed(1)}</b>
-            </h3>
-            <div className="ih-dres__crit">
-              {CRITERIA[k].map((c) => (
-                <span key={c}>
-                  <small>{t(`ieltsOb.crit.${c}`)}</small>
-                  <b>{sec.criteria?.[c] != null ? Number(sec.criteria[c]).toFixed(1) : '—'}</b>
-                </span>
-              ))}
-            </div>
-            {sec.feedback && <p>{sec.feedback}</p>}
-            {sec.strengths?.length > 0 && (
-              <>
-                <small className="ih-muted">{t('ieltsOb.strengths')}</small>
-                <ul>{sec.strengths.map((x, i) => <li key={i}>{typeof x === 'string' ? x : x?.text || JSON.stringify(x)}</li>)}</ul>
-              </>
-            )}
-            {sec.improvements?.length > 0 && (
-              <>
-                <small className="ih-muted">{t('ieltsOb.improvements')}</small>
-                <ul>{sec.improvements.map((x, i) => <li key={i}>{typeof x === 'string' ? x : x?.text || JSON.stringify(x)}</li>)}</ul>
-              </>
-            )}
-          </div>
-        )
-      })}
-    </section>
-  )
-}
+const SP_SHORT = { fluencyCoherence: 'fc', lexicalResource: 'lr', grammaticalRange: 'gra', pronunciation: 'p' }
 
 /**
  * Разбор ответов по секциям: Listening — по частям записи (часть у вопроса своя), Reading — одним текстом. Нумерация
  * сквозная внутри секции, как на экзамене.
  */
-function DiagReview({ r, v, byId, readingTitle, P, t, lang }) {
+function DiagReview({ r, v, byId, readingTitle, P, t, lang, sec, setSec, grading }) {
   const rows = r.items || []
-  const skills = REVIEW_SKILLS.filter((k) => rows.some((x) => x.skill === k))
-  const [sec, setSec] = useState(skills[0] || 'listening')
+  // Writing и Speaking — те же вкладки, что Listening и Reading: разбор ИИ лежит рядом, а не отдельным блоком ниже
+  const skills = [...REVIEW_SKILLS.filter((k) => rows.some((x) => x.skill === k)), ...AI_SKILLS]
   const list = rows.filter((x) => x.skill === sec)
+  const doc = v.document || {}
+  const spQuestions = [
+    ...(doc.speaking?.part1 || []).map((q) => ({ id: q.id, text: q.text })),
+    ...(doc.speaking?.cueCard ? [{ id: doc.speaking.cueCard.id, text: `${doc.speaking.cueCard.topic} ${doc.speaking.cueCard.explain || ''}`.trim() }] : []),
+  ]
   const groups = []
   for (const row of list) {
     const it = byId[row.itemId] || {}
@@ -80,23 +45,49 @@ function DiagReview({ r, v, byId, readingTitle, P, t, lang }) {
     if (!g) groups.push((g = { key, rows: [] }))
     g.rows.push(row)
   }
+  const tabs = (
+    <div className="ih-mrev__secs ih-dres__secs" role="tablist">
+      {skills.map((k) => {
+        const raw = r.raw?.[k]
+        const aiSec = AI_SKILLS.includes(k) ? r[k] : null
+        const sub = raw
+          ? t('ieltsOb.rawOf', { n: String(raw.correct), total: String(raw.total) })
+          : r.bands?.[k] != null
+            ? r.bands[k].toFixed(1)
+            : aiSec?.status === 'skipped'
+              ? P('result.skipped')
+              : aiSec?.status === 'failed' || grading[k] === 'err'
+                ? t('ieltsOb.gradeFailed')
+                : grading[k] === 'run'
+                  ? t('ieltsOb.grading')
+                  : t('ieltsOb.waitsAiShort')
+        return (
+          <button key={k} type="button" role="tab" aria-selected={k === sec} className={`ih-mrev__sec${k === sec ? ' is-on' : ''}`} onClick={() => setSec(k)}>
+            <SectionTile section={k} size={32} iconSize={16} />
+            <span>
+              <b>{P(`block.${k}`)}</b>
+              <small>{sub}</small>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
   let n = 0
+  if (sec === 'writing' || sec === 'speaking')
+    return (
+      <>
+        {tabs}
+        {sec === 'writing' ? (
+          <DiagWritingReview sec={r.writing} text={v.answers?.writing} question={doc.writing?.question} grading={grading.writing} />
+        ) : (
+          <DiagSpeakingReview sec={r.speaking} questions={spQuestions} grading={grading.speaking} />
+        )}
+      </>
+    )
   return (
     <>
-      <div className="ih-mrev__secs ih-dres__secs" role="tablist">
-        {skills.map((k) => {
-          const raw = r.raw?.[k]
-          return (
-            <button key={k} type="button" role="tab" aria-selected={k === sec} className={`ih-mrev__sec${k === sec ? ' is-on' : ''}`} onClick={() => setSec(k)}>
-              <SectionTile section={k} size={32} iconSize={16} />
-              <span>
-                <b>{P(`block.${k}`)}</b>
-                <small>{raw ? t('ieltsOb.rawOf', { n: String(raw.correct), total: String(raw.total) }) : r.bands?.[k]?.toFixed(1)}</small>
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      {tabs}
       {groups.map((g) => (
         <div key={g.key} className="ih-dres__group">
           <h3>
@@ -154,6 +145,8 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
   const authToken = token || loadToken()
   const [state, setState] = useState({ status: 'loading' })
   const [review, setReview] = useState(false)
+  // вкладка разбора: L/R — ответы по вопросам, W/S — разбор ИИ; открывается и с карточки навыка
+  const [revSec, setRevSec] = useState(null)
   const reviewRef = useRef(null)
 
   useEffect(() => {
@@ -225,11 +218,15 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
     const taken = v.attempt?.finishedAt ? formatDate(v.attempt.finishedAt, lang) : ''
     const examLabel = p.examDate ? formatDate(`${p.examDate}T00:00:00`, lang) : null
     const term = gap != null && gap > 0 ? estimateTerm(gap, daily) : null
-    const openReview = () => {
+    const firstSec = REVIEW_SKILLS.find((k) => (r.items || []).some((x) => x.skill === k)) || 'writing'
+    const openReview = (k) => {
+      setRevSec(typeof k === 'string' ? k : revSec || firstSec)
       setReview(true)
       setTimeout(() => reviewRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }), 50)
     }
     // Figma 2.1: шкала секции — доля от 9; у overall — доля от цели
+    // короткая диагностика: по 5–6 вопросов на секцию, 5 из 5 даёт 9.0 — балл помечается примерным
+    const short = r.level === 'light'
     const share = (x, max) => (x == null || !max ? 0 : Math.max(0, Math.min(1, x / max)))
     body = (
       <div className="ih-dres">
@@ -238,11 +235,11 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
             <h1>{t('ieltsOb.resultTitle')}</h1>
             <p className="ih-muted">{t('ieltsOb.resultSub', { level: P(`level.${r.level}`), form, date: taken })}</p>
           </div>
-          <button type="button" className="ih-btn ih-btn--outline ih-dres__reviewbtn" onClick={openReview}><DescriptionIcon size={18} />{P('result.review')}</button>
+          <button type="button" className="ih-btn ih-btn--outline ih-dres__reviewbtn" onClick={() => openReview()}><DescriptionIcon size={18} />{P('result.review')}</button>
         </header>
         <div className="ih-dres__top">
           <section className="ih-dres__overall">
-            <span>{b.overallPrelim === false ? t('ieltsOb.overallFinal') : t('ieltsOb.overallPrelim')}</span>
+            <span>{b.overallPrelim === false ? t('ieltsOb.overallFinal') : t('ieltsOb.overallPrelim')}{short ? ' · ≈' : ''}</span>
             <div className="ih-dres__big">
               <b>{b.overall?.toFixed(1) ?? '—'}</b>
               {target != null && <span>{t('ieltsDash.goalShort', { n: Number(target).toFixed(1) })}</span>}
@@ -257,6 +254,7 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                     ? t('ieltsOb.gapText', { n: gap.toFixed(1) })
                     : t('ieltsOb.gapTerm', { gap: gap.toFixed(1), term: formatMonths(term.months, t, lang), daily: formatDuration(daily, t) })}
             </p>
+            {short && <p className="ih-dres__estimate"><InfoIcon size={14} />{t('ieltsOb.shortEstimate')}</p>}
           </section>
           <div className="ih-dres__skills">
             {SKILLS.map((k) => {
@@ -268,7 +266,7 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                     <SectionTile section={k} size={36} iconSize={18} />
                     <b>{P(`block.${k}`)}</b>
                     {b[k] != null ? (
-                      <strong>{b[k].toFixed(1)}</strong>
+                      <strong title={short && raw ? t('ieltsOb.shortEstimateShort') : undefined}>{short && raw ? '≈' : ''}{b[k].toFixed(1)}</strong>
                     ) : (
                       <span className="ih-dres__ai">
                         <TimerIcon size={14} />
@@ -296,6 +294,23 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                     </button>
                   )}
                   {grading[k] === 'lost' && <small className="ih-muted">{t('ieltsOb.gradeLost')}</small>}
+                  {pending?.status === 'done' && pending.criteria && (
+                    <div className="ih-dres__crit">
+                      {/* порядок критериев — экзаменационный: jsonb в базе ключи переставляет */}
+                      {CRIT_ORDER[k].filter((c) => c in pending.criteria).map((c) => [c, pending.criteria[c]]).map(([c, val]) => (
+                        <span key={c} title={t(k === 'writing' ? `ieltsWriting.crit.${c}` : `ieltsSpeaking.p.crit.${SP_SHORT[c]}`)}>
+                          <small>{CRIT_ABBR[c]}</small>
+                          <b>{val != null ? Number(val).toFixed(1) : '—'}</b>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {(raw || pending?.status === 'done') && (
+                    <button type="button" className="ih-link ih-dres__open" onClick={() => openReview(k)}>
+                      {pending?.errors?.length ? t('ieltsOb.reviewErrors', { n: String(pending.errors.length) }) : t('ieltsOb.reviewOpen')}
+                      <ArrowForwardIcon size={14} />
+                    </button>
+                  )}
                 </section>
               )
             })}
@@ -329,10 +344,9 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
             <small className="ih-muted">{t('ieltsOb.bandNote')}</small>
           </section>
         </div>
-        <AiReview r={r} t={t} />
         <details className="ih-card ih-dres__review" open={review} ref={reviewRef} onToggle={(e) => setReview(e.currentTarget.open)}>
           <summary>{P('result.review')}</summary>
-          {review && <DiagReview r={r} v={v} byId={byId} readingTitle={readingTitle} P={P} t={t} lang={lang} />}
+          {review && <DiagReview r={r} v={v} byId={byId} readingTitle={readingTitle} P={P} t={t} lang={lang} sec={revSec || firstSec} setSec={setRevSec} grading={grading} />}
         </details>
       </div>
     )

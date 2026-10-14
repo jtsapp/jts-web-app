@@ -26,6 +26,7 @@ vi.mock('../api.js', () => ({
   deleteStudentVocabWord: vi.fn(),
   markVocabLearned: vi.fn(async () => {}),
   // ученик не IELTS — полки IELTS Vocabulary нет, наборы не запрашиваются
+  getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, onboarded: false })),
   getIeltsTests: vi.fn(async () => []),
   getIeltsTest: vi.fn(),

@@ -22,6 +22,8 @@ const COVERED = {
   'landing.css | .ld': ".ld[lang='kk']",
   'landing.css | .ld-tear': ".ld[lang='kk'] .ld-tear",
   'landing.css | .ld-footer': ".ld[lang='kk'] .ld-footer",
+  'sat.css | .st-ref__f': "html[data-ui-lang='kk'] .st-ref__f",
+  'sat.css | .st-wb__input': "html[data-ui-lang='kk'] .st-wb__input",
 }
 
 function cssFiles(dir) {

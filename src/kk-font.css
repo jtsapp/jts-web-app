@@ -44,3 +44,9 @@ html[data-ui-lang='kk'] .trial {
 .ld[lang='kk'] .ld-footer {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* SAT: справочник формул и поле доски — свои гарнитуры, на казахском тоже Inter */
+html[data-ui-lang='kk'] .st-ref__f,
+html[data-ui-lang='kk'] .st-wb__input {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}

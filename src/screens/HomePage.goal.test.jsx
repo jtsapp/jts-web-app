@@ -21,6 +21,7 @@ vi.mock('../api.js', () => ({
   getMyHomework: vi.fn(async () => []),
   requestTrialLesson: vi.fn(async () => ({ requested: true })),
   getLevelProgress: vi.fn(async () => levelProgress.value),
+  getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
 }))
 

@@ -15,6 +15,7 @@ import IeltsReadingRunPage from './IeltsReadingRunPage.jsx'
 import IeltsWritingRunPage from './IeltsWritingRunPage.jsx'
 import IeltsSpeakingRunPage from './IeltsSpeakingRunPage.jsx'
 import MockReview from '../ielts/mock/MockReview.jsx'
+import { errorText, isQuotaError } from '../lib/examQuota.js'
 
 // опрос итога, пока ИИ проверяет: раз в 5 с, не дольше 10 минут (дальше — «результат появится в истории»)
 const POLL_MS = 5000
@@ -178,7 +179,7 @@ export default function IeltsMockPage({ token, target, onExit, onHistory, onToda
       restoreMulti(started)
       setStage('section')
     } catch (e) {
-      setError(e?.status === 409 ? t('ieltsMock.err.otherOpen') : t('ieltsMock.err.start'))
+      setError(e?.status === 409 ? t('ieltsMock.err.otherOpen') : isQuotaError(e) ? errorText(e, t) : t('ieltsMock.err.start'))
     } finally {
       setBusy(false)
     }

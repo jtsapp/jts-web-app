@@ -247,3 +247,86 @@ html[data-theme="dark"] .ih-locked__steps li {
 html[data-theme="dark"] .ih-dres__crit span {
   background: rgba(255, 255, 255, 0.06);
 }
+html[data-theme="dark"] .ih-pg__est {
+  background: rgba(245, 165, 36, 0.15);
+  color: #f5c76a;
+}
+html[data-theme="dark"] .exam-pr {
+  background: var(--dk-bg, #120f1c);
+  color: #f1eef8;
+}
+html[data-theme="dark"] .exam-pr__plan,
+html[data-theme="dark"] .exam-pr__back,
+html[data-theme="dark"] .exam-pr__cta {
+  background: var(--dk-card);
+  border-color: var(--dk-line);
+  color: inherit;
+}
+html[data-theme="dark"] .exam-pr__plan.is-featured {
+  border-color: #9047ff;
+}
+html[data-theme="dark"] .exam-pr__cta.is-primary {
+  background: #9047ff;
+  color: #fff;
+}
+html[data-theme="dark"] .exam-pr__how,
+html[data-theme="dark"] .st-start .ih-locked__steps li.is-now {
+  background: rgba(144, 71, 255, 0.16);
+}
+html[data-theme="dark"] .exam-pr__top p,
+html[data-theme="dark"] .exam-pr__desc {
+  color: #b9b3c9;
+}
+html[data-theme="dark"] .exam-pr__price {
+  border-color: var(--dk-line);
+}
+html[data-theme="dark"] .st-start__icon {
+  background: rgba(144, 71, 255, 0.2);
+}
+
+/* ---- TeenTech SAT (SAT-SYNC-PLAN D1, B12): в тёмной теме акцент раздела SAT — жёлтый, текст на нём чёрный.
+   Переопределяем токены, а не правила: сгенерированная тёмная тема sat.css пишет акцент через --dk-acc*, поэтому
+   одна подмена здесь перекрашивает все кнопки, плашки и выделения раздела. Стоит в конце файла — после
+   html[data-theme="dark"] .ih с той же специфичностью. ---- */
+html[data-theme="dark"] .st,
+html[data-theme="dark"] .exam-quota {
+  --ih-violet: #ffd400;
+  --dk-acc: #ffd400;
+  --dk-acc-strong: #e6bf00;
+  --dk-acc-soft: #4d4100;
+  --dk-acc-tint: #221e08;
+  --dk-acc-line: #4d4100;
+  --dk-acc-text: #ffdf4d;
+  --dk-acc-on: #fff3b3;
+  --dk-on-acc: #111111;
+  --st-tint: #2a250b;
+  --st-line: #2a2a31;
+  --st-edge: #3a3a44;
+  --st-bg: #17171c;
+}
+html[data-theme="dark"] .st-nav__item.is-on,
+html[data-theme="dark"] .st-errs__kind.is-on,
+html[data-theme="dark"] .st-errs__pages button.is-on,
+html[data-theme="dark"] .st-croad__stop.is-here .st-croad__pin,
+html[data-theme="dark"] .st .ih-cta {
+  color: #111;
+}
+html[data-theme="dark"] .st-field input,
+html[data-theme="dark"] .st-field select,
+html[data-theme="dark"] .st-field textarea {
+  background: #17171c;
+  color: var(--dk-text);
+}
+html[data-theme="dark"] .st-psum__ring::before,
+html[data-theme="dark"] .exam-quota {
+  background: var(--dk-card);
+}
+html[data-theme="dark"] .exam-demo {
+  background: #2a250b;
+  border-color: #4d4100;
+  color: #fff3b3;
+}
+html[data-theme="dark"] .st-brand__mark {
+  background: #ffd400;
+  color: #111;
+}
