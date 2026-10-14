@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent, act, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Тропа из 21 узла (индексы 0–20), первые 20 (l0..l19) уже пройдены — как у
@@ -28,8 +28,9 @@ vi.mock('../api.js', () => ({
   // Квота модуля: 3 — новый лимит, введённый уже ПОСЛЕ того, как демо-ученик
   // прошёл 20 узлов.
   getContentQuota: vi.fn(async () => 3),
-  // Каталог «Уроков» по умолчанию ничего не открывает — тропа идёт по своему
-  // прохождению. Тесты открытия по каталогу подставляют свой курс и отметки.
+  // Каталог «Уроков» экран не спрашивает вовсе: тропа идёт только по пройденному в самом «Повторении».
+  // Заглушки нужны, чтобы тесты могли следить, что к ним и правда не обращаются, и подсовывать «отметки»,
+  // которые тропу не трогают.
   getCourseCatalog: vi.fn(async () => []),
   getCatalogProgress: vi.fn(async () => ({ completedLessonIds: [] })),
 }))
@@ -97,7 +98,7 @@ vi.mock('../learning/LevelExam.jsx', () => ({
 import { loadLevelExam } from '../learning/levelExam.js'
 import { markDone, loadDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import { getContentQuota, getLessonModules, getCourseCatalog, getCatalogProgress } from '../api.js'
-import { getLevelLessons } from '../learning/lessonData.js'
+import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
 import KingdomInteriorPage from './KingdomInteriorPage.jsx'
 
 const kingdom = { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'B1', ring: '#fff' }
@@ -296,9 +297,10 @@ describe('KingdomInteriorPage — демо-лимит на тропе показ
 })
 
 // «Повторение» идёт подряд по всей тропе, как прежнее «Обучение»: открыт первый урок, каждый следующий — после
-// предыдущего, и через границу юнитов тоже — живые занятия для этого не нужны. Каталог «Уроков» (живой урок,
-// «Самостоятельно») сверх того открывает пройденное там, но ничего не запирает.
-describe('KingdomInteriorPage — тропа идёт подряд, «Уроки» открывают пройденное', () => {
+// предыдущего, и через границу юнитов тоже. Ни живые занятия, ни «Самостоятельно», ни отметки каталога «Уроков»
+// на это не влияют: прошёл узел — следующий открылся сам. Единственные ограничения — квота и блокировка модуля
+// из админки.
+describe('KingdomInteriorPage — тропа идёт подряд, «Уроки» ни на что не влияют', () => {
   const MULTI_UNIT_TRAIL = [
     { code: 'm0', order: 0, title: 'Юнит 1 · шаг 1', unit: 1 },
     { code: 'm1', order: 1, title: 'Юнит 1 · шаг 2', unit: 1 },
@@ -319,6 +321,7 @@ describe('KingdomInteriorPage — тропа идёт подряд, «Уроки
     getContentQuota.mockResolvedValue(null) // без лимита модуля — квота тут не при чём
     getCourseCatalog.mockResolvedValue(CATALOG)
     getCatalogProgress.mockResolvedValue({ completedLessonIds: [] }) // в «Уроках» тоже ничего
+    markDone.mockResolvedValue(new Set(DONE_CODES))
   })
 
   const stepsOf = async (props) => {
@@ -349,30 +352,49 @@ describe('KingdomInteriorPage — тропа идёт подряд, «Уроки
     expect(trailLocked(buttons[3])).toBe(true)
   })
 
-  // Жалоба 12.10.2026: ученица прошла 18 уроков в «Уроках», а «Повторение» после 07.10 открывало ей только
-  // первый урок — выглядело как пропавший прогресс.
-  it('в «Уроках» пройден урок 1 юнита 2 — тропа открыта до него, следующий ждёт', async () => {
-    getCatalogProgress.mockResolvedValue({ completedLessonIds: [21] })
-    const buttons = await stepsOf()
+  // Каталог «Уроков» (живые занятия, «Самостоятельно») экран не спрашивает вовсе — ни у вошедшего, ни у гостя.
+  it('каталог «Уроков» не спрашивается: ни список курсов, ни отметки', async () => {
+    await stepsOf()
 
-    expect(buttons.slice(0, 3).map(trailLocked)).toEqual([false, false, false])
-    expect(trailLocked(buttons[3])).toBe(true)
+    expect(getCourseCatalog).not.toHaveBeenCalled()
+    expect(getCatalogProgress).not.toHaveBeenCalled()
   })
 
-  it('за открытым по «Урокам» тропа ведёт дальше сама: пройден m2 — открыт m3', async () => {
-    getCatalogProgress.mockResolvedValue({ completedLessonIds: [21] })
-    loadDone.mockResolvedValue(new Set(['m2']))
+  // С 23.09 по 06.10 и 13–14.10 «Повторение» сверялось с «Уроками»: отметки оттуда что-то открывали, а их
+  // нехватка — не пускала. Теперь отметки «Уроков» тропу не двигают ни в какую сторону.
+  it('пройденное в «Уроках» ничего не открывает: в «Повторении» пусто — открыт только первый урок', async () => {
+    getCatalogProgress.mockResolvedValue({ completedLessonIds: [11, 12, 21, 22] }) // в «Уроках» пройден весь курс
     const buttons = await stepsOf()
 
-    expect(buttons.every((b) => !trailLocked(b))).toBe(true)
+    expect(buttons.map(trailLocked)).toEqual([false, true, true, true])
   })
 
-  it('отметки «Уроков» не запирают пройденное в самом «Повторении»', async () => {
-    getCatalogProgress.mockResolvedValue({ completedLessonIds: [11] })
-    loadDone.mockResolvedValue(new Set(['m0', 'm1', 'm2']))
+  // Жалоба 14.10.2026: ученик прошёл узлы «Повторения» подряд, а следующий не открылся — в «Уроках» у него
+  // отмечено на материал меньше. Следующий узел обязан открываться по самому прохождению.
+  it('в «Уроках» отмечено меньше, чем пройдено в «Повторении», — следующий узел открыт', async () => {
+    getCatalogProgress.mockResolvedValue({ completedLessonIds: [11] }) // в «Уроках» — только юнит 1, урок 1
+    loadDone.mockResolvedValue(new Set(['m0', 'm1', 'm2'])) // в «Повторении» — три узла подряд
     const buttons = await stepsOf()
 
-    expect(buttons.every((b) => !trailLocked(b))).toBe(true)
+    expect(buttons.map(trailLocked)).toEqual([false, false, false, false])
+  })
+
+  it('прошёл узел — «Следующий урок» открывает следующий, без «лимита» и без сверки с «Уроками»', async () => {
+    getCatalogProgress.mockResolvedValue({ completedLessonIds: [] }) // в «Уроках» отметок нет совсем
+    loadDone.mockResolvedValue(new Set(['m0', 'm1']))
+    markDone.mockResolvedValueOnce(new Set(['m0', 'm1', 'm2']))
+    const buttons = await stepsOf()
+
+    fireEvent.click(buttons[2])
+    fireEvent.click(await screen.findByText('сдать урок'))
+    const next = await screen.findByText('Перейти на следующий урок')
+    await waitFor(() => expect(next.disabled).toBe(false))
+    fireEvent.click(next)
+
+    // Открылся m3 (плеер снова на экране), а не экран «🔒 лимит».
+    expect(await screen.findByText('сдать урок')).toBeTruthy()
+    expect(loadLesson).toHaveBeenLastCalledWith('B1', 'm3')
+    expect(document.querySelector('.le-restricted')).toBe(null)
   })
 
   // Решение 13.10: на любом уровне — постепенно. Правило «уровень ниже своего CEFR открыт целиком»
@@ -384,39 +406,16 @@ describe('KingdomInteriorPage — тропа идёт подряд, «Уроки
     expect(buttons.slice(1).every(trailLocked)).toBe(true)
   })
 
-  it('урок, до которого дошёл в «Уроках», открыт, следующий закрыт, пока этот не пройден', async () => {
-    getCatalogProgress.mockResolvedValue({ completedLessonIds: [11] }) // в «Уроках» — юнит 1, урок 1
-    let buttons = await stepsOf()
-    expect(buttons.map(trailLocked)).toEqual([false, true, true, true])
-
-    cleanup()
-    loadDone.mockResolvedValue(new Set(['m0'])) // прошёл его в «Повторении» — открылся следующий
-    buttons = await stepsOf()
-    expect(buttons.map(trailLocked)).toEqual([false, false, true, true])
-  })
-
-  // Гость ходит под общим демо-токеном (getPracticeToken): спроси экран каталог под ним — гостю открылись бы
-  // отметки демо-аккаунта.
-  it('гость каталог не спрашивает — тропа идёт по порядку', async () => {
+  it('гость: тропа идёт по порядку, каталог не нужен', async () => {
     const buttons = await stepsOf({ token: null })
 
     expect(getCatalogProgress).not.toHaveBeenCalled()
-    expect(getCourseCatalog).not.toHaveBeenCalled()
     expect(trailLocked(buttons[0])).toBe(false)
     expect(buttons.slice(1).every(trailLocked)).toBe(true)
   })
 
-  it('каталог не ответил — тропа не падает и идёт по порядку', async () => {
-    getCatalogProgress.mockRejectedValue(new Error('network'))
-    getCourseCatalog.mockRejectedValue(new Error('network'))
-    const buttons = await stepsOf()
-
-    expect(trailLocked(buttons[0])).toBe(false)
-    expect(buttons.slice(1).every(trailLocked)).toBe(true)
-  })
-
-  it('квота модуля закрывает и открытое по «Урокам»: демо-лимит из админки остаётся в силе', async () => {
-    getCatalogProgress.mockResolvedValue({ completedLessonIds: [22] })
+  it('квота модуля закрывает следующий узел, даже когда предыдущий пройден: лимит из админки остаётся в силе', async () => {
+    loadDone.mockResolvedValue(new Set(['m0', 'm1']))
     getContentQuota.mockResolvedValue(2)
     const buttons = await stepsOf()
 
@@ -506,13 +505,13 @@ describe('KingdomInteriorPage — финальный экзамен уровня
     expect(node.title).toBe('Сначала пройди предыдущий урок')
   })
 
-  it('в «Уроках» пройден весь курс уровня — экзамен открыт, даже если в «Повторении» не пройдено ничего', async () => {
+  it('в «Уроках» пройден весь курс уровня, а в «Повторении» нет — экзамен всё равно заперт: открывает только тропа', async () => {
     loadDone.mockResolvedValue(new Set())
     getCourseCatalog.mockResolvedValue([{ code: 'B1', units: [{ lessons: [{ id: 1 }] }] }])
     getCatalogProgress.mockResolvedValue({ completedLessonIds: [1] })
     const { container } = await renderWithExam()
 
-    expect(trailLocked(lastNode(container))).toBe(false)
+    expect(trailLocked(lastNode(container))).toBe(true)
   })
 
   it('после последнего урока «Следующий урок» при запертом экзамене ведёт на тропу, а не в «лимит»', async () => {
