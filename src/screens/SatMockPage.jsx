@@ -13,8 +13,6 @@ import { MOCK_MIN_WIDTH, moduleNo } from '../sat/model/mock.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { LaptopIcon } from '../sat/icons.jsx'
 import { errorText } from '../lib/examQuota.js'
-import { useSatTheme } from '../sat/theme.js'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
 import { enterFullWindow, leaveFullWindow } from '../sat/fullWindow.js'
 
 function readId() {
@@ -130,7 +128,6 @@ function ModuleRun({ run, onExit, onSubmitted }) {
  */
 export default function SatMockPage({ token, onNav }) {
   const { t } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const wide = useWide()
   const [run, setRun] = useState(null)
@@ -214,7 +211,7 @@ export default function SatMockPage({ token, onNav }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={() => toHub()} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <SatBrand />
+        <b className="st-ob__logo">just to study</b>
         <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t(paper ? 'sat.papers.title' : 'sat.mock.chip')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

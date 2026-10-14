@@ -9,8 +9,6 @@ import { pick } from '../sat/model/profile.js'
 import { domainName, skillName } from '../sat/names.js'
 import { ArrowForwardIcon, CheckCircleIcon, ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { NoCircleIcon, TargetIcon } from '../sat/icons.jsx'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
-import { useSatTheme } from '../sat/theme.js'
 import { errorText } from '../lib/examQuota.js'
 
 // Мягкий таймер проверки (MINUTES прототипа): считает, но ничего не закрывает
@@ -129,7 +127,6 @@ function DailyResult({ data, explainLang, onPractice, onHub }) {
  */
 export default function SatDailyPage({ token, onNav }) {
   const { t } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -161,7 +158,7 @@ export default function SatDailyPage({ token, onNav }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={() => toHub()} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <SatBrand />
+        <b className="st-ob__logo">just to study</b>
         <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t('sat.daily.chip')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

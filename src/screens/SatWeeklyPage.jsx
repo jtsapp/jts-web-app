@@ -12,8 +12,6 @@ import { pick } from '../sat/model/profile.js'
 import { domainName, skillName } from '../sat/names.js'
 import { answersPayload, submitBody, domainRows, draftKey, minutesOf, missedSkills, resultRows, sectionCounts } from '../sat/model/weekly.js'
 import { hoursMinutes } from '../sat/model/mock.js'
-import { useSatTheme } from '../sat/theme.js'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
 import { weekLabel } from '../sat/weekly/WeeklyCard.jsx'
 import { ArrowForwardIcon, ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { ExpandLessIcon, StopwatchIcon } from '../sat/icons.jsx'
@@ -194,7 +192,6 @@ function WeeklyResult({ data, explainLang, loc, onPractice, onHub, busy }) {
  */
 export default function SatWeeklyPage({ token, onNav }) {
   const { t, lang } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const [data, setData] = useState(null)
@@ -245,7 +242,7 @@ export default function SatWeeklyPage({ token, onNav }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={() => toHub()} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <SatBrand />
+        <b className="st-ob__logo">just to study</b>
         <span className="ih-chip ih-chip--sm"><span>{t('sat.wk.title')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

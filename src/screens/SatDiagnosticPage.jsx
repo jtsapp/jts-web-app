@@ -13,8 +13,6 @@ import { SatModal } from '../sat/question/ToolDialogs.jsx'
 import { phaseForWeek, horizonWeeks, previewPlan, roadmapSteps } from '../sat/model/plan.js'
 import { domainName } from '../sat/names.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
-import { useSatTheme } from '../sat/theme.js'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
 
 const STEPS = ['intro', 'report', 'time']
@@ -106,7 +104,6 @@ function DiagnosticRun({ diag, onExit, onDone }) {
  */
 export default function SatDiagnosticPage({ token, onNav }) {
   const { t } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const [diag, setDiag] = useState(null)
   const [plan, setPlan] = useState(null)
@@ -267,7 +264,7 @@ export default function SatDiagnosticPage({ token, onNav }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={back} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <SatBrand />
+        <b className="st-ob__logo">just to study</b>
         <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{chip}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={exit}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

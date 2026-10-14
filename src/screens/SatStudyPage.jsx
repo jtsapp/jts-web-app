@@ -4,8 +4,6 @@ import {
   getSatSessionSummary, logSatError, startSatSession,
 } from '../api.js'
 import { errorText } from '../lib/examQuota.js'
-import { useSatTheme } from '../sat/theme.js'
-import { SatBrand } from '../sat/ui/SatNav.jsx'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
@@ -347,7 +345,6 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
  */
 export default function SatStudyPage({ token, onNav }) {
   const { t } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -420,7 +417,7 @@ export default function SatStudyPage({ token, onNav }) {
       <div className="ih st st-ob">
         <header className="st-ob__top">
           <button type="button" className="ih-round" onClick={() => toHub('plan')} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-          <SatBrand />
+          <b className="st-ob__logo">just to study</b>
         </header>
         <div className="ih-empty st-study__err">
           <h2>{t('sat.study.cantStart')}</h2>
@@ -436,7 +433,7 @@ export default function SatStudyPage({ token, onNav }) {
       <div className="ih st st-ob">
         <header className="st-ob__top">
           <button type="button" className="ih-round" onClick={back} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-          <SatBrand />
+          <b className="st-ob__logo">just to study</b>
           <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t(isPractice ? 'sat.tab.practice' : 'sat.study.chip')}</span></span>
           <span className="st-spacer" />
           <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

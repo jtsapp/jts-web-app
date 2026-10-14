@@ -1,4 +1,4 @@
-// Строки синхронизации SAT с прототипом (SAT-SYNC-PLAN B13, HEAD b9d1797a): TeenTech SAT, недельный тест, статистика
+// Строки синхронизации SAT с прототипом (SAT-SYNC-PLAN B13, HEAD b9d1797a): недельный тест, статистика
 // дашборда, «Log error», журнал ошибок, «Результаты» с ручными баллами, past papers, дорога курса, словарь «Далее», а
 // также демо-версия IELTS / SAT (E2). Отдельным файлом, а не в i18n.jsx, чтобы правка не терялась в 19 000 строк
 // словаря; i18n.jsx вливает его в ru / en / kk. Ключи одинаковые во всех трёх языках (тест i18nSync.test.js).
@@ -28,11 +28,6 @@ const ru = {
   'sat.hard.lead': 'Полные «hard»-симуляции I и II (CH11, CH12): четыре модуля из самых сложных вопросов.',
   'sat.hard.sat': 'пройдено {n}',
   'sat.hard.soon': 'Скоро',
-  'sat.brand': 'TeenTech SAT',
-  'sat.brandEyebrow': 'Digital SAT · Bluebook',
-  'sat.crumbs': 'Навигация',
-  'sat.nav.study': 'Учёба',
-  'sat.nav.tools': 'Инструменты',
   'sat.tab.papers': 'Past papers',
 
   'exam.demo.tag': 'Демо',
@@ -206,11 +201,6 @@ const en = {
   'sat.hard.lead': 'Full hard simulations I and II (CH11, CH12): four modules of the hardest questions.',
   'sat.hard.sat': 'taken {n}',
   'sat.hard.soon': 'Soon',
-  'sat.brand': 'TeenTech SAT',
-  'sat.brandEyebrow': 'Digital SAT · Bluebook',
-  'sat.crumbs': 'Navigation',
-  'sat.nav.study': 'Study',
-  'sat.nav.tools': 'Tools',
   'sat.tab.papers': 'Past papers',
 
   'exam.demo.tag': 'Demo',
@@ -384,11 +374,6 @@ const kk = {
   'sat.hard.lead': 'Толық «hard» симуляциялар I және II (CH11, CH12): ең күрделі сұрақтардан төрт модуль.',
   'sat.hard.sat': '{n} рет өтілді',
   'sat.hard.soon': 'Жақында',
-  'sat.brand': 'TeenTech SAT',
-  'sat.brandEyebrow': 'Digital SAT · Bluebook',
-  'sat.crumbs': 'Навигация',
-  'sat.nav.study': 'Оқу',
-  'sat.nav.tools': 'Құралдар',
   'sat.tab.papers': 'Past papers',
 
   'exam.demo.tag': 'Демо',

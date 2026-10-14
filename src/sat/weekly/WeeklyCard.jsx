@@ -19,7 +19,7 @@ export function weekLabel(weekStart, loc) {
 /**
  * Карточка недельного теста на «Сегодня» (B1, прототип weekly-test.js card): неделя, правило «15 вопросов · ≈20 мин»,
  * статус (счёт, начат, не начат), прошлые недели и одна кнопка — начать, продолжить или открыть результат.
- * Нет в Figma: карточка прототипа в стиле дашборда TeenTech.
+ * Нет в Figma: карточка прототипа в стиле дашборда SAT.
  */
 export default function WeeklyCard({ onOpen }) {
   const { t, lang } = useI18n()

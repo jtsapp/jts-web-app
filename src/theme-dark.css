@@ -284,37 +284,11 @@ html[data-theme="dark"] .st-start__icon {
   background: rgba(144, 71, 255, 0.2);
 }
 
-/* ---- TeenTech SAT (SAT-SYNC-PLAN D1, B12): в тёмной теме акцент раздела SAT — жёлтый, текст на нём чёрный.
-   Переопределяем токены, а не правила: сгенерированная тёмная тема sat.css пишет акцент через --dk-acc*, поэтому
-   одна подмена здесь перекрашивает все кнопки, плашки и выделения раздела. Стоит в конце файла — после
-   html[data-theme="dark"] .ih с той же специфичностью. ---- */
-html[data-theme="dark"] .st,
-html[data-theme="dark"] .exam-quota {
-  --ih-violet: #ffd400;
-  --dk-acc: #ffd400;
-  --dk-acc-strong: #e6bf00;
-  --dk-acc-soft: #4d4100;
-  --dk-acc-tint: #221e08;
-  --dk-acc-line: #4d4100;
-  --dk-acc-text: #ffdf4d;
-  --dk-acc-on: #fff3b3;
-  --dk-on-acc: #111111;
-  --st-tint: #2a250b;
-  --st-line: #2a2a31;
-  --st-edge: #3a3a44;
-  --st-bg: #17171c;
-}
-html[data-theme="dark"] .st-nav__item.is-on,
-html[data-theme="dark"] .st-errs__kind.is-on,
-html[data-theme="dark"] .st-errs__pages button.is-on,
-html[data-theme="dark"] .st-croad__stop.is-here .st-croad__pin,
-html[data-theme="dark"] .st .ih-cta {
-  color: #111;
-}
+/* ---- синхронизация SAT (B1–B11): поля форм, кольцо итога, демо-плашка и квота в тёмной теме ---- */
 html[data-theme="dark"] .st-field input,
 html[data-theme="dark"] .st-field select,
 html[data-theme="dark"] .st-field textarea {
-  background: #17171c;
+  background: var(--dk-card);
   color: var(--dk-text);
 }
 html[data-theme="dark"] .st-psum__ring::before,
@@ -322,11 +296,7 @@ html[data-theme="dark"] .exam-quota {
   background: var(--dk-card);
 }
 html[data-theme="dark"] .exam-demo {
-  background: #2a250b;
-  border-color: #4d4100;
-  color: #fff3b3;
-}
-html[data-theme="dark"] .st-brand__mark {
-  background: #ffd400;
-  color: #111;
+  background: rgba(144, 71, 255, 0.16);
+  border-color: rgba(144, 71, 255, 0.4);
+  color: var(--dk-text);
 }

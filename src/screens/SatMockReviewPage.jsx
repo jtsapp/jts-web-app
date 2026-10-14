@@ -10,7 +10,6 @@ import { moduleNo, reviewList, shortClock, unanswered } from '../sat/model/mock.
 import { domainName, skillName } from '../sat/names.js'
 import { ArrowBackIcon, BookmarkIcon, FlashIcon, RobotIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, MenuBookIcon } from '../ielts/icons.jsx'
-import { useSatTheme } from '../sat/theme.js'
 import { errorText } from '../lib/examQuota.js'
 
 const FILTERS = ['all', 'wrong', 'marked']
@@ -46,7 +45,6 @@ const answerText = (v) => (Array.isArray(v) ? v.join(' · ') : v == null ? '—'
  */
 export default function SatMockReviewPage({ token, onNav }) {
   const { t, lang } = useI18n()
-  useSatTheme()
   const authToken = token || loadToken()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
