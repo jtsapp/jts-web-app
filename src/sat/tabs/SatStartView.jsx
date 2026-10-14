@@ -1,12 +1,11 @@
 import { useI18n } from '../../i18n.jsx'
-import { SUPPORT_WHATSAPP_URL } from '../../lib/support.js'
 import { MenuBookIcon, QuizIcon } from '../../ielts/icons.jsx'
 import { LockIcon } from '../icons.jsx'
 
 /**
- * Старт SAT до открытия материалов (backend V341, SatAccessInterceptor): три шага — главы об экзамене с целью и датой,
- * диагностика, доступ от менеджера. Пока хоть один не пройден, вкладок хаба нет вовсе: «Сегодня», план и практика без
- * диагностики пусты, а без доступа сервер их и не отдаст. Вид — как замок IELTS (`.ih-locked`), но без маскота IELTS:
+ * Старт SAT до открытия материалов (backend V341, SatAccessInterceptor): два шага — главы об экзамене с целью и датой,
+ * и диагностика. После них материалы открываются сами (2026-10-15, SatAccessService.startDone), менеджер не нужен. Пока
+ * шаги не пройдены, вкладок хаба нет вовсе: «Сегодня», план и практика без диагностики пусты. Вид — как замок IELTS (`.ih-locked`), но без маскота IELTS:
  * у SAT своя плашка с иконкой шага.
  */
 export default function SatStartView({ me, onOnboarding, onDiagnostic, onResults, onPricing }) {
@@ -14,7 +13,6 @@ export default function SatStartView({ me, onOnboarding, onDiagnostic, onResults
   const steps = [
     { key: 'onboarding', done: me.onboarded },
     { key: 'diagnostic', done: me.diagnosticDone },
-    { key: 'access', done: me.access },
   ]
   const next = steps.find((s) => !s.done)?.key || 'access'
   const Icon = next === 'onboarding' ? MenuBookIcon : next === 'diagnostic' ? QuizIcon : LockIcon
@@ -33,7 +31,6 @@ export default function SatStartView({ me, onOnboarding, onDiagnostic, onResults
         {next === 'diagnostic' && <button type="button" className="ih-btn ih-btn--primary" onClick={onDiagnostic}>{t('sat.lock.toDiagnostic')}</button>}
         {next === 'access' && me.diagnosticDone && <button type="button" className="ih-btn ih-btn--primary" onClick={onResults}>{t('sat.lock.results')}</button>}
         {next === 'access' && <button type="button" className="ih-btn ih-btn--outline" onClick={onPricing}>{t('sat.lock.pricing')}</button>}
-        <a className="ih-btn ih-btn--outline" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer">{t('sat.lock.contact')}</a>
       </div>
     </div>
   )
