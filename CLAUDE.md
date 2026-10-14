@@ -16,6 +16,19 @@ IELTS-модулем и голосовым AI-тьютором. Это тот с
   входа и профиля; сами экраны и код остаются и открываются диплинком
   `?screen=…` для отладки.
 
+**Деплой — GitLab CI, пайплайн рождает зеркало.** GitHub Action
+`.github/workflows/mirror-to-gitlab.yml` на каждый push в `main`/`develop`
+пушит ref в GitLab, там отрабатывает `.gitlab-ci.yml` (test → deploy). С
+14.10.2026 `develop` катится на раннер `jts-dev` нового сервера, `main` — на
+прежний `justtostudy.kz` (`GITLAB_RUNNER_TAG` в `workflow.rules`). Кнопка Retry
+у нашего аккаунта GitLab не работает (не верифицирован), поэтому упавший
+пайплайн перезапускается только новым коммитом в ветку. `Canceled` — не
+поломка: новый push гасит ещё не начатый пайплайн той же ветки, деплоит
+последний, в нём все коммиты. `fatal: … returned error: 500` при клоне в джобе —
+это gitlab.com не отдал репозиторий раннеру (смотри status.gitlab.com), а не
+зеркало: зеркало проверяется `gh run list --workflow mirror-to-gitlab.yml` и
+сверкой `git ls-remote` обеих сторон.
+
 ## Команды
 
 ```bash
