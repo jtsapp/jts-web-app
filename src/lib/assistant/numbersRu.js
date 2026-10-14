@@ -54,7 +54,8 @@ export function numberToRu(n) {
   return words.join(' ')
 }
 
-const NOT_LATIN = '(?<![A-Za-z0-9.,:])'
+// без lookbehind: Safari < 16.4 его не разбирает (safariSyntax.test.js) — символ перед числом ловим группой и возвращаем
+const NOT_LATIN = '(^|[^A-Za-z0-9.,:])'
 const TIME_RE = new RegExp(`${NOT_LATIN}(\\d{1,2}):(\\d{2})(?![0-9])`, 'g')
 const PERCENT_RE = new RegExp(`${NOT_LATIN}(\\d+)\\s?%`, 'g')
 const DECIMAL_RE = new RegExp(`${NOT_LATIN}(\\d+)[.,](\\d+)(?![0-9A-Za-z])`, 'g')
@@ -65,8 +66,8 @@ const minutes = (mm) => (mm === '00' ? 'ноль ноль' : mm[0] === '0' ? `н
 /** Русская фраза с числами словами — для синтеза голосом Луны. */
 export function spellNumbersRu(text) {
   return String(text ?? '')
-    .replace(TIME_RE, (_, h, mm) => `${numberToRu(Number(h))} ${minutes(mm)}`)
-    .replace(PERCENT_RE, (_, n) => `${numberToRu(Number(n))} ${plural(Number(n), ['процент', 'процента', 'процентов'])}`)
-    .replace(DECIMAL_RE, (_, a, b) => `${numberToRu(Number(a))} и ${numberToRu(Number(b))}`)
-    .replace(INT_RE, (_, n) => numberToRu(Number(n)))
+    .replace(TIME_RE, (_, p, h, mm) => `${p}${numberToRu(Number(h))} ${minutes(mm)}`)
+    .replace(PERCENT_RE, (_, p, n) => `${p}${numberToRu(Number(n))} ${plural(Number(n), ['процент', 'процента', 'процентов'])}`)
+    .replace(DECIMAL_RE, (_, p, a, b) => `${p}${numberToRu(Number(a))} и ${numberToRu(Number(b))}`)
+    .replace(INT_RE, (_, p, n) => p + numberToRu(Number(n)))
 }
