@@ -6,7 +6,7 @@
 // зависеть от квоты в момент, когда ученик только знакомится с приложением.
 //
 // Голоса берём у тех же провайдеров, что озвучивают тьютора вживую
-// (зеркало TUTOR_PROVIDER из app/api/tutor-tts/route.js), иначе тембр на
+// (зеркало TUTOR_PROVIDER из lib/tutorVoice.js), иначе тембр на
 // экране выбора разойдётся с тем, что ученик услышит в разговоре.
 //
 // Запуск (ключи читаются из .env.local в корне):
@@ -218,7 +218,7 @@ async function ttsEleven(text, _lang, key) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-// Голоса Soniox по ключу визитки — зеркало SONIOX_VOICE в tutor-tts/route.js.
+// Голоса Soniox по ключу визитки — зеркало SONIOX_VOICE в lib/tutorVoice.js.
 // Спарк и KZ-стенд разведены по тембрам намеренно: Owen — Спарк, Daniel — стенд.
 const SONIOX_VOICE = { spark: 'Owen', 'spark-harsh': 'Owen', jarvis: 'Daniel', 'jarvis-harsh': 'Daniel' }
 
@@ -226,7 +226,7 @@ async function ttsSoniox(text, lang, key) {
   const apiKey = process.env.SONIOX_API_KEY
   if (!apiKey) throw new Error('SONIOX_API_KEY не задан')
   const base = String(key || 'spark').replace(/-harsh$/, '')
-  // Хост именно tts-rt (realtime), как в app/api/tutor-tts/route.js —
+  // Хост именно tts-rt (realtime), как в lib/tutorVoice.js —
   // api.soniox.com отдаёт на этот путь 404.
   const res = await fetch('https://tts-rt.soniox.com/tts', {
     method: 'POST',
@@ -248,7 +248,7 @@ async function ttsFish(text) {
   const key = process.env.FISH_AUDIO_API_KEY
   if (!key) throw new Error('FISH_AUDIO_API_KEY не задан')
   // Тот же reference_id, что у живого Джарвиса (FISH_VOICE в
-  // app/api/tutor-tts/route.js и FISH_TTS_VOICE в agent.py).
+  // lib/tutorVoice.js и FISH_TTS_VOICE в agent.py).
   const voice = process.env.FISH_VOICE_ID_JARVIS || 'c47719f52ce34cc193b9bc2f00565e8a'
   const res = await fetch('https://api.fish.audio/v1/tts', {
     method: 'POST',
@@ -256,7 +256,7 @@ async function ttsFish(text) {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       // Модель у Fish едет заголовком, а не полем тела.
-      // Та же модель, что у живого Джарвиса (см. FISH_MODEL в tutor-tts/route.js).
+      // Та же модель, что у живого Джарвиса (см. FISH_MODEL в lib/tutorVoice.js).
       model: process.env.FISH_TTS_MODEL || 's2.1-pro',
     },
     body: JSON.stringify({
@@ -272,7 +272,7 @@ async function ttsFish(text) {
 }
 
 // OpenAI TTS — сейчас на нём Джарвис в обоих нравах (зеркало openaiTts в
-// app/api/tutor-tts/route.js и _cascade_tts_openai в agent.py). Имя ключа
+// lib/tutorVoice.js и _cascade_tts_openai в agent.py). Имя ключа
 // читаем в двух написаниях: в .env.local он приехал как OpenAI_API_KEY.
 //
 // Голос берётся по БАЗОВОМУ ключу, подача — по ключу с нравом: 18+ меняет
