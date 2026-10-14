@@ -22,6 +22,7 @@ import '../courseCatalog.css'
 import '../course.css'
 import '../trial.css'
 import '../demo.css'
+import '../placement.css'
 import '../assistant.css'
 // Мобильный слой по макету «Web Адаптивка» — строго после всех файлов разделов
 import '../mobile/base.css'

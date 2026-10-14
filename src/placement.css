@@ -1,0 +1,465 @@
+/* Тест уровня v16 (спека 2026-10-14-placement-v16-first-login-design.md): экран теста с iframe, окно говорения,
+   закрытый роадмап «Главной» и отчёт теста. Цвета — те же, что у блока цели General English (.ge-skin в demo.css). */
+
+/* ── экран теста ─────────────────────────────────────────────────────────── */
+.pl-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #fff;
+}
+.pl-page__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e9e6f2;
+  background: #fff;
+}
+.pl-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #23202b;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+.pl-page__back:hover {
+  background: #f4f1fb;
+}
+.pl-page__back:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+/* iframe — вся оставшаяся высота: у теста своя шапка и своя прокрутка */
+.pl-page__frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  display: block;
+}
+
+/* ── окно говорения поверх теста ─────────────────────────────────────────── */
+.pl-speak {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(24, 18, 44, 0.55);
+}
+.pl-speak__card {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 24px;
+  background: #fff;
+  color: #23202b;
+  font-family: inherit;
+  box-shadow: 0 24px 60px rgba(24, 18, 44, 0.25);
+}
+.pl-speak__eyebrow {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f1e9ff;
+  color: #9047ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.pl-speak__topic {
+  margin: 14px 0 10px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 30px;
+}
+.pl-speak__hints {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  color: #656172;
+  font-size: 15px;
+  line-height: 24px;
+}
+.pl-speak__text {
+  margin: 0 0 18px;
+  font-size: 15px;
+  line-height: 23px;
+}
+.pl-speak__clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  font-size: 18px;
+  line-height: 24px;
+}
+.pl-speak__clock b {
+  font-variant-numeric: tabular-nums;
+}
+.pl-speak__clock--rec {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pl-speak__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pl-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pl-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-speak__dot {
+    animation: none;
+  }
+}
+.pl-speak__error {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff1f0;
+  color: #b42318;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pl-speak__level {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 6px 0 12px;
+  font-size: 15px;
+  color: #656172;
+}
+.pl-speak__level b {
+  color: #9047ff;
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 800;
+}
+.pl-speak__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pl-btn {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+  cursor: pointer;
+}
+.pl-btn--main {
+  background: #9047ff;
+  color: #fff;
+}
+.pl-btn--main:hover {
+  background: #7d33f0;
+}
+.pl-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pl-btn:focus-visible,
+.pl-speak__skip:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+.pl-speak__skip {
+  margin-top: 16px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #656172;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── закрытый роадмап «Главной» ──────────────────────────────────────────── */
+.ge-locked {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+}
+/* образец блока цели: размыт, недоступен для клика и выделения */
+.ge-locked__preview {
+  filter: blur(7px);
+  opacity: 0.75;
+  pointer-events: none;
+  user-select: none;
+}
+.ge-locked__veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.45);
+}
+.ge-locked__lock {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fff;
+  color: #9047ff;
+  box-shadow: 0 8px 24px rgba(144, 71, 255, 0.25);
+}
+.ge-locked__title {
+  margin: 4px 0 0;
+  max-width: 520px;
+  color: #23202b;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 32px;
+}
+.ge-locked__sub {
+  margin: 0;
+  max-width: 520px;
+  color: #3d3a48;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+}
+.ge-locked__cta {
+  margin-top: 6px;
+}
+
+/* ── отчёт теста на «Главной» ─────────────────────────────────────────────── */
+.pl-report {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pl-report__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pl-report__head .hm-card__title {
+  margin: 0;
+}
+.pl-report__date {
+  color: #656172;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.pl-report__overall {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+.pl-report__label {
+  color: #656172;
+  font-size: 14px;
+  font-weight: 600;
+}
+.pl-report__level {
+  color: #9047ff;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 800;
+}
+.pl-report__name {
+  font-size: 16px;
+  font-weight: 700;
+}
+.pl-report__tag {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b25e09;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.pl-report__skills {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pl-report__skill {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) 48px minmax(80px, 2fr) minmax(120px, 1.4fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 20px;
+}
+.pl-report__skillName {
+  font-weight: 600;
+}
+.pl-report__chip {
+  justify-self: start;
+  min-width: 40px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: #f1e9ff;
+  color: #7d33f0;
+  font-weight: 800;
+  text-align: center;
+}
+.pl-report__chip.is-empty {
+  background: #f4f4f4;
+  color: #9a96a6;
+}
+.pl-report__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #efecf6;
+  overflow: hidden;
+}
+.pl-report__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #9047ff;
+}
+.pl-report__note {
+  color: #656172;
+  font-size: 14px;
+}
+.pl-report__note em {
+  color: #b25e09;
+  font-style: normal;
+}
+.pl-report__goal p {
+  margin: 0 0 4px;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pl-report__muted {
+  color: #656172;
+}
+.pl-report__h {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 22px;
+}
+.pl-report__list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pl-report__list li + li {
+  margin-top: 6px;
+}
+.pl-report__acts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.pl-report__act {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid #e9e6f2;
+  border-radius: 16px;
+  background: #fff;
+  color: #23202b;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pl-report__act:hover {
+  border-color: #c9b2ff;
+  background: #faf7ff;
+}
+.pl-report__act:focus-visible,
+.pl-report__retake:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+.pl-report__actTitle {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.pl-report__actMeta {
+  color: #7d33f0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pl-report__actWhy {
+  color: #3d3a48;
+  font-size: 14px;
+  line-height: 20px;
+}
+.pl-report__actPath {
+  color: #9a96a6;
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-report__retake {
+  align-self: flex-start;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #7d33f0;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+/* узкий экран: навыки — строкой «название · уровень», полоса и подпись под ними */
+@media (max-width: 760px) {
+  .pl-report__skill {
+    grid-template-columns: 1fr 48px;
+    row-gap: 6px;
+  }
+  .pl-report__bar,
+  .pl-report__note {
+    grid-column: 1 / -1;
+  }
+  .ge-locked__title {
+    font-size: 20px;
+    line-height: 26px;
+  }
+  .pl-speak__card {
+    padding: 22px 18px;
+  }
+}

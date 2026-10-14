@@ -34,7 +34,7 @@ const MAX_DEPTH = 30
 const NOT_RETURNABLE = new Set([
   'welcome', 'chat', 'phone', 'reg-phone', 'reg-email', 'reg-birth', 'otp',
   'login-password', 'complete-registration', 'set-password', 'success',
-  'test-intro', 'test', 'speaking-test', 'ge-onboarding', 'tutor-loading',
+  'test-intro', 'test', 'placement', 'speaking-test', 'ge-onboarding', 'tutor-loading',
   'tutor-voice-chat', 'booth',
 ])
 
