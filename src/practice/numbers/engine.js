@@ -362,7 +362,7 @@ const CUE  = {time:'Find the clock', dates:'Find the date', money:'Find the pric
 function clockFace(t){
   const [h,m]=t.split(':').map(Number); const ma=m*6, ha=((h%12)+m/60)*30;
   let tk=''; for(let i=0;i<12;i++){ const a=i*30*Math.PI/180; tk+=`<line x1="${50+38*Math.sin(a)}" y1="${50-38*Math.cos(a)}" x2="${50+44*Math.sin(a)}" y2="${50-44*Math.cos(a)}" stroke="#6b5fa8" stroke-width="${i%3?2:4}" stroke-linecap="round"/>`; }
-  const n=[12,3,6,9].map((v,i)=>{const a=i*90*Math.PI/180;return `<text x="${50+30*Math.sin(a)}" y="${50-30*Math.cos(a)+5}" text-anchor="middle" font-family="Baloo 2,Nunito,sans-serif" font-weight="800" font-size="14" fill="#2b1a66">${v}</text>`}).join('');
+  const n=[12,3,6,9].map((v,i)=>{const a=i*90*Math.PI/180;return `<text x="${50+30*Math.sin(a)}" y="${50-30*Math.cos(a)+5}" text-anchor="middle" font-family="inherit" font-weight="800" font-size="14" fill="#2b1a66">${v}</text>`}).join('');
   const P=(ang,len)=>`${50+len*Math.sin(ang*Math.PI/180)} ${50-len*Math.cos(ang*Math.PI/180)}`;
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="#fff" stroke="#874BF8" stroke-width="5"/>${tk}${n}<path d="M50 50L${P(ha,24)}" stroke="#2b1a66" stroke-width="6" stroke-linecap="round"/><path d="M50 50L${P(ma,36)}" stroke="#874BF8" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="50" r="4.5" fill="#2b1a66"/></svg>`;
 }
@@ -414,7 +414,7 @@ function skinHTML(skin, v){
     case 'road': return /km|mph/.test(v) ? `<span class="o road">${e}</span>` : `<span class="o meas">${measIcon(v)}<span>${e}</span></span>`;
     case 'meas': return `<span class="o meas">${measIcon(v)}<span>${e}</span></span>`;
     case 'pie-text': return `<span class="o pie"><i style="font-size:1em;padding:.12em .3em 0">${e}</i></span>`;
-    case 'pie': { const m=v.match(/^(\d)([½⅓¼¾⅖⅕⅔])$/); if(m){ const [n,d]=PIE[m[2]]; return `<span class="o pie" style="flex-direction:row;gap:.1em"><span style="font-family:var(--num);font-weight:800;color:#2b1a66;font-size:.9em">${m[1]}</span>${pieSVG(n,d)}<i>${e}</i></span>`; }
+    case 'pie': { const m=v.match(/^(\d)([½⅓¼¾⅖⅕⅔])$/); if(m){ const [n,d]=PIE[m[2]]; return `<span class="o pie" style="flex-direction:row;gap:.1em"><span style="font-family:inherit;font-weight:800;color:#2b1a66;font-size:.9em">${m[1]}</span>${pieSVG(n,d)}<i>${e}</i></span>`; }
       const [n,d]=PIE[v]; return `<span class="o pie">${pieSVG(n,d)}<i>${e}</i></span>`; }
     case 'ticket': { const head=skin.split(':')[1]; const shown=ticketHead(v)[1](v); return `<span class="o ticket">${head?`<b>${esc(head)}</b>`:''}<span>${esc(shown)}</span></span>`; }
   }
