@@ -65,6 +65,9 @@ export default function HomePage({
   tourKey,
   // Счётчик сохранённых итогов теста уровня v16 (App): вырос — отчёт теста перечитывается.
   placementVersion = 0,
+  // Ученик учился до теста v16 (аккаунт старше выкатки, src/placement/existingStudent.js): тест ему не навязываем —
+  // роадмап не размывается, а на «Главной» тест числится непройденным (решение владельца 14.10.2026).
+  existingStudent = false,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -133,7 +136,7 @@ export default function HomePage({
   const goalValue = track.mode === 'goal' ? track.goal : null
 
   // Верхний блок General English. У IELTS-аккаунта свой (IeltsHomeCard) — профиль General English ему не показываем.
-  const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel })
+  const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel, existing: existingStudent })
   const geMode = geTop !== 'legacy'
   // План по дням (спека 2026-10-13): есть блок цели — есть и план; его «Сегодня» встаёт вместо «Что сделать сегодня».
   // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
@@ -435,8 +438,16 @@ export default function HomePage({
         )}
 
         {/* Подробный отчёт теста уровня v16 — под роадмапом, который тест открыл. Нет пройденного теста — нет и блока. */}
+        {/* Учившемуся до теста отметка «не пройден» — только когда сверху на тест никто не зовёт: у карточки
+            «тест не пройден» и у прежней карточки «нет уровня» своя кнопка. */}
         {!ieltsAccount && (
-          <PlacementReport token={token} version={placementVersion} onNav={onNav} onRetake={onStartLevelTest} />
+          <PlacementReport
+            token={token}
+            version={placementVersion}
+            onNav={onNav}
+            onRetake={onStartLevelTest}
+            showMissing={existingStudent && !levelUnknown && (geTop === 'goal' || geTop === 'needRoute' || geTop === 'legacy')}
+          />
         )}
 
         <div className="hm-row">

@@ -30,8 +30,8 @@ function profileFrom(body, level, route = null) {
   }
 }
 
-async function setup(page, { level = 'A2', tours = false } = {}) {
-  const state = { level, profile: { onboarded: false }, puts: [], attempts: [] }
+async function setup(page, { level = 'A2', tours = false, createdAt = null, profile = { onboarded: false } } = {}) {
+  const state = { level, profile, puts: [], attempts: [] }
   await page.addInitScript(
     ({ token, tours }) => {
       localStorage.setItem('jts_access_token', token)
@@ -39,7 +39,7 @@ async function setup(page, { level = 'A2', tours = false } = {}) {
     },
     { token: jwt, tours },
   )
-  const me = () => ({ userId: 7, name: 'Сакен', role: 'USER', languageLevel: state.level, isDemoAccount: false })
+  const me = () => ({ userId: 7, name: 'Сакен', role: 'USER', languageLevel: state.level, isDemoAccount: false, createdAt })
   await page.route(/justtostudy\.kz/, (route) => {
     const req = route.request()
     const url = req.url()
@@ -159,6 +159,29 @@ test('настоящий экран итога v16: итог сохраняет�
   await page.frameLocator('.pl-page__frame').locator('#prLearn').click()
   await expect(page.getByRole('heading', { name: 'Как дойти до B1' })).toBeVisible({ timeout: 20000 })
   expect(state.puts).toHaveLength(1)
+})
+
+// Решение владельца 14.10: учившихся до теста v16 не заставлять — на «Главной» тест просто числится непройденным.
+test.describe('учится до теста v16', () => {
+  const OLD = '2026-09-01T10:00:00'
+
+  test('анкеты нет — без блюра, карточка «Тест уровня не пройден»', async ({ page }) => {
+    await setup(page, { level: 'A2', createdAt: OLD })
+    await page.goto('/?screen=home')
+    await expect(page.locator('.ge-invite')).toContainText('Тест уровня не пройден', { timeout: 20000 })
+    await expect(page.locator('.ge-locked')).toHaveCount(0)
+    await page.locator('.ge-invite').getByRole('button', { name: 'Пройти тест' }).click()
+    await expect(page.locator('.pl-page__frame')).toBeVisible()
+  })
+
+  test('маршрут есть — он на месте, под ним «Тест уровня · Не пройден»', async ({ page }) => {
+    const goal = profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'A2', 'self_study')
+    await setup(page, { level: 'A2', createdAt: OLD, profile: goal })
+    await page.goto('/?screen=home')
+    await expect(page.locator('.ge-goal')).toBeVisible({ timeout: 20000 })
+    await expect(page.locator('.pl-report--missing')).toContainText('Не пройден')
+    await expect(page.locator('.ge-locked')).toHaveCount(0)
+  })
 })
 
 test.describe('тур', () => {

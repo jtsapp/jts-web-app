@@ -6,6 +6,7 @@ import { navForActivity, navForSection } from './activityRoutes.js'
 import { bandFor, pickTopic, topicById, TOPICS } from './speakingTopics.js'
 import { reportView } from './reportModel.js'
 import { installBridge, readEnvelope } from './bridge.js'
+import { isExistingStudent } from './existingStudent.js'
 
 // Фикстура — настоящий конверт, снятый с самого теста v16 (симулятор ученика B1 + анкета «путешествовать без
 // переводчика»): форма не придумана, а та, что придёт в приложение.
@@ -137,6 +138,18 @@ describe('reportModel', () => {
 
   it('без конверта — нечего рисовать', () => {
     expect(reportView(null)).toBe(null)
+  })
+})
+
+describe('existingStudent', () => {
+  it('аккаунт старше выкатки — «уже учится», новый и без даты — новый', () => {
+    // бэкенд отдаёт LocalDateTime без зоны — время сервера
+    expect(isExistingStudent('2026-09-01T12:00:00')).toBe(true)
+    expect(isExistingStudent('2026-10-14T23:59:59')).toBe(true)
+    expect(isExistingStudent('2026-10-15T00:00:01')).toBe(false)
+    expect(isExistingStudent('2026-10-14T20:00:00Z')).toBe(false) // 01:00 15.10 по Алматы
+    expect(isExistingStudent(null)).toBe(false)
+    expect(isExistingStudent('мусор')).toBe(false)
   })
 })
 

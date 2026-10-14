@@ -83,6 +83,32 @@ describe('HomePage — General English', () => {
     }
   })
 
+  // Учившимся до теста v16 тест не навязываем (решение владельца 14.10): без блюра, но «не пройден» видно.
+  it('учившийся до теста, анкеты нет — обычная карточка «тест не пройден», без блюра', async () => {
+    const onGeStart = vi.fn()
+    renderHome({ geProfile: { onboarded: false }, existingStudent: true, onGeStart })
+    await waitFor(() => expect(screen.getByText('Тест уровня не пройден')).toBeTruthy())
+    expect(document.querySelector('.ge-locked')).toBe(null)
+    fireEvent.click(within(document.querySelector('.ge-invite')).getByRole('button', { name: 'Пройти тест' }))
+    expect(onGeStart).toHaveBeenCalled()
+  })
+
+  it('учившийся до теста с блоком цели — блок на месте, под ним «Тест уровня · Не пройден»', async () => {
+    const onStartLevelTest = vi.fn()
+    renderHome({ geProfile: goal, existingStudent: true, onStartLevelTest })
+    await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
+    expect(document.querySelector('.ge-goal')).toBeTruthy()
+    expect(document.querySelector('.pl-report--missing').textContent).toContain('Не пройден')
+    fireEvent.click(within(document.querySelector('.pl-report--missing')).getByRole('button', { name: 'Пройти тест' }))
+    expect(onStartLevelTest).toHaveBeenCalled()
+  })
+
+  it('новый ученик с блоком цели и без теста — отметки «не пройден» нет', async () => {
+    renderHome({ geProfile: goal })
+    await waitFor(() => expect(document.querySelector('.ge-goal')).toBeTruthy())
+    expect(document.querySelector('.pl-report--missing')).toBe(null)
+  })
+
   it('анкета есть, формата нет — шаг «выберите формат»', async () => {
     const onGeRoute = vi.fn()
     renderHome({ geProfile: { ...goal, route: null }, onGeRoute })
