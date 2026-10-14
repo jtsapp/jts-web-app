@@ -3512,6 +3512,12 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # 05.10.2026 к нему добавился «Спарк тест» (SPARK_TEST_STAND) — та же сборка и
 # тот же мозг, но персона Спарка и сессия живого Спарка. Ему откатываться
 # некуда: прежней персоны у ключа нет, поэтому KZ_TEST_PROMPT его не трогает.
+#
+# 14.10.2026 решение владельца: тестовый Декстер заменяет живого — у bro та же
+# сборка, что у KZ TEST, на дев и на проде сразу (агент у них один). Голос и
+# сессия у bro и так свои, поэтому звонок с карточки Декстера побайтно тот же,
+# что с KZ TEST. Откат на прежнюю персону — секрет DEXTER_PROMPT=legacy, без
+# деплоя; KZ TEST при этом остаётся на пакете (у него свой KZ_TEST_PROMPT).
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
@@ -3519,6 +3525,12 @@ BUDDY_TEST_PERSONA = "dexter"
 BUDDY_STANDS: dict[str, tuple[str, str]] = {
     KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
     SPARK_TEST_STAND: ("spark", "hype"),
+    BUDDY_VOICE_TUTOR: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+}
+# Секрет воркера, который возвращает ключ на прежнюю персону (у кого она есть).
+BUDDY_LEGACY_SWITCH: dict[str, str] = {
+    KZ_DEV_STAND_PERSONA: "KZ_TEST_PROMPT",
+    BUDDY_VOICE_TUTOR: "DEXTER_PROMPT",
 }
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
@@ -3567,15 +3579,15 @@ def buddy_persona_for(p: LearnerProfile) -> str:
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
-    свои. Оба нрава KZ TEST — Декстер v3: тумблера 18+ в новой схеме нет."""
+    свои. Оба нрава Декстера (и KZ TEST, и живого) — Декстер v3: тумблера 18+
+    в новой схеме нет."""
     stand = BUDDY_STANDS.get(_stand_key(p))
     if stand is None:
         return False
     if p.mode != "tutor" or p.scenario:
         return False
-    if _stand_key(p) == KZ_DEV_STAND_PERSONA and (
-        (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false")
-    ):
+    switch = BUDDY_LEGACY_SWITCH.get(_stand_key(p))
+    if switch and (os.getenv(switch) or "").strip().lower() in ("legacy", "off", "0", "false"):
         return False
     # Ядро требует тег эмоции в начале КАЖДОЙ реплики (core §13), а снимает его
     # только llm_node каскада. У realtime-модели свой тракт — там тег прозвучал
@@ -5795,8 +5807,9 @@ def _is_openai_brain(model: str) -> bool:
 # Модели Claude, которые агент тоже зовёт напрямую, мимо шима. Шим знает только
 # свой белый список (чужую модель молча меняет на Haiku 4.5), шлёт temperature
 # и держит префилл, а Haiku 5.5 на температуру не 1 и на хвостовую реплику
-# тьютора отвечает 400 — тьютор молчал бы. Править шим бесполезно: агент ходит
-# в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную и без SSH.
+# тьютора отвечает 400 — тьютор молчал бы. Шим с 14.10.2026 Haiku 5.5 умеет,
+# но агент ходит в его копию brain-us (VOICE_BRAIN_URL), а она катится вручную,
+# поэтому путь через шим включается секретом — см. _anthropic_via_shim.
 ANTHROPIC_DIRECT_BRAINS = ("claude-haiku-5",)
 # Нет ключа или плагина — в шим на ближайшую модель, которую он умеет.
 ANTHROPIC_BRAIN_FALLBACK = "claude-haiku-4-5"
@@ -5809,6 +5822,26 @@ ANTHROPIC_BRAIN_EFFORT = "low"
 
 def _is_anthropic_direct_brain(model: str) -> bool:
     return (model or "").strip().lower().startswith(ANTHROPIC_DIRECT_BRAINS)
+
+
+# 14.10.2026 решение владельца: живого Декстера (Haiku 5.5) вести через brain-us,
+# как остальных тьюторов. Шим научили Haiku 5.5 (белый список, effort low, «.» на
+# хвост тьютора), а доступ к серверу brain-us у владельца теперь есть. Почему
+# шим быстрее прямого вызова: плагин livekit-anthropic шлёт тулы со strict:
+# true, а шим — без него; замер того же промпта с тулами — Haiku 5.5 1.34 → 0.76
+# с до первого токена, Haiku 4.5 1.98 → 0.65 с (без тулов оба ~0.56 с).
+#
+# Секрет воркера ANTHROPIC_VIA_SHIM — список ключей тьюторов (bro,jarvis) или
+# on — всем. Пусто — напрямую, как раньше. Включать ТОЛЬКО после выкатки шима на
+# brain-us: старый шим Haiku 5.5 не знает и молча ответит Haiku 4.5 (звонок не
+# сломается, но модель будет не та — смотреть строку `model=` в логах brain-us).
+def _anthropic_via_shim(tutor: str) -> bool:
+    raw = (os.getenv("ANTHROPIC_VIA_SHIM") or "").replace("﻿", "").strip().lower()
+    if not raw or raw in ("off", "0", "false", "no"):
+        return False
+    if raw in ("on", "1", "true", "yes", "all"):
+        return True
+    return (tutor or "").strip().lower() in {t.strip() for t in raw.split(",") if t.strip()}
 
 
 def _anthropic_api_key() -> str:
@@ -5873,8 +5906,12 @@ BUDDY_BRAIN_MODEL = "gpt-6-sol"
 # дешевле Haiku 4.5 и в разы дешевле Sol. «Спарк тест» остаётся на Sol: менять
 # живого тьютора стенда без его замера нельзя. Откат без деплоя — секрет
 # BRAIN_MODEL_BUDDY_<КЛЮЧ> (BRAIN_MODEL_BUDDY_JARVIS=gpt-6-sol).
+# 14.10.2026 живой Декстер стал тестовым целиком — и мозг его же. Откат мозга
+# отдельно от персоны — BRAIN_MODEL_BUDDY_BRO (BRAIN_MODEL_BRO у пакета не
+# читается: он про прежнюю персону и вернётся вместе с DEXTER_PROMPT=legacy).
 BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
+    BUDDY_VOICE_TUTOR: "claude-haiku-5-5",
 }
 
 
@@ -6641,8 +6678,18 @@ def build_cascade_session(
             brain_model, OPENAI_BRAIN_FALLBACK,
         )
         brain_model = OPENAI_BRAIN_FALLBACK
-    anthropic_key = _anthropic_api_key() if _is_anthropic_direct_brain(brain_model) else ""
-    if _is_anthropic_direct_brain(brain_model) and not (anthropic_key and lk_anthropic):
+    # Через шим — тот же brain_model, его отдаёт шиму OpenAI-поле model (ветка
+    # else ниже); ключ Anthropic и плагин тогда не нужны.
+    direct = _is_anthropic_direct_brain(brain_model) and not _anthropic_via_shim(
+        guard_tutor or profile.tutor
+    )
+    if _is_anthropic_direct_brain(brain_model) and not direct:
+        logger.info(
+            "[brain] %s via the shim at %s (ANTHROPIC_VIA_SHIM) for tutor=%s",
+            brain_model, brain_url or api_url, guard_tutor or profile.tutor,
+        )
+    anthropic_key = _anthropic_api_key() if direct else ""
+    if direct and not (anthropic_key and lk_anthropic):
         logger.error(
             "[brain] %s needs ANTHROPIC_API_KEY and livekit-plugins-anthropic — "
             "falling back to %s via the shim",
@@ -7120,9 +7167,13 @@ async def entrypoint(ctx: JobContext):
     # у SLIM_OUT_SECTIONS). Делаем это ПОСЛЕ сборки, а не гейтами внутри неё:
     # так правка не размазывается по гигантскому выражению и одинаково работает
     # для всех четырёх режимов промпта.
-    instructions = (
-        slim_prompt_for_persona(instructions, persona_key(profile.tutor, profile.temper))
-    )
+    # Пакет Buddy не трогаем: его тон в самом пакете, а bro стоит в
+    # TONE_SELF_DEFINED_PERSONAS ради прежней персоны — без этой проверки живой
+    # Декстер на пакете расходился бы с KZ TEST.
+    if not is_buddy:
+        instructions = slim_prompt_for_persona(
+            instructions, persona_key(profile.tutor, profile.temper)
+        )
     # Мозг на GPT без живых log_topic/log_fact (см. POST_CALL_MEMORY_TOOLS). Только
     # обычный урок: выжимка пишет темы и факты для режима free, а у сценариев,
     # дебатов, проверки уровня и своих промптов (Джарвис, Buddy) блок тулов иной.

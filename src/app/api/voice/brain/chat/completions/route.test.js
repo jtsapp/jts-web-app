@@ -76,6 +76,13 @@ describe('POST /api/voice/brain/chat/completions', () => {
     expect(calls.at(-1).model).toBe('claude-sonnet-5')
   })
 
+  // Живой Декстер на пакете Speaking Buddy через brain-us (14.10.2026).
+  it('Haiku 5.5 — в белом списке', async () => {
+    calls.length = 0
+    await drain(await call({ model: 'claude-haiku-5-5' }))
+    expect(calls.at(-1).model).toBe('claude-haiku-5-5')
+  })
+
   it('служебное имя и чужая модель — дефолт роута', async () => {
     calls.length = 0
     await drain(await call({ model: 'jts-voice-router' }))
