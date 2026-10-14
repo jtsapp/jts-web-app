@@ -28,6 +28,8 @@ const HIDDEN_SCREENS = new Set([
   'sat-diagnostic',
   'sat-study',
   'sat-daily',
+  'sat-weekly',
+  'sat-papers',
   'sat-mock',
   'sat-mock-review',
   'sat-unit',

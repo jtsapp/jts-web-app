@@ -9,6 +9,7 @@ import WordList from '../vocab/WordList.jsx'
 import Games from '../vocab/Games.jsx'
 import AddWordDialog from '../vocab/AddWordDialog.jsx'
 import { GOALS, buildDeck, counts, displayWord, queue, status } from '../model/vocab.js'
+import { errorText } from '../../lib/examQuota.js'
 
 const VIEWS = ['cards', 'words', 'games']
 
@@ -35,7 +36,7 @@ export default function VocabTab() {
     let alive = true
     fetch('/sat/vocab/deck.json').then((r) => r.json()).then((d) => alive && setBase(d.cards)).catch(() => alive && setError(t('sat.study.netError')))
     fetch('/sat/vocab/games.json').then((r) => r.json()).then((d) => alive && setGames(d)).catch(() => {})
-    getSatVocab(token).then((s) => alive && setState(s)).catch((e) => alive && setError(e?.serverMessage || t('sat.study.netError')))
+    getSatVocab(token).then((s) => alive && setState(s)).catch((e) => alive && setError(errorText(e, t)))
     return () => {
       alive = false
     }
@@ -60,7 +61,7 @@ export default function VocabTab() {
       setState((s) => ({ ...s, today: s.today + 1, cards: { ...s.cards, [wordId]: card } }))
       setNow(Date.now())
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }
@@ -71,7 +72,7 @@ export default function VocabTab() {
     try {
       setState(await setSatVocabGoal(token, n))
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }
@@ -85,7 +86,7 @@ export default function VocabTab() {
       setState((s) => ({ ...s, custom: [w, ...s.custom] }))
       setAdding(false)
     } catch (e) {
-      setAddError(e?.serverMessage || t('sat.study.netError'))
+      setAddError(errorText(e, t))
     } finally {
       setBusy(false)
     }
@@ -101,7 +102,7 @@ export default function VocabTab() {
         return { ...s, custom: s.custom.filter((w) => w.id !== id), cards: rest }
       })
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }

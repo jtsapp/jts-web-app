@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   addSatSimilar, checkSatAnswer, finishSatSession, getSatProfile, getSatSession, getSatSessionExplanation, getSatSessionHint,
-  setSatErrorType, startSatSession,
+  getSatSessionSummary, logSatError, startSatSession,
 } from '../api.js'
+import { errorText } from '../lib/examQuota.js'
+import { useSatTheme } from '../sat/theme.js'
+import { SatBrand } from '../sat/ui/SatNav.jsx'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
@@ -10,13 +13,14 @@ import useSatSession from '../sat/question/useSatSession.js'
 import { goTo, timeOn } from '../sat/question/session.js'
 import HintPopover from '../sat/study/HintPopover.jsx'
 import ExplanationPanel from '../sat/study/ExplanationPanel.jsx'
-import ErrorTypeDialog from '../sat/study/ErrorTypeDialog.jsx'
+import LogErrorDialog from '../sat/study/LogErrorDialog.jsx'
 import StudySummary from '../sat/study/StudySummary.jsx'
+import PracticeSummary from '../sat/study/PracticeSummary.jsx'
 import { pick } from '../sat/model/profile.js'
 import { parse } from '../sat/model/plan.js'
 import { domainName, skillName } from '../sat/names.js'
 import { lessonByCode } from '../sat/model/course.js'
-import { BookOpenIcon, BulbIcon, ReplayIcon, RobotIcon } from '../sat/icons.jsx'
+import { BookOpenIcon, BulbIcon, NAV_ICONS, ReplayIcon, RobotIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 
 // Один запрос старта на занятие за раз: экран в разработке монтируется дважды (StrictMode), и без этого два POST
@@ -95,7 +99,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
   const [hintOpen, setHintOpen] = useState(false)
   const [panel, setPanel] = useState(null) // null | 'explain' | 'ai'
   const [pre, setPre] = useState({}) // объяснения, открытые до ответа
-  const [etype, setEtype] = useState(null) // id вопроса, для которого открыт выбор типа ошибки
+  const [logFor, setLogFor] = useState(null) // id вопроса, для которого открыта запись «Log error»
 
   const docs = useMemo(() => Object.fromEntries(data.questions.map((q) => [q.id, q])), [data.questions])
   const results = data.results || {}
@@ -106,7 +110,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
   }, [results, docs])
 
   const fail = useCallback((e) => {
-    setToast(e?.serverMessage || t('sat.study.netError'))
+    setToast(errorText(e, t))
     setTimeout(() => setToast(null), 4000)
   }, [t])
 
@@ -139,7 +143,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
       }
       setData((d) => ({ ...d, results: { ...(d.results || {}), [qid]: r } }))
       setHintOpen(false)
-      if (!r.correct && r.errorId) setEtype(qid)
+      // после промаха окно больше не выпрыгивает само (прототип 93e93191): «Log error» — кнопкой в панели помощи
     } catch (e) {
       fail(e)
     } finally {
@@ -195,13 +199,22 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
     }
   }
 
-  const saveType = async (qid, type) => {
+  // «Log error» (B3): промах становится строкой журнала ошибок с заголовком, темой и причиной
+  const saveLog = async (qid, body) => {
     const r = results[qid]
     setBusy(true)
     try {
-      const out = await setSatErrorType(token, r.errorId, type)
-      setData((d) => ({ ...d, results: { ...d.results, [qid]: { ...d.results[qid], errorType: out.errorType, reviewDueAt: out.reviewDueAt } } }))
-      setEtype(null)
+      const out = await logSatError(token, r.errorId, body)
+      setData((d) => ({
+        ...d,
+        results: {
+          ...d.results,
+          [qid]: { ...d.results[qid], logged: true, errorType: out?.errorType ?? body.errorType, reviewDueAt: out?.reviewDueAt ?? d.results[qid].reviewDueAt },
+        },
+      }))
+      setLogFor(null)
+      setToast(t('sat.logerr.done'))
+      setTimeout(() => setToast(null), 2500)
     } catch (e) {
       fail(e)
     } finally {
@@ -256,6 +269,11 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
       <button type="button" className="st-tool" disabled={busy} onClick={similar}>
         <ReplayIcon size={16} />{t('sat.study.similar')}
       </button>
+      {res && !res.correct && res.errorId && (
+        <button type="button" className={`st-tool st-tool--log ${res.logged ? 'is-on' : ''}`} disabled={busy || res.logged} onClick={() => setLogFor(q.id)}>
+          {NAV_ICONS.errors(16)}{t(res.logged ? 'sat.logerr.logged' : 'sat.logerr.button')}
+        </button>
+      )}
     </div>
   )
 
@@ -279,7 +297,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
     />
   ) : null
 
-  const etypeRes = etype ? results[etype] : null
+  const logRes = logFor ? results[logFor] : null
   const names = data.skillIds.map((s) => skillName(s, lang)).join(' · ')
   return (
     <>
@@ -294,15 +312,14 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
         onFinish={finish}
         footerExtra={footerExtra}
         sidePanel={sidePanel}
-        overlay={etypeRes && (
-          <ErrorTypeDialog
-            suggested={etypeRes.suggestedErrorType}
-            timeSec={etypeRes.timeSec}
-            pace={etypeRes.pace}
-            current={etypeRes.errorType}
+        overlay={logRes && (
+          <LogErrorDialog
+            doc={docs[logFor]}
+            result={logRes}
+            section={docs[logFor]?.section === 'math' ? 'math' : 'rw'}
             busy={busy}
-            onSave={(type) => saveType(etype, type)}
-            onSkip={() => setEtype(null)}
+            onSave={(body) => saveLog(logFor, body)}
+            onClose={() => setLogFor(null)}
           />
         )}
         study={{
@@ -330,10 +347,14 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
  */
 export default function SatStudyPage({ token, onNav }) {
   const { t } = useI18n()
+  useSatTheme()
   const authToken = token || loadToken()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [explainLang, setExplainLang] = useState('ru')
+  // итог набора «Практики» (B2): только source = practice; null — грузится, false — не пришёл (общий итог занятия)
+  const [psum, setPsum] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -347,19 +368,48 @@ export default function SatStudyPage({ token, onNav }) {
         setParams({ satLesson: null, satSession: s.id })
         setData(s)
       })
-      .catch((e) => alive && setError(e?.serverMessage || t('sat.study.netError')))
+      .catch((e) => alive && setError(errorText(e, t)))
     window.scrollTo(0, 0)
     return () => {
       alive = false
     }
   }, [authToken, t])
 
+  const isPractice = data?.kind === 'practice'
+  const finished = !!data?.finished
+  const sid = data?.id
+  useEffect(() => {
+    if (!finished || !isPractice || !sid) return undefined
+    let alive = true
+    getSatSessionSummary(authToken, sid)
+      .then((x) => alive && setPsum(x || false))
+      .catch(() => alive && setPsum(false))
+    return () => {
+      alive = false
+    }
+  }, [authToken, finished, isPractice, sid])
+
   const toHub = (tab) => {
     setParams({ satSession: null, satLesson: null, satUnit: null, satTab: tab || null })
     onNav?.('sat')
   }
-  // набор юнита курса возвращается на свой юнит, занятие плана — в «План»
+  // «Потренировать слабые»: новый набор по навыкам открывается здесь же
+  const again = async (skillIds) => {
+    setBusy(true)
+    try {
+      const s = await startSatSession(authToken, { mode: 'skills', skillIds, count: 10 })
+      setParams({ satSession: s.id, satLesson: null })
+      setPsum(null)
+      setData(await getSatSession(authToken, s.id))
+    } catch (e) {
+      setError(errorText(e, t))
+    } finally {
+      setBusy(false)
+    }
+  }
+  // набор юнита курса возвращается на свой юнит, набор «Практики» — в «Практику», занятие плана — в «План»
   const back = () => {
+    if (isPractice) return toHub('practice')
     if (!data?.unitCode) return toHub('plan')
     setParams({ satSession: null, satUnit: data.unitCode })
     onNav?.('sat-unit')
@@ -370,7 +420,7 @@ export default function SatStudyPage({ token, onNav }) {
       <div className="ih st st-ob">
         <header className="st-ob__top">
           <button type="button" className="ih-round" onClick={() => toHub('plan')} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-          <b className="st-ob__logo">just to study</b>
+          <SatBrand />
         </header>
         <div className="ih-empty st-study__err">
           <h2>{t('sat.study.cantStart')}</h2>
@@ -385,14 +435,24 @@ export default function SatStudyPage({ token, onNav }) {
     return (
       <div className="ih st st-ob">
         <header className="st-ob__top">
-          <button type="button" className="ih-round" onClick={() => toHub('plan')} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-          <b className="st-ob__logo">just to study</b>
-          <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t('sat.study.chip')}</span></span>
+          <button type="button" className="ih-round" onClick={back} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
+          <SatBrand />
+          <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t(isPractice ? 'sat.tab.practice' : 'sat.study.chip')}</span></span>
           <span className="st-spacer" />
           <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
         </header>
         <div className="ih-enter">
-          <StudySummary summary={data.summary} skillIds={data.skillIds} onPlan={back} planLabel={data.unitCode ? t('sat.unit.backToUnit') : undefined} onErrors={() => toHub('errors')} />
+          {isPractice && psum === null ? null : isPractice && psum ? (
+            <PracticeSummary summary={psum} busy={busy} onAgain={() => toHub('practice')} onWeak={again} onDashboard={() => toHub()} onErrors={() => toHub('errors')} />
+          ) : (
+            <StudySummary
+              summary={data.summary}
+              skillIds={data.skillIds}
+              onPlan={back}
+              planLabel={data.unitCode ? t('sat.unit.backToUnit') : isPractice ? t('sat.psum.again') : undefined}
+              onErrors={() => toHub('errors')}
+            />
+          )}
         </div>
       </div>
     )

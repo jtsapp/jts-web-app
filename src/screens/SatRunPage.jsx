@@ -6,6 +6,7 @@ import { pick } from '../sat/model/profile.js'
 import SAMPLE from '../sat/question/sample.json'
 import TAXONOMY from '../sat/data/taxonomy.json'
 import { useI18n } from '../i18n.jsx'
+import { useSatTheme } from '../sat/theme.js'
 
 const MODES = ['study', 'diagnostic', 'exam']
 // Время образца: диагностика — мягкие 30 минут, модуль экзамена — 10 минут по стене часов (чтобы увидеть красные
@@ -30,6 +31,7 @@ function readMode() {
  */
 export default function SatRunPage({ onNav }) {
   const { t, lang } = useI18n()
+  useSatTheme()
   const [mode, setMode] = useState(null)
   const [done, setDone] = useState(null)
 

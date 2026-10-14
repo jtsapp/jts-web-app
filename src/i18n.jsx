@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { RuFlagIcon, GbFlagIcon, KzFlagIcon } from './components/icons.jsx'
+import { SAT_SYNC_DICT } from './sat/i18nSync.js'
 
 // `short` — для мест, где на подпись нет ширины (шапка кабинета рядом с
 // колокольчиком). `KZ`, а не `KK`: код языка казахский — `kk`, но на флаге и в
@@ -19370,6 +19371,9 @@ const dict = {
     'shadowing.dev.fitDone': 'Созылды ×{k} — енді сөйлемдер бойынша таймингті нақтыла.',
   },
 }
+
+// Строки синхронизации SAT с прототипом (SAT-SYNC-PLAN B13) живут в своём файле — вливаем их в каждый язык
+for (const l of Object.keys(SAT_SYNC_DICT)) Object.assign(dict[l], SAT_SYNC_DICT[l])
 
 const I18nCtx = createContext(null)
 

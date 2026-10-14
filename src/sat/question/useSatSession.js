@@ -77,3 +77,9 @@ export default function useSatSession(spec) {
 
   return { session, update, append, clear }
 }
+
+/** Есть ли на устройстве начатый (не сданный) черновик — «Продолжить» вместо «Начать» на карточке недельного теста. */
+export function hasDraft(key) {
+  const s = key ? read(key) : null
+  return !!(s && !s.finishedAt && Object.values(s.answers || {}).some((a) => a && a.value != null && String(a.value) !== ''))
+}

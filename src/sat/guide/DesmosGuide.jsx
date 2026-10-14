@@ -54,7 +54,7 @@ export default function DesmosGuide({ seg }) {
   const sections = GUIDE.sections
   const [open, setOpen] = useState(0)
   const [studied, setStudied] = useState(() => readStudied())
-  const [calc, setCalc] = useState(false)
+  const [calc, setCalc] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024) // на широком экране калькулятор открыт сразу (B11)
   const [copied, setCopied] = useState(null)
   const s = sections[open]
 
@@ -71,7 +71,6 @@ export default function DesmosGuide({ seg }) {
   }
   const go = (i) => {
     setOpen(i)
-    setCalc(false)
     setCopied(null)
   }
   const copy = (expr) => {
@@ -109,7 +108,9 @@ export default function DesmosGuide({ seg }) {
             </button>
           </div>
           <div className="st-dg__cols">
+            {/* B11, прототип 89fb0508: видео урока слева, калькулятор открыт рядом справа — смотришь и повторяешь */}
             <div className="st-dg__left">
+              <Video url={s.video} credit={s.videoCredit} title={pick(s.title, lang)} />
               {steps ? (
                 <ol className="st-dg__steps">
                   {/* шаги — текст гида из прототипа (только <b>, <code>, <i>), доверенная разметка выгрузки */}
@@ -130,7 +131,6 @@ export default function DesmosGuide({ seg }) {
                   </div>
                 </div>
               )}
-              <Video url={s.video} credit={s.videoCredit} title={pick(s.title, lang)} />
             </div>
             <div className="st-dg__calc">
               {calc ? (

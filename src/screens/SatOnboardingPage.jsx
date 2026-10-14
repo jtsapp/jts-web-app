@@ -5,6 +5,8 @@ import { useI18n } from '../i18n.jsx'
 import { AboutChapter, CHAPTERS, DatePicker, GoalPicker, SectionChapter, StructureChapter, chapterData } from '../sat/onboarding/chapters.jsx'
 import { pick, roundSection } from '../sat/model/profile.js'
 import { ArrowForwardIcon, ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
+import { SatBrand } from '../sat/ui/SatNav.jsx'
+import { useSatTheme } from '../sat/theme.js'
 
 // Цель по умолчанию — как на макете (Figma 3): 650 + 700 = 1350, середина типичных целей
 const DEFAULT_TARGET = { rw: 650, math: 700 }
@@ -19,6 +21,7 @@ const WIDE = new Set(['examday', 'verbal', 'math'])
  */
 export default function SatOnboardingPage({ token, onExit, onDiagnostic }) {
   const { t, lang } = useI18n()
+  useSatTheme()
   const authToken = token || loadToken()
   const [step, setStep] = useState(0)
   const [target, setTarget] = useState(DEFAULT_TARGET)
@@ -102,7 +105,7 @@ export default function SatOnboardingPage({ token, onExit, onDiagnostic }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={back} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <b className="st-ob__logo">just to study</b>
+        <SatBrand />
         <span className="ih-chip ih-chip--violet ih-chip--sm"><span>SAT</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => onExit?.()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>

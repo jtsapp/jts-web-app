@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
-import Tabs from '../ielts/ui/Tabs.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import PillButton from '../ielts/ui/PillButton.jsx'
 import GuideTab from '../sat/tabs/GuideTab.jsx'
 import PlanTab from '../sat/tabs/PlanTab.jsx'
 import TodayTab from '../sat/tabs/TodayTab.jsx'
 import PracticeTab from '../sat/tabs/PracticeTab.jsx'
-import ProgressTab from '../sat/tabs/ProgressTab.jsx'
 import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
@@ -21,10 +19,14 @@ import { useI18n } from '../i18n.jsx'
 import { EventIcon, MenuBookIcon, QuizIcon } from '../ielts/icons.jsx'
 import { FireIcon, TargetIcon } from '../sat/icons.jsx'
 import { fmtDate } from '../sat/model/dates.js'
+import SatNav, { SAT_TABS, SatPageHead } from '../sat/ui/SatNav.jsx'
+import { useSatTheme } from '../sat/theme.js'
+import ExamDemoBanner from '../components/ExamDemoBanner.jsx'
+import { errorText } from '../lib/examQuota.js'
 
-// Вкладки хаба: семь из Figma (решение 1 доски) + «Материалы» и «Ошибки» — реальные разделы прототипа, которых в
-// макете нет (решение C плана). Порядок: как в макете, свои — в конце.
-export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'vocab', 'guide', 'materials', 'errors']
+// Вкладки хаба — группы «Study / Tools» навигации TeenTech SAT (SAT-SYNC-PLAN B12, src/sat/ui/SatNav.jsx). «Прогресс»
+// убран (B4): его меры — на дашборде «Сегодня»; старый адрес ?satTab=progress открывает «Сегодня».
+export { SAT_TABS }
 const SOON_ICON = {}
 
 function readTab() {
@@ -54,6 +56,7 @@ function writeTab(tab) {
  */
 export default function SatPage({ token, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useI18n()
+  const { theme, toggle: toggleTheme } = useSatTheme()
   const authToken = token || loadToken()
   const [tab, setTab] = useState('today')
   const [moved, setMoved] = useState(false)
@@ -63,7 +66,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [busy, setBusy] = useState(false)
   const [today, setToday] = useState(null)
   const [error, setError] = useState(null)
-  // шаги старта и доступ (V336): пока что-то не пройдено, вместо вкладок — экран старта
+  // шаги старта и доступ (V341): пока что-то не пройдено, вместо вкладок — экран старта
   const [me, setMe] = useState(null)
 
   // вкладку из адреса читаем после монтирования: иначе сервер и клиент нарисуют разное (как у IELTS)
@@ -106,6 +109,11 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   }, [authToken, me?.access])
 
   const go = (next) => {
+    // Past papers — свой экран во всё окно, без сайдбара (B6)
+    if (next === 'papers') {
+      onNav?.('sat-papers')
+      return
+    }
     setMoved(true)
     setTab(next)
     writeTab(next)
@@ -192,7 +200,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     try {
       await startPractice({ mode: 'review', count: 20 })
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     }
   }
 
@@ -209,16 +217,22 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   if (tab === 'guide') panel = <GuideTab />
   else if (tab === 'plan') {
     panel = !plan || !diagnostic ? null : (
-      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} />
+      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} onUnit={openUnit} />
     )
   } else if (tab === 'today') {
     panel = !profile || !plan || !diagnostic || !today ? null : todayPanel()
   } else if (tab === 'practice') {
     panel = <PracticeTab onStart={startPractice} />
-  } else if (tab === 'progress') {
-    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: 10 }).catch((e) => setError(e?.serverMessage || t('sat.study.netError')))} />
   } else if (tab === 'mocks') {
-    panel = <MocksTab target={profile?.targetTotal ?? null} onOpenRun={(id) => openMock(id)} onReview={(id) => openMock(id, 'sat-mock-review')} />
+    panel = (
+      <MocksTab
+        target={profile?.targetTotal ?? null}
+        onOpenRun={(id) => openMock(id)}
+        onReview={(id) => openMock(id, 'sat-mock-review')}
+        onPapers={() => onNav?.('sat-papers')}
+        onPricing={() => onNav?.('sat-pricing')}
+      />
+    )
   } else if (tab === 'vocab') {
     panel = <VocabTab />
   } else if (tab === 'materials') {
@@ -281,9 +295,11 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onStart={startLesson}
         onResume={openSession}
         onReview={review}
-        onDaily={() => onNav?.('sat-daily')}
+        onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
         onVocab={() => go('vocab')}
+        onErrors={() => go('errors')}
+        onMocks={() => go('mocks')}
       />
     )
   }
@@ -296,9 +312,10 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>
         <div className="ih st">
           <header className="st-header">
-            <h1>SAT</h1>
+            <SatBrandTitle />
             <span className="st-header__kind">{t('sat.digital')}</span>
           </header>
+          <ExamDemoBanner exam="sat" token={authToken} demo={me?.demo} onPricing={() => onNav?.('sat-pricing')} />
           {me && (
             <SatStartView
               me={me}
@@ -313,27 +330,37 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     )
   }
 
+  // Хаб «TeenTech SAT»: сайдбар платформы свёрнут в рейл, слева своя навигация SAT (группы Study / Tools с иконками),
+  // сверху крошки и крупный заголовок раздела (B12, прототип a4f6a9e1).
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="ih st">
-        <header className="st-header">
-          <h1>SAT</h1>
-          <span className="st-header__kind">{t('sat.digital')}</span>
-          <span className="st-spacer" />
-          {profile?.targetTotal != null && (
-            <span className="ih-chip ih-chip--violet ih-chip--md"><span><TargetIcon size={16} />{t('sat.goalChip', { n: String(profile.targetTotal) })}</span></span>
-          )}
-          {dateChip && <span className="st-header__date"><EventIcon size={16} />{dateChip}</span>}
-          {today?.streak?.current > 0 && (
-            <span className="st-header__streak"><FireIcon size={16} />{plural(t, lang, 'sat.streakChip', today.streak.current)}</span>
-          )}
-        </header>
-        <Tabs items={SAT_TABS.map((k) => ({ key: k, label: t(`sat.tab.${k}`) }))} value={tab} onChange={go} idBase="st" label="SAT" />
-        {error && <p className="st-error" role="alert">{error}</p>}
-        <div key={tab} role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className={moved ? 'st__panel ih-enter' : 'st__panel'}>
-          {panel}
+    <LearningLayout userName={userName} userLevel={userLevel} active="sat" token={token} onNav={onNav} onProfile={onProfile} rail>
+      <div className="ih st st-hub">
+        <SatNav value={tab} onChange={go} theme={theme} onTheme={toggleTheme} />
+        <div className="st-hub__main">
+          <ExamDemoBanner exam="sat" token={authToken} demo={me?.demo} onPricing={() => onNav?.('sat-pricing')} />
+          <SatPageHead tab={tab} onHome={() => go('today')}>
+            <div className="st-head__chips">
+              {profile?.targetTotal != null && (
+                <span className="ih-chip ih-chip--violet ih-chip--md"><span><TargetIcon size={16} />{t('sat.goalChip', { n: String(profile.targetTotal) })}</span></span>
+              )}
+              {dateChip && <span className="st-header__date"><EventIcon size={16} />{dateChip}</span>}
+              {today?.streak?.current > 0 && (
+                <span className="st-header__streak"><FireIcon size={16} />{plural(t, lang, 'sat.streakChip', today.streak.current)}</span>
+              )}
+            </div>
+          </SatPageHead>
+          {error && <p className="st-error" role="alert">{error}</p>}
+          <div key={tab} role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} className={moved ? 'st__panel ih-enter' : 'st__panel'}>
+            {panel}
+          </div>
         </div>
       </div>
     </LearningLayout>
   )
+}
+
+/** Заголовок экрана старта: знак TeenTech SAT вместо голого «SAT». */
+function SatBrandTitle() {
+  const { t } = useI18n()
+  return <h1 className="st-header__brand">{t('sat.brand')}</h1>
 }

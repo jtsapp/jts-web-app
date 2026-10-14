@@ -9,6 +9,8 @@ import { PHASES, currentPhase, iso, parse, roadmapSteps } from '../model/plan.js
 import { todayLoad } from '../model/vocab.js'
 import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
 import { fmtDate } from '../model/dates.js'
+import WeeklyCard from '../weekly/WeeklyCard.jsx'
+import DashboardStats from '../dashboard/DashboardStats.jsx'
 
 // Минуты действий занятия (Figma 11: «Изучить 5 мин · Практика 40 мин · Разбор ошибок 15 мин» при 60 минутах):
 // изучение и разбор — фиксированные, практика забирает остальное поровну
@@ -25,10 +27,11 @@ export function actionMinutes(lesson) {
 
 /**
  * «Сегодня» с готовым планом (Figma SAT 11): незавершённая сессия, следующее занятие (что в нём и сколько минут),
- * где вы на дороге плана; справа — до экзамена, ошибки, которым пора вернуться, ежедневная проверка (её в макете нет —
- * prototype daily.js), контрольная точка и словарь (карточки на сегодня). Один следующий шаг на экране — главный.
+ * где вы на дороге плана; справа — недельный тест (вместо ежедневной проверки, SAT-SYNC-PLAN B1), до экзамена, ошибки,
+ * которым пора вернуться, контрольная точка и словарь. Под ними — «Моя статистика» (B2): то, что раньше было на
+ * вкладке «Прогресс» (B4), плюс «Слова сегодня» (B10). Один следующий шаг на экране — главный.
  */
-export default function TodayTab({ today, plan, diagnostic, onStart, onResume, onReview, onDaily, onPlan, onVocab }) {
+export default function TodayTab({ today, plan, diagnostic, onStart, onResume, onReview, onWeekly, onPlan, onVocab, onErrors, onMocks }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
@@ -37,7 +40,7 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
   const [vocab, setVocab] = useState(null)
   useEffect(() => {
     let alive = true
-    getSatVocab(loadToken()).then((s) => alive && setVocab(todayLoad(s, Date.now()))).catch(() => {})
+    getSatVocab(loadToken()).then((s) => alive && setVocab({ ...todayLoad(s, Date.now()), goal: s.goal })).catch(() => {})
     return () => {
       alive = false
     }
@@ -110,7 +113,6 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
 
   const due = today.dueErrors || { count: 0, items: [] }
   const exam = today.exam
-  const daily = today.daily || {}
 
   return (
     <div className="st-today">
@@ -150,6 +152,7 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
           </article>
         </div>
         <aside className="st-today__side">
+          <WeeklyCard onOpen={onWeekly} />
           {exam && (
             <div className="st-exam">
               <span className="st-rep__eyebrow">{t('sat.today.toExam')}</span>
@@ -176,15 +179,6 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
               <button type="button" className="st-hint__more" onClick={onReview}>{t('sat.today.reviewNow')}</button>
             </div>
           )}
-          {/* Нет в Figma: ежедневная проверка — адаптация прототипа daily.js */}
-          <button type="button" className="st-card st-side-card" onClick={onDaily}>
-            <span className="st-side-card__icon is-green"><TargetIcon size={20} /></span>
-            <span>
-              <b>{t('sat.daily.title')}</b>
-              <small>{daily.finished ? t('sat.daily.done', { c: String(daily.correct ?? 0), n: String(daily.total ?? 5) }) : t('sat.daily.todo')}</small>
-            </span>
-            <ChevronRightIcon size={18} />
-          </button>
           {today.checkpoint && (
             <div className="st-card st-side-card is-static">
               <span className="st-side-card__icon is-violet"><FlagIcon size={20} /></span>
@@ -209,6 +203,7 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
           </button>
         </aside>
       </div>
+      <DashboardStats vocab={vocab} onVocab={onVocab} onErrors={onErrors} onMocks={onMocks} />
     </div>
   )
 }

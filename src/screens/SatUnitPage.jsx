@@ -10,6 +10,9 @@ import { COURSE, clampPart, lessonByCode, neighbours, partTitle, sectionOf, unit
 import { pick } from '../sat/model/profile.js'
 import { ArrowForwardIcon, CheckCircleIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, InfoIcon } from '../ielts/icons.jsx'
 import { CalculateIcon, FullscreenExitIcon, FullscreenIcon, PenIcon } from '../sat/icons.jsx'
+import { SatBrand } from '../sat/ui/SatNav.jsx'
+import { useSatTheme } from '../sat/theme.js'
+import { errorText } from '../lib/examQuota.js'
 
 function readCode() {
   try {
@@ -112,6 +115,7 @@ function Parts({ code, doc, onPractice }) {
  */
 export default function SatUnitPage({ token, onNav }) {
   const { t, lang } = useI18n()
+  useSatTheme()
   const authToken = token || loadToken()
   const [code, setCode] = useState(() => readCode())
   const lesson = code ? lessonByCode(code) : null
@@ -173,7 +177,7 @@ export default function SatUnitPage({ token, onNav }) {
       setParams({ satSession: s.id, satUnit: lesson.code })
       onNav?.('sat-study')
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
       setBusy(false)
     }
   }
@@ -186,7 +190,7 @@ export default function SatUnitPage({ token, onNav }) {
     <div className="ih st st-unit">
       <header className="st-ob__top st-unit__top">
         <button type="button" className="ih-round" onClick={toHub} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <b className="st-ob__logo">just to study</b>
+        <SatBrand />
         <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t('sat.unit.chip')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={toHub}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
@@ -224,7 +228,6 @@ export default function SatUnitPage({ token, onNav }) {
       <button type="button" className="ih-cta st-unit__start" disabled={busy} onClick={start}>{label}<ArrowForwardIcon size={20} /></button>
     )
   }
-
   const side = (
     // инструменты под рукой, где бы ни была прокручена страница
     <aside className="st-unit__side" aria-label={t('sat.unit.tools')}>

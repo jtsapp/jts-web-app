@@ -6,6 +6,7 @@ import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, ExpandMoreIcon, ScheduleIcon } from '../../ielts/icons.jsx'
 import { BulbIcon, InsightsIcon, StopwatchIcon, TargetIcon, TickIcon } from '../icons.jsx'
 import { domainName, skillName } from '../names.js'
+import { errorText } from '../../lib/examQuota.js'
 
 const MODES = [
   { key: 'module', Icon: StopwatchIcon },
@@ -95,7 +96,7 @@ export default function PracticeTab({ onStart }) {
     try {
       await onStart(override || body)
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }

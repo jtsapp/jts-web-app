@@ -55,6 +55,8 @@ import SatRunPage from './screens/SatRunPage.jsx'
 import SatDiagnosticPage from './screens/SatDiagnosticPage.jsx'
 import SatStudyPage from './screens/SatStudyPage.jsx'
 import SatDailyPage from './screens/SatDailyPage.jsx'
+import SatWeeklyPage from './screens/SatWeeklyPage.jsx'
+import SatPapersPage from './screens/SatPapersPage.jsx'
 import SatMockPage from './screens/SatMockPage.jsx'
 import SatMockReviewPage from './screens/SatMockReviewPage.jsx'
 import SatUnitPage from './screens/SatUnitPage.jsx'
@@ -66,6 +68,7 @@ import IeltsRoutePage from './screens/IeltsRoutePage.jsx'
 import GeOnboardingPage from './screens/GeOnboardingPage.jsx'
 import GeRoutePage from './screens/GeRoutePage.jsx'
 import { syncLegacyGoal } from './ge/legacyGoal.js'
+import { ieltsAccountRedirect } from './lib/ieltsAccountRedirect.js'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
@@ -159,8 +162,10 @@ const PERSISTABLE_SCREENS = new Set([
   'sat-diagnostic',
   // учебная сессия держит себя в ?satSession= (или ?satLesson= до старта)
   'sat-study',
-  // ежедневная проверка — одна на день, свой экран без меню
+  // ежедневная проверка — одна на день, свой экран без меню (с 14.10.2026 из навигации убрана, диплинк остался)
   'sat-daily',
+  // недельный тест (SAT-SYNC-PLAN B1) и past papers во всё окно (B6)
+  'sat-weekly', 'sat-papers',
   // пробник и его разбор держат прохождение в ?satMock= (фаза — на сервере)
   'sat-mock',
   'sat-mock-review',
@@ -489,9 +494,8 @@ export default function App() {
   const [phoneGate, setPhoneGate] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
-  // Аккаунт IELTS (дизайн «IELTS new»): интерфейса General English у такого ученика нет — «Повторение» (тропа
-  // kingdom) недоступно и по диплинку, и как стартовый экран; вместо него открывается раздел IELTS. Сайдбар прячет
-  // пункт сам (Sidebar.jsx), здесь — защита от прямого адреса.
+  // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
+  // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
   const [ieltsAccount, setIeltsAccount] = useState(false)
   useEffect(() => {
     if (!token) {
@@ -507,11 +511,12 @@ export default function App() {
     }
   }, [token])
   useEffect(() => {
-    if (ieltsAccount && typeof screen === 'string' && screen.startsWith('kingdom')) setScreen('ielts')
+    // «Повторение» (kingdom*) у ученика IELTS / SAT больше не уводит в IELTS — пункт вернулся в меню (SAT-SYNC-PLAN E3).
     // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
     // его старт — онбординг и диагностика IELTS, их зовёт «Главная» (IeltsHomeCard). Признак аккаунта приходит
-    // после входа отдельным запросом, поэтому поправляем уже открытый экран.
-    if (ieltsAccount && screen === 'test-intro') setScreen('home')
+    // после входа отдельным запросом, поэтому поправляем уже открытый экран. Правило — lib/ieltsAccountRedirect.js.
+    const to = ieltsAccountRedirect(ieltsAccount, screen)
+    if (to) setScreen(to)
   }, [ieltsAccount, screen])
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
@@ -1552,7 +1557,7 @@ export default function App() {
     else if (key === 'ielts-onboarding' || key === 'ielts-diagnostic' || key === 'ielts-route') { setIeltsRunTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-diagnostic-result') { setIeltsReviewTarget(payload || null); setScreen(key) }
     else if (key === 'ielts-mock') { if (payload?.mockId || payload?.sessionId) { setIeltsMockTarget(payload); setScreen('ielts-mock') } }
-    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
+    else if (key === 'sat' || key === 'sat-onboarding' || key === 'sat-run' || key === 'sat-diagnostic' || key === 'sat-study' || key === 'sat-daily' || key === 'sat-weekly' || key === 'sat-papers' || key === 'sat-mock' || key === 'sat-mock-review' || key === 'sat-unit' || key === 'sat-pricing' || key === 'ielts-pricing') setScreen(key)
     else if (key === 'ielts-reading-review') { if (payload?.attemptId) { setIeltsReviewTarget(payload); setScreen('ielts-reading-review') } }
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -2167,6 +2172,10 @@ export default function App() {
       return <SatRunPage onNav={handleNav} />
     case 'sat-daily':
       return <SatDailyPage token={token} onNav={handleNav} />
+    case 'sat-weekly':
+      return <SatWeeklyPage token={token} onNav={handleNav} />
+    case 'sat-papers':
+      return <SatPapersPage token={token} onNav={handleNav} />
     case 'sat-mock':
       return <SatMockPage token={token} onNav={handleNav} />
     case 'sat-mock-review':

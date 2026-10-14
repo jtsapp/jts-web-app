@@ -74,7 +74,9 @@ export default function MaterialsTab({ onOpen }) {
               let caption
               if (l.hard) caption = t('sat.mat.hardCaption')
               else if (p?.questions) caption = `${pick(unit?.name, lang)} · ${plural(t, lang, 'sat.q', p.questions)}`
-              else caption = `${pick(unit?.name, lang)} · ${t('sat.mat.setSoon')}`
+              // 24 набора юнитов загружены (SAT-SYNC-PLAN A4) — заглушку «набор готовится» больше не печатаем; пока
+              // счёт не пришёл, строка — просто имя раздела
+              else caption = pick(unit?.name, lang)
               return (
                 <li key={l.code}>
                   <button type="button" className={`st-mat__unit is-${s}`} onClick={() => onOpen(l.code)}>

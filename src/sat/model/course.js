@@ -91,3 +91,32 @@ export function partTitle(title) {
 export function withN(text, n) {
   return String(text || '').replace(/#N\b/g, `#${n}`)
 }
+
+/** Номер теста Bluebook из названия («Official Bluebook Practice Test 6» → 6); последний тест без номера — null. */
+export function bluebookNo(test) {
+  const m = /Practice Test (\d+)/i.exec(test?.name?.en || '')
+  return m ? Number(m[1]) : null
+}
+
+/**
+ * Остановки роудмапа курса (B8, прототип roadmap.js после 7934498a / d55de44c / 7e01922d): диагностика (Bluebook
+ * Practice Test 6) → месяц со своими темами → контрольная точка (тест Bluebook, которым месяц закрывается) → … Без
+ * недельного списка и без кнопок «Материалы» / «Пробники» на контрольных точках — только темы со ссылкой на юнит.
+ * Названия и номера тестов — из course.json (programme прототипа), экран их не выдумывает.
+ */
+export function roadStops(course = COURSE) {
+  const out = []
+  const first = testBefore(course)
+  if (first) out.push({ kind: 'diagnostic', id: first.id, test: first, bluebook: bluebookNo(first) })
+  for (const ph of course.phases) {
+    out.push({ kind: 'month', id: ph.id, phase: ph, lessons: ordered(course).filter((l) => l.n >= ph.from && l.n <= ph.to) })
+    const test = course.officialTests.find((x) => x.after === ph.id)
+    if (test) out.push({ kind: 'checkpoint', id: test.id, test, bluebook: bluebookNo(test) })
+  }
+  return out
+}
+
+/** Сколько юнитов месяца пройдено — счёт на свёрнутой строке месяца. */
+export function monthDone(stop, st = {}) {
+  return (stop.lessons || []).filter((l) => st[l.code] === 'done').length
+}

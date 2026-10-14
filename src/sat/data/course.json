@@ -86,17 +86,17 @@
    }
   },
   {
-   "id": "ptLatest",
+   "id": "pt9",
    "after": "month2",
    "name": {
-    "en": "The latest official Bluebook practice test",
-    "ru": "Последний официальный practice test в Bluebook",
-    "kk": "Bluebook-тағы ең соңғы ресми practice test"
+    "en": "Official Bluebook Practice Test 9",
+    "ru": "Официальный Bluebook Practice Test 9",
+    "kk": "Ресми Bluebook Practice Test 9"
    },
    "note": {
-    "en": "The progress test that closes Month 2: the newest full-length test in Bluebook. Take it in one sitting under exam conditions and review it the next day.",
-    "ru": "Прогресс-тест, закрывающий месяц 2: самый новый полный тест в Bluebook. Пройдите его за один присест в условиях экзамена и разберите на следующий день.",
-    "kk": "2-айды жабатын прогресс тест: Bluebook-тағы ең жаңа толық тест. Оны бір отырыста емтихан жағдайында тапсырып, келесі күні талдаңыз."
+    "en": "The progress test that closes Month 2. Take it in one sitting under exam conditions and review it the next day.",
+    "ru": "Прогресс-тест, закрывающий месяц 2. Пройдите его за один присест в условиях экзамена и разберите на следующий день.",
+    "kk": "2-айды жабатын прогресс тест. Оны бір отырыста емтихан жағдайында тапсырып, келесі күні талдаңыз."
    }
   }
  ],
@@ -114,9 +114,9 @@
    "n": 2,
    "afterLesson": 24,
    "name": {
-    "en": "Latest Bluebook practice test — end of Month 2",
-    "ru": "Последний Bluebook practice test — конец месяца 2",
-    "kk": "Bluebook-тағы соңғы practice test — 2-айдың соңы"
+    "en": "Bluebook Practice Test 9 — end of Month 2",
+    "ru": "Bluebook Practice Test 9 — конец месяца 2",
+    "kk": "Bluebook Practice Test 9 — 2-айдың соңы"
    }
   }
  ],
@@ -335,9 +335,9 @@
     "kk": "Контекстегі сөздер"
    },
    "skills": {
-    "en": "The four-step method, two special cases, word parts as a backup tool",
-    "ru": "Метод из четырёх шагов, два особых случая, части слова как запасной инструмент",
-    "kk": "Төрт қадамдық әдіс, екі ерекше жағдай, сөз бөліктері — қосалқы құрал"
+    "en": "Context, connotation, clue-finding, elimination, word parts",
+    "ru": "Контекст, коннотация, поиск подсказки, исключение вариантов, части слова",
+    "kk": "Контекст, коннотация, белгі табу, нұсқаларды алып тастау, сөз бөліктері"
    }
   },
   {
@@ -348,12 +348,12 @@
    "t": {
     "en": "Text Structure and Purpose",
     "ru": "Структура и цель текста",
-    "kk": "Мәтін құрылымы және мақсаты"
+    "kk": "Мәтіннің құрылымы мен мақсаты"
    },
    "skills": {
-    "en": "The job-label method; purpose, structure and function questions",
-    "ru": "Метод меток-функций; вопросы о цели, структуре и функции",
-    "kk": "Қызмет-белгі әдісі; мақсат, құрылым және қызмет туралы сұрақтар"
+    "en": "Main purpose, overall structure, function of a sentence, strict choice checking",
+    "ru": "Главная цель, общая структура, функция предложения, строгая проверка вариантов",
+    "kk": "Негізгі мақсат, жалпы құрылым, сөйлемнің қызметі, нұсқаларды қатаң тексеру"
    }
   },
   {
@@ -367,9 +367,9 @@
     "kk": "Бір айнымалысы бар сызықтық теңдеулер мен теңсіздіктер"
    },
    "skills": {
-    "en": "The solving sequence, no solution and infinitely many, word problems, the Desmos shortcut",
-    "ru": "Порядок решения, нет решений и бесконечно много, текстовые задачи, приём с Desmos",
-    "kk": "Шешу реті, шешімі жоқ және шексіз көп, мәтінді есептер, Desmos тәсілі"
+    "en": "Solving linear equations, inequalities, expressions, solution counts, word problems",
+    "ru": "Решение линейных уравнений, неравенств, выражений, число решений, текстовые задачи",
+    "kk": "Сызықтық теңдеулер мен теңсіздіктер, өрнектер, шешім саны, мәтіндік есептер"
    }
   },
   {
@@ -379,13 +379,13 @@
    "week": 2,
    "t": {
     "en": "Cross-Text Connections",
-    "ru": "Связи между двумя текстами",
-    "kk": "Екі мәтін арасындағы байланыс"
+    "ru": "Связи между текстами",
+    "kk": "Мәтіндер арасындағы байланыс"
    },
    "skills": {
-    "en": "The five relationships between two texts, the method, the traps",
-    "ru": "Пять типов отношений между текстами, метод, ловушки",
-    "kk": "Екі мәтін арасындағы бес қатынас, әдіс, тұзақтар"
+    "en": "Point of view, agreement, disagreement, qualification, cross-text response",
+    "ru": "Точка зрения, согласие, несогласие, оговорка, реакция одного текста на другой",
+    "kk": "Көзқарас, келісу, келіспеу, шектеу, бір мәтіннің екіншісіне жауабы"
    }
   },
   {
@@ -396,12 +396,12 @@
    "t": {
     "en": "Linear Equations in Two Variables, Slope, and Linear Functions",
     "ru": "Линейные уравнения с двумя переменными, наклон и линейные функции",
-    "kk": "Екі айнымалысы бар сызықтық теңдеулер, еңіс және сызықтық функциялар"
+    "kk": "Екі айнымалысы бар сызықтық теңдеулер, көлбеулік және сызықтық функциялар"
    },
    "skills": {
-    "en": "Slope, points on a line, what the equation means in context, the Desmos workflow",
-    "ru": "Наклон, точки на прямой, смысл уравнения в контексте, работа в Desmos",
-    "kk": "Еңіс, түзудегі нүктелер, теңдеудің контексттегі мағынасы, Desmos-пен жұмыс"
+    "en": "Slope, intercepts, line equations, parallel/perpendicular lines, interpretation in context",
+    "ru": "Наклон, пересечения с осями, уравнения прямой, параллельность/перпендикулярность, смысл в контексте",
+    "kk": "Көлбеулік, осьтермен қиылысу, түзу теңдеулері, параллель/перпендикуляр түзулер, контекстегі мағына"
    }
   },
   {
@@ -415,9 +415,9 @@
     "kk": "Сызықтық теңдеулер жүйелері"
    },
    "skills": {
-    "en": "Three algebraic methods, special-answer questions, the Desmos method, word problems",
-    "ru": "Три алгебраических метода, вопросы об особых ответах, метод Desmos, текстовые задачи",
-    "kk": "Үш алгебралық әдіс, ерекше жауап сұрақтары, Desmos әдісі, мәтінді есептер"
+    "en": "Substitution, elimination, number of solutions, Desmos intersections, word problems",
+    "ru": "Подстановка, исключение, число решений, пересечения в Desmos, текстовые задачи",
+    "kk": "Алмастыру, жою, шешім саны, Desmos-та қиылысу, мәтіндік есептер"
    }
   },
   {
@@ -427,13 +427,13 @@
    "week": 3,
    "t": {
     "en": "Central Ideas and Details",
-    "ru": "Главная мысль и детали",
-    "kk": "Негізгі ой және детальдар"
+    "ru": "Главные идеи и детали",
+    "kk": "Негізгі идеялар мен детальдар"
    },
    "skills": {
-    "en": "The main idea method, the detail method, two different reading rhythms",
-    "ru": "Метод главной мысли, метод деталей, два разных ритма чтения",
-    "kk": "Негізгі ой әдісі, деталь әдісі, оқудың екі түрлі ырғағы"
+    "en": "Main idea, detail questions, prediction, passage keywords, distortion traps",
+    "ru": "Главная идея, вопросы на детали, прогноз ответа, ключевые слова, ловушки-искажения",
+    "kk": "Негізгі идея, деталь сұрақтары, жауапты болжау, кілт сөздер, бұрмалау тұзақтары"
    }
   },
   {
@@ -443,13 +443,13 @@
    "week": 3,
    "t": {
     "en": "Command of Evidence: Textual",
-    "ru": "Доказательства из текста",
-    "kk": "Мәтіннен дәлел"
+    "ru": "Работа с текстовыми доказательствами",
+    "kk": "Мәтіндік дәлелдермен жұмыс"
    },
    "skills": {
-    "en": "Support, weaken and illustrate questions; the method and common patterns",
-    "ru": "Вопросы «подтвердить», «ослабить», «проиллюстрировать»; метод и типичные схемы",
-    "kk": "«Қолдау», «әлсірету», «мысалмен көрсету» сұрақтары; әдіс және жиі үлгілер"
+    "en": "Claims, supporting or weakening evidence, quotations, scope and direction",
+    "ru": "Утверждения, усиливающие и ослабляющие доказательства, цитаты, охват и направление",
+    "kk": "Тұжырымдар, қолдайтын/әлсірететін дәлелдер, дәйексөздер, ауқым мен бағыт"
    }
   },
   {
@@ -459,13 +459,13 @@
    "week": 3,
    "t": {
     "en": "Quadratics Part 1",
-    "ru": "Квадратичные функции, часть 1",
-    "kk": "Квадраттық функциялар, 1-бөлім"
+    "ru": "Квадратные уравнения, часть 1",
+    "kk": "Квадрат теңдеулер, 1-бөлім"
    },
    "skills": {
-    "en": "The three forms, factoring, polynomial operations, reading a graph or table, Desmos",
-    "ru": "Три формы, разложение на множители, действия с многочленами, график и таблица, Desmos",
-    "kk": "Үш түрі, көбейткішке жіктеу, көпмүшелермен амалдар, график пен кесте, Desmos"
+    "en": "Quadratic forms, factoring, zero product property, polynomial operations, graphs",
+    "ru": "Формы квадратных выражений, разложение на множители, нулевое произведение, операции с многочленами, графики",
+    "kk": "Квадрат өрнек түрлері, көбейткіштерге жіктеу, нөлдік көбейтінді, көпмүшелермен амалдар, графиктер"
    }
   },
   {
@@ -475,13 +475,13 @@
    "week": 4,
    "t": {
     "en": "Command of Evidence: Quantitative",
-    "ru": "Доказательства из данных",
-    "kk": "Деректен дәлел"
+    "ru": "Работа с количественными доказательствами",
+    "kk": "Сандық дәлелдермен жұмыс"
    },
    "skills": {
-    "en": "Tables and graphs as evidence; the method, the traps, a worked example",
-    "ru": "Таблицы и графики как доказательство; метод, ловушки, разобранный пример",
-    "kk": "Кестелер мен графиктер дәлел ретінде; әдіс, тұзақтар, талданған мысал"
+    "en": "Tables and graphs, claim matching, data accuracy, relevant evidence, trends",
+    "ru": "Таблицы и графики, связь с утверждением, точность данных, релевантные доказательства, тренды",
+    "kk": "Кестелер мен графиктер, тұжырыммен сәйкестік, дерек дәлдігі, релевант дәлел, трендтер"
    }
   },
   {
@@ -491,13 +491,13 @@
    "week": 4,
    "t": {
     "en": "Quadratics Part 2",
-    "ru": "Квадратичные функции, часть 2",
-    "kk": "Квадраттық функциялар, 2-бөлім"
+    "ru": "Квадратные уравнения, часть 2",
+    "kk": "Квадрат теңдеулер, 2-бөлім"
    },
    "skills": {
-    "en": "The discriminant, completing the square, the vertex, nonlinear systems, Desmos for hard questions",
-    "ru": "Дискриминант, выделение полного квадрата, вершина, нелинейные системы, Desmos для сложных задач",
-    "kk": "Дискриминант, толық квадрат бөлу, төбе, сызықтық емес жүйелер, күрделі есептерге Desmos"
+    "en": "Quadratic formula, discriminant, completing the square, vertex, line-parabola systems",
+    "ru": "Квадратная формула, дискриминант, выделение полного квадрата, вершина, системы прямая-парабола",
+    "kk": "Квадрат формуласы, дискриминант, толық квадратқа келтіру, төбе, түзу-парабола жүйелері"
    }
   },
   {
@@ -507,13 +507,13 @@
    "week": 4,
    "t": {
     "en": "Exponentials and Radicals",
-    "ru": "Показательные функции и корни",
-    "kk": "Көрсеткіштік функциялар және түбірлер"
+    "ru": "Показательные выражения и радикалы",
+    "kk": "Көрсеткіштік өрнектер мен түбірлер"
    },
    "skills": {
-    "en": "Percent change in the base, growth and decay, radicals, Desmos applications",
-    "ru": "Процентное изменение в основании, рост и убывание, корни, применение Desmos",
-    "kk": "Негіздегі пайыздық өзгеріс, өсу мен кему, түбірлер, Desmos қолдану"
+    "en": "Exponent rules, rational exponents, radicals, radical equations, growth and decay",
+    "ru": "Правила степеней, рациональные показатели, радикалы, иррациональные уравнения, рост и убывание",
+    "kk": "Дәреже ережелері, рационал көрсеткіштер, түбірлер, түбірлі теңдеулер, өсу мен кему"
    }
   },
   {
@@ -524,12 +524,12 @@
    "t": {
     "en": "Inferences",
     "ru": "Выводы",
-    "kk": "Қорытындылар"
+    "kk": "Логикалық қорытындылар"
    },
    "skills": {
-    "en": "The method and the four ways a choice overshoots the text",
-    "ru": "Метод и четыре способа, которыми вариант выходит за рамки текста",
-    "kk": "Әдіс және нұсқаның мәтіннен асып кетуінің төрт жолы"
+    "en": "Premises and conclusions, logical gaps, modest inference, scope and qualifier traps",
+    "ru": "Посылки и выводы, логические пробелы, умеренный вывод, ловушки охвата и усилителей",
+    "kk": "Алғышарттар мен қорытынды, логикалық бос орын, сақ қорытынды, ауқым мен күшейткіш тұзақтары"
    }
   },
   {
@@ -543,9 +543,9 @@
     "kk": "Сөйлем шекаралары, 1-бөлім"
    },
    "skills": {
-    "en": "The connector menu, the error catalog, the method",
-    "ru": "Меню соединителей, каталог ошибок, метод",
-    "kk": "Байланыстырғыштар мәзірі, қателер каталогы, әдіс"
+    "en": "Independent/dependent clauses, sentence connectors, colons, comma splices, run-ons",
+    "ru": "Независимые/зависимые части, соединение предложений, двоеточие, comma splice, слитные предложения",
+    "kk": "Тәуелсіз/тәуелді сөйлемдер, сөйлемдерді байланыстыру, қос нүкте, comma splice, run-on қателері"
    }
   },
   {
@@ -555,13 +555,13 @@
    "week": 5,
    "t": {
     "en": "Ratios, Rates, and Percentages",
-    "ru": "Пропорции, скорости и проценты",
+    "ru": "Отношения, скорости и проценты",
     "kk": "Қатынастар, жылдамдықтар және пайыздар"
    },
    "skills": {
-    "en": "The percent multiplier method, ratios and proportions, the Desmos angle",
-    "ru": "Метод процентного множителя, отношения и пропорции, Desmos",
-    "kk": "Пайыздық көбейткіш әдісі, қатынастар мен пропорциялар, Desmos"
+    "en": "Ratios, proportions, unit rates, conversions, percentages, percent change",
+    "ru": "Отношения, пропорции, единичные скорости, переводы единиц, проценты, процентное изменение",
+    "kk": "Қатынастар, пропорциялар, бірлік жылдамдықтар, бірлік ауыстыру, пайыздар, пайыздық өзгеріс"
    }
   },
   {
@@ -575,9 +575,9 @@
     "kk": "Сөйлем шекаралары, 2-бөлім"
    },
    "skills": {
-    "en": "Colons, dashes and the other new tools; the trap patterns",
-    "ru": "Двоеточия, тире и другие новые инструменты; типичные ловушки",
-    "kk": "Қос нүкте, сызықша және басқа жаңа құралдар; тұзақ үлгілері"
+    "en": "Essential/nonessential information, commas, dashes, semicolons, colons, punctuation roles",
+    "ru": "Обязательная/добавочная информация, запятые, тире, точки с запятой, двоеточия, функции пунктуации",
+    "kk": "Маңызды/қосымша ақпарат, үтір, сызықша, нүктелі үтір, қос нүкте, тыныс белгілерінің қызметі"
    }
   },
   {
@@ -587,13 +587,13 @@
    "week": 6,
    "t": {
     "en": "Statistics, Data Displays, and Probability",
-    "ru": "Статистика, представление данных и вероятность",
+    "ru": "Статистика, визуализация данных и вероятность",
     "kk": "Статистика, деректерді көрсету және ықтималдық"
    },
    "skills": {
-    "en": "Centre and spread, displays, two-way tables, lines of fit, margin of error and study design",
-    "ru": "Среднее и разброс, диаграммы, таблицы сопряжённости, линии тренда, погрешность и дизайн исследования",
-    "kk": "Орта мән мен шашырау, диаграммалар, екі өлшемді кестелер, тренд сызығы, қателік және зерттеу дизайны"
+    "en": "Mean and median, data displays, probability, scatterplots, sampling, study design",
+    "ru": "Среднее и медиана, визуализация данных, вероятность, диаграммы рассеяния, выборка, дизайн исследования",
+    "kk": "Орташа мен медиана, деректерді көрсету, ықтималдық, шашырау диаграммасы, іріктеу, зерттеу дизайны"
    }
   },
   {
@@ -603,13 +603,13 @@
    "week": 6,
    "t": {
     "en": "Linear Inequalities, Absolute Value, and Desmos Shading",
-    "ru": "Линейные неравенства, модуль и штриховка в Desmos",
-    "kk": "Сызықтық теңсіздіктер, модуль және Desmos-тағы бояу"
+    "ru": "Линейные неравенства, модуль и области в Desmos",
+    "kk": "Сызықтық теңсіздіктер, модуль және Desmos-та аймақтарды бояу"
    },
    "skills": {
-    "en": "Systems of inequalities, the Desmos method, inequalities in context, absolute value",
-    "ru": "Системы неравенств, метод Desmos, неравенства в контексте, модуль",
-    "kk": "Теңсіздіктер жүйесі, Desmos әдісі, контексттегі теңсіздіктер, модуль"
+    "en": "Inequalities, systems, shaded regions, constraints, absolute value equations and inequalities",
+    "ru": "Неравенства, системы, области решений, ограничения, уравнения и неравенства с модулем",
+    "kk": "Теңсіздіктер, жүйелер, шешім аймақтары, шектеулер, модульді теңдеулер мен теңсіздіктер"
    }
   },
   {
@@ -618,14 +618,14 @@
    "n": 19,
    "week": 7,
    "t": {
-    "en": "Form, Structure, and Sense: Verbs, Pronouns, Modifiers, Possessives",
-    "ru": "Form, Structure, and Sense: глаголы, местоимения, определения, притяжательные",
-    "kk": "Form, Structure, and Sense: етістіктер, есімдіктер, анықтауыштар, тәуелдік"
+    "en": "Form, Structure, and Sense",
+    "ru": "Форма, структура и смысл",
+    "kk": "Форма, құрылым және мағына"
    },
    "skills": {
-    "en": "Subject–verb agreement, verb tense, pronouns, modifiers, possessives and apostrophes, one unified method",
-    "ru": "Согласование подлежащего и сказуемого, время глагола, местоимения, определения, притяжательные формы и апострофы, единый метод",
-    "kk": "Бастауыш пен баяндауыштың қиысуы, етістік шағы, есімдіктер, анықтауыштар, тәуелдік формалар мен апострофтар, бірыңғай әдіс"
+    "en": "Verb agreement and tense, pronouns, modifiers, plurals, possessives",
+    "ru": "Согласование и время глагола, местоимения, модификаторы, множественное число, притяжательные формы",
+    "kk": "Етістік сәйкестігі мен шағы, есімдіктер, анықтауыштар, көпше және тәуелдік формалар"
    }
   },
   {
@@ -639,9 +639,9 @@
     "kk": "Геометрия, 1-бөлім: түзулер, бұрыштар, үшбұрыштар, аудан және көлем"
    },
    "skills": {
-    "en": "The reference sheet, lines and angles, similar triangles, area and scaling, volume",
-    "ru": "Справочный лист, прямые и углы, подобные треугольники, площадь и масштаб, объём",
-    "kk": "Анықтамалық парақ, түзулер мен бұрыштар, ұқсас үшбұрыштар, аудан және масштаб, көлем"
+    "en": "Angle rules, triangles, similarity, area, coordinate geometry, volume, diagrams",
+    "ru": "Правила углов, треугольники, подобие, площадь, координатная геометрия, объём, диаграммы",
+    "kk": "Бұрыш ережелері, үшбұрыштар, ұқсастық, аудан, координаталық геометрия, көлем, сызбалар"
    }
   },
   {
@@ -655,9 +655,9 @@
     "kk": "Функциялар, көпмүшелер және рационал теңдеулер"
    },
    "skills": {
-    "en": "Evaluation, composites, domain and range, transformations, polynomial zeros, rational equations",
-    "ru": "Вычисление, композиция, область определения и значений, преобразования, нули многочленов, рациональные уравнения",
-    "kk": "Мәнін есептеу, композиция, анықталу және мәндер облысы, түрлендірулер, көпмүше нөлдері, рационал теңдеулер"
+    "en": "Function notation, transformations, polynomial zeros, rational functions, rational equations",
+    "ru": "Запись функций, преобразования, нули многочленов, рациональные функции, рациональные уравнения",
+    "kk": "Функция жазылуы, түрлендірулер, көпмүше нөлдері, рационал функциялар, рационал теңдеулер"
    }
   },
   {
@@ -671,9 +671,9 @@
     "kk": "Риторикалық синтез"
    },
    "skills": {
-    "en": "The method and the common goal types",
-    "ru": "Метод и типичные виды целей",
-    "kk": "Әдіс және мақсаттың жиі түрлері"
+    "en": "Goal-first reading, selecting relevant notes, accuracy checking, audience and two-part goals",
+    "ru": "Чтение от цели, отбор релевантных заметок, проверка точности, аудитория и двухчастные цели",
+    "kk": "Мақсаттан бастап оқу, релевант жазбаларды таңдау, дәлдікті тексеру, аудитория және екі бөлікті мақсаттар"
    }
   },
   {
@@ -683,13 +683,13 @@
    "week": 8,
    "t": {
     "en": "Transitions",
-    "ru": "Связки",
-    "kk": "Байланыстырғыштар"
+    "ru": "Переходы",
+    "kk": "Логикалық байланыстырғыштар"
    },
    "skills": {
-    "en": "The method and the two classic traps",
-    "ru": "Метод и две классические ловушки",
-    "kk": "Әдіс және екі классикалық тұзақ"
+    "en": "Continuation, contrast, cause and effect, exact transition job, logical direction",
+    "ru": "Продолжение, контраст, причина и следствие, точная функция перехода, логическое направление",
+    "kk": "Жалғастыру, қарама-қарсылық, себеп-салдар, жалғаушының нақты қызметі, логикалық бағыт"
    }
   },
   {
@@ -703,9 +703,9 @@
     "kk": "Геометрия, 2-бөлім: тікбұрышты үшбұрыштар, тригонометрия, шеңберлер"
    },
    "skills": {
-    "en": "Right triangles, trigonometry, circle equations, arcs, sectors and radians, circle theorems, Desmos",
-    "ru": "Прямоугольные треугольники, тригонометрия, уравнения окружности, дуги, секторы и радианы, теоремы об окружности, Desmos",
-    "kk": "Тікбұрышты үшбұрыштар, тригонометрия, шеңбер теңдеулері, доғалар, секторлар және радиандар, шеңбер теоремалары, Desmos"
+    "en": "Right triangles, trigonometry, circle equations, arcs and sectors, circle theorems",
+    "ru": "Прямоугольные треугольники, тригонометрия, уравнения окружности, дуги и сектора, теоремы окружности",
+    "kk": "Тікбұрышты үшбұрыштар, тригонометрия, шеңбер теңдеулері, доғалар мен секторлар, шеңбер теоремалары"
    }
   },
   {
@@ -718,11 +718,6 @@
     "en": "R&W Hard Module A",
     "ru": "R&W: сложный модуль A",
     "kk": "R&W: күрделі модуль A"
-   },
-   "skills": {
-    "en": "Baseline hard module. Focus on Words in Context and Text Structure (Classes 1–2).",
-    "ru": "Стартовый сложный модуль. Фокус: Words in Context и структура текста (уроки 1–2).",
-    "kk": "Бастапқы күрделі модуль. Назарда: Words in Context және мәтін құрылымы (1–2 сабақ)."
    }
   },
   {
@@ -735,11 +730,6 @@
     "en": "Math Hard Module A",
     "ru": "Math: сложный модуль A",
     "kk": "Math: күрделі модуль A"
-   },
-   "skills": {
-    "en": "Baseline hard module. Focus on linear equations, systems and inequalities (Classes 3, 5, 6, 18).",
-    "ru": "Стартовый сложный модуль. Фокус: линейные уравнения, системы и неравенства (уроки 3, 5, 6, 18).",
-    "kk": "Бастапқы күрделі модуль. Назарда: сызықтық теңдеулер, жүйелер және теңсіздіктер (3, 5, 6, 18 сабақ)."
    }
   },
   {
@@ -752,11 +742,6 @@
     "en": "R&W Hard Module B",
     "ru": "R&W: сложный модуль B",
     "kk": "R&W: күрделі модуль B"
-   },
-   "skills": {
-    "en": "Command of Evidence: textual and quantitative (Classes 8, 10).",
-    "ru": "Доказательства из текста и из данных (уроки 8, 10).",
-    "kk": "Мәтіннен және деректен дәлел (8, 10 сабақ)."
    }
   },
   {
@@ -769,11 +754,6 @@
     "en": "Math Hard Module B",
     "ru": "Math: сложный модуль B",
     "kk": "Math: күрделі модуль B"
-   },
-   "skills": {
-    "en": "Advanced Math: quadratics, equivalent expressions, exponentials, radicals, functions, polynomials (Classes 9, 11, 12, 21).",
-    "ru": "Advanced Math: квадратичные, равносильные выражения, показательные, корни, функции, многочлены (уроки 9, 11, 12, 21).",
-    "kk": "Advanced Math: квадраттық, тең өрнектер, көрсеткіштік, түбірлер, функциялар, көпмүшелер (9, 11, 12, 21 сабақ)."
    }
   },
   {
@@ -786,11 +766,6 @@
     "en": "R&W Hard Module C",
     "ru": "R&W: сложный модуль C",
     "kk": "R&W: күрделі модуль C"
-   },
-   "skills": {
-    "en": "Inferences, Cross-Text, Central Ideas (Classes 4, 7, 13).",
-    "ru": "Выводы, два текста, главная мысль (уроки 4, 7, 13).",
-    "kk": "Қорытындылар, екі мәтін, негізгі ой (4, 7, 13 сабақ)."
    }
   },
   {
@@ -803,11 +778,6 @@
     "en": "Math Hard Module C",
     "ru": "Math: сложный модуль C",
     "kk": "Math: күрделі модуль C"
-   },
-   "skills": {
-    "en": "Ratios, percents, statistics, probability, margin of error (Classes 15, 17).",
-    "ru": "Пропорции, проценты, статистика, вероятность, погрешность (уроки 15, 17).",
-    "kk": "Қатынастар, пайыздар, статистика, ықтималдық, қателік (15, 17 сабақ)."
    }
   },
   {
@@ -820,11 +790,6 @@
     "en": "R&W Hard Module D",
     "ru": "R&W: сложный модуль D",
     "kk": "R&W: күрделі модуль D"
-   },
-   "skills": {
-    "en": "Boundaries, Form/Structure/Sense, Synthesis, Transitions (Classes 14, 16, 19, 22, 23).",
-    "ru": "Границы предложений, Form/Structure/Sense, синтез, связки (уроки 14, 16, 19, 22, 23).",
-    "kk": "Сөйлем шекаралары, Form/Structure/Sense, синтез, байланыстырғыштар (14, 16, 19, 22, 23 сабақ)."
    }
   },
   {
@@ -837,11 +802,6 @@
     "en": "Math Hard Module D",
     "ru": "Math: сложный модуль D",
     "kk": "Math: күрделі модуль D"
-   },
-   "skills": {
-    "en": "Geometry, circles, trigonometry (Classes 20, 24; completing the square from Class 11).",
-    "ru": "Геометрия, окружности, тригонометрия (уроки 20, 24; полный квадрат из урока 11).",
-    "kk": "Геометрия, шеңберлер, тригонометрия (20, 24 сабақ; толық квадрат — 11 сабақтан)."
    }
   },
   {
@@ -854,11 +814,6 @@
     "en": "R&W Hard Module E",
     "ru": "R&W: сложный модуль E",
     "kk": "R&W: күрделі модуль E"
-   },
-   "skills": {
-    "en": "Mixed, hardest-difficulty only. Target: 30 min finish.",
-    "ru": "Смешанный, только самые сложные. Цель: уложиться в 30 минут.",
-    "kk": "Аралас, тек ең күрделілері. Мақсат: 30 минутта бітіру."
    }
   },
   {
@@ -871,11 +826,6 @@
     "en": "Math Hard Module E",
     "ru": "Math: сложный модуль E",
     "kk": "Math: күрделі модуль E"
-   },
-   "skills": {
-    "en": "Mixed, hardest-difficulty only, student-produced responses.",
-    "ru": "Смешанный, только самые сложные, задания с вводом ответа.",
-    "kk": "Аралас, тек ең күрделілері, жауабын өзі енгізетін тапсырмалар."
    }
   },
   {
@@ -888,11 +838,6 @@
     "en": "Full Hard Simulation I",
     "ru": "Полная сложная симуляция I",
     "kk": "Толық күрделі симуляция I"
-   },
-   "skills": {
-    "en": "Full adaptive test under real conditions (Bluebook).",
-    "ru": "Полный адаптивный тест в реальных условиях (Bluebook).",
-    "kk": "Нақты жағдайдағы толық адаптивті тест (Bluebook)."
    }
   },
   {
@@ -905,110 +850,105 @@
     "en": "Full Hard Simulation II",
     "ru": "Полная сложная симуляция II",
     "kk": "Толық күрделі симуляция II"
-   },
-   "skills": {
-    "en": "Final simulation one week before test day.",
-    "ru": "Финальная симуляция за неделю до экзамена.",
-    "kk": "Емтиханға бір апта қалғандағы соңғы симуляция."
    }
   }
  ],
  "teach": {
   "U1": {
-   "parts": 5,
-   "minutes": 18
+   "parts": 10,
+   "minutes": 0
   },
   "U2": {
-   "parts": 4,
-   "minutes": 18
+   "parts": 9,
+   "minutes": 0
   },
   "U3": {
-   "parts": 5,
-   "minutes": 18
+   "parts": 10,
+   "minutes": 0
   },
   "U4": {
-   "parts": 4,
-   "minutes": 17
+   "parts": 9,
+   "minutes": 0
   },
   "U5": {
-   "parts": 5,
-   "minutes": 21
+   "parts": 11,
+   "minutes": 0
   },
   "U6": {
-   "parts": 5,
-   "minutes": 20
+   "parts": 9,
+   "minutes": 0
   },
   "U7": {
-   "parts": 4,
-   "minutes": 16
+   "parts": 7,
+   "minutes": 0
   },
   "U8": {
-   "parts": 4,
-   "minutes": 17
+   "parts": 7,
+   "minutes": 0
   },
   "U9": {
-   "parts": 6,
-   "minutes": 27
+   "parts": 7,
+   "minutes": 0
   },
   "U10": {
-   "parts": 4,
-   "minutes": 18
+   "parts": 7,
+   "minutes": 0
   },
   "U11": {
-   "parts": 5,
-   "minutes": 24
+   "parts": 8,
+   "minutes": 0
   },
   "U12": {
-   "parts": 5,
-   "minutes": 21
+   "parts": 8,
+   "minutes": 0
   },
   "U13": {
-   "parts": 4,
-   "minutes": 18
+   "parts": 7,
+   "minutes": 0
   },
   "U14": {
-   "parts": 4,
-   "minutes": 18
+   "parts": 7,
+   "minutes": 0
   },
   "U15": {
-   "parts": 4,
-   "minutes": 17
+   "parts": 9,
+   "minutes": 0
   },
   "U16": {
-   "parts": 4,
-   "minutes": 17
+   "parts": 9,
+   "minutes": 0
   },
   "U17": {
-   "parts": 6,
-   "minutes": 30
+   "parts": 8,
+   "minutes": 0
   },
   "U18": {
    "parts": 5,
-   "minutes": 20
+   "minutes": 0
   },
   "U19": {
-   "parts": 8,
-   "minutes": 36
+   "parts": 10,
+   "minutes": 0
   },
   "U20": {
-   "parts": 5,
-   "minutes": 19
+   "parts": 9,
+   "minutes": 0
   },
   "U21": {
-   "parts": 8,
-   "minutes": 34
+   "parts": 10,
+   "minutes": 0
   },
   "U22": {
-   "parts": 4,
-   "minutes": 18
+   "parts": 8,
+   "minutes": 0
   },
   "U23": {
-   "parts": 4,
-   "minutes": 17
+   "parts": 9,
+   "minutes": 0
   },
   "U24": {
-   "parts": 6,
-   "minutes": 24
+   "parts": 8,
+   "minutes": 0
   }
  }
 }

@@ -237,3 +237,47 @@ export function BarChartIcon({ size = 18 }) {
 export function FireIcon({ size = 18 }) {
   return <Icon size={size} d="M19.48 12.35c-1.57-4.08-7.16-4.3-5.81-10.23.1-.44-.37-.78-.75-.55C9.29 3.71 6.68 8 8.87 13.62c.18.46-.36.89-.75.59-1.81-1.37-2-3.34-1.84-4.75.06-.52-.62-.77-.91-.34C4.69 10.16 4 11.84 4 14.37c.38 5.6 5.11 7.32 6.81 7.54 2.43.31 5.06-.14 6.95-1.87 2.08-1.93 2.84-5.01 1.72-7.69zm-9.28 5.03c1.44-.35 2.18-1.39 2.38-2.31.33-1.43-.96-2.83-.09-5.09.33 1.87 3.27 3.04 3.27 5.08.08 2.53-2.66 4.7-5.56 2.32z" />
 }
+
+// Линейные иконки навигации «TeenTech SAT» (прототип core.js navIcons, B12): контур в currentColor, чтобы иконка
+// текущего раздела темнела на жёлтой плашке вместе с подписью.
+function Line({ size, children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  )
+}
+
+export const NAV_ICONS = {
+  today: (s) => <Line size={s}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></Line>,
+  plan: (s) => <Line size={s}><path d="M9 4.5l-6 2v13l6-2 6 2 6-2v-13l-6 2z" /><path d="M9 4.5v13M15 6.5v13" /></Line>,
+  practice: (s) => <Line size={s}><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" /></Line>,
+  mocks: (s) => <Line size={s}><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M9.5 2.5h5" /></Line>,
+  materials: (s) => <Line size={s}><path d="M2.5 5.5c3-1.5 6-1.5 9.5 1 3.5-2.5 6.5-2.5 9.5-1v13c-3-1.5-6-1.5-9.5 1-3.5-2.5-6.5-2.5-9.5-1z" /><path d="M12 6.5v13" /></Line>,
+  errors: (s) => <Line size={s}><path d="M5 21V4m0 0h11l-2 4 2 4H5" /></Line>,
+  vocab: (s) => <Line size={s}><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h11" /></Line>,
+  guide: (s) => <Line size={s}><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7M12 17.2v.1" /></Line>,
+  papers: (s) => <Line size={s}><path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5M10 13h6M10 17h6" /></Line>,
+}
+
+/** Шапочка выпускника — знак «TeenTech SAT» (прототип e4ec8476). */
+export function CapLogoIcon({ size = 22 }) {
+  return (
+    <Line size={size}>
+      <path d="M2 9l10-5 10 5-10 5z" />
+      <path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6" />
+    </Line>
+  )
+}
+
+export function SunLineIcon({ size = 18 }) {
+  return <Line size={size}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Line>
+}
+
+export function MoonLineIcon({ size = 18 }) {
+  return <Line size={size}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></Line>
+}
+
+export function TrashIcon({ size = 16 }) {
+  return <Line size={size}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></Line>
+}

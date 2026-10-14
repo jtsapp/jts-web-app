@@ -6,6 +6,7 @@ import { EventIcon, HelpIcon, SyncIcon } from '../../ielts/icons.jsx'
 import RoadmapView from '../plan/RoadmapView.jsx'
 import WeekView from '../plan/WeekView.jsx'
 import MonthView from '../plan/MonthView.jsx'
+import CourseRoad from '../plan/CourseRoad.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
 import { currentPhase, iso, nextLesson, roadmapSteps } from '../model/plan.js'
 
@@ -52,7 +53,7 @@ export function HowItWorks({ onClose }) {
  * План строит сервер; «Пересобрать план» ведёт на «время на занятия» (Figma 10) — там же меняют дни и минуты,
  * а прожитые недели при пересборке сохраняются.
  */
-export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, onDiagnostic, onStart }) {
+export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, onDiagnostic, onStart, onUnit }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
@@ -98,7 +99,12 @@ export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, o
       {plan.stale && <p className="st-rep__stale"><span>{t('sat.rep.stale')}</span></p>}
       {p.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
       <div key={view} className="ih-enter">
-        {view === 'roadmap' && <RoadmapView steps={steps} current={currentPhase(p, todayIso)} examDate={p.examDate} onStart={next ? () => onStart(next.id) : null} />}
+        {view === 'roadmap' && (
+          <>
+            <RoadmapView steps={steps} current={currentPhase(p, todayIso)} examDate={p.examDate} onStart={next ? () => onStart(next.id) : null} />
+            {onUnit && <CourseRoad onUnit={onUnit} />}
+          </>
+        )}
         {view === 'week' && <WeekView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
         {view === 'month' && <MonthView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
       </div>

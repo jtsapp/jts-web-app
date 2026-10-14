@@ -5,7 +5,8 @@ import { plural } from '../../lib/plural.js'
 import EmptyState from '../../ielts/ui/EmptyState.jsx'
 import { NotesIcon, PlayCircleIcon } from '../icons.jsx'
 import { TranslateIcon } from '../../ielts/icons.jsx'
-import { GRADES, displayWord, nextIn } from '../model/vocab.js'
+import { NEXT_Q, displayWord } from '../model/vocab.js'
+import { ArrowForwardIcon } from '../../ielts/icons.jsx'
 
 const POS = { v: 'verb', n: 'noun', adj: 'adjective', adv: 'adverb' }
 
@@ -26,9 +27,10 @@ export function say(word) {
 }
 
 /**
- * Карточки (Figma SAT 18): слово — нажатие или пробел — определение, перевод и пример; оценка четырьмя кнопками
- * (клавиши 1–4) с подписью, когда карточка вернётся. Кнопки появляются только после переворота: оценка до ответа —
- * догадка о догадке. Очередь — сначала повторения, потом новые до дневной цели.
+ * Карточки (Figma SAT 18): слово — нажатие или пробел — определение, перевод и пример; дальше одна кнопка «Далее»
+ * (B10, прототип b9d1797a: вместо Again / Hard / Good / Easy) — карточка уходит в расписание SM-2 как обычное «Good»
+ * (качество 4). Кнопка появляется только после переворота; с клавиатуры — стрелка вправо или Enter.
+ * Очередь — сначала повторения, потом новые до дневной цели.
  */
 export default function Flashcards({ q, cards, goal, today, busy, onGrade }) {
   const { t, lang } = useI18n()
@@ -53,10 +55,9 @@ export default function Flashcards({ q, cards, goal, today, busy, onGrade }) {
         return
       }
       if (!flipped) return
-      const i = ['1', '2', '3', '4'].indexOf(e.key)
-      if (i >= 0) {
+      if (e.key === 'ArrowRight' || (e.key === 'Enter' && !e.target?.closest?.('button, [role="button"]'))) {
         e.preventDefault()
-        grade(GRADES[i].q)
+        grade(NEXT_Q)
       }
     }
     document.addEventListener('keydown', onKey)
@@ -113,19 +114,12 @@ export default function Flashcards({ q, cards, goal, today, busy, onGrade }) {
               <p className="st-vc__hint">{t('sat.vc.tapToFlip')}</p>
             )}
           </div>
-          <div className="st-vc__grades" hidden={!flipped}>
-            {GRADES.map((g, i) => {
-              const n = nextIn(card, g.q)
-              return (
-                <button key={g.id} type="button" className={`st-vc__grade is-${g.id}`} disabled={busy} onClick={() => grade(g.q)}>
-                  <b>{t(`sat.vc.g.${g.id}`)}</b>
-                  <small>{n.unit === 'min' ? t('sat.vc.inMin', { n: String(n.n) }) : plural(t, lang, 'sat.vc.inDays', n.n)}</small>
-                  <kbd aria-hidden="true">{i + 1}</kbd>
-                </button>
-              )
-            })}
+          <div className="st-vc__grades st-vc__next" hidden={!flipped}>
+            <button type="button" className="ih-cta" disabled={busy} onClick={() => grade(NEXT_Q)}>
+              {t('sat.vc.next')}<ArrowForwardIcon size={18} />
+            </button>
           </div>
-          <p className="st-muted st-vc__keys">{t('sat.vc.keys')}</p>
+          <p className="st-muted st-vc__keys">{t('sat.vc.keysNext')}</p>
         </>
       )}
     </div>

@@ -30,3 +30,34 @@ describe('проверка банка SAT (порт validateAll)', () => {
     expect(validateBank([{ ...lesson, meta: { ...lesson.meta, lessonCode: 'U99' } }], ctx)[0].message).toMatch(/names no class/)
   })
 })
+
+describe('новый формат прототипа (SAT-SYNC-PLAN A2)', () => {
+  const lesson = (code, extra = {}) => ({ ...rw, distractors: undefined, explanation: { en: 'e' }, meta: { ...meta, kind: 'lesson', lessonCode: code }, ...extra })
+  const ctx2 = { ...ctx, lessonCodes: new Set(['U1', 'CH11']) }
+
+  it('вопрос юнита и пробника может быть без навыка, банка — нет', () => {
+    const noSkill = { skillId: undefined }
+    expect(validateBank([lesson('U1', noSkill)], ctx2)).toEqual([])
+    const paper = { ...rw, ...noSkill, explanation: undefined, distractors: undefined, meta: { ...meta, kind: 'paper' } }
+    expect(validateBank([paper], ctx2)).toEqual([])
+    expect(validateBank([{ ...rw, ...noSkill }], ctx2)[0].message).toBe('unknown skillId undefined')
+  })
+
+  it('разбор вариантов R&W нужен только банку; у Challenge разбор необязателен', () => {
+    expect(validateBank([lesson('U1')], ctx2)).toEqual([])
+    expect(validateBank([lesson('U1', { explanation: undefined })], ctx2)[0].message).toBe('explanation needs en')
+    expect(validateBank([lesson('CH11', { explanation: undefined })], ctx2)).toEqual([])
+  })
+
+  it('acceptedAnswers — только числа и только у вписывания', () => {
+    expect(validateBank([{ ...math, acceptedAnswers: ['3.5'] }], ctx)).toEqual([])
+    expect(validateBank([{ ...math, acceptedAnswers: ['x'] }], ctx)[0].message).toBe('accepted answer not numeric: x')
+    expect(validateBank([{ ...rw, acceptedAnswers: ['A'] }], ctx)[0].message).toBe('acceptedAnswers is for spr only')
+  })
+
+  it('картинка с путём, не найденным через assetBase, — ошибка', () => {
+    const ok = { ...rw, stem: '<img src="sat-media:0123456789abcdef01234567.svg">' }
+    expect(validateBank([ok], ctx)).toEqual([])
+    expect(validateBank([{ ...rw, stem: '<img src="rw-m1-01.png">' }], ctx)[0].message).toMatch(/assetBase: rw-m1-01.png/)
+  })
+})

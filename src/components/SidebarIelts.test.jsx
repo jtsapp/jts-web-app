@@ -19,8 +19,8 @@ function tokenFor(role) {
   return `${b64({ alg: 'HS256' })}.${b64({ role, userId: 4 })}.sig`
 }
 
-// Дизайн «IELTS new»: у аккаунта IELTS в меню ровно эти разделы — без «Повторения» (курс General English), счётчиков
-// и плашки уровня, с «Настройками» внизу.
+// Дизайн «IELTS new»: у аккаунта IELTS в меню ровно эти разделы — без счётчиков и плашки уровня, с «Настройками»
+// внизу. «Повторение» (Review) с 13.10.2026 в меню есть, первым после «Главной» (владелец, SAT-SYNC-PLAN E3).
 describe('Sidebar — аккаунт IELTS', () => {
   it('показывает только разделы из макета', async () => {
     const onProfile = vi.fn()
@@ -31,15 +31,14 @@ describe('Sidebar — аккаунт IELTS', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT'])
-    expect(screen.queryByText('Повторение')).toBeNull()
+    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
     expect(onProfile).toHaveBeenCalled()
   })
 
-  it('доступ к одному SAT даёт то же меню — без «Повторения», с IELTS и SAT', async () => {
+  it('доступ к одному SAT даёт то же меню — с «Повторением», IELTS и SAT', async () => {
     getIeltsMe.mockResolvedValueOnce({ ieltsAccount: false, access: false })
     getSatMeCached.mockResolvedValueOnce({ access: true })
     render(
@@ -51,6 +50,6 @@ describe('Sidebar — аккаунт IELTS', () => {
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
     expect(items).toContain('IELTS')
     expect(items).toContain('SAT')
-    expect(screen.queryByText('Повторение')).toBeNull()
+    expect(items[1]).toBe('Повторение')
   })
 })

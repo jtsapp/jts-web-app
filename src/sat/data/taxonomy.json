@@ -224,64 +224,40 @@
    "name_kk": "Сызықтық теңсіздіктер"
   },
   {
-   "id": "m.adv.quadratics",
+   "id": "m.adv.expressions",
+   "section": "math",
+   "domain": "m.adv",
+   "examWeight": 0.034,
+   "prerequisites": [
+    "m.alg.linear"
+   ],
+   "name_en": "Equivalent expressions",
+   "name_ru": "Равносильные выражения",
+   "name_kk": "Тең мәнді өрнектер"
+  },
+  {
+   "id": "m.adv.functions",
+   "section": "math",
+   "domain": "m.adv",
+   "examWeight": 0.075,
+   "prerequisites": [
+    "m.alg.linear"
+   ],
+   "name_en": "Nonlinear functions",
+   "name_ru": "Нелинейные функции",
+   "name_kk": "Сызықтық емес функциялар"
+  },
+  {
+   "id": "m.adv.nonlinear",
    "section": "math",
    "domain": "m.adv",
    "examWeight": 0.048,
    "prerequisites": [
-    "m.alg.linear"
+    "m.adv.expressions"
    ],
-   "name_en": "Quadratic equations and functions",
-   "name_ru": "Квадратные уравнения и функции",
-   "name_kk": "Квадрат теңдеулер мен функциялар"
-  },
-  {
-   "id": "m.adv.polynomials",
-   "section": "math",
-   "domain": "m.adv",
-   "examWeight": 0.03,
-   "prerequisites": [
-    "m.adv.quadratics"
-   ],
-   "name_en": "Polynomials",
-   "name_ru": "Многочлены",
-   "name_kk": "Көпмүшелер"
-  },
-  {
-   "id": "m.adv.exponential",
-   "section": "math",
-   "domain": "m.adv",
-   "examWeight": 0.035,
-   "prerequisites": [
-    "m.alg.linear"
-   ],
-   "name_en": "Exponential functions and growth",
-   "name_ru": "Показательные функции и рост",
-   "name_kk": "Көрсеткіштік функциялар және өсу"
-  },
-  {
-   "id": "m.adv.radicals",
-   "section": "math",
-   "domain": "m.adv",
-   "examWeight": 0.02,
-   "prerequisites": [
-    "m.adv.quadratics"
-   ],
-   "name_en": "Radicals and rational exponents",
-   "name_ru": "Корни и дробные степени",
-   "name_kk": "Түбірлер мен бөлшек дәрежелер"
-  },
-  {
-   "id": "m.adv.rational",
-   "section": "math",
-   "domain": "m.adv",
-   "examWeight": 0.024,
-   "prerequisites": [
-    "m.adv.polynomials"
-   ],
-   "name_en": "Rational expressions",
-   "name_ru": "Рациональные выражения",
-   "name_kk": "Рационал өрнектер"
+   "name_en": "Nonlinear equations in one variable and systems of equations in two variables",
+   "name_ru": "Нелинейные уравнения с одной переменной и системы уравнений с двумя переменными",
+   "name_kk": "Бір айнымалысы бар сызықтық емес теңдеулер және екі айнымалысы бар теңдеулер жүйелері"
   },
   {
    "id": "m.psda.ratios",

@@ -10,6 +10,8 @@ import { moduleNo, reviewList, shortClock, unanswered } from '../sat/model/mock.
 import { domainName, skillName } from '../sat/names.js'
 import { ArrowBackIcon, BookmarkIcon, FlashIcon, RobotIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, MenuBookIcon } from '../ielts/icons.jsx'
+import { useSatTheme } from '../sat/theme.js'
+import { errorText } from '../lib/examQuota.js'
 
 const FILTERS = ['all', 'wrong', 'marked']
 
@@ -44,6 +46,7 @@ const answerText = (v) => (Array.isArray(v) ? v.join(' · ') : v == null ? '—'
  */
 export default function SatMockReviewPage({ token, onNav }) {
   const { t, lang } = useI18n()
+  useSatTheme()
   const authToken = token || loadToken()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -62,7 +65,7 @@ export default function SatMockReviewPage({ token, onNav }) {
         // все верно — фильтр «неверные» был бы пустым
         if (!d.modules.some((m) => m.items.some((x) => !x.correct))) setFilter('all')
       })
-      .catch((e) => alive && setError(e?.serverMessage || t('sat.study.netError')))
+      .catch((e) => alive && setError(errorText(e, t)))
     getSatProfile(authToken).then((p) => alive && p?.explainLang && setExplainLang(p.explainLang)).catch(() => {})
     window.scrollTo(0, 0)
     return () => {
@@ -73,9 +76,10 @@ export default function SatMockReviewPage({ token, onNav }) {
   const list = useMemo(() => (data ? reviewList(data.modules, filter) : []), [data, filter])
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f, data ? reviewList(data.modules, f).length : 0])), [data])
 
+  // разбор past paper возвращается на страницу Past papers (B6), симуляции — во вкладку «Пробники»
   const toHub = () => {
     setParams({ satTab: 'mocks', satMock: null })
-    onNav?.('sat')
+    onNav?.(data?.paperId || data?.paperTitle ? 'sat-papers' : 'sat')
   }
   const toResult = () => onNav?.('sat-mock')
   const practice = async (skillId) => {
@@ -85,7 +89,7 @@ export default function SatMockReviewPage({ token, onNav }) {
       setParams({ satSession: s.id, satLesson: null, satMock: null })
       onNav?.('sat-study')
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
       setBusy(false)
     }
   }

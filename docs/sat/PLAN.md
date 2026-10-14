@@ -48,10 +48,10 @@ The README says «300 questions» — outdated; the data holds 3 123.
 | # | Topic | Decision |
 |---|---|---|
 | A | **AI** | Build the AI places from Figma as **inert placeholders**: hint button «AI-подсказка» (22), AI suggestion on the error-type step (23), the «AI» side-panel tab with the chat layout and the visible limit (25). They render, are clearly marked «скоро», and do nothing. Written hints from the bank work fully. Functionality later, behind a flag `SAT_AI` and server routes `src/app/api/sat/*`. |
-| B | **«Добавить результат»** (35) | Not built (removed at the school's request). Old prototype entries are not imported. |
+| B | **«Добавить результат»** (35) | ~~Not built~~ **Replaced 14.10.2026 (D2, `SAT-SYNC-PLAN.md`):** manual Bluebook / official SAT scores are back — «Результаты» table in «Пробники» (phase 11). Old prototype entries are not imported. |
 | C | **Navigation** | Figma's 7 tabs + **Материалы** and **Ошибки**. Roadmap = a view of «План», Desmos guide inside «Гайд». |
 | D | **Screens without a Figma design** | Built in the platform style from the prototype layouts, and **marked for your design review** (see 3.1). |
-| E | **Visual style** | Figma: Manrope, rounded corners, violet accent; R&W blue, Math pink; no dark theme. |
+| E | **Visual style** | ~~Figma: Manrope, rounded corners, violet accent; no dark theme.~~ **Replaced 14.10.2026 (D1):** «TeenTech SAT» as in the prototype — dark theme by default (one-time switch of stored settings, `src/sat/theme.js`), yellow accent, nav icons in «Study / Tools» groups, breadcrumbs, graduation-cap logo. |
 | F | **Plan default view** | Month first, then Week; Roadmap as the third view. |
 | G | **Accounts** | Platform accounts; no import of prototype local profiles. |
 
@@ -316,10 +316,33 @@ Of 3 123 prototype items 2 813 pass validation; 10 070 distinct images, 26 MB. F
   «на сегодня всё» state. Different from Figma: the guide lists the prototype's 23 lessons instead of Figma's 7 groups;
   no «руками ≈10 с / с Desmos ≈35 с» comparison (no such data); «изучено» marks and game scores stay on the device.
 
+## 6k. Phases 10–12 — sync with the prototype HEAD `b9d1797a` (14.10.2026)
+
+Plan: `C:\GitHub\work\jts\SAT-SYNC-PLAN.md` (decisions D1–D4, sections A, B, E). API — `backend/docs/sat/TEST_FORMAT.md`
+§1–5, §9–15.
+
+- **Phase 10 — content.** `scripts/sat/export-sat.js` runs the prototype's JSON loaders in `node:vm`: 4 962 questions
+  (3 867 bank, 801 lesson, 294 paper), papers `jts-1/2/3` (27/27/22/22; `jts-p2`, `local-test-p2` removed), sets U1–U24
+  (15), Challenge Verbal 135, Challenge Math 110, CH11 / CH12 (98 each, `ch12f4-`). ≈3 770 College Board items are
+  `licensed`, nothing held back; papers, Challenge and U-sets are still `original` (provenance to confirm). Media: only
+  referenced files (29 107), SVG allowed and sanitised. New taxonomy (Advanced Math = expressions / functions /
+  nonlinear) in backend and web. «Набор готовится» is gone from «Материалы». Seed: `backend/scripts/sat/seed-local.js
+  --publish --overwrite --prune` (needs a backend built from this branch).
+- **Phase 11 — features.** Weekly test instead of the daily check (`?screen=sat-weekly`, card on «Сегодня», V342);
+  practice-set summary and «Моя статистика» on the dashboard; «Log error» (V344); «Прогресс» tab removed
+  (`?satTab=progress` → «Сегодня»); «Результаты» with manual scores (V343); «Past papers» full-screen page
+  (`?screen=sat-papers`, no phone tab); full-screen simulation, result 400–1600 vs goal, lost skills, hard simulations
+  I/II (CH11/CH12); course road (months fold, topics → unit, diagnostic = Bluebook PT6, month-2 checkpoint = PT9); error
+  log as cards, 10 per page; vocabulary «Next» (= Good) and «Words today»; Desmos guide video | calculator.
+- **Phase 12 — brand, i18n, access.** TeenTech SAT (decision E above), new keys en/ru/kk in `src/sat/i18nSync.js`.
+  Access to IELTS / SAT is opened by an admin in the user card (managers' pages removed); demo accounts get SAT/IELTS
+  within demo quotas with a «демо-версия» banner and a clear message when a quota runs out (`TEST_FORMAT.md` §15).
+- Not checked yet: the screens in a browser against the prototype (dark theme especially), the seed against a live DB.
+
 ## 7. Still needed from you
 
-1. **Access:** no subscription for SAT yet — the section is open to every signed-in student. A product key gate
-   (like `PRACTICE_IELTS`) is added before production; the access check lives in one place so it is a one-line change.
+1. **Access:** ~~no subscription for SAT yet~~ — since 14.10.2026 SAT is open by an admin grant (user card →
+   «Доступ к контенту») or within demo quotas (§6k).
 2. **Content owners:** who verifies the 16 colleges, reviews the 3 123 draft questions, and confirms the vocabulary
    licence — needed before launch, not before development.
 3. **Desmos:** a legal yes on embedding the public calculator in a paid product — needed before launch. The guide's

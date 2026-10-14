@@ -12,6 +12,10 @@ import MockResult from '../sat/mock/MockResult.jsx'
 import { MOCK_MIN_WIDTH, moduleNo } from '../sat/model/mock.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { LaptopIcon } from '../sat/icons.jsx'
+import { errorText } from '../lib/examQuota.js'
+import { useSatTheme } from '../sat/theme.js'
+import { SatBrand } from '../sat/ui/SatNav.jsx'
+import { enterFullWindow, leaveFullWindow } from '../sat/fullWindow.js'
 
 function readId() {
   try {
@@ -97,7 +101,7 @@ function ModuleRun({ run, onExit, onSubmitted }) {
       clear()
       onSubmitted(res)
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
       sending.current = false
     }
   }
@@ -126,6 +130,7 @@ function ModuleRun({ run, onExit, onSubmitted }) {
  */
 export default function SatMockPage({ token, onNav }) {
   const { t } = useI18n()
+  useSatTheme()
   const authToken = token || loadToken()
   const wide = useWide()
   const [run, setRun] = useState(null)
@@ -143,7 +148,7 @@ export default function SatMockPage({ token, onNav }) {
     }
     getSatMock(authToken, id)
       .then((r) => alive && setRun(r))
-      .catch((e) => alive && setError(e?.serverMessage || t('sat.study.netError')))
+      .catch((e) => alive && setError(errorText(e, t)))
     getSatProfile(authToken).then((p) => alive && setTarget(p?.targetTotal ?? null)).catch(() => {})
     window.scrollTo(0, 0)
     return () => {
@@ -151,10 +156,20 @@ export default function SatMockPage({ token, onNav }) {
     }
   }, [authToken, t])
 
+  // симуляция и past paper идут во весь экран (B7); уходя с экрана — из полного экрана тоже
+  useEffect(() => () => leaveFullWindow(), [])
+  const finished = run?.status === 'finished'
+  useEffect(() => {
+    // итог смотрят уже не на экзамене: полный экран снимаем (прототип 12325245)
+    if (finished) leaveFullWindow()
+  }, [finished])
+
+  // past paper возвращается на свою страницу, симуляция — во вкладку «Пробники»
+  const paper = !!run?.paperId
   const toHub = useCallback((tab = 'mocks') => {
     setParams({ satTab: tab, satMock: null })
-    onNav?.('sat')
-  }, [onNav])
+    onNav?.(paper && tab === 'mocks' ? 'sat-papers' : 'sat')
+  }, [onNav, paper])
 
   const act = useCallback(async (fn) => {
     setBusy(true)
@@ -163,14 +178,18 @@ export default function SatMockPage({ token, onNav }) {
       setRun(await fn())
       window.scrollTo(0, 0)
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }
   }, [t])
 
   const runId = run?.id
-  const start = useCallback(() => act(() => startSatMockModule(authToken, runId)), [act, authToken, runId])
+  const start = useCallback(() => {
+    // браузер пускает в полный экран только из клика — просим здесь, до запроса
+    enterFullWindow()
+    return act(() => startSatMockModule(authToken, runId))
+  }, [act, authToken, runId])
   const abandon = () => {
     setConfirm(false)
     act(() => abandonSatMock(authToken, run.id)).then(() => toHub())
@@ -182,7 +201,7 @@ export default function SatMockPage({ token, onNav }) {
       setParams({ satSession: s.id, satLesson: null, satMock: null })
       onNav?.('sat-study')
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
       setBusy(false)
     }
   }
@@ -195,8 +214,8 @@ export default function SatMockPage({ token, onNav }) {
     <div className="ih st st-ob">
       <header className="st-ob__top">
         <button type="button" className="ih-round" onClick={() => toHub()} aria-label={t('sat.ob.back')}><ChevronLeftIcon size={20} /></button>
-        <b className="st-ob__logo">just to study</b>
-        <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t('sat.mock.chip')}</span></span>
+        <SatBrand />
+        <span className="ih-chip ih-chip--violet ih-chip--sm"><span>{t(paper ? 'sat.papers.title' : 'sat.mock.chip')}</span></span>
         <span className="st-spacer" />
         <button type="button" className="st-ob__exit" onClick={() => toHub()}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
       </header>
@@ -216,7 +235,7 @@ export default function SatMockPage({ token, onNav }) {
   )
 
   if (!run) return error ? shell(<div className="ih-empty st-study__err"><h2>{t('sat.mock.cantOpen')}</h2><p>{error}</p></div>) : <div className="ih st st-run" />
-  if (run.status === 'finished') return shell(<MockResult run={run} target={target} busy={busy} onReview={review} onPractice={practice} />)
+  if (run.status === 'finished') return shell(<MockResult run={run} target={target} busy={busy} onReview={review} onPractice={practice} onBack={() => toHub()} />)
   if (run.status !== 'active') return shell(<div className="ih-empty st-study__err"><h2>{t('sat.mock.abandoned')}</h2></div>)
   if (!wide) {
     return shell(

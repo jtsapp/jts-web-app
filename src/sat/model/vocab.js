@@ -9,6 +9,8 @@ export const GRADES = [
   { id: 'good', q: 4 },
   { id: 'easy', q: 5 },
 ]
+/** Качество SM-2 у единственной кнопки «Далее» (B10, прототип b9d1797a NEXT_Q): обычное припоминание «Good». */
+export const NEXT_Q = 4
 export const MASTERED_DAYS = 21
 const DAY = 86400000
 const AGAIN_MS = 10 * 60000

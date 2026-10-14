@@ -11,6 +11,7 @@ vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 3, streakActiveToday: true })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
+  getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, track: 'academic' })),
   getMyLessonOccurrences: vi.fn(async () => []),
   getIeltsPlan: vi.fn(async () => ({ enrollment: { status: 'programme_pending', pendingReason: 'no_diagnostic' }, tasks: [] })),

@@ -1,6 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { ArrowForwardIcon, InfoIcon, TrendingUpIcon } from '../../ielts/icons.jsx'
+import { ArrowForwardIcon, ChevronLeftIcon, InfoIcon, TrendingUpIcon } from '../../ielts/icons.jsx'
 import { FlashIcon } from '../icons.jsx'
 import { skillName, skillSection } from '../names.js'
 import { hoursMinutes, moduleNo, onScale, share } from '../model/mock.js'
@@ -15,16 +15,27 @@ const SECTIONS = [
  * что известно точно: raw-счёт секций и маршрут модулей. Итог всегда из секций. Заканчивается действием — навыками,
  * где ушли баллы. У пробника (paper) маршрута нет: второй модуль у всех один.
  */
-export default function MockResult({ run, target, onReview, onPractice, busy }) {
+export default function MockResult({ run, target: profileTarget, onReview, onPractice, onBack, busy }) {
   const { t, lang } = useI18n()
   const r = run.result || {}
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const date = run.finishedAt ? new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).format(new Date(run.finishedAt)) : ''
-  const total = r.total
-  const weak = r.weak || []
+  // B7: итог на шкале 400–1600 рядом с целью. Сервер может прислать итог числом или диапазоном, цель — в самом итоге
+  // (SatMockService) или только в профиле; навыки с наибольшей потерей — weak (имя поля уточняется по бэкенду).
+  // SatMockService: score { total, rw, math, min, max }, target { total, rw, math }, toTarget, lost — топ-5 навыков
+  // { skillId, section, missed, lostPoints }. Старые прохождения — диапазон total { low, high } и weak.
+  const num = r.score?.total ?? (typeof r.total === 'number' ? r.total : null)
+  const total = num != null ? { low: num, high: num } : r.total
+  const target = (typeof r.target === 'object' && r.target ? r.target.total : r.target) ?? profileTarget ?? null
+  const weak = r.lost || r.weak || []
+  const middle = total ? Math.round((total.low + total.high) / 2) : null
+  const gap = r.toTarget ?? (target && middle != null ? target - middle : null)
 
   return (
     <main className="st-res">
+      {onBack && (
+        <button type="button" className="st-link st-res__back" onClick={onBack}><ChevronLeftIcon size={16} />{t(run.paperId ? 'sat.papers.back' : 'sat.mock.backToMocks')}</button>
+      )}
       <div className="st-res__top">
         <div>
           <h1>{run.paperTitle ? t('sat.mock.paperResult', { title: run.paperTitle }) : t('sat.mock.resultTitle')}</h1>
@@ -45,7 +56,8 @@ export default function MockResult({ run, target, onReview, onPractice, busy }) 
             <span className="st-spacer" />
             <span className="st-res__flag"><InfoIcon size={14} />{t('sat.mock.rangeNotScore')}</span>
           </div>
-          <b className="st-res__range">{total ? `${total.low}–${total.high}` : '—'}</b>
+          <b className="st-res__range">{total ? (total.low === total.high ? total.low : `${total.low}–${total.high}`) : '—'}<small className="st-res__of"> / 1600</small></b>
+          {gap != null && <p className="st-res__gap">{gap > 0 ? t('sat.scores.gap', { n: String(gap) }) : t('sat.scores.reached')}</p>}
           {total && (
             <div className="st-res__scale" aria-hidden="true">
               <i className="st-res__track" />
@@ -80,7 +92,7 @@ export default function MockResult({ run, target, onReview, onPractice, busy }) 
                 </div>
                 <div className="st-res__nums">
                   <div><b>{x.correct} / {x.total}</b><small>{t('sat.mock.rawCorrect')}</small></div>
-                  <div><b className="st-res__secRange">{x.low != null ? `${x.low}–${x.high}` : '—'}</b><small>{t('sat.mock.secEstimate')}</small></div>
+                  <div><b className="st-res__secRange">{x.mid != null ? x.mid : x.low != null ? `${x.low}–${x.high}` : '—'}</b><small>{t('sat.mock.secEstimate')}</small></div>
                 </div>
                 <div className="st-res__bar"><i style={{ width: `${Math.round(share(x) * 100)}%` }} /></div>
               </section>
@@ -114,15 +126,15 @@ export default function MockResult({ run, target, onReview, onPractice, busy }) 
           {weak.length === 0 ? <p className="st-muted">{t('sat.mock.noLost')}</p> : (
             <>
               <ul>
-                {weak.slice(0, 3).map((w) => (
+                {weak.slice(0, 5).map((w) => (
                   <li key={w.skillId}>
                     <i className={`st-dot is-${skillSection(w.skillId) === 'math' ? 'math' : 'rw'}`} />
                     <span>{skillName(w.skillId, lang)}</span>
-                    <b>{plural(t, lang, 'sat.mock.errors', w.missed)}</b>
+                    <b>{plural(t, lang, 'sat.mock.errors', w.missed)}{w.lostPoints ? ` · −${w.lostPoints}` : ''}</b>
                   </li>
                 ))}
               </ul>
-              <button type="button" className="st-res__practice" disabled={busy} onClick={() => onPractice(weak.slice(0, 3).map((w) => w.skillId))}>
+              <button type="button" className="st-res__practice" disabled={busy} onClick={() => onPractice(weak.map((w) => w.skillId).filter((id) => id !== 'rw' && id !== 'math').slice(0, 3))}>
                 <FlashIcon size={18} />{t('sat.mock.practiceWeak')}
               </button>
             </>

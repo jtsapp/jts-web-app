@@ -1,0 +1,116 @@
+{
+  "corrections": [
+    {
+      "id": "rw-evt-a13541c0",
+      "set": {
+        "passage": "<p>Sandra Cisneros’s 1984 novella The House on Mango Street made a lasting impact on US literature. Its depiction of Mexican American culture inspired later authors to examine their own heritage within their fictional works. Also influential was the book’s portrayal of the main character, Esperanza, during a pivotal year of her youth. <u>This insightful depiction of a preteen girl encouraged authors who, like Cisneros herself, are Latina to use fictional works to examine experiences from their own youth.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-dd1757fd",
+      "set": {
+        "passage": "<p>Neural networks are computer models intended to reflect the organization of human brains and are often used in studies of brain function. According to an analysis of 11,000 such networks, Rylan Schaeffer and colleagues advise caution when drawing conclusions about brains from observations of neural networks. They found that when attempting to mimic grid cells (brain cells used in navigation), while 90% of the networks could accomplish navigation-related tasks, only about 10% of those exhibited any behaviors similar to those of grid cells. <u>But even this approximation of grid-cell activity has less to do with similarity between the neural networks and biological brains than it does with the rules programmed into the networks.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-3a489e1e",
+      "set": {
+        "passage": "<p>Born in Chile in 1917, artist and ethnomusicologist Violeta Parra was a pioneer in the nueva canción chilena (Chilean New Song) movement that emerged in the late 1950s and then spread throughout Latin America, Portugal, and Spain as nueva canción. Parra traveled all over Chile compiling extensive records of authentic folk music as well as recipes, proverbs, and other facets of cultural history. These records formed the foundation for the early movement’s revival of traditional Chilean folk forms in new songs that represented modern realities of the working class and strongly advocated for social change. <u>As the movement spread beyond Chile, the breadth of musical traditions incorporated into its foundation also expanded.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-8e22efd9",
+      "set": {
+        "passage": "<p>Having demonstrated that the power conversion efficiency of new perovskite photovoltaic cells is nearly indistinguishable from that of cells recycled multiple times, Xun Xiao and colleagues evaluated the levelized cost of electricity (LCOE)—a measure of cost per produced electricity unit that incorporates materials acquisition costs as well as operating costs—for power plants utilizing each type of cell. With a modeled 15-year cell lifetime, the LCOE of plants using new cells was 4.99 cents per kilowatt-hour, whereas that of plants using cells recycled three times was 4.05 cents per kilowatt-hour. <u>Moreover, the LCOE differential grew from 18.8% to 31.3% when the modeled cell lifetime was reduced by two- thirds.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-0fc0a773",
+      "set": {
+        "passage": "<p>The Minneapolis Institute of Art in Minneapolis, Minnesota, has over 90,000 works of art. Digital images of thousands of those works have been put online through the museum’s website and the Google Arts &amp; Culture project. One of the images is of Mississippi Delta, a drawing by Siah Armajani. In a paper, a student claims that <u>putting a work from the museum online increases the number of people who experience that work</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-10455a19",
+      "set": {
+        "passage": "<p>In the early 1970s, art historian Michael Baxandall created an approach to viewing art called the “period eye,” which explains how to look at art through the lens of its historical period. Baxandall argued that it is critical that art historians understand and communicate the original social and cultural contexts of older works of art so that it is clear what the artists intended and how the pieces would have been understood by their original viewers. <u>Since it was first introduced, Baxandall’s period eye has significantly influenced the practice of art history.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-38d75269",
+      "set": {
+        "passage": "<p>Janet Echelman is a sculptor and fiber artist. She has installed giant sculptures all over the world. Echelman uses bright and flowing materials, which mimic the wind. However, <u>while her sculptures appear as delicate as a breeze, they are actually very durable</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-ac7166f7",
+      "set": {
+        "passage": "<p>Researchers Narelle Haworth and Amy Schramm studied bicycling behavior in Queensland, Australia. Haworth and Schramm asked adult bike riders questions about their level of experience, reasons for riding a bike, and route preferences. The researchers claim that <u>experienced riders who mainly bike to work tend to prefer routes that reduce their travel time</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-26ee16ba",
+      "set": {
+        "passage": "<p>Hip-hop pedagogy is a form of teaching that’s gaining popularity across school subjects. It involves incorporating hip-hop and rap music into lessons as well as using hip-hop elements when teaching other subject matters. For example, Quan Neloms’s students look for college-level vocabulary and historical events in rap songs. Researchers claim that in addition to developing students’ social justice awareness, <u>hip-hop pedagogy encourages student success by raising students’ interest and engagement</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-4d38c2ea",
+      "set": {
+        "passage": "<p>Gorgets, or necklaces with large pendants, have been part of the ceremonial attire of tribes from the US Southeast for centuries. One of the oldest examples, the Fairfield Gorget, was found in Fairfield, Missouri, in 1958. Its overall design resembles that of other art from the region during the Mississippian period (900–1600 CE). Yet the image on the gorget is of a jaguar—a species whose range doesn’t extend to Missouri. Jaguar images are common in ancient Mexican art, and Mexico lies squarely in the species’ range. <u>Therefore, some scholars argue that long- distance trade in Mexican art objects brought the imagery to Missouri, where a local artist could have adopted it and incorporated it into the Fairfield Gorget.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-d76ea360",
+      "set": {
+        "passage": "<p>Puerto Rico is an island in the Caribbean Sea. Indigenous people there started raising guinea pigs about 1,700 years ago. Guinea pigs had originally been domesticated much earlier in both Colombia and Peru. So were guinea pigs brought to Puerto Rico from Colombia or from Peru? Ancient Caribbean trade routes connected Puerto Rico with Colombia but not with Peru. <u>Therefore, guinea pigs in Puerto Rico probably came from Colombia and descended from Colombian guinea pigs.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-dc47c2ac",
+      "set": {
+        "passage": "<p>Although most songbirds build open, cupped nests, some species build domed nests with roofs that provide much more protection. <u>Many ecologists have assumed that domed nests would provide protection from weather conditions and thus would allow species that build them to have larger geographic ranges than species that build open nests do.</u> To evaluate this assumption, a research team led by evolutionary biologist Iliana Medina analyzed data for over 3,000 species of songbirds.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-378c66d5",
+      "set": {
+        "passage": "<p>A member of the Otomi, an Indigenous people in Central Mexico, Octavio Medellín immigrated to the United States as a child, and his sculpture bears the impress of traditions on both sides of the border: US-based modernist sculpture, Mexican modernist painting, Otomi art, and the ancient sculpture of other Mexican Indigenous peoples, including the Maya. <u>In his 1950 masterpiece History of Mexico, Medellín fuses these influences into a style so idiosyncratic that it resists efforts to view his work through the lens of nationality or cultural identity.</u> Artists, he insisted, should strive for individual expression, even as they draw inspiration from their heritage and the communities where they live and work.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-0021d326",
+      "set": {
+        "passage": "<p>Olms are salamanders that live in underwater caves. Scientists once thought that olms stay in their caves all their lives. However, Raoul Manenti and team claim that <u>olms regularly come to the surface to perform important activities such as finding food</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-73d457b6",
+      "set": {
+        "passage": "<p>In the 1970s, a roughly 60,000-year-old piece of hyena bone marked with nine notches was discovered at a site in western France once inhabited by Neanderthals. Although many believe that only modern humans developed systems for notating numbers, one archaeologist asserts that this artifact may be a sign that Neanderthals also recorded numerical information. The notches on the bone are unevenly spaced but approximately parallel, and microscopic analysis reveals that they were made with a single stone tool; according to the archaeologist, this suggests that <u>the notches were all made at one time by one individual as a means of counting something</u>.</p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    },
+    {
+      "id": "rw-evt-c088a9a9",
+      "set": {
+        "passage": "<p>Over the course of the 1900s, more and more Native Hawaiians spoke English instead of the Hawaiian language. To preserve their language, Native Hawaiian teachers founded the ‘Aha Pūnana Leo preschool in 1984. They spoke Hawaiian while teaching, and their Native Hawaiian students were soon able to understand and speak it themselves. The school was a huge success. Eventually it opened locations around Hawai‘i and started teaching Hawaiian to elementary and high school students too. <u>Thanks to ‘Aha Pūnana Leo, the number of young people who speak the language has increased.</u></p>"
+      },
+      "reason": "Stem refers to an underlined sentence/claim but the passage had no underline markup; restored <u> around the referenced text (per explanation)."
+    }
+  ]
+}

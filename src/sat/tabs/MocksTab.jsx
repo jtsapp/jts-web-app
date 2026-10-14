@@ -1,77 +1,62 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { abandonSatMock, getSatMocks, startSatMock, startSatMockModule } from '../../api.js'
+import { abandonSatMock, addSatScore, deleteSatScore, getSatMocks, getSatScores, startSatMock, startSatMockModule } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
-import { plural } from '../../lib/plural.js'
+import { errorText, isQuotaError } from '../../lib/examQuota.js'
 import ConfirmDialog from '../../ielts/ui/ConfirmDialog.jsx'
+import { QuotaNotice } from '../../components/ExamDemoBanner.jsx'
 import { ArrowForwardIcon, CheckCircleIcon, InfoIcon, RadioOffIcon } from '../../ielts/icons.jsx'
-import { AssignmentIcon, BlockIcon, CafeIcon, CalculateIcon, LaptopIcon, RouteIcon } from '../icons.jsx'
-import { MOCK_BLOCKS, MOCK_MIN_WIDTH, TOTAL_MINUTES, deltas, hoursMinutes, mid, trajectory } from '../model/mock.js'
+import { AssignmentIcon, BlockIcon, CafeIcon, CalculateIcon, LaptopIcon, NAV_ICONS, RouteIcon } from '../icons.jsx'
+import { MOCK_BLOCKS, MOCK_MIN_WIDTH, TOTAL_MINUTES, hoursMinutes, mid } from '../model/mock.js'
 import { fmtDate } from '../model/dates.js'
+import { AddScoreDialog, ScoreTrajectory, ScoresTable, gapToTarget } from '../mock/ScoresPanel.jsx'
+import { enterFullWindow, leaveFullWindow } from '../fullWindow.js'
 
-const W = 372
-const H = 210
-const PAD = { l: 34, r: 10, t: 12, b: 26 }
-
-/** Траектория к цели (Figma 16): диапазон каждой сданной симуляции — столбик, середина — точка; линия цели. */
-function Trajectory({ runs, target, lang, t }) {
-  const tr = trajectory(runs, target)
-  if (!tr || !tr.points.length) return <p className="st-muted st-mocks__empty">{t('sat.mock.trajEmpty')}</p>
-  const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
-  const y = (v) => PAD.t + (1 - (v - tr.lo) / (tr.hi - tr.lo)) * (H - PAD.t - PAD.b)
-  const n = tr.points.length
-  const x = (i) => PAD.l + 20 + (n === 1 ? (W - PAD.l - PAD.r - 40) / 2 : (i * (W - PAD.l - PAD.r - 40)) / (n - 1))
-  // подпись точки — месяц, как в макете; несколько попыток в одном месяце дали бы «окт окт окт» — тогда с числом
-  const months = tr.points.map((p) => new Date(p.finishedAt).toISOString().slice(0, 7))
-  const labelOpts = new Set(months).size === months.length ? { month: 'short' } : { day: 'numeric', month: 'short' }
-  return (
-    <svg className="st-traj" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('sat.mock.trajectory')}>
-      {tr.ticks.map((v) => (
-        <g key={v}>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} className="st-traj__grid" />
-          <text x={PAD.l - 6} y={y(v) + 3} className="st-traj__tick">{v}</text>
-        </g>
-      ))}
-      {target && target >= tr.lo && target <= tr.hi && (
-        <g>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(target)} y2={y(target)} className="st-traj__goal" />
-          <text x={W - PAD.r - 4} y={y(target) - 6} className="st-traj__goalText">{t('sat.mock.goal', { n: String(target) })}</text>
-        </g>
-      )}
-      {n > 1 && (
-        <polyline className="st-traj__line" points={tr.points.map((p, i) => `${x(i)},${y(mid(p.total))}`).join(' ')} />
-      )}
-      {tr.points.map((p, i) => (
-        <g key={p.id}>
-          <rect x={x(i) - 7} y={y(p.total.high)} width="14" height={Math.max(4, y(p.total.low) - y(p.total.high))} rx="7" className="st-traj__band" />
-          <circle cx={x(i)} cy={y(mid(p.total))} r="6" className="st-traj__dot" />
-          <text x={x(i)} y={H - 6} className="st-traj__month">{fmtDate(loc, new Date(p.finishedAt), labelOpts)}</text>
-        </g>
-      ))}
-    </svg>
-  )
+/**
+ * Запасной список для таблицы, пока /mobile/sat/scores нет на бэкенде: только симуляции из /mocks (без past papers),
+ * балл — середина диапазона «внутренней оценки JTS».
+ */
+export function entriesFromRuns(runs = []) {
+  return runs
+    .filter((r) => !r.paperId && r.total && r.finishedAt)
+    .map((r) => ({
+      id: `sim-${r.id}`,
+      source: 'SIMULATION',
+      label: null,
+      takenOn: String(r.finishedAt).slice(0, 10),
+      rw: r.sections?.rw ? Math.round(mid(r.sections.rw) / 10) * 10 : null,
+      math: r.sections?.math ? Math.round(mid(r.sections.math) / 10) * 10 : null,
+      total: Math.round(mid(r.total) / 10) * 10,
+      delta: null,
+      mockId: r.id,
+    }))
 }
 
 /**
- * Вкладка «Пробники» (Figma SAT 16): запуск полной симуляции JTS и история результатов. Симуляция — четыре модуля и
- * перерыв по правилам экзамена; итог — диапазон, не балл. Пробники (past papers) — свой блок, его в макете нет.
- * «Добавить результат» (35) не строим — решение B плана: в таблице только прохождения JTS.
+ * Вкладка «Пробники» (Figma SAT 16, B5–B7): полная симуляция JTS рядом с траекторией к цели, под ними — таблица
+ * «Результаты»: симуляции и баллы, которые ученик добавил сам (Bluebook, официальный SAT, решение D2), с изменением
+ * к предыдущему. Past papers — своя страница во всё окно (B6), отсюда на неё ведёт кнопка; в таблицу их результаты
+ * не входят. Симуляция идёт во весь экран (B7).
  */
-export default function MocksTab({ target, onOpenRun, onReview }) {
+export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPricing }) {
   const { t, lang } = useI18n()
   const token = loadToken()
   const [hub, setHub] = useState(null)
+  const [scores, setScores] = useState(null)
   const [timed, setTimed] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [paper, setPaper] = useState(null)
+  const [quota, setQuota] = useState(null)
   const [abandon, setAbandon] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState(null)
   const [wide, setWide] = useState(true)
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (s) => fmtDate(loc, new Date(s), { day: 'numeric', month: 'short', year: 'numeric' })
 
   const load = useCallback(() => {
-    getSatMocks(token).then(setHub).catch((e) => setError(e?.serverMessage || t('sat.study.netError')))
+    getSatMocks(token).then(setHub).catch((e) => setError(errorText(e, t)))
+    getSatScores(token).then((s) => setScores(s || { entries: [] })).catch(() => setScores(false))
   }, [token, t])
   useEffect(() => load(), [load])
   useEffect(() => {
@@ -81,8 +66,10 @@ export default function MocksTab({ target, onOpenRun, onReview }) {
     return () => window.removeEventListener('resize', on)
   }, [])
 
-  // старт: прохождение создаёт сервер, первый модуль начинается сразу — как startModule прототипа после create
+  // старт: прохождение создаёт сервер, первый модуль начинается сразу — как startModule прототипа после create.
+  // Полный экран просим здесь, в клике: позже браузер его не даст.
   const begin = async (body) => {
+    enterFullWindow()
     setBusy(true)
     setError(null)
     try {
@@ -90,9 +77,15 @@ export default function MocksTab({ target, onOpenRun, onReview }) {
       await startSatMockModule(token, run.id)
       onOpenRun(run.id)
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      leaveFullWindow()
+      if (isQuotaError(e)) setQuota(errorText(e, t))
+      else setError(errorText(e, t))
       setBusy(false)
     }
+  }
+  const resume = (id) => {
+    enterFullWindow()
+    onOpenRun(id)
   }
   const drop = async () => {
     setAbandon(false)
@@ -101,17 +94,43 @@ export default function MocksTab({ target, onOpenRun, onReview }) {
       await abandonSatMock(token, hub.active.id)
       load()
     } catch (e) {
-      setError(e?.serverMessage || t('sat.study.netError'))
+      setError(errorText(e, t))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const addScore = async (body) => {
+    setBusy(true)
+    setAddError(null)
+    try {
+      await addSatScore(token, body)
+      setAdding(false)
+      load()
+    } catch (e) {
+      setAddError(errorText(e, t))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const removeScore = async (id) => {
+    setBusy(true)
+    try {
+      await deleteSatScore(token, id)
+      setScores((s) => (s ? { ...s, entries: (s.entries || []).filter((e) => e.id !== id) } : s))
+    } catch (e) {
+      setError(errorText(e, t))
     } finally {
       setBusy(false)
     }
   }
 
+  if (quota) return <QuotaNotice text={quota} onBack={() => setQuota(null)} onPricing={onPricing} />
   if (!hub) return error ? <p className="st-error" role="alert">{error}</p> : null
   const active = hub.active
   const cap = hub.capacity
-  const runs = hub.runs || []
-  const dl = deltas(runs)
+  const entries = scores ? scores.entries || [] : entriesFromRuns(hub.runs || [])
+  const goal = (scores && scores.target) || target || null
+  const gap = gapToTarget(entries, goal)
 
   let action
   if (active) {
@@ -124,7 +143,7 @@ export default function MocksTab({ target, onOpenRun, onReview }) {
         </div>
         <div className="st-mocks__acts">
           <button type="button" className="ih-btn ih-btn--outline" disabled={busy} onClick={() => setAbandon(true)}>{t('sat.mock.abandon')}</button>
-          <button type="button" className="ih-cta" disabled={busy || !wide} onClick={() => onOpenRun(active.id)}>{t('sat.mock.resume')}<ArrowForwardIcon size={20} /></button>
+          <button type="button" className="ih-cta" disabled={busy || !wide} onClick={() => resume(active.id)}>{t('sat.mock.resume')}<ArrowForwardIcon size={20} /></button>
         </div>
       </div>
     )
@@ -184,83 +203,58 @@ export default function MocksTab({ target, onOpenRun, onReview }) {
         </section>
         <section className="st-card st-mocks__traj">
           <h2>{t('sat.mock.trajectory')}</h2>
-          <p className="st-muted">{t('sat.mock.trajectorySub')}</p>
-          <Trajectory runs={runs} target={target} lang={lang} t={t} />
-          {runs.length > 0 && (
+          <p className="st-muted">{gap == null ? t('sat.scores.trajSub') : gap > 0 ? t('sat.scores.gap', { n: String(gap) }) : t('sat.scores.reached')}</p>
+          <ScoreTrajectory entries={entries} target={goal} />
+          {entries.length > 0 && (
             <div className="st-mocks__legend">
-              <span className="st-mocks__src is-sim"><i />{t('sat.mock.legendSim')}</span>
+              <span className="st-mocks__src is-simulation"><i />{t('sat.scores.src.SIMULATION')}</span>
+              <span className="st-mocks__src is-bluebook"><i />{t('sat.scores.src.BLUEBOOK')}</span>
+              <span className="st-mocks__src is-official"><i />{t('sat.scores.src.OFFICIAL')}</span>
             </div>
           )}
         </section>
       </div>
 
-      {hub.papers?.length > 0 && (
-        // Нет в Figma: адаптация прототипа mock.js (paperCard) — пробники целиком, без подсказок и объяснений
-        <section className="st-card st-mocks__papers">
-          <h2>{t('sat.mock.papersTitle')}</h2>
-          <p className="st-muted">{t('sat.mock.papersLead')}</p>
-          <ul>
-            {hub.papers.map((p) => (
-              <li key={p.id}>
+      {/* Past papers — своя страница во всё окно (B6, прототип b5e85dfa): отсюда на неё одна кнопка */}
+      <section className="st-card st-mocks__papersLink">
+        <span className="st-mocks__simIcon">{NAV_ICONS.papers(24)}</span>
+        <div>
+          <h2>{t('sat.papers.title')}</h2>
+          <p className="st-muted">{t('sat.papers.lead')}</p>
+        </div>
+        <span className="st-spacer" />
+        <button type="button" className="ih-btn ih-btn--outline" onClick={onPapers}>{t('sat.papers.open')}<ArrowForwardIcon size={18} /></button>
+      </section>
+
+      {/* Полные «hard»-симуляции I и II (B7, CH11 / CH12 курса): та же симуляция по модулям, но из сложных наборов.
+          Сервер отдаёт их в hub.hard и стартует по { variant } */}
+      {hub.hard?.length > 0 && (
+        <section className="st-card st-mocks__hard">
+          <h2>{t('sat.hard.title')}</h2>
+          <p className="st-muted">{t('sat.hard.lead')}</p>
+          <ul className="st-mocks__hardList">
+            {hub.hard.map((h) => (
+              <li key={h.id}>
                 <div>
-                  <b>{p.title}</b>
+                  <b>{h.title || h.unitCode}</b>
                   <small className="st-muted">
-                    {plural(t, lang, 'sat.q', p.count)} · {t('sat.mock.fourModules')}
-                    {p.sat > 0 && <> · {plural(t, lang, 'sat.mock.satTimes', p.sat)}</>}
+                    {h.unitCode ? `${h.unitCode} · ` : ''}{t('sat.mock.fourModules')}
+                    {h.sat > 0 ? ` · ${t('sat.hard.sat', { n: String(h.sat) })}` : ''}
                   </small>
                 </div>
-                <button type="button" className="ih-btn ih-btn--outline" disabled={busy || !!active || !wide} onClick={() => setPaper(p)}>{t('sat.mock.sitPaper')}</button>
+                <span className="st-spacer" />
+                <button type="button" className="ih-btn ih-btn--outline" disabled={busy || !!active || !wide || h.available === false} onClick={() => begin({ variant: h.id, timed })}>
+                  {h.available === false ? t('sat.hard.soon') : t('sat.papers.start')}
+                </button>
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      <section className="st-card st-mocks__hist">
-        <h2>{t('sat.mock.results')}</h2>
-        <p className="st-muted">{t('sat.mock.resultsSub')}</p>
-        {runs.length === 0 ? <p className="st-muted st-mocks__empty">{t('sat.mock.noResults')}</p> : (
-          <div className="st-mocks__table" role="table">
-            <div className="st-mocks__tr is-head" role="row">
-              {['date', 'source', 'rw', 'math', 'total', 'delta'].map((k) => <span key={k} role="columnheader">{t(`sat.mock.col.${k}`)}</span>)}
-              <span role="columnheader" />
-            </div>
-            {runs.map((r, i) => (
-              <div key={r.id} className="st-mocks__tr" role="row">
-                <span role="cell" className="is-wide">{fmt(r.finishedAt)}</span>
-                <span role="cell" className="is-wide">
-                  <span className={`st-mocks__src ${r.paperId ? 'is-paper' : 'is-sim'}`} title={r.paperTitle || undefined}><i /><span>{r.paperTitle || t('sat.mock.srcSim')}</span></span>
-                  {!r.timed && <span className="st-mocks__tag">{t('sat.mock.untimedTag')}</span>}
-                </span>
-                <span role="cell" data-label={t('sat.mock.col.rw')}><b>{r.sections?.rw?.low != null ? `${r.sections.rw.low}–${r.sections.rw.high}` : '—'}</b></span>
-                <span role="cell" data-label={t('sat.mock.col.math')}><b>{r.sections?.math?.low != null ? `${r.sections.math.low}–${r.sections.math.high}` : '—'}</b></span>
-                <span role="cell" className="st-mocks__total" data-label={t('sat.mock.col.total')}>
-                  <b>{r.total ? `${r.total.low}–${r.total.high}` : '—'}</b>
-                  <span className="st-mocks__est">{t('sat.mock.estimateChip')}</span>
-                </span>
-                <span role="cell" data-label={t('sat.mock.col.delta')} className={dl[i] > 0 ? 'is-up' : dl[i] < 0 ? 'is-down' : 'st-muted'}>{dl[i] == null ? '—' : `${dl[i] > 0 ? '+' : ''}${dl[i]}`}</span>
-                <span role="cell"><button type="button" className="st-link" onClick={() => onReview(r.id)}>{t('sat.mock.reviewShort')}</button></span>
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="st-mocks__note"><InfoIcon size={20} />{t('sat.mock.historyNote')}</p>
-      </section>
+      <ScoresTable entries={entries} busy={busy} onAdd={() => { setAddError(null); setAdding(true) }} onDelete={removeScore} onReview={onReview} />
 
-      <ConfirmDialog
-        open={!!paper}
-        title={paper?.title || ''}
-        text={t('sat.mock.paperConfirm')}
-        confirmLabel={t('sat.mock.sitPaper')}
-        cancelLabel={t('sat.mock.abandonCancel')}
-        busy={busy}
-        onConfirm={() => {
-          const p = paper
-          setPaper(null)
-          begin({ paperId: p.id, timed: true })
-        }}
-        onCancel={() => setPaper(null)}
-      />
+      {adding && <AddScoreDialog busy={busy} error={addError} onSave={addScore} onClose={() => setAdding(false)} />}
       <ConfirmDialog
         open={abandon}
         title={t('sat.mock.abandonTitle')}

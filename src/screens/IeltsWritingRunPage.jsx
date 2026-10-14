@@ -11,6 +11,7 @@ import { countWords, dropWritingDraft, kindKey, loadWritingDraft, minWords, save
 import { useMockAutosave } from '../ielts/mock/mockSession.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { SparkleIcon, CheckCircleIcon, CheckIcon, CloseIcon, EditIcon, InfoIcon, TimerIcon } from '../ielts/icons.jsx'
+import { errorText, isQuotaError } from '../lib/examQuota.js'
 
 const PLAN_STEPS = { t1ac: 4, t1gt: 5, t2: 4 }
 
@@ -146,7 +147,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
       if (mock) mock.onSubmitted([view.attempt.id])
       else onDone?.(view.attempt.id, testId)
     } catch (e) {
-      setError(e?.message || t('ieltsReading.submitError'))
+      setError(isQuotaError(e) ? errorText(e, t) : e?.message || t('ieltsReading.submitError'))
       setBusy(false)
       setConfirm(false)
     }

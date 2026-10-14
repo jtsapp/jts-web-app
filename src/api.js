@@ -94,6 +94,8 @@ async function authGet(path, token) {
     // а не поломку — отличать это от сетевой осечки приходится по нему.
     const err = new Error(`Ошибка сервера (${res.status})`)
     err.status = res.status
+    // 403 у GET — это либо замок доступа, либо исчерпанная демо-квота (GET /mobile/sat/weekly): тело различает их
+    if (res.status === 403) err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json()
@@ -128,7 +130,7 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     // Текст отказа — отдельным полем, а не в message: вызывающие, что
     // показывают свою подпись, его не заметят, а сдача домашки (HomeworkPage)
     // покажет ученику слова сервера вместо общего «не удалось».
-    err.serverMessage = await rejectionText(res)
+    err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json().catch(() => null)
@@ -141,12 +143,21 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
  * `message` — запасной вид того же. `error` не берём: у Spring это фраза кода
  * («Bad Request»), ученику она ничего не скажет.
  */
-async function rejectionText(res) {
+async function rejectionText(res, err) {
   let body = null
   try {
     body = await res.json()
   } catch {
     // Тела нет или оно не JSON (прокси, обрыв) — отказ остаётся с одним кодом.
+  }
+  // Исчерпанная демо-квота (ContentQuotaService, SAT-SYNC-PLAN E2): 403 с code CONTENT_QUOTA_EXCEEDED, типом контента и
+  // счётчиками. Закрытый доступ — тоже 403, но без code: экраны различают их по нему (lib/examQuota.js).
+  if (err && body && typeof body === 'object' && body.code) {
+    err.code = body.code
+    err.contentType = body.contentType ?? null
+    err.limit = body.limit ?? null
+    err.used = body.used ?? null
+    err.demoExpired = !!body.demoExpired
   }
   const text = (Array.isArray(body?.messages) ? body.messages[0] : null) ?? body?.message
   return typeof text === 'string' && text.trim() ? text.trim() : null
@@ -175,7 +186,7 @@ async function authPost(path, token, body) {
     const err = new Error(`request failed: ${res.status}`)
     err.status = res.status
     // текст отказа сервера — отдельным полем, как у authPut: message вызывающие местами сравнивают
-    err.serverMessage = await rejectionText(res)
+    err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json().catch(() => null)
@@ -1494,7 +1505,7 @@ export function getIeltsProgress(token) {
 }
 
 // ---- SAT (бэкенд /mobile/sat/**, docs/sat/TEST_FORMAT.md): профиль, таксономия, вопрос без ключа, проверка
-// Шаги старта и доступ к материалам SAT (backend V336): { access, onboarded, diagnosticDone } — открыто без доступа
+// Шаги старта и доступ к материалам SAT (backend V341): { access, onboarded, diagnosticDone } — открыто без доступа
 export function getSatMe(token) {
   return authGet('/mobile/sat/me', token)
 }
@@ -1691,6 +1702,57 @@ export function abandonSatMock(token, id) {
 
 export function getSatMockReview(token, id) {
   return authGet(`/mobile/sat/mocks/${encodeURIComponent(id)}/review`, token)
+}
+
+// ---- SAT, синхронизация с прототипом (SAT-SYNC-PLAN B1–B5): недельный тест, статистика, журнал ошибок, баллы
+
+/** Недельный тест: { weekStart, status: READY | DONE, timeLimitSeconds, questions, result }. Набор держится неделю. */
+export function getSatWeekly(token) {
+  return authGet('/mobile/sat/weekly', token)
+}
+
+/** Сдать недельный тест целиком: { answers: [{ questionId, answer, timeSpentMs }] } → WeeklyResult. */
+export function submitSatWeekly(token, body) {
+  return authPost('/mobile/sat/weekly/submit', token, Array.isArray(body) ? { answers: body } : body)
+}
+
+/** Прошлые недели: [{ weekStart, correct, total, completedAt }]. */
+export function getSatWeeklyHistory(token) {
+  return authGet('/mobile/sat/weekly/history', token)
+}
+
+/** Статистика для дашборда «Сегодня» (серия, решено, время, освоено, домены, 90 дней, бейджи). */
+export function getSatStats(token) {
+  return authGet('/mobile/sat/insights/stats', token)
+}
+
+/** Итог набора из «Практики» (только source = practice). */
+export function getSatSessionSummary(token, id) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/summary`, token)
+}
+
+/** «Log error»: запись очереди повторения становится строкой журнала (title, topic, unitCode, errorType). */
+export function logSatError(token, errorId, body) {
+  return authPost(`/mobile/sat/errors/${encodeURIComponent(errorId)}/log`, token, body)
+}
+
+/** Таблица «Результаты»: симуляции + добавленные баллы (Bluebook, официальный SAT). { target, entries }. */
+export function getSatScores(token) {
+  return authGet('/mobile/sat/scores', token)
+}
+
+/** Добавить балл: { source: BLUEBOOK | OFFICIAL, label, takenOn, rw, math }. */
+export function addSatScore(token, body) {
+  return authPost('/mobile/sat/scores', token, body)
+}
+
+/** Остаток демо-квот раздела: [{ contentType, limit, used, remaining, source, sourceName }], limit null — без лимита. */
+export function getContentQuotaUsage(token, area) {
+  return authGet(`/mobile/content-quota/usage?area=${encodeURIComponent(area)}`, token)
+}
+
+export function deleteSatScore(token, id) {
+  return authDelete(`/mobile/sat/scores/${encodeURIComponent(id)}`, token)
 }
 
 export function getIeltsProfile(token) {

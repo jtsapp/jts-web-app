@@ -17,6 +17,7 @@ vi.mock('../api.js', () => ({
   saveStudentVocab: vi.fn(),
   deleteStudentVocabWord: vi.fn(),
   markVocabLearned: vi.fn(),
+  getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: true })),
   getIeltsTests: vi.fn(async () => [
     { id: 'VOC-EDU', category: 'education', title: 'Education', topic: { ru: 'Образование' }, questionCount: 40 },

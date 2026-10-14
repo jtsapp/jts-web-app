@@ -843,8 +843,10 @@ onboarding.js`: 160 часов на балл, 6 занятий в неделю, 
 **IELTS по дизайну «IELTS new» (Figma JTS-clone, страница «IELTS new», 08.10.2026).** Макет читается через Figma Desktop
 Bridge (`figma-console`, без лимита Starter). Аккаунт IELTS — явный признак `ielts_enrollments.ielts_account` (ставит
 web-admin «Ученики IELTS», позже биллинг; ручка `/mobile/ielts/plan/me`, клиент `getIeltsMe`): у него в сайдбаре ровно
-Главная · Практика · Speaking Buddy · Уроки · Домашняя работа · Словарь · IELTS · Настройки, без «Повторения», счётчиков и
-плашки уровня, а тропа kingdom уводит в IELTS. Тесты, мокающие `api.js` с `getDemoAccess`, обязаны мокать и `getIeltsMe`.
+Главная · Практика · Speaking Buddy · Уроки · Домашняя работа · Словарь · IELTS · Настройки (+ «Повторение», см. ниже), без счётчиков и
+плашки уровня. С 14.10.2026 у аккаунтов IELTS/SAT в меню есть «Повторение» (`learning`, первым в `IELTS_SECTIONS`), и
+тропа kingdom больше НЕ уводит в IELTS (редирект убран из App.jsx; пропуск теста уровня при входе — в
+`lib/ieltsAccountRedirect.js`). Тесты, мокающие `api.js` с `getDemoAccess`, обязаны мокать и `getIeltsMe`.
 Курса General English у такого ученика нет: вход без уровня CEFR не уводит его на письменный тест уровня (`test-intro` →
 «Главная», эффект рядом с `ieltsAccount` в App.jsx), а верх «Главной» — `home/IeltsHomeCard.jsx` (до онбординга — «Начать
 подготовку», после — программа и «Открыть план на сегодня»; на проде IELTS скрыт — карточки нет). Виджет «Домашнее
@@ -874,7 +876,7 @@ web-admin «Ученики IELTS», позже биллинг; ручка `/mobi
 «ждёт ИИ». Анкету и итог видят web-admin «IELTS · ученики», кабинет преподавателя (вкладка «Диагностика») и «IELTS ·
 доступ» (теперь кнопка в «Учениках» / «Моих студентах», не пункт меню).
 
-**SAT — тот же замок, что у IELTS (backend V336).** `/mobile/sat/me` отдаёт `{access, onboarded, diagnosticDone}`; пока
+**SAT — тот же замок, что у IELTS (backend V341).** `/mobile/sat/me` отдаёт `{access, onboarded, diagnosticDone}`; пока
 хоть один шаг не пройден, хаб SAT рисует вместо вкладок `src/sat/tabs/SatStartView.jsx` (главы → диагностика → доступ от
 менеджера, без маскота IELTS). Замок на сервере — `SatAccessInterceptor` (открыты me, profile, taxonomy, diagnostic/**,
 plan и plan/rebuild); менеджер открывает доступ в web-admin «Ученики → SAT · доступ». Тарифы экзаменов — свои у SAT и

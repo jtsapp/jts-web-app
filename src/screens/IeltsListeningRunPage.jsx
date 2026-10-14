@@ -19,6 +19,7 @@ import { setIeltsParams } from '../ielts/urlParams.js'
 import { joinNumbers, unansweredNumbers, useMockAutosave } from '../ielts/mock/mockSession.js'
 import MockRunHeader, { RunTopBar } from '../ielts/mock/MockRunHeader.jsx'
 import { HeadphonesIcon, InfoIcon } from '../ielts/icons.jsx'
+import { errorText, isQuotaError } from '../lib/examQuota.js'
 
 /**
  * Прохождение Listening (Figma «8 · Listening — тренировка»): плеер сверху, бланк вопросов части, транскрипт
@@ -70,7 +71,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview,
         if (mode === 'exam') setPhase({ name: 'intro' })
         if (mode === 'study') setTranscriptOpen(true)
       })
-      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error' }))
+      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error', quota: isQuotaError(e) }))
     return () => {
       alive = false
     }
@@ -112,9 +113,10 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview,
       dropDraft(run.testId)
       if (mock) mock.onSubmitted([res.attempt.id])
       else onReview?.(res.attempt.id)
-    } catch {
+    } catch (e) {
       submittedRef.current = false
-      setError(t('ieltsReading.submitFailed'))
+      // исчерпанная демо-квота IELTS (E2) — её текст, а не «не удалось отправить»
+      setError(isQuotaError(e) ? errorText(e, t) : t('ieltsReading.submitFailed'))
     } finally {
       setSubmitting(false)
       setConfirm(false)
@@ -171,7 +173,7 @@ export default function IeltsListeningRunPage({ token, target, onExit, onReview,
   if (!testId || state.status === 'missing' || state.status === 'error') {
     return (
       <div className="ih-run ih-run--empty">
-        <EmptyState icon={<HeadphonesIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />
+        <EmptyState icon={<HeadphonesIcon size={28} />} title={t(state.quota ? 'exam.quota.title' : 'ieltsReading.errorTitle')} text={t(state.quota ? 'exam.quota.text' : 'ieltsReading.errorText')} />
         <button type="button" className="ih-btn ih-btn--outline" onClick={() => onExit?.(testId)}>{t('ieltsReading.back')}</button>
       </div>
     )
