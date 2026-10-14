@@ -115,8 +115,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Токен, под которым читались модули (practice-токен, если он выдался):
   // повторный запрос обязан идти под тем же, иначе бэкенд ответит иначе.
   const authTokenRef = useRef(token)
-  // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
-  // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
+  // Лимит модуля («N из M» из админки, тариф, демо) и два его вида — тексты у них разные:
+  // 'refused' — бэкенд отдал 403 на завершении урока: урок НЕ засчитан, показываем это на экране итогов
+  // вместо тихой синхронизации; 'limit' — урок засчитан, но следующий узел заперт лимитом (goNext).
+  // false — ограничения нет.
   const [restricted, setRestricted] = useState(false)
 
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
@@ -352,18 +354,19 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     const next = i >= 0 ? lessons[i + 1] : null
     // Квота исчерпана ровно на границе (только что прошли последний доступный
     // урок): следующий уже заблокирован isUnlocked. Не открываем его молча —
-    // остаёмся на экране итогов, переключая на тот же "🔒 квота" вид, что и
-    // при отказе бэкенда на завершении (см. onDone/ContentRestrictedError).
+    // остаёмся на экране итогов, в том же "🔒" виде, что и при отказе бэкенда
+    // на завершении (см. onDone/ContentRestrictedError), но с другим текстом:
+    // этот урок как раз засчитан, а не засчитан — следующий.
     if (next && !isUnlocked(i + 1)) {
-      // Экзамен заперт своим правилом (весь курс уровня в каталоге), а не
-      // квотой: «урок не засчитан, лимит» после засчитанного последнего урока
-      // было бы неправдой, а демо-ученику ещё и продавало подписку. На тропу.
+      // Заперт экзамен — ведём на тропу, а не в «лимит»: «урок не засчитан,
+      // лимит» после засчитанного последнего урока было бы неправдой, а
+      // демо-ученику ещё и продавало подписку.
       if (next.code === EXAM_CODE) {
         setEnd(null)
         setOpen(null)
         return
       }
-      setRestricted(true)
+      setRestricted('limit')
       return
     }
     setEnd(null)
@@ -426,7 +429,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                 return kept
               })
             }
-            setRestricted(true)
+            setRestricted('refused')
             return
           }
           throw e
@@ -711,8 +714,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                     <span>{t('lesson.result.right')}</span>
                   </div>
                 </div>
-                {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
-                    «следующий урок» — он всё равно упрётся в тот же отказ. */}
+                {/* Лимит от админа. Либо урок решён верно, но не засчитан (restricted
+                    === 'refused'), либо засчитан, а следующий заперт лимитом ('limit') —
+                    текст у них разный. Прячем «следующий урок» — он всё равно упрётся
+                    в тот же отказ. */}
                 {restricted ? (
                   <div className="le-acts">
                     {/* У демо-ученика тот же отказ живёт в модалке про подписку
@@ -723,7 +728,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                         модалке. Лимит от админа (не демо) виден как раньше. */}
                     {!isDemoAccount && (
                       <div className="le-restricted" role="status">
-                        🔒 {t('learn.quotaReached')}
+                        🔒 {t(restricted === 'limit' ? 'learn.limitAfterDone' : 'learn.quotaReached')}
                       </div>
                     )}
                     <button className="le-btn" onClick={exitLesson}>

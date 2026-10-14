@@ -182,6 +182,43 @@ describe('KingdomInteriorPage — демо-лимит на тропе показ
       .toContain('Урок не засчитан: вы исчерпали лимит уроков в этом модуле.')
   })
 
+  // Граница лимита: последний разрешённый урок сервер засчитал, заперт следующий. «Урок не засчитан» тут было бы
+  // неправдой — по такому экрану (скриншот ученицы от 29.09: 89% за урок и «не засчитан») решили, что урок пропал.
+  async function finishLastAllowedLesson(props) {
+    loadDone.mockImplementationOnce(async () => new Set())
+    getContentQuota.mockImplementationOnce(async () => 1) // лимит модуля: один узел
+    markDone.mockImplementationOnce(async () => new Set(['l0'])) // сервер засчитал первый
+
+    const view = renderPage(props)
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
+    fireEvent.click(view.container.querySelector('.kt-step'))
+    fireEvent.click(await screen.findByText('сдать урок'))
+    const next = await screen.findByText('Перейти на следующий урок')
+    await waitFor(() => expect(next.disabled).toBe(false))
+    fireEvent.click(next)
+    return view
+  }
+
+  it('на границе лимита ученик видит «Урок засчитан», а не «не засчитан»', async () => {
+    const view = await finishLastAllowedLesson({ isDemoAccount: false })
+
+    await waitFor(() => expect(view.container.querySelector('.le-restricted')).toBeTruthy())
+    const line = view.container.querySelector('.le-restricted').textContent
+    expect(line).toContain('Урок засчитан.')
+    expect(line).not.toContain('не засчитан')
+    expect(line).toContain('менеджеру')
+    // Дальше идти некуда: остаётся только «Назад».
+    expect(screen.queryByText('Перейти на следующий урок')).toBe(null)
+    expect(screen.getByText('Назад')).toBeTruthy()
+  })
+
+  it('демо-ученик на границе лимита видит плашку про подписку, а не строку', async () => {
+    const view = await finishLastAllowedLesson({ isDemoAccount: true })
+
+    expect(await screen.findByText(PAYWALL)).toBeTruthy()
+    expect(view.container.querySelector('.le-restricted')).toBe(null)
+  })
+
   it('«Вернуться» уводит туда же, куда «Назад» с итогов, — на тропу', async () => {
     const view = renderPage({ isDemoAccount: true })
     await finishLessonWithQuotaRefusal(view)

@@ -1151,6 +1151,8 @@ const dict = {
     'learn.locked': 'Вы ещё не дошли до уровня {label}',
     'learn.moduleLocked': 'Доступ к этому модулю закрыт. Напишите менеджеру — и вам откроют доступ.',
     'learn.quotaReached': 'Урок не засчитан: вы исчерпали лимит уроков в этом модуле. Напишите менеджеру.',
+    // Тот же лимит, но на границе: сам урок засчитан, заперт следующий.
+    'learn.limitAfterDone': 'Урок засчитан. Лимит уроков в этом модуле исчерпан — чтобы открыть следующий, напишите менеджеру.',
     // Профиль (порт мобильного экрана профиля)
     'profile.rankPrefix': 'Ваш уровень',
     'profile.noName': 'Без имени',
@@ -6723,6 +6725,7 @@ const dict = {
     'learn.locked': 'You haven’t reached level {label} yet',
     'learn.moduleLocked': 'Access to this module is closed. Message your manager and they will open it.',
     'learn.quotaReached': 'Lesson not counted: you have reached your lesson limit for this module. Message your manager.',
+    'learn.limitAfterDone': 'Lesson counted. You have reached your lesson limit for this module — message your manager to open the next one.',
     'profile.rankPrefix': 'Your level',
     'profile.noName': 'No name',
     'profile.keepLearning': 'Keep learning',
@@ -12282,6 +12285,7 @@ const dict = {
     'learn.locked': '{label} деңгейіне әлі жеткен жоқсыз',
     'learn.moduleLocked': 'Бұл модуль жабық. Менеджерге жазыңыз — сізге қолжетімділік ашылады.',
     'learn.quotaReached': 'Сабақ есептелмеді: осы модуль бойынша сабақ лимитін тауыстыңыз. Менеджерге жазыңыз.',
+    'learn.limitAfterDone': 'Сабақ есептелді. Осы модуль бойынша сабақ лимитін тауыстыңыз — келесісін ашу үшін менеджерге жазыңыз.',
     'profile.rankPrefix': 'Сіздің деңгейіңіз',
     'profile.noName': 'Аты жоқ',
     'profile.keepLearning': 'Оқуды жалғастырыңыз',
