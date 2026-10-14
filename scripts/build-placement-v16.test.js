@@ -4,7 +4,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { applyPatches, injectPrelude, extractMedia, cloudfrontMap, rewriteUrls, PATCHES } = require('./build-placement-v16.js')
+const { applyPatches, injectPrelude, injectKkFont, extractMedia, cloudfrontMap, rewriteUrls, PATCHES } = require('./build-placement-v16.js')
 
 const SRC = path.join(__dirname, '..', 'data', 'jtsplacement-v16.html')
 
@@ -23,6 +23,15 @@ describe('build-placement-v16', () => {
   it('прелюдия встаёт перед первым скриптом страницы', () => {
     const out = injectPrelude('<head><style></style><script>let x</script></head>')
     expect(out.indexOf('JTS_HOST')).toBeLessThan(out.indexOf('let x'))
+  })
+
+  it('казахский — на Inter: правило по lang="kk" и сам шрифт в <head>, после стилей автора', () => {
+    const out = injectKkFont('<head><style>body{font-family:"JTS Manrope"}</style></head><body></body>')
+    expect(out).toContain('html[lang="kk"] *{font-family:"Inter"')
+    expect(out).toMatch(/font-family:"Inter"[^}]*!important\}/)
+    expect(out).toContain('fonts.googleapis.com/css2?family=Inter')
+    expect(out.indexOf('jts-host-kk-font')).toBeGreaterThan(out.indexOf('JTS Manrope'))
+    expect(out.indexOf('jts-host-kk-font')).toBeLessThan(out.indexOf('</head>'))
   })
 
   it('крупный base64 уходит файлом, мелкий остаётся внутри', () => {

@@ -247,7 +247,9 @@ scripts/extract-level-exams.js` исполняет прототип в `node:vm`
 собирает `public/placement/v16/`: base64 → `media/`, записи с чужого
 CloudFront → `audio/`, плюс точечные патчи (пространство localStorage по
 профилю, стартовый язык, свои адреса) — каждый обязан найтись ровно один раз,
-иначе сборка падает. Экран `?screen=placement` (`PlacementPage`) держит его в
+иначе сборка падает. Казахский в тесте — на Inter, как во всём приложении:
+`kk-font.css` в iframe не доходит, поэтому сборка кладёт в <head> теста Inter
+(Google Fonts) и правило по `html[lang="kk"]`, который тест ставит сам. Экран `?screen=placement` (`PlacementPage`) держит его в
 iframe с того же адреса; приложение подключается крючками автора
 (`src/placement/bridge.js`): `onComplete` / `openLearning` /
 `openPracticeActivity` / `navigate` и `JTSSpeakingBuddy.start`. Старые адреса

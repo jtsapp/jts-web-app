@@ -46,6 +46,16 @@ const PRELUDE =
   "window.JTS_HOST={lang:['ru','kk','en'].indexOf(l)>=0?l:null,ns:(q.get('ns')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,64)}" +
   '}catch(e){window.JTS_HOST={lang:null,ns:\'\'}}})();</script>'
 
+// Казахский интерфейс — на Inter, как во всём приложении (src/kk-font.css). Правила приложения в iframe не доходят: у
+// теста свой документ и своя вшитая гарнитура «JTS Manrope». Тест сам ставит <html lang="kk"> при казахском (chrome()
+// автора, и при переключении языка внутри теста тоже), поэтому правило висит на атрибуте. Гарнитур у теста только две —
+// «JTS Manrope» и Inter, моноширинных и иконочных нет, — так что * с !important ничего чужого не задевает. Inter — той же
+// ссылкой Google Fonts, что в layout.jsx: файлы шрифта браузер качает, только когда гарнитура реально нужна. Логотип
+// (.wordmark) автор сам задал на Inter на всех языках — без этой ссылки он падал на системный шрифт.
+const KK_FONT =
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap"/>' +
+  '<style id="jts-host-kk-font">html[lang="kk"] *{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif!important}</style>'
+
 // [что ищем, на что меняем, зачем]. Строки — точные куски исходника.
 const PATCHES = [
   [
@@ -97,6 +107,13 @@ function injectPrelude(html) {
   const at = html.indexOf('<script')
   if (at < 0) throw new Error('[build-placement-v16] в странице нет <script>')
   return html.slice(0, at) + PRELUDE + html.slice(at)
+}
+
+/** Inter для казахского — в конец <head>, после стилей автора. */
+function injectKkFont(html) {
+  const at = html.indexOf('</head>')
+  if (at < 0) throw new Error('[build-placement-v16] в странице нет </head>')
+  return html.slice(0, at) + KK_FONT + html.slice(at)
 }
 
 /**
@@ -153,7 +170,7 @@ async function main() {
   const src = args.find((a) => !a.startsWith('--')) || DEFAULT_SRC
   const raw = fs.readFileSync(src, 'utf8')
 
-  const patched = injectPrelude(applyPatches(raw))
+  const patched = injectKkFont(injectPrelude(applyPatches(raw)))
   const { html: lean, files } = extractMedia(patched)
   const audio = cloudfrontMap(lean)
   const html = rewriteUrls(lean, audio)
@@ -186,4 +203,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { applyPatches, injectPrelude, extractMedia, cloudfrontMap, rewriteUrls, PATCHES, PRELUDE }
+module.exports = { applyPatches, injectPrelude, injectKkFont, extractMedia, cloudfrontMap, rewriteUrls, PATCHES, PRELUDE }
