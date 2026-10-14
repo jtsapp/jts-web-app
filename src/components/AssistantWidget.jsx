@@ -4,8 +4,12 @@ import { OPEN_EVENT, setAssistantAvailable } from '../lib/assistant/assistantBus
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
+import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
+import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
+import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
+import { unlockSpeech } from '../lib/speech.js'
 
-// Помощник по сайту: плавающая кнопка и окно чата поверх любого экрана
+// Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
 //
 // Смонтирован на уровне App, вне обёртки экрана с key, поэтому переходы между
@@ -16,9 +20,68 @@ import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 // Снимок экрана снимается в момент отправки вопроса из `.scr-in` — обёртки
 // текущего экрана в App. Сам виджет лежит вне неё и в снимок не попадает
 // (для надёжности ещё и помечен data-assistant-ignore).
+//
+// Голос — «голос на голос» (решение владельца 14.10.2026): вопрос, сказанный в
+// микрофон, получает ответ голосом сразу, по мере того как он пишется;
+// набранный текстом — только текстом. Озвучку можно выключить кнопкой в шапке.
 
 const MAX_INPUT = 2000
 const SCREEN_ROOT = '.scr-in'
+// Аватар Луны (уменьшенная копия public/tutor/tutor-luna.png): кнопка висит на
+// каждом экране, и 169 КБ оригинала ради круга в 60px — лишний вес.
+const AVATAR = '/assets/luna-assistant.webp'
+const MUTE_KEY = 'jts_assistant_voice_muted'
+
+const VOICE_ERRORS = {
+  denied: 'assistant.mic.denied',
+  not_heard: 'assistant.mic.notHeard',
+  stt_failed: 'assistant.mic.failed',
+  auth: 'assistant.err.auth',
+}
+
+function readMuted() {
+  try {
+    return localStorage.getItem(MUTE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeMuted(value) {
+  try {
+    if (value) localStorage.setItem(MUTE_KEY, '1')
+    else localStorage.removeItem(MUTE_KEY)
+  } catch {
+    /* приватный режим — выбор проживёт до перезагрузки */
+  }
+}
+
+const clock = (sec) => {
+  const s = Math.max(0, Math.floor(sec || 0))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+function MicIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SoundIcon({ muted }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      {muted ? (
+        <path d="m17 9 4 6m0-6-4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      ) : (
+        <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      )}
+    </svg>
+  )
+}
 
 // **жирный** и списки «- » — всё форматирование, которое разрешено помощнику
 // (см. prompt.js). Текст идёт в React как текст, не как HTML.
@@ -58,13 +121,19 @@ function RichText({ text }) {
 export default function AssistantWidget({ token, screen, enabled = true }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([]) // {role, content}
+  const [messages, setMessages] = useState([]) // {role, content, voice?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null) // {text, retry: string|null}
+  // Выбор «без озвучки» запоминается на устройстве. Читаем сразу: на сервере
+  // выйдет false, но расхождения при гидратации нет — кнопка звука рисуется
+  // только после голосового вопроса, а в первой разметке окно закрыто.
+  const [muted, setMuted] = useState(readMuted)
   const abortRef = useRef(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
+  // Озвучка текущего ответа: её обрывают печать, новый вопрос, закрытие окна.
+  const voiceRef = useRef(null)
   // Вопрос в пути. Отдельно от busy: два клика подряд успевают до перерисовки,
   // и по одному busy ушли бы два одинаковых вопроса.
   const inFlightRef = useRef(false)
@@ -76,8 +145,13 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
   // Layout-эффект идёт внутри коммита, до любого события.
   useLayoutEffect(() => {
-    stateRef.current = { messages, screen, token, lang, enabled }
+    stateRef.current = { messages, screen, token, lang, enabled, muted }
   })
+
+  const stopVoice = useCallback(() => {
+    voiceRef.current?.stop()
+    voiceRef.current = null
+  }, [])
 
   // Экран стал запрещённым — окно закрывается. Не эффектом, а при рендере: так
   // окно не успевает мелькнуть на экзамене ни на кадр.
@@ -95,8 +169,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     setError(null)
     setBusy(false)
   }
-  // Ответ, который ещё идёт прошлому ученику, обрываем.
-  useEffect(() => () => abortRef.current?.abort(), [token])
+  // Ответ, который ещё идёт (или звучит) прошлому ученику, обрываем.
+  useEffect(
+    () => () => {
+      abortRef.current?.abort()
+      stopVoice()
+    },
+    [token, stopVoice],
+  )
 
   useEffect(() => {
     setAssistantAvailable(enabled)
@@ -113,13 +193,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  const send = useCallback(async (raw) => {
+  const send = useCallback(async (raw, { voice = false } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
     if (!text || !cur?.token || inFlightRef.current) return
     inFlightRef.current = true
+    stopVoice()
 
-    const history = [...cur.messages, { role: 'user', content: text }]
+    const history = [...cur.messages, { role: 'user', content: text, ...(voice ? { voice: true } : {}) }]
     setMessages([...history, { role: 'assistant', content: '' }])
     // Пары «вопрос не по теме — отказ» модели не нужны: они только удлиняют
     // каждый следующий запрос. На экране остаются, в запрос не идут.
@@ -127,6 +208,29 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     setInput('')
     setError(null)
     setBusy(true)
+
+    // Озвучка — только голосовому вопросу и только если ученик её не выключил.
+    let speaker = null
+    let chunker = null
+    if (voice && !cur.muted) {
+      chunker = createSpeechChunker()
+      speaker = createVoiceQueue({
+        token: cur.token,
+        lang: cur.lang,
+        onFinish: ({ played }) => {
+          if (voiceRef.current === speaker) voiceRef.current = null
+          if (played) return
+          // Ни одна фраза не зазвучала — говорим об этом тихо, текст ответа на месте.
+          setMessages((prev) => {
+            const next = prev.slice()
+            const last = next[next.length - 1]
+            if (last?.role === 'assistant') next[next.length - 1] = { ...last, voiceFailed: true }
+            return next
+          })
+        },
+      })
+      voiceRef.current = speaker
+    }
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -141,15 +245,22 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         pageUrl: typeof location !== 'undefined' ? location.href : '',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         bugReported: history.some((m) => m.reported),
+        voice,
         signal: controller.signal,
-        onDelta: (chunk) =>
+        onDelta: (chunk) => {
           setMessages((prev) => {
             const next = prev.slice()
             const last = next[next.length - 1]
             next[next.length - 1] = { ...last, content: last.content + chunk }
             return next
-          }),
+          })
+          if (speaker) chunker.push(chunk).forEach((p) => speaker.say(p))
+        },
       })
+      if (speaker) {
+        chunker.flush().forEach((p) => speaker.say(p))
+        speaker.end()
+      }
       if (reply.offtopic) {
         setMessages((prev) => {
           const next = prev.slice()
@@ -166,6 +277,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         })
       }
     } catch (err) {
+      speaker?.stop()
       if (err?.name === 'AbortError') return
       // Неудачный вопрос убираем из разговора вместе с недописанным ответом:
       // иначе полуответ ушёл бы в историю следующего вопроса как настоящий.
@@ -190,7 +302,29 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         setBusy(false)
       }
     }
-  }, [t])
+  }, [t, stopVoice])
+
+  const voiceQ = useVoiceQuestion({
+    token,
+    lang,
+    screenId: screen,
+    onText: (text) => send(text, { voice: true }),
+  })
+  const { cancel: cancelRecording } = voiceQ
+
+  // Закрыть окно — замолчать и бросить недоговорённую запись.
+  const close = useCallback(() => {
+    stopVoice()
+    cancelRecording()
+    setOpen(false)
+  }, [stopVoice, cancelRecording])
+
+  // Экран, где помощника нет (экзамен, звонок), — ни звука, ни микрофона.
+  useEffect(() => {
+    if (enabled) return
+    stopVoice()
+    cancelRecording()
+  }, [enabled, stopVoice, cancelRecording])
 
   // Кнопка «Спросить помощника» из плеера урока: открыть окно и сразу задать
   // вопрос — снимок снимется с того же экрана, где ученик её нажал.
@@ -209,10 +343,27 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     abortRef.current?.abort()
     abortRef.current = null
     inFlightRef.current = false
+    stopVoice()
     setMessages([])
     setError(null)
     setBusy(false)
     inputRef.current?.focus()
+  }
+
+  const toggleMuted = () => {
+    const next = !muted
+    setMuted(next)
+    writeMuted(next)
+    if (next) stopVoice()
+  }
+
+  // Синхронно в обработчике нажатия: unlockSpeech — это жест, после которого
+  // iPhone разрешит сыграть ответ, пришедший через несколько секунд без жеста.
+  const onMic = () => {
+    unlockSpeech()
+    stopVoice()
+    voiceQ.clearError()
+    voiceQ.toggle()
   }
 
   const onKeyDown = (e) => {
@@ -231,6 +382,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   ]
   const last = messages[messages.length - 1]
   const waitingFirstChunk = busy && last?.role === 'assistant' && !last.content
+  const recording = voiceQ.state === 'recording'
+  const transcribing = voiceQ.state === 'transcribing'
+  const voiceError = voiceQ.error === 'rate'
+    ? t('assistant.err.rate', { min: Math.max(1, Math.ceil((voiceQ.retryAfterSec || 60) / 60)) })
+    : voiceQ.error
+      ? t(VOICE_ERRORS[voiceQ.error])
+      : null
+  const askedByVoice = messages.some((m) => m.voice)
 
   if (!enabled) return null
 
@@ -241,20 +400,32 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
           className="asst__panel"
           role="dialog"
           aria-label={t('assistant.title')}
-          onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+          onKeyDown={(e) => e.key === 'Escape' && close()}
         >
           <div className="asst__head">
-            <img className="asst__avatar" src="/assets/dexter.png" alt="" width="36" height="36" />
+            <img className="asst__avatar" src={AVATAR} alt="" width="36" height="36" />
             <div className="asst__who">
               <b>{t('assistant.title')}</b>
               <span>{t('assistant.sub')}</span>
             </div>
+            {askedByVoice && (
+              <button
+                type="button"
+                className={`asst__sound${muted ? ' is-muted' : ''}`}
+                aria-pressed={!muted}
+                aria-label={t(muted ? 'assistant.sound.unmute' : 'assistant.sound.mute')}
+                title={t(muted ? 'assistant.sound.unmute' : 'assistant.sound.mute')}
+                onClick={toggleMuted}
+              >
+                <SoundIcon muted={muted} />
+              </button>
+            )}
             {messages.length > 0 && (
               <button type="button" className="asst__ghost" onClick={reset}>
                 {t('assistant.reset')}
               </button>
             )}
-            <button type="button" className="asst__x" aria-label={t('assistant.close')} onClick={() => setOpen(false)}>
+            <button type="button" className="asst__x" aria-label={t('assistant.close')} onClick={close}>
               ×
             </button>
           </div>
@@ -282,15 +453,27 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
             {messages.map((m, i) =>
               m.role === 'assistant' && !m.content ? null : (
                 <div key={i} className={`asst__msg asst__msg--${m.role === 'user' ? 'me' : 'bot'}`}>
-                  {m.role === 'user' ? <p>{m.content}</p> : <RichText text={m.content} />}
+                  {m.role === 'user' ? (
+                    <p>
+                      {m.voice && (
+                        <span className="asst__voice-tag" role="img" aria-label={t('assistant.voice.asked')}>
+                          <MicIcon size={13} />
+                        </span>
+                      )}
+                      {m.content}
+                    </p>
+                  ) : (
+                    <RichText text={m.content} />
+                  )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
+                  {m.voiceFailed && <p className="asst__voice-failed">{t('assistant.voice.failed')}</p>}
                 </div>
               ),
             )}
             {waitingFirstChunk && (
               <div className="asst__msg asst__msg--bot asst__msg--typing">{t('assistant.thinking')}</div>
             )}
-            {error && (
+            {error ? (
               <div className="asst__err" role="alert">
                 <span>{error.text}</span>
                 {error.retry && (
@@ -299,7 +482,11 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                   </button>
                 )}
               </div>
-            )}
+            ) : voiceError ? (
+              <div className="asst__err" role="alert">
+                <span>{voiceError}</span>
+              </div>
+            ) : null}
           </div>
 
           <form
@@ -309,21 +496,46 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
               send(input)
             }}
           >
-            <textarea
-              ref={inputRef}
-              className="asst__input"
-              rows={1}
-              value={input}
-              maxLength={MAX_INPUT}
-              placeholder={t('assistant.placeholder')}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-            />
-            <button type="submit" className="asst__send" disabled={busy || !input.trim()} aria-label={t('assistant.send')}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-              </svg>
-            </button>
+            {recording || transcribing ? (
+              <div className="asst__listening" aria-live="polite">
+                {recording && <span className="asst__rec-dot" aria-hidden="true" />}
+                {recording ? t('assistant.mic.listening', { sec: clock(voiceQ.elapsed) }) : t('assistant.mic.transcribing')}
+              </div>
+            ) : (
+              <textarea
+                ref={inputRef}
+                className="asst__input"
+                rows={1}
+                value={input}
+                maxLength={MAX_INPUT}
+                placeholder={t('assistant.placeholder')}
+                onChange={(e) => {
+                  // Ученик начал печатать — ответ дослушивать не хочет.
+                  if (e.target.value) stopVoice()
+                  setInput(e.target.value)
+                }}
+                onKeyDown={onKeyDown}
+              />
+            )}
+            {voiceQ.supported && (
+              <button
+                type="button"
+                className={`asst__mic${recording ? ' is-rec' : ''}`}
+                aria-label={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
+                title={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
+                disabled={busy || transcribing}
+                onClick={onMic}
+              >
+                <MicIcon />
+              </button>
+            )}
+            {!recording && !transcribing && (
+              <button type="submit" className="asst__send" disabled={busy || !input.trim()} aria-label={t('assistant.send')}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
           </form>
           <p className="asst__privacy">{t('assistant.privacy')}</p>
         </div>
@@ -334,11 +546,10 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         className={`asst__launcher${open ? ' is-open' : ''}`}
         aria-label={t('assistant.launcher')}
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : setOpen(true))}
       >
-        {open ? <span className="asst__launcher-x">×</span> : <img src="/assets/dexter.png" alt="" width="40" height="40" />}
+        {open ? <span className="asst__launcher-x">×</span> : <img src={AVATAR} alt="" width="40" height="40" />}
       </button>
     </div>
   )
 }
-

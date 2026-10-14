@@ -57,7 +57,7 @@ describe('помощник по сайту', () => {
     renderApp()
     expect(screen.queryByRole('dialog')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
-    expect(screen.getByRole('dialog', { name: 'Помощник JTS' })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: 'Луна' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Почему мой ответ неверный?' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Дай план на неделю' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'На сайте ошибка' })).toBeTruthy()
@@ -85,7 +85,7 @@ describe('помощник по сайту', () => {
     expect(body.screen.text).toContain('Clare is reading.')
     expect(body.screen.text).toContain('ученик ввёл «Is Cleare reading?» (отмечено как неверное)')
     // Свой текст виджет в снимок не кладёт.
-    expect(body.screen.text).not.toContain('Помощник JTS')
+    expect(body.screen.text).not.toContain('Помощник JTS: сайт')
     expect(body.pageUrl).toBeTruthy()
     expect(Array.isArray(body.errors)).toBe(true)
     expect(body.userAgent).toBeTruthy()
