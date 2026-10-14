@@ -257,8 +257,12 @@ CloudFront → `audio/`, плюс точечные патчи (простран�
 iframe с того же адреса; приложение подключается крючками автора
 (`src/placement/bridge.js`): `onComplete` / `openLearning` /
 `openPracticeActivity` / `navigate` и `JTSSpeakingBuddy.start`. Старые адреса
-`test-intro` и `test` ведут туда же; код прежнего теста
-(`src/practice/placement/`) пока лежит недоступным — снести отдельным PR.
+`test-intro` и `test` ведут туда же. Экран прежнего теста, его роуты
+`grade` / `session` и пересчёт уровня по прогону удалены (14.10.2026); движок
+`src/practice/placement/`, банк `public/practice/placement/` и
+`/api/placement/a0-options` остались — на них работает пробный урок (`/trial`).
+`/api/placement/complete` теперь только пишет уровень в Neon-профиль (его
+зовут голосовой агент и `persistPlacementLevel`).
 
 Итог (`finalizePlacement` в App): конверт v16 → `POST /api/placement/attempts`
 (таблица `placement_v16_attempt`, миграция 0017), уровень — ТОЛЬКО в пустой

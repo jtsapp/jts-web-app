@@ -1,63 +1,23 @@
-// Подтверждённый уровень после устного собеседования. Зовёт голосовой агент
-// tool-ом report_placement_level. Клиент финализирует уровень сам из LiveKit,
-// так что это подстраховка: пишет уровень в долговременный профиль.
+// Уровень CEFR → Neon-профиль этого приложения (его читает голосовой тьютор). Зовут двое: голосовой агент tool-ом
+// report_placement_level после устного собеседования (клиент финализирует уровень сам из LiveKit, так что это
+// подстраховка) и клиентская запись уровня (lib/levelSave.js → lib/tutorPrefs.js) — тест уровня v16, уровень из
+// бэкенда при входе.
 //
 // Порт felix app/api/placement/complete/route.ts.
+//
+// До 14.10.2026 роут ещё и пересчитывал уровень по прогону прежнего теста (журнал ответов, проверка по ключам) и
+// докладывал бэкенду снимок θ/SE. Прогоны заводил только экран прежнего теста — он удалён вместе с этой веткой.
+// Тест v16 хранит свой результат сам (/api/placement/attempts) и пишет уровень только в пустой аккаунт.
 
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { upsertProfile } from '@/lib/db/profile.js'
-import { BACKEND_URL, bearerFromRequest, resolveProfileId } from '@/lib/auth-server.js'
-import { profileLevel, sanitizePlacementRecord } from '@/lib/placement.js'
-import { scoreGradedAnswers, scorePlacementSession } from '@/lib/placementScore.js'
-import { loadPlacementSession, finishPlacementSession } from '@/lib/db/placementSession.js'
+import { resolveProfileId } from '@/lib/auth-server.js'
+import { profileLevel } from '@/lib/placement.js'
 
 export const runtime = 'nodejs'
 
-// A0 добавлен вместе с новым тестом (public/practice/placement/): он ветвится
-// на A0 отдельно от θ, и без этого уровня результат новичка молча отбраковывался
-// четырёхсоткой — на бэкенде enum LanguageLevel A0 знает давно.
+// A0 бэкенд знает давно (enum LanguageLevel): без него уровень новичка молча отбраковывался четырёхсоткой.
 const VALID_LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-
-// Снимок прохождения (θ, SE, флаги качества) уезжает в Neon-профиль этого
-// приложения, но там его не видит никто из персонала: web-admin (Angular)
-// ходит только в backend, к jts-web-app у неё доступа нет. Backend уже пишет
-// СВОЮ букву уровня через PUT /user/language-level (см. saveLanguageLevel в
-// src/lib/tutorPrefs.js) — этот вызов её не трогает и не дублирует, только
-// докладывает то, чего там никогда не было: флаги и θ/SE, отдельной строкой
-// (POST /placement-test/report, backend: PlacementTestResult).
-//
-// Best-effort и не блокирует ответ студенту: backend может быть недоступен
-// (дев-стенд, сетевой сбой) — placement уже сохранён в jts-web-app, это лишь
-// вторичная витрина для менеджера, а не источник истины.
-//
-// Только для вошедших: у анонимного прогона (deviceId) на backend нет
-// аккаунта, и слать нечего.
-async function reportToBackend(request, snapshot) {
-  const token = bearerFromRequest(request)
-  if (!token || !snapshot) return
-  try {
-    const res = await fetch(`${BACKEND_URL}/placement-test/report`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      // measured (snapshot.level), а не смягчённый profileLevel: менеджеру
-      // нужен именно намеренный A0, ради которого весь список и заводится —
-      // мягкий A1 уже и так лежит в language-level.
-      body: JSON.stringify({
-        level: snapshot.level,
-        theta: snapshot.theta,
-        se: snapshot.se,
-        flags: snapshot.flags,
-        variant: snapshot.variant,
-        answered: snapshot.answered,
-      }),
-    })
-    if (!res.ok) {
-      console.warn('[placement.complete] backend report failed: %s', res.status)
-    }
-  } catch (err) {
-    console.warn('[placement.complete] backend report failed:', err)
-  }
-}
 
 export async function POST(request) {
   let body = {}
@@ -68,61 +28,22 @@ export async function POST(request) {
     /* пустое тело — ниже отдадим 400 */
   }
 
-  const claimed = typeof body.level === 'string' && VALID_LEVELS.includes(body.level) ? body.level : null
-  if (!claimed) {
+  const measured = typeof body.level === 'string' && VALID_LEVELS.includes(body.level) ? body.level : null
+  if (!measured) {
     return Response.json({ configured: isDbConfigured(), error: 'Invalid or missing level.' }, { status: 400 })
   }
-
-  // Уровень считает сервер, а не клиент: раньше он приезжал готовым числом и
-  // был утверждением, а не измерением. Источник по убыванию доверия:
-  //   1) запись прогона на сервере — он сам проверял эти ответы;
-  //   2) журнал от клиента (сырые ответы) — перепроверяется по ключам;
-  //   3) заявленный уровень — голосовой placement и старые сборки.
-  const run = await loadPlacementSession(body.sessionToken).catch(() => null)
-  let scored = null
-  if (run && run.answers.length > 0) {
-    scored = scoreGradedAnswers(run.answers, body.session?.theta0)
-  } else if (body.session && typeof body.session === 'object') {
-    scored = scorePlacementSession(body.session)
-  }
-  const measured = scored && VALID_LEVELS.includes(scored.level) ? scored.level : claimed
   const level = profileLevel(measured)
-  if (scored && measured !== claimed) {
-    console.warn('[placement.complete] client level %s != server %s', claimed, measured)
-  }
-
-  if (run && !run.finished) {
-    // Прогон закрыт: повторно отправить его ответы или дописать новые нельзя.
-    await finishPlacementSession(run.token, scored?.level ?? claimed).catch(() => {})
-  }
 
   if (!isDbConfigured()) {
-    // Сохранить некуда, но уровень посчитан — клиенту он нужен, чтобы не
-    // показывать и не записывать свой.
+    // Сохранить некуда, но уровень клиенту нужен — тот же, что записали бы.
     return Response.json({ configured: false, level, measured, error: 'DATABASE_URL is not set.' }, { status: 200 })
   }
 
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
 
-  // Вместе с уровнем принимаем снимок прохождения: θ, её погрешность и флаги
-  // качества (`unresolved` — движок сам не уверен в уровне, `a0_branch` и др.).
-  // Без него спорный результат неотличим от уверенного, а банк, который живёт
-  // без калибровки, нечем калибровать. Снимок необязателен: голосовой
-  // placement и старые клиенты присылают только уровень.
-  const snapshot = body.summary || scored
-    ? sanitizePlacementRecord(
-        measured,
-        { ...(body.summary || {}), ...(scored || {}), clientLevel: claimed },
-        new Date().toISOString(),
-      )
-    : undefined
-
   try {
-    await upsertProfile(resolved.id, snapshot ? { level, placement: snapshot } : { level })
-    // После успешной записи здесь — не раньше: если jts-web-app вообще не
-    // сохранил результат, докладывать backend'у нечего и незачем.
-    await reportToBackend(request, snapshot)
+    await upsertProfile(resolved.id, { level })
     return Response.json({ configured: true, ok: true, level, measured })
   } catch (err) {
     console.error('[placement.complete] failed', err)
