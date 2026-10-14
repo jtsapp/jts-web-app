@@ -44,10 +44,9 @@ describe('extract-numbers', () => {
     expect(crlf['data.json'].equals(files['data.json'])).toBe(true)
   })
 
-  it('картинки и шрифты: 11 картинок, 8 начертаний', () => {
+  it('11 картинок и ни одного шрифта: игра на шрифте сайта', () => {
     const rels = Object.keys(files)
     expect(rels.filter((r) => r.startsWith('img/'))).toHaveLength(11)
-    expect(rels.filter((r) => r.endsWith('.woff2'))).toHaveLength(8)
-    expect(String(files['fonts/fonts.css'])).toMatch(/url\(\/practice\/numbers\/fonts\/literata-1\.woff2\)/)
+    expect(rels.filter((r) => r.startsWith('fonts/'))).toHaveLength(0)
   })
 })

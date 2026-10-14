@@ -27,11 +27,6 @@ import { NUMBERS_LANG_KEY } from '../practice/practiceKeys.js'
 import { recordSkill } from '../practice/skillStats.js'
 
 const DATA_URL = '/practice/numbers/data.json'
-const FONT_LINKS = [
-  '/practice/numbers/fonts/fonts.css',
-  'https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap',
-]
-
 const RECORDS_URL = '/practice/numbers/audio/index.json'
 
 // Один запрос на вкладку; провал не кэшируется — «ещё раз» спросит заново.
@@ -53,19 +48,6 @@ function loadData() {
   return dataPromise
 }
 
-function useDocumentFonts() {
-  useEffect(() => {
-    for (const href of FONT_LINKS) {
-      if ([...document.head.querySelectorAll('link[data-numbers-font]')].some((l) => l.dataset.numbersFont === href)) continue
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = href
-      link.dataset.numbersFont = href
-      document.head.appendChild(link)
-    }
-  }, [])
-}
-
 export default function NumbersPage({ userName, userLevel, token, onNav, onProfile }) {
   const { t } = useI18n()
   const hostRef = useRef(null)
@@ -77,7 +59,6 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   // ней обрывало бы живой раунд и выкидывало на карту. ownerOf стабилен, пока
   // ученик тот же (sub из JWT), и меняется на входе и выходе.
   const owner = ownerOf(token)
-  useDocumentFonts()
 
   useEffect(() => {
     let alive = true
