@@ -1,36 +1,92 @@
-/* Тёмная тема — НАБРОСОК. Значения токенов --dk-*, которыми пишет
-   src/theme-dark.generated.css (scripts/gen-dark-theme.js). Палитру правят
-   здесь, генератор при этом перезапускать не нужно.
+/* Тёмная тема по брендбуку (JustToStudy_Guide_1.0). Значения токенов --dk-*,
+   которыми пишет src/theme-dark.generated.css (scripts/gen-dark-theme.js).
+   Палитру правят здесь, генератор при этом перезапускать не нужно.
 
    Тема включается атрибутом data-theme="dark" на <html>; его ставит
    загрузочный скрипт из layout.jsx до первой отрисовки (иначе экран мигает
-   белым). Акцент — фиолетовый бренда (оранжевый сравнили и отклонили 09.10). */
+   белым).
 
-/* Фиолетовый: нейтральные с холодным фиолетовым подтоном — от бренда
-   (--ink #171326), а не чистый серый: на нём фиолетовый акцент выглядит
-   родным, а не наклеенным. */
+   Первый набросок (09.10) руководство отклонило: «не сочетались цвета».
+   Причин было две: серые с фиолетовым подтоном (#110f19) спорили с
+   оранжевым и зелёным, а каждая пастель темнела в свой тусклый оттенок —
+   бурый, оливковый, серо-синий. Теперь серые — серые бренда без оттенка
+   (#4e4b4b, #898787, #c4c3c3), а цветное — только пять цветов бренда со
+   ступенями одной доли у всех семейств (см. scripts/lib/dark-palette.js).
+   Контраст текстовых токенов сверяет scripts/lib/dark-palette.test.js. */
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --dk-page: #110f19;
-  --dk-card: #1b1826;
-  --dk-chip: #262236;
-  --dk-raised: #322d45;
-  --dk-ink-bg: #2c2740;
-  --dk-text: #f2f0f8;
-  --dk-text-2: #c8c4d6;
-  --dk-muted: #8f8aa3;
-  --dk-line: #2a2639;
-  --dk-line-strong: #453f5c;
+  /* Графит: чёрный бренда, поверхности чуть светлее. */
+  --dk-page: #0f0e0e;
+  --dk-card: #1a1919;
+  --dk-chip: #242222;
+  --dk-raised: #2e2c2c;
+  --dk-ink-bg: #383535;
+  --dk-text: #ffffff;
+  --dk-text-2: #c4c3c3;
+  /* серый бренда #898787 на плашке --dk-chip даёт 4.4:1 — ниже AA, поэтому
+     на полтона светлее; на глаз разницы нет */
+  --dk-muted: #8f8d8d;
+  --dk-line: #2a2828;
+  --dk-line-strong: #4e4b4b;
 
-  --dk-acc: #9047ff;
-  --dk-acc-strong: #7a35ec;
-  --dk-acc-soft: #4d3388;
-  --dk-acc-tint: #221935;
-  --dk-acc-line: #3d2e63;
-  --dk-acc-text: #b996ff;
-  --dk-acc-on: #eadfff;
+  /* Фиолетовый бренда. Мелкий текст им на графите не читается (3.7:1), для
+     текста — светлее. */
+  --dk-acc: #874bf8;
+  --dk-acc-strong: #7438e8;
+  --dk-acc-text: #a982fa;
+  --dk-acc-on: #e6daff;
   --dk-on-acc: #ffffff;
+
+  /* Остальные цвета бренда (2.1). Красного у бренда нет — он только для
+     «неверно», чтобы ошибка не спуталась с оранжевым «Чтения». */
+  --dk-blue: #0aafff;
+  --dk-green: #00d441;
+  --dk-orange: #ff7d1d;
+  --dk-yellow: #ffad00;
+  --dk-red: #ff5a4e;
+  --dk-on-bright: #1a1919;
+
+  /* Ступени семейства — одна доля цвета у всех: так тинты разных семейств
+     стоят рядом ровно. Тинт оранжевого и жёлтого поверх тёмного неизбежно
+     уходит в коричневый (при 9% обложки «Чтения» уже бурели), поэтому доля
+     тинта малая: фон остаётся графитом с намёком на цвет, а цвет держат
+     линия, иконка и текст. Фиолетовый — акцент и выделение, в коричневый он
+     не уходит, ему доля больше. */
+  --dk-tint: 5%;
+  --dk-soft: 12%;
+  --dk-deep: 24%;
+  --dk-mix-line: 42%;
+
+  --dk-acc-tint: color-mix(in srgb, var(--dk-acc) 10%, var(--dk-card));
+  --dk-acc-soft: color-mix(in srgb, var(--dk-acc) 22%, var(--dk-card));
+  --dk-acc-deep: color-mix(in srgb, var(--dk-acc) var(--dk-deep), var(--dk-page));
+  --dk-acc-line: color-mix(in srgb, var(--dk-acc) var(--dk-mix-line), var(--dk-card));
+
+  --dk-blue-tint: color-mix(in srgb, var(--dk-blue) var(--dk-tint), var(--dk-card));
+  --dk-blue-soft: color-mix(in srgb, var(--dk-blue) var(--dk-soft), var(--dk-card));
+  --dk-blue-deep: color-mix(in srgb, var(--dk-blue) var(--dk-deep), var(--dk-page));
+  --dk-blue-line: color-mix(in srgb, var(--dk-blue) var(--dk-mix-line), var(--dk-card));
+
+  --dk-green-tint: color-mix(in srgb, var(--dk-green) var(--dk-tint), var(--dk-card));
+  --dk-green-soft: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+  --dk-green-deep: color-mix(in srgb, var(--dk-green) var(--dk-deep), var(--dk-page));
+  --dk-green-line: color-mix(in srgb, var(--dk-green) var(--dk-mix-line), var(--dk-card));
+
+  --dk-orange-tint: color-mix(in srgb, var(--dk-orange) var(--dk-tint), var(--dk-card));
+  --dk-orange-soft: color-mix(in srgb, var(--dk-orange) var(--dk-soft), var(--dk-card));
+  --dk-orange-deep: color-mix(in srgb, var(--dk-orange) var(--dk-deep), var(--dk-page));
+  --dk-orange-line: color-mix(in srgb, var(--dk-orange) var(--dk-mix-line), var(--dk-card));
+
+  --dk-yellow-tint: color-mix(in srgb, var(--dk-yellow) var(--dk-tint), var(--dk-card));
+  --dk-yellow-soft: color-mix(in srgb, var(--dk-yellow) var(--dk-soft), var(--dk-card));
+  --dk-yellow-deep: color-mix(in srgb, var(--dk-yellow) var(--dk-deep), var(--dk-page));
+  --dk-yellow-line: color-mix(in srgb, var(--dk-yellow) var(--dk-mix-line), var(--dk-card));
+
+  --dk-red-tint: color-mix(in srgb, var(--dk-red) var(--dk-tint), var(--dk-card));
+  --dk-red-soft: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card));
+  --dk-red-deep: color-mix(in srgb, var(--dk-red) var(--dk-deep), var(--dk-page));
+  --dk-red-line: color-mix(in srgb, var(--dk-red) var(--dk-mix-line), var(--dk-card));
 }
 
 html[data-theme="dark"] body {
@@ -45,37 +101,60 @@ html[data-theme="dark"] ::selection {
 /* ---------- Правки поверх генератора ---------- */
 
 /* Карточки навыков в «Практике»: рисунок — SVG с пастельными фигурами,
-   генератор до цветов внутри файла не достаёт. Первый вариант (multiply по
-   тёмному тону) гасил фигуры почти до фона — рисунок пропадал. Поэтому у
-   каждого SVG тёмная копия: подложка тёмная, фигуры того же оттенка, но
-   заметно светлее подложки. */
+   генератор до цветов внутри файла не достаёт. Поэтому у каждого SVG тёмная
+   копия (*-dark.svg): подложка прозрачная — её даёт --sk-bg, то есть тинт
+   семейства, — а фигуры цветом бренда с прозрачностью 0.09 (при 0.13
+   оранжевая уже бурела). Так рисунок следует за токенами и не уходит в
+   бурый, как первая копия (#2c1f12).
+   Копии сделаны из светлых SVG заменой цветов, рисунок тот же.
+   Невыбранная карточка в светлой теме — полупрозрачная (opacity 0.6), и
+   полупрозрачный тинт на графите мутнел. Здесь она нейтральная и
+   непрозрачная, а тинт и цветная рамка — только у выбранной. */
+html[data-theme="dark"] .pk-skill {
+  --sk-bg: var(--dk-card);
+  opacity: 1;
+}
+html[data-theme="dark"] .pk-skill:not(.is-on) .pk-skill__title {
+  color: var(--dk-muted);
+}
+html[data-theme="dark"] .pk-skill:not(.is-on):hover .pk-skill__title {
+  color: var(--dk-text-2);
+}
 html[data-theme="dark"] .pk-skill--listening {
-  --sk-bg: #192230;
+  --sk-tint: var(--dk-blue-tint);
   --sk-art: url('/practice/skills/listening-dark.svg');
-  --sk-line: #385681;
+  --sk-line: var(--dk-blue-line);
 }
 html[data-theme="dark"] .pk-skill--reading {
-  --sk-bg: #2c1f12;
+  --sk-tint: var(--dk-orange-tint);
   --sk-art: url('/practice/skills/reading-dark.svg');
-  --sk-line: #744b20;
+  --sk-line: var(--dk-orange-line);
 }
 html[data-theme="dark"] .pk-skill--writing {
-  --sk-bg: #241e2e;
+  --sk-tint: var(--dk-acc-tint);
   --sk-art: url('/practice/skills/writing-dark.svg');
-  --sk-line: #5c4a7b;
+  --sk-line: var(--dk-acc-line);
 }
 html[data-theme="dark"] .pk-skill--speaking {
-  --sk-bg: #14261d;
+  --sk-tint: var(--dk-green-tint);
   --sk-art: url('/practice/skills/speaking-dark.svg');
-  --sk-line: #256346;
+  --sk-line: var(--dk-green-line);
+}
+html[data-theme="dark"] .pk-skill.is-on {
+  --sk-bg: var(--sk-tint);
 }
 
 /* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
-   ни генератор, ни токены до него не достают. Белый вариант (на шапках)
-   не трогаем. */
+   ни генератор, ни токены до него не достают. На тёмном фоне по брендбуку
+   (2.2) знак белый, а «to» — жёлтое #fffb05. Белый вариант (на цветных
+   шапках) не трогаем. */
 html[data-theme="dark"] .logo[style*="9047ff"],
 html[data-theme="dark"] .logo[style*="144, 71, 255"] {
-  color: var(--dk-acc) !important;
+  color: #ffffff !important;
+}
+html[data-theme="dark"] .logo[style*="9047ff"] .logo__to,
+html[data-theme="dark"] .logo[style*="144, 71, 255"] .logo__to {
+  color: #fffb05;
 }
 
 /* номер подсписка AWL в «Словаре»: светлая плашка на тёмной карточке слепила */
