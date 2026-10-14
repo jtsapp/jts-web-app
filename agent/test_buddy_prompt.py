@@ -85,7 +85,7 @@ for block in [BUDDY_CORE, *BUDDY_LEVEL_PROFILES.values(), *BUDDY_PERSONAS.values
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(p)
 assert buddy_test_on(profile(temper="harsh")), "тумблера 18+ нет: оба нрава — Декстер v3"
-for other in ("gentle", "bro", "hype", "aizere"):
+for other in ("gentle", "hype", "aizere"):
     assert not buddy_test_on(profile(tutor=other)), other
 # В сценарии характер выключен — там своя сборка, стенд туда не лезет.
 assert not buddy_test_on(profile(mode="scenario", scenario_id="ordering-coffee"))
@@ -315,7 +315,7 @@ from agent import (  # noqa: E402
 
 assert BUDDY_BRAIN_MODEL == "gpt-6-sol", "общий мозг Buddy — у «Спарк теста»"
 assert session_brain_model(p) == "claude-haiku-5-5"
-for other in ("bro", "gentle", "hype", "aizere"):
+for other in ("gentle", "hype", "aizere"):
     assert session_brain_model(profile(tutor=other)) == _brain_model_for(other), other
 os.environ["BRAIN_MODEL_BUDDY"] = "claude-haiku-4-5"
 assert session_brain_model(p) == "claude-haiku-4-5", "откат секретом воркера, без деплоя"

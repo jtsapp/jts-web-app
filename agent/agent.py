@@ -3512,6 +3512,12 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # 05.10.2026 к нему добавился «Спарк тест» (SPARK_TEST_STAND) — та же сборка и
 # тот же мозг, но персона Спарка и сессия живого Спарка. Ему откатываться
 # некуда: прежней персоны у ключа нет, поэтому KZ_TEST_PROMPT его не трогает.
+#
+# 14.10.2026 решение владельца: тестовый Декстер заменяет живого — у bro та же
+# сборка, что у KZ TEST, на дев и на проде сразу (агент у них один). Голос и
+# сессия у bro и так свои, поэтому звонок с карточки Декстера побайтно тот же,
+# что с KZ TEST. Откат на прежнюю персону — секрет DEXTER_PROMPT=legacy, без
+# деплоя; KZ TEST при этом остаётся на пакете (у него свой KZ_TEST_PROMPT).
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
@@ -3519,6 +3525,12 @@ BUDDY_TEST_PERSONA = "dexter"
 BUDDY_STANDS: dict[str, tuple[str, str]] = {
     KZ_DEV_STAND_PERSONA: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
     SPARK_TEST_STAND: ("spark", "hype"),
+    BUDDY_VOICE_TUTOR: (BUDDY_TEST_PERSONA, BUDDY_VOICE_TUTOR),
+}
+# Секрет воркера, который возвращает ключ на прежнюю персону (у кого она есть).
+BUDDY_LEGACY_SWITCH: dict[str, str] = {
+    KZ_DEV_STAND_PERSONA: "KZ_TEST_PROMPT",
+    BUDDY_VOICE_TUTOR: "DEXTER_PROMPT",
 }
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
@@ -3567,15 +3579,15 @@ def buddy_persona_for(p: LearnerProfile) -> str:
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
-    свои. Оба нрава KZ TEST — Декстер v3: тумблера 18+ в новой схеме нет."""
+    свои. Оба нрава Декстера (и KZ TEST, и живого) — Декстер v3: тумблера 18+
+    в новой схеме нет."""
     stand = BUDDY_STANDS.get(_stand_key(p))
     if stand is None:
         return False
     if p.mode != "tutor" or p.scenario:
         return False
-    if _stand_key(p) == KZ_DEV_STAND_PERSONA and (
-        (os.getenv("KZ_TEST_PROMPT") or "").strip().lower() in ("legacy", "off", "0", "false")
-    ):
+    switch = BUDDY_LEGACY_SWITCH.get(_stand_key(p))
+    if switch and (os.getenv(switch) or "").strip().lower() in ("legacy", "off", "0", "false"):
         return False
     # Ядро требует тег эмоции в начале КАЖДОЙ реплики (core §13), а снимает его
     # только llm_node каскада. У realtime-модели свой тракт — там тег прозвучал
@@ -5873,8 +5885,12 @@ BUDDY_BRAIN_MODEL = "gpt-6-sol"
 # дешевле Haiku 4.5 и в разы дешевле Sol. «Спарк тест» остаётся на Sol: менять
 # живого тьютора стенда без его замера нельзя. Откат без деплоя — секрет
 # BRAIN_MODEL_BUDDY_<КЛЮЧ> (BRAIN_MODEL_BUDDY_JARVIS=gpt-6-sol).
+# 14.10.2026 живой Декстер стал тестовым целиком — и мозг его же. Откат мозга
+# отдельно от персоны — BRAIN_MODEL_BUDDY_BRO (BRAIN_MODEL_BRO у пакета не
+# читается: он про прежнюю персону и вернётся вместе с DEXTER_PROMPT=legacy).
 BUDDY_STAND_BRAIN_MODEL: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "claude-haiku-5-5",
+    BUDDY_VOICE_TUTOR: "claude-haiku-5-5",
 }
 
 
@@ -7120,9 +7136,13 @@ async def entrypoint(ctx: JobContext):
     # у SLIM_OUT_SECTIONS). Делаем это ПОСЛЕ сборки, а не гейтами внутри неё:
     # так правка не размазывается по гигантскому выражению и одинаково работает
     # для всех четырёх режимов промпта.
-    instructions = (
-        slim_prompt_for_persona(instructions, persona_key(profile.tutor, profile.temper))
-    )
+    # Пакет Buddy не трогаем: его тон в самом пакете, а bro стоит в
+    # TONE_SELF_DEFINED_PERSONAS ради прежней персоны — без этой проверки живой
+    # Декстер на пакете расходился бы с KZ TEST.
+    if not is_buddy:
+        instructions = slim_prompt_for_persona(
+            instructions, persona_key(profile.tutor, profile.temper)
+        )
     # Мозг на GPT без живых log_topic/log_fact (см. POST_CALL_MEMORY_TOOLS). Только
     # обычный урок: выжимка пишет темы и факты для режима free, а у сценариев,
     # дебатов, проверки уровня и своих промптов (Джарвис, Buddy) блок тулов иной.
