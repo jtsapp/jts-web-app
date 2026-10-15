@@ -390,7 +390,8 @@ describe('POST /api/assistant/chat', () => {
       await (await post(opening(501))).text()
       const last = calls[0].messages.at(-1).content
       expect(last).toMatch(/Сегодня: \d{4}-\d{2}-\d{2}/)
-      expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский$/)
+      expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский\n/)
+      expect(last).toMatch(/Не больше 4 коротких предложений\.$/)
       expect(last).not.toContain('Вопрос ученика:')
     })
 
@@ -439,6 +440,8 @@ describe('POST /api/assistant/chat', () => {
 
   // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
   describe('заметка о совете', () => {
+    // «Главная»: не экран задания — первая реплика там может предлагать раздел.
+    const HOME = { id: 'home', text: 'Главная ВАШ УРОВЕНЬ A2' }
     const offer = (text) => {
       streamImpl = async function* () {
         yield { type: 'text', text }
@@ -466,7 +469,7 @@ describe('POST /api/assistant/chat', () => {
 
     it('в первой реплике переход — всегда предложение: пишется и ошибочный _NOW', async () => {
       offer('Начните со словаря. Открываю.\n[[OPEN_NOW vocab]]')
-      await (await post({ ...question(603), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
+      await (await post({ ...question(603), screen: HOME, messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
       expect(saveAdviceNote).toHaveBeenCalledWith('user-603', expect.objectContaining({ target: 'vocab' }))
     })
 
@@ -474,13 +477,22 @@ describe('POST /api/assistant/chat', () => {
       studentContextResult =
         'Совет сайта, что сделать сейчас: Аудирование: мини-игра — самый слабый навык — listening (метка [[OPEN listening]]).'
       offer('Аудирование у вас слабее всего. Открыть мини-игру?')
-      const opening = { ...question(605), messages: [{ role: 'user', content: '[ученик открыл окно]' }] }
+      const opening = { ...question(605), screen: HOME, messages: [{ role: 'user', content: '[ученик открыл окно]' }] }
       expect(await (await post(opening)).text()).toMatch(/Открыть мини-игру\?\[\[ASST_ACTION open listening offer\]\]$/)
       expect(saveAdviceNote).toHaveBeenCalledWith('user-605', expect.objectContaining({ target: 'listening' }))
       // На обычный вопрос не додумываем: там метка — решение модели.
       saveAdviceNote.mockClear()
       offer('Аудирование у вас слабее всего. Открыть мини-игру?')
       expect(await (await post(question(605))).text()).not.toContain('ASST_ACTION')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('первая реплика на экране задания — без кнопки и без заметки, даже если модель позвала', async () => {
+      offer('Доделайте урок, а потом — домашка. Открыть?\n[[OPEN homework]]')
+      // question(): экран урока с полем ответа — задание.
+      const text = await (await post({ ...question(606), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
+      expect(text).toMatch(/^Доделайте урок, а потом — домашка\. Открыть\?\s*$/)
+      expect(text).not.toContain('ASST_ACTION')
       expect(saveAdviceNote).not.toHaveBeenCalled()
     })
 

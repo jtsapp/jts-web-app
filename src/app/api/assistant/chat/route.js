@@ -25,6 +25,7 @@ import {
   classifyStart,
   createReportFilter,
   isOpeningTurn,
+  openingFocus,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
@@ -171,7 +172,13 @@ export async function POST(request) {
   // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
   // Действие ответа: метка модели, а в первой реплике без метки — кнопка «Совета
   // сайта», если Луна предложила открыть именно его раздел (inferAdviceOffer).
-  const finalAction = () => actions.action() || (opening ? inferAdviceOffer(shown, studentContext) : null)
+  // Первая реплика на экране задания — без кнопки вовсе: ученик посреди урока, и
+  // уводить его оттуда нельзя, даже если модель всё же позвала (openingFocus).
+  const focusTask = opening && openingFocus(parsed.screen.text).task
+  const finalAction = () => {
+    if (focusTask) return null
+    return actions.action() || (opening ? inferAdviceOffer(shown, studentContext) : null)
+  }
   const serviceTail = async () => {
     const action = finalAction()
     await saveNote(action)

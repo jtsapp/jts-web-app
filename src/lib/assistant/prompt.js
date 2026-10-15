@@ -9,12 +9,12 @@
 
 import { destinationIdForScreen, destinationsText } from './destinations.js'
 import { knowledgeText } from './knowledge.js'
-import { OPENING_MARK, isOpeningTurn } from './opening.js'
+import { OPENING_MARK, isOpeningTurn, openingFocus } from './opening.js'
 import { RECALL_MARK } from './tracker.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
-export { OPENING_MARK, isOpeningTurn }
+export { OPENING_MARK, isOpeningTurn, openingFocus }
 
 // Ограничения запроса. Длинный разговор помощнику не нужен — это не тьютор, а
 // справка, — а каждый лишний ход оплачивается на каждом следующем вопросе.
@@ -296,14 +296,37 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
 export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
+  const opening = isOpeningTurn(last.content)
+  const focus = opening ? openingFocus(screen?.text) : { task: false, unchecked: false }
   // Открытие окна — не «вопрос ученика»: подпись «Вопрос ученика: [ученик открыл
   // окно]» читалась бы как его слова.
   // Язык — рядом с пометкой, а не только «Язык интерфейса» в <контекст>: вопроса,
   // по которому его видно, нет, и при казахском интерфейсе Haiku отвечала
   // по-русски — на языке правил (замер 15.10.2026).
-  const ask = isOpeningTurn(last.content)
-    ? `${OPENING_MARK}\nЯзык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`
+  // Что на экране задание и не проверено ли оно, решает код (openingFocus): правила
+  // об этом в RULES Haiku 5.5 пропускала, а указание рядом с пометкой — нет. По той же
+  // причине на экране задания модели не дают «Совет сайта» и пометку «вспомни»:
+  // посреди урока она звала с них в домашку.
+  const ask = opening
+    ? [
+        OPENING_MARK,
+        `Язык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`,
+        ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
+        ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
+        'Не больше 4 коротких предложений.',
+      ].join('\n')
     : `Вопрос ученика: ${last.content}`
-  last.content = `${buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl, today })}\n\n${ask}${voice ? `\n\n${VOICE_MARK}` : ''}`
+  const context = focus.task ? withoutAdvice(studentContext) : studentContext
+  last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today })}\n\n${ask}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
+}
+
+/** Профиль без «Совета сайта» и без пометки «вспомни» — для первой реплики на экране задания. */
+function withoutAdvice(studentContext) {
+  if (!studentContext) return studentContext
+  return String(studentContext)
+    .split('\n')
+    .filter((line) => !line.startsWith('Совет сайта'))
+    .map((line) => line.replace(`  ${RECALL_MARK}`, ''))
+    .join('\n')
 }
