@@ -18,6 +18,8 @@ export default function MonthView({ plan, next, todayIso, busy, onLesson, onStar
   const today = parse(todayIso)
   const [ym, setYm] = useState({ y: today.getFullYear(), m: today.getMonth() })
   const [menu, setMenu] = useState(null)
+  // Меню занятия — в точке правого клика (clientX/Y): левый клик сразу начинает занятие.
+  const openMenu = (e, id) => { e.preventDefault(); setMenu({ id, x: e.clientX, y: e.clientY }) }
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const rows = monthGrid(plan, ym.y, ym.m)
@@ -65,17 +67,18 @@ export default function MonthView({ plan, next, todayIso, busy, onLesson, onStar
                       const st = shownStatus(l, next)
                       return (
                         <div key={l.id} className="st-month__slot">
-                          <button type="button" className={`st-lesson st-mlesson is-${st}`} aria-haspopup="dialog" onClick={() => setMenu(menu === l.id ? null : l.id)}>
+                          <button type="button" className={`st-lesson st-mlesson is-${st}`} aria-haspopup="dialog" onClick={(e) => (l.status === 'skipped' ? openMenu(e, l.id) : onStart(l.id))}
+                            onContextMenu={(e) => openMenu(e, l.id)}>
                             {st === 'done' ? <CheckCircleIcon size={13} /> : <i className={`st-dot is-${skillSection(l.skillIds[0])}`} />}
                             <span>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</span>
                           </button>
-                          {menu === l.id && (
+                          {menu?.id === l.id && (
                             <LessonMenu
                               lesson={l}
                               examDate={plan.examDate}
                               todayIso={todayIso}
                               busy={busy}
-                              anchor={i >= 4 ? { right: 0 } : { left: 0 }}
+                              at={menu}
                               onClose={() => setMenu(null)}
                               onStart={() => onStart(l.id)}
                               onStatus={(s) => onLesson(l.id, { status: s }).then(() => setMenu(null))}
