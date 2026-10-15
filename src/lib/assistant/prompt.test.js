@@ -14,6 +14,7 @@ import {
   buildTurns,
   parseChatRequest,
   VOICE_MARK,
+  OPENING_MARK,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -317,8 +318,89 @@ ${VOICE_MARK}`)).toBe(true)
     expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru', voice: true })).not.toContain(VOICE_MARK)
   })
 
-  it('помощника зовут Луна', () => {
-    expect(buildSystemPrompt()).toMatch(/^Ты — Луна, помощник на сайте/)
+  // 15.10.2026, владелец: «не просто ассистент, а ещё и преподаватель».
+  it('Луна — преподаватель и куратор ученика, а не справочное окно', () => {
+    expect(buildSystemPrompt()).toMatch(/^Ты — Луна, преподаватель и куратор ученика/)
+  })
+})
+
+describe('первая реплика: ученик открыл окно', () => {
+  const opening = () => parseChatRequest(ask(OPENING_MARK, { voice: true }))
+
+  it('пометка открытия — не «вопрос ученика»: модель не должна принять её за его слова', () => {
+    const last = buildTurns({ ...opening(), user: null }).at(-1).content
+    expect(last).not.toContain('Вопрос ученика:')
+    expect(last.endsWith(`</контекст>
+
+${OPENING_MARK}
+Язык ответа: русский
+Не больше 4 коротких предложений.
+
+${VOICE_MARK}`)).toBe(true)
+  })
+
+  // Что на экране задание и не проверено ли оно, решает код (openingFocus): Haiku 5.5 правила
+  // в RULES пропускала — звала в домашку посреди урока и оценивала непроверенный ответ (замер 15.10.2026).
+  it('на экране непроверенное задание — указания рядом с пометкой, профиль без «Совета сайта» и «вспомни»', () => {
+    const profile = [
+      'Уровень курса: A2.',
+      'Совет сайта, что сделать сейчас: Домашняя работа — домашку сдавать в ближайшие двое суток (метка [[OPEN homework]]).',
+      'Твои прошлые советы этому ученику (заметки Луны, свежие сверху):',
+      '- 2026-10-14 (вчера): Словарь — «Повторите слова.» — выполнено 2026-10-14  ← вспомни его в первой реплике',
+    ].join('\n')
+    const screen = { id: 'kingdom-interior', text: 'He ___ (play) football. [поле: ученик ввёл «play»] [кнопка «Проверить»]' }
+    const last = buildTurns({ ...opening(), user: null, screen, studentContext: profile }).at(-1).content
+    expect(last).toContain('На экране задание: говори только о нём')
+    expect(last).toContain('Задание ещё не проверено: не оценивай введённый ответ и не называй правильный')
+    expect(last).not.toContain('Совет сайта')
+    expect(last).not.toContain('вспомни его в первой реплике')
+    expect(last).toContain('- 2026-10-14 (вчера): Словарь — «Повторите слова.» — выполнено 2026-10-14')
+    // На «Главной» — совет на месте, указаний про задание нет.
+    const home = buildTurns({ ...opening(), user: null, screen: { id: 'home', text: 'Главная' }, studentContext: profile }).at(-1).content
+    expect(home).toContain('Совет сайта')
+    expect(home).not.toContain('На экране задание')
+    // Обычный вопрос — профиль целиком: ученик сам спросил.
+    const asked = buildTurns({ ...parseChatRequest(ask('что делать?')), user: null, screen, studentContext: profile }).at(-1).content
+    expect(asked).toContain('Совет сайта')
+  })
+
+  it('пометка в истории остаётся ходом ученика — «да» на её «Открыть?» видит её реплику', () => {
+    const parsed = parseChatRequest({
+      messages: [
+        { role: 'user', content: OPENING_MARK },
+        { role: 'assistant', content: 'Здравствуйте. С домашки и стоит начать. Открыть?\n[[OPEN homework]]' },
+        { role: 'user', content: 'да' },
+      ],
+    })
+    expect(parsed.messages.map((m) => m.role)).toStrictEqual(['user', 'assistant', 'user'])
+    const turns = buildTurns({ ...parsed, user: null })
+    expect(turns[0].content).toBe(OPENING_MARK)
+    expect(turns.at(-1).content).toMatch(/Вопрос ученика: да$/)
+  })
+
+  it('как отвечать на открытие — в правилах: экран, подсказка до проверки, совет с меткой', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toContain(`пометка ${OPENING_MARK}`)
+    expect(rules).toMatch(/ещё не проверено — не оценивай введённый ответ/)
+    expect(rules).toMatch(/не произноси правильный ответ ни целиком, ни как пример/)
+    expect(rules).toMatch(/ОБЯЗАТЕЛЬНО кончается вопросом «Открыть\?»/)
+  })
+
+  it('трекер: прогресс только цифрами профиля, один прошлый совет за реплику, ошибки из звонков', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toMatch(/Ты следишь за учёбой \(трекер\)/)
+    expect(rules).toMatch(/О прогрессе говори только этими цифрами/)
+    // Какой прошлый совет вспомнить, решает код (пометка в профиле): сама Haiku пропускала выполненный (замер 15.10.2026).
+    expect(rules).toContain('стоит пометка «← вспомни его в первой реплике»')
+    expect(rules).toMatch(/Других прошлых советов в первой реплике не вспоминай/)
+    // Связь с ошибкой из звонка — в пункте разбора задания: из раздела «трекер» Haiku её не делала (0 из 3).
+    expect(rules).toMatch(/добавь одной фразой, что она была и в разговоре со Speaking Buddy/)
+  })
+
+  // Без сегодняшней даты модель гадала «уже просрочено» про срок через два дня (замер 15.10.2026).
+  it('в контексте — сегодняшняя дата, если роут её передал', () => {
+    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru', today: '2026-10-15' })).toContain('Сегодня: 2026-10-15')
+    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru' })).not.toContain('Сегодня:')
   })
 })
 

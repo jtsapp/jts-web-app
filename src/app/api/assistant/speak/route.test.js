@@ -41,6 +41,8 @@ describe('POST /api/assistant/speak', () => {
     expect(voiceLang('Open Practice', 'en')).toBe('en')
     expect(voiceLang('Ашыңыз', 'kk')).toBe('kk')
     expect(voiceLang('Откройте', undefined)).toBe('ru')
+    // Казахское имя в начале русской фразы (первая реплика Луны) — голос её, а не казахский синтез.
+    expect(voiceLang('Айгерім, вы на Главной, и у вас домашка.', 'ru')).toBe('ru')
   })
 
   it('без входа — 401, пустой текст — 400', async () => {

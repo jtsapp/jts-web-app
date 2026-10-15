@@ -41,6 +41,10 @@ vi.mock('@/lib/db/assistantErrorReports.js', () => ({
 }))
 const { saveAssistantErrorReport } = await import('@/lib/db/assistantErrorReports.js')
 
+// Заметки Луны-трекера (lib/db/assistantTracker.js): здесь — что и когда роут просит записать.
+vi.mock('@/lib/db/assistantTracker.js', () => ({ saveAdviceNote: vi.fn(async () => true) }))
+const { saveAdviceNote } = await import('@/lib/db/assistantTracker.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -70,6 +74,7 @@ describe('POST /api/assistant/chat', () => {
     loadStudentContext.mockClear()
     saveCalls.length = 0
     saveAssistantErrorReport.mockClear()
+    saveAdviceNote.mockClear()
     streamImpl = async function* () {
       yield { type: 'text', text: 'Опечатка: ' }
       yield { type: 'text', text: '«Cleare» → «Clare».' }
@@ -371,5 +376,132 @@ describe('POST /api/assistant/chat', () => {
     expect(calls[0].systemPrompt).toContain('## Разделы, которые ты умеешь открывать')
     expect(calls[0].systemPrompt).toContain('- practice-speaking — Практика → Говорение')
     expect(calls[0].systemPrompt).toContain('[[TOUR_NOW id]]')
+  })
+
+  // Ученик открыл окно, и Луна заговаривает первой (lib/assistant/opening.js).
+  describe('первая реплика при открытии окна', () => {
+    const opening = (userId, extra = {}) => ({
+      ...question(userId),
+      messages: [{ role: 'user', content: '[ученик открыл окно]' }],
+      ...extra,
+    })
+
+    it('уходит в модель с сегодняшней датой и пометкой вместо «вопроса ученика»', async () => {
+      await (await post(opening(501))).text()
+      const last = calls[0].messages.at(-1).content
+      expect(last).toMatch(/Сегодня: \d{4}-\d{2}-\d{2}/)
+      expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский\n/)
+      expect(last).toMatch(/Не больше 4 коротких предложений\.$/)
+      expect(last).not.toContain('Вопрос ученика:')
+    })
+
+    it('отказ «не по теме» вместо реплики — 502 без паузы ученику, следующий вопрос проходит', async () => {
+      for (let i = 0; i < 6; i += 1) {
+        streamImpl = async function* () {
+          yield { type: 'text', text: '[[OFFTOPIC]]' }
+        }
+        const res = await post(opening(502))
+        expect(res.status).toBe(502)
+        expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+      }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Опечатка.' }
+      }
+      const res = await post(question(502))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('Опечатка.')
+    })
+
+    it('поломку сама не передаёт — даже если модель поставила метку', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Здравствуйте. Вижу сбой на экране.\n[[REPORT_BUG]]\nРаздел: Урок' }
+      }
+      const text = await (await post(opening(503, { errors: [{ at: 1, message: 'ChunkLoadError' }] }))).text()
+      expect(text).toBe('Здравствуйте. Вижу сбой на экране.\n')
+      expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+
+    // После чипа «ошибка» любая реплика ученика длиннее 16 знаков — уже описание поломки (shouldAutoReportBug).
+    // Пометка открытия — не его слова: ни отчёта по ней, ни её текста в «словах ученика».
+    it('пометка после чипа «ошибка» описанием поломки не считается', async () => {
+      await (await post({
+        ...question(504),
+        messages: [
+          { role: 'user', content: 'На сайте ошибка' },
+          { role: 'assistant', content: 'Что именно не работает?' },
+          { role: 'user', content: '[ученик открыл окно]' },
+          { role: 'assistant', content: 'Здравствуйте. Вы на Главной.' },
+          { role: 'user', content: 'спасибо' },
+        ],
+      })).text()
+      expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+  })
+
+  // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
+  describe('заметка о совете', () => {
+    // «Главная»: не экран задания — первая реплика там может предлагать раздел.
+    const HOME = { id: 'home', text: 'Главная ВАШ УРОВЕНЬ A2' }
+    const offer = (text) => {
+      streamImpl = async function* () {
+        yield { type: 'text', text }
+      }
+    }
+
+    it('предложение открыть раздел — заметка: раздел и сам совет без вопроса-кнопки', async () => {
+      offer('Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать. Открыть?\n[[OPEN homework]]')
+      const text = await (await post(question(601))).text()
+      expect(text).toMatch(/\[\[ASST_ACTION open homework offer\]\]$/)
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-601', {
+        target: 'homework',
+        advice: 'Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать.',
+      })
+    })
+
+    it('«открой» по просьбе ученика, тур и ответ без метки — не советы', async () => {
+      offer('Открываю Словарь.\n[[OPEN_NOW vocab]]')
+      await (await post(question(602))).text()
+      offer('Начинаю тур по Главной.\n[[TOUR_NOW home]]')
+      await (await post(question(602))).text()
+      await (await post(question(602))).text()
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('в первой реплике переход — всегда предложение: пишется и ошибочный _NOW', async () => {
+      offer('Начните со словаря. Открываю.\n[[OPEN_NOW vocab]]')
+      await (await post({ ...question(603), screen: HOME, messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-603', expect.objectContaining({ target: 'vocab' }))
+    })
+
+    it('первая реплика без метки, но с «Открыть …?» про «Совет сайта» — кнопка и заметка всё равно есть', async () => {
+      studentContextResult =
+        'Совет сайта, что сделать сейчас: Аудирование: мини-игра — самый слабый навык — listening (метка [[OPEN listening]]).'
+      offer('Аудирование у вас слабее всего. Открыть мини-игру?')
+      const opening = { ...question(605), screen: HOME, messages: [{ role: 'user', content: '[ученик открыл окно]' }] }
+      expect(await (await post(opening)).text()).toMatch(/Открыть мини-игру\?\[\[ASST_ACTION open listening offer\]\]$/)
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-605', expect.objectContaining({ target: 'listening' }))
+      // На обычный вопрос не додумываем: там метка — решение модели.
+      saveAdviceNote.mockClear()
+      offer('Аудирование у вас слабее всего. Открыть мини-игру?')
+      expect(await (await post(question(605))).text()).not.toContain('ASST_ACTION')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('первая реплика на экране задания — без кнопки и без заметки, даже если модель позвала', async () => {
+      offer('Доделайте урок, а потом — домашка. Открыть?\n[[OPEN homework]]')
+      // question(): экран урока с полем ответа — задание.
+      const text = await (await post({ ...question(606), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
+      expect(text).toMatch(/^Доделайте урок, а потом — домашка\. Открыть\?\s*$/)
+      expect(text).not.toContain('ASST_ACTION')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('заметка не записалась — ответ всё равно доходит целиком', async () => {
+      saveAdviceNote.mockRejectedValueOnce(new Error('db down'))
+      offer('С домашки и начните. Открыть?\n[[OPEN homework]]')
+      const res = await post(question(604))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toMatch(/С домашки и начните\. Открыть\?\n\[\[ASST_ACTION open homework offer\]\]$/)
+    })
   })
 })
