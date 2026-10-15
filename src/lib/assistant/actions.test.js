@@ -29,6 +29,12 @@ describe('метки действий в ответе модели', () => {
     expect(noTour.action).toBeNull()
   })
 
+  it('форму метки прощаем: «id=», кавычки, двоеточие', () => {
+    expect(run('Открыть?\n[[OPEN id="practice-listening"]]').action).toEqual({ kind: 'open', target: 'practice-listening', now: false })
+    expect(run('Открываю.\n[[OPEN_NOW: vocab]]').action).toEqual({ kind: 'open', target: 'vocab', now: true })
+    expect(run('Тур?\n[[TOUR «home»]]').out).toBe('Тур?\n')
+  })
+
   it('раздел не из белого списка: метка не видна ученику и не становится действием', () => {
     const { out, action } = run('Открываю.\n[[OPEN_NOW ielts-mock]]')
     expect(out).toBe('Открываю.\n')

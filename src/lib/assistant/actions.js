@@ -16,7 +16,9 @@
 import { REPORTED_STREAM_MARKER, createHoldbackFilter } from './report.js'
 import { validAction } from './destinations.js'
 
-const MODEL_MARK = /^\[\[(OPEN|TOUR)(_NOW)?\s+([A-Za-z0-9_-]{1,40})\s*\]\]$/
+// Форму модель местами путает (живой прогон 15.10.2026: «[[OPEN id="practice-listening"]]»),
+// поэтому двоеточие, «id=» и кавычки вокруг id прощаем — раздел всё равно сверяется со списком.
+const MODEL_MARK = /^\[\[(OPEN|TOUR)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«]?([A-Za-z0-9_-]{1,40})["'»]?\s*\]\]$/
 // Длиннее этого метка модели не бывает: «[[» без закрытия дальше — просто текст.
 const MAX_MARK = 56
 

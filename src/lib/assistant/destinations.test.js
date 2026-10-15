@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { DESTINATIONS, destinationName, destinationOf, destinationsText, validAction } from './destinations.js'
+import { DESTINATIONS, destinationIdForScreen, destinationName, destinationOf, destinationsText, validAction } from './destinations.js'
 import { EXPANDABLE, SKILL_KEYS } from '../../screens/practice/practiceTabs.js'
-import { SCREEN_NAMES } from './prompt.js'
+import { SCREEN_NAMES, buildContextBlock } from './prompt.js'
 import { assistantAllowedOn } from './visibility.js'
 
 const appSource = readFileSync(fileURLToPath(new URL('../../App.jsx', import.meta.url)), 'utf8')
@@ -57,6 +57,15 @@ describe('куда Луна умеет вести', () => {
     expect(validAction('open', 'ielts')).toBeNull()
     expect(validAction('delete', 'vocab')).toBeNull()
     expect(destinationOf('__proto__')).toBeNull()
+  })
+
+  it('id раздела, где ученик сейчас, — модели в контекст, чтобы не сочиняла свой', () => {
+    expect(destinationIdForScreen('practice')).toBe('practice')
+    expect(destinationIdForScreen('kingdom')).toBe('learning')
+    expect(destinationIdForScreen('tutor-dashboard')).toBe('tutor')
+    expect(destinationIdForScreen('lesson-workspace')).toBeNull()
+    const block = buildContextBlock({ user: { name: 'А' }, screen: { id: 'practice', text: 'x' }, lang: 'ru' })
+    expect(block).toContain('Открытый раздел: Практика (id для метки: practice)')
   })
 
   it('список для модели: id, имя и пометка тура', () => {

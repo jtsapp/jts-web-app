@@ -169,6 +169,16 @@ export function destinationOf(id) {
   return BY_ID.get(String(id ?? '')) || null
 }
 
+/**
+ * id раздела, в котором ученик сейчас, — модели в контекст: по одному имени
+ * экрана («Практика») она сочиняла id сама («home_practice», живой прогон
+ * 15.10.2026). Экран без своего раздела в списке — null.
+ */
+export function destinationIdForScreen(screen) {
+  const d = DESTINATIONS.find((x) => x.screen === screen && !x.payload)
+  return d ? d.id : null
+}
+
 /** Имя раздела на языке интерфейса — для кнопки под ответом. */
 export function destinationName(id, lang = 'ru') {
   const d = destinationOf(id)
