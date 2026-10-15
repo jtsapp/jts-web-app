@@ -1607,6 +1607,11 @@ export function updateSatLesson(token, lessonId, body) {
   return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
 }
 
+/** Навык из разбора пробника — в ближайшее занятие плана → { added, lesson, plan }; added=false — уже есть на неделе. */
+export function addSatPlanSkill(token, skillId) {
+  return authPost('/mobile/sat/plan/skills', token, { skillId })
+}
+
 /** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
 export function startSatSession(token, body) {
   return authPost('/mobile/sat/sessions', token, body)
