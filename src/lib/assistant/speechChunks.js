@@ -5,6 +5,10 @@
 // ними. Разметку (**…**, «- ») и служебные метки вслух не читаем.
 
 export const FIRST_MIN = 30
+// Первая фраза — не длиннее этого: пока она синтезируется, Луна молчит, а
+// ученик смотрит на «Сейчас скажу…» (живой прогон 15.10.2026: первое
+// предложение в 100+ символов — 5–6 с тишины). Длиннее — режем по запятой.
+export const FIRST_MAX = 90
 export const NEXT_MIN = 120
 // Gemini читает фразу целиком примерно за 1.5 с + 40 мс на символ (замер
 // 14.10.2026): 300 символов — ~13 с, и такая фраза успевает готовиться, пока
@@ -62,35 +66,40 @@ function softCut(buf, max) {
 
 /**
  * push(кусок потока) → готовые фразы; flush() в конце ответа отдаёт остаток.
+ * ends[i] — где в исходном потоке (с разметкой) кончается i-я фраза: по нему
+ * виджет показывает текст ровно до того места, которое Луна сейчас говорит.
+ * Кусок без слов для речи (одни эмодзи) своей фразы не даёт и уходит со следующей.
  */
-export function createSpeechChunker({ firstMin = FIRST_MIN, nextMin = NEXT_MIN, max = MAX_CHUNK } = {}) {
+export function createSpeechChunker({ firstMin = FIRST_MIN, firstMax = FIRST_MAX, nextMin = NEXT_MIN, max = MAX_CHUNK } = {}) {
   let buf = ''
   let emitted = 0
+  let consumed = 0 // символов потока до начала buf
+  const ends = []
 
   function take(final) {
     const out = []
-    const emit = (raw) => {
-      const t = cleanForSpeech(raw)
+    const emit = (len) => {
+      const t = cleanForSpeech(buf.slice(0, len))
+      buf = buf.slice(len)
+      consumed += len
       if (t) {
         out.push(t)
+        ends.push(consumed)
         emitted++
       }
     }
     for (;;) {
       const min = emitted === 0 ? firstMin : nextMin
-      const ends = sentenceEnds(buf)
-      let cut = ends.find((e) => e >= min) ?? -1
-      if (cut > max || (cut < 0 && buf.length > max)) {
-        cut = ends.filter((e) => e <= max).pop() ?? softCut(buf, max)
+      const lim = emitted === 0 ? firstMax : max
+      const sentences = sentenceEnds(buf)
+      let cut = sentences.find((e) => e >= min) ?? -1
+      if (cut > lim || (cut < 0 && buf.length > lim)) {
+        cut = sentences.filter((e) => e <= lim).pop() ?? softCut(buf, lim)
       }
       if (cut < 0) break
-      emit(buf.slice(0, cut))
-      buf = buf.slice(cut)
+      emit(cut)
     }
-    if (final) {
-      emit(buf)
-      buf = ''
-    }
+    if (final) emit(buf.length)
     return out
   }
 
@@ -102,5 +111,6 @@ export function createSpeechChunker({ firstMin = FIRST_MIN, nextMin = NEXT_MIN, 
     flush() {
       return take(true)
     },
+    ends,
   }
 }

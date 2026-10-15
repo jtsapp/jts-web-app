@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { MAX_CHUNK, cleanForSpeech, createSpeechChunker } from './speechChunks.js'
+import { FIRST_MAX, MAX_CHUNK, cleanForSpeech, createSpeechChunker } from './speechChunks.js'
 
 describe('cleanForSpeech', () => {
   it('снимает разметку и метки', () => {
@@ -93,5 +93,34 @@ describe('createSpeechChunker', () => {
 
   it('пустые и служебные куски не дают фраз', () => {
     expect(run(['- ', '\n', '[[REPORT_BUG]]'])).toEqual([])
+  })
+
+  // Голос Gemini не потоковый: первая фраза синтезируется целиком, ~40 мс на
+  // символ. Длинное первое предложение — секунды тишины перед первым словом.
+  it(`первая фраза не длиннее ${FIRST_MAX}: длинное предложение режется по запятой`, () => {
+    const first = 'Студент, у вас пять домашек уже просрочены, самая старая с 2 октября, и по ним идёт отставание от курса. '
+    const out = run([first, 'Открыть?'])
+    expect(out[0].length).toBeLessThanOrEqual(FIRST_MAX)
+    expect(out[0].endsWith(',')).toBe(true)
+    expect(out.join(' ')).toBe(`${first.trim()} Открыть?`)
+  })
+
+  // Текст на экране показывается по мере того, как Луна его произносит: виджету
+  // нужно знать, где в исходном потоке кончается каждая фраза.
+  it('ends — конец каждой фразы в исходном потоке, с разметкой', () => {
+    const c = createSpeechChunker()
+    const raw = ['Откройте **Практику** в меню слева. ', 'Там вкладки. ', 'И ещё.']
+    const phrases = [...raw.flatMap((p) => c.push(p)), ...c.flush()]
+    const full = raw.join('')
+    expect(c.ends).toHaveLength(phrases.length)
+    expect(full.slice(0, c.ends[0])).toBe('Откройте **Практику** в меню слева.')
+    expect(c.ends.at(-1)).toBe(full.length)
+  })
+
+  it('кусок без слов для речи своей фразы не даёт — его текст уходит со следующей', () => {
+    const c = createSpeechChunker()
+    c.push('🙂\n')
+    c.push('Откройте Практику в меню слева, там всё есть. ')
+    expect(c.ends).toEqual(['🙂\nОткройте Практику в меню слева, там всё есть.'.length])
   })
 })

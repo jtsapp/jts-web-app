@@ -8,14 +8,21 @@ import { OPENING_MARK } from '../lib/assistant/opening.js'
 // Первая реплика Луны: открыл окно — она заговаривает сама (opening.js). Очередь
 // озвучки подменена: звук тут не проверить, а что сказано — можно.
 const queue = vi.hoisted(() => ({ said: [], stopped: 0 }))
+// Фраза «звучит» сразу (onPhrase) — текст ответа виден, как только сказан.
 vi.mock('../lib/assistant/voiceQueue.js', () => ({
-  createVoiceQueue: () => ({
-    say: (t) => queue.said.push(t),
-    end: () => {},
-    stop: () => {
-      queue.stopped++
-    },
-  }),
+  createVoiceQueue: (opts) => {
+    let n = 0
+    return {
+      say: (t) => {
+        queue.said.push(t)
+        opts.onPhrase?.(n++)
+      },
+      end: () => {},
+      stop: () => {
+        queue.stopped++
+      },
+    }
+  },
 }))
 const speech = vi.hoisted(() => ({ unlocks: 0 }))
 vi.mock('../lib/speech.js', () => ({
@@ -215,8 +222,9 @@ describe('первая реплика Луны при открытии окна'
     fetchMock.mockImplementationOnce(async () => new Response(JSON.stringify({ error: 'model_failed' }), { status: 502 }))
     render(<Harness />)
     fireEvent.click(launcher())
-    // Хвост потока фильтр служебной метки придерживает — ищем по началу фразы.
-    await screen.findByText(/Айгерім, вы на/, {}, WAIT)
+    // Полфразы ещё не прозвучали — на экране не они, а «Сейчас скажу…» (текст
+    // идёт вслед за голосом).
+    await screen.findByText('Сейчас скажу…', {}, WAIT)
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'дай план' } })
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }))
     await screen.findByRole('alert', {}, WAIT)

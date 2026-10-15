@@ -10,13 +10,19 @@ import { cancelTourRequest, emitTourEnd, emitTourStep, tourRequestPending } from
 // Очередь озвучки подменена — звук тут не проверить, а что сказано — можно.
 const queue = vi.hoisted(() => ({ said: [], stopped: 0 }))
 vi.mock('../lib/assistant/voiceQueue.js', () => ({
-  createVoiceQueue: () => ({
-    say: (t) => queue.said.push(t),
-    end: () => {},
-    stop: () => {
-      queue.stopped++
-    },
-  }),
+  createVoiceQueue: (opts) => {
+    let n = 0
+    return {
+      say: (t) => {
+        queue.said.push(t)
+        opts.onPhrase?.(n++)
+      },
+      end: () => {},
+      stop: () => {
+        queue.stopped++
+      },
+    }
+  },
 }))
 vi.mock('../lib/speech.js', () => ({ unlockSpeech: () => {}, stopTts: () => {}, playUrl: () => true }))
 // Голос тура — свой модуль (предзагрузка следующего шага); здесь — что и когда сказано.

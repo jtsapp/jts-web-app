@@ -14,7 +14,7 @@
 // поэтому служебные метки идут только после всего видимого текста.
 
 import { REPORTED_STREAM_MARKER, createHoldbackFilter } from './report.js'
-import { validAction } from './destinations.js'
+import { DESTINATIONS, destinationOf, validAction } from './destinations.js'
 
 // Форму модель местами путает (живой прогон 15.10.2026: «[[OPEN id="practice-listening"]]»),
 // поэтому двоеточие, «id=» и кавычки вокруг id прощаем — раздел всё равно сверяется со списком.
@@ -94,6 +94,60 @@ export function createActionFilter() {
       return action
     },
   }
+}
+
+// Ученик просит тур: «тур» в любом падеже (по-казахски «турды», «турға»),
+// «экскурсия», английское «tour» / «walk me through» / «show me around».
+// Границы — по буквам: «турнир», «туризм», «турецкий» — не тур.
+const TOUR_WORDS = /(?:^|[^\p{L}])(?:тур\p{L}{0,2}|экскурси\p{L}*|tours?|walk me through|show me around)(?=[^\p{L}]|$)/iu
+// Согласие на её предложение — короткое «да» в начале ответа.
+const AGREE = /^\s*(?:да|давай|давайте|ок|окей|хорошо|конечно|ага|угу|можно|иә|ия|жарайды|болады|yes|yeah|yep|sure|ok|okay|please)(?=[^\p{L}]|$)/iu
+// «Не надо тур, просто открой» — тур не навязываем.
+const REFUSE = /(?:^|[^\p{L}])(?:нет|не надо|не нужно|не хочу|без тура|без экскурсии|просто открой|жоқ|керек емес|no|don't|without|just open)(?=[^\p{L}]|$)/iu
+const MODEL_TOUR_MARK = /\[\[TOUR(?:_NOW)?\s+([a-z0-9-]{1,40})\]\]/i
+
+/**
+ * Тур, который Луна предлагала прошлым ответом (метка [[TOUR id]] в её
+ * сообщении — виджет возвращает метку в историю, см. AssistantWidget). Смотрим
+ * только её последний ответ перед вопросом ученика.
+ */
+export function offeredTourTarget(messages) {
+  const list = Array.isArray(messages) ? messages : []
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (list[i]?.role !== 'assistant') continue
+    const m = MODEL_TOUR_MARK.exec(String(list[i].content ?? ''))
+    return m ? m[1].toLowerCase() : null
+  }
+  return null
+}
+
+/**
+ * Ученик просил тур, а модель поставила «открыть» — делаем тур.
+ *
+ * Живой прогон 15.10.2026 (Haiku 5.5): «проведи для меня тур по практике» →
+ * «открываю Практику и проведу по ней» с меткой [[OPEN_NOW practice]]; раздел
+ * открылся, тур — нет. Правило про TOUR_NOW в промпте есть, но 5.5 держит его
+ * через раз (зонд 15.10: 8 из 12), поэтому решает код — по словам ученика
+ * (userText) или по согласию на тур, который Луна сама предлагала
+ * (offeredTour — offeredTourTarget). «Сразу» или «предложить» — как решила модель.
+ *
+ * Вкладка Практики своего тура не имеет — тур идёт по экрану, где она живёт
+ * (тур Практики сам переключает вкладку на первую).
+ */
+export function preferTour(action, { userText = '', offeredTour = null } = {}) {
+  if (!action || action.kind !== 'open') return action
+  const dest = destinationOf(action.target)
+  if (!dest) return action
+  const text = String(userText ?? '')
+  if (REFUSE.test(text)) return action
+  const onScreen = (d) => d && d.tour && d.screen === dest.screen
+  const offered = destinationOf(offeredTour)
+  let target = null
+  if (onScreen(offered) && AGREE.test(text)) target = offered.id
+  else if (TOUR_WORDS.test(text)) {
+    target = dest.tour ? dest.id : DESTINATIONS.find(onScreen)?.id || null
+  }
+  return target ? { kind: 'tour', target, now: action.now } : action
 }
 
 /**
