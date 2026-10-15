@@ -9412,6 +9412,25 @@
   color: var(--ih-ink-2);
 }
 
+/* «что сделать дальше» — задач плана не осталось */
+.ih-rec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-rec__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ih-rec__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* зона роста */
 .ih-gz {
   display: flex;
