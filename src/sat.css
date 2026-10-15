@@ -6728,7 +6728,13 @@ mark.st-hl {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   background: var(--st-bg);
-  color: var(--ih-ink, #181818);
+  --ih-ink: #181818;
+  --ih-muted: #8a8a8a;
+  color: var(--ih-ink);
+}
+.st-mrev__top .ih-round {
+  border: 0;
+  background: #f4f4f4;
 }
 .st-mrev__top {
   display: grid;
@@ -6790,19 +6796,37 @@ mark.st-hl {
   padding: 20px 16px;
   background: #fff;
   border-right: 1px solid var(--st-line);
+  overflow-x: hidden;
   overflow-y: auto;
+  /* Figma 29 без полосы прокрутки: колонка ровно 288 px, колёсико и тач по-прежнему листают */
+  scrollbar-width: none;
+}
+.st-mrev__list::-webkit-scrollbar {
+  display: none;
 }
 .st-mrev__list .ih-seg {
+  flex: none;
   align-self: flex-start;
+  padding: 4px;
+  gap: 2px;
 }
 .st-mrev__list .ih-seg button {
   white-space: nowrap;
-  padding-inline: 12px;
+  min-height: 0;
+  height: 30px;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ih-muted);
+}
+.st-mrev__list .ih-seg button.is-on {
+  color: var(--ih-ink);
+  box-shadow: none;
 }
 .st-mrev__group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
 }
 /* Figma 29: другая секция свёрнута в ссылку под списком */
 .st-mrev__more {
@@ -6812,7 +6836,8 @@ mark.st-hl {
   font-weight: 700;
 }
 .st-mrev__group h3 {
-  margin: 8px 0 4px;
+  margin: 0;
+  line-height: 15px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -6825,16 +6850,17 @@ mark.st-hl {
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 12px;
   background: none;
   font: inherit;
+  font-weight: 500;
   text-align: left;
   color: inherit;
   cursor: pointer;
 }
 .st-mrev__row.is-on {
-  border-color: var(--ih-violet, #9047ff);
+  border: 1px solid var(--ih-violet, #9047ff);
   background: var(--st-tint);
   font-weight: 700;
 }
@@ -6869,6 +6895,7 @@ mark.st-hl {
   flex: 1;
   min-width: 0;
   font-size: 13px;
+  line-height: 18px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6935,7 +6962,30 @@ mark.st-hl {
 .st-mrev__stem {
   font-size: 17px;
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 26px;
+}
+/* варианты в разборе (Figma 29): пара «ваш — верный» рамкой 2px, остальные серые с иконкой зачёркивания */
+.st-mrev .st-opt.is-right,
+.st-mrev .st-opt.is-wrong {
+  border-width: 2px;
+}
+.st-mrev .st-opt.is-right {
+  background: #e6f6ec;
+}
+.st-mrev .st-opt.is-rest .st-opt__text,
+.st-mrev .st-opt.is-rest .st-opt__key {
+  color: #8a8a8a;
+}
+.st-mrev .st-opt.is-rest .st-opt__key {
+  border-color: #e3e3ea;
+}
+.st-mrev .st-opt.is-right .st-opt__mark svg,
+.st-mrev .st-opt.is-wrong .st-opt__mark svg {
+  width: 22px;
+  height: 22px;
+}
+.st-mrev .st-opt.is-rest .st-opt__mark {
+  color: #c9c9d3;
 }
 .st-mrev__stem p {
   margin: 0 0 8px;
@@ -6988,12 +7038,14 @@ mark.st-hl {
 }
 .st-mrev__tiles small {
   font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
   color: var(--ih-muted, #8a8a8a);
 }
 .st-mrev__tiles b {
   font-size: 24px;
   font-weight: 800;
+  line-height: 33px;
   overflow-wrap: break-word;
 }
 .st-mrev__tiles .is-wrong {
@@ -7013,7 +7065,7 @@ mark.st-hl {
 .st-mrev__xp {
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 21px;
 }
 .st-mrev__xp p {
   margin: 0 0 8px;
@@ -7026,7 +7078,7 @@ mark.st-hl {
   background: var(--st-red-tint);
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 19px;
   color: #4a4a55;
 }
 .st-mrev__why b {
@@ -7074,8 +7126,14 @@ mark.st-hl {
   font-weight: 700;
 }
 .st-mrev__practice {
+  flex: none;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
+  min-height: 0;
+  height: 46px;
+  padding: 12px 20px;
+  font-size: 15px;
 }
 .st-mrev__planNote {
   display: flex;
@@ -7098,7 +7156,7 @@ mark.st-hl {
   color: #4a4a55;
 }
 .st-mrev__next {
-  min-height: 36px;
+  min-height: 34px;
   padding: 8px 14px;
   font-size: 13px;
 }

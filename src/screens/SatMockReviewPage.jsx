@@ -191,7 +191,7 @@ export default function SatMockReviewPage({ token, onNav }) {
               </div>
               <HtmlBlock html={item.stem} className="st-mrev__stem" />
               {mcq ? (
-                <AnswerChoices options={item.options || []} value={item.given} verdict={{ answer: item.answer, chosen: item.given }} disabled />
+                <AnswerChoices options={item.options || []} value={item.given} verdict={{ answer: item.answer, chosen: item.given }} disabled restMark />
               ) : (
                 <div className={`st-mrev__spr ${item.correct ? 'is-right' : 'is-wrong'}`}>
                   <span>{t('sat.mock.yourAnswer')}: <b>{blank ? t('sat.mock.noAnswer') : answerText(item.given)}</b></span>
@@ -251,7 +251,7 @@ export default function SatMockReviewPage({ token, onNav }) {
               )}
               <button type="button" className="ih-btn ih-btn--outline st-mrev__practice" disabled={busy || !!inPlan[item.skillId]}
                 onClick={() => addToPlan(item.skillId)}>
-                <PlusIcon size={18} />{t('sat.mock.addSkillToPlan')}
+                <PlusIcon size={20} />{t('sat.mock.addSkillToPlan')}
               </button>
             </>
           )}
