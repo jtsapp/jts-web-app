@@ -26,6 +26,13 @@ const DEFAULT_GRADING_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 export const SUMMARY_MODEL =
   process.env.CALL_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
 const MAX_OUTPUT_TOKENS = 4096;
+// Haiku 5.5 в голосовом мозге (Декстер на пакете Speaking Buddy через brain-us,
+// 14.10.2026). Отличия от Haiku 4.5: хвостовую реплику тьютора (префилл) не
+// принимает, а мышление выключается только при effort не выше high — без
+// effort модель берёт medium. low — как у прямого вызова в агенте
+// (ANTHROPIC_BRAIN_EFFORT): короче реплики, меньше тулов, быстрее первый токен.
+const NO_PREFILL_BRAIN = /^claude-haiku-5/;
+const VOICE_BRAIN_EFFORT = "low";
 // Разбор IELTS Writing и Speaking — Sonnet 5.5 (решение владельца 02.10.2026). Отдельно от DEFAULT_GRADING_MODEL:
 // остальные грейдеры (Аркада, Ситуации, шэдоуинг, проверка письма) идут через тот же structured() со старым
 // способом вызова, а Sonnet 5.5 его не принимает — см. structuredViaOutputFormat ниже.
@@ -134,6 +141,14 @@ export async function* chatStreamRich(args) {
   // Mutating the block in place is safe: toRichMessages() built these objects
   // from scratch on this call.
   const messages = toRichMessages(args.messages);
+  // Хвост на реплике тьютора — это префилл, а Haiku 5.5 его не принимает (400,
+  // тьютор молчал бы). Агент сам префилл такой модели не шлёт, но хвост бывает и
+  // без него: generate_reply после реплики тьютора без ответа ученика. Плагин
+  // livekit-anthropic в этом случае подкладывает реплику ученика «.» — делаем
+  // так же, чтобы через шим модель вела себя, как при прямом вызове.
+  if (NO_PREFILL_BRAIN.test(model) && messages[messages.length - 1]?.role === "assistant") {
+    messages.push({ role: "user", content: [{ type: "text", text: "." }] });
+  }
   const lastMsg = messages[messages.length - 1];
   if (Array.isArray(lastMsg?.content) && lastMsg.content.length > 0) {
     lastMsg.content[lastMsg.content.length - 1].cache_control = {
@@ -145,6 +160,7 @@ export async function* chatStreamRich(args) {
     model,
     max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
     thinking: { type: "disabled" },
+    ...(NO_PREFILL_BRAIN.test(model) ? { output_config: { effort: VOICE_BRAIN_EFFORT } } : {}),
     system,
     messages,
     ...(tools ? { tools } : {}),
@@ -258,10 +274,16 @@ function toJsonSchema(schema) {
  * `maxRetries` overrides the SDK default (2) when the caller has a hard wall
  * clock (Cloudflare drops a request after 100 s of silence on prod).
  *
+ * `strict` — строгий инструмент (`strict: true`): ответ обязан пройти схему,
+ * все required на месте. Без него claude-sonnet-5 (прод-дефолт) на длинной
+ * схеме иногда молча роняет поле: замер 12.10.2026 — Письмо без nextSteps в
+ * 3 из 12 проверок, разбор «Аркады» строкой вместо объектов в 2 из 3.
+ * Включается по месту: промпты остальных грейдеров мерили без него.
+ *
  * @param {{ systemPrompt: string, userMessage: string, schema: object,
  *           images?: {mimeType: string, dataBase64: string}[],
  *           model?: string, maxOutputTokens?: number, timeoutMs?: number,
- *           maxRetries?: number }} args
+ *           maxRetries?: number, strict?: boolean }} args
  */
 // Structured outputs требуют additionalProperties:false у каждого объекта схемы.
 export async function structured(args) {
@@ -311,7 +333,10 @@ export async function structured(args) {
           name: "record_result",
           description:
             "Record the structured result. Call this exactly once with the full result.",
-          input_schema: inputSchema,
+          // Строгой схеме нужен additionalProperties:false на каждом объекте —
+          // тот же strictObjects, что и у structured outputs ниже.
+          input_schema: args.strict ? strictObjects(inputSchema) : inputSchema,
+          ...(args.strict ? { strict: true } : {}),
         },
       ],
       // Force the model to answer through the tool so we always get JSON.

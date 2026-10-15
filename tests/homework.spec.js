@@ -28,7 +28,7 @@ const IN_REVIEW = {
 /** Логин ученика + бэкенд, отвечающий заготовленными данными. */
 async function signIn(page, homework, assignments = []) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json(homework)))
   // Задания с живых уроков (назначенные материалы) — вторая половина списка.
   await page.route('**/student/assignments', (r) => r.fulfill(json(assignments)))
@@ -78,10 +78,16 @@ test('задание с живого урока видно в списке и о
 
   await page.goto('/?screen=homework')
 
+  // На телефоне сразу открыто задание, а список — за «Все задания».
+  await expect(page.locator('.hw__layout')).toBeVisible()
+  const кСписку = page.getByRole('button', { name: /Все задания/ })
+  if (await кСписку.isVisible()) await кСписку.click()
+
   // Назначенный материал стоит выше проверенной работы (ждёт действий ученика).
-  await expect(page.getByText('Present Perfect · practice test').first()).toBeVisible()
-  await expect(page.getByText('Задание с урока').first()).toBeVisible()
-  await page.getByText('Present Perfect · practice test').first().click()
+  const карточка = page.locator('.hw-card').first()
+  await expect(карточка).toContainText('Present Perfect · practice test')
+  await expect(карточка.getByText('Задание с урока')).toBeVisible()
+  await карточка.click()
   await expect(page.getByRole('button', { name: 'Открыть задание' })).toBeVisible()
 })
 

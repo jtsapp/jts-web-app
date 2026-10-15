@@ -11,13 +11,15 @@
 //                    оценок. Это ОЦЕНКА СВЕРХУ, а не замер: кредит покрывает до
 //                    30 с аудио, реальную длительность записи мы нигде не храним.
 //   workbooks,
-//   vocabulary_sr  ← activity_time(profile_id, module, day, seconds) — активное
-//                    время на экране воркбука и практики «Словаря», его считает
-//                    хук src/lib/useTimeOnTask.js. Пишется только залогиненным:
-//                    у анонима нет плана, сравнивать его минуты не с чем.
-// Модуля media_practice в приложении нет — он отдаётся нулём с честным флагом
-// tracked:'none': фронту нужно отличать «ноль минут» от «мы это не меряем»,
-// иначе дашборд соврёт студенту дефицитом.
+//   vocabulary_sr,
+//   media_practice ← activity_time(profile_id, module, day, seconds) — активное
+//                    время на экране воркбука, практики «Словаря» и медиа
+//                    (книги, аудирование, чтение, комиксы, караоке — с
+//                    13.10.2026), его считает хук src/lib/useTimeOnTask.js.
+//                    Пишется только залогиненным: у анонима нет плана,
+//                    сравнивать его минуты не с чем.
+// Флаг tracked остаётся: фронту нужно отличать «ноль минут» от «мы это не
+// меряем», иначе дашборд соврёт студенту дефицитом.
 //
 // completed_lessons из ТЗ здесь НЕТ намеренно. Соблазн взять lesson_progress из
 // нашей базы — ловушка: там лежат сценарии голосового тьютора
@@ -40,7 +42,7 @@ export const TRACKED = {
   ai_tutor: 'measured', // секунды разговора
   workbooks: 'measured', // активное время на экране воркбука
   shadowing: 'estimated', // кредиты × 30 с, потолок
-  media_practice: 'none',
+  media_practice: 'measured', // активное время на экранах медиа
   vocabulary_sr: 'measured', // активное время в практике «Словаря»
 }
 
@@ -82,7 +84,7 @@ export function buildWeeklySummary(raw = {}) {
     ai_tutor: toMinutes(raw.voiceSeconds),
     workbooks: toMinutes(activity.workbooks),
     shadowing: toMinutes(Number(raw.shadowingCredits || 0) * SECONDS_PER_CREDIT),
-    media_practice: 0,
+    media_practice: toMinutes(activity.media_practice),
     vocabulary_sr: toMinutes(activity.vocabulary_sr),
   }
   // Цели считаем только если план известен. Пока таблицы roadmaps нет, план

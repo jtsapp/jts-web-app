@@ -94,6 +94,8 @@ async function authGet(path, token) {
     // а не поломку — отличать это от сетевой осечки приходится по нему.
     const err = new Error(`Ошибка сервера (${res.status})`)
     err.status = res.status
+    // 403 у GET — это либо замок доступа, либо исчерпанная демо-квота (GET /mobile/sat/weekly): тело различает их
+    if (res.status === 403) err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json()
@@ -128,7 +130,7 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
     // Текст отказа — отдельным полем, а не в message: вызывающие, что
     // показывают свою подпись, его не заметят, а сдача домашки (HomeworkPage)
     // покажет ученику слова сервера вместо общего «не удалось».
-    err.serverMessage = await rejectionText(res)
+    err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json().catch(() => null)
@@ -141,12 +143,21 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
  * `message` — запасной вид того же. `error` не берём: у Spring это фраза кода
  * («Bad Request»), ученику она ничего не скажет.
  */
-async function rejectionText(res) {
+async function rejectionText(res, err) {
   let body = null
   try {
     body = await res.json()
   } catch {
     // Тела нет или оно не JSON (прокси, обрыв) — отказ остаётся с одним кодом.
+  }
+  // Исчерпанная демо-квота (ContentQuotaService, SAT-SYNC-PLAN E2): 403 с code CONTENT_QUOTA_EXCEEDED, типом контента и
+  // счётчиками. Закрытый доступ — тоже 403, но без code: экраны различают их по нему (lib/examQuota.js).
+  if (err && body && typeof body === 'object' && body.code) {
+    err.code = body.code
+    err.contentType = body.contentType ?? null
+    err.limit = body.limit ?? null
+    err.used = body.used ?? null
+    err.demoExpired = !!body.demoExpired
   }
   const text = (Array.isArray(body?.messages) ? body.messages[0] : null) ?? body?.message
   return typeof text === 'string' && text.trim() ? text.trim() : null
@@ -174,6 +185,8 @@ async function authPost(path, token, body) {
     // отменил», и это объяснение ученику, а не общая осечка сети.
     const err = new Error(`request failed: ${res.status}`)
     err.status = res.status
+    // текст отказа сервера — отдельным полем, как у authPut: message вызывающие местами сравнивают
+    err.serverMessage = await rejectionText(res, err)
     throw err
   }
   return res.json().catch(() => null)
@@ -596,6 +609,64 @@ export function getLevelProgress(token) {
   return authGet('/mobile/level-progress', token)
 }
 
+// Профиль General English — анкета «Главной», цель, срок и формат (бэкенд /mobile/ge, спека 2026-10-12). Ответ без
+// булевого onboarded — не профиль (старый бэкенд без ручки, заглушка e2e, отдающая {} на всё): тогда «Главная» прежняя.
+export function geProfileShape(raw) {
+  return raw && typeof raw === 'object' && typeof raw.onboarded === 'boolean' ? raw : null
+}
+
+/** null — ручки нет или она не ответила: экран остаётся прежним, а не рушится. */
+export async function getGeProfile(token) {
+  if (!token) return null
+  try {
+    return geProfileShape(await authGet('/mobile/ge/profile', token))
+  } catch {
+    return null
+  }
+}
+
+export async function saveGeProfile(token, body) {
+  return geProfileShape(await authPut('/mobile/ge/profile', token, body))
+}
+
+export async function setGeRoute(token, route) {
+  return geProfileShape(await authPut('/mobile/ge/profile/route', token, { route }))
+}
+
+export async function importLegacyGoal(token, goal) {
+  return geProfileShape(await authPost('/mobile/ge/profile/legacy-goal', token, goal))
+}
+
+// План по дням общего курса (бэкенд /mobile/ge/plan, спека 2026-10-13). Ответ без строкового state и массива задач — не
+// план (старый бэкенд без ручки, заглушка e2e с {} на всё): тогда на «Главной» остаётся прежняя «Что сделать сегодня».
+export function gePlanShape(raw) {
+  return raw && typeof raw === 'object' && typeof raw.state === 'string' && Array.isArray(raw.tasks) ? raw : null
+}
+
+/** null — ручки нет или она не ответила: экраны остаются прежними, а не рушатся. */
+export async function getGePlan(token, { from, to } = {}) {
+  if (!token) return null
+  const q = new URLSearchParams()
+  if (from) q.set('from', from)
+  if (to) q.set('to', to)
+  const qs = q.toString()
+  try {
+    return gePlanShape(await authGet(`/mobile/ge/plan${qs ? `?${qs}` : ''}`, token))
+  } catch {
+    return null
+  }
+}
+
+/** Перенос своей задачи плана (урок курса, практика) на другой день: сегодня или позже, в пределах плана. */
+export function moveGeTask(token, id, date) {
+  return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/date`, token, { date })
+}
+
+/** Ученик отмечает своё задание преподавателя («Своё задание», kind custom) выполненным или снимает отметку. */
+export function markGeTaskDone(token, id, done) {
+  return authPut(`/mobile/ge/plan/tasks/${encodeURIComponent(id)}/done`, token, { done: !!done })
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради
@@ -941,8 +1012,13 @@ export async function completeLesson(token, moduleId, code, xp = 0) {
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
-export function getAudiobooks(token) {
-  return cachedAuthGet('/mobile/audio-lessons', token)
+//
+// onFresh обязателен для SWR-кэша: каталог отдаётся из памяти/localStorage сразу, а
+// свежий ответ приходит позже и без этого колбэка просто выбрасывался. Книгу,
+// которую админ добавил или включил, ученик видел только со второго захода в
+// «Практику» — со стороны это выглядело как «то книги есть, то нет».
+export function getAudiobooks(token, onFresh) {
+  return cachedAuthGet('/mobile/audio-lessons', token, onFresh)
 }
 
 // Одна книга целиком (GET /mobile/audio-lessons/{id}). В отличие от списка выше
@@ -1295,6 +1371,24 @@ export function getKaraokeTracks(token, onFresh) {
   return cachedAuthGet('/mobile/karaoke', token, onFresh)
 }
 
+// Уроки «Практика → Шэдоуинг», добавленные методистом через админку
+// (GET /mobile/shadowing). Вшитые в сайт уроки (public/shadowing/*.json) не
+// трогаем — это дополнение к ним. Каталог: [{id,slug,title,speaker,video,
+// sourceChannel,sourceUrl,level,segCount,orderIndex,active,updatedAt}], фраз в
+// нём нет. Кэш — тот же stale-while-revalidate, что у караоке и комиксов: список
+// меняется редко, а открывают его каждый заход; показанное и скрытое в админке
+// подтянется фоновым обновлением.
+export function getShadowingLessons(token, onFresh) {
+  return cachedAuthGet('/mobile/shadowing', token, onFresh)
+}
+
+// Один урок с фразами: те же поля плюс segments: [[начало, конец, текст], …] в
+// секундах, как в файлах public/shadowing/<id>.json. Без кэша: правка фраз в
+// админке должна доехать при следующем открытии урока.
+export function getShadowingLesson(token, slug) {
+  return authGet(`/mobile/shadowing/${encodeURIComponent(slug)}`, token)
+}
+
 // Один караоке-трек (GET /mobile/karaoke/{id}). Нужен на случай диплинка и
 // перезагрузки экрана исполнения: карточка каталога к этому моменту может быть
 // уже не в памяти.
@@ -1443,6 +1537,257 @@ export function abortIeltsMock(token, id) {
 
 export function getIeltsProgress(token) {
   return authGet('/mobile/ielts/progress', token)
+}
+
+// ---- SAT (бэкенд /mobile/sat/**, docs/sat/TEST_FORMAT.md): профиль, таксономия, вопрос без ключа, проверка
+// Шаги старта и доступ к материалам SAT (backend V341): { access, onboarded, diagnosticDone } — открыто без доступа
+export function getSatMe(token) {
+  return authGet('/mobile/sat/me', token)
+}
+
+// Сайдбар спрашивает доступ SAT на каждом экране — ответ помним по токену; осечку не помним (доступа нет до
+// следующего экрана, меню просто останется прежним).
+const _satMe = new Map()
+export function getSatMeCached(token) {
+  if (!token) return Promise.resolve(null)
+  if (!_satMe.has(token)) {
+    _satMe.set(token, getSatMe(token).catch(() => {
+      _satMe.delete(token)
+      return null
+    }))
+  }
+  return _satMe.get(token)
+}
+
+export function getSatProfile(token) {
+  return authGet('/mobile/sat/profile', token)
+}
+
+/** Частичное сохранение: поля null остаются как были — каждая глава онбординга пишет своё. */
+export function saveSatProfile(token, body) {
+  return authPut('/mobile/sat/profile', token, body)
+}
+
+/** Диагностика SAT: status none | active (вопросы без ключей) | finished (последний отчёт). */
+export function getSatDiagnostic(token) {
+  return authGet('/mobile/sat/diagnostic', token)
+}
+
+/** Начать диагностику или продолжить идущую — набор выбирает сервер. */
+export function startSatDiagnostic(token) {
+  return authPost('/mobile/sat/diagnostic', token, {})
+}
+
+/** Сдать все ответы разом: { answers: {id: ответ}, times: {id: секунды}, elapsedSec } → отчёт. */
+export function submitSatDiagnostic(token, id, body) {
+  return authPost(`/mobile/sat/diagnostic/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+export function getSatPlan(token) {
+  return authGet('/mobile/sat/plan', token)
+}
+
+/** Дни (1 = пн) и минуты: первый раз строит план, дальше пересобирает недели впереди. */
+export function saveSatPlan(token, body) {
+  return authPut('/mobile/sat/plan', token, body)
+}
+
+export function rebuildSatPlan(token) {
+  return authPost('/mobile/sat/plan/rebuild', token, {})
+}
+
+/** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
+export function updateSatLesson(token, lessonId, body) {
+  return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
+}
+
+/** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
+export function startSatSession(token, body) {
+  return authPost('/mobile/sat/sessions', token, body)
+}
+
+export function getSatSession(token, id) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}`, token)
+}
+
+/** Подсказка внутри сессии — до проверки делает попытку «с подсказкой» (сервер помнит сам). */
+export function getSatSessionHint(token, id, qid, index) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/hints/${index}`, token)
+}
+
+/** Полное решение; до проверки делает попытку «с объяснением». */
+export function getSatSessionExplanation(token, id, qid) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/explanation`, token)
+}
+
+/** «Похожее»: вопрос того же навыка в конец сессии. */
+export function addSatSimilar(token, id, qid) {
+  return authPost(`/mobile/sat/sessions/${encodeURIComponent(id)}/questions/${encodeURIComponent(qid)}/similar`, token, {})
+}
+
+export function finishSatSession(token, id) {
+  return authPost(`/mobile/sat/sessions/${encodeURIComponent(id)}/finish`, token, {})
+}
+
+/** Проверка одного ответа: { given, mode, helpType, timeSec, sessionId } → верность, ключ, разбор, ошибка в очереди. */
+export function checkSatAnswer(token, qid, body) {
+  return authPost(`/mobile/sat/questions/${encodeURIComponent(qid)}/check`, token, body)
+}
+
+/** Тип ошибки (Figma 23): knowledge | misread | calculation | strategy | time | careless. */
+export function setSatErrorType(token, errorId, errorType) {
+  return authPatch(`/mobile/sat/errors/${errorId}`, token, { errorType })
+}
+
+/** Таксономия SAT с числом опубликованных вопросов банка по навыку (questions) — «40 в банке» (Figma 15). */
+export function getSatTaxonomy(token) {
+  return authGet('/mobile/sat/taxonomy', token)
+}
+
+/** «Сегодня» SAT (Figma 11): незавершённая сессия, следующее занятие, ошибки к повтору, до экзамена, проверка, серия. */
+export function getSatToday(token) {
+  return authGet('/mobile/sat/today', token)
+}
+
+/** «Прогресс» SAT (Figma 17): самостоятельно / с помощью, карта навыков, домены, темп, 90 дней, бейджи. */
+export function getSatProgress(token) {
+  return authGet('/mobile/sat/progress', token)
+}
+
+/** Журнал ошибок: status due | waiting | resolved | all. */
+export function getSatErrors(token, status = 'all') {
+  return authGet(`/mobile/sat/errors?status=${encodeURIComponent(status)}`, token)
+}
+
+/** Ошибка журнала: { errorType } и/или { resolved: true | false } — отметка «разобрано» или вернуть в очередь. */
+export function patchSatError(token, id, body) {
+  return authPatch(`/mobile/sat/errors/${id}`, token, body)
+}
+
+/** Сколько вопросов банка подходит под выбор конструктора практики (тело — как у startSatSession). */
+export function getSatPracticePool(token, body) {
+  return authPost('/mobile/sat/practice/pool', token, body)
+}
+
+/** Ежедневная проверка: сегодняшняя (начатая или новая). */
+export function startSatDaily(token) {
+  return authPost('/mobile/sat/daily', token, {})
+}
+
+/** Сдать проверку разом: { answers, times }. */
+export function submitSatDaily(token, id, body) {
+  return authPost(`/mobile/sat/daily/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+/** Словарь SAT: дневная цель, оценено сегодня, расписание SM-2 по слову, свои слова (колода — public/sat/vocab). */
+export function getSatVocab(token) {
+  return authGet('/mobile/sat/vocab', token)
+}
+
+/** Оценить карточку: 0 «Снова», 3 «Трудно», 4 «Хорошо», 5 «Легко». */
+export function gradeSatVocab(token, wordId, grade) {
+  return authPost('/mobile/sat/vocab/grade', token, { wordId, grade })
+}
+
+export function setSatVocabGoal(token, goal) {
+  return authPut('/mobile/sat/vocab/goal', token, { goal })
+}
+
+/** Своё слово: { word, definition, example, ru }. */
+export function addSatVocabWord(token, body) {
+  return authPost('/mobile/sat/vocab/words', token, body)
+}
+
+export function deleteSatVocabWord(token, id) {
+  return authDelete(`/mobile/sat/vocab/words/${encodeURIComponent(id)}`, token)
+}
+
+/** Курс «36 юнитов»: размер набора каждого юнита и что ученик в нём сделал. */
+export function getSatCourse(token) {
+  return authGet('/mobile/sat/course', token)
+}
+
+/** Пробники SAT: хватает ли банка, идущее прохождение, сданные, опубликованные пробники. */
+export function getSatMocks(token) {
+  return authGet('/mobile/sat/mocks', token)
+}
+
+/** Начать полную симуляцию ({ timed }) или пробник ({ paperId }); прохождение одно за раз. */
+export function startSatMock(token, body) {
+  return authPost('/mobile/sat/mocks', token, body)
+}
+
+export function getSatMock(token, id) {
+  return authGet(`/mobile/sat/mocks/${encodeURIComponent(id)}`, token)
+}
+
+/** Начать текущий модуль (и закончить перерыв раньше). */
+export function startSatMockModule(token, id) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/start`, token, {})
+}
+
+/** Сдать модуль целиком: { key, answers, times, marked, elapsedSec }. */
+export function submitSatMockModule(token, id, body) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/submit`, token, body)
+}
+
+export function abandonSatMock(token, id) {
+  return authPost(`/mobile/sat/mocks/${encodeURIComponent(id)}/abandon`, token, {})
+}
+
+export function getSatMockReview(token, id) {
+  return authGet(`/mobile/sat/mocks/${encodeURIComponent(id)}/review`, token)
+}
+
+// ---- SAT, синхронизация с прототипом (SAT-SYNC-PLAN B1–B5): недельный тест, статистика, журнал ошибок, баллы
+
+/** Недельный тест: { weekStart, status: READY | DONE, timeLimitSeconds, questions, result }. Набор держится неделю. */
+export function getSatWeekly(token) {
+  return authGet('/mobile/sat/weekly', token)
+}
+
+/** Сдать недельный тест целиком: { answers: [{ questionId, answer, timeSpentMs }] } → WeeklyResult. */
+export function submitSatWeekly(token, body) {
+  return authPost('/mobile/sat/weekly/submit', token, Array.isArray(body) ? { answers: body } : body)
+}
+
+/** Прошлые недели: [{ weekStart, correct, total, completedAt }]. */
+export function getSatWeeklyHistory(token) {
+  return authGet('/mobile/sat/weekly/history', token)
+}
+
+/** Статистика для дашборда «Сегодня» (серия, решено, время, освоено, домены, 90 дней, бейджи). */
+export function getSatStats(token) {
+  return authGet('/mobile/sat/insights/stats', token)
+}
+
+/** Итог набора из «Практики» (только source = practice). */
+export function getSatSessionSummary(token, id) {
+  return authGet(`/mobile/sat/sessions/${encodeURIComponent(id)}/summary`, token)
+}
+
+/** «Log error»: запись очереди повторения становится строкой журнала (title, topic, unitCode, errorType). */
+export function logSatError(token, errorId, body) {
+  return authPost(`/mobile/sat/errors/${encodeURIComponent(errorId)}/log`, token, body)
+}
+
+/** Таблица «Результаты»: симуляции + добавленные баллы (Bluebook, официальный SAT). { target, entries }. */
+export function getSatScores(token) {
+  return authGet('/mobile/sat/scores', token)
+}
+
+/** Добавить балл: { source: BLUEBOOK | OFFICIAL, label, takenOn, rw, math }. */
+export function addSatScore(token, body) {
+  return authPost('/mobile/sat/scores', token, body)
+}
+
+/** Остаток демо-квот раздела: [{ contentType, limit, used, remaining, source, sourceName }], limit null — без лимита. */
+export function getContentQuotaUsage(token, area) {
+  return authGet(`/mobile/content-quota/usage?area=${encodeURIComponent(area)}`, token)
+}
+
+export function deleteSatScore(token, id) {
+  return authDelete(`/mobile/sat/scores/${encodeURIComponent(id)}`, token)
 }
 
 export function getIeltsProfile(token) {
@@ -1771,21 +2116,23 @@ export async function getIsDemoAccount(token) {
 const _demoAccess = new Map()
 
 export async function getDemoAccess(token) {
-  if (!token) return { isDemo: false, expiresAt: null }
+  if (!token) return { isDemo: false, expiresAt: null, createdAt: null }
   if (_demoAccess.has(token)) return _demoAccess.get(token)
   const p = authGet('/user/me', token)
     .then((data) => {
       const isDemo = !!data?.isDemoAccount
       const expiresAt = data?.demoExpiresAt || null
       rememberDemoDeadline(isDemo ? expiresAt : null)
-      return { isDemo, expiresAt }
+      // Дата создания аккаунта — тем же ответом: по ней «Главная» отличает учившихся до теста v16 от новых
+      // (src/placement/existingStudent.js).
+      return { isDemo, expiresAt, createdAt: typeof data?.createdAt === 'string' ? data.createdAt : null }
     })
     .catch(() => {
       // Сетевая осечка не должна залипать в памяти: следующий экран спросит
       // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —
       // это безопаснее, чем показать её платящему).
       _demoAccess.delete(token)
-      return { isDemo: false, expiresAt: null }
+      return { isDemo: false, expiresAt: null, createdAt: null }
     })
   _demoAccess.set(token, p)
   return p

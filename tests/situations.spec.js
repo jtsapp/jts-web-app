@@ -103,7 +103,7 @@ const fakeMicrophone = (page) =>
 const asStudent = async (page) => {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
-    r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'A1' } })),
+    r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'A1', phone: '77001234567' } })),
   )
 }
 

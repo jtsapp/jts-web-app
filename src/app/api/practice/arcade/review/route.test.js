@@ -2,13 +2,21 @@
 // уходит в модель. Мокаются платный Claude, проверка токена и бюджет.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import Anthropic from '@anthropic-ai/sdk'
+import { REVIEW_CLIENT_TIMEOUT_MS, REVIEW_DEADLINE_MS } from '@/practice/arcade/reviewContract.js'
 
-const ext = vi.hoisted(() => ({ key: true, db: true, reply: null, fail: null, consumed: 0, refunded: 0, allow: true, calls: [] }))
+const ext = vi.hoisted(() => ({ key: true, db: true, reply: null, fail: null, script: [], consumed: 0, refunded: 0, allow: true, calls: [] }))
 
 vi.mock('@/lib/anthropic.js', () => ({
   hasAnthropicKey: () => ext.key,
   structured: vi.fn(async (args) => {
     ext.calls.push(args)
+    // script — по шагу на вызов: ошибка бросается, остальное — ответ модели.
+    if (ext.script.length) {
+      const step = ext.script.shift()
+      if (step instanceof Error) throw step
+      return step
+    }
     if (ext.fail) throw ext.fail
     return ext.reply
   }),
@@ -59,8 +67,10 @@ function post(body, auth = true) {
 const body = (extra = {}) => ({ level: 'easy', topicIndex: 0, language: 'ru', transcript: transcript(), ...extra })
 
 beforeEach(() => {
-  Object.assign(ext, { key: true, db: true, reply: REPLY, fail: null, consumed: 0, refunded: 0, allow: true, calls: [] })
+  Object.assign(ext, { key: true, db: true, reply: REPLY, fail: null, script: [], consumed: 0, refunded: 0, allow: true, calls: [] })
 })
+
+const overloaded = () => new Anthropic.InternalServerError(529, { type: 'overloaded_error' }, 'Overloaded', new Headers())
 
 describe('POST /api/practice/arcade/review', () => {
   it('гостю — 401, модель не зовётся', async () => {
@@ -129,6 +139,60 @@ describe('POST /api/practice/arcade/review', () => {
     expect((await res.json()).review.criteria[1].band).toBe(6)
     expect(warns.mock.calls.join(' ')).toContain('lexicalResource: JSON string')
     warns.mockRestore()
+  })
+
+  it('роут успевает раньше, чем клиент сдастся (баг 77)', () => {
+    expect(REVIEW_DEADLINE_MS + 10000).toBeLessThanOrEqual(REVIEW_CLIENT_TIMEOUT_MS)
+    expect(REVIEW_CLIENT_TIMEOUT_MS).toBeLessThan(100000)
+  })
+
+  it('строгая схема и без ретраев SDK: вызов не дольше потолка роута', async () => {
+    await post(body())
+    expect(ext.calls[0]).toMatchObject({ strict: true, maxRetries: 0 })
+    expect(ext.calls[0].timeoutMs).toBeLessThanOrEqual(REVIEW_DEADLINE_MS)
+  })
+
+  it('перегрузка модели — один свой повтор, попытка списана один раз', async () => {
+    const warns = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    ext.script = [overloaded()]
+    const res = await post(body())
+    expect(res.status).toBe(200)
+    expect(ext.calls).toHaveLength(2)
+    expect(ext.consumed).toBe(1)
+    expect(ext.refunded).toBe(0)
+    warns.mockRestore()
+  })
+
+  it('два сбоя подряд — отказ с возвратом, третьей попытки нет', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warns = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    ext.script = [new Anthropic.APIConnectionTimeoutError(), new Anthropic.APIConnectionTimeoutError(), REPLY]
+    const res = await post(body())
+    expect(res.status).toBe(504)
+    expect(await res.json()).toEqual({ error: 'timeout' })
+    expect(ext.calls).toHaveLength(2)
+    expect(ext.refunded).toBe(1)
+    errors.mockRestore()
+    warns.mockRestore()
+  })
+
+  it('повтора нет, если до потолка на него не хватит времени', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const now = vi.spyOn(Date, 'now')
+    let t = 1_000_000
+    now.mockImplementation(() => t)
+    const { structured } = await import('@/lib/anthropic.js')
+    structured.mockImplementationOnce(async (args) => {
+      ext.calls.push(args)
+      t += 40000
+      throw overloaded()
+    })
+    const res = await post(body())
+    now.mockRestore()
+    expect(res.status).toBe(502)
+    expect(ext.calls).toHaveLength(1)
+    expect(ext.refunded).toBe(1)
+    errors.mockRestore()
   })
 
   it('без ключа Anthropic — 503 not_configured', async () => {

@@ -13,6 +13,7 @@ import {
   buildSystemPrompt,
   buildTurns,
   parseChatRequest,
+  VOICE_MARK,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -282,5 +283,53 @@ describe('вопросы не по теме', () => {
       expect(OFFTOPIC_REPLY[lang]).toBeTruthy()
       expect(OFFTOPIC_REPLY[lang]).not.toContain(OFFTOPIC_MARKER)
     }
+  })
+})
+
+describe('голосовой вопрос', () => {
+  it('флаг voice разбирается и по умолчанию false', () => {
+    expect(parseChatRequest(ask('где домашка')).voice).toBe(false)
+    expect(parseChatRequest(ask('где домашка', { voice: true })).voice).toBe(true)
+    expect(parseChatRequest(ask('где домашка', { voice: 'yes' })).voice).toBe(true)
+  })
+
+  // Пометка — ВНЕ блока <контекст>: правила велят считать всё внутри него
+  // данными, а не указаниями, и модель законно игнорировала просьбу о коротком
+  // ответе (живой прогон 14.10.2026: шесть предложений с выделением).
+  it('пометка голоса — после вопроса, вне блока данных', () => {
+    const turns = buildTurns({ ...parseChatRequest(ask('где домашка', { voice: true })), user: null })
+    const last = turns.at(-1).content
+    expect(last.endsWith(`Вопрос ученика: где домашка
+
+${VOICE_MARK}`)).toBe(true)
+    expect(last.slice(0, last.indexOf('</контекст>'))).not.toContain(VOICE_MARK)
+  })
+
+  it('у набранного вопроса пометки нет', () => {
+    const turns = buildTurns({ ...parseChatRequest(ask('где домашка')), user: null })
+    expect(turns.at(-1).content).not.toContain(VOICE_MARK)
+  })
+
+  it('правило о голосовом ответе — в системном промпте (он один для всех и кэшируется)', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toContain(VOICE_MARK)
+    expect(rules).toMatch(/2–4 коротких предложения/)
+    expect(buildContextBlock({ screen: { text: 'x' }, lang: 'ru', voice: true })).not.toContain(VOICE_MARK)
+  })
+
+  it('помощника зовут Луна', () => {
+    expect(buildSystemPrompt()).toMatch(/^Ты — Луна, помощник на сайте/)
+  })
+})
+
+describe('голос и тон Луны', () => {
+  it('голосовой ответ — без эмодзи (синтез читал их вслух)', () => {
+    expect(buildSystemPrompt()).toMatch(/\[голосом\][^\n]*без эмодзи/)
+  })
+
+  it('тон — как у Луны в звонке: спокойно, ясно, без дежурных похвал', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toMatch(/Тон — как у Луны в звонке/)
+    expect(rules).toMatch(/без дежурных похвал/)
   })
 })

@@ -279,6 +279,15 @@ export function LessonsIcon({ size = 24 }) {
 // IELTS — академическая шапочка (Material Symbols "school") из макета хаба
 // IELTS (Figma JTS-clone, NavItem/IELTS). Прежняя раскрытая книга здесь
 // нигде не использовалась.
+// SAT — лист с карандашом (edit_note, Material Symbols), как в сайдбаре макета Figma SAT
+export function SatIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 10h11v2H3v-2zm0-2h11V6H3v2zm0 8h7v-2H3v2zm15.01-3.13.71-.71a1 1 0 0 1 1.41 0l.71.71a1 1 0 0 1 0 1.41l-.71.71-2.12-2.12zm-.71.71-5.3 5.3V21h2.12l5.3-5.3-2.12-2.12z" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function IeltsIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">

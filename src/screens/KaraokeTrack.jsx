@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { loadLyrics, trackProgress, saveKaraokeResult } from '../practice/karaoke/karaokeData.js'
 import KaraokePlayer from './karaoke/KaraokePlayer.jsx'
 import KaraokeResult from './karaoke/KaraokeResult.jsx'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 // Один караоке-трек: плеер → результат (макет Figma «Караоке», 24.09.2026).
 //
@@ -23,6 +24,8 @@ const LEAD_IN = 2
 const TAIL = 0.6
 
 export default function KaraokeTrack({ track, token, onBack }) {
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token })
   const [doc, setDoc] = useState(null)
   const [failed, setFailed] = useState(false)
   const [result, setResult] = useState(null)

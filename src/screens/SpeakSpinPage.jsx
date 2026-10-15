@@ -22,7 +22,7 @@ import { SPEAKSPIN_MARKUP } from '../practice/speakspin/markup.js'
 import { SPEAKSPIN_CSS } from '../practice/speakspin/styles.js'
 import { createAssessAdapter } from '../practice/speakspin/assessClient.js'
 
-export default function SpeakSpinPage({ userName, userLevel, token, onNav, onProfile }) {
+export default function SpeakSpinPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
 
@@ -52,8 +52,8 @@ export default function SpeakSpinPage({ userName, userLevel, token, onNav, onPro
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="spsp-top">
-        <button type="button" className="spsp-back" onClick={() => onNav?.('practice', { skill: 'speaking' })}>
-          ← {t('practice.speakspin.toPractice')}
+        <button type="button" className="spsp-back" onClick={() => (onBack ? onBack() : onNav?.('practice', { skill: 'speaking' }))}>
+          ← {backLabel || t('practice.speakspin.toPractice')}
         </button>
       </div>
       <div className="spsp-host" ref={hostRef} />

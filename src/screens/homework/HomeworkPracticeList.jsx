@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n.jsx'
 import { practiceExercises } from './homeworkExercises.js'
 import { practiceNavTarget } from '../../lib/practiceTarget.js'
+import { useShadowingCatalog } from '../../practice/shadowing/catalog.js'
 
 /**
  * Задания из раздела «Практика», выданные преподавателем.
@@ -16,9 +17,12 @@ import { practiceNavTarget } from '../../lib/practiceTarget.js'
  * уровня в разделе не существует), кнопки не будет вовсе — открыть чужое
  * задание хуже, чем не открыть никакого.
  */
-export default function HomeworkPracticeList({ hw, onOpen }) {
+export default function HomeworkPracticeList({ hw, token, onOpen }) {
   const { t } = useI18n()
   const items = practiceExercises(hw)
+  // Урок шэдоуинга мог быть добавлен через админку: чтобы кнопка «Открыть» появилась и для него, список уроков
+  // должен быть загружен. Без заданий шэдоуинга в работе сеть не трогаем.
+  useShadowingCatalog(items.some((item) => item.practiceArea === 'shadowing') ? token : '')
   if (!items.length) return null
 
   const areaLabel = (area) => {

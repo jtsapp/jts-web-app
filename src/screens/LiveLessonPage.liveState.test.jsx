@@ -225,6 +225,7 @@ beforeEach(() => {
   sendStage.mockClear()
   api.getLessonById.mockClear()
   api.getLessonSections.mockClear()
+  api.getLessonMessages.mockClear()
   sessionStorage.clear()
 })
 afterEach(() => vi.useRealTimers())
@@ -474,6 +475,61 @@ describe('LiveLessonPage — опрос шапки занятия', () => {
 
     await act(async () => { vi.advanceTimersByTime(5_000) })
     expect(api.getLessonById).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Чат урока опрашивали раз в 5 с с каждой открытой вкладки — в вечерний пик
+// 12.10.2026 это была половина запросов прода, почти все впустую. Теперь чат
+// перечитывается по сигналу сервера, а опрос — только страховка.
+describe('LiveLessonPage — чат урока', () => {
+  it('сигнал «чат изменился» — переписка перечитывается сразу', async () => {
+    await renderAsStudent()
+    await connectWith(liveState())
+    api.getLessonMessages.mockClear()
+
+    await act(async () => { socketHandlers.onChatChanged() })
+
+    expect(api.getLessonMessages).toHaveBeenCalledTimes(1)
+  })
+
+  // Сигнал может не дойти: сокет с просроченным токеном молча теряет подписки.
+  // Раз в минуту чат перечитывается всё равно.
+  it('сокет жив — страховочный опрос раз в минуту', async () => {
+    await renderAsStudent()
+    await connectWith(liveState())
+    api.getLessonMessages.mockClear()
+
+    await act(async () => { vi.advanceTimersByTime(59_000) })
+    expect(api.getLessonMessages).not.toHaveBeenCalled()
+
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+    expect(api.getLessonMessages).toHaveBeenCalledTimes(1)
+  })
+
+  // Без сокета сигналу прийти неоткуда — чат живёт опросом, как раньше.
+  it('сокет лежит — раз в 5 секунд', async () => {
+    socketConnected = false
+    await renderAsStudent()
+    api.getLessonMessages.mockClear()
+
+    await act(async () => { vi.advanceTimersByTime(5_000) })
+    expect(api.getLessonMessages).toHaveBeenCalledTimes(1)
+
+    await act(async () => { vi.advanceTimersByTime(5_000) })
+    expect(api.getLessonMessages).toHaveBeenCalledTimes(2)
+  })
+
+  // Пока связи не было, сигналы терялись: на переподключении чат перечитывается
+  // сразу, а не через минуту страховки.
+  it('сокет переподключился — переписка перечитывается сразу', async () => {
+    socketConnected = false
+    await renderAsStudent()
+    api.getLessonMessages.mockClear()
+
+    socketConnected = true
+    await connectWith(liveState())
+
+    expect(api.getLessonMessages).toHaveBeenCalledTimes(1)
   })
 })
 

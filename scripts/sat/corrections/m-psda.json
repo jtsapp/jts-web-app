@@ -1,0 +1,76 @@
+{
+ "corrections": [
+  {
+   "id": "m-prob-06",
+   "set": {
+    "answer": [
+     "2/3",
+     "0.666",
+     "0.667",
+     ".6666",
+     ".6667",
+     ".667"
+    ]
+   },
+   "reason": "SPR: added missing grid forms .6666/.6667 for 2/3 (key value 120/180=2/3 verified)."
+  },
+  {
+   "id": "m-psda-89ff6a0a",
+   "set": {
+    "answer": [
+     ".9538",
+     "62/65",
+     "0.953",
+     "0.954"
+    ]
+   },
+   "reason": "SPR: added equivalent grid forms 0.953/0.954 for 62/65 (value unchanged, verified)."
+  },
+  {
+   "id": "m-psda-2df8f293",
+   "set": {
+    "answer": [
+     ".0714",
+     "1/14",
+     "0.071"
+    ]
+   },
+   "reason": "SPR: added equivalent grid form 0.071 for 1/14 (value unchanged, verified)."
+  },
+  {
+   "id": "m-psda-8637294f",
+   "set": {
+    "answer": [
+     ".0625",
+     "1/16",
+     ".062",
+     ".063",
+     "0.062",
+     "0.063"
+    ]
+   },
+   "reason": "SPR: added .062/.063 forms which the official explanation lists as accepted (value 1/16 verified)."
+  },
+  {
+   "id": "m-psda-6a715bed",
+   "set": {
+    "answer": [
+     ".3833",
+     "23/60",
+     "0.383"
+    ]
+   },
+   "reason": "SPR: added 0.383 form which the official explanation lists as accepted (23/60 verified)."
+  },
+  {
+   "id": "m-psda-8213b1b3",
+   "set": {
+    "answer": [
+     ".0014",
+     "0.001"
+    ]
+   },
+   "reason": "SPR: added 0.001 (truncated 0.0014) which the official explanation lists as accepted."
+  }
+ ]
+}

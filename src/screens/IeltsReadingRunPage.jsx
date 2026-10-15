@@ -20,6 +20,7 @@ import { ChevronLeftIcon, ChevronRightIcon, MenuBookIcon } from '../ielts/icons.
 import { setIeltsParams } from '../ielts/urlParams.js'
 import { joinNumbers, unansweredNumbers, useMockAutosave } from '../ielts/mock/mockSession.js'
 import MockRunHeader, { RunTopBar } from '../ielts/mock/MockRunHeader.jsx'
+import { errorText, isQuotaError } from '../lib/examQuota.js'
 
 // Прохождение теста Reading (Figma «6 · Reading — экзамен»): режим фокуса без меню платформы — текст слева,
 // вопросы справа, сетка номеров снизу. Режим: exam — таймер, без подсказок, проверка только при сдаче;
@@ -63,7 +64,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
         setRun(draft && draft.mode === mode ? resumeDraft(draft) : createRun(doc, mode))
         setState({ status: 'ready', doc, test: r.test })
       })
-      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error' }))
+      .catch((e) => alive && setState({ status: e?.status === 404 ? 'missing' : 'error', quota: isQuotaError(e) }))
     return () => {
       alive = false
     }
@@ -95,9 +96,10 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
       dropDraft(run.testId)
       if (mock) mock.onSubmitted([res.attempt.id])
       else onReview?.(res.attempt.id)
-    } catch {
+    } catch (e) {
       submittedRef.current = false
-      setError(t('ieltsReading.submitFailed'))
+      // исчерпанная демо-квота IELTS (E2) — её текст, а не «не удалось отправить»
+      setError(isQuotaError(e) ? errorText(e, t) : t('ieltsReading.submitFailed'))
     } finally {
       setSubmitting(false)
       setConfirm(false)
@@ -143,7 +145,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
   if (!testId || state.status === 'missing' || state.status === 'error') {
     return (
       <div className="ih-run ih-run--empty">
-        <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />
+        <EmptyState icon={<MenuBookIcon size={28} />} title={t(state.quota ? 'exam.quota.title' : 'ieltsReading.errorTitle')} text={t(state.quota ? 'exam.quota.text' : 'ieltsReading.errorText')} />
         <button type="button" className="ih-btn ih-btn--outline" onClick={() => onExit?.(testId)}>{t('ieltsReading.back')}</button>
       </div>
     )

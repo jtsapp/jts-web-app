@@ -12,7 +12,8 @@ import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
-import { validateCheckRequest, validateAssessment } from '@/practice/writing/assessContract.js'
+import { CHECK_DEADLINE_MS, validateCheckRequest, validateAssessment } from '@/practice/writing/assessContract.js'
+import { isRetryableLlmError } from '@/lib/llmRetry.js'
 import {
   checkBudget,
   checkBudgetPayload,
@@ -22,6 +23,11 @@ import {
 import { recordWritingAttempt, updateWritingSnapshot } from '@/lib/db/writingAttempts.js'
 
 export const runtime = 'nodejs'
+
+// Один вызов модели — не дольше 35 с (обычная проверка 11–15 с), повтор —
+// только если до CHECK_DEADLINE_MS осталось хотя бы 15 с.
+const CALL_TIMEOUT_MS = 35000
+const MIN_RETRY_MS = 15000
 
 // Человекочитаемый ярлык уровня для промпта: внутренние id совпадают с CEFR,
 // кроме a2p — модели надо говорить «A2+», иначе она примет «A2P» за опечатку.
@@ -181,30 +187,49 @@ export async function POST(request) {
 
   const levelTag = LEVEL_TAG[String(value.level || '').toUpperCase()] || String(value.level || 'B1')
 
+  // Свой цикл вместо ретраев SDK (см. lib/llmRetry.js): повтор — только на
+  // сбой сети/перегрузку и только если до CHECK_DEADLINE_MS на него хватает
+  // времени. Так роут гарантированно отвечает раньше, чем клиент сдастся
+  // (CHECK_CLIENT_TIMEOUT_MS), а не после — когда кредит уже списан, а ученик
+  // смотрит офлайн-проверку.
   let raw
-  try {
-    raw = await structured({
-      systemPrompt: buildCheckPrompt({
-        levelTag,
-        genre: value.genre,
-        task: value.task,
-        targetWords: value.targetWords,
-      }),
-      userMessage: value.text,
-      schema: CHECK_SCHEMA,
-      maxOutputTokens: 3500,
-      timeoutMs: 60000,
-    })
-  } catch (e) {
-    console.error('[writing.check] grading failed', e)
-    if (charged) {
-      try {
-        await refundCheck(profileId)
-      } catch (re) {
-        console.error('[writing.check] budget refund failed', re)
+  const startedAt = Date.now()
+  for (let attempt = 1; ; attempt++) {
+    try {
+      raw = await structured({
+        systemPrompt: buildCheckPrompt({
+          levelTag,
+          genre: value.genre,
+          task: value.task,
+          targetWords: value.targetWords,
+        }),
+        userMessage: value.text,
+        schema: CHECK_SCHEMA,
+        maxOutputTokens: 3500,
+        // Строгая схема: без неё модель иногда роняла nextSteps, проверка
+        // уходила в 502, а ученик получал офлайн-разбор (3 из 12 на замере
+        // 12.10.2026).
+        strict: true,
+        timeoutMs: Math.min(CALL_TIMEOUT_MS, CHECK_DEADLINE_MS - (Date.now() - startedAt)),
+        maxRetries: 0,
+      })
+      break
+    } catch (e) {
+      const left = CHECK_DEADLINE_MS - (Date.now() - startedAt)
+      if (attempt < 2 && isRetryableLlmError(e) && left >= MIN_RETRY_MS) {
+        console.warn('[writing.check] grading failed, retrying', e?.status ?? e?.name)
+        continue
       }
+      console.error('[writing.check] grading failed', e)
+      if (charged) {
+        try {
+          await refundCheck(profileId)
+        } catch (re) {
+          console.error('[writing.check] budget refund failed', re)
+        }
+      }
+      return Response.json({ error: 'Grading failed. Try again.' }, { status: 502 })
     }
-    return Response.json({ error: 'Grading failed. Try again.' }, { status: 502 })
   }
 
   // Нормализация против текста ученика (verbatim-цитаты и пр.) — общий контракт

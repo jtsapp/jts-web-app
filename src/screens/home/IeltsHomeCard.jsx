@@ -20,7 +20,7 @@ export default function IeltsHomeCard({ token, onNav }) {
   }, [token])
 
   const started = !!me?.onboarded
-  // онбординг пройден, а материалы ещё закрыты (backend V324): заявка у менеджера — до диагностики можно дойти и сейчас
+  // онбординг пройден, а материалы ещё закрыты: остался второй шаг — диагностика, после неё всё откроется само
   const waiting = started && me?.access === false
   const track = me?.track === 'general' ? 'General Training' : 'Academic'
   const key = waiting ? 'Wait' : started ? 'Go' : 'Start'

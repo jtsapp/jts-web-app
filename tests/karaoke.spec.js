@@ -61,7 +61,7 @@ const LYRICS = {
 async function signIn(page, tracks, lyrics = LYRICS) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
-    r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A2' } })))
+    r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A2', phone: '77001234567' } })))
   await page.route('**/mobile/karaoke', (r) => r.fulfill(json(tracks)))
   // Карточка каталога разметку не несёт — она приезжает только по одному треку.
   await page.route('**/mobile/karaoke/1', (r) => r.fulfill(json({ ...TRACK, lyrics })))
@@ -233,4 +233,83 @@ test('трек без разметки помечается недоступны
   await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
 
   await expect(page.locator('.kk-play__msg')).toContainText('битая разметка')
+})
+
+// Ревью Практики 08.10.2026, #73. Пока браузер спрашивает разрешение на
+// микрофон, ▶ ничем не показывает, что нажатие принято, — и его жмут ещё раз.
+// Второй старт запрашивал второй поток, первый оставался без хозяина: красная
+// точка записи горела до перезагрузки вкладки, даже после выхода из караоке.
+test('двойной ▶, пока браузер спрашивает микрофон, не оставляет его включённым', async ({ page }) => {
+  await signIn(page, [TRACK])
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
+  // Настоящий MediaStream (его ест createMediaStreamSource) с живой дорожкой,
+  // выданный через 0,6 с — это и есть окно между двумя тапами.
+  await page.addInitScript(() => {
+    window.__gum = 0
+    window.__tracks = []
+    navigator.mediaDevices.getUserMedia = () => {
+      window.__gum += 1
+      const stream = new AudioContext().createMediaStreamDestination().stream
+      window.__tracks.push(...stream.getTracks())
+      return new Promise((resolve) => setTimeout(() => resolve(stream), 600))
+    }
+  })
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+
+  const play = page.getByRole('button', { name: 'Играть' })
+  await play.evaluate((el) => {
+    el.click()
+    el.click()
+  })
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run', { timeout: 15000 })
+  expect(await page.evaluate(() => window.__gum)).toBe(1)
+
+  await page.getByRole('button', { name: 'Выйти' }).click()
+  await page.getByRole('dialog', { name: 'Пауза' }).getByRole('button', { name: 'Выйти без результата' }).click()
+  await expect(page.locator('.kk-play')).toHaveCount(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__tracks.filter((t) => t.readyState === 'live').length))
+    .toBe(0)
+})
+
+// Распознавание дубля висело без таймаута, а «Выйти» на «Считаем…» было
+// выключено: если сеть или сервер вставали, ученик сидел перед экраном до
+// обрыва запроса. Теперь выход работает и с этого экрана.
+test('«Считаем…»: распознавание не отвечает — выйти можно, запрос отменяется', async ({ page }) => {
+  await signIn(page, [TRACK])
+  // Песня на 3 с: дубль кончается сам, и плеер уходит в «Считаем…».
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(3) }))
+  // Распознавание не отвечает никогда.
+  await page.route('**/api/transcribe', () => {})
+  await page.addInitScript(() => {
+    window.__tracks = []
+    // Живой тон, а не тишина: из пустого потока MediaRecorder отдаёт пустой
+    // дубль, и распознавание не зовётся вовсе.
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ctx = new AudioContext()
+      const osc = ctx.createOscillator()
+      const dest = ctx.createMediaStreamDestination()
+      osc.connect(dest)
+      osc.start()
+      window.__tracks.push(...dest.stream.getTracks())
+      return dest.stream
+    }
+  })
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await page.getByRole('button', { name: 'Играть' }).click()
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'scoring', { timeout: 20000 })
+  await expect(page.getByText('Считаем результат…').first()).toBeVisible()
+
+  const transcribe = page.waitForEvent('requestfailed', (req) => req.url().includes('/api/transcribe'))
+  const exit = page.getByRole('button', { name: 'Выйти' })
+  await expect(exit).toBeEnabled()
+  await exit.click()
+  await expect(page.locator('.kk-play')).toHaveCount(0)
+  // Брошенный запрос закрыт, а не висит до ответа сервера.
+  await transcribe
+  await expect
+    .poll(() => page.evaluate(() => window.__tracks.filter((t) => t.readyState === 'live').length))
+    .toBe(0)
 })

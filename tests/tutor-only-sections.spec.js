@@ -31,6 +31,8 @@ async function loginToTutorZone(page) {
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
+  // Вход начинается с пароля; по коду — ссылкой под формой
+  await page.getByRole('link', { name: 'Войти по коду из сообщения' }).click()
   await page.locator('.phone-field input').fill('7771234567')
   await page.locator('.form-primary').click()
   const boxes = page.locator('.otp-box')

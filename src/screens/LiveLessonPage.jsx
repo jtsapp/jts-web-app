@@ -45,7 +45,13 @@ import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
 const PAUSE_MINUTES = 5
+// Чат перечитывается по сигналу сокета (chat-changed), опрос — только страховка:
+// сокет с просроченным токеном молча теряет подписки, и сигнал до него не дойдёт.
+// Без сокета сигналу прийти неоткуда — тогда опрос прежний, раз в 5 с. Раньше
+// он шёл раз в 5 с всегда, и в вечерний пик 12.10.2026 это была половина
+// запросов прода.
 const MESSAGE_POLL_MS = 5000
+const MESSAGE_SAFETY_POLL_MS = 60000
 // Шапка занятия (ссылка на звонок, тема, состав) — опросом раз в 30 с. Статус
 // приходит состоянием занятия сразу, ждать опроса ему не нужно (спека
 // live-lesson-server-state §2 п.6). Пока сокет лежит или состояния ещё нет,
@@ -1096,6 +1102,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     },
     onCatchUp: handleCatchUpRequest,
     onSectionsChanged: loadSections,
+    onChatChanged: refreshMessages,
     // Учительский канал шагов слушает только преподаватель (см. хук).
     isStaff,
     // Урок, открытый шагами: что делает собеседник прямо сейчас.
@@ -1641,13 +1648,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }, [lessonId, token, isStaff, lessonPollMs])
 
   useEffect(() => {
-    if (!lessonId || !token) return undefined
+    if (!lessonId || !token) return
     loadSections()
-    refreshMessages()
-    const handle = setInterval(refreshMessages, MESSAGE_POLL_MS)
-    return () => clearInterval(handle)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId, token])
+
+  // Зависит от связи: на каждом подключении и переподключении чат перечитывается
+  // сразу — сигналы, пришедшие за время обрыва, потеряны.
+  useEffect(() => {
+    if (!lessonId || !token) return undefined
+    refreshMessages()
+    const handle = setInterval(refreshMessages, liveConnected ? MESSAGE_SAFETY_POLL_MS : MESSAGE_POLL_MS)
+    return () => clearInterval(handle)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, token, liveConnected])
 
   // Первое состояние персонала, пришедшее раньше занятия, применяется, как
   // только занятие известно (restoreFromFirstState).

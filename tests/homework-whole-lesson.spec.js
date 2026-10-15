@@ -60,7 +60,7 @@ const КАТАЛОГ = [{
 
 async function openHomework(page) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Зере', role: 'STUDENT', languageLevel: 'A1' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Зере', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json([])))
   await page.route('**/student/assignments', (r) => r.fulfill(json([УРОК])))
   await page.route('**/mobile/course-catalog', (r) => r.fulfill(json(КАТАЛОГ)))

@@ -2,13 +2,14 @@
 // lang } → баллы произношения + послово-карта + короткий совет Claude.
 //
 // Azure Pronunciation Assessment в эталон-режиме (assessAgainstReference); без
-// ключей или при сбое — mock (200, mock:true), чтобы тренажёр работал всегда.
+// ключей — mock (200, mock:true), чтобы тренажёр работал и на локалке. Речи не
+// нашлось или Azure не ответил — 422 no_speech, а не выдуманный балл.
 // Совет Claude — best-effort и ТОЛЬКО по реальным баллам. Гостю оценка закрыта,
 // лимита на количество оценок нет (см. lib/db/shadowingBudget.js).
 
 import {
   assessAgainstReference,
-  assessPronunciation,
+  assessPronunciationChunked,
   mockPronunciation,
   isAzureSpeechConfigured,
 } from '@/lib/ielts/azure-pronunciation.js'
@@ -17,6 +18,7 @@ import { buildTipPrompt } from '@/lib/shadowing/tipPrompt.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { wavSeconds, creditsForSeconds, dayKey, recordCredits } from '@/lib/db/shadowingBudget.js'
+import { queueGeActivity } from '@/lib/geActivity.js'
 
 export const runtime = 'nodejs'
 
@@ -24,6 +26,24 @@ export const runtime = 'nodejs'
 // Было 40 МБ, но лимит обязан оставаться НИЖЕ client_max_body_size на nginx
 // (там 32m): иначе прокси отдаёт голый 413 вместо понятной ошибки роута.
 const MAX_BYTES = 30 * 1024 * 1024
+
+// Прод стоит за Cloudflare, который рвёт молчащий запрос через 100 с (524).
+// Оценка целого отрывка кусками идёт ~20–30 с даже на 12 минутах, но кусок,
+// на котором Azure повис, держал бы роут до своего клапана (45 с + длина
+// куска) — поэтому весь Azure ждём не дольше AZURE_DEADLINE_MS, а совет —
+// не дольше TIP_TIMEOUT_MS и без ретраев SDK: итог заметно ниже 100 с.
+const AZURE_DEADLINE_MS = 70_000
+const TIP_TIMEOUT_MS = 10_000
+
+// Обещание с потолком: по истечении — fallback. Работа не отменяется, но роут
+// её больше не ждёт (как в роутах IELTS).
+function withDeadline(promise, ms, fallback) {
+  let timer
+  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() =>
+    clearTimeout(timer),
+  )
+}
+const TIMED_OUT = Symbol('timeout')
 
 const TIP_SCHEMA = {
   type: 'object',
@@ -42,6 +62,10 @@ async function makeTip(score, refText, lang) {
     schema: TIP_SCHEMA,
     model: 'claude-haiku-4-5-20251001',
     maxOutputTokens: 200,
+    // Совет — украшение: без потолка SDK ждал бы его до 10 минут × 3 попытки,
+    // и уже готовая оценка уходила в 524.
+    timeoutMs: TIP_TIMEOUT_MS,
+    maxRetries: 0,
   })
   return String(raw?.tip || '').trim().slice(0, 300)
 }
@@ -66,7 +90,10 @@ export async function POST(request) {
   const text = String(form.get('text') || '').trim()
   const lang = String(form.get('lang') || 'ru')
   // 'whole' — оценка целого отрывка: длинное аудио, поэтому continuous без
-  // эталона (recognizeOnce эталон-режима обрезал бы на ~15с). Послово-карты нет.
+  // эталона (recognizeOnce эталон-режима обрезал бы на ~15с), а запись режется
+  // по паузам на куски по минуте и оценивается параллельно — одним потоком
+  // 12 минут шли ~3 минуты и на проде обрывались Cloudflare (баг 65).
+  // Послово-карты нет.
   const mode = String(form.get('mode') || 'phrase')
 
   if (!(file instanceof File)) {
@@ -87,18 +114,35 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
 
-  // Оценка: реальная Azure, иначе mock (без падения).
+  // Оценка: реальная Azure. Mock — только когда Azure не настроен вовсе
+  // (локалка без ключей), чтобы тренажёр там работал.
   let score = null
   if (isAzureSpeechConfigured()) {
     const buf = Buffer.from(await file.arrayBuffer())
     const run =
       mode === 'whole'
-        ? assessPronunciation(buf).then((r) => (r ? { ...r, words: [] } : null))
+        ? assessPronunciationChunked(buf).then((r) => (r ? { ...r, words: [] } : null))
         : assessAgainstReference(buf, text)
-    score = await run.catch((e) => {
-      console.error('[shadowing.assess] azure failed', e)
-      return null
-    })
+    score = await withDeadline(
+      run.catch((e) => {
+        console.error('[shadowing.assess] azure failed', e)
+        return null
+      }),
+      AZURE_DEADLINE_MS,
+      TIMED_OUT,
+    )
+    // Не дождались — это не тишина: «запишите ещё раз» тут не поможет, нужен
+    // повтор той же записи. Платы за брошенную оценку в учёт не пишем.
+    if (score === TIMED_OUT) {
+      console.error('[shadowing.assess] azure deadline exceeded', { mode, bytes: file.size })
+      return Response.json({ error: 'timeout' }, { status: 504 })
+    }
+    // Azure настроен, но речи не нашёл (тишина, шум) или не ответил. Раньше и
+    // это уходило в mock: молчание получало «оценочные» 70, экран сохранял их
+    // лучшим баллом фразы и засчитывал в навык речи. Отличить тишину от сбоя
+    // по null нельзя, поэтому ответ один — «речь не разобрана, запишите ещё
+    // раз»; платы не было, в учёт не пишем.
+    if (!score) return Response.json({ error: 'no_speech' }, { status: 422 })
   }
   if (!score) {
     score = { ...mockPronunciation(), words: [], transcript: '' }
@@ -111,7 +155,10 @@ export async function POST(request) {
   // строка учёта, студент своё получает.
   if (!score.mock) {
     try {
-      await recordCredits(resolved.id, dayKey(new Date()), creditsForSeconds(wavSeconds(file.size)))
+      const day = dayKey(new Date())
+      await recordCredits(resolved.id, day, creditsForSeconds(wavSeconds(file.size)))
+      // минуты шэдоуинга — в план по дням общего курса на бэкенде (после ответа, ученик не ждёт)
+      queueGeActivity(resolved.id, day)
     } catch (e) {
       console.error('[shadowing.assess] usage record failed', e)
     }

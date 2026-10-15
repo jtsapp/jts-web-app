@@ -18,6 +18,7 @@ import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { recordSkill } from '../practice/skillStats.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 // Уровня, которого у Аудирования нет, — ближайший из тех, что есть. Раньше
@@ -307,7 +308,7 @@ function ExitModal({ onStay, onLeave }) {
 }
 
 // ───────────────────────── Screen ─────────────────────────
-export default function ListeningPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
+export default function ListeningPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount, onBack, backLabel }) {
   const { t } = useI18n()
   // Обычно уровень берётся из профиля, но домашняя работа задаёт свой: у неё
   // адресом юнита служит сам уровень, и открывать «свой» вместо заданного
@@ -318,6 +319,9 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // время на экране медиа — в учёт Roadmap и в план по дням общего курса (спека 2026-10-13, секция 3)
+  useTimeOnTask('media_practice', { token, enabled: phase !== 'intro' })
+
   const [queue, setQueue] = useState([])
   const [response, setResponse] = useState(null)
   const [answered, setAnswered] = useState(null) // { ok, body }
@@ -327,6 +331,8 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const [stepsDone, setStepsDone] = useState(0)
   const [stepsTotal, setStepsTotal] = useState(0)
   const [exitOpen, setExitOpen] = useState(false)
+  // Куда уйти по «Выйти» в окне подтверждения: назад или в словарь.
+  const [leave, setLeave] = useState(null)
   // Разбор только что показан: «Продолжить» на месте «Проверить» на миг
   // недоступна. Кнопка та же, и второй клик двойного нажатия (или двойной тап)
   // иначе сразу листал разбор, не дав его увидеть (ревью 08.10.2026). Именно
@@ -498,9 +504,20 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
 
   const progress = stepsTotal ? Math.round((stepsDone / stepsTotal) * 100) : 0
 
-  const back = () => onNav?.('practice')
-  // выход из НЕзавершённой тренировки требует подтверждения
-  const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
+  // Туда, откуда открыли (App: стек «откуда пришли»), — с «Главной», из
+  // домашки, из Практики.
+  const back = () => (onBack ? onBack() : onNav?.('practice'))
+  // Словарь — тоже уход с экрана: открытый с полосы раздела, он получает
+  // «Назад» сюда.
+  const toVocab = () => onNav?.('vocab', { back: true })
+  // выход из НЕзавершённой тренировки требует подтверждения — и в словарь
+  // тоже: раньше он молча бросал начатую тренировку
+  const requestLeave = (go) => {
+    if (phase !== 'task') return go()
+    setLeave(() => go)
+    setExitOpen(true)
+  }
+  const requestBack = () => requestLeave(back)
 
   // Из экрана лимита — назад к интро. Сбрасываем и attemptedStart (чтобы
   // повторный заход не показывал замок раньше следующего клика «Начать»), и
@@ -543,7 +560,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
           <button
             type="button"
             className="lt-dict"
-            onClick={() => onNav?.('vocab')}
+            onClick={() => requestLeave(toVocab)}
             aria-label={t('nav.vocab')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -555,14 +572,14 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
 
         {error && <div className="lt-note lt-note--err">{error}</div>}
 
-        {exitOpen && <ExitModal onStay={() => setExitOpen(false)} onLeave={back} />}
+        {exitOpen && <ExitModal onStay={() => setExitOpen(false)} onLeave={leave || back} />}
 
         {phase === 'intro' && (
           <Intro level={level} loading={loading} onStart={startSession} doneCount={doneCount} />
         )}
 
         {phase === 'result' && (
-          <TrainerResult correct={correct} wrong={wrong} onAgain={startSession} onHome={back} />
+          <TrainerResult correct={correct} wrong={wrong} onAgain={startSession} onHome={back} homeLabel={backLabel} />
         )}
 
         {phase === 'task' && current && (

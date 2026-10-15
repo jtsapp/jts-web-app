@@ -1,0 +1,98 @@
+[
+ {
+  "id": "p2.rw1.05",
+  "section": "rw",
+  "skillId": "rw.cs.text-structure-purpose",
+  "type": "mcq",
+  "stem": "Which choice best describes the function of the underlined sentence in the text as a whole?",
+  "passage": "<p><u>Many visitors to old churches have been told that the window glass is thicker at the bottom because, over the centuries, it has slowly flowed downward.</u> The explanation is appealing but wrong. Medieval glassmakers could not produce panes of even thickness, and glaziers usually set the heavier edge at the bottom so that the pane would sit more securely in its frame.</p>",
+  "options": [
+   "It presents a widely held explanation that the text goes on to reject.",
+   "It offers evidence that supports the text’s main claim.",
+   "It describes a technique used by medieval glassmakers.",
+   "It summarises the results of a laboratory experiment."
+  ]
+ },
+ {
+  "id": "p2.rw1.07",
+  "section": "rw",
+  "skillId": "rw.cs.cross-text-connections",
+  "type": "mcq",
+  "stem": "Based on the texts, how would the author of Text 2 most likely respond to the claim in Text 1?",
+  "passage": "<p><b>Text 1</b></p><p>Two years after the city painted protected bicycle lanes on forty of its busiest streets, traffic injuries on those streets had fallen by 30 percent. The lanes, city officials concluded, have made the streets safer for everyone.</p><p><b>Text 2</b></p><p>In the same month that the lanes were painted, the city lowered its speed limit on all streets from 60 to 50 kilometres per hour. Over the following two years, injuries fell by a similar share on streets that received no lanes at all.</p>",
+  "options": [
+   "By agreeing that the bicycle lanes reduced injuries, and arguing that more should be built.",
+   "By arguing that the injury figures were recorded incorrectly.",
+   "By claiming that bicycle lanes make streets more dangerous.",
+   "By suggesting that another change may account for the decline described in Text 1."
+  ]
+ },
+ {
+  "id": "p2.rw1.13",
+  "section": "rw",
+  "skillId": "rw.ii.evidence-quantitative",
+  "type": "mcq",
+  "stem": "Which choice most effectively uses data from the table to complete the statement?",
+  "passage": "<p>A school fitted low-flow taps at the start of the winter term but removed them at the start of the spring term after complaints. The data suggest that the taps reduced the school’s water use: ______</p><table><tr><th>Term</th><th>Students</th><th>Water used (thousand litres)</th></tr><tr><td>Autumn</td><td>800</td><td>240</td></tr><tr><td>Winter</td><td>820</td><td>205</td></tr><tr><td>Spring</td><td>790</td><td>237</td></tr></table>",
+  "options": [
+   "the number of students rose from 800 in the autumn term to 820 in the winter term.",
+   "water use fell from 240 thousand litres in the autumn term to 205 thousand in the winter term, then rose to 237 thousand in the spring term.",
+   "water use was highest in the autumn term, when there were 800 students.",
+   "the school used 237 thousand litres of water in the spring term, when it had 790 students."
+  ]
+ },
+ {
+  "id": "p2.rw1.26",
+  "section": "rw",
+  "skillId": "rw.ei.rhetorical-synthesis",
+  "type": "mcq",
+  "stem": "Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+  "passage": "<p>While researching a topic, a student took the following notes:</p><ul><li>Lake Balkhash is in southeastern Kazakhstan.</li><li>It is about 600 kilometres long.</li><li>Its western part holds fresh water.</li><li>Its eastern part is salty.</li></ul><p>The student wants to emphasise an unusual feature of the lake.</p>",
+  "options": [
+   "Lake Balkhash is in southeastern Kazakhstan.",
+   "Lake Balkhash is about 600 kilometres long.",
+   "Located in southeastern Kazakhstan, Lake Balkhash is a large lake.",
+   "Lake Balkhash is unusual: its western part is fresh water, while its eastern part is salty."
+  ]
+ },
+ {
+  "id": "p2.m1.02",
+  "section": "math",
+  "skillId": "m.alg.linear",
+  "type": "mcq",
+  "stem": "<p>A gym charges a $30 joining fee plus $15 per month. Which expression gives the total cost, in dollars, of joining the gym and paying for <i>m</i> months?</p>",
+  "options": [
+   "15<i>m</i> + 30",
+   "30<i>m</i> + 15",
+   "45<i>m</i>",
+   "15(<i>m</i> + 30)"
+  ]
+ },
+ {
+  "id": "p2.m1.05",
+  "section": "math",
+  "skillId": "m.alg.systems",
+  "type": "spr",
+  "stem": "<p><i>x</i> + <i>y</i> = 14<br><i>x</i> &minus; <i>y</i> = 4</p><p>If (<i>x</i>, <i>y</i>) is the solution to the system of equations above, what is the value of <i>x</i>?</p>"
+ },
+ {
+  "id": "m-av-01",
+  "section": "math",
+  "skillId": "m.geo.area-volume",
+  "type": "mcq",
+  "stem": "A cylindrical tank has radius 3 metres and height 5 metres. A second cylindrical tank has the same height and twice the radius. The volume of the second tank is how many times the volume of the first?",
+  "options": [
+   "2",
+   "4",
+   "6",
+   "8"
+  ]
+ },
+ {
+  "id": "m-av-03",
+  "section": "math",
+  "skillId": "m.geo.area-volume",
+  "type": "spr",
+  "stem": "A cube has a volume of 216 cubic centimetres. What is the length, in centimetres, of one of its edges?"
+ }
+]

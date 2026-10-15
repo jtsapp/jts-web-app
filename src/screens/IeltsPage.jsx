@@ -26,6 +26,7 @@ import { useIeltsDashboard } from '../ielts/model/useIeltsDashboard.js'
 import { getMyLessonOccurrences, getIeltsMe, markIeltsPlanTask } from '../api.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { loadToken } from '../lib/session.js'
+import ExamDemoBanner from '../components/ExamDemoBanner.jsx'
 import { useReadingCatalog, useListeningCatalog, useIeltsCatalog, useIeltsTrack } from '../ielts/reading/useReadingCatalog.js'
 import { studentBandOf } from '../ielts/model/levels.js'
 
@@ -189,14 +190,16 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   const tabs = IELTS_TABS.map((key) => ({ key, label: t(`ieltsHub.tab.${key}`) }))
 
   let panel
-  // Материалы закрыты, пока менеджер не открыл доступ (backend V324): любая вкладка — экран «доступ откроет менеджер».
+  // Материалы закрыты до двух стартовых шагов (анкета + диагностика, затем доступ открывается сам): любая вкладка — шаги старта.
   // Ждём ответ /plan/me: до него вкладка рисуется как обычно, иначе у ученика с доступом мигал бы замок.
   if (me && me.access === false) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
         <div className="ih">
           <IeltsHeader track={me?.track || track} />
-          <IeltsLockedView onboarded={!!me.onboarded} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} />
+          {/* демо-версия IELTS (SAT-SYNC-PLAN E2): набор ограничен демо-квотой, полный — через тариф */}
+          <ExamDemoBanner exam="ielts" token={token} onPricing={() => onNav?.('ielts-pricing')} />
+          <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} onOpenPricing={() => onNav?.('ielts-pricing')} />
         </div>
       </LearningLayout>
     )
@@ -380,6 +383,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ih">
         <IeltsHeader track={me?.track || track} />
+        <ExamDemoBanner exam="ielts" token={token} onPricing={() => onNav?.('ielts-pricing')} />
         <Tabs items={tabs} value={hub.tab === 'progress' ? 'today' : hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
         {/* key — по вкладке и экрану внутри неё: новый экран монтируется заново и проигрывает короткое появление
             (.ih-enter, только opacity и transform). Внутри одного экрана обновления данных его не перезапускают. */}

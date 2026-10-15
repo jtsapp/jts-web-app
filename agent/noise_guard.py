@@ -41,12 +41,19 @@ Soniox послушно пишет их в реплику ученика.
   но фреймворк ждёт финальный транскрипт, а казахскую фразу Soniox закрывает
   сам только через ~2.6 с (английскую — за 0.3–0.5 с). Шлём ему finalize, как
   рация, только сигналом служит конец речи по VAD.
+
+И два слоя «тьютор не понимает, о чём речь» (13.10.2026), тоже выключены по
+умолчанию (см. «Контекст разговора и сомнительные слова»):
+
+* контекст разговора — последняя реплика тьютора уходит в контекст Soniox;
+* сомнительные слова — слова ниже порога уверенности помечаются мозгу.
 """
 
 from __future__ import annotations
 
 import asyncio
 import bisect
+import difflib
 import json
 import logging
 import math
@@ -116,6 +123,13 @@ logger = logging.getLogger("jts-agent")
 # SONIOX_VAD_FINALIZE_TUTORS — его канарейка (иначе — NOISE_GUARD_TUTORS).
 # SONIOX_VAD_FINALIZE_SEC — сколько звука дослать после конца речи VAD, прежде
 #   чем слать finalize.
+# SONIOX_DIALOG_CONTEXT=on — последняя реплика тьютора в контекст Soniox (см.
+#   «Контекст разговора»). Выключен по умолчанию.
+# SONIOX_DIALOG_CONTEXT_TUTORS — его канарейка (иначе — NOISE_GUARD_TUTORS).
+# ASR_UNCERTAIN=on — пометка для мозга слов, в которых Soniox не уверен.
+#   Выключена по умолчанию.
+# ASR_UNCERTAIN_TUTORS — её канарейка (иначе — NOISE_GUARD_TUTORS).
+# ASR_UNCERTAIN_CONF — уверенность, ниже которой слово сомнительное.
 SPEAKER_LOCK_DEFAULT = "on"
 TURN_WATCHDOG_DEFAULT_SEC = 1.2
 SPEAKER_LOCK_RATIO_DEFAULT = 1.3
@@ -334,6 +348,26 @@ def vad_finalize_enabled(tutor: str) -> bool:
 
 def vad_finalize_delay_sec() -> float:
     return _env_fraction("SONIOX_VAD_FINALIZE_SEC", VAD_FINALIZE_DELAY_SEC_DEFAULT, 0.0, 3.0)
+
+
+def dialog_context_enabled(tutor: str) -> bool:
+    """Подсказывать ли Soniox последнюю реплику тьютора. Выключено по
+    умолчанию — по той же причине, что и фильтр эха."""
+    if (os.getenv("SONIOX_DIALOG_CONTEXT") or "").strip().lower() not in _ON:
+        return False
+    return _tutor_allowed(tutor, "SONIOX_DIALOG_CONTEXT_TUTORS")
+
+
+def asr_uncertain_enabled(tutor: str) -> bool:
+    """Помечать ли для мозга сомнительные слова ученика. Выключено по
+    умолчанию."""
+    if (os.getenv("ASR_UNCERTAIN") or "").strip().lower() not in _ON:
+        return False
+    return _tutor_allowed(tutor, "ASR_UNCERTAIN_TUTORS")
+
+
+def asr_uncertain_conf() -> float:
+    return _env_fraction("ASR_UNCERTAIN_CONF", ASR_UNCERTAIN_CONF_DEFAULT, 0.0, 1.0)
 
 
 # ── Замок на ученика ─────────────────────────────────────────────────────────
@@ -1311,6 +1345,186 @@ class EchoFilter:
         return out, " ".join(w for w in dropped_all if w)
 
 
+# ── Контекст разговора и сомнительные слова ──────────────────────────────────
+# Жалоба владельца 13.10.2026: «главной проблемой остаётся слух — тьютор не
+# понимает, о чём речь». Шум и эхо к этому моменту закрыты слоями выше, а смысл
+# терялся ещё в двух местах.
+#
+# * Распознавание не знало, о чём разговор. Контекст Soniox собирается один раз
+#   на звонок (имя, словарь, термины), а самой сильной подсказки — что тьютор
+#   только что спросил — в нём не было: на «What did you have for breakfast?»
+#   неясный звук стоит искать среди еды. Контекст Soniox принимает только при
+#   подключении сокета, поэтому новый вопрос доезжает с новым сокетом. В рации
+#   поток и так новый на каждый ход. В «Свободно» сокет переподключаем, когда
+#   ученик молчит и его фраза у Soniox закрыта, — и только после finalize:
+#   Soniox сперва отдаёт всё, что успел услышать (_GuardedSpeechStream.refresh_context).
+#   Звук, пришедший за время подключения, ждёт в канале кадров. В контекст
+#   идёт реплика, которую тьютор ГОВОРИТ, а не любой готовый текст мозга.
+#
+#   Цена (замер 13.10.2026, синтез под шумом): контекст подтягивает к форме
+#   вопроса и ошибки ученика — «I watch it» на «Did you watch…?» становится
+#   «I watched it». См. DIALOG_CONTEXT_* и замер в CLAUDE.md.
+#
+# * Мозг не знал, где распознавание сомневалось. Soniox ставит уверенность
+#   каждому куску слова, плагин усредняет её на реплику и дальше не отдаёт:
+#   ослышка доходила до мозга как сказанное, и тьютор «исправлял» ошибку,
+#   которой ученик не делал. Пакет Speaking Buddy v3 для этого ждёт флаг
+#   latest_input.asr_uncertain (01_Shared_Core.md) — код его не ставил нигде.
+
+# Хвост реплики тьютора, который уходит в контекст. Вопрос, на который отвечает
+# ученик, почти всегда последний («Nice! … What did you have for breakfast?»),
+# а длинное объяснение перед ним подсказывает меньше, чем отбирает бюджета.
+DIALOG_CONTEXT_MAX_CHARS = 240
+# В general — короче: Soniox советует там короткие пары, и остальные пары
+# контекста сессии режутся так же (_stt_context_general в agent.py).
+DIALOG_GENERAL_MAX_CHARS = 120
+# Чаще одного переподключения за столько секунд сокет не дёргаем: короткие
+# реплики подряд («Okay.» → вопрос) не должны превращаться в серию подключений —
+# лимит запросов в минуту у Soniox общий на организацию.
+DIALOG_REFRESH_MIN_SEC = 3.0
+# Сколько ждать <fin> перед переподключением. Soniox отвечает на finalize за
+# доли секунды; дольше — сокет, похоже, болен, и рвать его вслепую не стоит.
+DIALOG_REFRESH_FIN_SEC = 2.0
+# Тишина после <fin>: звук, ушедший в сокет после метки, Soniox расшифровывает
+# с задержкой ~0.2–0.3 с, и его слова приходят уже после <fin>.
+DIALOG_REFRESH_QUIET_SEC = 0.3
+# Через сколько спросить снова, если фраза ученика открыта или он говорит.
+DIALOG_REFRESH_RETRY_SEC = 0.5
+# Порог уверенности слова. Замер 13.10.2026 (синтез Soniox под розовым шумом,
+# уверенность слова — худший кусок): на почти чистой речи (0 дБ) порог 0.6
+# пометил бы хоть одно слово в 23 из 106 верных реплик, 0.5 — в 12, 0.4 — в 2;
+# на −6 дБ ошибку в реплике 0.6 ловит в 34 из 37, 0.5 — в 27, 0.4 — в 16.
+# Ложная пометка дешевле пропуска: на верной реплике мозг с пометкой почти
+# не переспрашивает (замер мозга там же), а пропущенная ослышка становится
+# «ошибкой ученика». Но пометка на каждой пятой чистой реплике — уже шум.
+# Шкала синтеза и живой речи с акцентом может разойтись — порог правится
+# секретом ASR_UNCERTAIN_CONF.
+ASR_UNCERTAIN_CONF_DEFAULT = 0.5
+# Больше слов не перечисляем: если сомнительна вся фраза, мозгу хватит и
+# начала списка, а длинная пометка только отвлекает.
+ASR_UNCERTAIN_MAX_WORDS = 6
+
+
+def reply_tail(text: str, limit: int = DIALOG_CONTEXT_MAX_CHARS) -> str:
+    """Конец реплики тьютора не длиннее `limit` символов — с начала
+    предложения, если оно в хвост помещается, иначе с начала слова."""
+    text = " ".join((text or "").split())
+    if len(text) <= limit:
+        return text
+    tail = text[-limit:]
+    starts = [m.end() for m in re.finditer(r"[.!?…]\s+", tail)]
+    if starts:
+        return tail[starts[0]:]
+    cut = tail.find(" ")
+    return tail[cut + 1:] if cut >= 0 else tail
+
+
+def dialog_context(base: Any, reply: str) -> Any:
+    """Контекст сессии плюс последняя реплика тьютора — новым объектом:
+    базовый контекст сессии не меняется, его берёт и следующая реплика."""
+    tail = reply_tail(reply)
+    if not tail:
+        return base
+    general = list(getattr(base, "general", None) or [])
+    general.append(
+        soniox.ContextGeneralItem(key="tutor_just_said", value=reply_tail(tail, DIALOG_GENERAL_MAX_CHARS))
+    )
+    return soniox.ContextObject(
+        general=general,
+        text=f'The tutor has just said to the learner: "{tail}"',
+        terms=getattr(base, "terms", None),
+        translation_terms=getattr(base, "translation_terms", None),
+    )
+
+
+def _bare(text: str) -> str:
+    """Слово для показа мозгу: без пробелов и знаков по краям."""
+    return str(text).strip().strip(".,!?;:…«»\"'()[]")
+
+
+class WordConfidence:
+    """Уверенность Soniox по словам ученика — чтобы пометить мозгу сомнительные.
+
+    Кормится финальными токенами ПОСЛЕ замка и фильтра эха — то есть ровно тем,
+    что уйдёт в реплику, — и держит последние слова звонка. Слово собирается из
+    кусков, как в _words: новое начинается с пробела. Уверенность слова — его
+    худший кусок: «por|ridge» с 0.95 и 0.3 — это ослышка, а не уверенное слово.
+
+    Границ хода здесь нет: реплика ученика сама находит свои слова — выравнивается
+    с хвостом накопленного (uncertain). Граница по событиям ошибалась в обе
+    стороны (ревью 13.10.2026): сброс по речи тьютора стирал слова, сказанные
+    между закрытием хода и его ответом, а отменённый ответ оставлял прошлый ход,
+    и уверенное повторение слова помечалось по старому сомнительному. Читать
+    пометку можно сколько угодно раз: у сессий включена предварительная
+    генерация, и мозг на один ход бывает вызван дважды."""
+
+    MAX_WORDS = 400
+    # Сколько слов сверх длины реплики смотреть с конца: хвост успевает
+    # пополниться, пока мозг собирается отвечать (ученик договаривает).
+    ALIGN_SLACK = 20
+
+    def __init__(self, threshold: float) -> None:
+        self.threshold = threshold
+        self._words: deque = deque(maxlen=self.MAX_WORDS)
+        # Может ли следующий кусок без пробела продолжить последнее слово: после
+        # конца фразы — нет, это новое слово следующей фразы.
+        self._open = False
+        # Сколько слов помечено за звонок (для сводки); одна реплика — один раз.
+        self.flagged = 0
+        self._counted = ""
+
+    def feed(self, tokens: list[dict[str, Any]]) -> None:
+        for t in tokens:
+            if not t.get("is_final"):
+                continue
+            if _is_end_token(t):
+                self._open = False
+                continue
+            text = str(t.get("text", ""))
+            conf = t.get("confidence")
+            conf = float(conf) if isinstance(conf, (int, float)) else None
+            if not self._open or text.startswith(" ") or not self._words:
+                self._words.append([text, conf])
+            else:
+                word = self._words[-1]
+                word[0] += text
+                if conf is not None:
+                    word[1] = conf if word[1] is None else min(word[1], conf)
+            self._open = True
+
+    def uncertain(self, transcript: str) -> list[str]:
+        """Сомнительные слова реплики `transcript`: её слова выравниваются с
+        хвостом накопленного, и уверенность берётся у того вхождения, которое
+        и есть эта реплика."""
+        keys = [k for k in (norm_word(w) for w in str(transcript or "").split()) if k]
+        if not keys:
+            return []
+        # С конца: на равных совпадениях SequenceMatcher берёт самое раннее, а
+        # нужно последнее вхождение — «yes» реплики, а не «yes» пять фраз назад.
+        window = list(self._words)[-(len(keys) + self.ALIGN_SLACK):][::-1]
+        wkeys = [norm_word(text) for text, _ in window]
+        hits: list[tuple[int, str]] = []
+        blocks = difflib.SequenceMatcher(a=keys[::-1], b=wkeys, autojunk=False).get_matching_blocks()
+        for a, b, size in blocks:
+            for k in range(size):
+                text, conf = window[b + k]
+                if conf is not None and conf < self.threshold:
+                    # Позиция в реплике — чтобы отдать слова в её порядке.
+                    hits.append((len(keys) - 1 - (a + k), _bare(text)))
+        out: list[str] = []
+        seen: set[str] = set()
+        for _, word in sorted(hits):
+            key = norm_word(word)
+            if key not in seen:
+                seen.add(key)
+                out.append(word)
+        out = out[:ASR_UNCERTAIN_MAX_WORDS]
+        if transcript != self._counted:
+            self._counted = transcript
+            self.flagged += len(out)
+        return out
+
+
 # Ручное закрытие фразы в протоколе Soniox: сервер дорасшифровывает всё, что
 # успел получить, и присылает токен <fin> — плагин считает его концом фразы и
 # сразу отдаёт FINAL. Без него конец фразы решает сам Soniox, и это до
@@ -1338,6 +1552,11 @@ if aiohttp is not None and soniox is not None:
         _FlushSentinel: тот шлёт flush() из commit_user_turn рации, и рубильник
         у него свой (SONIOX_FINALIZE)."""
 
+    class _RefreshMark:
+        """Метка «закрыть фразу перед переподключением» (контекст разговора) —
+        тем же каналом, что кадры: finalize встаёт строго после всего звука,
+        ушедшего до неё."""
+
     class _FilteringWS:
         """Обёртка сокета Soniox: плагин читает из неё ответы, в которых уже
         нет слов фона (если замок включён), а после ответа на finalize зовётся
@@ -1351,6 +1570,7 @@ if aiohttp is not None and soniox is not None:
             on_fin: Callable[[], None],
             echo: EchoFilter | None = None,
             log_echo: Callable[[str], None] | None = None,
+            confidence: WordConfidence | None = None,
         ) -> None:
             self._ws = ws
             self._lock = lock
@@ -1358,6 +1578,32 @@ if aiohttp is not None and soniox is not None:
             self._on_fin = on_fin
             self._echo = echo
             self._log_echo = log_echo
+            self._confidence = confidence
+            # Открыта ли у Soniox фраза: есть финальные слова после последнего
+            # <end>/<fin> (плагин копит их до конца фразы) или черновик в
+            # последнем ответе. Переподключение такую фразу потеряло бы.
+            self._finals_open = False
+            self._drafts = False
+
+        @property
+        def open_phrase(self) -> bool:
+            return self._finals_open or self._drafts
+
+        def _track(self, tokens: list[dict[str, Any]]) -> None:
+            drafts = False
+            for t in tokens:
+                if _is_end_token(t):
+                    self._finals_open = False
+                    continue
+                if not norm_word(t.get("text", "")):
+                    continue
+                if t.get("is_final"):
+                    self._finals_open = True
+                else:
+                    drafts = True
+            # Черновик Soniox присылает целиком в каждом ответе — ответ без
+            # черновых слов значит, что черновика больше нет.
+            self._drafts = drafts
 
         def __getattr__(self, name: str) -> Any:
             return getattr(self._ws, name)
@@ -1383,9 +1629,13 @@ if aiohttp is not None and soniox is not None:
                 return msg, False
             tokens = content.get("tokens")
             if not tokens:
+                self._drafts = False
                 return msg, False
             fin = any(t.get("text") == "<fin>" for t in tokens)
             if self._lock is None and self._echo is None:
+                self._track(tokens)
+                if self._confidence is not None:
+                    self._confidence.feed(tokens)
                 return msg, fin
             out = tokens
             if self._lock is not None:
@@ -1398,6 +1648,11 @@ if aiohttp is not None and soniox is not None:
                 out, echoed = self._echo.process(out)
                 if echoed and self._log_echo:
                     self._log_echo(echoed)
+            # Уверенность — по тому, что осталось после фильтров: слово фона
+            # или эха в реплику не попадёт, и помечать его мозгу незачем.
+            self._track(out)
+            if self._confidence is not None:
+                self._confidence.feed(out)
             content["tokens"] = out
             return msg._replace(data=json.dumps(content, ensure_ascii=False)), fin
 
@@ -1411,7 +1666,11 @@ if aiohttp is not None and soniox is not None:
                     keep=stt._keep,
                     same=stt._same,
                     outlier=stt._outlier,
-                    prior=stt._prior_level if stt._memory else None,
+                    # Контекст разговора переподключает сокет на каждую реплику
+                    # тьютора, и номера говорящих начинаются заново: без уровня
+                    # ученика из прошлых сокетов основным мог стать фон (ревью
+                    # 13.10.2026). Поэтому с ним память включена всегда.
+                    prior=stt._prior_level if (stt._memory or stt.dialog) else None,
                     prior_bg=stt._prior_bg,
                     warmup_ms=stt._warmup_ms,
                     claim_warmup=stt._claim_warmup,
@@ -1448,6 +1707,99 @@ if aiohttp is not None and soniox is not None:
             self._vad_fin_left: float | None = None
             self._vad_rms: deque | None = deque(maxlen=200) if stt.vad_finalize else None
             self._vad_resume: float | None = None
+            # С какой версией контекста разговора открыт сокет и когда; ждёт ли
+            # он переподключения (finalize ушёл) и сколько finalize без ответа.
+            self._ctx_version = -1
+            self._connected_at = 0.0
+            self._fws: Any = None
+            self._refresh_waiting = False
+            self._refresh_timer: Any = None
+            self._quiet_timer: Any = None
+            self._fin_outstanding = 0
+
+        @property
+        def open_phrase(self) -> bool:
+            return bool(self._fws is not None and self._fws.open_phrase)
+
+        def refresh_context(self, version: int) -> float:
+            """Переподключить сокет, если он открыт со старым контекстом.
+
+            Порядок, и у каждого шага своя причина (ревью 13.10.2026):
+            * фраза ученика открыта — ничего не шлём, спросим позже: finalize
+              оборвал бы её на паузе посреди фразы, и тьютор ответил бы на обрывок;
+            * иначе finalize — Soniox отдаёт всё, что успел услышать. Рвать
+              сокет сразу нельзя: детектор голоса отпускает ученика через 0.3 с,
+              а Soniox держит фразу до 2 с, и она пропала бы со старым сокетом;
+            * <fin> на ПОСЛЕДНИЙ из отправленных finalize (свой мог быть не
+              единственным — VAD-finalize, рация) — и ещё короткая тишина:
+              слова звука, ушедшего после метки, приходят уже после <fin>;
+            * фраза закрыта и ученик молчит — переподключение (_refresh_commit).
+            Кадры, пришедшие за время подключения, ждут в канале.
+
+            Возвращает, через сколько секунд спросить снова (0 — не нужно)."""
+            if self._ctx_version < 0 or self._ctx_version >= version or self._refresh_waiting:
+                return 0.0
+            age = time.monotonic() - self._connected_at
+            if age < DIALOG_REFRESH_MIN_SEC:
+                return DIALOG_REFRESH_MIN_SEC - age
+            if self.open_phrase:
+                return DIALOG_REFRESH_RETRY_SEC
+            try:
+                self._input_ch.send_nowait(_RefreshMark())
+            except Exception:
+                # Поток уже закрыт — переподключать нечего.
+                return 0.0
+            self._refresh_waiting = True
+            try:
+                loop = asyncio.get_running_loop()
+                self._refresh_timer = loop.call_later(DIALOG_REFRESH_FIN_SEC, self._refresh_give_up)
+            except RuntimeError:
+                self._refresh_timer = None
+            return 0.0
+
+        def _cancel_refresh_timers(self) -> None:
+            for name in ("_refresh_timer", "_quiet_timer"):
+                timer = getattr(self, name)
+                if timer is not None:
+                    timer.cancel()
+                    setattr(self, name, None)
+
+        def _refresh_give_up(self) -> None:
+            """<fin> не пришёл — переподключение отменяется: рвать сокет вслепую
+            значит рисковать словами ученика, а контекст подождёт следующей
+            реплики тьютора."""
+            self._refresh_timer = None
+            if self._refresh_waiting:
+                self._refresh_waiting = False
+                if self._quiet_timer is not None:
+                    self._quiet_timer.cancel()
+                    self._quiet_timer = None
+                logger.info("STT dialog: Soniox не ответил на finalize — контекст не обновлён")
+
+        def _refresh_on_fin(self) -> None:
+            if not self._refresh_waiting or self._fin_outstanding > 0 or self._quiet_timer is not None:
+                return
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                return
+            self._quiet_timer = loop.call_later(DIALOG_REFRESH_QUIET_SEC, self._refresh_commit)
+
+        def _refresh_commit(self) -> None:
+            self._quiet_timer = None
+            if not self._refresh_waiting:
+                return
+            self._refresh_waiting = False
+            if self._refresh_timer is not None:
+                self._refresh_timer.cancel()
+                self._refresh_timer = None
+            # За это время ученик мог заговорить — его фраза открыта на этом
+            # сокете. Спросим позже.
+            if self.open_phrase or self._guard._user_speaking:
+                self._guard.schedule_refresh(DIALOG_REFRESH_RETRY_SEC)
+                return
+            self._reconnect_event.set()
+            self._guard.dialog_reconnects += 1
 
         def arm_finalize(self) -> None:
             self._fin_deadline = time.monotonic() + FINALIZE_ARM_SEC
@@ -1549,7 +1901,11 @@ if aiohttp is not None and soniox is not None:
                 self._echo_buf = []
 
         async def _connect_ws(self) -> Any:
+            # Версию — до подключения: родитель читает params.context прямо
+            # сейчас, и реплика, пришедшая во время подключения, уже не в нём.
+            self._ctx_version = self._guard.ctx_version
             ws = await super()._connect_ws()
+            self._connected_at = time.monotonic()
             if self._lock is not None:
                 # Новый сокет — новое время слов и новые номера говорящих.
                 self._lock.reset()
@@ -1563,9 +1919,20 @@ if aiohttp is not None and soniox is not None:
             self._vad_fin_left = None
             self._drop_buf = []
             self._echo_buf = []
-            return _FilteringWS(
-                ws, self._lock, self._log_drop, self._on_fin, self._echo, self._log_echo
+            # Переподключение (если ждали его) состоялось; finalize старого
+            # сокета новому не ответят.
+            self._refresh_waiting = False
+            self._cancel_refresh_timers()
+            self._fin_outstanding = 0
+            if self._guard.ctx_version > self._ctx_version:
+                # Реплика тьютора пришла, пока сокет подключался: родитель уже
+                # прочитал старый контекст — нужно ещё одно обновление.
+                asyncio.get_running_loop().call_soon(self._guard.refresh_context)
+            self._fws = _FilteringWS(
+                ws, self._lock, self._log_drop, self._on_fin, self._echo, self._log_echo,
+                self._guard.confidence,
             )
+            return self._fws
 
         def _on_fin(self) -> None:
             # Ответ на finalize. Если фраза к этому моменту уже была отдана
@@ -1580,6 +1947,9 @@ if aiohttp is not None and soniox is not None:
                     alternatives=[lk_stt.SpeechData(language=LanguageCode(""), text="")],
                 )
             )
+            # Фраза закрыта — если ждали этого перед переподключением, пора.
+            self._fin_outstanding = max(0, self._fin_outstanding - 1)
+            self._refresh_on_fin()
 
         async def _prepare_audio_task(self) -> None:
             # Копия родителя (soniox 1.6.7) плюс две вещи. Счёт громкости: считать
@@ -1601,12 +1971,16 @@ if aiohttp is not None and soniox is not None:
                     if self._echo is not None:
                         self._loud.push_pcm(pcm_data, data.sample_rate)
                     self.audio_queue.put_nowait(pcm_data)
-                elif isinstance(data, _FinalizeMark):
+                elif isinstance(data, (_FinalizeMark, _RefreshMark)):
+                    self._fin_outstanding += 1
                     self.audio_queue.put_nowait(FINALIZE_MESSAGE)
                 elif isinstance(data, self._FlushSentinel) and self._guard._finalize:
+                    self._fin_outstanding += 1
                     self.audio_queue.put_nowait(FINALIZE_MESSAGE)
 
         async def aclose(self) -> None:
+            self._refresh_waiting = False
+            self._cancel_refresh_timers()
             if self._lock is not None and (self._lock.kept_words or self._lock.dropped_words):
                 logger.info(
                     "Speaker lock: слов ученика %d, выкинуто фона %d",
@@ -1645,6 +2019,8 @@ if aiohttp is not None and soniox is not None:
             echo_debug: bool = False,
             vad_finalize: bool = False,
             vad_finalize_sec: float = VAD_FINALIZE_DELAY_SEC_DEFAULT,
+            dialog: bool = False,
+            uncertain_conf: float | None = None,
             **kwargs: Any,
         ) -> None:
             params = kwargs.get("params") or soniox.STTOptions()
@@ -1678,6 +2054,99 @@ if aiohttp is not None and soniox is not None:
             # Живые потоки сессии: finalize_now зовут из RPC рации, а поток
             # распознавания создаёт и держит сам фреймворк.
             self._streams: weakref.WeakSet = weakref.WeakSet()
+            # Контекст разговора: базовый контекст сессии, версия текущего
+            # (растёт с каждой новой репликой тьютора) и кто сейчас говорит.
+            self.dialog = dialog
+            self._base_context = params.context
+            self.ctx_version = 0
+            self._is_auto: Callable[[], bool] = lambda: True
+            self._agent_speaking = False
+            self._user_speaking = False
+            self.dialog_updates = 0
+            self.dialog_reconnects = 0
+            # Реплика, которую тьютор ещё не начал говорить, и таймер повтора
+            # переподключения (сокет слишком молод).
+            self._pending_reply = ""
+            self._retry_timer: Any = None
+            # Уверенность по словам — один учёт на звонок: в рации поток новый
+            # на каждый ход, а пометку берёт мозг уже после того, как ход закрыт.
+            self.confidence: WordConfidence | None = (
+                WordConfidence(uncertain_conf) if uncertain_conf is not None else None
+            )
+
+        def begin_reply(self) -> None:
+            """Мозг начал новый ответ: прежняя несказанная реплика (например,
+            отменённая предварительная генерация) больше не нужна."""
+            self._pending_reply = ""
+
+        def set_tutor_reply(self, text: str) -> None:
+            """Текст реплики тьютора готов. В контекст она идёт, только когда
+            тьютор её говорит: предварительную генерацию фреймворк отменяет и
+            после того, как текст готов (ревью 13.10.2026), — несказанная фраза
+            подсказывала бы распознаванию чужой вопрос."""
+            if not self.dialog:
+                return
+            self._pending_reply = text
+            if self._agent_speaking:
+                self._apply_reply()
+
+        def _apply_reply(self) -> None:
+            text, self._pending_reply = self._pending_reply, ""
+            ctx = dialog_context(self._base_context, text)
+            if ctx is self._base_context:
+                return
+            self._params.context = ctx
+            self.ctx_version += 1
+            self.dialog_updates += 1
+            self.refresh_context()
+
+        def refresh_context(self) -> None:
+            """Обновить контекст живых сокетов. В рации не нужно: поток и так
+            новый на каждый ход, а между ходами звук в распознавание не идёт.
+            Пока ученик говорит — нет: спросим, когда замолчит (on_user_state).
+            Остальную безопасность держит поток: открытая фраза, finalize,
+            <fin> и тишина после него (_GuardedSpeechStream.refresh_context).
+            Говорит ли тьютор, не важно: вопрос короткой реплики («Okay. What
+            did you have?») должен доехать и после того, как она отзвучала."""
+            if not self.dialog or not self._is_auto() or self._user_speaking:
+                return
+            later = 0.0
+            for s in list(self._streams):
+                later = max(later, s.refresh_context(self.ctx_version))
+            if later > 0:
+                self.schedule_refresh(later)
+
+        def schedule_refresh(self, delay: float) -> None:
+            """Спросить снова через `delay` секунд (сокет молод, фраза открыта)."""
+            if self._retry_timer is not None:
+                return
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                return
+            self._retry_timer = loop.call_later(delay + 0.05, self._retry_refresh)
+
+        def _retry_refresh(self) -> None:
+            self._retry_timer = None
+            self.refresh_context()
+
+        def on_agent_state(self, state: str) -> None:
+            self._agent_speaking = state == "speaking"
+            if self._agent_speaking and self._pending_reply:
+                # Тьютор заговорил — его реплика в контекст.
+                self._apply_reply()
+
+        def on_user_state(self, state: str) -> None:
+            was_speaking = self._user_speaking
+            self._user_speaking = state == "speaking"
+            if was_speaking and not self._user_speaking:
+                self.refresh_context()
+
+        async def aclose(self) -> None:
+            if self._retry_timer is not None:
+                self._retry_timer.cancel()
+                self._retry_timer = None
+            await super().aclose()
 
         def stream(self, *, language: Any = None, conn_options: Any = None) -> Any:
             from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
@@ -1860,3 +2329,39 @@ def attach_echo_and_vad_finalize(session: Any, stt: Any, *, is_auto: Callable[[]
                 stt.cancel_silence_finalize()
             elif new == "listening" and str(getattr(ev, "old_state", "")) == "speaking" and is_auto():
                 stt.finalize_on_silence()
+
+
+def attach_dialog_context(session: Any, stt: Any, *, is_auto: Callable[[], bool]) -> None:
+    """Подписать контекст разговора и учёт уверенности на события сессии.
+
+    Переподключению сокета нужно знать, кто сейчас говорит (см.
+    GuardedSonioxSTT.refresh_context), а режим хода меняется прямо в звонке —
+    его читаем каждый раз. В конце звонка — сводка без текста речи: по ней
+    видно, доехала ли реплика тьютора до распознавания и как часто мозг
+    получал пометку."""
+    dialog = bool(getattr(stt, "dialog", False))
+    confidence = getattr(stt, "confidence", None)
+    if not dialog and confidence is None:
+        return
+    if dialog:
+        stt._is_auto = is_auto
+
+        @session.on("agent_state_changed")
+        def _on_agent(ev: Any) -> None:
+            stt.on_agent_state(str(getattr(ev, "new_state", "")))
+
+        @session.on("user_state_changed")
+        def _on_user(ev: Any) -> None:
+            stt.on_user_state(str(getattr(ev, "new_state", "")))
+
+    @session.on("close")
+    def _on_close(ev: Any) -> None:
+        parts = []
+        if dialog:
+            parts.append(
+                f"реплик тьютора в контексте {stt.dialog_updates}, "
+                f"переподключений {stt.dialog_reconnects}"
+            )
+        if confidence is not None:
+            parts.append(f"помечено сомнительных слов {confidence.flagged}")
+        logger.info("STT dialog: %s", "; ".join(parts))

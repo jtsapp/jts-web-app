@@ -35,6 +35,7 @@ export const PRACTICE_AREA_BY_MODULE = {
   words: 'words',
   verbs: 'verbs',
   listenchoose: 'listenchoose',
+  numbers: 'numbers',
 }
 
 /** Миграция, с которой кабинет считает решённые задания по суткам (skill_day). */

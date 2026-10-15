@@ -3,7 +3,7 @@ import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
-import { getBalance, getDemoAccess, getIeltsMe } from '../api.js'
+import { getBalance, getDemoAccess, getIeltsMe, getSatMeCached } from '../api.js'
 import { ieltsHidden } from '../lib/ieltsGate.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
@@ -17,6 +17,7 @@ import {
   LessonsIcon,
   HomeworkIcon,
   IeltsIcon,
+  SatIcon,
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -40,6 +41,7 @@ const NAV_FULL = [
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
+  { key: 'sat', label: 'nav.sat', Icon: SatIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
@@ -58,7 +60,9 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке — без «Повторения» (курс
 // General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
-const IELTS_SECTIONS = ['practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts']
+// С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и в нём всегда ОБА экзамена: доступ к
+// одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в меню — владелец, 13.10.2026.
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
@@ -110,7 +114,10 @@ export default function Sidebar({
     if (!authToken || teacher) return
     let alive = true
     getIeltsMe(authToken).then((m) => {
-      if (alive) setIeltsAccount(!!m.ieltsAccount)
+      if (alive && (m.ieltsAccount || m.access)) setIeltsAccount(true)
+    })
+    getSatMeCached(authToken).then((m) => {
+      if (alive && m?.access) setIeltsAccount(true)
     })
     return () => {
       alive = false

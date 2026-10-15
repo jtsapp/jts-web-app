@@ -27,7 +27,7 @@ const CATALOG = [
 
 async function openSelfStudy(page, catalog = CATALOG) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
-  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B2' } })))
+  await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B2' } })))
   await page.route('**/mobile/course-catalog', (r) => r.fulfill(json(catalog)))
   await page.route('**/mobile/course-catalog/progress', (r) => r.fulfill(json({ completedLessonIds: [] })))
   await page.goto('/?screen=lessons')

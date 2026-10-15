@@ -14,6 +14,7 @@
 
 import { blobToWav16kMono } from '../../lib/ielts-audio.js'
 import { MASK_STEP_MS, maskLength, markSpan } from './scoring.js'
+import { createSingingGate } from './singingGate.js'
 
 export function isMicSupported() {
   if (typeof window === 'undefined') return false
@@ -106,8 +107,12 @@ function rmsOf(analyser, buf) {
  * `ctx` — контекст, созданный в обработчике клика (см. createAudioContext).
  * Свой заводим только как запасной путь: созданный здесь, уже после запроса
  * микрофона, в Safari остался бы приостановленным.
+ *
+ * `introAt(sec)` — в этой точке трека идёт вступление, петь ещё рано (см.
+ * singingGate.introAt): по нему порог узнаёт, насколько громко доходит до
+ * микрофона сама музыка.
  */
-export async function startTake({ stream, durationSec, positionSec, ctx: given, stepMs = MASK_STEP_MS }) {
+export async function startTake({ stream, durationSec, positionSec, introAt = null, ctx: given, stepMs = MASK_STEP_MS }) {
   const ctx = given ?? createAudioContext()
   if (ctx.state === 'suspended') await ctx.resume()
   const source = ctx.createMediaStreamSource(stream)
@@ -139,10 +144,10 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   })
   floorSamples.sort((a, b) => a - b)
   const floor = floorSamples[Math.floor(floorSamples.length / 2)] || 0
-  // Порог — втрое над медианой фона, но не ниже абсолютного минимума: в
-  // идеальной тишине медиана уходит почти в ноль, и тогда триггером станет
-  // любой шорох.
-  const threshold = Math.max(floor * 3, 0.012)
+  // Порог — от фона, остатка музыки и голоса самого певца (singingGate.js).
+  // Жёсткий пол 0.012 не слышал тихий микрофон: без автоусиления голос с
+  // ноутбука приходит на ~0.006.
+  const gate = createSingingGate({ floor, stepMs })
 
   const mask = new Uint8Array(maskLength(durationSec, stepMs))
   const window5 = []
@@ -160,14 +165,15 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   const timer = setInterval(() => {
     if (paused) return
     const rms = rmsOf(analyser, buf)
+    const pos = positionSec()
+    const loud = gate.step(rms, introAt ? introAt(pos) : false)
     // Сглаживание по 5 окнам (ТЗ 8.1): решает большинство, поэтому одиночный
     // щелчок не создаёт «спел», а вдох посреди строки не создаёт паузу.
-    window5.push(rms > threshold ? 1 : 0)
+    window5.push(loud ? 1 : 0)
     if (window5.length > 5) window5.shift()
     const voiced = window5.reduce((a, b) => a + b, 0) >= 3
     voicedNow = voiced
-    level = Math.min(1, rms / (threshold * 4))
-    const pos = positionSec()
+    level = Math.min(1, rms / (gate.threshold() * 4))
     const idx = Math.floor((pos * 1000) / stepMs)
     if (voiced) markSpan(mask, lastIdx, idx)
     lastIdx = idx
@@ -192,7 +198,9 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   return {
     level: () => level,
     voiced: () => voicedNow,
-    threshold,
+    get threshold() {
+      return gate.threshold()
+    },
     pause() {
       paused = true
       level = 0
@@ -243,26 +251,50 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   }
 }
 
+// Сколько ждать распознавание дубля. Обычно оно идёт 8–12 с на песне до пяти
+// минут (Fast Transcription, замер 12.10.2026) плюс отправка записи; дольше —
+// значит, сервер ушёл в потоковое распознавание (минуты) или сеть встала.
+// Раньше ожидание было бесконечным, а выход с экрана «Считаем…» закрыт, и
+// ученик сидел перед ним до обрыва запроса — дубль терялся. Теперь по таймауту
+// слова просто не оцениваются, и экран результата честно об этом пишет.
+export const TRANSCRIBE_TIMEOUT_MS = 60000
+
 /**
  * Распознаёт дубль собственным STT приложения.
  *
  * Возвращает текст либо `null`, если распознавание недоступно: нет сети, роут
- * не настроен (503), тело не прошло прокси (413). Ноль вместо `null` вернуть
- * нельзя — «слова не оценивались» и «спел не те слова» дают разные веса в
- * итоговом балле (см. finalScore).
+ * не настроен (503), тело не прошло прокси (413), ответа нет дольше
+ * `timeoutMs`, или ожидание отменили сигналом (ученик вышел). Ноль вместо
+ * `null` вернуть нельзя — «слова не оценивались» и «спел не те слова» дают
+ * разные веса в итоговом балле (см. finalScore).
  */
-export async function transcribeTake(blob) {
-  if (!blob || blob.size === 0) return null
+export async function transcribeTake(blob, { signal, timeoutMs = TRANSCRIBE_TIMEOUT_MS } = {}) {
+  if (!blob || blob.size === 0 || signal?.aborted) return null
+  // Свой контроллер: и таймаут, и отмена снаружи закрывают запрос, а ответ
+  // возвращается сразу — не дожидаясь, как fetch отработает abort.
+  const ctrl = new AbortController()
+  const onAbort = () => ctrl.abort()
+  signal?.addEventListener('abort', onAbort, { once: true })
+  const timer = setTimeout(onAbort, timeoutMs)
+  const gaveUp = new Promise((resolve) => ctrl.signal.addEventListener('abort', () => resolve(null), { once: true }))
+  const work = async () => {
+    try {
+      const wav = await blobToWav16kMono(blob)
+      const form = new FormData()
+      form.append('audio', wav, 'take.wav')
+      const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal: ctrl.signal })
+      if (!res.ok) return null
+      const data = await res.json()
+      const text = typeof data?.text === 'string' ? data.text.trim() : ''
+      return text || null
+    } catch {
+      return null
+    }
+  }
   try {
-    const wav = await blobToWav16kMono(blob)
-    const form = new FormData()
-    form.append('audio', wav, 'take.wav')
-    const res = await fetch('/api/transcribe', { method: 'POST', body: form })
-    if (!res.ok) return null
-    const data = await res.json()
-    const text = typeof data?.text === 'string' ? data.text.trim() : ''
-    return text || null
-  } catch {
-    return null
+    return await Promise.race([work(), gaveUp])
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', onAbort)
   }
 }

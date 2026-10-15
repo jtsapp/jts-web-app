@@ -36,7 +36,7 @@ def chunk(text=None, tool=None):
 
 
 def make_agent(prefill=True):
-    return A.TutorAgent(instructions="x", device_id="d", api_url="https://e.invalid", tutor="jarvis",
+    return A.TutorAgent(instructions="x", device_id="d", api_url="https://e.invalid", tutor="bro",
                         moods_enabled=True, prefill_tag=prefill)
 
 

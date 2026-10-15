@@ -49,6 +49,14 @@ export const LISTENCHOOSE_KEY = 'jts_listenchoose_done'
 // темп, громкость). Не синкается — это свойство устройства, а не ученика; но
 // чистится вместе с прогрессом: следующий аккаунт не должен продолжить чужой набор.
 export const LISTENCHOOSE_RUN_KEY = 'jts_listenchoose_run'
+// Прогресс «Чисел» (Dexter's Number World): { sections: { <id>: { rounds: [{passed,
+// best, stars, plays}], stars, best, bestCr, done, plays } }, bestCombo, totalCorrect,
+// seen: { <босс|lab>: { <ключ задания>: показов } } }. Replace со сведением merge
+// (numbersProgress.js): пройденный раунд не «распроходится».
+export const NUMBERS_KEY = 'jts_numbers_done'
+// Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
+// синкается, но чистится вместе с прогрессом.
+export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
 // «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
 // «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
 // 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
@@ -68,6 +76,7 @@ export const READING_PROGRESS_EVENT = 'reading-progress'
 export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
+export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

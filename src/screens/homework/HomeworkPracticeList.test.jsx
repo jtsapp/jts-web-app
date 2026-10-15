@@ -1,9 +1,23 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import HomeworkPracticeList from './HomeworkPracticeList.jsx'
 import { practiceExercises } from './homeworkExercises.js'
+import { resetLessonsForTests } from '../../practice/shadowing/catalog.js'
+
+// Уроки шэдоуинга из админки приезжают с бэкенда; настоящей сети в тесте нет.
+const getShadowingLessons = vi.fn(() => new Promise(() => {}))
+vi.mock('../../api.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getShadowingLessons: (...a) => getShadowingLessons(...a),
+}))
+
+beforeEach(() => {
+  resetLessonsForTests()
+  getShadowingLessons.mockReset()
+  getShadowingLessons.mockImplementation(() => new Promise(() => {}))
+})
 
 const unit = (over = {}) => ({
   id: 1,
@@ -15,10 +29,10 @@ const unit = (over = {}) => ({
   ...over,
 })
 
-function show(hw, onOpen) {
+function show(hw, onOpen, token) {
   return render(
     <I18nProvider>
-      <HomeworkPracticeList hw={hw} onOpen={onOpen} />
+      <HomeworkPracticeList hw={hw} token={token} onOpen={onOpen} />
     </I18nProvider>,
   )
 }
@@ -128,5 +142,47 @@ describe('practiceExercises', () => {
     expect(screen.queryByText('Пройдено')).toBeNull()
     expect(screen.getByRole('button', { name: 'Открыть' })).toBeTruthy()
     expect(container.querySelector('.hw-practice__row.is-done')).toBeNull()
+  })
+})
+
+describe('Задания из «Практики» — урок шэдоуинга, добавленный через админку', () => {
+  const REMOTE = { id: 5, slug: 'calm-talk-ab3k9', title: 'Calm Talk', speaker: 'Ann Remote', video: 'CqgmozFr_GM', segCount: 2 }
+  const remoteUnit = (key = 'calm-talk-ab3k9') => unit({
+    practiceArea: 'shadowing', practiceLevel: 'all', practiceUnitId: null, practiceUnitKey: key, title: 'Calm Talk',
+  })
+
+  it('кнопка «Открыть» есть сразу, не дожидаясь списка уроков, и ведёт на этот урок', () => {
+    const onOpen = vi.fn()
+    show({ exercises: [remoteUnit()] }, onOpen, 'tok')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть' }))
+
+    expect(onOpen).toHaveBeenCalledWith({ key: 'shadowing', payload: 'calm-talk-ab3k9' })
+  })
+
+  it('список уроков запрашивается только когда в работе есть задание шэдоуинга', () => {
+    show({ exercises: [unit()] }, undefined, 'tok')
+
+    expect(getShadowingLessons).not.toHaveBeenCalled()
+
+    show({ exercises: [remoteUnit()] }, undefined, 'tok')
+
+    expect(getShadowingLessons).toHaveBeenCalledTimes(1)
+  })
+
+  it('список доехал и такого урока в нём нет (скрыли или удалили) — кнопка исчезает, объяснение остаётся', async () => {
+    getShadowingLessons.mockResolvedValue([REMOTE])
+    show({ exercises: [remoteUnit('gone-talk-zz9zz')] }, undefined, 'tok')
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Открыть' })).toBeNull())
+    expect(screen.getByText(/нет в разделе/)).toBeTruthy()
+  })
+
+  it('урок в списке есть — кнопка остаётся', async () => {
+    getShadowingLessons.mockResolvedValue([REMOTE])
+    show({ exercises: [remoteUnit()] }, undefined, 'tok')
+
+    await waitFor(() => expect(getShadowingLessons).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Открыть' })).toBeTruthy())
   })
 })

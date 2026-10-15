@@ -1,0 +1,52 @@
+// Тесты экстрактора «Чисел». Гоняются по настоящему прототипу
+// (data/jtsnumbers.html): правка контента без перезапуска экстрактора или сдвиг
+// структуры прототипа станут красными здесь, а не пустым экраном в проде.
+
+import fs from 'node:fs'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_OUT, SRC, extract } from './extract-numbers.js'
+import { withGeneratedTours } from '../src/practice/numbers/logic.js'
+
+const html = fs.readFileSync(SRC, 'utf8')
+const { files, game } = extract(html)
+
+describe('extract-numbers', () => {
+  it('файлы в public/practice/numbers совпадают с тем, что режется из прототипа', () => {
+    for (const [rel, buf] of Object.entries(files)) {
+      const p = path.join(DEFAULT_OUT, rel)
+      expect(fs.existsSync(p), `${rel} — перезапусти node scripts/extract-numbers.js`).toBe(true)
+      // Текстовые файлы на Windows выкачиваются с CRLF (core.autocrlf) — сверяем без них.
+      const same = /\.(json|css)$/.test(rel)
+        ? fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n') === buf.toString('utf8')
+        : fs.readFileSync(p).equals(buf)
+      expect(same, `${rel} устарел — перезапусти экстрактор`).toBe(true)
+    }
+  })
+
+  it('в данных 17 разделов, у каждого есть объяснение', () => {
+    const data = JSON.parse(files['data.json'])
+    expect(data.sections).toHaveLength(17)
+    for (const s of data.sections) expect(data.lessons[s.id], s.id).toBeTruthy()
+  })
+
+  it('раунды боссов и Lab, собранные logic.js, — те же, что собрал прототип', () => {
+    const data = JSON.parse(files['data.json'])
+    const ours = withGeneratedTours(data.sections, data.tours)
+    for (const id of ['boss1', 'boss2', 'boss3', 'lab']) {
+      // JSON с обеих сторон: дыры массивов прототипа (c[8] = тема) становятся null.
+      expect(JSON.parse(JSON.stringify(ours[id])), id).toEqual(JSON.parse(JSON.stringify(game.TOURS[id])))
+    }
+  })
+
+  it('CRLF в прототипе не меняет результат', () => {
+    const crlf = extract(html.replace(/\n/g, '\r\n')).files
+    expect(crlf['data.json'].equals(files['data.json'])).toBe(true)
+  })
+
+  it('11 картинок и ни одного шрифта: игра на шрифте сайта', () => {
+    const rels = Object.keys(files)
+    expect(rels.filter((r) => r.startsWith('img/'))).toHaveLength(11)
+    expect(rels.filter((r) => r.startsWith('fonts/'))).toHaveLength(0)
+  })
+})

@@ -31,6 +31,10 @@ import { mergeReadingState } from './readingState.js'
 // 'listenchoose' — стейт-объект {seen: {easy, medium, hard}} «Слушай и выбирай»:
 // какие задания выборка уже показывала на каждой сложности. Replace, как у verbs.
 // Area 'listenchoose' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'numbers' — стейт-объект «Чисел» (Dexter's Number World): раунды разделов,
+// лучший результат и «уже было» у боссов. Replace; клиент сводит с серверным
+// (numbersProgress.js merge), чтобы пройденное не терялось. Area 'numbers'
+// бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -47,6 +51,7 @@ export const PRACTICE_MODULES = [
   'words',
   'verbs',
   'listenchoose',
+  'numbers',
   'vocabLearned',
   'vocabMisses',
 ]

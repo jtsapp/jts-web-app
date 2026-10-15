@@ -26,6 +26,7 @@ import { transcribeWavSoniox, isSonioxConfigured } from '@/lib/soniox-stt.js'
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { buildAssessPrompt, ASSESS_SCHEMA } from '@/lib/situations/assessPrompt.js'
 import { composeScore } from '@/lib/situations/score.js'
+import { isRetryableLlmError } from '@/lib/llmRetry.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
@@ -49,6 +50,29 @@ const MAX_BYTES = 10 * 1024 * 1024
 // и не зовём платное — иначе промах пальцем стоит студенту попытки.
 const MIN_SECONDS = 1.5
 
+// Звенья параллельны, но у каждого раньше был свой, слишком длинный потолок:
+// Fast Transcription — 120 с, кусок произношения — 45 с + его длина, грейдер —
+// дефолт SDK, 10 минут × 3 попытки. Обычный разбор пяти минут идёт ~30 с, но
+// любое повисшее звено держало запрос до 524 Cloudflare (100 с), когда
+// попытка уже списана. Теперь весь роут — не дольше TOTAL_BUDGET_MS:
+// распознавание и произношение — до STT_DEADLINE_MS (Fast на пяти минутах —
+// 21 с, произношение кусками ~25 с), грейдеру — остаток, но не больше
+// GRADER_TIMEOUT_MS на вызов (обычно 6–7 с). Не хватает на грейдер хотя бы
+// MIN_GRADER_MS — честнее сразу вернуть попытку, чем отдать запрос Cloudflare.
+const TOTAL_BUDGET_MS = 90_000
+const STT_DEADLINE_MS = 45_000
+const GRADER_TIMEOUT_MS = 30_000
+const MIN_GRADER_MS = 10_000
+
+// Обещание с потолком: по истечении — fallback. Работа не отменяется, но роут
+// её больше не ждёт (как в роутах IELTS).
+function withDeadline(promise, ms, fallback) {
+  let timer
+  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() =>
+    clearTimeout(timer),
+  )
+}
+
 function isSttConfigured() {
   return isAzureSpeechConfigured() || isSonioxConfigured()
 }
@@ -67,20 +91,52 @@ function isSttConfigured() {
 async function transcribe(buf, pronP) {
   if (isAzureSpeechConfigured()) {
     // null — «этим путём нельзя», '' — «сработало, речи нет».
-    const fast = await transcribeWavFast(buf)
+    const fast = await transcribeWavFast(buf, { timeoutMs: STT_DEADLINE_MS }).catch(() => null)
     if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
     const pron = await pronP
     const text = String(pron?.transcript || '').trim()
     if (text) return { text, stt: 'azure' }
   }
   if (isSonioxConfigured()) {
-    const text = await transcribeWavSoniox(buf, { lang: 'en' }).catch((e) => {
+    const text = await transcribeWavSoniox(buf, { lang: 'en', timeoutMs: STT_DEADLINE_MS }).catch((e) => {
       console.error('[situations.assess] soniox stt failed', e)
       return ''
     })
     return { text: text.trim(), stt: 'soniox' }
   }
   return { text: '', stt: null }
+}
+
+// Грейдер: ретраи SDK выключены, свой повтор — один, на сбой сети или
+// перегрузку и только если до TOTAL_BUDGET_MS на него хватает времени.
+// null — разбора нет (роут вернёт попытку).
+async function grade(input, startedAt) {
+  for (let attempt = 1; ; attempt++) {
+    const left = TOTAL_BUDGET_MS - (Date.now() - startedAt)
+    if (left < MIN_GRADER_MS) {
+      console.error('[situations.assess] no time left for the grader', { left, attempt })
+      return null
+    }
+    try {
+      return await structured({
+        ...buildAssessPrompt(input),
+        schema: ASSESS_SCHEMA,
+        maxOutputTokens: 900,
+        // Четыре оси — числа для composeScore: строгая схема не даёт модели
+        // пропустить ось (тот же приём, что у Письма и Аркады).
+        strict: true,
+        timeoutMs: Math.min(GRADER_TIMEOUT_MS, left),
+        maxRetries: 0,
+      })
+    } catch (e) {
+      if (attempt < 2 && isRetryableLlmError(e)) {
+        console.warn('[situations.assess] grader failed, retrying', e?.status ?? e?.name)
+        continue
+      }
+      console.error('[situations.assess] grader failed', e)
+      return null
+    }
+  }
 }
 
 function clampList(list, cap, mapper) {
@@ -197,11 +253,17 @@ export async function POST(request) {
   // звено, поэтому стартует первым, а длинный ответ идёт кусками по минуте
   // параллельно (assessPronunciationChunked). На тишине оно тоже отработает
   // впустую; это дешевле, чем ждать его после текста на каждом ответе.
+  // Произношение — необязательная ось: не дождались — разбор идёт без него
+  // (вес оси делится между остальными, см. composeScore).
   const pronP = isAzureSpeechConfigured()
-    ? assessPronunciationChunked(buf).catch((e) => {
-        console.error('[situations.assess] azure pronunciation failed', e)
-        return null
-      })
+    ? withDeadline(
+        assessPronunciationChunked(buf).catch((e) => {
+          console.error('[situations.assess] azure pronunciation failed', e)
+          return null
+        }),
+        STT_DEADLINE_MS,
+        null,
+      )
     : Promise.resolve(null)
 
   const { text: transcript, stt } = await transcribe(buf, pronP)
@@ -215,17 +277,7 @@ export async function POST(request) {
   // Берём у Azure именно accuracy, а не его overall: в overall подмешаны
   // беглость и полнота, а их отдельно оценивает грейдер — иначе одна и та же
   // характеристика попала бы в итог дважды.
-  const [pron, graded] = await Promise.all([
-    pronP,
-    structured({
-      ...buildAssessPrompt({ level, task, transcript, seconds, lang, title }),
-      schema: ASSESS_SCHEMA,
-      maxOutputTokens: 900,
-    }).catch((e) => {
-      console.error('[situations.assess] grader failed', e)
-      return null
-    }),
-  ])
+  const [pron, graded] = await Promise.all([pronP, grade({ level, task, transcript, seconds, lang, title }, startedAt)])
 
   // Чем реально разбирали — в ответ и в лог стенда. Без этого отказ Azure не
   // виден: грейдер отвечает, оценка приходит, просто без произношения.

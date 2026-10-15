@@ -9,7 +9,8 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
-import { addActivitySeconds, clampBatchSeconds, isClientTrackedModule } from '@/lib/db/activityTime.js'
+import { addActivitySeconds, clampBatchSeconds, isClientTrackedModule, utcDay } from '@/lib/db/activityTime.js'
+import { queueGeActivity } from '@/lib/geActivity.js'
 
 export const runtime = 'nodejs'
 
@@ -43,6 +44,8 @@ export async function POST(request) {
 
   try {
     const today = await addActivitySeconds(resolved.id, moduleKey, seconds)
+    // итог дня — в план по дням общего курса на бэкенде; после ответа, хук не ждёт бэкенд
+    queueGeActivity(resolved.id, utcDay(new Date()))
     return Response.json({ configured: true, recorded: seconds, todaySeconds: today })
   } catch (err) {
     console.error('[profile.activity] write failed', err)

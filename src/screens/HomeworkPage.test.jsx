@@ -26,6 +26,7 @@ vi.mock('../api.js', () => ({
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
+  getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
   getMyHomework: vi.fn(async () => [ASSIGNMENT]),
   getHomeworkById: vi.fn(async () => ASSIGNMENT),
@@ -613,5 +614,49 @@ describe('Домашние задания IELTS', () => {
     expect(await screen.findByText('Принесите на урок')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Отметить выполненным' }))
     await waitFor(() => expect(api.markIeltsPlanTask).toHaveBeenCalledWith('TOK', 569, true))
+  })
+})
+
+/**
+ * На телефоне список и задание — два экрана (≤900px прячет один из них по
+ * классу .hw__layout--pane). jsdom медиазапросов не считает, поэтому
+ * проверяем сам переключатель: класс раскладки и кнопку «Все задания».
+ */
+describe('HomeworkPage: список и задание на телефоне', () => {
+  const ВТОРАЯ = { ...ASSIGNMENT, id: 8, title: 'Unit 4 · Past Simple' }
+  const раскладка = (container) => container.querySelector('.hw__layout')
+
+  it('сразу открыто задание, к списку ведёт «Все задания» с числом работ', async () => {
+    api.getMyHomework.mockResolvedValueOnce([ASSIGNMENT, ВТОРАЯ])
+    const { container } = renderPage()
+
+    const назад = await screen.findByRole('button', { name: /все задания/i })
+    expect(назад.textContent).toContain('2')
+    expect(раскладка(container).classList.contains('hw__layout--pane')).toBe(true)
+  })
+
+  it('«Все задания» показывает список, выбор работы — снова её экран', async () => {
+    api.getMyHomework.mockResolvedValueOnce([ASSIGNMENT, ВТОРАЯ])
+    const { container } = renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: /все задания/i }))
+    expect(раскладка(container).classList.contains('hw__layout--pane')).toBe(false)
+    expect(screen.queryByRole('button', { name: /все задания/i })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /Unit 4 · Past Simple/ }))
+    expect(раскладка(container).classList.contains('hw__layout--pane')).toBe(true)
+    expect(container.querySelector('.hw-detail__title').textContent).toBe('Unit 4 · Past Simple')
+  })
+
+  it('работу отменили — экрана задания нет, остаётся список', async () => {
+    api.getMyHomework.mockResolvedValueOnce([{ ...ASSIGNMENT, submissions: [{ id: 9, fileName: 'a.jpg', url: 'u' }] }, ВТОРАЯ])
+    api.submitHomework.mockRejectedValueOnce(Object.assign(new Error('request failed: 410'), { status: 410 }))
+    const { container } = renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: /отправить на проверку/i }))
+
+    await screen.findByText('Преподаватель отменил эту работу — её больше нет')
+    expect(раскладка(container).classList.contains('hw__layout--pane')).toBe(false)
+    expect(screen.queryByRole('button', { name: /все задания/i })).toBeNull()
   })
 })
