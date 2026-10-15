@@ -111,6 +111,9 @@ import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
+import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
+import { destinationOf } from './lib/assistant/destinations.js'
+import { useTourRequest } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
@@ -1569,6 +1572,8 @@ export default function App() {
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
+    // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
+    else if (key === 'profile') setScreen('profile')
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
     else if (key === 'course') {
@@ -1656,6 +1661,35 @@ export default function App() {
       return undefined
     }
   }, [kingdom, liveLessonId, liveWorkspaceId, workspaceSource, workspaceCardId, vocabReturn])
+
+  // ── Луна открывает раздел (lib/assistant/destinations.js) ───────────────
+  // Переход тот же, что у сайдбара и карточек, — handleNav, без обходных
+  // путей. Ученик уже на этом экране, а цель другая (вкладка Практики): экран
+  // открываем заново — setScreen на тот же экран ничего не делает, а цель
+  // экран читает только при монтировании. Ключ обёртки .scr-in несёт счётчик
+  // таких повторных открытий.
+  const [screenNonce, setScreenNonce] = useState(0)
+  const handleNavRef = useRef(null)
+  useEffect(() => {
+    handleNavRef.current = handleNav
+  })
+  useEffect(
+    () =>
+      onAssistantNavigate((target) => {
+        const dest = destinationOf(target)
+        if (!dest) return
+        if (dest.screen === screenRef.current) {
+          if (!dest.payload) return
+          setResume(null)
+          setScreenNonce((n) => n + 1)
+        }
+        handleNavRef.current?.(dest.nav, dest.payload)
+      }),
+    [],
+  )
+  // Тур Speaking Buddy живёт не в экране, а здесь (showTutorTour), поэтому
+  // заявку Луны на него забирает App, пока открыт дашборд тьютора.
+  useTourRequest(screen === 'tutor-dashboard' ? () => setShowTutorTour(true) : null)
 
   function restoreAppPlace(to, place) {
     // Цель перехода в Практику (книги с «Главной», юнит домашки) уже отыграла:
@@ -1796,7 +1830,7 @@ export default function App() {
   return (
     <>
       {page && (
-        <div key={view} className="scr-in">
+        <div key={`${view}#${screenNonce}`} className="scr-in">
           {page}
         </div>
       )}

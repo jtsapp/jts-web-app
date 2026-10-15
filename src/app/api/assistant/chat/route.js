@@ -34,6 +34,7 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
+import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 
 export const runtime = 'nodejs'
@@ -141,8 +142,17 @@ export async function POST(request) {
     return json(502, { error: 'model_empty' })
   }
 
+  // Две метки в конце ответа: поломка ([[REPORT_BUG]] и отчёт после неё — ученику
+  // не показываем) и действие («открыть раздел», «тур» — actions.js). Метка
+  // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
-  const first = filter.push(head) + (finished ? filter.flush() : '')
+  const actions = createActionFilter()
+  const visible = (text) => actions.push(filter.push(text))
+  const visibleTail = () => actions.push(filter.flush()) + actions.flush()
+  // Служебный хвост: действие, затем «отчёт записан». Клиент режет всё от
+  // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
+  const serviceTail = async () => actionTail(actions.action()) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
+  const first = visible(head) + (finished ? visibleTail() : '')
   const saveReport = async () => {
     const modelReport = filter.report()
     const auto = shouldAutoReportBug(parsed.messages)
@@ -182,20 +192,22 @@ export async function POST(request) {
     async start(controller) {
       if (first) controller.enqueue(encoder.encode(first))
       if (finished) {
-        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
+        const service = await serviceTail()
+        if (service) controller.enqueue(encoder.encode(service))
         controller.close()
         return
       }
       try {
         for await (const ev of gen) {
           if (ev.type === 'text' && ev.text) {
-            const out = filter.push(ev.text)
+            const out = visible(ev.text)
             if (out) controller.enqueue(encoder.encode(out))
           }
         }
-        const tail = filter.flush()
+        const tail = visibleTail()
         if (tail) controller.enqueue(encoder.encode(tail))
-        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
+        const service = await serviceTail()
+        if (service) controller.enqueue(encoder.encode(service))
         controller.close()
       } catch (err) {
         console.error('[assistant] stream failed:', err?.message || err)

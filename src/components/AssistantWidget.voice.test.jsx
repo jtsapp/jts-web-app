@@ -45,7 +45,20 @@ vi.mock('../lib/speech.js', () => ({
   playUrl: () => true,
 }))
 
+// Голос тура — свой модуль; здесь важно только, КОГДА Луна начинает шаг.
+const tour = vi.hoisted(() => ({ said: [] }))
+vi.mock('../lib/assistant/tourVoice.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  createTourVoice: () => ({
+    say: (phrases) => tour.said.push(phrases.join(' ')),
+    prefetch: () => {},
+    stop: () => {},
+    dispose: () => {},
+  }),
+}))
+
 const { default: AssistantWidget } = await import('./AssistantWidget.jsx')
+const { cancelTourRequest, emitTourStep, emitTourEnd } = await import('../lib/tourBus.js')
 
 function streamResponse(chunks) {
   const enc = new TextEncoder()
@@ -91,6 +104,27 @@ describe('голос в помощнике', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     localStorage.clear()
+  })
+
+  it('тур голосом: первый шаг ждёт, пока Луна договорит «начинаю тур», следующий — сразу', async () => {
+    tour.said.length = 0
+    fetchMock.mockImplementationOnce(async () =>
+      streamResponse(['Хорошо, провожу тур по этой странице.\n', '[[ASST_ACTION tour homework now]]']),
+    )
+    renderWidget()
+    openPanel()
+    await askByVoice('покажи, что тут где')
+    await waitFor(() => expect(queue.ended).toBe(true), WAIT)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), WAIT)
+
+    act(() => emitTourStep({ index: 0, total: 2, title: 'Список работ', text: 'Здесь все задания.' }))
+    expect(tour.said).toEqual([])
+    act(() => queue.opts.onFinish({ played: 2, failed: 0 }))
+    expect(tour.said).toEqual(['Список работ. Здесь все задания.'])
+    act(() => emitTourStep({ index: 1, total: 2, title: 'Сдать', text: 'Кнопка отправки.' }))
+    expect(tour.said).toEqual(['Список работ. Здесь все задания.', 'Сдать. Кнопка отправки.'])
+    act(() => emitTourEnd())
+    cancelTourRequest()
   })
 
   it('окно — Луна; микрофон разрешает звук в том же нажатии и включает запись', () => {

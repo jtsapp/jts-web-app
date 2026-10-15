@@ -223,6 +223,10 @@ export const DICT = {
     'tour.skip': 'Пропустить',
     'tour.next': 'ОК',
     'tour.done': 'Готово',
+    // Тур, который ведёт помощник Луна: она читает шаги вслух
+    'tour.luna': 'Рассказывает Луна',
+    'tour.luna.mute': 'Выключить голос Луны',
+    'tour.luna.unmute': 'Включить голос Луны',
     'tour.mic.title': 'Поговори с тьютором',
     'tour.mic.text':
       'Нажми на микрофон и общайся с тьютором голосом — как с живым собеседником.',
@@ -613,6 +617,9 @@ export const DICT = {
     'tour.skip': 'Өткізу',
     'tour.next': 'ОК',
     'tour.done': 'Дайын',
+    'tour.luna': 'Луна айтып береді',
+    'tour.luna.mute': 'Лунаның дауысын өшіру',
+    'tour.luna.unmute': 'Лунаның дауысын қосу',
     'tour.mic.title': 'Тьютормен сөйлес',
     'tour.mic.text':
       'Микрофонды бас та, тьютормен дауыспен сөйлес — тірі әңгімелесушідей.',
@@ -997,6 +1004,9 @@ export const DICT = {
     'tour.skip': 'Skip',
     'tour.next': 'OK',
     'tour.done': 'Done',
+    'tour.luna': 'Luna is guiding you',
+    'tour.luna.mute': 'Mute Luna',
+    'tour.luna.unmute': 'Unmute Luna',
     'tour.mic.title': 'Talk to your tutor',
     'tour.mic.text':
       'Tap the microphone and chat with your tutor by voice — like a real conversation partner.',

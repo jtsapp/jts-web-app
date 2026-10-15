@@ -331,4 +331,45 @@ describe('POST /api/assistant/chat', () => {
     expect(saveCalls[0].userMessage).toContain('На сайте ошибка')
     expect(saveCalls[0].userMessage).toContain('аудио всё ещё обрывается')
   })
+
+  it('метка «открыть раздел» уходит хвостом, а не в текст — даже разрезанная кусками', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Говорение тренируют в Практике, вкладка «Говорение». Открыть?\n[[OP' }
+      yield { type: 'text', text: 'EN practice-spea' }
+      yield { type: 'text', text: 'king]]' }
+    }
+    const text = await (await post(question(401))).text()
+    expect(text).toContain('Открыть?')
+    expect(text).not.toContain('[[OPEN')
+    expect(text.endsWith('[[ASST_ACTION open practice-speaking offer]]')).toBe(true)
+  })
+
+  it('«открой сейчас» и тур — свой вид хвоста; раздел не из списка не уходит вовсе', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Начинаю тур по Практике.\n[[TOUR_NOW practice]]' }
+    }
+    expect(await (await post(question(402))).text()).toBe('Начинаю тур по Практике.\n[[ASST_ACTION tour practice now]]')
+
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW ielts-mock]]' }
+    }
+    expect(await (await post(question(403))).text()).toBe('Открываю.\n')
+  })
+
+  it('метка действия и запись поломки в одном ответе — оба хвоста, действие первым', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Передала команде. Можно пока потренироваться в Словаре.\n[[OPEN vocab]]\n' }
+      yield { type: 'text', text: '[[REPORT_BUG]]\nРаздел: Урок' }
+    }
+    const text = await (await post({ ...question(404), messages: [{ role: 'user', content: 'урок не открывается, белый экран' }] })).text()
+    expect(text).not.toContain('[[OPEN')
+    expect(text).toMatch(/\[\[ASST_ACTION open vocab offer\]\]\[\[ASST_REPORTED\]\]$/)
+  })
+
+  it('модели в системном промпте приходит список разделов, которые можно открыть', async () => {
+    await (await post(question(405))).text()
+    expect(calls[0].systemPrompt).toContain('## Разделы, которые ты умеешь открывать')
+    expect(calls[0].systemPrompt).toContain('- practice-speaking — Практика → Говорение')
+    expect(calls[0].systemPrompt).toContain('[[TOUR_NOW id]]')
+  })
 })
