@@ -82,6 +82,21 @@ const PATCHES = [
     "practiceUrl:'/?screen=practice',",
     'practice-url',
   ],
+  [
+    "subscores:raw.subscores||null}:{status:'not_assessed'}}",
+    "subscores:raw.subscores||null,feedback:raw.feedback||null}:{status:'not_assessed'}}",
+    // Отзыв о говорении (summary/strengths/improvements грейдера) автор выбрасывал вместе со всем, кроме уровня. Окно
+    // говорения поэтому показывало его само, сразу после записи — раньше остальных результатов (жалоба 16.10.2026).
+    // Теперь он хранится с уровнем в состоянии теста и едет в конверт (skillResults.S.feedback) — до итога.
+    'speaking-feedback-keep',
+  ],
+  [
+    '${evidence(p,r)}${goalsHTML(g)}',
+    "${evidence(p,r)}${window.JTSHostSpeakingFeedback?window.JTSHostSpeakingFeedback(p.skills.S,lang):''}${goalsHTML(g)}",
+    // Отзыв о говорении — на экране итога рядом с остальными навыками. Разметку рисует хост (src/placement/
+    // speakingFeedback.js): у автора панели отзыва нет, а текст модели надо экранировать.
+    'speaking-feedback-result',
+  ],
 ]
 
 function count(haystack, needle) {

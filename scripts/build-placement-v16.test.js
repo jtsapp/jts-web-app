@@ -15,6 +15,12 @@ describe('build-placement-v16', () => {
     expect(() => applyPatches(html)).not.toThrow()
   })
 
+  it('отзыв о говорении: тест хранит его с уровнем и показывает в итоге через крючок хоста', () => {
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    expect(out).toContain("subscores:raw.subscores||null,feedback:raw.feedback||null}")
+    expect(out).toMatch(/\$\{evidence\(p,r\)\}\$\{[^}]*JTSHostSpeakingFeedback[^}]*\}\$\{goalsHTML\(g\)\}/)
+  })
+
   it('патч, который не нашёлся, роняет сборку, а не уезжает молча', () => {
     expect(() => applyPatches('nothing here', [['let a=1;', 'let a=2;', 'x']])).toThrow(/найдено 0/)
     expect(() => applyPatches('a;a;', [['a;', 'b;', 'x']])).toThrow(/найдено 2/)

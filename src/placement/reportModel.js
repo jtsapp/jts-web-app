@@ -4,6 +4,7 @@
 
 import { CEFR } from './envelope.js'
 import { navForActivity } from './activityRoutes.js'
+import { pickFeedback } from './speakingFeedback.js'
 
 const SKILL_ORDER = ['LU', 'R', 'L', 'S']
 
@@ -42,6 +43,8 @@ export function reportView(env, lang = 'ru') {
     partial: a.overallStatus === 'partial',
     completedAt: a.completedAt || env.host?.savedAt || null,
     skills,
+    // Отзыв о говорении — в отчёте рядом с уровнем, а не отдельным итогом посреди теста (speakingFeedback.js).
+    speaking: skills.find((s) => s.id === 'S').assessed ? pickFeedback(a.skillResults?.S?.feedback) : null,
     flags: arr(a.flags).filter((f) => typeof f === 'string'),
     goal: env.goals?.primaryGoal ? (label?.[lang] || label?.ru || null) : null,
     target: cefr(rec.targetCEFR),

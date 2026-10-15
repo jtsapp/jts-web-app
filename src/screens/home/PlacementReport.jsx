@@ -5,7 +5,8 @@ import { reportView } from '../../placement/reportModel.js'
 
 /**
  * Отчёт последнего теста уровня v16 на «Главной» (указание руководителя 14.10.2026: «после теста все данные — очень
- * детальные отчёты — в этом разделе»): общий уровень, навыки, цель, на что сделать упор и задания «Практики».
+ * детальные отчёты — в этом разделе»): общий уровень, навыки, отзыв о говорении, цель, на что сделать упор и задания
+ * «Практики».
  * Причины и пояснения пишет сам тест на языке прохождения — показываем их как есть.
  *
  * version — счётчик сохранённых итогов из App: тест сохранил новый итог — отчёт перечитывается.
@@ -91,6 +92,33 @@ export default function PlacementReport({ token, version = 0, onNav, onRetake, s
           </li>
         ))}
       </ul>
+
+      {view.speaking && (
+        <div className="pl-report__block">
+          <h3 className="pl-report__h">{t('placement.report.speaking')}</h3>
+          {view.speaking.summary && <p className="pl-report__speakSummary">{view.speaking.summary}</p>}
+          {view.speaking.strengths.length > 0 && (
+            <>
+              <p className="pl-report__label">{t('placement.report.speakingGood')}</p>
+              <ul className="pl-report__list">
+                {view.speaking.strengths.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {view.speaking.improvements.length > 0 && (
+            <>
+              <p className="pl-report__label">{t('placement.report.speakingWork')}</p>
+              <ul className="pl-report__list">
+                {view.speaking.improvements.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
 
       {(view.goal || view.target) && (
         <div className="pl-report__goal">
