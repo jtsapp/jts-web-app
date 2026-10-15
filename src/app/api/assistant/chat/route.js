@@ -44,7 +44,7 @@ export const runtime = 'nodejs'
 
 // Haiku: ответ справки должен начаться за секунду, а разбор школьного
 // задания ему по силам. Для эксперимента с моделью посильнее — ASSISTANT_MODEL.
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-4-5-20251001'
+const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
