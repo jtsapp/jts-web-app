@@ -2411,7 +2411,7 @@ export default function App() {
     case 'ielts-diagnostic-result':
       return <IeltsDiagnosticResultPage {...ieltsProps} target={ieltsReviewTarget} onRoute={() => handleNav('ielts-route')} />
     case 'ielts-route':
-      return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} onPricing={() => handleNav('pricing')} />
+      return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} />
     case 'ielts-mock': {
       const toMocks = () => handleNav('ielts', { tab: 'mocks' })
       return (
