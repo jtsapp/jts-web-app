@@ -1,9 +1,7 @@
 import { useI18n } from '../../i18n.jsx'
-import { CheckCircleIcon, CloseIcon, InfoIcon } from '../../ielts/icons.jsx'
-import { ReplayIcon } from '../icons.jsx'
+import { CheckCircleIcon, CloseIcon } from '../../ielts/icons.jsx'
 import { KEYS } from '../question/session.js'
 import { pick } from '../model/profile.js'
-import AiTutorPanel from '../ai/AiTutorPanel.jsx'
 
 /** Решение по шагам: у Math разбор банка — абзац алгебры, по предложениям он читается как 1, 2, 3 (steps прототипа). */
 function steps(html) {
@@ -13,12 +11,11 @@ function steps(html) {
 }
 
 /**
- * Боковая панель учебного режима (Figma SAT 24–25): «Объяснение» и «AI-тьютор». Объяснение — из банка на языке
- * разборов ученика: верный ответ, почему он верный, почему неверны остальные (свой выбор помечен), другие способы
- * решения. До ответа объяснение закрыто воротами: открыть — значит увидеть ответ, и попытка станет «с объяснением».
- * Внизу — «Решить похожую без подсказки»: засчитывается только она.
+ * Боковая панель учебного режима (Figma SAT 21): только «Объяснение», после проверки ответа. Из банка на языке разборов
+ * ученика: верный ответ, почему он верный, почему неверны остальные (свой выбор помечен), другие способы решения.
+ * Объяснения фиксированные — чата с AI здесь нет (решение по макету, 15.10.2026).
  */
-export default function ExplanationPanel({ tab, onTab, onClose, doc, data, chosen, checked, correct, gated, busy, explainLang, onReveal, onSimilar, canSimilar }) {
+export default function ExplanationPanel({ onClose, doc, data, chosen, explainLang }) {
   const { t } = useI18n()
   const lang = explainLang || 'ru'
   const isMcq = doc?.type === 'mcq'
@@ -29,20 +26,13 @@ export default function ExplanationPanel({ tab, onTab, onClose, doc, data, chose
   return (
     <div className="st-xp">
       <div className="st-xp__top">
-        <div className="ih-seg" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === 'explain'} className={tab === 'explain' ? 'is-on' : ''} onClick={() => onTab('explain')}>{t('sat.study.explanation')}</button>
-          <button type="button" role="tab" aria-selected={tab === 'ai'} className={tab === 'ai' ? 'is-on' : ''} onClick={() => onTab('ai')}>{t('sat.ai.name')}</button>
-        </div>
+        <h2 className="st-xp__title">{t('sat.study.explanation')}</h2>
         <span className="st-spacer" />
         <button type="button" className="ih-round st-navdlg__close" aria-label={t('sat.run.close')} onClick={onClose}><CloseIcon size={18} /></button>
       </div>
 
-      {tab === 'ai' ? <AiTutorPanel /> : !data ? (
-        // Нет в Figma: ворота объяснения до ответа — макет 24 показывает панель только после проверки
-        <div className="st-xp__gate">
-          <p><InfoIcon size={18} />{t(gated ? 'sat.study.gate' : 'sat.study.loading')}</p>
-          {gated && <button type="button" className="ih-cta st-xp__reveal" disabled={busy} onClick={onReveal}>{t('sat.study.reveal')}</button>}
-        </div>
+      {!data ? (
+        <p className="st-muted st-xp__loading">{t('sat.study.loading')}</p>
       ) : (
         <div className="st-xp__body">
           <p className="st-xp__answer"><CheckCircleIcon size={20} />{t('sat.study.rightAnswer', { a: String(answer) })}</p>
@@ -82,12 +72,6 @@ export default function ExplanationPanel({ tab, onTab, onClose, doc, data, chose
         </div>
       )}
 
-      {tab === 'explain' && checked && canSimilar && (
-        <div className="st-xp__similar">
-          <button type="button" className="ih-cta" disabled={busy} onClick={onSimilar}><ReplayIcon size={18} />{t('sat.study.similarNoHelp')}</button>
-          <small>{t(correct ? 'sat.study.similarNoteHelped' : 'sat.study.similarNote')}</small>
-        </div>
-      )}
     </div>
   )
 }

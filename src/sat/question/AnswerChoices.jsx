@@ -8,7 +8,8 @@ import { useI18n } from '../../i18n.jsx'
  * verdict — после проверки в учебном режиме и в разборах: { answer, chosen } — верный зелёный, неверный выбор красный;
  * справа у них ✓ / ✗, остальные бледнеют; варианты больше не нажимаются. В экзамене и диагностике verdict не приходит вовсе.
  */
-export default function AnswerChoices({ options, value, struck = [], onSelect, onStrike, verdict, disabled }) {
+// restMark — в разборе пробника (Figma 29) у бледных вариантов справа серая иконка зачёркивания
+export default function AnswerChoices({ options, value, struck = [], onSelect, onStrike, verdict, disabled, restMark }) {
   const { t } = useI18n()
   const locked = disabled || !!verdict
   return (
@@ -40,6 +41,9 @@ export default function AnswerChoices({ options, value, struck = [], onSelect, o
             </button>
             {(state === 'is-right' || state === 'is-wrong') && (
               <span className="st-opt__mark" aria-hidden="true">{state === 'is-right' ? <OkCircleIcon size={20} /> : <NoCircleIcon size={20} />}</span>
+            )}
+            {restMark && state === 'is-rest' && (
+              <span className="st-opt__mark" aria-hidden="true"><StrikeIcon size={20} /></span>
             )}
             {!verdict && (
               <button

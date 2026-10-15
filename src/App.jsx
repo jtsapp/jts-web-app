@@ -1472,7 +1472,17 @@ export default function App() {
       liveWorkspaceId,
       workspaceCardId,
     }))
-    if (changed) window.history.replaceState(null, '', url)
+    // SAT держит своё состояние в ?satTab=, ?satMock= и т.п.; вне SAT-экранов оно не нужно и не должно оставаться в адресе
+    let satLeft = false
+    if (!screen.startsWith('sat')) {
+      for (const key of [...url.searchParams.keys()]) {
+        if (/^sat[A-Z]/.test(key)) {
+          url.searchParams.delete(key)
+          satLeft = true
+        }
+      }
+    }
+    if (changed || satLeft) window.history.replaceState(null, '', url)
   }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
@@ -2411,7 +2421,7 @@ export default function App() {
     case 'ielts-diagnostic-result':
       return <IeltsDiagnosticResultPage {...ieltsProps} target={ieltsReviewTarget} onRoute={() => handleNav('ielts-route')} />
     case 'ielts-route':
-      return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} onPricing={() => handleNav('pricing')} />
+      return <IeltsRoutePage {...ieltsProps} onChosen={() => handleNav('ielts', { tab: 'today' })} />
     case 'ielts-mock': {
       const toMocks = () => handleNav('ielts', { tab: 'mocks' })
       return (

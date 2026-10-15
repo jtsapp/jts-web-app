@@ -57,10 +57,10 @@ export function ScoreTrajectory({ entries, target }) {
   )
 }
 
-/** «Добавить результат» (решение D2): Bluebook или официальный SAT, дата, баллы секций. */
+/** «Добавить результат» (Figma 30): источник — официальный SAT, JTS или Bluebook, дата, баллы секций; итог считается сам. */
 function AddScoreDialog({ busy, error, onSave, onClose }) {
   const { t } = useI18n()
-  const [form, setForm] = useState({ source: 'BLUEBOOK', label: '', takenOn: todayIso(), rw: '', math: '' })
+  const [form, setForm] = useState({ source: 'BLUEBOOK', takenOn: todayIso(), rw: '', math: '' })
   const [tried, setTried] = useState(false)
   const errs = validateScore(form, todayIso())
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -74,6 +74,8 @@ function AddScoreDialog({ busy, error, onSave, onClose }) {
   return (
     <SatModal title={t('sat.scores.addTitle')} onClose={onClose}>
       <form className="st-scoreform" onSubmit={submit} noValidate>
+        <p className="st-muted st-scoreform__sub">{t('sat.scores.addSub')}</p>
+        <span className="st-scoreform__cap">{t('sat.scores.source')}</span>
         <div className="ih-seg st-scoreform__src" role="radiogroup" aria-label={t('sat.scores.source')}>
           {MANUAL_SOURCES.map((s) => (
             <button key={s} type="button" role="radio" aria-checked={form.source === s} className={form.source === s ? 'is-on' : ''} onClick={() => setForm((f) => ({ ...f, source: s }))}>
@@ -82,27 +84,29 @@ function AddScoreDialog({ busy, error, onSave, onClose }) {
           ))}
         </div>
         <label className="st-field">
-          <span>{t('sat.scores.label')}</span>
-          <input type="text" value={form.label} maxLength={80} onChange={set('label')} placeholder={t(form.source === 'BLUEBOOK' ? 'sat.scores.labelPhBluebook' : 'sat.scores.labelPhOfficial')} />
-        </label>
-        <label className="st-field">
           <span>{t('sat.scores.date')}</span>
           <input type="date" value={form.takenOn} max={todayIso()} onChange={set('takenOn')} />
           {tried && errs.takenOn && <small className="st-field__err">{t(`sat.scores.err.${errs.takenOn}`)}</small>}
         </label>
         <div className="st-scoreform__pair">
           <label className="st-field">
-            <span>Reading and Writing</span>
+            <span><i className="st-dot is-rw" />Reading and Writing</span>
             <input type="number" inputMode="numeric" min={200} max={800} step={10} value={form.rw} onChange={set('rw')} placeholder="200–800" />
             {tried && errs.rw && <small className="st-field__err">{t('sat.scores.err.section')}</small>}
           </label>
           <label className="st-field">
-            <span>Math</span>
+            <span><i className="st-dot is-math" />Math</span>
             <input type="number" inputMode="numeric" min={200} max={800} step={10} value={form.math} onChange={set('math')} placeholder="200–800" />
             {tried && errs.math && <small className="st-field__err">{t('sat.scores.err.section')}</small>}
           </label>
         </div>
-        <p className="st-scoreform__total">{t('sat.scores.total')}: <b>{!errs.rw && !errs.math ? total : '—'}</b></p>
+        <div className="st-scoreform__total">
+          <span>
+            <small>{t('sat.scores.totalAuto')}</small>
+            {!errs.rw && !errs.math && <span>{form.rw} + {form.math} = {total}</span>}
+          </span>
+          <b>{!errs.rw && !errs.math ? total : '—'}</b>
+        </div>
         {error && <p className="st-error" role="alert">{error}</p>}
         <div className="st-navdlg__actions">
           <button type="button" className="ih-btn ih-btn--outline st-navdlg__back" onClick={onClose}>{t('sat.logerr.cancel')}</button>

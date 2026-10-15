@@ -9865,7 +9865,16 @@ html[data-theme="dark"] .st-how b {
     color: var(--ih-ink)
 }
 html[data-theme="dark"] .st-road__map {
-    background: var(--dk-acc-tint)
+    background: linear-gradient(180deg, var(--dk-page) 0%, var(--dk-acc-tint) 100%)
+}
+html[data-theme="dark"] .st-road__track {
+    stroke: var(--dk-acc-on)
+}
+html[data-theme="dark"] .st-road__passed {
+    stroke: color-mix(in oklab, var(--dk-acc-text) 35%, transparent)
+}
+html[data-theme="dark"] .st-road__dash {
+    stroke: #fff
 }
 html[data-theme="dark"] .st-road__nav {
     color: var(--ih-ink-2)
@@ -9875,7 +9884,7 @@ html[data-theme="dark"] .st-road__arrow {
 }
 html[data-theme="dark"] .st-road__node circle {
     fill: #fff;
-    stroke: var(--dk-acc-on)
+    stroke: var(--dk-acc-text)
 }
 html[data-theme="dark"] .st-road__node circle.is-done {
     fill: var(--ih-green);
@@ -9901,10 +9910,10 @@ html[data-theme="dark"] .st-road__num.is-here {
     fill: #fff
 }
 html[data-theme="dark"] .st-road__star {
-    fill: var(--dk-muted)
+    fill: var(--dk-acc-text)
 }
 html[data-theme="dark"] .st-road__star.is-on {
-    fill: #f5a524
+    fill: #f2a516
 }
 html[data-theme="dark"] .st-road__here {
     background: var(--ih-ink);
@@ -10265,27 +10274,24 @@ html[data-theme="dark"] .st-ai__input input {
 html[data-theme="dark"] .st-ai__foot {
     color: var(--ih-muted)
 }
-html[data-theme="dark"] .st-etype__opt {
+html[data-theme="dark"] .st-etype__row {
     border: 1px solid var(--st-line);
     background: var(--dk-card);
     color: var(--ih-ink)
 }
-html[data-theme="dark"] .st-etype__opt small {
-    color: var(--ih-muted)
+html[data-theme="dark"] .st-etype__row > i {
+    border: 2px solid var(--dk-line)
 }
-html[data-theme="dark"] .st-etype__opt.is-on {
-    border: 2px solid var(--ih-violet);
+html[data-theme="dark"] .st-etype__row.is-on {
+    border-color: var(--ih-violet);
     background: var(--dk-acc-tint)
 }
-html[data-theme="dark"] .st-etype__opt.is-on > svg {
-    color: var(--ih-violet)
+html[data-theme="dark"] .st-etype__row.is-on > i {
+    border: 5px solid var(--ih-violet)
 }
 html[data-theme="dark"] .st-etype__sug {
     background: var(--dk-card);
     color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-etype__why {
-    color: var(--ih-ink-2)
 }
 html[data-theme="dark"] .st-sum__icon {
     background: var(--dk-page);
@@ -11876,6 +11882,16 @@ html[data-theme="dark"] .st-traj__dot.is-bluebook {
 }
 html[data-theme="dark"] .st-traj__dot.is-official {
     fill: var(--dk-green)
+}
+html[data-theme="dark"] .st-scoreform__total {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .st-scoreform__total small {
+    color: var(--ih-violet)
+}
+html[data-theme="dark"] .st-mocks__src.is-jts i, html[data-theme="dark"] .st-traj__dot.is-jts {
+    background: var(--ih-violet);
+    fill: var(--ih-violet)
 }
 html[data-theme="dark"] .st-papers__row {
     border: 0;

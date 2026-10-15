@@ -1,3 +1,4 @@
+import RecommendedList from '../plan/RecommendedList.jsx'
 import { useI18n } from '../../i18n.jsx'
 import { formatDate } from '../format.js'
 import { originLabel, taskLabel, taskOrigin } from '../plan/planModel.js'
@@ -121,6 +122,7 @@ function LessonRow({ lesson, onOpenLessons }) {
 export function TodayTasksCard({ programme, live, lesson, onStartTask, onMark, onOpenPlan, onOpenLessons }) {
   const { t } = useI18n()
   const tasks = programme?.tasks || []
+  const recommended = programme?.recommended || []
   const minutes = tasks.reduce((s, x) => s + (x.status === 'completed' ? 0 : x.minutes || 0), 0)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
   // нет ответа бэкенда или программы — честное «программы ещё нет», а не «на сегодня всё сделано»
@@ -144,9 +146,11 @@ export function TodayTasksCard({ programme, live, lesson, onStartTask, onMark, o
         <ul className="ih-tt__list">
           {live && <LessonRow lesson={lesson} onOpenLessons={onOpenLessons} />}
           {tasks.map((task, i) => <TaskRow key={task.id} task={task} primary={!live && i === firstOpen} onStart={onStartTask} onMark={onMark} />)}
-          {!tasks.length && <li className="ih-tt__empty">{t('ieltsPlan.allDone')}</li>}
+          {!tasks.length && !recommended.length && <li className="ih-tt__empty">{t('ieltsPlan.allDone')}</li>}
         </ul>
       )}
+      {/* задач плана не осталось (или плана ещё нет) — советы бэкенда: mock, полные тесты; «Сегодня» не пустеет */}
+      {!tasks.length && <RecommendedList items={recommended} noPlan={pending} onStart={onStartTask} />}
       <p className="ih-tt__hint"><ScheduleIcon size={18} /> {t(live ? 'ieltsToday.hintLive' : 'ieltsToday.hintSelf')}</p>
     </section>
   )

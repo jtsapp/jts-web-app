@@ -112,6 +112,7 @@ export function reviewList(modules, filter) {
     for (const it of m.items || []) {
       if (filter === 'wrong' && it.correct) continue
       if (filter === 'marked' && !it.marked) continue
+      if (filter === 'blank' && (it.correct || !unanswered(it))) continue
       out.push({ item: it, module: m })
     }
   }

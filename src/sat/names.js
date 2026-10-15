@@ -14,9 +14,19 @@ export function domainName(id, lang) {
   return pick(names(TAXONOMY.domains.find((d) => d.id === id)), lang) || id
 }
 
+// Старые навыки Advanced Math (до таксономии 10.2026) остаются в планах и попытках — показываем новым именем
+const LEGACY_SKILL = {
+  'm.adv.quadratics': 'm.adv.nonlinear',
+  'm.adv.polynomials': 'm.adv.expressions',
+  'm.adv.exponential': 'm.adv.functions',
+  'm.adv.radicals': 'm.adv.nonlinear',
+  'm.adv.rational': 'm.adv.expressions',
+}
+
 export function skillName(id, lang) {
   if (SECTION_NAME[id]) return SECTION_NAME[id]
-  return pick(names(TAXONOMY.skills.find((s) => s.id === id)), lang) || id
+  const sid = LEGACY_SKILL[id] || id
+  return pick(names(TAXONOMY.skills.find((s) => s.id === sid)), lang) || id
 }
 
 export function skillSection(id) {

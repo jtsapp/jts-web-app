@@ -57,5 +57,7 @@ describe('mock model', () => {
     expect(reviewList(modules, 'all').map((x) => x.item.id)).toEqual([1, 2, 3, 4])
     expect(reviewList(modules, 'wrong').map((x) => x.item.id)).toEqual([2, 3])
     expect(reviewList(modules, 'marked').map((x) => x.item.id)).toEqual([3, 4])
+    // «Без ответа» (Figma 29): пустой ответ, а не просто неверный
+    expect(reviewList(modules, 'blank').map((x) => x.item.id)).toEqual([3])
   })
 })

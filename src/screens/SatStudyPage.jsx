@@ -1,24 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  addSatSimilar, checkSatAnswer, finishSatSession, getSatProfile, getSatSession, getSatSessionExplanation, getSatSessionHint,
-  getSatSessionSummary, logSatError, startSatSession,
+  checkSatAnswer, finishSatSession, getSatProfile, getSatSession, getSatSessionSummary, logSatError, startSatSession,
 } from '../api.js'
 import { errorText } from '../lib/examQuota.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
 import useSatSession from '../sat/question/useSatSession.js'
-import { goTo, timeOn } from '../sat/question/session.js'
-import HintPopover from '../sat/study/HintPopover.jsx'
+import { timeOn } from '../sat/question/session.js'
 import ExplanationPanel from '../sat/study/ExplanationPanel.jsx'
-import LogErrorDialog from '../sat/study/LogErrorDialog.jsx'
+import ErrorTypeDialog from '../sat/study/ErrorTypeDialog.jsx'
 import StudySummary from '../sat/study/StudySummary.jsx'
 import PracticeSummary from '../sat/study/PracticeSummary.jsx'
 import { pick } from '../sat/model/profile.js'
 import { parse } from '../sat/model/plan.js'
 import { domainName, skillName } from '../sat/names.js'
 import { lessonByCode } from '../sat/model/course.js'
-import { BookOpenIcon, BulbIcon, NAV_ICONS, ReplayIcon, RobotIcon } from '../sat/icons.jsx'
+import { BookOpenIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 
 // Один запрос старта на занятие за раз: экран в разработке монтируется дважды (StrictMode), и без этого два POST
@@ -79,25 +77,26 @@ function VerdictBox({ res, loc }) {
   )
 }
 
-/** Прохождение учебной сессии: общий экран вопроса (фаза 3) + слой помощи (фаза 5). */
+/**
+ * Прохождение учебной сессии по Figma 19–21: общий экран вопроса без таймера, черновика, паузы и инструкции; помощи
+ * до ответа нет. Неверный ответ сам открывает «Какая это была ошибка?» (20), после выбора или закрытия справа
+ * открывается объяснение (21); «Объяснение» в подвале — только у проверенного вопроса. AI и «Похожее» убраны.
+ */
 function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
   const { t, lang } = useI18n()
   const token = loadToken()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const spec = useMemo(
     () => ({ key: `study-${data.id}`, mode: 'study', questions: data.questions.map((q) => ({ id: q.id, section: q.section })), timing: {} }),
-    // ключ — id сессии: «Похожее» дописывает вопросы через append, а не пересоздаёт сессию
+    // ключ — id сессии: набор вопросов внутри неё не меняется
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.id],
   )
-  const { session, update, append, clear } = useSatSession(spec)
+  const { session, update, clear } = useSatSession(spec)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState(null)
-  const [hints, setHints] = useState({})
-  const [hintOpen, setHintOpen] = useState(false)
-  const [panel, setPanel] = useState(null) // null | 'explain' | 'ai'
-  const [pre, setPre] = useState({}) // объяснения, открытые до ответа
-  const [logFor, setLogFor] = useState(null) // id вопроса, для которого открыта запись «Log error»
+  const [panel, setPanel] = useState(false) // объяснение справа (Figma 21)
+  const [etypeFor, setEtypeFor] = useState(null) // id вопроса, для которого открыто «Какая это была ошибка?»
 
   const docs = useMemo(() => Object.fromEntries(data.questions.map((q) => [q.id, q])), [data.questions])
   const results = data.results || {}
@@ -117,10 +116,6 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
   const doc = docs[q.id]
   const res = results[q.id]
   const checked = !!res
-  const isSimilar = !!data.similar?.[q.id]
-  const helpBlocked = isSimilar && !checked // похожий вопрос решается без помощи, пока не проверен
-  const taken = hints[q.id] || []
-  const total = doc?.hintCount || 0
 
   const onCheck = async (qid) => {
     const a = session.answers[qid]
@@ -140,8 +135,9 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
         return
       }
       setData((d) => ({ ...d, results: { ...(d.results || {}), [qid]: r } }))
-      setHintOpen(false)
-      // после промаха окно больше не выпрыгивает само (прототип 93e93191): «Log error» — кнопкой в панели помощи
+      // промах: ученик сам называет тип ошибки (Figma 20), после окна — объяснение; верный ответ — объяснение по кнопке
+      if (!r.correct && r.errorId) setEtypeFor(qid)
+      else setPanel(false)
     } catch (e) {
       fail(e)
     } finally {
@@ -149,70 +145,25 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
     }
   }
 
-  const loadHint = async () => {
-    if (taken.length >= total) return setHintOpen(true)
-    setBusy(true)
-    try {
-      const h = await getSatSessionHint(token, data.id, q.id, taken.length)
-      setHints((m) => ({ ...m, [q.id]: [...(m[q.id] || []), pick(h.hint, explainLang)] }))
-      setData((d) => ({ ...d, help: { ...(d.help || {}), [q.id]: d.help?.[q.id] === 'explanation' ? 'explanation' : 'hint' } }))
-      setHintOpen(true)
-    } catch (e) {
-      fail(e)
-    } finally {
-      setBusy(false)
-    }
+  // окно типа ошибки закрыто (выбором или «Пропустить») — справа открывается объяснение (Figma 21)
+  const closeEtype = () => {
+    setEtypeFor(null)
+    setPanel(true)
   }
-
-  const reveal = async () => {
-    setBusy(true)
-    try {
-      const x = await getSatSessionExplanation(token, data.id, q.id)
-      setPre((m) => ({ ...m, [q.id]: x }))
-      if (!checked) setData((d) => ({ ...d, help: { ...(d.help || {}), [q.id]: 'explanation' } }))
-    } catch (e) {
-      fail(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const similar = async () => {
-    setBusy(true)
-    try {
-      const nq = await addSatSimilar(token, data.id, q.id)
-      setData((d) => (d.questions.some((x) => x.id === nq.id) ? d : {
-        ...d,
-        questions: [...d.questions, nq],
-        similar: { ...(d.similar || {}), [nq.id]: nq.similarOf },
-      }))
-      append({ id: nq.id, section: nq.section })
-      update((s) => goTo(s, s.questions.findIndex((x) => x.id === nq.id)))
-      setPanel(null)
-      setHintOpen(false)
-    } catch (e) {
-      fail(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // «Log error» (B3): промах становится строкой журнала ошибок с заголовком, темой и причиной
-  const saveLog = async (qid, body) => {
+  // тип ошибки уходит в журнал ошибок (заголовок сервер берёт из условия) и в очередь повторения
+  const saveEtype = async (qid, errorType) => {
     const r = results[qid]
     setBusy(true)
     try {
-      const out = await logSatError(token, r.errorId, body)
+      const out = await logSatError(token, r.errorId, { errorType })
       setData((d) => ({
         ...d,
         results: {
           ...d.results,
-          [qid]: { ...d.results[qid], logged: true, errorType: out?.errorType ?? body.errorType, reviewDueAt: out?.reviewDueAt ?? d.results[qid].reviewDueAt },
+          [qid]: { ...d.results[qid], logged: true, errorType: out?.errorType ?? errorType, reviewDueAt: out?.reviewDueAt ?? d.results[qid].reviewDueAt },
         },
       }))
-      setLogFor(null)
-      setToast(t('sat.logerr.done'))
-      setTimeout(() => setToast(null), 2500)
+      closeEtype()
     } catch (e) {
       fail(e)
     } finally {
@@ -232,70 +183,16 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
     }
   }
 
-  const togglePanel = (tab) => {
-    setHintOpen(false)
-    setPanel((p) => (p === tab ? null : tab))
-  }
-
-  const footerExtra = (
-    <div className="st-help">
-      {hintOpen && taken.length > 0 && (
-        <HintPopover
-          hints={taken}
-          total={total}
-          busy={busy}
-          onMore={loadHint}
-          onSolution={() => {
-            setHintOpen(false)
-            setPanel('explain')
-          }}
-          onClose={() => setHintOpen(false)}
-        />
-      )}
-      <button type="button" className={`st-tool ${taken.length ? 'is-on' : ''}`} disabled={busy || checked || helpBlocked || !total}
-        title={!total ? t('sat.study.noHints') : helpBlocked ? t('sat.study.similarAlone') : undefined}
-        onClick={() => (hintOpen ? setHintOpen(false) : taken.length ? setHintOpen(true) : loadHint())}>
-        <BulbIcon size={16} />{taken.length ? t('sat.study.hintCount', { n: String(taken.length), total: String(total) }) : t('sat.study.hint')}
-      </button>
-      <button type="button" className={`st-tool ${panel === 'explain' ? 'is-on' : ''}`} disabled={helpBlocked}
-        title={helpBlocked ? t('sat.study.similarAlone') : undefined} onClick={() => togglePanel('explain')}>
-        <BookOpenIcon size={16} />{t('sat.study.explanation')}
-      </button>
-      <button type="button" className={`st-tool ${panel === 'ai' ? 'is-on' : ''}`} onClick={() => togglePanel('ai')}>
-        <RobotIcon size={16} />{t('sat.study.askAi')}
-      </button>
-      <button type="button" className="st-tool" disabled={busy} onClick={similar}>
-        <ReplayIcon size={16} />{t('sat.study.similar')}
-      </button>
-      {res && !res.correct && res.errorId && (
-        <button type="button" className={`st-tool st-tool--log ${res.logged ? 'is-on' : ''}`} disabled={busy || res.logged} onClick={() => setLogFor(q.id)}>
-          {NAV_ICONS.errors(16)}{t(res.logged ? 'sat.logerr.logged' : 'sat.logerr.button')}
-        </button>
-      )}
-    </div>
-  )
-
-  const shownData = res || pre[q.id] || null
-  const sidePanel = panel ? (
-    <ExplanationPanel
-      tab={panel}
-      onTab={setPanel}
-      onClose={() => setPanel(null)}
-      doc={doc}
-      data={shownData}
-      chosen={res?.given}
-      checked={checked}
-      correct={res?.correct}
-      gated={!shownData && !helpBlocked}
-      busy={busy}
-      explainLang={explainLang}
-      onReveal={reveal}
-      onSimilar={similar}
-      canSimilar={checked && (!res.correct || (res.helpType && res.helpType !== 'none'))}
-    />
+  const footerExtra = checked ? (
+    <button type="button" className={`st-tool ${panel ? 'is-on' : ''}`} aria-pressed={panel} onClick={() => setPanel((p) => !p)}>
+      <BookOpenIcon size={16} />{t('sat.study.explanation')}
+    </button>
   ) : null
 
-  const logRes = logFor ? results[logFor] : null
+  const sidePanel = panel && checked ? (
+    <ExplanationPanel onClose={() => setPanel(false)} doc={doc} data={res} chosen={res.given} explainLang={explainLang} />
+  ) : null
+
   const names = data.skillIds.map((s) => skillName(s, lang)).join(' · ')
   return (
     <>
@@ -310,16 +207,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
         onFinish={finish}
         footerExtra={footerExtra}
         sidePanel={sidePanel}
-        overlay={logRes && (
-          <LogErrorDialog
-            doc={docs[logFor]}
-            result={logRes}
-            section={docs[logFor]?.section === 'math' ? 'math' : 'rw'}
-            busy={busy}
-            onSave={(body) => saveLog(logFor, body)}
-            onClose={() => setLogFor(null)}
-          />
-        )}
+        overlay={etypeFor && <ErrorTypeDialog busy={busy} onSave={(type) => saveEtype(etypeFor, type)} onSkip={closeEtype} />}
         study={{
           onCheck,
           checking: busy,
@@ -328,8 +216,7 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
           skillLabel: (d) => [domainName(d.domain, lang), skillName(d.skillId, lang)].filter(Boolean).join(' · '),
           below: (qid) => {
             const r = results[qid]
-            if (!r) return isSimilar && qid === q.id ? <p className="st-similar-note">{t('sat.study.similarAlone')}</p> : null
-            return <VerdictBox res={r} loc={loc} />
+            return r ? <VerdictBox res={r} loc={loc} /> : null
           },
         }}
       />

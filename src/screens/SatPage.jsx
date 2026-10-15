@@ -10,7 +10,7 @@ import PracticeTab from '../sat/tabs/PracticeTab.jsx'
 import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
-import VocabTab from '../sat/tabs/VocabTab.jsx'
+import ProgressTab from '../sat/tabs/ProgressTab.jsx'
 import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { loadToken } from '../lib/session.js'
@@ -23,9 +23,10 @@ import { fmtDate } from '../sat/model/dates.js'
 import ExamDemoBanner from '../components/ExamDemoBanner.jsx'
 import { errorText } from '../lib/examQuota.js'
 
-// Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» убран (B4): его меры —
-// на дашборде «Сегодня»; старый адрес ?satTab=progress открывает «Сегодня». Past papers — свой экран, вход — из «Пробников».
-export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'vocab', 'guide', 'materials', 'errors']
+// Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» вернулся по Figma 16
+// (15.10.2026), «Словаря» во вкладках больше нет — в макете его нет. Past papers — свой экран, вход — из «Пробников».
+// «Материалы» и «Ошибки» скрыты (вкладки и их экраны остаются в коде): адрес с satTab=materials|errors открывает «Сегодня»
+export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'guide']
 const SOON_ICON = {}
 
 function readTab() {
@@ -215,7 +216,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   if (tab === 'guide') panel = <GuideTab />
   else if (tab === 'plan') {
     panel = !plan || !diagnostic ? null : (
-      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} onUnit={openUnit} />
+      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} />
     )
   } else if (tab === 'today') {
     panel = !profile || !plan || !diagnostic || !today ? null : todayPanel()
@@ -231,8 +232,8 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onPricing={() => onNav?.('sat-pricing')}
       />
     )
-  } else if (tab === 'vocab') {
-    panel = <VocabTab />
+  } else if (tab === 'progress') {
+    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: 10 }).catch((e) => setError(errorText(e, t)))} />
   } else if (tab === 'materials') {
     panel = <MaterialsTab onOpen={(code) => openUnit(code)} />
   } else if (tab === 'errors') {
@@ -295,9 +296,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onReview={review}
         onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
-        onVocab={() => go('vocab')}
-        onErrors={() => go('errors')}
-        onMocks={() => go('mocks')}
       />
     )
   }

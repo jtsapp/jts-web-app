@@ -3029,7 +3029,17 @@ mark.st-hl {
   position: relative;
   padding: 0;
   border-radius: 28px;
-  background: #efe8ff;
+  /* Figma 11, RoadStage: сверху почти белый, книзу лавандовый */
+  background: linear-gradient(180deg, #fbf8ff 0%, #efe6ff 100%);
+}
+.st-road__track {
+  stroke: #e2d5ff;
+}
+.st-road__passed {
+  stroke: rgba(144, 71, 255, 0.35);
+}
+.st-road__dash {
+  stroke: #fff;
 }
 .st-road__svg {
   display: block;
@@ -3062,7 +3072,7 @@ mark.st-hl {
 }
 .st-road__node circle {
   fill: #fff;
-  stroke: #d6c4ff;
+  stroke: #cdb8ff;
   stroke-width: 2;
   transition: r 0.16s ease;
 }
@@ -3098,10 +3108,10 @@ mark.st-hl {
 }
 .st-road__star {
   font-size: 12px;
-  fill: #c8c8d4;
+  fill: #cfc6e6;
 }
 .st-road__star.is-on {
-  fill: #f5a524;
+  fill: #f2a516;
 }
 .st-road__here {
   position: absolute;
@@ -3996,6 +4006,14 @@ mark.st-hl {
   padding: 24px;
   overflow-y: auto;
 }
+.st-xp__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+.st-xp__loading {
+  margin: 12px 0 0;
+}
 .st-xp__top {
   display: flex;
   align-items: center;
@@ -4230,49 +4248,40 @@ mark.st-hl {
 .st-etype {
   width: min(520px, 100%);
 }
-.st-etype__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.st-etype__opt {
+.st-etype__list {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Figma 20: строка-радио — пустой кружок слева, название типа */
+.st-etype__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid var(--st-line);
-  border-radius: 16px;
+  border-radius: 14px;
   background: #fff;
   font: inherit;
+  font-size: 14px;
+  font-weight: 600;
   text-align: left;
   color: var(--ih-ink);
   cursor: pointer;
 }
-.st-etype__opt > svg {
+.st-etype__row > i {
   flex-shrink: 0;
-  margin-top: 1px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #c9c9d4;
+  border-radius: 999px;
 }
-.st-etype__opt span {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-.st-etype__opt b {
-  font-size: 14px;
-}
-.st-etype__opt small {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ih-muted);
-}
-.st-etype__opt.is-on {
-  border: 2px solid var(--ih-violet);
-  padding: 13px;
+.st-etype__row.is-on {
+  border-color: var(--ih-violet);
   background: #f6f0ff;
 }
-.st-etype__opt.is-on > svg {
-  color: var(--ih-violet);
+.st-etype__row.is-on > i {
+  border: 5px solid var(--ih-violet);
 }
 .st-etype__sug {
   margin-top: 4px;
@@ -4283,13 +4292,6 @@ mark.st-hl {
   font-style: normal;
   font-weight: 700;
   color: var(--ih-violet);
-}
-.st-etype__why {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 19px;
-  color: var(--ih-ink-2);
 }
 .st-etype__save {
   padding: 12px 20px;
@@ -6726,7 +6728,13 @@ mark.st-hl {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   background: var(--st-bg);
-  color: var(--ih-ink, #181818);
+  --ih-ink: #181818;
+  --ih-muted: #8a8a8a;
+  color: var(--ih-ink);
+}
+.st-mrev__top .ih-round {
+  border: 0;
+  background: #f4f4f4;
 }
 .st-mrev__top {
   display: grid;
@@ -6788,22 +6796,48 @@ mark.st-hl {
   padding: 20px 16px;
   background: #fff;
   border-right: 1px solid var(--st-line);
+  overflow-x: hidden;
   overflow-y: auto;
+  /* Figma 29 без полосы прокрутки: колонка ровно 288 px, колёсико и тач по-прежнему листают */
+  scrollbar-width: none;
+}
+.st-mrev__list::-webkit-scrollbar {
+  display: none;
 }
 .st-mrev__list .ih-seg {
+  flex: none;
   align-self: flex-start;
+  padding: 4px;
+  gap: 2px;
 }
 .st-mrev__list .ih-seg button {
   white-space: nowrap;
-  padding-inline: 12px;
+  min-height: 0;
+  height: 30px;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ih-muted);
+}
+.st-mrev__list .ih-seg button.is-on {
+  color: var(--ih-ink);
+  box-shadow: none;
 }
 .st-mrev__group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
+}
+/* Figma 29: другая секция свёрнута в ссылку под списком */
+.st-mrev__more {
+  align-self: flex-start;
+  margin: 6px 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
 }
 .st-mrev__group h3 {
-  margin: 8px 0 4px;
+  margin: 0;
+  line-height: 15px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -6816,16 +6850,17 @@ mark.st-hl {
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 12px;
   background: none;
   font: inherit;
+  font-weight: 500;
   text-align: left;
   color: inherit;
   cursor: pointer;
 }
 .st-mrev__row.is-on {
-  border-color: var(--ih-violet, #9047ff);
+  border: 1px solid var(--ih-violet, #9047ff);
   background: var(--st-tint);
   font-weight: 700;
 }
@@ -6860,6 +6895,7 @@ mark.st-hl {
   flex: 1;
   min-width: 0;
   font-size: 13px;
+  line-height: 18px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6926,7 +6962,30 @@ mark.st-hl {
 .st-mrev__stem {
   font-size: 17px;
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 26px;
+}
+/* варианты в разборе (Figma 29): пара «ваш — верный» рамкой 2px, остальные серые с иконкой зачёркивания */
+.st-mrev .st-opt.is-right,
+.st-mrev .st-opt.is-wrong {
+  border-width: 2px;
+}
+.st-mrev .st-opt.is-right {
+  background: #e6f6ec;
+}
+.st-mrev .st-opt.is-rest .st-opt__text,
+.st-mrev .st-opt.is-rest .st-opt__key {
+  color: #8a8a8a;
+}
+.st-mrev .st-opt.is-rest .st-opt__key {
+  border-color: #e3e3ea;
+}
+.st-mrev .st-opt.is-right .st-opt__mark svg,
+.st-mrev .st-opt.is-wrong .st-opt__mark svg {
+  width: 22px;
+  height: 22px;
+}
+.st-mrev .st-opt.is-rest .st-opt__mark {
+  color: #c9c9d3;
 }
 .st-mrev__stem p {
   margin: 0 0 8px;
@@ -6979,12 +7038,14 @@ mark.st-hl {
 }
 .st-mrev__tiles small {
   font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
   color: var(--ih-muted, #8a8a8a);
 }
 .st-mrev__tiles b {
   font-size: 24px;
   font-weight: 800;
+  line-height: 33px;
   overflow-wrap: break-word;
 }
 .st-mrev__tiles .is-wrong {
@@ -7004,7 +7065,7 @@ mark.st-hl {
 .st-mrev__xp {
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.55;
+  line-height: 21px;
 }
 .st-mrev__xp p {
   margin: 0 0 8px;
@@ -7017,7 +7078,7 @@ mark.st-hl {
   background: var(--st-red-tint);
   font-size: 13px;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 19px;
   color: #4a4a55;
 }
 .st-mrev__why b {
@@ -7065,8 +7126,22 @@ mark.st-hl {
   font-weight: 700;
 }
 .st-mrev__practice {
+  flex: none;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
+  min-height: 0;
+  height: 46px;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+.st-mrev__planNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--ih-green);
 }
 .st-mrev__bottom {
   display: flex;
@@ -7081,7 +7156,7 @@ mark.st-hl {
   color: #4a4a55;
 }
 .st-mrev__next {
-  min-height: 36px;
+  min-height: 34px;
   padding: 8px 14px;
   font-size: 13px;
 }
@@ -9784,9 +9859,46 @@ mark.st-hl {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* Figma 30: подзаголовок, подпись «Источник», точки секций и лиловая плашка итога, который считается сам */
+.st-scoreform__sub {
+  margin: -8px 0 0;
+}
+.st-scoreform__cap {
+  margin-bottom: -6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.st-scoreform .st-field .st-dot {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
 .st-scoreform__total {
-  margin: 0;
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f1eaff;
+  font-size: 13px;
+}
+.st-scoreform__total > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-scoreform__total small {
+  color: var(--ih-violet);
+}
+.st-scoreform__total b {
+  font-size: 26px;
+  font-weight: 800;
+}
+.st-mocks__src.is-jts i,
+.st-traj__dot.is-jts {
+  background: var(--ih-violet);
+  fill: var(--ih-violet);
 }
 .st-res__back {
   align-self: flex-start;
@@ -10051,4 +10163,15 @@ mark.st-hl {
 .st-iconbtn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* узел роадмапа — role=button на <g>: без чёрной рамки фокуса при клике */
+.st-road__node,
+.st-road__node:focus,
+.st-road__node:focus-visible,
+.st-road__svg:focus {
+  outline: none;
+}
+.st-road__node {
+  -webkit-tap-highlight-color: transparent;
 }

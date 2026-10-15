@@ -13,7 +13,7 @@ import { MOCK_MIN_WIDTH, moduleNo } from '../sat/model/mock.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { LaptopIcon } from '../sat/icons.jsx'
 import { errorText } from '../lib/examQuota.js'
-import { enterFullWindow, leaveFullWindow } from '../sat/fullWindow.js'
+import { enterFullWindow, holdFullWindow, leaveFullWindow } from '../sat/fullWindow.js'
 
 function readId() {
   try {
@@ -154,7 +154,7 @@ export default function SatMockPage({ token, onNav }) {
   }, [authToken, t])
 
   // симуляция и past paper идут во весь экран (B7); уходя с экрана — из полного экрана тоже
-  useEffect(() => () => leaveFullWindow(), [])
+  useEffect(() => holdFullWindow(), [])
   const finished = run?.status === 'finished'
   useEffect(() => {
     // итог смотрят уже не на экзамене: полный экран снимаем (прототип 12325245)

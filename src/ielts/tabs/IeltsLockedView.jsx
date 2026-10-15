@@ -5,7 +5,7 @@ import { useI18n } from '../../i18n.jsx'
  * IeltsAccessService.startDone), менеджер не нужен. Замок стоит и на сервере — экран лишь показывает шаги вместо пустых
  * вкладок с ошибками.
  */
-export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboarding, onOpenDiagnostic, onOpenResult, onOpenPricing }) {
+export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboarding, onOpenDiagnostic, onOpenResult }) {
   const { t } = useI18n()
   return (
     <div className="ih-locked">
@@ -25,7 +25,6 @@ export default function IeltsLockedView({ onboarded, diagnosticDone, onOpenOnboa
         ) : (
           <button type="button" className="ih-btn ih-btn--primary" onClick={onOpenOnboarding}>{t('ieltsLocked.onboarding')}</button>
         )}
-        {onboarded && onOpenPricing && <button type="button" className="ih-btn ih-btn--outline" onClick={onOpenPricing}>{t('ieltsLocked.pricing')}</button>}
       </div>
     </div>
   )

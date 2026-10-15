@@ -13,14 +13,13 @@ export const ERROR_TYPES = [
 ]
 
 /**
- * «В чём была ошибка?» (Figma SAT 23): после неверного ответа ученик называет тип — по нему очередь повторения и
- * журнал ошибок понимают, что тренировать. Предложение заранее отмечено, но это правило прототипа по времени ответа
- * и близости числа (suggestErrorType), а не AI: в макете оно подписано «AI предлагает», здесь — «Предположение»,
- * чтобы не обещать того, чего нет (решение A: AI — заглушки до флага SAT_AI). «Пропустить» — без типа.
+ * «Какая это была ошибка?» (Figma SAT 20): окно открывается само после неверного ответа в учебном режиме — ученик
+ * называет тип, и ошибка с ним уходит в журнал и очередь повторения. Простой список из шести типов, ничего не
+ * отмечено заранее; «Пропустить» и крестик закрывают без типа. После окна страница открывает объяснение (Figma 21).
  */
-export default function ErrorTypeDialog({ suggested, timeSec, pace, current, busy, onSave, onSkip }) {
+export default function ErrorTypeDialog({ busy, onSave, onSkip }) {
   const { t } = useI18n()
-  const [chosen, setChosen] = useState(current || suggested || null)
+  const [chosen, setChosen] = useState(null)
   const ref = useRef(null)
   useEffect(() => {
     ref.current?.focus()
@@ -39,21 +38,14 @@ export default function ErrorTypeDialog({ suggested, timeSec, pace, current, bus
           </div>
           <button type="button" className="ih-round st-navdlg__close" aria-label={t('sat.run.close')} onClick={onSkip}><CloseIcon size={18} /></button>
         </div>
-        <div className="st-etype__grid" role="radiogroup" aria-labelledby="st-etype-title">
-          {ERROR_TYPES.map(({ key, Icon }) => (
-            <button key={key} type="button" role="radio" aria-checked={chosen === key} className={`st-etype__opt ${chosen === key ? 'is-on' : ''}`} onClick={() => setChosen(key)}>
-              <Icon size={18} />
-              <span>
-                <b>{t(`sat.etype.${key}`)}</b>
-                <small>{t(`sat.etype.${key}Sub`)}</small>
-                {suggested === key && <em className="st-etype__sug">{t('sat.etype.suggested')}</em>}
-              </span>
+        <div className="st-etype__list" role="radiogroup" aria-labelledby="st-etype-title">
+          {ERROR_TYPES.map(({ key }) => (
+            <button key={key} type="button" role="radio" aria-checked={chosen === key} className={`st-etype__row ${chosen === key ? 'is-on' : ''}`} onClick={() => setChosen(key)}>
+              <i aria-hidden="true" />
+              {t(`sat.etype.${key}`)}
             </button>
           ))}
         </div>
-        {suggested && (
-          <p className="st-etype__why">{t(`sat.etype.why.${suggested}`, { s: String(timeSec ?? '—'), p: String(pace ?? '—') })}</p>
-        )}
         <div className="st-navdlg__actions">
           <button type="button" className="ih-btn ih-btn--outline st-navdlg__back" onClick={onSkip}>{t('sat.etype.skip')}</button>
           <button type="button" className="ih-cta st-etype__save" disabled={!chosen || busy} onClick={() => onSave(chosen)}>{t('sat.etype.save')}</button>

@@ -56,7 +56,22 @@ export function originLabel(t, task, fmtDate) {
   return t('ieltsPlan.origin.teacher')
 }
 
+// Советы бэкенда, когда открытых задач плана нет (IeltsPlanFallback): mock и полные тесты — всегда есть что делать
+const RECOMMEND_ROUTE = {
+  mock: { tab: 'mocks' },
+  'reading-full': { tab: 'learn', view: 'reading-full' },
+  'listening-full': { tab: 'learn', view: 'listening-full' },
+  'writing-task2': { tab: 'learn', view: 'writing-task2' },
+  'speaking-part2': { tab: 'learn', view: 'speaking-part2' },
+}
+
+/** Совет «что сделать дальше» как задача для startPlanTask: ведёт туда же, куда его ключ. */
+export function recommendTask(r) {
+  return { ...r, recommend: true }
+}
+
 export function taskRoute(task) {
+  if (task.recommend) return RECOMMEND_ROUTE[task.key] || { tab: 'learn' }
   if (task.origin === 'teacher') {
     const ex = task.extra || {}
     // полный пробный экзамен — сразу его экран (описание и старт), набор слов — «Словарь»
