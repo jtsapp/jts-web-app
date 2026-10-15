@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { pattern } from '../../practice/verbs/engine.js'
+import { writtenExpected } from '../../practice/verbs/assistantExpected.js'
 import VerbWordCard from './VerbWordCard.jsx'
 
 // Письменные режимы — renderWritten/checkWritten/showWrittenResult прототипа.
@@ -136,7 +137,12 @@ export default function VerbsWritten({ drill, snap, data, token }) {
       </form>
 
       {result && (
-        <div className="vb-feedback" aria-live="polite">
+        <div
+          className="vb-feedback"
+          aria-live="polite"
+          // Ключ полей для помощника — только после проверки с ошибкой (верные формы разбор и так уже показал).
+          data-assistant-expected={writtenExpected(result, fields) || undefined}
+        >
           {result.score.results.map((r, i) => (
             <div key={i} className={`vb-answerrow${r.heard ? ' is-correct' : ''}`}>
               <span>{result.revealed ? t('verbs.revealCounts') : r.heard ? `✓ ${t('verbs.correct')}` : `↻ ${t('verbs.tryAgain')}`}</span>

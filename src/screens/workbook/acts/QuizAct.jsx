@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { optOrder } from '../../../practice/workbook/engine.js'
-import { Note, Qnum } from '../ActShell.jsx'
+import { Note, Qnum, WorkbookTestContext } from '../ActShell.jsx'
 
 // Викторина урока (B2). Порт R.quiz (data/jtsworkbook-b2.html:13417):
 // вопросы идут ПО ОДНОМУ, ответ засчитывается с первой и единственной попытки,
@@ -19,6 +19,7 @@ export default function QuizAct({ act, ctl }) {
   const [pos, setPos] = useState(0)
   const [right, setRight] = useState(0)
   const [picked, setPicked] = useState(null) // индекс варианта в порядке показа
+  const test = useContext(WorkbookTestContext)
 
   // «Показать ответы» из разбора ошибок закрывает остаток как неверные — тогда
   // викторина сразу показывает итог. Это ВЫВОД из состояния экрана, а не своё
@@ -38,6 +39,9 @@ export default function QuizAct({ act, ctl }) {
   const order = optOrder(act, it, pos)
   const rightIdx = order.indexOf(it.a)
   const answered = picked != null
+  // Попытка одна, и после промаха экран сам подсвечивает верный вариант — ключ помощнику ничего не раскрывает, а
+  // строкой он читается надёжнее подсветки. Не на зачётном уроке.
+  const missedKey = answered && picked !== rightIdx && !test ? String(it.o[it.a]) : undefined
 
   return (
     <>
@@ -47,7 +51,7 @@ export default function QuizAct({ act, ctl }) {
         </div>
         <b>{t('workbook.quizOf', { a: pos + 1, b: items.length })}</b>
       </div>
-      <div className="wb-item">
+      <div className="wb-item" data-assistant-expected={missedKey}>
         <div className="wb-qline">
           <Qnum n={pos} />
           <span>{it.q}</span>

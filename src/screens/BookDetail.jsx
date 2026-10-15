@@ -709,6 +709,8 @@ function ReadProgress({ articleRef, endRef, chKey, label }) {
     <div
       ref={barRef}
       className={`bk-readbar${pct >= 100 ? ' is-done' : ''}`}
+      // Портал в body: снимок помощника читает оттуда только помеченное (screenSnapshot.js).
+      data-assistant-overlay="полоса чтения книги"
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}

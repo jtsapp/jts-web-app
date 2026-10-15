@@ -43,9 +43,10 @@ export function GoalDialog({ options, value, onPick, onClose }) {
   }, [onClose])
 
   // Портал — по той же причине, что у тура: обёртка смены экранов анимируется
-  // transform'ом, и position: fixed внутри неё ехал бы вместе со страницей.
+  // transform'ом, и position: fixed внутри неё ехал бы вместе со страницей. Из body окно не видно снимку помощника —
+  // отсюда метка data-assistant-overlay (screenSnapshot.js).
   return createPortal(
-    <div className="hm-goaldlg" onClick={onClose}>
+    <div className="hm-goaldlg" data-assistant-overlay="выбор цели" onClick={onClose}>
       <div
         className="hm-goaldlg__card"
         role="dialog"

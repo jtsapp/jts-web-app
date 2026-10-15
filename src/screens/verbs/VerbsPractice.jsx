@@ -14,6 +14,7 @@ import {
   targetForms,
   variantsNote,
 } from '../../practice/verbs/engine.js'
+import { spokenExpected } from '../../practice/verbs/assistantExpected.js'
 import { MicIcon, PlayIcon, StopIcon } from './VerbsIcons.jsx'
 import VerbsWritten from './VerbsWritten.jsx'
 
@@ -612,7 +613,11 @@ function SpokenResult({ drill, snap, t, last }) {
   return (
     <>
       <h3>{r.kind === 'speech' ? t('verbs.score', { n: r.score.hits, total: r.score.total }) : t('verbs.manualResult')}</h3>
-      <div className="vb-chips-result">
+      <div
+        className="vb-chips-result"
+        // Ключ для помощника — только когда распознавание не услышало форму; самопроверка его не несёт.
+        data-assistant-expected={spokenExpected(r, snap) || undefined}
+      >
         {rows.map((x, i) => (
           <div key={i} className={`vb-resultchip${manual ? ' is-neutral' : x.heard ? ' is-ok' : ''}`} lang="en">
             <span>{(manual ? '' : x.heard ? '✓ ' : '↻ ') + x.form}</span>

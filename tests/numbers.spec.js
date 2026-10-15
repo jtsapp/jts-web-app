@@ -120,3 +120,33 @@ test('длинные варианты помещаются в табличку �
     await jump(page)
   }
 })
+
+// Помощник по сайту (Луна) читает игру через открытый shadow root, а эталон — из data-assistant-expected на
+// сообщении. Правило владельца: до окончательной проверки ключ не отдаём. Первый промах оставляет попытку — ключа
+// нет; второй закрывает задание и игра сама подсвечивает верный остров — тогда эталон есть.
+test('эталон для помощника — только после второго промаха', async ({ page }) => {
+  await open(page)
+  await page.locator('.card[data-id="teens"]').click()
+  await page.locator('#goBtn').click()
+  await expect(ready(page)).toHaveCount(3, { timeout: 15000 })
+  const ans = await page.locator('#scene').getAttribute('data-answer')
+  const wrong = page.locator(`#isles button.isl:not([disabled]):not([data-v="${ans.replace(/"/g, '\\"')}"])`)
+  const msg = page.locator('#msg')
+
+  await wrong.first().click()
+  await expect(msg).toHaveClass(/\bshow\b/)
+  await expect(msg).not.toHaveAttribute('data-assistant-expected', /.+/)
+
+  // Пока Декстер прыгает, игра клики молча пропускает (R.busy, снаружи не видно) — жмём, пока клик не засчитан.
+  await expect(async () => {
+    if (await wrong.count()) await wrong.first().click({ timeout: 1000 })
+    await expect(msg).toHaveAttribute('data-assistant-expected', /.+/, { timeout: 500 })
+  }).toPass({ timeout: 15000 })
+  expect((await msg.getAttribute('data-assistant-expected')).endsWith(`→ ${ans}`)).toBe(true)
+  // Следующее сообщение (прыжок на подсвеченный остров) эталон снимает — он не переживает своё задание.
+  const right = page.locator(`#isles button.isl:not([disabled])[data-v="${ans.replace(/"/g, '\\"')}"]`)
+  await expect(async () => {
+    if (await right.count()) await right.first().click({ timeout: 1000 })
+    await expect(msg).not.toHaveAttribute('data-assistant-expected', /.+/, { timeout: 500 })
+  }).toPass({ timeout: 15000 })
+})

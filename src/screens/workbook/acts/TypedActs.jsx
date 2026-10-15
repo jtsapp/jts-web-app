@@ -67,6 +67,9 @@ function TypedRow({ item, idx, ctl, level, head, wide }) {
           aria-label={item.cue || item.q || item.a}
           placeholder={item.ph || ''}
           value={revealed ? item.a : value}
+          // «Показать ответ» ставит в поле ключ, а набранное остаётся в value: снимку помощника отдаём набранное, иначе
+          // он принял бы ключ за ввод ученика (lib/assistant/screenSnapshot.js).
+          data-assistant-entered={revealed ? value : undefined}
           disabled={closed || revealed}
           onChange={(e) => setValue(e.target.value)}
           // По потере фокуса не судим: недописанное предложение когда-то

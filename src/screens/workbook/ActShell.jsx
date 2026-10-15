@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { createContext, useCallback, useMemo, useState } from 'react'
 import { createActState, hit, slip, actDone, revealRest } from '../../practice/workbook/actCtl.js'
 
 // Общая обвязка экрана задания: счётчик мест, «неверно», «показать ответы» и
@@ -8,6 +8,10 @@ import { createActState, hit, slip, actDone, revealRest } from '../../practice/w
 // (data/jtsworkbook-a0.html:6289) — правильный ответ не показывается сам:
 // он открывается только кнопкой «показать», и тогда место засчитывается как
 // ошибка. Это поведенческий контракт, а не украшение.
+
+// Идёт ли зачётный урок (lesson.test). До экранов заданий флаг иначе не доходит, а нужен он ради помощника по сайту:
+// на зачёте Луна не получает ключ (data-assistant-expected), как и на тесте юнита в курсе.
+export const WorkbookTestContext = createContext(false)
 
 export function useAct(act) {
   const [state, setState] = useState(() => createActState(act))

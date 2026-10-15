@@ -7,6 +7,7 @@ import { VolumeIcon } from '../components/icons.jsx'
 import {
   buildSession,
   checkAnswer,
+  expectedAnswer,
   feedbackBody,
   headingFor,
   mix,
@@ -219,7 +220,7 @@ function TypeTask({ task, response, setResponse, disabled, onEnter, verdict }) {
 }
 
 // ───────────────────────── Feedback ─────────────────────────
-function Feedback({ ok, body }) {
+function Feedback({ ok, body, expected }) {
   const { t } = useI18n()
   const ref = useRef(null)
   // На телефоне кнопка шага липнет к низу экрана (.lt-dock), и разбор,
@@ -239,7 +240,13 @@ function Feedback({ ok, body }) {
     el.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' })
   }, [])
   return (
-    <div ref={ref} className={`lt-fb ${ok ? 'lt-fb--ok' : 'lt-fb--no'}`}>
+    <div
+      ref={ref}
+      className={`lt-fb ${ok ? 'lt-fb--ok' : 'lt-fb--no'}`}
+      // Эталон для помощника — только после неверного ответа. Задание после первой ошибки вернётся в конце очереди, но
+      // ответ разбор уже показал ученику сам, так что помощник не узнаёт ничего сверх экрана.
+      data-assistant-expected={!ok && expected ? expected : undefined}
+    >
       <div className="lt-fb__icon">{ok ? '✓' : '☹'}</div>
       <div className="lt-fb__text">
         <div className="lt-fb__title">{ok ? t('listening.good') : t('listening.bad')}</div>
@@ -603,7 +610,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
               <TypeTask task={current} response={response} setResponse={setResponse} disabled={!!answered} onEnter={() => canSubmit && submit()} verdict={answered ? (answered.ok ? 'ok' : 'no') : null} />
             )}
 
-            {answered && <Feedback ok={answered.ok} body={answered.body} />}
+            {answered && <Feedback ok={answered.ok} body={answered.body} expected={expectedAnswer(current)} />}
 
             {/* Кнопка шага живёт в собственной полосе у нижней кромки экрана
                 (кадры раздела: Frame 440×80 с полем 16 на том же сером фоне).

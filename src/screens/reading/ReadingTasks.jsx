@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { initExercise, isAnswered, isChoice, isMatch, isOrder, solvedState } from '../../practice/reading/engine.js'
 import { checkExercise } from '../../practice/reading/check.js'
+import { exerciseAnswers } from '../../practice/reading/answers.js'
 import { loc } from '../../practice/reading/loc.js'
 import { markExercise, textState } from '../../practice/reading/readingProgress.js'
 import ChoiceTask from './tasks/ChoiceTask.jsx'
@@ -151,6 +152,13 @@ function Exercise({ textId, ex, index, unchecked }) {
   // Пояснение к приёму чтения показываем, когда оно ещё пригодится: после
   // полностью верного ответа на вопросы оно уже лишнее (правило прототипа).
   const showExpl = res && ex.explanation && (res.score < res.total || !isChoice(ex.type))
+  // Ключ для помощника по сайту — только после проверки с ошибками: до неё помощник даёт лишь подсказки. Проверка
+  // окончательна — поля после неё закрыты, «Ещё раз» начинает задание заново. После «Показать ответ» ответы и так
+  // стоят на экране целиком, а у «мнения» ключа нет.
+  const expected =
+    res && !revealed && res.score < res.total
+      ? exerciseAnswers(ex, { yes: t('reading.true'), no: t('reading.false'), notGiven: t('reading.notGiven') }, lang)
+      : ''
 
   return (
     <section className="rd-ex" id={`rd-ex-${index}`} aria-labelledby={`rd-ex-t-${index}`}>
@@ -167,6 +175,7 @@ function Exercise({ textId, ex, index, unchecked }) {
           className={`rd-ex__res${res ? (revealed ? ' is-part' : res.score === res.total ? ' is-ok' : res.score > 0 ? ' is-part' : ' is-bad') : ''}`}
           ref={resultRef}
           tabIndex={-1}
+          data-assistant-expected={expected || undefined}
         >
           {res &&
             (revealed
