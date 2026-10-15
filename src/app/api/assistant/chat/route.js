@@ -37,6 +37,8 @@ import {
 } from '@/lib/assistant/report.js'
 import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
+import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
+import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 
 export const runtime = 'nodejs'
 
@@ -157,11 +159,34 @@ export async function POST(request) {
   // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
   const actions = createActionFilter()
-  const visible = (text) => actions.push(filter.push(text))
-  const visibleTail = () => actions.push(filter.flush()) + actions.flush()
+  // Видимый ответ целиком — из него трекер берёт совет одной строкой (saveNote).
+  let shown = ''
+  const keep = (out) => {
+    shown += out
+    return out
+  }
+  const visible = (text) => keep(actions.push(filter.push(text)))
+  const visibleTail = () => keep(actions.push(filter.flush()) + actions.flush())
   // Служебный хвост: действие, затем «отчёт записан». Клиент режет всё от
   // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
-  const serviceTail = async () => actionTail(actions.action()) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
+  // Действие ответа: метка модели, а в первой реплике без метки — кнопка «Совета
+  // сайта», если Луна предложила открыть именно его раздел (inferAdviceOffer).
+  const finalAction = () => actions.action() || (opening ? inferAdviceOffer(shown, studentContext) : null)
+  const serviceTail = async () => {
+    const action = finalAction()
+    await saveNote(action)
+    return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
+  }
+  // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
+  // открыть раздел, то есть метка [[OPEN id]] без _NOW. «Открой» по прямой просьбе
+  // ученика — уже не совет, а исполнение, тур — объяснение экрана; их не пишем. В
+  // первой реплике переход всегда только предложение (виджет снимает _NOW), поэтому
+  // там пишем и то, что модель ошибочно пометила _NOW. Переписка не сохраняется:
+  // в строку идёт только сам совет (adviceText).
+  const saveNote = async (action) => {
+    if (action?.kind !== 'open' || (action.now && !opening)) return
+    await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
+  }
   const first = visible(head) + (finished ? visibleTail() : '')
   const saveReport = async () => {
     // Первая реплика сама поломок не передаёт: ученик ещё ничего не сказал, а сбои

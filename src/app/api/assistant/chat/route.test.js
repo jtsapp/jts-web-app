@@ -41,6 +41,10 @@ vi.mock('@/lib/db/assistantErrorReports.js', () => ({
 }))
 const { saveAssistantErrorReport } = await import('@/lib/db/assistantErrorReports.js')
 
+// Заметки Луны-трекера (lib/db/assistantTracker.js): здесь — что и когда роут просит записать.
+vi.mock('@/lib/db/assistantTracker.js', () => ({ saveAdviceNote: vi.fn(async () => true) }))
+const { saveAdviceNote } = await import('@/lib/db/assistantTracker.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -70,6 +74,7 @@ describe('POST /api/assistant/chat', () => {
     loadStudentContext.mockClear()
     saveCalls.length = 0
     saveAssistantErrorReport.mockClear()
+    saveAdviceNote.mockClear()
     streamImpl = async function* () {
       yield { type: 'text', text: 'Опечатка: ' }
       yield { type: 'text', text: '«Cleare» → «Clare».' }
@@ -429,6 +434,62 @@ describe('POST /api/assistant/chat', () => {
         ],
       })).text()
       expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+  })
+
+  // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
+  describe('заметка о совете', () => {
+    const offer = (text) => {
+      streamImpl = async function* () {
+        yield { type: 'text', text }
+      }
+    }
+
+    it('предложение открыть раздел — заметка: раздел и сам совет без вопроса-кнопки', async () => {
+      offer('Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать. Открыть?\n[[OPEN homework]]')
+      const text = await (await post(question(601))).text()
+      expect(text).toMatch(/\[\[ASST_ACTION open homework offer\]\]$/)
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-601', {
+        target: 'homework',
+        advice: 'Вы на Главной. У вас домашка «Unit 4» до 17 октября — с неё и стоит начать.',
+      })
+    })
+
+    it('«открой» по просьбе ученика, тур и ответ без метки — не советы', async () => {
+      offer('Открываю Словарь.\n[[OPEN_NOW vocab]]')
+      await (await post(question(602))).text()
+      offer('Начинаю тур по Главной.\n[[TOUR_NOW home]]')
+      await (await post(question(602))).text()
+      await (await post(question(602))).text()
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('в первой реплике переход — всегда предложение: пишется и ошибочный _NOW', async () => {
+      offer('Начните со словаря. Открываю.\n[[OPEN_NOW vocab]]')
+      await (await post({ ...question(603), messages: [{ role: 'user', content: '[ученик открыл окно]' }] })).text()
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-603', expect.objectContaining({ target: 'vocab' }))
+    })
+
+    it('первая реплика без метки, но с «Открыть …?» про «Совет сайта» — кнопка и заметка всё равно есть', async () => {
+      studentContextResult =
+        'Совет сайта, что сделать сейчас: Аудирование: мини-игра — самый слабый навык — listening (метка [[OPEN listening]]).'
+      offer('Аудирование у вас слабее всего. Открыть мини-игру?')
+      const opening = { ...question(605), messages: [{ role: 'user', content: '[ученик открыл окно]' }] }
+      expect(await (await post(opening)).text()).toMatch(/Открыть мини-игру\?\[\[ASST_ACTION open listening offer\]\]$/)
+      expect(saveAdviceNote).toHaveBeenCalledWith('user-605', expect.objectContaining({ target: 'listening' }))
+      // На обычный вопрос не додумываем: там метка — решение модели.
+      saveAdviceNote.mockClear()
+      offer('Аудирование у вас слабее всего. Открыть мини-игру?')
+      expect(await (await post(question(605))).text()).not.toContain('ASST_ACTION')
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+    })
+
+    it('заметка не записалась — ответ всё равно доходит целиком', async () => {
+      saveAdviceNote.mockRejectedValueOnce(new Error('db down'))
+      offer('С домашки и начните. Открыть?\n[[OPEN homework]]')
+      const res = await post(question(604))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toMatch(/С домашки и начните\. Открыть\?\n\[\[ASST_ACTION open homework offer\]\]$/)
     })
   })
 })

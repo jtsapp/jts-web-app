@@ -4,6 +4,10 @@
 // без этого он видит только текущий экран (см. screenSnapshot.js) и ничего не
 // знает о ходе учёбы в целом.
 //
+// С 15.10.2026 здесь же трекер (tracker.js): цель, две недели рядом, давно не
+// открытые разделы Практики, ошибки из звонков Speaking Buddy и заметки Луны о
+// её прошлых советах — выполнены ли они, решают данные сайта.
+//
 // Источники — те же ручки, что уже дёргает сам ученик с клиента (HomePage,
 // профиль), плюс своя база (Neon) для навыков/экосистемы/IELTS — читаем её
 // напрямую, без похода через собственный /api/skills: тот же процесс, лишний
@@ -20,12 +24,13 @@
 
 import { BACKEND_URL, profileIdForUser, fetchTutorLimitOverride } from '../auth-server.js'
 import { isDbConfigured } from '../db/sql.js'
-import { loadSkillStats } from '../db/skillStats.js'
 import { rankSkills, skillHighlights } from '../levelProgress.js'
-import { loadEcosystemWeek, buildWeeklySummary } from '../db/ecosystem.js'
+import { buildStudentAppActivity, loadStudentAppActivity } from '../db/studentActivity.js'
+import { loadAdviceNotes, loadTutorMistakes, loadTutorSessionsSince, markAdviceDone } from '../db/assistantTracker.js'
 import { listIeltsScores } from '../db/ielts.js'
 import { destinationName, destinationOf } from './destinations.js'
 import { pickRecommendation } from './recommend.js'
+import { checkNotes, goalLine, mistakesLine, notesLines, practiceLine, weekLine } from './tracker.js'
 
 export const CONTEXT_TTL_MS = 3 * 60 * 1000
 const IELTS_HISTORY_LIMIT = 3
@@ -167,6 +172,22 @@ export function adviceLine({ homework, occurrences, skillStats, now = Date.now()
 }
 
 /**
+ * Своя база для трекера (lib/assistant/tracker.js): активность ученика — та же
+ * сборка, что карточка у преподавателя (навыки, цель, неделя, дни, разделы
+ * Практики), заметки Луны, звонки тьютора после самого старого невыполненного
+ * совета и ошибки из звонков. По одному запросу за раз: пул соединений общий с
+ * живыми учениками (studentActivity.js), а профиль кэшируется на CONTEXT_TTL_MS.
+ */
+async function loadTracker(profileId, now) {
+  const raw = await loadStudentAppActivity(profileId, new Date(now))
+  const notes = await loadAdviceNotes(profileId)
+  const oldestOpen = notes.filter((n) => !n.doneAt).map((n) => n.createdAt).sort()[0]
+  const tutorSessions = oldestOpen ? await loadTutorSessionsSince(profileId, oldestOpen) : []
+  const mistakes = await loadTutorMistakes(profileId)
+  return { raw, activity: buildStudentAppActivity(raw), notes, tutorSessions, mistakes }
+}
+
+/**
  * Собирает и форматирует профиль ученика в текст для промпта. `null`, если не
  * собралось вообще ничего полезного — тогда помощник просто не получит этот
  * блок и останется без персонализации, а не с пустой строкой в промпте.
@@ -183,12 +204,25 @@ export async function loadStudentContext(token, user, now = Date.now()) {
     authGetJson('/admin/lessons/occurrences', token),
     authGetJson('/mobile/level-progress', token),
     fetchTutorLimitOverride(token),
-    isDbConfigured() ? loadSkillStats(profileId) : Promise.resolve(null),
-    isDbConfigured() ? loadEcosystemWeek(profileId, new Date(now)) : Promise.resolve(null),
+    isDbConfigured() ? loadTracker(profileId, now) : Promise.resolve(null),
     isDbConfigured() ? listIeltsScores(profileId, IELTS_HISTORY_LIMIT) : Promise.resolve(null),
   ])
-  const [homework, occurrences, levelProgress, tutorLimit, skillStats, ecosystemRaw, ieltsScores] =
-    results.map(settled)
+  const [homework, occurrences, levelProgress, tutorLimit, tracker, ieltsScores] = results.map(settled)
+  const skillStats = tracker?.raw?.stats || null
+  const weekModules = tracker?.activity?.week?.modules || null
+
+  // Советы Луны сверяем с данными сайта здесь, когда домашка уже доехала:
+  // «сдал домашку после совета» видно только по её submittedAt.
+  let notes = []
+  if (tracker) {
+    const checked = checkNotes(tracker.notes, {
+      practice: tracker.activity?.practice ?? null,
+      tutorSessions: tracker.tutorSessions,
+      homework: Array.isArray(homework) ? homework : null,
+    })
+    notes = checked.notes
+    if (checked.updates.length) await markAdviceDone(checked.updates).catch(() => {})
+  }
 
   const lines = [
     levelProgress?.level
@@ -196,13 +230,18 @@ export async function loadStudentContext(token, user, now = Date.now()) {
           typeof levelProgress.percent === 'number' ? `, пройдено ${levelProgress.percent}%` : ''
         }.`
       : null,
+    goalLine(tracker?.activity?.goal),
     skillStats ? skillsLine(skillStats) : null,
     homeworkLines(homework, now),
     scheduleLines(occurrences, now),
-    tutorLine(tutorLimit, ecosystemRaw ? buildWeeklySummary(ecosystemRaw) : null),
-    ecosystemRaw ? ecosystemLine(buildWeeklySummary(ecosystemRaw)) : null,
+    tutorLine(tutorLimit, weekModules),
+    weekModules ? ecosystemLine(weekModules) : null,
+    tracker ? weekLine(tracker.activity?.days, now) : null,
+    practiceLine(tracker?.activity?.practice, now),
+    mistakesLine(tracker?.mistakes),
     ieltsLine(ieltsScores),
     adviceLine({ homework, occurrences, skillStats, now }),
+    notesLines(notes, now),
   ].filter(Boolean)
 
   const text = lines.length ? lines.join('\n') : null

@@ -18,6 +18,35 @@ vi.mock('../db/ecosystem.js', async () => {
   return { ...actual, loadEcosystemWeek: vi.fn(async () => null) }
 })
 vi.mock('../db/ielts.js', () => ({ listIeltsScores: vi.fn(async () => []) }))
+// Активность ученика — одна сборка с карточкой преподавателя (studentActivity.js).
+// Читает её loadStudentAppActivity: здесь он собирается из тех же ручек-моков
+// навыков и недели, что и раньше, плюс то, что тест положит в activity.extra.
+const activity = vi.hoisted(() => ({ extra: {} }))
+vi.mock('../db/studentActivity.js', async () => {
+  const actual = await vi.importActual('../db/studentActivity.js')
+  const { loadSkillStats } = await import('../db/skillStats.js')
+  const { loadEcosystemWeek } = await import('../db/ecosystem.js')
+  return {
+    ...actual,
+    loadStudentAppActivity: vi.fn(async () => ({
+      stats: await loadSkillStats(),
+      goal: null,
+      week: await loadEcosystemWeek(),
+      voice: [],
+      trainer: [],
+      tasks: [],
+      practice: [],
+      practiceSince: null,
+      ...activity.extra,
+    })),
+  }
+})
+vi.mock('../db/assistantTracker.js', () => ({
+  loadAdviceNotes: vi.fn(async () => []),
+  loadTutorSessionsSince: vi.fn(async () => []),
+  loadTutorMistakes: vi.fn(async () => []),
+  markAdviceDone: vi.fn(async () => {}),
+}))
 
 const {
   loadStudentContext,
@@ -28,6 +57,7 @@ const { fetchTutorLimitOverride } = await import('../auth-server.js')
 const { loadSkillStats } = await import('../db/skillStats.js')
 const { loadEcosystemWeek } = await import('../db/ecosystem.js')
 const { listIeltsScores } = await import('../db/ielts.js')
+const { loadAdviceNotes, loadTutorSessionsSince, loadTutorMistakes, markAdviceDone } = await import('../db/assistantTracker.js')
 
 const backendPath = (url) => url.replace('https://backend.test', '')
 const jsonRes = (body) => new Response(JSON.stringify(body), { status: 200 })
@@ -43,6 +73,10 @@ describe('профиль ученика для помощника', () => {
     loadSkillStats.mockResolvedValue(null)
     loadEcosystemWeek.mockResolvedValue(null)
     listIeltsScores.mockResolvedValue([])
+    activity.extra = {}
+    loadAdviceNotes.mockResolvedValue([])
+    loadTutorSessionsSince.mockResolvedValue([])
+    loadTutorMistakes.mockResolvedValue([])
   })
 
   it('без токена или без userId — null, в сеть не ходит', async () => {
@@ -143,10 +177,43 @@ describe('профиль ученика для помощника', () => {
     expect(text).toContain('writing 12%')
   })
 
+  // Трекер (tracker.js): цель, две недели, разделы, ошибки из звонков и прошлые советы Луны.
+  it('трекер: цель, неделя, давно не открытые разделы и ошибки из звонков', async () => {
+    activity.extra = {
+      goal: { target: 'B1', from: 'A2' },
+      tasks: [{ day: '2026-10-14', tasks: 10, first_try: 8 }],
+      practice: [{ module: 'reading', updated_at: '2026-09-30T10:00:00Z' }, { module: 'vocab', updated_at: '2026-10-14T10:00:00Z' }],
+    }
+    loadTutorMistakes.mockResolvedValue(['he go to school'])
+    const text = await loadStudentContext('tok', user, Date.parse('2026-10-15T12:00:00Z'))
+    expect(text).toContain('Цель уровня, которую ученик выбрал: B1 (от A2).')
+    expect(text).toContain('Последние 7 дней: дней с занятиями 1, заданий 10 (верно с первой попытки 80%)')
+    expect(text).toContain('давно не открывал — Чтение (15 дн. назад); недавно — Словарь (вчера)')
+    expect(text).toContain('Ошибки из разговоров со Speaking Buddy, ещё не пройденные: «he go to school».')
+  })
+
+  it('прошлые советы сверяются с сайтом: выполненный помечается в базе и в тексте', async () => {
+    activity.extra = { practice: [{ module: 'vocab', updated_at: '2026-10-14T18:00:00Z' }] }
+    loadAdviceNotes.mockResolvedValue([
+      { id: '7', target: 'vocab', advice: 'Повторите 14 слов.', createdAt: '2026-10-14T10:00:00.000Z', doneAt: null },
+      { id: '8', target: 'tutor', advice: 'Поговорите с Декстером.', createdAt: '2026-10-13T10:00:00.000Z', doneAt: null },
+    ])
+    loadTutorSessionsSince.mockResolvedValue([])
+    const text = await loadStudentContext('tok', user, Date.parse('2026-10-15T12:00:00Z'))
+    // Звонки тьютора ищем начиная с самого старого невыполненного совета — и не раньше.
+    expect(loadTutorSessionsSince).toHaveBeenCalledWith('user-42', '2026-10-13T10:00:00.000Z')
+    expect(markAdviceDone).toHaveBeenCalledWith([{ id: '7', doneAt: '2026-10-14T18:00:00.000Z' }])
+    expect(text).toContain('- 2026-10-14 (вчера): Словарь — «Повторите 14 слов.» — выполнено 2026-10-14')
+    expect(text).toContain('- 2026-10-13 (2 дн. назад): Speaking Buddy — «Поговорите с Декстером.» — пока не выполнено')
+  })
+
   it('лимит и фактические минуты Speaking Buddy — в одной строке', async () => {
     fetchTutorLimitOverride.mockResolvedValue({ dailyLimitSeconds: 1200, monthlyLimitSeconds: null, totalLimitSeconds: null })
-    loadEcosystemWeek.mockResolvedValue({ voiceSeconds: 900 })
-    const text = await loadStudentContext('tok', user)
+    // Минуты недели — суммой суточных строк voice_usage (seconds + pool_seconds), как в карточке
+    // преподавателя: voiceSeconds недельной сводки не видит докупленных минут (studentActivity.js).
+    loadEcosystemWeek.mockResolvedValue({ weekStart: '2026-09-21', weekEndExclusive: '2026-09-28', voiceSeconds: 0 })
+    activity.extra = { voice: [{ day: '2026-09-22', seconds: 600 }, { day: '2026-09-23', seconds: 300 }, { day: '2026-09-15', seconds: 999 }] }
+    const text = await loadStudentContext('tok', user, new Date('2026-09-23T12:00:00Z').getTime())
     expect(text).toContain('Speaking Buddy: дневной лимит 20 мин, на этой неделе уже позанимался 15 мин.')
   })
 
