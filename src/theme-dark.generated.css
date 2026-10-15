@@ -23209,11 +23209,15 @@ html[data-theme="dark"] .pl-speak__error {
     background: var(--dk-page);
     color: var(--dk-red)
 }
-html[data-theme="dark"] .pl-speak__level {
-    color: var(--dk-text-2)
+html[data-theme="dark"] .pl-speak__wait {
+    background: var(--dk-page)
 }
-html[data-theme="dark"] .pl-speak__level b {
-    color: var(--dk-acc-text)
+html[data-theme="dark"] .pl-speak__spinner {
+    border: 3px solid var(--dk-acc-line);
+    border-top-color: var(--dk-acc)
+}
+html[data-theme="dark"] .pl-speak__waitHint {
+    color: var(--dk-text-2)
 }
 html[data-theme="dark"] .pl-btn {
     border: 0
