@@ -8,6 +8,7 @@ import { I18nProvider } from '../i18n.jsx'
 vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  getProfileStats: vi.fn(async () => ({ streak: 0, lessonsPassed: 0, lessonsSource: 'SELF_STUDY' })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getSatMeCached: vi.fn(async () => null),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
