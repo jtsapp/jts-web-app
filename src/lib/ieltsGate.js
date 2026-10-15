@@ -8,9 +8,12 @@ export const PROD_HOSTS = ['ai-tutor.justtostudy.kz']
 
 const clean = (v) => String(v ?? '').trim().toLowerCase().replace(/:\d+$/, '')
 
+/** Прод-домен ли это (в любом регистре и с портом) — общая развилка для разделов, скрытых на проде. */
+export const isProdHost = (hostname) => PROD_HOSTS.includes(clean(hostname))
+
 export function ieltsHiddenFor(hostname, forced = process.env.NEXT_PUBLIC_ENABLE_IELTS) {
   if (String(forced ?? '').trim() === '1') return false
-  return PROD_HOSTS.includes(clean(hostname))
+  return isProdHost(hostname)
 }
 
 /** Скрыт ли IELTS у этого посетителя (по адресу страницы; на сервере и без window — не скрыт). */

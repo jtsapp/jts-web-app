@@ -133,6 +133,7 @@ import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
+import { satHidden, isSatScreen } from './lib/satGate.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -264,9 +265,10 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
-    // IELTS скрыт на проде (lib/ieltsGate.js): диплинк на него там не открывает ничего.
+    // IELTS и SAT скрыты на проде (lib/ieltsGate.js, lib/satGate.js): диплинк на них там не открывает ничего.
     const rawDeepLink = searchParams.get('screen')
-    const deepLink = isIeltsScreen(rawDeepLink) && ieltsHidden() ? null : rawDeepLink
+    const hiddenOnProd = (isIeltsScreen(rawDeepLink) && ieltsHidden()) || (isSatScreen(rawDeepLink) && satHidden())
+    const deepLink = hiddenOnProd ? null : rawDeepLink
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
@@ -1563,6 +1565,7 @@ export default function App() {
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (isIeltsScreen(key) && ieltsHidden()) return
+    if (isSatScreen(key) && satHidden()) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
