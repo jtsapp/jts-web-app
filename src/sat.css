@@ -10164,3 +10164,14 @@ mark.st-hl {
   opacity: 0.4;
   cursor: default;
 }
+
+/* узел роадмапа — role=button на <g>: без чёрной рамки фокуса при клике */
+.st-road__node,
+.st-road__node:focus,
+.st-road__node:focus-visible,
+.st-road__svg:focus {
+  outline: none;
+}
+.st-road__node {
+  -webkit-tap-highlight-color: transparent;
+}
