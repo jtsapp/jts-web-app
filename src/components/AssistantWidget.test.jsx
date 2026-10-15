@@ -45,10 +45,14 @@ describe('помощник по сайту', () => {
   beforeEach(() => {
     localStorage.setItem('lang', 'ru')
     resetErrorLog()
+    // Набранный вопрос будит звук (unlockSpeech — тишина на общем <audio>), а
+    // проигрывать jsdom не умеет и сыплет «Not implemented» в лог.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve())
     fetchMock = vi.fn(async () => streamResponse(['Опечатка: ', '«Cleare» → «Clare».']))
     vi.stubGlobal('fetch', fetchMock)
   })
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
     localStorage.clear()
   })

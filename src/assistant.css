@@ -131,6 +131,20 @@
 /* Пока задаётся голосовой вопрос, другие не отправить. */
 .asst__chip:disabled, .asst__ghost:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 
+/* Действие Луны под её ответом: открыть раздел или провести тур
+   (lib/assistant/actions.js). Заметнее чипа — это ответ на просьбу ученика,
+   а не подсказка «о чём спросить». */
+.asst__action {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  border: 0; background: var(--asst-accent); color: #fff;
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left;
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+}
+.asst__action::after { content: "→"; }
+.asst__action--tour::after { content: "✦"; }
+.asst__action:hover { filter: brightness(1.08); }
+.asst__action:disabled { opacity: 0.45; cursor: default; }
+
 .asst__reported {
   margin-top: 8px !important;
   font-size: 12px;

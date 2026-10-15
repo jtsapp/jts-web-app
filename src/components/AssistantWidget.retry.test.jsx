@@ -47,11 +47,14 @@ describe('помощник по сайту — повтор после ошиб�
   beforeEach(() => {
     localStorage.setItem('lang', 'ru')
     resetErrorLog()
+    // unlockSpeech на набранном вопросе: jsdom не проигрывает и шумит в лог.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve())
     fetchMock = vi.fn(async () => streamResponse(['Опечатка: ', '«Cleare» → «Clare».']))
     vi.stubGlobal('fetch', fetchMock)
   })
   afterEach(() => {
     slow.on = false
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
     localStorage.clear()
   })

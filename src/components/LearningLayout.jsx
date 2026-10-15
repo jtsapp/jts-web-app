@@ -5,6 +5,7 @@ import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import LangSelector from './LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
+import { useTourRequest } from '../lib/tourBus.js'
 
 // Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
 // на мобилке — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом.
@@ -29,6 +30,9 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  // Тур просит Луна — нажимаем ту же «?»: у экрана свой старт тура (вкладка,
+  // с которой тур начинается), и повторять его в помощнике незачем.
+  useTourRequest(onHelp)
   const help = onHelp ? (
     <button className="tour-help" type="button" onClick={onHelp} title={t('tour.help')} aria-label={t('tour.help')}>
       ?

@@ -1,6 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
+import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration } from '../lib/tourBus.js'
+import { unlockSpeech } from '../lib/speech.js'
+
+const LUNA_AVATAR = '/assets/luna-assistant.webp'
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 
@@ -135,6 +139,24 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   const shownRef = useRef(false)
   const step = steps[i]
   const selector = step?.selector
+  // Тур ведёт Луна: шаги она читает вслух (tourBus.js, AssistantWidget), а в
+  // карточке — её строка и кнопка звука.
+  const narration = useTourNarration()
+
+  // Конец тура — Луне замолчать. По размонтированию, а не только в finish:
+  // ушли с экрана посреди тура — тоже конец. Отложенно и со сверкой: в dev
+  // StrictMode гоняет эффект «смонтировать — снять — смонтировать», и без
+  // сверки озвучка гасла бы на первом же шаге.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      setTimeout(() => {
+        if (!mountedRef.current) emitTourEnd()
+      }, 0)
+    }
+  }, [])
 
   const finish = () => {
     try {
@@ -159,6 +181,17 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
       return undefined
     }
     shownRef.current = true
+    // Шаг показан — сообщаем Луне (озвучит, если тур ведёт она). Только
+    // показанный: пропущенный шаг без элемента рассказывать не о чем. next —
+    // чтобы она успела синтезировать следующий шаг, пока звучит этот.
+    const after = steps[i + 1]
+    emitTourStep({
+      index: i,
+      total: steps.length,
+      title: step.title,
+      text: step.text,
+      next: after ? { title: after.title, text: after.text } : null,
+    })
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
@@ -212,6 +245,9 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   const blocked = step?.canNext === false
   const next = () => {
     if (blocked) return
+    // Нажатие «Далее» — жест: iPhone разрешит сыграть Луне следующий шаг,
+    // который придёт после синтеза, уже без жеста.
+    if (narration.on && !narration.muted) unlockSpeech()
     if (i + 1 < steps.length) setI(i + 1)
     else finish()
   }
@@ -274,6 +310,33 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
         <b className="t-tour__title">{step.title}</b>
         <p className="t-tour__text">{step.text}</p>
         {step.content && <div className="t-tour__content">{step.content}</div>}
+
+        {narration.on && (
+          <div className="t-tour__luna">
+            <img src={LUNA_AVATAR} alt="" width="24" height="24" />
+            <span>{t('tour.luna')}</span>
+            <button
+              type="button"
+              className={`t-tour__luna-sound${narration.muted ? ' is-muted' : ''}`}
+              aria-pressed={!narration.muted}
+              aria-label={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
+              title={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
+              onClick={() => {
+                if (narration.muted) unlockSpeech()
+                toggleTourNarrationMute()
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                {narration.muted ? (
+                  <path d="m17 9 4 6m0-6-4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                ) : (
+                  <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
+          </div>
+        )}
 
         <div className="t-tour__bar">
           <span style={{ width: `${((i + 1) / steps.length) * 100}%` }} />

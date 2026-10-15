@@ -21,7 +21,8 @@ export function splitReport(text) {
   }
 }
 
-function createHoldbackFilter(mark, onFound) {
+// Общий для меток отчёта и служебного хвоста стрима (actions.js).
+export function createHoldbackFilter(mark, onFound) {
   let hold = ''
   let capturing = false
   let visible = ''

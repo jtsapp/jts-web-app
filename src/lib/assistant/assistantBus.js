@@ -37,3 +37,20 @@ export function openAssistant({ prompt } = {}) {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: { prompt: prompt || '' } }))
 }
+
+// Обратное направление: Луна просит App открыть раздел (id из destinations.js).
+// Переход делает App — только он знает, как открыть экран (handleNav).
+export const NAVIGATE_EVENT = 'jts:assistant-navigate'
+
+export function navigateTo(target) {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(NAVIGATE_EVENT, { detail: { target } }))
+}
+
+/** Подписка App на переходы, которые просит Луна. */
+export function onAssistantNavigate(fn) {
+  if (typeof window === 'undefined') return () => {}
+  const handler = (e) => fn(e.detail?.target)
+  window.addEventListener(NAVIGATE_EVENT, handler)
+  return () => window.removeEventListener(NAVIGATE_EVENT, handler)
+}
