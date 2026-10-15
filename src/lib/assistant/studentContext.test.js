@@ -69,8 +69,37 @@ describe('профиль ученика для помощника', () => {
     const text = await loadStudentContext('tok', user, new Date('2026-09-23T00:00:00Z').getTime())
     expect(text).toContain('Домашка (1 к сроку на этой неделе)')
     expect(text).toContain('Эссе про путешествие')
+    // Сколько дней до срока считает код: с одной датой «Сегодня» модель путала «завтра» и «через два дня».
+    expect(text).toContain('«Эссе про путешествие» — до 2026-09-25 (через 2 дн.)')
     expect(text).not.toContain('Проверено давно')
     expect(text).not.toContain('Через месяц')
+  })
+
+  // Первая реплика Луны советует то же, что карточка «Рекомендация дня» на «Главной», — с меткой раздела.
+  it('совет сайта: горящая домашка важнее слабого навыка, с меткой раздела', async () => {
+    fetchImpl.value = async (url) =>
+      backendPath(url) === '/admin/homework/my'
+        ? jsonRes([{ title: 'Unit 4', status: 'ASSIGNED', dueDate: '2026-09-24T00:00:00Z' }])
+        : new Response(null, { status: 404 })
+    loadSkillStats.mockResolvedValue({ listening: { done: 30, firstTry: 6 }, reading: { done: 30, firstTry: 27 } })
+    const text = await loadStudentContext('tok', user, new Date('2026-09-23T00:00:00Z').getTime())
+    expect(text).toContain('Совет сайта, что сделать сейчас: Домашняя работа — домашку сдавать в ближайшие двое суток (метка [[OPEN homework]]).')
+  })
+
+  // Навык без попыток рейтинг считает за 0% — как и «Главная», — поэтому здесь все шесть.
+  const allSkills = (percentOf) =>
+    Object.fromEntries(['listening', 'reading', 'writing', 'speaking', 'grammar', 'vocab'].map((k) => [k, { done: 30, firstTry: percentOf(k) }]))
+
+  it('совет сайта без горящей домашки — слабый навык, тренажёр этого навыка', async () => {
+    loadSkillStats.mockResolvedValue(allSkills((k) => (k === 'listening' ? 6 : 27)))
+    const text = await loadStudentContext('tok', user)
+    expect(text).toMatch(/Совет сайта, что сделать сейчас: .+ — самый слабый навык — listening \(метка \[\[OPEN listening\]\]\)\./)
+  })
+
+  it('сигнала нет — и совета нет: выдумывать его Луне не из чего', async () => {
+    loadSkillStats.mockResolvedValue(allSkills(() => 27))
+    const text = await loadStudentContext('tok', user)
+    expect(text).not.toContain('Совет сайта')
   })
 
   it('расписание: только будущие занятия, отсортированы, сдана дата и учитель', async () => {

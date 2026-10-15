@@ -1853,7 +1853,7 @@ export default function App() {
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !boothAccount && !isTeacher(token) && (
-        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} />
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
     </>
   )

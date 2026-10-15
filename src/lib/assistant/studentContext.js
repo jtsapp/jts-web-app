@@ -21,9 +21,11 @@
 import { BACKEND_URL, profileIdForUser, fetchTutorLimitOverride } from '../auth-server.js'
 import { isDbConfigured } from '../db/sql.js'
 import { loadSkillStats } from '../db/skillStats.js'
-import { rankSkills } from '../levelProgress.js'
+import { rankSkills, skillHighlights } from '../levelProgress.js'
 import { loadEcosystemWeek, buildWeeklySummary } from '../db/ecosystem.js'
 import { listIeltsScores } from '../db/ielts.js'
+import { destinationName, destinationOf } from './destinations.js'
+import { pickRecommendation } from './recommend.js'
 
 export const CONTEXT_TTL_MS = 3 * 60 * 1000
 const IELTS_HISTORY_LIMIT = 3
@@ -53,6 +55,21 @@ function fmtDate(iso) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// Сколько дней до срока — считаем сами: с одной датой «Сегодня» Haiku называла
+// срок через два дня «завтра» или «уже просрочено» (замер 15.10.2026). Дни
+// календарные, по UTC, как и сами даты строки.
+function dueIn(iso, now) {
+  const due = fmtDate(iso)
+  if (!due) return ''
+  const days = Math.round((Date.parse(due) - Date.parse(new Date(now).toISOString().slice(0, 10))) / DAY_MS)
+  if (days < 0) return ' (просрочено)'
+  if (days === 0) return ' (сегодня)'
+  if (days === 1) return ' (завтра)'
+  return ` (через ${days} дн.)`
+}
+
 function homeworkLines(homework, now) {
   const open = (Array.isArray(homework) ? homework : [])
     .filter((h) => !OPEN_HOMEWORK_DONE.has(String(h?.status || '').toUpperCase()))
@@ -63,7 +80,7 @@ function homeworkLines(homework, now) {
   if (!open.length) return null
   const items = open
     .slice(0, 5)
-    .map((h) => `«${String(h.title || 'задание').slice(0, 80)}»${h.dueDate ? ` — до ${fmtDate(h.dueDate)}` : ' — без срока'}`)
+    .map((h) => `«${String(h.title || 'задание').slice(0, 80)}»${h.dueDate ? ` — до ${fmtDate(h.dueDate)}${dueIn(h.dueDate, now)}` : ' — без срока'}`)
   return `Домашка (${open.length} к сроку на этой неделе): ${items.join('; ')}.`
 }
 
@@ -122,6 +139,33 @@ function ieltsLine(scores) {
   return `Последние баллы IELTS: ${items.join('; ')}.`
 }
 
+const ADVICE_REASONS = {
+  'home.recommend.hwOverdue': () => 'срок домашки уже прошёл',
+  'home.recommend.hwSoon': () => 'домашку сдавать в ближайшие двое суток',
+  'home.recommend.weakSkill': (vars) => `самый слабый навык — ${vars?.skill}`,
+  'home.recommend.noLesson': () => 'больше двух недель без живого занятия',
+}
+
+// Что сделать сейчас — тем же правилом, что карточка «Рекомендация дня» на
+// «Главной» (recommend.js): Луна-преподаватель и карточка не должны советовать
+// разное. Строка несёт и метку раздела: без неё Haiku в первой реплике треть раз
+// советовала словами, а кнопку «Открыть» не ставила (замер 15.10.2026).
+export function adviceLine({ homework, occurrences, skillStats, now = Date.now() }) {
+  const summary = { weakest: skillStats ? skillHighlights(rankSkills(skillStats)).weakest : null }
+  const rec = pickRecommendation({
+    summary,
+    homework: Array.isArray(homework) ? homework : [],
+    occurrences: Array.isArray(occurrences) ? occurrences : [],
+    now,
+  })
+  if (!rec) return null
+  // nav карточки → раздел Луны: «Практика» с фильтром — свой раздел (grammar).
+  const id = rec.nav.payload?.filter || rec.nav.to
+  const reason = ADVICE_REASONS[rec.reasonKey]
+  if (!destinationOf(id) || !reason) return null
+  return `Совет сайта, что сделать сейчас: ${destinationName(id)} — ${reason(rec.reasonVars)} (метка [[OPEN ${id}]]).`
+}
+
 /**
  * Собирает и форматирует профиль ученика в текст для промпта. `null`, если не
  * собралось вообще ничего полезного — тогда помощник просто не получит этот
@@ -158,6 +202,7 @@ export async function loadStudentContext(token, user, now = Date.now()) {
     tutorLine(tutorLimit, ecosystemRaw ? buildWeeklySummary(ecosystemRaw) : null),
     ecosystemRaw ? ecosystemLine(buildWeeklySummary(ecosystemRaw)) : null,
     ieltsLine(ieltsScores),
+    adviceLine({ homework, occurrences, skillStats, now }),
   ].filter(Boolean)
 
   const text = lines.length ? lines.join('\n') : null

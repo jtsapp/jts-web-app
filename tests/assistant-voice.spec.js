@@ -56,7 +56,11 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
     await r.fulfill(json({ text: sttText }))
   })
   await page.route('**/api/assistant/chat', async (r) => {
-    calls.chat.push(JSON.parse(r.request().postData()))
+    const body = JSON.parse(r.request().postData())
+    // Первая реплика при открытии окна (lib/assistant/opening.js) — свой тест,
+    // assistant-opening.spec.js; здесь она «не удалась», и окно ведёт себя как без неё.
+    if (body.messages.at(-1)?.content === '[ученик открыл окно]') return r.fulfill(json({ error: 'model_failed' }, 502)).catch(() => {})
+    calls.chat.push(body)
     await r.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', body: reply })
   })
   await page.route('**/api/assistant/speak', async (r) => {

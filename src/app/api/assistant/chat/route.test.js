@@ -372,4 +372,63 @@ describe('POST /api/assistant/chat', () => {
     expect(calls[0].systemPrompt).toContain('- practice-speaking — Практика → Говорение')
     expect(calls[0].systemPrompt).toContain('[[TOUR_NOW id]]')
   })
+
+  // Ученик открыл окно, и Луна заговаривает первой (lib/assistant/opening.js).
+  describe('первая реплика при открытии окна', () => {
+    const opening = (userId, extra = {}) => ({
+      ...question(userId),
+      messages: [{ role: 'user', content: '[ученик открыл окно]' }],
+      ...extra,
+    })
+
+    it('уходит в модель с сегодняшней датой и пометкой вместо «вопроса ученика»', async () => {
+      await (await post(opening(501))).text()
+      const last = calls[0].messages.at(-1).content
+      expect(last).toMatch(/Сегодня: \d{4}-\d{2}-\d{2}/)
+      expect(last).toMatch(/<\/контекст>\n\n\[ученик открыл окно\]\nЯзык ответа: русский$/)
+      expect(last).not.toContain('Вопрос ученика:')
+    })
+
+    it('отказ «не по теме» вместо реплики — 502 без паузы ученику, следующий вопрос проходит', async () => {
+      for (let i = 0; i < 6; i += 1) {
+        streamImpl = async function* () {
+          yield { type: 'text', text: '[[OFFTOPIC]]' }
+        }
+        const res = await post(opening(502))
+        expect(res.status).toBe(502)
+        expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+      }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Опечатка.' }
+      }
+      const res = await post(question(502))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('Опечатка.')
+    })
+
+    it('поломку сама не передаёт — даже если модель поставила метку', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Здравствуйте. Вижу сбой на экране.\n[[REPORT_BUG]]\nРаздел: Урок' }
+      }
+      const text = await (await post(opening(503, { errors: [{ at: 1, message: 'ChunkLoadError' }] }))).text()
+      expect(text).toBe('Здравствуйте. Вижу сбой на экране.\n')
+      expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+
+    // После чипа «ошибка» любая реплика ученика длиннее 16 знаков — уже описание поломки (shouldAutoReportBug).
+    // Пометка открытия — не его слова: ни отчёта по ней, ни её текста в «словах ученика».
+    it('пометка после чипа «ошибка» описанием поломки не считается', async () => {
+      await (await post({
+        ...question(504),
+        messages: [
+          { role: 'user', content: 'На сайте ошибка' },
+          { role: 'assistant', content: 'Что именно не работает?' },
+          { role: 'user', content: '[ученик открыл окно]' },
+          { role: 'assistant', content: 'Здравствуйте. Вы на Главной.' },
+          { role: 'user', content: 'спасибо' },
+        ],
+      })).text()
+      expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+  })
 })

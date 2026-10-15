@@ -89,7 +89,7 @@ describe('помощник по сайту', () => {
     expect(body.screen.text).toContain('Clare is reading.')
     expect(body.screen.text).toContain('ученик ввёл «Is Cleare reading?» (отмечено как неверное)')
     // Свой текст виджет в снимок не кладёт.
-    expect(body.screen.text).not.toContain('Помощник JTS: сайт')
+    expect(body.screen.text).not.toContain('Преподаватель JTS')
     expect(body.pageUrl).toBeTruthy()
     expect(Array.isArray(body.errors)).toBe(true)
     expect(body.userAgent).toBeTruthy()

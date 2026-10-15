@@ -23,19 +23,12 @@
 
 import { playUrl, stopTts } from '../speech.js'
 import { ttsUrl } from '../ttsShared.js'
+import { phraseLang } from './phraseLang.js'
 
 export const LOOKAHEAD = 2
 const FALLBACK_VOICE = 'Grace'
 
-const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
-const CYRILLIC = /[а-яё]/i
-
-/** Язык фразы для голоса: казахские буквы — kk, кириллица — ru, иначе en. */
-export function phraseLang(text) {
-  const t = String(text || '')
-  if (KK_LETTERS.test(t)) return 'kk'
-  return CYRILLIC.test(t) ? 'ru' : 'en'
-}
+export { phraseLang }
 
 /**
  * lang (язык интерфейса) голос не выбирает — см. phraseLang; принят для
