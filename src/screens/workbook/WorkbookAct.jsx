@@ -6,8 +6,9 @@ import { ICON, isFree, skillOf, stageOf, STAGE_ICON } from '../../practice/workb
 import { stopAudio } from '../../practice/workbook/voice.js'
 import { markAct } from '../../practice/workbook/workbookProgress.js'
 import { recordSkill } from '../../practice/skillStats.js'
-import { Tally, useAct } from './ActShell.jsx'
+import { Tally, WorkbookTestContext, useAct } from './ActShell.jsx'
 import ActBody from './acts/index.jsx'
+import { actAnswers } from './answers.js'
 import { insText, subText } from './loc.js'
 
 // Экран одного задания. Порт renderAct (data/jtsworkbook-a0.html:6289):
@@ -64,6 +65,18 @@ export function ActBrief({ act, meta, extra }) {
 }
 
 /**
+ * Ключ экрана для помощника по сайту (data-assistant-expected на списке пунктов) — только после «Показать ответ»:
+ * до него неверный пункт пересдают, и Луна дала бы ответ вместо подсказки. На зачётном уроке — никогда, как на тесте
+ * юнита в курсе. После раскрытия ответы и так на экране, но разбросаны по пунктам плашками и подсветкой — ключ одной
+ * строкой Луна читает надёжнее.
+ */
+export function useRevealedKey(act, ctl, test) {
+  const { t, lang } = useI18n()
+  if (!ctl.revealed || test) return undefined
+  return actAnswers(act, { lang, labels: { true: t('workbook.true'), false: t('workbook.false') } }) || undefined
+}
+
+/**
  * Нижняя панель. «Показать ответы» появляется только после реальной ошибки —
  * так в прототипе: это выход для застрявшего, а не кнопка «пропустить».
  */
@@ -109,6 +122,7 @@ export default function WorkbookAct({
   const act = lesson.acts[index]
   const ctl = useAct(act)
   const last = index >= lesson.acts.length - 1
+  const revealedKey = useRevealedKey(act, ctl, lesson.test)
 
   // Смена экрана обрывает воспроизведение: иначе аудио прошлого задания
   // продолжает читать поверх нового.
@@ -144,17 +158,19 @@ export default function WorkbookAct({
       />
       <ActBrief act={act} meta={meta} />
       <div className="wb-card">
-        <div className="wb-items" key={ctl.gen}>
-          <ActBody
-            act={act}
-            ctl={ctl}
-            level={level}
-            unit={lesson.unit}
-            slow={slow}
-            onSlow={onSlow}
-            draft={draft}
-            onDraft={onDraft}
-          />
+        <div className="wb-items" key={ctl.gen} data-assistant-expected={revealedKey}>
+          <WorkbookTestContext.Provider value={!!lesson.test}>
+            <ActBody
+              act={act}
+              ctl={ctl}
+              level={level}
+              unit={lesson.unit}
+              slow={slow}
+              onSlow={onSlow}
+              draft={draft}
+              onDraft={onDraft}
+            />
+          </WorkbookTestContext.Provider>
         </div>
       </div>
       <ActBar

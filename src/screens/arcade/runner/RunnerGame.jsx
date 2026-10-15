@@ -21,6 +21,7 @@ import {
 } from '../../../practice/arcade/runner/engine.js'
 import { layoutObstacles } from '../../../practice/arcade/runner/obstacles.js'
 import { layoutPickups } from '../../../practice/arcade/runner/pickups.js'
+import { missToast } from '../../../practice/arcade/runner/hud.js'
 import { useArcadeFullscreen } from '../useArcadeFullscreen.js'
 import { formatNumber } from '../format.js'
 import RunnerResults from './RunnerResults.jsx'
@@ -107,10 +108,7 @@ function hudOf(s, status, countdown) {
           .join('|')
       : '',
     crash: s?.lastHit && s.elapsed - s.lastHit.at < TOAST_SECONDS ? s.lastHit.n : 0,
-    toast:
-      s?.last && !s.last.hit && s.elapsed - s.last.at < TOAST_SECONDS
-        ? { prompt: s.last.prompt, answer: s.last.answer }
-        : null,
+    toast: missToast(s, TOAST_SECONDS),
   }
 }
 
@@ -560,7 +558,8 @@ export default function RunnerGame({ onExit }) {
             </div>
           )}
           {hud.toast && (
-            <p className="ar-run-toast" role="status">
+            // Плашка бывает только после промаха (missToast) — эталон ряда для помощника по сайту.
+            <p className="ar-run-toast" role="status" data-assistant-expected={hud.toast.answer || undefined}>
               {t('arcade.run.miss', { prompt: hud.toast.prompt, answer: hud.toast.answer })}
             </p>
           )}

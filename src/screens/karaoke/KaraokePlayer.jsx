@@ -554,8 +554,10 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     { at: fmtTime(pos), dur: fmtTime(duration) },
   )}`
 
+  // Плеер — портал в body, вне обёртки экрана, которую читает снимок помощника: без метки он видел бы только список
+  // песен под плеером (screenSnapshot.js).
   return createPortal(
-    <div className="kk-play" data-phase={phase}>
+    <div className="kk-play" data-phase={phase} data-assistant-overlay="плеер караоке">
       <span className="kk-play__glow kk-play__glow--violet" aria-hidden="true" />
       <span className="kk-play__glow kk-play__glow--orange" aria-hidden="true" />
       <span className="kk-play__glow kk-play__glow--pink" aria-hidden="true" />

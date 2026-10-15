@@ -516,7 +516,8 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
           не видна. Сам корень не трансформирован, fixed там честный. */}
       {pop &&
         createPortal(
-          <div className="cr-pop" onClick={(e) => e.stopPropagation()}>
+          // Метка для снимка помощника: из body карточку обёртка экрана не читает (screenSnapshot.js).
+          <div className="cr-pop" data-assistant-overlay="перевод слова" onClick={(e) => e.stopPropagation()}>
             <div className="cr-pop__word">{pop.word}</div>
             {pop.loading ? (
               <div className="cr-pop__tr cr-pop__tr--wait">…</div>

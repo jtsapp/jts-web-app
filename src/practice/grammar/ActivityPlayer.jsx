@@ -8,6 +8,7 @@ import { normAnswer, answerMatches } from '../../lib/answer-match.js'
 import { playTts } from '../../lib/speech.js'
 import { VOICE } from '../../lib/ttsShared.js'
 import { normalizeActivities, transformExtras, errorTargets } from './activityShape.js'
+import { expectedOf } from './expectedAnswer.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -195,7 +196,13 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
         />
       </div>
       {feedback && (
-        <div className={`gr-fb show ${feedback.ok ? 'ok' : 'no'}`}>
+        <div
+          className={`gr-fb show ${feedback.ok ? 'ok' : 'no'}`}
+          // Эталон для помощника — только на итоговой плашке неверного ответа: finish срабатывает один раз (firedRef),
+          // после него задание заперто, переответить нельзя. Встроенная плашка диалога «Попробуйте другой ответ» его не
+          // несёт — там ученик ещё выбирает, и помощник даёт только подсказку.
+          data-assistant-expected={feedback.ok ? undefined : expectedOf(a, lang) || undefined}
+        >
           <span className="gr-fb__ic">{feedback.ok ? '✓' : '✕'}</span>
           <div className="gr-fb__text">
             <b>{feedback.ok ? t('fb_correct') : t('fb_wrong')}</b>
@@ -452,13 +459,17 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
 
   const slotWords = answered && wrongShown ? answerWords : slots.map((i) => a.words[i])
   const slotCls = answered ? (wrongShown ? 'wrong' : 'correct') : ''
+  // После ошибки в строке стоит уже ответ, а не порядок ученика. Снимок помощника читал эти плитки как собранное
+  // учеником — и видел «Неверный ответ» под фразой, совпавшей с эталоном. is-rev снимок понимает как «верный ответ
+  // показал сайт»; своих стилей у класса в «Грамматике» нет, вид плиток прежний.
+  const slotWordCls = answered && wrongShown ? 'gr-slot-word is-rev' : 'gr-slot-word'
 
   return (
     <>
       <div className="gr-actq">{uiStr(lang, 'order_instr')}</div>
       <div className={`gr-slots ${slotCls}`} aria-live="polite">
         {slotWords.map((w, k) => (
-          <button key={k} className="gr-slot-word" onClick={() => !wrongShown && removeAt(k)}>
+          <button key={k} className={slotWordCls} onClick={() => !wrongShown && removeAt(k)}>
             {w}
           </button>
         ))}

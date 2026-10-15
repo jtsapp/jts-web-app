@@ -60,6 +60,9 @@ function TypeItem({ it, i, ctl, level }) {
           aria-label={loc(it.q, lang)}
           placeholder={it.ph || ''}
           value={revealed ? it.a : value}
+          // «Показать ответ» ставит в поле ключ, а набранное остаётся в value: снимку помощника отдаём набранное, иначе
+          // он принял бы ключ за ввод ученика (lib/assistant/screenSnapshot.js).
+          data-assistant-entered={revealed ? value : undefined}
           disabled={closed || revealed}
           onChange={(e) => setValue(e.target.value)}
           // Ничего не судим по потере фокуса: недонабранное слово когда-то

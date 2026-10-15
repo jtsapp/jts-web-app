@@ -107,6 +107,10 @@ function ensureWorld() {
   // body в standalone-версии (--midnight), иначе в незакрытых сценой зонах
   // просвечивала бы Практика
   host.style.cssText = 'position:fixed;inset:0;z-index:2147482000;background:#060a17;'
+  // Оверлей живёт в body, вне обёртки экрана, и снимок помощника по сайту его не видел: на вопрос из сказки помощник
+  // описывал Практику под ней. Помеченный корень снимок читает первым (src/lib/assistant/screenSnapshot.js); закрытый
+  // оверлей (display:none) в снимок не попадает.
+  host.setAttribute('data-assistant-overlay', 'мир сказок')
   host.innerHTML = MARKUP
   document.body.appendChild(host)
   world = createTaleWorld()
