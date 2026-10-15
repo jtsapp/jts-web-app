@@ -226,32 +226,6 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
         <button type="button" className="ih-btn ih-btn--outline" onClick={onPapers}>{t('sat.papers.open')}<ArrowForwardIcon size={18} /></button>
       </section>
 
-      {/* Полные «hard»-симуляции I и II (B7, CH11 / CH12 курса): та же симуляция по модулям, но из сложных наборов.
-          Сервер отдаёт их в hub.hard и стартует по { variant } */}
-      {hub.hard?.length > 0 && (
-        <section className="st-card st-mocks__hard">
-          <h2>{t('sat.hard.title')}</h2>
-          <p className="st-muted">{t('sat.hard.lead')}</p>
-          <ul className="st-mocks__hardList">
-            {hub.hard.map((h) => (
-              <li key={h.id}>
-                <div>
-                  <b>{h.title || h.unitCode}</b>
-                  <small className="st-muted">
-                    {h.unitCode ? `${h.unitCode} · ` : ''}{t('sat.mock.fourModules')}
-                    {h.sat > 0 ? ` · ${t('sat.hard.sat', { n: String(h.sat) })}` : ''}
-                  </small>
-                </div>
-                <span className="st-spacer" />
-                <button type="button" className="ih-btn ih-btn--outline" disabled={busy || !!active || !wide || h.available === false} onClick={() => begin({ variant: h.id, timed })}>
-                  {h.available === false ? t('sat.hard.soon') : t('sat.papers.start')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <ScoresTable entries={entries} busy={busy} onAdd={() => { setAddError(null); setAdding(true) }} onDelete={removeScore} onReview={onReview} />
 
       {adding && <AddScoreDialog busy={busy} error={addError} onSave={addScore} onClose={() => setAdding(false)} />}

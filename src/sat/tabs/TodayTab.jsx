@@ -1,16 +1,11 @@
-import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getSatVocab } from '../../api.js'
-import { loadToken } from '../../lib/session.js'
 import { plural } from '../../lib/plural.js'
-import { ArrowForwardIcon, ChevronRightIcon, FlagIcon, MenuBookIcon, TranslateIcon } from '../../ielts/icons.jsx'
+import { ArrowForwardIcon, FlagIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { BookOpenIcon, CalendarIcon, NotesIcon, PlayCircleIcon, ReplayIcon, SigmaIcon, TargetIcon, StopwatchIcon } from '../icons.jsx'
 import { PHASES, currentPhase, iso, parse, roadmapSteps } from '../model/plan.js'
-import { todayLoad } from '../model/vocab.js'
 import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 import WeeklyCard from '../weekly/WeeklyCard.jsx'
-import DashboardStats from '../dashboard/DashboardStats.jsx'
 
 // Минуты действий занятия (Figma 11: «Изучить 5 мин · Практика 40 мин · Разбор ошибок 15 мин» при 60 минутах):
 // изучение и разбор — фиксированные, практика забирает остальное поровну
@@ -28,23 +23,14 @@ export function actionMinutes(lesson) {
 /**
  * «Сегодня» с готовым планом (Figma SAT 11): незавершённая сессия, следующее занятие (что в нём и сколько минут),
  * где вы на дороге плана; справа — недельный тест (вместо ежедневной проверки, SAT-SYNC-PLAN B1), до экзамена, ошибки,
- * которым пора вернуться, контрольная точка и словарь. Под ними — «Моя статистика» (B2): то, что раньше было на
- * вкладке «Прогресс» (B4), плюс «Слова сегодня» (B10). Один следующий шаг на экране — главный.
+ * которым пора вернуться, контрольная точка. Статистика — на вкладке «Прогресс» (Figma 16), словаря в SAT больше нет
+ * (15.10.2026). Один следующий шаг на экране — главный.
  */
-export default function TodayTab({ today, plan, diagnostic, onStart, onResume, onReview, onWeekly, onPlan, onVocab, onErrors, onMocks }) {
+export default function TodayTab({ today, plan, diagnostic, onStart, onResume, onReview, onWeekly, onPlan }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const todayIso = iso(new Date())
-  // карточки словаря на сегодня; не пришли — карточка остаётся с общей подписью, главный экран от неё не зависит
-  const [vocab, setVocab] = useState(null)
-  useEffect(() => {
-    let alive = true
-    getSatVocab(loadToken()).then((s) => alive && setVocab({ ...todayLoad(s, Date.now()), goal: s.goal })).catch(() => {})
-    return () => {
-      alive = false
-    }
-  }, [])
   const p = plan.plan
   const next = today.nextLesson
   const open = today.openSession
@@ -188,22 +174,8 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
               </span>
             </div>
           )}
-          {/* словарь (Figma 11): ведёт на карточки вкладки «Словарь» */}
-          <button type="button" className="st-card st-side-card" onClick={onVocab}>
-            <span className="st-side-card__icon is-orange"><TranslateIcon size={20} /></span>
-            {vocab ? (
-              <span>
-                <b>{plural(t, lang, 'sat.today.vocabCards', vocab.total)}</b>
-                <small>{vocab.done >= vocab.total ? t('sat.today.vocabDone') : t('sat.today.vocabToday', { done: String(vocab.done), total: String(vocab.total) })}</small>
-              </span>
-            ) : (
-              <span><b>{t('sat.today.vocab')}</b><small>{t('sat.today.vocabSoon')}</small></span>
-            )}
-            <ChevronRightIcon size={18} />
-          </button>
         </aside>
       </div>
-      <DashboardStats vocab={vocab} onVocab={onVocab} onErrors={onErrors} onMocks={onMocks} />
     </div>
   )
 }

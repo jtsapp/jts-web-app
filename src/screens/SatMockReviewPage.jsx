@@ -8,11 +8,11 @@ import AnswerChoices from '../sat/question/AnswerChoices.jsx'
 import { pick } from '../sat/model/profile.js'
 import { moduleNo, reviewList, shortClock, unanswered } from '../sat/model/mock.js'
 import { domainName, skillName } from '../sat/names.js'
-import { ArrowBackIcon, BookmarkIcon, FlashIcon, RobotIcon } from '../sat/icons.jsx'
+import { ArrowBackIcon, BookmarkIcon, FlashIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, MenuBookIcon } from '../ielts/icons.jsx'
 import { errorText } from '../lib/examQuota.js'
 
-const FILTERS = ['all', 'wrong', 'marked']
+const FILTERS = ['all', 'wrong', 'blank']
 
 function readId() {
   try {
@@ -39,9 +39,10 @@ const modLabel = (t, m) => `${m.section === 'math' ? 'Math' : 'R&W'} · ${t('sat
 const answerText = (v) => (Array.isArray(v) ? v.join(' · ') : v == null ? '—' : String(v))
 
 /**
- * Разбор пробника — `?screen=sat-mock-review&satMock=<id>` (Figma SAT 34). Объяснения и ИИ открываются только после
- * теста: слева все вопросы с фильтром «все / неверные / отмеченные», в центре вопрос с верным и выбранным вариантом,
- * справа ваш ответ рядом с правильным, время и причина. У пробника (paper) объяснений нет — он для того и пробник.
+ * Разбор пробника — `?screen=sat-mock-review&satMock=<id>` (Figma SAT 29). Объяснения открываются только после теста,
+ * без AI: слева вопросы секции текущего вопроса с фильтром «все / неверные / без ответа» (другая секция — одной ссылкой
+ * «ещё N в Math»), в центре вопрос с верным и выбранным вариантом, справа ваш ответ рядом с правильным, время и
+ * причина. У пробника (paper) объяснений нет — он для того и пробник.
  */
 export default function SatMockReviewPage({ token, onNav }) {
   const { t, lang } = useI18n()
@@ -117,6 +118,9 @@ export default function SatMockReviewPage({ token, onNav }) {
   }
   const blank = item ? unanswered(item) : false
   const mcq = item?.type === 'mcq'
+  // список держит одну секцию — ту, где текущий вопрос; другая сворачивается в ссылку на свой первый вопрос (Figma 29)
+  const otherRows = sel ? list.map((x, i) => ({ ...x, i })).filter((x) => x.module.section !== sel.module.section) : []
+  const other = otherRows.length ? { n: otherRows.length, first: otherRows[0].i, section: otherRows[0].module.section } : null
   const chosenReason = item && mcq && !item.correct && !blank && item.distractors ? pick(item.distractors[item.given], explainLang) : ''
 
   return (
@@ -145,7 +149,7 @@ export default function SatMockReviewPage({ token, onNav }) {
             ))}
           </div>
           {list.length === 0 && <p className="st-muted">{t(`sat.mock.filterEmpty.${filter}`)}</p>}
-          {data.modules.map((m) => {
+          {data.modules.filter((m) => !sel || m.section === sel.module.section).map((m) => {
             const rows = list.map((x, i) => ({ ...x, i })).filter((x) => x.module.key === m.key)
             if (!rows.length) return null
             return (
@@ -165,6 +169,11 @@ export default function SatMockReviewPage({ token, onNav }) {
               </div>
             )
           })}
+          {other && (
+            <button type="button" className="st-link st-mrev__more" onClick={() => go(other.first)}>
+              {t('sat.mock.moreIn', { n: String(other.n), section: other.section === 'math' ? 'Math' : 'R&W' })}
+            </button>
+          )}
         </aside>
 
         <main className="st-mrev__main">
@@ -227,12 +236,6 @@ export default function SatMockReviewPage({ token, onNav }) {
                 </>
               )}
               <span className="st-spacer" />
-              {!paper && (
-                // ИИ-наставник — заглушка до флага SAT_AI (решение A плана): видна, помечена «скоро», ничего не делает
-                <button type="button" className="st-mrev__ai is-locked" disabled title={t('sat.ai.soon')}>
-                  <RobotIcon size={20} />{t('sat.mock.askAi')}<span className="st-soon">{t('sat.ai.soonChip')}</span>
-                </button>
-              )}
               <button type="button" className="ih-btn ih-btn--outline st-mrev__practice" disabled={busy} onClick={() => practice(item.skillId)}>
                 <FlashIcon size={18} />{t('sat.mock.practiceSkill')}
               </button>

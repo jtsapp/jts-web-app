@@ -21,3 +21,15 @@ export function leaveFullWindow() {
     /* уже вышли */
   }
 }
+
+// Выход из полного экрана при уходе с экрана теста — отложенный. React в разработке (Strict Mode) сразу после монтирования
+// прогоняет очистку эффекта и монтирует заново: немедленный выход снимал полный экран, только что включённый кликом
+// «Начать симуляцию», и снова он появлялся лишь по кнопке модуля 2. Повторное монтирование отменяет отложенный выход.
+let pendingLeave = null
+
+export function holdFullWindow() {
+  clearTimeout(pendingLeave)
+  return () => {
+    pendingLeave = setTimeout(leaveFullWindow, 0)
+  }
+}

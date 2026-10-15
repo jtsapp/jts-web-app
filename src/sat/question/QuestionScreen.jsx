@@ -20,9 +20,11 @@ import { useI18n } from '../../i18n.jsx'
 /**
  * Общий экран вопроса SAT в стиле Bluebook (Figma SAT 8, 26, 27, 29, 30) — фаза 3 плана. Его без изменений берут
  * диагностика (4), учебный режим (5) и пробник (7); разница — только в режиме сессии:
- *  - study: секундомер вверх, пауза, кнопка «Проверить» (если экран дал study.onCheck) и место под помощь (footerExtra);
+ *  - study (Figma 19): без таймера, черновика, инструкции и паузы — только «Выделение» (Math: калькулятор и справочник),
+ *    кнопка «Проверить» (если экран дал study.onCheck) и место под «Объяснение» (footerExtra);
  *  - diagnostic: мягкий таймер, инструкция, пауза, помощи нет;
- *  - exam: жёсткий таймер по стене часов, «Скрыть таймер», без паузы и помощи.
+ *  - exam: жёсткий таймер по стене часов, «Скрыть таймер», без паузы и помощи; крестик открывает проверку модуля
+ *    (Figma 25), а не выход: модуль закрывается только сдачей, дальше — экран «Модуль завершён» (26).
  * В диагностике и экзамене элементов помощи нет в разметке вовсе, а не спрятаны (AI-08 прототипа).
  *
  * sidePanel — третья колонка справа (объяснение и AI-тьютор учебного режима, Figma 24–25): пока она открыта, Desmos
@@ -212,7 +214,7 @@ export default function QuestionScreen({
     <div className={`ih st st-run ${sidePanel ? 'has-panel' : ''}`}>
       <header ref={topRef} className="st-run__top">
         <div className="st-run__left">
-          <button type="button" className="ih-round st-run__close" aria-label={t('sat.run.close')} onClick={() => setDialog('exit')}>
+          <button type="button" className="ih-round st-run__close" aria-label={t('sat.run.close')} onClick={() => setDialog(mode === 'exam' ? 'review' : 'exit')}>
             <CloseIcon size={20} />
           </button>
           <div className="st-run__title">
@@ -220,7 +222,8 @@ export default function QuestionScreen({
             {subtitle && <span>{subtitle}</span>}
           </div>
         </div>
-        <QuestionTimer session={session} hidden={session.tools.timerHidden} onExpire={mode === 'exam' ? finish : undefined} />
+        {/* время в учебном режиме всё равно считается (timeOn) — не показывается (Figma 19) */}
+        {isStudy ? <span className="st-spacer" /> : <QuestionTimer session={session} hidden={session.tools.timerHidden} onExpire={mode === 'exam' ? finish : undefined} />}
         <div className="st-run__tools">
           {mode === 'exam' && (
             <button type="button" className="st-tool" aria-pressed={session.tools.timerHidden}
@@ -238,9 +241,11 @@ export default function QuestionScreen({
               <button type="button" className="st-tool" onClick={() => setDialog('ref')}>
                 <RulerIcon size={16} />{t('sat.run.reference')}
               </button>
-              <button type="button" className="st-tool" onClick={() => setDialog('scratch')}>
-                <NoteIcon size={16} />{t('sat.run.scratch')}
-              </button>
+              {!isStudy && (
+                <button type="button" className="st-tool" onClick={() => setDialog('scratch')}>
+                  <NoteIcon size={16} />{t('sat.run.scratch')}
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -249,21 +254,15 @@ export default function QuestionScreen({
                 onClick={() => update((s) => setTool(s, 'highlight', !s.tools.highlight))}>
                 <HighlighterIcon size={16} />{t('sat.run.highlight')}
               </button>
-              {/* черновик в R&W — только в учебном режиме (Figma 21); на диагностике и экзамене его нет (8, 29) */}
-              {isStudy && (
-                <button type="button" className="st-tool" onClick={() => setDialog('scratch')}>
-                  <NoteIcon size={16} />{t('sat.run.scratch')}
-                </button>
-              )}
             </>
           )}
-          {/* инструкция — везде, кроме учебного Math: там место занимают калькулятор и справочник (Figma 26) */}
-          {!(isStudy && math) && (
+          {/* инструкция — везде, кроме учебного режима (Figma 19, 22) */}
+          {!isStudy && (
             <button type="button" className="st-tool" onClick={() => setDialog('directions')}>
               <DescriptionIcon size={16} />{t('sat.run.directions')}
             </button>
           )}
-          {!session.clock.wallClock && (
+          {!session.clock.wallClock && !isStudy && (
             <button type="button" className="st-tool" aria-pressed={paused} onClick={() => update((s) => setPaused(s, !s.clock.paused))}>
               {t(paused ? 'sat.run.resume' : 'sat.run.pause')}
             </button>

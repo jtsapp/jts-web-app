@@ -2,7 +2,8 @@
 // симуляции JTS + баллы, которые ученик добавил сам (Bluebook, официальный SAT), изменение к предыдущему и траектория
 // к цели. Бумажные тесты (past papers) сюда не входят — у них своя страница. Чистые функции под тестами.
 
-export const MANUAL_SOURCES = ['BLUEBOOK', 'OFFICIAL']
+// Источник ручного балла (Figma 30, 15.10.2026): официальный SAT, пробник JTS вне платформы или Bluebook — без подписи.
+export const MANUAL_SOURCES = ['OFFICIAL', 'JTS', 'BLUEBOOK']
 export const SECTION_MIN = 200
 export const SECTION_MAX = 800
 

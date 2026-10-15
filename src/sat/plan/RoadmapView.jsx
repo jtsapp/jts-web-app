@@ -16,6 +16,10 @@ const NODES = [
 ]
 const TROPHY = { x: 943, y: 70 }
 const ROAD = 'M103 310 H878 A60 60 0 0 0 878 190 H208 A60 60 0 0 1 208 70 H943'
+// Длина дороги от старта до каждого узла (прямые + полуокружности r=60, узлы 3 и 5 — середины дуг): пройденный
+// участок (Figma 11 — фиолетовая полоса до «вы здесь») рисуется той же дорогой с штрихом этой длины.
+const ARC = Math.PI * 60
+const AT = [0, 423, 775 + ARC / 2, 775 + ARC + 334, 775 + ARC + 670 + ARC / 2, 775 + ARC + 670 + ARC + 350]
 
 /**
  * Роудмап (Figma SAT 12): шесть шагов от диагностики до дня экзамена дорогой-змейкой, под ней — карточка
@@ -27,6 +31,7 @@ export default function RoadmapView({ steps, current, examDate, onStart }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(current)
   useEffect(() => setOpen(current), [current])
+  const curIdx = PHASES.findIndex((p) => p.id === current)
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const byPhase = Object.fromEntries(steps.map((s) => [s.phase, s]))
@@ -54,8 +59,9 @@ export default function RoadmapView({ steps, current, examDate, onStart }) {
           </button>
         </div>
         <svg className="st-road__svg" viewBox="0 0 1088 380" role="img" aria-label={t('sat.road.label')}>
-          <path d={ROAD} fill="none" stroke="#e3d6ff" strokeWidth="46" strokeLinecap="round" strokeLinejoin="round" />
-          <path d={ROAD} fill="none" stroke="#fff" strokeWidth="2.5" strokeDasharray="12 10" />
+          <path d={ROAD} className="st-road__track" fill="none" strokeWidth="46" strokeLinecap="round" strokeLinejoin="round" />
+          {curIdx > 0 && <path d={ROAD} className="st-road__passed" fill="none" strokeWidth="46" strokeDasharray={`${AT[curIdx]} 9999`} />}
+          <path d={ROAD} className="st-road__dash" fill="none" strokeWidth="3" strokeDasharray="10 12" />
           {PHASES.map((p, i) => {
             const n = NODES[i]
             const s = byPhase[p.id]
