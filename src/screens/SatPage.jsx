@@ -25,7 +25,8 @@ import { errorText } from '../lib/examQuota.js'
 
 // Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» вернулся по Figma 16
 // (15.10.2026), «Словаря» во вкладках больше нет — в макете его нет. Past papers — свой экран, вход — из «Пробников».
-export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'guide', 'materials', 'errors']
+// «Материалы» и «Ошибки» скрыты (вкладки и их экраны остаются в коде): адрес с satTab=materials|errors открывает «Сегодня»
+export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'guide']
 const SOON_ICON = {}
 
 function readTab() {
