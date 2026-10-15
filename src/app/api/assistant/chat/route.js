@@ -36,7 +36,7 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
-import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
+import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@/lib/assistant/actions.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
@@ -175,9 +175,17 @@ export async function POST(request) {
   // Первая реплика на экране задания — без кнопки вовсе: ученик посреди урока, и
   // уводить его оттуда нельзя, даже если модель всё же позвала (openingFocus).
   const focusTask = opening && openingFocus(parsed.screen.text).task
+  // Ученик просил тур, а модель поставила «открыть» — тур (preferTour).
+  const askedTour = (action) =>
+    opening
+      ? action
+      : preferTour(action, {
+          userText: parsed.messages[parsed.messages.length - 1].content,
+          offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
+        })
   const finalAction = () => {
     if (focusTask) return null
-    return actions.action() || (opening ? inferAdviceOffer(shown, studentContext) : null)
+    return askedTour(actions.action()) || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {
     const action = finalAction()

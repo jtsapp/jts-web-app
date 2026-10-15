@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { actionMarker, actionTail, createActionFilter, createServiceTailFilter } from './actions.js'
+import { actionMarker, actionTail, createActionFilter, createServiceTailFilter, offeredTourTarget, preferTour } from './actions.js'
 import { REPORTED_STREAM_MARKER } from './report.js'
 
 // Прогнать текст через фильтр кусками заданного размера — как стрим модели.
@@ -95,5 +95,63 @@ describe('служебный хвост стрима на клиенте', () =>
 
   it('действие с разделом не из списка клиент не выполнит', () => {
     expect(read('Ок.[[ASST_ACTION open ielts-mock now]]').action).toBeNull()
+  })
+})
+
+// Живой прогон 15.10.2026 (Haiku 5.5): «проведи для меня тур по практике» —
+// ответ «открываю Практику и проведу по ней» с меткой [[OPEN_NOW practice]].
+// Раздел открылся, тур — нет. Что ученик просил тур, видно по его словам, и
+// решает это код, а не модель.
+describe('preferTour: просили тур — открытие становится туром', () => {
+  const open = (target, now = true) => ({ kind: 'open', target, now })
+
+  it('слово «тур» у ученика: OPEN_NOW раздела с туром → TOUR_NOW', () => {
+    expect(preferTour(open('practice'), { userText: 'Привет, можешь, пожалуйста, провести для меня тур по практике?' }))
+      .toEqual({ kind: 'tour', target: 'practice', now: true })
+    expect(preferTour(open('home', false), { userText: 'сделай тур по главной' }))
+      .toEqual({ kind: 'tour', target: 'home', now: false })
+    expect(preferTour(open('practice'), { userText: 'Тәжірибе бойынша тур жасап берші' })).toMatchObject({ kind: 'tour' })
+    expect(preferTour(open('practice'), { userText: 'give me a tour of practice' })).toMatchObject({ kind: 'tour' })
+    expect(preferTour(open('practice'), { userText: 'устрой экскурсию по практике' })).toMatchObject({ kind: 'tour' })
+  })
+
+  it('вкладка Практики без своего тура — тур по Практике целиком', () => {
+    expect(preferTour(open('practice-listening'), { userText: 'проведи тур по аудированию' }))
+      .toEqual({ kind: 'tour', target: 'practice', now: true })
+  })
+
+  it('«да» на её предложение тура, а модель поставила OPEN_NOW — тур', () => {
+    expect(preferTour(open('practice'), { userText: 'да', offeredTour: 'practice' }))
+      .toEqual({ kind: 'tour', target: 'practice', now: true })
+    // Предлагала тур по другому разделу — это уже другая просьба.
+    expect(preferTour(open('verbs'), { userText: 'да', offeredTour: 'practice' })).toEqual(open('verbs'))
+    // Отказался от тура — открыть, как и просил.
+    expect(preferTour(open('practice'), { userText: 'нет, просто открой', offeredTour: 'practice' })).toEqual(open('practice'))
+    expect(preferTour(open('practice'), { userText: 'не надо тур, просто открой практику' })).toEqual(open('practice'))
+    // Не согласие, а новая просьба — решает модель.
+    expect(preferTour(open('practice'), { userText: 'открой практику', offeredTour: 'practice' })).toEqual(open('practice'))
+  })
+
+  it('без тура в словах — как решила модель; у раздела без тура — тоже', () => {
+    expect(preferTour(open('practice'), { userText: 'открой практику' })).toEqual(open('practice'))
+    expect(preferTour(open('verbs'), { userText: 'проведи тур по глаголам' })).toEqual(open('verbs'))
+    // «турнир», «туризм» — не тур.
+    expect(preferTour(open('practice'), { userText: 'где турнир по словам? и туризм' })).toEqual(open('practice'))
+    expect(preferTour(null, { userText: 'проведи тур' })).toBeNull()
+    const tour = { kind: 'tour', target: 'home', now: true }
+    expect(preferTour(tour, { userText: 'тур' })).toBe(tour)
+  })
+})
+
+describe('offeredTourTarget: тур, который Луна предлагала прошлым ответом', () => {
+  it('метка тура в её последнем ответе', () => {
+    const msgs = [
+      { role: 'user', content: 'как тут всё устроено' },
+      { role: 'assistant', content: 'Провести тур?\n[[TOUR practice]]' },
+      { role: 'user', content: 'да' },
+    ]
+    expect(offeredTourTarget(msgs)).toBe('practice')
+    expect(offeredTourTarget([{ role: 'assistant', content: 'Открыть?\n[[OPEN vocab]]' }, { role: 'user', content: 'да' }])).toBeNull()
+    expect(offeredTourTarget([{ role: 'user', content: 'да' }])).toBeNull()
   })
 })

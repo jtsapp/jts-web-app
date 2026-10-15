@@ -361,6 +361,30 @@ describe('POST /api/assistant/chat', () => {
     expect(await (await post(question(403))).text()).toBe('Открываю.\n')
   })
 
+  // Живой прогон 15.10.2026: на «проведи тур» Haiku 5.5 поставила OPEN_NOW — раздел
+  // открылся, а тур нет. Что просили тур, код видит по словам ученика.
+  it('просили тур, а модель поставила «открыть» — уходит тур', async () => {
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Конечно, открываю Практику и проведу по ней.\n[[OPEN_NOW practice]]' }
+    }
+    const body = { ...question(406), messages: [{ role: 'user', content: 'Привет, можешь провести для меня тур по практике?' }] }
+    expect(await (await post(body)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+
+    // «Да» на её же предложение тура — тоже тур.
+    streamImpl = async function* () {
+      yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW practice]]' }
+    }
+    const agreed = {
+      ...question(407),
+      messages: [
+        { role: 'user', content: 'как тут всё устроено?' },
+        { role: 'assistant', content: 'Провести тур по Практике?\n[[TOUR practice]]' },
+        { role: 'user', content: 'да' },
+      ],
+    }
+    expect(await (await post(agreed)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+  })
+
   it('метка действия и запись поломки в одном ответе — оба хвоста, действие первым', async () => {
     streamImpl = async function* () {
       yield { type: 'text', text: 'Передала команде. Можно пока потренироваться в Словаре.\n[[OPEN vocab]]\n' }

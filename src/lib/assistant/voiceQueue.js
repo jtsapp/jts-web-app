@@ -35,15 +35,24 @@ export { phraseLang }
  * совместимости вызова.
  * @param {{ token: string, lang?: string, fetchImpl?: typeof fetch,
  *           play?: typeof playUrl, stopSound?: typeof stopTts,
+ *           onPhrase?: (index: number) => void,
+ *           onInterrupt?: () => void,
  *           onFinish?: (r: { played: number, failed: number }) => void }} opts
+ *   onPhrase — фраза номер index (по порядку say) зазвучала — или пропущена,
+ *   потому что не зазвучала вовсе: по нему виджет показывает текст ответа
+ *   вслед за голосом, и пропущенная фраза не должна держать его скрытым.
+ *   onInterrupt — очередь замолкла от чужого звука (см. шапку); после своего
+ *   stop() не зовётся.
  *   onFinish — один раз, когда после end() доиграна вся очередь; после stop()
- *   не зовётся.
+ *   и чужого звука не зовётся.
  */
 export function createVoiceQueue({
   token,
   fetchImpl = (...args) => fetch(...args),
   play = playUrl,
   stopSound = stopTts,
+  onPhrase,
+  onInterrupt,
   onFinish,
 } = {}) {
   const items = [] // { text, url: Promise<string|null> | null }
@@ -57,6 +66,14 @@ export function createVoiceQueue({
   let voiceLang = null
   let played = 0
   let failed = 0
+  let reached = -1 // последняя фраза, о которой сказали onPhrase
+
+  // Каждой фразе — один раз и по порядку.
+  const reach = (i) => {
+    if (i <= reached) return
+    reached = i
+    onPhrase?.(i)
+  }
 
   const revoke = (u) => {
     if (u && urls.delete(u)) URL.revokeObjectURL(u)
@@ -96,6 +113,7 @@ export function createVoiceQueue({
     stopped = true
     ctrl.abort()
     for (const u of [...urls]) revoke(u)
+    onInterrupt?.()
     resolve()
   }
 
@@ -112,13 +130,19 @@ export function createVoiceQueue({
       return
     }
     busy = true
-    const item = items[idx]
-    for (let k = 1; k <= LOOKAHEAD && items[idx + k]; k++) load(items[idx + k])
+    const at = idx
+    const item = items[at]
+    for (let k = 1; k <= LOOKAHEAD && items[at + k]; k++) load(items[at + k])
     const url = await load(item)
     if (stopped) return
+    const skip = () => {
+      failed++
+      reach(at)
+    }
     if (url) {
       await new Promise((resolve) => {
         const ok = play(url, {
+          onStart: () => reach(at),
           onEnd: (reason) => {
             if (reason === 'stopped' && !stopped) return yieldToOther(resolve)
             played++
@@ -126,17 +150,17 @@ export function createVoiceQueue({
           },
           onCancel: () => yieldToOther(resolve),
           onFail: () => {
-            failed++
+            skip()
             resolve()
           },
         })
         if (ok === false) {
-          failed++
+          skip()
           resolve()
         }
       })
       revoke(url)
-    } else failed++
+    } else skip()
     if (stopped) return
     idx++
     busy = false
