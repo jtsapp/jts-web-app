@@ -9,11 +9,17 @@
 // Отвечает за ответы НЕ агент: он спрашивает браузер, а тот — тот же
 // /api/assistant/chat по токену ученика. Поэтому в metadata нет ни памяти,
 // ни контекста — только язык, имя и бюджет секунд для сторожа агента.
+//
+// Учёт строже, чем у тьютора (ревью 16.10.2026): сбой базы — звонка нет (503),
+// а не полный бюджет без счёта; вторая комната, пока идёт первая, — 409: бюджет
+// секунд выдаётся комнате один раз, и две вкладки уложили бы в день вдвое
+// больше лимита.
 
 import { AccessToken } from 'livekit-server-sdk'
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { closeStaleSessions, getUsage, isDbConfigured, openSession } from '@/lib/usage.js'
-import { ASSISTANT_CALL_DAILY_SEC, assistantCallProfileId } from '@/lib/assistant/callUsage.js'
+import { ASSISTANT_CALL_DAILY_SEC, assistantCallProfileId, hasOpenAssistantCall } from '@/lib/assistant/callUsage.js'
+import { assistantCallHiddenFor } from '@/lib/assistant/callGate.js'
 
 export const runtime = 'nodejs'
 
@@ -24,7 +30,17 @@ const LANGS = new Set(['ru', 'kz', 'en'])
 const json = (status, body) => Response.json(body, { status })
 const rand = () => Math.random().toString(36).slice(2, 10)
 
+// Домен, на который пришёл ученик. За nginx приложение видит свой внутренний
+// адрес, поэтому сначала заголовок прокси.
+const requestHost = (request) =>
+  (request.headers.get('x-forwarded-host') || request.headers.get('host') || new URL(request.url).host).split(',')[0]
+
 export async function POST(request) {
+  // На проде звонка ещё нет (callGate.js): кнопку прячет окно, а роут не даёт
+  // позвонить и в обход неё — агент без режима assistant провёл бы комнату
+  // уроком тьютора.
+  if (assistantCallHiddenFor(requestHost(request))) return json(404, { error: 'not_found' })
+
   const auth = await verifyTokenStatus(bearerFromRequest(request))
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
@@ -47,17 +63,20 @@ export async function POST(request) {
   const profileId = assistantCallProfileId(userId)
   const limitSec = ASSISTANT_CALL_DAILY_SEC
   let ttl = limitSec
-  // Без базы лимит не посчитать — звонок всё равно даём (как у тьютора), но
-  // не дольше дневного лимита: его держит сторож агента по sessionTtlSec.
-  if (isDbConfigured()) {
+  // Без базы (локальный стенд) лимит не посчитать — звонок даём, его длину
+  // держит сторож агента по sessionTtlSec.
+  const metered = isDbConfigured()
+  if (metered) {
     try {
       await closeStaleSessions(profileId)
+      if (await hasOpenAssistantCall(profileId)) return json(409, { configured: true, error: 'call_busy' })
       const { todaySeconds } = await getUsage(profileId)
       // Разговор короче минуты бессмыслен: остаток меньше — честнее «кончилось».
       if (limitSec - todaySeconds < 60) return json(403, { configured: true, limited: true, error: 'daily_limit', limitSec })
       ttl = limitSec - todaySeconds
     } catch (err) {
       console.error('[assistant.call] usage check failed', err?.message || err)
+      return json(503, { configured: true, error: 'usage_unavailable' })
     }
   }
 
@@ -71,17 +90,21 @@ export async function POST(request) {
     sessionTtlSec: ttl,
     ...(name ? { userName: name } : {}),
   })
-  const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
-  at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
-  const token = await at.toJwt()
 
-  if (isDbConfigured()) {
+  // Строку сессии — ДО токена: без неё звонок не тарифицировался бы вовсе
+  // (armSession обновлять нечего), а чат не узнал бы живой звонок.
+  if (metered) {
     try {
       await openSession(room, profileId)
     } catch (err) {
       console.error('[assistant.call] openSession failed', err?.message || err)
+      return json(503, { configured: true, error: 'usage_unavailable' })
     }
   }
+
+  const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
+  at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
+  const token = await at.toJwt()
 
   return json(200, { configured: true, token, url, room, identity, ttl, limitSec })
 }

@@ -7201,11 +7201,13 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
             session.say(text, allow_interruptions=True)
         return "ok"
 
-    # RPC — до старта: фраза ответа может прийти сразу за подтверждением luna.ask.
+    # Фразы ответа — до старта: первая реплика спрашивается сразу после него.
+    # luna.say — после: interrupt()/say() у неначатой сессии не работают, и шаг
+    # тура, пришедший так рано, пропал бы молча.
     lp.register_rpc_method(assistant_call.REPLY_METHOD, brain.on_reply)
-    lp.register_rpc_method(assistant_call.SAY_METHOD, _say)
 
     await session.start(**start_kwargs)
+    lp.register_rpc_method(assistant_call.SAY_METHOD, _say)
 
     # Сторож конца хода — как в «Свободно» у тьютора: детектор голоса держит
     # ход на музыке, а слов ученика нет.

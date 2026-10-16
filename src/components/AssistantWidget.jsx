@@ -986,10 +986,15 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           speak(note)
           patchLast((m) => ({ ...m, content: note, local: true }))
         } else {
+          // Первая реплика по экрану не вышла — звонок не должен начаться
+          // тишиной: Луна хотя бы отзывается.
           setMessages(base)
+          speak(t('assistant.call.hello'))
         }
       } finally {
-        sender.end()
+        // Снятый ответ («Новый чат», новая реплика, отмена агентом) кончается
+        // тихо: иначе агент сказал бы «не получилось» на то, что сняли нарочно.
+        sender.end({ silent: controller.signal.aborted })
         if (mine()) {
           callAskRef.current = null
           setCallThinking(false)
@@ -1072,6 +1077,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       if (callSeqRef.current !== seq) return
       if (res.status === 403 && data.limited) return fail('assistant.call.err.limit', { min: Math.round((data.limitSec || 900) / 60) })
       if (res.status === 401) return fail('assistant.err.auth')
+      if (res.status === 409) return fail('assistant.call.err.busy')
       if (!res.ok || !data.token || !data.url) return fail('assistant.call.err.unavailable')
       liveCallRef.current = data.room
       setCall({ phase: 'live', session: data, agentState: 'connecting', micOn: true, audioBlocked: false, userText: '', since: clockNow() })
@@ -1203,6 +1209,16 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     // «Новый чат» — с чистого листа: и недоговорённое «открываю…» отменяется.
     dropDeferred()
     stopVoice()
+    // В звонке — тоже: ответ, который ещё пишется, снимаем, Луна замолкает, а
+    // переход, обещанный в прошлом разговоре, не случается. Сам звонок идёт.
+    if (callAskRef.current) {
+      callAskRef.current.controller.abort()
+      callAskRef.current = null
+      callCtlRef.current?.say('')
+    }
+    clearTimeout(callActionRef.current?.timer)
+    callActionRef.current = null
+    setCallThinking(false)
     setMessages([])
     setError(null)
     setBusy(false)

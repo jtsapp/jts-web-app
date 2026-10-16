@@ -62,10 +62,10 @@ test('компьютер: компактное окно, «телефон», п�
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/2-phone.png` })
   await dialog.getByRole('button', { name: 'Сделать окно компактным' }).click()
 
-  // Тянем за шапку в левый верхний угол.
+  // Тянем за шапку (за аватар — середину узкой шапки занимают кнопки) в левый верхний угол.
   const head = dialog.locator('.asst__head')
   const h = await box(head)
-  await page.mouse.move(h.x + h.width / 2, h.y + 20)
+  await page.mouse.move(h.x + 28, h.y + 24)
   await page.mouse.down()
   await page.mouse.move(400, 300, { steps: 8 })
   await page.mouse.move(200, 100, { steps: 8 })

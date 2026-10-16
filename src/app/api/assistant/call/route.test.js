@@ -7,21 +7,35 @@ vi.mock('@/lib/auth-server.js', () => ({
   bearerFromRequest: (req) => (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '') || null,
   verifyTokenStatus: async () => authResult,
 }))
-const usage = vi.hoisted(() => ({ today: 0, db: true, opened: [], stale: [] }))
+const usage = vi.hoisted(() => ({ today: 0, db: true, opened: [], stale: [], open: false, failUsage: false, failOpen: false }))
 vi.mock('@/lib/usage.js', () => ({
   isDbConfigured: () => usage.db,
   closeStaleSessions: async (id) => usage.stale.push(id),
-  getUsage: async () => ({ todaySeconds: usage.today }),
-  openSession: async (room, id) => usage.opened.push([room, id]),
+  getUsage: async () => {
+    if (usage.failUsage) throw new Error('db down')
+    return { todaySeconds: usage.today }
+  },
+  openSession: async (room, id) => {
+    if (usage.failOpen) throw new Error('db down')
+    usage.opened.push([room, id])
+  },
+}))
+vi.mock('@/lib/assistant/callUsage.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  hasOpenAssistantCall: async () => usage.open,
 }))
 
 const { POST } = await import('./route.js')
 
-const post = (body = {}, token = 'tok') =>
+const post = (body = {}, token = 'tok', host = null) =>
   POST(
     new Request('http://localhost/api/assistant/call', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+        ...(host ? { 'x-forwarded-host': host } : {}),
+      },
       body: JSON.stringify(body),
     }),
   )
@@ -33,7 +47,7 @@ describe('POST /api/assistant/call', () => {
   const saved = {}
   beforeEach(() => {
     authResult = { status: 'ok', user: { userId: 42, name: 'Айгерім' } }
-    Object.assign(usage, { today: 0, db: true, opened: [], stale: [] })
+    Object.assign(usage, { today: 0, db: true, opened: [], stale: [], open: false, failUsage: false, failOpen: false })
     for (const k of ['LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'LIVEKIT_URL']) saved[k] = process.env[k]
     process.env.LIVEKIT_API_KEY = '﻿key'
     process.env.LIVEKIT_API_SECRET = 'secret-secret-secret-secret-secret'
@@ -74,6 +88,29 @@ describe('POST /api/assistant/call', () => {
     expect(res.status).toBe(403)
     expect(await res.json()).toMatchObject({ limited: true, error: 'daily_limit', limitSec: 900 })
     expect(usage.opened).toEqual([])
+  })
+
+  it('идёт другой звонок (вторая вкладка) — 409: бюджет дня не удваивается', async () => {
+    usage.open = true
+    const res = await post()
+    expect(res.status).toBe(409)
+    expect(await res.json()).toMatchObject({ error: 'call_busy' })
+    expect(usage.opened).toEqual([])
+  })
+
+  it('база упала — звонка нет (503), а не полный бюджет без счёта', async () => {
+    usage.failUsage = true
+    expect((await post()).status).toBe(503)
+    usage.failUsage = false
+    usage.failOpen = true
+    const res = await post()
+    expect(res.status).toBe(503)
+    expect((await res.json()).token).toBeUndefined()
+  })
+
+  it('на проде звонка пока нет — 404 и в обход кнопки', async () => {
+    expect((await post({}, 'tok', 'ai-tutor.justtostudy.kz')).status).toBe(404)
+    expect((await post({}, 'tok', 'dev-tutor.justtostudy.kz')).status).toBe(200)
   })
 
   it('чужой язык — русский', async () => {

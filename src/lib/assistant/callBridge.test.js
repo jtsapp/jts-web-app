@@ -53,6 +53,13 @@ describe('мост звонка Луне', () => {
     expect(room.sent.every((x) => x.to === 'agent-1' && x.method === REPLY)).toBe(true)
   })
 
+  it('ответ, снятый нарочно, кончается тихо — агент не скажет «не получилось»', async () => {
+    const room = fakeRoom()
+    const s = createReplySender(room, 'agent-1', '9')
+    await s.end({ silent: true })
+    expect(room.sent.map((x) => x.body)).toEqual([{ id: '9', end: true, silent: true }])
+  })
+
   it('сбой одной отправки не рвёт очередь', async () => {
     const room = fakeRoom({ failFirst: true })
     const s = createReplySender(room, 'agent-1', '8')

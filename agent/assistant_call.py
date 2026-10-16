@@ -13,7 +13,7 @@ RPC-вызовом luna.ask, браузер спрашивает тот же ч�
 
 Протокол (браузер — src/lib/assistant/callBridge.js, менять парой):
   агент → браузер  luna.ask    {id, text, opening}  ответ «ok» сразу
-  браузер → агент  luna.reply  {id, text} … {id, end: true}
+  браузер → агент  luna.reply  {id, text} … {id, end: true[, silent: true]}
   агент → браузер  luna.cancel {id}                 ученик перебил — ответ не нужен
   браузер → агент  luna.say    {text}               сказать шаг тура (пусто — замолчать)
 
@@ -127,8 +127,14 @@ class BrowserBrain:
         task.add_done_callback(self._bg.discard)
 
     async def ask(self, text: str, opening: bool = False) -> AsyncIterator[str]:
-        """Фразы ответа по мере прихода. Браузер не ответил или замолчал —
-        одна запасная фраза («не получилось»), а не тишина в звонке."""
+        """Фразы ответа по мере прихода. Браузер не ответил, замолчал или
+        закончил ответ без единой фразы — одна запасная фраза («не получилось»),
+        а не тишина в звонке. Исключения: первая реплика (браузер сам решает,
+        что сказать в начале) и `silent` — ответ снят нарочно («Новый чат»).
+
+        Любой выход, кроме конца от браузера, шлёт ему luna.cancel: и ученик
+        перебил, и браузер замолчал по таймауту — его запрос к модели дальше
+        не нужен (ревью 16.10.2026: по таймауту стрим шёл до конца впустую)."""
         rid = f"{int(time.time() * 1000)}-{next(self._seq)}"
         queue: asyncio.Queue = asyncio.Queue()
         self._queues[rid] = queue
@@ -144,7 +150,6 @@ class BrowserBrain:
                 )
             except Exception as e:
                 logger.warning("[luna-call] ask failed: %s", e)
-                done = True
                 yield fallback_text(self._lang)
                 return
             timeout = FIRST_PHRASE_SEC
@@ -153,7 +158,6 @@ class BrowserBrain:
                     msg = await asyncio.wait_for(queue.get(), timeout)
                 except asyncio.TimeoutError:
                     logger.warning("[luna-call] reply stalled (%s phrases said)", "some" if said else "no")
-                    done = True
                     if not said:
                         yield fallback_text(self._lang)
                     return
@@ -163,6 +167,8 @@ class BrowserBrain:
                     yield piece
                 if msg.get("end"):
                     done = True
+                    if not said and not opening and not msg.get("silent"):
+                        yield fallback_text(self._lang)
                     return
                 timeout = NEXT_PHRASE_SEC
         finally:

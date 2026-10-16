@@ -50,10 +50,11 @@ function Harness({ greetOnOpen = false }) {
 }
 
 const sender = () => {
-  const s = { phrases: [], ended: 0 }
+  const s = { phrases: [], ended: 0, silent: null }
   s.phrase = (t) => s.phrases.push(t)
-  s.end = () => {
+  s.end = ({ silent = false } = {}) => {
     s.ended += 1
+    s.silent = silent
   }
   return s
 }
@@ -158,6 +159,7 @@ describe('звонок Луне', () => {
     act(() => room.props.onCancel('3'))
     await waitFor(() => expect(s.ended).toBe(1), WAIT)
     expect(s.phrases).toEqual([])
+    expect(s.silent).toBe(true)
     expect(release).toBeTypeOf('function')
   })
 
@@ -175,6 +177,42 @@ describe('звонок Луне', () => {
     expect(s.phrases).toEqual(['Я на связи — слушаю вас.'])
     expect(s.ended).toBe(1)
     expect(chatBodies()).toHaveLength(1)
+  })
+
+  it('«Новый чат» посреди звонка: ответ снят тихо, Луна замолкает, обещанный переход не случается', async () => {
+    chatReplies.push(['Открываю Словарь.\n', '[[ASST_ACTION open vocab now]]'])
+    await startCall()
+    const s1 = sender()
+    await act(async () => room.props.onAsk({ id: '5', text: 'открой словарь', opening: false, sender: s1 }))
+    await waitFor(() => expect(s1.ended).toBe(1), WAIT)
+    act(() => room.props.onState({ agentState: 'speaking' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Новый чат' }))
+    act(() => room.props.onState({ agentState: 'listening' }))
+    expect(navigations).toEqual([])
+  })
+
+  it('первая реплика не удалась — Луна всё равно отзывается в звонке', async () => {
+    fetchMock.mockImplementation(async (url) =>
+      url === '/api/assistant/call'
+        ? Response.json({ configured: true, token: 'lk', url: 'wss://x', room: ROOM, identity: 's', ttl: 900 })
+        : new Response('{}', { status: 502 }),
+    )
+    await startCall()
+    const s = sender()
+    await act(async () => room.props.onAsk({ id: '6', text: '', opening: true, sender: s }))
+    await waitFor(() => expect(s.ended).toBe(1), WAIT)
+    expect(s.phrases).toEqual(['Я на связи — слушаю вас.'])
+  })
+
+  it('звонок уже идёт в другой вкладке — 409 и понятная строка', async () => {
+    fetchMock.mockImplementation(async (url) =>
+      url === '/api/assistant/call' ? Response.json({ error: 'call_busy' }, { status: 409 }) : streamResponse(['ok']),
+    )
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Позвонить Луне' }))
+    expect(await screen.findByText(/Звонок уже идёт/, {}, WAIT)).toBeTruthy()
+    expect(room.props).toBeNull()
   })
 
   it('лимит на сегодня — понятная строка, звонка нет', async () => {

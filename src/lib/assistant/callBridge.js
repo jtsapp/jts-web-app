@@ -5,7 +5,7 @@
 //
 // Протокол (менять парой с agent/assistant_call.py):
 //   агент → браузер  luna.ask    {id, text, opening}  ответ «ok» сразу
-//   браузер → агент  luna.reply  {id, text} … {id, end: true}
+//   браузер → агент  luna.reply  {id, text} … {id, end: true[, silent: true]}
 //   агент → браузер  luna.cancel {id}                 ученик перебил
 //   браузер → агент  luna.say    {text}               шаг тура (пусто — замолчать)
 
@@ -69,6 +69,8 @@ export function attachCallBridge(room, { onAsk, onCancel }) {
  * Отправитель фраз одного ответа. Фразы уходят строго по очереди — следующая
  * после подтверждения прежней, иначе агент мог бы сказать их не в том порядке.
  * Агент недоступен — молча: звонок кончается сам, а ронять из-за этого чат незачем.
+ * end({ silent: true }) — ответ сняли нарочно («Новый чат»): агент на конец без
+ * единой фразы говорит «не получилось», и silent его от этого удерживает.
  */
 export function createReplySender(room, agent, id) {
   let chain = Promise.resolve()
@@ -91,10 +93,10 @@ export function createReplySender(room, agent, id) {
       const t = String(text ?? '').trim()
       if (t && !ended) send({ text: t })
     },
-    end() {
+    end({ silent = false } = {}) {
       if (ended) return chain
       ended = true
-      return send({ end: true })
+      return send(silent ? { end: true, silent: true } : { end: true })
     },
   }
 }

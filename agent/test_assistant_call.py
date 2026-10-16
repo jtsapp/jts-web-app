@@ -99,8 +99,30 @@ async def test_fallback_on_silence():
         lp = FakeParticipant()
         brain = C.BrowserBrain(lp, "student-1", "en")
         assert await collect(brain.ask("hi")) == [C.FALLBACK["en"]]
+        # Браузер замолчал — его запрос к модели больше не нужен.
+        await asyncio.sleep(0.01)
+        assert lp.calls[-1][1] == C.CANCEL_METHOD, lp.calls
     finally:
         C.FIRST_PHRASE_SEC = old
+
+
+async def test_end_without_phrases():
+    # Ответ кончился без единой фразы — запасная фраза, а не тишина...
+    lp = FakeParticipant()
+    brain = C.BrowserBrain(lp, "student-1", "ru")
+    task = asyncio.ensure_future(collect(brain.ask("что дальше?")))
+    await asyncio.sleep(0)
+    await reply(brain, id=lp.calls[0][2]["id"], end=True)
+    assert await task == [C.FALLBACK["ru"]]
+    # ...кроме ответа, снятого нарочно («Новый чат»), и первой реплики.
+    for opening, msg in ((False, {"end": True, "silent": True}), (True, {"end": True})):
+        lp = FakeParticipant()
+        brain = C.BrowserBrain(lp, "student-1", "ru")
+        task = asyncio.ensure_future(collect(brain.ask("" if opening else "x", opening=opening)))
+        await asyncio.sleep(0)
+        await reply(brain, id=lp.calls[0][2]["id"], **msg)
+        assert await task == [], msg
+        assert [m for _, m, _ in lp.calls] == [C.ASK_METHOD]
 
 
 def test_texts():
@@ -119,6 +141,7 @@ async def main():
     await test_cancel_on_interrupt()
     await test_fallback_when_browser_missing()
     await test_fallback_on_silence()
+    await test_end_without_phrases()
     test_texts()
 
 
