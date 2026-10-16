@@ -5,7 +5,7 @@ import { actionMarker } from '../lib/assistant/actions.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
-import { OPENING_MARK, screenStateKey } from '../lib/assistant/opening.js'
+import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
@@ -14,6 +14,7 @@ import { assistantCallHidden } from '../lib/assistant/callGate.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
 import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
+import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
 import { unlockSpeech } from '../lib/speech.js'
 import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequestPending } from '../lib/tourBus.js'
 
@@ -74,6 +75,13 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // разговор идёт в тот же список сообщений, «открываю…» выполняется, когда она
 // договорила, шаги тура читает голос звонка. Окно можно закрыть — звонок
 // продолжается, кнопка Луны показывает, что она на связи.
+//
+// Позывной (16.10.2026): ученик говорит «Привет, Луна» / «Сәлем, Луна» — окно
+// открывается, Луна здоровается, говорит, что видит, спрашивает, чем помочь, и,
+// договорив, сама слушает ОДИН ответ, как по кнопке микрофона. Дальше — кнопкой:
+// разговор без кнопок в чате владелец отменил 15.10 (для разговора есть звонок).
+// Распознаёт позывной само устройство (lib/assistant/wake/), включает его ученик
+// переключателем в окне; во время звонка «ухо» выключено — микрофон у звонка.
 
 const MAX_INPUT = 2000
 // Тур не начался за это время (экран без тура, данные не доехали) — честно
@@ -204,6 +212,12 @@ const VOICE_ERRORS = {
   not_heard: 'assistant.mic.notHeard',
   stt_failed: 'assistant.mic.failed',
   auth: 'assistant.err.auth',
+}
+
+const WAKE_ERRORS = {
+  denied: 'assistant.wake.denied',
+  model: 'assistant.wake.modelFailed',
+  mic: 'assistant.wake.micFailed',
 }
 
 function readMuted() {
@@ -389,7 +403,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
   // Layout-эффект идёт внутри коммита, до любого события.
   useLayoutEffect(() => {
-    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen, callLive, callRoom: call?.session?.room || null }
+    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen, callLive, callRoom: call?.session?.room || null, open }
   })
   // Состояние экрана, о котором Луна уже сказала первую реплику (opening.js).
   const greetedRef = useRef(null)
@@ -648,7 +662,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
   // opening — первая реплика Луны: вместо вопроса уходит OPENING_MARK, на экране
   // его нет, а сбой не показывается плашкой.
-  const send = useCallback(async (raw, { voice = false, opening = false } = {}) => {
+  // afterReply — когда ответ кончился: договорён голосом или, без голоса, дописан.
+  // На позывной по нему Луна сама начинает слушать ответ ученика.
+  const send = useCallback(async (raw, { voice = false, opening = false, afterReply = null } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
     if (!text || !cur?.token || !mountedRef.current) return
@@ -726,6 +742,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           }
           // «Открываю…» договорено — теперь сам переход (или тур).
           runDeferred(speaker)
+          afterReply?.()
           if (played) return
           // Ни одна фраза не зазвучала — говорим об этом тихо, текст ответа на месте.
           setMessages((prev) => {
@@ -813,6 +830,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           return next
         })
       }
+      // Без голоса ответ кончился, когда дописан.
+      if (!speaker) afterReply?.()
     } catch (err) {
       speaker?.stop()
       if (speaker) reveal(null)
@@ -1160,6 +1179,33 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   useLayoutEffect(() => {
     cancelRecordingRef.current = cancelRecording
   })
+
+  // Позывной (см. шапку). Луна отвечает всегда — позвали, значит нужна, правило «один
+  // раз на экран» не для неё; но экран запоминается, чтобы открытие кнопкой следом
+  // не повторило первую реплику.
+  const voiceQRef = useRef(voiceQ)
+  useLayoutEffect(() => {
+    voiceQRef.current = voiceQ
+  })
+  const listenAnswer = useCallback(() => {
+    const q = voiceQRef.current
+    const cur = stateRef.current
+    // Окно закрыли, пока она говорила, или ученик уже сам жмёт микрофон — не слушаем.
+    if (!mountedRef.current || !cur?.enabled || !cur.open || cur.callLive || !q || q.state !== 'idle') return
+    q.clearError()
+    q.toggle()
+  }, [])
+  const onWake = useCallback(() => {
+    const cur = stateRef.current
+    if (!mountedRef.current || !cur?.enabled || !cur.token || cur.callLive) return
+    setOpen(true)
+    stateRef.current = { ...cur, open: true }
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    greetedRef.current = screenStateKey(cur.screen, snapshotScreen(root))
+    send(WAKE_MARK, { voice: !cur.muted, opening: true, afterReply: listenAnswer })
+  }, [send, listenAnswer])
+  // Во время звонка «ухо» молчит: микрофон у звонка, и Луна и так на связи.
+  const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake })
 
   // Закрыть окно — замолчать и бросить недоговорённую запись.
   const close = useCallback(() => {
@@ -1645,6 +1691,29 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             )}
           </form>
           )}
+          {/* Позывной — там же, где подпись о приватности: в компактном окне после
+              первого вопроса места под неё нет, и переключатель уходит вместе с ней. */}
+          {(!compact || !asked) && !call && wake.supported && Boolean(token) && (
+            <div className="asst__wake">
+              <label className="asst__wake-row">
+                <input
+                  type="checkbox"
+                  checked={wake.on}
+                  onChange={(e) => (e.target.checked ? wake.enable() : wake.disable())}
+                />
+                <span>{t('assistant.wake.toggle')}</span>
+              </label>
+              {(wake.on || wake.error) && (
+                <p className="asst__wake-hint" role={wake.error ? 'alert' : undefined}>
+                  {wake.error
+                    ? t(WAKE_ERRORS[wake.error])
+                    : wake.state === 'loading'
+                      ? t('assistant.wake.loading')
+                      : t('assistant.wake.hint')}
+                </p>
+              )}
+            </div>
+          )}
           {(!compact || !asked) && !call && <p className="asst__privacy">{t('assistant.privacy')}</p>}
         </div>
       )}
@@ -1683,6 +1752,14 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         }}
       >
         <img src={AVATAR} alt="" width="40" height="40" draggable={false} />
+        {!open && wake.state !== 'off' && (
+          <span
+            className={`asst__wake-dot is-${wake.state}`}
+            data-wake={wake.state}
+            title={t(`assistant.wake.badge.${wake.state}`)}
+            aria-hidden="true"
+          />
+        )}
       </button>
     </div>
   )

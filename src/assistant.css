@@ -269,6 +269,32 @@
 }
 .asst__privacy { margin: 0; padding: 0 14px 10px; font-size: 11px; line-height: 1.35; color: var(--asst-muted); }
 
+/* Позывной «Привет, Луна»: переключатель в окне и точка на кнопке Луны —
+   слушает (зелёная), не слушает (серая: микрофон занят, окно открыто, ждёт касания),
+   грузит модель (пульс). Точка внутри круга: у кнопки overflow: hidden, и на углу
+   квадрата её бы срезало — 7px от края держат её в круге 48px. */
+.asst__wake { padding: 0 14px 6px; }
+.asst__wake-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.asst__wake-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--asst-accent); }
+.asst__wake-hint { margin: 4px 0 0 24px; font-size: 12px; line-height: 1.35; color: var(--asst-muted); }
+.asst__wake-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #9aa0ab;
+  pointer-events: none;
+}
+.asst__wake-dot.is-listening { background: #2fbf71; }
+.asst__wake-dot.is-loading { background: #f5a524; animation: asst-wake-pulse 1.2s ease-in-out infinite; }
+@keyframes asst-wake-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  .asst__wake-dot.is-loading { animation: none; }
+}
+
 /* Телефон: окно на всю ширину снизу, кнопка выше — над кнопкой шага урока
    («Проверить»/«Продолжить»), которая занимает низ экрана во всю ширину. */
 @media (max-width: 720px) {
