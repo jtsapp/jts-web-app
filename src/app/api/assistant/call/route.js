@@ -20,6 +20,7 @@ import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { closeStaleSessions, getUsage, isDbConfigured, openSession } from '@/lib/usage.js'
 import { ASSISTANT_CALL_DAILY_SEC, assistantCallProfileId, hasOpenAssistantCall } from '@/lib/assistant/callUsage.js'
 import { assistantCallHiddenFor } from '@/lib/assistant/callGate.js'
+import { warmStudentContext } from '@/lib/assistant/studentContext.js'
 
 export const runtime = 'nodejs'
 
@@ -41,7 +42,8 @@ export async function POST(request) {
   // уроком тьютора.
   if (assistantCallHiddenFor(requestHost(request))) return json(404, { error: 'not_found' })
 
-  const auth = await verifyTokenStatus(bearerFromRequest(request))
+  const bearer = bearerFromRequest(request)
+  const auth = await verifyTokenStatus(bearer)
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
 
@@ -105,6 +107,11 @@ export async function POST(request) {
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
   const token = await at.toJwt()
+
+  // Пока браузер входит в комнату и агент просыпается (секунды), профиль ученика
+  // соберётся заранее: иначе его ждала бы первая реплика Луны (живой звонок
+  // 16.10.2026 — ~9 с тишины на старте).
+  warmStudentContext(bearer, auth.user)
 
   return json(200, { configured: true, token, url, room, identity, ttl, limitSec })
 }

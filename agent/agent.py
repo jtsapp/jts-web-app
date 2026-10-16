@@ -47,7 +47,7 @@ from livekit.agents import (
     tokenize,
 )
 from livekit.agents import tts as lk_tts
-from livekit.agents.types import NOT_GIVEN
+from livekit.agents.types import NOT_GIVEN, FlushSentinel
 from livekit.agents.utils import is_given
 from livekit.plugins import google
 from google.genai import types as genai_types
@@ -6360,10 +6360,11 @@ def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool =
     чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
     TTS и ключи, а это чистая функция над env и уже готовым детектором.
 
-    preemptive=False — звонок Луне-помощнику (assistant_call.py): там «мозг» —
-    браузер с платным запросом к чату на каждый вызов, и генерация по черновому
-    транскрипту, которую LiveKit бросает и начинает заново, стоила бы лишних
-    запросов, а не экономила бы время."""
+    preemptive=False — звонок Луне-помощнику с секретом LUNA_CALL_PREEMPTIVE=off
+    (_luna_call_preemptive): там «мозг» — браузер с платным запросом к чату на
+    каждый вызов, и черновой ход, который LiveKit бросает и начинает заново,
+    стоит лишнего запроса. С 16.10.2026 по умолчанию упреждение включено и
+    звонку: без него Луна отвечала заметно позже тьюторов."""
     if push_to_talk:
         # Ход открывает и закрывает клиент (см. RPC в entrypoint). В manual
         # фреймворк не перебивает тьютора по VAD вообще, а нажатие рации
@@ -7109,6 +7110,30 @@ def _aligned_transcript_for(profile: LearnerProfile) -> bool:
 ASSISTANT_CALL_INSTRUCTIONS = "Luna, the JTS site assistant. Replies come from the student's browser."
 
 
+def _luna_call_preemptive() -> bool:
+    """Упреждающая генерация в звонке помощнику (16.10.2026, «скорость как в
+    Speaking Buddy»): вопрос браузеру уходит по готовой фразе ученика, не
+    дожидаясь, пока детектор решит, что ход кончен, — у тьюторов это и прячет
+    паузу конца хода. Лишний запрос к чату, если ученик продолжил фразу,
+    LiveKit ограничивает тремя попытками на ход, а в окне черновик не виден
+    (luna.commit, assistant_call.py). Рубильник без деплоя — секрет
+    LUNA_CALL_PREEMPTIVE=off."""
+    return (os.getenv("LUNA_CALL_PREEMPTIVE") or "").strip().lower() not in ("0", "off", "false", "no")
+
+
+def _current_speech() -> Any:
+    """Речь LiveKit, для которой сейчас идёт llm_node, или None. Публичного
+    доступа нет: тот же contextvar читает сам фреймворк (voice/agent.py),
+    версия livekit-agents закреплена в requirements.txt. Не нашлась — ход
+    считается подтверждённым, как было до упреждения."""
+    try:
+        from livekit.agents.voice.agent_activity import _SpeechHandleContextVar
+
+        return _SpeechHandleContextVar.get(None)
+    except Exception:
+        return None
+
+
 class AssistantAgent(TutorAgent):
     """Луна-помощник в звонке: голос, распознавание, фильтр эха и замок на
     ученика — от TutorAgent, а ответ — из браузера (BrowserBrain)."""
@@ -7136,10 +7161,17 @@ class AssistantAgent(TutorAgent):
         if last is not None and not text:
             return
         said: list[str] = []
-        async for piece in self._brain.ask(text, opening=last is None):
+        async for piece in self._brain.ask(text, opening=last is None, speech=_current_speech()):
             out = assistant_call.spoken(piece)
             said.append(out)
             yield out
+            # Фраза от браузера всегда законченная, а потоковый TTS (blingfire)
+            # отдаёт предложение в синтез, только когда пришёл кусок следующего:
+            # у тьютора токены идут сплошь, а здесь следующая фраза — через 120+
+            # символов или в конце ответа. Без сброса первая фраза Луны ждала
+            # вторую (16.10.2026). Каждая фраза — свой отрезок синтеза; следующий
+            # LiveKit начинает готовить, пока звучит прежний.
+            yield FlushSentinel()
         reply = "".join(said).strip()
         if reply and self._stt_guard is not None:
             self._stt_guard.set_tutor_reply(reply)
@@ -7162,7 +7194,7 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
         brain_url=(os.getenv("VOICE_BRAIN_URL") or "").strip().rstrip("/"),
         guard_tutor="gentle",
         brain_model=session_brain_model(voice),
-        preemptive=False,
+        preemptive=_luna_call_preemptive(),
     )
     _attach_latency_logging(session)
     _attach_interruption_logging(session)

@@ -357,6 +357,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const [callNote, setCallNote] = useState(null)
   const callCtlRef = useRef(null) // кнопки звонка (AssistantCall: hangUp, toggleMic, say, startAudio)
   const callAskRef = useRef(null) // { id, controller } — ответ звонку, который сейчас пишется
+  // Черновой ход звонка (упреждающая генерация агента): id → { visible, queue }.
+  // Ответ уже готовится, а переписку он тронет только по luna.commit (callCommit).
+  const callDraftsRef = useRef(new Map())
   const callActionRef = useRef(null) // { action, spoke, timer } — «открываю…» ждёт конца её реплики
   const callSeqRef = useRef(0) // номер нажатия «Позвонить»: поздний токен отменённого — в мусор
   const hangingUpRef = useRef(false)
@@ -867,6 +870,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     callSeqRef.current += 1
     callAskRef.current?.controller.abort()
     callAskRef.current = null
+    callDraftsRef.current.clear()
     clearTimeout(callActionRef.current?.timer)
     callActionRef.current = null
   }, [])
@@ -878,14 +882,29 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
   // Агент спросил: ученик сказал text (или звонок только начался — opening).
   // Ответ — тем же чат-роутом, что и окно, фразами в голос звонка.
+  //
+  // pending — черновик: агент спросил, ещё не решив, что ученик договорил
+  // (упреждающая генерация, как у тьюторов Speaking Buddy). Модель спрашиваем
+  // сразу — ради этого и спрашивают заранее, — фразы шлём агенту (он придержит
+  // их до своего решения), а всё, что видно в окне, копим в draft.queue до
+  // luna.commit. Агент выбросил черновик — cancel с drop, и следа в переписке нет.
   const callAsk = useCallback(
-    async ({ id, text, opening, sender }) => {
+    async ({ id, text, opening, pending = false, sender }) => {
       const cur = stateRef.current
       if (!mountedRef.current || !cur?.token || !cur.callLive) {
         sender.end()
         return
       }
       callAskRef.current?.controller.abort()
+      // Новый вопрос снимает и прежний черновик: агент спрашивает заново, когда
+      // фраза ученика поменялась, — старому ходу в окне уже не бывать.
+      callDraftsRef.current.clear()
+      const draft = { visible: !pending, queue: [] }
+      if (pending) callDraftsRef.current.set(id, draft)
+      const ui = (fn) => (draft.visible ? fn() : draft.queue.push(fn))
+      // Замеры для строки LATENCY luna агента: где в звонке теряется время.
+      const askedAt = performance.now()
+      const timing = { pending }
       // Разговор в окне уже идёт (Луна поздоровалась, ученик что-то спрашивал) —
       // вторая первая реплика была бы повтором и лишним запросом к модели: Луна
       // просто говорит, что на связи. Полная реплика по экрану — в пустом окне.
@@ -893,7 +912,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         const hello = t('assistant.call.hello')
         sender.phrase(callSpeech(hello))
         sender.end()
-        setMessages((prev) => [...prev, { role: 'assistant', content: hello, local: true }])
+        ui(() => setMessages((prev) => [...prev, { role: 'assistant', content: hello, local: true }]))
         return
       }
       const controller = new AbortController()
@@ -908,29 +927,42 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       while (base.length && base[base.length - 1].role === 'assistant' && !base[base.length - 1].content.trim()) base.pop()
       if (base.length && base[base.length - 1].opening) base.pop()
       const history = [...base, { role: 'user', content: raw, voice: true, call: true, ...(opening ? { opening: true } : {}) }]
-      setMessages([...history, { role: 'assistant', content: '' }])
-      setError(null)
-      setCallNote(null)
-      setCallThinking(true)
+      ui(() => {
+        setMessages([...history, { role: 'assistant', content: '' }])
+        setError(null)
+        setCallNote(null)
+        setCallThinking(true)
+      })
       const mine = () => callAskRef.current?.id === id
       const toSend = history
         .filter((m) => !m.offtopic && !m.local)
         .map(({ role, content, action }) => ({ role, content: action ? `${content.trimEnd()}\n${actionMarker(action)}` : content }))
       const chunker = createSpeechChunker()
-      const speak = (phrase) => sender.phrase(callSpeech(phrase))
+      let firstPhrase = true
+      const speak = (phrase) => {
+        if (firstPhrase) {
+          firstPhrase = false
+          sender.timing({ ...timing, phrase: Math.round(performance.now() - askedAt) })
+        }
+        sender.phrase(callSpeech(phrase))
+      }
       const patchLast = (fn) =>
-        setMessages((prev) => {
-          const next = prev.slice()
-          const lastMsg = next[next.length - 1]
-          if (lastMsg?.role === 'assistant') next[next.length - 1] = fn(lastMsg)
-          return next
-        })
+        ui(() =>
+          setMessages((prev) => {
+            const next = prev.slice()
+            const lastMsg = next[next.length - 1]
+            if (lastMsg?.role === 'assistant') next[next.length - 1] = fn(lastMsg)
+            return next
+          }),
+        )
       const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+      const screenText = snapshotScreen(root)
+      timing.snap = Math.round(performance.now() - askedAt)
       try {
         const reply = await askAssistant({
           token: cur.token,
           messages: toSend,
-          screen: { id: cur.screen || null, text: snapshotScreen(root) },
+          screen: { id: cur.screen || null, text: screenText },
           lang: cur.lang,
           errors: recentErrors(),
           pageUrl: typeof location !== 'undefined' ? location.href : '',
@@ -939,9 +971,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           voice: true,
           call: cur.callRoom,
           signal: controller.signal,
+          onResponse: ({ serverTiming }) => {
+            timing.head = Math.round(performance.now() - askedAt)
+            if (serverTiming) timing.server = serverTiming
+          },
           onDelta: (chunk) => {
             if (controller.signal.aborted || !mine()) return
-            setCallThinking(false)
+            ui(() => setCallThinking(false))
             patchLast((m) => ({ ...m, content: m.content + chunk }))
             chunker.push(chunk).forEach(speak)
           },
@@ -954,13 +990,15 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (fallback) speak(fallback)
         if (action) {
           patchLast((m) => ({ ...m, content: fallback || m.content, action }))
-          if (action.now && stateRef.current?.enabled) {
-            clearTimeout(callActionRef.current?.timer)
-            callActionRef.current = { action, spoke: false, timer: setTimeout(runCallAction, ACTION_WAIT_MAX_MS) }
-          }
+          ui(() => {
+            if (action.now && stateRef.current?.enabled) {
+              clearTimeout(callActionRef.current?.timer)
+              callActionRef.current = { action, spoke: false, timer: setTimeout(runCallAction, ACTION_WAIT_MAX_MS) }
+            }
+          })
         }
         if (reply.offtopic || reply.reported) {
-          setMessages((prev) => {
+          ui(() => setMessages((prev) => {
             const next = prev.slice()
             const n = next.length
             if (reply.offtopic) {
@@ -969,7 +1007,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             }
             if (reply.reported) next[n - 1] = { ...next[n - 1], reported: true }
             return next
-          })
+          }))
         }
       } catch (err) {
         if (err?.name === 'AbortError' || !mine()) return
@@ -988,7 +1026,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         } else {
           // Первая реплика по экрану не вышла — звонок не должен начаться
           // тишиной: Луна хотя бы отзывается.
-          setMessages(base)
+          ui(() => setMessages(base))
           speak(t('assistant.call.hello'))
         }
       } finally {
@@ -997,19 +1035,34 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         sender.end({ silent: controller.signal.aborted })
         if (mine()) {
           callAskRef.current = null
-          setCallThinking(false)
+          // Через очередь черновика: commit после конца ответа без текста
+          // (ошибка, одна кнопка) иначе включил бы «Думаю…» уже навсегда.
+          ui(() => setCallThinking(false))
         }
       }
     },
     [t, runCallAction],
   )
 
-  // Агент передумал (ученик перебил) — ответ больше не нужен.
-  const callCancel = useCallback((id) => {
+  // Агент передумал (ученик перебил) — ответ больше не нужен. drop — черновик
+  // так и не стал ходом: накопленное для окна выбрасываем вместе с ним.
+  const callCancel = useCallback((id, { drop = false } = {}) => {
+    if (drop) callDraftsRef.current.delete(id)
     if (callAskRef.current?.id !== id) return
     callAskRef.current.controller.abort()
     callAskRef.current = null
     setCallThinking(false)
+  }, [])
+
+  // Черновик стал ходом: агент решил, что ученик договорил. Вопрос и всё, что
+  // уже пришло от модели, появляются в окне разом — ответ к этому моменту
+  // обычно уже пишется, а то и дописан.
+  const callCommit = useCallback((id) => {
+    const draft = callDraftsRef.current.get(id)
+    if (!draft) return
+    callDraftsRef.current.delete(id)
+    draft.visible = true
+    draft.queue.splice(0).forEach((fn) => fn())
   }, [])
 
   useLayoutEffect(() => {
@@ -1655,6 +1708,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             session={call.session}
             onAsk={callAsk}
             onCancel={callCancel}
+            onCommit={callCommit}
             onState={callState}
             onEnded={callEnded}
             controlRef={callCtlRef}

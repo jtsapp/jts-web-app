@@ -4,15 +4,24 @@
 // Почему так, а не мозгом агента, — шапка agent/assistant_call.py.
 //
 // Протокол (менять парой с agent/assistant_call.py):
-//   агент → браузер  luna.ask    {id, text, opening}  ответ «ok» сразу
-//   браузер → агент  luna.reply  {id, text} … {id, end: true[, silent: true]}
-//   агент → браузер  luna.cancel {id}                 ученик перебил
+//   агент → браузер  luna.ask    {id, text, opening[, pending]}  ответ «ok» сразу
+//   агент → браузер  luna.commit {id}                 черновик стал ходом
+//   браузер → агент  luna.reply  {id, text[, t]} … {id, end: true[, silent: true]}
+//   агент → браузер  luna.cancel {id[, drop]}         ученик перебил; drop — ход не начался
 //   браузер → агент  luna.say    {text}               шаг тура (пусто — замолчать)
+//
+// pending — упреждающая генерация (16.10.2026, «скорость как в Speaking
+// Buddy»): агент спрашивает, ещё не решив, что ученик договорил. Ответ надо
+// начинать готовить сразу — ради этого всё и затевалось, — но в окне такой ход
+// не показывают до luna.commit: ученик мог продолжить фразу, и тогда агент
+// пришлёт cancel с drop, а в переписке не должно остаться ни обрывка вопроса,
+// ни ответа на него.
 
 import { spellNumbersRu } from './numbersRu.js'
 import { phraseLang } from './phraseLang.js'
 
 export const ASK = 'luna.ask'
+export const COMMIT = 'luna.commit'
 export const REPLY = 'luna.reply'
 export const CANCEL = 'luna.cancel'
 export const SAY = 'luna.say'
@@ -38,11 +47,12 @@ export function callSpeech(phrase) {
 }
 
 /**
- * Обработчики RPC агента. onAsk({id, text, opening, agent}) зовётся без
+ * Обработчики RPC агента. onAsk({id, text, opening, pending, agent}) зовётся без
  * ожидания: агент ждёт только «принял», сам ответ идёт фразами отдельно.
+ * onCommit(id) — черновик (pending) стал ходом; onCancel(id, {drop}).
  * @returns {() => void} снять обработчики (конец звонка)
  */
-export function attachCallBridge(room, { onAsk, onCancel }) {
+export function attachCallBridge(room, { onAsk, onCancel, onCommit }) {
   room.registerRpcMethod(ASK, async (data) => {
     const msg = parse(data.payload)
     if (!msg || !msg.id) return 'bad'
@@ -50,17 +60,24 @@ export function attachCallBridge(room, { onAsk, onCancel }) {
       id: String(msg.id),
       text: String(msg.text || ''),
       opening: Boolean(msg.opening),
+      pending: Boolean(msg.pending),
       agent: data.callerIdentity,
     })
     return 'ok'
   })
+  room.registerRpcMethod(COMMIT, async (data) => {
+    const msg = parse(data.payload)
+    if (msg?.id) onCommit?.(String(msg.id))
+    return 'ok'
+  })
   room.registerRpcMethod(CANCEL, async (data) => {
     const msg = parse(data.payload)
-    if (msg?.id) onCancel(String(msg.id))
+    if (msg?.id) onCancel(String(msg.id), { drop: Boolean(msg.drop) })
     return 'ok'
   })
   return () => {
     room.unregisterRpcMethod(ASK)
+    room.unregisterRpcMethod(COMMIT)
     room.unregisterRpcMethod(CANCEL)
   }
 }
@@ -71,10 +88,14 @@ export function attachCallBridge(room, { onAsk, onCancel }) {
  * Агент недоступен — молча: звонок кончается сам, а ронять из-за этого чат незачем.
  * end({ silent: true }) — ответ сняли нарочно («Новый чат»): агент на конец без
  * единой фразы говорит «не получилось», и silent его от этого удерживает.
+ * timing(t) — замеры браузера: уходят полем `t` с первой фразой, и агент пишет
+ * их в строку LATENCY luna (по ней и видно, где в звонке теряется время).
  */
 export function createReplySender(room, agent, id) {
   let chain = Promise.resolve()
   let ended = false
+  let timing = null
+  let sentText = false
   const send = (body) => {
     chain = chain
       .then(() =>
@@ -89,9 +110,14 @@ export function createReplySender(room, agent, id) {
     return chain
   }
   return {
+    timing(t) {
+      if (!sentText && t && typeof t === 'object') timing = t
+    },
     phrase(text) {
       const t = String(text ?? '').trim()
-      if (t && !ended) send({ text: t })
+      if (!t || ended) return
+      send(!sentText && timing ? { text: t, t: timing } : { text: t })
+      sentText = true
     },
     end({ silent = false } = {}) {
       if (ended) return chain

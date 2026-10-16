@@ -50,7 +50,10 @@ function Harness({ greetOnOpen = false }) {
 }
 
 const sender = () => {
-  const s = { phrases: [], ended: 0, silent: null }
+  const s = { phrases: [], ended: 0, silent: null, t: null }
+  s.timing = (t) => {
+    s.t = t
+  }
   s.phrase = (t) => s.phrases.push(t)
   s.end = ({ silent = false } = {}) => {
     s.ended += 1
@@ -161,6 +164,72 @@ describe('звонок Луне', () => {
     expect(s.phrases).toEqual([])
     expect(s.silent).toBe(true)
     expect(release).toBeTypeOf('function')
+  })
+
+  it('черновой ход (pending): ответ готовится сразу, а в окне появляется только по commit', async () => {
+    chatReplies.push(['Словарь — в меню слева. ', 'Нажмите «Словарь».'])
+    await startCall()
+    const s = sender()
+    await act(async () => room.props.onAsk({ id: '11', text: 'как открыть словарь', opening: false, pending: true, sender: s }))
+    await waitFor(() => expect(s.ended).toBe(1), WAIT)
+    // Модель спросили и фразы агенту отдали — он придержит их до своего решения...
+    expect(chatBodies()).toHaveLength(1)
+    expect(s.phrases.join(' ')).toContain('Словарь — в меню слева.')
+    expect(s.t).toMatchObject({ pending: true })
+    expect(s.t.phrase).toBeTypeOf('number')
+    // ...а в переписке хода ещё нет.
+    expect(screen.queryByText('как открыть словарь')).toBeNull()
+    expect(screen.queryByText(/в меню слева/)).toBeNull()
+    act(() => room.props.onCommit('11'))
+    expect(await screen.findByText('как открыть словарь', {}, WAIT)).toBeTruthy()
+    expect(screen.getByText(/Словарь — в меню слева\. Нажмите «Словарь»\./)).toBeTruthy()
+  })
+
+  it('черновик подтвердили после неудачного ответа — строка «не вышло» в окне, «Думаю…» не висит', async () => {
+    fetchMock.mockImplementation(async (url) =>
+      url === '/api/assistant/call'
+        ? Response.json({ configured: true, token: 'lk', url: 'wss://x', room: ROOM, identity: 's', ttl: 900 })
+        : new Response('{}', { status: 502 }),
+    )
+    await startCall()
+    const s = sender()
+    await act(async () => room.props.onAsk({ id: '14', text: 'где домашка', opening: false, pending: true, sender: s }))
+    await waitFor(() => expect(s.ended).toBe(1), WAIT)
+    act(() => room.props.onCommit('14'))
+    expect(await screen.findByText('где домашка', {}, WAIT)).toBeTruthy()
+    expect(document.querySelector('.asst__status')).toBeNull()
+  })
+
+  it('черновик выброшен (cancel с drop) — ни вопроса, ни ответа в окне, и в историю он не идёт', async () => {
+    let release
+    fetchMock.mockImplementation(async (url, opts) =>
+      url === '/api/assistant/call'
+        ? Response.json({ configured: true, token: 'lk', url: 'wss://x', room: ROOM, identity: 's', ttl: 900 })
+        : new Promise((resolve, reject) => {
+            release = () => resolve(streamResponse(['Ответ на обрывок.']))
+            opts.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })))
+          }),
+    )
+    await startCall()
+    const s1 = sender()
+    act(() => {
+      room.props.onAsk({ id: '12', text: 'как открыть', opening: false, pending: true, sender: s1 })
+    })
+    await waitFor(() => expect(chatBodies()).toHaveLength(1), WAIT)
+    act(() => room.props.onCancel('12', { drop: true }))
+    await waitFor(() => expect(s1.ended).toBe(1), WAIT)
+    expect(s1.silent).toBe(true)
+    expect(release).toBeTypeOf('function')
+    act(() => room.props.onCommit('12')) // поздний commit выброшенного — ничего
+    expect(screen.queryByText('как открыть')).toBeNull()
+    // Окончательный вопрос: история без обрывка.
+    fetchMock.mockImplementation(async () => streamResponse(['Словарь в меню.']))
+    const s2 = sender()
+    await act(async () => room.props.onAsk({ id: '13', text: 'как открыть словарь', opening: false, sender: s2 }))
+    await waitFor(() => expect(s2.ended).toBe(1), WAIT)
+    const last = chatBodies().at(-1)
+    expect(last.messages.filter((m) => m.role === 'user').map((m) => m.content)).toEqual(['как открыть словарь'])
+    expect(await screen.findByText('Словарь в меню.', {}, WAIT)).toBeTruthy()
   })
 
   it('разговор в окне уже идёт — в начале звонка Луна только говорит, что на связи, без запроса к модели', async () => {

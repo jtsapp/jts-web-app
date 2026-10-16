@@ -21,6 +21,14 @@
 // («…а если начать с грамматики?»), и дёргать шесть источников на каждый было
 // бы и медленно, и лишней нагрузкой на бэкенд. TTL короткий: план не должен
 // расходиться с реальностью дольше, чем на несколько минут.
+//
+// С 16.10.2026 протухший профиль отдаётся сразу, а свежий собирается в фоне
+// (CONTEXT_STALE_MS). Причина — звонок Луне: реплики там идут каждые 10–30 с, и
+// раз в три минуты одна из них стояла, пока шесть ручек бэкенда и пять запросов
+// к базе соберут профиль заново, — секунды тишины посреди разговора (первая
+// реплика живого звонка ждала ~9 с). Цена — один ответ по профилю старше трёх
+// минут, но не старше пятнадцати. Звонок к тому же греет кэш заранее, при выдаче
+// токена (warmStudentContext в api/assistant/call).
 
 import { BACKEND_URL, profileIdForUser, fetchTutorLimitOverride } from '../auth-server.js'
 import { isDbConfigured } from '../db/sql.js'
@@ -33,9 +41,14 @@ import { pickRecommendation } from './recommend.js'
 import { checkNotes, goalLine, mistakesLine, notesLines, practiceLine, weekLine } from './tracker.js'
 
 export const CONTEXT_TTL_MS = 3 * 60 * 1000
+// Дольше этого протухший профиль ответом не служит — вопрос ждёт свежий.
+export const CONTEXT_STALE_MS = 15 * 60 * 1000
 const IELTS_HISTORY_LIMIT = 3
 
 const cache = new Map() // profileId → { at, text }
+// Сборка в пути: черновой и окончательный вопрос звонка приходят почти разом,
+// и каждый не должен дёргать бэкенд заново.
+const inflight = new Map() // profileId → Promise<string|null>
 
 async function authGetJson(path, token) {
   try {
@@ -197,8 +210,35 @@ export async function loadStudentContext(token, user, now = Date.now()) {
   const profileId = profileIdForUser(user.userId)
 
   const cached = cache.get(profileId)
-  if (cached && now - cached.at < CONTEXT_TTL_MS) return cached.text
+  const age = cached ? now - cached.at : Infinity
+  if (age < CONTEXT_TTL_MS) return cached.text
+  if (age < CONTEXT_STALE_MS) {
+    refresh(token, profileId, now).catch(() => {})
+    return cached.text
+  }
+  return refresh(token, profileId, now)
+}
 
+/** Начать сборку профиля заранее и не ждать её (звонок Луне — при выдаче токена). */
+export function warmStudentContext(token, user) {
+  loadStudentContext(token, user).catch(() => {})
+}
+
+function refresh(token, profileId, now) {
+  let pending = inflight.get(profileId)
+  if (!pending) {
+    pending = buildStudentContext(token, profileId, now)
+      .then((text) => {
+        cache.set(profileId, { at: now, text })
+        return text
+      })
+      .finally(() => inflight.delete(profileId))
+    inflight.set(profileId, pending)
+  }
+  return pending
+}
+
+async function buildStudentContext(token, profileId, now) {
   const results = await Promise.allSettled([
     authGetJson('/admin/homework/my', token),
     authGetJson('/admin/lessons/occurrences', token),
@@ -244,12 +284,11 @@ export async function loadStudentContext(token, user, now = Date.now()) {
     notesLines(notes, now),
   ].filter(Boolean)
 
-  const text = lines.length ? lines.join('\n') : null
-  cache.set(profileId, { at: now, text })
-  return text
+  return lines.length ? lines.join('\n') : null
 }
 
 /** Для тестов и на случай смены ученика на этой же вкладке процесса. */
 export function clearStudentContextCache() {
   cache.clear()
+  inflight.clear()
 }

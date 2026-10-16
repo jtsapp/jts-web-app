@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ASK, CANCEL, REPLY, SAY, attachCallBridge, callSpeech, createCallTourVoice, createReplySender, sayInCall } from './callBridge.js'
+import { ASK, CANCEL, COMMIT, REPLY, SAY, attachCallBridge, callSpeech, createCallTourVoice, createReplySender, sayInCall } from './callBridge.js'
 
 // Комната LiveKit в миниатюре: обработчики RPC и журнал исходящих вызовов.
 function fakeRoom({ failFirst = false } = {}) {
@@ -32,12 +32,30 @@ describe('мост звонка Луне', () => {
     const detach = attachCallBridge(room, { onAsk, onCancel })
     const res = await room.handlers.get(ASK)({ payload: '{"id":"7","text":"где домашка?","opening":false}', callerIdentity: 'agent-1' })
     expect(res).toBe('ok')
-    expect(onAsk).toHaveBeenCalledWith({ id: '7', text: 'где домашка?', opening: false, agent: 'agent-1' })
+    expect(onAsk).toHaveBeenCalledWith({ id: '7', text: 'где домашка?', opening: false, pending: false, agent: 'agent-1' })
     expect(await room.handlers.get(ASK)({ payload: 'не json' })).toBe('bad')
     await room.handlers.get(CANCEL)({ payload: '{"id":"7"}' })
-    expect(onCancel).toHaveBeenCalledWith('7')
+    expect(onCancel).toHaveBeenCalledWith('7', { drop: false })
     detach()
     expect(room.handlers.size).toBe(0)
+  })
+
+  it('черновик: pending в вопросе, luna.commit делает его ходом, cancel с drop — без следа', async () => {
+    const room = fakeRoom()
+    const onAsk = vi.fn()
+    const onCancel = vi.fn()
+    const onCommit = vi.fn()
+    attachCallBridge(room, { onAsk, onCancel, onCommit })
+    await room.handlers.get(ASK)({ payload: '{"id":"8","text":"как открыть","pending":true}', callerIdentity: 'agent-1' })
+    expect(onAsk).toHaveBeenCalledWith({ id: '8', text: 'как открыть', opening: false, pending: true, agent: 'agent-1' })
+    expect(await room.handlers.get(COMMIT)({ payload: '{"id":"8"}' })).toBe('ok')
+    expect(onCommit).toHaveBeenCalledWith('8')
+    await room.handlers.get(CANCEL)({ payload: '{"id":"9","drop":true}' })
+    expect(onCancel).toHaveBeenCalledWith('9', { drop: true })
+    // Старое окно без обработчика commit — не падаем.
+    const bare = fakeRoom()
+    attachCallBridge(bare, { onAsk, onCancel })
+    expect(await bare.handlers.get(COMMIT)({ payload: '{"id":"8"}' })).toBe('ok')
   })
 
   it('фразы ответа уходят агенту по порядку, конец — один раз, после конца — ничего', async () => {
@@ -51,6 +69,21 @@ describe('мост звонка Луне', () => {
     await s.end()
     expect(room.sent.map((x) => x.body)).toEqual([{ id: '7', text: 'Первая.' }, { id: '7', text: 'Вторая.' }, { id: '7', end: true }])
     expect(room.sent.every((x) => x.to === 'agent-1' && x.method === REPLY)).toBe(true)
+  })
+
+  it('замеры браузера едут с первой фразой и только с ней', async () => {
+    const room = fakeRoom()
+    const s = createReplySender(room, 'agent-1', '7')
+    s.timing({ fetch: 812, server: 'auth;dur=40' })
+    s.phrase('Первая.')
+    s.timing({ fetch: 1 })
+    s.phrase('Вторая.')
+    await s.end()
+    expect(room.sent.map((x) => x.body)).toEqual([
+      { id: '7', text: 'Первая.', t: { fetch: 812, server: 'auth;dur=40' } },
+      { id: '7', text: 'Вторая.' },
+      { id: '7', end: true },
+    ])
   })
 
   it('ответ, снятый нарочно, кончается тихо — агент не скажет «не получилось»', async () => {
