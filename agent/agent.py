@@ -6365,6 +6365,11 @@ def _turn_mode_from_payload(payload: Any) -> str | None:
 # (resume_false_interruption по умолчанию). Ручки — секретами воркера.
 LUNA_CALL_INTERRUPT_MIN_WORDS_DEFAULT = 1
 LUNA_CALL_INTERRUPT_MIN_SEC_DEFAULT = 0.5
+# Сколько ждать продолжения фразы, которую детектор счёл незаконченной. У
+# тьютора 4 с — ученик подбирает английские слова; в звонке помощнику короткое
+# «а где домашка» ждало конца хода 3 с (второй живой звонок 16.10.2026,
+# eou_delay=2.98s), и ответ приходил через 4.5 с вместо 1–2.
+LUNA_CALL_MAX_ENDPOINTING_SEC_DEFAULT = 1.5
 
 
 def _barge_in_options() -> dict[str, Any]:
@@ -6427,7 +6432,12 @@ def _turn_handling(
                 "min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.35")),
                 # Незаконченная: сколько ученику дают молча подумать, не теряя ход.
                 # Ради этого потолка всё и затевалось — на VAD его не существует.
-                "max_delay": float(os.getenv("MAX_ENDPOINTING_SEC", "4.0")),
+                # В звонке помощнику — короче (LUNA_CALL_MAX_ENDPOINTING_SEC_DEFAULT).
+                "max_delay": float(
+                    os.getenv("LUNA_CALL_MAX_ENDPOINTING_SEC", str(LUNA_CALL_MAX_ENDPOINTING_SEC_DEFAULT))
+                    if barge_in
+                    else os.getenv("MAX_ENDPOINTING_SEC", "4.0")
+                ),
             },
             # Отличает поддакивание ученика от настоящего перебивания. Если
             # начнёт глотать настоящие — вернуть {"mode": "vad"}.
@@ -7262,14 +7272,42 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
         if fut is not None and hasattr(fut, "add_done_callback"):
             fut.add_done_callback(lambda f: f.cancelled() or f.exception())
 
+    # Кто оборвал реплику: кнопка «Перебить» (luna.say с пустым текстом) или
+    # голос ученика. Без этой строки перебивание в логе не видно вовсе: в режиме
+    # VAD LiveKit событий о нём не шлёт (второй живой звонок 16.10.2026).
+    pressed = {"at": 0.0}
+
+    @session.on("speech_created")
+    def _on_speech(ev: Any) -> None:
+        handle = getattr(ev, "speech_handle", None)
+        if handle is None:
+            return
+        started = time.monotonic()
+
+        def _done(h: Any) -> None:
+            if not getattr(h, "interrupted", False):
+                return
+            now = time.monotonic()
+            how = "button" if now - pressed["at"] < 1.5 else "voice"
+            logger.info("[luna-call] interrupted by %s after %.1fs", how, now - started)
+
+        try:
+            handle.add_done_callback(_done)
+        except Exception:
+            logger.exception("[luna-call] speech handle callback failed")
+
     async def _say(data: Any) -> str:
         """Шаг тура, который ведёт Луна: сказать его в звонке, оборвав прежнюю
-        реплику. Пустой текст — просто замолчать (ученик закрыл тур)."""
+        реплику. Пустой текст — просто замолчать (кнопка «Перебить», конец тура)."""
         text = assistant_call.say_payload_text(data)
         if text is None:
             return "bad"
+        if not text.strip():
+            pressed["at"] = time.monotonic()
+            logger.info("[luna-call] stop requested by browser")
         _detach(session.interrupt())
         if text.strip():
+            logger.info("[luna-call] say: %d chars (tour step)", len(text))
             session.say(text, allow_interruptions=True)
         return "ok"
 

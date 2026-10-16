@@ -89,6 +89,9 @@ async def main():
     assert A._turn_handling(None, push_to_talk=True, barge_in=True)["interruption"] == barge
     assert A._turn_handling(object())["interruption"]["mode"] == "adaptive"
     assert "mode" not in A._turn_handling(None)["interruption"]
+    # Конец хода в звонке помощнику ждёт не дольше 1.5 с, у тьютора — 4 с.
+    assert A._turn_handling(object(), barge_in=True)["endpointing"]["max_delay"] == 1.5
+    assert A._turn_handling(object())["endpointing"]["max_delay"] == 4.0
     os.environ["LUNA_CALL_INTERRUPT_MIN_SEC"] = "0.3"
     try:
         assert A._barge_in_options()["min_duration"] == 0.3

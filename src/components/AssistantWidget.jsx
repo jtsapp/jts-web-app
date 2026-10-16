@@ -205,6 +205,9 @@ const AssistantCall = lazy(() => import('./AssistantCall.jsx'))
 const CALL_AGENT_WAIT_MS = 20_000
 // Часы звонка — только в обработчиках и таймерах, не при рендере.
 const clockNow = () => Date.now()
+// Первая фраза ответа в звонке (см. callAsk): короче, чем в окне.
+const CALL_FIRST_MIN = 12
+const CALL_FIRST_MAX = 60
 const MUTE_KEY = 'jts_assistant_voice_muted'
 
 const VOICE_ERRORS = {
@@ -956,7 +959,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       const toSend = history
         .filter((m) => !m.offtopic && !m.local)
         .map(({ role, content, action }) => ({ role, content: action ? `${content.trimEnd()}\n${actionMarker(action)}` : content }))
-      const chunker = createSpeechChunker()
+      // Первая фраза звонка — с 12 символов, а не с 30: голос агента начинает,
+      // как только есть законченный кусок («Конечно, сейчас.»), а не ждёт
+      // длинного предложения (второй живой звонок 16.10.2026: первая фраза
+      // приходила агенту через 1.7–2.2 с).
+      const chunker = createSpeechChunker({ firstMin: CALL_FIRST_MIN, firstMax: CALL_FIRST_MAX })
       let firstPhrase = true
       const speak = (phrase) => {
         if (firstPhrase) {
