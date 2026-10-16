@@ -111,8 +111,9 @@ function zipSync(entries) {
   return Buffer.concat([...locals, dirBuf, end])
 }
 
-// Читаем свои же архивы только в тестах — распаковщик умеет ровно то, что
-// умеет писатель (store), и на чужих архивах с deflate вернёт пустоту.
+// Читатель локальных заголовков: store и deflate, без data descriptor и zip64.
+// Хватает своих архивов (тесты комиксов) и модели позывного Луны — её zip
+// закреплён по sha256 (scripts/fetch-wake-model.js) и устроен ровно так.
 function unzipSync(buf) {
   const out = {}
   let i = 0
