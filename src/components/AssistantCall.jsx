@@ -27,13 +27,14 @@ import { useCallSession } from '../tutor/callSession.js'
 
 /**
  * @param {{ session: {token: string, url: string, room: string},
- *   onAsk: (q: {id: string, text: string, opening: boolean, sender: ReturnType<typeof createReplySender>}) => void,
- *   onCancel: (id: string) => void,
+ *   onAsk: (q: {id: string, text: string, opening: boolean, pending: boolean, sender: ReturnType<typeof createReplySender>}) => void,
+ *   onCommit?: (id: string) => void,
+ *   onCancel: (id: string, opts?: {drop?: boolean}) => void,
  *   onState: (s: {agentState: string, micOn: boolean, audioBlocked: boolean, userText: string}) => void,
  *   onEnded: (reason: 'disconnected'|'error'|'mic') => void,
  *   controlRef: {current: null | {hangUp: () => void, toggleMic: () => void, say: (text: string) => Promise<void>, startAudio: () => Promise<void>}} }} props
  */
-export default function AssistantCall({ session, onAsk, onCancel, onState, onEnded, controlRef }) {
+export default function AssistantCall({ session, onAsk, onCancel, onCommit, onState, onEnded, controlRef }) {
   return (
     <LiveKitRoom
       token={session.token}
@@ -50,6 +51,7 @@ export default function AssistantCall({ session, onAsk, onCancel, onState, onEnd
       <CallLink
         roomName={session.room}
         onAsk={onAsk}
+        onCommit={onCommit}
         onCancel={onCancel}
         onState={onState}
         controlRef={controlRef}
@@ -58,7 +60,7 @@ export default function AssistantCall({ session, onAsk, onCancel, onState, onEnd
   )
 }
 
-function CallLink({ roomName, onAsk, onCancel, onState, controlRef }) {
+function CallLink({ roomName, onAsk, onCancel, onCommit, onState, controlRef }) {
   const room = useRoomContext()
   const va = useVoiceAssistant()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
@@ -73,18 +75,19 @@ function CallLink({ roomName, onAsk, onCancel, onState, controlRef }) {
   const closeRef = useRef(closeSession)
 
   // Колбэки окна живут дольше одного рендера: обработчики RPC ставятся один раз.
-  const cb = useRef({ onAsk, onCancel, onState })
+  const cb = useRef({ onAsk, onCancel, onCommit, onState })
   useLayoutEffect(() => {
-    cb.current = { onAsk, onCancel, onState }
+    cb.current = { onAsk, onCancel, onCommit, onState }
     closeRef.current = closeSession
   })
 
   useEffect(
     () =>
       attachCallBridge(room, {
-        onAsk: ({ id, text, opening, agent }) =>
-          cb.current.onAsk({ id, text, opening, sender: createReplySender(room, agent, id) }),
-        onCancel: (id) => cb.current.onCancel(id),
+        onAsk: ({ id, text, opening, pending, agent }) =>
+          cb.current.onAsk({ id, text, opening, pending, sender: createReplySender(room, agent, id) }),
+        onCancel: (id, opts) => cb.current.onCancel(id, opts),
+        onCommit: (id) => cb.current.onCommit?.(id),
       }),
     [room],
   )

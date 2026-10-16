@@ -53,8 +53,10 @@ const MAX_OUTPUT_TOKENS = 800
 const takeQuota = createRateLimiter()
 // Звонок Луне: реплики идут каждые 10–30 с, и общий лимит (20 за 10 минут)
 // оборвал бы разговор на середине. Потолок звонку ставит его дневной лимит
-// минут (callUsage.js), здесь — лишь страховка от петли.
-const takeCallQuota = createRateLimiter({ windowLimit: 80, dayLimit: 400 })
+// минут (callUsage.js), здесь — лишь страховка от петли. С 16.10.2026 агент
+// спрашивает и черновиком (упреждающая генерация, до трёх попыток на ход, см.
+// agent/assistant_call.py) — отсюда запас ×2.5 к прежним 80/400.
+const takeCallQuota = createRateLimiter({ windowLimit: 200, dayLimit: 1000 })
 const offtopic = createOfftopicGuard()
 
 const json = (status, body, headers = {}) =>
@@ -68,9 +70,24 @@ const TEXT_HEADERS = {
   'x-accel-buffering': 'no',
 }
 
+// Server-Timing ответа: сколько роут потратил на вход, проверку звонка, профиль
+// ученика и первые слова модели. Браузер звонка Луне пересылает его агенту, и
+// тот пишет в строку LATENCY luna — по логам LiveKit видно, где в звонке теряется
+// время (16.10.2026: без этого задержку звонка можно было только угадывать).
+function serverTiming(marks) {
+  return Object.entries(marks)
+    .filter(([, v]) => Number.isFinite(v))
+    .map(([k, v]) => `${k};dur=${Math.round(v)}`)
+    .join(', ')
+}
+
 export async function POST(request) {
+  const startedAt = performance.now()
+  const marks = {}
+  const since = (t) => performance.now() - t
   const bearer = bearerFromRequest(request)
   const auth = await verifyTokenStatus(bearer)
+  marks.auth = since(startedAt)
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
   if (!hasAnthropicKey()) return json(503, { error: 'assistant_unavailable' })
@@ -98,7 +115,20 @@ export async function POST(request) {
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
   }
+  // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
+  // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
+  // должен из-за этого падать — план останется без персонализации. Собирается
+  // параллельно с проверкой звонка и лимитом: это разные походы (бэкенд и
+  // база), и ждать их по очереди — лишнее время до первого слова Луны.
+  const ctxAt = performance.now()
+  const contextReady = loadStudentContext(bearer, auth.user)
+    .catch(() => null)
+    .finally(() => {
+      marks.ctx = since(ctxAt)
+    })
+  const callAt = performance.now()
   const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
+  marks.call = since(callAt)
   const limiter = inCall ? takeCallQuota : takeQuota
   const quota = limiter(key)
   if (!quota.ok) {
@@ -107,11 +137,9 @@ export async function POST(request) {
     })
   }
 
-  // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
-  // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
-  // должен из-за этого падать — план останется без персонализации.
-  const studentContext = await loadStudentContext(bearer, auth.user).catch(() => null)
+  const studentContext = await contextReady
 
+  const modelAt = performance.now()
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(),
     messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
@@ -143,6 +171,10 @@ export async function POST(request) {
     return json(502, { error: 'model_failed' })
   }
 
+  marks.model = since(modelAt)
+  marks.total = since(startedAt)
+  const timingHeaders = { 'server-timing': serverTiming(marks) }
+
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
 
@@ -157,7 +189,7 @@ export async function POST(request) {
     offtopic.record(key)
     return new Response(OFFTOPIC_REPLY[parsed.lang] || OFFTOPIC_REPLY.ru, {
       status: 200,
-      headers: { ...TEXT_HEADERS, 'x-assistant-offtopic': '1' },
+      headers: { ...TEXT_HEADERS, ...timingHeaders, 'x-assistant-offtopic': '1' },
     })
   }
 
@@ -286,5 +318,5 @@ export async function POST(request) {
     },
   })
 
-  return new Response(stream, { status: 200, headers: TEXT_HEADERS })
+  return new Response(stream, { status: 200, headers: { ...TEXT_HEADERS, ...timingHeaders } })
 }

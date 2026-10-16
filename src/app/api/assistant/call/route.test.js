@@ -25,6 +25,11 @@ vi.mock('@/lib/assistant/callUsage.js', async (importOriginal) => ({
   hasOpenAssistantCall: async () => usage.open,
 }))
 
+// Прогрев профиля ученика: сам профиль собирает studentContext.js (бэкенд и
+// база) — здесь только кого и когда роут просит прогреть.
+vi.mock('@/lib/assistant/studentContext.js', () => ({ warmStudentContext: vi.fn() }))
+const { warmStudentContext } = await import('@/lib/assistant/studentContext.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body = {}, token = 'tok', host = null) =>
@@ -96,6 +101,16 @@ describe('POST /api/assistant/call', () => {
     expect(res.status).toBe(409)
     expect(await res.json()).toMatchObject({ error: 'call_busy' })
     expect(usage.opened).toEqual([])
+  })
+
+  it('выданный звонок греет профиль ученика: первая реплика Луны не ждёт бэкенд', async () => {
+    warmStudentContext.mockClear()
+    usage.open = true
+    expect((await post()).status).toBe(409)
+    expect(warmStudentContext).not.toHaveBeenCalled()
+    usage.open = false
+    expect((await post({}, 'student-bearer')).status).toBe(200)
+    expect(warmStudentContext).toHaveBeenCalledWith('student-bearer', expect.objectContaining({ userId: 42 }))
   })
 
   it('база упала — звонка нет (503), а не полный бюджет без счёта', async () => {
