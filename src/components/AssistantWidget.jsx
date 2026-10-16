@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { OPEN_EVENT, navigateTo, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
 import { actionMarker } from '../lib/assistant/actions.js'
@@ -7,6 +7,7 @@ import { destinationName, destinationOf } from '../lib/assistant/destinations.js
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { OPENING_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
+import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
 import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
@@ -53,6 +54,14 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // заговорила. Теперь у озвучиваемого ответа фраза появляется, когда Луна
 // начинает её говорить (held), до того — строка «Думаю… / Смотрю на экран… /
 // Сейчас скажу…» (StatusBubble), а переход и тур — когда она договорила.
+//
+// Размер и место (16.10.2026, комментарий руководства: «уменьшить, чтобы не
+// мешал при работе с платформой; по команде — больше, как телефон на экране
+// компьютера; перемещать окно»): по умолчанию окно компактное, кнопка в шапке
+// разворачивает его до размера телефона. Кнопку и окно можно перетащить — за
+// шапку окна или за саму кнопку, место запоминается на устройстве
+// (lib/assistant/placement.js), двойной клик по шапке возвращает в угол. Размер
+// не запоминается: после перезагрузки окно снова компактное.
 
 const MAX_INPUT = 2000
 // Тур не начался за это время (экран без тура, данные не доехали) — честно
@@ -123,6 +132,37 @@ function isPhone() {
   }
 }
 
+// Двигать окно можно только на компьютере: на телефоне оно — лист снизу во всю
+// ширину (assistant.css), и место ему задаёт CSS.
+function subscribePhone(cb) {
+  let mq
+  try {
+    mq = window.matchMedia(PHONE_QUERY)
+  } catch {
+    return () => {}
+  }
+  mq.addEventListener?.('change', cb)
+  return () => mq.removeEventListener?.('change', cb)
+}
+const usePhone = () => useSyncExternalStore(subscribePhone, isPhone, () => false)
+
+// Размер экрана — только после гидратации: на сервере его нет, и до первого
+// эффекта кнопка стоит по CSS (правый нижний угол) — разметка совпадает.
+function useViewport() {
+  const [vp, setVp] = useState(null)
+  useEffect(() => {
+    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight })
+    on()
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  return vp
+}
+
+// Сдвиг меньше — это нажатие, а не перетаскивание: рука дрожит при клике.
+const DRAG_THRESHOLD = 4
+const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
+
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
   const name = destinationName(action.target, lang)
@@ -173,6 +213,26 @@ function MicIcon({ size = 20 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SizeIcon({ big }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {big ? (
+        <path d="M10 4v6H4M14 20v-6h6M10 10 4 4m10 10 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path d="M4 10V4h6M20 14v6h-6M4 4l6 6m10 10-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+    </svg>
+  )
+}
+
+function NewChatIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -236,6 +296,17 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // выйдет false, но расхождения при гидратации нет — кнопка звука рисуется
   // только после голосового вопроса, а в первой разметке окно закрыто.
   const [muted, setMuted] = useState(readMuted)
+  // Место кнопки и окна (одно на двоих) и размер окна — см. шапку файла.
+  const [place, setPlace] = useState(readPlace)
+  const [size, setSize] = useState('compact')
+  const phone = usePhone()
+  const vp = useViewport()
+  const free = Boolean(vp) && !phone
+  const panelRef = useRef(null)
+  const launcherRef = useRef(null)
+  const dragRef = useRef(null)
+  // Кнопку только что перетащили — отпускание не должно открыть окно.
+  const draggedRef = useRef(false)
   const abortRef = useRef(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
@@ -881,19 +952,98 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // Кнопка звука — когда Луна говорила: ответ на голосовой вопрос или тур.
   const spoke = messages.some((m) => m.voice || m.action?.kind === 'tour')
 
+  // ── Перетаскивание (только компьютер) ──────────────────────────────────
+  // Пока тянут, элемент двигается напрямую через style — без перерисовки всего
+  // разговора на каждое движение мыши; место сохраняется, когда отпустили.
+  // Указатель захватывается сразу при нажатии: резкий рывок уводил мышь с
+  // 48-пиксельной кнопки раньше первого pointermove, и она не двигалась. Захват —
+  // на элементе, который ловит события (шапка или кнопка): захвати его окно,
+  // события ушли бы мимо обработчиков шапки. click кнопки захват не ломает.
+  // Что тянут — окно или кнопку — говорит data-drag элемента, ловящего события.
+  const onDragStart = (e) => {
+    const kind = e.currentTarget.dataset.drag
+    if (!free || e.button !== 0 || e.isPrimary === false) return
+    if (kind === 'panel' && e.target.closest?.('button, a, input, textarea, select')) return
+    const el = kind === 'panel' ? panelRef.current : launcherRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    dragRef.current = { kind, el, id: e.pointerId, sx: e.clientX, sy: e.clientY, x0: r.left, y0: r.top, size: { w: r.width, h: r.height }, pos: null }
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* старый браузер — тянется, пока мышь над элементом */
+    }
+  }
+  const onDragMove = (e) => {
+    const d = dragRef.current
+    if (!d || d.id !== e.pointerId) return
+    const dx = e.clientX - d.sx
+    const dy = e.clientY - d.sy
+    if (!d.pos) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+      d.el.classList.add('is-dragging')
+    }
+    d.pos = clampPos({ x: d.x0 + dx, y: d.y0 + dy }, d.size, viewportNow())
+    d.el.style.left = `${d.pos.x}px`
+    d.el.style.top = `${d.pos.y}px`
+  }
+  const onDragEnd = (e) => {
+    const d = dragRef.current
+    if (!d || d.id !== e.pointerId) return
+    dragRef.current = null
+    if (!d.pos) return
+    d.el.classList.remove('is-dragging')
+    const next = toAnchor(d.pos, d.size, viewportNow())
+    setPlace(next)
+    writePlace(next)
+    if (d.kind === 'launcher') {
+      draggedRef.current = true
+      // click приходит сразу за pointerup; не пришёл — следующее нажатие честное.
+      setTimeout(() => {
+        draggedRef.current = false
+      }, 0)
+    }
+  }
+  const resetPlace = (e) => {
+    if (!free || e.target.closest?.('button')) return
+    setPlace(DEFAULT_PLACE)
+    writePlace(null)
+  }
+
+  // Компактное окно узкое: длинная подсказка в поле выросла бы в три строки, а
+  // подпись о приватности — в пять. Подсказка короче, подпись — пока ученик
+  // ничего не спросил (прочитать её до первого вопроса он успел).
+  const compact = free && size === 'compact'
+  const panelBox = free ? placeRect(place, panelSize(size, vp), vp) : null
+  const launcherBox = free ? placeRect(place, { w: LAUNCHER_SIZE, h: LAUNCHER_SIZE }, vp) : null
+  const boxStyle = (b, sized) =>
+    b ? { left: b.x, top: b.y, right: 'auto', bottom: 'auto', ...(sized ? { width: b.w, height: b.h, maxHeight: 'none' } : {}) } : undefined
+
   if (!enabled) return null
 
   return (
-    <div className="asst" data-assistant-ignore="">
+    <div className={`asst${free ? ' asst--free' : ''}`} data-assistant-ignore="">
       {open && (
         <div
-          className="asst__panel"
+          ref={panelRef}
+          className={`asst__panel asst__panel--${size}`}
+          style={boxStyle(panelBox, true)}
           role="dialog"
           aria-label={t('assistant.title')}
           onKeyDown={(e) => e.key === 'Escape' && close()}
         >
-          <div className="asst__head">
-            <img className="asst__avatar" src={AVATAR} alt="" width="36" height="36" />
+          <div
+            className="asst__head"
+            title={free ? t('assistant.drag') : undefined}
+            data-drag="panel"
+            onDoubleClick={resetPlace}
+            onPointerDown={onDragStart}
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+          >
+            {free && <span className="asst__grip" aria-hidden="true" />}
+            <img className="asst__avatar" src={AVATAR} alt="" width="32" height="32" draggable={false} />
             <div className="asst__who">
               <b>{t('assistant.title')}</b>
               <span>{t('assistant.sub')}</span>
@@ -911,8 +1061,20 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               </button>
             )}
             {messages.length > 0 && (
-              <button type="button" className="asst__ghost" onClick={reset}>
-                {t('assistant.reset')}
+              <button type="button" className="asst__icon" aria-label={t('assistant.reset')} title={t('assistant.reset')} onClick={reset}>
+                <NewChatIcon />
+              </button>
+            )}
+            {free && (
+              <button
+                type="button"
+                className="asst__icon asst__size"
+                aria-pressed={size === 'phone'}
+                aria-label={t(size === 'phone' ? 'assistant.size.compact' : 'assistant.size.phone')}
+                title={t(size === 'phone' ? 'assistant.size.compact' : 'assistant.size.phone')}
+                onClick={() => setSize((v) => (v === 'phone' ? 'compact' : 'phone'))}
+              >
+                <SizeIcon big={size === 'phone'} />
               </button>
             )}
             <button type="button" className="asst__x" aria-label={t('assistant.close')} onClick={close}>
@@ -1027,7 +1189,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                 rows={1}
                 value={input}
                 maxLength={MAX_INPUT}
-                placeholder={t('assistant.placeholder')}
+                placeholder={t(compact ? 'assistant.placeholder.short' : 'assistant.placeholder')}
                 onChange={(e) => {
                   // Ученик начал печатать — ответ дослушивать не хочет.
                   if (e.target.value) stopVoice()
@@ -1056,18 +1218,31 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               </button>
             )}
           </form>
-          <p className="asst__privacy">{t('assistant.privacy')}</p>
+          {(!compact || !asked) && <p className="asst__privacy">{t('assistant.privacy')}</p>}
         </div>
       )}
 
+      {/* Открытое окно встаёт на место кнопки, и она прячется (CSS is-open):
+          закрывает окно его же «×» в шапке. */}
       <button
+        ref={launcherRef}
         type="button"
         className={`asst__launcher${open ? ' is-open' : ''}`}
+        style={boxStyle(launcherBox, false)}
         aria-label={t('assistant.launcher')}
         aria-expanded={open}
-        onClick={() => (open ? close() : openWindow())}
+        data-drag="launcher"
+        onPointerDown={onDragStart}
+        onPointerMove={onDragMove}
+        onPointerUp={onDragEnd}
+        onPointerCancel={onDragEnd}
+        onClick={() => {
+          if (draggedRef.current) return
+          if (open) close()
+          else openWindow()
+        }}
       >
-        {open ? <span className="asst__launcher-x">×</span> : <img src={AVATAR} alt="" width="40" height="40" />}
+        <img src={AVATAR} alt="" width="40" height="40" draggable={false} />
       </button>
     </div>
   )

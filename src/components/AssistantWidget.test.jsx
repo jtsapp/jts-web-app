@@ -38,7 +38,8 @@ const renderApp = ({ enabled = true, token = 'tok' } = {}) =>
 // тот же флак уже ронял CI на LiveLessonPage. Запас не замедляет зелёный тест:
 // ожидание кончается, как только элемент появился.
 const WAIT = { timeout: 5000 }
-const PLACEHOLDER = 'Спросите о сайте, задании или напишите, если что-то сломалось…'
+// Окно по умолчанию компактное — подсказка в поле короткая (placement.js).
+const PLACEHOLDER = 'Спросите Луну…'
 
 describe('помощник по сайту', () => {
   let fetchMock
