@@ -140,6 +140,14 @@ class BrowserBrain:
         self._queues[rid] = queue
         done = False
         said = False
+        # Жизненный цикл ответа — в лог одной строкой (живой звонок 16.10.2026:
+        # после первой реплики Луна молчала, а по логу было не понять, спросил ли
+        # агент браузер и что тот ответил). Только длины и время — без слов
+        # ученика.
+        t0 = time.monotonic()
+        first: float | None = None
+        phrases = 0
+        outcome = "cancelled"
         try:
             try:
                 await self._lp.perform_rpc(
@@ -150,6 +158,7 @@ class BrowserBrain:
                 )
             except Exception as e:
                 logger.warning("[luna-call] ask failed: %s", e)
+                outcome = "ask_failed"
                 yield fallback_text(self._lang)
                 return
             timeout = FIRST_PHRASE_SEC
@@ -158,20 +167,30 @@ class BrowserBrain:
                     msg = await asyncio.wait_for(queue.get(), timeout)
                 except asyncio.TimeoutError:
                     logger.warning("[luna-call] reply stalled (%s phrases said)", "some" if said else "no")
+                    outcome = "stalled"
                     if not said:
                         yield fallback_text(self._lang)
                     return
                 piece = str(msg.get("text") or "")
                 if piece.strip():
                     said = True
+                    phrases += 1
+                    if first is None:
+                        first = time.monotonic() - t0
                     yield piece
                 if msg.get("end"):
                     done = True
+                    outcome = "silent" if msg.get("silent") else "end"
                     if not said and not opening and not msg.get("silent"):
                         yield fallback_text(self._lang)
                     return
                 timeout = NEXT_PHRASE_SEC
         finally:
+            logger.info(
+                "[luna-call] reply %s: %s, %d phrases, first %s, total %.2fs, asked %d chars%s",
+                rid, outcome, phrases, f"{first:.2f}s" if first is not None else "-",
+                time.monotonic() - t0, len(text or ""), " (opening)" if opening else "",
+            )
             self._queues.pop(rid, None)
             # Генерацию оборвали снаружи (ученик перебил) — браузеру незачем
             # дальше тратить запрос к модели.

@@ -6355,7 +6355,39 @@ def _turn_mode_from_payload(payload: Any) -> str | None:
     return mode if mode in TURN_MODES else None
 
 
-def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool = True) -> dict[str, Any]:
+# Звонок Луне-помощнику (assistant_call.py): ученик ДОЛЖЕН перебивать её
+# голосом («стоп», новый вопрос посреди фразы) — живой звонок 16.10.2026: Луна
+# говорила 8 с первой реплики, ученик заговорил поверх, адаптивный детектор
+# счёл это поддакиванием (prob 0.69) и не остановил её. У тьютора тугие пороги
+# держат эхо из колонок; помощнику нужно наоборот, поэтому здесь простой VAD:
+# первое распознанное слово после ~0.5 с речи останавливает Луну. Если это был
+# шум и дальше тишина, LiveKit сам продолжит её фразу через 2 с
+# (resume_false_interruption по умолчанию). Ручки — секретами воркера.
+LUNA_CALL_INTERRUPT_MIN_WORDS_DEFAULT = 1
+LUNA_CALL_INTERRUPT_MIN_SEC_DEFAULT = 0.5
+
+
+def _barge_in_options() -> dict[str, Any]:
+    """Пороги перебивания звонка помощнику: VAD, а не адаптивный детектор."""
+
+    def _num(name: str, default: float, cast):
+        raw = (os.getenv(name) or "").strip()
+        try:
+            value = cast(raw) if raw else default
+        except ValueError:
+            return default
+        return value if value >= 0 else default
+
+    return {
+        "mode": "vad",
+        "min_words": _num("LUNA_CALL_INTERRUPT_MIN_WORDS", LUNA_CALL_INTERRUPT_MIN_WORDS_DEFAULT, int),
+        "min_duration": _num("LUNA_CALL_INTERRUPT_MIN_SEC", LUNA_CALL_INTERRUPT_MIN_SEC_DEFAULT, float),
+    }
+
+
+def _turn_handling(
+    detector: Any, push_to_talk: bool = False, preemptive: bool = True, barge_in: bool = False
+) -> dict[str, Any]:
     """Сборка turn_handling сессии. Вынесено из build_cascade_session отдельно,
     чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
     TTS и ключи, а это чистая функция над env и уже готовым детектором.
@@ -6363,7 +6395,11 @@ def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool =
     preemptive=False — звонок Луне-помощнику (assistant_call.py): там «мозг» —
     браузер с платным запросом к чату на каждый вызов, и генерация по черновому
     транскрипту, которую LiveKit бросает и начинает заново, стоила бы лишних
-    запросов, а не экономила бы время."""
+    запросов, а не экономила бы время.
+
+    barge_in=True — тот же звонок: перебивание по VAD (_barge_in_options) при
+    любом детекторе конца хода."""
+    barge = _barge_in_options() if barge_in else None
     if push_to_talk:
         # Ход открывает и закрывает клиент (см. RPC в entrypoint). В manual
         # фреймворк не перебивает тьютора по VAD вообще, а нажатие рации
@@ -6379,7 +6415,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool =
         return {
             "turn_detection": "manual",
             "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
-            "interruption": _interruption_options(),
+            "interruption": barge or _interruption_options(),
             "preemptive_generation": {"enabled": preemptive},
         }
     if detector is not None:
@@ -6394,7 +6430,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool =
             },
             # Отличает поддакивание ученика от настоящего перебивания. Если
             # начнёт глотать настоящие — вернуть {"mode": "vad"}.
-            "interruption": {"mode": "adaptive", **_interruption_options()},
+            "interruption": barge or {"mode": "adaptive", **_interruption_options()},
             "preemptive_generation": {"enabled": preemptive},
         }
     # Старый путь ровно как был: Soniox не шлёт END_OF_SPEECH (#4034), поэтому
@@ -6406,7 +6442,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool =
         # Без детектора порог перебивания тем более нужен: решение «это
         # перебивание» принимает один Silero, а он одинаково реагирует и на
         # слово, и на хлопок дверью.
-        "interruption": _interruption_options(),
+        "interruption": barge or _interruption_options(),
         "preemptive_generation": {"enabled": preemptive},
     }
 
@@ -6634,6 +6670,7 @@ def build_cascade_session(
     guard_tutor: str = "",
     brain_model: str = "",
     preemptive: bool = True,
+    barge_in: bool = False,
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -6758,7 +6795,7 @@ def build_cascade_session(
     # памяти воркера, а облачная ещё и платная, и оба конца хода в этом режиме
     # известны точно.
     detector = None if push_to_talk else _build_turn_detector(_turn_detector_mode_for(profile))
-    turn_handling = _turn_handling(detector, push_to_talk=push_to_talk, preemptive=preemptive)
+    turn_handling = _turn_handling(detector, push_to_talk=push_to_talk, preemptive=preemptive, barge_in=barge_in)
     kwargs: dict[str, Any] = {
         "stt": stt,
         "llm": llm,
@@ -7163,6 +7200,9 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
         guard_tutor="gentle",
         brain_model=session_brain_model(voice),
         preemptive=False,
+        # Ученик перебивает Луну голосом (см. _barge_in_options), кнопкой —
+        # через luna.say с пустым текстом.
+        barge_in=True,
     )
     _attach_latency_logging(session)
     _attach_interruption_logging(session)
