@@ -69,8 +69,17 @@ const TEXT_HEADERS = {
 }
 
 export async function POST(request) {
+  // Где уходит время до первого слова (звонок Луне, 16.10.2026): заголовок
+  // x-assistant-timing — проверка входа, контекст ученика, первые токены
+  // модели, в мс. Браузер передаёт его агенту, и агент пишет в лог.
+  const t0 = Date.now()
+  const marks = {}
+  const mark = (name, since) => {
+    marks[name] = Date.now() - since
+  }
   const bearer = bearerFromRequest(request)
   const auth = await verifyTokenStatus(bearer)
+  mark('auth', t0)
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
   if (!hasAnthropicKey()) return json(503, { error: 'assistant_unavailable' })
@@ -98,6 +107,10 @@ export async function POST(request) {
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
   }
+  // Контекст ученика грузим сразу — параллельно с проверкой звонка и лимитами:
+  // это поход к бэкенду, и ждать его после них незачем.
+  const tCtx = Date.now()
+  const studentContextP = loadStudentContext(bearer, auth.user).catch(() => null)
   const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
   const limiter = inCall ? takeCallQuota : takeQuota
   const quota = limiter(key)
@@ -110,7 +123,9 @@ export async function POST(request) {
   // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
   // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
   // должен из-за этого падать — план останется без персонализации.
-  const studentContext = await loadStudentContext(bearer, auth.user).catch(() => null)
+  const studentContext = await studentContextP
+  mark('ctx', tCtx)
+  const tModel = Date.now()
 
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(),
@@ -143,6 +158,9 @@ export async function POST(request) {
     return json(502, { error: 'model_failed' })
   }
 
+  mark('model', tModel)
+  const timingHeader = { 'x-assistant-timing': Object.entries(marks).map(([k, v]) => `${k}=${v}`).join(';') }
+
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
 
@@ -157,7 +175,7 @@ export async function POST(request) {
     offtopic.record(key)
     return new Response(OFFTOPIC_REPLY[parsed.lang] || OFFTOPIC_REPLY.ru, {
       status: 200,
-      headers: { ...TEXT_HEADERS, 'x-assistant-offtopic': '1' },
+      headers: { ...TEXT_HEADERS, ...timingHeader, 'x-assistant-offtopic': '1' },
     })
   }
 
@@ -286,5 +304,5 @@ export async function POST(request) {
     },
   })
 
-  return new Response(stream, { status: 200, headers: TEXT_HEADERS })
+  return new Response(stream, { status: 200, headers: { ...TEXT_HEADERS, ...timingHeader } })
 }

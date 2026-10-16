@@ -60,6 +60,13 @@ describe('мост звонка Луне', () => {
     expect(room.sent.map((x) => x.body)).toEqual([{ id: '9', end: true, silent: true }])
   })
 
+  it('тайминги ответа уходят агенту вместе с концом', async () => {
+    const room = fakeRoom()
+    const s = createReplySender(room, 'agent-1', '10')
+    await s.end({ timing: { headersMs: 800, firstPhraseMs: 1400 } })
+    expect(room.sent.map((x) => x.body)).toEqual([{ id: '10', end: true, timing: { headersMs: 800, firstPhraseMs: 1400 } }])
+  })
+
   it('сбой одной отправки не рвёт очередь', async () => {
     const room = fakeRoom({ failFirst: true })
     const s = createReplySender(room, 'agent-1', '8')

@@ -148,6 +148,7 @@ class BrowserBrain:
         first: float | None = None
         phrases = 0
         outcome = "cancelled"
+        browser = ""
         try:
             try:
                 await self._lp.perform_rpc(
@@ -181,21 +182,41 @@ class BrowserBrain:
                 if msg.get("end"):
                     done = True
                     outcome = "silent" if msg.get("silent") else "end"
+                    browser = timing_text(msg.get("timing"))
                     if not said and not opening and not msg.get("silent"):
                         yield fallback_text(self._lang)
                     return
                 timeout = NEXT_PHRASE_SEC
         finally:
             logger.info(
-                "[luna-call] reply %s: %s, %d phrases, first %s, total %.2fs, asked %d chars%s",
+                "[luna-call] reply %s: %s, %d phrases, first %s, total %.2fs, asked %d chars%s%s",
                 rid, outcome, phrases, f"{first:.2f}s" if first is not None else "-",
                 time.monotonic() - t0, len(text or ""), " (opening)" if opening else "",
+                f"; browser {browser}" if browser else "",
             )
             self._queues.pop(rid, None)
             # Генерацию оборвали снаружи (ученик перебил) — браузеру незачем
             # дальше тратить запрос к модели.
             if not done:
                 self._fire(CANCEL_METHOD, {"id": rid})
+
+
+def timing_text(raw: Any) -> str:
+    """Тайминги, которые браузер прислал с концом ответа, — в строку лога:
+    сколько он ждал заголовков чат-роута, первого куска текста и первой фразы,
+    и что из этого сервер (x-assistant-timing). Только числа и короткая строка
+    сервера — ничего от ученика."""
+    if not isinstance(raw, dict):
+        return ""
+    parts = []
+    for key, label in (("headersMs", "headers"), ("firstDeltaMs", "first text"), ("firstPhraseMs", "first phrase")):
+        value = raw.get(key)
+        if isinstance(value, (int, float)) and 0 <= value < 600_000:
+            parts.append(f"{label} {value / 1000:.2f}s")
+    server = raw.get("server")
+    if isinstance(server, str) and server.strip():
+        parts.append(f"server {server.strip()[:120]}")
+    return ", ".join(parts)
 
 
 def say_payload_text(data: Any) -> str | None:

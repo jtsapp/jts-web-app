@@ -125,6 +125,12 @@ async def test_end_without_phrases():
         assert [m for _, m, _ in lp.calls] == [C.ASK_METHOD]
 
 
+def test_timing_text():
+    t = C.timing_text({"headersMs": 820, "firstDeltaMs": 1010, "firstPhraseMs": 1490, "server": "auth=210;ctx=4;model=590"})
+    assert t == "headers 0.82s, first text 1.01s, first phrase 1.49s, server auth=210;ctx=4;model=590", t
+    assert C.timing_text(None) == "" and C.timing_text({"headersMs": "x", "firstDeltaMs": -5}) == ""
+
+
 def test_texts():
     assert C.spoken("Привет.") == "Привет. "
     assert C.spoken("Привет.\n") == "Привет.\n"
@@ -143,6 +149,7 @@ async def main():
     await test_fallback_on_silence()
     await test_end_without_phrases()
     test_texts()
+    test_timing_text()
 
 
 asyncio.run(main())

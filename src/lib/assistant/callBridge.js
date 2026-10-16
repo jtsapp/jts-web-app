@@ -93,10 +93,11 @@ export function createReplySender(room, agent, id) {
       const t = String(text ?? '').trim()
       if (t && !ended) send({ text: t })
     },
-    end({ silent = false } = {}) {
+    // timing — сколько браузер ждал чат-роут (агент пишет это в лог ответа).
+    end({ silent = false, timing = null } = {}) {
       if (ended) return chain
       ended = true
-      return send(silent ? { end: true, silent: true } : { end: true })
+      return send({ end: true, ...(silent ? { silent: true } : {}), ...(timing ? { timing } : {}) })
     },
   }
 }

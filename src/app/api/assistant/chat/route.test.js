@@ -169,6 +169,13 @@ describe('POST /api/assistant/chat', () => {
     expect(calls).toHaveLength(20)
   })
 
+  it('ответ несёт x-assistant-timing: вход, контекст, первые токены модели (мс)', async () => {
+    const res = await post(question(108))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('x-assistant-timing')).toMatch(/^auth=\d+;ctx=\d+;model=\d+$/)
+    await res.text()
+  })
+
   it('вопрос из живого звонка Луне — квота звонка, а не 20 за 10 минут; чужая комната — общая', async () => {
     const room = 'jts-luna-abc123-1760600000000'
     const body = { ...question(106), call: room }
