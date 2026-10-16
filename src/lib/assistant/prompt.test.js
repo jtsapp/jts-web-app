@@ -15,6 +15,7 @@ import {
   parseChatRequest,
   VOICE_MARK,
   OPENING_MARK,
+  WAKE_MARK,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -418,5 +419,28 @@ describe('голос и тон Луны', () => {
     const rules = buildSystemPrompt()
     expect(rules).toMatch(/Тон — как у Луны в звонке/)
     expect(rules).toMatch(/без дежурных похвал/)
+  })
+})
+
+describe('ученик позвал голосом', () => {
+  const wake = (extra = {}) => parseChatRequest(ask(WAKE_MARK, { voice: true, ...extra }))
+  const profile = 'Совет сайта, что сделать сейчас: Словарь — 14 слов ждут повторения (метка [[OPEN vocab]]).'
+
+  it('пометка — с указанием поздороваться и спросить, без «вопроса ученика» и без «Совета сайта»', () => {
+    const last = buildTurns({ ...wake(), user: null, studentContext: profile }).at(-1).content
+    expect(last).not.toContain('Вопрос ученика:')
+    expect(last).not.toContain('Совет сайта')
+    expect(last).toContain(`</контекст>\n\n${WAKE_MARK}\nЯзык ответа: русский\nУченик сам позвал тебя голосом`)
+    expect(last).toMatch(/Не больше 3 коротких предложений\.\n\n\[голосом\]$/)
+  })
+
+  it('на непроверенном задании — и тут без оценки ответа', () => {
+    const screen = { id: 'kingdom-interior', text: 'He ___ (play) football. [поле: ученик ввёл «play»] [кнопка «Проверить»]' }
+    const last = buildTurns({ ...wake({ screen }), user: null }).at(-1).content
+    expect(last).toContain('Задание ещё не проверено: не оценивай введённый ответ и не называй правильный.')
+  })
+
+  it('в правилах — пометка и разрешение поздороваться', () => {
+    expect(buildSystemPrompt()).toContain(`Пометка ${WAKE_MARK} — ученик сам позвал тебя голосом`)
   })
 })
