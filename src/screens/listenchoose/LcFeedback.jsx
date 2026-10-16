@@ -6,7 +6,14 @@
 // ошибки ответ скрыт, и студенту остаётся «послушай ещё раз».
 
 export default function LcFeedback({ snap, t, nextRef, onNext, onToggleTranscript }) {
-  const { question, round, heard, transcriptOpen, isLast } = snap
+  const { question, round, options, heard, transcriptOpen, isLast } = snap
+  // Ключ для помощника по сайту — только когда задание закрыто промахом обеих попыток. После первой ошибки ответ
+  // скрыт намеренно (вторая попытка), и помощник не должен его выдать. Подпись фото нужна потому, что на плитке её
+  // нет текстом: снимок видит лишь номер и галочку «3 ✓», а подпись живёт в alt и aria-label.
+  const expected =
+    round.resolved && !round.correct && options
+      ? `${t('listenchoose.picture')} ${round.order.indexOf(question.answer) + 1}: ${options[question.answer]}`
+      : undefined
   let state = 'idle'
   let title = 'idleTitle'
   let detail = 'idleDetail'
@@ -24,7 +31,7 @@ export default function LcFeedback({ snap, t, nextRef, onNext, onToggleTranscrip
   }
   return (
     <>
-      <div className="lc-feedback" data-state={state}>
+      <div className="lc-feedback" data-state={state} data-assistant-expected={expected}>
         <div className="lc-feedback__copy" role="status" aria-live="polite" aria-atomic="true">
           <strong>{t(`listenchoose.${title}`)}</strong>
           <p>{round.resolved && round.correct ? `${t('listenchoose.key')}: ${question.key}` : t(`listenchoose.${detail}`)}</p>

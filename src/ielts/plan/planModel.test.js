@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, byDate, groupWeeks, monthGrid, shiftMonth, statusTone, subLabel, taskLabel, taskRoute } from './planModel.js'
+import { addDays, byDate, groupWeeks, monthGrid, shiftMonth, statusTone, recommendTask, subLabel, taskLabel, taskRoute } from './planModel.js'
 
 const t = (key, vars = {}) => key + (Object.keys(vars).length ? JSON.stringify(vars) : '')
 
 describe('planModel', () => {
+  it('советы при пустом плане ведут в mock и полные тесты', () => {
+    expect(taskRoute(recommendTask({ key: 'mock' }))).toEqual({ tab: 'mocks' })
+    expect(taskRoute(recommendTask({ key: 'reading-full', sec: 'reading' }))).toEqual({ tab: 'learn', view: 'reading-full' })
+    expect(taskRoute(recommendTask({ key: 'listening-full', sec: 'listening' }))).toEqual({ tab: 'learn', view: 'listening-full' })
+  })
+
   it('ведёт задачу в её место раздела, словарь — в общий словарь, контроль — по виду', () => {
     expect(taskRoute({ kind: 'type', sub: 'tfng' })).toEqual({ tab: 'learn', view: 'types' })
     expect(taskRoute({ kind: 't2' })).toEqual({ tab: 'learn', view: 'writing-task2' })

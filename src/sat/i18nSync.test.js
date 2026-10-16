@@ -16,7 +16,7 @@ function dictKeys() {
 const FILES = [
   'sat/weekly/WeeklyCard.jsx', 'screens/SatWeeklyPage.jsx', 'sat/dashboard/DashboardStats.jsx',
   'sat/study/PracticeSummary.jsx', 'sat/study/LogErrorDialog.jsx', 'sat/tabs/ErrorsTab.jsx', 'sat/tabs/MocksTab.jsx',
-  'sat/mock/ScoresPanel.jsx', 'screens/SatPapersPage.jsx', 'sat/plan/CourseRoad.jsx', 'sat/vocab/Flashcards.jsx',
+  'sat/mock/ScoresPanel.jsx', 'screens/SatPapersPage.jsx', 'sat/vocab/Flashcards.jsx',
   'components/ExamDemoBanner.jsx', 'sat/mock/MockResult.jsx', 'screens/SatStudyPage.jsx', 'screens/SatPage.jsx',
 ]
 

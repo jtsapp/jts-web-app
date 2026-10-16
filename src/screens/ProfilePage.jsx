@@ -10,7 +10,7 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
+import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -130,27 +130,27 @@ export default function ProfilePage({
     } catch {}
   }, [])
 
-  // Стрик + уроки (сумма пройденных активностей по открытым королевствам).
+  // «Дней подряд» и «уроков пройдено» считает сервер: серия — по входам; уроки — занятия с
+  // преподавателем, а если их нет — «Самостоятельно» (не складываются, чтобы не считать дважды).
   useEffect(() => {
     if (!token) return
     let alive = true
-    getBalance(token)
-      .then((b) => alive && b && setStreak(b.streak ?? 0))
+    getProfileStats(token)
+      .then((s) => {
+        if (!alive || !s) return
+        setStreak(s.streak ?? 0)
+        setLessons(s.lessonsPassed ?? 0)
+      })
       .catch(() => {})
 
+    // Полоса прогресса уровня — по тропе «Повторения» своего уровня; в счётчик уроков не входит.
     const kingdoms = computeKingdoms(userLevel).filter((k) => !k.comingSoon)
-    let sumDone = 0
-    Promise.all(
-      kingdoms.map((k) =>
-        getLearningPath(k.level, token)
-          .then((p) => {
-            const c = countProgress(p)
-            sumDone += c.done
-            if (k.level.toUpperCase() === (userLevel || 'A1').toUpperCase() && alive) setLevelProg(c)
-          })
-          .catch(() => {}),
-      ),
-    ).then(() => alive && setLessons(sumDone))
+    kingdoms.forEach((k) => {
+      if (k.level.toUpperCase() !== (userLevel || 'A1').toUpperCase()) return
+      getLearningPath(k.level, token)
+        .then((p) => alive && setLevelProg(countProgress(p)))
+        .catch(() => {})
+    })
 
     return () => {
       alive = false

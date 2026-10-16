@@ -9,6 +9,13 @@ import path from 'node:path'
 // Сорок вопросов в e2e не проходим: итог отдаём тем же крючком, которым его отдаёт сам тест
 // (JTSPlacementConfig.openLearning), с настоящим конвертом v16 (__fixtures__/envelope-b1.json).
 
+// Фейковый микрофон Chrome — для окна говорения. Флаги запуска нельзя задать группе (они требуют своего воркера),
+// поэтому на весь файл; остальным тестам они не мешают.
+test.use({
+  permissions: ['microphone'],
+  launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] },
+})
+
 const ENVELOPE = JSON.parse(fs.readFileSync(path.resolve('src/placement/__fixtures__/envelope-b1.json'), 'utf8'))
 const jwt = ['eyJhbGciOiJIUzI1NiJ9', Buffer.from(JSON.stringify({ role: 'USER', sub: '7', userId: 7 })).toString('base64url'), 'sig'].join('.')
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -159,6 +166,94 @@ test('настоящий экран итога v16: итог сохраняет�
   await page.frameLocator('.pl-page__frame').locator('#prLearn').click()
   await expect(page.getByRole('heading', { name: 'Как дойти до B1' })).toBeVisible({ timeout: 20000 })
   expect(state.puts).toHaveLength(1)
+})
+
+// Жалоба 16.10.2026: после записи окно говорения минуту молчало без единой кнопки, а потом само показывало уровень и
+// «отзыв преподавателя» — раньше результатов остальных навыков. Теперь окно только ждёт оценку и закрывается, а отзыв —
+// в итоге теста рядом со всеми навыками и в отчёте «Главной». Микрофон — фейковый у Chrome, оценка подменена.
+test.describe('говорение', () => {
+  test('после записи — ожидание без своего итога, отзыв — в результатах теста и на «Главной»', async ({ page }) => {
+    test.setTimeout(120_000)
+    const state = await setup(page, { level: 'A2' })
+    let release
+    const graded = new Promise((r) => {
+      release = r
+    })
+    await page.route('**/api/placement/speaking', async (route) => {
+      await graded
+      return route.fulfill(
+        json({
+          status: 'completed',
+          speaking_level: 'B1',
+          confidence: 'medium',
+          subscores: { range: 3, accuracy: 3, fluency: 3, coherence: 3, pronunciation: 80 },
+          summary: 'Ты говоришь связно и уверенно.',
+          strengths: ['Длинные фразы без пауз'],
+          improvements: ['Прошедшее время: went, а не goed'],
+          transcript: 'I goed to the park with my friends',
+          topicId: 'b1-trip',
+        }),
+      )
+    })
+
+    await page.goto('/?screen=placement')
+    const frame = page.locator('.pl-page__frame')
+    await expect(frame).toBeVisible({ timeout: 20000 })
+    const f = await (await frame.elementHandle()).contentFrame()
+    await f.waitForFunction(() => typeof window.JTSSpeakingBuddy?.start === 'function', null, { timeout: 30000 })
+    // Грамматика, чтение и аудирование — симулятором автора; говорение — по-настоящему, тем путём, которым тест сам
+    // зовёт окно (экран Speaking после всех разделов).
+    await f.evaluate(() => {
+      /* global simulateRealProfile, app, render */
+      simulateRealProfile('B1', 2, 1)
+      SELFTEST_ACTIVE = false
+      app.goalOnboarding = { step: 5, selections: { travel: ['travel_independent'] }, customText: {}, followUpDrafts: { deadline: { value: '3_6_months', customText: '' } }, returnScreen: null }
+      window.JTSStudentGoals.getData()
+      app.studentGoals.selectedCategories = ['travel']
+      app.studentGoals.completed = true
+      app.speaking = { status: 'not_assessed' }
+      app.active = 'S'
+      app.screen = 'speaking'
+      render()
+    })
+
+    const modal = page.locator('.pl-speak')
+    await modal.getByRole('button', { name: 'Начать подготовку' }).click()
+    await modal.getByRole('button', { name: 'Готов — записывать' }).click()
+    const stop = modal.getByRole('button', { name: 'Закончить ответ' })
+    await expect(stop).toBeEnabled()
+    await page.waitForTimeout(16_000) // короче MIN_SECONDS (15 с) окно запись не отправит
+    await stop.click()
+
+    // ожидание: прямо сказано, что нажимать ничего не нужно, и кнопок нет вовсе — ни «итога», ни «вернуться»
+    await expect(modal.locator('.pl-speak__wait')).toContainText('Ничего нажимать не нужно')
+    await expect(modal.getByRole('button')).toHaveCount(0)
+    await expect(modal).not.toContainText('Ты говоришь связно')
+    release()
+
+    // окно закрылось само, тест открыл итог: отзыв — там, рядом с остальными навыками
+    await expect(modal).toHaveCount(0, { timeout: 15000 })
+    const results = page.frameLocator('.pl-page__frame')
+    await expect(results.locator('.personal-results')).toBeVisible()
+    await expect(results.locator('.jts-sf')).toContainText('Ты говоришь связно и уверенно.')
+    await expect(results.locator('.jts-sf')).toContainText('Прошедшее время: went, а не goed')
+
+    await expect.poll(() => state.attempts.length, { timeout: 15000 }).toBeGreaterThan(0)
+    expect(state.attempts.at(-1).assessment.skillResults.S).toMatchObject({
+      status: 'completed',
+      level: 'B1',
+      feedback: { summary: 'Ты говоришь связно и уверенно.', strengths: ['Длинные фразы без пауз'] },
+    })
+    // стенограмма речи в конверт не попадает — отчёту она не нужна
+    expect(JSON.stringify(state.attempts.at(-1))).not.toContain('I goed to the park')
+
+    await results.locator('#prLearn').click()
+    await page.getByRole('button', { name: 'Учиться самостоятельно' }).click()
+    const report = page.locator('.pl-report')
+    await expect(report).toContainText('Отзыв о говорении', { timeout: 20000 })
+    await expect(report).toContainText('Ты говоришь связно и уверенно.')
+    await expect(report).toContainText('Прошедшее время: went, а не goed')
+  })
 })
 
 // Решение владельца 14.10: учившихся до теста v16 не заставлять — на «Главной» тест просто числится непройденным.

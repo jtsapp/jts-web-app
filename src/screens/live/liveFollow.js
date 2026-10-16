@@ -67,3 +67,20 @@ export function isPointerBatch(events) {
   return Array.isArray(events) && events.length > 0 && events.every(isPointEvent)
 }
 
+
+/**
+ * Событие показа — ▶/■ и перемотка плеера урока: мост кладёт в value клика намерение
+ * преподавателя (`jts-audio:play` / `jts-audio:stop`), перемотку шлёт событием `audio-seek`
+ * (MaterialBridgeScriptInjector). Такие события приходят
+ * по «Слушать вместе» и звучат у всего класса, следует ученик за классом или нет.
+ * Двойник — `isAudioCommand` в web-admin (core/utils/live-follow.util.ts).
+ */
+export function isAudioCommand(event) {
+  if (event?.eventType === 'audio-seek') return true
+  return event?.eventType === 'click' && (event.value === 'jts-audio:play' || event.value === 'jts-audio:stop')
+}
+
+/** Пачка показа — только ▶/■ плеера, не поток класса. */
+export function isAudioBatch(events) {
+  return Array.isArray(events) && events.length > 0 && events.every(isAudioCommand)
+}

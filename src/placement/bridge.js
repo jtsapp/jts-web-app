@@ -4,11 +4,15 @@
 //   JTSPlacementConfig.openPracticeActivity(rec)    — нажал задание из рекомендаций;
 //   JTSPlacementConfig.navigate(d)                  — кнопка раздела на итоге (d.section);
 //   JTSSpeakingBuddy.start(args)                    — экран говорения просит провести разговор.
+// И один свой, которого у автора нет: JTSHostSpeakingFeedback(speaking, lang) — панель отзыва о говорении на экране
+// итога (вызов вставляет патч сборки, scripts/build-placement-v16.js; почему — speakingFeedback.js).
 // Iframe с того же адреса (public/placement/v16/), поэтому крючки кладутся прямо в его window — postMessage не нужен.
 //
 // «Главной» нужен полный конверт (с анкетой и рекомендациями). openLearning получает его от теста сам; onComplete
 // несёт урезанный payload прежнего формата, а задание и раздел — ничего, — для них конверт читаем из состояния теста
 // (JTSPersonalizedResults.getPayload()).
+
+import { feedbackHtml, pickFeedback } from './speakingFeedback.js'
 
 /** Название главной цели на трёх языках из конфигурации анкеты — в конверте только её id. */
 export function goalLabel(win, goalId) {
@@ -72,10 +76,19 @@ export function installBridge(win, handlers) {
       handlers.onSection?.(d?.section, readEnvelope(win))
     },
   }
-  win.JTSSpeakingBuddy = { start: (args) => handlers.startSpeaking(args) }
+  win.JTSSpeakingBuddy = {
+    // Отзыв кладём в ответ отдельным полем: тест (с патчем validateSpeaking) хранит его с уровнем до экрана итога.
+    start: async (args) => {
+      const r = await handlers.startSpeaking(args)
+      const feedback = pickFeedback(r)
+      return feedback ? { ...r, feedback } : r
+    },
+  }
+  win.JTSHostSpeakingFeedback = (speaking, lang) => feedbackHtml(speaking, lang)
   return () => {
     try {
       delete win.JTSSpeakingBuddy
+      delete win.JTSHostSpeakingFeedback
       win.JTSPlacementConfig = prev
     } catch {
       /* окно уже выгружено */

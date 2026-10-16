@@ -11,6 +11,11 @@ import { assessSpeaking } from './api.js'
 //
 // Окно отвечает тесту одним из двух: done(результат) — v16 примет уровень говорения, skip() — ученик отказался
 // (микрофона нет, не хочет). На skip тест помечает говорение «не оценено» и сам окно больше не зовёт.
+//
+// Своего итога у окна НЕТ: оценка пришла — окно сразу отдаёт её тесту и закрывается, а тест открывает результаты.
+// Раньше здесь показывались уровень и отзыв с кнопкой «Вернуться к тесту» — отзыв выходил раньше результатов
+// остальных навыков, а минута оценки без единой кнопки выглядела зависанием (жалоба 16.10.2026). Отзыв теперь в
+// итоге вместе со всеми (speakingFeedback.js), а ожидание прямо говорит, что нажимать ничего не нужно.
 
 const fmt = (sec) => {
   const s = Math.max(0, Math.ceil(sec))
@@ -21,9 +26,8 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
   const { t, lang } = useI18n()
   const measured = { grammar: args?.grammarLevel || null, reading: args?.readingLevel || null, listening: args?.listeningLevel || null }
   const [topic] = useState(() => pickTopic([measured.grammar, measured.reading, measured.listening], Math.random()))
-  const [phase, setPhase] = useState('intro') // intro | prep | recording | assessing | result | retry
+  const [phase, setPhase] = useState('intro') // intro | prep | recording | assessing | retry
   const [left, setLeft] = useState(PREP_SECONDS)
-  const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const rec = useRecorder()
   const timer = useRef(null)
@@ -68,8 +72,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
         setPhase('retry')
         return
       }
-      setResult(r)
-      setPhase('result')
+      onDone(r)
     } catch (e) {
       const key = e?.code === 'daily_limit_reached' ? 'limit' : e?.code === 'not_configured' ? 'off' : 'failed'
       setError(t(`placement.speaking.err.${key}`))
@@ -95,7 +98,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
         <h2 id="pl-speak-title" className="pl-speak__topic" lang="en">
           {topic.prompt}
         </h2>
-        {phase !== 'result' && (
+        {phase !== 'assessing' && (
           <ul className="pl-speak__hints" lang="en">
             {topic.hints.map((h) => (
               <li key={h}>{h}</li>
@@ -144,9 +147,13 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
         )}
 
         {phase === 'assessing' && (
-          <p className="pl-speak__text" aria-live="polite">
-            {t('placement.speaking.assessing')}
-          </p>
+          <div className="pl-speak__wait" role="status" aria-live="polite">
+            <i className="pl-speak__spinner" aria-hidden="true" />
+            <div>
+              <p className="pl-speak__waitTitle">{t('placement.speaking.assessing')}</p>
+              <p className="pl-speak__waitHint">{t('placement.speaking.assessingHint')}</p>
+            </div>
+          </div>
         )}
 
         {phase === 'retry' && (
@@ -162,22 +169,7 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
           </>
         )}
 
-        {phase === 'result' && result && (
-          <>
-            <div className="pl-speak__level">
-              <span>{t('placement.speaking.level')}</span>
-              <b>{result.speaking_level}</b>
-            </div>
-            {result.summary && <p className="pl-speak__text">{result.summary}</p>}
-            <div className="pl-speak__actions">
-              <button type="button" className="pl-btn pl-btn--main" onClick={() => onDone(result)}>
-                {t('placement.speaking.back')}
-              </button>
-            </div>
-          </>
-        )}
-
-        {phase !== 'result' && phase !== 'assessing' && (
+        {phase !== 'assessing' && (
           <button type="button" className="pl-speak__skip" onClick={() => { skipped.current = true; clearInterval(timer.current); rec.stop(); onSkip() }}>
             {t('placement.speaking.skip')}
           </button>

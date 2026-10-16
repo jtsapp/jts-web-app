@@ -4,6 +4,7 @@ import PillButton from '../ui/PillButton.jsx'
 import PageHeader from '../ui/PageHeader.jsx'
 import { TimerIcon } from '../icons.jsx'
 import { MonthView, RoadmapView, WeekView } from './PlanViews.jsx'
+import RecommendedList from './RecommendedList.jsx'
 import { getIeltsPlan, markIeltsPlanTask, moveIeltsPlanTask } from '../../api.js'
 import { useI18n } from '../../i18n.jsx'
 
@@ -67,12 +68,16 @@ export default function PlanTab({ token, onStartTask, onOpenDiagnostic }) {
   const e = data.enrollment
   if (e.status === 'programme_pending') {
     return (
-      <EmptyState
-        icon={<TimerIcon size={28} />}
-        title={t('ieltsPlan.pendingTitle')}
-        text={t(`ieltsPlan.pending.${e.pendingReason || 'no_diagnostic'}`)}
-        action={e.pendingReason === 'no_diagnostic' ? <PillButton variant="primary" onClick={onOpenDiagnostic}>{t('ieltsPlan.toDiagnostic')}</PillButton> : null}
-      />
+      <>
+        <EmptyState
+          icon={<TimerIcon size={28} />}
+          title={t('ieltsPlan.pendingTitle')}
+          text={t(`ieltsPlan.pending.${e.pendingReason || 'no_diagnostic'}`)}
+          action={e.pendingReason === 'no_diagnostic' ? <PillButton variant="primary" onClick={onOpenDiagnostic}>{t('ieltsPlan.toDiagnostic')}</PillButton> : null}
+        />
+        {/* плана ещё нет — всё равно есть что делать */}
+        <RecommendedList items={data.recommended} noPlan onStart={onStartTask} />
+      </>
     )
   }
 
@@ -103,6 +108,8 @@ export default function PlanTab({ token, onStartTask, onOpenDiagnostic }) {
           <b>{t('ieltsPlanV.progress', { p: String(data.completion.percent) })}</b>
         </div>
       )}
+      {/* все задачи плана сделаны — советы бэкенда, план не заканчивается пустотой */}
+      <RecommendedList items={data.recommended} onStart={onStartTask} />
       {view === 'roadmap' && <RoadmapView key={data.currentWeek} data={data} onStart={onStartTask} onMark={mark} />}
       {view === 'week' && <WeekView key={weekN} data={data} n={weekN} onWeek={(n) => pick('week', n ? String(n) : null)} onStart={onStartTask} onMove={move} />}
       {view === 'month' && <MonthView key={month.slice(0, 7)} data={data} month={month} onMonth={(m) => pick('month', m)} onStart={onStartTask} onMark={mark} />}

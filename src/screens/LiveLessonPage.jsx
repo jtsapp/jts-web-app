@@ -40,7 +40,7 @@ import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { playCue } from '../lib/notifySound.js'
 import { knowsFocusTarget, sectionWithMaterial } from './live/followFocus.js'
-import { isPointerBatch, nextFollow } from './live/liveFollow.js'
+import { isAudioBatch, isPointerBatch, nextFollow } from './live/liveFollow.js'
 import { createSnapshotQueue } from './live/snapshotQueue.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -1076,6 +1076,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // класса: доходит до каждого, следует он за классом или нет.
       if (isPointerBatch(events)) {
         bringToPointer(evt.materialId, events)
+        return
+      }
+      // ▶/■ преподавателя при «Слушать вместе» — всему классу, следует ученик или нет.
+      // Только в открытую рамку того же материала: копить команду «сейчас» на потом незачем.
+      if (isAudioBatch(events)) {
+        if (evt.materialId === activeMaterial?.materialId && materialFrameRef.current) {
+          materialFrameRef.current.replay(events)
+        }
         return
       }
       // Не следующему показ класса не адресован: к классу его вернёт «Внимание»,

@@ -29,7 +29,7 @@ function silentWav() {
   return b
 }
 
-async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ', speakStatus = 200 } = {}) {
+async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ', speakStatus = 200, speakDelayMs = 0 } = {}) {
   await page.addInitScript(() => {
     localStorage.setItem('jts_access_token', 'test-token')
     // Что реально заиграло: адрес и состояние play().
@@ -56,11 +56,17 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
     await r.fulfill(json({ text: sttText }))
   })
   await page.route('**/api/assistant/chat', async (r) => {
-    calls.chat.push(JSON.parse(r.request().postData()))
+    const body = JSON.parse(r.request().postData())
+    // Первая реплика при открытии окна (lib/assistant/opening.js) — свой тест,
+    // assistant-opening.spec.js; здесь она «не удалась», и окно ведёт себя как без неё.
+    if (body.messages.at(-1)?.content === '[ученик открыл окно]') return r.fulfill(json({ error: 'model_failed' }, 502)).catch(() => {})
+    calls.chat.push(body)
     await r.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', body: reply })
   })
   await page.route('**/api/assistant/speak', async (r) => {
     calls.speak.push(JSON.parse(r.request().postData()))
+    // Синтез Gemini не потоковый — фраза приходит через секунды.
+    if (speakDelayMs) await new Promise((res) => setTimeout(res, speakDelayMs))
     if (speakStatus !== 200) return r.fulfill(json({ error: 'tts_failed' }, speakStatus))
     await r.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() })
   })
@@ -150,4 +156,24 @@ test('набранный вопрос — ответ только текстом
   await page.waitForTimeout(500)
   expect(calls.speak).toHaveLength(0)
   expect(calls.tts).toHaveLength(0)
+})
+
+// Живой прогон 15.10.2026: текст ответа стоял на экране за секунды до голоса, а
+// «открываю» уводило в раздел раньше, чем Луна заговорила.
+test('текст — вслед за голосом, переход — когда Луна договорила', async ({ page }) => {
+  const calls = await setup(page, {
+    sttText: 'Открой словарь',
+    reply: 'Открываю Словарь, начните с уровня A2.\n[[ASST_ACTION open vocab now]]',
+    speakDelayMs: 2500,
+  })
+  await askByVoice(page)
+  await expect.poll(() => calls.speak.length).toBe(1)
+  // Ответ уже пришёл, голос ещё готовится: строка ожидания, без текста и без перехода.
+  await expect(page.getByRole('status')).toHaveText(/Сейчас скажу|Ещё секунду/)
+  await expect(page.locator('.asst__list')).not.toContainText('Открываю Словарь')
+  await expect(page.locator('.vp')).toHaveCount(0)
+
+  await expect(page.locator('.asst__msg--bot').last()).toContainText('Открываю Словарь', { timeout: 10000 })
+  await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
+  await expect(page.locator('.vp').first()).toBeVisible({ timeout: 15000 })
 })

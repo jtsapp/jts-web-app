@@ -6,7 +6,7 @@ import { SUBSETTABLE, subsetAct } from '../../practice/workbook/engine.js'
 import { stopAudio } from '../../practice/workbook/voice.js'
 import { resolveMiss } from '../../practice/workbook/workbookProgress.js'
 import { useAct } from './ActShell.jsx'
-import { ActBar, ActBrief } from './WorkbookAct.jsx'
+import { ActBar, ActBrief, useRevealedKey } from './WorkbookAct.jsx'
 import ActBody from './acts/index.jsx'
 
 // «Разбор ошибок» — порт renderReview (data/jtsworkbook-a0.html:6480).
@@ -24,6 +24,9 @@ export default function WorkbookReview({ level, lesson, index, missed, meta, slo
   const act = useMemo(() => subsetAct(base, missed, meta?.subsettable), [base, missed, meta])
   const ctl = useAct(act)
   const narrowed = act !== base
+  // Разбор ошибок — пересдача, а не зачёт (балла здесь нет), поэтому ключ после «Показать ответ» отдаём и для
+  // промахов зачётного урока. Ключ — суженного экрана: номера совпадают с пунктами на экране.
+  const revealedKey = useRevealedKey(act, ctl, false)
 
   useEffect(() => {
     stopAudio()
@@ -64,7 +67,7 @@ export default function WorkbookReview({ level, lesson, index, missed, meta, slo
       <ActBrief act={act} meta={meta} extra={t('workbook.reviewIns')} />
 
       <div className="wb-card">
-        <div className="wb-items" key={ctl.gen}>
+        <div className="wb-items" key={ctl.gen} data-assistant-expected={revealedKey}>
           <ActBody
             act={act}
             ctl={ctl}

@@ -199,7 +199,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
           <IeltsHeader track={me?.track || track} />
           {/* демо-версия IELTS (SAT-SYNC-PLAN E2): набор ограничен демо-квотой, полный — через тариф */}
           <ExamDemoBanner exam="ielts" token={token} onPricing={() => onNav?.('ielts-pricing')} />
-          <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} onOpenPricing={() => onNav?.('ielts-pricing')} />
+          <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} />
         </div>
       </LearningLayout>
     )

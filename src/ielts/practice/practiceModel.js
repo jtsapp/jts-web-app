@@ -76,7 +76,8 @@ function testRow(t, skill, view, mode = 'practice') {
     status: statusOf([t]),
     // уровень задания для фишки «Band 6.0–7.0» (model/levels.js); level above — «на вырост»
     band: bandLabel(t),
-    level: t.level,
+    // полный тест рекомендуется при любом уровне ученика (backend IeltsLevels.fitOf) — не «Неподходящие»
+    level: t.kind === 'test' ? 'fit' : t.level,
     // «добавлен 8 окт» — у полных тестов, заданий Writing и частей Speaking: новое видно сразу (правка владельца 11.10.2026)
     added: ADDED_KINDS.has(t.kind) ? t.createdAt || null : null,
     open: t.kind === 'dictation' || t.kind === 'spelling' ? { run: { testId: t.id, kind: t.kind } } : { tab: 'learn', view, testId: t.id },

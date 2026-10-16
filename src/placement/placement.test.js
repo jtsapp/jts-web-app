@@ -7,6 +7,7 @@ import { bandFor, pickTopic, topicById, TOPICS } from './speakingTopics.js'
 import { reportView } from './reportModel.js'
 import { installBridge, readEnvelope } from './bridge.js'
 import { isExistingStudent } from './existingStudent.js'
+import { feedbackHtml, pickFeedback } from './speakingFeedback.js'
 
 // Фикстура — настоящий конверт, снятый с самого теста v16 (симулятор ученика B1 + анкета «путешествовать без
 // переводчика»): форма не придумана, а та, что придёт в приложение.
@@ -139,6 +140,37 @@ describe('reportModel', () => {
   it('без конверта — нечего рисовать', () => {
     expect(reportView(null)).toBe(null)
   })
+
+  it('отзыв о говорении едет в отчёт вместе с уровнем, без отзыва — null', () => {
+    expect(reportView(env(), 'ru').speaking).toBe(null)
+    const e = env()
+    e.assessment.skillResults.S = { status: 'completed', level: 'A2', feedback: { summary: ' Ты говоришь уверенно. ', strengths: ['Длинные фразы'], improvements: ['Прошедшее время'] } }
+    const v = reportView(e, 'ru')
+    expect(v.skills[3]).toMatchObject({ id: 'S', assessed: true, level: 'A2' })
+    expect(v.speaking).toEqual({ summary: 'Ты говоришь уверенно.', strengths: ['Длинные фразы'], improvements: ['Прошедшее время'] })
+  })
+})
+
+describe('speakingFeedback', () => {
+  it('из ответа оценки берёт только отзыв: обрезает, режет списки до трёх, пустой — null', () => {
+    const r = { status: 'completed', speaking_level: 'B1', summary: '  Хорошо. ', strengths: ['a', ' ', 'b', 'c', 'd', 7], improvements: 'не список', transcript: 'секрет' }
+    expect(pickFeedback(r)).toEqual({ summary: 'Хорошо.', strengths: ['a', 'b', 'c'], improvements: [] })
+    expect(pickFeedback({ summary: '', strengths: [], improvements: [] })).toBe(null)
+    expect(pickFeedback(null)).toBe(null)
+  })
+
+  it('панель итога v16 — экранирована, на языке теста, только при оценённом говорении', () => {
+    const s = { status: 'completed', level: 'B1', feedback: { summary: '<img src=x onerror=alert(1)>', strengths: ['Темп'], improvements: [] } }
+    const html = feedbackHtml(s, 'kk')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).not.toContain('<img')
+    expect(html).toContain('Күшті жақтары')
+    expect(html).toContain('B1')
+    expect(html).not.toContain('Нені жақсарту керек') // пустой список — без заголовка
+    expect(feedbackHtml({ status: 'not_assessed' }, 'ru')).toBe('')
+    expect(feedbackHtml({ status: 'completed', level: 'B1' }, 'ru')).toBe('')
+    expect(feedbackHtml(s, 'xx')).toContain('Что получилось')
+  })
 })
 
 describe('existingStudent', () => {
@@ -184,9 +216,20 @@ describe('bridge', () => {
     win.JTSPlacementConfig.navigate({ section: 'tutor' })
     expect(h.onSection).toHaveBeenCalledWith('tutor', expect.any(Object))
     expect(await win.JTSSpeakingBuddy.start({ placementSessionId: 'a' })).toEqual({ status: 'completed' })
+    expect(win.JTSHostSpeakingFeedback({ status: 'completed', level: 'A2', feedback: { summary: 'Ок' } }, 'ru')).toContain('Ок')
 
     off()
     expect(win.JTSSpeakingBuddy).toBe(undefined)
+    expect(win.JTSHostSpeakingFeedback).toBe(undefined)
     vi.useRealTimers()
+  })
+
+  it('ответ говорения уходит в тест с отзывом отдельным полем — тест донесёт его до итога', async () => {
+    const graded = { status: 'completed', speaking_level: 'B1', summary: 'Хорошо', strengths: ['Темп'], improvements: [], transcript: 'речь' }
+    const win = fakeWin()
+    installBridge(win, { startSpeaking: async () => graded })
+    const r = await win.JTSSpeakingBuddy.start({})
+    expect(r).toMatchObject({ status: 'completed', speaking_level: 'B1' })
+    expect(r.feedback).toEqual({ summary: 'Хорошо', strengths: ['Темп'], improvements: [] })
   })
 })

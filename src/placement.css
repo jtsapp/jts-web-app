@@ -141,19 +141,46 @@
   font-size: 15px;
   line-height: 22px;
 }
-.pl-speak__level {
+/* ожидание оценки: без кнопок, поэтому крутилка и прямое «нажимать ничего не нужно» (жалоба 16.10.2026) */
+.pl-speak__wait {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: 6px 0 12px;
-  font-size: 15px;
-  color: #656172;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 6px 0 4px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f6f1ff;
 }
-.pl-speak__level b {
-  color: #9047ff;
-  font-size: 34px;
-  line-height: 40px;
-  font-weight: 800;
+.pl-speak__spinner {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e2d4ff;
+  border-top-color: #9047ff;
+  border-radius: 50%;
+  animation: pl-spin 0.9s linear infinite;
+}
+@keyframes pl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-speak__spinner {
+    animation-duration: 2.4s;
+  }
+}
+.pl-speak__waitTitle {
+  margin: 2px 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+}
+.pl-speak__waitHint {
+  margin: 0;
+  color: #656172;
+  font-size: 15px;
+  line-height: 22px;
 }
 .pl-speak__actions {
   display: flex;
@@ -383,6 +410,16 @@
 }
 .pl-report__list li + li {
   margin-top: 6px;
+}
+/* отзыв о говорении — в отчёте, а не отдельным итогом посреди теста (жалоба 16.10.2026) */
+.pl-report__speakSummary {
+  margin: 0 0 4px;
+  font-size: 15px;
+  line-height: 22px;
+}
+.pl-report__block .pl-report__label {
+  display: block;
+  margin: 10px 0 4px;
 }
 .pl-report__acts {
   display: grid;

@@ -122,6 +122,19 @@ export function checkAnswer(task, response) {
   }
 }
 
+// Эталон задания для помощника по сайту (data-assistant-expected на плашке неверного ответа). Разбор и сам называет
+// ответ («Правильный ответ: …»), но внутри объяснения с разметкой, и помощник путал его с текстом пояснения. У «собери
+// фразу» эталон — плитки в верном порядке, а не `text`: сверка идёт по плиткам, а в `text` бывает хвост, которого
+// среди них нет («No, he isn't Brazilian. He's Spanish.» при плитках «No he isn't Brazilian»).
+export function expectedAnswer(task) {
+  if (!task) return ''
+  if (task.type === 'listen_assemble') {
+    const tiles = (task.tokens || []).join(' ').trim()
+    return tiles || String(task.text || '').trim()
+  }
+  return String(task.answer ?? '').trim()
+}
+
 // Compose the feedback body (may contain <b> from `explanation`). UI strings
 // come from the caller's t() (i18n.jsx) — the engine keeps no dictionary of
 // its own; `explanation` and `prompt` are content data and stay as authored.

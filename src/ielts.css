@@ -7307,6 +7307,15 @@
   margin-top: auto;
   font-size: 15px;
 }
+/* WhatsApp менеджера — под основной кнопкой каждого маршрута */
+.ih-route__wa {
+  width: 100%;
+  justify-content: center;
+  min-height: 42px;
+  font-size: 14px;
+  text-decoration: none;
+  text-align: center;
+}
 .ih-route__opt.is-rec > .ih-cta {
   /* у .ih-cta свои поля (53 px) — в карточке маршрута все три кнопки одной высоты, как в макете */
   height: 46px;
@@ -9410,6 +9419,25 @@
 .ih-tt__empty {
   margin: 0;
   color: var(--ih-ink-2);
+}
+
+/* «что сделать дальше» — задач плана не осталось */
+.ih-rec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-rec__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ih-rec__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 /* зона роста */

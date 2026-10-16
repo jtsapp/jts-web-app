@@ -120,11 +120,76 @@ describe('снимок экрана', () => {
     expect(snap).not.toContain('ученик ввёл «understand»')
   })
 
+  it('ученик поле не заполнил, а сайт поставил туда ключ — не «пустое поле»', () => {
+    const root = mount('<input class="wb-tin is-rev" aria-label="seven" data-assistant-entered="" />')
+    root.querySelector('input').value = '7'
+    expect(snapshotScreen(root)).toBe('[поле seven: ученик ничего не ввёл; в поле сайт показал верный ответ «7»]')
+  })
+
   it('ввод совпадает с тем, что показано в поле, — пояснения про подстановку нет', () => {
     const root = mount('<input class="is-wrong" aria-label="Ваш ответ" data-assistant-entered="Is Cleare reading?" />')
     root.querySelector('input').value = 'Is Cleare reading?'
     const snap = snapshotScreen(root)
     expect(snap).toBe('[поле Ваш ответ: ученик ввёл «Is Cleare reading?» (отмечено как неверное)]')
+  })
+
+  // Практика красит вердикт своими классами: воркбук и «Письмо» — is-no / is-ok / is-rev, «Грамматика» — wrong /
+  // correct / picked-no, «Аудирование» — data-state. Без них помощник не видел, какой вариант ученик выбрал неверно.
+  it('понимает вердикты разделов Практики', () => {
+    const root = mount(`
+      <button class="wb-opt is-no">went</button>
+      <button class="wb-opt is-ok">goes</button>
+      <button class="wb-opt is-rev">gone</button>
+      <button class="lc-photo is-revealed">a dog</button>
+      <button class="gr-opt wrong">am</button>
+      <button class="gr-opt correct">is</button>
+      <button class="gr-fchip picked-no">True</button>
+      <button class="gr-opt sel">are</button>
+      <input class="lt-input" data-state="no" aria-label="Ответ" />
+      <select class="wb-dsel is-rev"><option>right</option></select>
+      <button class="wb-opt is-normal">ok-not-verdict</button>`)
+    root.querySelector('input').value = 'fourty'
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «went» (отмечено как неверное)]')
+    expect(snap).toContain('[кнопка «goes» (отмечено как верное)]')
+    expect(snap).toContain('[кнопка «gone» (верный ответ показал сайт)]')
+    expect(snap).toContain('[кнопка «a dog» (верный ответ показал сайт)]')
+    expect(snap).toContain('[кнопка «am» (отмечено как неверное)]')
+    expect(snap).toContain('[кнопка «is» (отмечено как верное)]')
+    expect(snap).toContain('[кнопка «True» (отмечено как неверное)]')
+    expect(snap).toContain('[кнопка «are» (выбрано)]')
+    expect(snap).toContain('[поле Ответ: ученик ввёл «fourty» (отмечено как неверное)]')
+    expect(snap).toContain('[выбор: «right» (верный ответ показал сайт)]')
+    expect(snap).toContain('[кнопка «ok-not-verdict»]')
+  })
+
+  // «Слушай и выбирай»: галочка верного ответа спрятана в плитке заранее — textContent читал «1✓» до ответа.
+  it('подпись кнопки — только из видимого, картинка — по alt', () => {
+    const root = mount(`
+      <button class="lc-photo"><img alt="A cyclist in a red helmet" /><span>1</span><i hidden>✓</i><i aria-hidden="true">✓</i></button>
+      <button aria-label="Закрыть"><svg></svg></button>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «[картинка: A cyclist in a red helmet] 1»]')
+    expect(snap).not.toContain('✓')
+    expect(snap).toContain('[кнопка «Закрыть»]')
+  })
+
+  // «Чтение» до проверки отмечает выбор только aria-checked на role="radio".
+  it('выбор через aria-checked / aria-pressed / aria-selected и роли-кнопки', () => {
+    const root = mount(`
+      <div role="radiogroup">
+        <div role="radio" aria-checked="true">True</div>
+        <div role="radio" aria-checked="false">False</div>
+      </div>
+      <button aria-pressed="true">RU</button>
+      <div role="tab" aria-selected="true">Сегодня</div>
+      <div role="option" aria-disabled="true">Нельзя</div>`)
+    const snap = snapshotScreen(root)
+    expect(snap).toContain('[кнопка «True» (выбрано)]')
+    expect(snap).toContain('[кнопка «False»]')
+    expect(snap).toContain('[кнопка «RU» (выбрано)]')
+    expect(snap).toContain('[кнопка «Сегодня» (выбрано)]')
+    expect(snap).toContain('[кнопка «Нельзя» неактивна]')
   })
 
   it('слово из банка, выбранное в пропуск, помечено «выбрано»', () => {
@@ -160,11 +225,99 @@ describe('снимок экрана', () => {
     const snap = snapshotScreen(long)
     expect(snap).toContain('[верный ответ по заданию: «слово слово')
     expect(snap).toContain('…»]')
-    expect(snap.length).toBeLessThan(500)
+    expect(snap.length).toBeLessThan(900)
     expect(snapshotScreen(mount('<div data-assistant-expected="  ">Неверный ответ</div>'))).toBe('Неверный ответ')
   })
 
   it('без корня — пустая строка', () => {
     expect(snapshotScreen(null)).toBe('')
+  })
+})
+
+// Слепые зоны обёртки экрана: Shadow DOM движков-прототипов (SpeakSpin, «Числа») и окна, уведённые порталом в body
+// (плеер караоке, карточка перевода, выбор цели). Без этого помощник на SpeakSpin видел только кнопку «← К практике».
+describe('снимок за пределами обёртки экрана', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('читает открытый Shadow DOM, стили тени пропускает', () => {
+    const root = mount('<button>← К практике</button><div class="spsp-host"></div>')
+    const shadow = root.querySelector('.spsp-host').attachShadow({ mode: 'open' })
+    shadow.innerHTML = '<style>.hero{color:red}</style><main><h1>Speak for a minute</h1><p>Topic: My best friend</p><button>Spin</button></main>'
+    expect(snapshotScreen(root)).toBe('[кнопка «← К практике»]\nSpeak for a minute\nTopic: My best friend\n[кнопка «Spin»]')
+  })
+
+  it('внутри тени видит поля и эталон', () => {
+    const root = mount('<div class="host"></div>')
+    const shadow = root.querySelector('.host').attachShadow({ mode: 'open' })
+    shadow.innerHTML = '<p>three hundred</p><div data-assistant-expected="300"><b>Wrong</b></div>'
+    expect(snapshotScreen(root)).toBe('three hundred\nWrong\n[верный ответ по заданию: «300»]')
+  })
+
+  it('окно-портал в body читается первым, экран — под ним', () => {
+    const root = mount('<h1>Караоке</h1><button>Imagine</button>')
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<div class="kk-play" data-assistant-overlay="плеер караоке"><p>Imagine there\'s no heaven</p><button>Пауза</button></div>',
+    )
+    expect(snapshotScreen(root)).toBe(
+      '[поверх экрана открыто: плеер караоке]\nImagine there\'s no heaven\n[кнопка «Пауза»]\n[экран под окном]\nКараоке\n[кнопка «Imagine»]',
+    )
+  })
+
+  it('непомеченный узел в body, скрытое окно и окно помощника не читаются', () => {
+    const root = mount('<p>экран</p>')
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `<div class="toast">чужое</div>
+       <div data-assistant-overlay="карточка" hidden><p>скрыто</p></div>
+       <div data-assistant-ignore><div data-assistant-overlay="помощник"><p>сам помощник</p></div></div>`,
+    )
+    expect(snapshotScreen(root)).toBe('экран')
+  })
+
+  it('окно без имени и вложенное окно читаются один раз', () => {
+    const root = mount('<p>экран</p>')
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<div data-assistant-overlay><p>внешнее</p><div data-assistant-overlay="внутри"><p>вложенное</p></div></div>',
+    )
+    const snap = snapshotScreen(root)
+    expect(snap).toBe('[поверх экрана открыто окно]\nвнешнее\nвложенное\n[экран под окном]\nэкран')
+  })
+
+  it('полоса прогресса — подписью и процентом из aria', () => {
+    const root = mount('<p>Глава 1</p>')
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<div data-assistant-overlay="полоса чтения книги" role="progressbar" aria-label="Прочитано" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42"><span><span></span></span></div>',
+    )
+    expect(snapshotScreen(root)).toBe('[поверх экрана открыто: полоса чтения книги]\n[индикатор «Прочитано»: 42%]\n[экран под окном]\nГлава 1')
+    expect(snapshotScreen(mount('<div role="progressbar"></div><p>x</p>'))).toBe('x')
+  })
+
+  // «Числа»: сообщение гаснет прозрачностью, а текст прошлого прыжка остаётся в разметке.
+  it('прозрачное не читается, кроме самого корня и полей', () => {
+    const root = mount(`
+      <div class="msg" style="opacity:0">That island is 30.</div>
+      <label><input type="checkbox" checked style="opacity:0" /> Slow</label>
+      <p>Listen and jump</p>`)
+    expect(snapshotScreen(root)).toBe('[отмечено] Slow\nListen and jump')
+    root.style.opacity = '0'
+    expect(snapshotScreen(root)).toBe('[отмечено] Slow\nListen and jump')
+  })
+
+  it('окно внутри корня читается на своём месте, без шапки', () => {
+    const root = mount('<p>до</p><div data-assistant-overlay="карточка"><p>перевод</p></div><p>после</p>')
+    expect(snapshotScreen(root)).toBe('до\nперевод\nпосле')
+  })
+
+  it('обрезка длинного экрана не съедает окно', () => {
+    const root = mount(`<p>${'a'.repeat(200)}</p>`)
+    document.body.insertAdjacentHTML('beforeend', '<div data-assistant-overlay="перевод"><p>apple — яблоко</p></div>')
+    const snap = snapshotScreen(root, { maxChars: 80 })
+    expect(snap.startsWith('[поверх экрана открыто: перевод]\napple — яблоко')).toBe(true)
+    expect(snap.endsWith('…[снимок обрезан]')).toBe(true)
   })
 })

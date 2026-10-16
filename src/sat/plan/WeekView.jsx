@@ -19,6 +19,8 @@ export default function WeekView({ plan, next, todayIso, busy, onLesson, onStart
   const todayWeek = Math.max(0, weeks.findIndex((w) => w.monday === iso(addDays(parse(todayIso), -((parse(todayIso).getDay() + 6) % 7)))))
   const [wi, setWi] = useState(todayWeek)
   const [menu, setMenu] = useState(null)
+  // Меню занятия — в точке правого клика (clientX/Y): левый клик сразу начинает занятие.
+  const openMenu = (e, id) => { e.preventDefault(); setMenu({ id, x: e.clientX, y: e.clientY }) }
   const week = weeks[Math.min(wi, weeks.length - 1)]
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
@@ -82,19 +84,20 @@ export default function WeekView({ plan, next, todayIso, busy, onLesson, onStart
                   const section = skillSection(l.skillIds[0])
                   return (
                     <div key={l.id} className="st-week__slot">
-                      <button type="button" className={`st-lesson is-${st}`} aria-haspopup="dialog" aria-expanded={menu === l.id} onClick={() => setMenu(menu === l.id ? null : l.id)}>
+                      <button type="button" className={`st-lesson is-${st}`} aria-haspopup="dialog" aria-expanded={menu?.id === l.id} onClick={(e) => (l.status === 'skipped' ? openMenu(e, l.id) : onStart(l.id))}
+                        onContextMenu={(e) => openMenu(e, l.id)}>
                         <span className="st-lesson__sec"><i className={`st-dot is-${section}`} />{section === 'math' ? 'Math' : 'R&W'}</span>
                         <b>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</b>
                         <span className="st-lesson__acts">{l.actions.map((a) => t(`sat.action.${a}`)).join(' · ')}</span>
                         <span className="st-lesson__st">{st === 'done' && <CheckCircleIcon size={14} />}{t(`sat.status.${st}`)}</span>
                       </button>
-                      {menu === l.id && (
+                      {menu?.id === l.id && (
                         <LessonMenu
                           lesson={l}
                           examDate={plan.examDate}
                           todayIso={todayIso}
                           busy={busy}
-                          anchor={i >= 4 ? { right: 0 } : { left: 0 }}
+                          at={menu}
                           onClose={() => setMenu(null)}
                           onStart={() => onStart(l.id)}
                           onStatus={(s) => onLesson(l.id, { status: s }).then(() => setMenu(null))}

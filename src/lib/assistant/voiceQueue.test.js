@@ -14,6 +14,18 @@ describe('язык фразы', () => {
     expect(phraseLang('Откройте «Практику».')).toBe('ru')
     expect(phraseLang('Open the Practice section.')).toBe('en')
   })
+
+  // Первая реплика начинается с имени ученика: казахское имя не делает русский ответ казахским.
+  it('казахское имя в русской фразе — всё ещё ru, голосом Луны', () => {
+    expect(phraseLang('Айгерім, вы на Главной, и у вас 14 слов ждут повторения.')).toBe('ru')
+    expect(phraseLang('Айгерім Нұрланқызы, вы на Главной, и у вас домашка со сроком 17 октября.')).toBe('ru')
+  })
+
+  it('казахская фраза — kk, даже короткая и с русским словом', () => {
+    expect(phraseLang('Айгерім, сіз Басты бетте, және сізде үй тапсырмасы бар.')).toBe('kk')
+    expect(phraseLang('Сәлеметсіз бе!')).toBe('kk')
+    expect(phraseLang('Мерзімі 17 қазан, сдавать керек.')).toBe('kk')
+  })
 })
 
 describe('очередь озвучки', () => {
@@ -224,6 +236,63 @@ describe('очередь озвучки', () => {
     const stopSound = vi.fn()
     queue({ stopSound }).stop()
     expect(stopSound).not.toHaveBeenCalled()
+  })
+
+  // Текст ответа на экране идёт вслед за голосом: виджет показывает фразу, когда
+  // она зазвучала, а пропущенную (сбой) — сразу, чтобы текст не застрял.
+  it('onPhrase — номер фразы, когда она зазвучала или пропущена', async () => {
+    const onPhrase = vi.fn()
+    const q = queue({ onPhrase })
+    q.say('Первая.')
+    q.say('Вторая.')
+    q.say('Третья.')
+    q.end()
+    await settle()
+    expect(onPhrase.mock.calls).toEqual([[0]])
+    play.finish()
+    await settle()
+    expect(onPhrase.mock.calls).toEqual([[0], [1]])
+    play.fail('error')
+    await settle()
+    expect(onPhrase.mock.calls).toEqual([[0], [1], [2]])
+  })
+
+  it('onPhrase ждёт настоящего звука, а не запроса синтеза', async () => {
+    let start
+    play = vi.fn((src, { onStart }) => {
+      played.push(src)
+      start = onStart
+      return true
+    })
+    const onPhrase = vi.fn()
+    const q = queue({ onPhrase })
+    q.say('Первая.')
+    await settle()
+    expect(played).toHaveLength(1)
+    expect(onPhrase).not.toHaveBeenCalled()
+    start()
+    expect(onPhrase).toHaveBeenCalledWith(0)
+  })
+
+  it('чужой звук оборвал фразу — onInterrupt (виджет покажет весь текст), onFinish — нет', async () => {
+    const onInterrupt = vi.fn()
+    const onFinish = vi.fn()
+    const q = queue({ onInterrupt, onFinish })
+    q.say('Первая.')
+    q.say('Вторая.')
+    q.end()
+    await settle()
+    play.interrupt()
+    await settle()
+    expect(onInterrupt).toHaveBeenCalledTimes(1)
+    expect(onFinish).not.toHaveBeenCalled()
+    // Свой stop — не «чужой звук».
+    const own = vi.fn()
+    const q2 = queue({ onInterrupt: own })
+    q2.say('Раз.')
+    await settle()
+    q2.stop()
+    expect(own).not.toHaveBeenCalled()
   })
 
   it('пустой ответ: end без фраз — onFinish с нулями', async () => {

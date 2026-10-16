@@ -120,6 +120,27 @@
 .asst__msg--me { align-self: flex-end; background: var(--asst-accent); color: #fff; border-bottom-right-radius: 6px; white-space: pre-wrap; }
 .asst__msg--typing { color: var(--asst-muted); font-style: italic; }
 
+/* Пока ответа не видно — что Луна делает («Думаю…», «Сейчас скажу…»), а у
+   ответа, который она ещё договаривает, — точки под сказанной частью
+   (AssistantWidget: StatusBubble, held). */
+.asst__status { display: inline-flex; align-items: center; gap: 8px; }
+.asst__dots { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+.asst__dots i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--asst-accent); opacity: 0.35;
+  animation: asst-dot 1.1s ease-in-out infinite;
+}
+.asst__dots i:nth-child(2) { animation-delay: 0.15s; }
+.asst__dots i:nth-child(3) { animation-delay: 0.3s; }
+.asst__dots--more { display: flex; margin-top: 6px; }
+@keyframes asst-dot {
+  0%, 60%, 100% { opacity: 0.35; transform: none; }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asst__dots i { animation: none; opacity: 0.6; }
+}
+
 .asst__chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .asst__chip {
   border: 1px solid var(--asst-line); background: #fff; color: var(--asst-ink);
@@ -130,6 +151,20 @@
 .asst__chip--bug:hover { border-color: #c47a3a; color: #9a4f12; }
 /* Пока задаётся голосовой вопрос, другие не отправить. */
 .asst__chip:disabled, .asst__ghost:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+/* Действие Луны под её ответом: открыть раздел или провести тур
+   (lib/assistant/actions.js). Заметнее чипа — это ответ на просьбу ученика,
+   а не подсказка «о чём спросить». */
+.asst__action {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  border: 0; background: var(--asst-accent); color: #fff;
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left;
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+}
+.asst__action::after { content: "→"; }
+.asst__action--tour::after { content: "✦"; }
+.asst__action:hover { filter: brightness(1.08); }
+.asst__action:disabled { opacity: 0.45; cursor: default; }
 
 .asst__reported {
   margin-top: 8px !important;

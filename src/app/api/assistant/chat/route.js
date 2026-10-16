@@ -24,6 +24,8 @@ import {
   buildTurns,
   classifyStart,
   createReportFilter,
+  isOpeningTurn,
+  openingFocus,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
@@ -34,13 +36,16 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
+import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@/lib/assistant/actions.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
+import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
+import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 
 export const runtime = 'nodejs'
 
 // Haiku: ответ справки должен начаться за секунду, а разбор школьного
 // задания ему по силам. Для эксперимента с моделью посильнее — ASSISTANT_MODEL.
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-4-5-20251001'
+const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
@@ -75,6 +80,11 @@ export async function POST(request) {
   }
 
   const key = `user-${auth.user.userId}`
+  // Ученик открыл окно, и Луна заговаривает первой (OPENING_MARK). Такой ход —
+  // не слова ученика: ни отказ «не по теме», ни поломка по нему не записываются,
+  // а в разбор поломки и в её «слова ученика» он не попадает.
+  const opening = isOpeningTurn(parsed.messages[parsed.messages.length - 1].content)
+  const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
@@ -93,7 +103,7 @@ export async function POST(request) {
 
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(),
-    messages: buildTurns({ ...parsed, user: auth.user, studentContext }),
+    messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
     model: MODEL,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     task: 'site_assistant',
@@ -129,6 +139,10 @@ export async function POST(request) {
     // return() закрывает стрим SDK — модель перестаёт генерировать и тарифицироваться.
     await gen.return?.().catch(() => {})
     takeQuota.refund(key)
+    // Отказ вместо первой реплики — сбой модели, а не вопрос не по теме: ни
+    // паузы ученику, ни стандартного «я помогаю только с английским» на экране —
+    // виджет молча покажет обычное приветствие.
+    if (opening) return json(502, { error: 'model_empty' })
     offtopic.record(key)
     return new Response(OFFTOPIC_REPLY[parsed.lang] || OFFTOPIC_REPLY.ru, {
       status: 200,
@@ -141,14 +155,63 @@ export async function POST(request) {
     return json(502, { error: 'model_empty' })
   }
 
+  // Две метки в конце ответа: поломка ([[REPORT_BUG]] и отчёт после неё — ученику
+  // не показываем) и действие («открыть раздел», «тур» — actions.js). Метка
+  // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
-  const first = filter.push(head) + (finished ? filter.flush() : '')
+  const actions = createActionFilter()
+  // Видимый ответ целиком — из него трекер берёт совет одной строкой (saveNote).
+  let shown = ''
+  const keep = (out) => {
+    shown += out
+    return out
+  }
+  const visible = (text) => keep(actions.push(filter.push(text)))
+  const visibleTail = () => keep(actions.push(filter.flush()) + actions.flush())
+  // Служебный хвост: действие, затем «отчёт записан». Клиент режет всё от
+  // первого [[ASST_ (actions.js), поэтому оба идут после всего видимого текста.
+  // Действие ответа: метка модели, а в первой реплике без метки — кнопка «Совета
+  // сайта», если Луна предложила открыть именно его раздел (inferAdviceOffer).
+  // Первая реплика на экране задания — без кнопки вовсе: ученик посреди урока, и
+  // уводить его оттуда нельзя, даже если модель всё же позвала (openingFocus).
+  const focusTask = opening && openingFocus(parsed.screen.text).task
+  // Ученик просил тур, а модель поставила «открыть» — тур (preferTour).
+  const askedTour = (action) =>
+    opening
+      ? action
+      : preferTour(action, {
+          userText: parsed.messages[parsed.messages.length - 1].content,
+          offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
+        })
+  const finalAction = () => {
+    if (focusTask) return null
+    return askedTour(actions.action()) || (opening ? inferAdviceOffer(shown, studentContext) : null)
+  }
+  const serviceTail = async () => {
+    const action = finalAction()
+    await saveNote(action)
+    return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
+  }
+  // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
+  // открыть раздел, то есть метка [[OPEN id]] без _NOW. «Открой» по прямой просьбе
+  // ученика — уже не совет, а исполнение, тур — объяснение экрана; их не пишем. В
+  // первой реплике переход всегда только предложение (виджет снимает _NOW), поэтому
+  // там пишем и то, что модель ошибочно пометила _NOW. Переписка не сохраняется:
+  // в строку идёт только сам совет (adviceText).
+  const saveNote = async (action) => {
+    if (action?.kind !== 'open' || (action.now && !opening)) return
+    await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
+  }
+  const first = visible(head) + (finished ? visibleTail() : '')
   const saveReport = async () => {
+    // Первая реплика сама поломок не передаёт: ученик ещё ничего не сказал, а сбои
+    // из консоли без его слов — шум в разборе. Спросит — тогда и передадим.
+    if (opening) return false
     const modelReport = filter.report()
-    const auto = shouldAutoReportBug(parsed.messages)
+    const auto = shouldAutoReportBug(studentTurns)
     if (modelReport == null && !auto) return false
-    const lastUser = [...parsed.messages].reverse().find((m) => m.role === 'user')
-    const thread = errorThreadFromMessages(parsed.messages)
+    const lastUser = [...studentTurns].reverse().find((m) => m.role === 'user')
+    const thread = errorThreadFromMessages(studentTurns)
     const screenName = parsed.screen.id ? (SCREEN_NAMES[parsed.screen.id] || parsed.screen.id) : ''
     try {
       const saved = await saveAssistantErrorReport({
@@ -182,20 +245,22 @@ export async function POST(request) {
     async start(controller) {
       if (first) controller.enqueue(encoder.encode(first))
       if (finished) {
-        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
+        const service = await serviceTail()
+        if (service) controller.enqueue(encoder.encode(service))
         controller.close()
         return
       }
       try {
         for await (const ev of gen) {
           if (ev.type === 'text' && ev.text) {
-            const out = filter.push(ev.text)
+            const out = visible(ev.text)
             if (out) controller.enqueue(encoder.encode(out))
           }
         }
-        const tail = filter.flush()
+        const tail = visibleTail()
         if (tail) controller.enqueue(encoder.encode(tail))
-        if (await saveReport()) controller.enqueue(encoder.encode(REPORTED_STREAM_MARKER))
+        const service = await serviceTail()
+        if (service) controller.enqueue(encoder.encode(service))
         controller.close()
       } catch (err) {
         console.error('[assistant] stream failed:', err?.message || err)

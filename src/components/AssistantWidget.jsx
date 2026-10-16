@@ -1,13 +1,18 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
-import { OPEN_EVENT, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
+import { OPEN_EVENT, navigateTo, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
+import { actionMarker } from '../lib/assistant/actions.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
+import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
+import { OPENING_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
+import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
 import { unlockSpeech } from '../lib/speech.js'
+import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequestPending } from '../lib/tourBus.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -24,8 +29,110 @@ import { unlockSpeech } from '../lib/speech.js'
 // Голос — «голос на голос» (решение владельца 14.10.2026): вопрос, сказанный в
 // микрофон, получает ответ голосом сразу, по мере того как он пишется;
 // набранный текстом — только текстом. Озвучку можно выключить кнопкой в шапке.
+//
+// Действия (15.10.2026): Луна умеет открыть раздел и провести тур по экрану
+// (lib/assistant/actions.js, destinations.js). Предложение — кнопка под её
+// ответом; «открой» / «да» — переход сразу, по концу ответа. Переход делает App
+// (navigateTo → handleNav), тур — сам экран, как по своей кнопке «?»
+// (tourBus.js); Луна только просит и потом читает шаги тура вслух. Тур она
+// озвучивает и на набранный вопрос: голос — и есть «объясняет, куда нажимать»;
+// выключается той же кнопкой звука (и в шапке, и в карточке тура).
+//
+// Первая реплика (15.10.2026, владелец: «реальный преподаватель», «когда
+// открываешь — подсказать, что правильно, что нет, и что сделать сейчас»): с
+// greetOnOpen Луна, открыв окно, заговаривает сама — смотрит на экран и советует,
+// чем заняться (lib/assistant/opening.js). Голосом, если звук не выключен:
+// открытие окна — нажатие, iPhone звук разрешит. Один раз на состояние экрана:
+// закрыл и открыл, ничего не поменяв, — она не повторяется (каждая реплика —
+// платный вызов модели). Не вышло (лимит, сеть) — молча обычное приветствие с
+// подсказками, без плашки ошибки: ученик ни о чём не спрашивал.
+//
+// Текст вслед за голосом (живой прогон 15.10.2026): ответ модели доезжает за
+// 1–2 с, а голос Gemini — через 3–7 с (синтез не потоковый), и ученик читал
+// ответ в тишине, а «открываю Практику» уводило его в раздел раньше, чем Луна
+// заговорила. Теперь у озвучиваемого ответа фраза появляется, когда Луна
+// начинает её говорить (held), до того — строка «Думаю… / Смотрю на экран… /
+// Сейчас скажу…» (StatusBubble), а переход и тур — когда она договорила.
 
 const MAX_INPUT = 2000
+// Тур не начался за это время (экран без тура, данные не доехали) — честно
+// говорим об этом, а не молчим. Чуть больше срока жизни заявки в tourBus.
+const TOUR_START_TIMEOUT_MS = 10_500
+// Первый шаг тура ждёт, пока Луна договорит ответ («начинаю тур»), но не
+// дольше: очередь ответа, которую оборвал чужой звук, конца уже не сообщит.
+const REPLY_WAIT_MAX_MS = 8_000
+// Состояние тура «Луна не ведёт» (guideRef в компоненте).
+const GUIDE_OFF = { on: false, screen: null, waitReply: false, pending: false, lastKey: null, lastPhrases: [], timer: null, waitTimer: null }
+const PHONE_QUERY = '(max-width: 720px)'
+// Текст озвучиваемого ответа ждёт первого звука, но не дольше: первая фраза
+// (≤ FIRST_MAX символов) у Gemini — до ~5 с; дольше — синтез завис или ушёл в
+// запасной путь, и смотреть на «Сейчас скажу…» без конца ученик не должен.
+const FIRST_SOUND_MAX_MS = 9_000
+// «Открываю…» ждёт, пока Луна договорит, — но не дольше (зависший синтез).
+const ACTION_WAIT_MAX_MS = 30_000
+
+// Строка ожидания: что Луна делает, пока ответа не видно. Сменяется по
+// времени — одно «Думаю…» на шесть секунд выглядит как зависание.
+const STATUS_STEPS = {
+  thinking: [
+    { key: 'assistant.thinking', ms: 2_200 },
+    { key: 'assistant.status.looking', ms: 2_800 },
+    { key: 'assistant.status.searching' },
+  ],
+  // Первая реплика: ученик ничего не спрашивал — Луна смотрит на его экран.
+  opening: [
+    { key: 'assistant.status.looking', ms: 2_800 },
+    { key: 'assistant.thinking', ms: 2_800 },
+    { key: 'assistant.status.advice' },
+  ],
+  // Ответ готов, голос синтезируется.
+  voicing: [
+    { key: 'assistant.status.voicing', ms: 3_500 },
+    { key: 'assistant.status.almost' },
+  ],
+}
+
+function StatusBubble({ phase, t }) {
+  const steps = STATUS_STEPS[phase] || STATUS_STEPS.thinking
+  const [i, setI] = useState(0)
+  const step = steps[Math.min(i, steps.length - 1)]
+  useEffect(() => {
+    if (!step.ms) return undefined
+    const id = setTimeout(() => setI((n) => n + 1), step.ms)
+    return () => clearTimeout(id)
+  }, [step])
+  return (
+    <div className="asst__msg asst__msg--bot asst__msg--typing asst__status" role="status">
+      <span className="asst__dots" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      {t(step.key)}
+    </div>
+  )
+}
+
+// На телефоне окно чата закрывает экран целиком: открыв раздел, Луна убирает
+// окно, иначе ученик не увидит, куда его привели.
+function isPhone() {
+  try {
+    return window.matchMedia(PHONE_QUERY).matches
+  } catch {
+    return false
+  }
+}
+
+// Подпись действия, когда в ответе нет своего текста (и для озвучки).
+function actionCaption(action, lang, t) {
+  const name = destinationName(action.target, lang)
+  const tour = action.kind === 'tour'
+  const key = action.now
+    ? (tour ? 'assistant.action.touring' : 'assistant.action.opening')
+    : (tour ? 'assistant.action.offerTour' : 'assistant.action.offerOpen')
+  return t(key, { name })
+}
+
 const SCREEN_ROOT = '.scr-in'
 // Аватар Луны (уменьшенная копия public/tutor/tutor-luna.png): кнопка висит на
 // каждом экране, и 169 КБ оригинала ради круга в 60px — лишний вес.
@@ -118,10 +225,10 @@ function RichText({ text }) {
 // enabled=false — экран, где помощника быть не должно (экзамен, живой урок):
 // окно закрывается и кнопка пропадает, но разговор остаётся и вернётся вместе
 // с кнопкой на следующем обычном экране.
-export default function AssistantWidget({ token, screen, enabled = true }) {
+export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false }) {
   const { t, lang } = useI18n()
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([]) // {role, content, voice?, offtopic?, reported?, voiceFailed?}
+  const [messages, setMessages] = useState([]) // {role, content, voice?, opening?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null) // {text, retry: {text, voice}|null}
@@ -154,20 +261,203 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
   // Layout-эффект идёт внутри коммита, до любого события.
   useLayoutEffect(() => {
-    stateRef.current = { messages, screen, token, lang, enabled, muted }
+    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen }
   })
+  // Состояние экрана, о котором Луна уже сказала первую реплику (opening.js).
+  const greetedRef = useRef(null)
+  // Первая реплика в пути: { base } — разговор до неё, на случай если ученик
+  // спросит раньше, чем она договорит (см. send).
+  const openingRef = useRef(null)
 
-  const stopVoice = useCallback(() => {
+  // Озвучиваемый ответ: сообщение с этим vid видно до символа shown (см. шапку).
+  // null — всё видно. Отдельно от messages: разговор уходит в историю
+  // следующего вопроса, а «сколько показано» — забота только экрана.
+  const [held, setHeld] = useState(null) // {vid, shown}
+  const vidRef = useRef(0)
+  const releaseHold = useCallback((vid) => {
+    setHeld((h) => (h && (vid == null || h.vid === vid) ? null : h))
+  }, [])
+
+  // Действие «сейчас» (открыть раздел, тур) ждёт, пока Луна договорит ответ:
+  // { action, owner — очередь озвучки этого ответа, timer }.
+  const deferredRef = useRef(null)
+  const performRef = useRef(null)
+  const dropDeferred = useCallback(() => {
+    clearTimeout(deferredRef.current?.timer)
+    deferredRef.current = null
+  }, [])
+  const runDeferred = useCallback((owner) => {
+    const d = deferredRef.current
+    if (!d || (owner && d.owner !== owner)) return
+    clearTimeout(d.timer)
+    deferredRef.current = null
+    if (mountedRef.current && stateRef.current?.enabled) performRef.current?.(d.action)
+  }, [])
+
+  // Замолчать. Оборванный ответ показывается целиком, а отложенный переход
+  // выполняется сразу: ученик просил открыть раздел, голос был лишь поводом
+  // подождать. Где переход уже не нужен (новый чат, выход), его снимают раньше
+  // (dropDeferred).
+  const silence = useCallback(() => {
     voiceRef.current?.stop()
     voiceRef.current = null
   }, [])
+  const stopVoice = useCallback(() => {
+    silence()
+    releaseHold()
+    runDeferred()
+  }, [silence, releaseHold, runDeferred])
+
+  // ── Тур, который ведёт Луна ────────────────────────────────────────────
+  // on — тур запустила Луна, и его шаги она читает вслух (tourVoice.js).
+  // screen — экран, на котором попросить тур, когда переход до него доедет.
+  // waitReply — первый шаг ждёт, пока договорит её ответ («начинаю тур…»), и
+  // не обрывает его на полуслове; дальше каждый шаг — по «Далее» ученика —
+  // обрывает прошлый. lastPhrases — текущий шаг: его повторяет включённый звук.
+  const guideRef = useRef({ ...GUIDE_OFF })
+  const tourVoiceRef = useRef(null)
+  const toggleMutedRef = useRef(null)
+
+  const endGuide = useCallback(() => {
+    const g = guideRef.current
+    clearTimeout(g.timer)
+    clearTimeout(g.waitTimer)
+    Object.assign(g, GUIDE_OFF)
+    tourVoiceRef.current?.dispose()
+    tourVoiceRef.current = null
+    setTourNarration({ on: false, muted: false })
+  }, [])
+
+  // Сказать текущий шаг — если ничто не мешает (звук выключен, ответ ещё звучит).
+  const sayStep = useCallback(() => {
+    const g = guideRef.current
+    const cur = stateRef.current
+    if (!g.on || !g.lastPhrases.length || cur?.muted || !cur?.enabled) return
+    g.waitReply = false
+    g.pending = false
+    clearTimeout(g.waitTimer)
+    stopVoice()
+    tourVoiceRef.current?.say(g.lastPhrases)
+  }, [stopVoice])
+
+  const narrate = useCallback((phrases, next) => {
+    const g = guideRef.current
+    g.lastPhrases = phrases
+    const cur = stateRef.current
+    if (!g.on || cur?.muted || !cur?.enabled) return
+    // Синтез начинаем сразу — и этого шага, и следующего: пока звучит этот,
+    // следующий успеет, и по «Далее» Луна заговорит без паузы.
+    tourVoiceRef.current?.prefetch(phrases)
+    tourVoiceRef.current?.prefetch(next)
+    if (g.waitReply && voiceRef.current) {
+      g.pending = true
+      clearTimeout(g.waitTimer)
+      g.waitTimer = setTimeout(sayStep, REPLY_WAIT_MAX_MS)
+      return
+    }
+    sayStep()
+  }, [sayStep])
+
+  const startGuide = useCallback(({ waitReply }) => {
+    const g = guideRef.current
+    clearTimeout(g.timer)
+    clearTimeout(g.waitTimer)
+    tourVoiceRef.current?.dispose()
+    tourVoiceRef.current = createTourVoice({ token: stateRef.current?.token })
+    Object.assign(g, { ...GUIDE_OFF, on: true, waitReply })
+    setTourNarration({ on: true, muted: Boolean(stateRef.current?.muted) }, () => toggleMutedRef.current?.())
+    g.timer = setTimeout(() => {
+      // Ни одного шага: у экрана нет тура или он не дождался своих данных.
+      // Молча погасший тур выглядел бы как «Луна соврала» — говорим как есть.
+      if (!guideRef.current.on || guideRef.current.lastKey !== null) return
+      cancelTourRequest()
+      endGuide()
+      if (!mountedRef.current || inFlightRef.current || !stateRef.current?.enabled) return
+      setMessages((prev) => [...prev, { role: 'assistant', content: stateRef.current.t('assistant.tour.unavailable') }])
+      setOpen(true)
+    }, TOUR_START_TIMEOUT_MS)
+  }, [endGuide])
+
+  // Выполнить действие Луны: открыть раздел или провести тур. gesture — нажата
+  // кнопка под ответом (тогда ответ дослушивать незачем, а iPhone даст звук).
+  const perform = useCallback((action, { gesture = false } = {}) => {
+    // Нажатая кнопка заменяет отложенный переход того же ответа — дважды не ведём.
+    dropDeferred()
+    const dest = destinationOf(action?.target)
+    const cur = stateRef.current
+    if (!dest || !cur?.enabled) return
+    const here = dest.screen === cur.screen
+    if (action.kind === 'open') {
+      if (!here || dest.payload) navigateTo(dest.id)
+      if (isPhone()) setOpen(false)
+      return
+    }
+    if (action.kind !== 'tour' || !dest.tour) return
+    if (gesture) {
+      unlockSpeech()
+      stopVoice()
+    }
+    startGuide({ waitReply: !gesture && Boolean(voiceRef.current) })
+    // Тур — затемнение и карточка на весь экран; окно чата ему только мешает.
+    // Не close(): тот глушит голос, а ответ «начинаю тур» пусть договорит.
+    setOpen(false)
+    if (here) requestTour()
+    else {
+      guideRef.current.screen = dest.screen
+      navigateTo(dest.id)
+    }
+  }, [startGuide, stopVoice, dropDeferred])
+  useLayoutEffect(() => {
+    performRef.current = perform
+  })
+
+  // Переход до раздела доехал — просим у экрана тур (как кнопкой «?»).
+  useEffect(() => {
+    const g = guideRef.current
+    if (g.on && g.screen && g.screen === screen) {
+      g.screen = null
+      requestTour()
+    }
+  }, [screen])
+
+  // Шаги тура — вслух; конец тура — Луна замолкает.
+  useEffect(
+    () =>
+      onTourEvent((e) => {
+        const g = guideRef.current
+        if (!g.on) return
+        if (e.type === 'step') {
+          const key = `${e.index}:${e.title}`
+          // Тот же шаг ещё раз (перерисовка экрана, dev StrictMode) — не повторяем.
+          if (key === g.lastKey) return
+          if (g.lastKey === null) clearTimeout(g.timer)
+          else g.waitReply = false
+          g.lastKey = key
+          narrate(stepPhrases(e), stepPhrases(e.next))
+        } else if (e.type === 'end') {
+          endGuide()
+        }
+      }),
+    [narrate, endGuide],
+  )
+
+  useEffect(
+    () => () => {
+      if (guideRef.current.on) endGuide()
+      if (tourRequestPending()) cancelTourRequest()
+    },
+    [endGuide],
+  )
 
   // Экран стал запрещённым — окно закрывается. Не эффектом, а при рендере: так
   // окно не успевает мелькнуть на экзамене ни на кадр.
   const [prevEnabled, setPrevEnabled] = useState(enabled)
   if (enabled !== prevEnabled) {
     setPrevEnabled(enabled)
-    if (!enabled) setOpen(false)
+    if (!enabled) {
+      setOpen(false)
+      setHeld(null)
+    }
   }
 
   // Другой ученик на том же устройстве не должен увидеть чужой разговор.
@@ -178,13 +468,18 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     setError(null)
     setBusy(false)
   }
-  // Ответ, который ещё идёт (или звучит) прошлому ученику, обрываем.
+  // Ответ, который ещё идёт (или звучит) прошлому ученику, обрываем — и никуда
+  // его не ведём.
   useEffect(
     () => () => {
       abortRef.current?.abort()
+      dropDeferred()
       stopVoice()
+      endGuide()
+      greetedRef.current = null
+      openingRef.current = null
     },
-    [token, stopVoice],
+    [token, stopVoice, endGuide, dropDeferred],
   )
 
   useEffect(() => {
@@ -195,39 +490,103 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   useEffect(() => () => setAssistantAvailable(false), [])
 
   useEffect(() => {
-    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
-  }, [messages, busy, error, open])
+    const list = listRef.current
+    if (!list) return
+    // Ученик ещё ничего не спросил — под первой репликой Луны висят подсказки, и
+    // прокрутка «в самый низ» уводила начало её реплики за край окна (на десктопе
+    // её первая строка пряталась под шапкой). Тогда показываем начало реплики.
+    const asked = messages.some((m) => m.role === 'user' && !m.opening)
+    const bots = list.querySelectorAll('.asst__msg--bot')
+    const greeting = !asked && messages.length > 0 ? bots[bots.length - 1] : null
+    list.scrollTop = greeting
+      ? Math.max(0, greeting.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - 8)
+      : list.scrollHeight
+  }, [messages, busy, error, open, held])
 
   useEffect(() => {
     if (open) inputRef.current?.focus()
   }, [open])
 
-  const send = useCallback(async (raw, { voice = false } = {}) => {
+  // opening — первая реплика Луны: вместо вопроса уходит OPENING_MARK, на экране
+  // его нет, а сбой не показывается плашкой.
+  const send = useCallback(async (raw, { voice = false, opening = false } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
-    if (!text || !cur?.token || inFlightRef.current || !mountedRef.current) return
+    if (!text || !cur?.token || !mountedRef.current) return
+    // Первая реплика ещё идёт, а ученик уже спросил сам — его вопрос важнее:
+    // реплику обрываем и убираем, иначе Enter в эти 2–3 секунды молча терялся бы.
+    const pending = openingRef.current
+    if (inFlightRef.current && !(pending && !opening)) return
+    let base = cur.messages
+    if (pending) {
+      openingRef.current = null
+      abortRef.current?.abort()
+      base = pending.base
+    }
     inFlightRef.current = true
     stopVoice()
 
-    const history = [...cur.messages, { role: 'user', content: text, ...(voice ? { voice: true } : {}) }]
-    setMessages([...history, { role: 'assistant', content: '' }])
+    const speaking = voice && !cur.muted
+    const vid = speaking ? ++vidRef.current : 0
+    const history = [...base, { role: 'user', content: text, ...(voice ? { voice: true } : {}), ...(opening ? { opening: true } : {}) }]
+    setMessages([...history, { role: 'assistant', content: '', ...(vid ? { vid } : {}) }])
     // Пары «вопрос не по теме — отказ» модели не нужны: они только удлиняют
     // каждый следующий запрос. На экране остаются, в запрос не идут.
-    const toSend = history.filter((m) => !m.offtopic).map(({ role, content }) => ({ role, content }))
+    // Метку действия возвращаем в её ответ: на «да» модель должна видеть, ЧТО
+    // она предлагала открыть, а с экрана метка срезана.
+    const toSend = history
+      .filter((m) => !m.offtopic)
+      .map(({ role, content, action }) => ({ role, content: action ? `${content.trimEnd()}\n${actionMarker(action)}` : content }))
     setInput('')
     setError(null)
     setBusy(true)
 
     // Озвучка — только голосовому вопросу и только если ученик её не выключил.
+    // Текст такого ответа показывается вслед за голосом: фраза i видна, когда
+    // она зазвучала (chunker.ends[i] — её конец в потоке), всё — когда очередь
+    // кончилась, оборвалась или первый звук так и не пришёл (FIRST_SOUND_MAX_MS).
     let speaker = null
     let chunker = null
-    if (voice && !cur.muted) {
+    let holdTimer = null
+    const reveal = (upto) => {
+      if (upto == null) {
+        clearTimeout(holdTimer)
+        releaseHold(vid)
+        return
+      }
+      setHeld((h) => (h && h.vid === vid ? { vid, shown: Math.max(h.shown, upto) } : h))
+    }
+    const speak = (phrase) => {
+      if (!holdTimer) holdTimer = setTimeout(() => reveal(null), FIRST_SOUND_MAX_MS)
+      speaker.say(phrase)
+    }
+    if (speaking) {
       chunker = createSpeechChunker()
+      setHeld({ vid, shown: 0 })
       speaker = createVoiceQueue({
         token: cur.token,
         lang: cur.lang,
+        onPhrase: (i) => {
+          if (i === 0) clearTimeout(holdTimer)
+          reveal(chunker.ends[i] ?? null)
+        },
+        // Чужой звук («послушать» у слова) оборвал Луну — она молчит, текст целиком.
+        onInterrupt: () => {
+          if (voiceRef.current === speaker) voiceRef.current = null
+          reveal(null)
+          runDeferred(speaker)
+        },
         onFinish: ({ played }) => {
           if (voiceRef.current === speaker) voiceRef.current = null
+          reveal(null)
+          // Ответ «начинаю тур» договорён — теперь первый шаг тура, который его ждал.
+          const g = guideRef.current
+          if (g.waitReply) {
+            if (g.pending) sayStep()
+            else g.waitReply = false
+          }
+          // «Открываю…» договорено — теперь сам переход (или тур).
+          runDeferred(speaker)
           if (played) return
           // Ни одна фраза не зазвучала — говорим об этом тихо, текст ответа на месте.
           setMessages((prev) => {
@@ -243,6 +602,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
 
     const controller = new AbortController()
     abortRef.current = controller
+    if (opening) openingRef.current = { base }
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     try {
       const reply = await askAssistant({
@@ -257,18 +617,47 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         voice,
         signal: controller.signal,
         onDelta: (chunk) => {
+          // Кусок оборванной первой реплики, уже прочитанный до обрыва, не должен
+          // дописаться в ответ на вопрос, который её перебил.
+          if (controller.signal.aborted) return
           setMessages((prev) => {
             const next = prev.slice()
             const last = next[next.length - 1]
             next[next.length - 1] = { ...last, content: last.content + chunk }
             return next
           })
-          if (speaker) chunker.push(chunk).forEach((p) => speaker.say(p))
+          if (speaker) chunker.push(chunk).forEach(speak)
         },
       })
+      // Действие — в конце ответа. Ответ из одной метки (модель так иногда
+      // делает) получает подпись сайта, иначе пузырь остался бы пустым.
+      // В первой реплике Луна только предлагает: ученик ни о чём не просил, и
+      // увести его с экрана без согласия нельзя, даже если модель сказала «открываю».
+      const action = reply.action && opening ? { ...reply.action, now: false } : reply.action
+      const fallback = action && !reply.text.trim() ? actionCaption(action, cur.lang, t) : ''
       if (speaker) {
-        chunker.flush().forEach((p) => speaker.say(p))
+        chunker.flush().forEach(speak)
+        // Подпись вместо пустого ответа — фраза без конца в потоке: зазвучав,
+        // она открывает весь текст (chunker.ends её не знает).
+        if (fallback) speak(fallback)
         speaker.end()
+      }
+      if (action) {
+        setMessages((prev) => {
+          const next = prev.slice()
+          const last = next[next.length - 1]
+          next[next.length - 1] = { ...last, content: fallback || last.content, action }
+          return next
+        })
+        // «Открой» / «да» — переход сразу, а у озвучиваемого ответа — когда Луна
+        // договорит «открываю…» (runDeferred в onFinish). Ученик ушёл с экрана,
+        // где можно (экзамен), или вышел из аккаунта — не ведём никуда.
+        if (action.now && mountedRef.current && stateRef.current?.enabled) {
+          if (speaker && voiceRef.current === speaker) {
+            dropDeferred()
+            deferredRef.current = { action, owner: speaker, timer: setTimeout(() => runDeferred(speaker), ACTION_WAIT_MAX_MS) }
+          } else perform(action)
+        }
       }
       if (reply.offtopic) {
         setMessages((prev) => {
@@ -287,10 +676,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
       }
     } catch (err) {
       speaker?.stop()
+      if (speaker) reveal(null)
       if (err?.name === 'AbortError') return
       // Неудачный вопрос убираем из разговора вместе с недописанным ответом:
       // иначе полуответ ушёл бы в историю следующего вопроса как настоящий.
-      setMessages(cur.messages)
+      // base, а не cur.messages: у вопроса, перебившего первую реплику, в
+      // cur.messages ещё лежит её недописанный кусок.
+      setMessages(base)
+      if (opening) return
       const kind = err instanceof AssistantError ? err.kind : 'unavailable'
       setError({
         text:
@@ -311,9 +704,30 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         abortRef.current = null
         inFlightRef.current = false
         setBusy(false)
+        if (opening) openingRef.current = null
       }
     }
-  }, [t, stopVoice])
+  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred])
+
+  // Луна заговаривает первой — если экран с прошлой её реплики поменялся.
+  const greet = useCallback(() => {
+    const cur = stateRef.current
+    if (!cur?.greetOnOpen || !cur.token || !cur.enabled || inFlightRef.current) return
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const key = screenStateKey(cur.screen, snapshotScreen(root))
+    if (greetedRef.current === key) return
+    // Запоминаем до ответа: и сбой (лимит) не повторяется на каждом открытии.
+    greetedRef.current = key
+    send(OPENING_MARK, { voice: !cur.muted, opening: true })
+  }, [send])
+
+  // Открыть окно кнопкой — синхронно в нажатии: unlockSpeech — жест, без
+  // которого iPhone не сыграет первую реплику, пришедшую через секунды.
+  const openWindow = () => {
+    unlockSpeech()
+    setOpen(true)
+    greet()
+  }
 
   const voiceQ = useVoiceQuestion({
     token,
@@ -336,11 +750,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   }, [stopVoice, cancelRecording])
 
   // Экран, где помощника нет (экзамен, звонок), — ни звука, ни микрофона.
+  // Недоговорённый ответ вернётся с кнопкой целиком (setHeld — при рендере, рядом
+  // с закрытием окна), а «открываю…» с экзамена никуда не ведёт.
   useEffect(() => {
     if (enabled) return
-    stopVoice()
+    dropDeferred()
+    silence()
     cancelRecording()
-  }, [enabled, stopVoice, cancelRecording])
+    endGuide()
+  }, [enabled, silence, cancelRecording, endGuide, dropDeferred])
 
   // Кнопка «Спросить помощника» из плеера урока: открыть окно и сразу задать
   // вопрос — снимок снимется с того же экрана, где ученик её нажал.
@@ -349,7 +767,10 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
       if (!stateRef.current?.enabled) return
       setOpen(true)
       const prompt = e.detail?.prompt
-      if (!prompt) return
+      if (!prompt) {
+        greet()
+        return
+      }
       // Готовый вопрос из урока важнее недоговорённого голосового: иначе тот,
       // вернувшись из распознавания, молча потерялся бы за занятым чатом.
       cancelRecordingRef.current?.()
@@ -357,12 +778,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     }
     window.addEventListener(OPEN_EVENT, onOpen)
     return () => window.removeEventListener(OPEN_EVENT, onOpen)
-  }, [send])
+  }, [send, greet])
 
   const reset = () => {
     abortRef.current?.abort()
     abortRef.current = null
+    openingRef.current = null
     inFlightRef.current = false
+    // «Новый чат» — с чистого листа: и недоговорённое «открываю…» отменяется.
+    dropDeferred()
     stopVoice()
     setMessages([])
     setError(null)
@@ -370,12 +794,27 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     inputRef.current?.focus()
   }
 
+  // Звук один на ответы и на тур: кнопка в шапке и кнопка в карточке тура
+  // (tourBus.toggleTourNarrationMute) — одно и то же.
   const toggleMuted = () => {
-    const next = !muted
+    const next = !stateRef.current?.muted
     setMuted(next)
     writeMuted(next)
-    if (next) stopVoice()
+    // До перерисовки stateRef ещё помнит прежнее — а шаг тура озвучивается сейчас.
+    stateRef.current = { ...stateRef.current, muted: next }
+    if (next) {
+      stopVoice()
+      tourVoiceRef.current?.stop()
+    }
+    if (guideRef.current.on) {
+      setTourNarration({ on: true, muted: next })
+      // Звук включили посреди тура — Луна читает текущий шаг.
+      if (!next) sayStep()
+    }
   }
+  useLayoutEffect(() => {
+    toggleMutedRef.current = toggleMuted
+  })
 
   // Синхронно в обработчике нажатия: unlockSpeech — это жест, после которого
   // iPhone разрешит сыграть ответ, пришедший через несколько секунд без жеста.
@@ -386,10 +825,17 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     voiceQ.toggle()
   }
 
+  // Набранный вопрос — тоже жест. Ответ на него Луна не озвучивает, но если она
+  // в ответ поведёт тур, шаги звучат — и iPhone разрешит их только после жеста.
+  const sendTyped = (text) => {
+    unlockSpeech()
+    send(text)
+  }
+
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
-      if (voiceQ.state === 'idle') send(input)
+      if (voiceQ.state === 'idle') sendTyped(input)
     }
   }
 
@@ -398,10 +844,30 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     { text: t('assistant.suggest.whyWrong') },
     { text: t('assistant.suggest.rule') },
     { text: t('assistant.suggest.page') },
+    { text: t('assistant.suggest.where') },
+    { text: t('assistant.suggest.tour') },
     { text: t('assistant.suggest.bug'), bug: true },
   ]
   const last = messages[messages.length - 1]
-  const waitingFirstChunk = busy && last?.role === 'assistant' && !last.content
+  // Подсказки-вопросы висят, пока ученик сам ничего не спросил: первая реплика
+  // Луны — не его вопрос, и после неё они как раз к месту; нажатая, пока реплика
+  // ещё идёт, подсказка её перебивает (send).
+  const asked = messages.some((m) => m.role === 'user' && !m.opening)
+  // Занят ответом на вопрос ученика. Первая реплика не в счёт: её перебивают вопросом.
+  const questionBusy = busy && asked
+  // Сколько видно у сообщения: у озвучиваемого ответа — то, что Луна уже говорит.
+  const visibleText = (m) => (held && m.vid === held.vid ? m.content.slice(0, held.shown) : m.content)
+  const lastHeld = Boolean(held && last?.vid === held.vid)
+  // Что показывать, пока ответа не видно: модель ещё думает (ответа нет вовсе)
+  // или ответ есть, а голос готовится.
+  const status =
+    last?.role !== 'assistant' || visibleText(last).trim()
+      ? null
+      : !last.content
+        ? (busy ? (messages[messages.length - 2]?.opening ? 'opening' : 'thinking') : null)
+        : lastHeld
+          ? 'voicing'
+          : null
   const recording = voiceQ.state === 'recording'
   const transcribing = voiceQ.state === 'transcribing'
   // Пока вопрос голосом не задан до конца, другой вопрос не отправляем: чат
@@ -412,7 +878,8 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     : voiceQ.error
       ? t(VOICE_ERRORS[voiceQ.error])
       : null
-  const askedByVoice = messages.some((m) => m.voice)
+  // Кнопка звука — когда Луна говорила: ответ на голосовой вопрос или тур.
+  const spoke = messages.some((m) => m.voice || m.action?.kind === 'tour')
 
   if (!enabled) return null
 
@@ -431,7 +898,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
               <b>{t('assistant.title')}</b>
               <span>{t('assistant.sub')}</span>
             </div>
-            {askedByVoice && (
+            {spoke && (
               <button
                 type="button"
                 className={`asst__sound${muted ? ' is-muted' : ''}`}
@@ -455,27 +922,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
 
           <div className="asst__list" ref={listRef} data-selectable="" aria-live="polite">
             {messages.length === 0 && (
-              <>
-                <div className="asst__msg asst__msg--bot">
-                  <p>{t('assistant.hello')}</p>
-                </div>
-                <div className="asst__chips">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.text}
-                      type="button"
-                      className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
-                      disabled={voiceBusy}
-                      onClick={() => send(s.text)}
-                    >
-                      {s.text}
-                    </button>
-                  ))}
-                </div>
-              </>
+              <div className="asst__msg asst__msg--bot">
+                <p>{t('assistant.hello')}</p>
+              </div>
             )}
-            {messages.map((m, i) =>
-              m.role === 'assistant' && !m.content ? null : (
+            {messages.map((m, i) => {
+              const text = m.role === 'assistant' ? visibleText(m) : m.content
+              // Часть ответа ещё не сказана — кнопка действия и пометки появятся с концом.
+              const partial = m.content.slice(text.length).trim() !== ''
+              return (m.role === 'assistant' && !text.trim()) || m.opening ? null : (
                 <div key={i} className={`asst__msg asst__msg--${m.role === 'user' ? 'me' : 'bot'}`}>
                   {m.role === 'user' ? (
                     <p>
@@ -487,15 +942,47 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                       {m.content}
                     </p>
                   ) : (
-                    <RichText text={m.content} />
+                    <RichText text={text} />
+                  )}
+                  {partial && (
+                    <span className="asst__dots asst__dots--more" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  )}
+                  {m.action && !partial && (
+                    <button
+                      type="button"
+                      className={`asst__action asst__action--${m.action.kind}`}
+                      disabled={voiceBusy}
+                      onClick={() => perform(m.action, { gesture: true })}
+                    >
+                      {t(m.action.kind === 'tour' ? 'assistant.action.tour' : 'assistant.action.open', {
+                        name: destinationName(m.action.target, lang),
+                      })}
+                    </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
                   {m.voiceFailed && <p className="asst__voice-failed">{t('assistant.voice.failed')}</p>}
                 </div>
-              ),
-            )}
-            {waitingFirstChunk && (
-              <div className="asst__msg asst__msg--bot asst__msg--typing">{t('assistant.thinking')}</div>
+              )
+            })}
+            {status && <StatusBubble key={`${last?.vid || messages.length}:${status}`} phase={status} t={t} />}
+            {!asked && (
+              <div className="asst__chips">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.text}
+                    type="button"
+                    className={`asst__chip${s.bug ? ' asst__chip--bug' : ''}`}
+                    disabled={voiceBusy}
+                    onClick={() => sendTyped(s.text)}
+                  >
+                    {s.text}
+                  </button>
+                ))}
+              </div>
             )}
             {error ? (
               <div className="asst__err" role="alert">
@@ -525,7 +1012,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
             className="asst__form"
             onSubmit={(e) => {
               e.preventDefault()
-              if (!voiceBusy) send(input)
+              if (!voiceBusy) sendTyped(input)
             }}
           >
             {recording || transcribing ? (
@@ -555,14 +1042,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
                 className={`asst__mic${recording ? ' is-rec' : ''}`}
                 aria-label={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
                 title={t(recording ? 'assistant.mic.stop' : 'assistant.mic.start')}
-                disabled={busy || transcribing || voiceQ.state === 'starting'}
+                disabled={questionBusy || transcribing || voiceQ.state === 'starting'}
                 onClick={onMic}
               >
                 <MicIcon />
               </button>
             )}
             {!recording && !transcribing && (
-              <button type="submit" className="asst__send" disabled={busy || voiceBusy || !input.trim()} aria-label={t('assistant.send')}>
+              <button type="submit" className="asst__send" disabled={questionBusy || voiceBusy || !input.trim()} aria-label={t('assistant.send')}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
                 </svg>
@@ -578,7 +1065,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
         className={`asst__launcher${open ? ' is-open' : ''}`}
         aria-label={t('assistant.launcher')}
         aria-expanded={open}
-        onClick={() => (open ? close() : setOpen(true))}
+        onClick={() => (open ? close() : openWindow())}
       >
         {open ? <span className="asst__launcher-x">×</span> : <img src={AVATAR} alt="" width="40" height="40" />}
       </button>

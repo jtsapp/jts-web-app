@@ -1,6 +1,6 @@
 // Клиент помощника: один вопрос → потоковый ответ кусками через onDelta.
 
-import { createReportedFlagFilter } from './report.js'
+import { createServiceTailFilter } from './actions.js'
 
 export class AssistantError extends Error {
   /** @param {'auth'|'rate'|'cooldown'|'unavailable'|'network'} kind */
@@ -17,9 +17,11 @@ export class AssistantError extends Error {
  *           errors?: {at?: number, message?: string, source?: string, url?: string, stack?: string}[],
  *           pageUrl?: string, userAgent?: string, bugReported?: boolean, voice?: boolean,
  *           onDelta: (text: string) => void, signal?: AbortSignal }} args
- * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean }>}
+ * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
+ *                     action: {kind: 'open'|'tour', target: string, now: boolean}|null }>}
  *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
- *   reported — поломку записали в БД (хвост стрима, ученику не показывается)
+ *   reported — поломку записали в БД; action — Луна предлагает открыть раздел
+ *   или провести тур (actions.js). Оба — хвост стрима, ученику не показывается.
  */
 export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, onDelta, signal }) {
   let res
@@ -50,7 +52,7 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
   if (!res.ok || !res.body) throw new AssistantError('unavailable')
   const offtopic = res.headers.get('x-assistant-offtopic') === '1'
   const reportedHeader = res.headers.get('x-assistant-reported') === '1'
-  const flag = createReportedFlagFilter()
+  const flag = createServiceTailFilter()
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -80,5 +82,5 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
     full += tail
     onDelta?.(tail)
   }
-  return { text: full, offtopic, reported: reportedHeader || flag.reported }
+  return { text: full, offtopic, reported: reportedHeader || flag.reported, action: offtopic ? null : flag.action }
 }

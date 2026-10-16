@@ -1034,6 +1034,12 @@ export function getAudiobook(token, id) {
 // Баланс: монеты и стрик (для HUD). SWR-кэш: сайдбар перемонтируется на каждом
 // переходе между экранами (key={screen} в App.jsx), кэш убирает и повторный
 // запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
+// Две цифры профиля: дни подряд (по входам) и уроки пройдено (занятия с преподавателем,
+// иначе «Самостоятельно») — считает сервер, чтобы вебу и приложению не расходиться.
+export function getProfileStats(token) {
+  return authGet('/mobile/profile-stats', token)
+}
+
 export function getBalance(token, onFresh) {
   return cachedAuthGet('/mobile/balance/info', token, onFresh)
 }
@@ -1599,6 +1605,11 @@ export function rebuildSatPlan(token) {
 /** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
 export function updateSatLesson(token, lessonId, body) {
   return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
+}
+
+/** Навык из разбора пробника — в ближайшее занятие плана → { added, lesson, plan }; added=false — уже есть на неделе. */
+export function addSatPlanSkill(token, skillId) {
+  return authPost('/mobile/sat/plan/skills', token, { skillId })
 }
 
 /** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */

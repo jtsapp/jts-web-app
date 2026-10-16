@@ -539,14 +539,18 @@ function flyCrystals(n, from){
     jobs.push(c.animate([{transform:'translate(-50%,-50%) scale(.4)',offset:0},{transform:`translate(${mx-from.x}px,${my-from.y}px) scale(1.2)`,offset:.45},{transform:`translate(${tx-from.x}px,${ty-from.y}px) scale(.6)`,offset:1}],{duration:R&&R.fast?20:750,delay:R&&R.fast?0:i*90,easing:'ease-in'}).finished.then(()=>c.remove())); }
   return Promise.all(jobs);
 }
-function message(kind, html, ms){
+// expected — эталон для помощника по сайту (data-assistant-expected, его читает снимок экрана). Ставится, только когда
+// задание закрыто и ответ уже открыт игрой (вторая ошибка): после первой у ученика ещё попытка, и Луна не должна
+// решать её за него. Любое новое сообщение эталон снимает — иначе он пережил бы свой прыжок.
+function message(kind, html, ms, expected){
   const m=$('#msg'); if(!m) return; m.className='msg show '+kind; m.innerHTML=html;
+  if(expected) m.dataset.assistantExpected=expected; else delete m.dataset.assistantExpected;
   const g=geo();   // keep the bubble clear of Dexter and the number tablets
   if(g.W>=700){ m.style.left='16px'; m.style.bottom='64px'; m.style.maxWidth=Math.min(360,g.W*0.34)+'px'; m.style.textAlign='left'; m.classList.add('side'); }
   else { m.style.left='50%'; m.style.bottom=(g.H*(1-BASE.y)+g.dh+10)+'px'; m.style.maxWidth=''; m.style.textAlign='center'; m.classList.remove('side'); }
   clearTimeout(m._t); if(ms) m._t=later(()=>m.classList.remove('show'), ms);
 }
-function hideMessage(){ const m=$('#msg'); if(m) m.classList.remove('show'); }
+function hideMessage(){ const m=$('#msg'); if(m){ m.classList.remove('show'); delete m.dataset.assistantExpected; } }
 
 /* ---- rounds ---- */
 async function spawnRound(){
@@ -603,7 +607,7 @@ function showWord(){ if(!R || R.shown) return; R.shown=true; renderPrompt(); mes
 
 function showWrongMsg(v, ans, txt, fb){
   const custom = fb ? ' '+esc(fb) : teenTenNote(v, ans);
-  if(R.attempts>=2) message('no', `<b>That was ${esc(v)}.</b> The right island is glowing: ${R.mode==='read'?esc(txt):`“${esc(txt)}”`} → <b>${esc(ans)}</b>.${custom}`);
+  if(R.attempts>=2) message('no', `<b>That was ${esc(v)}.</b> The right island is glowing: ${R.mode==='read'?esc(txt):`“${esc(txt)}”`} → <b>${esc(ans)}</b>.${custom}`, 0, `${txt} → ${ans}`);
   else message('no', `<b>That island is ${esc(v)}.</b> ${R.mode==='listen'&&canSay()?'Listen again and jump.':'Read carefully and jump again.'}${custom}`);
 }
 function teenTenNote(a,b){

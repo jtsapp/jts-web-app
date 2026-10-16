@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { getIeltsProfile, setIeltsRoute } from '../api.js'
 import { loadToken } from '../lib/session.js'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { useI18n } from '../i18n.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { bandGap, recommendRoute, routeOptions } from '../ielts/onboarding/onboarding.js'
@@ -12,12 +13,17 @@ import { CheckCircleIcon, CheckIcon, InfoIcon, StarIcon, TrendingUpIcon } from '
 const SPARE_DAYS = 21
 const FEATURES = { platform: 3, mix: 4, teacher: 3 }
 
+/** WhatsApp менеджера с готовым текстом: какой маршрут IELTS выбрал ученик. */
+function managerUrl(route) {
+  return `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(`Здравствуйте! Хочу заниматься IELTS: ${route}`)}`
+}
+
 /**
  * «Как дойти до цели» (Figma 3): три маршрута — самостоятельно на платформе, микс с уроками, курс с преподавателем —
  * со сроком до цели при выбранном времени в день и пометкой, успевают ли к дате экзамена. Рекомендуемый — по правилам
- * §11.4. Выбор ложится в профиль; заявка на уроки и курс — по ссылке тарифов.
+ * §11.4. Выбор ложится в профиль; оплаты здесь нет — уроки и курс оформляет менеджер в WhatsApp (кнопка в каждой карточке).
  */
-export default function IeltsRoutePage({ token, onChosen, onPricing, userName, userLevel, onNav, onProfile }) {
+export default function IeltsRoutePage({ token, onChosen, userName, userLevel, onNav, onProfile }) {
   const { t, lang } = useI18n()
   const authToken = token || loadToken()
   const [state, setState] = useState({ status: 'loading' })
@@ -37,8 +43,9 @@ export default function IeltsRoutePage({ token, onChosen, onPricing, userName, u
     setBusy(route)
     try {
       await setIeltsRoute(authToken, route)
-      if (route === 'platform') onChosen?.(route)
-      else onPricing?.(route)
+      // уроки и курс с преподавателем оформляет менеджер: сразу открываем WhatsApp, а ученик идёт в раздел
+      if (route !== 'platform') window.open(managerUrl(t(`ieltsOb.route.${route}`)), '_blank', 'noopener,noreferrer')
+      onChosen?.(route)
     } catch {
       setBusy(null)
     }
@@ -97,6 +104,9 @@ export default function IeltsRoutePage({ token, onChosen, onPricing, userName, u
                 <button type="button" className={recommended ? 'ih-cta' : 'ih-btn ih-btn--outline'} onClick={() => choose(o.id)} disabled={!!busy}>
                   {t(`ieltsOb.routeCta.${o.id}`)}
                 </button>
+                <a className="ih-btn ih-btn--outline ih-route__wa" href={managerUrl(t(`ieltsOb.route.${o.id}`))} target="_blank" rel="noopener noreferrer">
+                  {t('ieltsOb.routeManager')}
+                </a>
               </section>
             )
           })}

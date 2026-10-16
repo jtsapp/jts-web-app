@@ -25,6 +25,7 @@ import { synth, synthGemini } from '@/lib/tutorVoice.js'
 import { createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { spellNumbersRu } from '@/lib/assistant/numbersRu.js'
 import { stripEmoji } from '@/lib/assistant/speechChunks.js'
+import { phraseLang } from '@/lib/assistant/phraseLang.js'
 
 export const runtime = 'nodejs'
 export const MAX_TEXT = 600
@@ -38,15 +39,15 @@ const LUNA_VOICE = 'Aoede'
 const LUNA_LANGUAGE = 'en-US'
 
 const takeQuota = createRateLimiter({ windowLimit: 100, dayLimit: 800 })
-const KK_LETTERS = /[әғқңөұүһіӘҒҚҢӨҰҮҺІ]/
 const json = (status, body, headers = {}) => Response.json(body, { status, headers })
 
 /**
- * Язык фразы для голоса: казахские буквы — kk; lang 'kk' — клиент закрепил
- * казахский за всем ответом (его первая фраза была казахской, voiceQueue.js).
+ * Язык фразы для голоса: казахская фраза (phraseLang — тот же расчёт, что у
+ * клиента) — kk; lang 'kk' — клиент закрепил казахский за всем ответом (его
+ * первая фраза была казахской, voiceQueue.js).
  */
 export function voiceLang(text, lang) {
-  if (lang === 'kk' || KK_LETTERS.test(String(text || ''))) return 'kk'
+  if (lang === 'kk' || phraseLang(text) === 'kk') return 'kk'
   return lang === 'en' ? 'en' : 'ru'
 }
 
