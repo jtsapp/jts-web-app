@@ -50,8 +50,10 @@ vi.mock('../db/assistantTracker.js', () => ({
 
 const {
   loadStudentContext,
+  warmStudentContext,
   clearStudentContextCache,
   CONTEXT_TTL_MS,
+  CONTEXT_STALE_MS,
 } = await import('./studentContext.js')
 const { fetchTutorLimitOverride } = await import('../auth-server.js')
 const { loadSkillStats } = await import('../db/skillStats.js')
@@ -259,6 +261,70 @@ describe('профиль ученика для помощника', () => {
 
     await loadStudentContext('tok', user, t0 + CONTEXT_TTL_MS + 1)
     expect(calls).toBe(2)
+  })
+
+  it('устаревший профиль отдаётся сразу, а свежий собирается в фоне', async () => {
+    let calls = 0
+    let level = 'A2'
+    fetchImpl.value = async (url) => {
+      if (backendPath(url) === '/mobile/level-progress') {
+        calls += 1
+        return jsonRes({ level })
+      }
+      return new Response(null, { status: 404 })
+    }
+    const t0 = 1_000_000
+    expect(await loadStudentContext('tok', user, t0)).toContain('Уровень курса: A2')
+    level = 'B1'
+    // Звонок не ждёт шесть ручек бэкенда: ответ идёт с прежним профилем...
+    expect(await loadStudentContext('tok', user, t0 + CONTEXT_TTL_MS + 1)).toContain('Уровень курса: A2')
+    expect(calls).toBe(2)
+    // ...а следующий вопрос уже видит свежий, без нового похода в сеть.
+    await new Promise((r) => setTimeout(r, 0))
+    expect(await loadStudentContext('tok', user, t0 + CONTEXT_TTL_MS + 2)).toContain('Уровень курса: B1')
+    expect(calls).toBe(2)
+  })
+
+  it('совсем старый профиль не отдаётся — ждём свежий', async () => {
+    let level = 'A2'
+    fetchImpl.value = async (url) =>
+      backendPath(url) === '/mobile/level-progress' ? jsonRes({ level }) : new Response(null, { status: 404 })
+    const t0 = 1_000_000
+    await loadStudentContext('tok', user, t0)
+    level = 'B1'
+    expect(await loadStudentContext('tok', user, t0 + CONTEXT_STALE_MS + 1)).toContain('Уровень курса: B1')
+  })
+
+  it('одновременные вопросы делят одну сборку профиля', async () => {
+    let calls = 0
+    fetchImpl.value = async (url) => {
+      if (backendPath(url) === '/mobile/level-progress') {
+        calls += 1
+        return jsonRes({ level: 'A2' })
+      }
+      return new Response(null, { status: 404 })
+    }
+    // Черновой и окончательный вопрос звонка приходят почти разом.
+    const [a, b] = await Promise.all([loadStudentContext('tok', user, 0), loadStudentContext('tok', user, 1)])
+    expect(a).toBe(b)
+    expect(calls).toBe(1)
+  })
+
+  it('прогрев начинает сборку и не ждёт её', async () => {
+    let calls = 0
+    fetchImpl.value = async (url) => {
+      if (backendPath(url) === '/mobile/level-progress') {
+        calls += 1
+        return jsonRes({ level: 'A2' })
+      }
+      return new Response(null, { status: 404 })
+    }
+    expect(warmStudentContext('tok', user)).toBeUndefined()
+    warmStudentContext(null, user) // без токена — тихо
+    expect(calls).toBe(1)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(await loadStudentContext('tok', user)).toContain('Уровень курса: A2')
+    expect(calls).toBe(1)
   })
 
   it('кэш не общий между учениками', async () => {

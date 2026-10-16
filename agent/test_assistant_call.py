@@ -125,10 +125,107 @@ async def test_end_without_phrases():
         assert [m for _, m, _ in lp.calls] == [C.ASK_METHOD]
 
 
-def test_timing_text():
-    t = C.timing_text({"headersMs": 820, "firstDeltaMs": 1010, "firstPhraseMs": 1490, "server": "auth=210;ctx=4;model=590"})
-    assert t == "headers 0.82s, first text 1.01s, first phrase 1.49s, server auth=210;ctx=4;model=590", t
-    assert C.timing_text(None) == "" and C.timing_text({"headersMs": "x", "firstDeltaMs": -5}) == ""
+async def settle(rounds=20):
+    """Прокрутить цикл, пока фоновые RPC не дойдут. sleep(0.01) здесь мало:
+    таймер Windows шагает по ~15 мс, и такой сон просыпается раньше задач,
+    которым до RPC ещё несколько переходов (shield → наблюдатель → _fire)."""
+    for _ in range(rounds):
+        await asyncio.sleep(0)
+
+
+class FakeSpeech:
+    """Речь LiveKit: scheduled — подтверждена; _wait_for_scheduled ждёт
+    подтверждения, add_done_callback — конца речи (выброшенный черновик)."""
+
+    def __init__(self, scheduled=False):
+        self._fut = asyncio.get_event_loop().create_future()
+        if scheduled:
+            self._fut.set_result(None)
+        self._done = []
+
+    @property
+    def scheduled(self):
+        return self._fut.done()
+
+    async def _wait_for_scheduled(self):
+        await asyncio.shield(self._fut)
+
+    def schedule(self):
+        self._fut.set_result(None)
+
+    def add_done_callback(self, cb):
+        self._done.append(cb)
+
+    def finish(self):
+        for cb in self._done:
+            cb(self)
+
+
+async def test_pending_commit():
+    # Упреждающая генерация: вопрос уходит черновиком, ход — по подтверждению.
+    lp = FakeParticipant()
+    brain = C.BrowserBrain(lp, "student-1", "ru")
+    speech = FakeSpeech()
+    gen = brain.ask("как открыть словарь", speech=speech)
+    first = asyncio.ensure_future(gen.__anext__())
+    await asyncio.sleep(0)
+    payload = lp.calls[0][2]
+    assert payload["pending"] is True, payload
+    rid = payload["id"]
+    await reply(brain, id=rid, text="Словарь в меню.", t={"fetch": 900})
+    assert await first == "Словарь в меню."
+    assert [m for _, m, _ in lp.calls] == [C.ASK_METHOD], "до подтверждения commit не шлём"
+    speech.schedule()
+    await settle()
+    assert lp.calls[-1][1] == C.COMMIT_METHOD and lp.calls[-1][2] == {"id": rid}, lp.calls
+    await reply(brain, id=rid, end=True)
+    assert await collect(gen) == []
+    # Подтверждённый ход оборвали позже (ученик перебил) — cancel без drop.
+    speech2 = FakeSpeech()
+    gen = brain.ask("ещё", speech=speech2)
+    first = asyncio.ensure_future(gen.__anext__())
+    await asyncio.sleep(0)
+    rid2 = lp.calls[-1][2]["id"]
+    speech2.schedule()
+    await reply(brain, id=rid2, text="Сейчас.")
+    await first
+    await settle()
+    await gen.aclose()
+    await settle()
+    assert lp.calls[-1][1] == C.CANCEL_METHOD and lp.calls[-1][2] == {"id": rid2}, lp.calls
+
+
+async def test_pending_dropped():
+    # LiveKit выбросил черновик (ученик продолжил фразу): cancel с drop, commit нет.
+    lp = FakeParticipant()
+    brain = C.BrowserBrain(lp, "student-1", "ru")
+    speech = FakeSpeech()
+    gen = brain.ask("как открыть", speech=speech)
+    first = asyncio.ensure_future(gen.__anext__())
+    await asyncio.sleep(0)
+    rid = lp.calls[0][2]["id"]
+    await reply(brain, id=rid, text="Открыть можно…")
+    await first
+    await gen.aclose()
+    speech.finish()
+    await settle()
+    methods = [m for _, m, _ in lp.calls]
+    assert C.COMMIT_METHOD not in methods, methods
+    assert lp.calls[-1][1] == C.CANCEL_METHOD and lp.calls[-1][2] == {"id": rid, "drop": True}, lp.calls
+
+
+async def test_scheduled_is_not_pending():
+    # Обычный ход (речь уже в очереди) — без pending и без commit, как раньше.
+    lp = FakeParticipant()
+    brain = C.BrowserBrain(lp, "student-1", "ru")
+    task = asyncio.ensure_future(collect(brain.ask("привет", speech=FakeSpeech(scheduled=True))))
+    await asyncio.sleep(0)
+    assert "pending" not in lp.calls[0][2], lp.calls[0][2]
+    await reply(brain, id=lp.calls[0][2]["id"], text="Привет!")
+    await reply(brain, id=lp.calls[0][2]["id"], end=True)
+    assert await task == ["Привет!"]
+    await settle()
+    assert [m for _, m, _ in lp.calls] == [C.ASK_METHOD]
 
 
 def test_texts():
@@ -148,8 +245,10 @@ async def main():
     await test_fallback_when_browser_missing()
     await test_fallback_on_silence()
     await test_end_without_phrases()
+    await test_pending_commit()
+    await test_pending_dropped()
+    await test_scheduled_is_not_pending()
     test_texts()
-    test_timing_text()
 
 
 asyncio.run(main())

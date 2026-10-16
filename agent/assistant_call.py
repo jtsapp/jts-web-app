@@ -11,11 +11,23 @@ RPC-вызовом luna.ask, браузер спрашивает тот же ч�
 присылает ответ обратно фразами (luna.reply) — агент озвучивает их по мере
 прихода, не дожидаясь конца ответа.
 
+Скорость (16.10.2026, «как в Speaking Buddy»): вопрос уходит браузеру ещё до
+того, как LiveKit решил, что ученик договорил (упреждающая генерация, как у
+тьюторов). Такой ход — черновик: браузер начинает спрашивать модель, но в окне
+его не показывает, пока агент не пришлёт luna.commit; LiveKit выбросил черновик
+(ученик продолжил фразу) — luna.cancel с drop, и следа в окне нет.
+
 Протокол (браузер — src/lib/assistant/callBridge.js, менять парой):
-  агент → браузер  luna.ask    {id, text, opening}  ответ «ok» сразу
-  браузер → агент  luna.reply  {id, text} … {id, end: true[, silent: true]}
-  агент → браузер  luna.cancel {id}                 ученик перебил — ответ не нужен
+  агент → браузер  luna.ask    {id, text, opening[, pending]}  ответ «ok» сразу
+  агент → браузер  luna.commit {id}                 черновик (pending) стал ходом
+  браузер → агент  luna.reply  {id, text[, t]} … {id, end: true[, silent: true]}
+  агент → браузер  luna.cancel {id[, drop]}         ученик перебил — ответ не нужен;
+                                                    drop — ход так и не начался
   браузер → агент  luna.say    {text}               сказать шаг тура (пусто — замолчать)
+
+`t` в первой фразе — замеры браузера (сколько ждал первый кусок ответа и что
+насчитал сам роут, Server-Timing): агент пишет их в строку LATENCY luna, иначе
+по логам не понять, где в звонке теряется время.
 
 Модуль не импортирует agent.py: тот запускается скриптом и тянет за собой весь
 стек, а мост проверяется отдельно (test_assistant_call.py).
@@ -35,6 +47,7 @@ logger = logging.getLogger("jts-tutor")
 ASSISTANT_MODE = "assistant"
 
 ASK_METHOD = "luna.ask"
+COMMIT_METHOD = "luna.commit"
 REPLY_METHOD = "luna.reply"
 CANCEL_METHOD = "luna.cancel"
 SAY_METHOD = "luna.say"
@@ -126,11 +139,38 @@ class BrowserBrain:
         self._bg.add(task)
         task.add_done_callback(self._bg.discard)
 
-    async def ask(self, text: str, opening: bool = False) -> AsyncIterator[str]:
+    def _watch_commit(self, rid: str, speech: Any, state: dict[str, Any]) -> None:
+        """Черновик стал ходом — сказать браузеру. Ждём, пока LiveKit поставит
+        речь в очередь (_wait_for_scheduled — так он подтверждает упреждающую
+        генерацию); выброшенный черновик своей очереди не дождётся, и наблюдатель
+        снимается вместе с речью."""
+
+        async def run() -> None:
+            try:
+                await speech._wait_for_scheduled()
+            except asyncio.CancelledError:
+                return
+            state["committed"] = True
+            logger.info("[luna-call] commit after %.3fs", time.monotonic() - state["t0"])
+            self._fire(COMMIT_METHOD, {"id": rid})
+
+        task = asyncio.create_task(run())
+        self._bg.add(task)
+        task.add_done_callback(self._bg.discard)
+        try:
+            speech.add_done_callback(lambda _: task.cancel())
+        except Exception:  # чужой объект речи — наблюдатель кончится с процессом
+            pass
+
+    async def ask(self, text: str, opening: bool = False, speech: Any = None) -> AsyncIterator[str]:
         """Фразы ответа по мере прихода. Браузер не ответил, замолчал или
         закончил ответ без единой фразы — одна запасная фраза («не получилось»),
         а не тишина в звонке. Исключения: первая реплика (браузер сам решает,
         что сказать в начале) и `silent` — ответ снят нарочно («Новый чат»).
+
+        speech — речь LiveKit, для которой спрашиваем. Ещё не в очереди — это
+        упреждающая генерация: вопрос уходит черновиком (pending), а ход
+        браузер покажет по luna.commit (см. шапку модуля).
 
         Любой выход, кроме конца от браузера, шлёт ему luna.cancel: и ученик
         перебил, и браузер замолчал по таймауту — его запрос к модели дальше
@@ -138,6 +178,7 @@ class BrowserBrain:
         rid = f"{int(time.time() * 1000)}-{next(self._seq)}"
         queue: asyncio.Queue = asyncio.Queue()
         self._queues[rid] = queue
+        pending = speech is not None and not getattr(speech, "scheduled", True)
         done = False
         said = False
         # Жизненный цикл ответа — в лог одной строкой (живой звонок 16.10.2026:
@@ -145,16 +186,19 @@ class BrowserBrain:
         # агент браузер и что тот ответил). Только длины и время — без слов
         # ученика.
         t0 = time.monotonic()
+        state: dict[str, Any] = {"committed": not pending, "t0": t0}
         first: float | None = None
         phrases = 0
         outcome = "cancelled"
-        browser = ""
         try:
+            payload: dict[str, Any] = {"id": rid, "text": text, "opening": opening}
+            if pending:
+                payload["pending"] = True
             try:
                 await self._lp.perform_rpc(
                     destination_identity=self._identity,
                     method=ASK_METHOD,
-                    payload=json.dumps({"id": rid, "text": text, "opening": opening}, ensure_ascii=False),
+                    payload=json.dumps(payload, ensure_ascii=False),
                     response_timeout=ASK_RPC_SEC,
                 )
             except Exception as e:
@@ -162,6 +206,8 @@ class BrowserBrain:
                 outcome = "ask_failed"
                 yield fallback_text(self._lang)
                 return
+            if pending:
+                self._watch_commit(rid, speech, state)
             timeout = FIRST_PHRASE_SEC
             while True:
                 try:
@@ -174,6 +220,15 @@ class BrowserBrain:
                     return
                 piece = str(msg.get("text") or "")
                 if piece.strip():
+                    if not said:
+                        # Первая фраза ответа: сколько браузер шёл до неё и где
+                        # (его замеры — в `t`). Задержку звонка мерить только так:
+                        # сумма звеньев по отдельности уже врала втрое.
+                        logger.info(
+                            "LATENCY luna first_phrase=%.3fs pending=%s opening=%s browser=%s",
+                            time.monotonic() - t0, pending, opening,
+                            json.dumps(msg.get("t"), ensure_ascii=False) if msg.get("t") else "-",
+                        )
                     said = True
                     phrases += 1
                     if first is None:
@@ -182,7 +237,6 @@ class BrowserBrain:
                 if msg.get("end"):
                     done = True
                     outcome = "silent" if msg.get("silent") else "end"
-                    browser = timing_text(msg.get("timing"))
                     if not said and not opening and not msg.get("silent"):
                         yield fallback_text(self._lang)
                     return
@@ -192,31 +246,17 @@ class BrowserBrain:
                 "[luna-call] reply %s: %s, %d phrases, first %s, total %.2fs, asked %d chars%s%s",
                 rid, outcome, phrases, f"{first:.2f}s" if first is not None else "-",
                 time.monotonic() - t0, len(text or ""), " (opening)" if opening else "",
-                f"; browser {browser}" if browser else "",
+                " (draft)" if pending else "",
             )
             self._queues.pop(rid, None)
-            # Генерацию оборвали снаружи (ученик перебил) — браузеру незачем
-            # дальше тратить запрос к модели.
+            # Генерацию оборвали снаружи (ученик перебил, LiveKit выбросил
+            # черновик) — браузеру незачем дальше тратить запрос к модели. drop —
+            # ход так и не начался: в окне от него не должно остаться следа.
             if not done:
-                self._fire(CANCEL_METHOD, {"id": rid})
-
-
-def timing_text(raw: Any) -> str:
-    """Тайминги, которые браузер прислал с концом ответа, — в строку лога:
-    сколько он ждал заголовков чат-роута, первого куска текста и первой фразы,
-    и что из этого сервер (x-assistant-timing). Только числа и короткая строка
-    сервера — ничего от ученика."""
-    if not isinstance(raw, dict):
-        return ""
-    parts = []
-    for key, label in (("headersMs", "headers"), ("firstDeltaMs", "first text"), ("firstPhraseMs", "first phrase")):
-        value = raw.get(key)
-        if isinstance(value, (int, float)) and 0 <= value < 600_000:
-            parts.append(f"{label} {value / 1000:.2f}s")
-    server = raw.get("server")
-    if isinstance(server, str) and server.strip():
-        parts.append(f"server {server.strip()[:120]}")
-    return ", ".join(parts)
+                cancel: dict[str, Any] = {"id": rid}
+                if not state["committed"]:
+                    cancel["drop"] = True
+                self._fire(CANCEL_METHOD, cancel)
 
 
 def say_payload_text(data: Any) -> str | None:

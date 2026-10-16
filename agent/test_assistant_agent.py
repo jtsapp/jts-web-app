@@ -20,10 +20,16 @@ class FakeBrain:
         self.phrases = phrases
         self.asked = []
 
-    async def ask(self, text, opening=False):
+    async def ask(self, text, opening=False, speech=None):
         self.asked.append((text, opening))
+        self.speech = speech
         for p in self.phrases:
             yield p
+
+
+def spoken(out):
+    """Текст реплики без сбросов синтеза (FlushSentinel)."""
+    return [x for x in out if isinstance(x, str)]
 
 
 async def run(agent, ctx):
@@ -40,13 +46,18 @@ async def main():
     ctx.add_message(role="user", content=" где домашка? ")
     out = await run(agent, ctx)
     assert brain.asked == [("где домашка?", False)], brain.asked
-    assert out == ["Домашка на Главной. ", "Открываю. "], out
+    assert spoken(out) == ["Домашка на Главной. ", "Открываю. "], out
+    # После каждой фразы — сброс синтеза: потоковый TTS иначе держал бы первую
+    # фразу, пока браузер не пришлёт вторую.
+    assert [type(x).__name__ for x in out] == ["str", "FlushSentinel", "str", "FlushSentinel"], out
+    # Вне сессии LiveKit речи нет — ход считается подтверждённым.
+    assert brain.speech is None
 
     # Начало звонка: реплики ученика нет — Луна говорит первой.
     brain = FakeBrain(["Привет!"])
     agent = A.AssistantAgent(brain)
     out = await run(agent, llm.ChatContext())
-    assert brain.asked == [("", True)] and out == ["Привет! "], (brain.asked, out)
+    assert brain.asked == [("", True)] and spoken(out) == ["Привет! "], (brain.asked, out)
 
     # Пустая реплика ученика — браузер не спрашиваем вовсе.
     brain = FakeBrain(["не должно прозвучать"])
@@ -55,9 +66,19 @@ async def main():
     ctx.add_message(role="user", content="   ")
     assert await run(agent, ctx) == [] and brain.asked == []
 
-    # Звонок помощнику не строит предварительную генерацию — у тьютора она есть.
+    # Упреждающая генерация у звонка помощнику — как у тьютора; секрет
+    # LUNA_CALL_PREEMPTIVE=off возвращает прежнее поведение без деплоя.
     assert A._turn_handling(None, preemptive=False)["preemptive_generation"] == {"enabled": False}
     assert A._turn_handling(None)["preemptive_generation"] == {"enabled": True}
+    old = os.environ.pop("LUNA_CALL_PREEMPTIVE", None)
+    try:
+        assert A._luna_call_preemptive() is True
+        os.environ["LUNA_CALL_PREEMPTIVE"] = "off"
+        assert A._luna_call_preemptive() is False
+    finally:
+        os.environ.pop("LUNA_CALL_PREEMPTIVE", None)
+        if old is not None:
+            os.environ["LUNA_CALL_PREEMPTIVE"] = old
     assert A.parse_metadata('{"mode":"assistant","lang":"kz"}').mode == A.assistant_call.ASSISTANT_MODE
 
     # Перебивание: в звонке помощнику — простой VAD по первому слову, при любом

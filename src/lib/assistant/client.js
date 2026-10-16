@@ -16,17 +16,16 @@ export class AssistantError extends Error {
  *           screen: {id: string|null, text: string}, lang: string,
  *           errors?: {at?: number, message?: string, source?: string, url?: string, stack?: string}[],
  *           pageUrl?: string, userAgent?: string, bugReported?: boolean, voice?: boolean, call?: string,
- *           onDelta: (text: string) => void, signal?: AbortSignal }} args
+ *           onDelta: (text: string) => void, signal?: AbortSignal,
+ *           onResponse?: (r: {serverTiming: string}) => void }} args
+ *   onResponse — ответ пошёл: заголовок Server-Timing роута (замеры звонка Луне)
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
  *                     action: {kind: 'open'|'tour', target: string, now: boolean}|null }>}
  *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
  *   reported — поломку записали в БД; action — Луна предлагает открыть раздел
  *   или провести тур (actions.js). Оба — хвост стрима, ученику не показывается.
  */
-export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, signal }) {
-  // Тайминги для звонка Луне: когда пришли заголовки и первый кусок текста.
-  const t0 = Date.now()
-  let firstDeltaMs = null
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, onResponse, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
@@ -55,7 +54,7 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
     })
   }
   if (!res.ok || !res.body) throw new AssistantError('unavailable')
-  const headersMs = Date.now() - t0
+  onResponse?.({ serverTiming: res.headers.get('server-timing') || '' })
   const offtopic = res.headers.get('x-assistant-offtopic') === '1'
   const reportedHeader = res.headers.get('x-assistant-reported') === '1'
   const flag = createServiceTailFilter()
@@ -66,7 +65,6 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
   const emit = (chunk) => {
     const out = flag.push(chunk)
     if (out) {
-      if (firstDeltaMs == null) firstDeltaMs = Date.now() - t0
       full += out
       onDelta?.(out)
     }
@@ -89,11 +87,5 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
     full += tail
     onDelta?.(tail)
   }
-  return {
-    text: full,
-    offtopic,
-    reported: reportedHeader || flag.reported,
-    action: offtopic ? null : flag.action,
-    timing: { headersMs, firstDeltaMs, server: res.headers.get('x-assistant-timing') || null },
-  }
+  return { text: full, offtopic, reported: reportedHeader || flag.reported, action: offtopic ? null : flag.action }
 }

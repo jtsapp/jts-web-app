@@ -111,6 +111,30 @@ describe('POST /api/assistant/chat', () => {
     expect(systemPrompt).not.toContain('Is Cleare reading?')
   })
 
+  it('Server-Timing: сколько ушло на вход, профиль и первые слова модели', async () => {
+    const res = await post(question(109))
+    await res.text()
+    const timing = res.headers.get('server-timing') || ''
+    for (const name of ['auth', 'call', 'ctx', 'model']) expect(timing).toMatch(new RegExp(`(^|, )${name};dur=\\d+`))
+  })
+
+  it('профиль собирается, пока идёт проверка звонка, а не после неё', async () => {
+    const order = []
+    const { isLiveAssistantCall } = await import('@/lib/assistant/callUsage.js')
+    isLiveAssistantCall.mockImplementationOnce(async () => {
+      order.push('call:start')
+      await new Promise((r) => setTimeout(r, 5))
+      order.push('call:end')
+      return true
+    })
+    loadStudentContext.mockImplementationOnce(async () => {
+      order.push('ctx:start')
+      return null
+    })
+    await (await post({ ...question(110), call: 'jts-luna-abc-1792150000000' })).text()
+    expect(order.indexOf('ctx:start')).toBeLessThan(order.indexOf('call:end'))
+  })
+
   it('зовёт loadStudentContext с бэрер-токеном ученика и кладёт результат в вопрос', async () => {
     studentContextResult = 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.'
     await (await post(question(108), 'my-bearer')).text()
@@ -167,13 +191,6 @@ describe('POST /api/assistant/chat', () => {
     expect(res.status).toBe(429)
     expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0)
     expect(calls).toHaveLength(20)
-  })
-
-  it('ответ несёт x-assistant-timing: вход, контекст, первые токены модели (мс)', async () => {
-    const res = await post(question(108))
-    expect(res.status).toBe(200)
-    expect(res.headers.get('x-assistant-timing')).toMatch(/^auth=\d+;ctx=\d+;model=\d+$/)
-    await res.text()
   })
 
   it('вопрос из живого звонка Луне — квота звонка, а не 20 за 10 минут; чужая комната — общая', async () => {
