@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { OPENING_MARK, isOpeningTurn, openingFocus, screenStateKey } from './opening.js'
+import { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus, screenStateKey } from './opening.js'
 
 describe('пометка «ученик открыл окно»', () => {
   it('узнаётся и с пробелами по краям, а вопрос ученика — нет', () => {
@@ -8,6 +8,16 @@ describe('пометка «ученик открыл окно»', () => {
     expect(isOpeningTurn('Почему мой ответ неверный?')).toBe(false)
     expect(isOpeningTurn(`${OPENING_MARK} и ещё вопрос`)).toBe(false)
     expect(isOpeningTurn(null)).toBe(false)
+  })
+})
+
+describe('пометка «ученик позвал голосом»', () => {
+  it('служебный ход, как открытие окна, но различима', () => {
+    expect(isOpeningTurn(WAKE_MARK)).toBe(true)
+    expect(isWakeTurn(` ${WAKE_MARK}
+`)).toBe(true)
+    expect(isWakeTurn(OPENING_MARK)).toBe(false)
+    expect(isWakeTurn('Привет, Луна')).toBe(false)
   })
 })
 
