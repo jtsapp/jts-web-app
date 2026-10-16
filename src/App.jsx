@@ -135,8 +135,6 @@ import { saveAttempt } from './placement/api.js'
 import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
-import { ieltsHidden, isIeltsScreen } from './lib/ieltsGate.js'
-import { satHidden, isSatScreen } from './lib/satGate.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -268,10 +266,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
-    // IELTS и SAT скрыты на проде (lib/ieltsGate.js, lib/satGate.js): диплинк на них там не открывает ничего.
-    const rawDeepLink = searchParams.get('screen')
-    const hiddenOnProd = (isIeltsScreen(rawDeepLink) && ieltsHidden()) || (isSatScreen(rawDeepLink) && satHidden())
-    const deepLink = hiddenOnProd ? null : rawDeepLink
+    const deepLink = searchParams.get('screen')
     // Пришёл с лендинга после заявки: в адресе код с именем и номером
     // (src/landing/handoff.js). Из адреса убираем сразу — ему незачем
     // оставаться в истории, закладках и на скриншотах.
@@ -1577,8 +1572,6 @@ export default function App() {
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (isIeltsScreen(key) && ieltsHidden()) return
-    if (isSatScreen(key) && satHidden()) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
@@ -2035,7 +2028,7 @@ export default function App() {
           demoExpiresAt={demoExpiresAt}
           // Без уровня «Главная» показывает приглашение на тест, а не чужие цифры.
           levelUnknown={needsLevelTest}
-          ieltsAccount={ieltsAccount && !ieltsHidden()}
+          ieltsAccount={ieltsAccount}
           onStartLevelTest={() => openPlacement('home')}
           geProfile={ieltsAccount ? null : geProfile}
           geLoaded={geLoaded}
@@ -2104,7 +2097,7 @@ export default function App() {
           // Гостю тест из профиля не предлагаем: уровня у него нет по
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
-          ieltsAccount={ieltsAccount && !ieltsHidden()}
+          ieltsAccount={ieltsAccount}
           onLevelTest={token ? () => openPlacement('profile') : undefined}
           // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
           onBack={popNav(navStack, screen) ? () => goBack() : undefined}
