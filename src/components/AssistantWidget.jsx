@@ -1621,6 +1621,19 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                 {t(`assistant.call.state.${callStatus}`)}
                 {callLeftMin != null && <small>{t('assistant.call.left', { min: callLeftMin })}</small>}
               </span>
+              {/* Перебить кнопкой (живой звонок 16.10.2026: «должна быть возможность
+                  перебить»). Голосом тоже можно — агент в звонке перебивается по
+                  первому слову, — но в шумной комнате кнопка надёжнее. */}
+              {callStatus === 'speaking' && (
+                <button
+                  type="button"
+                  className="asst__call-stop"
+                  title={t('assistant.call.interruptHint')}
+                  onClick={() => callCtlRef.current?.say('')}
+                >
+                  {t('assistant.call.interrupt')}
+                </button>
+              )}
               {call.audioBlocked && (
                 <button type="button" className="asst__ghost" onClick={() => callCtlRef.current?.startAudio()}>
                   {t('assistant.call.audio')}

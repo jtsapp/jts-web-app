@@ -60,6 +60,20 @@ async def main():
     assert A._turn_handling(None)["preemptive_generation"] == {"enabled": True}
     assert A.parse_metadata('{"mode":"assistant","lang":"kz"}').mode == A.assistant_call.ASSISTANT_MODE
 
+    # Перебивание: в звонке помощнику — простой VAD по первому слову, при любом
+    # детекторе конца хода; у тьютора — прежние пороги.
+    barge = {"mode": "vad", "min_words": 1, "min_duration": 0.5}
+    assert A._turn_handling(None, barge_in=True)["interruption"] == barge
+    assert A._turn_handling(object(), barge_in=True)["interruption"] == barge
+    assert A._turn_handling(None, push_to_talk=True, barge_in=True)["interruption"] == barge
+    assert A._turn_handling(object())["interruption"]["mode"] == "adaptive"
+    assert "mode" not in A._turn_handling(None)["interruption"]
+    os.environ["LUNA_CALL_INTERRUPT_MIN_SEC"] = "0.3"
+    try:
+        assert A._barge_in_options()["min_duration"] == 0.3
+    finally:
+        del os.environ["LUNA_CALL_INTERRUPT_MIN_SEC"]
+
 
 asyncio.run(main())
 print("ok")
