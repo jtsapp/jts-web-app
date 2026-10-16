@@ -88,6 +88,11 @@ describe('разбор запроса', () => {
 
   it('bugReported с клиента — что ошибку в этом чате уже записали', () => {
     expect(parseChatRequest(ask('ещё раз', { bugReported: true })).bugReported).toBe(true)
+    // Комната звонка Луне — только своей формы: мусор не должен дойти до SQL.
+    expect(parseChatRequest(ask('q', { call: 'jts-luna-ab12cd-1760600000000' })).call).toBe('jts-luna-ab12cd-1760600000000')
+    expect(parseChatRequest(ask('q', { call: "jts-luna-x'; drop-1" })).call).toBeNull()
+    expect(parseChatRequest(ask('q', { call: 'jts-tutor-ab12cd-1760600000000' })).call).toBeNull()
+    expect(parseChatRequest(ask('q')).call).toBeNull()
   })
 
   it.each([

@@ -64,6 +64,7 @@ except Exception:  # pragma: no cover - plugin missing in some envs
 # Второй слой поверх Krisp: замок на основного говорящего и сторож конца хода
 # (близкий фон BVC пропускает, и Soniox пишет его в реплику ученика).
 import noise_guard
+import assistant_call
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
@@ -6354,10 +6355,15 @@ def _turn_mode_from_payload(payload: Any) -> str | None:
     return mode if mode in TURN_MODES else None
 
 
-def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
+def _turn_handling(detector: Any, push_to_talk: bool = False, preemptive: bool = True) -> dict[str, Any]:
     """Сборка turn_handling сессии. Вынесено из build_cascade_session отдельно,
     чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
-    TTS и ключи, а это чистая функция над env и уже готовым детектором."""
+    TTS и ключи, а это чистая функция над env и уже готовым детектором.
+
+    preemptive=False — звонок Луне-помощнику (assistant_call.py): там «мозг» —
+    браузер с платным запросом к чату на каждый вызов, и генерация по черновому
+    транскрипту, которую LiveKit бросает и начинает заново, стоила бы лишних
+    запросов, а не экономила бы время."""
     if push_to_talk:
         # Ход открывает и закрывает клиент (см. RPC в entrypoint). В manual
         # фреймворк не перебивает тьютора по VAD вообще, а нажатие рации
@@ -6374,7 +6380,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
             "turn_detection": "manual",
             "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
             "interruption": _interruption_options(),
-            "preemptive_generation": {"enabled": True},
+            "preemptive_generation": {"enabled": preemptive},
         }
     if detector is not None:
         return {
@@ -6389,7 +6395,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
             # Отличает поддакивание ученика от настоящего перебивания. Если
             # начнёт глотать настоящие — вернуть {"mode": "vad"}.
             "interruption": {"mode": "adaptive", **_interruption_options()},
-            "preemptive_generation": {"enabled": True},
+            "preemptive_generation": {"enabled": preemptive},
         }
     # Старый путь ровно как был: Soniox не шлёт END_OF_SPEECH (#4034), поэтому
     # ход закрывает VAD, а 0.3с — компромисс между «рвёт на паузе» и «мёртвый
@@ -6401,7 +6407,7 @@ def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
         # перебивание» принимает один Silero, а он одинаково реагирует и на
         # слово, и на хлопок дверью.
         "interruption": _interruption_options(),
-        "preemptive_generation": {"enabled": True},
+        "preemptive_generation": {"enabled": preemptive},
     }
 
 
@@ -6627,6 +6633,7 @@ def build_cascade_session(
     brain_url: str = "",
     guard_tutor: str = "",
     brain_model: str = "",
+    preemptive: bool = True,
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -6751,7 +6758,7 @@ def build_cascade_session(
     # памяти воркера, а облачная ещё и платная, и оба конца хода в этом режиме
     # известны точно.
     detector = None if push_to_talk else _build_turn_detector(_turn_detector_mode_for(profile))
-    turn_handling = _turn_handling(detector, push_to_talk=push_to_talk)
+    turn_handling = _turn_handling(detector, push_to_talk=push_to_talk, preemptive=preemptive)
     kwargs: dict[str, Any] = {
         "stt": stt,
         "llm": llm,
@@ -7093,10 +7100,180 @@ def _aligned_transcript_for(profile: LearnerProfile) -> bool:
     return not _pronunciation_lang(profile)
 
 
+# ── Звонок Луне-помощнику (16.10.2026) ──────────────────────────────────────
+# Уши и голос — как у живой Луны (gentle), ответ пишет браузер ученика тем же
+# чат-роутом, что и окно помощника. Почему так — шапка assistant_call.py.
+
+# Модель агента в звонке помощнику не вызывается (см. AssistantAgent.llm_node);
+# строка — только для порядка в логах сессии.
+ASSISTANT_CALL_INSTRUCTIONS = "Luna, the JTS site assistant. Replies come from the student's browser."
+
+
+class AssistantAgent(TutorAgent):
+    """Луна-помощник в звонке: голос, распознавание, фильтр эха и замок на
+    ученика — от TutorAgent, а ответ — из браузера (BrowserBrain)."""
+
+    def __init__(self, brain: "assistant_call.BrowserBrain", speech_lang: str = ""):
+        super().__init__(
+            instructions=ASSISTANT_CALL_INSTRUCTIONS,
+            device_id="",
+            api_url="",
+            speech_lang=speech_lang,
+        )
+        # Тулы памяти тьютора помощнику не положены: модель агента здесь не
+        # вызывается вовсе, а разговор о сайте не должен ложиться в память
+        # ученика об английском.
+        self._tools = []
+        self._brain = brain
+
+    async def llm_node(self, chat_ctx, tools, model_settings):
+        if self._stt_guard is not None:
+            self._stt_guard.begin_reply()
+        last = chat_ctx.items[-1] if _last_is_user_message(chat_ctx) else None
+        text = (last.text_content or "").strip() if last is not None else ""
+        # Пустая реплика ученика (шум, обрезанный ход) — спрашивать нечего; без
+        # реплики вовсе (начало звонка) — Луна заговаривает первой.
+        if last is not None and not text:
+            return
+        said: list[str] = []
+        async for piece in self._brain.ask(text, opening=last is None):
+            out = assistant_call.spoken(piece)
+            said.append(out)
+            yield out
+        reply = "".join(said).strip()
+        if reply and self._stt_guard is not None:
+            self._stt_guard.set_tutor_reply(reply)
+
+
+async def run_assistant_call(ctx: JobContext, participant: Any, profile: LearnerProfile) -> None:
+    """Звонок помощнику: сессия живой Луны без памяти, сценариев и истории звонков."""
+    voice_stack = (os.getenv("VOICE_STACK") or "gemini-live").strip().lower()
+    if voice_stack != "cascade":
+        logger.error("[luna-call] needs VOICE_STACK=cascade, got %s — not answering", voice_stack)
+        return
+    # Голос, уши, температура и замок на ученика — живой Луны. Подсказки
+    # распознаванию — все три языка: с помощником говорят по-русски и по-казахски.
+    voice = _dc_replace(profile, tutor="gentle", english_only=False, push_to_talk=False)
+    api_url = (os.getenv("JTS_API_URL") or "").strip().rstrip("/") or "http://localhost:3000"
+    session = build_cascade_session(
+        profile=voice,
+        persona_temperature=PERSONA_TEMPERATURE.get("gentle", 0.7),
+        api_url=api_url,
+        brain_url=(os.getenv("VOICE_BRAIN_URL") or "").strip().rstrip("/"),
+        guard_tutor="gentle",
+        brain_model=session_brain_model(voice),
+        preemptive=False,
+    )
+    _attach_latency_logging(session)
+    _attach_interruption_logging(session)
+
+    lp = ctx.room.local_participant
+    brain = assistant_call.BrowserBrain(lp, participant.identity, profile.lang)
+    agent = AssistantAgent(brain, speech_lang=_pronunciation_lang(voice))
+    logger.info(
+        "[luna-call] start: identity=%s lang=%s budget=%ss",
+        participant.identity, profile.lang, profile.session_ttl_sec,
+    )
+
+    start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}
+    logger.info("Krisp BVC: %s", _krisp_reason())
+    if _krisp_enabled():
+        start_kwargs["room_input_options"] = RoomInputOptions(noise_cancellation=noise_cancellation.BVC())
+    start_kwargs["room_output_options"] = _transcript_output_options(_tts_provider_for(voice))
+    agent._echo = getattr(session.stt, "echo", None)
+    noise_guard.attach_echo_and_vad_finalize(session, session.stt, is_auto=lambda: True)
+    if callable(getattr(session.stt, "set_tutor_reply", None)):
+        agent._stt_guard = session.stt
+    noise_guard.attach_dialog_context(session, session.stt, is_auto=lambda: True)
+
+    def _detach(fut: Any) -> None:
+        if fut is not None and hasattr(fut, "add_done_callback"):
+            fut.add_done_callback(lambda f: f.cancelled() or f.exception())
+
+    async def _say(data: Any) -> str:
+        """Шаг тура, который ведёт Луна: сказать его в звонке, оборвав прежнюю
+        реплику. Пустой текст — просто замолчать (ученик закрыл тур)."""
+        text = assistant_call.say_payload_text(data)
+        if text is None:
+            return "bad"
+        _detach(session.interrupt())
+        if text.strip():
+            session.say(text, allow_interruptions=True)
+        return "ok"
+
+    # RPC — до старта: фраза ответа может прийти сразу за подтверждением luna.ask.
+    lp.register_rpc_method(assistant_call.REPLY_METHOD, brain.on_reply)
+    lp.register_rpc_method(assistant_call.SAY_METHOD, _say)
+
+    await session.start(**start_kwargs)
+
+    # Сторож конца хода — как в «Свободно» у тьютора: детектор голоса держит
+    # ход на музыке, а слов ученика нет.
+    watchdog = noise_guard.TurnWatchdog(noise_guard.turn_watchdog_sec("gentle"))
+    watchdog.enabled = watchdog.quiet_sec > 0
+    if watchdog.quiet_sec > 0:
+        noise_guard.attach_turn_watchdog(session, watchdog)
+
+    # Дневной бюджет звонка (свой у помощника, считает /api/assistant/call): по
+    # нему прощаемся и удаляем комнату — как у тьютора, но прощание готовой
+    # фразой: модели агента здесь нет.
+    ttl_sec = profile.session_ttl_sec
+    if ttl_sec and ttl_sec > 0:
+        room_name = ctx.room.name
+
+        async def _end_on_budget(limit: int) -> None:
+            try:
+                await asyncio.sleep(limit)
+            except asyncio.CancelledError:
+                return
+            logger.info("[luna-call] budget %ds reached — ending room %s.", limit, room_name)
+            try:
+                _detach(session.interrupt())
+                session.say(assistant_call.goodbye_text(profile.lang), allow_interruptions=False)
+                await asyncio.sleep(4.0)
+            except Exception:
+                logger.exception("[luna-call] goodbye failed")
+            try:
+                from livekit import api as lk_api
+
+                lkapi = lk_api.LiveKitAPI()
+                try:
+                    await lkapi.room.delete_room(lk_api.DeleteRoomRequest(room=room_name))
+                finally:
+                    await lkapi.aclose()
+            except Exception:
+                logger.exception("[luna-call] delete_room failed; disconnecting agent")
+                try:
+                    await ctx.room.disconnect()
+                except Exception:
+                    logger.exception("[luna-call] room disconnect failed")
+
+        budget_task = asyncio.create_task(_end_on_budget(ttl_sec))
+
+        async def _cancel_budget() -> None:
+            budget_task.cancel()
+
+        ctx.add_shutdown_callback(_cancel_budget)
+
+    # Луна заговаривает первой — как при открытии окна (браузер шлёт пометку
+    # «ученик открыл окно», и чат-роут решает, что сказать по экрану).
+    await asyncio.sleep(0.15)
+    handle = session.generate_reply()
+    try:
+        await handle
+    except Exception:
+        logger.exception("[luna-call] opening failed")
+
+
 async def entrypoint(ctx: JobContext):
     await ctx.connect()
     participant = await ctx.wait_for_participant()
     profile = parse_metadata(participant.metadata)
+    # Звонок помощнику — своя сессия, мимо всех режимов тьютора (память,
+    # сценарии, история звонков ему не положены).
+    if profile.mode == assistant_call.ASSISTANT_MODE:
+        await run_assistant_call(ctx, participant, profile)
+        return
     logger.info(
         "Learner joined: %s | level=%s lang=%s english_only=%s style=%s goal=%s tutor=%s "
         "skills=%s mistakes=%d topics=%d vocab=%d writing=%s",

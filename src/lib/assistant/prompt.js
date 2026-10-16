@@ -224,6 +224,8 @@ const clipText = (s, n) => {
  *             errors: {at: number, message: string, source: string, url: string, stack: string}[],
  *             bugReported: boolean, voice: boolean }}
  */
+const CALL_ROOM_RE = /^jts-luna-[a-z0-9]{1,16}-\d{10,16}$/
+
 export function parseChatRequest(body) {
   if (!body || typeof body !== 'object') throw new AssistantRequestError('Пустой запрос')
   const raw = Array.isArray(body.messages) ? body.messages : null
@@ -249,8 +251,11 @@ export function parseChatRequest(body) {
   const errors = parseClientErrors(body.errors)
   const bugReported = Boolean(body.bugReported)
   const voice = Boolean(body.voice)
+  // Вопрос из звонка Луне — имя его комнаты (api/assistant/call). Роут сверит
+  // её с базой и даст квоту звонка; здесь только форма, чтобы мусор не ушёл в SQL.
+  const call = typeof body.call === 'string' && CALL_ROOM_RE.test(body.call) ? body.call : null
 
-  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported, voice }
+  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported, voice, call }
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { OPEN_EVENT, navigateTo, setAssistantAvailable } from '../lib/assistant/assistantBus.js'
 import { actionMarker } from '../lib/assistant/actions.js'
@@ -9,6 +9,8 @@ import { OPENING_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
+import { callSpeech, createCallTourVoice } from '../lib/assistant/callBridge.js'
+import { assistantCallHidden } from '../lib/assistant/callGate.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
 import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
@@ -62,6 +64,16 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // шапку окна или за саму кнопку, место запоминается на устройстве
 // (lib/assistant/placement.js), двойной клик по шапке возвращает в угол. Размер
 // не запоминается: после перезагрузки окно снова компактное.
+//
+// Звонок (16.10.2026, руководство: «максимально приближенно к Speaking Buddy»):
+// кнопка в шапке звонит Луне в реальном времени. Слушает и говорит агент LiveKit
+// голосом Луны (AssistantCall, agent/assistant_call.py), а ответ на каждую его
+// реплику пишет ЭТОТ виджет тем же /api/assistant/chat — со снимком экрана,
+// контекстом ученика и метками действий. Поэтому в звонке Луна видит экран,
+// объясняет ошибки, открывает разделы и водит турами так же, как в чате:
+// разговор идёт в тот же список сообщений, «открываю…» выполняется, когда она
+// договорила, шаги тура читает голос звонка. Окно можно закрыть — звонок
+// продолжается, кнопка Луны показывает, что она на связи.
 
 const MAX_INPUT = 2000
 // Тур не начался за это время (экран без тура, данные не доехали) — честно
@@ -177,6 +189,14 @@ const SCREEN_ROOT = '.scr-in'
 // Аватар Луны (уменьшенная копия public/tutor/tutor-luna.png): кнопка висит на
 // каждом экране, и 169 КБ оригинала ради круга в 60px — лишний вес.
 const AVATAR = '/assets/luna-assistant.webp'
+// Компонент звонка подтягивается только по нажатию «Позвонить»: звонят Луне
+// редко, а виджет висит на каждом экране (сам livekit-client уже в общем
+// бандле — его статически тянет экран тьютора).
+const AssistantCall = lazy(() => import('./AssistantCall.jsx'))
+// Агент не зашёл в комнату за это время — звонок не состоялся, говорим как есть.
+const CALL_AGENT_WAIT_MS = 20_000
+// Часы звонка — только в обработчиках и таймерах, не при рендере.
+const clockNow = () => Date.now()
 const MUTE_KEY = 'jts_assistant_voice_muted'
 
 const VOICE_ERRORS = {
@@ -225,6 +245,27 @@ function SizeIcon({ big }) {
       ) : (
         <path d="M4 10V4h6M20 14v6h-6M4 4l6 6m10 10-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       )}
+    </svg>
+  )
+}
+
+function PhoneIcon({ size = 17 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 4h3.5l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5l1.5-2 4 1.5V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function MicOffIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.7-1.3M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M4 4l16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -307,6 +348,22 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const dragRef = useRef(null)
   // Кнопку только что перетащили — отпускание не должно открыть окно.
   const draggedRef = useRef(false)
+  // Звонок Луне (см. шапку): null — нет звонка; { phase: 'starting' } — ждём
+  // микрофон и токен; { phase: 'live', session, agentState, micOn, audioBlocked,
+  // userText, since } — идёт.
+  const [call, setCall] = useState(null)
+  const [callThinking, setCallThinking] = useState(false)
+  // Строка «звонок завершён» после конца, который ученик не нажимал сам.
+  const [callNote, setCallNote] = useState(null)
+  const callCtlRef = useRef(null) // кнопки звонка (AssistantCall: hangUp, toggleMic, say, startAudio)
+  const callAskRef = useRef(null) // { id, controller } — ответ звонку, который сейчас пишется
+  const callActionRef = useRef(null) // { action, spoke, timer } — «открываю…» ждёт конца её реплики
+  const callSeqRef = useRef(0) // номер нажатия «Позвонить»: поздний токен отменённого — в мусор
+  const hangingUpRef = useRef(false)
+  // Комната идущего звонка. LiveKit может прислать «отключено» ещё раз, уже
+  // снимаясь со страницы, — такое событие относится к звонку, которого нет.
+  const liveCallRef = useRef(null)
+  const callLive = call?.phase === 'live'
   const abortRef = useRef(null)
   const listRef = useRef(null)
   const inputRef = useRef(null)
@@ -332,7 +389,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
   // Layout-эффект идёт внутри коммита, до любого события.
   useLayoutEffect(() => {
-    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen }
+    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen, callLive, callRoom: call?.session?.room || null }
   })
   // Состояние экрана, о котором Луна уже сказала первую реплику (opening.js).
   const greetedRef = useRef(null)
@@ -403,7 +460,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const sayStep = useCallback(() => {
     const g = guideRef.current
     const cur = stateRef.current
-    if (!g.on || !g.lastPhrases.length || cur?.muted || !cur?.enabled) return
+    if (!g.on || !g.lastPhrases.length || (cur?.muted && !cur?.callLive) || !cur?.enabled) return
     g.waitReply = false
     g.pending = false
     clearTimeout(g.waitTimer)
@@ -415,7 +472,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     const g = guideRef.current
     g.lastPhrases = phrases
     const cur = stateRef.current
-    if (!g.on || cur?.muted || !cur?.enabled) return
+    if (!g.on || (cur?.muted && !cur?.callLive) || !cur?.enabled) return
     // Синтез начинаем сразу — и этого шага, и следующего: пока звучит этот,
     // следующий успеет, и по «Далее» Луна заговорит без паузы.
     tourVoiceRef.current?.prefetch(phrases)
@@ -434,7 +491,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     clearTimeout(g.timer)
     clearTimeout(g.waitTimer)
     tourVoiceRef.current?.dispose()
-    tourVoiceRef.current = createTourVoice({ token: stateRef.current?.token })
+    // В звонке шаг читает агент: второй голос поверх звонка звучал бы
+    // одновременно с ним и попадал бы ему в микрофон.
+    tourVoiceRef.current = stateRef.current?.callLive
+      ? createCallTourVoice((text) => callCtlRef.current?.say(text))
+      : createTourVoice({ token: stateRef.current?.token })
     Object.assign(g, { ...GUIDE_OFF, on: true, waitReply })
     setTourNarration({ on: true, muted: Boolean(stateRef.current?.muted) }, () => toggleMutedRef.current?.())
     g.timer = setTimeout(() => {
@@ -528,6 +589,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     if (!enabled) {
       setOpen(false)
       setHeld(null)
+      // Звонок на экзамене или в звонке тьютору — кладём трубку (AssistantCall
+      // снимется и закроет комнату).
+      setCall(null)
+      setCallThinking(false)
     }
   }
 
@@ -539,6 +604,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     setError(null)
     setBusy(false)
   }
+  // dropCall объявлен ниже, а эффект смены ученика — здесь: зовём через ref.
+  const dropCallRef = useRef(null)
   // Ответ, который ещё идёт (или звучит) прошлому ученику, обрываем — и никуда
   // его не ведём.
   useEffect(
@@ -549,6 +616,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       endGuide()
       greetedRef.current = null
       openingRef.current = null
+      dropCallRef.current?.()
     },
     [token, stopVoice, endGuide, dropDeferred],
   )
@@ -606,7 +674,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     // Метку действия возвращаем в её ответ: на «да» модель должна видеть, ЧТО
     // она предлагала открыть, а с экрана метка срезана.
     const toSend = history
-      .filter((m) => !m.offtopic)
+      .filter((m) => !m.offtopic && !m.local)
       .map(({ role, content, action }) => ({ role, content: action ? `${content.trimEnd()}\n${actionMarker(action)}` : content }))
     setInput('')
     setError(null)
@@ -780,10 +848,284 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }
   }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred])
 
+  // ── Звонок ───────────────────────────────────────────────────────────
+  // Выполнить «открываю…» звонка: Луна договорила (или ждать уже нечего).
+  const runCallAction = useCallback(() => {
+    const p = callActionRef.current
+    if (!p) return
+    clearTimeout(p.timer)
+    callActionRef.current = null
+    if (mountedRef.current && stateRef.current?.enabled) performRef.current?.(p.action)
+  }, [])
+
+  // Убрать звонок без следов: экран, где Луны нет, другой ученик, выход.
+  // Комнату закрывает сам AssistantCall, снимаясь со страницы. dropCallRefs —
+  // только то, что не состояние React: на запрещённом экране состояние
+  // сбрасывается при рендере (см. prevEnabled), а ответ и переход — здесь.
+  const dropCallRefs = useCallback(() => {
+    liveCallRef.current = null
+    callSeqRef.current += 1
+    callAskRef.current?.controller.abort()
+    callAskRef.current = null
+    clearTimeout(callActionRef.current?.timer)
+    callActionRef.current = null
+  }, [])
+  const dropCall = useCallback(() => {
+    dropCallRefs()
+    setCallThinking(false)
+    setCall(null)
+  }, [dropCallRefs])
+
+  // Агент спросил: ученик сказал text (или звонок только начался — opening).
+  // Ответ — тем же чат-роутом, что и окно, фразами в голос звонка.
+  const callAsk = useCallback(
+    async ({ id, text, opening, sender }) => {
+      const cur = stateRef.current
+      if (!mountedRef.current || !cur?.token || !cur.callLive) {
+        sender.end()
+        return
+      }
+      callAskRef.current?.controller.abort()
+      // Разговор в окне уже идёт (Луна поздоровалась, ученик что-то спрашивал) —
+      // вторая первая реплика была бы повтором и лишним запросом к модели: Луна
+      // просто говорит, что на связи. Полная реплика по экрану — в пустом окне.
+      if (opening && cur.messages.some((m) => m.role === 'assistant' && m.content.trim())) {
+        const hello = t('assistant.call.hello')
+        sender.phrase(callSpeech(hello))
+        sender.end()
+        setMessages((prev) => [...prev, { role: 'assistant', content: hello, local: true }])
+        return
+      }
+      const controller = new AbortController()
+      callAskRef.current = { id, controller }
+      const raw = opening ? OPENING_MARK : String(text ?? '').trim().slice(0, MAX_INPUT)
+      if (!raw) {
+        sender.end()
+        return
+      }
+      // Ответ, который ученик перебил на первом слове, пуст — в историю не идёт.
+      const base = cur.messages.slice()
+      while (base.length && base[base.length - 1].role === 'assistant' && !base[base.length - 1].content.trim()) base.pop()
+      if (base.length && base[base.length - 1].opening) base.pop()
+      const history = [...base, { role: 'user', content: raw, voice: true, call: true, ...(opening ? { opening: true } : {}) }]
+      setMessages([...history, { role: 'assistant', content: '' }])
+      setError(null)
+      setCallNote(null)
+      setCallThinking(true)
+      const mine = () => callAskRef.current?.id === id
+      const toSend = history
+        .filter((m) => !m.offtopic && !m.local)
+        .map(({ role, content, action }) => ({ role, content: action ? `${content.trimEnd()}\n${actionMarker(action)}` : content }))
+      const chunker = createSpeechChunker()
+      const speak = (phrase) => sender.phrase(callSpeech(phrase))
+      const patchLast = (fn) =>
+        setMessages((prev) => {
+          const next = prev.slice()
+          const lastMsg = next[next.length - 1]
+          if (lastMsg?.role === 'assistant') next[next.length - 1] = fn(lastMsg)
+          return next
+        })
+      const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+      try {
+        const reply = await askAssistant({
+          token: cur.token,
+          messages: toSend,
+          screen: { id: cur.screen || null, text: snapshotScreen(root) },
+          lang: cur.lang,
+          errors: recentErrors(),
+          pageUrl: typeof location !== 'undefined' ? location.href : '',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+          bugReported: history.some((m) => m.reported),
+          voice: true,
+          call: cur.callRoom,
+          signal: controller.signal,
+          onDelta: (chunk) => {
+            if (controller.signal.aborted || !mine()) return
+            setCallThinking(false)
+            patchLast((m) => ({ ...m, content: m.content + chunk }))
+            chunker.push(chunk).forEach(speak)
+          },
+        })
+        if (!mine()) return
+        chunker.flush().forEach(speak)
+        // Первая реплика только предлагает: увести ученика с экрана без его просьбы нельзя.
+        const action = reply.action && opening ? { ...reply.action, now: false } : reply.action
+        const fallback = action && !reply.text.trim() ? actionCaption(action, cur.lang, t) : ''
+        if (fallback) speak(fallback)
+        if (action) {
+          patchLast((m) => ({ ...m, content: fallback || m.content, action }))
+          if (action.now && stateRef.current?.enabled) {
+            clearTimeout(callActionRef.current?.timer)
+            callActionRef.current = { action, spoke: false, timer: setTimeout(runCallAction, ACTION_WAIT_MAX_MS) }
+          }
+        }
+        if (reply.offtopic || reply.reported) {
+          setMessages((prev) => {
+            const next = prev.slice()
+            const n = next.length
+            if (reply.offtopic) {
+              next[n - 2] = { ...next[n - 2], offtopic: true }
+              next[n - 1] = { ...next[n - 1], offtopic: true }
+            }
+            if (reply.reported) next[n - 1] = { ...next[n - 1], reported: true }
+            return next
+          })
+        }
+      } catch (err) {
+        if (err?.name === 'AbortError' || !mine()) return
+        // Слова ученика остаются на экране, а вместо ответа — что не вышло. Эта
+        // строка не ответ модели, и в следующий запрос она не идёт (local).
+        const kind = err instanceof AssistantError ? err.kind : 'unavailable'
+        const note =
+          kind === 'rate' || kind === 'cooldown'
+            ? t('assistant.call.err.rate')
+            : kind === 'auth'
+              ? t('assistant.err.auth')
+              : t('assistant.call.failed')
+        if (!opening) {
+          speak(note)
+          patchLast((m) => ({ ...m, content: note, local: true }))
+        } else {
+          setMessages(base)
+        }
+      } finally {
+        sender.end()
+        if (mine()) {
+          callAskRef.current = null
+          setCallThinking(false)
+        }
+      }
+    },
+    [t, runCallAction],
+  )
+
+  // Агент передумал (ученик перебил) — ответ больше не нужен.
+  const callCancel = useCallback((id) => {
+    if (callAskRef.current?.id !== id) return
+    callAskRef.current.controller.abort()
+    callAskRef.current = null
+    setCallThinking(false)
+  }, [])
+
+  useLayoutEffect(() => {
+    dropCallRef.current = dropCall
+  })
+
+  const callState = useCallback((s) => {
+    setCall((c) => (c && c.phase === 'live' ? { ...c, ...s } : c))
+  }, [])
+
+  // Комната закрылась: ученик положил трубку, кончился дневной лимит (агент
+  // прощается и удаляет комнату) или пропала связь.
+  const callEnded = useCallback(
+    (reason) => {
+      if (!liveCallRef.current) return
+      const user = hangingUpRef.current
+      hangingUpRef.current = false
+      // Луна сказала «открываю…» и звонок кончился — ученик всё же просил раздел.
+      runCallAction()
+      dropCall()
+      if (user) return
+      const cur = stateRef.current
+      setCallNote(cur?.t(reason === 'mic' ? 'assistant.call.err.mic' : reason === 'error' ? 'assistant.call.err.dropped' : 'assistant.call.ended'))
+    },
+    [dropCall, runCallAction],
+  )
+
+  // «Позвонить»: микрофон (жест — разрешение спрашивается в этом же нажатии),
+  // токен комнаты, дальше AssistantCall.
+  const startCall = async () => {
+    if (call || !token) return
+    const seq = ++callSeqRef.current
+    hangingUpRef.current = false
+    unlockSpeech()
+    stopVoice()
+    cancelRecording()
+    // Текстовый ответ, который ещё пишется, в звонок не тянем — звонок начнёт свою реплику.
+    abortRef.current?.abort()
+    abortRef.current = null
+    openingRef.current = null
+    inFlightRef.current = false
+    setBusy(false)
+    setError(null)
+    setCallNote(null)
+    setCall({ phase: 'starting' })
+    const fail = (key, vars) => {
+      if (callSeqRef.current !== seq) return
+      setCall(null)
+      setError({ text: t(key, vars), retry: null })
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach((tr) => tr.stop())
+    } catch {
+      return fail('assistant.call.err.mic')
+    }
+    if (callSeqRef.current !== seq) return
+    try {
+      const res = await fetch('/api/assistant/call', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify({ lang }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (callSeqRef.current !== seq) return
+      if (res.status === 403 && data.limited) return fail('assistant.call.err.limit', { min: Math.round((data.limitSec || 900) / 60) })
+      if (res.status === 401) return fail('assistant.err.auth')
+      if (!res.ok || !data.token || !data.url) return fail('assistant.call.err.unavailable')
+      liveCallRef.current = data.room
+      setCall({ phase: 'live', session: data, agentState: 'connecting', micOn: true, audioBlocked: false, userText: '', since: clockNow() })
+    } catch {
+      fail('assistant.call.err.unavailable')
+    }
+  }
+
+  const endCall = () => {
+    if (!call) return
+    if (call.phase !== 'live') {
+      dropCall()
+      return
+    }
+    hangingUpRef.current = true
+    // «Открываю…» уже сказано — переход не отменяем: ученик об этом просил.
+    runCallAction()
+    if (callCtlRef.current) callCtlRef.current.hangUp()
+    else callEnded('disconnected')
+  }
+
+  // Луна на связи: «открываю…» ждёт, пока она договорит, — по состоянию агента.
+  const agentState = call?.agentState
+  useEffect(() => {
+    const p = callActionRef.current
+    if (!p) return
+    if (agentState === 'speaking') p.spoke = true
+    else if (p.spoke && (agentState === 'listening' || agentState === 'thinking')) runCallAction()
+  }, [agentState, runCallAction])
+
+  // Агент так и не зашёл в комнату (воркер не поднялся) — честно говорим.
+  useEffect(() => {
+    if (!callLive || agentState !== 'connecting') return undefined
+    const id = setTimeout(() => {
+      hangingUpRef.current = true
+      callCtlRef.current?.hangUp()
+      dropCall()
+      setError({ text: stateRef.current.t('assistant.call.err.unavailable'), retry: null })
+    }, CALL_AGENT_WAIT_MS)
+    return () => clearTimeout(id)
+  }, [callLive, agentState, dropCall])
+
+  // Остаток минут звонка — раз в 15 с, этого достаточно для «осталось N мин».
+  const [callNow, setCallNow] = useState(0)
+  useEffect(() => {
+    if (!callLive) return undefined
+    const id = setInterval(() => setCallNow(clockNow()), 15_000)
+    return () => clearInterval(id)
+  }, [callLive])
+
   // Луна заговаривает первой — если экран с прошлой её реплики поменялся.
   const greet = useCallback(() => {
     const cur = stateRef.current
-    if (!cur?.greetOnOpen || !cur.token || !cur.enabled || inFlightRef.current) return
+    if (!cur?.greetOnOpen || !cur.token || !cur.enabled || cur.callLive || inFlightRef.current) return
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     const key = screenStateKey(cur.screen, snapshotScreen(root))
     if (greetedRef.current === key) return
@@ -829,7 +1171,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     silence()
     cancelRecording()
     endGuide()
-  }, [enabled, silence, cancelRecording, endGuide, dropDeferred])
+    dropCallRefs()
+  }, [enabled, silence, cancelRecording, endGuide, dropDeferred, dropCallRefs])
 
   // Кнопка «Спросить помощника» из плеера урока: открыть окно и сразу задать
   // вопрос — снимок снимется с того же экрана, где ученик её нажал.
@@ -838,6 +1181,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       if (!stateRef.current?.enabled) return
       setOpen(true)
       const prompt = e.detail?.prompt
+      if (stateRef.current?.callLive) return
       if (!prompt) {
         greet()
         return
@@ -1014,6 +1358,26 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // подпись о приватности — в пять. Подсказка короче, подпись — пока ученик
   // ничего не спросил (прочитать её до первого вопроса он успел).
   const compact = free && size === 'compact'
+
+  // Звонок: что делает Луна и сколько минут осталось.
+  const callStatus = !call || call.phase !== 'live'
+    ? 'connecting'
+    : call.micOn === false
+      ? 'muted'
+      : call.agentState === 'listening' || call.agentState === 'thinking' || call.agentState === 'speaking'
+        ? call.agentState
+        : 'connecting'
+  const callLeftMin = callLive && call.session?.ttl
+    ? Math.max(0, Math.ceil((call.session.ttl * 1000 - (Math.max(callNow, call.since) - call.since)) / 60_000))
+    : null
+  // Подпись того, что ученик говорит сейчас: пока Луна слушает и это ещё не
+  // ушедшая ей реплика (та уже стоит в разговоре своим сообщением).
+  const norm = (x) => String(x || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user' && !m.opening)
+  const liveCaption =
+    callLive && call.agentState === 'listening' && call.userText && norm(call.userText) !== norm(lastUser?.content)
+      ? call.userText
+      : ''
   const panelBox = free ? placeRect(place, panelSize(size, vp), vp) : null
   const launcherBox = free ? placeRect(place, { w: LAUNCHER_SIZE, h: LAUNCHER_SIZE }, vp) : null
   const boxStyle = (b, sized) =>
@@ -1046,9 +1410,20 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             <img className="asst__avatar" src={AVATAR} alt="" width="32" height="32" draggable={false} />
             <div className="asst__who">
               <b>{t('assistant.title')}</b>
-              <span>{t('assistant.sub')}</span>
+              <span>{call ? t('assistant.call.sub') : t('assistant.sub')}</span>
             </div>
-            {spoke && (
+            {!call && token && !assistantCallHidden() && (
+              <button
+                type="button"
+                className="asst__icon asst__call-btn"
+                aria-label={t('assistant.call.start')}
+                title={t('assistant.call.start')}
+                onClick={startCall}
+              >
+                <PhoneIcon />
+              </button>
+            )}
+            {spoke && !call && (
               <button
                 type="button"
                 className={`asst__sound${muted ? ' is-muted' : ''}`}
@@ -1131,7 +1506,14 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               )
             })}
             {status && <StatusBubble key={`${last?.vid || messages.length}:${status}`} phase={status} t={t} />}
-            {!asked && (
+            {callLive && callThinking && !status && <StatusBubble key={`call:${messages.length}`} phase="thinking" t={t} />}
+            {liveCaption && (
+              <div className="asst__msg asst__msg--me asst__msg--live" aria-hidden="true">
+                <p>{liveCaption}</p>
+              </div>
+            )}
+            {callNote && !call && <p className="asst__call-note">{callNote}</p>}
+            {!asked && !call && (
               <div className="asst__chips">
                 {suggestions.map((s) => (
                   <button
@@ -1170,6 +1552,34 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             ) : null}
           </div>
 
+          {call ? (
+            <div className="asst__call" role="group" aria-label={t('assistant.call.title')}>
+              <span className={`asst__call-state is-${callStatus}`} aria-live="polite">
+                <i className="asst__call-dot" aria-hidden="true" />
+                {t(`assistant.call.state.${callStatus}`)}
+                {callLeftMin != null && <small>{t('assistant.call.left', { min: callLeftMin })}</small>}
+              </span>
+              {call.audioBlocked && (
+                <button type="button" className="asst__ghost" onClick={() => callCtlRef.current?.startAudio()}>
+                  {t('assistant.call.audio')}
+                </button>
+              )}
+              <button
+                type="button"
+                className={`asst__call-mic${call.micOn === false ? ' is-off' : ''}`}
+                aria-pressed={call.micOn === false}
+                aria-label={t(call.micOn === false ? 'assistant.call.micOn' : 'assistant.call.micOff')}
+                title={t(call.micOn === false ? 'assistant.call.micOn' : 'assistant.call.micOff')}
+                disabled={!callLive}
+                onClick={() => callCtlRef.current?.toggleMic()}
+              >
+                {call.micOn === false ? <MicOffIcon /> : <MicIcon />}
+              </button>
+              <button type="button" className="asst__call-end" aria-label={t('assistant.call.end')} title={t('assistant.call.end')} onClick={endCall}>
+                <PhoneIcon size={20} />
+              </button>
+            </div>
+          ) : (
           <form
             className="asst__form"
             onSubmit={(e) => {
@@ -1218,8 +1628,22 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
               </button>
             )}
           </form>
-          {(!compact || !asked) && <p className="asst__privacy">{t('assistant.privacy')}</p>}
+          )}
+          {(!compact || !asked) && !call && <p className="asst__privacy">{t('assistant.privacy')}</p>}
         </div>
+      )}
+
+      {callLive && (
+        <Suspense fallback={null}>
+          <AssistantCall
+            session={call.session}
+            onAsk={callAsk}
+            onCancel={callCancel}
+            onState={callState}
+            onEnded={callEnded}
+            controlRef={callCtlRef}
+          />
+        </Suspense>
       )}
 
       {/* Открытое окно встаёт на место кнопки, и она прячется (CSS is-open):
@@ -1227,7 +1651,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       <button
         ref={launcherRef}
         type="button"
-        className={`asst__launcher${open ? ' is-open' : ''}`}
+        className={`asst__launcher${open ? ' is-open' : ''}${call ? ' is-call' : ''}`}
         style={boxStyle(launcherBox, false)}
         aria-label={t('assistant.launcher')}
         aria-expanded={open}

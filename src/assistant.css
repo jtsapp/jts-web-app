@@ -309,3 +309,67 @@
   cursor: pointer;
 }
 .asst-ask::before { content: '💬'; text-decoration: none; }
+
+/* Звонок Луне (16.10.2026, AssistantWidget + AssistantCall): полоса звонка
+   вместо поля ввода, разговор — в том же списке сообщений. Окно можно закрыть
+   посреди звонка — кнопка Луны тогда в зелёном кольце: она на связи. */
+.asst__room { display: none; }
+.asst__call-btn { color: #1f9d55; }
+.asst__call-btn:hover { background: #e7f6ee; color: #167a42; }
+
+.asst__call {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--asst-line);
+}
+.asst__call-state {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--asst-ink);
+}
+.asst__call-state small { font-size: 12px; font-weight: 500; color: var(--asst-muted); }
+.asst__call-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex: none;
+  background: var(--asst-muted);
+}
+.asst__call-state.is-listening .asst__call-dot { background: #1f9d55; animation: asst-call-pulse 1.4s ease-in-out infinite; }
+.asst__call-state.is-thinking .asst__call-dot { background: #f0a020; animation: asst-dot 1.1s ease-in-out infinite; }
+.asst__call-state.is-speaking .asst__call-dot { background: var(--asst-accent); animation: asst-call-pulse 0.9s ease-in-out infinite; }
+.asst__call-state.is-muted .asst__call-dot { background: var(--asst-err); }
+@keyframes asst-call-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(31, 157, 85, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(31, 157, 85, 0); }
+}
+.asst__call-mic,
+.asst__call-end {
+  width: 44px; height: 44px; flex: none; border-radius: 50%; padding: 0;
+  display: grid; place-items: center; cursor: pointer;
+}
+.asst__call-mic { border: 1.5px solid var(--asst-line); background: var(--asst-bg); color: var(--asst-ink); }
+.asst__call-mic:hover:not(:disabled) { background: var(--asst-bubble); }
+.asst__call-mic.is-off { border-color: var(--asst-err); color: var(--asst-err); }
+.asst__call-mic:disabled { opacity: 0.4; cursor: default; }
+.asst__call-end { border: 0; background: var(--asst-err); color: #fff; }
+.asst__call-end svg { transform: rotate(135deg); }
+.asst__call-end:hover { filter: brightness(1.08); }
+
+/* Что ученик говорит сейчас — до того, как реплика ушла Луне. */
+.asst__msg--live { opacity: 0.6; font-style: italic; }
+.asst__call-note { margin: 0; font-size: 12px; color: var(--asst-muted); text-align: center; }
+
+.asst__launcher.is-call { box-shadow: 0 0 0 3px #1f9d55, 0 8px 24px rgba(23, 19, 38, 0.25); animation: asst-call-ring 1.6s ease-in-out infinite; }
+@keyframes asst-call-ring {
+  0%, 100% { box-shadow: 0 0 0 3px #1f9d55, 0 8px 24px rgba(23, 19, 38, 0.25); }
+  50% { box-shadow: 0 0 0 7px rgba(31, 157, 85, 0.35), 0 8px 24px rgba(23, 19, 38, 0.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asst__call-state .asst__call-dot, .asst__launcher.is-call { animation: none; }
+}
