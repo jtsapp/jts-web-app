@@ -40,6 +40,7 @@ import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
+import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +50,10 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
+// Звонок Луне: реплики идут каждые 10–30 с, и общий лимит (20 за 10 минут)
+// оборвал бы разговор на середине. Потолок звонку ставит его дневной лимит
+// минут (callUsage.js), здесь — лишь страховка от петли.
+const takeCallQuota = createRateLimiter({ windowLimit: 80, dayLimit: 400 })
 const offtopic = createOfftopicGuard()
 
 const json = (status, body, headers = {}) =>
@@ -89,7 +94,9 @@ export async function POST(request) {
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
   }
-  const quota = takeQuota(key)
+  const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
+  const limiter = inCall ? takeCallQuota : takeQuota
+  const quota = limiter(key)
   if (!quota.ok) {
     return json(429, { error: 'rate_limited', retryAfterSec: quota.retryAfterSec }, {
       'retry-after': String(quota.retryAfterSec),
@@ -128,7 +135,7 @@ export async function POST(request) {
   } catch (err) {
     console.error('[assistant] model failed:', err?.message || err)
     // Ответа не было — и вопрос не должен съесть лимит ученика.
-    takeQuota.refund(key)
+    limiter.refund(key)
     return json(502, { error: 'model_failed' })
   }
 
@@ -138,7 +145,7 @@ export async function POST(request) {
   if (verdict === 'offtopic') {
     // return() закрывает стрим SDK — модель перестаёт генерировать и тарифицироваться.
     await gen.return?.().catch(() => {})
-    takeQuota.refund(key)
+    limiter.refund(key)
     // Отказ вместо первой реплики — сбой модели, а не вопрос не по теме: ни
     // паузы ученику, ни стандартного «я помогаю только с английским» на экране —
     // виджет молча покажет обычное приветствие.
@@ -151,7 +158,7 @@ export async function POST(request) {
   }
 
   if (finished && !head.trim()) {
-    takeQuota.refund(key)
+    limiter.refund(key)
     return json(502, { error: 'model_empty' })
   }
 

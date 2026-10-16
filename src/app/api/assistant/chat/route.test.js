@@ -45,6 +45,12 @@ const { saveAssistantErrorReport } = await import('@/lib/db/assistantErrorReport
 vi.mock('@/lib/db/assistantTracker.js', () => ({ saveAdviceNote: vi.fn(async () => true) }))
 const { saveAdviceNote } = await import('@/lib/db/assistantTracker.js')
 
+// Звонок Луне: какая комната «живая», решает база — здесь подменена списком.
+const liveCalls = vi.hoisted(() => new Set())
+vi.mock('@/lib/assistant/callUsage.js', () => ({
+  isLiveAssistantCall: vi.fn(async (room, userId) => liveCalls.has(`${room}:${userId}`)),
+}))
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -161,6 +167,17 @@ describe('POST /api/assistant/chat', () => {
     expect(res.status).toBe(429)
     expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0)
     expect(calls).toHaveLength(20)
+  })
+
+  it('вопрос из живого звонка Луне — квота звонка, а не 20 за 10 минут; чужая комната — общая', async () => {
+    const room = 'jts-luna-abc123-1760600000000'
+    const body = { ...question(106), call: room }
+    liveCalls.add(`${room}:106`)
+    for (let i = 0; i < 25; i += 1) expect((await post(body)).status).toBe(200)
+    // Та же комната, но звонок другого ученика — для него она не живая.
+    const other = { ...question(107), call: room }
+    for (let i = 0; i < 20; i += 1) await (await post(other)).text()
+    expect((await post(other)).status).toBe(429)
   })
 
   it('обрыв модели посреди ответа — ошибка чтения, а не полуфраза как готовый ответ', async () => {

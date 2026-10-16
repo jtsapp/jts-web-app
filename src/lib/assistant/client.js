@@ -15,7 +15,7 @@ export class AssistantError extends Error {
  * @param {{ token: string, messages: {role: string, content: string}[],
  *           screen: {id: string|null, text: string}, lang: string,
  *           errors?: {at?: number, message?: string, source?: string, url?: string, stack?: string}[],
- *           pageUrl?: string, userAgent?: string, bugReported?: boolean, voice?: boolean,
+ *           pageUrl?: string, userAgent?: string, bugReported?: boolean, voice?: boolean, call?: string,
  *           onDelta: (text: string) => void, signal?: AbortSignal }} args
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
  *                     action: {kind: 'open'|'tour', target: string, now: boolean}|null }>}
@@ -23,7 +23,7 @@ export class AssistantError extends Error {
  *   reported — поломку записали в БД; action — Луна предлагает открыть раздел
  *   или провести тур (actions.js). Оба — хвост стрима, ученику не показывается.
  */
-export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, onDelta, signal }) {
+export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, signal }) {
   let res
   try {
     res = await fetch('/api/assistant/chat', {
@@ -34,6 +34,8 @@ export async function askAssistant({ token, messages, screen, lang, errors, page
         bugReported: Boolean(bugReported),
         // голосовой вопрос — ответ прочитают вслух, он должен быть короче (prompt.js, VOICE_MARK)
         voice: Boolean(voice),
+        // вопрос из звонка Луне — комната звонка: роут даст ему квоту звонка (callUsage.js)
+        ...(call ? { call } : {}),
       }),
       signal,
     })
