@@ -141,6 +141,16 @@ describe('звонок Луне', () => {
     expect(navigations).toEqual(['vocab'])
   })
 
+  it('«Перебить» — только пока Луна говорит; нажатие останавливает её (luna.say с пустым текстом)', async () => {
+    await startCall()
+    expect(screen.queryByRole('button', { name: 'Перебить' })).toBeNull()
+    act(() => room.props.onState({ agentState: 'speaking' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Перебить' }))
+    expect(room.ctl.say).toHaveBeenCalledWith('')
+    act(() => room.props.onState({ agentState: 'listening' }))
+    expect(screen.queryByRole('button', { name: 'Перебить' })).toBeNull()
+  })
+
   it('агент передумал (ученик перебил) — ответ обрывается, фраз больше нет', async () => {
     let release
     await startCall()
