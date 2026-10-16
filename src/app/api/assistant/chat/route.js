@@ -25,6 +25,7 @@ import {
   classifyStart,
   createReportFilter,
   isOpeningTurn,
+  isWakeTurn,
   openingFocus,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
@@ -106,6 +107,9 @@ export async function POST(request) {
   // не слова ученика: ни отказ «не по теме», ни поломка по нему не записываются,
   // а в разбор поломки и в её «слова ученика» он не попадает.
   const opening = isOpeningTurn(parsed.messages[parsed.messages.length - 1].content)
+  // Позывной (opening.js): Луна здоровается и спрашивает, чем помочь, — без кнопки
+  // раздела и без заметки трекера, даже если модель всё же поставила метку.
+  const wake = isWakeTurn(parsed.messages[parsed.messages.length - 1].content)
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
@@ -223,7 +227,7 @@ export async function POST(request) {
           offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
         })
   const finalAction = () => {
-    if (focusTask) return null
+    if (focusTask || wake) return null
     return askedTour(actions.action()) || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {

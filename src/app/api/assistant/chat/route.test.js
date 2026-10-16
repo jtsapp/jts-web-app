@@ -503,6 +503,35 @@ describe('POST /api/assistant/chat', () => {
     })
   })
 
+  // Позывной «Привет, Луна» (lib/assistant/wake/): Луна здоровается и спрашивает, чем помочь.
+  describe('ученик позвал голосом', () => {
+    const wake = (userId, extra = {}) => ({
+      ...question(userId),
+      screen: { id: 'home', text: 'Главная ВАШ УРОВЕНЬ A2' },
+      messages: [{ role: 'user', content: '[ученик позвал голосом]' }],
+      ...extra,
+    })
+
+    it('уходит в модель пометкой с указанием; кнопки раздела и заметки нет, даже если модель позвала', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Здравствуйте, Толик! Вы на Главной. Чем помочь?\n[[OPEN homework]]' }
+      }
+      const text = await (await post(wake(701))).text()
+      expect(text).toMatch(/^Здравствуйте, Толик! Вы на Главной\. Чем помочь\?\s*$/)
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+      expect(calls[0].messages.at(-1).content).toContain('[ученик позвал голосом]\nЯзык ответа: русский')
+    })
+
+    it('отказ «не по теме» вместо приветствия — 502 без паузы ученику', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: '[[OFFTOPIC]]' }
+      }
+      const res = await post(wake(702))
+      expect(res.status).toBe(502)
+      expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+    })
+  })
+
   // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
   describe('заметка о совете', () => {
     // «Главная»: не экран задания — первая реплика там может предлагать раздел.
