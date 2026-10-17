@@ -39,6 +39,9 @@ ENV NEXT_PUBLIC_ENABLE_JARVIS=${NEXT_PUBLIC_ENABLE_JARVIS}
 # CI и не доезжает досюда, именно так это и выглядит: настроено, а не работает.
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+# Модель позывного Луны (45 МБ) в git не лежит — скачиваем и сверяем по sha256.
+# --soft: недоступный сайт моделей не валит деплой, позывной просто не включится.
+RUN node scripts/fetch-wake-model.js --soft
 RUN npm run build
 
 FROM node:20-slim AS runner

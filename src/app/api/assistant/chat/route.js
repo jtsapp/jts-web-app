@@ -25,6 +25,7 @@ import {
   classifyStart,
   createReportFilter,
   isOpeningTurn,
+  isWakeTurn,
   openingFocus,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
@@ -40,6 +41,7 @@ import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
+import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
 
 export const runtime = 'nodejs'
 
@@ -49,6 +51,12 @@ const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-5-5'
 const MAX_OUTPUT_TOKENS = 800
 
 const takeQuota = createRateLimiter()
+// Звонок Луне: реплики идут каждые 10–30 с, и общий лимит (20 за 10 минут)
+// оборвал бы разговор на середине. Потолок звонку ставит его дневной лимит
+// минут (callUsage.js), здесь — лишь страховка от петли. С 16.10.2026 агент
+// спрашивает и черновиком (упреждающая генерация, до трёх попыток на ход, см.
+// agent/assistant_call.py) — отсюда запас ×2.5 к прежним 80/400.
+const takeCallQuota = createRateLimiter({ windowLimit: 200, dayLimit: 1000 })
 const offtopic = createOfftopicGuard()
 
 const json = (status, body, headers = {}) =>
@@ -62,9 +70,24 @@ const TEXT_HEADERS = {
   'x-accel-buffering': 'no',
 }
 
+// Server-Timing ответа: сколько роут потратил на вход, проверку звонка, профиль
+// ученика и первые слова модели. Браузер звонка Луне пересылает его агенту, и
+// тот пишет в строку LATENCY luna — по логам LiveKit видно, где в звонке теряется
+// время (16.10.2026: без этого задержку звонка можно было только угадывать).
+function serverTiming(marks) {
+  return Object.entries(marks)
+    .filter(([, v]) => Number.isFinite(v))
+    .map(([k, v]) => `${k};dur=${Math.round(v)}`)
+    .join(', ')
+}
+
 export async function POST(request) {
+  const startedAt = performance.now()
+  const marks = {}
+  const since = (t) => performance.now() - t
   const bearer = bearerFromRequest(request)
   const auth = await verifyTokenStatus(bearer)
+  marks.auth = since(startedAt)
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
   if (!hasAnthropicKey()) return json(503, { error: 'assistant_unavailable' })
@@ -84,23 +107,39 @@ export async function POST(request) {
   // не слова ученика: ни отказ «не по теме», ни поломка по нему не записываются,
   // а в разбор поломки и в её «слова ученика» он не попадает.
   const opening = isOpeningTurn(parsed.messages[parsed.messages.length - 1].content)
+  // Позывной (opening.js): Луна здоровается и спрашивает, чем помочь, — без кнопки
+  // раздела и без заметки трекера, даже если модель всё же поставила метку.
+  const wake = isWakeTurn(parsed.messages[parsed.messages.length - 1].content)
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
   }
-  const quota = takeQuota(key)
+  // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
+  // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
+  // должен из-за этого падать — план останется без персонализации. Собирается
+  // параллельно с проверкой звонка и лимитом: это разные походы (бэкенд и
+  // база), и ждать их по очереди — лишнее время до первого слова Луны.
+  const ctxAt = performance.now()
+  const contextReady = loadStudentContext(bearer, auth.user)
+    .catch(() => null)
+    .finally(() => {
+      marks.ctx = since(ctxAt)
+    })
+  const callAt = performance.now()
+  const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
+  marks.call = since(callAt)
+  const limiter = inCall ? takeCallQuota : takeQuota
+  const quota = limiter(key)
   if (!quota.ok) {
     return json(429, { error: 'rate_limited', retryAfterSec: quota.retryAfterSec }, {
       'retry-after': String(quota.retryAfterSec),
     })
   }
 
-  // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
-  // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
-  // должен из-за этого падать — план останется без персонализации.
-  const studentContext = await loadStudentContext(bearer, auth.user).catch(() => null)
+  const studentContext = await contextReady
 
+  const modelAt = performance.now()
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(),
     messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
@@ -128,9 +167,13 @@ export async function POST(request) {
   } catch (err) {
     console.error('[assistant] model failed:', err?.message || err)
     // Ответа не было — и вопрос не должен съесть лимит ученика.
-    takeQuota.refund(key)
+    limiter.refund(key)
     return json(502, { error: 'model_failed' })
   }
+
+  marks.model = since(modelAt)
+  marks.total = since(startedAt)
+  const timingHeaders = { 'server-timing': serverTiming(marks) }
 
   // Модель закончила на обрывке метки («[[OFF») — ответа по теме тут нет.
   if (finished && verdict === 'undecided' && head.trim()) verdict = 'offtopic'
@@ -138,7 +181,7 @@ export async function POST(request) {
   if (verdict === 'offtopic') {
     // return() закрывает стрим SDK — модель перестаёт генерировать и тарифицироваться.
     await gen.return?.().catch(() => {})
-    takeQuota.refund(key)
+    limiter.refund(key)
     // Отказ вместо первой реплики — сбой модели, а не вопрос не по теме: ни
     // паузы ученику, ни стандартного «я помогаю только с английским» на экране —
     // виджет молча покажет обычное приветствие.
@@ -146,12 +189,12 @@ export async function POST(request) {
     offtopic.record(key)
     return new Response(OFFTOPIC_REPLY[parsed.lang] || OFFTOPIC_REPLY.ru, {
       status: 200,
-      headers: { ...TEXT_HEADERS, 'x-assistant-offtopic': '1' },
+      headers: { ...TEXT_HEADERS, ...timingHeaders, 'x-assistant-offtopic': '1' },
     })
   }
 
   if (finished && !head.trim()) {
-    takeQuota.refund(key)
+    limiter.refund(key)
     return json(502, { error: 'model_empty' })
   }
 
@@ -184,7 +227,7 @@ export async function POST(request) {
           offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
         })
   const finalAction = () => {
-    if (focusTask) return null
+    if (focusTask || wake) return null
     return askedTour(actions.action()) || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {
@@ -275,5 +318,5 @@ export async function POST(request) {
     },
   })
 
-  return new Response(stream, { status: 200, headers: TEXT_HEADERS })
+  return new Response(stream, { status: 200, headers: { ...TEXT_HEADERS, ...timingHeaders } })
 }

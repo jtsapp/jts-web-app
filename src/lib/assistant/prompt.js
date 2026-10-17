@@ -9,12 +9,12 @@
 
 import { destinationIdForScreen, destinationsText } from './destinations.js'
 import { knowledgeText } from './knowledge.js'
-import { OPENING_MARK, isOpeningTurn, openingFocus } from './opening.js'
+import { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus } from './opening.js'
 import { RECALL_MARK } from './tracker.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
-export { OPENING_MARK, isOpeningTurn, openingFocus }
+export { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus }
 
 // Ограничения запроса. Длинный разговор помощнику не нужен — это не тьютор, а
 // справка, — а каждый лишний ход оплачивается на каждом следующем вопросе.
@@ -86,6 +86,7 @@ const RULES = `Ты — Луна, преподаватель и куратор �
 - Даты называй числом, как в профиле, без дня недели. Сроки считай от сегодняшней даты из <контекст>: не пиши «просрочено» или «завтра», если даты этого не говорят.
 - Профиля нет — совет только по экрану, без выдуманных цифр и сроков.
 - Если ты уже говорила об этом экране в разговоре, не повторяйся: скажи, что изменилось, или коротко спроси, чем помочь.
+- Пометка ${WAKE_MARK} — ученик сам позвал тебя голосом. Здесь приветствие уместно: поздоровайся, одной фразой скажи, что на экране, и спроси, чем помочь. Без совета раздела и без метки: ученик сейчас скажет, что ему нужно.
 
 Как разбирать задание:
 - Смотри снимок экрана: там задание, что ввёл или выбрал ученик («ученик ввёл «…»», «кнопка «…» (отмечено как неверное)») и что показал сайт после проверки (плашка «Неверный ответ» и объяснение).
@@ -224,6 +225,8 @@ const clipText = (s, n) => {
  *             errors: {at: number, message: string, source: string, url: string, stack: string}[],
  *             bugReported: boolean, voice: boolean }}
  */
+const CALL_ROOM_RE = /^jts-luna-[a-z0-9]{1,16}-\d{10,16}$/
+
 export function parseChatRequest(body) {
   if (!body || typeof body !== 'object') throw new AssistantRequestError('Пустой запрос')
   const raw = Array.isArray(body.messages) ? body.messages : null
@@ -249,8 +252,11 @@ export function parseChatRequest(body) {
   const errors = parseClientErrors(body.errors)
   const bugReported = Boolean(body.bugReported)
   const voice = Boolean(body.voice)
+  // Вопрос из звонка Луне — имя его комнаты (api/assistant/call). Роут сверит
+  // её с базой и даст квоту звонка; здесь только форма, чтобы мусор не ушёл в SQL.
+  const call = typeof body.call === 'string' && CALL_ROOM_RE.test(body.call) ? body.call : null
 
-  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported, voice }
+  return { messages, screen: { id: screenId, text: screenText }, lang, pageUrl, userAgent, errors, bugReported, voice, call }
 }
 
 /**
@@ -307,16 +313,29 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // об этом в RULES Haiku 5.5 пропускала, а указание рядом с пометкой — нет. По той же
   // причине на экране задания модели не дают «Совет сайта» и пометку «вспомни»:
   // посреди урока она звала с них в домашку.
-  const ask = opening
+  // Позывной (opening.js): ученик сам позвал — Луна здоровается и спрашивает, чем помочь.
+  // Указание — рядом с пометкой по той же причине, что у открытия окна. Совета раздела
+  // нет: ученик сейчас скажет, что ему нужно, — поэтому и «Совет сайта» из профиля убран.
+  const wake = isWakeTurn(last.content)
+  const answerLang = `Язык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`
+  const ask = wake
     ? [
-        OPENING_MARK,
-        `Язык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`,
-        ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
-        ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
-        'Не больше 4 коротких предложений.',
+        WAKE_MARK,
+        answerLang,
+        'Ученик сам позвал тебя голосом («Привет, Луна»). Поздоровайся коротко — по имени, если оно есть, и на «вы»; одной фразой скажи, что видишь на экране; спроси, чем помочь. Раздел не советуй и метку не ставь.',
+        ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный.'] : []),
+        'Не больше 3 коротких предложений.',
       ].join('\n')
-    : `Вопрос ученика: ${last.content}`
-  const context = focus.task ? withoutAdvice(studentContext) : studentContext
+    : opening
+      ? [
+          OPENING_MARK,
+          answerLang,
+          ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
+          ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
+          'Не больше 4 коротких предложений.',
+        ].join('\n')
+      : `Вопрос ученика: ${last.content}`
+  const context = focus.task || wake ? withoutAdvice(studentContext) : studentContext
   last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today })}\n\n${ask}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }

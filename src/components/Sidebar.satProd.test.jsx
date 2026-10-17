@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment-options { "url": "https://ai-tutor.justtostudy.kz/" }
-// На проде (ai-tutor.justtostudy.kz) раздел SAT в меню не показывается — даже ученику с открытым доступом;
-// на деве и локально он виден (см. остальные Sidebar*.test.jsx).
+// На проде (ai-tutor.justtostudy.kz) раздел SAT в меню показывается так же, как на деве: ученику с открытым доступом
+// он виден (раньше по домену скрывался).
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
@@ -20,8 +20,8 @@ function tokenFor(role) {
   return `${b64({ alg: 'HS256' })}.${b64({ role, userId: 4 })}.sig`
 }
 
-describe('Sidebar — SAT скрыт на проде', () => {
-  it('у ученика с доступом к SAT пункта «SAT» нет, остальное меню на месте', async () => {
+describe('Sidebar — SAT виден на проде', () => {
+  it('у ученика с доступом к SAT пункт «SAT» в меню есть', async () => {
     expect(window.location.hostname).toBe('ai-tutor.justtostudy.kz')
     render(
       <I18nProvider>
@@ -30,7 +30,7 @@ describe('Sidebar — SAT скрыт на проде', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).not.toContain('SAT')
+    expect(items).toContain('SAT')
     expect(items).toContain('Главная')
     expect(items.length).toBeGreaterThan(3)
   })

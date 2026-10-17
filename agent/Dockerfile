@@ -46,6 +46,11 @@ COPY agent.py .
 COPY latency_logging.py .
 # agent.py импортирует его на старте: без этой строки образ падает при запуске.
 COPY noise_guard.py .
+# Звонок Луне-помощнику (режим assistant). 16.10.2026 этой строки не было, и
+# выкачанный агент ушёл в CrashLoop на `import assistant_call` — общий для дева
+# и прода. Новый модуль рядом с agent.py — строка COPY здесь; сторожит
+# test_dockerfile.py.
+COPY assistant_call.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is
 # fast instead of stalling on a model download.

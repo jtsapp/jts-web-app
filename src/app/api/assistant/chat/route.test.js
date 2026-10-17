@@ -45,6 +45,12 @@ const { saveAssistantErrorReport } = await import('@/lib/db/assistantErrorReport
 vi.mock('@/lib/db/assistantTracker.js', () => ({ saveAdviceNote: vi.fn(async () => true) }))
 const { saveAdviceNote } = await import('@/lib/db/assistantTracker.js')
 
+// Звонок Луне: какая комната «живая», решает база — здесь подменена списком.
+const liveCalls = vi.hoisted(() => new Set())
+vi.mock('@/lib/assistant/callUsage.js', () => ({
+  isLiveAssistantCall: vi.fn(async (room, userId) => liveCalls.has(`${room}:${userId}`)),
+}))
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -105,6 +111,30 @@ describe('POST /api/assistant/chat', () => {
     expect(systemPrompt).not.toContain('Is Cleare reading?')
   })
 
+  it('Server-Timing: сколько ушло на вход, профиль и первые слова модели', async () => {
+    const res = await post(question(109))
+    await res.text()
+    const timing = res.headers.get('server-timing') || ''
+    for (const name of ['auth', 'call', 'ctx', 'model']) expect(timing).toMatch(new RegExp(`(^|, )${name};dur=\\d+`))
+  })
+
+  it('профиль собирается, пока идёт проверка звонка, а не после неё', async () => {
+    const order = []
+    const { isLiveAssistantCall } = await import('@/lib/assistant/callUsage.js')
+    isLiveAssistantCall.mockImplementationOnce(async () => {
+      order.push('call:start')
+      await new Promise((r) => setTimeout(r, 5))
+      order.push('call:end')
+      return true
+    })
+    loadStudentContext.mockImplementationOnce(async () => {
+      order.push('ctx:start')
+      return null
+    })
+    await (await post({ ...question(110), call: 'jts-luna-abc-1792150000000' })).text()
+    expect(order.indexOf('ctx:start')).toBeLessThan(order.indexOf('call:end'))
+  })
+
   it('зовёт loadStudentContext с бэрер-токеном ученика и кладёт результат в вопрос', async () => {
     studentContextResult = 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.'
     await (await post(question(108), 'my-bearer')).text()
@@ -161,6 +191,17 @@ describe('POST /api/assistant/chat', () => {
     expect(res.status).toBe(429)
     expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0)
     expect(calls).toHaveLength(20)
+  })
+
+  it('вопрос из живого звонка Луне — квота звонка, а не 20 за 10 минут; чужая комната — общая', async () => {
+    const room = 'jts-luna-abc123-1760600000000'
+    const body = { ...question(106), call: room }
+    liveCalls.add(`${room}:106`)
+    for (let i = 0; i < 25; i += 1) expect((await post(body)).status).toBe(200)
+    // Та же комната, но звонок другого ученика — для него она не живая.
+    const other = { ...question(107), call: room }
+    for (let i = 0; i < 20; i += 1) await (await post(other)).text()
+    expect((await post(other)).status).toBe(429)
   })
 
   it('обрыв модели посреди ответа — ошибка чтения, а не полуфраза как готовый ответ', async () => {
@@ -459,6 +500,35 @@ describe('POST /api/assistant/chat', () => {
         ],
       })).text()
       expect(saveAssistantErrorReport).not.toHaveBeenCalled()
+    })
+  })
+
+  // Позывной «Привет, Луна» (lib/assistant/wake/): Луна здоровается и спрашивает, чем помочь.
+  describe('ученик позвал голосом', () => {
+    const wake = (userId, extra = {}) => ({
+      ...question(userId),
+      screen: { id: 'home', text: 'Главная ВАШ УРОВЕНЬ A2' },
+      messages: [{ role: 'user', content: '[ученик позвал голосом]' }],
+      ...extra,
+    })
+
+    it('уходит в модель пометкой с указанием; кнопки раздела и заметки нет, даже если модель позвала', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Здравствуйте, Толик! Вы на Главной. Чем помочь?\n[[OPEN homework]]' }
+      }
+      const text = await (await post(wake(701))).text()
+      expect(text).toMatch(/^Здравствуйте, Толик! Вы на Главной\. Чем помочь\?\s*$/)
+      expect(saveAdviceNote).not.toHaveBeenCalled()
+      expect(calls[0].messages.at(-1).content).toContain('[ученик позвал голосом]\nЯзык ответа: русский')
+    })
+
+    it('отказ «не по теме» вместо приветствия — 502 без паузы ученику', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: '[[OFFTOPIC]]' }
+      }
+      const res = await post(wake(702))
+      expect(res.status).toBe(502)
+      expect(res.headers.get('x-assistant-offtopic')).toBeNull()
     })
   })
 
