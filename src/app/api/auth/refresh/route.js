@@ -37,7 +37,12 @@ export async function POST(request) {
   }
 
   if (res.status === 401 || res.status === 403 || res.status === 400) {
-    return Response.json({ error: 'Refresh rejected.' }, { status: 401 })
+    const rejected = await res.json().catch(() => null)
+    // SESSION_REPLACED — в аккаунт вошли с другого устройства; клиент завершает эту сессию с объяснением.
+    return Response.json(
+      { error: rejected?.messages?.[0] || 'Refresh rejected.', code: rejected?.code || null },
+      { status: 401 },
+    )
   }
   if (!res.ok) {
     console.error('[auth.refresh] backend status', res.status)

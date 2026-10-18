@@ -105,7 +105,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
-import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
@@ -429,7 +429,7 @@ export default function App() {
         // Токен был, а сессии нет — человека сейчас встретит экран входа, и он
         // должен понять, что это срок, а не сбой: без слова «Сессия истекла»
         // это выглядело как «приложение само меня разлогинило».
-        if (!session && hadToken) setSessionExpired(true)
+        if (!session && hadToken) setSessionNotice('expired')
         if (session) {
           setToken(session.token)
           setBoothAccount(!!session.boothAccount)
@@ -612,7 +612,7 @@ export default function App() {
   // Сессия кончилась сама (токен протух), а не человек нажал «Выйти»: на экране
   // входа ему нужно сказать, почему его туда вернуло. Гасится, как только он
   // вошёл снова или закрыл плашку.
-  const [sessionExpired, setSessionExpired] = useState(false)
+  const [sessionNotice, setSessionNotice] = useState(null)
   // Свежий handleLogout для подписки ниже: сама подписка ставится один раз, а
   // функция пересоздаётся на каждый рендер.
   const handleLogoutRef = useRef(null)
@@ -1354,17 +1354,33 @@ export default function App() {
       onRefreshed: (tok) => setToken(tok),
       onExpired: () => {
         handleLogoutRef.current?.()
-        setSessionExpired(true)
+        setSessionNotice('expired')
+      },
+      // В аккаунт вошли с другого устройства: эта сессия закрыта, говорим об этом и выходим.
+      onReplaced: () => {
+        handleLogoutRef.current?.()
+        setSessionNotice('replaced')
       },
     })
-    return () => setSessionHooks({})
+    // Пока вкладка открыта, раз в 15 секунд проверяем, что сессия ещё наша.
+    // Иначе человек, которого выкинул вход с другого устройства, узнает об этом только по следующему клику.
+    const watch = setInterval(() => {
+      const current = loadToken()
+      if (current) reportUnauthorized(current) 
+      // reportUnauthorized сам проверяет токен через /api/auth/me и зовёт onReplaced.
+    }, 15000)
+    return () => {
+      clearInterval(watch)
+      setSessionHooks({})
+    }
   }, [])
   // Вошёл снова — плашка своё отработала.
   useEffect(() => {
-    if (token) setSessionExpired(false)
+    if (token) setSessionNotice(null)
   }, [token])
 
   function handleLogout() {
+    endSessionOnServer()
     // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
     // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
     // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
@@ -1843,13 +1859,14 @@ export default function App() {
       {/* «Сессия истекла» — тоже вне обёртки с key: смена экрана после выхода
           не должна её перемонтировать и сбивать анимацию. Только гостю: у
           вошедшего сообщать не о чем. */}
-      {sessionExpired && !token && (
+      {sessionNotice && !token && (
         <SessionExpiredNotice
+          reason={sessionNotice}
           onLogin={() => {
-            setSessionExpired(false)
+            setSessionNotice(null)
             setScreen('welcome')
           }}
-          onClose={() => setSessionExpired(false)}
+          onClose={() => setSessionNotice(null)}
         />
       )}
       {/* Помощник по сайту — тоже вне обёртки с key: разговор переживает
