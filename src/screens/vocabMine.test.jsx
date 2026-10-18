@@ -5,7 +5,7 @@
 //    появлялось («не получается добавить слово в словарь»);
 //  - ошибка загрузки глоталась, и экран писал «Пока нет сохранённых слов».
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, waitFor } from '@testing-library/react'
+import { render, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 const api = vi.hoisted(() => ({ mine: null, fail: false }))
@@ -71,5 +71,31 @@ describe('«Мой словарь» на главной', () => {
       expect(msg.textContent).not.toMatch(/Пока нет/)
       expect(msg.textContent).toMatch(/Не удалось/)
     })
+  })
+  // Ученик: «нажимаю "Начать практику" у Топ-3 — выходят только эти слова, а хочу пройти по всем сохранённым».
+  it('на главной есть практика по ВСЕМ сохранённым словам, а не только по топ-3', async () => {
+    api.mine = { words: Array.from({ length: 10 }, (_, i) => word(i + 1)) }
+    const { container } = open()
+    const btn = await waitFor(() => {
+      const b = [...container.querySelectorAll('#vsec-mine button.vp-btn')][0]
+      if (!b) throw new Error('нет кнопки')
+      return b
+    })
+    expect(btn.textContent).toContain('10')
+
+    fireEvent.click(btn)
+
+    await waitFor(() => {
+      const big = container.querySelector('.vp-intro .big')
+      if (!big) throw new Error('нет экрана практики')
+      expect(big.textContent).toContain('10')
+    })
+  })
+
+  it('нет сохранённых слов — кнопки практики по всем нет', async () => {
+    api.mine = { words: [] }
+    const { container } = open()
+    await waitFor(() => expect(container.querySelector('#vsec-mine')).not.toBeNull())
+    expect(container.querySelector('#vsec-mine button.vp-btn')).toBeNull()
   })
 })

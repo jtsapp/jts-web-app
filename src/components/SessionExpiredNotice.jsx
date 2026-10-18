@@ -11,7 +11,7 @@ import { useI18n } from '../i18n.jsx'
 // Не тост и не часть конкретного экрана: после выхода экран зависит от того, где
 // человек был (гостю открыта Практика, ученику — «Главная»), а сказать об этом
 // нужно везде, и висеть плашка должна, пока он не войдёт или не закроет её сам.
-export default function SessionExpiredNotice({ onLogin, onClose }) {
+export default function SessionExpiredNotice({ onLogin, onClose, reason }) {
   const { t } = useI18n()
   return (
     <div className="se-notice" role="alert">
@@ -19,7 +19,7 @@ export default function SessionExpiredNotice({ onLogin, onClose }) {
         <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.9" />
         <path d="M12 7.6V12l3 1.8" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="se-notice__text">{t('session.expired')}</span>
+      <span className="se-notice__text">{t(reason === 'replaced' ? 'session.replaced' : 'session.expired')}</span>
       <button type="button" className="se-notice__cta" onClick={onLogin}>
         {t('session.expired.login')}
       </button>

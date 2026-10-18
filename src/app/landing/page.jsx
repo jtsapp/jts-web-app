@@ -8,6 +8,8 @@
 import { headers } from 'next/headers'
 import '../../landing.css'
 import Landing from '../../landing/Landing.jsx'
+import MetaPixel from '../../landing/MetaPixel.jsx'
+import { metaPixelId } from '../../landing/metaPixel.js'
 import { APP_LOGIN_URL, pickContent } from '../../landing/content.js'
 import { appLink, normalizeAppUrl, parseHosts, requestHost } from '../../landing/hostRouting.js'
 import { landingAppPath, pickUtm } from '../../lib/attribution.js'
@@ -46,6 +48,9 @@ export default async function LandingPage({ searchParams }) {
           общий layout и не грузятся экранами приложения. */}
       <link rel="stylesheet" precedence="default" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;900&family=Geist:wght@400;500&display=swap" />
       <Landing c={pickContent(lang)} lang={lang} links={links} />
+      {/* Meta Pixel — только на домене лендинга: на dev и в самом приложении учеников его нет,
+          иначе в рекламную аудиторию попадали бы экраны кабинета и тестовые заявки. */}
+      {onLandingHost && <MetaPixel pixelId={metaPixelId(process.env.META_PIXEL_ID)} />}
     </>
   )
 }

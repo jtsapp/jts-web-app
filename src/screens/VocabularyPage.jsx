@@ -313,6 +313,20 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     setScreen('practice')
   }
 
+  // Практика по ВСЕМ сохранённым словам. Одна функция на главную («Мой словарь») и на экран «Мой словарь»:
+  // раньше она жила только во втором, и ученик с главной мог начать лишь «Топ 3 хуже запомненных» — три слова.
+  const practiceMine = () => {
+    const cards = (mine?.words || []).map((w) => ({
+      id: w.id,
+      en: w.word,
+      ru: w.translationRu,
+      kk: w.translationKz,
+      ipa: w.ipa,
+      example: '',
+    }))
+    startPractice(cards, t('vocab.home.mine'), 'mine', 'mine')
+  }
+
   // Тур домашнего экрана словаря. Хук — до ранних return'ов ниже (правило
   // хуков) и ждёт загруженный каталог: до него секции пустые, и тур пропустил
   // бы все шаги подряд. Ключ читается один раз, на первом непустом значении.
@@ -406,17 +420,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         flash={flash}
         onBack={() => setScreen('home')}
         onChanged={(next) => setMine(newestFirst(next))}
-        onPractice={() => {
-          const cards = (mine?.words || []).map((w) => ({
-            id: w.id,
-            en: w.word,
-            ru: w.translationRu,
-            kk: w.translationKz,
-            ipa: w.ipa,
-            example: '',
-          }))
-          startPractice(cards, t('vocab.home.mine'), 'mine', 'mine')
-        }}
+        onPractice={practiceMine}
       />,
     )
   }
@@ -570,6 +574,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
             </button>
           ))}
         </div>
+        {mineWords.length > 0 && (
+          <button type="button" className="vp-btn wide" style={{ marginTop: 14 }} onClick={practiceMine}>
+            <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+            {t('vocab.home.practiceAll', { n: mineWords.length })}
+          </button>
+        )}
       </div>
 
       {topMiss.length > 0 && (

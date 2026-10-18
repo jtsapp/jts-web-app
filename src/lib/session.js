@@ -171,6 +171,22 @@ export function clearToken() {
   }
 }
 
+
+/** Сообщить бэкенду о выходе, пока токен ещё на месте: запишется время выхода. Сбой сети выход не останавливает. */
+export function endSessionOnServer() {
+  const token = loadToken()
+  if (!token) return
+  try {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    /* ignore */
+  }
+}
+
 const BOOTH_LESSON_KEY = 'jts_booth_lesson_id'
 
 /**
@@ -229,9 +245,11 @@ async function tryRefresh() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     })
+    const data = await res.json().catch(() => null)
+    // Вошли с другого устройства: продлевать эту сессию нельзя, App покажет причину.
+    if (data?.code === 'SESSION_REPLACED') return 'replaced'
     if (res.status === 401) return null
     if (!res.ok) return 'unavailable'
-    const data = await res.json().catch(() => null)
     if (!data?.accessToken) return null
     saveToken(data.accessToken, data.refreshToken || refreshToken)
     const prev = loadUserSnapshot() || {}
@@ -329,7 +347,7 @@ let recovering = null
 /**
  * Подписка App.jsx на события сессии.
  * `onRefreshed(token)` — access обновлён по refresh, его надо положить в
- * состояние; `onExpired()` — сессии больше нет, надо выйти и сказать об этом.
+ * состояние; `onExpired()` — сессии больше нет; `onReplaced()` — вошли с другого устройства.
  */
 export function setSessionHooks(hooks) {
   sessionHooks = hooks || {}
@@ -369,6 +387,11 @@ async function verifyAndRecover(token) {
   // Бэкенд сейчас недоступен — решать рано. Сессию рвём только по настоящему
   // отказу, как и restoreSession.
   if (refreshed === 'unavailable') return
+  if (refreshed === 'replaced') {
+    clearToken()
+    sessionHooks.onReplaced?.()
+    return
+  }
   if (typeof refreshed === 'string' && refreshed) {
     sessionHooks.onRefreshed?.(refreshed)
     return

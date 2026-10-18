@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { formatPhone, isPhoneComplete, phoneDigits } from './lead.js'
 import { pickUtm } from '../lib/attribution.js'
+import { trackLead } from './metaPixel.js'
 
 export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
   const [name, setName] = useState('')
@@ -60,7 +61,13 @@ export default function TrialForm({ f, lang, privacyUrl, mascot, icons }) {
       if (!res.ok || !data?.ok) return setStatus('error')
       setStatus('sent')
       // Ловушка сработала — адреса нет, бот остаётся на «принято».
-      if (data.redirect) window.location.assign(data.redirect)
+      if (!data.redirect) return
+      // Конверсия Lead — только на настоящей заявке (адрес перехода есть): бот из ловушки тоже получает ok,
+      // и его заявка засорила бы рекламный кабинет. Без пикселя (dev, чужой домен) trackLead ничего не делает.
+      const tracked = trackLead()
+      // Событию нужно успеть уйти до перехода в приложение, иначе браузер может оборвать запрос.
+      if (tracked) setTimeout(() => window.location.assign(data.redirect), 250)
+      else window.location.assign(data.redirect)
     } catch {
       setStatus('error')
     }

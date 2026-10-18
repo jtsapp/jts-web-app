@@ -74,6 +74,18 @@ describe('reportUnauthorized — конец сессии', () => {
     expect(hooks.onExpired).not.toHaveBeenCalled()
     expect(loadToken()).toBe('access-new')
   })
+
+  it('вошли с другого устройства — отдельный повод, не «сессия истекла»', async () => {
+    hooks.onReplaced = vi.fn()
+    backend({ me: 401, refresh: { status: 401, body: { code: 'SESSION_REPLACED' } } })
+
+    reportUnauthorized(ACCESS)
+    await settle()
+
+    expect(hooks.onReplaced).toHaveBeenCalledTimes(1)
+    expect(hooks.onExpired).not.toHaveBeenCalled()
+    expect(loadToken()).toBeNull()
+  })
 })
 
 describe('reportUnauthorized — когда сессию рвать НЕЛЬЗЯ', () => {
