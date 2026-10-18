@@ -29,7 +29,7 @@ export async function POST(request) {
 
   let res
   try {
-    const url = `${BACKEND_URL}/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}`
+    const url = `${BACKEND_URL}/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}&jts_app=student`
     res = await fetch(url, { method: 'POST', cache: 'no-store', headers: { 'X-App': 'student' } })
   } catch (err) {
     console.error('[auth.refresh] backend unreachable', err?.message || err)

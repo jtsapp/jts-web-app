@@ -1086,14 +1086,16 @@ export function countProgress(path) {
 // Клиентская часть работает только под ролью студента. Метка на входе говорит бэкенду: выдай токен ученика, даже
 // если у человека в админке несколько ролей; а у сотрудника без роли студента вход здесь закрыт — бэкенд
 // ответит сообщением «зарегистрируйтесь как студент или обратитесь к менеджеру», его и показываем.
-export const APP_HEADER = { 'X-App': 'student' }
+// Метка идёт параметром запроса, а не заголовком: CORS-preflight отвечает nginx с фиксированным списком заголовков,
+// и свой заголовок X-App браузер не пропустит («CORS error» на /auth/login). Параметр проходит без правок nginx.
+export const APP_PARAM = 'jts_app=student'
 
 async function post(path, body) {
   let res
   try {
-    res = await fetch(BASE + path, {
+    res = await fetch(BASE + path + (path.includes('?') ? '&' : '?') + APP_PARAM, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...APP_HEADER },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
   } catch (e) {
