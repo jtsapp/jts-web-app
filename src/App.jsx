@@ -2567,13 +2567,13 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          // После «подстройки» — предложение пройти голосовой placement-тест
-          // (экран tutor-level-offer), оттуда либо сам тест, либо «позже» сразу
-          // к интересам. Раньше загрузка вела прямо в тест, и экран-предложение,
-          // хотя и свёрстан по макету, был недостижим — уйти от теста было
-          // нечем. Смена тьютора (пришли из управления) цепочку пропускает:
-          // ответы уже в профиле.
-          onDone={() => goAfterTutorEdit('tutor-level-offer', 'tutor-dashboard')}
+          // После «подстройки» — сразу вопрос об интересах. Голосовой
+          // placement-тест (tutor-level-offer → voice-intro) и «кем работаешь»
+          // из первого прохода убраны (решение владельца 18.10.2026): остались
+          // в «Управлении тьютором» — «Пройти тест заново» и правка профессии.
+          // Смена тьютора (пришли из управления) цепочку пропускает: ответы уже
+          // в профиле.
+          onDone={() => goAfterTutorEdit('tutor-interests', 'tutor-dashboard')}
         />
       )
     case 'tutor-level-offer':
@@ -2658,7 +2658,19 @@ export default function App() {
           onContinue={(ids) => {
             setInterestIds(ids)
             saveTutorPrefs(token, { interests: interestIdsToEn(ids) })
-            goAfterTutorEdit('tutor-profession')
+            // Правка из «Управления» возвращает туда же.
+            if (tutorEditFrom === 'manage') return goAfterTutorEdit('tutor-voice-chat')
+            // Интересы — последний вопрос онбординга, дальше сразу разговор.
+            // Тур дашборда выйдет, когда ученик впервые попадёт на дашборд —
+            // уже после звонка.
+            setShowTutorTour(!isTourSeen(tutorTourKey))
+            setScenario(null)
+            // Опрос позади: «Назад» из звонка не должен возвращать в него по
+            // стеку (интересы → снова звонок по кругу). Стек чистим — звонок
+            // уйдёт на свой запасной путь, дашборд.
+            setNavStack([])
+            skipPushRef.current = true
+            setScreen('tutor-voice-chat')
           }}
         />
       )
