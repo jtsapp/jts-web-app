@@ -101,7 +101,7 @@ import { getTutor, temperFor } from './tutor/tutors.js'
 // сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
+import { tourKeyFor } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
@@ -578,10 +578,8 @@ export default function App() {
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
-  // Тур по дашборду: включается один раз — сразу после онбординг-цепочки.
-  // «Один раз» держится на отметке в localStorage (tourKeyFor), а не на этом
-  // стейте: стейт умирает на перезагрузке, а смена тьютора гоняет цепочку
-  // заново — раньше из-за этого тур выходил на каждый выбор тьютора.
+  // Тур по дашборду: только по просьбе Луне (useTourRequest ниже). Сам после
+  // онбординг-цепочки он больше не выходит — владелец убрал его 18.10.2026.
   const [showTutorTour, setShowTutorTour] = useState(false)
   // Id профиля из /api/profile (`user-<id>` или device-id анонима) — им
   // разделяются отметки тура, чтобы «один раз» считалось на аккаунт.
@@ -2690,13 +2688,10 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}
-          // Цепочка завершена — первый dashboard показываем с туром. «Первый» тут
-          // буквально: смена тьютора гоняет эту же цепочку, и без отметки тур
-          // выходил снова на каждый выбор.
-          onDone={() => {
-            setShowTutorTour(!isTourSeen(tutorTourKey))
-            setScreen('tutor-dashboard')
-          }}
+          // Цепочка завершена — сразу dashboard. Тур-подсказки сюда больше сами
+          // не выходят (решение владельца 18.10.2026: онбординг со страницы
+          // тьютора убрать); остался только по просьбе Луне (useTourRequest).
+          onDone={() => setScreen('tutor-dashboard')}
         />
       )
     case 'tutor-dashboard':
