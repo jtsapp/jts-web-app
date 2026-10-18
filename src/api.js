@@ -1083,12 +1083,17 @@ export function countProgress(path) {
   return { total, done }
 }
 
+// Клиентская часть работает только под ролью студента. Метка на входе говорит бэкенду: выдай токен ученика, даже
+// если у человека в админке несколько ролей; а у сотрудника без роли студента вход здесь закрыт — бэкенд
+// ответит сообщением «зарегистрируйтесь как студент или обратитесь к менеджеру», его и показываем.
+export const APP_HEADER = { 'X-App': 'student' }
+
 async function post(path, body) {
   let res
   try {
     res = await fetch(BASE + path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...APP_HEADER },
       body: JSON.stringify(body),
     })
   } catch (e) {

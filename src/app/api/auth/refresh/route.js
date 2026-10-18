@@ -30,7 +30,7 @@ export async function POST(request) {
   let res
   try {
     const url = `${BACKEND_URL}/auth/refresh?refreshToken=${encodeURIComponent(refreshToken)}`
-    res = await fetch(url, { method: 'POST', cache: 'no-store' })
+    res = await fetch(url, { method: 'POST', cache: 'no-store', headers: { 'X-App': 'student' } })
   } catch (err) {
     console.error('[auth.refresh] backend unreachable', err?.message || err)
     return Response.json({ error: 'Backend unavailable.' }, { status: 503 })
