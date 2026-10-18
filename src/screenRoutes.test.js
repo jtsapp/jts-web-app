@@ -57,9 +57,13 @@ describe('навигация — недостижимых экранов нет'
     expect(orphans, 'экран смонтирован, но попасть на него нечем').toEqual([])
   })
 
-  // Точечная фиксация починенной цепочки: загрузка тьютора → предложение теста.
-  it('после подстройки тьютора студент попадает на предложение теста', () => {
-    expect(app).toMatch(/onDone=\{\(\) => goAfterTutorEdit\('tutor-level-offer', 'tutor-dashboard'\)\}/)
+  // Точечная фиксация цепочки: загрузка тьютора → интересы → звонок. Тест
+  // разговорного и профессию из первого прохода убрали 18.10.2026.
+  it('после подстройки тьютора — интересы, после них сразу разговор', () => {
+    expect(app).toMatch(/onDone=\{\(\) => goAfterTutorEdit\('tutor-interests', 'tutor-dashboard'\)\}/)
+    const interests = app.slice(app.indexOf("case 'tutor-interests':"), app.indexOf("case 'tutor-profession':"))
+    expect(interests).toMatch(/setScreen\('tutor-voice-chat'\)/)
+    expect(interests).not.toMatch(/tutor-profession/)
   })
 
   // F5 в зоне тьютора должен читать ?screen=tutor-… тем же deepLink-путём,
