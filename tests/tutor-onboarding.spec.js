@@ -211,3 +211,35 @@ test.describe('выбор тьютора — поток', () => {
     await expect(page.locator('.t-status__name')).toHaveText('Спарк')
   })
 })
+
+// Онбординг укорочен 18.10.2026: после подстройки — только интересы, и сразу
+// разговор. Теста разговорного и вопроса «кем работаешь» в первом проходе нет.
+test.describe('онбординг тьютора — интересы и сразу разговор', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) <= 560, 'на телефоне вместо ряда карусель')
+
+  // Старт с выбора тьютора, а не диплинком на язык: выбор помечает онбординг
+  // пройденным, и только тогда «Назад» из звонка ведёт на дашборд.
+  test('выбор → язык → подстройка → интересы → звонок; «Назад» — на дашборд', async ({ page }) => {
+    await page.goto('/?screen=tutor-welcome')
+    const start = page.locator('.t-pick__start')
+    await start.click()
+    await page.locator('.t-pick__card', { hasText: 'Спарк' }).click()
+    await start.click()
+    await page.locator('.t-lang__option', { hasText: 'Русский' }).click()
+
+    // Подстройка сама уходит дальше — на интересы, а не на предложение теста.
+    await expect(page.locator('.t-interests__chips')).toBeVisible({ timeout: 20000 })
+    await expect(page).toHaveURL(/screen=tutor-interests/)
+
+    await page.locator('.t-topic').first().click()
+    await page.locator('button', { hasText: 'Продолжить' }).click()
+    await expect(page).toHaveURL(/screen=tutor-voice-chat/)
+    await expect(page.locator('.t-micperm')).toBeVisible()
+
+    // Опрос позади: «Назад» не возвращает в интересы. Кнопку накрывает окно
+    // запроса микрофона, поэтому нажатие — событием.
+    await page.locator('.t-back:visible').first().dispatchEvent('click')
+    await expect(page).toHaveURL(/screen=tutor-dashboard/)
+    await expect(page.locator('.t-dash__orb')).toBeVisible()
+  })
+})
