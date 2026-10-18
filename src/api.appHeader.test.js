@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loginWithGoogle, loginWithPassword, verifyLoginOtp } from './api.js'
 
-// Клиентская часть — только для студентов. Все входы сообщают об этом бэкенду заголовком X-App: он выдаёт токен
+// Клиентская часть — только для студентов. Все входы сообщают об этом бэкенду параметром jts_app: он выдаёт токен
 // ученика человеку с несколькими ролями и закрывает вход сотруднику без роли студента.
-describe('вход в клиентскую часть: заголовок X-App', () => {
+describe('вход в клиентскую часть: метка jts_app', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   const stubFetch = (response) => {
@@ -13,7 +13,7 @@ describe('вход в клиентскую часть: заголовок X-App'
   }
   const ok = () => ({ ok: true, status: 200, json: async () => ({ accessToken: 't' }) })
 
-  it('пароль, код из письма и Google отправляют X-App: student', async () => {
+  it('пароль, код из письма и Google отправляют jts_app=student параметром, без своего заголовка', async () => {
     const fetchMock = stubFetch(ok())
 
     await loginWithPassword('+77001112233', 'secret')
@@ -21,8 +21,10 @@ describe('вход в клиентскую часть: заголовок X-App'
     await loginWithGoogle('id-token')
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
-    for (const [, init] of fetchMock.mock.calls) {
-      expect(init.headers['X-App']).toBe('student')
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(String(url)).toContain('jts_app=student')
+      // Свой заголовок ломает CORS-preflight nginx — только Content-Type.
+      expect(Object.keys(init.headers)).toEqual(['Content-Type'])
     }
   })
 
