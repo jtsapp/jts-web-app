@@ -14,9 +14,22 @@ describe('позывной', () => {
     expect(matchWake('привет луна [unk]')).toBe(true)
   })
 
-  it('одно слово, разорванная фраза, склейка, пусто — нет', () => {
-    expect(matchWake('луна')).toBe(false)
+  it('просто «Луна», сказанное отдельно, — да; и повтор имени', () => {
+    expect(matchWake('луна')).toBe(true)
+    expect(matchWake('Луна!')).toBe(true)
+    expect(matchWake('  луна  ')).toBe(true)
+    expect(matchWake('луна луна')).toBe(true)
+  })
+
+  it('имя внутри чужой реплики — нет: так грамматика слышит «на луну», «она сказала»', () => {
+    expect(matchWake('[unk] луна')).toBe(false)
+    expect(matchWake('луна [unk]')).toBe(false)
+    expect(matchWake('[unk] луна [unk]')).toBe(false)
+  })
+
+  it('«привет» без имени, разорванная фраза, склейка, пусто — нет', () => {
     expect(matchWake('привет')).toBe(false)
+    expect(matchWake('салем')).toBe(false)
     expect(matchWake('привет [unk] луна')).toBe(false)
     expect(matchWake('приветлуна')).toBe(false)
     expect(matchWake('[unk]')).toBe(false)
@@ -24,7 +37,7 @@ describe('позывной', () => {
     expect(matchWake(null)).toBe(false)
   })
 
-  it('грамматика распознавателя — две фразы и [unk]', () => {
-    expect(WAKE_GRAMMAR).toEqual(['привет луна', 'салем луна', '[unk]'])
+  it('грамматика распознавателя — две фразы, имя и [unk]', () => {
+    expect(WAKE_GRAMMAR).toEqual(['привет луна', 'салем луна', 'луна', '[unk]'])
   })
 })

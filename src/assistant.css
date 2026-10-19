@@ -21,31 +21,77 @@
   font-family: inherit;
 }
 
-/* Размер и место (16.10.2026, «не мешать при работе с платформой»): кнопка
-   48px, окно по умолчанию компактное, «телефон» — по кнопке в шапке. Здесь —
-   место до гидратации и на телефоне; на компьютере left/top/размер ставит
-   виджет (lib/assistant/placement.js), и кнопку с окном можно перетащить. */
+/* Размер и место (16.10.2026, «не мешать при работе с платформой»): окно по
+   умолчанию компактное, «телефон» — по кнопке в шапке. Здесь — место до
+   гидратации и на телефоне; на компьютере left/top/размер ставит виджет
+   (lib/assistant/placement.js), и кнопку с окном можно перетащить.
+
+   Заметность (19.10.2026, владелец: «сделай Луну более заметной»). 16.10 кнопку
+   уменьшили с 60 до 48 px — и её перестали замечать: белый кружок с аватаркой
+   терялся в углу. Теперь 56 px, но выделяется она не размером: кольцо в цветах
+   Луны (фиолетовый бренда → оранжевый её аватарки), имя на плашке и редкий
+   ореол — раз в 9 с кольцо расходится, как свечение вокруг луны. Постоянной
+   пульсации нет: она тянула бы взгляд с задания. Облачко-знакомство рядом с
+   кнопкой — lib/assistant/introHint.js. */
 .asst__launcher {
   position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 35;
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  border: 3px solid #fff;
-  background: var(--asst-accent);
-  box-shadow: 0 8px 24px rgba(23, 19, 38, 0.25);
+  border: 0;
+  background: linear-gradient(140deg, var(--asst-accent) 0%, #c45cff 50%, #ff8a3d 100%);
+  box-shadow: 0 6px 20px rgba(144, 71, 255, 0.45);
   display: grid;
   place-items: center;
-  padding: 0;
+  padding: 3px;
   cursor: pointer;
-  overflow: hidden;
+  font-family: inherit;
   transition: transform 0.15s ease;
 }
-.asst__launcher:hover { transform: scale(1.05); }
-.asst__launcher:focus-visible { outline: 3px solid var(--blue-soft, #bfe6f2); outline-offset: 2px; }
-.asst__launcher img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.asst__launcher:hover { transform: scale(1.06); }
+.asst__launcher:focus-visible { outline: 3px solid var(--blue-soft, #bfe6f2); outline-offset: 3px; }
+.asst__launcher img {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+/* Ореол: под аватаркой (z-index -1 внутри кнопки), виден только снаружи круга. */
+.asst__launcher::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: asst-glow 9s ease-out 2s infinite;
+}
+@keyframes asst-glow {
+  0% { box-shadow: 0 0 0 0 rgba(144, 71, 255, 0.55); }
+  16%, 100% { box-shadow: 0 0 0 18px rgba(144, 71, 255, 0); }
+}
+.asst__name {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--asst-accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(23, 19, 38, 0.18);
+  pointer-events: none;
+}
 /* Открытое окно стоит на месте кнопки; закрывает его «×» в шапке. */
 .asst__launcher.is-open { display: none; }
 
@@ -81,6 +127,65 @@
 @media (prefers-reduced-motion: reduce) {
   .asst__panel { animation: none; }
   .asst__launcher { transition: none; }
+  .asst__launcher::before { animation: none; }
+}
+
+/* Облачко-знакомство (lib/assistant/introHint.js): сбоку от кнопки, к середине
+   экрана. Мышь сквозь него проходит — оно ничего не закрывает; уходит само или
+   от первого нажатия. Здесь — место у кнопки в углу по умолчанию; на компьютере
+   top и сторону ставит виджет по месту кнопки (is-free, is-left). */
+.asst__hint {
+  position: fixed;
+  right: calc(24px + 56px + 14px);
+  bottom: calc(24px + 28px);
+  z-index: 35;
+  transform: translateY(50%);
+  width: max-content;
+  max-width: 248px;
+  padding: 12px 14px;
+  border: 1px solid var(--asst-line);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--asst-ink);
+  box-shadow: 0 12px 32px rgba(23, 19, 38, 0.18);
+  pointer-events: none;
+  animation: asst-hint-in 0.28s ease-out;
+}
+.asst__hint.is-free { bottom: auto; transform: translateY(-50%); }
+/* Хвостик к кнопке. */
+.asst__hint::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-top: 1px solid var(--asst-line);
+  border-right: 1px solid var(--asst-line);
+  transform: translateY(-50%) rotate(45deg);
+}
+.asst__hint.is-left { animation-name: asst-hint-in-left; }
+.asst__hint.is-left::after {
+  right: auto;
+  left: -7px;
+  border: 0;
+  border-bottom: 1px solid var(--asst-line);
+  border-left: 1px solid var(--asst-line);
+}
+.asst__hint-title { display: block; font-size: 14px; font-weight: 800; line-height: 1.3; }
+.asst__hint-text { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: #4a4658; }
+.asst__hint-voice { display: block; margin-top: 4px; font-size: 13px; font-weight: 700; line-height: 1.4; color: var(--asst-accent); }
+@keyframes asst-hint-in {
+  from { opacity: 0; translate: 8px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes asst-hint-in-left {
+  from { opacity: 0; translate: -8px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asst__hint { animation: none; }
 }
 
 .asst__head {
@@ -269,18 +374,17 @@
 }
 .asst__privacy { margin: 0; padding: 0 14px 10px; font-size: 11px; line-height: 1.35; color: var(--asst-muted); }
 
-/* Позывной «Привет, Луна»: переключатель в окне и точка на кнопке Луны —
+/* Позывной «Луна» / «Привет, Луна»: переключатель в окне и точка на кнопке Луны —
    слушает (зелёная), не слушает (серая: микрофон занят, окно открыто, ждёт касания),
-   грузит модель (пульс). Точка внутри круга: у кнопки overflow: hidden, и на углу
-   квадрата её бы срезало — 7px от края держат её в круге 48px. */
+   грузит модель (пульс). Точка сидит на кольце, у верхнего правого края круга. */
 .asst__wake { padding: 0 14px 6px; }
 .asst__wake-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
 .asst__wake-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--asst-accent); }
 .asst__wake-hint { margin: 4px 0 0 24px; font-size: 12px; line-height: 1.35; color: var(--asst-muted); }
 .asst__wake-dot {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 1px;
+  right: 1px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -301,6 +405,11 @@
   .asst__launcher {
     right: 16px;
     bottom: calc(var(--safe-bottom, 56px) + 72px);
+  }
+  .asst__hint {
+    right: calc(16px + 56px + 12px);
+    bottom: calc(var(--safe-bottom, 56px) + 72px + 28px);
+    max-width: min(248px, calc(100vw - 100px));
   }
   .asst__panel,
   .asst__panel--phone {
@@ -398,7 +507,9 @@
 .asst__msg--live { opacity: 0.6; font-style: italic; }
 .asst__call-note { margin: 0; font-size: 12px; color: var(--asst-muted); text-align: center; }
 
-.asst__launcher.is-call { box-shadow: 0 0 0 3px #1f9d55, 0 8px 24px rgba(23, 19, 38, 0.25); animation: asst-call-ring 1.6s ease-in-out infinite; }
+.asst__launcher.is-call { background: #1f9d55; box-shadow: 0 0 0 3px #1f9d55, 0 8px 24px rgba(23, 19, 38, 0.25); animation: asst-call-ring 1.6s ease-in-out infinite; }
+/* В звонке Луна и так «светится» зелёным — свой ореол не нужен. */
+.asst__launcher.is-call::before { animation: none; }
 @keyframes asst-call-ring {
   0%, 100% { box-shadow: 0 0 0 3px #1f9d55, 0 8px 24px rgba(23, 19, 38, 0.25); }
   50% { box-shadow: 0 0 0 7px rgba(31, 157, 85, 0.35), 0 8px 24px rgba(23, 19, 38, 0.25); }
