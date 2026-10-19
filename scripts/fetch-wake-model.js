@@ -21,6 +21,12 @@
 //                                             # Dockerfile — недоступный сайт моделей не
 //                                             # должен валить деплой всего приложения;
 //                                             # позывной тогда напишет «не загрузилось».
+//   node scripts/fetch-wake-model.js --soft --cache /wake-cache
+//                                             # Dockerfile: шаг стоит после `COPY . .` и
+//                                             # слоем не кэшируется никогда, поэтому 105 МБ
+//                                             # шли с alphacephei.com на каждой сборке.
+//                                             # Каталог — кэш-маунт сборки: модель из него
+//                                             # берётся без сети, скачанная кладётся туда.
 const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
@@ -58,10 +64,26 @@ function zipToTarGz(zipBuf) {
   return tarGzSync(names.map((name) => (name.endsWith('/') ? { name } : { name, data: files[name] })))
 }
 
-async function fetchModel(model, soft) {
-  const out = path.join(__dirname, '..', model.out)
+/** Атомарная копия: оборванная запись не должна выглядеть готовой моделью. */
+function copyAtomic(from, to) {
+  fs.mkdirSync(path.dirname(to), { recursive: true })
+  fs.copyFileSync(from, `${to}.part`)
+  fs.renameSync(`${to}.part`, to)
+}
+
+async function fetchModel(model, { soft = false, cacheDir = null, root = path.join(__dirname, '..') } = {}) {
+  const out = path.join(root, model.out)
   if (fs.existsSync(out)) {
     console.log(`[wake-model] уже есть: ${model.out}`)
+    return
+  }
+  // Имя файла несёт версию модели (…-ru-0.22.tar.gz), так что новая модель в
+  // кэше не найдётся и скачается заново. В кэш попадает только то, что прошло
+  // сверку sha256, — копия оттуда сверки уже не требует.
+  const cached = cacheDir && path.join(cacheDir, path.basename(model.out))
+  if (cached && fs.existsSync(cached)) {
+    copyAtomic(cached, out)
+    console.log(`[wake-model] из кэша сборки: ${model.out}`)
     return
   }
   let zip
@@ -86,11 +108,14 @@ async function fetchModel(model, soft) {
   fs.writeFileSync(`${out}.part`, tgz)
   fs.renameSync(`${out}.part`, out)
   console.log(`[wake-model] ${model.out}: ${(tgz.length / 1e6).toFixed(1)} МБ`)
+  if (cached) copyAtomic(out, cached)
 }
 
 async function main() {
   const soft = process.argv.includes('--soft')
-  for (const model of MODELS) await fetchModel(model, soft)
+  const i = process.argv.indexOf('--cache')
+  const cacheDir = i > 0 ? process.argv[i + 1] : null
+  for (const model of MODELS) await fetchModel(model, { soft, cacheDir })
 }
 
 if (require.main === module) {
@@ -100,4 +125,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { MODEL, MODELS, sha256, zipToTarGz }
+module.exports = { MODEL, MODELS, fetchModel, sha256, zipToTarGz }

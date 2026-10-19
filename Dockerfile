@@ -15,7 +15,10 @@ COPY package.json package-lock.json ./
 # падает на WASM-заглушке, а Turbopack на ней не работает: «native bindings are
 # not available». Поэтому optional включаем явно, проверяем, что модуль на месте,
 # и при его отсутствии доставляем ту же версию, что у next.
-RUN npm ci --force --include=optional \
+# Сам слой берётся из кэша сборки, пока не менялся package-lock; кэш npm
+# смонтирован, чтобы и при смене lock из реестра качались только новые пакеты.
+RUN --mount=type=cache,id=jts-npm,target=/root/.npm \
+    npm ci --force --include=optional \
  && ( node -e "require('@next/swc-linux-x64-gnu')" \
       || npm install --no-save --force --include=optional \
            "@next/swc-linux-x64-gnu@$(node -p "require('next/package.json').version")" ) \
@@ -39,9 +42,14 @@ ENV NEXT_PUBLIC_ENABLE_JARVIS=${NEXT_PUBLIC_ENABLE_JARVIS}
 # CI и не доезжает досюда, именно так это и выглядит: настроено, а не работает.
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-# Модель позывного Луны (45 МБ) в git не лежит — скачиваем и сверяем по sha256.
+# Модели позывного (45 + 60 МБ) в git не лежат — скачиваем и сверяем по sha256.
 # --soft: недоступный сайт моделей не валит деплой, позывной просто не включится.
-RUN node scripts/fetch-wake-model.js --soft
+# Скачанное держит кэш-маунт (--cache), а не отдельная стадия: её слой запомнил
+# бы и неудачную загрузку, и позывной пропал бы до смены скрипта. Каталог
+# создаём всегда — runner копирует его и тогда, когда модели не скачались.
+RUN --mount=type=cache,id=jts-wake-models,target=/wake-cache \
+    mkdir -p public/assistant/wake \
+ && node scripts/fetch-wake-model.js --soft --cache /wake-cache
 RUN npm run build
 
 FROM node:20-slim AS runner
@@ -49,15 +57,23 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Сначала всё, что берётся прямо из исходников: слои builder меняются с каждым
+# коммитом, а слой, стоящий после изменённого, собирается заново, даже если сам
+# не менялся. Особенно это про public — 720 МБ медиа: пока он ехал из builder,
+# каждый деплой писал его в образ новым слоем; отсюда слой берётся из кэша,
+# пока в public/ ничего не менялось.
+COPY public ./public
 # .sql миграции читаются через fs.readdirSync (src/lib/migrate.js), не через
 # import — трассировщик standalone-сборки их не видит и не копирует сам.
-COPY --from=builder --chown=nextjs:nodejs /app/src/lib/migrations ./src/lib/migrations
+COPY --chown=nextjs:nodejs src/lib/migrations ./src/lib/migrations
 # Тексты книг: вне public (их отдаёт авторизованный роут /api/books), поэтому
 # в standalone-сборку сами не попадают — как и миграции строкой выше.
-COPY --from=builder --chown=nextjs:nodejs /app/data/books ./data/books
+COPY --chown=nextjs:nodejs data/books ./data/books
+
+# Модели позывного в git нет — их кладёт builder (см. выше).
+COPY --from=builder /app/public/assistant/wake ./public/assistant/wake
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000
