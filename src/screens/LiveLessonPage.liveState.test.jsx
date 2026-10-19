@@ -1868,3 +1868,38 @@ describe('LiveLessonPage — ученик после перезагрузки в
     setItem.mockRestore()
   })
 })
+
+describe('LiveLessonPage — «Сменить» урок файла уровня', () => {
+  // Урок 3 и урок 4 одного файла — один материал, разные ссылки раздела.
+  const lessonOf = (no, id) => ({ ...SECTIONS[0].materials[0], id, focusLessonNo: no })
+  const sectionWith = (...materials) => [{ ...SECTIONS[0], materials }, SECTIONS[1]]
+
+  /** Урок файла, который рамка открыла goto-lesson'ом после загрузки. */
+  async function openedLessonNo(container) {
+    const iframe = frameOf(container)
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    await act(async () => { iframe.dispatchEvent(new Event('load')) })
+    await act(async () => { vi.advanceTimersByTime(GOTO_LESSON_MS) })
+    return post.mock.calls.map(([m]) => m).filter((m) => m.type === 'goto-lesson').at(-1)?.index
+  }
+
+  // Прод 19.10.2026: «Сменить» = прикрепить урок 4 и открепить урок 3 — два сигнала
+  // sections-changed подряд. Ответ на первый ([3, 4]) пришёл позже ответа на второй ([4])
+  // и затёр его: ученик остался на уроке 3, пока сам не перезашёл.
+  it('опоздавший ответ на прежний сигнал не возвращает ученика на старый урок', async () => {
+    sections = sectionWith(lessonOf(3, 31))
+    const { container } = await renderAsStudent()
+    let answerFirst
+    api.getLessonSections
+      .mockImplementationOnce(() => new Promise((resolve) => { answerFirst = resolve }))
+      .mockImplementationOnce(async () => sectionWith(lessonOf(4, 32)))
+
+    await act(async () => { socketHandlers.onSectionsChanged() })
+    await act(async () => { socketHandlers.onSectionsChanged() })
+    await flush()
+    await act(async () => { answerFirst(sectionWith(lessonOf(3, 31), lessonOf(4, 32))) })
+    await flush()
+
+    expect(await openedLessonNo(container)).toBe(4)
+  })
+})

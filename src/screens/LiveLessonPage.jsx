@@ -292,9 +292,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // «преподаватель ещё ничего не открыл» — ученик ждал материал, которого не
   // будет. Теперь пустой урок и неудачный запрос — это разные сообщения.
   const [sectionsFailed, setSectionsFailed] = useState(false)
+  // Последний запрос разделов. «Сменить» урок шлёт два sections-changed подряд, и ответ на
+  // первый, придя позже, затирал свежий список — ученик оставался на старом уроке
+  // (прод 19.10.2026). Применяется только последний; ждавшим старого отдаётся он же.
+  const sectionsRequestRef = useRef(null)
 
   function loadSections() {
-    return getLessonSections(token, lessonId).then((list) => {
+    const request = getLessonSections(token, lessonId).then((list) => {
+      if (sectionsRequestRef.current !== request) return sectionsRequestRef.current
       setSections(list)
       setSectionsFailed(false)
       // Первый вход после перезагрузки: ученик возвращается туда, где был, а не на первый раздел — иначе это
@@ -305,9 +310,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (place?.sectionId ?? list[0]?.id ?? null))
       return list
     }).catch(() => {
+      if (sectionsRequestRef.current !== request) return sectionsRequestRef.current
       setSectionsFailed(true)
       return null
     })
+    sectionsRequestRef.current = request
+    return request
   }
 
   function selectSection(sectionId) {
