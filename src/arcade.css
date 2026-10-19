@@ -730,6 +730,11 @@
     transform: translateY(-50%); animation: none;
   }
   .ar-run-score b { font-size: 28px; }
+  /* «Звук», «Пауза» и «Во весь экран» подписями в строку не влезают: шапка
+     вырастала на ряд в момент старта и сталкивала поле вниз. Звук — значком,
+     имя кнопке даёт aria-label. */
+  .ar-tool--sound { justify-content: center; min-width: 44px; padding: 0; }
+  .ar-tool--sound span { display: none; }
   .ar-run-results__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ar-run-mistakes small { flex-basis: 100%; margin-left: 0; }
 }

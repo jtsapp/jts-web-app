@@ -22,10 +22,12 @@ import {
 import { layoutObstacles } from '../../../practice/arcade/runner/obstacles.js'
 import { layoutPickups } from '../../../practice/arcade/runner/pickups.js'
 import { missToast } from '../../../practice/arcade/runner/hud.js'
+import { cuesOf } from '../../../practice/arcade/runner/cues.js'
 import { useArcadeFullscreen } from '../useArcadeFullscreen.js'
 import { formatNumber } from '../format.js'
 import RunnerResults from './RunnerResults.jsx'
-import { CollapseIcon, ExpandIcon, PlayIcon } from '../../../components/icons.jsx'
+import { isRunnerSoundOn, playRunnerCue, setRunnerSoundOn, sleepRunnerSound, wakeRunnerSound } from './runnerSound.js'
+import { CollapseIcon, ExpandIcon, PlayIcon, VolumeIcon } from '../../../components/icons.jsx'
 import { PkChevron } from '../../practice/PracticeIcons.jsx'
 
 // «Word Rush» — вторая игра «Аркады». Разделение как у Speak or Die: правила
@@ -128,6 +130,15 @@ function PauseGlyph() {
   )
 }
 
+function MutedGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 9v6h3.5L13 20V4L7.5 9H4Z" fill="currentColor" />
+      <path d="m16.5 9.5 5 5m0-5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function RunnerGame({ onExit }) {
   const { t, lang } = useI18n()
   // Средняя сложность по умолчанию — как у Speak or Die.
@@ -136,6 +147,9 @@ export default function RunnerGame({ onExit }) {
   const [error, setError] = useState(null) // null | webgl | words
   const [hud, setHud] = useState(() => hudOf(null, 'loading', 0))
   const [result, setResult] = useState(null)
+  // Экран не рендерится на сервере (он открывается навигацией после
+  // гидратации), поэтому настройку можно прочесть сразу.
+  const [soundOn, setSoundOn] = useState(() => typeof window === 'undefined' || isRunnerSoundOn())
   const canvas = useRef(null)
   const panel = useRef(null)
   const scene = useRef(null)
@@ -194,10 +208,11 @@ export default function RunnerGame({ onExit }) {
           const pickups = layoutPickups({ difficulty, speed, obstacles: layout })
           s = spawnRow(s, g.deck.next(), layout, pickups)
         }
-        const before = s.seq
+        const before = s
         s = advance(s, dt)
-        if (s.seq !== before && !s.last.hit) g.deck.miss(s.last)
+        if (s.seq !== before.seq && !s.last.hit) g.deck.miss(s.last)
         g.state = s
+        for (const cue of cuesOf(before, s)) playRunnerCue(cue)
         if (isOver(s)) finish(s)
       }
       const running = !!s && st !== 'ready'
@@ -257,6 +272,7 @@ export default function RunnerGame({ onExit }) {
       observer.disconnect()
       current?.dispose()
       scene.current = null
+      sleepRunnerSound()
     }
   }, [])
 
@@ -278,7 +294,16 @@ export default function RunnerGame({ onExit }) {
   function togglePause() {
     const st = statusRef.current
     if (st === 'playing') go('paused')
-    else if (st === 'paused') go('playing')
+    else if (st === 'paused') {
+      wakeRunnerSound()
+      go('playing')
+    }
+  }
+
+  function toggleSound() {
+    const next = !soundOn
+    setRunnerSoundOn(next)
+    setSoundOn(next)
   }
 
   useEffect(() => {
@@ -318,6 +343,9 @@ export default function RunnerGame({ onExit }) {
 
   async function start() {
     if (statusRef.current === 'starting' || !scene.current) return
+    // Звук будится здесь, до первого await: только в тике нажатия iPhone
+    // разрешает контексту звучать, а кадры забега нажатием уже не считаются.
+    wakeRunnerSound()
     const d = RUN_DIFFICULTIES[level]
     setResult(null)
     setError(null)
@@ -476,6 +504,16 @@ export default function RunnerGame({ onExit }) {
             <b>{t(`arcade.difficulty.${difficulty.key}`)}</b>
           </span>
           <span className="ar-run-tools">
+            <button
+              type="button"
+              className="ar-tool ar-tool--sound"
+              aria-label={t('arcade.run.sound')}
+              aria-pressed={soundOn}
+              onClick={toggleSound}
+            >
+              {soundOn ? <VolumeIcon size={16} /> : <MutedGlyph />}
+              <span>{t('arcade.run.sound')}</span>
+            </button>
             {(status === 'playing' || status === 'paused') && (
               <button type="button" className="ar-tool" onClick={togglePause}>
                 {status === 'paused' ? <PlayIcon size={16} /> : <PauseGlyph />}
