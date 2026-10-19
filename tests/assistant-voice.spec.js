@@ -128,7 +128,7 @@ test('русский ответ — голос Луны (/api/assistant/speak)',
   })
   await askByVoice(page)
   await expect.poll(() => calls.speak.length).toBe(1)
-  expect(calls.speak[0]).toEqual({ text: 'Домашняя работа — в меню слева, раздел «Домашняя работа».', lang: 'ru' })
+  expect(calls.speak[0]).toEqual({ text: 'Домашняя работа — в меню слева, раздел «Домашняя работа».', lang: 'ru', persona: 'luna' })
   await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
   expect(calls.tts).toHaveLength(0)
 })
@@ -176,4 +176,28 @@ test('текст — вслед за голосом, переход — когд
   await expect(page.locator('.asst__msg--bot').last()).toContainText('Открываю Словарь', { timeout: 10000 })
   await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
   await expect(page.locator('.vp').first()).toBeVisible({ timeout: 15000 })
+})
+
+// Казахский интерфейс — помощник Айзере (lib/assistant/persona.js): её имя и аватар
+// в окне, казахский ответ — её голосом через /api/assistant/speak (клон ElevenLabs),
+// а не потоком Soniox «Grace» Луны.
+test('казахский интерфейс: помощник — Айзере, казахский ответ её голосом', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('lang', 'kk'))
+  const calls = await setup(page)
+  await page.goto('/?screen=home')
+  await page.getByRole('button', { name: 'Көмекші' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Айзере' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.locator('.asst__avatar')).toHaveAttribute('src', '/assets/aizere-assistant.webp')
+  await page.getByRole('button', { name: 'Дауыспен сұрау' }).click()
+  const stop = page.getByRole('button', { name: 'Сұрақты аяқтау' })
+  await expect(stop).toBeVisible()
+  await page.waitForTimeout(1200)
+  if (await stop.isVisible()) await stop.click()
+
+  await expect(page.locator('.asst__msg--bot').last()).toContainText('сол жақ мәзірдегі')
+  await expect.poll(() => calls.speak.length).toBe(1)
+  expect(calls.speak[0]).toMatchObject({ persona: 'aizere', lang: 'kk', text: 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде.' })
+  expect(calls.tts).toHaveLength(0)
+  await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
 })

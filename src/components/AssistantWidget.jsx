@@ -9,6 +9,7 @@ import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/openin
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { useIntroHint } from '../lib/assistant/introHint.js'
+import { assistantPersona } from '../lib/assistant/persona.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
 import { callSpeech, createCallTourVoice } from '../lib/assistant/callBridge.js'
 import { assistantCallHidden } from '../lib/assistant/callGate.js'
@@ -197,9 +198,10 @@ function actionCaption(action, lang, t) {
 }
 
 const SCREEN_ROOT = '.scr-in'
-// Аватар Луны (уменьшенная копия public/tutor/tutor-luna.png): кнопка висит на
-// каждом экране, и 169 КБ оригинала ради круга в 60px — лишний вес.
-const AVATAR = '/assets/luna-assistant.webp'
+// Аватар — persona.avatar (lib/assistant/persona.js): уменьшенные копии
+// public/tutor/tutor-<имя>.png — кнопка висит на каждом экране, и 170 КБ
+// оригинала ради круга в 56px — лишний вес. При казахском интерфейсе помощник —
+// Айзере: её аватар, имя (казахский словарь i18n), голос и тон.
 // Компонент звонка подтягивается только по нажатию «Позвонить»: звонят Луне
 // редко, а виджет висит на каждом экране (сам livekit-client уже в общем
 // бандле — его статически тянет экран тьютора).
@@ -348,6 +350,7 @@ function RichText({ text }) {
 // с кнопкой на следующем обычном экране.
 export default function AssistantWidget({ token, screen, enabled = true, greetOnOpen = false }) {
   const { t, lang } = useI18n()
+  const persona = assistantPersona(lang)
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([]) // {role, content, voice?, opening?, offtopic?, reported?, voiceFailed?}
   const [input, setInput] = useState('')
@@ -412,7 +415,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // ответ] — и слала три сообщения вместо одного (так падал тест на медленном раннере CI, 06.10).
   // Layout-эффект идёт внутри коммита, до любого события.
   useLayoutEffect(() => {
-    stateRef.current = { messages, screen, token, lang, enabled, muted, t, greetOnOpen, callLive, callRoom: call?.session?.room || null, open }
+    stateRef.current = { messages, screen, token, lang, persona, enabled, muted, t, greetOnOpen, callLive, callRoom: call?.session?.room || null, open }
   })
   // Состояние экрана, о котором Луна уже сказала первую реплику (opening.js).
   const greetedRef = useRef(null)
@@ -518,9 +521,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     // одновременно с ним и попадал бы ему в микрофон.
     tourVoiceRef.current = stateRef.current?.callLive
       ? createCallTourVoice((text) => callCtlRef.current?.say(text))
-      : createTourVoice({ token: stateRef.current?.token })
+      : createTourVoice({ token: stateRef.current?.token, persona: stateRef.current?.persona })
     Object.assign(g, { ...GUIDE_OFF, on: true, waitReply })
-    setTourNarration({ on: true, muted: Boolean(stateRef.current?.muted) }, () => toggleMutedRef.current?.())
+    setTourNarration({ on: true, muted: Boolean(stateRef.current?.muted), avatar: stateRef.current?.persona?.avatar }, () => toggleMutedRef.current?.())
     g.timer = setTimeout(() => {
       // Ни одного шага: у экрана нет тура или он не дождался своих данных.
       // Молча погасший тур выглядел бы как «Луна соврала» — говорим как есть.
@@ -730,6 +733,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       speaker = createVoiceQueue({
         token: cur.token,
         lang: cur.lang,
+        persona: cur.persona,
         onPhrase: (i) => {
           if (i === 0) clearTimeout(holdTimer)
           reveal(chunker.ends[i] ?? null)
@@ -1268,7 +1272,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     send(WAKE_MARK, { voice: !cur.muted, opening: true, afterReply: listenAnswer })
   }, [send, listenAnswer])
   // Во время звонка «ухо» молчит: микрофон у звонка, и Луна и так на связи.
-  const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake })
+  const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake, persona: persona.id })
   // Облачко «Я Луна…» у кнопки, пока ученик её ни разу не открывал (introHint.js).
   const introHint = useIntroHint({ screen, active: enabled && !call, open })
 
@@ -1349,7 +1353,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       tourVoiceRef.current?.stop()
     }
     if (guideRef.current.on) {
-      setTourNarration({ on: true, muted: next })
+      setTourNarration({ on: true, muted: next, avatar: stateRef.current?.persona?.avatar })
       // Звук включили посреди тура — Луна читает текущий шаг.
       if (!next) sayStep()
     }
@@ -1545,7 +1549,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             onPointerCancel={onDragEnd}
           >
             {free && <span className="asst__grip" aria-hidden="true" />}
-            <img className="asst__avatar" src={AVATAR} alt="" width="32" height="32" draggable={false} />
+            <img className="asst__avatar" src={persona.avatar} alt="" width="32" height="32" draggable={false} />
             <div className="asst__who">
               <b>{t('assistant.title')}</b>
               <span>{call ? t('assistant.call.sub') : t('assistant.sub')}</span>
@@ -1856,7 +1860,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           else openWindow()
         }}
       >
-        <img src={AVATAR} alt="" width="50" height="50" draggable={false} />
+        <img src={persona.avatar} alt="" width="50" height="50" draggable={false} />
         <span className="asst__name" aria-hidden="true">{t('assistant.title')}</span>
         {!open && wake.state !== 'off' && (
           <span

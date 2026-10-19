@@ -22,7 +22,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { isTtsActive, unlockSpeech } from '../../speech.js'
 import { installMicArbiter } from './micArbiter.js'
-import { WAKE_MODEL_URL } from './model.js'
+import { wakeSet } from './matchWake.js'
+import { WAKE_MODELS } from './model.js'
 import { createWakeEar } from './wakeEar.js'
 import { useWakeOn, writeWakeOn } from './wakeSetting.js'
 
@@ -76,10 +77,12 @@ function earFactory() {
 }
 
 /**
+ * persona — id помощника (lib/assistant/persona.js): Луна слушает русской моделью и
+ * ждёт «Луна», Айзере — казахской и ждёт «Айзере» (matchWake.js).
  * @returns {{ supported: boolean, on: boolean, state: 'off'|'loading'|'listening'|'paused',
  *   error: null|'model'|'denied'|'mic', enable: () => void, disable: () => void }}
  */
-export function useWakeWord({ token, enabled, open, onWake }) {
+export function useWakeWord({ token, enabled, open, onWake, persona = 'luna' }) {
   const supported = useSupported()
   const on = useWakeOn()
   const [ear, setEar] = useState({ state: 'idle', error: null })
@@ -93,8 +96,10 @@ export function useWakeWord({ token, enabled, open, onWake }) {
   })
 
   const getEar = useCallback(() => {
+    const wake = wakeSet(persona)
     earRef.current ??= earFactory()({
-      modelUrl: WAKE_MODEL_URL,
+      modelUrl: WAKE_MODELS[wake.model],
+      wake,
       onWake: () => {
         cooldownRef.current = Date.now() + WAKE_COOLDOWN_MS
         earRef.current?.stop()
@@ -106,9 +111,21 @@ export function useWakeWord({ token, enabled, open, onWake }) {
       },
     })
     return earRef.current
-  }, [])
+  }, [persona])
 
   const live = Boolean(supported && on && token && enabled)
+
+  // Сменился язык интерфейса — сменился помощник: прежнее «ухо» (чужая модель и
+  // фразы) отпускаем, новое создаст getEar на следующем тике. Эффект стоит ДО тика:
+  // тот перезапускается на новый getEar и должен застать earRef пустым.
+  const personaRef = useRef(persona)
+  useEffect(() => {
+    if (personaRef.current === persona) return
+    personaRef.current = persona
+    earRef.current?.dispose()
+    earRef.current = null
+    setEar({ state: 'idle', error: null })
+  }, [persona])
 
   useEffect(
     () => () => {

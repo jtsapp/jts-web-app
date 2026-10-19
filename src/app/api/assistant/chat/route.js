@@ -31,6 +31,7 @@ import {
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { loadStudentContext } from '@/lib/assistant/studentContext.js'
+import { assistantPersona } from '@/lib/assistant/persona.js'
 import {
   REPORTED_STREAM_MARKER,
   errorThreadFromMessages,
@@ -141,7 +142,7 @@ export async function POST(request) {
 
   const modelAt = performance.now()
   const gen = chatStreamRich({
-    systemPrompt: buildSystemPrompt(),
+    systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang)),
     messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
     model: MODEL,
     maxOutputTokens: MAX_OUTPUT_TOKENS,

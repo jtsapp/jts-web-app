@@ -88,9 +88,9 @@ let narration = { on: false, muted: false }
 let toggleMute = null
 const narrationListeners = new Set()
 
-/** Виджет помощника: тур ведёт Луна (on) и выключен ли звук. */
+/** Виджет помощника: тур ведёт помощник (on), выключен ли звук и чей аватар (Луна или Айзере, persona.js). */
 export function setTourNarration(next, onToggleMute) {
-  narration = { on: Boolean(next.on), muted: Boolean(next.muted) }
+  narration = { on: Boolean(next.on), muted: Boolean(next.muted), avatar: next.avatar || null }
   if (onToggleMute !== undefined) toggleMute = onToggleMute
   for (const fn of [...narrationListeners]) fn()
 }
