@@ -88,6 +88,29 @@ describe('POST /api/assistant/speak', () => {
     expect(synth).toHaveBeenCalledWith('soniox', 'Тәжірибе бөлімін ашыңыз.', 'luna', 'kk')
   })
 
+  // Казахский интерфейс — помощник Айзере (persona.js): её клон ElevenLabs на любом
+  // языке фразы, как в звонке Speaking Buddy. Gemini и Soniox Луны не зовутся.
+  it('Айзере — её голос ElevenLabs и по-казахски, и по-русски (числа словами)', async () => {
+    const kk = await post({ text: 'Тәжірибе бөлімін ашыңыз.', lang: 'kk', persona: 'aizere' })
+    expect(kk.status).toBe(200)
+    expect(kk.headers.get('x-assistant-voice')).toBe('eleven')
+    expect(synth).toHaveBeenCalledWith('eleven', 'Тәжірибе бөлімін ашыңыз.', 'aizere', 'kk')
+    await post({ text: 'Осталось 5 заданий.', lang: 'ru', persona: 'aizere' })
+    expect(synth).toHaveBeenLastCalledWith('eleven', 'Осталось пять заданий.', 'aizere', 'ru')
+    expect(synthGemini).not.toHaveBeenCalled()
+  })
+
+  it('Айзере: ElevenLabs не ответил — 502 (клиент дочитает потоком), лимит не тратится', async () => {
+    impl.soniox = async () => ({ status: 503 })
+    expect((await post({ text: 'Сәлеметсіз бе', persona: 'aizere' })).status).toBe(502)
+    expect(synthGemini).not.toHaveBeenCalled()
+  })
+
+  it('чужая персона в запросе — голос Луны', async () => {
+    const res = await post({ text: 'Привет', lang: 'ru', persona: 'dexter' })
+    expect(res.headers.get('x-assistant-voice')).toBe('gemini')
+  })
+
   // Сервер Soniox за Gemini больше не подставляет: в этом пути Soniox собирает
   // фразу целиком 10–12 с (замер на дев-стенде 14.10.2026), и ответ вставал
   // посреди фразы. Клиент сам берёт потоковый /api/tts — первый звук ~0.6 с.

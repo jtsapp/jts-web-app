@@ -81,6 +81,15 @@ async def main():
             os.environ["LUNA_CALL_PREEMPTIVE"] = old
     assert A.parse_metadata('{"mode":"assistant","lang":"kz"}').mode == A.assistant_call.ASSISTANT_MODE
 
+    # Тьютор звонка помощнику: Айзере при казахском интерфейсе (сайт кладёт её в
+    # metadata.tutor), иначе Луна; чужой тьютор и старый сайт без поля — Луна.
+    tutor_of = lambda meta: A.assistant_call_tutor(A.parse_metadata(meta))  # noqa: E731
+    assert tutor_of('{"mode":"assistant","tutor":"aizere","lang":"kz"}') == "aizere"
+    assert tutor_of('{"mode":"assistant","tutor":"gentle"}') == "gentle"
+    assert tutor_of('{"mode":"assistant"}') == "gentle"
+    assert tutor_of('{"mode":"assistant","tutor":"bro"}') == "gentle"
+    assert A.PERSONA_TEMPERATURE.get("aizere") is not None
+
     # Перебивание: в звонке помощнику — простой VAD по первому слову, при любом
     # детекторе конца хода; у тьютора — прежние пороги.
     barge = {"mode": "vad", "min_words": 1, "min_duration": 0.5}

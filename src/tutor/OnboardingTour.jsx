@@ -313,7 +313,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
 
         {narration.on && (
           <div className="t-tour__luna">
-            <img src={LUNA_AVATAR} alt="" width="24" height="24" />
+            <img src={narration.avatar || LUNA_AVATAR} alt="" width="24" height="24" />
             <span>{t('tour.luna')}</span>
             <button
               type="button"

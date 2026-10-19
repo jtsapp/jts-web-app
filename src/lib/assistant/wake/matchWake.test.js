@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { WAKE_GRAMMAR, matchWake } from './matchWake.js'
+import { WAKE_GRAMMAR, WAKE_SETS, matchWake, wakeSet } from './matchWake.js'
 
 describe('позывной', () => {
   it('обе фразы — да, в любом регистре, с ё/ә и знаками', () => {
@@ -14,17 +14,26 @@ describe('позывной', () => {
     expect(matchWake('привет луна [unk]')).toBe(true)
   })
 
-  it('просто «Луна», сказанное отдельно, — да; и повтор имени', () => {
+  it('просто «Луна» — да: отдельно, повтором и первым словом обращения', () => {
     expect(matchWake('луна')).toBe(true)
     expect(matchWake('Луна!')).toBe(true)
     expect(matchWake('  луна  ')).toBe(true)
     expect(matchWake('луна луна')).toBe(true)
+    // «Луна, открой…» — остальное ложится на ловушки, имя первым.
+    expect(matchWake('луна от урок')).toBe(true)
+    expect(matchWake('луна [unk]')).toBe(true)
+    // шум перед именем — не слово
+    expect(matchWake('[unk] луна')).toBe(true)
   })
 
-  it('имя внутри чужой реплики — нет: так грамматика слышит «на луну», «она сказала»', () => {
-    expect(matchWake('[unk] луна')).toBe(false)
-    expect(matchWake('луна [unk]')).toBe(false)
-    expect(matchWake('[unk] луна [unk]')).toBe(false)
+  // Распознанное замера 19.10.2026 (/wake-lab, голоса Soniox и Айзере): имя посреди
+  // фразы — это речь о помощнике, а не к нему.
+  it('имя посреди реплики — нет', () => {
+    expect(matchWake('по лунная луна сегодня')).toBe(false)
+    expect(matchWake('по смотри на луну')).toBe(false)
+    expect(matchWake('она сказать что привет')).toBe(false)
+    expect(matchWake('одна задание')).toBe(false)
+    expect(matchWake('[unk] привет [unk]')).toBe(false)
   })
 
   it('«привет» без имени, разорванная фраза, склейка, пусто — нет', () => {
@@ -37,7 +46,60 @@ describe('позывной', () => {
     expect(matchWake(null)).toBe(false)
   })
 
-  it('грамматика распознавателя — две фразы, имя и [unk]', () => {
-    expect(WAKE_GRAMMAR).toEqual(['привет луна', 'салем луна', 'луна', '[unk]'])
+  it('грамматика распознавателя — две фразы, имя, слова-ловушки и [unk]', () => {
+    expect(WAKE_GRAMMAR.slice(0, 3)).toEqual(['привет луна', 'салем луна', 'луна'])
+    expect(WAKE_GRAMMAR.at(-1)).toBe('[unk]')
+    // Созвучные имени — среди ловушек: «Одна задача осталась» без них приходило как «луна».
+    expect(WAKE_GRAMMAR).toEqual(expect.arrayContaining(['одна', 'она', 'луну']))
+  })
+
+  it('ловушки не задевают позывной: в них нет ни имени, ни слов привета', () => {
+    for (const set of Object.values(WAKE_SETS)) {
+      const fillers = set.grammar.slice(3, -1)
+      expect(fillers.length).toBeGreaterThan(50)
+      for (const w of [set.name, 'привет', 'салем', 'сәлем']) expect(fillers).not.toContain(w)
+      expect(new Set(fillers).size).toBe(fillers.length)
+    }
+  })
+})
+
+// Айзере — помощник при казахском интерфейсе: своя модель (казахская), свои фразы.
+describe('позывной Айзере', () => {
+  const aiz = wakeSet('aizere')
+
+  it('слушает казахской моделью, грамматика — сәлем/привет + имя', () => {
+    expect(aiz.model).toBe('kk')
+    expect(aiz.grammar.slice(0, 3)).toEqual(['сәлем айзере', 'привет айзере', 'айзере'])
+    expect(aiz.grammar).toEqual(expect.arrayContaining(['зере', 'айгерім', 'қалай']))
+  })
+
+  it('«Сәлем, Айзере», «Привет, Айзере», отдельное «Айзере» — да', () => {
+    expect(matchWake('сәлем айзере', aiz)).toBe(true)
+    expect(matchWake('Сәлем, Айзере!', aiz)).toBe(true)
+    expect(matchWake('привет айзере', aiz)).toBe(true)
+    expect(matchWake('[unk] сәлем айзере', aiz)).toBe(true)
+    expect(matchWake('айзере', aiz)).toBe(true)
+    expect(matchWake('Айзере!', aiz)).toBe(true)
+  })
+
+  it('«Айзере, маған көмектесші» — да: имя первым словом', () => {
+    expect(matchWake('айзере мұғалім күн мектеп', aiz)).toBe(true)
+  })
+
+  // Распознанное замера 19.10.2026: имя посреди фразы, созвучные имена, ловушки.
+  it('имя посреди реплики и чужое имя — нет; Луну Айзере не слышит', () => {
+    expect(matchWake('мен кеш айзере мен сөз кім', aiz)).toBe(false)
+    expect(matchWake('әйгерім сәлем', aiz)).toBe(false)
+    expect(matchWake('сәлем қалай', aiz)).toBe(false)
+    expect(matchWake('зере қайда жеті', aiz)).toBe(false)
+    expect(matchWake('мүмкін ауыл өте жақсы', aiz)).toBe(false)
+    expect(matchWake('сәлем', aiz)).toBe(false)
+    expect(matchWake('луна', aiz)).toBe(false)
+    expect(matchWake('привет луна', aiz)).toBe(false)
+  })
+
+  it('чужой id — набор Луны', () => {
+    expect(wakeSet('dexter')).toBe(WAKE_SETS.luna)
+    expect(matchWake('айзере')).toBe(false)
   })
 })

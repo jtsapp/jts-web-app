@@ -21,6 +21,7 @@ import { closeStaleSessions, getUsage, isDbConfigured, openSession } from '@/lib
 import { ASSISTANT_CALL_DAILY_SEC, assistantCallProfileId, hasOpenAssistantCall } from '@/lib/assistant/callUsage.js'
 import { assistantCallHiddenFor } from '@/lib/assistant/callGate.js'
 import { warmStudentContext } from '@/lib/assistant/studentContext.js'
+import { assistantPersona } from '@/lib/assistant/persona.js'
 
 export const runtime = 'nodejs'
 
@@ -59,7 +60,14 @@ export async function POST(request) {
   } catch {
     /* пустое тело — язык по умолчанию */
   }
-  const lang = LANGS.has(body.lang) ? body.lang : 'ru'
+  // Окно шлёт код интерфейса ('kk'), агент знает казахский как 'kz' (код
+  // приложения тьютора). Раньше 'kk' здесь не узнавался, и казахский звонок
+  // уходил агенту русским.
+  const lang = body.lang === 'kk' ? 'kz' : LANGS.has(body.lang) ? body.lang : 'ru'
+  // Голос и уши звонка — тьютора персоны (persona.js): при казахском интерфейсе
+  // помощник — Айзере. Агент без этой правки tutor из metadata не читает и
+  // звонит голосом Луны — так что выкатывать сайт и агента можно в любом порядке.
+  const persona = assistantPersona(lang === 'kz' ? 'kk' : lang)
 
   const userId = auth.user.userId
   const profileId = assistantCallProfileId(userId)
@@ -87,7 +95,7 @@ export async function POST(request) {
   const name = String(auth.user.name || '').trim().slice(0, 40)
   const metadata = JSON.stringify({
     mode: 'assistant',
-    tutor: 'gentle',
+    tutor: persona.callTutor,
     lang,
     sessionTtlSec: ttl,
     ...(name ? { userName: name } : {}),

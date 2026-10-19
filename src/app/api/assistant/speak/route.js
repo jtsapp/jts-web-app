@@ -19,9 +19,16 @@
 //
 // Только для вошедшего ученика и с лимитом: синтез платный, а ответ на один
 // вопрос — 2–4 фразы (чат пускает 20 вопросов за 10 минут).
+//
+// При казахском интерфейсе помощник — Айзере (lib/assistant/persona.js, тело
+// запроса `persona: 'aizere'`): её голос — тот же клон ElevenLabs «zere», что в
+// звонке Speaking Buddy и на кнопке «послушать» (synth('eleven', …, 'aizere')),
+// на любом языке фразы. Сбой — 502, и клиент дочитает её запасным голосом
+// потоком (Soniox «Maya»): серверный Soniox собирал бы фразу целиком (см. выше).
 
 import { bearerFromRequest, verifyTokenStatus } from '@/lib/auth-server.js'
 import { synth, synthGemini } from '@/lib/tutorVoice.js'
+import { personaById } from '@/lib/assistant/persona.js'
 import { createRateLimiter } from '@/lib/assistant/rateLimit.js'
 import { spellNumbersRu } from '@/lib/assistant/numbersRu.js'
 import { stripEmoji } from '@/lib/assistant/speechChunks.js'
@@ -91,14 +98,17 @@ export async function POST(request) {
   }
 
   const lang = voiceLang(text, body?.lang)
-  const voice = lang === 'kk' ? 'soniox' : 'gemini'
+  const persona = personaById(body?.persona)
+  const voice = persona.id === 'aizere' ? 'eleven' : lang === 'kk' ? 'soniox' : 'gemini'
   const result =
-    lang === 'kk'
-      ? await withTimeout(synth('soniox', text, 'luna', 'kk'), 'soniox')
-      : await withTimeout(
-          synthGemini(lang === 'ru' ? spellNumbersRu(text) : text, { voice: LUNA_VOICE, languageCode: LUNA_LANGUAGE }),
-          'gemini',
-        )
+    voice === 'eleven'
+      ? await withTimeout(synth('eleven', lang === 'ru' ? spellNumbersRu(text) : text, 'aizere', lang), 'eleven')
+      : voice === 'soniox'
+        ? await withTimeout(synth('soniox', text, 'luna', 'kk'), 'soniox')
+        : await withTimeout(
+            synthGemini(lang === 'ru' ? spellNumbersRu(text) : text, { voice: LUNA_VOICE, languageCode: LUNA_LANGUAGE }),
+            'gemini',
+          )
   if (!result) {
     // Звука не было — и фраза не должна съесть лимит ученика.
     takeQuota.refund(key)

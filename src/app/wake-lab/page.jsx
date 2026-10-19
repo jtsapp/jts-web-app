@@ -5,18 +5,25 @@
 // телефонах попадания, ложные срабатывания и нагрузку. Отдельный адрес Next, а не
 // экран App: ей не нужны ни вход, ни сайдбар. Открывается на локалке и дев-стенде;
 // на проде страницы нет — ученикам она ни к чему.
+//
+// ?persona=aizere — «ухо» Айзере (казахская модель, «Айзере» / «Сәлем, Айзере»),
+// без параметра — Луны (matchWake.js).
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { WAKE_MODEL_URL } from '../../lib/assistant/wake/model.js'
+import { WAKE_MODELS } from '../../lib/assistant/wake/model.js'
+import { wakeSet } from '../../lib/assistant/wake/matchWake.js'
 import { createWakeEar } from '../../lib/assistant/wake/wakeEar.js'
 
 const LAB_HOSTS = /^(localhost|127\.0\.0\.1|.+\.localhost|dev-[\w-]+\.justtostudy\.kz)$/
 const noop = () => () => {}
 const isLabHost = () => LAB_HOSTS.test(window.location.hostname)
 const clock = (ms) => new Date(ms).toLocaleTimeString('ru-RU')
+const personaOf = () => (new URLSearchParams(window.location.search).get('persona') === 'aizere' ? 'aizere' : 'luna')
 
 export default function WakeLabPage() {
   const allowed = useSyncExternalStore(noop, isLabHost, () => null)
+  const persona = useSyncExternalStore(noop, personaOf, () => 'luna')
+  const wake = wakeSet(persona)
   const [state, setState] = useState('idle')
   const [error, setError] = useState(null)
   const [log, setLog] = useState([])
@@ -32,12 +39,17 @@ export default function WakeLabPage() {
 
   const ear = () => {
     earRef.current ??= createWakeEar({
-      modelUrl: WAKE_MODEL_URL,
+      modelUrl: WAKE_MODELS[wake.model],
+      wake,
       onWake: () => {
         setWakes((n) => n + 1)
         setLog((l) => [{ at: Date.now(), text: '★ ПОЗЫВНОЙ' }, ...l].slice(0, 300))
       },
-      onResult: (text) => setLog((l) => [{ at: Date.now(), text: text || '(пусто)' }, ...l].slice(0, 300)),
+      // Слово — с длительностью и уверенностью: «айзере 0.62с 1.00».
+      onResult: (text, words = []) => {
+        const detail = words.map((w) => `${w.word} ${(w.end - w.start).toFixed(2)}с ${Number(w.conf).toFixed(2)}`).join(', ')
+        setLog((l) => [{ at: Date.now(), text: `${text || '(пусто)'}${detail ? ` {${detail}}` : ''}` }, ...l].slice(0, 300))
+      },
       onState: (s, err) => {
         setState(s)
         setError(err || null)
@@ -75,8 +87,12 @@ export default function WakeLabPage() {
 
   return (
     <main style={{ padding: 16, maxWidth: 640, margin: '0 auto', fontFamily: 'system-ui, sans-serif', background: '#fff', color: '#171326', minHeight: '100vh' }}>
-      <h1 style={{ fontSize: 22 }}>Позывной Луны — лаборатория</h1>
-      <p>Фразы: «Привет, Луна», «Сәлем, Луна» и отдельное «Луна». Звук не покидает устройство.</p>
+      <h1 style={{ fontSize: 22 }}>Позывной {persona === 'aizere' ? 'Айзере' : 'Луны'} — лаборатория</h1>
+      <p data-testid="wake-phrases">
+        {/* Грамматика начинается с позывного; дальше — слова-ловушки, их не показываем. */}
+        Фразы: {wake.grammar.slice(0, 3).map((g) => `«${g}»`).join(', ')} (имя — первым словом). Звук не покидает
+        устройство.
+      </p>
       <p data-testid="wake-state">
         Состояние: <b>{state}</b>
         {error ? ` (${error})` : ''}

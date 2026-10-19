@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import zlib from 'node:zlib'
 import { createRequire } from 'node:module'
-import { WAKE_MODEL_URL } from '../src/lib/assistant/wake/model.js'
+import { WAKE_MODELS, WAKE_MODEL_URL } from '../src/lib/assistant/wake/model.js'
 
 const require = createRequire(import.meta.url)
-const { MODEL, zipToTarGz } = require('./fetch-wake-model.js')
+const { MODEL, MODELS, zipToTarGz } = require('./fetch-wake-model.js')
 const { zipSync } = require('./lib/zip.js')
 
 const tarNames = (tar) => {
@@ -24,9 +24,17 @@ describe('модель позывного', () => {
     expect(`/${MODEL.out.replace(/^public\//, '')}`).toBe(WAKE_MODEL_URL)
   })
 
-  it('закреплён sha256 именно той модели, чей словарь проверен', () => {
+  it('каждая модель сборки — ровно та, что ждёт клиент (WAKE_MODELS)', () => {
+    expect(MODELS.map((m) => m.key).sort()).toEqual(Object.keys(WAKE_MODELS).sort())
+    for (const m of MODELS) expect(`/${m.out.replace(/^public\//, '')}`).toBe(WAKE_MODELS[m.key])
+  })
+
+  it('закреплён sha256 именно тех моделей, чей словарь проверен', () => {
     expect(MODEL.url).toBe('https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip')
     expect(MODEL.sha256).toBe('961d5ff98a17f4aa6de69864d0aa71fa5bac682301d2b5d17a3f24c5c99a46d4')
+    const kk = MODELS.find((m) => m.key === 'kk')
+    expect(kk.url).toBe('https://alphacephei.com/vosk/models/vosk-model-small-kz-0.42.zip')
+    expect(kk.sha256).toBe('b6d6bfe6195c866805bd18b1f56723e4d2ba4866e81df1481006d0c5704fda4f')
   })
 
   it('zip → tar.gz: те же файлы под той же папкой, по алфавиту', () => {

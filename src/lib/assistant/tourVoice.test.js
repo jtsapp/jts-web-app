@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createTourVoice, stepPhrases } from './tourVoice.js'
+import { PERSONAS } from './persona.js'
 
 // Плеер подменён: «играет» до тех пор, пока тест не скажет end(), — так видно
 // порядок фраз и что новая реплика обрывает прошлую.
@@ -107,6 +108,27 @@ describe('голос тура', () => {
     await tick()
     expect(failing).toHaveBeenCalledTimes(1)
     expect(p.log[1]).toMatch(/^\/api\/tts\?/)
+  })
+
+  it('тур Айзере: казахский шаг — её голосом, сбой — запасной Maya', async () => {
+    const p = fakePlayer()
+    const bodies = []
+    const own = vi.fn(async (url, init) => {
+      bodies.push(JSON.parse(init.body))
+      return new Response(new Blob(['x']), { status: 200 })
+    })
+    const v = createTourVoice({ token: 't', persona: PERSONAS.aizere, fetchImpl: own, play: p.play, stopSound: p.stopSound })
+    v.say(['Дағдылар бөлімі.'])
+    await tick()
+    expect(bodies[0]).toEqual({ text: 'Дағдылар бөлімі.', lang: 'kk', persona: 'aizere' })
+    expect(p.log).toEqual(['blob:1'])
+    p.end()
+
+    const failing = vi.fn(async () => new Response('no', { status: 502 }))
+    const w = createTourVoice({ token: 't', persona: PERSONAS.aizere, fetchImpl: failing, play: p.play, stopSound: p.stopSound })
+    w.say(['Деңгей.'])
+    await tick()
+    expect(p.log.at(-1)).toContain('v=Maya')
   })
 
   it('stop не трогает чужой звук, dispose отпускает записи', async () => {

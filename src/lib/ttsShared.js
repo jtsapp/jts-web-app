@@ -23,6 +23,9 @@ export const VOICE = {
   // Им озвучены записи курса «Обучения» (scripts/make-lesson-audio.js).
   // Слово без записи должно звучать тем же голосом, что и слово с записью.
   course: 'Owen',
+  // Запасной голос помощника Айзере (lib/assistant/persona.js) — её откатный
+  // голос у агента: женский, чтобы на сбое ElevenLabs она не заговорила Спарком.
+  aizere: 'Maya',
 }
 
 // Состав Сказок (src/practice/fairytale/engine.js кастует персонажей из этих

@@ -1,7 +1,7 @@
 'use client'
 
 // «Ухо» позывного Луны: Vosk (vosk-browser, WASM в Web Worker) слушает микрофон
-// и ждёт «Луна» / «Привет, Луна» / «Сәлем, Луна». Звук никуда не уходит — распознаёт само
+// и ждёт позывной помощника (Луны или Айзере — matchWake.js). Звук никуда не уходит — распознаёт само
 // устройство (решение 16.10.2026: слать звук на сервер — платить за каждую
 // открытую вкладку и держать чужой микрофон в комнате ученика).
 //
@@ -19,7 +19,7 @@
 // состояние 'asleep', и будит его resume() — его зовут из обработчика нажатия.
 
 import { withOwnMic } from './micArbiter.js'
-import { WAKE_GRAMMAR, matchWake } from './matchWake.js'
+import { WAKE_SETS, matchWake } from './matchWake.js'
 
 // 4096 кадров ≈ 85 мс при 48 кГц: так кормит распознаватель пример vosk-browser.
 const FRAME = 4096
@@ -36,13 +36,16 @@ async function loadVoskModel(url) {
 const micError = (err) => (err?.name === 'NotAllowedError' || err?.name === 'SecurityError' ? 'denied' : 'mic')
 
 /**
- * @param {{ modelUrl: string, onWake: () => void,
+ * wake — набор позывного персоны (matchWake.js: грамматика, фразы, имя); по
+ * умолчанию — Луны.
+ * @param {{ modelUrl: string, wake?: { grammar: string[], phrases: string[], name: string }, onWake: () => void,
  *   onState?: (state: 'idle'|'loading'|'asleep'|'listening'|'error', error?: 'model'|'denied'|'mic') => void,
  *   onResult?: (text: string) => void, loadModel?: (url: string) => Promise<any>,
  *   getUserMedia?: (c: MediaStreamConstraints) => Promise<MediaStream>, createContext?: () => AudioContext }} opts
  */
 export function createWakeEar({
   modelUrl,
+  wake = WAKE_SETS.luna,
   onWake,
   onState = () => {},
   onResult = () => {},
@@ -120,11 +123,14 @@ export function createWakeEar({
       ctx.onstatechange = () => {
         if (run) set(live())
       }
-      const rec = new model.KaldiRecognizer(ctx.sampleRate, JSON.stringify(WAKE_GRAMMAR))
+      const rec = new model.KaldiRecognizer(ctx.sampleRate, JSON.stringify(wake.grammar))
+      // Время и уверенность слов — для лаборатории (/wake-lab пишет их в журнал).
+      rec.setWords?.(true)
       rec.on('result', (msg) => {
         const text = msg?.result?.text || ''
-        onResult(text)
-        if (run?.rec === rec && matchWake(text)) onWake()
+        const words = Array.isArray(msg?.result?.result) ? msg.result.result : []
+        onResult(text, words)
+        if (run?.rec === rec && matchWake(text, wake)) onWake()
       })
       const source = ctx.createMediaStreamSource(stream)
       // ScriptProcessor, а не AudioWorklet: acceptWaveform vosk-browser берёт
