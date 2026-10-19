@@ -22,7 +22,7 @@ describe('placement', () => {
 
   it('по умолчанию кнопка и окно — в правом нижнем углу, окно растёт к середине', () => {
     const btn = placeRect(DEFAULT_PLACE, BTN, VP)
-    expect(btn).toEqual({ x: 1440 - 24 - 48, y: 900 - 24 - 48, w: 48, h: 48 })
+    expect(btn).toEqual({ x: 1440 - 24 - 56, y: 900 - 24 - 56, w: 56, h: 56 })
     const panel = placeRect(DEFAULT_PLACE, panelSize('compact', VP), VP)
     // Правый нижний угол окна совпадает с углом кнопки — окно «вырастает» из неё.
     expect(panel.x + panel.w).toBe(btn.x + btn.w)

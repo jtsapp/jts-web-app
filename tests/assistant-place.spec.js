@@ -37,7 +37,7 @@ test('компьютер: компактное окно, «телефон», п�
   await expect(launcher).toBeVisible({ timeout: 30000 })
   const vp = page.viewportSize()
   const b = await box(launcher)
-  expect(Math.round(b.width)).toBe(48)
+  expect(Math.round(b.width)).toBe(56)
   expect(Math.round(vp.width - b.x - b.width)).toBe(24)
 
   await launcher.click()

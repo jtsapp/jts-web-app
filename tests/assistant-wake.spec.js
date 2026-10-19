@@ -71,7 +71,7 @@ async function enableWake(page) {
   await page.getByRole('button', { name: 'Помощник' }).click()
   const dialog = page.getByRole('dialog', { name: 'Луна' })
   await dialog.getByRole('checkbox', { name: 'Звать Луну голосом' }).check()
-  await expect(dialog.getByText('Скажите «Привет, Луна»')).toBeVisible()
+  await expect(dialog.getByText('Скажите «Луна»')).toBeVisible()
   await dialog.getByRole('button', { name: 'Закрыть' }).click()
   await expect(dot(page)).toHaveAttribute('data-wake', 'listening', { timeout: 10_000 })
 }

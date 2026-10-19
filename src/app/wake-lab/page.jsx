@@ -76,7 +76,7 @@ export default function WakeLabPage() {
   return (
     <main style={{ padding: 16, maxWidth: 640, margin: '0 auto', fontFamily: 'system-ui, sans-serif', background: '#fff', color: '#171326', minHeight: '100vh' }}>
       <h1 style={{ fontSize: 22 }}>Позывной Луны — лаборатория</h1>
-      <p>Фразы: «Привет, Луна», «Сәлем, Луна». Звук не покидает устройство.</p>
+      <p>Фразы: «Привет, Луна», «Сәлем, Луна» и отдельное «Луна». Звук не покидает устройство.</p>
       <p data-testid="wake-state">
         Состояние: <b>{state}</b>
         {error ? ` (${error})` : ''}

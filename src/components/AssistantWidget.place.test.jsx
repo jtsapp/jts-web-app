@@ -26,8 +26,8 @@ function rectFromStyle() {
   const px = (v) => parseFloat(v) || 0
   const left = px(this.style.left)
   const top = px(this.style.top)
-  const width = px(this.style.width) || 48
-  const height = px(this.style.height) || 48
+  const width = px(this.style.width) || 56
+  const height = px(this.style.height) || 56
   return { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top }
 }
 
@@ -56,8 +56,8 @@ describe('место и размер окна Луны', () => {
 
   it('кнопка — в правом нижнем углу, окно встаёт на её место компактным', () => {
     render(<Harness />)
-    expect(launcher().style.left).toBe(`${VW - 24 - 48}px`)
-    expect(launcher().style.top).toBe(`${VH - 24 - 48}px`)
+    expect(launcher().style.left).toBe(`${VW - 24 - 56}px`)
+    expect(launcher().style.top).toBe(`${VH - 24 - 56}px`)
     fireEvent.click(launcher())
     const panel = screen.getByRole('dialog', { name: 'Луна' })
     expect(panel.style.width).toBe('320px')
@@ -81,8 +81,8 @@ describe('место и размер окна Луны', () => {
   it('кнопку перетащили — окно не открылось, место запомнилось и у окна', () => {
     const { unmount } = render(<Harness />)
     const btn = launcher()
-    const x0 = VW - 24 - 48
-    const y0 = VH - 24 - 48
+    const x0 = VW - 24 - 56
+    const y0 = VH - 24 - 56
     fireEvent.pointerDown(btn, { button: 0, clientX: x0 + 10, clientY: y0 + 10 })
     fireEvent.pointerMove(btn, { clientX: 110, clientY: 110 })
     fireEvent.pointerUp(btn, { clientX: 110, clientY: 110 })

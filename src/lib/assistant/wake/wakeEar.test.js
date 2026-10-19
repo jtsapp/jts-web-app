@@ -89,7 +89,7 @@ describe('«ухо» позывного', () => {
     expect(states).toEqual(['loading', 'listening'])
     expect(e.state).toBe('listening')
     expect(f.recs[0].rate).toBe(48000)
-    expect(JSON.parse(f.recs[0].grammar)).toEqual(['привет луна', 'салем луна', '[unk]'])
+    expect(JSON.parse(f.recs[0].grammar)).toEqual(['привет луна', 'салем луна', 'луна', '[unk]'])
     f.node.onaudioprocess({ inputBuffer: {} })
     expect(f.recs[0].fed).toBe(1)
   })
@@ -99,8 +99,11 @@ describe('«ухо» позывного', () => {
     const { e, onWake } = ear(f)
     await e.start()
     f.recs[0].say('[unk]')
+    f.recs[0].say('[unk] луна')
     f.recs[0].say('привет луна')
     expect(onWake).toHaveBeenCalledTimes(1)
+    f.recs[0].say('луна')
+    expect(onWake).toHaveBeenCalledTimes(2)
   })
 
   it('stop отдаёт микрофон; повторный start не качает модель заново', async () => {

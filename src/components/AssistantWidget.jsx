@@ -8,6 +8,7 @@ import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
+import { useIntroHint } from '../lib/assistant/introHint.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
 import { callSpeech, createCallTourVoice } from '../lib/assistant/callBridge.js'
 import { assistantCallHidden } from '../lib/assistant/callGate.js'
@@ -76,7 +77,7 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // договорила, шаги тура читает голос звонка. Окно можно закрыть — звонок
 // продолжается, кнопка Луны показывает, что она на связи.
 //
-// Позывной (16.10.2026): ученик говорит «Привет, Луна» / «Сәлем, Луна» — окно
+// Позывной (16.10.2026, «Луна» — с 19.10): ученик говорит «Луна» / «Привет, Луна» — окно
 // открывается, Луна здоровается, говорит, что видит, спрашивает, чем помочь, и,
 // договорив, сама слушает ОДИН ответ, как по кнопке микрофона. Дальше — кнопкой:
 // разговор без кнопок в чате владелец отменил 15.10 (для разговора есть звонок).
@@ -84,6 +85,8 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // переключателем в окне; во время звонка «ухо» выключено — микрофон у звонка.
 
 const MAX_INPUT = 2000
+// Зазор между кнопкой и облачком-знакомством (хвостик облачка — 7 px).
+const HINT_GAP = 14
 // Тур не начался за это время (экран без тура, данные не доехали) — честно
 // говорим об этом, а не молчим. Чуть больше срока жизни заявки в tourBus.
 const TOUR_START_TIMEOUT_MS = 10_500
@@ -1266,6 +1269,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   }, [send, listenAnswer])
   // Во время звонка «ухо» молчит: микрофон у звонка, и Луна и так на связи.
   const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake })
+  // Облачко «Я Луна…» у кнопки, пока ученик её ни разу не открывал (introHint.js).
+  const introHint = useIntroHint({ screen, active: enabled && !call, open })
 
   // Закрыть окно — замолчать и бросить недоговорённую запись.
   const close = useCallback(() => {
@@ -1504,6 +1509,17 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const launcherBox = free ? placeRect(place, { w: LAUNCHER_SIZE, h: LAUNCHER_SIZE }, vp) : null
   const boxStyle = (b, sized) =>
     b ? { left: b.x, top: b.y, right: 'auto', bottom: 'auto', ...(sized ? { width: b.w, height: b.h, maxHeight: 'none' } : {}) } : undefined
+  // Облачко — сбоку от кнопки, к середине экрана: кнопку можно увести в любой угол.
+  const hintLeft = free && place.h === 'l'
+  const hintStyle = launcherBox
+    ? {
+        top: launcherBox.y + launcherBox.h / 2,
+        bottom: 'auto',
+        ...(hintLeft
+          ? { left: launcherBox.x + launcherBox.w + HINT_GAP, right: 'auto' }
+          : { right: vp.w - launcherBox.x + HINT_GAP, left: 'auto' }),
+      }
+    : undefined
 
   if (!enabled) return null
 
@@ -1805,6 +1821,21 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         </Suspense>
       )}
 
+      {/* Мышь сквозь облачко проходит (pointer-events: none), а читалке хватает
+          подписи самой кнопки — облачко её лишь повторяет. */}
+      {introHint && !open && (
+        <div
+          className={`asst__hint${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
+          style={hintStyle}
+          aria-hidden="true"
+          data-intro-hint=""
+        >
+          <b className="asst__hint-title">{t('assistant.hint.title')}</b>
+          <span className="asst__hint-text">{t('assistant.hint.text')}</span>
+          {wake.on && <span className="asst__hint-voice">{t('assistant.hint.voice')}</span>}
+        </div>
+      )}
+
       {/* Открытое окно встаёт на место кнопки, и она прячется (CSS is-open):
           закрывает окно его же «×» в шапке. */}
       <button
@@ -1825,7 +1856,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           else openWindow()
         }}
       >
-        <img src={AVATAR} alt="" width="40" height="40" draggable={false} />
+        <img src={AVATAR} alt="" width="50" height="50" draggable={false} />
+        <span className="asst__name" aria-hidden="true">{t('assistant.title')}</span>
         {!open && wake.state !== 'off' && (
           <span
             className={`asst__wake-dot is-${wake.state}`}
