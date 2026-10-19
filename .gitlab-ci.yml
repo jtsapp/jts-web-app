@@ -43,8 +43,17 @@ test:
   stage: test
   tags:
     - $GITLAB_RUNNER_TAG
+  # Кэш npm между пайплайнами: без него `npm ci` на каждом пуше заново качал из
+  # реестра все пакеты. Ключ — package-lock: сменились зависимости — новый кэш.
+  # Каталог внутри проекта, потому что GitLab кэширует только такие.
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
   script:
-    - npm ci
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
     - npm test
 
 # Отдельного build-стейджа, в отличие от backend, не нужно — сборка Next.js
@@ -74,7 +83,10 @@ deploy:
     # память впустую. Команды безвредны, когда удалять уже нечего.
     - docker rm -f jts-$APP_ENV-redis-1 >/dev/null 2>&1 || true
     - docker volume rm jts-${APP_ENV}_jts-web-app-redis >/dev/null 2>&1 || true
-    - docker compose -f compose.yaml -f compose-app.yaml -p jts-$APP_ENV up -d --build --force-recreate
+    # Пересоздаётся только web: --force-recreate без имени сервиса на каждом
+    # деплое перезапускал и Postgres стенда. Postgres compose поднимет сам, если
+    # тот не запущен (depends_on), и пересоздаст, только если поменялся его конфиг.
+    - docker compose -f compose.yaml -f compose-app.yaml -p jts-$APP_ENV up -d --build --force-recreate web
   # dev отработал стабильно (реальное потребление RAM проверено) — добавляем
   # main для прода. POSTGRES_PORT/APP_PORT для production ДОЛЖНЫ быть заданы
   # отдельными от dev значениями в GitLab CI/CD Variables (иначе конфликт
@@ -135,11 +147,16 @@ trash:
     - $GITLAB_RUNNER_TAG
   stage: trash
   script:
-    # until=720h (30 дней) на build cache не освобождал ничего: при частых
-    # деплоях кэш не доживает до месяца — проверено на сервере вживую
-    # (0B reclaimed). Кэш чистим без пощады к возрасту, образы/контейнеры —
-    # только старше суток, с запасом на откат.
-    - docker builder prune -a -f
+    # Кэш сборки — с потолком по размеру, а не целиком. `prune -a` после каждого
+    # деплоя заставлял следующую сборку делать всё с нуля: npm ci, загрузку
+    # моделей позывного, 720 МБ public в образ, — и пайплайн develop на новом
+    # сервере дошёл до 43 минут. Потолок вытесняет давно не нужное, свежее
+    # остаётся. (until=720h не годился: при частых деплоях кэш не доживает до
+    # месяца, на сервере вышло 0B reclaimed.) Кэш общий на весь сервер: у backend
+    # такой же шаг, и его `prune -a` стирал бы и наш. Docker переименовал флаг
+    # (`--keep-storage` → `--reserved-space`), отсюда запасной вызов.
+    - docker builder prune -a -f --keep-storage 10gb || docker builder prune -a -f --reserved-space 10gb
+    # Образы и контейнеры — только старше суток, с запасом на откат.
     - docker system prune -f --all --filter "until=24h"
   only:
     - develop
