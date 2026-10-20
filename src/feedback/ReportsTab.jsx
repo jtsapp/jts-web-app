@@ -18,6 +18,13 @@ function formatDay(iso, lang) {
   return d.toLocaleDateString(LOCALES[lang] || 'ru-RU', { day: 'numeric', month: 'long' })
 }
 
+// Отчёты, открытые за этот визит, — «не новые» в любом списке, даже в том,
+// что пришёл позже: из уведомления отчёт и список грузятся одновременно, и
+// снимок списка мог быть сделан до отметки.
+function withSeen(items, seen) {
+  return items.map((x) => (!x.seenAt && seen.has(String(x.id)) ? { ...x, seenAt: new Date().toISOString() } : x))
+}
+
 export default function ReportsTab({ token, initialReportId = null }) {
   const { t, lang } = useI18n()
   const [list, setList] = useState(null) // null — грузим
@@ -35,7 +42,7 @@ export default function ReportsTab({ token, initialReportId = null }) {
     ;(async () => {
       try {
         const raw = wantsReportSample() ? SAMPLE_LIST : await getFeedbackReports(token)
-        if (!cancelled) setList(normalizeReportList(raw))
+        if (!cancelled) setList(withSeen(normalizeReportList(raw), seenRef.current))
       } catch (e) {
         if (cancelled) return
         // 404 — ручки на бэкенде ещё нет (веб вышел раньше): для ученика это
@@ -88,7 +95,7 @@ export default function ReportsTab({ token, initialReportId = null }) {
   useEffect(() => {
     if (!report || report.id == null || seenRef.current.has(String(report.id))) return
     seenRef.current.add(String(report.id))
-    setList((prev) => prev && prev.map((x) => (String(x.id) === String(report.id) && !x.seenAt ? { ...x, seenAt: new Date().toISOString() } : x)))
+    setList((prev) => prev && withSeen(prev, seenRef.current))
     if (wantsReportSample()) return
     markFeedbackReportSeen(token, report.id).catch(() => {})
   }, [report, token])

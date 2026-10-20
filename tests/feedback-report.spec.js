@@ -30,6 +30,22 @@ test('ссылка из мессенджера открывает отчёт б�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
 
+test('у родителя с сохранённым английским интерфейсом гидратация не расходится', async ({ page }) => {
+  // Первый кадр рисует и сервер (язык там всегда ru): текст загрузки на языке
+  // интерфейса разошёлся бы с клиентом и дал hydration error.
+  // React бросает «Hydration failed» необработанным исключением страницы, а не
+  // console.error — слушаем оба канала.
+  const errors = []
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.addInitScript(() => localStorage.setItem('lang', 'en'))
+  await page.route('**/feedback-reports/link/tok-en', (r) => r.fulfill(json(REPORT)))
+  await page.route('**/feedback-reports/link/tok-en/opened', (r) => r.fulfill({ status: 204 }))
+  await page.goto('/report/tok-en')
+  await expect(page.getByRole('heading', { name: 'Айша Тестова' })).toBeVisible()
+  expect(errors.filter((e) => /hydrat/i.test(e))).toEqual([])
+})
+
 test('неизвестная ссылка — «недействительна»', async ({ page }) => {
   await page.route('**/feedback-reports/link/nope', (r) => r.fulfill(json({ messages: ['not found'] }, 404)))
   await page.goto('/report/nope')
@@ -55,6 +71,9 @@ test('вкладка «Отчёты»: список → отчёт → «про�
   await page.route('**/mobile/feedback-reports/2/seen', (r) => { seen += 1; return r.fulfill({ status: 204 }) })
 
   await page.goto('/?screen=lessons&tab=reports')
+  // Цель диплинка одноразовая — из адреса она уходит сразу, иначе F5 после
+  // ухода и возврата снова открыл бы её.
+  await expect.poll(() => new URL(page.url()).searchParams.has('tab')).toBe(false)
   // По классам, а не по тексту: заголовок карточки вместе с меткой — «2-й
   // месяцНовый», а слово «Новый» может встретиться где угодно на экране.
   const item = page.locator('.fbl__item', { hasText: '2-й месяц' })

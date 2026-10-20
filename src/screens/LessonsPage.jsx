@@ -54,6 +54,14 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   useEffect(() => {
     rememberPlace('lessons', { tab })
   }, [tab])
+  // Отчёт из уведомления открывается ОДИН раз: вкладка «Отчёты» при уходе на
+  // соседнюю размонтируется, и без этого на возврате она снова открыла бы его
+  // вместо списка.
+  const [pendingReportId, setPendingReportId] = useState(initialReportId)
+  const selectTab = (key) => {
+    setTab(key)
+    setPendingReportId(null)
+  }
 
   // Тур — ученический: он рассказывает, как заходить на свой урок и сдавать
   // работы. Преподаватель этот экран использует как рабочее место (каталог,
@@ -68,7 +76,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
     { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text') },
   ]
   const startTour = () => {
-    setTab('online')
+    selectTab('online')
     tour.start()
   }
 
@@ -97,7 +105,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
             <button
               key={key}
               className={`ls-tab ${tab === key ? 'ls-tab--active' : ''}`}
-              onClick={() => setTab(key)}
+              onClick={() => selectTab(key)}
             >
               {t(label)}
             </button>
@@ -129,7 +137,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
 
         {tab === 'reports' && !teacher && (
           <div className="ls__body ls__body--wide">
-            <ReportsTab token={token} initialReportId={initialReportId} />
+            <ReportsTab token={token} initialReportId={pendingReportId} />
           </div>
         )}
 

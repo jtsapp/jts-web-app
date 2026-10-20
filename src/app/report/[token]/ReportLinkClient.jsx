@@ -54,8 +54,11 @@ export default function ReportLinkClient({ token }) {
     <main className="fbp">
       <div className="fbp__inner">
         <div className="fbp__brand">Just to Study</div>
+        {/* Загрузка — без текста: первый кадр рисует и сервер, а у него язык
+            всегда ru, тогда как у браузера в localStorage может быть kk или en —
+            подпись разошлась бы при гидратации. */}
         {state.status === 'loading' && (
-          <div className="fbp__msg" aria-busy="true"><p>{t('reports.loading')}</p></div>
+          <div className="fbp__msg" aria-busy="true"><div className="spinner" /></div>
         )}
         {state.status === 'invalid' && (
           <div className="fbp__msg"><p>{t('reports.linkInvalid')}</p></div>

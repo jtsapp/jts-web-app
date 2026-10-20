@@ -105,7 +105,14 @@ describe('LessonsPage tabs', () => {
 })
 
 describe('вкладка «Отчёты»', () => {
-  beforeEach(() => vi.clearAllMocks())
+  // Сброс и ответов, а не только вызовов: тест, упавший до своей уборки, не
+  // должен подсунуть соседу свой список.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getFeedbackReports.mockReset().mockImplementation(async () => [])
+    getFeedbackReport.mockReset().mockImplementation(async () => ({}))
+    markFeedbackReportSeen.mockReset().mockImplementation(async () => null)
+  })
 
   it('ученик открывает отчёт из списка, и он отмечается просмотренным', async () => {
     getFeedbackReports.mockResolvedValueOnce(SAMPLE_LIST)
@@ -125,6 +132,32 @@ describe('вкладка «Отчёты»', () => {
     renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports', initialReportId: '2' })
     expect(await screen.findByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeTruthy()
     expect(getFeedbackReport).toHaveBeenLastCalledWith(expect.any(String), '2')
+  })
+
+  it('отчёт из уведомления открывается один раз: после смены вкладки — список', async () => {
+    getFeedbackReport.mockResolvedValueOnce(SAMPLE_REPORT)
+    getFeedbackReports.mockResolvedValue(SAMPLE_LIST)
+    renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports', initialReportId: '2' })
+    expect(await screen.findByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Онлайн-уроки' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Отчёты' }))
+    expect(await screen.findByText('1-й месяц')).toBeTruthy()
+    expect(screen.queryByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeNull()
+  })
+
+  it('отчёт пришёл раньше списка — в списке он уже не «Новый»', async () => {
+    let releaseList
+    getFeedbackReports.mockImplementationOnce(() => new Promise((r) => { releaseList = () => r(SAMPLE_LIST) }))
+    getFeedbackReport.mockResolvedValueOnce(SAMPLE_REPORT)
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports', initialReportId: '2' })
+    expect(await screen.findByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeTruthy()
+    await waitFor(() => expect(markFeedbackReportSeen).toHaveBeenCalled())
+
+    releaseList()
+    fireEvent.click(screen.getByText('← Все отчёты'))
+    expect(await screen.findByText('2-й месяц')).toBeTruthy()
+    expect(container.querySelector('.fbl__new')).toBeNull()
   })
 
   it('ручки ещё нет (404) — «Отчётов пока нет», а не ошибка', async () => {

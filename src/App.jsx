@@ -376,7 +376,15 @@ export default function App() {
     // (ссылка из уведомления в браузере и проверка вида по адресу).
     if (deepLink === 'lessons') {
       const tab = searchParams.get('tab')
-      if (tab) setLessonsTarget({ tab, reportId: searchParams.get('report'), at: Date.now() })
+      if (tab) {
+        setLessonsTarget({ tab, reportId: searchParams.get('report'), at: Date.now() })
+        // Цель одноразовая, и в адресе ей не место: screenUrlParams знает только
+        // свои ключи, и после ухода и возврата F5 снова открыл бы тот же отчёт.
+        const clean = new URL(window.location.href)
+        clean.searchParams.delete('tab')
+        clean.searchParams.delete('report')
+        window.history.replaceState(null, '', clean)
+      }
     }
     // ?screen=arcade&game=runner — сразу в игру «Аркады», минуя зал: без
     // этого проверить Word Rush по ссылке можно было бы только кликом.
@@ -643,9 +651,12 @@ export default function App() {
   // Работа, которую открыть в «Домашней работе» (карточка «Главной»); null — первая по порядку.
   const [homeworkTarget, setHomeworkTarget] = useState(null)
   // Вкладка и отчёт «Уроков» — из уведомления «Новый отчёт», карточки
-  // «Главной» и диплинка ?screen=lessons&tab=reports. at — метка перехода:
-  // по ней экран пересоздаётся, иначе повторный переход, пока «Уроки» уже
-  // открыты, не сменил бы вкладку (initialTab читается только при монтировании).
+  // «Главной» и диплинка ?screen=lessons&tab=reports. Цель ОДНОРАЗОВАЯ: «Уроки»
+  // монтируются заново только через handleNav (ставит или сбрасывает её) и
+  // goBack (сбрасывает), так что «назад» из урока не откроет отчёт повторно.
+  // at — метка перехода: по ней экран пересоздаётся, иначе переход, пока
+  // «Уроки» уже открыты, не сменил бы вкладку (initialTab читается только при
+  // монтировании).
   const [lessonsTarget, setLessonsTarget] = useState(null)
   // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
   // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
@@ -1435,6 +1446,8 @@ export default function App() {
     // иначе прочитал бы чужой liveLessonId прошлого пользователя вкладки как
     // сеанс следующего аккаунта класса.
     setLiveLessonId(null)
+    // Отчёт из уведомления — чужой для следующего вошедшего в этой вкладке.
+    setLessonsTarget(null)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -1746,6 +1759,9 @@ export default function App() {
   // Куда ведёт «назад» с текущего экрана: туда, откуда пришли, а без истории
   // (диплинк, F5 на первом экране вкладки) — по запасному переходу экрана.
   function goBack(fallback) {
+    // «Назад» (и его запасной переход) возвращает туда, где человек был, а не
+    // к цели уведомления: иначе «назад» из урока снова открыл бы отчёт.
+    setLessonsTarget(null)
     const hit = popNav(navStack, screen)
     if (!hit) {
       skipPushRef.current = true

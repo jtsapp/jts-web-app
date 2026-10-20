@@ -132,6 +132,7 @@
 .fbp__msg { background: #fff; border-radius: 20px; padding: 24px; text-align: center; color: #17161f; }
 .fbp__msg p { margin: 0 0 12px; }
 .fbp__msg p:last-child { margin-bottom: 0; }
+.fbp__msg .spinner { margin: 0 auto; }
 .fbp__foot { margin: 0; font-size: 12px; color: #8b8a99; text-align: center; }
 
 /* ── Карточка «Новый отчёт» на «Главной» ── */
