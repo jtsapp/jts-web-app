@@ -4,6 +4,11 @@
 > сессия начинает отсюда. Перед кодом — `superpowers:writing-plans` по этапу 1
 > (этот документ — карта работ и решения, а не пошаговый план с кодом).
 
+**Этап 1 сделан 20.10.2026** — backend, ветка `feat/feedback-reports` (worktree
+`~/Desktop/backend-feedback-reports`), миграция V377, пошаговый план —
+`docs/superpowers/plans/2026-10-20-feedback-reports-stage1.md` там же. Не
+запушен; живая проверка — на dev после пуша (Docker на машине не стартует).
+
 **Статус на 20.10.2026.** Веб — ветка `feat/feedback-reports-student` в
 `jts-web-app` (worktree `.claude/worktrees/feedback-reports`, не запушена).
 Контракт ручек, которые ждёт веб, — §3 спеки
