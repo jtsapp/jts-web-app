@@ -75,7 +75,7 @@ describe('POST /api/assistant/call', () => {
 
   it('токен: режим assistant, голос Луны, бюджет — остаток дня; учёт под user-<id>-luna', async () => {
     usage.today = 5 * 60
-    const res = await post({ lang: 'kz' })
+    const res = await post({ lang: 'ru' })
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.room).toMatch(/^jts-luna-[a-z0-9]+-\d+$/)
@@ -84,7 +84,17 @@ describe('POST /api/assistant/call', () => {
     expect(usage.stale).toEqual(['user-42-luna'])
     expect(usage.opened).toEqual([[data.room, 'user-42-luna']])
     const meta = JSON.parse(claims(data.token).metadata)
-    expect(meta).toEqual({ mode: 'assistant', tutor: 'gentle', lang: 'kz', sessionTtlSec: 600, userName: 'Айгерім' })
+    expect(meta).toEqual({ mode: 'assistant', tutor: 'gentle', lang: 'ru', sessionTtlSec: 600, userName: 'Айгерім' })
+  })
+
+  // Казахский интерфейс — помощник Айзере (persona.js): звонок её голосом. Окно
+  // шлёт код интерфейса 'kk', агент ждёт 'kz' — раньше 'kk' падал в русский.
+  it('казахский интерфейс: звонок Айзере, язык kz — и по коду окна kk, и по kz', async () => {
+    const fromWidget = JSON.parse(claims((await (await post({ lang: 'kk' })).json()).token).metadata)
+    expect(fromWidget).toMatchObject({ tutor: 'aizere', lang: 'kz' })
+    usage.open = false
+    const fromApp = JSON.parse(claims((await (await post({ lang: 'kz' })).json()).token).metadata)
+    expect(fromApp).toMatchObject({ tutor: 'aizere', lang: 'kz' })
   })
 
   it('лимит исчерпан (или меньше минуты) — 403 limited, комнату не открываем', async () => {

@@ -14,13 +14,15 @@
 // Звук на сайте один (speech.js): новая реплика тура обрывает прошлую, а чужой
 // звук («послушать» у слова) обрывает реплику тура — дальше по этому шагу Луна
 // молчит, следующий шаг звучит как обычно.
+//
+// Тур Айзере (казахский интерфейс, persona.js) — её голосом на любом языке,
+// запасной поток — Soniox «Maya», как у ответов чата.
 
 import { playUrl, stopTts } from '../speech.js'
 import { ttsUrl } from '../ttsShared.js'
 import { phraseLang } from './voiceQueue.js'
 import { stripEmoji } from './speechChunks.js'
-
-const FALLBACK_VOICE = 'Grace'
+import { PERSONAS } from './persona.js'
 
 /** Фразы шага: заголовок и текст отдельно (см. шапку). */
 export function stepPhrases(step) {
@@ -33,10 +35,12 @@ export function stepPhrases(step) {
 }
 
 /**
- * @param {{ token: string, fetchImpl?: typeof fetch, play?: typeof playUrl, stopSound?: typeof stopTts }} opts
+ * @param {{ token: string, persona?: { id: string, fallbackVoice: string, speaksKazakh: boolean },
+ *           fetchImpl?: typeof fetch, play?: typeof playUrl, stopSound?: typeof stopTts }} opts
  */
 export function createTourVoice({
   token,
+  persona = PERSONAS.luna,
   fetchImpl = (...args) => fetch(...args),
   play = playUrl,
   stopSound = stopTts,
@@ -48,18 +52,18 @@ export function createTourVoice({
   let playing = false
   let disposed = false
 
-  const streamUrl = (text, lang) => ttsUrl({ text, voice: FALLBACK_VOICE, lang })
+  const streamUrl = (text, lang) => ttsUrl({ text, voice: persona.fallbackVoice, lang })
 
   function load(text) {
     if (cache.has(text)) return cache.get(text)
     const lang = phraseLang(text)
     const url =
-      lang === 'kk'
+      lang === 'kk' && !persona.speaksKazakh
         ? Promise.resolve(streamUrl(text, lang))
         : fetchImpl('/api/assistant/speak', {
             method: 'POST',
             headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-            body: JSON.stringify({ text, lang }),
+            body: JSON.stringify({ text, lang, persona: persona.id }),
             signal: ctrl.signal,
           })
             .then((r) => (r.ok ? r.blob() : null))

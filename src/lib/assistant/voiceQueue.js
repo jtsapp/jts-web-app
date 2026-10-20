@@ -20,20 +20,24 @@
 // Звук на сайте один (speech.js), и чужая реплика — ученик нажал «послушать» у
 // слова, экран ушёл и всё заглушил — обрывает фразу Луны. Тогда очередь
 // замолкает целиком, а не перебивает чужой звук следующей фразой.
+//
+// Айзере (помощник при казахском интерфейсе, persona.js) говорит своим голосом
+// ElevenLabs на любом языке, казахском тоже: обходного пути «казахское — сразу
+// потоком» у неё нет, а запасной поток — её откатный голос Soniox «Maya».
 
 import { playUrl, stopTts } from '../speech.js'
 import { ttsUrl } from '../ttsShared.js'
 import { phraseLang } from './phraseLang.js'
+import { PERSONAS } from './persona.js'
 
 export const LOOKAHEAD = 2
-const FALLBACK_VOICE = 'Grace'
 
 export { phraseLang }
 
 /**
  * lang (язык интерфейса) голос не выбирает — см. phraseLang; принят для
- * совместимости вызова.
- * @param {{ token: string, lang?: string, fetchImpl?: typeof fetch,
+ * совместимости вызова. Голос выбирает persona.
+ * @param {{ token: string, lang?: string, persona?: { id: string, fallbackVoice: string }, fetchImpl?: typeof fetch,
  *           play?: typeof playUrl, stopSound?: typeof stopTts,
  *           onPhrase?: (index: number) => void,
  *           onInterrupt?: () => void,
@@ -48,6 +52,7 @@ export { phraseLang }
  */
 export function createVoiceQueue({
   token,
+  persona = PERSONAS.luna,
   fetchImpl = (...args) => fetch(...args),
   play = playUrl,
   stopSound = stopTts,
@@ -80,18 +85,18 @@ export function createVoiceQueue({
   }
 
   // Потоковая запись той же фразы запасным голосом.
-  const streamUrl = (text) => ttsUrl({ text, voice: FALLBACK_VOICE, lang: voiceLang })
+  const streamUrl = (text) => ttsUrl({ text, voice: persona.fallbackVoice, lang: voiceLang })
 
   function load(item) {
     if (item.url) return item.url
-    if (voiceLang === 'kk') {
+    if (voiceLang === 'kk' && !persona.speaksKazakh) {
       item.url = Promise.resolve(streamUrl(item.text))
       return item.url
     }
     item.url = fetchImpl('/api/assistant/speak', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ text: item.text, lang: voiceLang }),
+      body: JSON.stringify({ text: item.text, lang: voiceLang, persona: persona.id }),
       signal: ctrl.signal,
     })
       .then((r) => (r.ok ? r.blob() : null))

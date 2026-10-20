@@ -19,3 +19,5 @@ tests
 playwright-report
 test-results
 .playwright
+# Кэш npm задачи test (.gitlab-ci.yml) — сборке образа не нужен.
+.npm

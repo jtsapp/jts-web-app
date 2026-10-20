@@ -7156,6 +7156,18 @@ def _aligned_transcript_for(profile: LearnerProfile) -> bool:
 # строка — только для порядка в логах сессии.
 ASSISTANT_CALL_INSTRUCTIONS = "Luna, the JTS site assistant. Replies come from the student's browser."
 
+# Чьим голосом и ушами звучит звонок помощнику (19.10.2026): при казахском
+# интерфейсе сайта помощник — Айзере (src/lib/assistant/persona.js), и
+# /api/assistant/call кладёт её в metadata.tutor. Белый список: помощник —
+# не любой тьютор, а пустое, чужое и старый сайт без поля — Луна, как раньше.
+ASSISTANT_CALL_TUTORS = ("gentle", "aizere")
+
+
+def assistant_call_tutor(profile: LearnerProfile) -> str:
+    """Тьютор звонка помощнику из metadata: Луна (gentle) или Айзере."""
+    tutor = (profile.tutor or "").strip().lower()
+    return tutor if tutor in ASSISTANT_CALL_TUTORS else "gentle"
+
 
 def _luna_call_preemptive() -> bool:
     """Упреждающая генерация в звонке помощнику (16.10.2026, «скорость как в
@@ -7230,16 +7242,18 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
     if voice_stack != "cascade":
         logger.error("[luna-call] needs VOICE_STACK=cascade, got %s — not answering", voice_stack)
         return
-    # Голос, уши, температура и замок на ученика — живой Луны. Подсказки
+    # Голос, уши, температура и замок на ученика — живого тьютора помощника:
+    # Луны, а при казахском интерфейсе — Айзере (assistant_call_tutor). Подсказки
     # распознаванию — все три языка: с помощником говорят по-русски и по-казахски.
-    voice = _dc_replace(profile, tutor="gentle", english_only=False, push_to_talk=False)
+    tutor = assistant_call_tutor(profile)
+    voice = _dc_replace(profile, tutor=tutor, english_only=False, push_to_talk=False)
     api_url = (os.getenv("JTS_API_URL") or "").strip().rstrip("/") or "http://localhost:3000"
     session = build_cascade_session(
         profile=voice,
-        persona_temperature=PERSONA_TEMPERATURE.get("gentle", 0.7),
+        persona_temperature=PERSONA_TEMPERATURE.get(tutor, 0.7),
         api_url=api_url,
         brain_url=(os.getenv("VOICE_BRAIN_URL") or "").strip().rstrip("/"),
-        guard_tutor="gentle",
+        guard_tutor=tutor,
         brain_model=session_brain_model(voice),
         preemptive=_luna_call_preemptive(),
         # Ученик перебивает Луну голосом (см. _barge_in_options), кнопкой —
@@ -7253,8 +7267,8 @@ async def run_assistant_call(ctx: JobContext, participant: Any, profile: Learner
     brain = assistant_call.BrowserBrain(lp, participant.identity, profile.lang)
     agent = AssistantAgent(brain, speech_lang=_pronunciation_lang(voice))
     logger.info(
-        "[luna-call] start: identity=%s lang=%s budget=%ss",
-        participant.identity, profile.lang, profile.session_ttl_sec,
+        "[luna-call] start: identity=%s lang=%s tutor=%s budget=%ss",
+        participant.identity, profile.lang, tutor, profile.session_ttl_sec,
     )
 
     start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}

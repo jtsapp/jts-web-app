@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { LOOKAHEAD, createVoiceQueue, phraseLang } from './voiceQueue.js'
+import { PERSONAS } from './persona.js'
 
 // Даём отработать цепочкам промисов (fetch → blob → play).
 const settle = async (n = 8) => {
@@ -60,7 +61,7 @@ describe('очередь озвучки', () => {
     await settle()
     expect(played).toEqual(['blob:1'])
     expect(fetchMock.mock.calls[0][0]).toBe('/api/assistant/speak')
-    expect(bodies()[0]).toEqual({ text: 'Первая фраза.', lang: 'ru' })
+    expect(bodies()[0]).toEqual({ text: 'Первая фраза.', lang: 'ru', persona: 'luna' })
     expect(fetchMock.mock.calls[0][1].headers.authorization).toBe('Bearer t')
     play.finish()
     await settle()
@@ -120,6 +121,26 @@ describe('очередь озвучки', () => {
     await settle()
     // весь ответ — тем же голосом, хотя вторая фраза без казахских букв
     expect(new URL(played[1], 'http://x').searchParams.get('l')).toBe('kk')
+  })
+
+  // Казахский интерфейс — помощник Айзере (persona.js): её клон ElevenLabs говорит
+  // по-казахски сам, обходного «сразу потоком» у неё нет.
+  it('Айзере: казахская фраза — её голосом через /api/assistant/speak', async () => {
+    const q = queue({ persona: PERSONAS.aizere })
+    q.say('Тәжірибе бөлімін ашыңыз.')
+    await settle()
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/assistant/speak')
+    expect(bodies()[0]).toEqual({ text: 'Тәжірибе бөлімін ашыңыз.', lang: 'kk', persona: 'aizere' })
+    expect(played).toEqual(['blob:1'])
+  })
+
+  it('Айзере: синтез не ответил — запасной поток её голосом Maya, а не Grace Луны', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('x', { status: 502 }))
+    const q = queue({ persona: PERSONAS.aizere })
+    q.say('Тәжірибе бөлімін ашыңыз.')
+    await settle()
+    expect(isStream(played[0])).toBe(true)
+    expect(new URL(played[0], 'http://x').searchParams.get('v')).toBe('Maya')
   })
 
   it('Gemini не ответил — та же фраза потоком /api/tts, а не тишина', async () => {

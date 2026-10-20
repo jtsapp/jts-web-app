@@ -56,3 +56,6 @@ build/
 
 # Модель позывного Луны (45 МБ) — кладёт scripts/fetch-wake-model.js при сборке.
 public/assistant/wake/
+
+# Кэш npm задачи test (.gitlab-ci.yml: npm ci --cache .npm).
+.npm/

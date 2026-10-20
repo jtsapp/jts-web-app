@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createWakeEar } from './wakeEar.js'
+import { wakeSet } from './matchWake.js'
 import { installMicArbiter } from './micArbiter.js'
 
 // Vosk, микрофон и AudioContext — подменные: проверяется порядок и состояния
@@ -89,7 +90,7 @@ describe('«ухо» позывного', () => {
     expect(states).toEqual(['loading', 'listening'])
     expect(e.state).toBe('listening')
     expect(f.recs[0].rate).toBe(48000)
-    expect(JSON.parse(f.recs[0].grammar)).toEqual(['привет луна', 'салем луна', '[unk]'])
+    expect(JSON.parse(f.recs[0].grammar).slice(0, 3)).toEqual(['привет луна', 'салем луна', 'луна'])
     f.node.onaudioprocess({ inputBuffer: {} })
     expect(f.recs[0].fed).toBe(1)
   })
@@ -99,7 +100,21 @@ describe('«ухо» позывного', () => {
     const { e, onWake } = ear(f)
     await e.start()
     f.recs[0].say('[unk]')
+    f.recs[0].say('по смотри на луну')
     f.recs[0].say('привет луна')
+    expect(onWake).toHaveBeenCalledTimes(1)
+    f.recs[0].say('луна')
+    expect(onWake).toHaveBeenCalledTimes(2)
+  })
+
+  it('«ухо» Айзере: её грамматика, и «Луна» её не зовёт', async () => {
+    const f = fakes()
+    const { e, onWake } = ear(f, { wake: wakeSet('aizere') })
+    await e.start()
+    expect(JSON.parse(f.recs[0].grammar).slice(0, 3)).toEqual(['сәлем айзере', 'привет айзере', 'айзере'])
+    f.recs[0].say('луна')
+    expect(onWake).not.toHaveBeenCalled()
+    f.recs[0].say('сәлем айзере')
     expect(onWake).toHaveBeenCalledTimes(1)
   })
 
