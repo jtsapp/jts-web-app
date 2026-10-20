@@ -19,6 +19,13 @@ describe('notificationTarget', () => {
     expect(notificationTarget('/system/schedule').screen).toBe('lessons')
   })
 
+  it('отчёт о прогрессе открывается во вкладке «Отчёты», сразу в нём', () => {
+    const report = { screen: 'lessons', payload: { tab: 'reports', reportId: '123' } }
+    expect(notificationTarget('feedback-reports/123')).toEqual(report)
+    expect(notificationTarget('/feedback-reports/123')).toEqual(report)
+    expect(notificationTarget('feedback-reports')).toEqual({ screen: 'lessons', payload: { tab: 'reports', reportId: null } })
+  })
+
   it('returns a null screen for empty or unknown links', () => {
     expect(notificationTarget(null).screen).toBeNull()
     expect(notificationTarget('/system/unknown').screen).toBeNull()

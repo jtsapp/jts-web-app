@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen } from '../api.js'
 import { normalizeReport, normalizeReportList } from './reportShape.js'
@@ -28,33 +28,46 @@ export default function ReportsTab({ token, initialReportId = null }) {
   const [attempt, setAttempt] = useState(0)
   const seenRef = useRef(new Set())
 
-  const loadList = useCallback(async () => {
-    setListError(false)
-    setList(null)
-    if (wantsReportSample()) {
-      setList(normalizeReportList(SAMPLE_LIST))
-      return
-    }
-    try {
-      setList(normalizeReportList(await getFeedbackReports(token)))
-    } catch (e) {
-      // 404 — ручки на бэкенде ещё нет (веб вышел раньше): для ученика это
-      // то же, что «отчётов нет», а не поломка.
-      if (e?.status === 404) setList([])
-      else setListError(true)
-    }
-  }, [token])
-
-  useEffect(() => { loadList() }, [loadList])
+  const [listAttempt, setListAttempt] = useState(0)
 
   useEffect(() => {
-    if (openId == null) {
-      setReport(null)
-      return undefined
-    }
     let cancelled = false
+    ;(async () => {
+      try {
+        const raw = wantsReportSample() ? SAMPLE_LIST : await getFeedbackReports(token)
+        if (!cancelled) setList(normalizeReportList(raw))
+      } catch (e) {
+        if (cancelled) return
+        // 404 — ручки на бэкенде ещё нет (веб вышел раньше): для ученика это
+        // то же, что «отчётов нет», а не поломка.
+        if (e?.status === 404) setList([])
+        else setListError(true)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [token, listAttempt])
+
+  const retryList = () => {
+    setListError(false)
+    setList(null)
+    setListAttempt((n) => n + 1)
+  }
+
+  // Сброс прошлого отчёта — в обработчиках (openReport, retry), а не здесь:
+  // setState в теле эффекта давал бы лишний проход рендера.
+  const openReport = (id) => {
     setReport(null)
     setReportError(false)
+    setOpenId(id)
+  }
+  const retryReport = () => {
+    setReportError(false)
+    setAttempt((n) => n + 1)
+  }
+
+  useEffect(() => {
+    if (openId == null) return undefined
+    let cancelled = false
     ;(async () => {
       try {
         const raw = wantsReportSample() ? SAMPLE_REPORTS[openId] : await getFeedbackReport(token, openId)
@@ -87,7 +100,7 @@ export default function ReportsTab({ token, initialReportId = null }) {
         {reportError ? (
           <div className="fbl__empty">
             <p>{t('reports.reportError')}</p>
-            <button type="button" className="fbl__retry" onClick={() => setAttempt((n) => n + 1)}>{t('reports.retry')}</button>
+            <button type="button" className="fbl__retry" onClick={retryReport}>{t('reports.retry')}</button>
           </div>
         ) : report ? (
           <ReportView report={report} />
@@ -103,7 +116,7 @@ export default function ReportsTab({ token, initialReportId = null }) {
       <div className="fbl">
         <div className="fbl__empty">
           <b>{t('reports.loadError')}</b>
-          <button type="button" className="fbl__retry" onClick={loadList}>{t('reports.retry')}</button>
+          <button type="button" className="fbl__retry" onClick={retryList}>{t('reports.retry')}</button>
         </div>
       </div>
     )
@@ -129,7 +142,7 @@ export default function ReportsTab({ token, initialReportId = null }) {
       <ul className="fbl__list">
         {list.map((r) => (
           <li key={r.id}>
-            <button type="button" className={`fbl__item ${r.seenAt ? '' : 'fbl__item--new'}`} onClick={() => setOpenId(r.id)}>
+            <button type="button" className={`fbl__item ${r.seenAt ? '' : 'fbl__item--new'}`} onClick={() => openReport(r.id)}>
               <span className="fbl__title">
                 {r.periodNo ? t('reports.month', { n: r.periodNo }) : t('reports.title')}
                 {!r.seenAt && <span className="fbl__new">{t('reports.new')}</span>}

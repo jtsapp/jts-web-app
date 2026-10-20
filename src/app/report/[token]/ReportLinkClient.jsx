@@ -16,9 +16,15 @@ export default function ReportLinkClient({ token }) {
   const [attempt, setAttempt] = useState(0)
   const openedRef = useRef(false)
 
+  // Повтор сбрасывает экран в «загружаем» сам, в обработчике: setState в теле
+  // эффекта давал бы лишний проход рендера.
+  const retry = () => {
+    setState({ status: 'loading', report: null, sample: false })
+    setAttempt((n) => n + 1)
+  }
+
   useEffect(() => {
     let cancelled = false
-    setState({ status: 'loading', report: null, sample: false })
     ;(async () => {
       try {
         const sample = token === SAMPLE_TOKEN && sampleAllowed(window.location.hostname)
@@ -57,7 +63,7 @@ export default function ReportLinkClient({ token }) {
         {state.status === 'error' && (
           <div className="fbp__msg">
             <p>{t('reports.linkError')}</p>
-            <button type="button" className="fbp__btn" onClick={() => setAttempt((n) => n + 1)}>{t('reports.retry')}</button>
+            <button type="button" className="fbp__btn" onClick={retry}>{t('reports.retry')}</button>
           </div>
         )}
         {state.status === 'ok' && (

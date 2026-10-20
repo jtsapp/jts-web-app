@@ -372,6 +372,12 @@ export default function App() {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
     }
+    // ?screen=lessons&tab=reports&report=<id> — вкладка «Уроков» и отчёт в ней
+    // (ссылка из уведомления в браузере и проверка вида по адресу).
+    if (deepLink === 'lessons') {
+      const tab = searchParams.get('tab')
+      if (tab) setLessonsTarget({ tab, reportId: searchParams.get('report'), at: Date.now() })
+    }
     // ?screen=arcade&game=runner — сразу в игру «Аркады», минуя зал: без
     // этого проверить Word Rush по ссылке можно было бы только кликом.
     if (deepLink === 'arcade') {
@@ -636,6 +642,11 @@ export default function App() {
   const [vocabReturn, setVocabReturn] = useState(false)
   // Работа, которую открыть в «Домашней работе» (карточка «Главной»); null — первая по порядку.
   const [homeworkTarget, setHomeworkTarget] = useState(null)
+  // Вкладка и отчёт «Уроков» — из уведомления «Новый отчёт», карточки
+  // «Главной» и диплинка ?screen=lessons&tab=reports. at — метка перехода:
+  // по ней экран пересоздаётся, иначе повторный переход, пока «Уроки» уже
+  // открыты, не сменил бы вкладку (initialTab читается только при монтировании).
+  const [lessonsTarget, setLessonsTarget] = useState(null)
   // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
   // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
   // прекращается, иначе она крутила бы уже следующий экран.
@@ -1635,7 +1646,12 @@ export default function App() {
       if (payload && payload.lessonId) {
         setLiveLessonId(payload.lessonId)
         setScreen('live-lesson')
-      } else setScreen('lessons')
+      } else {
+        // Цель СБРАСЫВАЕТСЯ переходом без payload — иначе вкладка «Отчёты»
+        // открывалась бы при каждом заходе из меню.
+        setLessonsTarget(payload?.tab ? { tab: payload.tab, reportId: payload.reportId ?? null, at: Date.now() } : null)
+        setScreen('lessons')
+      }
     }
     // payload.id — конкретная работа (карточка «Главной»): открыть её, а не первую в списке.
     else if (key === 'homework') { setHomeworkTarget(payload?.id ?? null); setScreen('homework') }
@@ -2286,7 +2302,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={resumeOf('lessons')?.tab} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':

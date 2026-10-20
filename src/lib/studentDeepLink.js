@@ -5,6 +5,12 @@
 export function notificationTarget(deepLink) {
   if (!deepLink || typeof deepLink !== 'string') return { screen: null, payload: null }
   const trimmed = deepLink.trim()
+  // Отчёт о прогрессе (уведомление FEEDBACK_REPORT, спека 2026-10-20 §3.5) —
+  // во вкладку «Отчёты» «Уроков», сразу в сам отчёт. Стоит выше общих веток:
+  // те ловят адрес по словам (lesson, homework), и любое совпадение увело бы
+  // в расписание.
+  const report = trimmed.match(/^\/?feedback-reports(?:\/([^/?#\s]+))?\/?$/)
+  if (report) return { screen: 'lessons', payload: { tab: 'reports', reportId: report[1] ?? null } }
   const live = trimmed.match(/\/system\/schedule\/(\d+)\/workspace/)
   if (live) return { screen: 'lessons', payload: { lessonId: Number(live[1]) } }
   if (trimmed === 'homework' || trimmed.includes('homework')) return { screen: 'homework', payload: null }
