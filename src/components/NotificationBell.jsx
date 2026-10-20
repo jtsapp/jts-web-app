@@ -5,6 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { loadToken } from '../lib/session.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { wsBase } from '../lib/wsUrl.js'
+import { stompConnectHeaders } from '../lib/stompAuth.js'
 import { notificationTarget } from '../lib/studentDeepLink.js'
 import { playCue, isSoundEnabled, setSoundEnabled } from '../lib/notifySound.js'
 import {
@@ -61,8 +62,11 @@ export function NotificationProvider({ token, onNavigate, children }) {
     let beat = null
     const client = new Client({
       brokerURL: wsBase(),
-      connectHeaders: { Authorization: `Bearer ${auth}` },
+      connectHeaders: stompConnectHeaders(auth),
       reconnectDelay: 5000,
+      beforeConnect: () => {
+        client.connectHeaders = stompConnectHeaders(auth)
+      },
       onConnect: () => {
         // Пульс, пока вкладка жива. Голого соединения мало: закрытая страница
         // успевает переподключиться, и преподаватель видит «на платформе».
