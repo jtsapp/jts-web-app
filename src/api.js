@@ -2112,6 +2112,21 @@ export async function getLanguageLevel(token) {
   return data?.languageLevel || data?.level || data?.value || null
 }
 
+// Раздел «Самостоятельно» в уроках (GET /user/me, поле selfStudy). Сервер
+// отвечает true, только когда сейчас действует подписка или абонемент линейки
+// Self Study. Сетевая осечка и старый ответ без поля — false: вкладку не
+// показываем, пока не знаем, что тариф есть. Не кэшируем: тариф могут выдать,
+// пока ученик уже в кабинете, и залипший ответ спрятал бы раздел до перелогина.
+export async function getSelfStudyAccess(token) {
+  if (!token) return false
+  try {
+    const data = await authGet('/user/me', token)
+    return data?.selfStudy === true
+  } catch {
+    return false
+  }
+}
+
 // Демо-статус аккаунта (GET /user/me, Bearer) — решает, показывать ли на
 // экранах «лимит исчерпан» демо-CTA со ссылкой на WhatsApp или обычный текст:
 // лимит может быть и не демо-природы (персональный override от менеджера).

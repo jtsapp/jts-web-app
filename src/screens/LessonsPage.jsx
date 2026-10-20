@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
@@ -8,6 +8,7 @@ import ReportsTab from '../feedback/ReportsTab.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import { rememberPlace } from '../lib/navStack.js'
+import { getSelfStudyAccess } from '../api.js'
 
 // Спикинг-клабы скрыты: офлайн-группы в админке так и не завели, и вкладка
 // открывала заглушку «Страница в разработке» — на живом сайте это читается как
@@ -16,7 +17,8 @@ import { rememberPlace } from '../lib/navStack.js'
 const TABS = [
   { key: 'online', label: 'lessons.tabOnline' },
   // Самостоятельное обучение: материалы каталога, которые ученик проходит сам.
-  // Не «каталог для ученика» — его срез до своего уровня, см. SelfStudy.
+  // Ученику вкладка видна только с тарифом Self Study — подписка или абонемент.
+  // Преподавателю она остаётся: это его рабочее место, не тариф.
   { key: 'self', label: 'lessons.tabSelf' },
 ]
 // Проверка домашних работ — вкладка преподавателя: ученик сдаёт работу в своём
@@ -49,8 +51,52 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
   // поэтому вход в него только по роли.
   const teacher = isTeacher(token)
-  const tabs = teacher ? [...TABS, TEACHER_TAB] : [...TABS, STUDENT_TAB]
-  const [tab, setTab] = useState(() => (tabs.some((x) => x.key === initialTab) ? initialTab : 'online'))
+  // pending — сервер ещё не ответил. Показать вкладку заранее нельзя: она
+  // мигнёт у того, кому тариф не положен. Решить, что её нет, тоже нельзя:
+  // возврат из урока «Самостоятельно» тогда откроет расписание.
+  const [selfStudy, setSelfStudy] = useState(teacher ? 'yes' : 'pending')
+  const showSelf = selfStudy === 'yes'
+  const tabs = teacher
+    ? [...TABS, TEACHER_TAB]
+    : [...TABS.filter((item) => item.key !== 'self' || showSelf), STUDENT_TAB]
+  const [tab, setTab] = useState(() => {
+    if (initialTab === 'reports' && !teacher) return 'reports'
+    if (initialTab === 'homework' && teacher) return 'homework'
+    if (initialTab === 'self' && teacher) return 'self'
+    return 'online'
+  })
+  const userPicked = useRef(false)
+
+  useEffect(() => {
+    if (teacher) {
+      setSelfStudy('yes')
+      return undefined
+    }
+    let cancelled = false
+    setSelfStudy('pending')
+    getSelfStudyAccess(token).then((ok) => {
+      if (!cancelled) setSelfStudy(ok ? 'yes' : 'no')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [teacher, token])
+
+  useEffect(() => {
+    if (userPicked.current) return
+    if (initialTab === 'self') {
+      if (!teacher && selfStudy === 'pending') return
+      if (showSelf) setTab('self')
+      return
+    }
+    if (initialTab === 'homework' && teacher) setTab('homework')
+    else if (initialTab === 'reports' && !teacher) setTab('reports')
+  }, [selfStudy, showSelf, teacher, initialTab])
+
+  useEffect(() => {
+    if (tab === 'self' && !showSelf && selfStudy !== 'pending') setTab('online')
+  }, [tab, showSelf, selfStudy])
+
   useEffect(() => {
     rememberPlace('lessons', { tab })
   }, [tab])
@@ -59,6 +105,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   // вместо списка.
   const [pendingReportId, setPendingReportId] = useState(initialReportId)
   const selectTab = (key) => {
+    userPicked.current = true
     setTab(key)
     setPendingReportId(null)
   }
@@ -71,7 +118,10 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   // календарь ищут элементы именно там; на других вкладках их нет, и тур их
   // пропустит сам. «?» возвращает на «Онлайн», чтобы этого не случилось.
   const tourSteps = [
-    { selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text') },
+    // Одна вкладка — рассказывать про «две» не о чем: Self Study ученику не открыт.
+    ...(showSelf
+      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text') }]
+      : []),
     { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text') },
     { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text') },
   ]

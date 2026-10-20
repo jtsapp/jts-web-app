@@ -35,10 +35,13 @@ vi.mock('../api.js', () => ({
   getFeedbackReports: vi.fn(async () => []),
   getFeedbackReport: vi.fn(async () => ({})),
   markFeedbackReportSeen: vi.fn(async () => null),
+  // Вкладка «Самостоятельно» спрашивает тариф. По умолчанию его нет —
+  // тесты, которым вкладка нужна, отвечают true сами.
+  getSelfStudyAccess: vi.fn(async () => false),
 }))
 
 import LessonsPage from './LessonsPage.jsx'
-import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen } from '../api.js'
+import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen, getSelfStudyAccess } from '../api.js'
 import { SAMPLE_LIST, SAMPLE_REPORT } from '../feedback/sample.js'
 
 // Роль читается из полезной нагрузки JWT (см. lib/jwt.js) — подписи никто не
@@ -57,12 +60,25 @@ const renderPage = (token, props = {}) => render(
 describe('возврат на свою вкладку', () => {
   it('initialTab открывает запрошенную вкладку', async () => {
     // Ученик уходит в материал из «Самостоятельно» — и кнопка «К урокам» должна
-    // вернуть туда же, а не на расписание.
+    // вернуть туда же, а не на расписание. Без тарифа Self Study вкладки нет,
+    // поэтому возврат проверяем у того, кому она положена.
+    getSelfStudyAccess.mockResolvedValue(true)
     const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'self' })
 
     await waitFor(() =>
       expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Самостоятельно'),
     )
+  })
+
+  it('без тарифа Self Study возврат в «Самостоятельно» не открывает раздел', async () => {
+    getSelfStudyAccess.mockResolvedValue(false)
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'self' })
+
+    await waitFor(() => expect(getSelfStudyAccess).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Онлайн-уроки'),
+    )
+    expect(screen.queryByRole('button', { name: 'Самостоятельно' })).toBeNull()
   })
 
   it('неизвестная вкладка откатывается к онлайн-урокам', async () => {
@@ -76,15 +92,28 @@ describe('возврат на свою вкладку', () => {
 })
 
 describe('LessonsPage tabs', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSelfStudyAccess.mockResolvedValue(false)
+  })
 
-  it('ученик видит онлайн-уроки, самостоятельное обучение и отчёты — без спикинг-клабов', async () => {
+  it('ученик без тарифа Self Study видит онлайн-уроки и отчёты', async () => {
+    const { container } = renderPage(tokenWithRole('STUDENT'))
+    await waitFor(() => expect(getSelfStudyAccess).toHaveBeenCalled())
+    await waitFor(() =>
+      expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent)).toEqual(['Онлайн-уроки', 'Отчёты']),
+    )
+  })
+
+  it('ученик с подпиской или абонементом Self Study видит «Самостоятельно»', async () => {
     // Клубов в админке нет, и вкладка открывала «Страница в разработке»;
     // проверяем именно её отсутствие, чтобы заглушка не вернулась незаметно.
+    getSelfStudyAccess.mockResolvedValue(true)
     const { container } = renderPage(tokenWithRole('STUDENT'))
-    await waitFor(() => expect(container.querySelectorAll('.ls-tab').length).toBeGreaterThan(0))
-    expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-      .toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты'])
+    await waitFor(() =>
+      expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
+        .toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты']),
+    )
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
