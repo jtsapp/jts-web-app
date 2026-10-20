@@ -1,0 +1,146 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useI18n } from '../i18n.jsx'
+import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen } from '../api.js'
+import { normalizeReport, normalizeReportList } from './reportShape.js'
+import { wantsReportSample, SAMPLE_LIST, SAMPLE_REPORTS } from './sample.js'
+import ReportView from './ReportView.jsx'
+
+// Вкладка «Отчёты» в «Уроках»: отчёты о прогрессе, которые преподаватель
+// пишет раз в 30 дней, а координатор одобряет. Отчёт — про живые уроки с
+// преподавателем, поэтому он рядом с расписанием, а не отдельным пунктом
+// меню (решение 20.10.2026). Раскладка одна на все ширины: список, по клику —
+// отчёт на его месте с кнопкой «Все отчёты».
+const LOCALES = { ru: 'ru-RU', en: 'en-GB', kk: 'kk-KZ' }
+
+function formatDay(iso, lang) {
+  const d = iso ? new Date(iso) : null
+  if (!d || Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString(LOCALES[lang] || 'ru-RU', { day: 'numeric', month: 'long' })
+}
+
+export default function ReportsTab({ token, initialReportId = null }) {
+  const { t, lang } = useI18n()
+  const [list, setList] = useState(null) // null — грузим
+  const [listError, setListError] = useState(false)
+  const [openId, setOpenId] = useState(initialReportId)
+  const [report, setReport] = useState(null)
+  const [reportError, setReportError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const seenRef = useRef(new Set())
+
+  const loadList = useCallback(async () => {
+    setListError(false)
+    setList(null)
+    if (wantsReportSample()) {
+      setList(normalizeReportList(SAMPLE_LIST))
+      return
+    }
+    try {
+      setList(normalizeReportList(await getFeedbackReports(token)))
+    } catch (e) {
+      // 404 — ручки на бэкенде ещё нет (веб вышел раньше): для ученика это
+      // то же, что «отчётов нет», а не поломка.
+      if (e?.status === 404) setList([])
+      else setListError(true)
+    }
+  }, [token])
+
+  useEffect(() => { loadList() }, [loadList])
+
+  useEffect(() => {
+    if (openId == null) {
+      setReport(null)
+      return undefined
+    }
+    let cancelled = false
+    setReport(null)
+    setReportError(false)
+    ;(async () => {
+      try {
+        const raw = wantsReportSample() ? SAMPLE_REPORTS[openId] : await getFeedbackReport(token, openId)
+        const r = normalizeReport(raw)
+        if (cancelled) return
+        if (r) setReport(r)
+        else setReportError(true)
+      } catch {
+        if (!cancelled) setReportError(true)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [openId, token, attempt])
+
+  // «Просмотрен» — после показа, один раз за визит вкладки: снимает метку
+  // «Новый» и карточку на «Главной». Ошибку не показываем — уйдёт при
+  // следующем открытии.
+  useEffect(() => {
+    if (!report || report.id == null || seenRef.current.has(String(report.id))) return
+    seenRef.current.add(String(report.id))
+    setList((prev) => prev && prev.map((x) => (String(x.id) === String(report.id) && !x.seenAt ? { ...x, seenAt: new Date().toISOString() } : x)))
+    if (wantsReportSample()) return
+    markFeedbackReportSeen(token, report.id).catch(() => {})
+  }, [report, token])
+
+  if (openId != null) {
+    return (
+      <div className="fbl">
+        <button type="button" className="fbl__back" onClick={() => setOpenId(null)}>{t('reports.back')}</button>
+        {reportError ? (
+          <div className="fbl__empty">
+            <p>{t('reports.reportError')}</p>
+            <button type="button" className="fbl__retry" onClick={() => setAttempt((n) => n + 1)}>{t('reports.retry')}</button>
+          </div>
+        ) : report ? (
+          <ReportView report={report} />
+        ) : (
+          <div className="fbl__loading" aria-busy="true">{t('reports.loading')}</div>
+        )}
+      </div>
+    )
+  }
+
+  if (listError) {
+    return (
+      <div className="fbl">
+        <div className="fbl__empty">
+          <b>{t('reports.loadError')}</b>
+          <button type="button" className="fbl__retry" onClick={loadList}>{t('reports.retry')}</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (list == null) {
+    return <div className="fbl"><div className="fbl__loading" aria-busy="true">{t('reports.loading')}</div></div>
+  }
+
+  if (list.length === 0) {
+    return (
+      <div className="fbl">
+        <div className="fbl__empty">
+          <b>{t('reports.emptyTitle')}</b>
+          <p>{t('reports.emptyText')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fbl">
+      <ul className="fbl__list">
+        {list.map((r) => (
+          <li key={r.id}>
+            <button type="button" className={`fbl__item ${r.seenAt ? '' : 'fbl__item--new'}`} onClick={() => setOpenId(r.id)}>
+              <span className="fbl__title">
+                {r.periodNo ? t('reports.month', { n: r.periodNo }) : t('reports.title')}
+                {!r.seenAt && <span className="fbl__new">{t('reports.new')}</span>}
+              </span>
+              <span className="fbl__meta">
+                {[r.teacherName, r.level, formatDay(r.publishedAt, lang)].filter(Boolean).join(' · ')}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

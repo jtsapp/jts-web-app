@@ -31,9 +31,15 @@ vi.mock('../api.js', () => ({
   saveHomeworkFeedback: vi.fn(async () => ({})),
   gradeHomework: vi.fn(async () => ({})),
   returnHomeworkForRevision: vi.fn(async () => ({})),
+  // Вкладка «Отчёты» (отчёты о прогрессе от преподавателя).
+  getFeedbackReports: vi.fn(async () => []),
+  getFeedbackReport: vi.fn(async () => ({})),
+  markFeedbackReportSeen: vi.fn(async () => null),
 }))
 
 import LessonsPage from './LessonsPage.jsx'
+import { getFeedbackReports, getFeedbackReport, markFeedbackReportSeen } from '../api.js'
+import { SAMPLE_LIST, SAMPLE_REPORT } from '../feedback/sample.js'
 
 // Роль читается из полезной нагрузки JWT (см. lib/jwt.js) — подписи никто не
 // проверяет, поэтому для теста достаточно собрать payload вручную.
@@ -72,17 +78,18 @@ describe('возврат на свою вкладку', () => {
 describe('LessonsPage tabs', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('ученик видит онлайн-уроки и самостоятельное обучение — без спикинг-клабов', async () => {
+  it('ученик видит онлайн-уроки, самостоятельное обучение и отчёты — без спикинг-клабов', async () => {
     // Клубов в админке нет, и вкладка открывала «Страница в разработке»;
     // проверяем именно её отсутствие, чтобы заглушка не вернулась незаметно.
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab').length).toBeGreaterThan(0))
     expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-      .toEqual(['Онлайн-уроки', 'Самостоятельно'])
+      .toEqual(['Онлайн-уроки', 'Самостоятельно', 'Отчёты'])
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
-  // нельзя: бэкенд всё равно отдаст ему только свои работы.
+  // нельзя: бэкенд всё равно отдаст ему только свои работы. И наоборот, отчётов
+  // о прогрессе у преподавателя нет — вкладок ровно три, без «Отчётов».
   it('преподаватель дополнительно видит вкладку проверки домашних работ', async () => {
     const { container } = renderPage(tokenWithRole('TEACHER'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(3))
@@ -94,5 +101,42 @@ describe('LessonsPage tabs', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Домашние задания' }))
     await waitFor(() => expect(container.querySelector('.hw__section-title')).not.toBeNull())
     expect(screen.getByText('Проверка домашних работ')).toBeTruthy()
+  })
+})
+
+describe('вкладка «Отчёты»', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('ученик открывает отчёт из списка, и он отмечается просмотренным', async () => {
+    getFeedbackReports.mockResolvedValueOnce(SAMPLE_LIST)
+    getFeedbackReport.mockResolvedValueOnce(SAMPLE_REPORT)
+    renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports' })
+
+    fireEvent.click(await screen.findByText('2-й месяц'))
+    expect(await screen.findByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeTruthy()
+    await waitFor(() => expect(markFeedbackReportSeen).toHaveBeenCalledWith(expect.any(String), 2))
+
+    fireEvent.click(screen.getByText('← Все отчёты'))
+    expect(await screen.findByText('1-й месяц')).toBeTruthy()
+  })
+
+  it('из уведомления отчёт открывается сразу', async () => {
+    getFeedbackReport.mockResolvedValueOnce(SAMPLE_REPORT)
+    renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports', initialReportId: '2' })
+    expect(await screen.findByText('Отчёт о прогрессе · 2-й месяц (дни 31–60)')).toBeTruthy()
+    expect(getFeedbackReport).toHaveBeenLastCalledWith(expect.any(String), '2')
+  })
+
+  it('ручки ещё нет (404) — «Отчётов пока нет», а не ошибка', async () => {
+    getFeedbackReports.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 404 }))
+    renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports' })
+    expect(await screen.findByText('Отчётов пока нет')).toBeTruthy()
+  })
+
+  it('сбой сервера — с кнопкой «Повторить»', async () => {
+    getFeedbackReports.mockRejectedValueOnce(Object.assign(new Error('x'), { status: 500 }))
+    renderPage(tokenWithRole('STUDENT'), { initialTab: 'reports' })
+    fireEvent.click(await screen.findByText('Повторить'))
+    expect(await screen.findByText('Отчётов пока нет')).toBeTruthy()
   })
 })

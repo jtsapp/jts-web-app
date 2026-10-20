@@ -4,6 +4,7 @@ import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
 import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
+import ReportsTab from '../feedback/ReportsTab.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import { rememberPlace } from '../lib/navStack.js'
@@ -22,6 +23,9 @@ const TABS = [
 // разделе «Домашняя работа», а принимает её тот, кто ведёт занятия, и логично
 // делать это там же, где он смотрит расписание.
 const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
+// Отчёты о прогрессе — ученические: их пишет преподаватель про своего ученика,
+// и у самого преподавателя этой вкладки нет.
+const STUDENT_TAB = { key: 'reports', label: 'lessons.tabReports' }
 
 /**
  * `initialTab` — с какой вкладки открыть экран.
@@ -35,14 +39,17 @@ const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
  * есть только при «назад». Раньше App выводил вкладку из источника последнего
  * открытого урока и не сбрасывал его: после одного урока «Самостоятельно» эта
  * вкладка открывалась при каждом заходе, в том числе из живого урока.
+ *
+ * `initialReportId` — отчёт о прогрессе, открытый сразу: уведомление «Новый
+ * отчёт» и карточка «Главной» ведут прямо в него, а не в список.
  */
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab, tourKey }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab, initialReportId = null, tourKey }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
   // поэтому вход в него только по роли.
   const teacher = isTeacher(token)
-  const tabs = teacher ? [...TABS, TEACHER_TAB] : TABS
+  const tabs = teacher ? [...TABS, TEACHER_TAB] : [...TABS, STUDENT_TAB]
   const [tab, setTab] = useState(() => (tabs.some((x) => x.key === initialTab) ? initialTab : 'online'))
   useEffect(() => {
     rememberPlace('lessons', { tab })
@@ -117,6 +124,12 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
               <h2 className="hw__section-title">{t('homework.reviewTitle')}</h2>
               <TeacherHomeworkBoard token={token} />
             </section>
+          </div>
+        )}
+
+        {tab === 'reports' && !teacher && (
+          <div className="ls__body ls__body--wide">
+            <ReportsTab token={token} initialReportId={initialReportId} />
           </div>
         )}
 
