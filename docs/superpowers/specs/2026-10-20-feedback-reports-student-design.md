@@ -124,13 +124,13 @@ GET с записью ставил бы «открыт» без родителя
   "improvements": ["Времена глаголов", "Окончание -s в Present Simple (he works, she likes)."],
   "motivation": "Ты делаешь огромные шаги — так держать!",
   "badges": [
-    { "type": "homework_hero" },
-    { "type": "skills_growth", "n": 3 },
+    { "type": "skills_growth", "n": 4 },
     { "type": "goals_achieved", "n": 2 },
     { "type": "months_with_jts", "n": 2 }
   ],
   "pastGoals": [
     { "text": "Выучить числа до 100", "result": "achieved" },
+    { "text": "Рассказать о себе 5 предложениями", "result": "achieved" },
     { "text": "Домашка каждый урок", "result": "partly" }
   ],
   "nextGoals": ["Без ошибок в -s (he works)", "Выучить 30 новых слов"],
@@ -232,9 +232,11 @@ src/feedback/
   ReportsTab.jsx      вкладка «Отчёты» в «Уроках»: список + открытый отчёт
   NewReportCard.jsx   карточка на «Главной»
 src/app/report/[token]/page.jsx + ReportLinkClient.jsx   публичный маршрут
-src/feedback.css                  стили раздела (подключить в layout.jsx)
-src/mobile/feedback.css           мобильный слой ≤560px
+src/feedback.css                  стили раздела, вместе с правилами ≤560px (подключить в layout.jsx)
 ```
+
+Мобильные правила — в `feedback.css`, а не в `src/mobile/`: тот слой — по
+кадру Figma «Web Адаптивка» на секцию, а у раздела кадра нет.
 
 - `api.js`: `getFeedbackReports`, `getFeedbackReport`, `markFeedbackReportSeen`
   (Bearer) и `getFeedbackReportByToken`, `markFeedbackReportOpened` (без
@@ -262,9 +264,13 @@ src/mobile/feedback.css           мобильный слой ≤560px
 
 - Ручки ещё не существуют: список отвечает 404 → вкладка показывает
   «Отчётов пока нет», а не сбой; ссылка → «Ссылка недействительна».
-- `?screen=lessons&reportSample=1` и `/report/sample` рисуют `sample.js` без
-  сети — посмотреть вид, пока живых отчётов нет. Токен `sample` бэкенд не
-  выдаст (128 бит случайности).
+- `?screen=lessons&tab=reports&reportSample=1` и `/report/sample` рисуют
+  `sample.js` без сети — посмотреть вид, пока живых отчётов нет. Только на
+  локалке и дев-стендах (тот же признак адреса, что у `?ieltsSample=1`): на
+  проде ученик, дописав параметр, увидел бы выдуманный отчёт как свой.
+- Список спрашивает и карточка «Главной» на каждом заходе, поэтому 404 веб
+  помнит 10 минут на токен (как `getIeltsMe`) — бэкенд не получает ошибку со
+  стеком на каждый заход ученика.
 
 ### Ошибки
 
