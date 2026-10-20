@@ -14,6 +14,8 @@ const homework = { value: [] }
 const levelProgress = { value: { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 } }
 
 vi.mock('../api.js', () => ({
+  // Карточка «Новый отчёт о прогрессе» спрашивает список отчётов.
+  getFeedbackReports: vi.fn(async () => []),
   // С токеном оболочка будит колокольчик уведомлений — без заглушки падает
   // весь экран (та же причина, что в CourseCatalogPage.test.jsx).
   getUnreadNotificationCount: vi.fn(async () => 0),
