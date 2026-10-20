@@ -9,6 +9,7 @@ vi.mock('@stomp/stompjs', () => {
     constructor(cfg) { this.cfg = cfg; this.subs = {}; lastClient = this }
     activate() { this.cfg.onConnect && this.cfg.onConnect() }
     subscribe(dest, cb) { this.subs[dest] = cb; return { unsubscribe() {} } }
+    publish(frame) { this.published = this.published || []; this.published.push(frame) }
     deactivate() { this.deactivated = true }
   }
   return { Client }
@@ -74,5 +75,8 @@ describe('NotificationBell', () => {
     await waitFor(() => expect(lastClient).toBeTruthy())
     expect(lastClient.cfg.brokerURL).toBe('wss://example.test/ws')
     expect(Object.keys(lastClient.subs)).toContain('/topic/notifications/7')
+    expect(lastClient.published).toEqual([
+      { destination: '/app/presence/platform', body: '{}' },
+    ])
   })
 })

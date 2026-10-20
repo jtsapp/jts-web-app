@@ -164,11 +164,17 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
         handlersRef.current.onConnect?.()
       },
     })
+    const stop = () => {
+      client.reconnectDelay = 0
+      if (rejoin) { clearInterval(rejoin); rejoin = null }
+      client.deactivate()
+    }
+    window.addEventListener('pagehide', stop)
     client.activate()
     clientRef.current = client
     return () => {
-      if (rejoin) clearInterval(rejoin)
-      client.deactivate()
+      window.removeEventListener('pagehide', stop)
+      stop()
       clientRef.current = null
       setConnected(false)
       setRoster([])

@@ -42,10 +42,16 @@ export function useLessonPresence(lessonId, token) {
       },
       onStompError: () => setConnected(false),
     })
+    const stop = () => {
+      client.reconnectDelay = 0
+      if (rejoin) { clearInterval(rejoin); rejoin = null }
+      client.deactivate()
+    }
+    window.addEventListener('pagehide', stop)
     client.activate()
     return () => {
-      if (rejoin) clearInterval(rejoin)
-      client.deactivate()
+      window.removeEventListener('pagehide', stop)
+      stop()
       setConnected(false)
       setRoster([])
     }

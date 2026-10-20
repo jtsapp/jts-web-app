@@ -47,9 +47,19 @@ export function useLessonBoard(lessonId, token, selfUserId, handlers) {
       onWebSocketClose: () => setConnected(false),
       onStompError: () => setConnected(false),
     })
+    const stop = () => {
+      client.reconnectDelay = 0
+      client.deactivate()
+    }
+    window.addEventListener('pagehide', stop)
     clientRef.current = client
     client.activate()
-    return () => { client.deactivate(); clientRef.current = null; setConnected(false) }
+    return () => {
+      window.removeEventListener('pagehide', stop)
+      stop()
+      clientRef.current = null
+      setConnected(false)
+    }
   }, [lessonId, token, selfUserId])
 
   const publishBoard = useCallback((action, body) => {
