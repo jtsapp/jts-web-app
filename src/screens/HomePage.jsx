@@ -14,6 +14,7 @@ import GePlanInvite from './home/GePlanInvite.jsx'
 import GeLockedRoadmap from './home/GeLockedRoadmap.jsx'
 import PlacementReport from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
+import NewReportCard from '../feedback/NewReportCard.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { todayView } from '../ge/plan/planModel.js'
 import { homeTopState } from '../ge/homeState.js'
@@ -314,6 +315,10 @@ export default function HomePage({
     >
       <div className="hm">
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
+
+        {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
+            приходит раз в месяц и сам исчезает, как только ученик его открыл. */}
+        <NewReportCard token={token} onNav={onNav} />
 
         {/* Уровня нет — тест не пройден. Вместо карточки с чужими цифрами
             зовём пройти тест: это единственный способ её наполнить. */}

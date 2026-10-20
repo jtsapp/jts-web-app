@@ -22194,6 +22194,124 @@ html[data-theme="dark"] .trial-inp {
 html[data-theme="dark"] .trial-leadok {
     background: color-mix(in oklab, var(--dk-green) 12%, transparent)
 }
+/*  feedback.css  */
+html[data-theme="dark"] .fbr {
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .fbr__kicker {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbr__meta {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbr__level {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .fbr__mot {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .fbr__badges li {
+    background: rgba(255, 255, 255, .2)
+}
+html[data-theme="dark"] .fbr__stat {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .fbr__stat small {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbr__blk h3 {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbr__track {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .fbr__track span {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .fbr__delta--up {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .fbr__delta--down {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .fbr__goals em {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbr__dot {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .fbr__dot--achieved {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .fbr__dot--partly {
+    background: var(--dk-orange)
+}
+html[data-theme="dark"] .fbr__dot--not {
+    background: var(--dk-red)
+}
+html[data-theme="dark"] .fbr__sign {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbl__item {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .fbl__item:hover {
+    border-color: var(--dk-acc)
+}
+html[data-theme="dark"] .fbl__item--new {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .fbl__new {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .fbl__meta {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbl__empty {
+    background: var(--dk-card);
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbl__empty b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .fbl__loading {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .fbl__back {
+    border: 0;
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .fbl__retry, html[data-theme="dark"] .fbp__btn {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .fbp {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .fbp__brand {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .fbp__msg {
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .fbp__foot {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .hm-report {
+    border: 0;
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc));
+    color: var(--dk-on-acc)
+}
 /*  demo.css  */
 html[data-theme="dark"] .dm-banner {
     background: var(--dk-ink-bg);

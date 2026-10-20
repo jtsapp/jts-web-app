@@ -2356,3 +2356,71 @@ export async function enterTrialBooth(token) {
   }
   return res.json()
 }
+
+// ── Отчёты о прогрессе (Feedback) ───────────────────────────────────────────
+// Контракт: docs/superpowers/specs/2026-10-20-feedback-reports-student-design.md, §3.
+// Кабинет ученика — Bearer; ссылка из мессенджера — без входа: секрет ссылки и
+// есть доступ, как у пробного урока (/trial/link/{token}).
+
+// Веб вышел раньше бэкенда, а список спрашивает карточка «Главной» на каждом
+// заходе: 404 (ручки ещё нет на этом стенде) помним на токен, как у
+// getIeltsMe, иначе каждый заход ученика стоил бы бэкенду ошибки со стеком в
+// логе. Остальные ошибки не помним — следующий заход спросит снова.
+const _feedbackMissing = new Map()
+const FEEDBACK_MISSING_RETRY_MS = 10 * 60 * 1000
+
+export async function getFeedbackReports(token) {
+  const until = _feedbackMissing.get(token)
+  if (until && Date.now() < until) {
+    const err = new Error('Ошибка сервера (404)')
+    err.status = 404
+    throw err
+  }
+  try {
+    return await authGet('/mobile/feedback-reports', token)
+  } catch (e) {
+    if (e?.status === 404) _feedbackMissing.set(token, Date.now() + FEEDBACK_MISSING_RETRY_MS)
+    throw e
+  }
+}
+
+export function getFeedbackReport(token, id) {
+  return authGet(`/mobile/feedback-reports/${encodeURIComponent(id)}`, token)
+}
+
+/** Ученик открыл отчёт в кабинете — снимает метку «Новый». */
+export function markFeedbackReportSeen(token, id) {
+  return authPost(`/mobile/feedback-reports/${encodeURIComponent(id)}/seen`, token, {})
+}
+
+/** Отчёт по ссылке из мессенджера. Ошибка несёт status: 404 — ссылки нет
+ *  (или отчёт отозван), 0 — нет связи; экран различает «недействительна» и
+ *  «попробуйте ещё раз» именно по нему. */
+export async function getFeedbackReportByToken(linkToken) {
+  let res
+  try {
+    res = await fetch(`${BASE}/feedback-reports/link/${encodeURIComponent(linkToken)}`, { cache: 'no-store' })
+  } catch {
+    const err = new Error('Нет связи с сервером. Проверьте интернет и попробуйте снова.')
+    err.status = 0
+    throw err
+  }
+  if (!res.ok) {
+    const err = new Error(`Ошибка сервера (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+/** «Отчёт открыт» — отдельным POST после показа, а не побочным эффектом GET:
+ *  мессенджеры сами ходят по ссылкам (предпросмотр), и GET ставил бы «открыт»
+ *  без родителя. */
+export async function markFeedbackReportOpened(linkToken) {
+  const res = await fetch(`${BASE}/feedback-reports/link/${encodeURIComponent(linkToken)}/opened`, { method: 'POST' })
+  if (!res.ok) {
+    const err = new Error(`Ошибка сервера (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+}
