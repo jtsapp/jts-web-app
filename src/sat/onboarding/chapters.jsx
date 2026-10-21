@@ -12,6 +12,7 @@ import {
   RadioOffIcon, ScheduleIcon, TimerIcon, TranslateIcon,
 } from '../../ielts/icons.jsx'
 import { fmtDate } from '../model/dates.js'
+import { domainName, skillName } from '../names.js'
 
 // Шесть глав об экзамене (Figma SAT 1–6). Одни и те же данные (satInfo.json — sat-info.js прототипа) рисует и
 // онбординг, и вкладка «Гайд» (Figma 19): так глава не может разойтись сама с собой. Интерактивные части — цель
@@ -122,9 +123,9 @@ export function SectionChapter({ id }) {
           <h3>{t('sat.section.what')}</h3>
           {shares.map((d) => (
             <div key={d.id} className="st-domain">
-              <div className="st-domain__head"><b>{pick({ en: d.name_en, ru: d.name_ru, kk: d.name_kk }, lang)}</b><b className="st-domain__pct">{d.percent}%</b></div>
+              <div className="st-domain__head"><b>{domainName(d.id, lang)}</b><b className="st-domain__pct">{d.percent}%</b></div>
               <i className="st-bar"><i style={{ width: `${d.percent * 2.5}%` }} /></i>
-              <div className="st-chips">{d.skills.map((s) => <span key={s.id}>{pick({ en: s.name_en, ru: s.name_ru, kk: s.name_kk }, lang)}</span>)}</div>
+              <div className="st-chips">{d.skills.map((s) => <span key={s.id}>{skillName(s.id, lang)}</span>)}</div>
             </div>
           ))}
         </div>
