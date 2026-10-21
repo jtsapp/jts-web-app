@@ -33,6 +33,7 @@ const AREA_NAMES = {
   verbs: 'Неправильные глаголы',
   listenchoose: 'Слушай и выбирай',
   numbers: 'Мир чисел',
+  listen: 'Just Listen It',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть

@@ -57,6 +57,14 @@ export const NUMBERS_KEY = 'jts_numbers_done'
 // Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
 // синкается, но чистится вместе с прогрессом.
 export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
+// Лучшие результаты Just Listen It: { best: { <ключ прогона>: { ok, n, coins } } },
+// ключ — как в прототипе без префикса режима: A1-L3-0 (часть урока), A1-L4-R
+// (урок-повторение), A1-U2 (повторить юнит), A1-T (тест), business-T. Replace со
+// сведением merge (listenProgress.js): лучший результат с любого устройства не теряется.
+export const LISTEN_KEY = 'jts_listen_done'
+// «Свой список» преподавателя — текст поля этого устройства. Не синкается, но
+// чистится вместе с прогрессом: на общей машине список достался бы следующему.
+export const LISTEN_OWN_KEY = 'jts_listen_own'
 // «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
 // «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
 // 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
@@ -77,6 +85,7 @@ export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
+export const LISTEN_PROGRESS_EVENT = 'listen-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
