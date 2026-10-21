@@ -29,7 +29,8 @@ function fromIso(value) {
   return { day: m[3], month: m[2], year: m[1] }
 }
 
-export default function BirthDateInput({ value, onChange, autoFocus = false, id }) {
+// pickerIcon — своя иконка кнопки календаря (у экранов регистрации она из макета).
+export default function BirthDateInput({ value, onChange, autoFocus = false, id, pickerIcon = null }) {
   const { t } = useI18n()
   const [parts, setParts] = useState(() => fromIso(value))
   // Зеркало состояния: обработчики полей создаются на рендер, и при быстром
@@ -144,7 +145,7 @@ export default function BirthDateInput({ value, onChange, autoFocus = false, id 
         aria-label={t('dob.pick')}
         title={t('dob.pick')}
       >
-        <CalendarIcon />
+        {pickerIcon || <CalendarIcon />}
       </button>
       {/* Системный календарь. Не display:none — скрытое поле браузер не
           показывает и showPicker() на нём падает. */}

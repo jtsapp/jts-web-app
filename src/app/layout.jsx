@@ -27,6 +27,8 @@ import '../feedback.css'
 import '../demo.css'
 import '../placement.css'
 import '../assistant.css'
+// Вход и регистрация (макет «Регистрация», 21.10.2026)
+import '../auth.css'
 // Мобильный слой по макету «Web Адаптивка» — строго после всех файлов разделов
 import '../mobile/base.css'
 import '../mobile/registration.css'

@@ -30,6 +30,8 @@ html[data-ui-lang='kk'] {
 html[data-ui-lang='kk'] body,
 /* Вход, регистрация, тест уровня — PT Root UI (styles.css) */
 html[data-ui-lang='kk'] .screen,
+/* Вход и регистрация v2 — Manrope поверх PT Root UI мобильного слоя */
+html[data-ui-lang='kk'] .rg,
 /* «Главная» на телефоне — Manrope поверх PT Root UI мобильного слоя */
 html[data-ui-lang='kk'] .hm,
 /* Пробный урок /trial — своя гарнитура под .trial */

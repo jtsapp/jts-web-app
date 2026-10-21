@@ -52,7 +52,7 @@ async function stubRegularStudent(page) {
 
 test('аккаунт класса после входа оказывается в уроке, а не на «Уроках»', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   await page.route('**/trial/booth/enter', (r) => r.fulfill(json(ENTERED)))
 
@@ -65,9 +65,9 @@ test('аккаунт класса после входа оказывается �
   // (имя матчится подстрокой) — падение по strict mode. Классами ходят и
   // соседние спеки, см. tests/auth-user-messages.spec.js.
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   // После входа приложение уводит с success-экрана само — до задачи 6 таймером
   // на 1.8 с, после неё сразу стражем кабинета, — потом экран класса просит вход
@@ -89,7 +89,7 @@ test('аккаунт класса после входа оказывается �
 // и уходит в урок, без перезагрузки.
 test('сетевая осечка на /user/me при входе не топит признак класса — вкладка сама дотягивает урок', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   await page.route('**/trial/booth/enter', (r) => r.fulfill(json(ENTERED)))
 
@@ -110,9 +110,9 @@ test('сетевая осечка на /user/me при входе не топи�
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   // Ждём с запасом: success-экран (1.8 с) успевает уйти на карту королевств
   // со старым false, прежде чем повтор (пауза после осечки) дотянет признак и
@@ -137,7 +137,7 @@ test('сетевая осечка на /user/me при входе не топи�
 // монтаж, то есть ещё 2 запроса) не происходит.
 test('свежий вход шлёт вход в класс за один монтаж, а не за два', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -147,9 +147,9 @@ test('свежий вход шлёт вход в класс за один мон
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   // Даём долететь дублю из StrictMode, если он есть, прежде чем считать.
@@ -264,7 +264,7 @@ test('обычный ученик диплинком ?screen=booth не захо
 // не видят: они не проходят весь путь вход → урок → выход → класс → возврат.
 test('выход из урока и возврат в него не заходят в класс повторно', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -274,9 +274,9 @@ test('выход из урока и возврат в него не заходя
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
 
@@ -310,7 +310,7 @@ test('выход из урока и возврат в него не заходя
 // секунду, когда преподаватель закончил, хотя за планшетом ещё никого нет.
 test('урок завершился — вкладка уходит из него сама, новый вход только по кнопке', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -320,9 +320,9 @@ test('урок завершился — вкладка уходит из нег�
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   await page.waitForTimeout(500)
@@ -425,7 +425,7 @@ test('мусор в ?live= не считается известным уроко
 // умирает, доска пустая.
 test('вышел из урока — перезагрузка не забывает сеанс, повторного входа нет', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -435,9 +435,9 @@ test('вышел из урока — перезагрузка не забыва�
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
 
@@ -469,7 +469,7 @@ test('вышел из урока — перезагрузка не забыва�
 // неизвестным и сам завёл бы новое занятие, хотя за планшетом ещё никого нет.
 test('урок завершён — перезагрузка не заводит автовход', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -479,9 +479,9 @@ test('урок завершён — перезагрузка не заводит
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   await page.waitForTimeout(500)
@@ -524,7 +524,7 @@ test('урок завершён — перезагрузка не заводит
 // а не поверить памяти вкладки на слово.
 test('вышел из урока, а его тем временем завершили — вернуться в старый нельзя, только войти заново', async ({ page }) => {
   await stubAccount(page)
-  await page.route('**/auth/login', (r) =>
+  await page.route('**/auth/login**', (r) =>
     r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
   let attempts = 0
   await page.route('**/trial/booth/enter', (r) => {
@@ -534,9 +534,9 @@ test('вышел из урока, а его тем временем заверш
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
-  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill(BOOTH_LOGIN)
+  await page.locator('#rg-login-pass').fill(BOOTH_PASSWORD)
+  await page.locator('.rg-btn').first().click()
 
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
 

@@ -31,7 +31,7 @@ async function гостьСВходом(page) {
   await page.route('**/api/profile/merge', (r) => r.fulfill(json({ ok: true })))
   await page.route('**/user/me', (r) => r.fulfill(json(УЧЕНИК)))
   await page.route('**/user/language-level', (r) => r.fulfill(json('B1')))
-  await page.route('**/auth/login', (r) => r.fulfill(json({
+  await page.route('**/auth/login**', (r) => r.fulfill(json({
     accessToken: TOKEN, refreshToken: 'r', userId: 900, name: 'Ученик', role: 'STUDENT',
   })))
 }
@@ -47,9 +47,9 @@ async function гостьСВходом(page) {
 async function войти(page) {
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill('student@example.com')
-  await page.getByPlaceholder('Пароль').fill('secret')
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill('student@example.com')
+  await page.locator('#rg-login-pass').fill('secret')
+  await page.locator('.rg-btn').first().click()
 }
 
 test('пришедший по ссылке после входа попадает туда, куда шёл', async ({ page }) => {

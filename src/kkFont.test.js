@@ -16,6 +16,7 @@ const KK = fs.readFileSync(path.join(SRC, 'kk-font.css'), 'utf8')
 const COVERED = {
   'styles.css | body': "html[data-ui-lang='kk'] body",
   'styles.css | .screen': "html[data-ui-lang='kk'] .screen",
+  'mobile/registration.css | .rg': "html[data-ui-lang='kk'] .rg",
   'mobile/base.css | body': "html[data-ui-lang='kk'] body",
   'mobile/home.css | .hm': "html[data-ui-lang='kk'] .hm",
   'trial.css | .trial': "html[data-ui-lang='kk'] .trial",
