@@ -97,20 +97,25 @@ describe('HomePage — General English', () => {
     expect(onGeStart).toHaveBeenCalled()
   })
 
-  it('учившийся до теста с блоком цели — блок на месте, под ним «Тест уровня · Не пройден»', async () => {
+  // Решение владельца 21.10.2026: непройденный тест спрашивается в самом блоке «Результаты теста уровня» — у всех, кто
+  // без теста: «Не пройден», плитки навыков с прочерком и кнопка теста.
+  it('учившийся до теста с блоком цели — блок цели на месте, «Результаты теста уровня» пустые и зовут на тест', async () => {
     const onStartLevelTest = vi.fn()
     renderHome({ geProfile: goal, existingStudent: true, onStartLevelTest })
     await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
     expect(document.querySelector('.ge-goal')).toBeTruthy()
-    expect(document.querySelector('.pl-report--missing').textContent).toContain('Не пройден')
-    fireEvent.click(within(document.querySelector('.pl-report--missing')).getByRole('button', { name: 'Пройти тест' }))
-    expect(onStartLevelTest).toHaveBeenCalled()
+    const card = document.querySelector('.pl-report--missing')
+    expect(within(card).getByText('Результаты теста уровня')).toBeTruthy()
+    expect(within(card).getByText('Не пройден')).toBeTruthy()
+    expect([...card.querySelectorAll('.pl-report__chip')].map((n) => n.textContent)).toEqual(['—', '—', '—', '—'])
+    fireEvent.click(within(card).getByRole('button', { name: 'Пройти тест уровня' }))
+    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
   })
 
-  it('новый ученик с блоком цели и без теста — отметки «не пройден» нет', async () => {
-    renderHome({ geProfile: goal })
-    await waitFor(() => expect(document.querySelector('.ge-goal')).toBeTruthy())
-    expect(document.querySelector('.pl-report--missing')).toBe(null)
+  it('новый ученик без теста — тот же пустой блок результатов', async () => {
+    renderHome({ geProfile: { onboarded: false } })
+    await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
+    expect(document.querySelector('.pl-report--missing').textContent).toContain('Уровень не определён')
   })
 
   it('анкета есть, формата нет — шаг «выберите формат»', async () => {

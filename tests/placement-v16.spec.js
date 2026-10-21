@@ -272,13 +272,16 @@ test.describe('учится до теста v16', () => {
     await expect(page.locator('.pl-page__frame')).toBeVisible()
   })
 
-  test('маршрут есть — он на месте, под ним «Тест уровня · Не пройден»', async ({ page }) => {
+  test('маршрут есть — он на месте, «Результаты теста уровня» пустые и зовут на тест', async ({ page }) => {
     const goal = profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'A2', 'self_study')
     await setup(page, { level: 'A2', createdAt: OLD, profile: goal })
     await page.goto('/?screen=home')
     await expect(page.locator('.ge-goal')).toBeVisible({ timeout: 20000 })
-    await expect(page.locator('.pl-report--missing')).toContainText('Не пройден')
+    const missing = page.locator('.pl-report--missing')
+    await expect(missing).toContainText('Не пройден')
     await expect(page.locator('.ge-locked')).toHaveCount(0)
+    await missing.getByRole('button', { name: 'Пройти тест уровня' }).click()
+    await expect(page.locator('.pl-page__frame')).toBeVisible()
   })
 })
 

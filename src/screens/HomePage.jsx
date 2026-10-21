@@ -481,15 +481,8 @@ export default function HomePage({
               <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
             )}
             <PracticeToday t={t} onNav={onNav} />
-            {/* Отчёт теста уровня v16. Учившемуся до теста отметка «не пройден» — только когда сверху на тест никто не
-                зовёт: у баннера «Здесь будет ваш маршрут» и у прежней карточки «нет уровня» своя кнопка. */}
-            {!ieltsAccount && (
-              <PlacementResults
-                report={report}
-                onRetake={onStartLevelTest}
-                showMissing={existingStudent && !levelUnknown && (geTop === 'goal' || geTop === 'needRoute' || geTop === 'legacy')}
-              />
-            )}
+            {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} />}
           </div>
 
           <div className="hm-grid__side">

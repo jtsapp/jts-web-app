@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { fetchLatestAttempt } from '../../placement/api.js'
-import { reportView } from '../../placement/reportModel.js'
+import { reportView, SKILL_ORDER } from '../../placement/reportModel.js'
 
 /**
  * Отчёт последнего теста уровня v16 на «Главной» (указание руководителя 14.10.2026: «после теста все данные — очень
@@ -44,30 +44,51 @@ const SKILL_ICON = {
 }
 
 /**
- * «Результаты теста уровня» (макет: общий уровень плашкой с кругом 88 и четыре плитки навыков). showMissing — теста ещё
- * нет, а сверху на него никто не зовёт (ученик учился до теста v16): вместо отчёта отметка «Тест уровня · Не пройден»
- * (решение владельца 14.10: не заставлять, но тест должен числиться непройденным).
+ * «Результаты теста уровня» (макет: общий уровень плашкой с кругом 88 и четыре плитки навыков). Теста ещё нет — та же
+ * карточка пустой: «Не пройден», «?» вместо уровня, плитки с прочерком и кнопка теста (решение владельца 21.10.2026:
+ * непройденный тест спрашивается в этом блоке). Так у всех, кто без теста, — и у нового ученика, и у учившегося до
+ * теста v16 (решение 14.10: не заставлять, но тест должен числиться непройденным).
  */
-export function PlacementResults({ report, onRetake, showMissing = false }) {
+export function PlacementResults({ report, onRetake }) {
   const { t, lang } = useI18n()
   const { loaded, view } = report
+  // ответа ещё нет — пусто: «Не пройден» мигал бы у прошедших тест
   if (!loaded) return null
   if (!view) {
-    if (!showMissing) return null
     return (
       <section className="hm-card pl-report pl-report--missing" aria-labelledby="pl-missing-title">
         <div className="pl-report__head">
           <h2 id="pl-missing-title" className="hm-card__title">
-            {t('placement.report.missingTitle')}
+            {t('placement.report.title')}
           </h2>
-          <span className="pl-report__tag">{t('placement.report.missingStatus')}</span>
+          <span className="pl-report__status">{t('placement.report.missingStatus')}</span>
         </div>
-        <p className="pl-report__muted">{t('placement.report.missingSub')}</p>
-        {onRetake && (
-          <button type="button" className="hm-placement__cta pl-report__missingCta" onClick={onRetake}>
-            {t('placement.report.missingCta')}
-          </button>
-        )}
+
+        <div className="pl-report__overall is-empty">
+          <b className="pl-report__level" aria-hidden="true">
+            ?
+          </b>
+          <span className="pl-report__overallText">
+            <span className="pl-report__label">{t('placement.report.overall')}</span>
+            <span className="pl-report__name">{t('placement.report.missingLevel')}</span>
+            <span className="pl-report__muted">{t('placement.report.missingSub')}</span>
+          </span>
+          {onRetake && (
+            <button type="button" className="pl-report__cta" onClick={() => onRetake()}>
+              {t('geStart.test.cta')}
+            </button>
+          )}
+        </div>
+
+        <ul className="pl-report__skills">
+          {SKILL_ORDER.map((id) => (
+            <li className="pl-report__skill is-empty" key={id}>
+              <span className="pl-report__skillName">{t(`placement.skill.${id}`)}</span>
+              <b className="pl-report__chip">—</b>
+              <span className="pl-report__note">{t('placement.report.notAssessed')}</span>
+            </li>
+          ))}
+        </ul>
       </section>
     )
   }

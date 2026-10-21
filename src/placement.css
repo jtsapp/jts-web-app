@@ -854,15 +854,68 @@
   }
 }
 
-/* отметка «Тест уровня · Не пройден» у учившихся до теста v16 (решение владельца 14.10) */
-.pl-report--missing {
-  gap: 12px;
+/* Теста нет — та же карточка пустой (решение владельца 21.10.2026): «Не пройден» оранжевой плашкой на месте даты,
+   серый круг с «?», пояснение и кнопка теста справа в сиреневой плашке, плитки навыков с прочерком. */
+.pl-report__status {
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--hm-down-bg, #fff0dd);
+  color: var(--hm-down, #e57a12);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  white-space: nowrap;
 }
-.pl-report--missing .pl-report__muted {
-  margin: 0;
-  font-size: 15px;
-  line-height: 22px;
+.pl-report__overall.is-empty .pl-report__level {
+  background: var(--hm-card, #ffffff);
+  color: var(--hm-mut, #8e8e99);
+  box-shadow: inset 0 0 0 2px #e6dcfc;
 }
-.pl-report__missingCta {
-  align-self: flex-start;
+.pl-report__overall.is-empty .pl-report__name {
+  font-size: 22px;
+  line-height: 30px;
+}
+.pl-report__overall.is-empty .pl-report__muted {
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-report__cta {
+  flex: none;
+  height: 40px;
+  margin-left: auto;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #9047ff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-report__cta:hover {
+  filter: brightness(1.06);
+}
+.pl-report__cta:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+/* в узкой колонке кнопка не влезает справа от текста — уходит под него во всю ширину */
+@media (max-width: 1280px) {
+  .pl-report__overall.is-empty {
+    flex-wrap: wrap;
+  }
+  .pl-report__overall.is-empty .pl-report__overallText {
+    flex: 1 1 calc(100% - 108px);
+  }
+  .pl-report__overall.is-empty .pl-report__cta {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}
+@media (max-width: 560px) {
+  .pl-report__overall.is-empty .pl-report__overallText {
+    flex-basis: calc(100% - 80px);
+  }
 }

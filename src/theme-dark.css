@@ -352,3 +352,7 @@ html[data-theme="dark"] .sb__role {
   border: 2px solid var(--dk-line);
   background: var(--dk-card);
 }
+html[data-theme="dark"] .pl-report__overall.is-empty .pl-report__level {
+  color: var(--dk-muted);
+  box-shadow: inset 0 0 0 2px var(--dk-acc-line);
+}
