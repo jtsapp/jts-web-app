@@ -1037,6 +1037,28 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       while (base.length && base[base.length - 1].role === 'assistant' && !base[base.length - 1].content.trim()) base.pop()
       if (base.length && base[base.length - 1].opening) base.pop()
       const history = [...base, { role: 'user', content: raw, voice: true, call: true, ...(opening ? { opening: true } : {}) }]
+      // Быстрая команда и в звонке («дальше» — voiceCommands.js): Луна жмёт сама и
+      // говорит одну фразу, без модели. Черновик (pending) нажмёт только по commit — через
+      // ui(): ученик мог ещё не договорить. Пара строк в модель не идёт (local).
+      const command = opening ? null : matchCommand(raw)
+      if (command) {
+        takeSnapshot()
+        const refs = refsRef.current
+        const hits = findCommandButtons(refs, command)
+        if (hits.length === 1) {
+          const action = { kind: 'click', target: String(hits[0].ref), label: hits[0].label, now: true }
+          const say = t('assistant.action.clicking', { label: action.label })
+          sender.phrase(callSpeech(say))
+          sender.end()
+          callAskRef.current = null
+          ui(() => {
+            setMessages([...base, { ...history[history.length - 1], local: true }, { role: 'assistant', content: say, local: true }])
+            setCallThinking(false)
+            press(action, { refs })
+          })
+          return
+        }
+      }
       ui(() => {
         setMessages([...history, { role: 'assistant', content: '' }])
         setError(null)
@@ -1157,7 +1179,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         }
       }
     },
-    [t, runCallAction, takeSnapshot],
+    [t, runCallAction, takeSnapshot, press],
   )
 
   // Агент передумал (ученик перебил) — ответ больше не нужен. drop — черновик
