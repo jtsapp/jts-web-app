@@ -93,7 +93,7 @@ async function finishTestThroughBridge(page) {
   const f = await (await frame.elementHandle()).contentFrame()
   // Страница теста загрузилась и мост поставил крючки
   await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30000 })
-  await expect(page.frameLocator('.pl-page__frame').getByText('JTS Placement Test')).toBeVisible()
+  await expect(page.frameLocator('.pl-page__frame').getByText('Давайте определим')).toBeVisible()
   return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, { intent: 'open_existing_roadmap' }), ENVELOPE)
 }
 
@@ -219,7 +219,7 @@ test.describe('говорение', () => {
 
     const modal = page.locator('.pl-speak')
     await modal.getByRole('button', { name: 'Начать подготовку' }).click()
-    await modal.getByRole('button', { name: 'Готов — записывать' }).click()
+    await modal.getByRole('button', { name: 'Я готов — записать' }).click()
     const stop = modal.getByRole('button', { name: 'Закончить ответ' })
     await expect(stop).toBeEnabled()
     await page.waitForTimeout(16_000) // короче MIN_SECONDS (15 с) окно запись не отправит
