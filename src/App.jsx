@@ -29,6 +29,7 @@ import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
+import ListenPage from './screens/ListenPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
@@ -156,7 +157,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
@@ -371,6 +372,12 @@ export default function App() {
     if (deepLink === 'listenchoose') {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
+    }
+    // ?screen=listen&set=A1 — сразу уровень (или направление) Just Listen It:
+    // проверить набор по ссылке, не проходя меню.
+    if (deepLink === 'listen') {
+      const set = searchParams.get('set')
+      if (set) setListenTarget({ set })
     }
     // ?screen=lessons&tab=reports&report=<id> — вкладка «Уроков» и отчёт в ней
     // (ссылка из уведомления в браузере и проверка вида по адресу).
@@ -794,6 +801,7 @@ export default function App() {
   // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
+  const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just Listen It
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -1653,6 +1661,7 @@ export default function App() {
       setScreen('situations')
     }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
+    else if (key === 'listen') { setListenTarget(payload || null); setScreen('listen') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
@@ -2236,6 +2245,18 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'listen':
+      return (
+        <ListenPage
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={listenTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
