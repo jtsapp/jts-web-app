@@ -116,6 +116,7 @@ describe('подпись кнопки', () => {
     expect(backLabelKey('kingdom-interior')).toBe('nav.back.learning')
     expect(backLabelKey('tutor-dashboard')).toBe('nav.back.tutor')
     expect(backLabelKey('listening')).toBe('nav.back.listening')
+    expect(backLabelKey('prepositions')).toBe('nav.back.prepositions')
     expect(backLabelKey('нечто')).toBe('nav.back.default')
     expect(backLabelKey(null)).toBe('nav.back.default')
   })

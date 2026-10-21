@@ -2010,6 +2010,12 @@ export function getListenSet(token, id, onFresh) {
   return cachedAuthGet(`/mobile/listen/sets/${encodeURIComponent(id)}`, token, onFresh)
 }
 
+// Prepositions World: весь курс одним бандлом (~1 МБ, форма прототипа, медиа — ссылки MinIO). Большой ответ
+// cachedAuthGet держит только в памяти вкладки — в localStorage он вытеснял бы прогресс.
+export function getPrepositions(token, onFresh) {
+  return cachedAuthGet('/mobile/prepositions', token, onFresh)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }
