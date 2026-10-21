@@ -4018,7 +4018,7 @@
   font-size: 52px;
   line-height: 68px;
   color: var(--t-purple);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .t-tour__intro-text {
   margin: 0;

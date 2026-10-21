@@ -33,7 +33,12 @@ html[data-ui-lang='kk'] .screen,
 /* «Главная» на телефоне — Manrope поверх PT Root UI мобильного слоя */
 html[data-ui-lang='kk'] .hm,
 /* Пробный урок /trial — своя гарнитура под .trial */
-html[data-ui-lang='kk'] .trial {
+html[data-ui-lang='kk'] .trial,
+/* Тур «Главной», окно «Жёсткий режим» и окно говорения теста — порталы в body со своей гарнитурой (макет «Первый
+   заход» / «Тест уровня», 21.10.2026) */
+html[data-ui-lang='kk'] .t-tour--coach,
+html[data-ui-lang='kk'] .hm-temper,
+html[data-ui-lang='kk'] .pl-speak {
   font-family: var(--kk-font);
 }
 
