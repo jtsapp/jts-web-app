@@ -5,8 +5,9 @@ import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
 import HomePage from './HomePage.jsx'
 
-// Цель уровня на «Главной»: выбор в первом шаге тура и кликом по медали,
-// дорожка от ближайшего уровня до цели, кадр «цель достигнута».
+// Цель уровня на «Главной»: выбор кликом по медали, дорожка от ближайшего
+// уровня до цели, кадр «цель достигнута». В туре вопроса о цели больше нет —
+// её спрашивает тест уровня (редизайн «Главной», 21.10.2026).
 //
 // Отдельным файлом от HomePage.test.jsx: здесь нужен токен (цель только у
 // залогиненного) и настоящий тур, а там экран проверяется без них.
@@ -95,31 +96,17 @@ describe('Цель уровня на «Главной»', () => {
     expect(screen.getByText('Цель — A1')).toBeTruthy()
   })
 
-  // Тур открывается приветствием (макет «Первый заход», 21.10.2026), выбор цели — первая подсказка после него.
-  const openTour = async () => {
-    const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
-    fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
-    return screen.findByRole('dialog', { name: 'Твоя цель' })
-  }
-
-  it('первый шаг тура — выбор цели: «Далее» заперта, пока цель не выбрана', async () => {
+  // Тур открывается приветствием (макет «Первый заход», 21.10.2026), за ним — подсказки по экрану. Вопроса о цели
+  // в нём нет: цель спрашивает тест уровня, второй раз за первый заход её не задаём.
+  it('тур без выбора цели: после приветствия — подсказка про прогресс', async () => {
     renderHome({ tourKey: 'jts_tour_home:user-7' })
 
-    const tour = await openTour()
-    const next = within(tour).getByRole('button', { name: 'Далее' })
-    expect(next.disabled).toBe(true)
-
-    // Выбор — с A1 (ближайшая ступень) до C2; A0 позади.
-    const chips = within(tour).getAllByRole('radio').map((c) => c.querySelector('b').textContent)
-    expect(chips).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'])
-
-    fireEvent.click(within(tour).getByRole('radio', { name: /B2/ }))
-    expect(next.disabled).toBe(false)
-    expect(goalPuts()).toEqual([{ target: 'B2', from: 'A0' }])
-    expect(stopLabels()).toEqual(['Старт', 'A1', 'A2', 'B1', 'Финиш · B2'])
-
-    // Кэш держит выбор: следующий заход нарисует дорожку сразу, до ответа сервера.
-    expect(JSON.parse(localStorage.getItem('jts_level_goal:7'))).toEqual({ target: 'B2', from: 'A0' })
+    const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
+    fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+    const step = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    expect(within(step).queryAllByRole('radio')).toHaveLength(0)
+    expect(screen.queryByRole('dialog', { name: 'Твоя цель' })).toBe(null)
+    expect(goalPuts()).toEqual([])
   })
 
   it('ответ сервера, пришедший после выбора, выбор не перетирает', async () => {
@@ -128,9 +115,9 @@ describe('Цель уровня на «Главной»', () => {
     fetchMock.mockImplementationOnce(
       () => new Promise((r) => { release = () => r({ ok: true, json: async () => ({ configured: true, goal: null }) }) }),
     )
-    renderHome({ tourKey: 'jts_tour_home:user-7' })
-    const tour = await openTour()
-    fireEvent.click(within(tour).getByRole('radio', { name: /B1/ }))
+    renderHome()
+    fireEvent.click(await screen.findByRole('button', { name: /Цель — A1/ }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Ваша цель' })).getByRole('radio', { name: /B1/ }))
     release()
     await waitFor(() => expect(goalPuts()).toEqual([{ target: 'B1', from: 'A0' }]))
     await new Promise((r) => setTimeout(r, 0))

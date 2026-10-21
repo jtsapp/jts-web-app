@@ -300,3 +300,59 @@ html[data-theme="dark"] .exam-demo {
   border-color: rgba(144, 71, 255, 0.4);
   color: var(--dk-text);
 }
+
+/* ---- «Главная» · редизайн (21.10.2026): токены карточек и то, что генератор перекрашивает поверх ---- */
+html[data-theme="dark"] .hm--v2 {
+  --hm-ink: var(--dk-text);
+  --hm-sec: var(--dk-text-2);
+  --hm-mut: var(--dk-muted);
+  --hm-lav: var(--dk-acc-soft);
+  --hm-lav2: var(--dk-acc-tint);
+  --hm-line: var(--dk-line);
+  --hm-tile: var(--dk-chip);
+  --hm-card: var(--dk-card);
+  --hm-up: var(--dk-green);
+  --hm-up-bg: var(--dk-green-tint);
+  --hm-down: var(--dk-orange);
+  --hm-down-bg: var(--dk-orange-tint);
+}
+html[data-theme="dark"] .pl-report__level {
+  color: #ffffff;
+}
+html[data-theme="dark"] .pl-report__chip,
+html[data-theme="dark"] .pl-report__tag {
+  background: none;
+}
+html[data-theme="dark"] .pl-report__chip {
+  color: var(--dk-acc-text);
+}
+html[data-theme="dark"] .pl-report__overall {
+  border-color: var(--dk-acc-line);
+}
+html[data-theme="dark"] .pl-report__act {
+  border-width: 2px;
+}
+html[data-theme="dark"] .hm--v2 .ge-task.is-primary {
+  background: var(--dk-acc-tint);
+}
+html[data-theme="dark"] .hm-start__plate {
+  background: var(--dk-acc-soft);
+}
+html[data-theme="dark"] .learn__main:has(.hm--v2) .tour-help,
+html[data-theme="dark"] .learn__main:has(.hm--v2) .nbell__btn {
+  border: 1px solid var(--dk-line);
+  background: var(--dk-card);
+  color: var(--dk-text);
+}
+/* сайдбар по тому же макету: профиль сиреневой плашкой, ранг — плашкой с рамкой */
+html[data-theme="dark"] .sb__profile {
+  background: var(--dk-acc-tint);
+}
+html[data-theme="dark"] .sb__role {
+  border: 2px solid var(--dk-line);
+  background: var(--dk-card);
+}
+html[data-theme="dark"] .pl-report__overall.is-empty .pl-report__level {
+  color: var(--dk-muted);
+  box-shadow: inset 0 0 0 2px var(--dk-acc-line);
+}

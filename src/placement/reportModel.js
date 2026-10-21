@@ -6,7 +6,8 @@ import { CEFR } from './envelope.js'
 import { navForActivity } from './activityRoutes.js'
 import { pickFeedback } from './speakingFeedback.js'
 
-const SKILL_ORDER = ['LU', 'R', 'L', 'S']
+// Порядок плиток отчёта; его же берёт пустая карточка «теста ещё нет» — плитки на тех же местах, что после теста.
+export const SKILL_ORDER = ['LU', 'R', 'L', 'S']
 
 const cefr = (v) => (CEFR.includes(v) ? v : null)
 const arr = (v) => (Array.isArray(v) ? v : [])
