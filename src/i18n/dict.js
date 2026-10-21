@@ -222,6 +222,7 @@ export const DICT = {
     // Онбординг-тур
     'tour.skip': 'Пропустить',
     'tour.next': 'ОК',
+    'tour.coach.next': 'Далее',
     'tour.done': 'Готово',
     // Тур, который ведёт помощник Луна: она читает шаги вслух
     'tour.luna': 'Рассказывает Луна',
@@ -616,6 +617,7 @@ export const DICT = {
     // Онбординг-тур
     'tour.skip': 'Өткізу',
     'tour.next': 'ОК',
+    'tour.coach.next': 'Әрі қарай',
     'tour.done': 'Дайын',
     'tour.luna': 'Айзере айтып береді',
     'tour.luna.mute': 'Айзеренің дауысын өшіру',
@@ -1003,6 +1005,7 @@ export const DICT = {
     // Onboarding tour
     'tour.skip': 'Skip',
     'tour.next': 'OK',
+    'tour.coach.next': 'Next',
     'tour.done': 'Done',
     'tour.luna': 'Luna is guiding you',
     'tour.luna.mute': 'Mute Luna',

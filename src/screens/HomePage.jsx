@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
 import AssetImage from '../components/AssetImage.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { isTourSeen, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
@@ -14,9 +14,11 @@ import GePlanInvite from './home/GePlanInvite.jsx'
 import GeLockedRoadmap from './home/GeLockedRoadmap.jsx'
 import PlacementReport from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
+import TourSections from './home/TourSections.jsx'
+import TemperInvite from './home/TemperInvite.jsx'
+import { armTemperInvite, closeTemperInvite, isTemperInvitePending, temperInviteKey } from './home/temperInvite.js'
 import NewReportCard from '../feedback/NewReportCard.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
-import { todayView } from '../ge/plan/planModel.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -69,6 +71,8 @@ export default function HomePage({
   // Ученик учился до теста v16 (аккаунт старше выкатки, src/placement/existingStudent.js): тест ему не навязываем —
   // роадмап не размывается, а на «Главной» тест числится непройденным (решение владельца 14.10.2026).
   existingStudent = false,
+  // «Попробовать жёсткий режим» в окне после тура (App пишет нрав тьютора 'harsh').
+  onTemperChoice,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -164,47 +168,26 @@ export default function HomePage({
   // Тур общего курса — другой (анкета, план), поэтому и отметка своя: видевшие прежний увидят обновлённый один раз.
   const tourStorageKey = tourKey && geMode ? `${tourKey}:ge` : tourKey
   const tour = useScreenTour(tourReady ? tourStorageKey : null)
-  // Тур новой «Главной» — по каждому блоку сверху вниз. Шаги собираются по тому, что на экране (приглашение или блок
-  // цели, «Сегодня» или прежняя подсказка, кабинет демо без практики и расписания): шаг без элемента тур пропустил бы
-  // и сам, но счётчик «2/11» на первом шаге выглядел бы сломанным. Функцией, а не значением: домашка и расписание
-  // объявлены ниже, а шаги нужны только открытому туру.
+  // Тур «Главной» по макету «Первый заход и подсказки» (21.10.2026): приветствие с именем и три подсказки — прогресс,
+  // пробный урок (демо) или «Расписание» с «Домашним заданием» одной рамкой, разделы меню. Прежние девять шагов по
+  // каждому блоку макет сменил: тур видит в основном новый ученик, а у него блок цели ещё закрыт и рассказывать про
+  // план по дням рано. Размеры карточек и маскоты — из макета (ширина карточки и колонки текста, рендер маскота).
+  // Функцией, а не значением: шаги нужны только открытому туру.
   const tourSteps = () => {
-    const todayTasks = geToday ? todayView(gePlan.plan) : null
-    return geMode
-      ? [
-          ...(geTop === 'goal'
-            ? [
-                { selector: '.ge-goal', title: t('tour.home.goal2.title'), text: t('tour.home.goal2.text') },
-                { selector: '.ge-goal .ih-gb__journey', title: t('tour.home.journey.title'), text: t('tour.home.journey.text') },
-              ]
-            : geTop === 'locked'
-              ? [{ selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }]
-              : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
-          // Без уровня карточки навыков нет — и шага про неё тоже.
-          ...(levelUnknown ? [] : [{ selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') }]),
-          ...(isDemoAccount
-            ? []
-            : geToday
-              ? [
-                  { selector: '.ge-today', title: t('tour.home.plan.title'), text: t('tour.home.plan.text') },
-                  ...(todayTasks.tasks.length || todayTasks.ahead.length
-                    ? [{ selector: '.ge-today .ge-task', title: t('tour.home.task.title'), text: t('tour.home.task.text') }]
-                    : []),
-                  { selector: '.ge-today__all', title: t('tour.home.allPlan.title'), text: t('tour.home.allPlan.text') },
-                ]
-              : pickRecommendation({ summary, homework, occurrences })
-                ? [{ selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.ge.recommend.text') }]
-                : []),
-          ...(isDemoAccount
-            ? []
-            : [
-                { selector: '.hm-prac', title: t('tour.home.prac.title'), text: t('tour.home.prac.text') },
-                { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.ge.schedule.text') },
-                { selector: '.hm-hw', title: t('tour.home.hw.title'), text: t('tour.home.hw.text') },
-              ]),
-        ]
-      : [
-          {
+    const top =
+      geTop === 'goal'
+        ? { selector: '.ge-goal', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
+        : geTop === 'locked'
+          ? { selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }
+          : geMode
+            ? { selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
+            : null
+    return [
+      top
+        ? { ...top, art: { src: '/assets/first-login/coach-progress.webp', w: 252, h: 236 }, width: 576, textWidth: 330 }
+        : {
+            // Прежняя «Главная» (бэкенд без анкеты GE): первым шагом по-прежнему выбор цели — без него дорожка не знает,
+            // куда вести. Маскоту рядом с чипами уровней места нет.
             selector: '.hm-level',
             title: t('tour.home.goal.title'),
             text: t('tour.home.goal.text'),
@@ -212,11 +195,59 @@ export default function HomePage({
             // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
             // целиком можно всегда, тогда дорожка остаётся прежней.
             canNext: !options.length || !!goalValue,
+            width: 520,
           },
-          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-          { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
-          { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
-        ]
+      isDemoAccount
+        ? {
+            selector: '.hm-trial',
+            title: t('tour.home.trial.title'),
+            text: t('tour.home.trial.text'),
+            art: { src: '/assets/first-login/coach-trial.webp', w: 274, h: 260 },
+            width: 535,
+            textWidth: 277,
+          }
+        : {
+            selector: ['.hm-sched', '.hm-hw'],
+            title: t('tour.home.lessons.title'),
+            text: t('tour.home.lessons.text'),
+            art: { src: '/assets/first-login/coach-schedule.webp', w: 227, h: 235 },
+            width: 576,
+            textWidth: 330,
+          },
+      // Сайдбар на телефоне спрятан в drawer — тогда список встаёт по центру без прожектора (optional).
+      { selector: '.sb', optional: true, title: t('tour.home.sections.title'), content: <TourSections />, width: 520 },
+    ]
+  }
+  // Приветствие перед подсказками — по имени, как в макете; имени нет — только «Добро пожаловать!».
+  const firstName = (userName || '').trim().split(/\s+/)[0] || ''
+  const tourIntro = {
+    title: t('tour.home.intro.title'),
+    name: firstName,
+    text: t('tour.home.intro.text'),
+    cta: t('tour.home.intro.cta'),
+    skip: t('tour.home.intro.skip'),
+  }
+
+  // После тура (решения владельца 21.10.2026): новый ученик сразу уходит в тест — у него закрыт роадмап, и тест и есть
+  // следующий шаг; учившимся до теста v16 тест остаётся кнопкой на «Главной». Окно «Жёсткий режим общения» — один раз
+  // после тура; новому — когда он вернётся с пройденным тестом (поверх закрытого роадмапа окно не выходит).
+  const temperKey = temperInviteKey(tourStorageKey)
+  const finishTour = () => {
+    tour.finish()
+    // Тур закрылся, ничего не показав (на экране не нашлось ни одного блока), — это не «пройден»: ни окна, ни теста.
+    if (!isTourSeen(tourStorageKey)) return
+    armTemperInvite(temperKey)
+    if (geTop === 'locked') onGeStart?.()
+  }
+  const [temperOpen, setTemperOpen] = useState(false)
+  useEffect(() => {
+    if (tour.open || !geLoaded || geTop === 'locked') return
+    if (isTemperInvitePending(temperKey)) setTemperOpen(true)
+  }, [tour.open, geLoaded, geTop, temperKey])
+  const closeTemper = (temper) => {
+    closeTemperInvite(temperKey)
+    setTemperOpen(false)
+    if (temper) onTemperChoice?.(temper)
   }
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
@@ -571,7 +602,11 @@ export default function HomePage({
           </div>
         </div>
       </div>
-      {tour.open && <OnboardingTour steps={tourSteps()} storageKey={tourStorageKey} onFinish={tour.finish} />}
+      {tour.open && (
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps()} storageKey={tourStorageKey} onFinish={finishTour} />
+      )}
+      {/* «Оставить обычный» нрав не пишет: окно могло выйти и тому, у кого жёсткий уже включён (тур по «?»). */}
+      {temperOpen && <TemperInvite onKeep={() => closeTemper(null)} onTry={() => closeTemper('harsh')} />}
       {goalOpen && (
         <GoalDialog options={options} value={goalValue} onPick={pickGoal} onClose={() => setGoalOpen(false)} />
       )}

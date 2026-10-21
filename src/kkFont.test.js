@@ -24,6 +24,12 @@ const COVERED = {
   'landing.css | .ld-footer': ".ld[lang='kk'] .ld-footer",
   'sat.css | .st-ref__f': "html[data-ui-lang='kk'] .st-ref__f",
   'sat.css | .st-wb__input': "html[data-ui-lang='kk'] .st-wb__input",
+  // порталы первого входа (макет «Первый заход» / «Тест уровня», 21.10.2026)
+  'tutor.css | .t-tour--coach': "html[data-ui-lang='kk'] .t-tour--coach",
+  'mobile/tutor.css | .t-tour--coach': "html[data-ui-lang='kk'] .t-tour--coach",
+  'demo.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
+  'mobile/home.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
+  'placement.css | .pl-speak': "html[data-ui-lang='kk'] .pl-speak",
 }
 
 function cssFiles(dir) {

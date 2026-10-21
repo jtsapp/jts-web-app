@@ -541,3 +541,34 @@
     font-size: 24px;
   }
 }
+
+/* Окно «Жёсткий режим общения» на телефоне: кнопки столбиком, поля уже —
+   две пилюли по 313 px рядом не помещаются. */
+@media (max-width: 560px) {
+  .hm-temper {
+    font-family: 'PT Root UI', Manrope, system-ui, sans-serif;
+  }
+  .hm-temper__card {
+    gap: 20px;
+    padding: 20px;
+    border-radius: 28px;
+  }
+  .hm-temper__title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+  .hm-temper__text {
+    font-size: 15px;
+  }
+  .hm-temper__acts {
+    grid-template-columns: 1fr;
+  }
+  .hm-temper__keep,
+  .hm-temper__try {
+    min-height: 52px;
+    padding: 14px 20px;
+  }
+  .hm-temper__try {
+    order: -1;
+  }
+}

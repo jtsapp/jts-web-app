@@ -95,11 +95,18 @@ describe('Цель уровня на «Главной»', () => {
     expect(screen.getByText('Цель — A1')).toBeTruthy()
   })
 
-  it('первый шаг тура — выбор цели: «ОК» заперта, пока цель не выбрана', async () => {
+  // Тур открывается приветствием (макет «Первый заход», 21.10.2026), выбор цели — первая подсказка после него.
+  const openTour = async () => {
+    const hello = await screen.findByRole('dialog', { name: 'Добро пожаловать!' })
+    fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+    return screen.findByRole('dialog', { name: 'Твоя цель' })
+  }
+
+  it('первый шаг тура — выбор цели: «Далее» заперта, пока цель не выбрана', async () => {
     renderHome({ tourKey: 'jts_tour_home:user-7' })
 
-    const tour = await screen.findByRole('dialog', { name: 'Твоя цель' })
-    const next = within(tour).getByRole('button', { name: 'ОК' })
+    const tour = await openTour()
+    const next = within(tour).getByRole('button', { name: 'Далее' })
     expect(next.disabled).toBe(true)
 
     // Выбор — с A1 (ближайшая ступень) до C2; A0 позади.
@@ -122,7 +129,7 @@ describe('Цель уровня на «Главной»', () => {
       () => new Promise((r) => { release = () => r({ ok: true, json: async () => ({ configured: true, goal: null }) }) }),
     )
     renderHome({ tourKey: 'jts_tour_home:user-7' })
-    const tour = await screen.findByRole('dialog', { name: 'Твоя цель' })
+    const tour = await openTour()
     fireEvent.click(within(tour).getByRole('radio', { name: /B1/ }))
     release()
     await waitFor(() => expect(goalPuts()).toEqual([{ target: 'B1', from: 'A0' }]))

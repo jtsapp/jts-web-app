@@ -41,6 +41,8 @@ test('первый заход: тур спрашивает цель, дорож�
   const state = await setup(page)
   await page.goto('/?screen=home')
 
+  // Тур начинается приветствием (макет «Первый заход», 21.10.2026), выбор цели — первая подсказка.
+  await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
   const pop = page.locator('.t-tour__pop')
   await expect(pop).toBeVisible({ timeout: 20000 })
   await expect(pop.locator('.t-tour__title')).toHaveText('Твоя цель')

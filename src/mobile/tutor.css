@@ -936,4 +936,48 @@
   .t-tour__ok:hover {
     transform: none;
   }
+
+  /* Тур «Главной» (look="coach"): макет только десктопный. На телефоне карточка во
+     всю ширину без маскота — рядом с колонкой текста 330 ему места нет; в
+     приветствии остаются двое верхних маскотов, боковые ушли бы за край. */
+  .t-tour--coach {
+    font-family: 'PT Root UI', Manrope, system-ui, sans-serif;
+  }
+  .t-tour--coach .t-tour__pop {
+    padding: 20px;
+    border-radius: 24px;
+  }
+  .t-tour--coach .t-tour__pop--art .t-tour__body {
+    width: auto;
+  }
+  .t-tour__art,
+  .t-tour__intro-art--left,
+  .t-tour__intro-art--right {
+    display: none;
+  }
+  .t-tour__intro-card {
+    gap: 24px;
+    padding: 28px 20px 20px;
+    border-radius: 28px;
+  }
+  .t-tour__intro-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .t-tour__intro-name {
+    font-size: 40px;
+    line-height: 52px;
+  }
+  .t-tour__intro-art--top1,
+  .t-tour__intro-art--top2 {
+    width: 140px;
+    height: 90px;
+  }
+  .t-tour__intro-art--top1 {
+    left: 8%;
+  }
+  .t-tour__intro-art--top2 {
+    left: auto;
+    right: 8%;
+  }
 }
