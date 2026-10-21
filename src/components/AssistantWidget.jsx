@@ -6,7 +6,8 @@ import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/opening.js'
-import { snapshotScreen } from '../lib/assistant/screenSnapshot.js'
+import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
+import { pressButton } from '../lib/assistant/clicker.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { useIntroHint } from '../lib/assistant/introHint.js'
 import { assistantPersona } from '../lib/assistant/persona.js'
@@ -43,6 +44,11 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // (tourBus.js); Луна только просит и потом читает шаги тура вслух. Тур она
 // озвучивает и на набранный вопрос: голос — и есть «объясняет, куда нажимать»;
 // выключается той же кнопкой звука (и в шапке, и в карточке тура).
+//
+// Нажатия (21.10.2026, владелец: «больше прав — нажимать на кнопки»): снимок вопроса
+// нумерует кнопки, Луна просит нажать по номеру, окно жмёт (clicker.js) — сразу, не
+// дожидаясь голоса: нажатие не уводит с экрана, а «нажимаю…» голосом только задержало
+// бы его. Что можно жать, решает код (clickPolicy.js), а не модель.
 //
 // Первая реплика (15.10.2026, владелец: «реальный преподаватель», «когда
 // открываешь — подсказать, что правильно, что нет, и что сделать сейчас»): с
@@ -189,6 +195,7 @@ const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
 
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
+  if (action.kind === 'click') return t(action.now ? 'assistant.action.clicking' : 'assistant.action.offerClick', { label: action.label })
   const name = destinationName(action.target, lang)
   const tour = action.kind === 'tour'
   const key = action.now
@@ -536,11 +543,41 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }, TOUR_START_TIMEOUT_MS)
   }, [endGuide])
 
-  // Выполнить действие Луны: открыть раздел или провести тур. gesture — нажата
-  // кнопка под ответом (тогда ответ дослушивать незачем, а iPhone даст звук).
+  // Номера кнопок последнего снимка (screenSnapshot.snapshotWithRefs): по ним окно жмёт
+  // кнопку, которую назвала Луна.
+  const refsRef = useRef(new Map())
+  const takeSnapshot = useCallback(() => {
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const snap = snapshotWithRefs(root)
+    refsRef.current = snap.refs
+    return snap.text
+  }, [])
+
+  // Нажать кнопку Луны. note — сказать в переписке, что кнопки нет (у облачка команды
+  // свой ответ); refs — номера снимка, по которому отвечали (звонок держит свои).
+  const press = useCallback((action, { note = true, refs = null } = {}) => {
+    const cur = stateRef.current
+    if (!cur?.enabled) return 'missing'
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    const res = pressButton(action, { refs: refs || refsRef.current, root })
+    if (res === 'pressed') {
+      // На телефоне лист окна закрывает экран — ученик должен видеть, что нажалось.
+      if (isPhone()) setOpen(false)
+    } else if (note) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: cur.t('assistant.click.missing', { label: action.label }), local: true }])
+    }
+    return res
+  }, [])
+
+  // Выполнить действие Луны: открыть раздел, провести тур или нажать кнопку. gesture —
+  // нажата кнопка под ответом (тогда ответ дослушивать незачем, а iPhone даст звук).
   const perform = useCallback((action, { gesture = false } = {}) => {
     // Нажатая кнопка заменяет отложенный переход того же ответа — дважды не ведём.
     dropDeferred()
+    if (action?.kind === 'click') {
+      if (gesture) unlockSpeech()
+      return press(action)
+    }
     const dest = destinationOf(action?.target)
     const cur = stateRef.current
     if (!dest || !cur?.enabled) return
@@ -564,7 +601,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       guideRef.current.screen = dest.screen
       navigateTo(dest.id)
     }
-  }, [startGuide, stopVoice, dropDeferred])
+  }, [startGuide, stopVoice, dropDeferred, press])
   useLayoutEffect(() => {
     performRef.current = perform
   })
@@ -772,12 +809,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     const controller = new AbortController()
     abortRef.current = controller
     if (opening) openingRef.current = { base }
-    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     try {
       const reply = await askAssistant({
         token: cur.token,
         messages: toSend,
-        screen: { id: cur.screen || null, text: snapshotScreen(root) },
+        screen: { id: cur.screen || null, text: takeSnapshot() },
         lang: cur.lang,
         errors: recentErrors(),
         pageUrl: typeof location !== 'undefined' ? location.href : '',
@@ -822,7 +858,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         // договорит «открываю…» (runDeferred в onFinish). Ученик ушёл с экрана,
         // где можно (экзамен), или вышел из аккаунта — не ведём никуда.
         if (action.now && mountedRef.current && stateRef.current?.enabled) {
-          if (speaker && voiceRef.current === speaker) {
+          // Нажатие — сразу (см. шапку); переход и тур — когда Луна договорит.
+          if (action.kind === 'click') perform(action)
+          else if (speaker && voiceRef.current === speaker) {
             dropDeferred()
             deferredRef.current = { action, owner: speaker, timer: setTimeout(() => runDeferred(speaker), ACTION_WAIT_MAX_MS) }
           } else perform(action)
@@ -878,7 +916,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (opening) openingRef.current = null
       }
     }
-  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred])
+  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot])
 
   // ── Звонок ───────────────────────────────────────────────────────────
   // Выполнить «открываю…» звонка: Луна договорила (или ждать уже нечего).
@@ -988,8 +1026,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
             return next
           }),
         )
-      const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
-      const screenText = snapshotScreen(root)
+      const screenText = takeSnapshot()
       timing.snap = Math.round(performance.now() - askedAt)
       try {
         const reply = await askAssistant({
@@ -1024,7 +1061,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (action) {
           patchLast((m) => ({ ...m, content: fallback || m.content, action }))
           ui(() => {
-            if (action.now && stateRef.current?.enabled) {
+            if (!action.now || !stateRef.current?.enabled) return
+            // Нажатие — по commit черновика и сразу; переход — когда Луна договорит.
+            if (action.kind === 'click') performRef.current?.(action)
+            else {
               clearTimeout(callActionRef.current?.timer)
               callActionRef.current = { action, spoke: false, timer: setTimeout(runCallAction, ACTION_WAIT_MAX_MS) }
             }
@@ -1074,7 +1114,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         }
       }
     },
-    [t, runCallAction],
+    [t, runCallAction, takeSnapshot],
   )
 
   // Агент передумал (ученик перебил) — ответ больше не нужен. drop — черновик
@@ -1637,9 +1677,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                       disabled={voiceBusy}
                       onClick={() => perform(m.action, { gesture: true })}
                     >
-                      {t(m.action.kind === 'tour' ? 'assistant.action.tour' : 'assistant.action.open', {
-                        name: destinationName(m.action.target, lang),
-                      })}
+                      {m.action.kind === 'click'
+                        ? t('assistant.action.click', { label: m.action.label })
+                        : t(m.action.kind === 'tour' ? 'assistant.action.tour' : 'assistant.action.open', {
+                            name: destinationName(m.action.target, lang),
+                          })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
