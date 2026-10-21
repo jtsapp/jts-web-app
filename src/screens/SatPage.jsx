@@ -17,6 +17,8 @@ import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
 import { plural } from '../lib/plural.js'
 import { daysUntil } from '../sat/model/profile.js'
+import { moduleSize } from '../sat/model/practice.js'
+import { skillSection } from '../sat/names.js'
 import { useI18n } from '../i18n.jsx'
 import { EventIcon, MenuBookIcon, QuizIcon } from '../ielts/icons.jsx'
 import { FireIcon, TargetIcon } from '../sat/icons.jsx'
@@ -234,7 +236,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       />
     )
   } else if (tab === 'progress') {
-    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: 10 }).catch((e) => setError(errorText(e, t)))} />
+    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))} />
   } else if (tab === 'materials') {
     panel = <MaterialsTab onOpen={(code) => openUnit(code)} />
   } else if (tab === 'errors') {

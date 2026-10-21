@@ -899,7 +899,7 @@ const dict = {
     'sat.prog.mastered': "Освоено навыков",
     'sat.prog.awaiting': "ещё {n} ждут подтверждения",
     'sat.prog.map': "Карта навыков",
-    'sat.prog.mapSub': "Нажмите на навык — соберём 10 вопросов по нему",
+    'sat.prog.mapSub': "Нажмите на навык — соберём набор размером с модуль экзамена: 27 вопросов R&W, 22 Math",
     'sat.prog.more.one': "ещё {n} попытка",
     'sat.prog.more.few': "ещё {n} попытки",
     'sat.prog.more.many': "ещё {n} попыток",

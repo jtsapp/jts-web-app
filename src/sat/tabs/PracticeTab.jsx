@@ -6,6 +6,7 @@ import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, ExpandMoreIcon, ScheduleIcon } from '../../ielts/icons.jsx'
 import { BulbIcon, InsightsIcon, StopwatchIcon, TargetIcon, TickIcon } from '../icons.jsx'
 import { domainName, skillName } from '../names.js'
+import { countForSection, countOptions, moduleSize } from '../model/practice.js'
 import { errorText } from '../../lib/examQuota.js'
 
 const MODES = [
@@ -14,7 +15,6 @@ const MODES = [
   { key: 'weak', Icon: InsightsIcon },
   { key: 'custom', Icon: TickIcon },
 ]
-const COUNTS = [5, 10, 20]
 const PACE = { rw: 71, math: 95 }
 
 /**
@@ -30,7 +30,7 @@ export default function PracticeTab({ onStart }) {
   const [mode, setMode] = useState('skills')
   const [picked, setPicked] = useState([])
   const [open, setOpen] = useState({})
-  const [count, setCount] = useState(10)
+  const [count, setCount] = useState(moduleSize('rw'))
   const [filters, setFilters] = useState({ difficulty: [], status: [], original: false })
   const [tax, setTax] = useState(null)
   const [progress, setProgress] = useState(null)
@@ -86,7 +86,7 @@ export default function PracticeTab({ onStart }) {
 
   const toggleSkill = (id) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
   const toggleList = (key, v) => setFilters((f) => ({ ...f, [key]: f[key].includes(v) ? f[key].filter((x) => x !== v) : [...f[key], v] }))
-  const take = mode === 'module' ? (section === 'math' ? 22 : 27) : count
+  const take = mode === 'module' ? moduleSize(section) : count
   const matching = pool?.count ?? 0
   const minutes = Math.max(1, Math.round((Math.min(take, matching || take) * PACE[section]) / 60))
 
@@ -123,7 +123,7 @@ export default function PracticeTab({ onStart }) {
             <div className="ih-seg" role="tablist">
               {['rw', 'math'].map((s) => (
                 <button key={s} type="button" role="tab" aria-selected={section === s} className={section === s ? 'is-on' : ''}
-                  onClick={() => { setSection(s); setPicked([]) }}>
+                  onClick={() => { setCount((c) => countForSection(c, section, s)); setSection(s); setPicked([]) }}>
                   {s === 'rw' ? 'Reading and Writing' : 'Math'}
                 </button>
               ))}
@@ -204,7 +204,7 @@ export default function PracticeTab({ onStart }) {
             <>
               <span className="st-sess__label">{t('sat.prac.count')}</span>
               <div className="ih-seg st-sess__counts">
-                {COUNTS.map((n) => <button key={n} type="button" className={count === n ? 'is-on' : ''} onClick={() => setCount(n)}>{n}</button>)}
+                {countOptions(section).map((n) => <button key={n} type="button" className={count === n ? 'is-on' : ''} onClick={() => setCount(n)}>{n}</button>)}
               </div>
             </>
           )}
