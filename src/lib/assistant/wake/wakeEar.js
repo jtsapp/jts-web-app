@@ -19,7 +19,8 @@
 // состояние 'asleep', и будит его resume() — его зовут из обработчика нажатия.
 
 import { withOwnMic } from './micArbiter.js'
-import { WAKE_SETS, matchWake } from './matchWake.js'
+import { WAKE_SETS, matchWake, wakeStartSec } from './matchWake.js'
+import { createRing } from './preroll.js'
 
 // 4096 кадров ≈ 85 мс при 48 кГц: так кормит распознаватель пример vosk-browser.
 const FRAME = 4096
@@ -38,7 +39,10 @@ const micError = (err) => (err?.name === 'NotAllowedError' || err?.name === 'Sec
 /**
  * wake — набор позывного персоны (matchWake.js: грамматика, фразы, имя); по
  * умолчанию — Луны.
- * @param {{ modelUrl: string, wake?: { grammar: string[], phrases: string[], name: string }, onWake: () => void,
+ * onWake получает итог: { text, words — слова Vosk со временем, preroll() — WAV 16 кГц от
+ * начала обращения (команда, сказанная одним духом с именем, preroll.js) или null }.
+ * @param {{ modelUrl: string, wake?: { grammar: string[], phrases: string[], name: string },
+ *   onWake: (detail: { text: string, words: object[], preroll: () => Blob|null }) => void,
  *   onState?: (state: 'idle'|'loading'|'asleep'|'listening'|'error', error?: 'model'|'denied'|'mic') => void,
  *   onResult?: (text: string) => void, loadModel?: (url: string) => Promise<any>,
  *   getUserMedia?: (c: MediaStreamConstraints) => Promise<MediaStream>, createContext?: () => AudioContext }} opts
@@ -126,17 +130,29 @@ export function createWakeEar({
       const rec = new model.KaldiRecognizer(ctx.sampleRate, JSON.stringify(wake.grammar))
       // Время и уверенность слов — для лаборатории (/wake-lab пишет их в журнал).
       rec.setWords?.(true)
+      // Последние секунды звука — для команды, сказанной одним духом с позывным
+      // (preroll.js). Время слов Vosk считает от начала этого распознавателя — и буфер тоже.
+      const ring = createRing(ctx.sampleRate)
       rec.on('result', (msg) => {
         const text = msg?.result?.text || ''
         const words = Array.isArray(msg?.result?.result) ? msg.result.result : []
         onResult(text, words)
-        if (run?.rec === rec && matchWake(text, wake)) onWake()
+        if (run?.rec === rec && matchWake(text, wake)) {
+          const from = wakeStartSec(words, wake)
+          onWake({ text, words, preroll: () => ring.wavFrom(from) })
+        }
       })
       const source = ctx.createMediaStreamSource(stream)
       // ScriptProcessor, а не AudioWorklet: acceptWaveform vosk-browser берёт
       // AudioBuffer, и он есть в старом Safari.
       const node = ctx.createScriptProcessor(FRAME, 1, 1)
       node.onaudioprocess = (e) => {
+        // В буфер — до распознавателя: тот может забрать данные кадра себе.
+        try {
+          ring.push(e.inputBuffer.getChannelData(0))
+        } catch {
+          /* кадра нет в буфере — команда одним духом не дойдёт, позывной дойдёт */
+        }
         try {
           rec.acceptWaveform(e.inputBuffer)
         } catch {

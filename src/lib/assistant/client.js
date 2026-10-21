@@ -20,10 +20,11 @@ export class AssistantError extends Error {
  *           onResponse?: (r: {serverTiming: string}) => void }} args
  *   onResponse — ответ пошёл: заголовок Server-Timing роута (замеры звонка Луне)
  * @returns {Promise<{ text: string, offtopic: boolean, reported: boolean,
- *                     action: {kind: 'open'|'tour', target: string, now: boolean}|null }>}
+ *                     action: {kind: 'open'|'tour'|'click', target: string, now: boolean, label?: string}|null }>}
  *   весь видимый ответ; offtopic — сервер ответил стандартным отказом;
- *   reported — поломку записали в БД; action — Луна предлагает открыть раздел
- *   или провести тур (actions.js). Оба — хвост стрима, ученику не показывается.
+ *   reported — поломку записали в БД; action — Луна предлагает открыть раздел,
+ *   провести тур или нажать кнопку экрана (actions.js; у click — подпись кнопки).
+ *   Оба — хвост стрима, ученику не показывается.
  */
 export async function askAssistant({ token, messages, screen, lang, errors, pageUrl, userAgent, bugReported, voice, call, onDelta, onResponse, signal }) {
   let res

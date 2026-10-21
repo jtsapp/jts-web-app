@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { WAKE_GRAMMAR, WAKE_SETS, matchWake, wakeSet } from './matchWake.js'
+import { WAKE_GRAMMAR, WAKE_SETS, matchWake, wakeSet, wakeStartSec } from './matchWake.js'
 
 describe('позывной', () => {
   it('обе фразы — да, в любом регистре, с ё/ә и знаками', () => {
@@ -101,5 +101,28 @@ describe('позывной Айзере', () => {
   it('чужой id — набор Луны', () => {
     expect(wakeSet('dexter')).toBe(WAKE_SETS.luna)
     expect(matchWake('айзере')).toBe(false)
+  })
+})
+
+// Команды голосом (21.10.2026): «Луна, дальше» — тот же позывной, команда слышна целиком.
+describe('команды в грамматике', () => {
+  it('«имя + команда» и сами команды; [unk] последним, без повторов', () => {
+    for (const set of [WAKE_SETS.luna, WAKE_SETS.aizere]) {
+      expect(set.grammar.at(-1)).toBe('[unk]')
+      expect(new Set(set.grammar).size).toBe(set.grammar.length)
+    }
+    expect(WAKE_SETS.luna.grammar).toContain('луна дальше')
+    expect(WAKE_SETS.luna.grammar).toContain('дальше')
+    expect(WAKE_SETS.aizere.grammar).toContain('айзере келесі')
+  })
+  it('«луна дальше» — позывной; «дальше» без имени — нет', () => {
+    expect(matchWake('луна дальше')).toBe(true)
+    expect(matchWake('дальше')).toBe(false)
+  })
+  it('wakeStartSec — начало имени или приветствия перед ним', () => {
+    expect(wakeStartSec([{ word: 'луна', start: 1.2 }, { word: 'дальше', start: 1.6 }])).toBe(1.2)
+    expect(wakeStartSec([{ word: 'привет', start: 0.4 }, { word: 'луна', start: 0.9 }])).toBe(0.4)
+    expect(wakeStartSec([{ word: 'дальше', start: 0.4 }])).toBe(null)
+    expect(wakeStartSec([{ word: 'сәлем', start: 2 }, { word: 'айзере', start: 2.5 }], WAKE_SETS.aizere)).toBe(2)
   })
 })

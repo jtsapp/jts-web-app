@@ -38,11 +38,16 @@ function streamResponse(chunks) {
 
 // Без первой реплики при открытии окна: звонок здесь начинается в пустом окне
 // (кроме теста, где разговор уже идёт).
-function Harness({ greetOnOpen = false }) {
+function Harness({ greetOnOpen = false, onNext = null }) {
   return (
     <I18nProvider>
       <div className="scr-in">
         <p>Главная. Домашка: Unit 4</p>
+        {onNext && (
+          <button type="button" onClick={onNext}>
+            Далее
+          </button>
+        )}
       </div>
       <AssistantWidget token="tok" screen="home" enabled greetOnOpen={greetOnOpen} />
     </I18nProvider>
@@ -142,6 +147,30 @@ describe('звонок Луне', () => {
     expect(navigations).toEqual([])
     act(() => room.props.onState({ agentState: 'listening' }))
     expect(navigations).toEqual(['vocab'])
+  })
+
+  // Быстрая команда в звонке (21.10.2026): «дальше» — нажатие и одна фраза, без модели.
+  it('«дальше» в звонке — нажатие и фраза агенту без запроса к модели', async () => {
+    const onNext = vi.fn()
+    await startCall({ onNext })
+    const s = sender()
+    await act(async () => room.props.onAsk({ id: '21', text: 'Дальше.', opening: false, sender: s }))
+    expect(onNext).toHaveBeenCalledOnce()
+    expect(s.phrases).toEqual(['Нажимаю «Далее».'])
+    expect(s.ended).toBe(1)
+    expect(chatBodies()).toHaveLength(0)
+    expect(screen.getByText('Нажимаю «Далее».')).toBeTruthy()
+  })
+
+  it('«дальше» черновиком (pending) — нажатие только по commit', async () => {
+    const onNext = vi.fn()
+    await startCall({ onNext })
+    const s = sender()
+    await act(async () => room.props.onAsk({ id: '22', text: 'дальше', opening: false, pending: true, sender: s }))
+    expect(s.phrases).toEqual(['Нажимаю «Далее».'])
+    expect(onNext).not.toHaveBeenCalled()
+    act(() => room.props.onCommit('22'))
+    expect(onNext).toHaveBeenCalledOnce()
   })
 
   it('«Перебить» — только пока Луна говорит; нажатие останавливает её (luna.say с пустым текстом)', async () => {
