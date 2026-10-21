@@ -102,10 +102,11 @@ test('ученик без анкеты: закрытый роадмап → те
   await page.goto('/?screen=home')
 
   const locked = page.locator('.ge-locked')
-  await expect(locked).toContainText('Пройдите тест — построим ваш маршрут', { timeout: 20000 })
-  // остальная «Главная» работает: закрыт только роадмап
+  await expect(locked).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
+  // остальная «Главная» работает: маршрута нет, на месте «Сегодня» — «Начните отсюда»
   await expect(page.locator('.hm-skills')).toBeVisible()
-  await locked.getByRole('button', { name: 'Пройти тест' }).click()
+  await expect(page.locator('.hm-start')).toContainText('Начните отсюда')
+  await locked.getByRole('button', { name: 'Пройти тест уровня' }).click()
 
   expect(await finishTestThroughBridge(page)).toEqual({ accepted: true, persisted: true, navigated: true })
 
@@ -124,14 +125,16 @@ test('ученик без анкеты: закрытый роадмап → те
   await expect(report).toContainText('Результаты теста уровня')
   await expect(report.locator('.pl-report__level')).toHaveText('B1')
   await expect(report.locator('.pl-report__skill')).toHaveCount(4)
-  await expect(report).toContainText('Путешествовать без переводчика')
+  // цель и что делать дальше — отдельным блоком под сеткой (макет «Главная · редизайн»)
+  await expect(page.locator('.pl-next')).toContainText('Путешествовать без переводчика')
+  await expect(page.locator('.hm-start')).toHaveCount(0)
 })
 
 test('ученик без уровня: тест ставит уровень аккаунта', async ({ page }) => {
   const state = await setup(page, { level: null })
   await page.goto('/?screen=home')
   await expect(page.locator('.ge-locked')).toBeVisible({ timeout: 20000 })
-  await page.locator('.ge-locked').getByRole('button', { name: 'Пройти тест' }).click()
+  await page.locator('.ge-locked').getByRole('button', { name: 'Пройти тест уровня' }).click()
   await finishTestThroughBridge(page)
   await expect.poll(() => state.level).toBe('B1')
   // B1 по тесту, цель v16 «уже достигнута» → следующая плитка
@@ -260,12 +263,12 @@ test.describe('говорение', () => {
 test.describe('учится до теста v16', () => {
   const OLD = '2026-09-01T10:00:00'
 
-  test('анкеты нет — без блюра, карточка «Тест уровня не пройден»', async ({ page }) => {
+  test('анкеты нет — баннер зовёт на тест, но маршрут не «закрыт»', async ({ page }) => {
     await setup(page, { level: 'A2', createdAt: OLD })
     await page.goto('/?screen=home')
-    await expect(page.locator('.ge-invite')).toContainText('Тест уровня не пройден', { timeout: 20000 })
+    await expect(page.locator('.ge-invite')).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
     await expect(page.locator('.ge-locked')).toHaveCount(0)
-    await page.locator('.ge-invite').getByRole('button', { name: 'Пройти тест' }).click()
+    await page.locator('.ge-invite').getByRole('button', { name: 'Пройти тест уровня' }).click()
     await expect(page.locator('.pl-page__frame')).toBeVisible()
   })
 

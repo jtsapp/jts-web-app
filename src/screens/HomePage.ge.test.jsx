@@ -69,30 +69,31 @@ describe('HomePage — General English', () => {
     expect(document.querySelector('.ge-invite')).toBe(null)
   })
 
-  // С 14.10.2026 анкету «Главной» заменила анкета теста v16: до него роадмап закрыт блюром и зовёт на тест.
-  it('анкеты нет — роадмап закрыт и зовёт на тест (с уровнем и без)', async () => {
+  // С 14.10.2026 анкету «Главной» заменила анкета теста v16. С редизайна (21.10.2026) до теста сверху баннер
+  // «Здесь будет ваш маршрут», а на месте «Сегодня» — «Начните отсюда»: обе кнопки ведут на тест.
+  it('анкеты нет — баннер «Здесь будет ваш маршрут» и «Начните отсюда» зовут на тест (с уровнем и без)', async () => {
     for (const levelUnknown of [false, true]) {
       const onGeStart = vi.fn()
       const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
-      await waitFor(() => expect(screen.getByText('Пройдите тест — построим ваш маршрут')).toBeTruthy())
+      await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
       expect(document.querySelector('.hm-level')).toBe(null)
-      // образец маршрута под блюром недоступен ни скринридеру, ни клавиатуре
-      const preview = document.querySelector('.ge-locked__preview')
-      expect(preview.getAttribute('aria-hidden')).toBe('true')
-      expect(preview.hasAttribute('inert')).toBe(true)
-      fireEvent.click(within(document.querySelector('.ge-locked__veil')).getByRole('button', { name: 'Пройти тест' }))
-      expect(onGeStart).toHaveBeenCalled()
+      // класс ge-locked — якорь шага тура про закрытый маршрут
+      expect(document.querySelector('.ge-start.ge-locked')).toBeTruthy()
+      fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Пройти тест уровня' }))
+      fireEvent.click(within(document.querySelector('.hm-start')).getByRole('button', { name: 'Пройти тест уровня' }))
+      expect(onGeStart).toHaveBeenCalledTimes(2)
       unmount()
     }
   })
 
-  // Учившимся до теста v16 тест не навязываем (решение владельца 14.10): без блюра, но «не пройден» видно.
-  it('учившийся до теста, анкеты нет — обычная карточка «тест не пройден», без блюра', async () => {
+  // Учившимся до теста v16 тест не навязываем (решение владельца 14.10): тот же баннер, но без класса закрытого
+  // маршрута — тур у них про приглашение, а не про замок.
+  it('учившийся до теста, анкеты нет — баннер зовёт на тест, маршрут не «закрыт»', async () => {
     const onGeStart = vi.fn()
     renderHome({ geProfile: { onboarded: false }, existingStudent: true, onGeStart })
-    await waitFor(() => expect(screen.getByText('Тест уровня не пройден')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
     expect(document.querySelector('.ge-locked')).toBe(null)
-    fireEvent.click(within(document.querySelector('.ge-invite')).getByRole('button', { name: 'Пройти тест' }))
+    fireEvent.click(within(document.querySelector('.ge-start.ge-invite')).getByRole('button', { name: 'Пройти тест уровня' }))
     expect(onGeStart).toHaveBeenCalled()
   })
 
@@ -116,8 +117,9 @@ describe('HomePage — General English', () => {
     const onGeRoute = vi.fn()
     renderHome({ geProfile: { ...goal, route: null }, onGeRoute })
     await waitFor(() => expect(screen.getByText('Выберите, как будете заниматься')).toBeTruthy())
-    fireEvent.click(screen.getByRole('button', { name: 'Выбрать формат' }))
-    expect(onGeRoute).toHaveBeenCalled()
+    fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Выбрать формат' }))
+    fireEvent.click(within(document.querySelector('.hm-start')).getByRole('button', { name: 'Выбрать формат' }))
+    expect(onGeRoute).toHaveBeenCalledTimes(2)
   })
 
   it('всё есть — блок цели: дорожка, срок не указан, правка', async () => {

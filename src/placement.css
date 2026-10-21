@@ -339,72 +339,19 @@
   }
 }
 
-/* ── закрытый роадмап «Главной» ──────────────────────────────────────────── */
-.ge-locked {
-  position: relative;
-  overflow: hidden;
-  border-radius: 24px;
-}
-/* образец блока цели: размыт, недоступен для клика и выделения */
-.ge-locked__preview {
-  filter: blur(7px);
-  opacity: 0.75;
-  pointer-events: none;
-  user-select: none;
-}
-.ge-locked__veil {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.45);
-}
-.ge-locked__lock {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #fff;
-  color: #9047ff;
-  box-shadow: 0 8px 24px rgba(144, 71, 255, 0.25);
-}
-.ge-locked__title {
-  margin: 4px 0 0;
-  max-width: 520px;
-  color: #23202b;
-  font-family: inherit;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 32px;
-}
-.ge-locked__sub {
-  margin: 0;
-  max-width: 520px;
-  color: #3d3a48;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 22px;
-}
-.ge-locked__cta {
-  margin-top: 6px;
-}
-
-/* ── отчёт теста на «Главной» ─────────────────────────────────────────────── */
+/* ── отчёт теста на «Главной» ─────────────────────────────────────────────────
+   Макет «Главная · редизайн» (21.10.2026). «Результаты теста уровня» — в колонке: дата серой плашкой, общий уровень
+   сиреневой плашкой с кругом 88, четыре навыка плитками 2×2. «Что делать дальше» — во всю ширину под сеткой: цель
+   плашкой с целевым уровнем, слева «На что сделать упор» (420), справа «Задания для вас» карточками 2×2.
+   Цвета — токенами «Главной» (--hm-*, demo.css) с запасным значением: отчёт рисуется только там. */
 .pl-report {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 .pl-report__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
@@ -412,100 +359,123 @@
   margin: 0;
 }
 .pl-report__date {
-  color: #656172;
-  font-size: 14px;
-  line-height: 20px;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--hm-tile, #f8f8f8);
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
   white-space: nowrap;
+}
+.pl-report__date::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(/assets/home-v2/ico/calendar_today.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/calendar_today.svg) center / contain no-repeat;
 }
 .pl-report__overall {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border: 2px solid #e6dcfc;
+  border-radius: 24px;
+  background: var(--hm-lav2, #f6f1ff);
+}
+.pl-report__level {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #ffffff;
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 800;
+}
+.pl-report__overallText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
 }
 .pl-report__label {
-  color: #656172;
+  color: var(--hm-sec, #5a5a66);
   font-size: 14px;
   font-weight: 600;
 }
-.pl-report__level {
-  color: #9047ff;
-  font-size: 32px;
-  line-height: 38px;
-  font-weight: 800;
+.pl-report__overallText .pl-report__label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .pl-report__name {
-  font-size: 16px;
-  font-weight: 700;
+  color: var(--hm-ink, #181818);
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
 }
 .pl-report__tag {
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #fff4e5;
-  color: #b25e09;
-  font-size: 13px;
+  color: var(--hm-down, #e57a12);
+  font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
-  line-height: 20px;
 }
 .pl-report__skills {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .pl-report__skill {
-  display: grid;
-  grid-template-columns: minmax(150px, 1.2fr) 48px minmax(80px, 2fr) minmax(120px, 1.4fr);
-  align-items: center;
-  gap: 12px;
-  font-size: 15px;
-  line-height: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--hm-tile, #f8f8f8);
 }
 .pl-report__skillName {
-  font-weight: 600;
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
 }
 .pl-report__chip {
-  justify-self: start;
-  min-width: 40px;
-  padding: 3px 8px;
-  border-radius: 8px;
-  background: #f1e9ff;
-  color: #7d33f0;
+  color: #9047ff;
+  font-size: 28px;
+  line-height: 36px;
   font-weight: 800;
-  text-align: center;
 }
-.pl-report__chip.is-empty {
-  background: #f4f4f4;
-  color: #9a96a6;
-}
-.pl-report__bar {
-  height: 8px;
-  border-radius: 999px;
-  background: #efecf6;
-  overflow: hidden;
-}
-.pl-report__bar i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #9047ff;
+.pl-report__skill.is-empty .pl-report__chip {
+  color: var(--hm-mut, #8e8e99);
 }
 .pl-report__note {
-  color: #656172;
-  font-size: 14px;
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
 }
 .pl-report__note em {
-  color: #b25e09;
+  color: var(--hm-down, #e57a12);
   font-style: normal;
 }
-.pl-report__goal p {
-  margin: 0 0 4px;
-  font-size: 15px;
-  line-height: 22px;
-}
 .pl-report__muted {
-  color: #656172;
+  color: var(--hm-sec, #5a5a66);
 }
 .pl-report__h {
   margin: 0 0 8px;
@@ -516,69 +486,32 @@
 .pl-report__list {
   margin: 0;
   padding-left: 20px;
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 14px;
+  line-height: 20px;
 }
 .pl-report__list li + li {
   margin-top: 6px;
 }
-/* отзыв о говорении — в отчёте, а не отдельным итогом посреди теста (жалоба 16.10.2026) */
+/* отзыв о говорении — в отчёте, а не отдельным итогом посреди теста (жалоба 16.10.2026); в макете его нет,
+   поэтому он ниже плиток, отделён линией */
+.pl-report__block {
+  padding-top: 16px;
+  border-top: 1px solid var(--hm-line, #e8e8ee);
+}
 .pl-report__speakSummary {
   margin: 0 0 4px;
-  font-size: 15px;
-  line-height: 22px;
+  font-size: 14px;
+  line-height: 20px;
 }
 .pl-report__block .pl-report__label {
   display: block;
   margin: 10px 0 4px;
 }
-.pl-report__acts {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-.pl-report__act {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px 16px;
-  border: 1px solid #e9e6f2;
-  border-radius: 16px;
-  background: #fff;
-  color: #23202b;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.pl-report__act:hover {
-  border-color: #c9b2ff;
-  background: #faf7ff;
-}
 .pl-report__act:focus-visible,
-.pl-report__retake:focus-visible {
+.pl-report__retake:focus-visible,
+.pl-next__retake:focus-visible {
   outline: 2px solid #9047ff;
   outline-offset: 2px;
-}
-.pl-report__actTitle {
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 20px;
-}
-.pl-report__actMeta {
-  color: #7d33f0;
-  font-size: 13px;
-  font-weight: 700;
-}
-.pl-report__actWhy {
-  color: #3d3a48;
-  font-size: 14px;
-  line-height: 20px;
-}
-.pl-report__actPath {
-  color: #9a96a6;
-  font-size: 12px;
-  line-height: 16px;
 }
 .pl-report__retake {
   align-self: flex-start;
@@ -593,22 +526,331 @@
   cursor: pointer;
 }
 
-/* узкий экран: навыки — строкой «название · уровень», полоса и подпись под ними */
+.pl-next {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.pl-next__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pl-next__head .hm-card__title {
+  margin: 0;
+}
+.pl-next__sub {
+  margin: 2px 0 0;
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.pl-next__retake {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--hm-lav, #efe7ff);
+  color: #9047ff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-next__retake::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(/assets/home-v2/ico/replay.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/replay.svg) center / contain no-repeat;
+}
+.pl-next__goal {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  background: var(--hm-lav2, #f6f1ff);
+}
+.pl-next__plate {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--hm-card, #ffffff);
+}
+.pl-next__plate::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  background: #9047ff;
+  -webkit-mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+}
+.pl-next__goalText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pl-next__label {
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+.pl-next__goalText .pl-next__label {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.pl-next__goalText b {
+  color: var(--hm-ink, #181818);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+}
+.pl-next__why {
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-next__target {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.pl-next__target b {
+  color: #9047ff;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 800;
+}
+.pl-next__met {
+  color: var(--hm-up, #1f9d55);
+  font-size: 12px;
+  font-weight: 700;
+}
+.pl-next__cols {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.pl-next__cols > :only-child {
+  grid-column: 1 / -1;
+}
+.pl-next__prios,
+.pl-next__recs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.pl-next__h {
+  margin: 0;
+  color: var(--hm-ink, #181818);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+.pl-next__hint {
+  margin: -8px 0 0;
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-next__prioList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pl-next__prio {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--hm-tile, #f8f8f8);
+}
+.pl-next__num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.pl-next__prioText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pl-next__prioText b {
+  color: var(--hm-ink, #181818);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+.pl-next__prioText span {
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-next__prioText small {
+  color: var(--hm-mut, #8e8e99);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+.pl-next__recGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pl-report__act {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 2px solid var(--hm-line, #e8e8ee);
+  border-radius: 20px;
+  background: var(--hm-card, #ffffff);
+  color: var(--hm-ink, #181818);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pl-report__act:hover {
+  border-color: #d9cdfa;
+}
+.pl-next__recHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pl-next__recHead img {
+  flex: none;
+}
+.pl-report__actTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+.pl-next__go {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: var(--hm-mut, #8e8e99);
+  -webkit-mask: url(/assets/home-v2/ico/arrow_forward.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/arrow_forward.svg) center / contain no-repeat;
+}
+.pl-next__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pl-next__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--hm-tile, #f8f8f8);
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  font-weight: 700;
+}
+.pl-next__chip.is-level {
+  background: #9047ff;
+  color: #ffffff;
+}
+.pl-report__actWhy {
+  color: var(--hm-sec, #5a5a66);
+  font-size: 12px;
+  line-height: 16px;
+}
+.pl-report__actPath {
+  color: var(--hm-mut, #8e8e99);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 1100px) {
+  .pl-next__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @media (max-width: 760px) {
-  .pl-report__skill {
-    grid-template-columns: 1fr 48px;
-    row-gap: 6px;
-  }
-  .pl-report__bar,
-  .pl-report__note {
-    grid-column: 1 / -1;
-  }
-  .ge-locked__title {
-    font-size: 20px;
-    line-height: 26px;
-  }
   .pl-speak__card {
     padding: 22px 18px;
+  }
+  .pl-next__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  /* цель — плашка и текст строкой, целевой уровень — отдельной строкой под ними: втроём в ряд текст цели
+     сжимался до слова в строку */
+  .pl-next__goal {
+    flex-wrap: wrap;
+  }
+  .pl-next__goalText {
+    flex-basis: calc(100% - 64px);
+  }
+  .pl-next__target {
+    flex-basis: 100%;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .pl-next__target b {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .pl-next__recGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .pl-report__overall {
+    gap: 16px;
+    padding: 16px;
+  }
+  .pl-report__level {
+    width: 64px;
+    height: 64px;
+    font-size: 26px;
+  }
+  .pl-report__name {
+    font-size: 22px;
+    line-height: 28px;
+  }
+  .pl-report__chip {
+    font-size: 22px;
+    line-height: 28px;
   }
 }
 
