@@ -17,7 +17,7 @@ const plan = {
     lessons: [{ id: 'a', date: '2026-10-15', status: 'planned', skillIds: [], actions: [], minutes: 30 }],
   }],
 }
-const props = { plan, next: null, todayIso: '2026-10-15', busy: false, onLesson: () => Promise.resolve() }
+const props = { plan, next: null, todayIso: '2026-10-15' }
 
 afterEach(cleanup)
 
@@ -27,16 +27,13 @@ describe.each([['WeekView', WeekView], ['MonthView', MonthView]])('%s', (_, View
     const { container } = render(<I18nProvider><View {...props} onStart={onStart} /></I18nProvider>)
     fireEvent.click(container.querySelector('.st-lesson'))
     expect(onStart).toHaveBeenCalledWith('a')
-    expect(container.querySelector('.st-lmenu')).toBeNull()
   })
 
-  it('правый клик открывает меню в точке клика', () => {
-    const { container } = render(<I18nProvider><View {...props} onStart={vi.fn()} /></I18nProvider>)
-    const ev = fireEvent.contextMenu(container.querySelector('.st-lesson'), { clientX: 120, clientY: 80 })
-    expect(ev).toBe(false) // меню браузера погашено
-    const menu = container.querySelector('.st-lmenu')
-    expect(menu.style.position).toBe('fixed')
-    expect(menu.style.left).toBe('120px')
-    expect(menu.style.top).toBe('80px')
+  it('меню занятия нет: правый клик ничего не открывает, статусы проставляет система (ТЗ SAT, задача 3.4)', () => {
+    const onStart = vi.fn()
+    const { container } = render(<I18nProvider><View {...props} onStart={onStart} /></I18nProvider>)
+    fireEvent.contextMenu(container.querySelector('.st-lesson'), { clientX: 120, clientY: 80 })
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(onStart).not.toHaveBeenCalled()
   })
 })

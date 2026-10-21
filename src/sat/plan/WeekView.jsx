@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
-import LessonMenu from './LessonMenu.jsx'
 import { PHASES, addDays, iso, parse, phaseRanges, progress, shownStatus } from '../model/plan.js'
 import { skillName, skillSection } from '../names.js'
 import { fmtDate } from '../model/dates.js'
@@ -13,14 +12,12 @@ const STATUS = ['done', 'next', 'planned', 'skipped', 'moved']
  * Неделя плана (Figma SAT 13): полоса фаз с прогрессом всего плана, семь дней недели с карточками занятий
  * (статус цветом и словом), меню занятия по клику, легенда и правило пересборки.
  */
-export default function WeekView({ plan, next, todayIso, busy, onLesson, onStart }) {
+export default function WeekView({ plan, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
   const weeks = plan.weeks
   const todayWeek = Math.max(0, weeks.findIndex((w) => w.monday === iso(addDays(parse(todayIso), -((parse(todayIso).getDay() + 6) % 7)))))
   const [wi, setWi] = useState(todayWeek)
-  const [menu, setMenu] = useState(null)
   // Меню занятия — в точке правого клика (clientX/Y): левый клик сразу начинает занятие.
-  const openMenu = (e, id) => { e.preventDefault(); setMenu({ id, x: e.clientX, y: e.clientY }) }
   const week = weeks[Math.min(wi, weeks.length - 1)]
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
@@ -62,9 +59,9 @@ export default function WeekView({ plan, next, todayIso, busy, onLesson, onStart
             <span className="st-muted">{plural(t, lang, 'sat.week.lessons', week.lessons.length)} · {t('sat.week.hours', { h: String(hours) })}</span>
           </div>
           <span className="st-spacer" />
-          <button type="button" className="ih-round st-week__nav" disabled={wi <= 0} aria-label={t('sat.week.prev')} onClick={() => { setMenu(null); setWi(wi - 1) }}><ChevronLeftIcon size={18} /></button>
-          <button type="button" className="ih-btn ih-btn--outline st-week__now" disabled={wi === todayWeek} onClick={() => { setMenu(null); setWi(todayWeek) }}>{t('sat.week.current')}</button>
-          <button type="button" className="ih-round st-week__nav" disabled={wi >= weeks.length - 1} aria-label={t('sat.week.next')} onClick={() => { setMenu(null); setWi(wi + 1) }}><ChevronRightIcon size={18} /></button>
+          <button type="button" className="ih-round st-week__nav" disabled={wi <= 0} aria-label={t('sat.week.prev')} onClick={() => { setWi(wi - 1) }}><ChevronLeftIcon size={18} /></button>
+          <button type="button" className="ih-btn ih-btn--outline st-week__now" disabled={wi === todayWeek} onClick={() => { setWi(todayWeek) }}>{t('sat.week.current')}</button>
+          <button type="button" className="ih-round st-week__nav" disabled={wi >= weeks.length - 1} aria-label={t('sat.week.next')} onClick={() => { setWi(wi + 1) }}><ChevronRightIcon size={18} /></button>
         </div>
         <div className="st-week__days">
           {Array.from({ length: 7 }, (_, i) => {
@@ -84,26 +81,12 @@ export default function WeekView({ plan, next, todayIso, busy, onLesson, onStart
                   const section = skillSection(l.skillIds[0])
                   return (
                     <div key={l.id} className="st-week__slot">
-                      <button type="button" className={`st-lesson is-${st}`} aria-haspopup="dialog" aria-expanded={menu?.id === l.id} onClick={(e) => (l.status === 'skipped' ? openMenu(e, l.id) : onStart(l.id))}
-                        onContextMenu={(e) => openMenu(e, l.id)}>
+                      <button type="button" className={`st-lesson is-${st}`} onClick={() => onStart(l.id)}>
                         <span className="st-lesson__sec"><i className={`st-dot is-${section}`} />{section === 'math' ? 'Math' : 'R&W'}</span>
                         <b>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</b>
                         <span className="st-lesson__acts">{l.actions.map((a) => t(`sat.action.${a}`)).join(' · ')}</span>
                         <span className="st-lesson__st">{st === 'done' && <CheckCircleIcon size={14} />}{t(`sat.status.${st}`)}</span>
                       </button>
-                      {menu?.id === l.id && (
-                        <LessonMenu
-                          lesson={l}
-                          examDate={plan.examDate}
-                          todayIso={todayIso}
-                          busy={busy}
-                          at={menu}
-                          onClose={() => setMenu(null)}
-                          onStart={() => onStart(l.id)}
-                          onStatus={(s) => onLesson(l.id, { status: s }).then(() => setMenu(null))}
-                          onMove={(date) => onLesson(l.id, { date }).then(() => setMenu(null))}
-                        />
-                      )}
                     </div>
                   )
                 })}

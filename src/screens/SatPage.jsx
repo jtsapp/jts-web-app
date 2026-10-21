@@ -11,7 +11,7 @@ import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import ProgressTab from '../sat/tabs/ProgressTab.jsx'
-import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession, updateSatLesson } from '../api.js'
+import { getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatToday, startSatSession } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
@@ -65,7 +65,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [profile, setProfile] = useState(null)
   const [plan, setPlan] = useState(null)
   const [diagnostic, setDiagnostic] = useState(null)
-  const [busy, setBusy] = useState(false)
   const [today, setToday] = useState(null)
   const [error, setError] = useState(null)
   // шаги старта и доступ (V341): пока что-то не пройдено, вместо вкладок — экран старта
@@ -206,20 +205,11 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     }
   }
 
-  const onLesson = async (id, body) => {
-    setBusy(true)
-    try {
-      setPlan(await updateSatLesson(authToken, id, body))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   let panel
   if (tab === 'guide') panel = <GuideTab />
   else if (tab === 'plan') {
     panel = !plan || !diagnostic ? null : (
-      <PlanTab plan={plan} diagnostic={diagnostic} busy={busy} onLesson={onLesson} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} />
+      <PlanTab plan={plan} diagnostic={diagnostic} onStart={startLesson} onRebuild={() => toDiagnostic('time')} onDiagnostic={toDiagnostic} />
     )
   } else if (tab === 'today') {
     panel = !profile || !plan || !diagnostic || !today ? null : todayPanel()

@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, DescriptionIcon, FlagIcon } from '../../ielts/icons.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
 import { TrophyIcon } from '../icons.jsx'
-import LessonMenu from './LessonMenu.jsx'
-import { PHASES, addDays, allLessons, lessonsInMonth, monthGrid, parse, shownStatus } from '../model/plan.js'
+import { PHASES, addDays, lessonsInMonth, monthGrid, parse, shownStatus } from '../model/plan.js'
 import { skillName, skillSection } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 
@@ -13,30 +12,24 @@ import { fmtDate } from '../model/dates.js'
  * занятия (точка секции и навык; сделанное зелёным). Внизу — контрольные точки: первый мини-тест, недели пробников
  * и день экзамена. Клик по занятию — то же меню, что в «Неделе».
  */
-export default function MonthView({ plan, next, todayIso, busy, onLesson, onStart }) {
+export default function MonthView({ plan, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
   const today = parse(todayIso)
   const [ym, setYm] = useState({ y: today.getFullYear(), m: today.getMonth() })
-  const [menu, setMenu] = useState(null)
   // Меню занятия — в точке правого клика (clientX/Y): левый клик сразу начинает занятие.
-  const openMenu = (e, id) => { e.preventDefault(); setMenu({ id, x: e.clientX, y: e.clientY }) }
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const rows = monthGrid(plan, ym.y, ym.m)
   const count = lessonsInMonth(plan, ym.y, ym.m)
   const title = fmt(new Date(ym.y, ym.m, 1), { month: 'long', year: 'numeric' }).replace(/\s*г$/, '')
   const shift = (n) => {
-    setMenu(null)
     const d = new Date(ym.y, ym.m + n, 1)
     setYm({ y: d.getFullYear(), m: d.getMonth() })
   }
   const weekdays = Array.from({ length: 7 }, (_, i) => fmt(addDays(parse('2026-09-28'), i), { weekday: 'short' }))
 
-  // контрольные точки: первый мини-тест, недели пробников (первое занятие каждой), день экзамена
-  const lessons = allLessons(plan)
-  const firstMini = lessons.find((l) => l.actions.includes('mini-test') && l.status !== 'skipped')
-  const mockWeeks = plan.weeks.filter((w) => w.phase === 5 && w.lessons.length).map((w) => w.lessons[0].date)
-  const day = (iso, o = { day: 'numeric', month: 'long' }) => fmt(parse(iso), o)
+  // Бейджи «Мини-тест», «Полные пробники», «День экзамена» под календарём убраны (ТЗ SAT 17.10, задача 3.3):
+  // мини-тест и пробники были подписями к обычным занятиям, а не отдельными тестами. День экзамена — в клетке.
 
   return (
     <div className="st-month">
@@ -47,7 +40,7 @@ export default function MonthView({ plan, next, todayIso, busy, onLesson, onStar
           <span className="st-spacer" />
           <button type="button" className="ih-round st-week__nav" aria-label={t('sat.month.prev')} onClick={() => shift(-1)}><ChevronLeftIcon size={18} /></button>
           <button type="button" className="ih-btn ih-btn--outline st-week__now" disabled={ym.y === today.getFullYear() && ym.m === today.getMonth()}
-            onClick={() => { setMenu(null); setYm({ y: today.getFullYear(), m: today.getMonth() }) }}>{t('sat.month.current')}</button>
+            onClick={() => { setYm({ y: today.getFullYear(), m: today.getMonth() }) }}>{t('sat.month.current')}</button>
           <button type="button" className="ih-round st-week__nav" aria-label={t('sat.month.next')} onClick={() => shift(1)}><ChevronRightIcon size={18} /></button>
         </div>
         <div className="st-month__wd">{weekdays.map((w) => <span key={w}>{w}</span>)}</div>
@@ -67,24 +60,10 @@ export default function MonthView({ plan, next, todayIso, busy, onLesson, onStar
                       const st = shownStatus(l, next)
                       return (
                         <div key={l.id} className="st-month__slot">
-                          <button type="button" className={`st-lesson st-mlesson is-${st}`} aria-haspopup="dialog" onClick={(e) => (l.status === 'skipped' ? openMenu(e, l.id) : onStart(l.id))}
-                            onContextMenu={(e) => openMenu(e, l.id)}>
+                          <button type="button" className={`st-lesson st-mlesson is-${st}`} onClick={() => onStart(l.id)}>
                             {st === 'done' ? <CheckCircleIcon size={13} /> : <i className={`st-dot is-${skillSection(l.skillIds[0])}`} />}
                             <span>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</span>
                           </button>
-                          {menu?.id === l.id && (
-                            <LessonMenu
-                              lesson={l}
-                              examDate={plan.examDate}
-                              todayIso={todayIso}
-                              busy={busy}
-                              at={menu}
-                              onClose={() => setMenu(null)}
-                              onStart={() => onStart(l.id)}
-                              onStatus={(s) => onLesson(l.id, { status: s }).then(() => setMenu(null))}
-                              onMove={(date) => onLesson(l.id, { date }).then(() => setMenu(null))}
-                            />
-                          )}
                         </div>
                       )
                     })}
@@ -94,24 +73,6 @@ export default function MonthView({ plan, next, todayIso, busy, onLesson, onStar
             </div>
           )
         })}
-      </div>
-      <div className="st-month__marks">
-        {firstMini && (
-          <div className="st-card st-month__mark">
-            <span className="st-month__markicon is-violet"><FlagIcon size={20} /></span>
-            <span><b>{day(firstMini.date)}</b><small>{t('sat.month.mini')}</small></span>
-          </div>
-        )}
-        {mockWeeks.length > 0 && (
-          <div className="st-card st-month__mark">
-            <span className="st-month__markicon"><DescriptionIcon size={20} /></span>
-            <span><b>{mockWeeks.map((d) => day(d, { day: 'numeric' })).join(t('sat.month.and'))} {fmt(parse(mockWeeks[mockWeeks.length - 1]), { month: 'long', day: 'numeric' }).replace(/^\d+\s*/, '')}</b><small>{t('sat.month.mocks')}</small></span>
-          </div>
-        )}
-        <div className="st-card st-month__mark">
-          <span className="st-month__markicon is-gold"><TrophyIcon size={20} /></span>
-          <span><b>{plan.examDate ? day(plan.examDate) : t('sat.dateUndecided')}</b><small>{t('sat.road.examDay')}</small></span>
-        </div>
       </div>
     </div>
   )

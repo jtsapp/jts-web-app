@@ -1,6 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { ArrowForwardIcon, FlagIcon, MenuBookIcon } from '../../ielts/icons.jsx'
+import { ArrowForwardIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { BookOpenIcon, CalendarIcon, NotesIcon, PlayCircleIcon, ReplayIcon, SigmaIcon, TargetIcon, StopwatchIcon } from '../icons.jsx'
 import { PHASES, currentPhase, iso, parse, roadmapSteps } from '../model/plan.js'
 import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
@@ -163,15 +163,6 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
               </ul>
               <p className="st-muted">{t('sat.today.dueNote')}</p>
               <button type="button" className="st-hint__more" onClick={onReview}>{t('sat.today.reviewNow')}</button>
-            </div>
-          )}
-          {today.checkpoint && (
-            <div className="st-card st-side-card is-static">
-              <span className="st-side-card__icon is-violet"><FlagIcon size={20} /></span>
-              <span>
-                <b>{t('sat.today.mini', { date: fmt(parse(today.checkpoint.date), { day: 'numeric', month: 'long' }) })}</b>
-                <small>{plural(t, lang, 'sat.today.checkpointIn', today.checkpoint.days)}</small>
-              </span>
             </div>
           )}
         </aside>

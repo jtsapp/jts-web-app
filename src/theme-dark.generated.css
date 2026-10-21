@@ -10668,29 +10668,6 @@ html[data-theme="dark"] .st-legend.is-moved {
     background: var(--dk-yellow-tint);
     color: var(--dk-yellow)
 }
-html[data-theme="dark"] .st-lmenu {
-    border: 1px solid var(--st-line);
-    background: var(--dk-card);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
-    outline: none
-}
-html[data-theme="dark"] .st-lmenu__goal {
-    color: var(--ih-muted)
-}
-html[data-theme="dark"] .st-lmenu__item {
-    border: 0;
-    background: none;
-    color: var(--ih-ink)
-}
-html[data-theme="dark"] .st-lmenu__item:hover:not(:disabled) {
-    background: var(--ih-soft)
-}
-html[data-theme="dark"] .st-lmenu__item.is-start {
-    color: var(--ih-violet)
-}
-html[data-theme="dark"] .st-lmenu__move input {
-    border: 1px solid var(--dk-line)
-}
 html[data-theme="dark"] .st-month__badge {
     background: var(--dk-acc-tint);
     color: var(--ih-violet)

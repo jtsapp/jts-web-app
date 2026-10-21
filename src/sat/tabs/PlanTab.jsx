@@ -52,7 +52,7 @@ export function HowItWorks({ onClose }) {
  * План строит сервер; «Пересобрать план» ведёт на «время на занятия» (Figma 10) — там же меняют дни и минуты,
  * а прожитые недели при пересборке сохраняются.
  */
-export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, onDiagnostic, onStart }) {
+export default function PlanTab({ plan, diagnostic, onRebuild, onDiagnostic, onStart }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
@@ -99,8 +99,8 @@ export default function PlanTab({ plan, diagnostic, busy, onLesson, onRebuild, o
       {p.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
       <div key={view} className="ih-enter">
         {view === 'roadmap' && <RoadmapView steps={steps} current={currentPhase(p, todayIso)} examDate={p.examDate} onStart={next ? () => onStart(next.id) : null} />}
-        {view === 'week' && <WeekView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
-        {view === 'month' && <MonthView plan={p} next={next} todayIso={todayIso} busy={busy} onLesson={onLesson} onStart={onStart} />}
+        {view === 'week' && <WeekView plan={p} next={next} todayIso={todayIso} onStart={onStart} />}
+        {view === 'month' && <MonthView plan={p} next={next} todayIso={todayIso} onStart={onStart} />}
       </div>
       {how && <HowItWorks onClose={() => setHow(false)} />}
     </div>
