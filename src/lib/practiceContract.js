@@ -39,6 +39,9 @@ import { mergeReadingState } from './readingState.js'
 // Replace; клиент сводит с серверным (listenProgress.js merge), чтобы лучший
 // результат не терялся. Area 'listen' бэкенду неизвестна — в домашнюю работу
 // раздел не отчитывается.
+// 'prepositions' — стейт-объект Prepositions World {done, score} (прочитанные уроки и лучшие результаты
+// наборов). Replace; клиент сводит с серверным (prepositions/progress.js merge). Area 'prepositions' бэкенду
+// неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -57,6 +60,7 @@ export const PRACTICE_MODULES = [
   'listenchoose',
   'numbers',
   'listen',
+  'prepositions',
   'vocabLearned',
   'vocabMisses',
 ]

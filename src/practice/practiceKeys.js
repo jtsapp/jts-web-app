@@ -65,6 +65,12 @@ export const LISTEN_KEY = 'jts_listen_done'
 // «Свой список» преподавателя — текст поля этого устройства. Не синкается, но
 // чистится вместе с прогрессом: на общей машине список достался бы следующему.
 export const LISTEN_OWN_KEY = 'jts_listen_own'
+// Прогресс Prepositions World: { done: { <id урока>: 1 }, score: { "L:<урок>" | "C:<категория>" | "F":
+// { best: доля 0..1, stars: 0..3 } } } — форма и ключ прототипа (jts_prepositions_v4). Replace со сведением
+// merge (prepositions/progress.js): прочитанный урок не «распрочитывается».
+export const PREPOSITIONS_KEY = 'jts_prepositions_v4'
+// Язык перевода курса (en | kk | ru) — настройка устройства, не синкается, но чистится вместе с прогрессом.
+export const PREPOSITIONS_LANG_KEY = 'jts_prepositions_lang'
 // «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
 // «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
 // 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
@@ -86,6 +92,7 @@ export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
 export const LISTEN_PROGRESS_EVENT = 'listen-progress'
+export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
