@@ -202,6 +202,8 @@ export default function Sidebar({
             <button
               key={key}
               className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
+              // data-nav читает тур «Главной»: список разделов в нём — ровно те, что в меню этого ученика
+              data-nav={key}
               onClick={() => pick(onNav)(key)}
             >
               <Icon size={24} />

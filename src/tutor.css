@@ -3852,6 +3852,245 @@
 .t-tour__luna-sound.is-muted {
   color: var(--t-muted);
 }
+
+/* --- Тур «Главной» (look="coach") — макет «Первый заход и подсказки», 21.10.2026.
+   Затемнение #181818 (62 % под подсказкой, 55 % под приветствием), прожектор r32
+   с белой рамкой 4 px, карточка r28 p24 с тенью 0 12 48. Шрифт — Manrope, как у
+   всего десктопа: тур портален в body, и шрифт .screen/.t-app до него не доходит. */
+.t-tour--coach {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.t-tour--coach .t-tour__veil {
+  background: rgba(24, 24, 24, 0.62);
+}
+.t-tour--coach .t-tour__veil--intro {
+  background: rgba(24, 24, 24, 0.55);
+}
+.t-tour--coach .t-tour__hole {
+  border-radius: 32px;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 4px #ffffff,
+    0 0 0 9999px rgba(24, 24, 24, 0.62);
+}
+.t-tour--coach .t-tour__pop {
+  width: auto;
+  max-width: calc(100vw - 32px);
+  padding: 24px;
+  border-radius: 28px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+.t-tour__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 100%;
+}
+.t-tour__pop--art .t-tour__body {
+  width: var(--tour-text-w);
+}
+.t-tour__dots {
+  display: flex;
+  gap: 4px;
+}
+.t-tour__dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e4daf8;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.t-tour__dots i.is-on {
+  width: 24px;
+  background: var(--t-purple);
+}
+.t-tour__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.t-tour--coach .t-tour__title {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--t-ink);
+}
+.t-tour--coach .t-tour__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+.t-tour--coach .t-tour__content {
+  margin-top: 0;
+}
+.t-tour--coach .t-tour__luna {
+  margin-top: 0;
+}
+.t-tour__acts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.t-tour__acts.is-last {
+  justify-content: flex-end;
+}
+.t-tour--coach .t-tour__ok {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.t-tour--coach .t-tour__ok:hover {
+  transform: none;
+}
+.t-tour--coach .t-tour__skip {
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--t-purple);
+}
+.t-tour--coach .t-tour__skip:hover {
+  color: #7a2fe6;
+}
+/* Маскот подсказки — справа снизу, вровень с краями карточки (их клип —
+   overflow карточки, как в макете). Под текстом, но прозрачными краями. */
+.t-tour__art {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  object-fit: contain;
+  object-position: right bottom;
+  pointer-events: none;
+}
+
+/* Приветствие: карточка 520 по центру экрана, маскоты выглядывают из-за краёв —
+   двое сверху (186×119), по одному слева (160×270) и справа (160×212). Блок с
+   маскотами выше карточки на 119 px, поэтому сама карточка чуть ниже центра. */
+.t-tour__intro {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 520px;
+  max-width: calc(100vw - 32px);
+  transform: translate(-50%, calc(-50% + 40px));
+  animation: t-tour-in 0.28s ease;
+}
+.t-tour__intro-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+.t-tour__intro-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.t-tour__intro-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+  color: var(--t-ink);
+}
+.t-tour__intro-name {
+  font-size: 52px;
+  line-height: 68px;
+  color: var(--t-purple);
+  overflow-wrap: anywhere;
+}
+.t-tour__intro-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+.t-tour__intro-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.t-tour__intro-go,
+.t-tour__intro-skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.t-tour__intro-go {
+  height: 56px;
+  padding: 0 24px;
+  background: var(--t-purple);
+  color: #ffffff;
+  transition: filter 0.15s ease;
+}
+.t-tour__intro-go:hover {
+  filter: brightness(1.06);
+}
+.t-tour__intro-skip {
+  height: 48px;
+  padding: 0 24px;
+  background: transparent;
+  color: var(--t-purple);
+}
+.t-tour__intro-art {
+  position: absolute;
+  pointer-events: none;
+}
+.t-tour__intro-art--top1 {
+  left: 40px;
+  bottom: 100%;
+  width: 186px;
+  height: 119px;
+}
+.t-tour__intro-art--top2 {
+  left: 281px;
+  bottom: 100%;
+  width: 186px;
+  height: 119px;
+}
+.t-tour__intro-art--left {
+  right: 100%;
+  top: 99px;
+  width: 160px;
+  height: 270px;
+}
+.t-tour__intro-art--right {
+  left: 100%;
+  top: 136px;
+  width: 160px;
+  height: 212px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .t-tour__hole,
   .t-tour__pop,

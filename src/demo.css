@@ -2826,3 +2826,137 @@ button.hm-level__goal:focus-visible {
   font-size: 13px;
   color: #c2560a;
 }
+
+/* --- Первый заход (макет «Первый заход и подсказки», 21.10.2026) ---------------
+   Список разделов в последней подсказке тура: строка 48 (иконка 40 r12 на
+   #efe7ff + название 16/24 и строка 12/16), шаг 8. */
+.hm-tour-sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hm-tour-sections__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.hm-tour-sections__plate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #efe7ff;
+  color: #9047ff;
+}
+.hm-tour-sections__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-tour-sections__text b {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: #181818;
+}
+.hm-tour-sections__text span {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+
+/* Окно «Жёсткий режим общения»: карточка 714 (p40, gap 32, r32), картинка
+   634×394 — фото r24 и ноги маскота под ним одним рендером, две кнопки-пилюли
+   62 px. Затемнение то же, что у приветствия тура. */
+.hm-temper {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.hm-temper__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 24, 0.55);
+}
+.hm-temper__card {
+  position: relative;
+  width: 714px;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: t-tour-in 0.28s ease;
+}
+.hm-temper__art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hm-temper__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hm-temper__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+  color: #181818;
+}
+.hm-temper__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #636363;
+}
+.hm-temper__acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.hm-temper__keep,
+.hm-temper__try {
+  min-height: 62px;
+  padding: 20px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hm-temper__keep {
+  border: 2px solid #ededed;
+  background: #ffffff;
+  color: #181818;
+}
+.hm-temper__keep:hover {
+  border-color: #dcdcdc;
+}
+.hm-temper__try {
+  border: none;
+  background: #9047ff;
+  color: #ffffff;
+}
+.hm-temper__try:hover {
+  filter: brightness(1.06);
+}
