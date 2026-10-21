@@ -7,8 +7,9 @@ import { reportUnauthorized } from './lib/session.js'
 import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
+import { API_BASE } from './lib/apiBase.js'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
+const BASE = API_BASE
 
 // Приводим телефон к формату бэкенда: цифры «код страны + национальный номер»
 // без «+» (E.164 без плюса). Бэкенд хранит и ищет номер по точному совпадению
