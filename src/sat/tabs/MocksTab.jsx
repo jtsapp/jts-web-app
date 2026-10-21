@@ -34,9 +34,9 @@ export function entriesFromRuns(runs = []) {
 
 /**
  * Вкладка «Пробники» (Figma SAT 16, B5–B7): полная симуляция JTS рядом с траекторией к цели, под ними — таблица
- * «Результаты»: симуляции и баллы, которые ученик добавил сам (Bluebook, официальный SAT, решение D2), с изменением
- * к предыдущему. Past papers — своя страница во всё окно (B6), отсюда на неё ведёт кнопка; в таблицу их результаты
- * не входят. Симуляция идёт во весь экран (B7).
+ * «Результаты»: симуляции, Past papers и баллы, которые ученик добавил сам (Bluebook, официальный SAT, решение D2),
+ * с изменением к предыдущему. Past papers запускаются на своей странице во всё окно (B6), а результаты — здесь,
+ * в общей таблице (ТЗ SAT 17.10, задача 13). Симуляция идёт во весь экран (B7).
  */
 export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPricing }) {
   const { t, lang } = useI18n()
@@ -208,6 +208,7 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
           {entries.length > 0 && (
             <div className="st-mocks__legend">
               <span className="st-mocks__src is-simulation"><i />{t('sat.scores.src.SIMULATION')}</span>
+              <span className="st-mocks__src is-paper"><i />{t('sat.scores.src.PAPER')}</span>
               <span className="st-mocks__src is-bluebook"><i />{t('sat.scores.src.BLUEBOOK')}</span>
               <span className="st-mocks__src is-official"><i />{t('sat.scores.src.OFFICIAL')}</span>
             </div>
@@ -215,7 +216,7 @@ export default function MocksTab({ target, onOpenRun, onReview, onPapers, onPric
         </section>
       </div>
 
-      {/* Past papers — своя страница во всё окно (B6, прототип b5e85dfa): отсюда на неё одна кнопка */}
+      {/* Past papers — запуск на своей странице во всё окно, результаты — в общей таблице выше (ТЗ SAT, задача 13) */}
       <section className="st-card st-mocks__papersLink">
         <span className="st-mocks__simIcon">{NAV_ICONS.papers(24)}</span>
         <div>

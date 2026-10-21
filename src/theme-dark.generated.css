@@ -12493,6 +12493,12 @@ html[data-theme="dark"] .st-traj__dot.is-bluebook {
 html[data-theme="dark"] .st-traj__dot.is-official {
     fill: var(--dk-green)
 }
+html[data-theme="dark"] .st-mocks__src.is-paper i {
+    background: var(--dk-orange)
+}
+html[data-theme="dark"] .st-traj__dot.is-paper {
+    fill: #f08a24
+}
 html[data-theme="dark"] .st-scoreform__total {
     background: var(--dk-acc-tint)
 }

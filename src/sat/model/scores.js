@@ -1,6 +1,6 @@
 // Таблица «Результаты» во вкладке «Пробники» (SAT-SYNC-PLAN B5, решение D2; прототип 34658a47 / 24c954ff):
-// симуляции JTS + баллы, которые ученик добавил сам (Bluebook, официальный SAT), изменение к предыдущему и траектория
-// к цели. Бумажные тесты (past papers) сюда не входят — у них своя страница. Чистые функции под тестами.
+// симуляции JTS, Past papers (ТЗ SAT 17.10, задача 13) и баллы, которые ученик добавил сам (Bluebook, официальный SAT),
+// изменение к предыдущему и траектория к цели. Чистые функции под тестами.
 
 // Источник ручного балла (Figma 30, 15.10.2026): официальный SAT, пробник JTS вне платформы или Bluebook — без подписи.
 export const MANUAL_SOURCES = ['OFFICIAL', 'JTS', 'BLUEBOOK']
@@ -50,11 +50,12 @@ function when(e) {
 }
 
 /**
- * Строки таблицы: без бумажных тестов, новые сверху; изменение — к предыдущей строке по дате (сервер шлёт delta —
+ * Строки таблицы: все источники, включая Past papers, новые сверху; изменение — к предыдущей строке по дате, какой бы
+ * ни был источник (сервер шлёт delta —
  * берём её, иначе считаем сами, у самой старой — null).
  */
 export function tableRows(entries = []) {
-  const rows = entries.filter((e) => e && e.source !== 'PAPER').slice().sort((a, b) => when(b).localeCompare(when(a)) || String(b.id).localeCompare(String(a.id)))
+  const rows = entries.filter(Boolean).slice().sort((a, b) => when(b).localeCompare(when(a)) || String(b.id).localeCompare(String(a.id)))
   return rows.map((e, i) => {
     const prev = rows[i + 1]
     const own = totalOf(e)

@@ -43,15 +43,15 @@ describe('таблица «Результаты» и траектория', () =
     expect(totalOf({ rw: null, math: 650 })).toBeNull()
   })
 
-  it('новые сверху, бумажные тесты не входят, изменение — к предыдущему (или серверное)', () => {
+  it('новые сверху, Past papers — в общей таблице, изменение — к предыдущему по дате любого источника (ТЗ SAT, задача 13)', () => {
     const rows = tableRows(entries)
-    expect(rows.map((r) => r.id)).toEqual(['8', '7', 'mock-1'])
-    expect(rows.map((r) => r.delta)).toEqual([70, 90, null])
-    expect(rows[1].total).toBe(1290)
+    expect(rows.map((r) => r.id)).toEqual(['8', 'p1', '7', 'mock-1'])
+    expect(rows.map((r) => r.delta)).toEqual([70, 110, 90, null])
+    expect(rows[2].total).toBe(1290)
   })
 
-  it('траектория — старые слева', () => {
-    expect(trajectoryPoints(entries).map((p) => p.total)).toEqual([1200, 1290, 1360])
+  it('траектория — старые слева, с точкой Past paper', () => {
+    expect(trajectoryPoints(entries).map((p) => p.total)).toEqual([1200, 1290, 1400, 1360])
   })
 
   it('до цели — от последнего результата', () => {

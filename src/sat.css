@@ -9782,6 +9782,13 @@ mark.st-hl {
 .st-traj__dot.is-official {
   fill: #1f9d55;
 }
+/* Past papers в общей таблице (ТЗ SAT 17.10, задача 13): свой цвет, одинаковый в таблице и в легенде графика */
+.st-mocks__src.is-paper i {
+  background: #f08a24;
+}
+.st-traj__dot.is-paper {
+  fill: #f08a24;
+}
 .st-scoreform {
   display: flex;
   flex-direction: column;

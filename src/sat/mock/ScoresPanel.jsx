@@ -119,7 +119,7 @@ function AddScoreDialog({ busy, error, onSave, onClose }) {
 
 /**
  * Таблица «Результаты» (B5): симуляции JTS и добавленные баллы с изменением к предыдущему; свои строки можно удалить.
- * Бумажные тесты сюда не входят — их результаты на странице Past papers. data — ответ GET /mobile/sat/scores.
+ * Past papers — в той же таблице (ТЗ SAT 17.10, задача 13): разбор как у симуляции, удалить нельзя. data — ответ GET /mobile/sat/scores.
  */
 export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
   const { t, lang } = useI18n()
@@ -153,8 +153,8 @@ export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
               <span role="cell" className="st-mocks__total" data-label={t('sat.mock.col.total')}><b>{r.total ?? '—'}</b></span>
               <span role="cell" data-label={t('sat.mock.col.delta')} className={r.delta > 0 ? 'is-up' : r.delta < 0 ? 'is-down' : 'st-muted'}>{r.delta == null ? '—' : `${r.delta > 0 ? '+' : ''}${r.delta}`}</span>
               <span role="cell" className="st-mocks__rowActs">
-                {r.source === 'SIMULATION' && r.mockId && <button type="button" className="st-link" onClick={() => onReview(r.mockId)}>{t('sat.mock.reviewShort')}</button>}
-                {r.source !== 'SIMULATION' && (
+                {(r.source === 'SIMULATION' || r.source === 'PAPER') && r.mockId && <button type="button" className="st-link" onClick={() => onReview(r.mockId)}>{t('sat.mock.reviewShort')}</button>}
+                {MANUAL_SOURCES.includes(r.source) && (
                   <button type="button" className="st-iconbtn" disabled={busy} aria-label={t('sat.scores.delete')} title={t('sat.scores.delete')} onClick={() => setDrop(r)}><TrashIcon size={16} /></button>
                 )}
               </span>
