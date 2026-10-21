@@ -1,0 +1,325 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>JTS Progress Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: teacher-cabinet shell — form column left, live student report right */
+:root{--bg:#f6f6fa;--card:#fff;color-scheme:light;--ink:#17161f;--muted:#8b8a99;--line:#ecebf2;--v:#9047ff;--vt:#f2ecff;--ok:#1a9e6a;--warn:#ff7300;--bad:#c92a2d;
+--f:Manrope,system-ui,sans-serif}
+body{background:var(--bg);color:var(--ink);font-family:var(--f)}
+.shell{display:flex;min-height:100%}
+.nav{flex:0 0 248px;box-sizing:border-box;background:var(--card);border-right:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+.nav .brand{padding:0 8px}.nav .sub{padding:0 8px}
+.srch{background:var(--bg);border-radius:10px;padding:10px 12px;color:var(--muted);font-size:14px}
+.nav ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.nav li{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:10px;font-size:15px;font-weight:500;color:var(--ink)}
+.nav li svg{width:20px;height:20px;flex:none;stroke:var(--muted);fill:none;stroke-width:1.8}
+.nav li.on{background:var(--vt);color:var(--v)}.nav li.on svg{stroke:var(--v)}
+.nav .new{margin-left:auto;font-size:10px;font-weight:800;background:var(--v);color:#fff;border-radius:999px;padding:2px 7px}
+.prof{margin-top:auto;display:flex;gap:10px;align-items:center;background:var(--bg);border-radius:12px;padding:10px}
+.ava{width:32px;height:32px;border-radius:50%;background:var(--v);color:#fff;display:grid;place-items:center;font-weight:700}
+main{flex:1;min-width:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px}
+@media(max-width:760px){.shell{flex-direction:column}.nav{flex:none;width:auto;border-right:0;border-bottom:1px solid var(--line)}.nav ul{flex-direction:row;overflow-x:auto}.nav li{white-space:nowrap}.prof,.srch{display:none}}
+.wrap{max-width:1184px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:24px;align-items:start}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}}
+header{max-width:1184px;margin:0 auto 24px}
+.brand{color:var(--v);font-weight:800;font-size:20px}.sub{color:var(--muted);font-size:13px;margin-top:2px}
+h1{font-size:26px;margin:12px 0 0;text-wrap:balance}
+.panel{background:var(--card);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.panel h2{margin:0;font-size:17px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+label,.lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;width:100%;box-sizing:border-box}
+textarea{min-height:80px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--v);outline-offset:-1px}
+.skill{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots button{width:38px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.dots button.on{background:var(--v);border-color:var(--v);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.chip.on{background:var(--vt);border-color:var(--v);color:var(--v);font-weight:700}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer;background:var(--v);color:#fff}
+.btn.ghost{background:var(--vt);color:var(--v)}
+/* report */
+.rep{position:sticky;top:max(16px,env(safe-area-inset-top,0px))}
+.rhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.lvl{background:var(--vt);color:var(--v);border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px;white-space:nowrap}
+.rname{font-size:20px;font-weight:800}.rmeta{color:var(--muted);font-size:12.5px;margin-top:3px}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:96px 1fr 34px;gap:10px;align-items:center;font-size:13px}
+.track{height:8px;border-radius:999px;background:var(--vt);overflow:hidden}.track span{display:block;height:100%;background:var(--v);border-radius:inherit}
+.bar b{text-align:right;font-variant-numeric:tabular-nums}
+.att{display:flex;gap:10px}.att div{flex:1;background:var(--bg);border-radius:14px;padding:12px}
+.att strong{display:block;font-size:22px;font-variant-numeric:tabular-nums}.att small{color:var(--muted);font-size:12px}
+.blk h3{margin:0 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.blk p,.blk ul{margin:0;font-size:14px;line-height:1.55}.blk ul{padding-left:18px}
+.queue{max-width:1184px;margin:0 auto 24px;background:var(--card);border-radius:20px;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.qhead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.qhead b{font-size:17px}.mut2{color:var(--muted);font-size:13px}
+.qlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.qi{font:inherit;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.qi.due{border-color:var(--v);background:var(--vt)}
+.qn{font-weight:800;font-size:14px}.qm{font-size:12px;color:var(--muted)}
+.qp{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted)}.qi.due .qp{color:var(--v)}
+.qt{flex:1;height:6px;border-radius:99px;background:var(--line);overflow:hidden}.qt span{display:block;height:100%;background:var(--v)}
+.goals{display:flex;flex-direction:column;gap:8px}
+.goal{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.goal input{flex:1;min-width:0;border:0;padding:4px}
+.gt{flex:1;min-width:160px;font-size:14px;font-weight:600}
+.gs{display:flex;gap:4px;flex-wrap:wrap}
+.gs button{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:5px 10px;cursor:pointer}
+.gs button.on.st-yes{background:#e8f7ef;border-color:#1a9e6a;color:#1a7f4b}.gs button.on.st-part{background:#fff0e2;border-color:#ff7300;color:#b85200}.gs button.on.st-no{background:#fdecea;border-color:#c92a2d;color:#c92a2d}
+.x{border:0;background:var(--vt);color:var(--v);width:28px;height:28px;border-radius:50%;font-size:18px;cursor:pointer}
+.rg{list-style:none;padding:0!important}.rg li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.rg em{font-style:normal;font-size:12px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;transform:translateY(-1px)}.dot.st-yes{background:#1a9e6a}.dot.st-part{background:#ff7300}.dot.st-no{background:#c92a2d}
+.dls{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.dl{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--vt);color:var(--v);margin-top:4px;align-self:flex-start}
+.dl.warn{background:#fff0e2;color:#b85200}.dl.bad{background:#fdecea;color:#c92a2d}.dl.ok{background:#e8f7ef;color:#1a7f4b}
+.qi.over{border-color:#c92a2d}.qi.sent{opacity:.7}
+.vtabs{max-width:1184px;margin:0 auto 16px;display:flex;gap:8px;flex-wrap:wrap}
+.vtabs button{font:inherit;font-weight:700;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:9px 16px;cursor:pointer}
+.vtabs button.on{background:var(--vt);border-color:var(--v);color:var(--v)}
+.coord{max-width:1184px;margin:0 auto;background:var(--card);border-radius:20px;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:12px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.dd{font-style:normal;font-size:11px;margin-left:4px}.dd.up{color:#1a9e6a}.dd.dn{color:#c92a2d}
+.bar{grid-template-columns:96px 1fr 58px!important}
+.motb{background:linear-gradient(135deg,var(--v),#b07bff);color:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.motb p{margin:0;font-size:16px;font-weight:700;line-height:1.4}
+.bdg{display:flex;flex-wrap:wrap;gap:6px}.bdg span{background:rgba(255,255,255,.2);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;display:inline-flex;gap:5px}.bdg i{font-style:normal}
+.gbar{background:var(--vt);border:1px solid var(--v);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.gtop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.gtop b{font-size:17px}
+.pill2{background:var(--card);color:var(--v);border-radius:999px;padding:4px 12px;font-weight:800;font-size:13px}
+.gst{display:flex;flex-wrap:wrap;gap:8px}
+.gst button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
+.gst button.ok{color:#1a7f4b;border-color:#1a9e6a}
+.gst button.cur{background:var(--v);border-color:var(--v);color:#fff}
+#gnext{align-self:flex-start}
+.rcp{display:flex;flex-direction:column;gap:8px}
+.rc{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:500}
+.rc input{width:auto;accent-color:var(--v)}
+.chs{display:flex;gap:4px;margin-left:auto}
+.ch{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px}
+.ch.wa{background:#e6f7ec;color:#128c4a}.ch.tg{background:#e5f3fc;color:#1b7fc1}
+.dst{width:100%;font-size:12px;font-weight:700;color:#1a7f4b}
+.nocon{background:#fff0e2;color:#b85200;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.45}
+.rvl{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.rv{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.rv.wait{border-color:#ff7300}.rv.done{opacity:.75}
+.rvh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.rvt{min-height:170px;font-size:13.5px;line-height:1.5}
+.rvst{background:#fff0e2;color:#b85200;border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:700}
+.rvst.ret{background:#fdecea;color:#c92a2d}
+.toast{font-size:13px;color:var(--ok);min-height:18px}
+</style>
+
+<main>
+<header>
+  <h1 style="margin:0">Feedback студенту</h1>
+  <div class="sub" style="font-size:14px;margin-top:6px">Отчёт пишется каждые 30 дней от первого урока студента — 12 отчётов в год</div>
+</header>
+<div class="vtabs" role="tablist"><button type="button" class="on" data-v="t">Преподаватель</button><button type="button" data-v="c">Координатор: все преподаватели</button></div>
+<section class="coord" id="coord" hidden>
+  <div class="qhead"><b>На проверку</b><span class="mut2">после одобрения отчёт автоматически уходит родителю и в кабинет студента</span><span class="dl" id="rvc"></span></div>
+  <div class="rvl" id="rvl"></div>
+  <div class="qhead"><b>Дедлайны по преподавателям</b><span class="mut2">за октябрь 2026 · примерные данные</span></div>
+  <div class="tw"><table><thead><tr><th>Преподаватель</th><th>Сдано вовремя</th><th>В работе</th><th>Просрочено</th><th>Дисциплина</th><th></th></tr></thead><tbody id="ctab"></tbody></table></div>
+</section>
+<section class="queue" id="tview">
+  <div class="qhead"><b>Пора написать feedback</b><span class="mut2">Дедлайн: <b id="dlh"></b> после даты отчёта · задаёт координатор</span><span class="dls" id="dls"></span></div>
+  <div class="qlist" id="queue"></div>
+</section>
+
+<div class="wrap" id="tview2">
+<form class="panel" id="f">
+  <div class="gbar" id="gbar" hidden></div>
+  <h2>Студент и период</h2>
+  <div class="row">
+    <div class="field"><label for="name">Студент</label><select id="name"></select></div>
+    <div class="field"><label for="teacher">Преподаватель</label><input id="teacher" value="Sunekesh Nurseitqyzy"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="level">Уровень</label>
+      <select id="level"><option>A0 Beginner</option><option selected>A1 Elementary</option><option>A2 Pre-Intermediate</option><option>B1 Intermediate</option><option>B2 Upper-Intermediate</option><option>C1 Advanced</option></select></div>
+    <div class="field"><label for="format">Формат</label><select id="format"><option selected>1 to 1</option><option>Group</option><option>Self study</option></select></div>
+    <div class="field"><label for="cp">Период</label><select id="cp">${""}</select></div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="units">Пройдено (юниты/уроки)</label><input id="units" value="Unit 2 — Lessons 1–6"></div>
+    <div class="field"><label for="att">Проведено уроков</label><input id="att" type="number" min="0" value="8"></div>
+    <div class="field"><label for="tot">Запланировано</label><input id="tot" type="number" min="0" value="9"></div>
+    <div class="field"><label for="hw">Домашки сдано, %</label><input id="hw" type="number" min="0" max="100" value="85"></div>
+  </div>
+
+  <h2>Навыки (1–5)</h2>
+  <div id="skills" style="display:flex;flex-direction:column;gap:10px"></div>
+
+  <h2>Сильные стороны</h2>
+  <div class="chips" data-group="str"></div>
+  <textarea id="strTxt" placeholder="Свой комментарий">Хорошо запоминает новые слова и уверенно использует их в диалогах.</textarea>
+
+  <h2>Над чем работать</h2>
+  <div class="chips" data-group="imp"></div>
+  <textarea id="impTxt" placeholder="Свой комментарий">Окончание -s в Present Simple (he works, she likes).</textarea>
+
+  <h2>Цели прошлого отчёта</h2>
+  <div class="goals" id="pgoals"></div>
+  <h2>Цели на следующие 30 дней</h2>
+  <div class="goals" id="ngoals"></div>
+  <div class="chips" id="gsug"></div>
+  <button type="button" class="btn ghost" id="addg" style="align-self:flex-start">+ Добавить цель</button>
+  <h2>Мотивация</h2>
+  <div class="mut2">Бейджи ставятся сами по цифрам. Выберите фразу или напишите свою.</div>
+  <div class="chips" id="mot"></div>
+  <textarea id="motTxt" placeholder="Своя фраза студенту"></textarea>
+  <div class="field"><label for="plan">План на следующий месяц</label><textarea id="plan">Unit 3: Present Simple — вопросы и отрицания, лексика «Daily routine». 10 минут в день на приложение Vocabulary.</textarea></div>
+  <div class="field"><label for="lang">Язык отчёта</label><select id="lang"><option value="ru" selected>Русский</option><option value="kk">Қазақша</option><option value="en">English</option></select></div>
+  <h2>Кому отправить</h2>
+  <div class="mut2">Контакты из карточки студента</div>
+  <div class="rcp" id="rcp"></div>
+  <div class="btns"><button type="button" class="btn" id="send">Отправить на проверку</button><button type="button" class="btn ghost" id="copy">Скопировать текст</button><button type="button" class="btn ghost" id="reset">Очистить форму</button></div>
+  <div class="toast" id="toast" aria-live="polite"></div>
+</form>
+
+<aside class="panel rep" id="rep" aria-label="Отчёт студента"></aside>
+</div>
+</main>
+
+<script>
+const SK={ru:["Speaking","Listening","Reading","Writing","Grammar","Vocabulary"]};
+const SKILLS=["Speaking","Listening","Reading","Writing","Grammar","Vocabulary"];
+const SNAME={ru:{Speaking:"Говорение",Listening:"Аудирование",Reading:"Чтение",Writing:"Письмо",Grammar:"Грамматика",Vocabulary:"Лексика"},
+kk:{Speaking:"Сөйлеу",Listening:"Тыңдау",Reading:"Оқу",Writing:"Жазу",Grammar:"Грамматика",Vocabulary:"Лексика"},
+en:{Speaking:"Speaking",Listening:"Listening",Reading:"Reading",Writing:"Writing",Grammar:"Grammar",Vocabulary:"Vocabulary"}};
+const CH={str:["Активен на уроке","Хорошее произношение","Быстро учит слова","Делает домашку вовремя","Не боится говорить","Хорошо понимает на слух"],
+imp:["Времена глаголов","Артикли","Произношение","Порядок слов","Словарный запас","Регулярность домашки","Говорить больше на уроке"]};
+const T={ru:{t:"Отчёт о прогрессе",att:"Посещаемость",hw:"Домашние задания",done:"Пройдено",str:"Сильные стороны",imp:"Над чем работаем",plan:"План",sk:"Навыки",tch:"Преподаватель",hi:n=>`Здравствуйте! Делимся прогрессом ${n} за период.`},
+kk:{t:"Прогресс есебі",att:"Қатысу",hw:"Үй тапсырмасы",done:"Өтілді",str:"Күшті жақтары",imp:"Жұмыс істейтін тұстар",plan:"Жоспар",sk:"Дағдылар",tch:"Мұғалім",hi:n=>`Сәлеметсіз бе! ${n} оқу прогресімен бөлісеміз.`},
+en:{t:"Progress report",att:"Attendance",hw:"Homework",done:"Covered",str:"Strengths",imp:"Areas to improve",plan:"Next steps",sk:"Skills",tch:"Teacher",hi:n=>`Hello! Here is ${n}'s progress for this period.`}};
+const GSUG=["Выучить 30 новых слов","Рассказать о своём дне 1 минуту","Домашка на 100%","Без ошибок в -s (he works)","Задавать вопросы с do/does","Пройти Unit 3"];
+const GST={yes:"Достигнута",part:"Частично",no:"Не достигнута"};
+const GSTL={ru:GST,kk:{yes:"Орындалды",part:"Ішінара",no:"Орындалмады"},en:{yes:"Achieved",part:"Partly",no:"Not yet"}};
+const GT={ru:["Цели прошлого отчёта","Цели на следующие 30 дней"],kk:["Өткен кезеңнің мақсаттары","Келесі 30 күнге мақсаттар"],en:["Last report goals","Goals for the next 30 days"]};
+let st={pg:[{t:"Выучить числа до 100",s:"yes"},{t:"Рассказать о себе 5 предложениями",s:"yes"},{t:"Домашка каждый урок",s:"part"}],ng:["Без ошибок в -s (he works)","Выучить 30 новых слов"],skills:{Speaking:4,Listening:3,Reading:4,Writing:3,Grammar:3,Vocabulary:4},str:["Активен на уроке","Быстро учит слова"],imp:["Времена глаголов"]};
+const $=id=>document.getElementById(id);
+const NOW=new Date("2026-10-15T23:00:00"),DL_H=48;
+const QUEUE=[{n:"Адэля Курманали",l:"A1 Elementary",f:"1 to 1",done:30,at:"2026-10-15T21:00"},{n:"Elementary 211 (kaz)",l:"A2 Pre-Intermediate",f:"Group",done:60,at:"2026-10-14T09:00",s:["Динара А.","Арман Б.","Жанель К.","Ерсултан М."]},{n:"Intermediate 235 (kaz)",l:"B1 Intermediate",f:"Group",done:90,at:"2026-10-12T20:00",s:["Айым Т.","Санжар О.","Мадина Р."],sentN:1},{n:"Алена Цекова",l:"A1 Elementary",f:"1 to 1",done:22},{n:"Pre intermediate 305 (rus)",l:"A2 Pre-Intermediate",f:"Group",done:120,at:"2026-10-11T22:00",sent:true,s:["Ирина П.","Олжас Н.","Анна С."],sentN:3}];
+const fmt=d=>d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+function buildQueue(){let over=0,soon=0,ok=0;
+ document.getElementById("queue").innerHTML=QUEUE.map((q,i)=>{const due=q.done%30===0&&q.done>0,next=Math.ceil((q.done+1)/30)*30;let dl="",cls="";
+  if(due&&q.at){const d=new Date(new Date(q.at).getTime()+DL_H*3600e3),h=Math.round((d-NOW)/3600e3);
+   if(q.sent){cls="sent";ok++;dl=`<span class="dl ok">✓ Сдан вовремя</span>`}
+   else if(h<0){cls="over";over++;dl=`<span class="dl bad">Просрочен на ${Math.ceil(-h/24)} д · был до ${fmt(d)}</span>`}
+   else{soon++;dl=`<span class="dl ${h<=24?"warn":""}">До ${fmt(d)} · осталось ${h<24?h+" ч":Math.floor(h/24)+" д "+(h%24)+" ч"}</span>`}}
+  return `<button type="button" class="qi ${due&&!q.sent?"due":""} ${cls}" data-q="${i}"><span class="qn">${q.n}</span><span class="qm">${q.l.split(" ")[0]} · ${q.f}${q.s?` · ${q.s.length} студ.`:""}</span>${q.s&&due?`<span class="qm" style="font-weight:700">Отчёты: ${gDone(q)}/${q.s.length}</span>`:""}<span class="qp"><span class="qt"><span style="width:${due?100:(q.done%30)/30*100}%"></span></span>${due?`отчёт за ${q.done/30}-й месяц`:`день ${q.done%30}/30 · ещё ${next-q.done} дн.`}</span>${dl}</button>`}).join("");
+ document.getElementById("dlh").textContent=DL_H+" ч";
+ document.getElementById("dls").innerHTML=`<span class="dl bad">${over} просрочено</span><span class="dl warn">${soon} в работе</span><span class="dl ok">${ok} сдано</span>`}
+$("cp").innerHTML=Array.from({length:40},(_,i)=>`<option value="${i+1}" ${i===0?"selected":""}>Отчёт ${i+1} · ${i+1}-й месяц (дни ${i*30+1}–${i*30+30})</option>`).join("");
+const ids=["name","teacher","level","format","cp","units","att","tot","hw","strTxt","impTxt","plan","lang"];
+const DEF={};ids.forEach(i=>DEF[i]=$(i).value);const DEFST=JSON.parse(JSON.stringify(st));
+try{const s=JSON.parse(localStorage.getItem("jtsfb")||"null");if(s){ids.forEach(i=>{if(s.f&&s.f[i]!=null)$(i).value=s.f[i]});if(s.st)st=Object.assign(st,s.st)}}catch(e){}
+st.pg=st.pg||[];st.ng=st.ng||[];
+function buildGoals(){
+ $("pgoals").innerHTML=st.pg.length?st.pg.map((g,i)=>`<div class="goal"><span class="gt">${esc(g.t)}</span><div class="gs">${Object.keys(GST).map(k=>`<button type="button" class="st-${k} ${g.s===k?"on":""}" data-pg="${i}" data-k="${k}">${GST[k]}</button>`).join("")}</div></div>`).join(""):`<p class="mut2">Это первый отчёт — прошлых целей нет.</p>`;
+ $("ngoals").innerHTML=st.ng.map((g,i)=>`<div class="goal"><input data-ng="${i}" value="${esc(g)}" aria-label="Цель ${i+1}"><button type="button" class="x" data-del="${i}" aria-label="Удалить цель">×</button></div>`).join("");
+ $("gsug").innerHTML=GSUG.filter(x=>!st.ng.includes(x)).map(x=>`<button type="button" class="chip" data-gs="${esc(x)}">+ ${esc(x)}</button>`).join("");
+}
+document.addEventListener("input",e=>{if(e.target.dataset.ng!=null){st.ng[+e.target.dataset.ng]=e.target.value;render()}});
+function save(){try{const f={};ids.forEach(i=>f[i]=$(i).value);localStorage.setItem("jtsfb",JSON.stringify({f,st}))}catch(e){}}
+function buildSkills(){$("skills").innerHTML=SKILLS.map(s=>`<div class="skill"><span class="lbl">${s}</span><div class="dots">${[1,2,3,4,5].map(n=>`<button type="button" data-s="${s}" data-n="${n}" class="${st.skills[s]===n?"on":""}" aria-label="${s} ${n}">${n}</button>`).join("")}</div></div>`).join("")}
+function buildChips(){document.querySelectorAll(".chips").forEach(c=>{const g=c.dataset.group;c.innerHTML=CH[g].map(x=>`<button type="button" class="chip ${st[g].includes(x)?"on":""}" data-g="${g}" data-v="${x}">${x}</button>`).join("")})}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function items(g,txt){return [...st[g],...$(txt).value.split("\n").map(x=>x.trim()).filter(Boolean)]}
+const PREV={Speaking:3,Listening:3,Reading:3,Writing:2,Grammar:3,Vocabulary:3};
+function dl(s){const p=PREV[s];if(p==null||+$("cp").value<2||p===st.skills[s])return"";return `<i class="dd ${st.skills[s]>p?"up":"dn"}">${st.skills[s]>p?"↑":"↓"}${Math.abs(st.skills[s]-p)}</i>`}
+const TEACH=[{n:"Sunekesh Nurseitqyzy",ok:9,w:2,o:0},{n:"Айгерим С.",ok:6,w:1,o:3},{n:"Данияр М.",ok:11,w:0,o:1},{n:"Мадина К.",ok:4,w:3,o:2},{n:"Ерлан Т.",ok:7,w:1,o:0}];
+function buildCoord(){document.getElementById("ctab").innerHTML=TEACH.sort((a,b)=>b.o-a.o).map(t=>{const tot=t.ok+t.o,p=tot?Math.round(t.ok/tot*100):100;return `<tr><td><b>${t.n}</b></td><td>${t.ok}</td><td>${t.w}</td><td>${t.o?`<span class="dl bad">${t.o}</span>`:"0"}</td><td><div class="qt" style="max-width:120px;display:inline-block;width:120px;vertical-align:middle"><span style="width:${p}%;background:${p>=90?"#1a9e6a":p>=70?"#ff7300":"#c92a2d"}"></span></div> ${p}%</td><td>${t.o?`<button type="button" class="chip">Напомнить</button>`:""}</td></tr>`}).join("")}
+const MOT={ru:["Ты делаешь огромные шаги — так держать!","Маленькие шаги каждый день = большой результат.","Ошибки — это часть обучения. Ты на верном пути!","Я горжусь твоим прогрессом!","Ещё месяц — и ты заговоришь ещё увереннее!"],
+kk:["Сен үлкен қадам жасап жатырсың — жарайсың!","Күн сайын кішкентай қадам = үлкен нәтиже.","Қателер — оқудың бір бөлігі. Сен дұрыс жолдасың!","Сенің прогресіңмен мақтанамын!","Тағы бір ай — және сен сенімдірек сөйлейсің!"],
+en:["You're making huge progress — keep it up!","Small steps every day lead to big results.","Mistakes are part of learning. You're on the right track!","I'm proud of your progress!","One more month and you'll speak even more confidently!"]};
+let motSel=0;
+function buildMot(){$("mot").innerHTML=MOT.ru.map((m,i)=>`<button type="button" class="chip ${motSel===i?"on":""}" data-m="${i}">${m}</button>`).join("")}
+function motPhrase(L){return $("motTxt").value.trim()||(motSel>=0?MOT[L][motSel]:"")}
+function badges(L){const E=L==="en",K=L==="kk",a=+$("att").value||0,hw=+$("hw").value||0,b=[];
+ if(a>0&&a>=(+$("tot").value||0))b.push({i:"🔥",t:E?"Perfect attendance":K?"Бірде-бір сабақ жібермеді":"Ни одного пропуска"});
+ if(hw>=90)b.push({i:"📚",t:E?"Homework hero":K?"Үй тапсырмасының чемпионы":"Герой домашки"});
+ const up=SKILLS.filter(s=>+$("cp").value>1&&st.skills[s]>PREV[s]).length;if(up>=2)b.push({i:"📈",t:E?`Grew in ${up} skills`:K?`${up} дағдыда өсті`:`Рост в ${up} навыках`});
+ const gy=st.pg.filter(g=>g.s==="yes").length;if(gy>=2)b.push({i:"🎯",t:E?`${gy} goals achieved`:K?`${gy} мақсат орындалды`:`${gy} цели достигнуто`});
+ const c=+$("cp").value;if(c>=2)b.push({i:"🏅",t:E?`${c} months with JTS`:K?`JTS-пен ${c} ай`:`${c} мес. с JTS`});return b}
+function motBlock(L){const B=badges(L),M=motPhrase(L);if(!B.length&&!M)return"";return `<div class="motb">${M?`<p>${esc(M)}</p>`:""}${B.length?`<div class="bdg">${B.map(b=>`<span><i>${b.i}</i>${b.t}</span>`).join("")}</div>`:""}</div>`}
+let curG=null,curI=0;const SNAP={};
+function buildStuSel(){const ind=QUEUE.filter(q=>!q.s),grp=QUEUE.filter(q=>q.s);$("name").innerHTML=`<optgroup label="Индивидуально (1 to 1)">${ind.map(q=>`<option>${esc(q.n)}</option>`).join("")}</optgroup>`+grp.map(q=>`<optgroup label="Группа: ${esc(q.n)}">${q.s.map(n=>`<option data-g="${esc(q.n)}">${esc(n)}</option>`).join("")}</optgroup>`).join("")}
+function pickStu(){const o=$("name").selectedOptions[0];if(!o)return;const gn=o.dataset.g;
+ if(gn){const q=QUEUE.find(x=>x.n===gn),i=q.s.indexOf(o.value);if(curG!==q){if(curG&&curI>=0)SNAP[key(curI)]=snap();curG=q;gDone(q);$("level").value=q.l;$("format").value="Group";$("cp").value=String(Math.max(1,Math.ceil(q.done/30)));curI=-1}switchStu(i)}
+ else{if(curG&&curI>=0)SNAP[key(curI)]=snap();curG=null;curI=0;$("gbar").hidden=true;const q=QUEUE.find(x=>x.n===o.value);if(q){$("level").value=q.l;$("format").value=q.f;$("cp").value=String(Math.max(1,Math.ceil(q.done/30)))}render()}}
+function gDone(q){if(!q.doneSet){q.doneSet=new Set(q.s.slice(0,q.sentN||0))}return q.doneSet.size}
+function snap(){return{st:JSON.parse(JSON.stringify(st)),f:["att","hw","strTxt","impTxt","plan","motTxt"].reduce((o,k)=>(o[k]=$(k).value,o),{})}}
+function loadSnap(k){const s=SNAP[k];if(s){st=JSON.parse(JSON.stringify(s.st));Object.entries(s.f).forEach(([k2,v])=>$(k2).value=v)}else{st={pg:[],ng:[],skills:{Speaking:3,Listening:3,Reading:3,Writing:3,Grammar:3,Vocabulary:3},str:[],imp:[]};["strTxt","impTxt","motTxt"].forEach(k2=>$(k2).value="");$("att").value=7;$("hw").value=""}buildSkills();buildChips();buildGoals()}
+function key(i){return curG.n+"|"+curG.s[i]}
+function openGroup(q){curG=q;gDone(q);$("level").value=q.l;$("format").value="Group";$("cp").value=String(Math.max(1,Math.ceil(q.done/30)));const i=q.s.findIndex(n=>!q.doneSet.has(n));curI=-1;switchStu(i<0?0:i);$("gbar").scrollIntoView({behavior:"smooth",block:"start"})}
+function switchStu(i){if(curI>=0&&curG)SNAP[key(curI)]=snap();curI=i;$("name").value=curG.s[i];loadSnap(key(i));buildGbar();render()}
+function sendCur(){SNAP[key(curI)]=snap();curG.doneSet.add(curG.s[curI]);try{navigator.clipboard.writeText(text()).catch(()=>{})}catch(e){}$("toast").textContent=`Отчёт для ${curG.s[curI]} скопирован`}
+function buildGbar(){const q=curG,g=$("gbar");g.hidden=false;const d=gDone(q);g.innerHTML=`<div class="gtop"><div><div class="lbl">Группа · каждому студенту свой отчёт</div><b>${esc(q.n)}</b></div><span class="pill2">${d}/${q.s.length} написано</span></div><div class="gst">${q.s.map((n,i)=>`<button type="button" data-gst="${i}" class="${i===curI?"cur":""} ${q.doneSet.has(n)?"ok":""}">${q.doneSet.has(n)?"✓ ":""}${esc(n)}</button>`).join("")}</div><button type="button" class="btn" id="gnext">Отправить и к следующему студенту →</button>`}
+const CONTACTS={"Аделя Курманали":[{r:"Родитель",n:"Гаухар К.",p:"+7 701 *** 45 67",c:["WhatsApp","Telegram"],on:true},{r:"Студент",n:"Аделя",p:"+7 747 *** 12 09",c:["Telegram"],on:false}],"Алена Цекова":[{r:"Студент",n:"Алена",p:"+7 705 *** 88 31",c:["WhatsApp"],on:true}],"Арман Б.":[]};
+function contactsFor(n){if(CONTACTS[n])return CONTACTS[n];const h=[...n].reduce((a,c)=>a+c.charCodeAt(0),0);return CONTACTS[n]=[{r:"Родитель",n:"Родитель",p:`+7 70${h%10} *** ${10+h%89} ${10+h%77}`,c:h%2?["WhatsApp"]:["WhatsApp","Telegram"],on:true}]}
+const SENT={};
+function buildRcp(){const n=$("name").value,cs=contactsFor(n),s=SENT[n];
+ $("rcp").innerHTML=cs.length?cs.map((c,i)=>`<label class="rc"><input type="checkbox" data-rc="${i}" ${c.on?"checked":""}><span><b>${c.r}</b> · ${esc(c.n)} · <span class="mut2">${c.p}</span></span><span class="chs">${c.c.map(x=>`<i class="ch ${x==="WhatsApp"?"wa":"tg"}">${x}</i>`).join("")}</span>${s&&s[i]?`<span class="dst">${s[i]}</span>`:""}</label>`).join(""):`<div class="nocon">У студента не привязан контакт родителя. Отчёт сохранится как «ждёт контакта», менеджер получит задачу.</div>`;
+ const r=REV.find(x=>x.n===n&&x.st!=="done");$("rvst")&&$("rvst").remove();if(r||RET[n]){const d=document.createElement("div");d.id="rvst";d.className=r?"rvst":"rvst ret";d.innerHTML=r?(r.st==="wait"?"⏳ На проверке у координатора":"✓ Одобрено и отправлено"):`↩ Возвращён на доработку: «${esc(RET[n])}»`;$("rcp").after(d)}
+ $("send").textContent=cs.length?"Отправить на проверку":"На проверку — контакта нет"}
+const REV=[{n:"Санжар О.",t:"Данияр М.",g:"Intermediate 235 (kaz) · 3-й месяц (дни 61–90)",to:"Родитель · WhatsApp",txt:"Здравствуйте! Делимся прогрессом Санжар О. за период.\n\n💬 Маленькие шаги каждый день = большой результат.\n\n📊 3-й месяц · B1 · Group\nПосещаемость: 7 из 11\nДомашние задания: 60%\n\n✅ Сильные стороны:\n• Хорошо понимает на слух\n\n🎯 Над чем работаем:\n• Регулярность домашки",at:"16 окт, 09:40",st:"wait"}];const RET={};
+function buildRev(){const w=REV.filter(r=>r.st==="wait");$("rvc").textContent=w.length+" ждут проверки";$("rvl").innerHTML=REV.length?REV.map((r,i)=>`<div class="rv ${r.st}"><div class="rvh"><div><b>${esc(r.n)}</b><div class="mut2">${esc(r.g)} · преподаватель ${esc(r.t)} · ${r.at}</div><div class="mut2">Получатели: ${esc(r.to)} + кабинет студента</div></div>${r.st==="wait"?`<span class="dl warn">На проверке</span>`:r.st==="done"?`<span class="dl ok">✓ Одобрено · отправлено</span>`:`<span class="dl bad">Возвращено</span>`}</div>${r.st==="wait"?`<textarea class="rvt" id="rvt${i}" aria-label="Текст отчёта">${esc(r.txt)}</textarea><input id="rvc${i}" placeholder="Комментарий преподавателю (для возврата)"><div class="btns"><button type="button" class="btn" data-ap="${i}">Одобрить и отправить</button><button type="button" class="btn ghost" data-rt="${i}">Вернуть на доработку</button></div>`:""}</div>`).join(""):`<p class="mut2">Отчётов на проверку нет.</p>`;const tb=document.querySelector('.vtabs [data-v="c"]');if(tb)tb.textContent=`Координатор${w.length?" · "+w.length+" на проверку":""}`}
+function doSend(){const n=$("name").value,cs=contactsFor(n);
+ if(!cs.length){$("toast").textContent=`Отчёт для ${n} сохранён. Уйдёт автоматически, когда менеджер добавит контакт.`;return true}
+ const on=cs.map((c,i)=>[c,i]).filter(([c])=>c.on);if(!on.length){$("toast").textContent="Выберите хотя бы одного получателя";return false}
+ for(let k=REV.length-1;k>=0;k--)if(REV[k].n===n&&REV[k].st==="wait")REV.splice(k,1);delete RET[n];
+ REV.unshift({n,t:$("teacher").value,g:`${curG?curG.n:$("format").value} · ${cpText()}`,to:on.map(([c])=>c.r+" · "+c.c.join(" + ")).join("; "),txt:text(),at:"сейчас",st:"wait",idx:on.map(([,i])=>i),cc:on.map(([c])=>c.c.join(" + "))});
+ buildRev();buildRcp();$("toast").textContent=`Отчёт для ${n} отправлен на проверку координатору`;return true}
+function cpText(){const c=+$("cp").value||1,L=$("lang").value,a=(c-1)*7+1,b=c*7;return L==="en"?`Month ${c} (days ${(c-1)*30+1}–${c*30})`:L==="kk"?`${c}-ай (${(c-1)*30+1}–${c*30} күн)`:`${c}-й месяц (дни ${(c-1)*30+1}–${c*30})`}
+function render(){
+ buildRcp();
+ const L=$("lang").value,t=T[L],a=+$("att").value||0,tt=+$("tot").value||0,pct=tt?Math.round(a/tt*100):0;
+ const S=items("str","strTxt"),I=items("imp","impTxt");
+ $("rep").innerHTML=`<div class="rhead"><div><div class="lbl">${t.t} · ${cpText()}</div><div class="rname">${esc($("name").value)}</div><div class="rmeta">${esc($("format").value)} · ${t.done}: ${esc($("units").value)}</div></div><span class="lvl">${esc($("level").value.split(" ")[0])}</span></div>
+ ${motBlock(L)}
+ <div class="att"><div><strong>${a}/${tt}</strong><small>${t.att} · ${pct}%</small></div><div><strong>${+$("hw").value||0}%</strong><small>${t.hw}</small></div></div>
+ <div class="blk"><h3>${t.sk}</h3><div class="bars">${SKILLS.map(s=>`<div class="bar"><span>${SNAME[L][s]}</span><div class="track"><span style="width:${st.skills[s]*20}%"></span></div><b>${st.skills[s]}/5${dl(s)}</b></div>`).join("")}</div></div>
+ ${S.length?`<div class="blk"><h3>${t.str}</h3><ul>${S.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+ ${I.length?`<div class="blk"><h3>${t.imp}</h3><ul>${I.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+ ${st.pg.length?`<div class="blk"><h3>${GT[L][0]}</h3><ul class="rg">${st.pg.map(g=>`<li><span class="dot st-${g.s}"></span>${esc(g.t)} <em>${GSTL[L][g.s]}</em></li>`).join("")}</ul></div>`:""}
+ ${st.ng.filter(x=>x.trim()).length?`<div class="blk"><h3>🎯 ${GT[L][1]}</h3><ul>${st.ng.filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:""}
+ ${$("plan").value.trim()?`<div class="blk"><h3>${t.plan}</h3><p>${esc($("plan").value)}</p></div>`:""}
+ <div class="rmeta">${t.tch}: ${esc($("teacher").value)}</div>`;
+ save();
+}
+function text(){const L=$("lang").value,t=T[L],a=+$("att").value||0,tt=+$("tot").value||0;
+ const S=items("str","strTxt"),I=items("imp","impTxt");
+ const B=badges(L),M=motPhrase(L);return `${t.hi($("name").value)}\n\n${M?"💬 "+M+"\n\n":""}${B.length?B.map(b=>b.i+" "+b.t).join("\n")+"\n\n":""}📊 ${t.t} — ${cpText()}\n${$("level").value} · ${$("format").value}\n${t.done}: ${$("units").value}\n${t.att}: ${a}/${tt}\n${t.hw}: ${$("hw").value}%\n\n${t.sk}:\n${SKILLS.map(s=>`• ${SNAME[L][s]}: ${st.skills[s]}/5${PREV[s]!=null&&st.skills[s]!==PREV[s]?` (${st.skills[s]>PREV[s]?"↑":"↓"} было ${PREV[s]})`:""}`).join("\n")}\n\n✅ ${t.str}:\n${S.map(x=>"• "+x).join("\n")}\n\n🎯 ${t.imp}:\n${I.map(x=>"• "+x).join("\n")}${st.pg.length?`\n\n🏁 ${GT[L][0]}:\n${st.pg.map(g=>`• ${g.t} — ${GSTL[L][g.s]}`).join("\n")}`:""}${st.ng.filter(x=>x.trim()).length?`\n\n🎯 ${GT[L][1]}:\n${st.ng.filter(x=>x.trim()).map(x=>"• "+x).join("\n")}`:""}\n\n📌 ${t.plan}:\n${$("plan").value}\n\n${t.tch}: ${$("teacher").value}`}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.dataset.gst!=null){switchStu(+b.dataset.gst);return}
+ if(b.dataset.ap!=null){const r=REV[+b.dataset.ap];r.txt=$("rvt"+b.dataset.ap).value;r.st="done";if(r.idx){SENT[r.n]={};r.idx.forEach((i,k)=>SENT[r.n][i]="✓✓ Доставлено · "+r.cc[k]+" · и в кабинете студента")}buildRev();buildRcp();return}
+ if(b.dataset.rt!=null){const i=+b.dataset.rt,c=$("rvc"+i).value.trim();if(!c){$("rvc"+i).focus();$("rvc"+i).placeholder="Напишите, что исправить — без комментария вернуть нельзя";return}const r=REV[i];r.st="ret";RET[r.n]=c;REV.splice(i,1);buildRev();buildRcp();return}
+ if(b.id==="send"){if(doSend()&&curG){curG.doneSet.add(curG.s[curI]);SNAP[key(curI)]=snap();buildGbar();buildQueue()}return}
+ if(b.id==="gnext"){const q=curG;if(!q)return;if(!doSend())return;sendCur();const i=q.s.findIndex(n=>!q.doneSet.has(n));if(i>=0)switchStu(i);else{buildGbar();$("toast").textContent="Всем студентам группы отчёты написаны"}buildQueue();return}
+ if(b.dataset.q){const q=QUEUE[+b.dataset.q];if(q.s){openGroup(q);return}curG=null;$("gbar").hidden=true;$("name").value=q.n;$("level").value=q.l;$("format").value=q.f;$("cp").value=String(Math.max(1,Math.ceil(q.done/30)));render();$("name").scrollIntoView({behavior:"smooth",block:"center"})}
+ if(b.dataset.v){document.querySelectorAll(".vtabs button").forEach(x=>x.classList.toggle("on",x===b));const c=b.dataset.v==="c";$("coord").hidden=!c;$("tview").hidden=c;$("tview2").hidden=c}
+ if(b.textContent==="Напомнить"){b.textContent="✓ Напоминание отправлено";b.disabled=true}
+ if(b.dataset.m){const i=+b.dataset.m;motSel=motSel===i?-1:i;buildMot();render()}
+ if(b.dataset.pg){st.pg[+b.dataset.pg].s=b.dataset.k;buildGoals();render()}
+ if(b.dataset.del){st.ng.splice(+b.dataset.del,1);buildGoals();render()}
+ if(b.dataset.gs){st.ng.push(b.dataset.gs);buildGoals();render()}
+ if(b.id==="addg"){st.ng.push("");buildGoals();render();const ins=$("ngoals").querySelectorAll("input");ins[ins.length-1].focus()}
+ if(b.dataset.s){st.skills[b.dataset.s]=+b.dataset.n;buildSkills();render()}
+ if(b.dataset.g){const g=b.dataset.g,v=b.dataset.v;st[g]=st[g].includes(v)?st[g].filter(x=>x!==v):[...st[g],v];buildChips();render()}});
+$("f").addEventListener("input",render);
+document.addEventListener("change",e=>{if(e.target.dataset.rc!=null){contactsFor($("name").value)[+e.target.dataset.rc].on=e.target.checked}});
+$("copy").onclick=()=>{const s=text();navigator.clipboard.writeText(s).then(()=>$("toast").textContent="Отчёт скопирован — вставьте в чат студенту",()=>{$("toast").textContent="Не удалось скопировать автоматически"})};
+$("reset").onclick=()=>{ids.forEach(i=>$(i).value=i==="teacher"||i==="lang"||i==="level"||i==="format"?$(i).value:"");st={pg:[],ng:[],skills:{Speaking:3,Listening:3,Reading:3,Writing:3,Grammar:3,Vocabulary:3},str:[],imp:[]};$("name").selectedIndex=0;buildSkills();buildChips();buildGoals();render();$("toast").textContent="Форма очищена"};
+buildStuSel();try{const s0=JSON.parse(localStorage.getItem("jtsfb")||"null");if(s0&&s0.f&&s0.f.name)$("name").value=s0.f.name}catch(e){}if(!$("name").value)$("name").selectedIndex=0;$("name").addEventListener("change",pickStu);
+buildRev();buildMot();buildCoord();buildQueue();buildSkills();buildChips();buildGoals();render();
+</script>
+
+</body></html>

@@ -13,6 +13,8 @@ import HomePage from './HomePage.jsx'
 
 const levelProgress = { value: null }
 vi.mock('../api.js', () => ({
+  // Карточка «Новый отчёт о прогрессе» спрашивает список отчётов.
+  getFeedbackReports: vi.fn(async () => []),
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),

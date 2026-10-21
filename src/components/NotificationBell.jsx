@@ -5,6 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { loadToken } from '../lib/session.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { wsBase } from '../lib/wsUrl.js'
+import { stompConnectHeaders } from '../lib/stompAuth.js'
 import { notificationTarget } from '../lib/studentDeepLink.js'
 import { playCue, isSoundEnabled, setSoundEnabled } from '../lib/notifySound.js'
 import {
@@ -58,11 +59,20 @@ export function NotificationProvider({ token, onNavigate, children }) {
     if (!auth) return undefined
     const userId = userIdFromToken(auth)
     if (!userId) return undefined
+    let beat = null
     const client = new Client({
       brokerURL: wsBase(),
-      connectHeaders: { Authorization: `Bearer ${auth}` },
+      connectHeaders: stompConnectHeaders(auth),
       reconnectDelay: 5000,
+      beforeConnect: () => {
+        client.connectHeaders = stompConnectHeaders(auth)
+      },
       onConnect: () => {
+        // Пульс, пока вкладка жива. Голого соединения мало: закрытая страница
+        // успевает переподключиться, и преподаватель видит «на платформе».
+        pulse()
+        if (beat) clearInterval(beat)
+        beat = setInterval(pulse, 10000)
         client.subscribe(`/topic/notifications/${userId}`, () => {
           // Звук здесь покрывает всё, о чём сервер шлёт уведомление, — в том
           // числе выданную домашнюю работу: заводить под неё отдельный канал
@@ -73,9 +83,22 @@ export function NotificationProvider({ token, onNavigate, children }) {
         })
       },
     })
+    const pulse = () => client.publish({ destination: '/app/presence/platform', body: '{}' })
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && client.connected) pulse()
+    }
+    const stop = () => {
+      client.reconnectDelay = 0
+      if (beat) { clearInterval(beat); beat = null }
+      client.deactivate()
+    }
+    window.addEventListener('pagehide', stop)
+    document.addEventListener('visibilitychange', onVisible)
     client.activate()
     return () => {
-      client.deactivate()
+      window.removeEventListener('pagehide', stop)
+      document.removeEventListener('visibilitychange', onVisible)
+      stop()
     }
   }, [auth, refreshUnread, refreshList])
 

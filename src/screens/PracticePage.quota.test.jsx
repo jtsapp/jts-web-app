@@ -29,6 +29,12 @@ vi.mock('../practice/fairytale/taleWorld.js', () => ({ openTaleWorld }))
 
 import PracticePage from './PracticePage.jsx'
 
+// Каждый тест рендерит «Практику» целиком, первый — ещё и с холодным импортом всех её разделов. Отдельно это
+// доли секунды, но в полном прогоне CI (640 файлов параллельно на медленном раннере) первый тест 20.10.2026 вышел
+// за дефолтные 5 с и уронил job `test` — а за ним и выкат dev (пайплайн 87d29ee9). Запас по времени, а не по логике:
+// проверки остались прежними.
+vi.setConfig({ testTimeout: 30_000 })
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
