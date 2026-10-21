@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { snapshotScreen } from './screenSnapshot.js'
+import { pressableLabel, snapshotScreen, snapshotWithRefs } from './screenSnapshot.js'
 
 const mount = (html) => {
   document.body.innerHTML = `<div id="root">${html}</div>`
@@ -319,5 +319,43 @@ describe('снимок за пределами обёртки экрана', () 
     const snap = snapshotScreen(root, { maxChars: 80 })
     expect(snap.startsWith('[поверх экрана открыто: перевод]\napple — яблоко')).toBe(true)
     expect(snap.endsWith('…[снимок обрезан]')).toBe(true)
+  })
+})
+
+describe('snapshotWithRefs — номера кнопок', () => {
+  it('нумерует нажимаемые кнопки, неактивные и опасные — без номера', () => {
+    document.body.innerHTML = `<div class="scr-in">
+      <button>Послушать</button>
+      <button disabled>Проверить</button>
+      <div role="radio" aria-checked="false">like</div>
+      <button>Выйти</button>
+      <button>Далее</button>
+    </div>`
+    const { text, refs } = snapshotWithRefs(document.querySelector('.scr-in'))
+    expect(text).toContain('[кнопка #1 «Послушать»]')
+    expect(text).toContain('[кнопка «Проверить» неактивна]')
+    expect(text).toContain('[кнопка #2 «like»]')
+    expect(text).toContain('[кнопка «Выйти»]')
+    expect(text).toContain('[кнопка #3 «Далее»]')
+    expect([...refs.keys()]).toEqual([1, 2, 3])
+    expect(refs.get(3).el.textContent).toBe('Далее')
+    expect(refs.get(3).label).toBe('Далее')
+  })
+  it('нумерация сквозная: окно-портал первым, потом экран', () => {
+    document.body.innerHTML = `<div class="scr-in"><button>Под окном</button></div>
+      <div data-assistant-overlay="карточка"><button>В окне</button></div>`
+    const { text, refs } = snapshotWithRefs(document.querySelector('.scr-in'))
+    expect(text.indexOf('#1 «В окне»')).toBeGreaterThan(-1)
+    expect(text.indexOf('#1 «В окне»')).toBeLessThan(text.indexOf('#2 «Под окном»'))
+    expect(refs.size).toBe(2)
+  })
+  it('snapshotScreen — прежний текст, без номеров', () => {
+    document.body.innerHTML = '<div class="scr-in"><button>Далее</button></div>'
+    expect(snapshotScreen(document.querySelector('.scr-in'))).toBe('[кнопка «Далее»]')
+  })
+  it('pressableLabel — видимая подпись, иначе aria-label', () => {
+    document.body.innerHTML = '<button id="a">Да<span hidden>✓</span>лее</button><button id="b" aria-label="Закрыть"></button>'
+    expect(pressableLabel(document.getElementById('a'))).toBe('Далее')
+    expect(pressableLabel(document.getElementById('b'))).toBe('Закрыть')
   })
 })
