@@ -248,5 +248,6 @@ main>*{animation:rise .35s ease both}main>*:nth-child(2){animation-delay:.04s}ma
 /* hover feedback without moving the hit box (a lifted element under a resting pointer flickers hover on/off at its edge) */
 .opt:hover:not(:disabled),.btn:hover,.lcard:hover,.prow:not(.locked):hover,.tcard:hover,.wcard:not(.locked):hover{transform:none}
 .final p{color:#fff}
+.pw-lang{margin-top:16px}
 
 `
