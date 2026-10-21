@@ -15,6 +15,7 @@ import {
   COINS_PER_TASK,
 } from '../practice/listening/engine.js'
 import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
+import { loadListeningLevel, listeningAudioUrl, safeMarkup } from '../practice/listening/listeningContent.js'
 import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { recordSkill } from '../practice/skillStats.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
@@ -36,11 +37,10 @@ export const normLevel = (lvl) => {
 // клика в Windows (500 мс по умолчанию), а прочитать разбор быстрее никто не
 // успеет.
 const NEXT_GUARD_MS = 500
-const audioUrl = (level, file) => `/practice/listening/audio/${level}/${file}`
 
-// Render an explanation string that may contain <b>…</b>.
+// Разбор с <b>…</b>; всё, кроме <b>/<i>, — текстом (safeMarkup).
 function Rich({ html }) {
-  return <span dangerouslySetInnerHTML={{ __html: html }} />
+  return <span dangerouslySetInnerHTML={{ __html: safeMarkup(html) }} />
 }
 
 // ───────────────────────── Audio ─────────────────────────
@@ -323,6 +323,10 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   const level = normLevel(initialTarget?.level || userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
   const [content, setContent] = useState(null)
+  // Откуда пришли задания: 'api' — бэкенд, 'static' — файлы сайта. Пишется в
+  // data-source корня экрана: по нему тесты и проверка стенда видят, что
+  // раздел уже читает админку, а не статику.
+  const [source, setSource] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -400,6 +404,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
   // Без сброса ученик получил бы задания прежнего уровня.
   useEffect(() => {
     setContent(null)
+    setSource(null)
     setQueue([])
     setPhase('intro')
     setResponse(null)
@@ -411,10 +416,9 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/practice/listening/content/${level}.json`)
-      if (!res.ok) throw new Error('bad status ' + res.status)
-      const data = await res.json()
+      const { data, source: from } = await loadListeningLevel(level)
       setContent(data)
+      setSource(from)
       return data
     } catch (e) {
       setError(t('listening.loadError'))
@@ -547,7 +551,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="lt">
+      <div className="lt" data-source={source || undefined}>
         {/* Полоса раздела по кадру 4273:9630: круглый крестик, крошка
             «Аудирование / Практика», переключатель языка и словарь. На телефоне
             она заменяет шапку оболочки (та скрыта в styles.css), как в макете —
@@ -598,7 +602,7 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
 
             <h3 className="lt-heading">{headingFor(current, t)}</h3>
 
-            <AudioBlock src={audioUrl(level, current.audio)} />
+            <AudioBlock src={listeningAudioUrl(level, current.audio)} />
 
             {current.type === 'listen_choice' && (
               <ChoiceTask task={current} response={response} setResponse={setResponse} disabled={!!answered} result={answered} />
