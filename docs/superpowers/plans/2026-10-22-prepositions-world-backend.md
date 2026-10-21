@@ -11,7 +11,7 @@
 `modules/practice` (`practice/prepositions/<sha24>.webp|mp3`, immutable), доученный webp и
 удалению. Таблица `prepositions_releases` — только мета.
 
-**Tech Stack:** Java 21, Spring Boot, Jackson, MinIO client, Flyway, JUnit 5 + Mockito + AssertJ.
+**Tech Stack:** Java 21, Gradle (`./gradlew`), Spring Boot, Jackson, MinIO client, Flyway, JUnit 5 + Mockito + AssertJ.
 
 **Спека:** `jts-web-app/docs/superpowers/specs/2026-10-22-prepositions-world-design.md`.
 
@@ -110,7 +110,7 @@ class PracticeMediaNamesTest {
 
 - [ ] **Step 2: Запустить — падает**
 
-Run: `./mvnw -q test -Dtest=PracticeMediaNamesTest`
+Run: `./gradlew test --tests '*PracticeMediaNamesTest'`
 Expected: FAIL — нет `allows`, `sniff(WEBP)` = null.
 
 - [ ] **Step 3: Реализация `PracticeMediaNames`**
@@ -198,7 +198,7 @@ Expected: FAIL — нет `allows`, `sniff(WEBP)` = null.
 
 - [ ] **Step 6: Тесты зелёные**
 
-Run: `./mvnw -q test -Dtest='PracticeMedia*Test,Listening*Test'`
+Run: `./gradlew test --tests '*PracticeMedia*Test' --tests '*Listening*Test'`
 Expected: PASS (новый тест и прежние тесты медиа и Аудирования).
 
 - [ ] **Step 7: Commit**
@@ -283,7 +283,7 @@ class PrepositionsAudioKeysTest {
 
 - [ ] **Step 2: Запустить — падает**
 
-Run: `./mvnw -q test -Dtest=PrepositionsAudioKeysTest`
+Run: `./gradlew test --tests '*PrepositionsAudioKeysTest'`
 Expected: FAIL — класса нет.
 
 - [ ] **Step 3: Реализация**
@@ -377,7 +377,7 @@ public final class PrepositionsAudioKeys {
 
 - [ ] **Step 4: Тест зелёный**
 
-Run: `./mvnw -q test -Dtest=PrepositionsAudioKeysTest`
+Run: `./gradlew test --tests '*PrepositionsAudioKeysTest'`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -650,7 +650,7 @@ class PrepositionsHtmlParserTest {
                 .isInstanceOf(BadRequestException.class).hasMessageContaining("a12fe6b1");
     }
 
-    /** Настоящий прототип: PREPOSITIONS_HTML=C:/…/Prepositions World.html ./mvnw test -Dtest=PrepositionsHtmlParserTest */
+    /** Настоящий прототип: PREPOSITIONS_HTML=C:/…/Prepositions World.html ./gradlew test --tests '*PrepositionsHtmlParserTest.realPrototype' */
     @Test
     @EnabledIfEnvironmentVariable(named = "PREPOSITIONS_HTML", matches = ".+")
     void realPrototype() throws Exception {
@@ -667,7 +667,7 @@ class PrepositionsHtmlParserTest {
 
 - [ ] **Step 3: Запустить — падает**
 
-Run: `./mvnw -q test -Dtest=PrepositionsHtmlParserTest`
+Run: `./gradlew test --tests '*PrepositionsHtmlParserTest'`
 Expected: FAIL — классов нет.
 
 - [ ] **Step 4: `PrepositionsBundle`**
@@ -1047,12 +1047,12 @@ public final class PrepositionsHtmlParser {
 
 - [ ] **Step 6: Тесты зелёные**
 
-Run: `./mvnw -q test -Dtest=PrepositionsHtmlParserTest`
+Run: `./gradlew test --tests '*PrepositionsHtmlParserTest'`
 Expected: PASS (`realPrototype` пропущен).
 
 - [ ] **Step 7: Прогон на настоящем прототипе и хэш движка**
 
-Run (Git Bash): `PREPOSITIONS_HTML="C:/Users/nural/Downloads/Prepositions World (11).html" ./mvnw -q test -Dtest=PrepositionsHtmlParserTest#realPrototype`
+Run (Git Bash): `PREPOSITIONS_HTML="C:/Users/nural/Downloads/Prepositions World (11).html" ./gradlew test --tests '*PrepositionsHtmlParserTest.realPrototype'`
 Expected: PASS, в выводе строка `prepositions.engine-sha=<64 hex> warnings=[…]`. Хэш записать — он нужен в Task 5.
 Если упало на проверке — это ошибка в данных прототипа или в правиле: правило сверить с движком
 (`prep.txt`), а не ослаблять под данные.
@@ -1492,7 +1492,7 @@ class PrepositionsUploadServiceTest {
 
 - [ ] **Step 5: Запустить — падает**
 
-Run: `./mvnw -q test -Dtest=PrepositionsUploadServiceTest`
+Run: `./gradlew test --tests '*PrepositionsUploadServiceTest'`
 Expected: FAIL — `PrepositionsUploadService` нет.
 
 - [ ] **Step 6: `PrepositionsUploadService`**
@@ -1653,7 +1653,7 @@ public class PrepositionsUploadService {
 
 - [ ] **Step 7: Тест загрузки зелёный**
 
-Run: `./mvnw -q test -Dtest=PrepositionsUploadServiceTest`
+Run: `./gradlew test --tests '*PrepositionsUploadServiceTest'`
 Expected: PASS.
 
 - [ ] **Step 8: Падающий тест чтения**
@@ -1780,7 +1780,7 @@ public class PrepositionsCatalogService {
 
 - [ ] **Step 10: Все тесты модуля зелёные**
 
-Run: `./mvnw -q test -Dtest='Prepositions*Test'`
+Run: `./gradlew test --tests '*Prepositions*Test'`
 Expected: PASS.
 
 - [ ] **Step 11: Commit**
@@ -1904,7 +1904,7 @@ class PrepositionsControllersTest {
 
 - [ ] **Step 2: Запустить — падает**
 
-Run: `./mvnw -q test -Dtest=PrepositionsControllersTest`
+Run: `./gradlew test --tests '*PrepositionsControllersTest'`
 Expected: FAIL — контроллеров нет.
 
 - [ ] **Step 3: Контроллеры**
@@ -2016,7 +2016,7 @@ public class MobilePrepositionsController {
 
 - [ ] **Step 4: Тесты ручек зелёные**
 
-Run: `./mvnw -q test -Dtest=PrepositionsControllersTest`
+Run: `./gradlew test --tests '*PrepositionsControllersTest'`
 Expected: PASS.
 
 - [ ] **Step 5: `application.yml`**
@@ -2075,10 +2075,10 @@ prepositions:
 
 - [ ] **Step 7: Полный прогон модуля и соседей**
 
-Run: `./mvnw -q test -Dtest='Prepositions*Test,PracticeMedia*Test,Listen*Test,Listening*Test'`
+Run: `./gradlew test --tests '*Prepositions*Test' --tests '*PracticeMedia*Test' --tests '*Listen*Test' --tests '*Listening*Test'`
 Expected: PASS.
 
-Run: `./mvnw -q -DskipTests package`
+Run: `./gradlew bootJar -x test`
 Expected: BUILD SUCCESS.
 
 - [ ] **Step 8: Commit**
