@@ -14,8 +14,8 @@ test.beforeEach(() => {
 
 test('после входа открывается тьютор-зона, а не королевства', async ({ page }) => {
   const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
-  await page.route('**/auth/otp/request', (r) => r.fulfill(json({ ok: true })))
-  await page.route('**/auth/otp/verify', (r) => r.fulfill(json({ accessToken: 'e2e-token', name: 'Тест' })))
+  await page.route('**/auth/otp/request**', (r) => r.fulfill(json({ ok: true })))
+  await page.route('**/auth/otp/verify**', (r) => r.fulfill(json({ accessToken: 'e2e-token', name: 'Тест' })))
   // Уровень в профиле уже есть — именно этот случай раньше вёл в 'kingdom'.
   await page.route('**/user/language-level', (r) => r.fulfill(json({ languageLevel: 'B1' })))
   await page.route('**/api/profile/merge', (r) => r.fulfill(json({ ok: true })))
@@ -26,18 +26,18 @@ test('после входа открывается тьютор-зона, а н�
   await page.goto('/')
   await page.locator('.btn--secondary').click()
   // Вход начинается с пароля; по коду — ссылкой под формой
-  await page.getByRole('link', { name: 'Войти по коду из сообщения' }).click()
-  await page.locator('.phone-field input').fill('7771234567')
-  await page.locator('.form-primary').click()
+  await page.getByRole('button', { name: 'Войти по коду из сообщения' }).click()
+  await page.locator('#rg-login-id').fill('7771234567')
+  await page.locator('.rg-btn').first().click()
 
-  const boxes = page.locator('.otp-box')
+  const boxes = page.locator('.rg-code__cell')
   await expect(boxes.first()).toBeVisible()
   // Инпуты сами перекидывают фокус на следующий — печатаем код подряд.
   await boxes.first().click()
+  // Кнопки нет: код проверяется сам после четвёртой цифры.
   await page.keyboard.type('1234')
-  await page.locator('.form-primary').click()
 
-  // SuccessPage сам уводит дальше через ~1.8с: тьютор без анкеты → онбординг
+  // Итоговый экран входа сам уводит дальше через ~1.2с: тьютор без анкеты → онбординг
   // (там и голосовой тест уровня), и никаких королевств.
   await expect(page.locator('.t-pick__title')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('.learn__body')).toHaveCount(0)

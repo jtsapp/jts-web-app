@@ -33,6 +33,7 @@ const MAX_DEPTH = 30
 // класс-аккаунт.
 const NOT_RETURNABLE = new Set([
   'welcome', 'chat', 'phone', 'reg-phone', 'reg-email', 'reg-birth', 'otp',
+  'reg-lang', 'reg-name', 'reg-contacts', 'reg-google',
   'login-password', 'complete-registration', 'set-password', 'success',
   'test-intro', 'test', 'placement', 'speaking-test', 'ge-onboarding', 'tutor-loading',
   'tutor-voice-chat', 'booth',

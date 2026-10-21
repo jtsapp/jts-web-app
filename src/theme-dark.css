@@ -356,3 +356,70 @@ html[data-theme="dark"] .pl-report__overall.is-empty .pl-report__level {
   color: var(--dk-muted);
   box-shadow: inset 0 0 0 2px var(--dk-acc-line);
 }
+
+/* Вход и регистрация (src/auth.css): экран пишет цветами из своих переменных,
+   здесь они подменяются графитом бренда. Фото стола светлое — гасим его
+   полупрозрачным графитом, иначе белые поля на нём не читаются. */
+html[data-theme="dark"] .rg {
+  --rg-ink: var(--dk-text);
+  --rg-text-2: var(--dk-text-2);
+  --rg-muted: var(--dk-muted);
+  --rg-line: var(--dk-line-strong);
+  --rg-card: var(--dk-card);
+  --rg-accent: var(--dk-acc);
+  --rg-accent-hover: var(--dk-acc-strong);
+  --rg-accent-soft: var(--dk-acc-tint);
+  --rg-accent-pill: var(--dk-acc-soft);
+  --rg-seg: var(--dk-raised);
+  --rg-error: var(--dk-red);
+  --rg-error-soft: color-mix(in srgb, var(--dk-red) 12%, var(--dk-card));
+  --rg-pill: var(--dk-chip);
+  --rg-radio: var(--dk-line-strong);
+  --rg-avatar: var(--dk-acc-soft);
+  background: var(--dk-page);
+}
+html[data-theme="dark"] .rg__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 14, 14, 0.82);
+}
+html[data-theme="dark"] .rg .logo {
+  background-image: url(/assets/reg/logo-white.svg);
+}
+html[data-theme="dark"] .rg-input input::placeholder,
+html[data-theme="dark"] .rg-dob .dob-field__part::placeholder {
+  color: var(--dk-muted);
+}
+html[data-theme="dark"] .rg-link,
+html[data-theme="dark"] .rg-dexter__who {
+  color: var(--dk-acc-text);
+}
+html[data-theme="dark"] .rg-phone__item:hover,
+html[data-theme="dark"] .rg-dob .dob-field__picker:hover,
+html[data-theme="dark"] .rg-btn--outline:hover:not(:disabled),
+html[data-theme="dark"] .rg-google:hover .rg-btn--outline:not(:disabled) {
+  background: var(--dk-raised);
+}
+/* Поле даты: общие тёмные правила .dob-field (theme-dark.generated.css) снимают
+   рамку — у регистрации она своя, как у остальных полей. */
+html[data-theme="dark"] .rg-dob .dob-field {
+  border: 2px solid var(--rg-line);
+  background: var(--rg-card);
+}
+html[data-theme="dark"] .rg-dob .dob-field:focus-within {
+  border-color: var(--rg-accent);
+  box-shadow: none;
+}
+html[data-theme="dark"] .rg-dob.is-invalid .dob-field {
+  border-color: var(--rg-error);
+}
+html[data-theme="dark"] .rg-dob .dob-field__sep {
+  color: var(--rg-ink);
+}
+html[data-theme="dark"] .rg .lang-selector--globe {
+  border: 1px solid var(--rg-line);
+  box-shadow: none;
+  background: var(--rg-card);
+  color: var(--rg-ink);
+}

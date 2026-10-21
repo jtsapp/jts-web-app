@@ -1117,12 +1117,13 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 3 регистрации (после того как собрали номер и почту — см.
-// RegisterPhonePage/RegisterEmailPage): отправляет оба идентификатора сразу.
+// Запрос кода регистрации (шаг «Как с вами связаться?», screens/auth/
+// ContactsStep): имя, дата, почта и номер собраны — отправляем всё сразу.
 // Бэкенд шлёт код на почту, когда она есть (RegistrationService: email
 // предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
-// веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
-// уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
+// веб-формы: имя и дата → почта и номер → код на почту → пароль. Если телефон
+// или почта уже заняты — не уводим молча в вход, а помечаем ошибку кодом
+// USER_EXISTS.
 export async function sendRegistrationOtp(name, phone, email, birthDate) {
   try {
     await post('/registration/initiate', {
@@ -1136,9 +1137,23 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
     })
     return 'register'
   } catch (e) {
-    if (isUserExistsError(e)) e.code = 'USER_EXISTS'
+    if (isUserExistsError(e)) {
+      e.code = 'USER_EXISTS'
+      // Что именно занято — почта или номер, — бэкенд пишет в тексте
+      // (UserIdentityConflict): экран ставит ошибку под нужное поле.
+      e.field = identityConflictField(e)
+    }
     throw e
   }
+}
+
+// 'email' | 'phone' | null — по тексту ответа бэкенда («с такой почтой…», «с
+// таким телефоном…») или по имени уникального индекса из сырой ошибки базы.
+export function identityConflictField(e) {
+  const msg = (e?.message || '').toLowerCase()
+  if (/почт|email/.test(msg)) return 'email'
+  if (/телефон|phone/.test(msg)) return 'phone'
+  return null
 }
 
 // Шаг 4: проверка кода, присланного на почту. Создаёт пользователя сразу с

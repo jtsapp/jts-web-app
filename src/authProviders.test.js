@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 //
 // 04.10.2026 владелец убрал Google из регистрации (чат с Декстером): он заводил
 // аккаунт вовсе без номера. Вернули 07.10.2026 вместе с обязательным шагом
-// «номер телефона» после Google-входа (App.jsx, phoneGate) — см. googlePhoneGate.test.js.
+// «номер телефона» после Google-входа (App.jsx, phoneGate) — см. googlePhoneGate.test.jsx.
 //
 // Apple жил в шести местах сразу — два экрана входа, регистрация, иконки,
 // переводы и стили, — поэтому вернуться он может так же незаметно: достаточно
@@ -48,22 +48,31 @@ describe('вход: Apple убран, Google на месте', () => {
     expect(readFileSync(join(src, 'styles.css'), 'utf8')).not.toMatch(/auth-btn--apple/)
   })
 
-  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка на экране входа', () => {
+  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка на экранах входа', () => {
     expect(existsSync(join(src, 'lib', 'googleAuth.js'))).toBe(true)
     expect(readFileSync(join(src, 'api.js'), 'utf8')).toMatch(/loginWithGoogle/)
-    const login = readFileSync(join(src, 'screens', 'PasswordLoginPage.jsx'), 'utf8')
-    expect(login).toMatch(/auth-btn--google/)
-    expect(login).toMatch(/google-slot/)
+    const fields = readFileSync(join(src, 'screens', 'auth', 'fields.jsx'), 'utf8')
+    expect(fields).toMatch(/renderGoogleButton/)
+    const login = readFileSync(join(src, 'screens', 'auth', 'LoginScreens.jsx'), 'utf8')
+    expect(login).toMatch(/<GoogleButton/)
+    expect(login).toMatch(/text="signin_with"/)
   })
 
-  it('в регистрации (чат с Декстером) Google на месте — второй строкой, под номером', () => {
-    const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
-    expect(reg).toMatch(/auth-btn--google/)
-    expect(reg).toMatch(/google-slot/)
-    expect(reg).toMatch(/onGoogleToken/)
-    expect(reg.indexOf("t('auth.phone')")).toBeLessThan(reg.indexOf("t('auth.google')"))
+  // Макет «Регистрация» (21.10.2026): Google — под кнопкой «Продолжить» шага «Как с вами связаться?». Дальше
+  // такой ученик проходит гейт «Остался один шаг» (номер и дата), см. googlePhoneGate.test.jsx.
+  it('в регистрации Google на шаге почты и телефона — под основной кнопкой', () => {
+    const reg = readFileSync(join(src, 'screens', 'auth', 'ContactsStep.jsx'), 'utf8')
+    expect(reg).toMatch(/<GoogleButton/)
+    expect(reg.indexOf('<PrimaryButton')).toBeLessThan(reg.indexOf('<GoogleButton'))
     const app = readFileSync(join(src, 'App.jsx'), 'utf8')
-    expect(app).toMatch(/<RegistrationPage\s+onGoogleToken=\{handleGoogleCredential\}/)
+    expect(app).toMatch(/<ContactsStep[\s\S]*?onGoogleToken=\{handleGoogleCredential\}/)
+  })
+
+  it('подписи кнопки Google новых экранов есть во всех трёх языках', () => {
+    const dict = readFileSync(join(src, 'i18n.jsx'), 'utf8')
+    for (const key of ['rg.google.continue', 'rg.google.signin']) {
+      expect(dict.split(`'${key}':`).length - 1, key).toBe(3)
+    }
   })
 
   it('подписи кнопки есть во всех трёх языках', () => {

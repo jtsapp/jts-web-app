@@ -640,3 +640,74 @@
     opacity: 1;
   }
 }
+
+/* ======================================================================
+   Вход и регистрация v2 (макет «Регистрация» → «2 · Регистрация», кадры
+   440×955, 21.10.2026). Десктоп — src/auth.css. На телефоне поля с
+   заголовком стоят по центру свободной высоты, а кнопки прижаты к низу
+   экрана отдельным блоком — как рамка с кнопкой в кадрах.
+
+   Новый макет весь на Manrope, а мобильный слой ставит body PT Root UI
+   (base.css) — поэтому гарнитура задана корню экрана явно.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .rg {
+    font-family: Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  .rg__bg {
+    background-image: url(/assets/reg/v2/bg-mobile.webp);
+    background-position: center top;
+  }
+  .rg-top {
+    gap: 12px;
+    height: 66px;
+    padding: 16px 16px 8px;
+  }
+  .rg-body,
+  .rg--centered .rg-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+  }
+  .rg-form {
+    flex: 1;
+    gap: 0;
+    width: 100%;
+  }
+  .rg-main {
+    flex: 1;
+    justify-content: center;
+    gap: 40px;
+    padding: 16px;
+  }
+  .rg-actions {
+    gap: 12px;
+    box-sizing: border-box;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .rg--done .rg-form {
+    gap: 0;
+  }
+  .rg--done .rg-content {
+    gap: 24px;
+  }
+  /* Четыре ячейки по 80 — это 368px; на узком телефоне (360) они ужимаются
+     пропорционально, а не вылезают за край. */
+  .rg-code {
+    gap: 12px;
+  }
+  .rg-code__cell {
+    flex: 0 1 80px;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    aspect-ratio: 80 / 96;
+  }
+  .rg-lang:hover {
+    border-color: var(--rg-line);
+  }
+  .rg-lang.is-active:hover {
+    border-color: var(--rg-accent);
+  }
+}
