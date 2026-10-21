@@ -477,7 +477,7 @@ git commit -m "$(printf 'feat(практика): медиа разделов П�
 ### Task A2: Таблица, сущность, правила пакета Аудирования
 
 **Files:**
-- Create: `src/main/resources/db/migration/V387__Practice_listening_tasks.sql` (номер перепроверить перед мержем)
+- Create: `src/main/resources/db/migration/V388__Practice_listening_tasks.sql` (номер перепроверить перед мержем)
 - Create: `$J/modules/practice/listening/ListeningTask.java`
 - Create: `$J/modules/practice/listening/ListeningTaskRepository.java`
 - Create: `$J/modules/practice/listening/ListeningDtos.java`
@@ -617,7 +617,7 @@ Expected: FAIL компиляции — `ListeningDtos` не найден.
 
 Перед созданием файла: `git ls-tree --name-only origin/develop src/main/resources/db/migration/ | sed -E 's/.*\/V([0-9]+)__.*/\1/' | sort -n | tail -1` → если не 386, взять следующий номер вместо 387.
 
-`src/main/resources/db/migration/V387__Practice_listening_tasks.sql`:
+`src/main/resources/db/migration/V388__Practice_listening_tasks.sql`:
 
 ```sql
 -- «Практика → Аудирование»: задания, которые до сих пор лежали файлами public/practice/listening/content/<уровень>.json
@@ -1011,7 +1011,7 @@ Expected: PASS, 7 тестов.
 - [ ] **Step 8: Коммит**
 
 ```bash
-git add src/main/resources/db/migration/V387__Practice_listening_tasks.sql src/main/java/kz/education/server/modules/practice/listening src/test/java/kz/education/server/modules/practice/listening
+git add src/main/resources/db/migration/V388__Practice_listening_tasks.sql src/main/java/kz/education/server/modules/practice/listening src/test/java/kz/education/server/modules/practice/listening
 git commit -m "$(printf 'feat(практика): таблица и правила заданий Аудирования\n\nЗадания приезжают пакетом из public/ сайта; id не меняется,\nпрефикс id = уровень, разметка — только <b>/<i>.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>')"
 ```
 
@@ -1916,7 +1916,7 @@ Expected: PASS. Полный `./gradlew test` без Docker даёт ~21 чуж�
 git add src/main/java/kz/education/server/presentation/common/practice src/main/java/kz/education/server/presentation/admin/practice src/main/java/kz/education/server/shared/security/SecurityConfig.java src/test/java/kz/education/server/modules/practice/PracticeContentSecurityTest.java docs/practice/PACK_FORMAT.md
 git commit -m "$(printf 'feat(практика): ручки Аудирования и контракт пакета\n\nGET /practice-content/listening/** открыт гостю (как статика на\nсайте), заливка пакета и медиа — только ADMIN.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>')"
 git push -u origin feat/practice-listening
-gh pr create --base develop --title "Практика → Аудирование: задания в админке (пилот переноса материалов)" --body "$(printf 'Пилот переноса материалов Практики из public/ сайта в админку.\n\n- таблица practice_listening_tasks (V387 — номер перепроверить перед мержем)\n- медиа Практики в MinIO по хэшу, Cache-Control immutable\n- GET /practice-content/listening/** без входа; пакет и медиа — ADMIN\n- контракт: docs/practice/PACK_FORMAT.md\n\nСпека: jts-web-app docs/superpowers/specs/2026-10-21-practice-content-to-admin-design.md\n\nТесты: ./gradlew test --tests modules.practice.* (+ shadowing) — зелёные.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)')"
+gh pr create --base develop --title "Практика → Аудирование: задания в админке (пилот переноса материалов)" --body "$(printf 'Пилот переноса материалов Практики из public/ сайта в админку.\n\n- таблица practice_listening_tasks (V388 — номер перепроверить перед мержем)\n- медиа Практики в MinIO по хэшу, Cache-Control immutable\n- GET /practice-content/listening/** без входа; пакет и медиа — ADMIN\n- контракт: docs/practice/PACK_FORMAT.md\n\nСпека: jts-web-app docs/superpowers/specs/2026-10-21-practice-content-to-admin-design.md\n\nТесты: ./gradlew test --tests modules.practice.* (+ shadowing) — зелёные.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)')"
 ```
 
 После создания PR проверить его состояние (`gh pr view --json state,mergedAt`): PR здесь мержат быстро, и коммит после мержа в него уже не войдёт.
@@ -3840,7 +3840,7 @@ Expected: `[{"level":"a1","count":124},…,{"level":"c1","count":163}]`; пер�
 
 ### Task D2: Релиз в прод
 
-- [ ] **Step 1: Миграция** — перед мержем backend develop → main: в `origin/main` нет миграции с тем же номером, что у `V387__Practice_listening_tasks.sql` (иначе — переименовать в develop отдельным PR до релиза; номер, уже применённый на деве, менять нельзя — тогда согласовать с владельцем).
+- [ ] **Step 1: Миграция** — перед мержем backend develop → main: в `origin/main` нет миграции с тем же номером, что у `V388__Practice_listening_tasks.sql` (иначе — переименовать в develop отдельным PR до релиза; номер, уже применённый на деве, менять нельзя — тогда согласовать с владельцем).
 - [ ] **Step 2: Порядок** — backend → web-admin → jts-web-app, каждый обычным PR develop → main (в релиз только свои PR).
 - [ ] **Step 3: Прод до заливки** — `curl -s https://prod-server.justtostudy.kz/practice-content/listening/levels` → `[]`; на проде `/?screen=listening` работает, `data-source="static"`.
 
@@ -3943,6 +3943,8 @@ export function loadListeningLevel(level, opts) {
 Отложено (не мешает пилоту):
 - проверка записей при импорте (~800 `statObject` в транзакции) — замер в D1 Step 2а;
 - сбой MinIO отвечает 400, а не 503 (так же у IELTS);
-- миграция V387 не прогонялась на Postgres (тесты на H2 через hbm2ddl) — синтаксис как у V326; проверка — деплой на
+- миграция V388 не прогонялась на Postgres (тесты на H2 через hbm2ddl) — синтаксис как у V326; проверка — деплой на
   дев, при ошибке dev-server не стартует, откат — новой миграцией, не revert'ом применённой;
 - `publicLevels()` грузит строки ради подсчёта, вкладка «Библиотеки» тянет все задания ради счётчика.
+
+**Номер миграции (21.10.2026, перед PR):** V387 заняла локальная ветка бэкенда `feat/just-listen-it` (другая сессия, не запушена), поэтому Аудирование — V388. Мержить в порядке номеров: если этот PR вольётся раньше just-listen, ей брать номер выше V388, иначе Flyway откажет миграции «из прошлого».
