@@ -25,8 +25,8 @@ function fakes() {
     remove() {
       this.removed = true
     }
-    say(text) {
-      this.handlers.result?.({ result: { text } })
+    say(text, words) {
+      this.handlers.result?.({ result: { text, ...(words ? { result: words } : {}) } })
     }
   }
   const model = { KaldiRecognizer: Rec, terminate: vi.fn() }
@@ -105,6 +105,22 @@ describe('«ухо» позывного', () => {
     expect(onWake).toHaveBeenCalledTimes(1)
     f.recs[0].say('луна')
     expect(onWake).toHaveBeenCalledTimes(2)
+  })
+
+  // Команда одним духом (21.10.2026): к срабатыванию позывного она уже сказана — её звук
+  // «ухо» отдаёт из своего буфера, от начала имени по времени слов Vosk.
+  it('позывной отдаёт текст, слова и кусок звука от имени', async () => {
+    const f = fakes()
+    const { e, onWake } = ear(f)
+    await e.start()
+    f.node.onaudioprocess({ inputBuffer: { getChannelData: () => new Float32Array(48000) } })
+    f.recs[0].say('луна дальше', [{ word: 'луна', start: 0.5, end: 0.8 }, { word: 'дальше', start: 0.9, end: 1.0 }])
+    expect(onWake).toHaveBeenCalledOnce()
+    const detail = onWake.mock.calls[0][0]
+    expect(detail.text).toBe('луна дальше')
+    expect(detail.words).toHaveLength(2)
+    // с 0.25 с (0.5 − запас 0.25) до конца 1-секундного буфера → 0.75 с при 16 кГц
+    expect(detail.preroll().size).toBe(44 + Math.round(0.75 * 16000) * 2)
   })
 
   it('«ухо» Айзере: её грамматика, и «Луна» её не зовёт', async () => {
