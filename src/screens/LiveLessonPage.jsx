@@ -16,6 +16,9 @@ import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroa
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
 import LiveHeader from './live/LiveHeader.jsx'
+import LessonVideo from './live/LessonVideo.jsx'
+import LessonVideoMini from './live/LessonVideoMini.jsx'
+import { useLessonVideo } from './live/useLessonVideo.js'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
@@ -1715,6 +1718,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Отменённого занятия не было — там вместо урока стоит баннер.
   const lessonOpen = status !== 'CANCELLED' || followMode
 
+  // Звонок живёт на уровне страницы, а не колонки «Урок»: иначе переход на доску размонтирует
+  // колонку и рвёт связь. Звонок доступен только в онлайн-уроке, который ещё не завершён.
+  const videoEnabled = lessonOpen && lesson?.format === 'ONLINE' && status !== 'COMPLETED'
+  const video = useLessonVideo({ token, lessonId, teacherUserId: lesson?.teacherId, enabled: videoEnabled })
+
   // Урок сеанса дошёл до терминального статуса — сообщаем об этом наружу ОДИН
   // раз. Проп необязательный и приходит только у аккаунта класса преподавателя
   // (см. App.jsx: onLessonClosed уводит его на экран класса и забывает урок) —
@@ -1833,6 +1841,55 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     materialFrameRef.current.restoreStage(stageRestore.index)
   }, [stageRestore, frameOnScreen, activeMaterialKey])
 
+  // Карточка звонка по ссылке. Ученику она не нужна: ссылка на Meet теперь в шапке урока,
+  // и вторая кнопка с тем же действием только отнимала место у чата. У преподавателя
+  // карточка остаётся — ссылкой управляет он, — а в онлайн-уроке служит запасным видом звонка.
+  function renderMeetCard() {
+    return (
+      <div className="lw-card lw-meet">
+        {editingMeetingUrl ? (
+          <div className="lw-meet__form">
+            <input
+              className="lw-meet__input"
+              value={meetingUrlDraft}
+              onChange={(e) => setMeetingUrlDraft(e.target.value)}
+              placeholder={t('lesson.ws.meetPlaceholder')}
+              autoFocus
+            />
+            <div className="lw-meet__form-actions">
+              <button className="lw-meet__save" onClick={saveMeetingUrl}>{t('lesson.ws.meetSave')}</button>
+              <button className="lw-meet__cancel" onClick={() => setEditingMeetingUrl(false)}>{t('lesson.ws.meetCancel')}</button>
+            </div>
+          </div>
+        ) : lesson.meetingUrl ? (
+          <>
+            {/* Свёрнутый звонок по спеке §5.1(B): плоская
+                карточка-CTA, а не строка-ссылка — для ученика
+                это главное действие в правой колонке. */}
+            <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
+              <svg className="lw-meet__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
+                />
+              </svg>
+              {t('lesson.ws.call')}
+            </a>
+            {isStaff && (
+              <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
+            )}
+          </>
+        ) : isStaff ? (
+          <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
+        ) : (
+          // Ученику нечего нажимать, пока учитель не дал ссылку: писать
+          // «Позвонить учителю» здесь — обещание кнопки, которой нет.
+          <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
     // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
@@ -1914,6 +1971,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <button className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`} onClick={() => setTab('board')}>
                     {t('lesson.ws.tabBoard')}
                   </button>
+                  {tab === 'board' && <LessonVideoMini video={video} onBack={() => setTab('lesson')} />}
                   {/* Следовать за преподавателем или смотреть своё. Раньше выбора
                       не было вовсе: экран ученика переносило за преподавателем
                       всегда, и вернуться к своему заданию было нечем. */}
@@ -2212,53 +2270,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                             {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
                           </p>
                         </div>
-                      ) : isStaff ? (
-                      /* Ученику карточка звонка здесь не нужна: ссылка на Meet
-                         теперь в шапке урока, и вторая кнопка с тем же
-                         действием только отнимала место у чата. У
-                         преподавателя карточка остаётся — ссылкой управляет он. */
-                      <div className="lw-card lw-meet">
-                        {editingMeetingUrl ? (
-                          <div className="lw-meet__form">
-                            <input
-                              className="lw-meet__input"
-                              value={meetingUrlDraft}
-                              onChange={(e) => setMeetingUrlDraft(e.target.value)}
-                              placeholder={t('lesson.ws.meetPlaceholder')}
-                              autoFocus
-                            />
-                            <div className="lw-meet__form-actions">
-                              <button className="lw-meet__save" onClick={saveMeetingUrl}>{t('lesson.ws.meetSave')}</button>
-                              <button className="lw-meet__cancel" onClick={() => setEditingMeetingUrl(false)}>{t('lesson.ws.meetCancel')}</button>
-                            </div>
-                          </div>
-                        ) : lesson.meetingUrl ? (
-                          <>
-                            {/* Свёрнутый звонок по спеке §5.1(B): плоская
-                                карточка-CTA, а не строка-ссылка — для ученика
-                                это главное действие в правой колонке. */}
-                            <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
-                              <svg className="lw-meet__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                                <path
-                                  fill="currentColor"
-                                  d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
-                                />
-                              </svg>
-                              {t('lesson.ws.call')}
-                            </a>
-                            {isStaff && (
-                              <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
-                            )}
-                          </>
-                        ) : isStaff ? (
-                          <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
-                        ) : (
-                          // Ученику нечего нажимать, пока учитель не дал ссылку: писать
-                          // «Позвонить учителю» здесь — обещание кнопки, которой нет.
-                          <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
-                        )}
-                      </div>
-                      ) : null}
+                      ) : lesson.format === 'ONLINE' ? (
+                        <LessonVideo
+                          video={video}
+                          lessonType={lesson.lessonType}
+                          enabled={videoEnabled}
+                          renderFallback={() => (isStaff ? renderMeetCard() : null)}
+                        />
+                      ) : isStaff ? renderMeetCard() : null}
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
