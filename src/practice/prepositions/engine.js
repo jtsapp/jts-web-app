@@ -44,6 +44,8 @@ const PDEF = bundle.pdef;
 
 /* ===== Scene engine v3: premium art, slots, geometry ===== */
 const ASSET = JSON.parse(JSON.stringify(bundle.assets)); // {img,size,slots}; копия: ниже движок дописывает SLOTS
+// Картинка по ключу. Ключа нет в бандле — пусто: <image href=""> браузер не запрашивает, а «undefined» уходил GET-ом к Next.
+const IMG = (k) => ASSET.img[k] || '';
 const MS = ASSET.size, SLOTS = ASSET.slots;
 const VW = 1000, VH = 563;
 /* extra slots (fractions of the object's box; y may be <0) */
@@ -151,7 +153,7 @@ let SUID=0;
 function itemUse(it){
   const b=it.box, f = it.flip ? ` transform="translate(${2*b.x+b.w} 0) scale(-1 1)"` : '';
   const sh = (it.kind==='m'&&!it.inside&&!it.float) ? `<ellipse cx="${b.x+b.w/2}" cy="${b.y+b.h-3}" rx="${b.w*.36}" ry="8" fill="#1b0b3a" opacity=".28"/>` : '';
-  return sh+`<image preserveAspectRatio="none" href="${ASSET.img[it.key]}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"${f}/>`;
+  return sh+`<image preserveAspectRatio="none" href="${IMG(it.key)}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"${f}/>`;
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function sceneSVG(sc,o){
@@ -175,7 +177,7 @@ function sceneSVG(sc,o){
   (o.hot||[]).forEach(h=>{ let r=h.rect||(()=>{const b=bx(h.id);return[b.x-6,b.y-6,b.w+12,b.h+12];})(); hot+=`<g class="hot" data-id="${h.id}" tabindex="0" role="button" aria-label="${esc(h.label||h.id)}"><rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="22"/></g>`; });
   const bg=BGN[sc.bg], z=MS[bg];
   return `<svg class="scene" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="${esc(o.alt||sc.alt||'Scene')}"><defs>${defs}</defs>
-    <image preserveAspectRatio="none" href="${ASSET.img[bg]}" x="0" y="0" width="${VW}" height="${VH}"/>${layers.map(l=>l.s).join('')}${over}${hot}</svg>`;
+    <image preserveAspectRatio="none" href="${IMG(bg)}" x="0" y="0" width="${VW}" height="${VH}"/>${layers.map(l=>l.s).join('')}${over}${hot}</svg>`;
 }
 
 /* ===== Stage v5: situation pictures for every practice question =====
@@ -300,12 +302,12 @@ function wDaypart(w){
   const sp=(v==='night'||v==='midnight')?'moon':(v==='winter'?'snowflake':'sun'); const id='dp'+(++SUID);
   return `<g class="wd dpart" data-w="daypart"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${G[0]}"/><stop offset="1" stop-color="${G[1]}"/></linearGradient><clipPath id="${id}c"><rect x="${x0}" y="${y0}" width="${W}" height="${H}" rx="${20*s}"/></clipPath></defs>
    <rect x="${x0+4}" y="${y0+7}" width="${W}" height="${H}" rx="${20*s}" fill="#1b0b3a" opacity=".22"/><rect x="${x0}" y="${y0}" width="${W}" height="${H}" rx="${20*s}" fill="url(#${id})"/>
-   <g clip-path="url(#${id}c)"><image preserveAspectRatio="none" href="${ASSET.img['p_'+sp]}" x="${x0+W*.5-34*s}" y="${y0+(v==='evening'?H*.45:v==='morning'?H*.42:H*.12)}" width="${68*s}" height="${68*s}"/><rect x="${x0}" y="${y0+H*.82}" width="${W}" height="${H*.2}" fill="#2e7d5b"/></g>
+   <g clip-path="url(#${id}c)"><image preserveAspectRatio="none" href="${IMG('p_'+sp)}" x="${x0+W*.5-34*s}" y="${y0+(v==='evening'?H*.45:v==='morning'?H*.42:H*.12)}" width="${68*s}" height="${68*s}"/><rect x="${x0}" y="${y0+H*.82}" width="${W}" height="${H*.2}" fill="#2e7d5b"/></g>
    <rect x="${x0}" y="${y0}" width="${W}" height="${H}" rx="${20*s}" fill="none" stroke="#fff" stroke-width="3"/><text x="${cx}" y="${y0+H-8*s}" text-anchor="middle" font-size="${15*s}" font-weight="800" fill="#fff" stroke="#2a1a4d" stroke-width="3" paint-order="stroke">${esc(w.label||v)}</text></g>`;
 }
 function wBubble(w){
   const s=w.s||1, cx=w.x*VW, cy=w.y*VH, W=(w.w||150)*s, H=(w.h||120)*s, x0=cx-W/2, y0=cy-H/2, tail=w.tail==='l'?-1:1; const ps=w.ps||[]; const n=ps.length||1;
-  let inner=''; ps.forEach((p,i)=>{ const z=MS['p_'+p]; const hh=Math.min(H*.72, 120*s), ww=hh*z[0]/z[1]; const x=x0+W*(i+.5)/n-Math.min(ww,W/n*.9)/2, k=Math.min(1,(W/n*.9)/ww); inner+=`<image preserveAspectRatio="none" href="${ASSET.img['p_'+p]}" x="${x}" y="${cy-hh*k/2-4*s}" width="${ww*k}" height="${hh*k}"/>`; });
+  let inner=''; ps.forEach((p,i)=>{ const z=MS['p_'+p]; const hh=Math.min(H*.72, 120*s), ww=hh*z[0]/z[1]; const x=x0+W*(i+.5)/n-Math.min(ww,W/n*.9)/2, k=Math.min(1,(W/n*.9)/ww); inner+=`<image preserveAspectRatio="none" href="${IMG('p_'+p)}" x="${x}" y="${cy-hh*k/2-4*s}" width="${ww*k}" height="${hh*k}"/>`; });
   return `<g class="wd bub" data-w="bubble"><path d="M${x0+W*.5-14*s} ${y0+H-2} L${cx+tail*W*.28} ${y0+H+26*s} L${x0+W*.5+16*s} ${y0+H-2}Z" fill="#fff" stroke="${WC.purple2}" stroke-width="3"/><rect x="${x0}" y="${y0}" width="${W}" height="${H}" rx="${28*s}" fill="#fff" stroke="${WC.purple2}" stroke-width="3"/>${inner}${w.mark?`<text x="${x0+W-14*s}" y="${y0+24*s}" text-anchor="end" font-size="${26*s}" font-weight="900" fill="${WC.red}">${esc(w.mark)}</text>`:''}</g>`;
 }
 function wRoute(w){ // dotted route with arrow: pts [[x,y],...] in fractions
@@ -324,12 +326,12 @@ function picSVG(sc,o){
   let hot='';
   sc.items.filter(it=>!it.held).forEach(it=>{ const b=it.box; hot+=`<g class="hot" data-id="${it.id}" tabindex="0" role="button" aria-label="${esc(it.name)}"><rect x="${b.x-4}" y="${b.y-4}" width="${b.w+8}" height="${b.h+8}" rx="20"/></g>`; });
   const tags=sc.items.filter(it=>it.tag).map(it=>{ const b=it.box, w=Math.max(70,it.tag.length*15+34), x=Math.min(VW-w-6,Math.max(6,b.x+b.w/2-w/2)), y=Math.max(8,b.y-6); return `<g class="ntag"><rect x="${x}" y="${y-30}" width="${w}" height="34" rx="17"/><text x="${x+w/2}" y="${y-7}" text-anchor="middle">${esc(it.tag)}</text></g>`; }).join('');
-  return `<svg class="scene pic" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="${esc(o.alt||sc.alt||'Picture')}"><defs>${defs}</defs><image preserveAspectRatio="none" href="${ASSET.img[bgk]}" x="0" y="0" width="${VW}" height="${VH}"/><g class="lay">${layers.map(l=>l.s).join('')}</g>${wd}${tags}<g class="ov"></g>${hot}</svg>`;
+  return `<svg class="scene pic" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="${esc(o.alt||sc.alt||'Picture')}"><defs>${defs}</defs><image preserveAspectRatio="none" href="${IMG(bgk)}" x="0" y="0" width="${VW}" height="${VH}"/><g class="lay">${layers.map(l=>l.s).join('')}</g>${wd}${tags}<g class="ov"></g>${hot}</svg>`;
 }
 function picItem(it,uid){
   const b=it.box, f=it.flip?` transform="translate(${2*b.x+b.w} 0) scale(-1 1)"`:'';
   const sh=(it.kind==='m'&&!it.air&&!it.sunk)||(it.kind==='o'&&it.h>110&&!it.air&&!it.held&&it.b>400)?`<ellipse class="shd" cx="${b.x+b.w/2}" cy="${b.y+b.h-3}" rx="${b.w*(it.kind==='m'?.34:.4)}" ry="${it.kind==='m'?8:7}" fill="#1b0b3a" opacity=".26"/>`:'';
-  return `<g class="it ${it.kind==='m'?'mas':'obj'}" data-id="${it.id}" style="transform-origin:${b.x+b.w/2}px ${b.y+b.h}px">${sh}<image preserveAspectRatio="none" href="${ASSET.img[it.key]}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"${f}/></g>`;
+  return `<g class="it ${it.kind==='m'?'mas':'obj'}" data-id="${it.id}" style="transform-origin:${b.x+b.w/2}px ${b.y+b.h}px">${sh}<image preserveAspectRatio="none" href="${IMG(it.key)}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"${f}/></g>`;
 }
 
 /* ---------- geometry check for authored relations (bounding boxes) ---------- */
@@ -449,7 +451,7 @@ const DG = (()=>{
   const P={ink:'#1d1538',v:'#5a2fc8',v2:'#8a5cff',g:'#ffc83c',t:'#0b8f84',pk:'#e8458b',bl:'#2b7de9',soft:'#e9e2fb',line:'#9a8bd0',ok:'#17a86a'};
   const T=(x,y,s,o)=>{o=o||{};return `<text x="${x}" y="${y}" text-anchor="${o.a||'middle'}" font-size="${o.s||20}" font-weight="${o.w||700}" fill="${o.f||P.ink}" font-family="Inter,'Segoe UI',system-ui,sans-serif">${s}</text>`;};
   const svg=(inner,alt)=>`<svg class="diag" viewBox="0 0 720 260" role="img" aria-label="${alt}"><rect width="720" height="260" rx="18" fill="url(#dgBg)"/>${inner}</svg>`;
-  const actor=(k,x,b,h)=>{const s=MS[k],w=h*s[0]/s[1];return `<image preserveAspectRatio="none" href="${ASSET.img[k]}" x="${x-w/2}" y="${b-h}" width="${w}" height="${h}"/>`;};
+  const actor=(k,x,b,h)=>{const s=MS[k],w=h*s[0]/s[1];return `<image preserveAspectRatio="none" href="${IMG(k)}" x="${x-w/2}" y="${b-h}" width="${w}" height="${h}"/>`;};
   const arrow=(d,c,dash)=>`<path d="${d}" fill="none" stroke="${c||P.v}" stroke-width="6" stroke-linecap="round" ${dash?'stroke-dasharray="2 12"':''} marker-end="url(#dgAh)"/>`;
   const dot=(x,y,c,r)=>`<circle cx="${x}" cy="${y}" r="${r||11}" fill="${c||P.v}" stroke="#fff" stroke-width="3"/>`;
   const line=(y)=>`<line x1="40" y1="${y}" x2="676" y2="${y}" stroke="${P.line}" stroke-width="6" stroke-linecap="round"/><path d="M676 ${y-12}l18 12-18 12z" fill="${P.line}"/>`;
@@ -522,8 +524,8 @@ const tr=o=>(o&&LANG!=='en')?o[LANG]:'';
 const trLine=o=>{ const v=tr(o); return v?`<span class="ls-trs" lang="${LANG}">${esc(v)}</span>`:''; };
 const studied=l=>!!MEM.done[l.id];
 const catStudied=c=>c.lessons.every(studied), allStudied=()=>LES.every(studied);
-function injectArt(){ let css=''; for(const k in CATART){ const key=CATART[k]; css+=`.art-${k}{background-image:url("${ASSET.img[key]}")}`; } root.insertAdjacentHTML('afterbegin',`<style>${css}</style>`); }
-function mascot(m,h){ const k=MASC[m].poses.std, z=MS[k]; return `<svg class="mascot" viewBox="0 0 ${z[0]} ${z[1]}" style="height:${h}px;width:${Math.round(h*z[0]/z[1])}px" aria-hidden="true"><image preserveAspectRatio="none" href="${ASSET.img[k]}" width="${z[0]}" height="${z[1]}"/></svg>`; }
+function injectArt(){ let css=''; for(const k in CATART){ const key=CATART[k]; css+=`.art-${k}{background-image:url("${IMG(key)}")}`; } root.insertAdjacentHTML('afterbegin',`<style>${css}</style>`); }
+function mascot(m,h){ const k=MASC[m].poses.std, z=MS[k]; return `<svg class="mascot" viewBox="0 0 ${z[0]} ${z[1]}" style="height:${h}px;width:${Math.round(h*z[0]/z[1])}px" aria-hidden="true"><image preserveAspectRatio="none" href="${IMG(k)}" width="${z[0]}" height="${z[1]}"/></svg>`; }
 function stars(n){ return `<span class="stars" aria-label="${n} of 3 stars">${[1,2,3].map(i=>IC.star(i<=n)).join('')}</span>`; }
 const scoreOf=k=>MEM.score[k]||null;
 const starsFor=p=>p>=0.9?3:p>=0.7?2:p>0?1:0;
@@ -583,7 +585,7 @@ function viewLesson(id,si){
   else body=`<h2 class="sh">Common mistakes</h2>${LANG!=='en'?`<span class="ls-trs sh-tr" lang="${LANG}">${LANG==='kk'?'Жиі кететін қателер':'Частые ошибки'}</span>`:''}
     <ul class="ls-mis">${l.mistakes.map(m=>`<li><div class="ls-pair"><span class="bad"><span class="sr">Incorrect: </span>${esc(m.bad)}</span><span class="arr" aria-hidden="true">→</span><span class="good"><span class="sr">Correct: </span>${esc(m.good)}</span></div><p class="why">${esc(m.note.en)}</p>${trLine(m.note)}</li>`).join('')}</ul>
     <div class="memory"><span>Remember</span><p>${esc(l.memory.en)}</p>${trLine(l.memory)}</div>
-    <details class="ls-src"><summary>Sources for teachers</summary><ul>${l.src.map(k=>{ const s=l.cat.sources[k]; return s?`<li><a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`:''; }).join('')}</ul></details>`;
+    <details class="ls-src"><summary>Sources for teachers</summary><ul>${l.src.map(k=>{ const s=l.cat.sources[k]; return s?`<li><a href="${/^https?:\/\//i.test(s[1])?esc(s[1]):'#'}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`:''; }).join('')}</ul></details>`;
   const prevHref = si>0?`#/learn/${id}/${si-1}`:'#/'; // прототип вёл на итог ЧУЖОГО урока
   const nextLes = LES[l.n+1];
   const foot = si<last ? `<a class="btn ghost" href="${prevHref}">${si>0?'Previous':'All lessons'}</a><button class="btn primary" id="nextBtn">Next</button>`
@@ -649,7 +651,7 @@ function sentenceOf(q){
 function trOf(q){ if(!q.tr||LANG==='en') return ''; const v=q.tr[LANG]; if(!v) return ''; if(Array.isArray(v)) return q.type==='compare'?v[q.ans]:v.join(' '); return v; }
 const blankHTML=s=>esc(s).replace('___','<span class="blank">___</span>');
 const optBtns=(opts,cls)=>`<div class="opts ${opts.length>3?'four':''}">${opts.map((o,k)=>`<button class="opt ${cls||''}" data-k="${k}" type="button"><span class="ol">${'ABCD'[k]}</span><span class="ov">${o==='–'?'– (no word)':esc(o)}</span></button>`).join('')}</div>`;
-function picBox(q){ const sp=PICS[q._id]; if(!sp) return ''; const sc=mkPic(sp); return `<div class="stage pstage" data-qid="${q._id}">${picSVG(sc,{alt:sp.alt})}<div class="pcap" aria-live="polite"></div></div>`; }
+function picBox(q){ const sp=PICS[q._id]; if(!sp) return ''; let sc; try{ sc=mkPic(sp); }catch(e){ return ''; } return `<div class="stage pstage" data-qid="${q._id}">${picSVG(sc,{alt:sp.alt})}<div class="pcap" aria-live="polite"></div></div>`; }
 const askTr=q=>tr(q.ask)?`<p class="ls-trs ask-tr" lang="${LANG}">${esc(q.ask[LANG])}</p>`:'<p class="ls-trs ask-tr" hidden></p>';
 function qBody(q){
   switch(q.type){
@@ -784,7 +786,7 @@ return {
   go,
   /** Для тестов: текущий адрес движка и собранная сессия вопросов. */
   snapshot: () => ({ hash: HASH, session: S }),
-  destroy(){ dead=true; ac.abort(); for(const id of timers) clearTimeout(id); timers.clear(); stopAud(); root.innerHTML=''; },
+  destroy(){ dead=true; ac.abort(); for(const id of timers) clearTimeout(id); timers.clear(); stopAud(); stopAudio(); root.innerHTML=''; },
 };
 
 

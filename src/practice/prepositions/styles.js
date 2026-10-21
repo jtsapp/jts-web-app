@@ -249,5 +249,8 @@ main>*{animation:rise .35s ease both}main>*:nth-child(2){animation-delay:.04s}ma
 .opt:hover:not(:disabled),.btn:hover,.lcard:hover,.prow:not(.locked):hover,.tcard:hover,.wcard:not(.locked):hover{transform:none}
 .final p{color:#fff}
 .pw-lang{margin-top:16px}
+/* Казахский перевод (lang="kk") — на Inter, как во всём приложении: правило html[data-ui-lang] внутрь тени не
+   дотягивается, а «ҚАЗ» включают и при русском интерфейсе. Сторож — src/kkFont.test.js (ENGINES). */
+.pw [lang="kk"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 
 `

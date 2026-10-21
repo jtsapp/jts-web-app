@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../lib/speech.js', () => ({ playTts: vi.fn() }))
-const { playTts } = await import('../../lib/speech.js')
-const { speakLesson } = await import('./voice.js')
+vi.mock('../../lib/speech.js', () => ({ playTts: vi.fn(), stopTts: vi.fn() }))
+const { playTts, stopTts } = await import('../../lib/speech.js')
+const { speakLesson, stopLesson } = await import('./voice.js')
 
 afterEach(() => vi.clearAllMocks())
 
@@ -21,5 +21,14 @@ describe('озвучка урока', () => {
     playTts.mock.calls[0][1].onFail('error')
     expect(speak).toHaveBeenCalled()
     expect(speak.mock.calls[0][0].lang).toBe('en-US')
+  })
+
+  it('stopLesson глушит и общий плеер, и голос устройства', () => {
+    const cancel = vi.fn()
+    globalThis.window = globalThis.window || globalThis
+    window.speechSynthesis = { speak: vi.fn(), cancel }
+    stopLesson()
+    expect(stopTts).toHaveBeenCalled()
+    expect(cancel).toHaveBeenCalled()
   })
 })

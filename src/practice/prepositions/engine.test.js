@@ -31,8 +31,10 @@ const allDone = () => ({ done: Object.fromEntries(bundle.course.cats.flatMap((c)
 let rng
 let api
 let host
+let stopAudio
 beforeEach(() => {
   rng = mulberry32(oracle.seed)
+  stopAudio = vi.fn()
   vi.spyOn(Math, 'random').mockImplementation(() => rng())
   window.scrollTo = () => {}
   host = document.createElement('div')
@@ -46,7 +48,7 @@ beforeEach(() => {
     progress: { read: () => JSON.parse(JSON.stringify(state)), write: (s) => { state = s } },
     speak: () => {},
     playUrl: () => {},
-    stopAudio: () => {},
+    stopAudio,
   })
 })
 afterEach(() => {
@@ -94,9 +96,11 @@ describe('Prepositions World: связь с приложением', () => {
     for (const m of source.matchAll(/localStorage\.(?:get|set)Item\(([^,)]+)/g)) expect(m[1].trim()).toBe('LKEY')
   })
 
-  it('destroy снимает разметку и не роняет отложенные шаги', () => {
+  it('destroy снимает разметку и глушит звук — и озвучку урока, а не только записи', () => {
+    stopAudio.mockClear()
     api.destroy()
     expect(host.shadowRoot.querySelector('.pw').innerHTML).toBe('')
+    expect(stopAudio).toHaveBeenCalled()
     api = null
   })
 })

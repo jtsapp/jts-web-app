@@ -16,11 +16,11 @@ import { useI18n } from '../i18n.jsx'
 import { mountPrepositions } from '../practice/prepositions/engine.js'
 import { PREPOSITIONS_CSS } from '../practice/prepositions/styles.js'
 import { readPrepositions, writePrepositions } from '../practice/prepositions/progress.js'
-import { speakLesson } from '../practice/prepositions/voice.js'
-import { PREPOSITIONS_LANG_KEY } from '../practice/practiceKeys.js'
+import { speakLesson, stopLesson } from '../practice/prepositions/voice.js'
+import { PREPOSITIONS_LANG_KEY, PREPOSITIONS_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { ownerOf } from '../practice/progressStore.js'
 import { recordSkill } from '../practice/skillStats.js'
-import { playUrl, stopTts } from '../lib/speech.js'
+import { playUrl } from '../lib/speech.js'
 import { usePrepositionsData } from './prepositions/usePrepositionsData.js'
 
 export default function PrepositionsPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
@@ -35,6 +35,11 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
   // Эффект объявлен РАНЬШЕ монтирующего: на первом кадре он отрабатывает первым и движок видит актуальный язык.
   useEffect(() => {
     langRef.current = lang
+  }, [lang])
+  // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
+  useEffect(() => {
+    const host = hostRef.current
+    if (host) host.style.setProperty('--pw-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
   }, [lang])
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'writing' }))
 
@@ -55,10 +60,19 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
       progress: { read: readPrepositions, write: writePrepositions },
       speak: speakLesson,
       playUrl,
-      stopAudio: stopTts,
+      // и общий плеер, и голос устройства: уход с экрана урока глушит любую озвучку
+      stopAudio: stopLesson,
       onAnswer: (ok) => recordSkill('grammar', ok),
     })
+    // Снимок прогресса с сервера приходит позже первого кадра (новое устройство): главная курса и список практики
+    // показали бы «0 of 31» до первого клика. Перерисовываем только их — посреди урока или вопроса не трогаем.
+    const onProgress = () => {
+      const h = api.snapshot().hash
+      if (h === '#/' || h === '#/practice') api.go(h)
+    }
+    window.addEventListener(PREPOSITIONS_PROGRESS_EVENT, onProgress)
     return () => {
+      window.removeEventListener(PREPOSITIONS_PROGRESS_EVENT, onProgress)
       api.destroy()
       shadow.innerHTML = ''
     }

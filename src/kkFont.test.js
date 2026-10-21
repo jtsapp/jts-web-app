@@ -78,6 +78,8 @@ const ENGINES = {
   numbers: (css) => expect(css).toContain(`.nw [lang="kk"]{font-family:'Inter'`),
   // Прототип и так на Inter.
   speakspin: (css) => expect(css).toMatch(/font-family:Inter\b/),
+  // Курс английский; казахский — только перевод с lang="kk" (как у «Чисел»).
+  prepositions: (css) => expect(css).toContain(`.pw [lang="kk"]{font-family:'Inter'`),
 }
 
 describe('казахский интерфейс на Inter', () => {
