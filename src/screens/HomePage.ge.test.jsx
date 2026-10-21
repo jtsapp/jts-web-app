@@ -180,7 +180,13 @@ describe('HomePage — тур общего курса', () => {
       </LanguageProvider>
     </I18nProvider>
   )
-  const next = (dialog) => fireEvent.click(within(dialog).getByRole('button', { name: /ОК|Далее|Готово/ }))
+  const next = (dialog) => fireEvent.click(within(dialog).getByRole('button', { name: /Далее|Готово/ }))
+  const intro = () => screen.findByRole('dialog', { name: 'Добро пожаловать!' })
+  const walkHints = async (first) => {
+    next(await screen.findByRole('dialog', { name: first }))
+    next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
+    next(await screen.findByRole('dialog', { name: 'Разделы слева — что за что отвечает' }))
+  }
 
   beforeEach(() => {
     localStorage.removeItem('jts_tours_off')
@@ -193,29 +199,88 @@ describe('HomePage — тур общего курса', () => {
     expect(screen.queryByRole('dialog')).toBe(null)
   })
 
-  it('профиль приехал после монтирования — тур идёт по новой «Главной»: цель, путь, навыки, «Сегодня», задача, весь план', async () => {
+  // Макет «Первый заход и подсказки» (21.10.2026): приветствие по имени и три подсказки вместо девяти шагов по блокам.
+  it('профиль приехал после монтирования — приветствие по имени и три подсказки: прогресс, расписание с домашкой, разделы', async () => {
     getGePlan.mockResolvedValue(plan)
     const { rerender } = render(tree({ geProfile: null, geLoaded: false }))
     await new Promise((r) => setTimeout(r, 30))
     rerender(tree({ geProfile: goal, geLoaded: true }))
-    const first = await screen.findByRole('dialog', { name: 'Ваша цель и срок' })
-    expect(within(first).queryAllByRole('radio')).toHaveLength(0)
-    // шаги — только под блоки на экране: цель, путь, навыки, «Сегодня», задача, весь план, практика, расписание, домашка
-    expect(within(first).getByText('1/9')).toBeTruthy()
+    const hello = await intro()
+    expect(within(hello).getByText('Сакен')).toBeTruthy()
+    fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+
+    const first = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    expect(first.querySelectorAll('.t-tour__dots i')).toHaveLength(3)
     next(first)
-    next(await screen.findByRole('dialog', { name: 'Путь до цели' }))
-    next(await screen.findByRole('dialog', { name: 'Сильные и слабые стороны' }))
-    next(await screen.findByRole('dialog', { name: 'План на сегодня' }))
-    const task = await screen.findByRole('dialog', { name: 'Задача' })
-    expect(within(task).getByText(/6 \/ 15 мин/)).toBeTruthy()
-    next(task)
-    expect(await screen.findByRole('dialog', { name: 'Весь план' })).toBeTruthy()
+    next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
+    // разделы — ровно пункты сайдбара этого ученика, без «Главной»
+    const last = await screen.findByRole('dialog', { name: 'Разделы слева — что за что отвечает' })
+    expect(within(last).getByText('Speaking Buddy')).toBeTruthy()
+    expect(within(last).getByText('Разговор с тьютором голосом и ролевые сценарии')).toBeTruthy()
+    expect(within(last).queryByText('Главная')).toBe(null)
+    expect(within(last).queryByRole('button', { name: 'Пропустить' })).toBe(null)
+    next(last)
+    await waitFor(() => expect(localStorage.getItem('jts_tour_home:user-7:ge')).toBe('1'))
     getGePlan.mockReset().mockResolvedValue(null)
   })
 
   it('видевший старый тур увидит обновлённый один раз', async () => {
     localStorage.setItem('jts_tour_home:user-7', '1')
     render(tree({ geProfile: goal, geLoaded: true }))
-    expect(await screen.findByRole('dialog', { name: 'Ваша цель и срок' })).toBeTruthy()
+    expect(await intro()).toBeTruthy()
+  })
+
+  // Решение владельца 21.10.2026: новому ученику тест — сразу после тура, как бы тур ни закрыли.
+  it('новый ученик: после тура сразу тест — и по «Готово», и по «Пропустить»', async () => {
+    for (const how of ['done', 'skip']) {
+      localStorage.clear()
+      const onGeStart = vi.fn()
+      const { unmount } = render(tree({ geProfile: { onboarded: false }, levelUnknown: true, onGeStart }))
+      const hello = await intro()
+      if (how === 'skip') {
+        fireEvent.click(within(hello).getByRole('button', { name: 'Пропустить' }))
+      } else {
+        fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+        await walkHints('Здесь будет ваш маршрут')
+      }
+      await waitFor(() => expect(onGeStart).toHaveBeenCalledTimes(1))
+      // окно «Жёсткий режим» ждёт возвращения с пройденным тестом: поверх закрытого роадмапа его нет
+      expect(screen.queryByRole('dialog', { name: 'Жесткий режим общения' })).toBe(null)
+      unmount()
+    }
+  })
+
+  it('учившийся до теста: тест остаётся на «Главной», после тура — окно «Жёсткий режим» один раз', async () => {
+    const onGeStart = vi.fn()
+    const onTemperChoice = vi.fn()
+    const props = { geProfile: { onboarded: false }, existingStudent: true, onGeStart, onTemperChoice }
+    const { unmount } = render(tree(props))
+    fireEvent.click(within(await intro()).getByRole('button', { name: 'Пропустить' }))
+    const invite = await screen.findByRole('dialog', { name: 'Жесткий режим общения' })
+    expect(onGeStart).not.toHaveBeenCalled()
+    fireEvent.click(within(invite).getByRole('button', { name: 'Попробовать жесткий режим' }))
+    expect(onTemperChoice).toHaveBeenCalledWith('harsh')
+    expect(screen.queryByRole('dialog', { name: 'Жесткий режим общения' })).toBe(null)
+    unmount()
+
+    render(tree(props))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(screen.queryByRole('dialog')).toBe(null)
+  })
+
+  it('«Оставить обычный режим» нрав не трогает; видевшим тур раньше окно не выходит', async () => {
+    const onTemperChoice = vi.fn()
+    const { unmount } = render(tree({ geProfile: goal, onTemperChoice }))
+    fireEvent.click(within(await intro()).getByRole('button', { name: 'Пропустить' }))
+    const invite = await screen.findByRole('dialog', { name: 'Жесткий режим общения' })
+    fireEvent.click(within(invite).getByRole('button', { name: 'Оставить обычный режим' }))
+    expect(onTemperChoice).not.toHaveBeenCalled()
+    unmount()
+
+    localStorage.clear()
+    localStorage.setItem('jts_tour_home:user-7:ge', '1')
+    render(tree({ geProfile: goal, onTemperChoice }))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(screen.queryByRole('dialog')).toBe(null)
   })
 })

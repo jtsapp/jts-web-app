@@ -93,7 +93,7 @@ async function finishTestThroughBridge(page) {
   const f = await (await frame.elementHandle()).contentFrame()
   // Страница теста загрузилась и мост поставил крючки
   await f.waitForFunction(() => typeof window.JTSPlacementConfig?.openLearning === 'function', null, { timeout: 30000 })
-  await expect(page.frameLocator('.pl-page__frame').getByText('JTS Placement Test')).toBeVisible()
+  await expect(page.frameLocator('.pl-page__frame').getByText('Давайте определим')).toBeVisible()
   return f.evaluate((env) => window.JTSPlacementConfig.openLearning(env, { intent: 'open_existing_roadmap' }), ENVELOPE)
 }
 
@@ -219,7 +219,7 @@ test.describe('говорение', () => {
 
     const modal = page.locator('.pl-speak')
     await modal.getByRole('button', { name: 'Начать подготовку' }).click()
-    await modal.getByRole('button', { name: 'Готов — записывать' }).click()
+    await modal.getByRole('button', { name: 'Я готов — записать' }).click()
     const stop = modal.getByRole('button', { name: 'Закончить ответ' })
     await expect(stop).toBeEnabled()
     await page.waitForTimeout(16_000) // короче MIN_SECONDS (15 с) окно запись не отправит
@@ -281,13 +281,27 @@ test.describe('учится до теста v16', () => {
 
 test.describe('тур', () => {
   test.use({ storageState: { cookies: [], origins: [] } })
-  test('новый ученик без уровня: сначала тур, первый шаг — про закрытый роадмап', async ({ page }) => {
+  // Макет «Первый заход» и решение владельца 21.10.2026: приветствие → подсказки → новому ученику тест открывается сам.
+  test('новый ученик без уровня: приветствие, первая подсказка — про закрытый роадмап, после тура сразу тест', async ({ page }) => {
     await setup(page, { level: null, tours: true })
     await page.goto('/?screen=home')
-    await expect(page.locator('.t-tour__pop')).toBeVisible({ timeout: 20000 })
+    await expect(page.locator('.t-tour__intro')).toContainText('Сакен', { timeout: 20000 })
+    await page.locator('.t-tour__intro-go').click()
     await expect(page.locator('.t-tour__title')).toHaveText('Здесь будет ваш маршрут')
     await page.locator('.t-tour__skip').click()
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
-    await expect(page.locator('.ge-locked')).toBeVisible()
+    await expect(page.locator('.pl-page__frame')).toBeVisible({ timeout: 20000 })
+  })
+
+  test('учившийся до теста: тест остаётся на «Главной», после тура — окно «Жёсткий режим»', async ({ page }) => {
+    await setup(page, { level: 'A2', tours: true, createdAt: '2026-09-01T10:00:00' })
+    await page.goto('/?screen=home')
+    await expect(page.locator('.t-tour__intro')).toBeVisible({ timeout: 20000 })
+    await page.locator('.t-tour__intro-skip').click()
+    const invite = page.getByRole('dialog', { name: 'Жесткий режим общения' })
+    await expect(invite).toBeVisible()
+    await invite.getByRole('button', { name: 'Оставить обычный режим' }).click()
+    await expect(invite).toHaveCount(0)
+    await expect(page.locator('.pl-page__frame')).toHaveCount(0)
   })
 })

@@ -2100,6 +2100,12 @@ export default function App() {
           // и запись идёт через него же — тем самым WhatsApp, куда ведут все
           // остальные демо-призывы (src/lib/support.js).
           onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
+          // Окно «Жёсткий режим общения» после тура: та же настройка, что кнопка «18+» у тьютора. Тьютор ещё не выбран —
+          // нрав всё равно пишется в профиль и встанет, когда ученик выберет тьютора с осью нрава (temperFor).
+          onTemperChoice={(next) => {
+            setTemper(temperFor(tutorKey, next) ?? temper)
+            saveTutorPrefs(token, { tutorTemper: next })
+          }}
         />
       )
     case 'minutes':
