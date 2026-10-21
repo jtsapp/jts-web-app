@@ -8,6 +8,9 @@ import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/opening.js'
 import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
 import { pressButton } from '../lib/assistant/clicker.js'
+import { playCue } from '../lib/assistant/cue.js'
+import { findCommandButtons, matchCommand, stripWake, wakeTail } from '../lib/assistant/voiceCommands.js'
+import { wakeSet } from '../lib/assistant/wake/matchWake.js'
 import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace, toAnchor, writePlace } from '../lib/assistant/placement.js'
 import { useIntroHint } from '../lib/assistant/introHint.js'
 import { assistantPersona } from '../lib/assistant/persona.js'
@@ -84,12 +87,17 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // договорила, шаги тура читает голос звонка. Окно можно закрыть — звонок
 // продолжается, кнопка Луны показывает, что она на связи.
 //
-// Позывной (16.10.2026, «Луна» — с 19.10): ученик говорит «Луна» / «Привет, Луна» — окно
-// открывается, Луна здоровается, говорит, что видит, спрашивает, чем помочь, и,
-// договорив, сама слушает ОДИН ответ, как по кнопке микрофона. Дальше — кнопкой:
-// разговор без кнопок в чате владелец отменил 15.10 (для разговора есть звонок).
-// Распознаёт позывной само устройство (lib/assistant/wake/), включает его ученик
-// переключателем в окне; во время звонка «ухо» выключено — микрофон у звонка.
+// Позывной (16.10.2026, «Луна» — с 19.10, команды — с 21.10): «Луна, дальше» — быстрая
+// команда (voiceCommands.js) жмёт кнопку сама, без модели; «Луна, нажми «Начать урок»»
+// одним духом — звук, снятый «ухом», уходит в распознавание и модели; одно «Луна» —
+// сигнал «слушаю» и одна команда, а промолчал — прежнее приветствие с окном: Луна
+// здоровается и, договорив, слушает ОДИН ответ. Дальше — кнопкой: разговор без кнопок
+// владелец отменил 15.10 (для разговора есть звонок). На команду окно не открывается
+// (решение владельца 21.10.2026): у кнопки облачко «Слушаю… → Нажала «Далее»», окно —
+// когда ответ объяснение или предложение. Распознаёт позывной само устройство
+// (lib/assistant/wake/), включает его ученик переключателем в окне; во время звонка
+// «ухо» выключено — микрофон у звонка. Те же быстрые команды — и у микрофона окна,
+// набранного текста и звонка.
 
 const MAX_INPUT = 2000
 // Зазор между кнопкой и облачком-знакомством (хвостик облачка — 7 px).
@@ -109,6 +117,11 @@ const PHONE_QUERY = '(max-width: 720px)'
 const FIRST_SOUND_MAX_MS = 9_000
 // «Открываю…» ждёт, пока Луна договорит, — но не дольше (зависший синтез).
 const ACTION_WAIT_MAX_MS = 30_000
+// Облачко голосовой команды: сколько висит «нажала», сколько Луна ждёт команду после
+// одного «Луна» (дальше — прежнее приветствие), глухота «уха» после команды.
+const CMD_SHOW_MS = 2500
+const WAKE_LISTEN_MS = 6000
+const FAST_COOLDOWN_MS = 1500
 
 // Строка ожидания: что Луна делает, пока ответа не видно. Сменяется по
 // времени — одно «Думаю…» на шесть секунд выглядит как зависание.
@@ -439,6 +452,17 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     setHeld((h) => (h && (vid == null || h.vid === vid) ? null : h))
   }, [])
 
+  // Облачко голосовой команды у кнопки (окно закрыто): { phase, label }, phase —
+  // listening | thinking | pressed | missing; ms — сколько висеть (без него — до смены).
+  const [cmd, setCmd] = useState(null)
+  const cmdTimerRef = useRef(null)
+  const showCmd = useCallback((phase, { label = '', ms = 0 } = {}) => {
+    clearTimeout(cmdTimerRef.current)
+    setCmd(phase ? { phase, label } : null)
+    if (phase && ms) cmdTimerRef.current = setTimeout(() => setCmd(null), ms)
+  }, [])
+  useEffect(() => () => clearTimeout(cmdTimerRef.current), [])
+
   // Действие «сейчас» (открыть раздел, тур) ждёт, пока Луна договорит ответ:
   // { action, owner — очередь озвучки этого ответа, timer }.
   const deferredRef = useRef(null)
@@ -713,7 +737,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // его нет, а сбой не показывается плашкой.
   // afterReply — когда ответ кончился: договорён голосом или, без голоса, дописан.
   // На позывной по нему Луна сама начинает слушать ответ ученика.
-  const send = useCallback(async (raw, { voice = false, opening = false, afterReply = null } = {}) => {
+  // quiet — команда голосом при закрытом окне: ход идёт облачком у кнопки, окно
+  // открывается, только если ответ надо прочитать (объяснение, предложение).
+  const send = useCallback(async (raw, { voice = false, opening = false, afterReply = null, quiet = false } = {}) => {
     const text = String(raw ?? '').trim().slice(0, MAX_INPUT)
     const cur = stateRef.current
     if (!text || !cur?.token || !mountedRef.current) return
@@ -744,6 +770,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     setInput('')
     setError(null)
     setBusy(true)
+    if (quiet) showCmd('thinking')
 
     // Озвучка — только голосовому вопросу и только если ученик её не выключил.
     // Текст такого ответа показывается вслед за голосом: фраза i видна, когда
@@ -847,6 +874,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (fallback) speak(fallback)
         speaker.end()
       }
+      let clicked = null
       if (action) {
         setMessages((prev) => {
           const next = prev.slice()
@@ -859,11 +887,21 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         // где можно (экзамен), или вышел из аккаунта — не ведём никуда.
         if (action.now && mountedRef.current && stateRef.current?.enabled) {
           // Нажатие — сразу (см. шапку); переход и тур — когда Луна договорит.
-          if (action.kind === 'click') perform(action)
+          if (action.kind === 'click') clicked = perform(action)
           else if (speaker && voiceRef.current === speaker) {
             dropDeferred()
             deferredRef.current = { action, owner: speaker, timer: setTimeout(() => runDeferred(speaker), ACTION_WAIT_MAX_MS) }
           } else perform(action)
+        }
+      }
+      // Команда голосом: нажатие — облачком, переход и тур видно и так; объяснение и
+      // предложение («Открыть?», «Нажать?») — в окне: их надо прочитать и нажать.
+      if (quiet && mountedRef.current) {
+        if (action?.kind === 'click' && action.now) {
+          showCmd(clicked === 'pressed' ? 'pressed' : 'missing', { label: action.label, ms: CMD_SHOW_MS })
+        } else {
+          showCmd(null)
+          if (!action?.now) setOpen(true)
         }
       }
       if (reply.offtopic) {
@@ -893,6 +931,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       // cur.messages ещё лежит её недописанный кусок.
       setMessages(base)
       if (opening) return
+      // Команда голосом не вышла — окно, где видно, что случилось.
+      if (quiet) {
+        showCmd(null)
+        setOpen(true)
+      }
       const kind = err instanceof AssistantError ? err.kind : 'unavailable'
       setError({
         text:
@@ -916,7 +959,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (opening) openingRef.current = null
       }
     }
-  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot])
+  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot, showCmd])
 
   // ── Звонок ───────────────────────────────────────────────────────────
   // Выполнить «открываю…» звонка: Луна договорила (или ждать уже нечего).
@@ -1270,15 +1313,59 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // которого iPhone не сыграет первую реплику, пришедшую через секунды.
   const openWindow = () => {
     unlockSpeech()
+    showCmd(null)
     setOpen(true)
     greet()
   }
+
+  // Быстрая команда (voiceCommands.js): ровно одна её кнопка на экране — жмём сами, без
+  // модели. quiet — облачком (позывной), иначе — парой строк в переписке, которые в
+  // модель не идут (local). false — решать модели (кнопок нет или их несколько).
+  const tryFast = useCallback((command, text, { quiet = false, voice = true } = {}) => {
+    if (command.id === 'stop') stopVoice()
+    takeSnapshot()
+    const hits = findCommandButtons(refsRef.current, command)
+    if (hits.length !== 1) {
+      // «Стоп», а кнопки паузы нет — Луна просто замолчала, это и просили.
+      if (command.id === 'stop' && !hits.length) {
+        if (quiet) showCmd(null)
+        return true
+      }
+      return false
+    }
+    const action = { kind: 'click', target: String(hits[0].ref), label: hits[0].label, now: true }
+    const res = press(action, { note: false })
+    if (quiet) {
+      showCmd(res === 'pressed' ? 'pressed' : 'missing', { label: action.label, ms: CMD_SHOW_MS })
+      if (res === 'pressed') playCue('press')
+    } else {
+      const say = stateRef.current.t(res === 'pressed' ? 'assistant.action.clicking' : 'assistant.click.missing', { label: action.label })
+      setInput('')
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text, ...(voice ? { voice: true } : {}), local: true },
+        { role: 'assistant', content: say, local: true },
+      ])
+    }
+    return true
+  }, [stopVoice, takeSnapshot, press, showCmd])
+
+  // Текст ученика — команда на месте, иначе вопрос модели. Голос — и ответ голосом.
+  const runText = useCallback((text, { quiet = false, voice = true } = {}) => {
+    const command = matchCommand(text)
+    if (command && !inFlightRef.current && tryFast(command, text, { quiet, voice })) return
+    send(text, { voice, quiet })
+  }, [tryFast, send])
+  const runTextRef = useRef(runText)
+  useLayoutEffect(() => {
+    runTextRef.current = runText
+  })
 
   const voiceQ = useVoiceQuestion({
     token,
     lang,
     screenId: screen,
-    onText: (text) => send(text, { voice: true }),
+    onText: (text) => runTextRef.current?.(text),
   })
   const { cancel: cancelRecording } = voiceQ
   // Для обработчика события открытия: он подписан один раз на send.
@@ -1302,19 +1389,70 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     q.clearError()
     q.toggle()
   }, [])
-  const onWake = useCallback(() => {
+  // Позывной без команды и без слов после имени — прежнее приветствие (окно, WAKE_MARK).
+  const greetOnWake = useCallback(() => {
     const cur = stateRef.current
     if (!mountedRef.current || !cur?.enabled || !cur.token || cur.callLive) return
+    showCmd(null)
     setOpen(true)
     stateRef.current = { ...cur, open: true }
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     greetedRef.current = screenStateKey(cur.screen, snapshotScreen(root))
     send(WAKE_MARK, { voice: !cur.muted, opening: true, afterReply: listenAnswer })
-  }, [send, listenAnswer])
+  }, [send, listenAnswer, showCmd])
+
+  // Распознанное после позывного: обращение срезаем, остаток — команда или вопрос.
+  const onWakeText = useCallback((raw) => {
+    const text = stripWake(raw, stateRef.current?.persona?.id)
+    if (!text) {
+      greetOnWake()
+      return
+    }
+    runText(text, { quiet: true })
+  }, [greetOnWake, runText])
+
+  // Итог «уха» (wake/wakeEar.js): { text — что распознал Vosk, preroll() — звук от имени }.
+  // Возвращает «ухо» глухоту: после команды следующую ученик скажет скоро.
+  const onWake = useCallback((detail = {}) => {
+    const cur = stateRef.current
+    if (!mountedRef.current || !cur?.enabled || !cur.token || cur.callLive) return undefined
+    const name = wakeSet(cur.persona?.id).name
+    const text = String(detail.text || '')
+    const fast = { cooldownMs: FAST_COOLDOWN_MS }
+    const command = matchCommand(text, { name })
+    if (command) {
+      if (!tryFast(command, text, { quiet: true })) send(wakeTail(text, name).join(' '), { voice: true, quiet: true })
+      return fast
+    }
+    // Слова после имени — команда одним духом: её звук уже в буфере «уха».
+    const wav = wakeTail(text, name).length ? detail.preroll?.() : null
+    if (wav) {
+      showCmd('thinking')
+      voiceQRef.current?.transcribeAudio(wav, { onText: onWakeText })
+      return fast
+    }
+    // Одно имя — сигнал «слушаю» и одна команда; промолчал — прежнее приветствие.
+    playCue('listen')
+    showCmd('listening')
+    voiceQRef.current?.listen({ noVoiceMs: WAKE_LISTEN_MS, onText: onWakeText, onNoVoice: greetOnWake })
+    return undefined
+  }, [tryFast, send, showCmd, onWakeText, greetOnWake])
   // Во время звонка «ухо» молчит: микрофон у звонка, и Луна и так на связи.
   const wake = useWakeWord({ token, enabled: enabled && !call, open, onWake, persona: persona.id })
   // Облачко «Я Луна…» у кнопки, пока ученик её ни разу не открывал (introHint.js).
   const introHint = useIntroHint({ screen, active: enabled && !call, open })
+
+  // Распознать команду после позывного не вышло (лимит, сбой, не расслышала) — окно,
+  // где ошибка видна: облачко «Думаю…» иначе висело бы без конца. При рендере, как
+  // prevEnabled выше: ошибка пришла — в этом же кадре облачко уходит, окно открыто.
+  const [prevVoiceError, setPrevVoiceError] = useState(null)
+  if (voiceQ.error !== prevVoiceError) {
+    setPrevVoiceError(voiceQ.error)
+    if (voiceQ.error && cmd) {
+      setCmd(null)
+      setOpen(true)
+    }
+  }
 
   // Закрыть окно — замолчать и бросить недоговорённую запись.
   const close = useCallback(() => {
@@ -1415,7 +1553,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // в ответ поведёт тур, шаги звучат — и iPhone разрешит их только после жеста.
   const sendTyped = (text) => {
     unlockSpeech()
-    send(text)
+    // «дальше», «проверь» набранным текстом — та же быстрая команда, без модели.
+    runText(String(text ?? '').trim(), { voice: false })
   }
 
   const onKeyDown = (e) => {
@@ -1564,6 +1703,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           : { right: vp.w - launcherBox.x + HINT_GAP, left: 'auto' }),
       }
     : undefined
+
+  // Облачко команды: запись кончилась, идёт распознавание — уже «Думаю…», а не «Слушаю…».
+  const cmdPhase = cmd?.phase === 'listening' && voiceQ.state === 'transcribing' ? 'thinking' : cmd?.phase
 
   if (!enabled) return null
 
@@ -1869,7 +2011,21 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
       {/* Мышь сквозь облачко проходит (pointer-events: none), а читалке хватает
           подписи самой кнопки — облачко её лишь повторяет. */}
-      {introHint && !open && (
+      {/* Облачко голосовой команды (см. шапку): окно закрыто, Луна слушает или нажала. */}
+      {cmd && !open && (
+        <div
+          className={`asst__hint asst__cmd${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
+          style={hintStyle}
+          role="status"
+          aria-live="polite"
+          data-cmd={cmdPhase}
+        >
+          {cmdPhase === 'listening' && <span className="asst__rec-dot" aria-hidden="true" />}
+          <span className="asst__hint-text">{t(`assistant.cmd.${cmdPhase}`, { label: cmd.label })}</span>
+        </div>
+      )}
+
+      {introHint && !open && !cmd && (
         <div
           className={`asst__hint${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
           style={hintStyle}

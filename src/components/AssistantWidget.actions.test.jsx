@@ -221,10 +221,24 @@ describe('Луна нажимает кнопку', () => {
     const onClick = vi.fn()
     fetchMock.mockResolvedValueOnce(streamResponse(['Нажимаю «Далее».', '[[ASST_ACTION click 1 now «Далее»]]']))
     renderWithButton(onClick)
-    ask('дальше')
+    ask('перейди к следующему шагу')
     await waitFor(() => expect(onClick).toHaveBeenCalledOnce(), WAIT)
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body.screen.text).toContain('[кнопка #1 «Далее»]')
+  })
+
+  it('«дальше» — быстрая команда: нажатие на месте, без модели, и в модель эта пара не уходит', async () => {
+    const onClick = vi.fn()
+    renderWithButton(onClick)
+    ask('дальше')
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screen.getByText('Нажимаю «Далее».')).toBeTruthy()
+    fetchMock.mockResolvedValueOnce(streamResponse(['Хорошо.']))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'спасибо' } })
+    fireEvent.submit(screen.getByRole('textbox').closest('form'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce(), WAIT)
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).messages).toEqual([{ role: 'user', content: 'спасибо' }])
   })
 
   it('CLICK — кнопка «Нажать» под ответом, нажатие только по ней', async () => {
