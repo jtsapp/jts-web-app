@@ -313,6 +313,7 @@ export default function QuestionScreen({
           title={dialog === 'review' ? reviewLabels?.title || t('sat.run.reviewTitle') : t('sat.run.navTitle')}
           finishLabel={reviewLabels?.finish}
           warn={reviewLabels?.warn}
+          canFinish={mode === 'exam'}
           subtitle={`${setLabel || title} · ${plural(t, lang, 'sat.q', c.total)}`}
           onGo={go}
           onClose={() => setDialog(null)}

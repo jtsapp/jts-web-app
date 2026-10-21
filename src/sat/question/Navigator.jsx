@@ -71,8 +71,10 @@ export function NavRail({ session, onGo, onOpen }) {
  * Окно всех вопросов (Figma SAT 30). Нет в Figma: простой вариант 'nav' — адаптация прототипа question.js (openGrid);
  * макет рисует только проверку модуля. variant='nav' — просто перейти; variant='review' — проверка перед сдачей модуля:
  * пустые номера красной пунктирной рамкой, предупреждение, «К вопросу N» и «Завершить модуль». Esc и фон — закрыть.
+ * canFinish — в 'nav' тоже показать предупреждение и «Завершить модуль» (экзамен: на Digital SAT модуль можно закрыть
+ * досрочно в любой момент, а не только дойдя до последнего вопроса; ТЗ SAT 17.10, задача 12).
  */
-export function NavDialog({ session, variant = 'nav', title, subtitle, finishLabel, warn, onGo, onClose, onFinish }) {
+export function NavDialog({ session, variant = 'nav', title, subtitle, finishLabel, warn, canFinish = false, onGo, onClose, onFinish }) {
   const { t } = useI18n()
   const closeRef = useRef(null)
   const c = counts(session)
@@ -123,7 +125,7 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
             )
           })}
         </div>
-        {review && (
+        {(review || canFinish) && (
           <>
             <p className="st-navdlg__warn">
               <WarningIcon size={20} />
