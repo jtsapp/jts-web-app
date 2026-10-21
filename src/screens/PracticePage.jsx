@@ -873,6 +873,20 @@ export default function PracticePage({
           />
         )
 
+      case 'justListen':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-listen"
+            variant="listen"
+            wide
+            title={t('practice.listen.heading')}
+            desc={t('practice.listen.desc')}
+            cta={t('practice.listen.cta')}
+            onStart={() => onNav?.('listen')}
+          />
+        )
+
       case 'speakspin':
         return (
           <Banner

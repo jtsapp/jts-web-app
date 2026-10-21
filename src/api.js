@@ -1983,6 +1983,18 @@ export function getVocabScope(token, id, onFresh) {
   )
 }
 
+// Just Listen It: оглавление (уровни и направления без слов) и набор целиком.
+// Большой набор cachedAuthGet держит только в памяти вкладки (порог
+// CATALOG_STORE_MAX_CHARS), в localStorage он вытеснял бы прогресс. 404 у
+// оглавления — материалы ещё не загружены через админку.
+export function getListenIndex(token, onFresh) {
+  return cachedAuthGet('/mobile/listen', token, onFresh)
+}
+
+export function getListenSet(token, id, onFresh) {
+  return cachedAuthGet(`/mobile/listen/sets/${encodeURIComponent(id)}`, token, onFresh)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }

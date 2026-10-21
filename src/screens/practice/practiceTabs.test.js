@@ -44,6 +44,13 @@ describe('practiceTabs', () => {
     expect(EXPANDABLE.has('arcade')).toBe(false)
   })
 
+  it('Just Listen It — во вкладке «Аудирование», до сказок', () => {
+    const ids = SKILLS.find((s) => s.key === 'listening').sections.map((sec) => sec.id)
+    expect(ids).toContain('justListen')
+    expect(ids.indexOf('justListen')).toBeLessThan(ids.indexOf('tales'))
+    expect(skillOfModule('listen')).toBe('listening')
+  })
+
   it('развернуть можно только секции-списки', () => {
     for (const s of SKILLS)
       for (const sec of s.sections)

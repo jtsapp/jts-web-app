@@ -1,0 +1,299 @@
+/* ============================================================
+   Just Listen It — диктант слова и предложения в «Практике».
+   Классы .jl-*. Палитра — из ТЗ раздела: акцент #9047FF, белые карточки
+   с радиусом 24px, кнопки-«пилюли», монеты. Ячейки слова — жирные
+   фиолетовые буквы; итог окрашивает их в зелёный / жёлтый / красный.
+   Тёмная тема — те же переменные на токенах --dk-* (theme-dark.css).
+   ============================================================ */
+.jl {
+  --jl-violet: #9047ff;
+  --jl-violet-600: #7a35e8;
+  --jl-soft: #f1e9ff;
+  --jl-surface: #fff;
+  --jl-surface-2: #f6f2fc;
+  --jl-text: #211934;
+  --jl-muted: #6f6880;
+  --jl-line: #e7e0f1;
+  --jl-ok: #17824f;
+  --jl-ok-bg: #e6f6ed;
+  --jl-near: #9a6200;
+  --jl-near-bg: #fff4dc;
+  --jl-bad: #c03a46;
+  --jl-bad-bg: #ffeff0;
+  --jl-gold: #f5b81f;
+  --jl-shadow: 0 8px 28px rgba(53, 34, 85, 0.06);
+
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 10px 24px calc(48px + env(safe-area-inset-bottom));
+  color: var(--jl-text);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+html[data-theme="dark"] .jl {
+  --jl-violet: var(--dk-acc);
+  --jl-violet-600: var(--dk-acc-strong);
+  --jl-soft: var(--dk-chip);
+  --jl-surface: var(--dk-card);
+  --jl-surface-2: var(--dk-chip);
+  --jl-text: var(--dk-text);
+  --jl-muted: var(--dk-muted);
+  --jl-line: var(--dk-line);
+  --jl-ok: var(--dk-green);
+  --jl-ok-bg: var(--dk-green-tint);
+  --jl-near: var(--dk-yellow);
+  --jl-near-bg: var(--dk-yellow-tint);
+  --jl-bad: var(--dk-red);
+  --jl-bad-bg: var(--dk-red-tint);
+  --jl-shadow: none;
+}
+html[data-theme="dark"] .pk-banner--listen {
+  background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%);
+}
+
+.jl-i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.jl-muted { color: var(--jl-muted); font-size: 14px; margin: 0; }
+.jl-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* ---------- шапка, карточки, кнопки ---------- */
+.jl-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.jl-back {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  border: 0; background: none; color: var(--jl-violet); font: inherit; font-weight: 700; font-size: 15px;
+  cursor: pointer; padding: 6px 0;
+}
+.jl-crumb b { color: var(--jl-text); font-size: 15px; font-weight: 800; }
+.jl-card {
+  background: var(--jl-surface);
+  border: 1px solid var(--jl-line);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--jl-shadow);
+}
+.jl-ctitle { margin: 0 0 14px; font-size: 20px; font-weight: 800; }
+.jl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 10px 22px; border-radius: 999px; border: 0;
+  background: var(--jl-violet); color: #fff; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.jl-btn:hover:not(:disabled) { background: var(--jl-violet-600); }
+.jl-btn:active:not(:disabled) { transform: translateY(1px); }
+.jl-btn:disabled { opacity: 0.45; cursor: default; }
+.jl-btn--ghost { background: var(--jl-soft); color: var(--jl-violet); }
+.jl-btn--ghost:hover:not(:disabled) { background: var(--jl-line); }
+.jl-btn--sm { min-height: 36px; padding: 6px 16px; font-size: 14px; }
+.jl-btn:focus-visible, .jl-tool:focus-visible, .jl-lv:focus-visible, .jl-fld:focus-visible, .jl-back:focus-visible {
+  outline: 3px solid var(--jl-violet); outline-offset: 2px;
+}
+.jl-notice {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  padding: 18px 20px; border-radius: 16px; background: var(--jl-surface-2); color: var(--jl-muted);
+}
+.jl-notice--err { background: var(--jl-bad-bg); color: var(--jl-bad); }
+.jl-coin {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--jl-gold); color: #5a3c00; font-weight: 900; font-size: 12px; flex: none;
+}
+
+/* ---------- меню ---------- */
+.jl-hero { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.jl-hero h1 { margin: 6px 0 8px; font-size: 30px; font-weight: 800; }
+.jl-hero p { margin: 0; color: var(--jl-muted); line-height: 1.5; }
+.jl-eyebrow { color: var(--jl-violet); font-weight: 750; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; }
+.jl-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.jl-steps span { padding: 6px 12px; border-radius: 999px; background: var(--jl-soft); color: var(--jl-violet); font-weight: 700; font-size: 14px; }
+.jl-steps .jl-i { color: var(--jl-muted); width: 16px; height: 16px; }
+.jl-demo { display: flex; gap: 6px; flex: none; }
+.jl-demo b {
+  display: grid; place-items: center; width: 48px; height: 56px; border-radius: 12px;
+  border: 2px solid var(--jl-violet); color: var(--jl-violet); font-size: 26px; font-weight: 800; background: var(--jl-surface);
+}
+.jl-levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.jl-lv {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  padding: 16px; border-radius: 18px; border: 1px solid var(--jl-line); background: var(--jl-surface-2);
+  color: var(--jl-text); font: inherit; cursor: pointer;
+}
+.jl-lv:hover { border-color: var(--jl-violet); }
+.jl-lv small { color: var(--jl-muted); font-size: 13px; }
+.jl-code {
+  display: inline-grid; place-items: center; min-width: 44px; height: 32px; padding: 0 10px; border-radius: 10px;
+  background: var(--jl-violet); color: #fff; font-weight: 800; font-size: 15px;
+}
+.jl-code--field { background: var(--jl-soft); font-size: 22px; }
+.jl-bar { width: 100%; height: 6px; border-radius: 999px; background: var(--jl-line); overflow: hidden; margin-top: 8px; }
+.jl-bar i { display: block; height: 100%; background: var(--jl-violet); border-radius: inherit; }
+.jl-fcat { margin: 16px 0 10px; font-size: 15px; color: var(--jl-muted); font-weight: 700; }
+.jl-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.jl-fld {
+  display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 16px;
+  border: 1px solid var(--jl-line); background: var(--jl-surface-2); color: var(--jl-text); font: inherit; cursor: pointer;
+}
+.jl-fld:hover { border-color: var(--jl-violet); }
+.jl-fab { font-size: 26px; line-height: 1; }
+.jl-fname { display: flex; flex-direction: column; min-width: 0; }
+.jl-fname small { color: var(--jl-muted); font-size: 13px; }
+.jl-own summary { cursor: pointer; font-weight: 800; font-size: 17px; }
+.jl-own p { color: var(--jl-muted); font-size: 14px; line-height: 1.5; }
+.jl-own textarea {
+  width: 100%; min-height: 140px; padding: 12px; border-radius: 14px; border: 1px solid var(--jl-line);
+  background: var(--jl-surface-2); color: var(--jl-text); font: inherit; font-size: 14px; resize: vertical; margin-bottom: 12px;
+}
+
+/* ---------- набор ---------- */
+.jl-setHead { display: flex; flex-direction: column; gap: 16px; }
+.jl-lvhead { display: flex; align-items: center; gap: 14px; }
+.jl-lvhead h1 { margin: 0; font-size: 26px; font-weight: 800; }
+.jl-lvhead p { margin: 2px 0 0; color: var(--jl-muted); font-size: 14px; }
+.jl-unit__h { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.jl-unit__h h2 { margin: 0; font-size: 19px; font-weight: 800; }
+.jl-topics { display: flex; flex-direction: column; gap: 10px; }
+.jl-topic {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 16px; background: var(--jl-surface-2);
+}
+.jl-topic > div:first-child { min-width: 0; flex: 1 1 260px; }
+.jl-topic h3 { margin: 2px 0 4px; font-size: 16px; font-weight: 800; }
+.jl-topic--rev { background: var(--jl-soft); }
+.jl-lnum { color: var(--jl-violet); font-weight: 700; font-size: 13px; }
+.jl-words { color: var(--jl-muted); font-size: 13px; overflow-wrap: break-word; }
+.jl-best { display: inline-flex; align-items: center; gap: 6px; margin: 6px 8px 0 0; font-size: 13px; font-weight: 700; color: var(--jl-ok); }
+.jl-pbtns { justify-content: flex-end; }
+
+/* ---------- задание ---------- */
+.jl-run { display: flex; flex-direction: column; gap: 14px; }
+.jl-run__top { display: flex; align-items: center; gap: 12px; }
+.jl-x { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--jl-soft); color: var(--jl-violet); cursor: pointer; flex: none; }
+.jl-pbar { flex: 1; height: 10px; border-radius: 999px; background: var(--jl-line); overflow: hidden; }
+.jl-pbar i { display: block; height: 100%; background: var(--jl-violet); border-radius: inherit; transition: width 0.3s ease; }
+.jl-lims { display: inline-flex; gap: 10px; color: var(--jl-violet); font-weight: 800; }
+.jl-lims > span { display: inline-flex; align-items: center; gap: 3px; }
+.jl-lims .is-zero { color: var(--jl-muted); opacity: 0.6; }
+.jl-coins { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
+/* Кабинет вешает «язык + уведомления» абсолютом в правый верхний угол
+   (.learn__bell) — ровно туда, куда легли бы лимиты и монеты теста; свои
+   кнопки там мертвы. Запас — как у «Слушай и выбирай» и «Аркады». */
+@media (min-width: 761px) {
+  .jl-top, .jl-run__top { padding-right: 170px; }
+}
+.jl-ex { display: flex; flex-direction: column; gap: 22px; }
+.jl-stage { display: flex; flex-direction: column; gap: 14px; }
+.jl-stage.is-locked { opacity: 0.55; }
+.jl-stage__h { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+.jl-n { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--jl-soft); color: var(--jl-violet); font-weight: 800; flex: none; }
+.jl-n.is-done { background: var(--jl-ok); color: #fff; }
+.jl-n .jl-i { width: 16px; height: 16px; }
+.jl-locked { color: var(--jl-muted); padding: 14px 16px; border-radius: 14px; background: var(--jl-surface-2); }
+.jl-listen { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.jl-listen small { color: var(--jl-muted); font-size: 13px; }
+.jl-play {
+  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 0;
+  background: var(--jl-violet); color: #fff; cursor: pointer; flex: none;
+}
+.jl-play .jl-i { width: 28px; height: 28px; }
+.jl-play:hover { background: var(--jl-violet-600); }
+.jl-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.jl-tool {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--jl-line); background: var(--jl-surface); color: var(--jl-text); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer;
+}
+.jl-tool:disabled { opacity: 0.45; cursor: default; }
+.jl-tool .jl-i { width: 16px; height: 16px; color: var(--jl-violet); }
+.jl-cnt { color: var(--jl-muted); font-weight: 800; }
+
+/* Ячейки слова */
+.jl-cells { position: relative; display: flex; flex-wrap: wrap; gap: 14px; padding: 4px 0; cursor: text; }
+.jl-grp { display: inline-flex; gap: 6px; }
+.jl-cell {
+  display: grid; place-items: center; width: 44px; height: 54px; border-radius: 12px;
+  border: 2px solid var(--jl-line); background: var(--jl-surface); color: var(--jl-violet);
+  font-size: 26px; font-weight: 800; text-transform: lowercase;
+}
+.jl-cell.is-filled { border-color: var(--jl-violet); }
+.jl-cell.is-cur { border-color: var(--jl-violet); box-shadow: 0 0 0 3px var(--jl-soft); }
+.jl-cell.is-hint { background: var(--jl-soft); }
+.jl-cells--sm .jl-cell { width: 34px; height: 44px; font-size: 21px; border-radius: 10px; }
+.jl-cells--xs .jl-cell { width: 26px; height: 36px; font-size: 17px; border-radius: 8px; }
+.jl-cells--xs .jl-grp, .jl-cells--sm .jl-grp { gap: 4px; }
+.jl-cells.is-ok .jl-cell, .jl-cells.is-shown .jl-cell { border-color: var(--jl-ok); color: var(--jl-ok); background: var(--jl-ok-bg); }
+.jl-cells.is-near .jl-cell { border-color: var(--jl-near); color: var(--jl-near); background: var(--jl-near-bg); }
+.jl-cells.is-bad .jl-cell { border-color: var(--jl-bad); color: var(--jl-bad); background: var(--jl-bad-bg); }
+.jl-cells.is-near, .jl-cells.is-bad { animation: jl-shake 0.4s ease; }
+/* Поле набора лежит поверх ячеек прозрачным: на телефоне по нему открывается
+   клавиатура, а 16px не дают iOS увеличить страницу при фокусе. */
+.jl-cells__input {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0;
+  font-size: 16px; color: transparent; caret-color: transparent; background: transparent;
+}
+@keyframes jl-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jl-cells.is-near, .jl-cells.is-bad { animation: none; }
+}
+
+/* Отклик */
+.jl-fb { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.45; }
+.jl-fb b { display: block; font-size: 15px; }
+.jl-fb__ic { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; flex: none; }
+.jl-fb__ic .jl-i { width: 16px; height: 16px; }
+.jl-fb--ok { background: var(--jl-ok-bg); color: var(--jl-ok); }
+.jl-fb--ok .jl-fb__ic { background: var(--jl-ok); }
+.jl-fb--near { background: var(--jl-near-bg); color: var(--jl-near); }
+.jl-fb--near .jl-fb__ic { background: var(--jl-near); }
+.jl-fb--bad { background: var(--jl-bad-bg); color: var(--jl-bad); }
+.jl-fb--bad .jl-fb__ic { background: var(--jl-bad); }
+.jl-diff { font-weight: 700; }
+.jl-miss { display: inline-block; margin: 0 4px 0 0; padding: 0 6px; border-radius: 6px; background: var(--jl-surface); }
+
+.jl-sent {
+  width: 100%; min-height: 96px; padding: 14px; border-radius: 16px; border: 2px solid var(--jl-line);
+  background: var(--jl-surface); color: var(--jl-text); font: inherit; font-size: 17px; line-height: 1.45; resize: vertical;
+}
+.jl-sent:focus { outline: none; border-color: var(--jl-violet); }
+.jl-sent.is-bad { border-color: var(--jl-bad); }
+.jl-sent.is-ok { border-color: var(--jl-ok); }
+.jl-foot { display: flex; justify-content: flex-end; }
+
+/* ---------- итог ---------- */
+.jl-result { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.jl-bigcoin { width: 64px; height: 64px; font-size: 30px; }
+.jl-result h2 { margin: 0; font-size: 26px; font-weight: 800; }
+.jl-result__note { color: var(--jl-violet); font-weight: 700; font-size: 14px; }
+.jl-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 480px; }
+.jl-stat { display: flex; flex-direction: column; padding: 12px; border-radius: 16px; background: var(--jl-surface-2); }
+.jl-stat b { font-size: 22px; }
+.jl-stat span { color: var(--jl-muted); font-size: 13px; }
+.jl-review { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; }
+.jl-rv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 10px 12px; border-radius: 14px; background: var(--jl-surface-2); }
+.jl-rv__d { grid-row: span 2; display: flex; gap: 4px; align-items: flex-start; }
+.jl-mark { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; }
+.jl-mark .jl-i { width: 14px; height: 14px; }
+.jl-mark--y { background: var(--jl-ok); }
+.jl-mark--n { background: var(--jl-bad); }
+.jl-rv__w { font-weight: 800; }
+.jl-rv__w span { color: var(--jl-muted); font-weight: 500; }
+.jl-rv__s { color: var(--jl-muted); font-size: 14px; overflow-wrap: break-word; }
+.jl-result .jl-row { justify-content: center; }
+
+/* ---------- телефон ---------- */
+@media (max-width: 560px) {
+  .jl { padding: 8px 16px calc(32px + env(safe-area-inset-bottom)); gap: 12px; }
+  .jl-card { padding: 18px 16px; border-radius: 20px; }
+  .jl-hero { flex-direction: column; align-items: flex-start; }
+  .jl-hero h1 { font-size: 24px; }
+  .jl-demo b { width: 38px; height: 46px; font-size: 21px; }
+  .jl-levels { grid-template-columns: repeat(2, 1fr); }
+  .jl-fields { grid-template-columns: 1fr; }
+  .jl-cell { width: 36px; height: 46px; font-size: 22px; }
+  .jl-cells--sm .jl-cell { width: 28px; height: 38px; font-size: 18px; }
+  .jl-cells--xs .jl-cell { width: 22px; height: 32px; font-size: 15px; }
+  .jl-cells { gap: 10px; }
+  .jl-play { width: 56px; height: 56px; }
+  .jl-pbtns, .jl-foot .jl-btn { width: 100%; }
+  .jl-pbtns .jl-btn { flex: 1; }
+}

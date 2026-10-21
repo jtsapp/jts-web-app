@@ -27,6 +27,9 @@ export const SKILLS = [
       // «Числа» (13.10.2026) — в макете их нет; широкий баннер под «Словами в
       // картинках»: тоже игра на слух.
       { id: 'numbers' },
+      // Just Listen It (21.10.2026) — диктант слова и предложения; в макете
+      // его нет, широкий баннер после «Чисел»: тоже на слух.
+      { id: 'justListen', modules: ['listen'] },
       { id: 'shadowing', all: 'link' },
       { id: 'karaoke', all: 'pill', small: true },
       { id: 'memes', all: 'pill' },

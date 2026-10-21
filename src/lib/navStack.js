@@ -127,6 +127,7 @@ const PRACTICE_SECTIONS = {
   workbook: 'nav.back.workbook',
   words: 'nav.back.words',
   numbers: 'nav.back.numbers',
+  listen: 'nav.back.listen',
   speakspin: 'nav.back.speakspin',
   verbs: 'nav.back.verbs',
   situations: 'nav.back.situations',

@@ -647,6 +647,22 @@ Lab в json не лежат: их собирает `logic.js` (`withGeneratedTou
 area `numbers` бэкенду неизвестна. E2E (`tests/numbers.spec.js`): флаг
 `window.__NUMBERS_FAST` сжимает анимации, верный остров — `data-answer` сцены.
 
+**Just Listen It в «Практике» — диктант слова и предложения, данные в MinIO.**
+Источник правды — прототип `data/jtslisten.html` (правки контента — туда и
+повторная загрузка в web-admin «Практика и тесты» → Just Listen It; бэкенд
+`/admin/listen/upload` разбирает SYL/FIELDS и кладёт наборы в
+`listen/current/`). Ученик читает `/mobile/listen` и `/mobile/listen/sets/{id}`
+(`getListenIndex/getListenSet`); экран `?screen=listen[&set=A1]`
+(`src/screens/ListenPage.jsx` + `src/screens/listen/`), движок —
+`src/practice/listen/`, сверка ответа — с оракулом самого прототипа
+(`scripts/extract-listen-oracle.js`, красный `compare.test.js` — чинить порт).
+Два отступления от прототипа: SYN/IRR читаются только по своим ключам (на
+«constructor» прототип падал) и монеты слова считают нажатия подсказки (ТЗ).
+Монеты в баланс — только прирост к лучшему результату прогона
+(`coinsToCredit`, решение владельца 21.10.2026), лучшие — модуль синка
+`listen` (merge «лучший по ключу»), ошибки — в «хуже запомненные» «Словаря».
+Premium пока открыт всем: проверку ставить на бэкенде в `readSet`.
+
 **Озвучка без записи — Soniox, а не браузерный синтез (с 23.09.2026).** Всё,
 что раньше читал `speechSynthesis` (Словарь, Воркбук, Чтение, Грамматика,
 Сказки без записанного клипа, «минимальные пары» теста уровня, слова курса без
