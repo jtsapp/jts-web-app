@@ -1,8 +1,28 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { GET, OPTIONS } from './route.js'
 
 // Каталог отдаётся панели преподавателя — там его единственный потребитель.
 describe('GET /api/practice/catalog', () => {
+  // Каталог спрашивает у бэкенда счётчики Аудирования. В тестах сети нет:
+  // по умолчанию бэкенд «молчит», и раздел строится с диска, как раньше.
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('Аудирование: счётчики уровней с бэкенда, когда пакет залит', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      expect(String(url)).toMatch(/\/practice-content\/listening\/levels$/)
+      return { ok: true, json: async () => [{ level: 'a1', count: 3 }, { level: 'b2', count: 0 }] }
+    }))
+    const body = await (await GET()).json()
+    const listening = body.areas.find((a) => a.key === 'listening')
+    expect(listening.levels.map((l) => l.code)).toEqual(['a1'])
+    expect(listening.levels[0].units[0]).toMatchObject({ key: 'a1', section: '3 заданий' })
+  })
+
   it('отдаёт уровни со списком юнитов', async () => {
     const res = await GET()
     expect(res.status).toBe(200)

@@ -100,6 +100,8 @@ test.describe('Демо-лимит: замок на контенте, не на 
     // Отметку о прохождении startSession досылает перед вопросом о праве
     // (flushModule) — БД на стенде нет, отвечаем за неё.
     await page.route('**/api/practice/state', (r) => r.fulfill(json({ configured: true, ok: true })))
+    // Пакет «Аудирования» на стенде не должен менять, какие задания видит тест.
+    await page.route('**/practice-content/listening/**', (r) => r.fulfill({ status: 404, body: '' }))
     await page.route('**/practice/listening/content/*.json', (r) =>
       r.fulfill(
         json([
