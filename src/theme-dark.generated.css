@@ -12225,34 +12225,12 @@ html[data-theme="dark"] .st-dg__mark.is-on {
     background: var(--dk-green-tint);
     color: var(--dk-green)
 }
-html[data-theme="dark"] .st-dg__steps li {
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-dg__steps li > span {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .st-dg__steps code, html[data-theme="dark"] .st-dg__expr code {
-    background: var(--dk-card);
-    color: var(--st-math)
-}
 html[data-theme="dark"] .st-dg__note {
     background: var(--dk-page);
     color: var(--dk-text-2)
 }
-html[data-theme="dark"] .st-dg__expr {
-    border: 1px solid var(--st-line);
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .st-dg__expr small {
-    color: var(--dk-green)
-}
 html[data-theme="dark"] .st-dg__video iframe {
     border: 0
-}
-html[data-theme="dark"] .st-dg__poster {
-    border: 0;
-    background: var(--ih-ink, #181818);
-    color: #fff
 }
 html[data-theme="dark"] .st-dg__credit a {
     color: var(--ih-violet, #9047ff)
@@ -12263,14 +12241,6 @@ html[data-theme="dark"] .st-dg__calc {
 }
 html[data-theme="dark"] .st-dg__calc iframe {
     border: 0
-}
-html[data-theme="dark"] .st-dg__load {
-    border: 0;
-    background: none;
-    color: var(--ih-violet, #9047ff)
-}
-html[data-theme="dark"] .st-dg__load small {
-    color: var(--ih-muted, #8a8a8a)
 }
 html[data-theme="dark"] .st-dg__ex {
     background: var(--dk-page)

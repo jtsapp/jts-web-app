@@ -8808,42 +8808,6 @@ mark.st-hl {
   flex-direction: column;
   gap: 12px;
 }
-.st-dg__steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.st-dg__steps li {
-  display: flex;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: #f8f8f8;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.st-dg__steps li > span {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 800;
-}
-.st-dg__steps code,
-.st-dg__expr code {
-  padding: 1px 6px;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--st-math);
-  font-weight: 700;
-}
 .st-dg__note {
   margin: 0;
   display: flex;
@@ -8858,32 +8822,6 @@ mark.st-hl {
 .st-dg__note svg {
   flex: none;
 }
-.st-dg__try {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-}
-.st-dg__try > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.st-dg__expr {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--st-line);
-  border-radius: 10px;
-  background: #f8f8f8;
-  font: inherit;
-  cursor: copy;
-}
-.st-dg__expr small {
-  color: #1f9d55;
-  font-weight: 700;
-}
 .st-dg__video {
   display: flex;
   flex-direction: column;
@@ -8894,21 +8832,6 @@ mark.st-hl {
   aspect-ratio: 16 / 9;
   border: 0;
   border-radius: 14px;
-}
-.st-dg__poster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 12px 18px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--ih-ink, #181818);
-  color: #fff;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
 }
 .st-dg__credit {
   margin: 0;
@@ -8929,26 +8852,6 @@ mark.st-hl {
   flex: 1;
   min-height: 420px;
   border: 0;
-}
-.st-dg__load {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 24px;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: var(--ih-violet, #9047ff);
-  cursor: pointer;
-}
-.st-dg__load small {
-  max-width: 260px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--ih-muted, #8a8a8a);
 }
 .st-dg__ex {
   display: flex;

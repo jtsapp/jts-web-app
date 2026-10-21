@@ -4,7 +4,6 @@ import GUIDE from '../data/desmosGuide.json'
 import { pick } from '../model/profile.js'
 import { DESMOS_URL } from '../question/DesmosDock.jsx'
 import { CheckCircleIcon, InfoIcon, OpenInNewIcon, RadioOffIcon } from '../../ielts/icons.jsx'
-import { CalculateIcon, PlayCircleIcon } from '../icons.jsx'
 
 const KEY = 'jts_sat_desmos_studied'
 
@@ -18,23 +17,17 @@ function readStudied() {
 }
 
 /**
- * Видео чужого автора открываем по нажатию и через youtube-nocookie: пока ученик не нажал, YouTube о нём не знает и
- * страница не тянет плеер. Подпись автора со ссылкой — обязательна: ролик не наш, и без подписи читался бы как наш.
+ * Плеер виден сразу, без кнопки «Смотреть видео урока», и сам не запускается (ТЗ SAT 17.10, задача 14). Домен
+ * youtube-nocookie: YouTube не ставит куки, пока ученик не нажал «играть». Подпись автора со ссылкой обязательна:
+ * ролик не наш, и без подписи читался бы как наш.
  */
 function Video({ url, credit, title }) {
   const { t } = useI18n()
-  const [on, setOn] = useState(false)
   if (!url) return null
   const src = url.replace('https://www.youtube.com/embed/', 'https://www.youtube-nocookie.com/embed/')
   return (
     <div className="st-dg__video">
-      {on ? (
-        <iframe src={`${src}?autoplay=1`} title={title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen loading="lazy" />
-      ) : (
-        <button type="button" className="st-dg__poster" onClick={() => setOn(true)}>
-          <PlayCircleIcon size={28} />{t('sat.dg.watch')}
-        </button>
-      )}
+      <iframe src={src} title={title} allow="fullscreen; picture-in-picture" allowFullScreen loading="lazy" />
       {credit && (
         <p className="st-muted st-dg__credit">
           {t('sat.dg.credit')} <a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.name}</a>
@@ -45,17 +38,16 @@ function Video({ url, credit, title }) {
 }
 
 /**
- * Гид по Desmos (Figma SAT 20; данные — prototype desmos-guide.js): уроки слева с отметкой «изучено», справа урок —
- * шаги с примером, выражения, чтобы повторить, живой калькулятор и видео. Калькулятор грузится по кнопке, а не сразу:
- * фрейм, до которого никто не дошёл, — секунды чужого интернета впустую. Отметки «изучено» — на устройстве.
+ * Гид по Desmos (Figma SAT 20; данные — prototype desmos-guide.js): уроки слева с отметкой «изучено», справа урок
+ * одного вида для всех — видео, плашка «Этот урок — видео…», рабочий калькулятор и «Упражнения» (ТЗ SAT 17.10,
+ * задача 14: формат урока 6 — единственный; текстовые шаги и вводный абзац уроков 1–4 не показываются).
+ * Отметки «изучено» — на устройстве.
  */
 export default function DesmosGuide({ seg }) {
   const { t, lang } = useI18n()
   const sections = GUIDE.sections
   const [open, setOpen] = useState(0)
   const [studied, setStudied] = useState(() => readStudied())
-  const [calc, setCalc] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024) // на широком экране калькулятор открыт сразу (B11)
-  const [copied, setCopied] = useState(null)
   const s = sections[open]
 
   const toggle = () => {
@@ -69,14 +61,7 @@ export default function DesmosGuide({ seg }) {
       /* отметка не сохранится — урок от этого не хуже */
     }
   }
-  const go = (i) => {
-    setOpen(i)
-    setCopied(null)
-  }
-  const copy = (expr) => {
-    navigator.clipboard?.writeText(expr).then(() => setCopied(expr)).catch(() => {})
-  }
-  const steps = s.steps ? pick(s.steps, lang) : null
+  const go = (i) => setOpen(i)
   const done = sections.filter((x) => studied.has(x.id)).length
 
   return (
@@ -101,7 +86,6 @@ export default function DesmosGuide({ seg }) {
             <div>
               <span className="st-dg__lesson">{t('sat.dg.lesson', { n: String(s.lesson) })}</span>
               <h2>{pick(s.title, lang)}</h2>
-              {s.lead && <p className="st-muted">{pick(s.lead, lang)}</p>}
             </div>
             <button type="button" className={`st-dg__mark ${studied.has(s.id) ? 'is-on' : ''}`} aria-pressed={studied.has(s.id)} onClick={toggle}>
               <CheckCircleIcon size={18} />{t(studied.has(s.id) ? 'sat.dg.marked' : 'sat.dg.mark')}
@@ -111,37 +95,10 @@ export default function DesmosGuide({ seg }) {
             {/* B11, прототип 89fb0508: видео урока слева, калькулятор открыт рядом справа — смотришь и повторяешь */}
             <div className="st-dg__left">
               <Video url={s.video} credit={s.videoCredit} title={pick(s.title, lang)} />
-              {steps ? (
-                <ol className="st-dg__steps">
-                  {/* шаги — текст гида из прототипа (только <b>, <code>, <i>), доверенная разметка выгрузки */}
-                  {steps.map((x, i) => <li key={i}><span>{i + 1}</span><div dangerouslySetInnerHTML={{ __html: x }} /></li>)}
-                </ol>
-              ) : (
-                <p className="st-dg__note"><InfoIcon size={18} />{t('sat.dg.videoLesson')}</p>
-              )}
-              {s.tryIt?.length > 0 && (
-                <div className="st-dg__try">
-                  <b>{t('sat.dg.tryIt')}</b>
-                  <div>
-                    {s.tryIt.map((e) => (
-                      <button key={e} type="button" className="st-dg__expr" onClick={() => copy(e)} title={t('sat.dg.copy')}>
-                        <code>{e}</code>{copied === e && <small>{t('sat.dg.copied')}</small>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="st-dg__note"><InfoIcon size={18} />{t('sat.dg.videoLesson')}</p>
             </div>
             <div className="st-dg__calc">
-              {calc ? (
-                <iframe src={DESMOS_URL} title="Desmos Graphing Calculator" loading="lazy" referrerPolicy="no-referrer" />
-              ) : (
-                <button type="button" className="st-dg__load" onClick={() => setCalc(true)}>
-                  <CalculateIcon size={28} />
-                  <b>{t('sat.dg.loadCalc')}</b>
-                  <small>{t('sat.dg.loadCalcNote')}</small>
-                </button>
-              )}
+              <iframe src={DESMOS_URL} title="Desmos Graphing Calculator" loading="lazy" referrerPolicy="no-referrer" />
             </div>
           </div>
           <div className="st-dg__ex">
