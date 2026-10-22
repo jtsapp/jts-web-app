@@ -130,6 +130,7 @@ const PRACTICE_SECTIONS = {
   numbers: 'nav.back.numbers',
   prepositions: 'nav.back.prepositions',
   listen: 'nav.back.listen',
+  cartoons: 'nav.back.cartoons',
   speakspin: 'nav.back.speakspin',
   verbs: 'nav.back.verbs',
   situations: 'nav.back.situations',
