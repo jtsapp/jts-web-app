@@ -6,6 +6,8 @@
 14.10.2026: новый Декстер из пакета стал живым (bro), и место KZ TEST отдано
 новой Луне — персона Luna.md пакета v3.4, сессия живой Луны (gentle), мозг
 Haiku 5.5. Замки и канарейки шума остаются по ключу jarvis.
+
+22.10.2026 — пакет v3.5: Луна говорит только en/ru, казахский — у Айзере.
 """
 import io
 import json
@@ -70,15 +72,16 @@ os.environ.pop("KZ_TEST_PROMPT")
 for lvl in ("A0", "A2", "B1", "C1"):
     text = build_buddy_instructions(profile(level=lvl), buddy_persona_for(p))
     persona = text.partition(PERSONA_HEADER)[2]
-    assert "# LUNA — PERSONA v3.4" in persona and "# DEXTER" not in text, lvl
+    assert "# LUNA — PERSONA v3.5" in persona and "# DEXTER" not in text, lvl
     assert context_of(text)["selection"]["persona_id"] == "luna", lvl
     # Ступени ростинга — только персоне с матом; у Луны его нет.
-    assert "==== YOUR TIER IN THIS CALL" not in text, lvl
+    assert "==== YOUR WORD RATING IN THIS CALL" not in text, lvl
     assert "==== LIMITS FOR EVERY REPLY" in text, lvl
-# Луна говорит en/ru/kk — язык объяснений не чинится.
+# С v3.5 Луна говорит en/ru: казахский выбор чинится в русский, как у Декстера.
+assert "- supported_languages: en, ru\n" in BUDDY_PERSONAS["luna"]
 assert context_of(build_buddy_instructions(p, "luna"))["language"]["support_language"] == "ru"
 kz = build_buddy_instructions(profile(explanation_lang="kz"), "luna")
-assert context_of(kz)["language"]["support_language"] == "kk"
+assert context_of(kz)["language"]["support_language"] == "ru"
 
 # ── Эмоции: весь набор Луны ложится на разрешённые стенду, злости нет ────────
 allowed = TUTOR_MOODS[KZ_DEV_STAND_PERSONA]
@@ -95,7 +98,8 @@ vp = buddy_voice_profile(p)
 assert vp.tutor == "gentle" and p.tutor == KZ_DEV_STAND_PERSONA, "исходный профиль не трогаем"
 assert _tts_provider_for(vp) == _tts_provider_for(LearnerProfile(tutor="gentle"))
 assert vp.tts_lang == "ru"
-assert buddy_voice_profile(profile(explanation_lang="kz")).tts_lang == "kk"
+assert buddy_voice_profile(profile(explanation_lang="kz")).tts_lang == "ru"
+assert vp.tts_provider == "", "голос стенда — живой Луны, своего провайдера у него нет"
 assert buddy_voice_profile(profile(english_only=True)).tts_lang == "en"
 
 # ── Мозг — Haiku 5.5, канарейки шума — по ключу стенда ───────────────────────
