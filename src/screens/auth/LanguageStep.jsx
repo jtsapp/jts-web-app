@@ -1,4 +1,5 @@
 import { LANGS, useI18n } from '../../i18n.jsx'
+import CountryFlag from '../../components/CountryFlag.jsx'
 import AuthLayout, { AuthHeading } from './AuthLayout.jsx'
 import { PrimaryButton } from './fields.jsx'
 
@@ -7,6 +8,8 @@ import { PrimaryButton } from './fields.jsx'
 const HELLO = { ru: 'Привет!', kk: 'Сәлем!', en: 'Hello!' }
 // Порядок карточек — как в кадре: русский, казахский, английский.
 const ORDER = ['ru', 'kk', 'en']
+// Флаг языка — эмодзи-флаг страны из макета (CountryFlag), а не плоская иконка.
+const FLAG = { ru: 'ru', kk: 'kz', en: 'gb' }
 
 /**
  * Первый экран регистрации: язык интерфейса. Выбор применяется сразу — экран
@@ -27,7 +30,6 @@ export default function LanguageStep({ onBack, onContinue }) {
       <AuthHeading title={t('rg.lang.title')} sub={t('rg.lang.sub')} />
       <div className="rg-langs" role="radiogroup" aria-label={t('rg.lang.title')}>
         {langs.map((l) => {
-          const Flag = l.Flag
           const active = l.code === lang
           return (
             <button
@@ -40,7 +42,7 @@ export default function LanguageStep({ onBack, onContinue }) {
               lang={l.code === 'kk' ? 'kk' : l.code}
             >
               <span className="rg-lang__flag">
-                <Flag size={32} />
+                <CountryFlag iso={FLAG[l.code]} height={21} />
               </span>
               <span className="rg-lang__text">
                 <span className="rg-lang__name">{l.label}</span>

@@ -352,11 +352,10 @@
   font: inherit;
   cursor: pointer;
 }
-.rg-phone__iso {
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  color: var(--rg-text-2);
+/* Флаг вместо букв «KZ» из кадра — просьба владельца 23.10.2026: флаги стран. */
+.rg-phone__flag {
+  display: block;
+  flex: none;
 }
 .rg-phone__dial {
   font-size: 16px;
@@ -411,11 +410,9 @@
   background: var(--rg-accent-soft);
   color: var(--rg-accent);
 }
-.rg-phone__item-iso {
-  width: 22px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--rg-muted);
+.rg-phone__item-flag {
+  display: block;
+  flex: none;
 }
 .rg-phone__item-name {
   flex: 1;
@@ -612,9 +609,11 @@
   border-color: var(--rg-accent);
   background: var(--rg-accent-soft);
 }
+/* Флаг языка — эмодзи-флаг из макета: глиф 32-го кегля, ~29×21 в поле 32. */
 .rg-lang__flag {
   flex: none;
   display: inline-flex;
+  justify-content: center;
   width: 32px;
 }
 .rg-lang__text {

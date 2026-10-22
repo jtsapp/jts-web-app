@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { COUNTRY_OPTIONS, DEFAULT_COUNTRY, formatNational } from '../../data/countries.js'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../../lib/googleAuth.js'
+import CountryFlag from '../../components/CountryFlag.jsx'
 import {
   ArrowForwardIcon,
   ExpandMoreIcon,
@@ -145,7 +146,7 @@ export function PhoneInput({ id, value, onChange, onBlur, invalid, autoFocus }) 
           aria-expanded={open}
           aria-label={t('phone.country')}
         >
-          <span className="rg-phone__iso">{country.iso === 'other' ? '' : country.iso.toUpperCase()}</span>
+          <CountryFlag iso={country.iso} height={18} className="rg-phone__flag" />
           {country.dial && <span className="rg-phone__dial">+{country.dial}</span>}
           {!country.dial && <ExpandMoreIcon />}
         </button>
@@ -181,7 +182,7 @@ export function PhoneInput({ id, value, onChange, onBlur, invalid, autoFocus }) 
                 className={`rg-phone__item${c.iso === country.iso ? ' is-active' : ''}`}
                 onClick={() => pick(c)}
               >
-                <span className="rg-phone__item-iso">{c.iso === 'other' ? '…' : c.iso.toUpperCase()}</span>
+                <CountryFlag iso={c.iso} height={16} className="rg-phone__item-flag" />
                 <span className="rg-phone__item-name">{c.name}</span>
                 {c.dial && <span className="rg-phone__item-dial">+{c.dial}</span>}
               </button>
