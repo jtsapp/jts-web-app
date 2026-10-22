@@ -109,6 +109,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('lesson') // 'lesson' | 'board'
+  // Урок во весь экран. На телефоне рамка материала занимала полэкрана: сверху
+  // шапка, ряд значков, плашка статуса и вкладки, снизу «Темы / Группа», и урок
+  // прокручивался внутри маленького окна поверх прокрутки страницы (видео
+  // владельца 21.10.2026). Развёрнутая рамка закрывает собой весь экран.
+  const [frameExpanded, setFrameExpanded] = useState(false)
+  const expandButtonRef = useRef(null)
   // Выход из живого урока спрашивает подтверждение — тем же диалогом, что и
   // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
   const [confirmExit, setConfirmExit] = useState(false)
@@ -1806,6 +1812,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // и проиграется, когда она загрузится. Отправленная просьба помечается, а не
   // стирается — стирать через setState в эффекте значит каскад рендеров.
   const frameOnScreen = state === 'ready' && lesson != null && lessonOpen && tab === 'lesson' && view === 'file'
+  // Рамка ушла с экрана (доска, указка на шаг разбора, урок закрылся) —
+  // развёрнутость гаснет вместе с ней, а не ждёт возвращения: иначе ученик,
+  // вернувшийся на урок, получил бы экран без шапки, о котором не просил.
+  // Сброс прямо в рендере, а не эффектом — без лишнего кадра с пустым экраном.
+  if (frameExpanded && !frameOnScreen) setFrameExpanded(false)
+  const expanded = frameExpanded && frameOnScreen
+  const collapseFrame = () => {
+    setFrameExpanded(false)
+    // Кнопка «Свернуть» исчезает вместе с режимом — фокус возвращается туда,
+    // откуда режим включили, а не падает на body.
+    requestAnimationFrame(() => expandButtonRef.current?.focus())
+  }
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (e) => { if (e.key === 'Escape') collapseFrame() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [expanded])
   const catchUpSentRef = useRef(null)
   useEffect(() => {
     if (!catchUp || catchUpSentRef.current === catchUp) return
@@ -1893,7 +1917,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
     // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
-    <div className="lv">
+    <div className={`lv${expanded ? ' is-immersive' : ''}`}>
       {/* Словарь открывается листом поверх урока, а не переходом в раздел
           «Словарь»: onNav увёл бы ученика с урока, ради которого он это слово и
           смотрел, а вернуться в урок было бы нечем. */}
@@ -1987,6 +2011,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       <span className="ls-follow__text">
                         {t(followTeacher ? 'live.followOn' : 'live.followOff')}
                       </span>
+                    </button>
+                  )}
+                  {/* Только на узком экране (CSS): на компьютере рамка и так
+                      занимает колонку целиком. */}
+                  {frameOnScreen && (
+                    <button
+                      ref={expandButtonRef}
+                      type="button"
+                      className="ls-expand"
+                      onClick={() => setFrameExpanded(true)}
+                      aria-pressed={expanded}
+                      aria-label={t('live.expandLessonHint')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                      </svg>
+                      <span className="ls-expand__text">{t('live.expandLesson')}</span>
                     </button>
                   )}
                 </div>
@@ -2199,7 +2240,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className="live__status-msg">{t('lesson.ws.accessDenied')}</p>
                       ) : (
                         <SectionMaterialFrame
-                          className={stageFlags}
+                          className={`${stageFlags}${expanded ? ' is-expanded' : ''}`}
                           ref={materialFrameRef}
                           lessonId={lessonId}
                           token={token}
@@ -2215,6 +2256,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onStage={handleFrameStage}
                           onStageList={handleFrameStageList}
                         />
+                      )}
+                      {expanded && (
+                        <button
+                          type="button"
+                          className="lw-frame-collapse"
+                          onClick={collapseFrame}
+                          aria-label={t('live.collapseLessonHint')}
+                          autoFocus
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+                          </svg>
+                          {t('live.collapseLesson')}
+                        </button>
                       )}
 
                       {/* Урок проходится кнопками под заданием, а не только
