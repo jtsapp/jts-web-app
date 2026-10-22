@@ -65,6 +65,13 @@ export const LISTEN_KEY = 'jts_listen_done'
 // «Свой список» преподавателя — текст поля этого устройства. Не синкается, но
 // чистится вместе с прогрессом: на общей машине список достался бы следующему.
 export const LISTEN_OWN_KEY = 'jts_listen_own'
+// Прогресс Cartoon World: { missions: { <id видео>: { turns: [{ t, p, w }], done, at, u } } } — ответы ученика
+// по ходам, «пройдено» и время последней правки (u). Replace со сведением merge (cartoons/progress.js):
+// пройденная миссия не «распроходится», а ходы берутся у свежей копии.
+export const CARTOONS_KEY = 'jts_cartoons_v1'
+// Черновики ответов миссий { <id видео>: текст } — только устройство: недописанный текст на другое устройство не
+// везём, но чистим вместе с прогрессом (на общей машине это тексты ученика).
+export const CARTOONS_DRAFTS_KEY = 'jts_cartoons_drafts'
 // «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
 // «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
 // 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
@@ -86,6 +93,7 @@ export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
 export const LISTEN_PROGRESS_EVENT = 'listen-progress'
+export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

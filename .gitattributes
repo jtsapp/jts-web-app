@@ -1,3 +1,4 @@
 # Shell-скрипты всегда с LF: с CRLF они не запускаются на Linux и macOS,
 # а разработка идёт и с Windows (core.autocrlf там подменяет окончания строк).
 *.sh text eol=lf
+src/practice/cartoons/__fixtures__/*.html -text
