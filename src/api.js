@@ -2016,6 +2016,18 @@ export function getPrepositions(token, onFresh) {
   return cachedAuthGet('/mobile/prepositions', token, onFresh)
 }
 
+// Cartoon World: каталог (~330 КБ — источники прототипа как есть, ссылки на фоны, нерабочие видео). Большой ответ
+// cachedAuthGet держит только в памяти вкладки.
+export function getCartoons(token, onFresh) {
+  return cachedAuthGet('/mobile/cartoons', token, onFresh)
+}
+
+// Одна миссия видео (~8 КБ) — при открытии видео. Без кэша в localStorage: 726 миссий съели бы квоту, а память
+// вкладки держит сам движок.
+export function getCartoonMission(token, id) {
+  return authGet(`/mobile/cartoons/missions/${encodeURIComponent(id)}`, token)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }
