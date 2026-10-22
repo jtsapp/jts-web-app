@@ -2286,6 +2286,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     </div>
 
                     <div className="lw-live-aside">
+                      {/* Звонок — первым в колонке, над темами (решение владельца 23.10).
+                          Урок кончился — звонка на его месте быть не должно:
+                          звонить уже некуда. Вместо него итог (спека §3.4). */}
+                      {status === 'COMPLETED' ? (
+                        <div className="lw-card lw-summary">
+                          <h3 className="lw-summary__title">{t('live.summaryTitle')}</h3>
+                          <p className="lw-summary__value">
+                            {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
+                          </p>
+                        </div>
+                      ) : lesson.format === 'ONLINE' ? (
+                        <LessonVideo
+                          video={video}
+                          lessonType={lesson.lessonType}
+                          enabled={videoEnabled}
+                          renderFallback={() => (isStaff ? renderMeetCard() : null)}
+                        />
+                      ) : isStaff ? renderMeetCard() : null}
                       {/* Маршрут урока и «Топики урока» были двумя списками в
                           двух колонках — в макете это один список справа, и
                           рядом с ним вкладка с составом класса.
@@ -2316,23 +2334,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onCall={sendCall}
                         />
                       )}
-                      {/* Урок кончился — звонка на его месте быть не должно:
-                          звонить уже некуда. Вместо него итог (спека §3.4). */}
-                      {status === 'COMPLETED' ? (
-                        <div className="lw-card lw-summary">
-                          <h3 className="lw-summary__title">{t('live.summaryTitle')}</h3>
-                          <p className="lw-summary__value">
-                            {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
-                          </p>
-                        </div>
-                      ) : lesson.format === 'ONLINE' ? (
-                        <LessonVideo
-                          video={video}
-                          lessonType={lesson.lessonType}
-                          enabled={videoEnabled}
-                          renderFallback={() => (isStaff ? renderMeetCard() : null)}
-                        />
-                      ) : isStaff ? renderMeetCard() : null}
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
