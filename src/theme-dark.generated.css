@@ -1696,6 +1696,9 @@ html[data-theme="dark"] .pf-modal__grab {
 html[data-theme="dark"] .pf-modal__title {
     color: var(--ink)
 }
+html[data-theme="dark"] .pf-note {
+    color: var(--dk-text-2)
+}
 html[data-theme="dark"] .pf-lang {
     border: 1px solid var(--dk-line);
     background: var(--dk-page);
@@ -12591,6 +12594,13 @@ html[data-theme="dark"] .st-band.is-strong {
 }
 html[data-theme="dark"] .st-self__offer {
     color: var(--ih-muted, #667085)
+}
+html[data-theme="dark"] .st-timing {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-timing.is-short {
+    background: var(--dk-yellow-tint)
 }
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {

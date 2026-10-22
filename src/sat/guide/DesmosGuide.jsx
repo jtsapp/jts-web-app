@@ -1,19 +1,41 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import GUIDE from '../data/desmosGuide.json'
 import { pick } from '../model/profile.js'
 import { DESMOS_URL } from '../question/DesmosDock.jsx'
 import { CheckCircleIcon, InfoIcon, OpenInNewIcon, RadioOffIcon } from '../../ielts/icons.jsx'
+import { getSatGuideStudied, importSatGuideStudied, markSatGuideStudied } from '../../api.js'
+import { loadToken } from '../../lib/session.js'
 
+// Прежнее место отметок — браузер. С ТЗ 21.10 (задача 17) они на сервере; ключ читается один раз, чтобы перенести.
 const KEY = 'jts_sat_desmos_studied'
 
-function readStudied() {
+function readLocal() {
   try {
     const v = JSON.parse(window.localStorage.getItem(KEY) || '[]')
-    return new Set(Array.isArray(v) ? v : [])
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []
   } catch {
-    return new Set()
+    return []
   }
+}
+
+function dropLocal() {
+  try {
+    window.localStorage.removeItem(KEY)
+  } catch {
+    /* ключ останется — при следующем заходе перенос просто повторится */
+  }
+}
+
+/** Отметки с сервера; старые из браузера переносятся при первом заходе и стираются только после ответа сервера. */
+async function loadStudied(token) {
+  const local = readLocal()
+  if (local.length) {
+    const ids = await importSatGuideStudied(token, local)
+    dropLocal()
+    return ids
+  }
+  return getSatGuideStudied(token)
 }
 
 /**
@@ -41,25 +63,38 @@ function Video({ url, credit, title }) {
  * Гид по Desmos (Figma SAT 20; данные — prototype desmos-guide.js): уроки слева с отметкой «изучено», справа урок
  * одного вида для всех — видео, плашка «Этот урок — видео…», рабочий калькулятор и «Упражнения» (ТЗ SAT 17.10,
  * задача 14: формат урока 6 — единственный; текстовые шаги и вводный абзац уроков 1–4 не показываются).
- * Отметки «изучено» — на устройстве.
+ * Отметки «изучено» — в аккаунте (задача 17): одни на ноутбуке и телефоне.
  */
 export default function DesmosGuide({ seg }) {
   const { t, lang } = useI18n()
   const sections = GUIDE.sections
   const [open, setOpen] = useState(0)
-  const [studied, setStudied] = useState(() => readStudied())
+  const [studied, setStudied] = useState(() => new Set())
   const s = sections[open]
 
-  const toggle = () => {
-    const next = new Set(studied)
-    if (next.has(s.id)) next.delete(s.id)
-    else next.add(s.id)
-    setStudied(next)
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify([...next]))
-    } catch {
-      /* отметка не сохранится — урок от этого не хуже */
+  useEffect(() => {
+    const token = loadToken()
+    if (!token) return undefined
+    let alive = true
+    loadStudied(token)
+      .then((ids) => alive && Array.isArray(ids) && setStudied(new Set(ids)))
+      .catch(() => {
+        /* сервер не ответил — отметок не видно, но и не потеряны */
+      })
+    return () => {
+      alive = false
     }
+  }, [])
+
+  const toggle = () => {
+    const on = !studied.has(s.id)
+    const next = new Set(studied)
+    if (on) next.add(s.id)
+    else next.delete(s.id)
+    setStudied(next)
+    markSatGuideStudied(loadToken(), s.id, on)
+      .then((ids) => Array.isArray(ids) && setStudied(new Set(ids)))
+      .catch(() => setStudied(studied))
   }
   const go = (i) => setOpen(i)
   const done = sections.filter((x) => studied.has(x.id)).length

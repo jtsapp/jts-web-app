@@ -3,6 +3,7 @@ import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, FlagIcon, InfoIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { RouteIcon, SigmaIcon } from '../icons.jsx'
 import { bands } from '../model/plan.js'
+import TimingBanner from '../plan/TimingBanner.jsx'
 import { domainShares } from '../model/profile.js'
 import { TAXONOMY, domainName, domainSection } from '../names.js'
 
@@ -36,7 +37,7 @@ function Dots({ correct, total }) {
  * приоритета, с которых откроется план. startKey — ключ первой фазы с занятиями (её и называет макет).
  * Первый раз ведёт к времени на занятия (Figma 10); когда план уже есть — к плану и к повторной диагностике.
  */
-export default function DiagnosticReport({ result, finishedAt, startKey, planExists, stale, busy, onRoadmap, onNext, onRetake, onPlan, onRebuild }) {
+export default function DiagnosticReport({ result, finishedAt, startKey, timing, onManager, onRoadmap, onRetake, onPlan }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const total = result.total || 0
@@ -136,28 +137,18 @@ export default function DiagnosticReport({ result, finishedAt, startKey, planExi
         <p className="st-rep__paper"><InfoIcon size={18} />{t('sat.rep.paperItems', { n: String(result.paperItems) })}</p>
       )}
 
-      {planExists && stale && (
-        // Нет в Figma: план построен до этого результата — адаптация прототипа diagnostic.js (diag.planStale)
-        <div className="st-rep__stale">
-          <span>{t('sat.rep.stale')}</span>
-          <button type="button" className="ih-btn ih-btn--outline" disabled={busy} onClick={onRebuild}>{t('sat.plan.rebuild')}</button>
-        </div>
-      )}
+      {/* план строится впервые — сразу видно, помещается ли он до экзамена (задача 4) */}
+      <TimingBanner timing={timing} onManager={onManager} />
 
       <div className="st-rep__foot">
         <span className="st-muted">{t('sat.rep.footNote')}</span>
         <span className="st-spacer" />
-        {planExists ? (
-          <>
-            <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRetake}>{t('sat.dx.retake')}</button>
-            <button type="button" className="ih-cta st-rep__cta" onClick={onPlan}>{t('sat.rep.toPlan')}<ArrowForwardIcon size={20} /></button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRoadmap}><RouteIcon size={20} />{t('sat.rep.roadmap')}</button>
-            <button type="button" className="ih-cta st-rep__cta" onClick={onNext}>{t('sat.rep.next')}<ArrowForwardIcon size={20} /></button>
-          </>
+        {/* после диагностики — сразу готовое расписание группы, без шага настройки (ТЗ 21.10, задача 3.1) */}
+        <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRetake}>{t('sat.dx.retake')}</button>
+        {onRoadmap && (
+          <button type="button" className="ih-btn ih-btn--outline st-rep__btn" onClick={onRoadmap}><RouteIcon size={20} />{t('sat.rep.roadmap')}</button>
         )}
+        <button type="button" className="ih-cta st-rep__cta" onClick={onPlan}>{t('sat.rep.toPlan')}<ArrowForwardIcon size={20} /></button>
       </div>
     </main>
   )

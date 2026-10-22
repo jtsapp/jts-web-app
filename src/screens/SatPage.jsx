@@ -148,7 +148,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       ? t('sat.dateUndecided')
       : null
 
-  // в диагностику — на нужный шаг (?satDiag=time — время на занятия после сданной диагностики)
+  // в диагностику — на нужный шаг (?satDiag=intro|report)
   const toDiagnostic = (step) => {
     try {
       const url = new URL(window.location.href)
@@ -322,6 +322,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onReview={review}
         onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
+        onManager={() => onNav?.('sat-pricing')}
       />
     )
   }

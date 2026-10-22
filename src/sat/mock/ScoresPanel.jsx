@@ -147,6 +147,8 @@ export function ScoresTable({ entries, onAdd, onDelete, onReview, busy }) {
               <span role="cell" className="is-wide">{r.takenOn ? fmtDate(loc, day(r.takenOn), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—'}</span>
               <span role="cell" className="is-wide">
                 <span className={`st-mocks__src is-${String(r.source).toLowerCase()}`} title={r.label || undefined}><i /><span>{r.label || t(`sat.scores.src.${r.source}`)}</span></span>
+                {/* Bluebook-тест ждёт куратора: учитывается, но помечен (ТЗ 21.10, задача 16) */}
+                {r.pending && <span className="st-bb__status is-pending">{t('sat.bb.pending')}</span>}
               </span>
               <span role="cell" data-label={t('sat.mock.col.rw')}><b>{r.rw ?? '—'}</b></span>
               <span role="cell" data-label={t('sat.mock.col.math')}><b>{r.math ?? '—'}</b></span>

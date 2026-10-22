@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSatDiagnostic, getSatPlan, getSatProfile, getSatRoadmap, rebuildSatPlan, saveSatPlan, saveSatProfile, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
+import { getSatDiagnostic, getSatProfile, getSatRoadmap, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
@@ -7,7 +7,6 @@ import useSatSession from '../sat/question/useSatSession.js'
 import { timeOn } from '../sat/question/session.js'
 import DiagnosticIntro from '../sat/diagnostic/DiagnosticIntro.jsx'
 import DiagnosticReport from '../sat/diagnostic/DiagnosticReport.jsx'
-import StudyTime from '../sat/diagnostic/StudyTime.jsx'
 import RoadmapView from '../sat/plan/RoadmapView.jsx'
 import { SatModal } from '../sat/question/ToolDialogs.jsx'
 import { phaseKeyOf } from '../sat/model/roadmap.js'
@@ -15,7 +14,7 @@ import { domainName } from '../sat/names.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
 
-const STEPS = ['intro', 'report', 'time']
+const STEPS = ['intro', 'report']
 
 function readStep() {
   try {
@@ -98,15 +97,14 @@ function DiagnosticRun({ diag, onExit, onDone }) {
 }
 
 /**
- * Диагностика SAT — фаза 4 плана: старт (Figma 7) → 24 вопроса (Figma 8) → карта (Figma 9) → время на занятия
- * (Figma 10) → план. Шаг держится в ?satDiag=intro|report|time: перезагрузка не выбрасывает в начало, а идущая
- * диагностика всегда продолжается с того же места (набор на сервере, ответы — черновиком на устройстве).
+ * Диагностика SAT: старт (Figma 7) → 24 вопроса (Figma 8) → карта (Figma 9) → план. Шага «время на занятия» больше нет
+ * (ТЗ 21.10, задача 3.1): даты занятий ставит школа, язык разборов — в «Настройках» профиля. Шаг держится в
+ * ?satDiag=intro|report: перезагрузка не выбрасывает в начало, а идущая диагностика продолжается с того же места.
  */
 export default function SatDiagnosticPage({ token, onNav }) {
   const { t } = useI18n()
   const authToken = token || loadToken()
   const [diag, setDiag] = useState(null)
-  const [plan, setPlan] = useState(null)
   const [profile, setProfile] = useState(null)
   const [step, setStep] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -116,19 +114,17 @@ export default function SatDiagnosticPage({ token, onNav }) {
   const [road, setRoad] = useState(null)
 
   const load = useCallback(async () => {
-    const [d, p, pr] = await Promise.all([
+    const [d, , pr] = await Promise.all([
       getSatDiagnostic(authToken).catch(() => ({ status: 'none' })),
-      getSatPlan(authToken).catch(() => ({ exists: false })),
       getSatRoadmap(authToken).then(setRoad).catch(() => null),
       getSatProfile(authToken).catch(() => ({ exists: false })),
     ])
     setDiag(d)
-    setPlan(p)
     setProfile(pr)
     const want = readStep()
     if (d.status === 'active') setStep('run')
     else if (want === 'intro' || d.status === 'none') setStep('intro')
-    else setStep(want === 'time' ? 'time' : 'report')
+    else setStep('report')
   }, [authToken])
 
   useEffect(() => {
@@ -175,32 +171,6 @@ export default function SatDiagnosticPage({ token, onNav }) {
     }
   }
 
-  const build = async ({ days, minutes, lang: explainLang }) => {
-    setBusy(true)
-    setError(null)
-    try {
-      await saveSatProfile(authToken, { explainLang })
-      const p = await saveSatPlan(authToken, { studyDays: days, minutesPerDay: minutes })
-      setPlan(p)
-      toPlan()
-    } catch {
-      setError(t('sat.time.buildError'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const rebuild = async () => {
-    setBusy(true)
-    try {
-      setPlan(await rebuildSatPlan(authToken))
-    } catch {
-      setError(t('sat.time.buildError'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   if (!step || !diag) return <div className="ih st st-ob" />
   if (step === 'run' && diag.status === 'active') {
     return (
@@ -216,11 +186,10 @@ export default function SatDiagnosticPage({ token, onNav }) {
   }
 
   const examDate = profile?.dateUndecided ? null : profile?.examDate || null
-  const today = new Date()
   // первая фаза с занятиями — её называет отчёт («начнём с … в фазе …»)
   const startKey = road ? phaseKeyOf(road.roadmap, road.roadmap.phases.find((p) => p.kind === 'lessons')?.n) : 'foundations1'
-  const chip = step === 'time' ? t('sat.time.chip') : t('sat.dx.chip')
-  const back = step === 'time' ? () => goStep('report') : exit
+  const chip = t('sat.dx.chip')
+  const back = exit
 
   let body = null
   if (step === 'intro') {
@@ -240,26 +209,11 @@ export default function SatDiagnosticPage({ token, onNav }) {
         result={diag.result}
         finishedAt={diag.finishedAt}
         startKey={startKey}
-        planExists={!!plan?.exists}
-        stale={!!plan?.stale}
-        busy={busy}
-        onRoadmap={() => setRoadmap(true)}
-        onNext={() => goStep('time')}
+        timing={road?.timing}
+        onManager={() => onNav?.('sat-pricing')}
+        onRoadmap={road ? () => setRoadmap(true) : null}
         onRetake={() => goStep('intro')}
         onPlan={toPlan}
-        onRebuild={rebuild}
-      />
-    )
-  } else if (step === 'time') {
-    body = (
-      <StudyTime
-        initial={plan?.exists ? { days: plan.studyDays, minutes: plan.minutesPerDay, lang: profile?.explainLang } : { lang: profile?.explainLang }}
-        examDate={examDate}
-        rebuilding={!!plan?.exists}
-        busy={busy}
-        error={error}
-        onBack={() => goStep('report')}
-        onBuild={build}
       />
     )
   }

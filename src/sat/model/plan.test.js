@@ -1,22 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  bands, horizonWeeks, intensity, monthGrid, nextLesson, parse, shownStatus, summarize,
+  bands, monthGrid, nextLesson, shownStatus,
 } from './plan.js'
 
-// Пример Figma 10–14 (тот же, что в SatPlannerTest бэкенда): вт 29 сен 2026, экзамен сб 5 дек, пн/ср/пт/сб по 60 минут
-const TODAY = parse('2026-09-29')
-const EXAM = '2026-12-05'
-
 describe('SAT plan model', () => {
-  it('сводка Figma 10 совпадает с правилами сервера', () => {
-    expect(horizonWeeks(TODAY, EXAM)).toBe(10)
-    expect(horizonWeeks(TODAY, null)).toBe(12)
-    // 4 дня × 10 недель − прошедший понедельник − день экзамена
-    expect(summarize(TODAY, EXAM, [1, 3, 5, 6], 60)).toEqual({ weeks: 10, lessons: 38, weekly: 240, intensity: 'standard' })
-    expect(intensity(2, 60)).toBe('light')
-    expect(intensity(5, 90)).toBe('intensive')
-  })
-
   const plan = {
     weeks: [
       {

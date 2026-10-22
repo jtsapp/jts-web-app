@@ -7,6 +7,7 @@ import { phaseKeyOf, phaseLessons } from '../model/roadmap.js'
 import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 import WeeklyCard from '../weekly/WeeklyCard.jsx'
+import TimingBanner from '../plan/TimingBanner.jsx'
 
 // Минуты действий занятия (Figma 11: «Изучить 5 мин · Практика 40 мин · Разбор ошибок 15 мин» при 60 минутах):
 // изучение и разбор — фиксированные, практика забирает остальное поровну
@@ -27,7 +28,7 @@ export function actionMinutes(lesson) {
  * которым пора вернуться, контрольная точка. Статистика — на вкладке «Прогресс» (Figma 16), словаря в SAT больше нет
  * (15.10.2026). Один следующий шаг на экране — главный.
  */
-export default function TodayTab({ today, plan, roadmap, schedule, onStart, onResume, onReview, onWeekly, onPlan }) {
+export default function TodayTab({ today, plan, roadmap, schedule, onStart, onResume, onReview, onWeekly, onPlan, onManager }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
@@ -116,6 +117,8 @@ export default function TodayTab({ today, plan, roadmap, schedule, onStart, onRe
           <button type="button" className="st-resume__btn" onClick={() => onResume(open.id)}>{t('sat.today.resume')}</button>
         </div>
       )}
+      {/* постоянно, пока ситуация не решена (ТЗ 21.10, задача 4); решилась — сервер вернёт ok, и баннера нет */}
+      <TimingBanner timing={roadmap.timing} onManager={onManager} />
       <div className="st-today__grid">
         <div className="st-today__main">
           {lessonBlock}

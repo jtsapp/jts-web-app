@@ -1933,6 +1933,20 @@ export function getSatSchedule(token) {
   return authGet('/mobile/sat/schedule', token)
 }
 
+/** Уроки гида по Desmos, отмеченные «изучено» (задача 17): [id]. */
+export function getSatGuideStudied(token) {
+  return authGet('/mobile/sat/guide/studied', token)
+}
+
+export function markSatGuideStudied(token, lessonId, studied) {
+  return authPut(`/mobile/sat/guide/studied/${encodeURIComponent(lessonId)}`, token, { studied })
+}
+
+/** Перенести отметки из браузера в аккаунт — только добавляет. */
+export function importSatGuideStudied(token, lessonIds) {
+  return authPost('/mobile/sat/guide/studied/import', token, { lessonIds })
+}
+
 /** Bluebook Test 6 → 8 → 10: баллы с приростом и снимки карты доменов. */
 export function getSatBluebook(token) {
   return authGet('/mobile/sat/bluebook', token)

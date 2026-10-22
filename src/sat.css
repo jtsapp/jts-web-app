@@ -10138,3 +10138,36 @@ mark.st-hl {
     padding: 6px 3px;
   }
 }
+
+/* ---- Хватает ли времени до экзамена (ТЗ 21.10, задача 4) ---- */
+.st-timing {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  background: #fffaeb;
+  color: #93370d;
+}
+.st-timing.is-short {
+  background: #fff4e5;
+}
+.st-timing > div {
+  flex: 1;
+}
+.st-timing ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-timing .ih-btn {
+  flex-shrink: 0;
+}
+@media (max-width: 560px) {
+  .st-timing {
+    flex-wrap: wrap;
+  }
+}

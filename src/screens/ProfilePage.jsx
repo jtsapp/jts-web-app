@@ -12,7 +12,7 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
+import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile, getSatMeCached, getSatProfile, saveSatProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadLevelSkillStatsRemote, readLocalLevelSkillStats } from '../practice/skillStats.js'
@@ -72,6 +72,9 @@ function nextRoleFor(level) {
   const nxt = ROLE_BY_LEVEL[next]
   return nxt && nxt.key !== cur?.key ? nxt : null
 }
+
+// Языки разборов SAT: вопросы и варианты всегда на английском, как на экзамене
+const SAT_EXPLAIN = { ru: 'Русский', kk: 'Қазақша', en: 'English' }
 
 export default function ProfilePage({
   userName,
@@ -183,6 +186,25 @@ export default function ProfilePage({
       setNotifEnabled(isSoundEnabled())
     } catch {}
   }, [])
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    Promise.resolve(getSatMeCached(token))
+      .then((me) => (me?.onboarded ? getSatProfile(token) : null))
+      .then((p) => alive && p?.exists && setSatLang(p.explainLang || 'ru'))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token])
+
+  const pickSatLang = (code) => {
+    setSatLangOpen(false)
+    const prev = satLang
+    setSatLang(code)
+    saveSatProfile(token, { explainLang: code }).catch(() => setSatLang(prev))
+  }
 
   // «Дней подряд» и «уроков пройдено» считает сервер: серия — по входам; уроки — занятия с
   // преподавателем, а если их нет — «Самостоятельно» (не складываются, чтобы не считать дважды).
