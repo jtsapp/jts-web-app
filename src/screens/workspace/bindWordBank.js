@@ -194,7 +194,7 @@ export function restampWordBankHtml(root, html, prefix, stampRef) {
  * grouped live card so split bank/paragraph keep one id series; a bank-only
  * info block must not paint (and clear) the paragraph's blanks.
  */
-export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { sync = true, prefix, clearMissing = true, checked = false } = {}) {
+export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { sync = true, prefix, clearMissing = true, checked = false, reveal = false } = {}) {
   if (!root) return
   tagWordBankGaps(root, prefix)
   const card = liveScope(root)
@@ -211,7 +211,7 @@ export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { syn
     gap.classList.toggle('is-live-here', on)
   })
   paintChips(card)
-  if (checked) gradeWordBankInRoot(root)
+  if (checked) gradeWordBankInRoot(root, { reveal })
   else clearWordBankGrades(root)
 }
 

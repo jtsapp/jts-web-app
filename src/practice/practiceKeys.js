@@ -57,7 +57,7 @@ export const NUMBERS_KEY = 'jts_numbers_done'
 // Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
 // синкается, но чистится вместе с прогрессом.
 export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
-// Лучшие результаты Just Listen It: { best: { <ключ прогона>: { ok, n, coins } } },
+// Лучшие результаты Just to Listen: { best: { <ключ прогона>: { ok, n, coins } } },
 // ключ — как в прототипе без префикса режима: A1-L3-0 (часть урока), A1-L4-R
 // (урок-повторение), A1-U2 (повторить юнит), A1-T (тест), business-T. Replace со
 // сведением merge (listenProgress.js): лучший результат с любого устройства не теряется.

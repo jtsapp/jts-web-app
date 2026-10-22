@@ -1253,6 +1253,12 @@
   pointer-events: auto;
 }
 
+.lw-gap-key {
+  margin-left: 8px;
+  font-weight: 700;
+  color: var(--lw-ok);
+}
+
 .lw-info__body input.gap.is-correct,
 .lw-practice__html input.gap.is-correct {
   border-color: #1a9e6a;

@@ -379,7 +379,7 @@ export default function App() {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
     }
-    // ?screen=listen&set=A1 — сразу уровень (или направление) Just Listen It:
+    // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
       const set = searchParams.get('set')
@@ -813,7 +813,7 @@ export default function App() {
   // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
-  const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just Listen It
+  const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just to Listen
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.

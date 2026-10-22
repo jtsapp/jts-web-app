@@ -23,24 +23,40 @@ export function collectCheckableGapIds(root) {
     .filter(Boolean)
 }
 
+function gapKeyNote(gap) {
+  const next = gap.nextElementSibling
+  return next && next.classList.contains('lw-gap-key') ? next : null
+}
+
 /**
  * Красит пропуски с `data-answer` в верно/неверно (как course Check answers).
- * Без ключа — open, не считаем.
+ * `reveal` — рядом с ошибкой пишет первый принятый вариант. Без ключа — open, не считаем.
  */
-export function gradeWordBankInRoot(root) {
+export function gradeWordBankInRoot(root, { reveal = false } = {}) {
   if (!root) return { correct: 0, total: 0 }
   let correct = 0
   let total = 0
   root.querySelectorAll(GAP).forEach((gap) => {
     const raw = (gap.getAttribute('data-answer') || '').trim()
+    const note = gapKeyNote(gap)
     if (!raw) {
       gap.classList.remove('is-correct', 'is-wrong')
+      if (note) note.remove()
       return
     }
     total += 1
     const ok = answerMatches(gap.value, raw.split('|').map((a) => a.trim()).filter(Boolean))
     gap.classList.toggle('is-correct', ok)
     gap.classList.toggle('is-wrong', !ok)
+    if (reveal && !ok) {
+      const text = raw.split('|')[0].trim()
+      const el = note || document.createElement('span')
+      el.className = 'lw-gap-key'
+      el.textContent = text
+      if (!note) gap.after(el)
+    } else if (note) {
+      note.remove()
+    }
     if (ok) correct += 1
   })
   return { correct, total }
@@ -50,5 +66,7 @@ export function clearWordBankGrades(root) {
   if (!root) return
   root.querySelectorAll(GAP).forEach((gap) => {
     gap.classList.remove('is-correct', 'is-wrong')
+    const note = gapKeyNote(gap)
+    if (note) note.remove()
   })
 }

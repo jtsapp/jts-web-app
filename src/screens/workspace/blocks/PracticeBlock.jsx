@@ -42,7 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
-  showAnswerKey = true, allowCheck = true,
+  showAnswerKey = true, revealChecked = false, allowCheck = true,
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -50,6 +50,9 @@ export default function PracticeBlock({
     return !!checked
   }
   const { t } = useI18n()
+  // Спойлер до проверки и эталон после «Проверить» — разные вещи. Второй
+  // открыт ученику живого урока, первый по-прежнему только у staff.
+  const showCheckedKey = showAnswerKey || revealChecked
   // Badge already shows card order — drop «3 ·» from course title/instruction
   // (and from leftover .instruction HTML) so the student sees one number.
   const displayTitle = stripExerciseNumber(block?.title)
@@ -85,7 +88,7 @@ export default function PracticeBlock({
 
   // Всё изменчивое, что читают слушатели на живом DOM: подписка не должна
   // зависеть от состояния, иначе она пересоздаётся на каждый ответ.
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked, questions, activeGapId }
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked, questions, activeGapId, revealChecked: showCheckedKey }
 
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
@@ -99,9 +102,9 @@ export default function PracticeBlock({
       return
     }
     if (htmlRef.current && hasWbCheck) {
-      setWbScore(gradeWordBankInRoot(htmlRef.current))
+      setWbScore(gradeWordBankInRoot(htmlRef.current, { reveal: showCheckedKey }))
     }
-  }, [checked, hasWbCheck, answers, tappableHtml])
+  }, [checked, hasWbCheck, answers, tappableHtml, showCheckedKey])
 
   // Слово из банка — в пропуск.
   //
@@ -188,7 +191,7 @@ export default function PracticeBlock({
     if (!canCheck) return
     const gapIds = collectCheckableGapIds(htmlRef.current)
     if (htmlRef.current && hasWbCheck) {
-      setWbScore(gradeWordBankInRoot(htmlRef.current))
+      setWbScore(gradeWordBankInRoot(htmlRef.current, { reveal: showCheckedKey }))
     }
     onCheck?.(gapIds)
   }
@@ -257,7 +260,7 @@ export default function PracticeBlock({
                 readOnly={readOnly}
                 onWord={onWord}
                 onFocusGap={setActiveGapId}
-                showAnswerKey={showAnswerKey}
+                showAnswerKey={showCheckedKey}
               />
             </div>
           )

@@ -20,7 +20,7 @@ import { stripAnswerKeySpoilers } from '../stripAnswerKeySpoilers.js'
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
 // info-блоков. `checked` — ученик нажал «Проверить» на этой карточке.
 // `showAnswerKey` — показывать ли спойлер «Why these answers» (только staff).
-function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked, showAnswerKey = true }) {
+function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked, showAnswerKey = true, revealChecked = false }) {
   const html = useMemo(() => {
     const raw = tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html)))
     return showAnswerKey ? raw : stripAnswerKeySpoilers(raw)
@@ -28,8 +28,8 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
   const title = block?.title ? stripExerciseNumber(block.title) : ''
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)
-  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked, revealChecked: false })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked, revealChecked: showAnswerKey || revealChecked }
 
   useEffect(() => {
     const root = bodyRef.current
