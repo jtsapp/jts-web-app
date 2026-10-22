@@ -39,6 +39,9 @@ import { mergeReadingState } from './readingState.js'
 // Replace; клиент сводит с серверным (listenProgress.js merge), чтобы лучший
 // результат не терялся. Area 'listen' бэкенду неизвестна — в домашнюю работу
 // раздел не отчитывается.
+// 'prepositions' — стейт-объект Prepositions World {done, score} (прочитанные уроки и лучшие результаты
+// наборов). Replace; клиент сводит с серверным (prepositions/progress.js merge). Area 'prepositions' бэкенду
+// неизвестна — в домашнюю работу раздел не отчитывается.
 // 'cartoons' — стейт-объект Cartoon World {missions: {<id видео>: {turns, done, at, u}}}. Replace; клиент сводит
 // с серверным (cartoons/progress.js merge): пройденное остаётся пройденным, ходы — у свежей копии. Area
 // 'cartoons' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
@@ -60,6 +63,7 @@ export const PRACTICE_MODULES = [
   'listenchoose',
   'numbers',
   'listen',
+  'prepositions',
   'cartoons',
   'vocabLearned',
   'vocabMisses',

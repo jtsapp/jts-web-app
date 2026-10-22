@@ -1,0 +1,806 @@
+{
+ "seed": 42,
+ "sessions": {
+  "#/practice/lesson/place-in-on-at": [
+   {
+    "id": "place/place-in-on-at/0",
+    "type": "scene",
+    "stem": "Aizere is ___ the hollow tree.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "in",
+     "under",
+     "outside"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/1",
+    "type": "scene",
+    "stem": "Aizere is ___ the rock.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "beside",
+     "on",
+     "behind"
+    ],
+    "ans": "on",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/2",
+    "type": "gap",
+    "stem": "Spark is ___ work until six.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "in",
+     "on"
+    ],
+    "ans": "at",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/3",
+    "type": "gap",
+    "stem": "The picture is ___ the wall.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "on",
+     "at",
+     "in"
+    ],
+    "ans": "on",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/4",
+    "type": "gap",
+    "stem": "We live ___ Almaty.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "on",
+     "in"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/5",
+    "type": "gap",
+    "stem": "Wait for me ___ the bus stop.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "in",
+     "on"
+    ],
+    "ans": "at",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/6",
+    "type": "gap",
+    "stem": "We came here ___ a taxi.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "on",
+     "in"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/7",
+    "type": "gap",
+    "stem": "Dexter's flat is ___ the fifth floor.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "in",
+     "at",
+     "on"
+    ],
+    "ans": "on",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/8",
+    "type": "gap",
+    "stem": "Write your name ___ the top of the page.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "by",
+     "at",
+     "in"
+    ],
+    "ans": "at",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/11",
+    "type": "fix",
+    "stem": "I met Luna [in] the bus stop.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "into",
+     "on",
+     "at"
+    ],
+    "ans": "at",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/9",
+    "type": "gap",
+    "stem": "Sorry, I can't talk now. I'm ___ the number 5 bus.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "on",
+     "at",
+     "in"
+    ],
+    "ans": "on",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/10",
+    "type": "gap",
+    "stem": "Aizere put the old chair ___ the corner of the room.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "in",
+     "at",
+     "on"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/12",
+    "type": "fix",
+    "stem": "Dexter is reading [at] bed.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "on",
+     "by",
+     "in"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/13",
+    "type": "compare",
+    "stem": null,
+    "text": null,
+    "lines": null,
+    "opts": [
+     "Luna put the plant in the corner.",
+     "Luna waited on the corner."
+    ],
+    "ans": 0,
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   }
+  ],
+  "#/practice/lesson/place-inside-outside-within": [
+   {
+    "id": "place/place-inside-outside-within/0",
+    "type": "gap",
+    "stem": "The keys are ___ the car. We can see them through the window.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "inside",
+     "out of"
+    ],
+    "ans": "inside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/1",
+    "type": "gap",
+    "stem": "It is raining, so the children are playing ___ the house.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "out of",
+     "inside"
+    ],
+    "ans": "inside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/2",
+    "type": "gap",
+    "stem": "Luna can't go in. She is waiting ___ the classroom.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "within",
+     "inside"
+    ],
+    "ans": "outside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/3",
+    "type": "scene",
+    "stem": "Aizere is ___ the tent.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "next to",
+     "below",
+     "outside"
+    ],
+    "ans": "outside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/4",
+    "type": "scene",
+    "stem": "Luna is ___ the spaceship.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "next to",
+     "inside",
+     "over"
+    ],
+    "ans": "inside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/5",
+    "type": "gap",
+    "stem": "We don't live in Almaty. We live in a small village just ___ the city.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "in",
+     "inside"
+    ],
+    "ans": "outside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/6",
+    "type": "gap",
+    "stem": "Mr Brown is not here. He is ___ town until Friday.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "inside",
+     "within",
+     "out of"
+    ],
+    "ans": "out of",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/7",
+    "type": "gap",
+    "stem": "Is there a cafe ___ 500 metres of the school?",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "within",
+     "outside",
+     "in"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/9",
+    "type": "scene",
+    "stem": "The hollow tree is ___ the tent.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "above",
+     "in front of",
+     "outside"
+    ],
+    "ans": "outside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/8",
+    "type": "gap",
+    "stem": "Most students live ___ 3 km of the university, so they walk to class.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "out of",
+     "within"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/10",
+    "type": "dialogue",
+    "stem": null,
+    "text": null,
+    "lines": [
+     "A: Where is Mr Ali? I need him now.",
+     "B: He's ___ the office today. He's at a conference."
+    ],
+    "opts": [
+     "inside",
+     "out of",
+     "in"
+    ],
+    "ans": "out of",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/11",
+    "type": "fix",
+    "stem": "Dexter lives [in] 5 km of the city centre.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "on",
+     "within"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   }
+  ],
+  "#/practice/cat/place": [
+   {
+    "id": "place/place-in-on-at/6",
+    "type": "gap",
+    "stem": "We came here ___ a taxi.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "on",
+     "in"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/7",
+    "type": "gap",
+    "stem": "Is there a cafe ___ 500 metres of the school?",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "in",
+     "within",
+     "outside"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/8",
+    "type": "gap",
+    "stem": "Most students live ___ 3 km of the university, so they walk to class.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "out of",
+     "within"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/12",
+    "type": "fix",
+    "stem": "Dexter is reading [at] bed.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "on",
+     "in",
+     "by"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/2",
+    "type": "gap",
+    "stem": "She sat ___ me at dinner, so we could look at each other across the table.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "opposite",
+     "beside",
+     "behind"
+    ],
+    "ans": "opposite",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/6",
+    "type": "gap",
+    "stem": "The children are sitting ___ the fire, listening to a story.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "around",
+     "beyond",
+     "against"
+    ],
+    "ans": "around",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/5",
+    "type": "gap",
+    "stem": "There are four cafes ___ 300 metres of the school.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "among",
+     "around",
+     "within"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/3",
+    "type": "gap",
+    "stem": "The village is 1,500 metres ___ sea level.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "above",
+     "below",
+     "beside"
+    ],
+    "ans": "above",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/0",
+    "type": "passage",
+    "stem": null,
+    "text": "My cousin lives ___(1) Astana. Her flat is ___(2) the fifth floor. The park is ___(3) her building, on the other side of the street. A bakery is ___(4) the bank and the pharmacy. She waits for the bus ___(5) the bus stop in front of the park.",
+    "lines": null,
+    "opts": null,
+    "ans": null,
+    "gaps": [
+     {
+      "opts": [
+       "at",
+       "on",
+       "in"
+      ],
+      "ans": "in"
+     },
+     {
+      "opts": [
+       "in",
+       "at",
+       "on"
+      ],
+      "ans": "on"
+     },
+     {
+      "opts": [
+       "opposite",
+       "under",
+       "behind"
+      ],
+      "ans": "opposite"
+     },
+     {
+      "opts": [
+       "between",
+       "above",
+       "among"
+      ],
+      "ans": "between"
+     },
+     {
+      "opts": [
+       "in",
+       "on",
+       "at"
+      ],
+      "ans": "at"
+     }
+    ],
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/4",
+    "type": "gap",
+    "stem": "The cat is hiding ___ the sofa, so you can't see it from the door.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "between",
+     "behind",
+     "within"
+    ],
+    "ans": "behind",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/1",
+    "type": "passage",
+    "stem": null,
+    "text": "There is a map ___(1) the wall ___(2) my bed. My desk is ___(3) the window, so I can see the garden. My cat sleeps ___(4) my bed, on the floor.",
+    "lines": null,
+    "opts": null,
+    "ans": null,
+    "gaps": [
+     {
+      "opts": [
+       "in",
+       "on",
+       "at"
+      ],
+      "ans": "on"
+     },
+     {
+      "opts": [
+       "between",
+       "above",
+       "under"
+      ],
+      "ans": "above"
+     },
+     {
+      "opts": [
+       "between",
+       "among",
+       "next to"
+      ],
+      "ans": "next to"
+     },
+     {
+      "opts": [
+       "under",
+       "over",
+       "above"
+      ],
+      "ans": "under"
+     }
+    ],
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   }
+  ],
+  "#/practice/final": [
+   {
+    "id": "place/int/6",
+    "type": "gap",
+    "stem": "The children are sitting ___ the fire, listening to a story.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "beyond",
+     "around",
+     "against"
+    ],
+    "ans": "around",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/int/0",
+    "type": "passage",
+    "stem": null,
+    "text": "My cousin lives ___(1) Astana. Her flat is ___(2) the fifth floor. The park is ___(3) her building, on the other side of the street. A bakery is ___(4) the bank and the pharmacy. She waits for the bus ___(5) the bus stop in front of the park.",
+    "lines": null,
+    "opts": null,
+    "ans": null,
+    "gaps": [
+     {
+      "opts": [
+       "at",
+       "in",
+       "on"
+      ],
+      "ans": "in"
+     },
+     {
+      "opts": [
+       "at",
+       "on",
+       "in"
+      ],
+      "ans": "on"
+     },
+     {
+      "opts": [
+       "under",
+       "opposite",
+       "behind"
+      ],
+      "ans": "opposite"
+     },
+     {
+      "opts": [
+       "between",
+       "above",
+       "among"
+      ],
+      "ans": "between"
+     },
+     {
+      "opts": [
+       "in",
+       "on",
+       "at"
+      ],
+      "ans": "at"
+     }
+    ],
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/11",
+    "type": "fix",
+    "stem": "Dexter lives [in] 5 km of the city centre.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "within",
+     "on"
+    ],
+    "ans": "within",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-inside-outside-within/9",
+    "type": "scene",
+    "stem": "The hollow tree is ___ the tent.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "outside",
+     "over",
+     "on"
+    ],
+    "ans": "outside",
+    "gaps": null,
+    "lesson": "place-inside-outside-within",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/12",
+    "type": "fix",
+    "stem": "Dexter is reading [at] bed.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "on",
+     "in",
+     "by"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   },
+   {
+    "id": "place/place-in-on-at/6",
+    "type": "gap",
+    "stem": "We came here ___ a taxi.",
+    "text": null,
+    "lines": null,
+    "opts": [
+     "at",
+     "on",
+     "in"
+    ],
+    "ans": "in",
+    "gaps": null,
+    "lesson": "place-in-on-at",
+    "cat": "place"
+   }
+  ]
+ }
+}

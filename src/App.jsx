@@ -30,6 +30,7 @@ import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
+import PrepositionsPage from './screens/PrepositionsPage.jsx'
 import CartoonsPage from './screens/CartoonsPage.jsx'
 import ListenPage from './screens/ListenPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
@@ -163,7 +164,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'cartoons', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'cartoons', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
@@ -1672,6 +1673,7 @@ export default function App() {
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
+    else if (key === 'prepositions') setScreen('prepositions')
     else if (key === 'cartoons') setScreen('cartoons')
     // Уровень приносит карточка Практики — она же и списала квоту.
     // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
@@ -2348,6 +2350,17 @@ export default function App() {
       return (
         <NumbersPage
           {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'prepositions':
+      return (
+        <PrepositionsPage
+          {...sectionBack('writing')}
           userLevel={userLevel}
           userName={name}
           token={token}

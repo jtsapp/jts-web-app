@@ -1,4 +1,8 @@
 # Shell-скрипты всегда с LF: с CRLF они не запускаются на Linux и macOS,
 # а разработка идёт и с Windows (core.autocrlf там подменяет окончания строк).
 *.sh text eol=lf
+# Фикстура «Prepositions World»: движок в ней обязан совпадать с прототипом байт в байт
+# (бэкенд сверяет хэш), а core.autocrlf на Windows превратил бы LF в CRLF.
+src/practice/prepositions/__fixtures__/*.html -text
+# Фикстура Cartoon World — по той же причине: оракул снимается с неё как с прототипа.
 src/practice/cartoons/__fixtures__/*.html -text

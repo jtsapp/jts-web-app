@@ -37,6 +37,7 @@ export const PRACTICE_AREA_BY_MODULE = {
   listenchoose: 'listenchoose',
   numbers: 'numbers',
   listen: 'listen',
+  prepositions: 'prepositions',
   cartoons: 'cartoons',
 }
 

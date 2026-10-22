@@ -4201,6 +4201,16 @@ textarea {
 .pk-banner--numbers { background: linear-gradient(99.4deg, #874bf8 17%, #3b2a8f 95.5%); }
 /* Just to Listen в макете тоже нет — акцент раздела (#9047ff) в тёмный фиолетовый. */
 .pk-banner--listen { background: linear-gradient(99.4deg, #9047ff 17%, #4b2a9e 95.5%); }
+/* Prepositions World в макете тоже нет — фиолетовый прототипа (#5a2fc8) в тёмный индиго его героя. */
+.pk-banner--prepositions { background: linear-gradient(99.4deg, #6d3df0 17%, #3a1f94 95.5%); }
+/* Prepositions World: оболочка та же, что у «Чисел» (кнопка «назад», статусы загрузки). Поля у .prp-top
+   такие же, как у .nmb-top (numbers.css): сама разметка курса стоит в Shadow DOM и своих полей у кнопки нет. */
+.prp-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.prp-host { display: block; }
+.prp-host[hidden] { display: none; }
+@media (max-width: 560px) {
+  .prp-top { padding: 8px 16px 0; }
+}
 /* Cartoon World в макете тоже нет — фирменный фиолетовый прототипа (#6332ff) в розовый его акцента. */
 .pk-banner--cartoons { background: linear-gradient(99.4deg, #6332ff 17%, #b62ab8 95.5%); }
 

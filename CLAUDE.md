@@ -668,6 +668,28 @@ area `numbers` бэкенду неизвестна. E2E (`tests/numbers.spec.js`
 `listen` (merge «лучший по ключу»), ошибки — в «хуже запомненные» «Словаря».
 Premium пока открыт всем: проверку ставить на бэкенде в `readSet`.
 
+**Prepositions World в «Практике» — курс предлогов, материал из админки (22.10.2026).** Источник правды —
+html-прототип методиста (~23 МБ, в репозитории его НЕТ): правки контента — в прототип и повторная заливка в
+web-admin «Практика и тесты» → Prepositions World. Бэкенд (`/admin/prepositions/upload`, backend
+`docs/practice/PREPOSITIONS.md`) проверяет курс, кладёт 266 картинок и 502 записи в MinIO по хэшу
+(`practice/prepositions/<sha24>.*`, immutable; файлы прошлого релиза живут ещё одну заливку — открытые вкладки не
+ловят 404) и отдаёт `GET /mobile/prepositions` — один бандл в форме данных прототипа (Bearer; 404 — «Раздел
+готовится»). Экран `?screen=prepositions` (`src/screens/PrepositionsPage.jsx`), баннер — вкладка «Письмо» после
+«Грамматики». Движок — `src/practice/prepositions/engine.js`, скрипт прототипа почти дословно в Shadow DOM, как у
+«Чисел»; отличия (роутер без адреса страницы, `<image href=URL>` вместо символов с base64, звук, прогресс, пять
+починок) — в шапке файла. Корневой класс тени `.pw` совпадает с классом слова-предлога прототипа — его правила
+переписаны как `.pw .pw` (`styles.js`). Правки движка — только PR сайта: заливка прототипа с другим движком
+проходит с предупреждением (хэш движка сверяется с `prepositions.engine-sha` бэкенда; перенесли движок заново —
+обновить значение, его печатает `PrepositionsHtmlParserTest.realPrototype`). Порт сверяется с оракулом самого
+прототипа (`scripts/prepositions/extract-oracle.js` на урезанной копии `__fixtures__/prototype-mini.html`, её режет
+`scripts/prepositions/make-fixture.js`; `.gitattributes` держит её в LF — иначе «движок байт в байт» ломался на
+Windows): красный `engine.test.js` — чинить порт. Озвучка примеров урока — Soniox (`voice.js`, запасной — голос
+устройства; `stopLesson` глушит оба на каждой смене экрана), записи вопросов — файлы через `playUrl`. Перевод
+`lang="kk"` внутри тени — на Inter (`kkFont.test.js`, ENGINES). Прогресс — модуль синка `prepositions` (ключ
+прототипа `jts_prepositions_v4`, merge: прочитанное объединяется, результат — лучший); ответ пишет
+`recordSkill('grammar')`. Квоты и домашки нет — area бэкенду неизвестна. Помощник Луна раздел пока не знает
+(`src/lib/assistant/destinations.js`).
+
 **Cartoon World в «Практике» — мультфильмы с YouTube и письменная миссия, данные в MinIO.**
 Источник правды — standalone-прототип «cartoons.html» (726 видео A0–C1 и по миссии
 на каждое: переписка с героем на 10 ходов). Методист заливает его ЦЕЛИКОМ в web-admin

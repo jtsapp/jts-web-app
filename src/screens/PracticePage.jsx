@@ -873,6 +873,20 @@ export default function PracticePage({
           />
         )
 
+      case 'prepositions':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-prepositions"
+            variant="prepositions"
+            wide
+            title={t('practice.prepositions.heading')}
+            desc={t('practice.prepositions.desc')}
+            cta={t('practice.prepositions.cta')}
+            onStart={() => onNav?.('prepositions')}
+          />
+        )
+
       case 'justListen':
         return (
           <Banner

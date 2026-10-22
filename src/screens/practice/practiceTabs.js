@@ -55,6 +55,9 @@ export const SKILLS = [
     key: 'writing',
     sections: [
       { id: 'grammar', all: 'pill' },
+      // Prepositions World (22.10.2026) — курс предлогов; в макете его нет. Широкий баннер сразу после
+      // «Грамматики»: предлоги — грамматика.
+      { id: 'prepositions' },
       { id: 'writePair', modules: ['writing', 'verbs'] },
       { id: 'workbooks', all: 'pill' },
     ],
