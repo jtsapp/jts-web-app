@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 // Код страны в телефоне. Выбор страны живёт на шаге регистрации «Как с вами
-// связаться?» (макет «Регистрация», 21.10.2026: «KZ +7 │ номер»). Регрессии:
+// связаться?» (макет «Регистрация»: «флаг +7 │ номер»). Регрессии:
 //   1) по умолчанию — Казахстан (+7), а не Россия;
 //   2) можно выбрать другой код (напр. Узбекистан +998);
 //   3) КРИТИЧНО: для +7 на бэкенд уходит канонический «7XXXXXXXXXX» —
@@ -14,7 +14,8 @@ test.describe('код страны в телефонном вводе', () => {
   test('по умолчанию Казахстан +7, а не Россия', async ({ page }) => {
     await page.goto('/?screen=reg-contacts')
     await expect(page.locator('.rg-phone__dial')).toHaveText('+7', { timeout: 20_000 })
-    await expect(page.locator('.rg-phone__iso')).toHaveText('KZ')
+    // Флаг картинкой (эмодзи-флаги из макета), а не буквы «KZ».
+    await expect(page.locator('.rg-phone__country .country-flag')).toHaveAttribute('data-iso', 'kz')
 
     await page.locator('.rg-phone__country').click()
     const items = page.locator('.rg-phone__item')
