@@ -31,6 +31,32 @@ const openText = async (page) => {
   await expect(page.locator('.rd-texthero h1')).toHaveText(TITLE)
 }
 
+// Бэкенд стенда мог уже получить пакет «Чтения» — тесты от этого не зависят:
+// по умолчанию «пакет не залит», и экран читает статику, как раньше.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/practice-content/reading/**', (r) => r.fulfill({ status: 404, body: '' }))
+})
+
+test.describe('источник текстов', () => {
+  test('пакет залит — тексты с бэкенда, корень экрана помечен data-source="api"', async ({ page }) => {
+    const remote = [{ ...TEXT, title: 'Honey From the Admin' }]
+    await page.unrouteAll()
+    await page.route('**/practice-content/reading/**', (r) =>
+      r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(remote) }),
+    )
+    await page.goto('/?screen=reading')
+    await expect(page.locator('.rd[data-source="api"]')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.rd-card', { hasText: 'Honey From the Admin' })).toBeVisible()
+    await expect(page.locator('.rd-card')).toHaveCount(1)
+  })
+
+  test('пакет не залит — статика, data-source="static"', async ({ page }) => {
+    await openLibrary(page)
+    await expect(page.locator('.rd[data-source="static"]')).toBeVisible()
+    await expect(page.locator('.rd-card', { hasText: TITLE })).toBeVisible()
+  })
+})
+
 // На мобильном раскладка вкладочная — задания живут за вкладкой «Задания».
 const openTasks = async (page) => {
   const tab = page.getByRole('tab', { name: /Задания/ })
