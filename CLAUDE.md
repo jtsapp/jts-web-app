@@ -652,9 +652,9 @@ Lab в json не лежат: их собирает `logic.js` (`withGeneratedTou
 area `numbers` бэкенду неизвестна. E2E (`tests/numbers.spec.js`): флаг
 `window.__NUMBERS_FAST` сжимает анимации, верный остров — `data-answer` сцены.
 
-**Just Listen It в «Практике» — диктант слова и предложения, данные в MinIO.**
+**Just to Listen в «Практике» — диктант слова и предложения, данные в MinIO.**
 Источник правды — прототип `data/jtslisten.html` (правки контента — туда и
-повторная загрузка в web-admin «Практика и тесты» → Just Listen It; бэкенд
+повторная загрузка в web-admin «Практика и тесты» → Just to Listen; бэкенд
 `/admin/listen/upload` разбирает SYL/FIELDS и кладёт наборы в
 `listen/current/`). Ученик читает `/mobile/listen` и `/mobile/listen/sets/{id}`
 (`getListenIndex/getListenSet`); экран `?screen=listen[&set=A1]`

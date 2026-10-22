@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// Just Listen It (?screen=listen) без бэкенда: оглавление и набор из двух слов
+// Just to Listen (?screen=listen) без бэкенда: оглавление и набор из двух слов
 // подменены, /api/tts отвечает тихим mp3 — пройти задание можно набором, звук
 // проверен юнитами (voice.test.js). Слово задания тест узнаёт по числу ячеек:
 // у mother их 6, у book — 4 (колода перемешана).
@@ -103,7 +103,7 @@ test('две ошибки в слове — показан ответ, за сл
 
 test('раздел не загружен — сообщение, а не белый лист', async ({ page }) => {
   await mockBackend(page, [])
-  await page.route('**/mobile/listen', (r) => r.fulfill(json({ messages: ['Just Listen It ещё не загружен'] }, 404)))
+  await page.route('**/mobile/listen', (r) => r.fulfill(json({ messages: ['Just to Listen ещё не загружен'] }, 404)))
   await page.goto('/?screen=listen')
   await expect(page.locator('.jl-notice')).toContainText('Раздел готовится', { timeout: 30000 })
 })

@@ -1,4 +1,4 @@
-// Правила проверки и награды Just Listen It — из checkWord/checkSentence/
+// Правила проверки и награды Just to Listen — из checkWord/checkSentence/
 // finishSentence прототипа и таблицы ТЗ «Подсказки, монеты, прогресс».
 
 import { compareSentence, containsTarget, enMain, letters, lev, missingWords } from './compare.js'

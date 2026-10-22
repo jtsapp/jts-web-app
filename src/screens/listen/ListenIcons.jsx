@@ -1,4 +1,4 @@
-// Иконки прототипа Just Listen It (набор I): штрих 2px, цвет — currentColor.
+// Иконки прототипа Just to Listen (набор I): штрих 2px, цвет — currentColor.
 
 const PATHS = {
   back: <path d="M15 18l-6-6 6-6" />,
