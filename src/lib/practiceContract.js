@@ -35,7 +35,7 @@ import { mergeReadingState } from './readingState.js'
 // лучший результат и «уже было» у боссов. Replace; клиент сводит с серверным
 // (numbersProgress.js merge), чтобы пройденное не терялось. Area 'numbers'
 // бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
-// 'listen' — стейт-объект Just Listen It {best: {<ключ прогона>: {ok, n, coins}}}.
+// 'listen' — стейт-объект Just to Listen {best: {<ключ прогона>: {ok, n, coins}}}.
 // Replace; клиент сводит с серверным (listenProgress.js merge), чтобы лучший
 // результат не терялся. Area 'listen' бэкенду неизвестна — в домашнюю работу
 // раздел не отчитывается.

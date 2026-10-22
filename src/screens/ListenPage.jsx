@@ -1,6 +1,6 @@
 'use client'
 
-// Just Listen It — раздел Практики: слышишь слово и пишешь его по буквам, потом
+// Just to Listen — раздел Практики: слышишь слово и пишешь его по буквам, потом
 // записываешь на слух предложение с ним. Порт data/jtslisten.html. Наборы —
 // с бэкенда (/mobile/listen; их загружает админка в MinIO), движок —
 // src/practice/listen/, экраны — src/screens/listen/.

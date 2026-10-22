@@ -40,7 +40,7 @@ export const SCREEN_NAMES = {
   arcade: 'Практика → Говорение → Аркада (Speak or Die)',
   speakspin: 'Практика → Говорение → SpeakSpin',
   numbers: 'Практика → Мир чисел Декстера',
-  listen: 'Практика → Аудирование → Just Listen It (диктант слова и предложения)',
+  listen: 'Практика → Аудирование → Just to Listen (диктант слова и предложения)',
   reading: 'Практика → Чтение',
   lessons: 'Уроки',
   homework: 'Домашняя работа',

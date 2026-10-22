@@ -1,4 +1,4 @@
-// Словари Just Listen It — три языка, один набор ключей. `t()` молча
+// Словари Just to Listen — три языка, один набор ключей. `t()` молча
 // откатывается на русский, если ключа в языке нет, поэтому пропуск в en/kk
 // выглядел бы как «раздел наполовину по-русски», а не как ошибка.
 
@@ -22,7 +22,7 @@ const KEY = /^ {4}'((?:listen\.|practice\.listen\.)[^']*|nav\.back\.listen)': (.
 const keysOf = (lang) => Object.fromEntries([...block(lang).matchAll(KEY)].map((m) => [m[1], m[2]]))
 const vars = (s) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
 
-describe('словари Just Listen It', () => {
+describe('словари Just to Listen', () => {
   const ru = keysOf('ru')
   const en = keysOf('en')
   const kk = keysOf('kk')

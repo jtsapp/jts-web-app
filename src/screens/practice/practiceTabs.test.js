@@ -44,7 +44,7 @@ describe('practiceTabs', () => {
     expect(EXPANDABLE.has('arcade')).toBe(false)
   })
 
-  it('Just Listen It — во вкладке «Аудирование», до сказок', () => {
+  it('Just to Listen — во вкладке «Аудирование», до сказок', () => {
     const ids = SKILLS.find((s) => s.key === 'listening').sections.map((sec) => sec.id)
     expect(ids).toContain('justListen')
     expect(ids.indexOf('justListen')).toBeLessThan(ids.indexOf('tales'))

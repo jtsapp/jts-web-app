@@ -1,4 +1,4 @@
-// Машина теста Just Listen It вне React — порт item()/checkWord()/hintLetter()/
+// Машина теста Just to Listen вне React — порт item()/checkWord()/hintLetter()/
 // revealWord()/toSentence()/checkSentence()/finishSentence()/result() прототипа
 // без DOM и звука. Экран подписан через useSyncExternalStore (subscribe /
 // getSnapshot); что сказать вслух, сессия сообщает колбэком onSay, а таймеры
