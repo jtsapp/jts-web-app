@@ -2,7 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, FlagIcon, InfoIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { RouteIcon, SigmaIcon } from '../icons.jsx'
-import { bands, phaseKey } from '../model/plan.js'
+import { bands } from '../model/plan.js'
 import { domainShares } from '../model/profile.js'
 import { TAXONOMY, domainName, domainSection } from '../names.js'
 
@@ -33,10 +33,10 @@ function Dots({ correct, total }) {
 
 /**
  * Карта по итогам диагностики (Figma SAT 9). Не балл SAT — доля верных по секциям и доменам, три полосы и два
- * приоритета, с которых откроется план. startPhase — фаза первой недели плана (её и называет макет).
+ * приоритета, с которых откроется план. startKey — ключ первой фазы с занятиями (её и называет макет).
  * Первый раз ведёт к времени на занятия (Figma 10); когда план уже есть — к плану и к повторной диагностике.
  */
-export default function DiagnosticReport({ result, finishedAt, startPhase, planExists, stale, busy, onRoadmap, onNext, onRetake, onPlan, onRebuild }) {
+export default function DiagnosticReport({ result, finishedAt, startKey, planExists, stale, busy, onRoadmap, onNext, onRetake, onPlan, onRebuild }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const total = result.total || 0
@@ -54,7 +54,7 @@ export default function DiagnosticReport({ result, finishedAt, startPhase, planE
       domain: domainName(first, lang),
       pct: String(share ?? ''),
       section: section === 'math' ? 'Math' : 'R&W',
-      phase: t(`sat.phase.${phaseKey(startPhase)}`),
+      phase: t(`sat.phase.${startKey || 'foundations1'}`),
     })
   }
 

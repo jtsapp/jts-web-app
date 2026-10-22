@@ -10018,3 +10018,123 @@ mark.st-hl {
 .st-road__node {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ---- Роудмап по ТЗ 21.10.2026: тест без баллов, Bluebook-тесты, фаза 7 ---- */
+.st-road__node circle.is-warn {
+  fill: var(--ih-orange, #f79009);
+  stroke: #fff;
+  stroke-width: 3;
+}
+.st-road__node circle.is-warn + .st-road__num {
+  fill: #fff;
+}
+.st-road__chip.is-warn {
+  background: #fff4e5;
+  color: #b54708;
+}
+.st-plan__count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ih-ink, #101828);
+  white-space: nowrap;
+}
+.st-bb,
+.st-self {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ih-line, #eaecf0);
+}
+.st-bb__open {
+  align-self: flex-start;
+}
+.st-bb__rejected {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+}
+.st-bb__block h3,
+.st-self h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.st-bb__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.st-bb__table th,
+.st-bb__table td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--ih-line, #eaecf0);
+}
+.st-bb__table thead th {
+  font-weight: 500;
+  color: var(--ih-muted, #667085);
+}
+.st-bb__table small.is-up {
+  color: var(--ih-green, #12b76a);
+  font-weight: 600;
+}
+.st-bb__table small.is-down {
+  color: #d92d20;
+  font-weight: 600;
+}
+.st-bb__status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #027a48;
+  white-space: nowrap;
+}
+.st-bb__status.is-pending {
+  background: #fff4e5;
+  color: #b54708;
+}
+.st-band {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #f2f4f7;
+  color: #475467;
+}
+.st-band.is-weak {
+  background: #fef3f2;
+  color: #b42318;
+}
+.st-band.is-shaky {
+  background: #fff4e5;
+  color: #b54708;
+}
+.st-band.is-strong {
+  background: #ecfdf3;
+  color: #027a48;
+}
+.st-self__list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-self__offer {
+  margin: 0;
+  color: var(--ih-muted, #667085);
+  font-size: 14px;
+}
+@media (max-width: 560px) {
+  .st-bb__table {
+    font-size: 12px;
+  }
+  .st-bb__domains th,
+  .st-bb__domains td {
+    padding: 6px 3px;
+  }
+}

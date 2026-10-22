@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import EmptyState from '../../ielts/ui/EmptyState.jsx'
-import PillButton from '../../ielts/ui/PillButton.jsx'
-import { EventIcon, HelpIcon, SyncIcon } from '../../ielts/icons.jsx'
+import { HelpIcon } from '../../ielts/icons.jsx'
 import RoadmapView from '../plan/RoadmapView.jsx'
 import WeekView from '../plan/WeekView.jsx'
 import MonthView from '../plan/MonthView.jsx'
 import { SatModal } from '../question/ToolDialogs.jsx'
-import { currentPhase, iso, nextLesson, roadmapSteps } from '../model/plan.js'
+import { iso } from '../model/plan.js'
+import { nextGroupLesson, scheduleAsPlan } from '../model/roadmap.js'
 
 const VIEWS = ['roadmap', 'week', 'month']
 
@@ -48,11 +47,11 @@ export function HowItWorks({ onClose }) {
 }
 
 /**
- * Вкладка «План» (Figma SAT 12–14): Роудмап · Неделя · Месяц (решение F: роудмап — первым видом, как в макете).
- * План строит сервер; «Пересобрать план» ведёт на «время на занятия» (Figma 10) — там же меняют дни и минуты,
- * а прожитые недели при пересборке сохраняются.
+ * Вкладка «План» (Figma SAT 12–14, фазы — ТЗ 21.10.2026): Роудмап · Неделя · Месяц. Фазы и счётчики — с сервера
+ * (тот же источник, что у «Сегодня»), даты занятий — из расписания группы: студент дни не выбирает, их ставит школа.
+ * Клик по занятию ведёт сразу в практику по его теме — меню занятия убрано (задача 3.4).
  */
-export default function PlanTab({ plan, diagnostic, onRebuild, onDiagnostic, onStart }) {
+export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onReload, selfPrepActions }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
@@ -61,23 +60,17 @@ export default function PlanTab({ plan, diagnostic, onRebuild, onDiagnostic, onS
     setView(v)
     writeView(v)
   }
+  if (!roadmap) return null
 
-  if (!plan?.exists) {
-    const finished = diagnostic?.status === 'finished'
-    return (
-      <EmptyState
-        icon={<EventIcon size={28} />}
-        title={t(finished ? 'sat.plan.noPlanTime' : 'sat.plan.noPlan')}
-        text={t(finished ? 'sat.plan.noPlanTimeText' : 'sat.plan.noPlanText')}
-        action={<PillButton variant="primary" onClick={() => onDiagnostic(finished ? 'time' : null)}>{t(finished ? 'sat.plan.toTime' : 'sat.plan.toDiag')}</PillButton>}
-      />
-    )
-  }
-
-  const p = plan.plan
+  const r = roadmap.roadmap
+  const plan = scheduleAsPlan(schedule, r, roadmap.examDate)
+  const next = nextGroupLesson(plan)
   const todayIso = iso(new Date())
-  const next = nextLesson(p, todayIso)
-  const steps = roadmapSteps(p, diagnostic?.finishedAt ? diagnostic.finishedAt.slice(0, 10) : null)
+  const byId = new Map((schedule?.lessons || []).map((l) => [String(l.id), l]))
+  const open = (id) => {
+    const l = byId.get(String(id))
+    if (l) onLesson(l)
+  }
 
   return (
     <div className="st-plan">
@@ -90,17 +83,20 @@ export default function PlanTab({ plan, diagnostic, onRebuild, onDiagnostic, onS
           ))}
         </div>
         <span className="st-spacer" />
+        <span className="st-plan__count">{t('sat.plan.lessonsCount', { d: String(r.attended), n: String(r.lessonCount) })}</span>
         {view === 'roadmap' && (
           <button type="button" className="st-tool" onClick={() => setHow(true)}><HelpIcon size={16} />{t('sat.how.title')}</button>
         )}
-        <button type="button" className="st-tool" onClick={onRebuild}><SyncIcon size={16} />{t('sat.plan.rebuild')}</button>
       </div>
-      {plan.stale && <p className="st-rep__stale"><span>{t('sat.rep.stale')}</span></p>}
-      {p.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
+      {r.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
       <div key={view} className="ih-enter">
-        {view === 'roadmap' && <RoadmapView steps={steps} current={currentPhase(p, todayIso)} examDate={p.examDate} onStart={next ? () => onStart(next.id) : null} />}
-        {view === 'week' && <WeekView plan={p} next={next} todayIso={todayIso} onStart={onStart} />}
-        {view === 'month' && <MonthView plan={p} next={next} todayIso={todayIso} onStart={onStart} />}
+        {view === 'roadmap' && (
+          <RoadmapView data={roadmap} bluebook={bluebook} schedule={schedule} onStartLesson={onLesson} onReload={onReload}
+            selfPrepActions={selfPrepActions} />
+        )}
+        {view !== 'roadmap' && !plan.weeks.length && <p className="st-plan__note">{t('sat.road.noGroup')}</p>}
+        {view === 'week' && plan.weeks.length > 0 && <WeekView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
+        {view === 'month' && plan.weeks.length > 0 && <MonthView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
       </div>
       {how && <HowItWorks onClose={() => setHow(false)} />}
     </div>

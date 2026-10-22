@@ -2,17 +2,16 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
-import { PHASES, addDays, iso, parse, phaseRanges, progress, shownStatus } from '../model/plan.js'
-import { skillName, skillSection } from '../names.js'
+import { addDays, iso, parse, shownStatus } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
 
 const STATUS = ['done', 'next', 'planned', 'skipped', 'moved']
 
 /**
- * Неделя плана (Figma SAT 13): полоса фаз с прогрессом всего плана, семь дней недели с карточками занятий
- * (статус цветом и словом), меню занятия по клику, легенда и правило пересборки.
+ * Неделя плана (Figma SAT 13): полоса фаз с прогрессом курса, семь дней недели с занятиями группы (статус цветом и
+ * словом) и легенда. Фазы и счётчик «X из N» — с сервера (roadmap), занятия — из расписания группы.
  */
-export default function WeekView({ plan, next, todayIso, onStart }) {
+export default function WeekView({ plan, roadmap, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
   const weeks = plan.weeks
   const todayWeek = Math.max(0, weeks.findIndex((w) => w.monday === iso(addDays(parse(todayIso), -((parse(todayIso).getDay() + 6) % 7)))))
@@ -22,33 +21,28 @@ export default function WeekView({ plan, next, todayIso, onStart }) {
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const mon = parse(week.monday)
-  const prog = progress(plan)
-  const ranges = phaseRanges(plan)
-  const curPhase = week.phase
+  const phases = roadmap.phases.filter((p) => p.kind !== 'exam' && p.kind !== 'self')
+  const pct = roadmap.lessonCount ? Math.round((roadmap.attended * 100) / roadmap.lessonCount) : 0
+  const curPhase = roadmap.active
   const hours = Math.round((week.lessons.reduce((a, l) => a + (l.minutes || 0), 0) / 60) * 10) / 10
 
   return (
     <div className="st-week">
       <div className="st-card st-phases">
         <div className="st-phases__row">
-          <span className="st-phases__tile is-done">
-            <b><CheckCircleIcon size={16} />{t('sat.phase.diagnostic')}</b>
-            <small>{t('sat.week.w0')}</small>
-          </span>
-          {ranges.map((r) => {
-            const key = PHASES.find((p) => p.id === r.phase).key
-            const state = r.phase === curPhase ? 'is-here' : r.phase < curPhase ? 'is-past' : ''
+          {phases.map((p) => {
+            const state = p.n === curPhase ? 'is-here' : p.status === 'done' ? 'is-done' : p.n < curPhase ? 'is-past' : ''
             return (
-              <span key={r.phase} className={`st-phases__tile ${state}`}>
-                <b>{t(`sat.phase.${key}`)}</b>
-                <small>{r.from === r.to ? t('sat.week.wN', { n: String(r.from) }) : t('sat.week.wRange', { a: String(r.from), b: String(r.to) })}</small>
+              <span key={p.n} className={`st-phases__tile ${state}`}>
+                <b>{p.status === 'done' && <CheckCircleIcon size={16} />}{t(`sat.phase.${p.key}`)}</b>
+                <small>{p.weekFrom == null ? '·' : p.weekFrom === p.weekTo ? t('sat.week.wN', { n: String(p.weekFrom) }) : t('sat.week.wRange', { a: String(p.weekFrom), b: String(p.weekTo) })}</small>
               </span>
             )
           })}
         </div>
         <div className="st-phases__prog">
-          <span className="st-rep__bar"><i style={{ width: `${Math.max(2, prog.pct)}%` }} /></span>
-          <b>{t('sat.week.progress', { d: String(prog.done), n: String(prog.total), p: String(prog.pct) })}</b>
+          <span className="st-rep__bar"><i style={{ width: `${Math.max(2, pct)}%` }} /></span>
+          <b>{t('sat.week.progress', { d: String(roadmap.attended), n: String(roadmap.lessonCount), p: String(pct) })}</b>
         </div>
       </div>
 
@@ -78,13 +72,12 @@ export default function WeekView({ plan, next, todayIso, onStart }) {
                 </span>
                 {lessons.map((l) => {
                   const st = shownStatus(l, next)
-                  const section = skillSection(l.skillIds[0])
                   return (
                     <div key={l.id} className="st-week__slot">
                       <button type="button" className={`st-lesson is-${st}`} onClick={() => onStart(l.id)}>
-                        <span className="st-lesson__sec"><i className={`st-dot is-${section}`} />{section === 'math' ? 'Math' : 'R&W'}</span>
-                        <b>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</b>
-                        <span className="st-lesson__acts">{l.actions.map((a) => t(`sat.action.${a}`)).join(' · ')}</span>
+                        <span className="st-lesson__sec"><i className={`st-dot is-${l.section}`} />{l.section === 'math' ? 'Math' : l.section === 'rw' ? 'R&W' : 'SAT'} · {l.time}</span>
+                        <b>{l.topic}</b>
+                        <span className="st-lesson__acts">{t('sat.lesson.number', { n: String(l.number) })}</span>
                         <span className="st-lesson__st">{st === 'done' && <CheckCircleIcon size={14} />}{t(`sat.status.${st}`)}</span>
                       </button>
                     </div>

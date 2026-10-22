@@ -3,16 +3,15 @@ import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
 import { TrophyIcon } from '../icons.jsx'
-import { PHASES, addDays, lessonsInMonth, monthGrid, parse, shownStatus } from '../model/plan.js'
-import { skillName, skillSection } from '../names.js'
+import { addDays, lessonsInMonth, monthGrid, parse, shownStatus } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
 
 /**
- * Месяц плана (Figma SAT 14): календарь с понедельника, над каждой строкой — неделя плана и её фаза, в днях —
- * занятия (точка секции и навык; сделанное зелёным). Внизу — контрольные точки: первый мини-тест, недели пробников
- * и день экзамена. Клик по занятию — то же меню, что в «Неделе».
+ * Месяц плана (Figma SAT 14): календарь с понедельника, над каждой строкой — неделя курса и её фаза, в днях —
+ * занятия группы (точка секции, время и тема; сделанное зелёным), день экзамена — в своей клетке. Клик по занятию —
+ * практика по его теме.
  */
-export default function MonthView({ plan, next, todayIso, onStart }) {
+export default function MonthView({ plan, roadmap, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
   const today = parse(todayIso)
   const [ym, setYm] = useState({ y: today.getFullYear(), m: today.getMonth() })
@@ -45,7 +44,7 @@ export default function MonthView({ plan, next, todayIso, onStart }) {
         </div>
         <div className="st-month__wd">{weekdays.map((w) => <span key={w}>{w}</span>)}</div>
         {rows.map((r) => {
-          const key = r.week ? PHASES.find((p) => p.id === r.week.phase)?.key : null
+          const key = r.week ? roadmap.phases.find((p) => p.n === r.week.phase)?.key : null
           return (
             <div key={r.monday} className="st-month__row">
               {r.week && (
@@ -61,8 +60,8 @@ export default function MonthView({ plan, next, todayIso, onStart }) {
                       return (
                         <div key={l.id} className="st-month__slot">
                           <button type="button" className={`st-lesson st-mlesson is-${st}`} onClick={() => onStart(l.id)}>
-                            {st === 'done' ? <CheckCircleIcon size={13} /> : <i className={`st-dot is-${skillSection(l.skillIds[0])}`} />}
-                            <span>{l.skillIds.map((s) => skillName(s, lang)).join(' · ')}</span>
+                            {st === 'done' ? <CheckCircleIcon size={13} /> : <i className={`st-dot is-${l.section}`} />}
+                            <span>{l.time} · {l.topic}</span>
                           </button>
                         </div>
                       )

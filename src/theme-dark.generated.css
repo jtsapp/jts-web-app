@@ -12532,6 +12532,66 @@ html[data-theme="dark"] .exam-demo__chip.is-out {
 html[data-theme="dark"] .st-road__node, html[data-theme="dark"] .st-road__node:focus, html[data-theme="dark"] .st-road__node:focus-visible, html[data-theme="dark"] .st-road__svg:focus {
     outline: none
 }
+html[data-theme="dark"] .st-road__node circle.is-warn {
+    fill: var(--ih-orange, #f79009);
+    stroke: #fff
+}
+html[data-theme="dark"] .st-road__node circle.is-warn + .st-road__num {
+    fill: #fff
+}
+html[data-theme="dark"] .st-road__chip.is-warn {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-plan__count {
+    color: var(--ih-ink, #101828)
+}
+html[data-theme="dark"] .st-bb, html[data-theme="dark"] .st-self {
+    border-top: 1px solid var(--ih-line, #eaecf0)
+}
+html[data-theme="dark"] .st-bb__rejected {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-bb__table th, html[data-theme="dark"] .st-bb__table td {
+    border-bottom: 1px solid var(--ih-line, #eaecf0)
+}
+html[data-theme="dark"] .st-bb__table thead th {
+    color: var(--ih-muted, #667085)
+}
+html[data-theme="dark"] .st-bb__table small.is-up {
+    color: var(--ih-green, #12b76a)
+}
+html[data-theme="dark"] .st-bb__table small.is-down {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-bb__status {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-bb__status.is-pending {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-band {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-band.is-weak {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-band.is-shaky {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-orange)
+}
+html[data-theme="dark"] .st-band.is-strong {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-self__offer {
+    color: var(--ih-muted, #667085)
+}
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {
     border: 1px solid var(--dk-line);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSatDiagnostic, getSatPlan, getSatProfile, rebuildSatPlan, saveSatPlan, saveSatProfile, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
+import { getSatDiagnostic, getSatPlan, getSatProfile, getSatRoadmap, rebuildSatPlan, saveSatPlan, saveSatProfile, startSatDiagnostic, submitSatDiagnostic } from '../api.js'
 import { loadToken } from '../lib/session.js'
 import { useI18n } from '../i18n.jsx'
 import QuestionScreen from '../sat/question/QuestionScreen.jsx'
@@ -10,7 +10,7 @@ import DiagnosticReport from '../sat/diagnostic/DiagnosticReport.jsx'
 import StudyTime from '../sat/diagnostic/StudyTime.jsx'
 import RoadmapView from '../sat/plan/RoadmapView.jsx'
 import { SatModal } from '../sat/question/ToolDialogs.jsx'
-import { phaseForWeek, horizonWeeks, previewPlan, roadmapSteps } from '../sat/model/plan.js'
+import { phaseKeyOf } from '../sat/model/roadmap.js'
 import { domainName } from '../sat/names.js'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
@@ -112,11 +112,14 @@ export default function SatDiagnosticPage({ token, onNav }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [roadmap, setRoadmap] = useState(false)
+  // фазы плана с сервера (ТЗ 21.10): тот же роудмап, что у вкладки «План»
+  const [road, setRoad] = useState(null)
 
   const load = useCallback(async () => {
     const [d, p, pr] = await Promise.all([
       getSatDiagnostic(authToken).catch(() => ({ status: 'none' })),
       getSatPlan(authToken).catch(() => ({ exists: false })),
+      getSatRoadmap(authToken).then(setRoad).catch(() => null),
       getSatProfile(authToken).catch(() => ({ exists: false })),
     ])
     setDiag(d)
@@ -214,7 +217,8 @@ export default function SatDiagnosticPage({ token, onNav }) {
 
   const examDate = profile?.dateUndecided ? null : profile?.examDate || null
   const today = new Date()
-  const startPhase = plan?.exists ? plan.plan.weeks[0]?.phase || 2 : phaseForWeek(0, horizonWeeks(today, examDate))
+  // первая фаза с занятиями — её называет отчёт («начнём с … в фазе …»)
+  const startKey = road ? phaseKeyOf(road.roadmap, road.roadmap.phases.find((p) => p.kind === 'lessons')?.n) : 'foundations1'
   const chip = step === 'time' ? t('sat.time.chip') : t('sat.dx.chip')
   const back = step === 'time' ? () => goStep('report') : exit
 
@@ -235,7 +239,7 @@ export default function SatDiagnosticPage({ token, onNav }) {
       <DiagnosticReport
         result={diag.result}
         finishedAt={diag.finishedAt}
-        startPhase={startPhase}
+        startKey={startKey}
         planExists={!!plan?.exists}
         stale={!!plan?.stale}
         busy={busy}
@@ -270,13 +274,9 @@ export default function SatDiagnosticPage({ token, onNav }) {
         <button type="button" className="st-ob__exit" onClick={exit}>{t('sat.ob.exit')}<CloseIcon size={16} /></button>
       </header>
       <div key={step} className="ih-enter">{body}</div>
-      {roadmap && (
+      {roadmap && road && (
         <SatModal wide title={t('sat.plan.view.roadmap')} onClose={() => setRoadmap(false)}>
-          <RoadmapView
-            steps={roadmapSteps(previewPlan(today, examDate), diag.finishedAt?.slice(0, 10))}
-            current={startPhase}
-            examDate={examDate}
-          />
+          <RoadmapView data={road} />
         </SatModal>
       )}
     </div>

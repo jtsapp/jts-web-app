@@ -1923,6 +1923,26 @@ export function rebuildSatPlan(token) {
   return authPost('/mobile/sat/plan/rebuild', token, {})
 }
 
+/** Фазы плана по ТЗ 21.10 — одна структура для дашборда, «Плана» и счётчиков: { roadmap, examDate, inGroup, selfPrep, tests }. */
+export function getSatRoadmap(token) {
+  return authGet('/mobile/sat/roadmap', token)
+}
+
+/** Занятия группы студента: { inGroup, groups, lessons, attended, lessonCount, packages }. */
+export function getSatSchedule(token) {
+  return authGet('/mobile/sat/schedule', token)
+}
+
+/** Bluebook Test 6 → 8 → 10: баллы с приростом и снимки карты доменов. */
+export function getSatBluebook(token) {
+  return authGet('/mobile/sat/bluebook', token)
+}
+
+/** Ввести баллы теста 6, 8 или 10: { rw, math, takenOn } — уходит на подтверждение куратору. */
+export function submitSatBluebook(token, test, body) {
+  return authPost(`/mobile/sat/bluebook/${encodeURIComponent(test)}`, token, body)
+}
+
 /** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
 export function updateSatLesson(token, lessonId, body) {
   return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)

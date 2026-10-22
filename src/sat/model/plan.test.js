@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  bands, horizonWeeks, intensity, monthGrid, nextLesson, parse, phaseForWeek, phaseRanges, progress, shownStatus, summarize,
+  bands, horizonWeeks, intensity, monthGrid, nextLesson, parse, shownStatus, summarize,
 } from './plan.js'
 
 // Пример Figma 10–14 (тот же, что в SatPlannerTest бэкенда): вт 29 сен 2026, экзамен сб 5 дек, пн/ср/пт/сб по 60 минут
@@ -15,18 +15,6 @@ describe('SAT plan model', () => {
     expect(summarize(TODAY, EXAM, [1, 3, 5, 6], 60)).toEqual({ weeks: 10, lessons: 38, weekly: 240, intensity: 'standard' })
     expect(intensity(2, 60)).toBe('light')
     expect(intensity(5, 90)).toBe('intensive')
-  })
-
-  it('фазы по неделям Figma 13', () => {
-    expect(Array.from({ length: 10 }, (_, i) => phaseForWeek(i, 10))).toEqual([2, 2, 3, 3, 3, 4, 4, 5, 5, 6])
-    const plan = { weeks: Array.from({ length: 10 }, (_, i) => ({ index: i, phase: phaseForWeek(i, 10), lessons: [] })) }
-    expect(phaseRanges(plan)).toEqual([
-      { phase: 2, from: 1, to: 2 },
-      { phase: 3, from: 3, to: 5 },
-      { phase: 4, from: 6, to: 7 },
-      { phase: 5, from: 8, to: 9 },
-      { phase: 6, from: 10, to: 10 },
-    ])
   })
 
   const plan = {
@@ -45,13 +33,12 @@ describe('SAT plan model', () => {
     ],
   }
 
-  it('следующее занятие, статусы и прогресс', () => {
+  it('следующее занятие и статусы', () => {
     const next = nextLesson(plan, '2026-09-29')
     expect(next.id).toBe('b')
     expect(shownStatus(plan.weeks[0].lessons[0], next)).toBe('done')
     expect(shownStatus(plan.weeks[0].lessons[1], next)).toBe('next')
     expect(shownStatus(plan.weeks[0].lessons[2], next)).toBe('moved')
-    expect(progress(plan)).toEqual({ done: 1, total: 4, pct: 25 })
   })
 
   it('сетка октября 2026 начинается с понедельника 28 сентября и знает неделю плана', () => {

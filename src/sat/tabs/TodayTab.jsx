@@ -2,7 +2,8 @@ import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, MenuBookIcon } from '../../ielts/icons.jsx'
 import { BookOpenIcon, CalendarIcon, NotesIcon, PlayCircleIcon, ReplayIcon, SigmaIcon, TargetIcon, StopwatchIcon } from '../icons.jsx'
-import { PHASES, currentPhase, iso, parse, roadmapSteps } from '../model/plan.js'
+import { iso, parse } from '../model/plan.js'
+import { phaseKeyOf, phaseLessons } from '../model/roadmap.js'
 import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 import WeeklyCard from '../weekly/WeeklyCard.jsx'
@@ -26,20 +27,22 @@ export function actionMinutes(lesson) {
  * которым пора вернуться, контрольная точка. Статистика — на вкладке «Прогресс» (Figma 16), словаря в SAT больше нет
  * (15.10.2026). Один следующий шаг на экране — главный.
  */
-export default function TodayTab({ today, plan, diagnostic, onStart, onResume, onReview, onWeekly, onPlan }) {
+export default function TodayTab({ today, plan, roadmap, schedule, onStart, onResume, onReview, onWeekly, onPlan }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const todayIso = iso(new Date())
-  const p = plan.plan
+  const p = plan?.plan || {}
   const next = today.nextLesson
   const open = today.openSession
-  const cur = currentPhase(p, todayIso)
-  const steps = roadmapSteps(p, diagnostic?.finishedAt?.slice(0, 10))
-  const curStep = steps.find((s) => s.phase === cur)
-  const week = p.weeks.findIndex((w) => w.monday <= todayIso && todayIso <= iso(new Date(parse(w.monday).getTime() + 6 * 86400000)))
-  const curKey = PHASES.find((x) => x.id === cur)?.key || 'foundations'
-  const stars = curStep && curStep.total ? Math.min(3, Math.ceil((curStep.done / curStep.total) * 3)) : 0
+  // фазы, неделя и шаг — с сервера (ТЗ 21.10, задача 1): тот же источник, что у вкладки «План»
+  const r = roadmap.roadmap
+  const cur = r.active
+  const curPhase = r.phases.find((x) => x.n === cur)
+  const curKey = phaseKeyOf(r, cur)
+  const counted = r.phases.filter((x) => x.counted)
+  const curLessons = phaseLessons(curPhase, schedule)
+  const stars = curLessons && curLessons.total ? Math.min(3, Math.ceil((curLessons.done / curLessons.total) * 3)) : 0
 
   let lessonBlock = null
   if (next) {
@@ -49,13 +52,13 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
     const rank = (p.focus || []).indexOf(domain)
     const when = next.date === todayIso ? `${t('sat.week.today').replace(/^./, (c) => c.toUpperCase())} · ${fmt(parse(next.date), { day: 'numeric', month: 'short' })}` : fmt(parse(next.date), { weekday: 'short', day: 'numeric', month: 'short' })
     const mins = actionMinutes(next)
-    const nextKey = PHASES.find((x) => x.id === next.phase)?.key || 'foundations'
+    const nextKey = curKey
     lessonBlock = (
       <article className="st-card st-next">
         <div className="st-next__head">
           <span className="st-muted">{t('sat.today.nextTitle')}</span>
           <span className="st-spacer" />
-          <span className="st-next__chip is-violet">{t('sat.today.phaseChip', { n: String(next.phase), phase: t(`sat.phase.${nextKey}`) })}</span>
+          <span className="st-next__chip is-violet">{t('sat.today.phaseChip', { n: String(r.activeIndex), phase: t(`sat.phase.${nextKey}`) })}</span>
           <span className="st-next__chip"><CalendarIcon size={14} />{when}</span>
         </div>
         <div className="st-next__title">
@@ -120,17 +123,21 @@ export default function TodayTab({ today, plan, diagnostic, onStart, onResume, o
             <div className="st-where__head">
               <div>
                 <h2>{t('sat.today.where')}</h2>
-                <span className="st-muted">{t('sat.today.whereSub', { w: String(Math.max(1, week + 1)), total: String(p.weeks.length), s: String(PHASES.findIndex((x) => x.id === cur) + 1) })}</span>
+                <span className="st-muted">
+                  {r.currentWeek > 0
+                    ? t('sat.today.whereSub2', { w: String(r.currentWeek), total: String(r.totalWeeks), s: String(r.activeIndex), n: String(r.countedTotal) })
+                    : t('sat.today.beforeStart', { s: String(r.activeIndex), n: String(r.countedTotal) })}
+                </span>
               </div>
               <span className="st-spacer" />
               <button type="button" className="ih-btn ih-btn--outline" onClick={onPlan}>{t('sat.today.openRoad')}<ArrowForwardIcon size={16} /></button>
             </div>
             <div className="st-where__bar">
-              {PHASES.map((ph) => (
-                <span key={ph.id} className={ph.id < cur ? 'is-done' : ph.id === cur ? 'is-here' : ''}>
+              {counted.map((ph) => (
+                <span key={ph.n} className={ph.status === 'done' ? 'is-done' : ph.n === cur ? 'is-here' : ''}>
                   <i />
                   <small>{t(`sat.phase.${ph.key}`)}</small>
-                  {ph.id === cur && <em aria-label={t('sat.today.stars', { n: String(stars) })}>{[0, 1, 2].map((j) => <b key={j} className={j < stars ? 'is-on' : ''}>★</b>)}</em>}
+                  {ph.n === cur && curLessons && <em aria-label={t('sat.today.stars', { n: String(stars) })}>{[0, 1, 2].map((j) => <b key={j} className={j < stars ? 'is-on' : ''}>★</b>)}</em>}
                 </span>
               ))}
             </div>
