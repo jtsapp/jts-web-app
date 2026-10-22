@@ -727,7 +727,8 @@ main { flex: 1; }
 .ct-brand__logo .jts-t { fill: var(--logo-t); }
 .ct-brand__logo .jts-o { fill: var(--logo-o); }
 .ct-brand__mark, .ct-brand__name { display: none; }
-.ct-crumbs { padding-left: 20px; margin-left: 4px; border-left: 1px solid var(--ct-line); font-size: 14.5px; }
+/* Черта отделяла крошки от логотипа прототипа; логотип у приложения — крошки с края. */
+.ct-crumbs { padding-left: 0; margin-left: 0; border-left: 0; font-size: 14.5px; }
 .ct-crumbs a { color: var(--ct-ink-2); font-weight: 600; }
 .ct-crumbs a:hover { color: var(--jts-purple-ink); }
 .ct-uilang { background: var(--ct-surface); border: 0; padding: 4px; }
@@ -895,7 +896,8 @@ main { flex: 1; }
   :host { --ct-header-h: 60px; }
   .ct-brand__logo { height: 24px; }
   .ct-crumbs { display: none; }
-  .ct-top__inner { justify-content: space-between; }
+  /* На телефоне в шапке прототипа оставались только логотип и RU/KZ — их у нас нет, пустая строка не нужна. */
+  .ct-top__inner { display: none; }
   .ct-h1 { font-size: 34px; }
   .ct-filters { padding: 14px; border-radius: var(--jts-r-l); }
   .ct-card__title { font-size: 19px; }

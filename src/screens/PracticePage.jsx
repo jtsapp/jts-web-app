@@ -887,6 +887,20 @@ export default function PracticePage({
           />
         )
 
+      case 'cartoons':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-cartoons"
+            variant="cartoons"
+            wide
+            title={t('practice.cartoons.heading')}
+            desc={t('practice.cartoons.desc')}
+            cta={t('practice.cartoons.cta')}
+            onStart={() => onNav?.('cartoons')}
+          />
+        )
+
       case 'speakspin':
         return (
           <Banner

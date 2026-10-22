@@ -3,11 +3,16 @@
 .nmb-top { padding: 12px 32px 0; }
 .nmb-back { border: 0; background: none; color: #6651d6; font: inherit; font-weight: 700; cursor: pointer; min-height: 44px; padding: 0; }
 .nmb-host { display: block; }
+/* Cartoon World — та же оболочка (кнопка «назад», статусы загрузки), свой корень тени. */
+.cwp-top { padding: 12px 32px 0; }
+.cwp-host { display: block; }
+.cwp-host[hidden] { display: none; }
 .nmb-host[hidden] { display: none; }
 .nmb-state { padding: 48px 32px; text-align: center; color: #5b5478; font-weight: 600; }
 .nmb-state p { margin: 0 0 16px; }
 .nmb-retry { border: 0; border-radius: 14px; padding: 12px 22px; background: #874bf8; color: #fff; font: inherit; font-weight: 800; cursor: pointer; min-height: 44px; }
 @media (max-width: 560px) {
   .nmb-top { padding: 8px 16px 0; }
+  .cwp-top { padding: 8px 16px 0; }
   .nmb-state { padding: 32px 16px; }
 }

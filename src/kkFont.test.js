@@ -78,6 +78,8 @@ const ENGINES = {
   numbers: (css) => expect(css).toContain(`.nw [lang="kk"]{font-family:'Inter'`),
   // Прототип и так на Inter.
   speakspin: (css) => expect(css).toMatch(/font-family:Inter\b/),
+  // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
+  cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
 }
 
 describe('казахский интерфейс на Inter', () => {
