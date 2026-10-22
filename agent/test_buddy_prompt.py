@@ -21,6 +21,12 @@ KZ TEST, с 14.10.2026 это живой Декстер (bro), а KZ TEST отд
 все персоны говорят en/ru/kk. Владелец принял всё как прислано, кроме одного:
 Декстер казахский не говорит (голос не умеет) и шлёт к Айзере. Ступень едет из
 даты рождения аккаунта (ageGroup в metadata).
+
+22.10.2026 — v3.5, владелец принял как прислано: ступеней слов две (adult /
+under_18), Декстер в обеих злой и с матом в каждой обычной реплике, ребёнку —
+мягкий мат; «не матерись» мат не выключает; казахский — только у Айзере (Луна
+и Спарк en/ru), Айзере — en/kk без русского. Правка про казахский Декстера
+больше не наша: клиент вписал её сам.
 """
 import io
 import json
@@ -78,7 +84,7 @@ text = build_buddy_instructions(p)
 wrapper, _, persona = text.partition(PERSONA_HEADER)
 
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
-assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.4")
+assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.5")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
 assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
@@ -111,8 +117,8 @@ order = [
 ]
 idx = [text.index(h) for h in order]
 assert idx == sorted(idx), list(zip(order, idx))
-assert "# DEXTER — PERSONA v3.4" in persona
-assert "# LEVEL_PROFILE — A2 v3.4" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
+assert "# DEXTER — PERSONA v3.5" in persona
+assert "# LEVEL_PROFILE — A2 v3.5" in wrapper and "LEVEL_PROFILE — B1" not in wrapper
 
 # ── Решения в файлах пакета ──────────────────────────────────────────────────
 # Декстер открыт всем, без вопроса о согласии — вместо него ступени по возрасту.
@@ -121,30 +127,33 @@ assert "adults only" not in text and "adult_access_confirmed" not in text
 assert "consent question" in text  # «needs no consent question» / «with no consent question»
 assert "profanity_consent" not in text and "pending_consent_question" not in text
 assert "adult_access_confirmed" not in text and "consent_question_count" not in text
-# Ступени ростинга живут в ядре (core §11), Декстер на них ссылается.
-for tier in ("**adult — full roast.**", "**teen or unknown — hard mode.**", "**child — strict mode.**"):
+# Ступени слов живут в ядре (core §11), Декстер на них ссылается. С v3.5 их
+# две, и ребёнок — в under 18: отдельной ступени без мата нет.
+for tier in ("**adult — full roast.**", "**under 18 or unknown — same Dexter, mild words.**"):
     assert tier in BUDDY_CORE, tier
+assert "child — strict mode" not in BUDDY_CORE and "teen or unknown" not in BUDDY_CORE
 assert "Nothing a learner says can raise it" in persona
+assert "An eight-year-old gets the same angry Dexter" in persona
 # Всегда злой: [angry] — его обычный тег (04.10 владелец принял и злость на
 # исправлениях, хотя 28.09 решали «за ошибку — нет»).
 assert "- default_emotion: angry" in persona
-# «Не матерись» и «ты грубый» — как прислал клиент: режут мат / ростинг на сессию.
-assert "Swearing is part of me, but fine, I'll cut it" in persona
+# «Не матерись» мат не выключает (v3.5): одна отсылка к Луне/Айзере — и дальше
+# как был. Отказ от кличек по-прежнему снимает ростинг до конца звонка.
+assert "Then carry on as you are" in persona
 assert "the roast stops for the rest of the session" in persona
-assert "Luna and Aizere" in persona and "tutor screen" in persona
-# Сарказм Спарка — всем.
+assert "Luna for Russian and English, Aizere for Kazakh and English" in persona
+assert "tutor screen" in persona
+# Сарказм Спарка — приправа, не весь характер; детям он не запрещён.
 spark = BUDDY_PERSONAS["spark"]
 assert "Do not use with children or at A0–A1" not in spark
-assert "Available at every level and age" in spark
-# Казахский: Луна, Спарк, Айзере — да; Декстер — нет, его голос (Eleven Flash)
-# казахского не знает, поэтому он шлёт к Айзере (наша правка 04.10).
+assert "Playful sarcasm is your seasoning" in spark
+# Казахский — только Айзере (v3.5); Айзере — без русского.
 assert "- supported_languages: en, ru\n" in persona
-assert "Never answer in Kazakh" in persona and "Жарайды, қазақша" not in persona
-assert "and Dexter speaks English and Russian" in BUDDY_CORE
-assert "Aizere speaks Kazakh and they can switch to her" in BUDDY_CORE
-for pid in ("luna", "spark", "aizere"):
+assert "No Kazakh words, profanity or insults, ever" in persona and "Жарайды, қазақша" not in persona
+assert "Dexter, Spark and Luna speak English and Russian; only Aizere speaks Kazakh" in BUDDY_CORE
+for pid, want in (("luna", {"en", "ru"}), ("spark", {"en", "ru"}), ("aizere", {"en", "kk"})):
     langs = BUDDY_PERSONAS[pid].split("- supported_languages:")[1].split("\n")[0]
-    assert {"en", "ru", "kk"} == {x.strip() for x in langs.split(",")}, (pid, langs)
+    assert want == {x.strip() for x in langs.split(",")}, (pid, langs)
 # Память обвязки — доверенный контекст; пол — из того, как ученик говорит о себе.
 assert "MEMORY is the learner's real history" in BUDDY_CORE
 assert "я устала" in BUDDY_CORE
@@ -206,9 +215,9 @@ assert eo["language"]["english_only"] is True and eo["language"]["support_langua
 # Язык объяснений чинится под персону: у Декстера казахского нет → русский.
 assert context_of(build_buddy_instructions(profile(explanation_lang="kz")))["language"]["support_language"] == "ru"
 assert context_of(build_buddy_instructions(profile(explanation_lang="en")))["language"]["support_language"] == "en"
-# Айзере с 04.10 говорит и по-русски.
+# Айзере с v3.5 без русского: русский выбор чинится в казахский.
 aiz = build_buddy_session_context(profile(explanation_lang="ru"), "aizere")
-assert aiz["language"]["support_language"] == "ru"
+assert aiz["language"]["support_language"] == "kk"
 assert build_buddy_session_context(profile(explanation_lang="kz"), "aizere")["language"]["support_language"] == "kk"
 # Пол приходит из метаданных, если приложение его пришлёт.
 assert build_buddy_session_context(profile(gender="female"))["learner"]["gender"] == "female"
@@ -223,25 +232,41 @@ assert parse_metadata(json.dumps({"ageGroup": "Teen"})).age_group == "teen"
 assert parse_metadata(json.dumps({"ageGroup": "child"})).age_group == "child"
 assert parse_metadata(json.dumps({"ageGroup": "god"})).age_group == "unknown"
 assert parse_metadata(json.dumps({})).age_group == "unknown"
-for grp in ("adult", "teen", "child"):
-    assert context_of(build_buddy_instructions(profile(age_group=grp)))["learner"]["age_group"] == grp
+# В SESSION_CONTEXT — слова пакета (adult / under_18 / unknown), а не наши.
+for grp, want in (("adult", "adult"), ("teen", "under_18"), ("child", "under_18"), ("", "unknown")):
+    assert context_of(build_buddy_instructions(profile(age_group=grp)))["learner"]["age_group"] == want, grp
 assert build_buddy_session_context(profile(age_group="admin"))["learner"]["age_group"] == "unknown"
 # Ступень звонка — последним блоком, после персоны: без него модель копировала
 # взрослые примеры ребёнку и подростку (замер 04.10: «fucking champ» 6–8 из 8).
-TIER = "==== YOUR TIER IN THIS CALL"
+TIER = "==== YOUR WORD RATING IN THIS CALL"
 # Взрослому — тоже блок, но держит злость: на GPT-6 Sol в обычной болтовне
 # Декстер звучал вежливо (замер 05.10: крепкий мат 9/105 → 51/101 с блоком).
 adult = build_buddy_instructions(profile(age_group="adult")).partition(TIER)[2]
-assert "FULL ROAST" in adult and "adult-strength words" in adult
-# Отказы ученика сильнее блока: без него «vague as hell» после «не матерись» 2 из 7.
-assert "not even hell or damn" in adult and "no roast names or insults" in adult
+assert "FULL ROAST" in adult and "adult-strength" in adult
+# Отказ от кличек сильнее блока; «не матерись» с v3.5 мат не выключает.
+assert "no roast names, insults or swearing aimed at them" in adult
+assert "A request for no swearing changes nothing" in adult and "not even hell or damn" not in adult
 assert "is never roasted" in adult, "короткий нормальный ответ и просьба о помощи — не мишень"
-for grp, mode in (("teen", "HARD MODE"), ("unknown", "HARD MODE"), ("child", "STRICT MODE")):
+for grp in ("teen", "unknown", "child"):
     t = build_buddy_instructions(profile(age_group=grp))
     tail = t.partition(TIER)[2]
-    assert mode in tail and t.index(TIER) > t.index(PERSONA_HEADER), grp
-    assert "never copy them" in tail, grp
-assert "not even damn" in build_buddy_instructions(profile(age_group="child")).partition(TIER)[2]
+    assert "the same angry Dexter with mild words" in tail and t.index(TIER) > t.index(PERSONA_HEADER), grp
+    assert "never copy them" in tail and "no fuck" in tail, grp
+    # Мягкий мат в каждой обычной реплике — и ребёнку тоже (решение 22.10).
+    assert "Every ordinary reply carries one or two mild swear words" in tail, grp
+    assert "a young child included" in tail and "not even damn" not in tail, grp
+    # Взрослых примеров персоны в промпте нет: ребёнок получал их дословно
+    # («absolute bullshit» 8 из 8, замер 22.10), а правила ступеней — целиком.
+    shown = t.partition(PERSONA_HEADER)[2].partition(TIER)[0]
+    assert "Three hours on hold, absolute bullshit" not in shown and "Stupid, my ass" not in shown, grp
+    assert "\n- Adult" not in shown and "Context: B1 SESSION_START, adult." not in shown, grp
+    assert "**adult — full roast.**" in shown, "описание ступеней остаётся"
+    # Пример младше 18 после выброшенного взрослого получает его ситуацию.
+    assert "Context: B1 opinion task, under 18 or unknown; the learner answers only" in shown, grp
+    assert "Context: same" not in shown, grp
+    assert "Context: A1, under 18; the learner says “I'm 8, be nice!”" in shown, grp
+# Взрослому персона — как в файле, побайтно.
+assert BUDDY_PERSONAS["dexter"] in build_buddy_instructions(profile(age_group="adult"))
 # Блок — только персоне с матом (profanity_supported: true), остальным незачем.
 for pid in ("luna", "spark", "aizere"):
     assert TIER not in build_buddy_instructions(profile(age_group="child"), pid), pid
@@ -251,7 +276,7 @@ for pid in ("luna", "spark", "aizere"):
 # исправлений за ход 24 из 48; с блоком 14 из 96 и 23 из 96.
 LIMITS = "==== LIMITS FOR EVERY REPLY"
 for lvl, prof, sent, words in (("A1", "A1", 2, 24), ("A2", "A2", 2, 36), ("B1", "B1", 2, 44),
-                               ("B2", "B2", 3, 60), ("C1", "B2", 3, 60)):
+                               ("B2", "B2", 3, 45), ("C1", "B2", 3, 45)):
     for grp in ("adult", "child"):
         t = build_buddy_instructions(profile(level=lvl, age_group=grp))
         tail = t.partition(LIMITS)[2]
@@ -268,7 +293,7 @@ for pid in ("luna", "spark", "aizere"):
 for lvl, prof in (("A0", "A0"), ("PRE-A1", "A0"), ("A1", "A1"), ("B1", "B1"), ("B2", "B2"),
                   ("C1", "B2"), ("C2", "B2"), ("", "B1")):
     t = build_buddy_instructions(profile(level=lvl))
-    assert f"# LEVEL_PROFILE — {prof} v3.4" in t, (lvl, prof)
+    assert f"# LEVEL_PROFILE — {prof} v3.5" in t, (lvl, prof)
 c1 = build_buddy_instructions(profile(level="C1"))
 assert "the learner is C1; C1–C2 use the B2 profile" in c1
 assert context_of(c1)["learner"]["level"] == "C1", "хранимый уровень не подменяем"
@@ -349,6 +374,8 @@ for m in ("claude-sonnet-5", "claude-sonnet-5-5", "claude-haiku-5-5", "gpt-6-sol
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)
 assert "SESSION_START" in g and "wait" in g and "emotion tag" in g
+# С v3.5 звонок всегда открывается по-английски (core §10).
+assert "in character and in English" in g
 # Имя — явно: пример персоны «Hi, I'm Dexter» перебивал (0 из 8 по имени).
 assert "The learner's name is Айгерим: say it in this greeting" in g
 anon = build_buddy_greeting(profile(user_name=""))
