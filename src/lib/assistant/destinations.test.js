@@ -50,6 +50,11 @@ describe('куда Луна умеет вести', () => {
     }
   })
 
+  it('Cartoon World открывается напрямую', () => {
+    expect(validAction('open', 'cartoons')).toEqual({ kind: 'open', target: 'cartoons', now: false })
+    expect(destinationIdForScreen('cartoons')).toBe('cartoons')
+  })
+
   it('действие проверяется по списку: тур — только где он есть', () => {
     expect(validAction('open', 'vocab')).toEqual({ kind: 'open', target: 'vocab', now: false })
     expect(validAction('tour', 'practice', true)).toEqual({ kind: 'tour', target: 'practice', now: true })
