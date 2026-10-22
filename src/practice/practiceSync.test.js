@@ -9,7 +9,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice, hydratePractice } from './practiceSync.js'
 import { createProgressStore, doneListOptions } from './progressStore.js'
-import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY } from './practiceKeys.js'
+import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY, PREPOSITIONS_KEY, PREPOSITIONS_LANG_KEY, PREPOSITIONS_PROGRESS_EVENT } from './practiceKeys.js'
+import { applyHydratedState } from './practiceSyncCore.js'
 
 // Управляемый fetch: тест сам решает, когда сервер ответит.
 function deferredFetch() {
@@ -145,11 +146,34 @@ describe('hydratePractice → память разделов', () => {
 // иначе достаётся следующему ученику. Новый раздел, забытый в списке, — ровно
 // эта утечка (так было со «Словами в картинках»).
 describe('clearLocalPractice', () => {
-  it('стирает прогресс чтения, «Слов в картинках», глаголов, «Слушай и выбирай» и «Чисел»', () => {
-    const keys = [READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY]
+  it('стирает прогресс чтения, «Слов в картинках», глаголов, «Слушай и выбирай», «Чисел» и Prepositions World', () => {
+    const keys = [READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY, NUMBERS_KEY, NUMBERS_LANG_KEY, LISTEN_KEY, LISTEN_OWN_KEY, PREPOSITIONS_KEY, PREPOSITIONS_LANG_KEY]
     for (const k of keys) localStorage.setItem(k, '{"x":1}')
     clearLocalPractice()
     for (const k of keys) expect(localStorage.getItem(k)).toBeNull()
+  })
+})
+
+// Prepositions World хранится объектом {done, score}. Забытый в списке модулей-объектов
+// ушёл бы на сервер как {done: [...]} (множество id) и затёр бы лучшие результаты.
+describe('модуль prepositions', () => {
+  it('уходит на сервер объектом как есть, а не множеством done-id', async () => {
+    const fetchMock = deferredFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    const state = { done: { 'place-in-on-at': 1 }, score: { 'L:place-in-on-at': { best: 0.8, stars: 2 } } }
+    const flushed = (pushModule('prepositions', state), flushModule('prepositions'))
+    expect(fetchMock.calls[0].body).toEqual({ module: 'prepositions', state })
+    fetchMock.calls[0].settle()
+    await flushed
+  })
+
+  it('серверный стейт ложится в ключ раздела и будит экран событием', () => {
+    const store = new Map()
+    const fired = []
+    const state = { done: { a: 1 }, score: {} }
+    applyHydratedState({ prepositions: state }, { setItem: (k, v) => store.set(k, v), dispatch: (e) => fired.push(e) })
+    expect(JSON.parse(store.get(PREPOSITIONS_KEY))).toEqual(state)
+    expect(fired).toEqual([PREPOSITIONS_PROGRESS_EVENT])
   })
 })
 

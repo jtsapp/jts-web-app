@@ -1122,6 +1122,9 @@ html[data-theme="dark"] .pk-banner--speakspin {
 html[data-theme="dark"] .pk-banner--numbers {
     background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
 }
+html[data-theme="dark"] .pk-banner--prepositions {
+    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
+}
 html[data-theme="dark"] .pk-arcade {
     color: #fff;
     background: radial-gradient(ellipse at 88% 18%, color-mix(in oklab, var(--dk-yellow-soft) 35%, transparent) 0, transparent 34%),
