@@ -93,7 +93,7 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // сигнал «слушаю» и одна команда, а промолчал — прежнее приветствие с окном: Луна
 // здоровается и, договорив, слушает ОДИН ответ. Дальше — кнопкой: разговор без кнопок
 // владелец отменил 15.10 (для разговора есть звонок). На команду окно не открывается
-// (решение владельца 21.10.2026): у кнопки облачко «Слушаю… → Нажала «Далее»», окно —
+// (решение владельца 21.10.2026): у кнопки плашка «Слушаю вас → Нажала «Далее»», окно —
 // когда ответ объяснение или предложение. Распознаёт позывной само устройство
 // (lib/assistant/wake/), включает его ученик переключателем в окне; во время звонка
 // «ухо» выключено — микрофон у звонка. Те же быстрые команды — и у микрофона окна,
@@ -102,6 +102,12 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 const MAX_INPUT = 2000
 // Зазор между кнопкой и облачком-знакомством (хвостик облачка — 7 px).
 const HINT_GAP = 14
+// Плашка голосовой команды (CmdBadge): высота и зазор до кнопки — макет «При вызове
+// Луны» (24 px при кнопке 72, у нас кнопка 56 — ореол меньше, и зазор с ним). Сколько
+// плашка «втягивается» в кнопку, уходя, — переход макета (0.2 с), держит и assistant.css.
+const BADGE_H = 32
+const BADGE_GAP = 20
+const BADGE_OUT_MS = 200
 // Тур не начался за это время (экран без тура, данные не доехали) — честно
 // говорим об этом, а не молчим. Чуть больше срока жизни заявки в tourBus.
 const TOUR_START_TIMEOUT_MS = 10_500
@@ -161,6 +167,63 @@ function StatusBubble({ phase, t }) {
         <i />
       </span>
       {t(step.key)}
+    </div>
+  )
+}
+
+// Плашка голосовой команды у кнопки (макет Figma «Помощник» → «При вызове Луны», 22.10.2026):
+// ученик позвал по имени — из-за кнопки выезжает плашка цвета фона аватарки («Слушаю вас»),
+// а вокруг кнопки расходится ореол (.asst__halo). Уходя, плашка втягивается обратно в кнопку,
+// поэтому живёт дольше самой команды: { out: true } — ещё BADGE_OUT_MS на анимацию ухода.
+// Открытое окно убирает её сразу: кнопки, в которую втягиваться, тогда не видно.
+function useBadge(want, open) {
+  const [badge, setBadge] = useState(null) // { phase, label, out }
+  if (want && (!badge || badge.out || badge.phase !== want.phase || badge.label !== want.label)) {
+    setBadge({ phase: want.phase, label: want.label, out: false })
+  } else if (!want && badge && (open || !badge.out)) {
+    setBadge(open ? null : { ...badge, out: true })
+  }
+  useEffect(() => {
+    if (!badge?.out) return undefined
+    const id = setTimeout(() => setBadge(null), BADGE_OUT_MS)
+    return () => clearTimeout(id)
+  }, [badge])
+  return badge
+}
+
+function CmdBadge({ badge, style, free, below, t }) {
+  const ref = useRef(null)
+  const innerRef = useRef(null)
+  const text = t(`assistant.cmd.${badge.phase}`, { label: badge.label })
+  // В макете растёт сама рамка (smart animate ширины), а не масштаб: текст не тянется,
+  // концы плашки остаются круглыми. «auto» не анимируется — ширину содержимого плашка
+  // берёт в пикселях и ставит переменной (assistant.css: width, @keyframes asst-badge-in).
+  useLayoutEffect(() => {
+    const w = innerRef.current?.getBoundingClientRect().width
+    if (w) ref.current.style.setProperty('--asst-badge-w', `${Math.ceil(w)}px`)
+  }, [text, badge.phase])
+  const icon = badge.phase === 'listening' ? 'mic' : badge.phase === 'thinking' ? 'dots' : null
+  return (
+    <div
+      ref={ref}
+      className={`asst__badge${free ? ' is-free' : ''}${below ? ' is-below' : ''}${badge.out ? ' is-out' : ''}`}
+      style={style}
+      role="status"
+      aria-live="polite"
+      aria-hidden={badge.out || undefined}
+      data-cmd={badge.phase}
+    >
+      <span ref={innerRef} className={`asst__badge-in${icon ? '' : ' is-plain'}`}>
+        {icon === 'mic' && <MicGlyph />}
+        {icon === 'dots' && (
+          <span className="asst__dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
+        <span>{text}</span>
+      </span>
     </div>
   )
 }
@@ -275,6 +338,19 @@ function MicIcon({ size = 20 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// Микрофон плашки «Слушаю вас» — иконка icon/mic макета (Figma «Помощник», экспорт SVG),
+// залитая, а не контурная, как MicIcon у поля ввода.
+function MicGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M6.584 8.75C6.195 8.361 6.001 7.889 6.001 7.333V3.333C6.001 2.777 6.195 2.305 6.584 1.916C6.973 1.527 7.445 1.333 8.001 1.333C8.556 1.333 9.028 1.527 9.417 1.916C9.806 2.305 10.001 2.777 10.001 3.333V7.333C10.001 7.889 9.806 8.361 9.417 8.75C9.028 9.139 8.556 9.333 8.001 9.333C7.445 9.333 6.973 9.139 6.584 8.75ZM7.334 14V11.95C6.178 11.794 5.223 11.278 4.467 10.4C3.712 9.522 3.334 8.5 3.334 7.333H4.667C4.667 8.255 4.992 9.041 5.642 9.691C6.292 10.341 7.078 10.666 8.001 10.666C8.923 10.666 9.709 10.341 10.359 9.691C11.009 9.041 11.334 8.255 11.334 7.333H12.667C12.667 8.5 12.29 9.522 11.534 10.4C10.778 11.278 9.823 11.794 8.667 11.95V14H7.334ZM8.476 7.808C8.603 7.68 8.667 7.522 8.667 7.333V3.333C8.667 3.144 8.603 2.986 8.476 2.858C8.348 2.73 8.19 2.666 8.001 2.666C7.812 2.666 7.653 2.73 7.526 2.858C7.398 2.986 7.334 3.144 7.334 3.333V7.333C7.334 7.522 7.398 7.68 7.526 7.808C7.653 7.936 7.812 8 8.001 8C8.19 8 8.348 7.936 8.476 7.808Z"
+        fill="currentColor"
+      />
     </svg>
   )
 }
@@ -1726,13 +1802,26 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       }
     : undefined
 
-  // Облачко команды: запись кончилась, идёт распознавание — уже «Думаю…», а не «Слушаю…».
+  // Облачко команды: запись кончилась, идёт распознавание — уже «Думаю…», а не «Слушаю вас».
   const cmdPhase = cmd?.phase === 'listening' && voiceQ.state === 'transcribing' ? 'thinking' : cmd?.phase
+  const badge = useBadge(cmd && !open ? { phase: cmdPhase, label: cmd.label } : null, open)
+  // Плашка — над кнопкой и по её внешнему краю, как в макете; у кнопки в верхней половине
+  // экрана — под ней: сверху там полоса колокольчика кабинета (TOP_EDGE).
+  const badgeBelow = free && place.v === 't'
+  const badgeStyle = launcherBox
+    ? {
+        top: badgeBelow ? launcherBox.y + launcherBox.h + BADGE_GAP : launcherBox.y - BADGE_GAP - BADGE_H,
+        bottom: 'auto',
+        ...(hintLeft
+          ? { left: launcherBox.x, right: 'auto' }
+          : { right: vp.w - launcherBox.x - launcherBox.w, left: 'auto' }),
+      }
+    : undefined
 
   if (!enabled) return null
 
   return (
-    <div className={`asst${free ? ' asst--free' : ''}`} data-assistant-ignore="">
+    <div className={`asst${free ? ' asst--free' : ''}`} data-persona={persona.id} data-assistant-ignore="">
       {open && (
         <div
           ref={panelRef}
@@ -2033,21 +2122,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
       {/* Мышь сквозь облачко проходит (pointer-events: none), а читалке хватает
           подписи самой кнопки — облачко её лишь повторяет. */}
-      {/* Облачко голосовой команды (см. шапку): окно закрыто, Луна слушает или нажала. */}
-      {cmd && !open && (
-        <div
-          className={`asst__hint asst__cmd${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
-          style={hintStyle}
-          role="status"
-          aria-live="polite"
-          data-cmd={cmdPhase}
-        >
-          {cmdPhase === 'listening' && <span className="asst__rec-dot" aria-hidden="true" />}
-          <span className="asst__hint-text">{t(`assistant.cmd.${cmdPhase}`, { label: cmd.label })}</span>
-        </div>
+      {/* Плашка голосовой команды (см. шапку): окно закрыто, Луна слушает или нажала.
+          В разметке — до кнопки: выезжает из-под неё. */}
+      {badge && (
+        <CmdBadge badge={badge} style={badgeStyle} free={free} below={badgeBelow} t={t} />
       )}
 
-      {introHint && !open && !cmd && (
+      {introHint && !open && !badge && (
         <div
           className={`asst__hint${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
           style={hintStyle}
@@ -2065,7 +2146,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       <button
         ref={launcherRef}
         type="button"
-        className={`asst__launcher${open ? ' is-open' : ''}${call ? ' is-call' : ''}`}
+        className={`asst__launcher${open ? ' is-open' : ''}${call ? ' is-call' : ''}${badge ? ' is-wake' : ''}`}
         style={boxStyle(launcherBox, false)}
         aria-label={t('assistant.launcher')}
         aria-expanded={open}
@@ -2080,6 +2161,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           else openWindow()
         }}
       >
+        {/* Ореол «слушаю» (макет «При вызове Луны»): только пока Луна ждёт команду. */}
+        {badge && (
+          <span className={`asst__halo${badge.phase === 'listening' && !badge.out ? '' : ' is-off'}`} aria-hidden="true" />
+        )}
         <img src={persona.avatar} alt="" width="50" height="50" draggable={false} />
         <span className="asst__name" aria-hidden="true">{t('assistant.title')}</span>
         {!open && wake.state !== 'off' && (
