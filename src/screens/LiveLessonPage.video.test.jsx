@@ -131,6 +131,15 @@ describe('LiveLessonPage — звонок и вкладка «Доска»', () 
     expect(useLessonVideoMock).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: false }))
   })
 
+  // Решение владельца 23.10: звонок в правой колонке первым, над темами урока.
+  it('звонок стоит в правой колонке выше тем урока', async () => {
+    await renderLesson()
+    const call = screen.getByRole('region', { name: 'Звонок урока' })
+    const topics = document.querySelector('.lv-side')
+    expect(topics).toBeTruthy()
+    expect(call.compareDocumentPosition(topics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('«Урок» -> «Доска» -> «К звонку» не вызывает leave и показывает плашку только на доске', async () => {
     await renderLesson()
     expect(screen.getByRole('region', { name: 'Звонок урока' })).toBeTruthy()

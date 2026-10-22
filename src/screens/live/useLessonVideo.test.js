@@ -326,6 +326,14 @@ describe('useLessonVideo', () => {
     expect(result.current.fallback).toBeNull()
   })
 
+  it('вход отклонён как удалённого (3009) — removed, а не сбой со ссылкой', async () => {
+    const client = fakeClient({ join: vi.fn(async () => { throw { type: 'JOIN_MEETING_FAILED', reason: 'user has been removed', errorCode: 3009 } }) })
+    const { result } = setup({ client })
+    await act(async () => { await result.current.join() })
+    expect(result.current.phase).toBe('removed')
+    expect(result.current.fallback).toBeNull()
+  })
+
   it("Closed с причиной 'ended by host' -> failed, fallback ended", async () => {
     const { client, result } = setup()
     await act(async () => { await result.current.join() })
