@@ -378,8 +378,9 @@ A2 47/49, B1 59/62, B2 49/62 треков сходятся по имени, ос
 self) теряется.
 
 **«Чтение» в Практике — один прототип, 80 текстов, всё офлайн.** Источник
-правды — `data/jtsreading.html` (standalone-прототип, правки контента идут
-туда). Данные режет `node scripts/extract-reading.js` в
+правды — `data/jtsreading.html` (standalone-прототип) — до заливки пакета на
+стенд; после неё тексты живут в админке (см. «Материалы Практики переезжают в
+админку» ниже). Данные режет `node scripts/extract-reading.js` в
 `public/practice/reading/{<level>,dict,meta}.json`; рисует их экран
 `?screen=reading` (`src/screens/ReadingPage.jsx` + `src/screens/reading/`),
 движок — `src/practice/reading/`.
@@ -601,6 +602,20 @@ React (под `useSyncExternalStore`), поэтому e2e подменяет з�
 (`a1_001`) не меняются — на них прогресс и квота. После проверки прода статику
 раздела удаляют отдельным PR и зовут загрузчик с `staticUrl = null`.
 Спека и план: `docs/superpowers/specs|plans/2026-10-21-practice-*`.
+
+Второй раздел — **«Чтение»** (22.10.2026, спека
+`2026-10-22-practice-reading-admin-design.md`): 80 текстов в
+`practice_reading_texts` бэкенда, текст — одна строка, документ целиком в
+`body`; медиа нет, MinIO раздел не трогает. Ученику —
+`GET /practice-content/reading/{level}` (массив текстов в форме файла уровня;
+`src/practice/reading/readingContent.js` сводит его к `{level, texts}`).
+Пакет собирает `node scripts/practice-pack/build-reading.js`, заливают в
+«Библиотека → Чтение»; там же форма текста (пять редакторов по механике).
+**После заливки правки текстов идут в админку, а не в прототип:**
+`data/jtsreading.html` и экстрактор остаются ради оракула движка и общего
+словаря тапа `dict.json` (он статикой и остаётся). Новый текст из формы
+создаётся скрытым, id ему выдаёт сервер со случайным хвостом
+(`b1-sci-placebo-k3f9q`) — формы дева и прода не столкнутся по id.
 
 **«Числа» в Практике — Dexter's Number World, движок прототипа в Shadow DOM
 (13.10.2026).** Английские числа на слух и чтение: Декстер прыгает по островам

@@ -7,6 +7,7 @@ import { READING_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { readView, writeView, viewVars, stepFont } from '../practice/reading/viewSettings.js'
 import { loadReadingFromServer } from '../practice/reading/readingProgress.js'
 import { loadDict } from '../practice/reading/loadDict.js'
+import { loadReadingLevel } from '../practice/reading/readingContent.js'
 import ReadingLibrary from './reading/ReadingLibrary.jsx'
 import ReadingText from './reading/ReadingText.jsx'
 import ReadingResult from './reading/ReadingResult.jsx'
@@ -18,17 +19,15 @@ export const READING_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 
 // Уровень — сотня-другая килобайт, поэтому грузим лениво и кэшируем промис на
 // уровне модуля (паттерн WritingPage/loadGrammarIndex): возврат в каталог не
-// перекачивает уже прочитанное.
+// перекачивает уже прочитанное. Тексты — с бэкенда, пока пакет не залит — со
+// статики (readingContent.js); источник едет вместе с данными уровня.
 const levelCache = new Map()
 function fetchLevel(level) {
   if (!levelCache.has(level)) {
     levelCache.set(
       level,
-      fetch(`/practice/reading/${level}.json`)
-        .then((r) => {
-          if (!r.ok) throw new Error('bad status ' + r.status)
-          return r.json()
-        })
+      loadReadingLevel(level)
+        .then(({ data, source }) => ({ ...data, source }))
         .catch((e) => {
           // Неудачную загрузку выкидываем из кэша, иначе ошибка «прилипает»
           // до перезагрузки страницы.
@@ -250,7 +249,8 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
       {/* data-selectable снимает глобальный запрет выделения (styles.css): весь
           раздел — поверхность чтения, и слово в тексте должно выделяться, чтобы
           его можно было перевести. */}
-      <div className={`rd${viewPrefs.dys ? ' rd--dys' : ''}`} data-selectable="" style={viewVars(viewPrefs)}>
+      {/* data-source: по нему тесты и проверка стенда видят, что раздел уже читает админку, а не статику */}
+      <div className={`rd${viewPrefs.dys ? ' rd--dys' : ''}`} data-selectable="" data-source={levels[level]?.source || undefined} style={viewVars(viewPrefs)}>
         <div className="rd-top">
           <button type="button" className="rd-back" onClick={goBack}>
             ← {backLabel}

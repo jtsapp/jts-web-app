@@ -14,6 +14,7 @@ describe('GET /api/practice/catalog', () => {
 
   it('Аудирование: счётчики уровней с бэкенда, когда пакет залит', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (!/\/practice-content\/listening\//.test(String(url))) throw new Error('offline')
       expect(String(url)).toMatch(/\/practice-content\/listening\/levels$/)
       return { ok: true, json: async () => [{ level: 'a1', count: 3 }, { level: 'b2', count: 0 }] }
     }))
@@ -92,6 +93,43 @@ describe('GET /api/practice/catalog', () => {
         })
       })
     })
+  })
+
+  // Тексты «Чтения» заводят в админке: когда пакет на стенде залит, каталог
+  // обязан показывать то, что видит ученик, а не файлы релиза.
+  it('«Чтение»: тексты с бэкенда, когда пакет залит', async () => {
+    const replies = {
+      levels: [{ level: 'a1', count: 1 }, { level: 'b1', count: 0 }],
+      a1: [{ id: 'a1-sci-honey-k3f9q', level: 'A1', genre: 'science', title: 'New <i>honey</i>' }],
+    }
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      const m = String(url).match(/\/practice-content\/reading\/(\w+)$/)
+      if (!m || !replies[m[1]]) throw new Error('offline')
+      return { ok: true, json: async () => replies[m[1]] }
+    }))
+    const body = await (await GET()).json()
+    const reading = body.areas.find((a) => a.key === 'reading')
+    expect(reading.levels.map((l) => l.code)).toEqual(['a1'])
+    expect(reading.levels[0].units).toEqual([
+      { key: 'a1-sci-honey-k3f9q', title: 'New honey', section: 'science', minutes: null, difficulty: null },
+    ])
+  })
+
+  it('«Чтение»: уровень с бэкенда не ответил — весь раздел с диска, без смеси', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (/\/practice-content\/reading\/levels$/.test(String(url))) {
+        return { ok: true, json: async () => [{ level: 'a1', count: 1 }, { level: 'a2', count: 1 }] }
+      }
+      if (/\/practice-content\/reading\/a1$/.test(String(url))) {
+        return { ok: true, json: async () => [{ id: 'a1-remote-x', level: 'A1', genre: 'science', title: 'R' }] }
+      }
+      return { ok: false, status: 502, json: async () => ({}) }
+    }))
+    const body = await (await GET()).json()
+    const reading = body.areas.find((a) => a.key === 'reading')
+    expect(reading.levels.map((l) => l.code)).toEqual(['a1', 'a2', 'b1', 'b2', 'c1'])
+    expect(reading.levels[0].units.some((u) => u.key === 'a1-remote-x')).toBe(false)
+    expect(reading.levels[0].units[0].key).toBe('a1-sci-honey')
   })
 
   it('«Чтение» адресует текст его id, а не номером', async () => {
