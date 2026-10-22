@@ -41,7 +41,7 @@ export default function VideoTile({ tile, quality, className = '', moderation, a
   }, [tile.videoOn, tile.userId, quality, attachVideo, detachVideo])
 
   const name = tile.isSelf ? t('live.video.you') : tile.name
-  const classes = ['lw-video__tile', tile.speaking && 'lw-video__tile--speaking', className].filter(Boolean).join(' ')
+  const classes = ['lw-video__tile', showVideo && 'lw-video__tile--video', tile.speaking && 'lw-video__tile--speaking', className].filter(Boolean).join(' ')
 
   return (
     <figure className={classes}>

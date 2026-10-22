@@ -255,6 +255,20 @@ describe('LessonVideo — звонок в уроке', () => {
     expect(detachVideo).toHaveBeenCalledWith('140')
   })
 
+  // Чужое видео SDK рисует на холсте под плитками: модификатор снимает с плитки фон, который его закрывал.
+  it('плитка с видео получает lw-video__tile--video, плитка с инициалами — нет', async () => {
+    const { container } = renderVideo({ state: { tiles: [{ ...TEACHER, videoOn: true }, DANA] } })
+    await waitFor(() => expect(container.querySelectorAll('.lw-video__tile--video')).toHaveLength(1))
+    expect(container.querySelector('.lw-video__tile--video .lw-video__name').textContent).toBe('Айгерим')
+  })
+
+  it('видео не подключилось — модификатора нет, фон под инициалами остаётся', async () => {
+    const attachVideo = vi.fn(async () => { throw new Error('boom') })
+    const { container } = renderVideo({ state: { tiles: [{ ...TEACHER, videoOn: true }], attachVideo } })
+    await waitFor(() => expect(container.querySelector('.lw-video__avatar')).toBeTruthy())
+    expect(container.querySelector('.lw-video__tile--video')).toBeNull()
+  })
+
   it('сбой attachVideo не роняет плитку: остаются инициалы', async () => {
     const attachVideo = vi.fn(async () => { throw new Error('boom') })
     const { container } = renderVideo({ state: { tiles: [{ ...TEACHER, videoOn: true }], attachVideo } })

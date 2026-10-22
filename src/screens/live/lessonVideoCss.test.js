@@ -22,4 +22,13 @@ describe('lessonVideo.css — звонок в правой колонке', () =
     const grid = css.match(/\.lw-video--grid \.lw-video__tiles\s*\{[^}]*\}/)?.[0] ?? ''
     expect(grid).toContain('grid-auto-rows: max-content')
   })
+
+  // В Chromium без SharedArrayBuffer SDK рисует чужое видео на холсте video-player-container,
+  // под плитками. Сплошной фон плитки закрывал его: у собеседника камера «не включалась».
+  it('плитка с видео прозрачная и правило стоит после базового фона плитки', () => {
+    const base = css.search(/\.lw-video__tile\s*\{[^}]*background:/)
+    const video = css.search(/\.lw-video__tile--video\s*\{\s*background: transparent;/)
+    expect(video).toBeGreaterThan(base)
+    expect(base).toBeGreaterThan(-1)
+  })
 })
