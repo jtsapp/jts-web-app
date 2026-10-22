@@ -34,19 +34,22 @@ const AREA_NAMES = {
   listenchoose: 'Слушай и выбирай',
   numbers: 'Мир чисел',
   listen: 'Just to Listen',
+  prepositions: 'Prepositions World',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
 // «сделал». Вкладка навыка — любой её тренажёр, который пишет прогресс.
 const TARGET_AREAS = {
-  'practice-listening': ['listening', 'listenchoose'],
+  'practice-listening': ['listening', 'listenchoose', 'listen'],
   'practice-reading': ['reading'],
-  'practice-writing': ['writing'],
+  'practice-writing': ['writing', 'prepositions'],
   'practice-speaking': ['shadowing', 'situations'],
   listening: ['listening'],
   listenchoose: ['listenchoose'],
   words: ['words'],
   numbers: ['numbers'],
+  listen: ['listen'],
+  prepositions: ['prepositions'],
   reading: ['reading'],
   writing: ['writing'],
   verbs: ['verbs'],

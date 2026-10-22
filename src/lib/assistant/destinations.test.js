@@ -68,6 +68,13 @@ describe('куда Луна умеет вести', () => {
     expect(block).toContain('Открытый раздел: Практика (id для метки: practice)')
   })
 
+  // Разделы, чей материал заливают в админке (22.10.2026): без строки в таблице Луна говорила «такого нет».
+  it('Just to Listen и Prepositions World открываются напрямую', () => {
+    expect(validAction('open', 'listen')).toEqual({ kind: 'open', target: 'listen', now: false })
+    expect(destinationIdForScreen('prepositions')).toBe('prepositions')
+    expect(destinationsText()).toContain('- prepositions — Prepositions World (предлоги): курс английских предлогов')
+  })
+
   it('список для модели: id, имя и пометка тура', () => {
     const text = destinationsText()
     expect(text).toContain('- practice-speaking — Практика → Говорение: ')
