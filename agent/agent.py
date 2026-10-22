@@ -2409,8 +2409,10 @@ async def _split_head(text) -> tuple[str, Any]:
     реплику целиком (начало, потом остаток).
 
     Нужно стилю голоса: он задаётся до открытия потока синтеза и зависит от
-    того, есть ли в реплике русский. Задержки это не добавляет — плагин Google
-    всё равно шлёт текст в Gemini по предложениям."""
+    того, есть ли в реплике русский. Текст в Gemini плагин и так шлёт по
+    предложениям, но поток (канал gRPC, токен Google) раньше открывался, пока
+    мозг ещё писал первое предложение, а теперь — после него. Заметно это на
+    первой реплике звонка, когда канал холодный; дальше он уже открыт."""
     it = text.__aiter__()
     head = ""
     async for chunk in it:
@@ -4165,15 +4167,18 @@ def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
         pieces.append(text[pos:m.start()])
         pos = m.end()
         ctx = m.group(1)
+        # Взрослый пример выбрасываем первым делом — даже «Context: same, adult»
+        # после другого взрослого: переименовать его в «under 18» значило бы
+        # отдать ребёнку взрослую реплику под чужой меткой.
+        if _ADULT_EXAMPLE_RE.search(ctx) and not _UNDER_18_EXAMPLE_RE.search(ctx):
+            dropped = dropped if ctx.lower().startswith("same") else ctx
+            continue
         if dropped and ctx.lower().startswith("same"):
             # «Context: same, under 18 or unknown.» ссылался на взрослый пример,
             # которого больше нет: берём его ситуацию со своей ступенью.
             own = _ADULT_EXAMPLE_RE.sub("under 18 or unknown", dropped, count=1)
             pieces.append(m.group(0).replace(f"Context: {ctx}", f"Context: {own}", 1))
             dropped = ""
-            continue
-        if _ADULT_EXAMPLE_RE.search(ctx) and not _UNDER_18_EXAMPLE_RE.search(ctx):
-            dropped = ctx
             continue
         dropped = ""
         pieces.append(m.group(0))

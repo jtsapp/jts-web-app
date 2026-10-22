@@ -267,6 +267,21 @@ for grp in ("teen", "unknown", "child"):
     assert "Context: A1, under 18; the learner says “I'm 8, be nice!”" in shown, grp
 # Взрослому персона — как в файле, побайтно.
 assert BUDDY_PERSONAS["dexter"] in build_buddy_instructions(profile(age_group="adult"))
+# «Context: same, adult» после взрослого примера — тоже взрослый: под метку
+# «under 18» его не переименовать (ревью #750).
+from agent import _buddy_persona_text  # noqa: E402
+
+_real = BUDDY_PERSONAS["fake"] = (
+    "- profanity_supported: true\n\n"
+    "Context: B1, adult; a one-word answer.\nResponse: `[angry] ADULT ONE`\n\n"
+    "Context: same, adult; second take.\nResponse: `[angry] ADULT TWO`\n\n"
+    "Context: same, under 18 or unknown.\nResponse: `[angry] KID ONE`\n"
+)
+kid = _buddy_persona_text(profile(age_group="child"), "fake")
+assert "ADULT" not in kid, kid
+assert "Context: B1, under 18 or unknown; a one-word answer.\nResponse: `[angry] KID ONE`" in kid, kid
+assert _buddy_persona_text(profile(age_group="adult"), "fake") == _real
+del BUDDY_PERSONAS["fake"]
 # Блок — только персоне с матом (profanity_supported: true), остальным незачем.
 for pid in ("luna", "spark", "aizere"):
     assert TIER not in build_buddy_instructions(profile(age_group="child"), pid), pid
