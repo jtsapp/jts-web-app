@@ -55,6 +55,12 @@
   transition: box-shadow 150ms ease-out;
 }
 
+/* Чужое видео SDK рисует на холсте video-player-container под плитками (Chromium без
+   SharedArrayBuffer), поэтому у плитки с видео фона нет: сплошной фон закрывал картинку. */
+.lw-video__tile--video {
+  background: transparent;
+}
+
 .lw-video__tile--speaking {
   box-shadow: 0 0 0 2px var(--lw-primary);
 }
