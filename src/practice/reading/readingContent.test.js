@@ -22,8 +22,8 @@ describe('loadReadingLevel', () => {
     expect(f.mock.calls[0][0]).toBe('https://api.test/practice-content/reading/a1')
   })
 
-  it('на стенде пакет не залит (404 или пусто) — файл уровня как раньше', async () => {
-    for (const remote of [status(404), ok([])]) {
+  it('на стенде пакет не залит (404, пусто, не массив) — файл уровня как раньше', async () => {
+    for (const remote of [status(404), ok([]), ok({ texts: [TEXT('api')] })]) {
       expect(await load(fetchWith(remote))).toEqual({ data: { level: 'A1', texts: [TEXT('static')] }, source: 'static' })
     }
   })

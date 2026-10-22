@@ -38,7 +38,8 @@ const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  // Оглавление меняется вместе с релизом приложения, не чаще.
+  // Пять минут — как у публичных ручек бэкенда: разделы, переехавшие в
+  // админку, меняются без релиза, и скрытое там должно уйти из каталога скоро.
   'Cache-Control': 'public, max-age=300',
 }
 
