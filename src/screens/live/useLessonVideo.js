@@ -3,6 +3,9 @@ import { getLessonVideoToken } from '../../api.js'
 import { createVideoClient } from './zoomVideoClient.js'
 import { callFallback, orderTiles } from './videoLayout.js'
 
+// Код отказа Zoom при входе участника, которого хост удалил из этой сессии.
+const REMOVED_FROM_SESSION = 3009
+
 // Звонок урока поверх Zoom Video SDK. Клиент создаётся только при join(), поэтому
 // SDK не грузится у тех, кто звонок не открывал. Любой сбой звонка не должен ронять урок:
 // он уходит в phase 'failed' с подсказкой, что показать вместо плиток.
@@ -106,8 +109,15 @@ export function useLessonVideo({ token, lessonId, teacherUserId, enabled, create
       setCamOn(false)
       refreshPeople()
       setPhase('connected')
-    } catch {
-      if (!stale()) fail('link')
+    } catch (err) {
+      if (stale()) return
+      // 3009: хост уже удалял этого участника, и Zoom не пустит его в сессию до её конца.
+      if (err?.errorCode === REMOVED_FROM_SESSION || err?.sdk?.errorCode === REMOVED_FROM_SESSION) {
+        dropClient()
+        setPhase('removed')
+      } else {
+        fail('link')
+      }
     }
   }, [token, lessonId, createClient, fail, dropClient, refreshPeople])
 

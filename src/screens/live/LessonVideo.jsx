@@ -59,7 +59,8 @@ export default function LessonVideo({ video, lessonType, enabled, renderFallback
 
   function renderBody() {
     if (phase === 'idle') return joinButton('live.video.join')
-    if (phase === 'removed') return <><p className="lw-video__msg">{t('live.video.removed')}</p>{joinButton('live.video.join')}</>
+    // Zoom не пускает удалённого хостом обратно в эту сессию — кнопки входа нет.
+    if (phase === 'removed') return <p className="lw-video__msg">{t('live.video.removed')}</p>
     if (phase === 'failed') {
       if (fallback === 'ended') return <p className="lw-video__msg">{t('live.video.ended')}</p>
       const failed = <p className="lw-video__msg">{t('live.video.failed')}</p>

@@ -67,7 +67,7 @@ describe('LessonVideo — звонок в уроке', () => {
     expect(within(dana).getByRole('button', { name: 'Выключить микрофон ученику' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Выключить микрофоны у всех' })).toBeTruthy()
     fireEvent.click(within(dana).getByRole('button', { name: 'Удалить из звонка' }))
-    expect(confirm).toHaveBeenCalledWith('Удалить Дана из звонка?')
+    expect(confirm).toHaveBeenCalledWith('Удалить Дана из звонка? Вернуться в этот звонок он не сможет до конца урока')
     expect(video.removeUser).toHaveBeenCalledWith('141')
     fireEvent.click(screen.getByRole('button', { name: 'Выключить микрофоны у всех' }))
     expect(video.muteAll).toHaveBeenCalled()
@@ -146,11 +146,12 @@ describe('LessonVideo — звонок в уроке', () => {
     expect(video.join).toHaveBeenCalledTimes(1)
   })
 
-  it('учителя убрали из звонка — текст и кнопка подключиться заново', () => {
-    const { video } = renderVideo({ state: { phase: 'removed', tiles: [] } })
-    expect(screen.getByText('Преподаватель убрал вас из звонка')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Подключиться к звонку' }))
-    expect(video.join).toHaveBeenCalled()
+  // Zoom не пускает удалённого хостом обратно в ту же сессию (3009 «user has been removed»):
+  // кнопка входа после удаления только роняла карточку звонка.
+  it('убрали из звонка — текст до конца урока, кнопки входа нет', () => {
+    renderVideo({ state: { phase: 'removed', tiles: [] } })
+    expect(screen.getByText('Преподаватель убрал вас из звонка до конца урока')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Подключиться к звонку' })).toBeNull()
   })
 
   it('ошибка устройства — role=alert с подсказкой про доступ', () => {
