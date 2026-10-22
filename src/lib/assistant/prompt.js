@@ -37,6 +37,7 @@ export const SCREEN_NAMES = {
   verbs: 'Практика → Глаголы',
   situations: 'Практика → Ситуации',
   listenchoose: 'Практика → Аудирование (выбор)',
+  cartoons: 'Практика → Аудирование → Cartoon World (мультфильмы и миссии-переписки)',
   arcade: 'Практика → Говорение → Аркада (Speak or Die)',
   speakspin: 'Практика → Говорение → SpeakSpin',
   numbers: 'Практика → Мир чисел Декстера',

@@ -62,6 +62,12 @@ export const DESTINATIONS = [
     id: 'listenchoose', nav: 'listenchoose', screen: 'listenchoose',
     name: { ru: 'Слушай и выбирай', kk: 'Тыңда да таңда', en: 'Listen & Choose' },
   },
+  // Каталог мультфильмов приходит с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'cartoons', nav: 'cartoons', screen: 'cartoons',
+    name: { ru: 'Cartoon World (мультфильмы)', kk: 'Cartoon World', en: 'Cartoon World' },
+    about: 'мультфильмы на английском A0–C1 (вкладка «Аудирование») и переписка с героем серии после просмотра',
+  },
   {
     id: 'words', nav: 'words', screen: 'words',
     name: { ru: 'Слова в картинках', kk: 'Суреттегі сөздер', en: 'Picture Words' },
