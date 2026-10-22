@@ -65,7 +65,7 @@ export default function VideoTile({ tile, quality, className = '', moderation, a
             </button>
           )}
           <button type="button" className="lw-video__mod-btn" aria-label={t('live.video.removeUser')} title={t('live.video.removeUser')} onClick={moderation.onRemove}>
-            <VideoIcon name="leave" size={16} />
+            <VideoIcon name="remove" size={16} />
           </button>
         </div>
       )}

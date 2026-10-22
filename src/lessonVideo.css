@@ -10,8 +10,12 @@
   border-radius: var(--lw-r-card);
 }
 
-.lw-live-aside > .lw-video {
-  flex: none;
+/* Только в колонку: ниже 1420px блоки колонки идут в ряд с flex: 1 1 320px,
+   и flex: none отнял бы у карточки ширину (как у lw-meet в lessonWorkspace.css). */
+@media (min-width: 1421px) {
+  .lw-live-aside > .lw-video {
+    flex: none;
+  }
 }
 
 .lw-video__tiles {
@@ -23,6 +27,9 @@
 /* В боковой колонке сетка не растёт выше 40% окна: остальное место нужно чату. */
 .lw-video--grid .lw-video__tiles {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Строка не ниже плитки: у плитки overflow: hidden, её минимальная высота для сетки — ноль,
+     и под потолком 40vh строки сжимались, а плитки наезжали друг на друга вместо прокрутки. */
+  grid-auto-rows: max-content;
   max-height: 40vh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -64,6 +71,12 @@
   width: 32%;
   border-radius: var(--lw-r-inner);
   box-shadow: 0 0 0 2px var(--lw-surface);
+}
+
+/* Подпись собеседника не заходит под своё окно: оно занимает 32% ширины справа внизу. */
+.lw-video--duo .lw-video__tile:not(.lw-video__self) > .lw-video__caption {
+  max-width: calc(68% - 20px);
+  overflow: hidden;
 }
 
 .lw-video__self.lw-video__tile--speaking {
@@ -119,8 +132,13 @@
   font-weight: 700;
 }
 
+/* В узкой плитке первой сжимается роль, а не имя: «О… Преподаватель» не говорит, кто это. */
 .lw-video__role {
-  flex: none;
+  flex: 0 3 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--lw-primary-ink);
 }
 
