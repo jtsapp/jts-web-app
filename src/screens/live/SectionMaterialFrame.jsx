@@ -421,6 +421,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       // документа страница прошлого уже не своя. У простой рамки (видео, PDF, чужая ссылка) ref
       // нет намеренно: ни моста, ни скрипта стадий в ней нет, и говорить ей здесь нечего.
       const frameWindow = iframeRef.current?.contentWindow
+      // Рамки нет или она отцеплена (contentWindow === null) — не верим никому: у сообщения без
+      // источника source тоже null, и сравнение «null с null» пропустило бы его.
       if (!frameWindow || e.source !== frameWindow) return
       const data = e.data
       // Стадия — свой источник и обеим ролям: ученику она двигает «Темы»,

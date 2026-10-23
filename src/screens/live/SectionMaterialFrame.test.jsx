@@ -952,6 +952,22 @@ describe('SectionMaterialFrame — кому верим', () => {
     expect(onStage).not.toHaveBeenCalled()
     expect(onMirror).not.toHaveBeenCalled()
   })
+
+  // У отцепленной от страницы рамки contentWindow === null, а у сообщения без источника source тоже
+  // null: без отдельной проверки сравнение «null с null» пропустило бы такое сообщение.
+  it('отцепленная рамка (contentWindow === null): сообщение без источника не принимается', async () => {
+    const onStage = vi.fn()
+    const { iframe } = renderFrame({ onStage })
+    Object.defineProperty(iframe, 'contentWindow', { value: null, configurable: true })
+
+    await message(STAGE, null)
+    expect(onStage).not.toHaveBeenCalled()
+
+    // Контроль: вернули настоящее окно рамки — её сообщение слышно, отказ выше не пустой.
+    delete iframe.contentWindow
+    await message(STAGE)
+    expect(onStage).toHaveBeenCalledTimes(1)
+  })
 })
 
 // allow="autoplay" — условие работы трансляции (см. комментарий у рамки). fullscreen нужен встроенным
