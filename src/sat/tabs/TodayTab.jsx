@@ -1,40 +1,25 @@
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { ArrowForwardIcon, MenuBookIcon } from '../../ielts/icons.jsx'
-import { BookOpenIcon, CalendarIcon, NotesIcon, PlayCircleIcon, ReplayIcon, SigmaIcon, TargetIcon, StopwatchIcon } from '../icons.jsx'
+import { ArrowForwardIcon } from '../../ielts/icons.jsx'
+import { PlayCircleIcon } from '../icons.jsx'
 import { iso, parse } from '../model/plan.js'
 import { phaseKeyOf, phaseLessons } from '../model/roadmap.js'
-import { domainName, skillName, skillSection, TAXONOMY } from '../names.js'
+import { skillName, skillSection } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 import WeeklyCard from '../weekly/WeeklyCard.jsx'
 import TimingBanner from '../plan/TimingBanner.jsx'
-
-// Минуты действий занятия (Figma 11: «Изучить 5 мин · Практика 40 мин · Разбор ошибок 15 мин» при 60 минутах):
-// изучение и разбор — фиксированные, практика забирает остальное поровну
-const FIXED = { learn: 5, 'review-errors': 15, 'mini-test': 15 }
-const ACTION_ICON = { learn: BookOpenIcon, practice: NotesIcon, 'review-errors': ReplayIcon, 'mini-test': StopwatchIcon }
-
-export function actionMinutes(lesson) {
-  const total = lesson.minutes || 60
-  const fixed = lesson.actions.reduce((a, x) => a + (FIXED[x] || 0), 0)
-  const practices = lesson.actions.filter((x) => x === 'practice').length || 1
-  const rest = Math.max(5, Math.round((total - fixed) / practices))
-  return lesson.actions.map((a) => (a === 'practice' ? rest : FIXED[a] || 10))
-}
+import TodayTasksCard from '../today/TodayTasksCard.jsx'
 
 /**
- * «Сегодня» с готовым планом (Figma SAT 11): незавершённая сессия, следующее занятие (что в нём и сколько минут),
- * где вы на дороге плана; справа — недельный тест (вместо ежедневной проверки, SAT-SYNC-PLAN B1), до экзамена, ошибки,
- * которым пора вернуться, контрольная точка. Статистика — на вкладке «Прогресс» (Figma 16), словаря в SAT больше нет
- * (15.10.2026). Один следующий шаг на экране — главный.
+ * «Сегодня» (Figma SAT 11; ТЗ 21.10, задачи 1, 4, 11): незавершённая сессия, баннер сроков, «Задания на сегодня» —
+ * три задания самостоятельной работы, — где вы на дороге плана; справа — недельный тест, до экзамена, ошибки, которым
+ * пора вернуться. Фазы и даты — с сервера (роудмап и расписание группы), старый план «по своим дням» сюда не ходит.
  */
-export default function TodayTab({ today, plan, roadmap, schedule, onStart, onResume, onReview, onWeekly, onPlan, onManager }) {
+export default function TodayTab({ today, roadmap, schedule, onResume, onReview, onWeekly, onPlan, onManager, onWords, onPracticeSkills, onMocks, onErrors }) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const todayIso = iso(new Date())
-  const p = plan?.plan || {}
-  const next = today.nextLesson
   const open = today.openSession
   // фазы, неделя и шаг — с сервера (ТЗ 21.10, задача 1): тот же источник, что у вкладки «План»
   const r = roadmap.roadmap
@@ -45,61 +30,18 @@ export default function TodayTab({ today, plan, roadmap, schedule, onStart, onRe
   const curLessons = phaseLessons(curPhase, schedule)
   const stars = curLessons && curLessons.total ? Math.min(3, Math.ceil((curLessons.done / curLessons.total) * 3)) : 0
 
-  let lessonBlock = null
-  if (next) {
-    const skill = next.skillIds[0]
-    const section = skillSection(skill)
-    const domain = TAXONOMY.skills.find((s) => s.id === skill)?.domain
-    const rank = (p.focus || []).indexOf(domain)
-    const when = next.date === todayIso ? `${t('sat.week.today').replace(/^./, (c) => c.toUpperCase())} · ${fmt(parse(next.date), { day: 'numeric', month: 'short' })}` : fmt(parse(next.date), { weekday: 'short', day: 'numeric', month: 'short' })
-    const mins = actionMinutes(next)
-    const nextKey = curKey
-    lessonBlock = (
-      <article className="st-card st-next">
-        <div className="st-next__head">
-          <span className="st-muted">{t('sat.today.nextTitle')}</span>
-          <span className="st-spacer" />
-          <span className="st-next__chip is-violet">{t('sat.today.phaseChip', { n: String(r.activeIndex), phase: t(`sat.phase.${nextKey}`) })}</span>
-          <span className="st-next__chip"><CalendarIcon size={14} />{when}</span>
-        </div>
-        <div className="st-next__title">
-          <span className={`st-next__icon is-${section}`}>{section === 'math' ? <SigmaIcon size={24} /> : <MenuBookIcon size={24} />}</span>
-          <div>
-            <h2>{next.skillIds.map((s) => skillName(s, lang)).join(' · ')}</h2>
-            <span className="st-muted">
-              {[domainName(domain, lang), section === 'math' ? 'Math' : 'Reading and Writing', rank >= 0 ? t('sat.today.priority', { n: String(rank + 1) }) : null].filter(Boolean).join(' · ')}
-            </span>
-          </div>
-        </div>
-        <div className="st-next__acts">
-          {next.actions.map((a, i) => {
-            const Icon = ACTION_ICON[a] || NotesIcon
-            return (
-              <div key={`${a}-${i}`} className="st-next__act">
-                <span className="st-next__acthead"><Icon size={18} /><small>{i + 1}</small></span>
-                {/* в карточке занятия места больше, чем в клетке недели: «Разбор ошибок», как в Figma 11 */}
-                <b>{a === 'review-errors' ? t('sat.actionFull.review-errors') : t(`sat.action.${a}`)}</b>
-                <span>{t(`sat.today.act.${a}`, { n: String(Math.max(3, Math.round(mins[i] / 4))) })}</span>
-                <small>{t('sat.time.min', { n: String(mins[i]) })}</small>
-              </div>
-            )
-          })}
-        </div>
-        <div className="st-next__foot">
-          <TargetIcon size={20} />
-          <p>{t('sat.today.goal', { goal: t(`sat.phaseText.${nextKey}.end`) })}</p>
-          <button type="button" className="ih-cta" onClick={() => onStart(next.id)}>{t('sat.road.start')}<ArrowForwardIcon size={20} /></button>
-        </div>
-      </article>
-    )
-  } else {
-    lessonBlock = (
-      <article className="st-card st-next">
-        <h2>{t('sat.today.noNext')}</h2>
-        <p className="st-muted">{t('sat.today.noNextText')}</p>
-      </article>
-    )
-  }
+  // «Задания на сегодня» вместо «Следующего занятия» (ТЗ 21.10, задача 11): три задания самостоятельной работы
+  const lessonBlock = (
+    <TodayTasksCard
+      schedule={schedule}
+      roadmap={r}
+      todayIso={todayIso}
+      onWords={onWords}
+      onPractice={onPracticeSkills}
+      onMocks={onMocks}
+      onErrors={onErrors}
+    />
+  )
 
   const due = today.dueErrors || { count: 0, items: [] }
   const exam = today.exam

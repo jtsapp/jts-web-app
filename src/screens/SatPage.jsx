@@ -11,7 +11,7 @@ import ErrorsTab from '../sat/tabs/ErrorsTab.jsx'
 import MocksTab from '../sat/tabs/MocksTab.jsx'
 import MaterialsTab from '../sat/tabs/MaterialsTab.jsx'
 import ProgressTab from '../sat/tabs/ProgressTab.jsx'
-import { getSatBluebook, getSatDiagnostic, getSatMe, getSatPlan, getSatProfile, getSatRoadmap, getSatSchedule, getSatToday, startSatSession } from '../api.js'
+import { getSatBluebook, getSatDiagnostic, getSatMe, getSatProfile, getSatRoadmap, getSatSchedule, getSatToday, startSatSession } from '../api.js'
 import SatStartView from '../sat/tabs/SatStartView.jsx'
 import { satStarted } from '../sat/model/start.js'
 import { loadToken } from '../lib/session.js'
@@ -28,8 +28,9 @@ import { errorText } from '../lib/examQuota.js'
 
 // Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» вернулся по Figma 16
 // (15.10.2026), «Словаря» во вкладках больше нет — в макете его нет. Past papers — свой экран, вход — из «Пробников».
-// «Материалы» и «Ошибки» скрыты (вкладки и их экраны остаются в коде): адрес с satTab=materials|errors открывает «Сегодня»
-export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'progress', 'guide']
+// «Материалы» скрыты (вкладка и экран остаются в коде): адрес с satTab=materials открывает «Сегодня». «Ошибки» вернулись
+// в меню страницей «Работа над ошибками» (ТЗ 21.10, задача 9)
+export const SAT_TABS = ['today', 'plan', 'practice', 'errors', 'mocks', 'progress', 'guide']
 const SOON_ICON = {}
 
 function readTab() {
@@ -63,7 +64,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [tab, setTab] = useState('today')
   const [moved, setMoved] = useState(false)
   const [profile, setProfile] = useState(null)
-  const [plan, setPlan] = useState(null)
   const [diagnostic, setDiagnostic] = useState(null)
   const [today, setToday] = useState(null)
   // фазы плана, расписание группы и Bluebook-тесты (ТЗ 21.10, задачи 1 и 15) — один источник для «Сегодня» и «Плана»
@@ -71,6 +71,8 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [schedule, setSchedule] = useState(null)
   const [bluebook, setBluebook] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  // «N ошибок в очереди» у навыка ведёт на страницу ошибок с фильтром по этому навыку (задача 9)
+  const [errorSkill, setErrorSkill] = useState(null)
   const [error, setError] = useState(null)
   // шаги старта и доступ (V341): пока что-то не пройдено, вместо вкладок — экран старта
   const [me, setMe] = useState(null)
@@ -91,9 +93,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     getSatProfile(authToken)
       .then((p) => alive && setProfile(p))
       .catch(() => alive && setProfile({ exists: false }))
-    getSatPlan(authToken)
-      .then((p) => alive && setPlan(p))
-      .catch(() => alive && setPlan({ exists: false }))
     getSatDiagnostic(authToken)
       .then((d) => alive && setDiagnostic(d))
       .catch(() => alive && setDiagnostic({ status: 'none' }))
@@ -159,19 +158,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       /* шаг выберет сам экран */
     }
     onNav?.('sat-diagnostic')
-  }
-
-  // занятие плана → учебная сессия (фаза 5); сервер продолжит начатую, если она есть
-  const startLesson = (lessonId) => {
-    try {
-      const url = new URL(window.location.href)
-      url.searchParams.set('satLesson', lessonId)
-      url.searchParams.delete('satSession')
-      window.history.replaceState(window.history.state, '', url)
-    } catch {
-      /* без адреса занятие не откроется — кнопка ничего не сделает */
-    }
-    onNav?.('sat-study')
   }
 
   // занятие группы → практика по его теме (навыки занятия из программы, размер — модуль секции, задача 7)
@@ -258,9 +244,9 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       />
     )
   } else if (tab === 'today') {
-    panel = !profile || !plan || !diagnostic || !today || !roadmap ? null : todayPanel()
+    panel = !profile || !diagnostic || !today || !roadmap || !schedule ? null : todayPanel()
   } else if (tab === 'practice') {
-    panel = <PracticeTab onStart={startPractice} />
+    panel = <PracticeTab onStart={startPractice} explainLang={profile?.explainLang} onErrors={(skillId) => { setErrorSkill(skillId); go('errors') }} />
   } else if (tab === 'mocks') {
     panel = (
       <MocksTab
@@ -272,11 +258,18 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
       />
     )
   } else if (tab === 'progress') {
-    panel = <ProgressTab onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))} />
+    panel = <ProgressTab roadmap={roadmap} onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))} />
   } else if (tab === 'materials') {
     panel = <MaterialsTab onOpen={(code) => openUnit(code)} />
   } else if (tab === 'errors') {
-    panel = <ErrorsTab onReview={review} />
+    panel = (
+      <ErrorsTab
+        key={errorSkill || 'all'}
+        initialSkill={errorSkill}
+        explainLang={profile?.explainLang}
+        onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
+      />
+    )
   } else {
     const Icon = SOON_ICON[tab] || QuizIcon
     panel = <EmptyState icon={<Icon size={28} />} title={t('sat.soon.title')} text={t(`sat.soon.${tab}`)} />
@@ -314,10 +307,12 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     return (
       <TodayTab
         today={today}
-        plan={plan}
         roadmap={roadmap}
         schedule={schedule}
-        onStart={startLesson}
+        onWords={() => onNav?.('vocab', { back: true })}
+        onPracticeSkills={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
+        onMocks={() => go('mocks')}
+        onErrors={() => go('errors')}
         onResume={openSession}
         onReview={review}
         onWeekly={() => onNav?.('sat-weekly')}

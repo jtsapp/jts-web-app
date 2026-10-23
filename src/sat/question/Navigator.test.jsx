@@ -38,3 +38,21 @@ describe('NavDialog — «Все вопросы»', () => {
     expect(screen.getByText(/Отвечено/)).toBeTruthy()
   })
 })
+
+describe('NavDialog — раскраска по результату (ТЗ SAT 21.10, задача 8)', () => {
+  afterEach(cleanup)
+  it('учебный режим: клетки верно/неверно и счётчики «Верно · Неверно · Без ответа»', () => {
+    const { container } = show({ results: { a: true, b: false } })
+    const cells = container.querySelectorAll('.st-navdlg__n')
+    expect(cells[0].className).toContain('is-right')
+    expect(cells[1].className).toContain('is-wrong')
+    expect(screen.getByText('Верно · 1')).toBeTruthy()
+    expect(screen.getByText('Неверно · 1')).toBeTruthy()
+  })
+
+  it('экзамен: без результатов — прежние «Отвечено» и «Без ответа», ни зелёного, ни красного', () => {
+    const { container } = show({ canFinish: true, onFinish: vi.fn() })
+    expect(container.querySelector('.is-right, .is-wrong')).toBeNull()
+    expect(screen.queryByText(/Верно ·/)).toBeNull()
+  })
+})

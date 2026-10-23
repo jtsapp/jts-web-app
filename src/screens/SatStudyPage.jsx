@@ -212,6 +212,8 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
           onCheck,
           checking: busy,
           verdicts,
+          // верно/неверно по каждому проверенному вопросу — для раскраски ленты и окна вопросов (задача 8)
+          results: Object.fromEntries(Object.entries(results).map(([qid, r]) => [qid, !!r.correct])),
           isChecked: (qid) => !!results[qid],
           skillLabel: (d) => [domainName(d.domain, lang), skillName(d.skillId, lang)].filter(Boolean).join(' · '),
           below: (qid) => {

@@ -1933,6 +1933,44 @@ export function getSatSchedule(token) {
   return authGet('/mobile/sat/schedule', token)
 }
 
+/** «Все вопросы» (задача 8): банк секции по навыкам, клетка [id, сложность, 1 · 0 · null]. */
+export function getSatBank(token, section) {
+  return authGet(`/mobile/sat/bank?section=${encodeURIComponent(section)}`, token)
+}
+
+/** Разбор уже решённого вопроса банка: { question, given, correct, answer, explanation, distractors }. */
+export function getSatBankReview(token, qid) {
+  return authGet(`/mobile/sat/bank/questions/${encodeURIComponent(qid)}/review`, token)
+}
+
+/** Вопрос банка без ключа — решать по одному (режим «Все вопросы»). */
+export function getSatQuestion(token, qid) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}`, token)
+}
+
+/** Подсказка index (с нуля) к вопросу банка вне сессии. */
+export function getSatQuestionHint(token, qid, index) {
+  return authGet(`/mobile/sat/questions/${encodeURIComponent(qid)}/hints/${index}`, token)
+}
+
+/** «Задания на сегодня» (задача 11): { practiceToday, openErrors, reviewedToday, mock, weakSkill } — факты дня. */
+export function getSatTodayTasks(token, skills = [], section) {
+  const q = new URLSearchParams()
+  skills.forEach((s) => q.append('skills', s))
+  if (section) q.set('section', section)
+  return authGet(`/mobile/sat/today-tasks?${q.toString()}`, token)
+}
+
+/** «Работа над ошибками» (задача 9): { items, stats } — неверные и неотвеченные с причиной и источником. */
+export function getSatErrorLog(token) {
+  return authGet('/mobile/sat/error-log', token)
+}
+
+/** Разбор ошибки: { item, question, given, answer, explanation, distractors }. */
+export function getSatErrorReview(token, id) {
+  return authGet(`/mobile/sat/error-log/${encodeURIComponent(id)}`, token)
+}
+
 /** Уроки гида по Desmos, отмеченные «изучено» (задача 17): [id]. */
 export function getSatGuideStudied(token) {
   return authGet('/mobile/sat/guide/studied', token)

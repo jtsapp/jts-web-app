@@ -82,6 +82,11 @@ export default function SatMockReviewPage({ token, onNav }) {
     onNav?.(data?.paperId || data?.paperTitle ? 'sat-papers' : 'sat')
   }
   const toResult = () => onNav?.('sat-mock')
+  // «Все мои ошибки» — страница «Работа над ошибками» хаба (задача 9): ошибки пробника уже там, вместе с остальными
+  const toErrors = () => {
+    setParams({ satTab: 'errors', satMock: null })
+    onNav?.('sat')
+  }
   // навык встаёт в ближайшее занятие плана (сервер: SatPlanSkills); новых дней не появляется
   const addToPlan = async (skillId) => {
     setBusy(true)
@@ -138,6 +143,7 @@ export default function SatMockReviewPage({ token, onNav }) {
         </div>
         {sel && <span className="st-mrev__mod"><MenuBookIcon size={18} />{modLabel(t, sel.module)}</span>}
         <div className="st-mrev__right">
+          <button type="button" className="ih-btn ih-btn--outline" onClick={toErrors}>{t('sat.el.allMine')}</button>
           <button type="button" className="ih-btn ih-btn--outline" onClick={toResult}>{t('sat.mock.toResult')}</button>
         </div>
       </header>

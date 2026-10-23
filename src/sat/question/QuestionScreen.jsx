@@ -295,7 +295,7 @@ export default function QuestionScreen({
       </div>
 
       <footer className="st-run__bottom">
-        <NavRail session={session} onGo={go} onOpen={() => setDialog('nav')} />
+        <NavRail session={session} onGo={go} onOpen={() => setDialog('nav')} results={isStudy ? study?.results : undefined} />
         <span className="st-spacer" />
         {isStudy && footerExtra}
         <button type="button" className="ih-btn ih-btn--outline st-run__back" disabled={session.index === 0} onClick={() => go(session.index - 1)}>
@@ -314,6 +314,7 @@ export default function QuestionScreen({
           finishLabel={reviewLabels?.finish}
           warn={reviewLabels?.warn}
           canFinish={mode === 'exam'}
+          results={isStudy ? study?.results : undefined}
           subtitle={`${setLabel || title} · ${plural(t, lang, 'sat.q', c.total)}`}
           onGo={go}
           onClose={() => setDialog(null)}

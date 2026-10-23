@@ -4,20 +4,39 @@ import { ArrowBackIcon, BookmarkIcon, ExpandLessIcon, WarningIcon } from '../ico
 import { CloseIcon } from '../../ielts/icons.jsx'
 import { useI18n } from '../../i18n.jsx'
 
-function tileState(session, i) {
+/** Цвет по результату — только в учебном режиме, где студент и так видит его сразу после ответа (ТЗ 21.10, задача 8). */
+function resultClass(results, qid) {
+  if (!results || results[qid] == null) return ''
+  return results[qid] ? 'is-right' : 'is-wrong'
+}
+
+function tileState(session, i, results) {
   const q = session.questions[i]
   const a = session.answers[q.id]
-  if (i === session.index) return 'is-here'
+  const res = resultClass(results, q.id)
+  if (i === session.index) return `is-here ${res}`
+  if (res) return res
   if (a?.marked) return 'is-marked'
   if (isAnswered(a)) return 'is-done'
   return ''
+}
+
+/** Счётчики учебного режима: «Верно · Неверно · Без ответа» вместо «Отвечено · Без ответа». */
+export function resultCounts(session, results) {
+  let right = 0
+  let wrong = 0
+  for (const q of session.questions) {
+    if (results?.[q.id] === true) right++
+    else if (results?.[q.id] === false) wrong++
+  }
+  return { right, wrong, none: session.questions.length - right - wrong }
 }
 
 /**
  * Нижняя лента (Figma SAT 8, 26, 27): плашка «7 из 24» открывает окно всех вопросов, дальше номера — отвеченные
  * тёмные, отмеченные оранжевые, текущий в фиолетовой рамке. Смена секции — разрыв и подпись «R&W 1–12 · Math 13–24».
  */
-export function NavRail({ session, onGo, onOpen }) {
+export function NavRail({ session, onGo, onOpen, results }) {
   const { t } = useI18n()
   const railRef = useRef(null)
   const groups = sectionGroups(session)
@@ -46,7 +65,7 @@ export function NavRail({ session, onGo, onOpen }) {
                 <button
                   key={i}
                   type="button"
-                  className={`st-rail__n ${tileState(session, i)}`}
+                  className={`st-rail__n ${tileState(session, i, results)}`}
                   aria-current={i === session.index ? 'step' : undefined}
                   aria-label={t('sat.run.position', { n: String(i + 1), total: String(total) })}
                   onClick={() => onGo(i)}
@@ -74,10 +93,11 @@ export function NavRail({ session, onGo, onOpen }) {
  * canFinish — в 'nav' тоже показать предупреждение и «Завершить модуль» (экзамен: на Digital SAT модуль можно закрыть
  * досрочно в любой момент, а не только дойдя до последнего вопроса; ТЗ SAT 17.10, задача 12).
  */
-export function NavDialog({ session, variant = 'nav', title, subtitle, finishLabel, warn, canFinish = false, onGo, onClose, onFinish }) {
+export function NavDialog({ session, variant = 'nav', title, subtitle, finishLabel, warn, canFinish = false, onGo, onClose, onFinish, results }) {
   const { t } = useI18n()
   const closeRef = useRef(null)
   const c = counts(session)
+  const rc = resultCounts(session, results)
   const review = variant === 'review'
   const gap = firstUnanswered(session)
 
@@ -101,8 +121,18 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
           </button>
         </div>
         <div className="st-navdlg__chips">
-          <span className="st-chip st-chip--done"><i />{t('sat.run.answered', { n: String(c.answered) })}</span>
-          {c.unanswered > 0 && <span className="st-chip st-chip--empty"><i />{t('sat.run.unanswered', { n: String(c.unanswered) })}</span>}
+          {results ? (
+            <>
+              <span className="st-chip st-chip--right"><i />{t('sat.run.rightN', { n: String(rc.right) })}</span>
+              <span className="st-chip st-chip--wrong"><i />{t('sat.run.wrongN', { n: String(rc.wrong) })}</span>
+              <span className="st-chip st-chip--empty"><i />{t('sat.run.unanswered', { n: String(rc.none) })}</span>
+            </>
+          ) : (
+            <>
+              <span className="st-chip st-chip--done"><i />{t('sat.run.answered', { n: String(c.answered) })}</span>
+              {c.unanswered > 0 && <span className="st-chip st-chip--empty"><i />{t('sat.run.unanswered', { n: String(c.unanswered) })}</span>}
+            </>
+          )}
           {c.marked > 0 && <span className="st-chip st-chip--marked"><BookmarkIcon size={14} />{t('sat.run.markedN', { n: String(c.marked) })}</span>}
         </div>
         <div className="st-navdlg__grid">
@@ -111,12 +141,13 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
             const done = isAnswered(a)
             let cls = done ? 'is-done' : review ? 'is-gap' : ''
             if (a?.marked) cls = 'is-marked'
+            cls = resultClass(results, q.id) || cls
             return (
               <button
                 key={q.id}
                 type="button"
                 className={`st-navdlg__n ${cls} ${i === session.index ? 'is-here' : ''}`}
-                aria-label={`${i + 1} · ${t(done ? 'sat.run.tileDone' : 'sat.run.tileEmpty')}${a?.marked ? ` · ${t('sat.run.marked')}` : ''}`}
+                aria-label={`${i + 1} · ${t(results?.[q.id] != null ? (results[q.id] ? 'sat.run.tileRight' : 'sat.run.tileWrong') : done ? 'sat.run.tileDone' : 'sat.run.tileEmpty')}${a?.marked ? ` · ${t('sat.run.marked')}` : ''}`}
                 onClick={() => onGo(i)}
               >
                 <span>{i + 1}</span>

@@ -4,26 +4,31 @@ import { getSatErrors, getSatPracticePool, getSatProgress, getSatTaxonomy } from
 import { loadToken } from '../../lib/session.js'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, ExpandMoreIcon, ScheduleIcon } from '../../ielts/icons.jsx'
-import { BulbIcon, InsightsIcon, StopwatchIcon, TargetIcon, TickIcon } from '../icons.jsx'
+import { BulbIcon, GridIcon, InsightsIcon, StopwatchIcon, TargetIcon, TickIcon } from '../icons.jsx'
 import { domainName, skillName } from '../names.js'
 import { countForSection, countOptions, moduleSize } from '../model/practice.js'
 import { errorText } from '../../lib/examQuota.js'
+import FilterBlocks, { EMPTY_FILTERS } from '../practice/FilterBlocks.jsx'
+import BankView from '../bank/BankView.jsx'
 
 const MODES = [
   { key: 'module', Icon: StopwatchIcon },
   { key: 'skills', Icon: TargetIcon },
   { key: 'weak', Icon: InsightsIcon },
   { key: 'custom', Icon: TickIcon },
+  // пятый режим — не набор, а весь банк сеткой (ТЗ 21.10, задача 8)
+  { key: 'all', Icon: GridIcon },
 ]
 const PACE = { rw: 71, math: 95 }
 
 /**
  * Практика (Figma SAT 15): рекомендация «Слабые», секция, режим (модуль · по навыкам · слабые · свой набор), дерево
  * навыков с mastery и числом вопросов в банке, справа — сводка сессии, количество, фильтры и честное «N вопросов
- * подходят» с сервера. Всё в учебном режиме: подсказки и разборы доступны. Фильтр «Отмеченные» из макета не
- * сделан: отметки «Отметить» живут в черновике на устройстве, сервер о них не знает.
+ * подходят» с сервера. Всё в учебном режиме: подсказки и разборы доступны. Секция в панели не повторяется — она
+ * выбрана вкладками сверху (задача 5). Фильтр «Отмеченные» из макета не сделан: отметки «Отметить» живут в черновике
+ * на устройстве, сервер о них не знает.
  */
-export default function PracticeTab({ onStart }) {
+export default function PracticeTab({ onStart, onErrors, explainLang }) {
   const { t, lang } = useI18n()
   const token = loadToken()
   const [section, setSection] = useState('rw')
@@ -31,7 +36,7 @@ export default function PracticeTab({ onStart }) {
   const [picked, setPicked] = useState([])
   const [open, setOpen] = useState({})
   const [count, setCount] = useState(moduleSize('rw'))
-  const [filters, setFilters] = useState({ difficulty: [], status: [], original: false })
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [tax, setTax] = useState(null)
   const [progress, setProgress] = useState(null)
   const [queue, setQueue] = useState({})
@@ -39,6 +44,9 @@ export default function PracticeTab({ onStart }) {
   const [weak, setWeak] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // «Все вопросы»: сводка банка секции для панели (сам банк держит BankView)
+  const [bankInfo, setBankInfo] = useState(null)
+  const isBank = mode === 'all'
 
   useEffect(() => {
     getSatTaxonomy(token).then(setTax).catch(() => setTax({ domains: [], skills: [] }))
@@ -64,11 +72,11 @@ export default function PracticeTab({ onStart }) {
     count,
     difficulty: filters.difficulty,
     status: filters.status,
-    source: filters.original ? 'original' : undefined,
   }), [mode, section, picked, count, filters])
 
   // «N вопросов подходят» — с сервера, с небольшой задержкой, чтобы не спрашивать на каждый клик
   useEffect(() => {
+    if (isBank) return undefined
     if (mode === 'skills' && !picked.length) {
       setPool({ count: 0 })
       return undefined
@@ -77,7 +85,7 @@ export default function PracticeTab({ onStart }) {
       getSatPracticePool(token, body).then(setPool).catch(() => setPool(null))
     }, 250)
     return () => clearTimeout(id)
-  }, [token, body, mode, picked.length])
+  }, [token, body, mode, picked.length, isBank])
 
   const mastery = useMemo(() => Object.fromEntries((progress?.skills || []).map((s) => [s.id, s])), [progress])
   const bank = useMemo(() => Object.fromEntries((tax?.skills || []).map((s) => [s.id, s.questions])), [tax])
@@ -85,7 +93,6 @@ export default function PracticeTab({ onStart }) {
   const skillsOf = (d) => (tax?.skills || []).filter((s) => s.domain === d)
 
   const toggleSkill = (id) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
-  const toggleList = (key, v) => setFilters((f) => ({ ...f, [key]: f[key].includes(v) ? f[key].filter((x) => x !== v) : [...f[key], v] }))
   const take = mode === 'module' ? moduleSize(section) : count
   const matching = pool?.count ?? 0
   const minutes = Math.max(1, Math.round((Math.min(take, matching || take) * PACE[section]) / 60))
@@ -140,7 +147,8 @@ export default function PracticeTab({ onStart }) {
               </button>
             ))}
           </div>
-          <div className="st-card st-tree">
+          {isBank && <BankView section={section} filters={filters} explainLang={explainLang} onBank={setBankInfo} />}
+          {!isBank && <div className="st-card st-tree">
             <h2>{t('sat.prac.skills')}</h2>
             <p className="st-muted">{t(mode === 'skills' ? 'sat.prac.skillsSub' : 'sat.prac.skillsInfo')}</p>
             {domains.map((d) => {
@@ -169,9 +177,13 @@ export default function PracticeTab({ onStart }) {
                               <span>{skillName(s.id, lang)}</span>
                             </label>
                             <span className="st-spacer" />
-                            <small className="st-muted">
-                              {!bank[s.id] ? t('sat.prac.noBank') : errs ? plural(t, lang, 'sat.prac.errsInQueue', errs) : m?.needed ? plural(t, lang, 'sat.prac.needMore', m.needed) : ''}
-                            </small>
+                            {errs && bank[s.id] && onErrors ? (
+                              <button type="button" className="st-link" onClick={() => onErrors(s.id)}>{plural(t, lang, 'sat.prac.errsInQueue', errs)}</button>
+                            ) : (
+                              <small className="st-muted">
+                                {!bank[s.id] ? t('sat.prac.noBank') : errs ? plural(t, lang, 'sat.prac.errsInQueue', errs) : m?.needed ? plural(t, lang, 'sat.prac.needMore', m.needed) : ''}
+                              </small>
+                            )}
                             {m && m.status !== 'no-data' && <span className={`st-mchip is-${m.status}`}><i />{t(`sat.mastery.${m.status}`)}</span>}
                           </li>
                         )
@@ -181,13 +193,12 @@ export default function PracticeTab({ onStart }) {
                 </div>
               )
             })}
-          </div>
+          </div>}
         </div>
         <aside className="st-card st-sess">
           <h2>{t('sat.prac.yours')}</h2>
           <dl>
             <dt>{t('sat.prac.type')}</dt><dd><b>{t(`sat.prac.mode.${mode}`)}</b></dd>
-            <dt>{t('sat.prac.section')}</dt><dd><span className={`st-sess__sec is-${section}`}><i />{section === 'math' ? 'Math' : 'R&W'}</span></dd>
           </dl>
           {mode === 'skills' && (
             <>
@@ -200,7 +211,11 @@ export default function PracticeTab({ onStart }) {
           {mode === 'weak' && weak?.skillIds && (
             <div className="st-sess__chips">{weak.skillIds.map((s) => <span key={s} className="st-sess__chip">{skillName(s, lang)}</span>)}</div>
           )}
-          {mode !== 'module' && (
+          {isBank && bankInfo && (
+            // в банке нет количества и «Начать сессии» — вместо них общий прогресс по секции
+            <p className="st-sess__fit">{t('sat.bank.section', { a: String(bankInfo.answered), n: String(bankInfo.total), p: String(bankInfo.answered ? Math.round((bankInfo.correct * 100) / bankInfo.answered) : 0) })}</p>
+          )}
+          {mode !== 'module' && !isBank && (
             <>
               <span className="st-sess__label">{t('sat.prac.count')}</span>
               <div className="ih-seg st-sess__counts">
@@ -208,26 +223,19 @@ export default function PracticeTab({ onStart }) {
               </div>
             </>
           )}
-          <span className="st-sess__label">{t('sat.prac.filters')}</span>
-          <div className="st-sess__filters">
-            {[1, 2, 3].map((d) => (
-              <button key={d} type="button" aria-pressed={filters.difficulty.includes(d)} className={filters.difficulty.includes(d) ? 'is-on' : ''} onClick={() => toggleList('difficulty', d)}>
-                {t('sat.prac.diff', { n: String(d) })}
-              </button>
-            ))}
-            <button type="button" aria-pressed={filters.status.includes('wrong')} className={filters.status.includes('wrong') ? 'is-on' : ''} onClick={() => toggleList('status', 'wrong')}>{t('sat.prac.wrong')}</button>
-            <button type="button" aria-pressed={filters.status.includes('new')} className={filters.status.includes('new') ? 'is-on' : ''} onClick={() => toggleList('status', 'new')}>{t('sat.prac.new')}</button>
-            <button type="button" aria-pressed={filters.original} className={filters.original ? 'is-on' : ''} onClick={() => setFilters((f) => ({ ...f, original: !f.original }))}>JTS Original</button>
-          </div>
+          {/* два блока: «Сложность» и «Ответы» — ИЛИ внутри, И между (ТЗ 21.10, задача 5); «JTS Original» убран */}
+          <FilterBlocks value={filters} onChange={setFilters} count={isBank ? null : matching} />
           {/* ни один вопрос не подходит — минут нет: «≈12 мин · 0 вопросов» противоречило само себе */}
-          <p className="st-sess__fit">
+          {!isBank && <p className="st-sess__fit">
             <ScheduleIcon size={18} />
             {matching ? t('sat.prac.fit', { m: String(minutes), n: plural(t, lang, 'sat.prac.qFit', matching) }) : plural(t, lang, 'sat.prac.qFit', 0)}
-          </p>
+          </p>}
           {error && <p className="st-error" role="alert">{error}</p>}
-          <button type="button" className="ih-cta st-sess__start" disabled={busy || !matching} onClick={() => start()}>
-            {t('sat.prac.startSession')}<ArrowForwardIcon size={20} />
-          </button>
+          {!isBank && (
+            <button type="button" className="ih-cta st-sess__start" disabled={busy || !matching} onClick={() => start()}>
+              {t('sat.prac.startSession')}<ArrowForwardIcon size={20} />
+            </button>
+          )}
         </aside>
       </div>
     </div>

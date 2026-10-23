@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getSatProgress } from '../../api.js'
+import { getSatProgress, getSatScores } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { plural } from '../../lib/plural.js'
 import { MenuBookIcon } from '../../ielts/icons.jsx'
-import { BulbIcon, FireIcon, OkCircleIcon, SigmaIcon, TrophyIcon } from '../icons.jsx'
+import { CalendarIcon, FireIcon, OkCircleIcon, SigmaIcon, TargetIcon, TrophyIcon } from '../icons.jsx'
 import { domainName, skillName, TAXONOMY } from '../names.js'
 import { parse } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
+import { lastScore, percent } from '../model/tiles.js'
 
 const STATUSES = ['mastered', 'developing', 'learning', 'no-data']
 
@@ -18,21 +19,26 @@ function hm(sec, t) {
 }
 
 /**
- * «Прогресс» (Figma SAT 17): самостоятельно и с помощью отдельно, серия, освоенные навыки; карта навыков (клик —
+ * «Прогресс» (Figma SAT 17; плитки — ТЗ 21.10, задача 10): решено вопросов, примерный балл, серия, пройдено занятий; карта навыков (клик —
  * 10 вопросов по навыку); точность по доменам только по самостоятельным попыткам; время и темп против эталона;
  * последние 90 дней; бейджи прототипа. Всё — из попыток: ни одна цифра не придумана, где данных нет — так и написано.
  */
-export default function ProgressTab({ onPractice }) {
+export default function ProgressTab({ onPractice, roadmap }) {
   const { t, lang } = useI18n()
   const [p, setP] = useState(null)
   const [sec, setSec] = useState('math')
+  const [scores, setScores] = useState(null)
   useEffect(() => {
     getSatProgress(loadToken()).then(setP).catch(() => setP({ error: true }))
+    getSatScores(loadToken()).then((x) => setScores(x?.entries || [])).catch(() => setScores([]))
   }, [])
   if (!p) return null
   if (p.error) return <p className="st-error">{t('sat.study.netError')}</p>
 
-  const indPct = p.independent.total ? Math.round((p.independent.correct * 100) / p.independent.total) : null
+  const practice = p.practice || { total: 0, correct: 0 }
+  const practicePct = percent(practice.correct, practice.total)
+  const last = lastScore(scores || [])
+  const lessons = roadmap?.roadmap
   const byId = Object.fromEntries(p.skills.map((s) => [s.id, s]))
   const domains = TAXONOMY.domains.slice().sort((a, b) => a.order - b.order)
   const max = Math.max(1, ...p.days.map((d) => d.count))
@@ -50,16 +56,22 @@ export default function ProgressTab({ onPractice }) {
 
   return (
     <div className="st-prog">
+      {/* четыре плитки по ТЗ 21.10 (задача 10): то, что интересует студента, а не механика режима ответа.
+          «Освоено навыков» убрана — освоенность видна ниже, в «Карте навыков» */}
       <div className="st-prog__stats">
         <div className="st-card st-pstat">
-          <span className="st-stat__icon is-green"><OkCircleIcon size={20} /></span><b>{t('sat.sum.indep')}</b>
-          <strong>{p.independent.total}</strong>
-          <small>{indPct == null ? t('sat.prog.noData') : t('sat.prog.right', { p: String(indPct) })}</small>
+          <span className="st-stat__icon is-green"><OkCircleIcon size={20} /></span><b>{t('sat.tiles.solved')}</b>
+          <strong>{practice.total}</strong>
+          <small>{practicePct == null ? t('sat.tiles.solvedNone') : t('sat.prog.right', { p: String(practicePct) })}</small>
         </div>
         <div className="st-card st-pstat">
-          <span className="st-stat__icon is-gold"><BulbIcon size={20} /></span><b>{t('sat.sum.helped')}</b>
-          <strong>{p.helped.total}</strong>
-          <small>{t('sat.prog.apart')}</small>
+          <span className="st-stat__icon is-violet"><TargetIcon size={20} /></span><b>{t('sat.tiles.score')}</b>
+          <strong>{last ? last.total : '—'}</strong>
+          <small>
+            {last
+              ? [last.label || t(`sat.scores.src.${last.source}`), last.delta != null ? `${last.delta > 0 ? '+' : ''}${last.delta}` : null, last.pending ? t('sat.bb.pending') : null].filter(Boolean).join(' · ')
+              : t('sat.tiles.scoreNone')}
+          </small>
         </div>
         <div className="st-card st-pstat">
           <span className="st-stat__icon is-orange"><FireIcon size={20} /></span><b>{t('sat.prog.streak')}</b>
@@ -67,9 +79,10 @@ export default function ProgressTab({ onPractice }) {
           <small>{t('sat.prog.best', { n: String(p.streak.best) })}</small>
         </div>
         <div className="st-card st-pstat">
-          <span className="st-stat__icon is-violet"><TrophyIcon size={20} /></span><b>{t('sat.prog.mastered')}</b>
-          <strong>{p.mastered.count} / {p.mastered.total}</strong>
-          <small>{p.mastered.awaiting ? t('sat.prog.awaiting', { n: String(p.mastered.awaiting) }) : t('sat.sum.masteryRule')}</small>
+          <span className="st-stat__icon is-gold"><CalendarIcon size={20} /></span><b>{t('sat.tiles.lessons')}</b>
+          {/* N — из пакетов студента (24 или 36), тот же счётчик, что у «Плана» и дашборда */}
+          <strong>{lessons ? t('sat.plan.lessonsCount', { d: String(lessons.attended), n: String(lessons.lessonCount) }) : '—'}</strong>
+          <small>{t('sat.tiles.lessonsNote')}</small>
         </div>
       </div>
 

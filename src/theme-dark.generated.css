@@ -12602,6 +12602,68 @@ html[data-theme="dark"] .st-timing {
 html[data-theme="dark"] .st-timing.is-short {
     background: var(--dk-yellow-tint)
 }
+html[data-theme="dark"] .st-el__bar i {
+    background: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-el__filters select, html[data-theme="dark"] .st-el__filters input {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .st-el__diff button {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-el__diff button.is-on {
+    background: var(--ih-violet, #9047ff);
+    border-color: var(--ih-violet, #9047ff);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .st-el__table td {
+    border-bottom: 1px solid var(--ih-line, #eaecf0)
+}
+html[data-theme="dark"] .st-elr__spr {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .st-elr__ok {
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .st-elr__bad {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .st-rail__n.is-right, html[data-theme="dark"] .st-navdlg__n.is-right, html[data-theme="dark"] .st-bank__cell.is-right {
+    background: var(--dk-green);
+    border-color: var(--dk-green);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-rail__n.is-wrong, html[data-theme="dark"] .st-navdlg__n.is-wrong, html[data-theme="dark"] .st-bank__cell.is-wrong {
+    background: var(--dk-red);
+    border-color: var(--dk-red);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .st-chip--right i {
+    background: var(--dk-green)
+}
+html[data-theme="dark"] .st-chip--wrong i {
+    background: var(--dk-red)
+}
+html[data-theme="dark"] .st-bank__cell {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .st-bankq__hints {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .st-tasks__item {
+    border: 1px solid var(--ih-line, #eaecf0)
+}
+html[data-theme="dark"] .st-tasks__item.is-done {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .st-tasks__icon {
+    color: var(--ih-violet, #9047ff)
+}
+html[data-theme="dark"] .st-tasks__item.is-done .st-tasks__icon {
+    color: var(--dk-green)
+}
 /*  grammar.css  */
 html[data-theme="dark"] .gr-search {
     border: 1px solid var(--dk-line);

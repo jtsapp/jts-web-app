@@ -10171,3 +10171,235 @@ mark.st-hl {
     flex-wrap: wrap;
   }
 }
+
+/* ---- Фильтры практики в два блока (ТЗ 21.10, задача 5) ---- */
+.st-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-filters__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* ---- «Работа над ошибками» (ТЗ 21.10, задача 9) — до макета ---- */
+.st-el {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.st-el__insights {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+.st-el__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.st-el__cols h3 {
+  margin: 10px 0 6px;
+  font-size: 14px;
+}
+.st-el__bar {
+  display: grid;
+  grid-template-columns: 1fr 120px 32px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.st-el__bar i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--ih-violet, #9047ff);
+}
+.st-el__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.st-el__filters select,
+.st-el__filters input {
+  padding: 6px 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.st-el__diff {
+  display: inline-flex;
+  gap: 4px;
+}
+.st-el__diff button {
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.st-el__diff button.is-on {
+  background: var(--ih-violet, #9047ff);
+  border-color: var(--ih-violet, #9047ff);
+  color: #fff;
+}
+.st-el__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.st-el__table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--ih-line, #eaecf0);
+  vertical-align: top;
+}
+.st-el__table tr {
+  cursor: pointer;
+}
+.st-el__table tr.is-reviewed {
+  opacity: 0.65;
+}
+.st-el__q {
+  max-width: 320px;
+}
+.st-elr {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.st-elr__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.st-elr__spr {
+  padding: 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+  max-width: 200px;
+}
+.st-elr__ok {
+  color: #027a48;
+  font-weight: 600;
+}
+.st-elr__bad {
+  color: #b42318;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .st-el__table td:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+/* ---- Учебный режим и «Все вопросы»: клетка по результату (ТЗ 21.10, задача 8). Экзамен этих классов не получает ---- */
+.st-rail__n.is-right,
+.st-navdlg__n.is-right,
+.st-bank__cell.is-right {
+  background: #12b76a;
+  border-color: #12b76a;
+  color: #fff;
+}
+.st-rail__n.is-wrong,
+.st-navdlg__n.is-wrong,
+.st-bank__cell.is-wrong {
+  background: #f04438;
+  border-color: #f04438;
+  color: #fff;
+}
+.st-chip--right i {
+  background: #12b76a;
+}
+.st-chip--wrong i {
+  background: #f04438;
+}
+
+/* ---- «Все вопросы» (ТЗ 21.10, задача 8) — до макета ---- */
+.st-bank {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-bank__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 0 12px 26px;
+}
+.st-bank__cell {
+  width: 34px;
+  height: 30px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.st-bankq__hints {
+  margin: 0;
+  padding-left: 18px;
+  color: #475467;
+}
+
+/* ---- «Задания на сегодня» (ТЗ 21.10, задача 11) — до макета ---- */
+.st-tasks__topic {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-tasks__topic h2 {
+  margin: 0;
+}
+.st-tasks__goals {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.st-tasks__list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-tasks__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ih-line, #eaecf0);
+  border-radius: 12px;
+}
+.st-tasks__item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-tasks__item.is-done {
+  background: #ecfdf3;
+}
+.st-tasks__icon {
+  display: inline-flex;
+  color: var(--ih-violet, #9047ff);
+}
+.st-tasks__item.is-done .st-tasks__icon {
+  color: #027a48;
+}
+@media (max-width: 560px) {
+  .st-tasks__item {
+    flex-wrap: wrap;
+  }
+}
