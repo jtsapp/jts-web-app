@@ -519,7 +519,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           src={material.fileUrl}
           title={material.title}
           className="lw-material-iframe"
-          allow="autoplay"
+          // Права — как у рамки урока ниже, там же и объяснено, зачем.
+          allow="autoplay; fullscreen"
           onLoad={() => scheduleCover(setCover, coverTimerRef, documentKeyRef.current, null)}
         />
         {loader}
@@ -542,14 +543,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           сюда реплеем — а синтетический клик жестом пользователя не считается, и
           звук у ученика молчал, пока он сам не ткнёт в материал. Атрибут
           делегирует разрешение родителя внутрь, и ученику не нужно нажимать
-          ничего. */}
+          ничего. fullscreen — так же, для встроенных в урок активностей вроде
+          Wordwall: их кнопка «на весь экран» работает, только если право выдано
+          по всей цепочке рамок сверху вниз. */}
       <iframe
         ref={iframeRef}
         key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"
-        allow="autoplay"
+        allow="autoplay; fullscreen"
         onLoad={handleLoad}
       />
       {loader}

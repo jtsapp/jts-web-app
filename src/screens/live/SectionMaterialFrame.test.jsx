@@ -953,3 +953,23 @@ describe('SectionMaterialFrame — кому верим', () => {
     expect(onMirror).not.toHaveBeenCalled()
   })
 })
+
+// allow="autoplay" — условие работы трансляции (см. комментарий у рамки). fullscreen нужен встроенным
+// в урок активностям вроде Wordwall: их кнопка «на весь экран» работает, только если право выдано по
+// всей цепочке рамок сверху вниз, и обрыв на нашем звене её молча глушит.
+describe('SectionMaterialFrame — права рамки (allow)', () => {
+  const allowOf = (iframe) => iframe.getAttribute('allow').split(';').map((token) => token.trim())
+
+  it('рамка урока разрешает автовоспроизведение и полный экран', () => {
+    const { iframe } = renderFrame()
+
+    expect(allowOf(iframe)).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
+  })
+
+  it('простая рамка (видео, PDF, ссылка) — те же права', () => {
+    const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
+    const { container } = render(frame({ material: video }))
+
+    expect(allowOf(container.querySelector('iframe'))).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
+  })
+})
