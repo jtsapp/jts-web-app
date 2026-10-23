@@ -598,4 +598,43 @@ describe('POST /api/assistant/chat', () => {
       expect(await res.text()).toMatch(/С домашки и начните\. Открыть\?\n\[\[ASST_ACTION open homework offer\]\]$/)
     })
   })
+
+  // Нажатие кнопки (21.10.2026): номер — из снимка запроса, а что можно нажать, решает
+  // код (clickPolicy.js), а не модель.
+  describe('нажатие кнопки', () => {
+    const lesson = { id: 'kingdom-interior', text: 'Готово.\n[кнопка #1 «Далее»]\n[кнопка «Выйти»]' }
+    const task = { id: 'kingdom-interior', text: "I ___ rain.\n[кнопка #1 «like»]\n[кнопка #2 «don't like»]\n[кнопка #3 «Проверить»]" }
+    const ask = (userId, screen, content) => ({ ...question(userId), screen, messages: [{ role: 'user', content }] })
+    const reply = (text) => {
+      streamImpl = async function* () {
+        yield { type: 'text', text }
+      }
+    }
+
+    it('CLICK_NOW по просьбе — хвост с подписью кнопки из снимка', async () => {
+      reply('Нажимаю «Далее».\n[[CLICK_NOW 1]]')
+      const text = await (await post(ask(701, lesson, 'дальше'))).text()
+      expect(text).toBe('Нажимаю «Далее».\n[[ASST_ACTION click 1 now «Далее»]]')
+    })
+
+    it('номера нет в снимке (опасная кнопка без номера) — действия нет', async () => {
+      reply('Нажимаю.\n[[CLICK_NOW 2]]')
+      expect(await (await post(ask(702, lesson, 'выйди из аккаунта'))).text()).toBe('Нажимаю.\n')
+    })
+
+    it('вариант ответа за ученика на непроверенном задании — без действия', async () => {
+      reply('Выбираю.\n[[CLICK_NOW 2]]')
+      expect(await (await post(ask(703, task, 'выбери сама'))).text()).not.toContain('ASST_ACTION')
+    })
+
+    it('названный учеником вариант — можно', async () => {
+      reply('Выбираю «like».\n[[CLICK_NOW 1]]')
+      expect(await (await post(ask(704, task, 'выбери like'))).text()).toContain('[[ASST_ACTION click 1 now «like»]]')
+    })
+
+    it('в первой реплике нажатий нет', async () => {
+      reply('Вы на уроке, можно идти дальше.\n[[CLICK 1]]')
+      expect(await (await post(ask(705, lesson, '[ученик открыл окно]'))).text()).not.toContain('click')
+    })
+  })
 })

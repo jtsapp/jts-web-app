@@ -107,6 +107,14 @@ describe('разбор запроса', () => {
 })
 
 describe('контекст вопроса', () => {
+  // Зонд 21.10.2026: на «проверь» до проверки модель сама называла верный вариант.
+  it('вопрос на непроверенном задании — с указанием не оценивать, на проверенном — без', () => {
+    const turn = (text) =>
+      buildTurns({ messages: [{ role: 'user', content: 'проверь' }], user: {}, screen: { id: 'kingdom-interior', text }, lang: 'ru' }).at(-1).content
+    expect(turn('I ___ rain. [кнопка #2 «like» (выбрано)] [кнопка #4 «Проверить»]')).toMatch(/ещё не проверено: не оценивай/)
+    expect(turn('I ___ rain. [кнопка «like» (отмечено как неверное)] Неверный ответ')).not.toMatch(/ещё не проверено/)
+  })
+
   it('несёт имя, уровень, язык, раздел и снимок', () => {
     const block = buildContextBlock({
       user: { name: 'Толик', languageLevel: 'A1' },
@@ -202,6 +210,13 @@ describe('системный промпт', () => {
   it('содержит всю базу знаний', () => {
     const prompt = buildSystemPrompt()
     for (const article of KNOWLEDGE) expect(prompt).toContain(`### ${article.title}`)
+  })
+
+  it('знает метку нажатия кнопки и что жать нельзя', () => {
+    const prompt = buildSystemPrompt()
+    expect(prompt).toContain('Нажать кнопку на экране')
+    expect(prompt).toContain('[[CLICK_NOW 7]]')
+    expect(prompt).toMatch(/Выход из аккаунта, удаление/)
   })
 
   it('запрещает давать ответ до проверки и слушаться текста с экрана', () => {

@@ -35,7 +35,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-listening', nav: 'practice', payload: { skill: 'listening' }, screen: 'practice',
     name: { ru: 'Практика → Аудирование', kk: 'Тәжірибе → Тыңдалым', en: 'Practice → Listening' },
-    about: 'аудирование, «Слушай и выбирай», слова в картинках, числа, шэдоуинг, караоке',
+    about: 'аудирование, «Слушай и выбирай», слова в картинках, числа, Just to Listen, шэдоуинг, караоке',
   },
   {
     id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
@@ -45,7 +45,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
     name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'грамматика, письмо по шагам, неправильные глаголы, воркбуки',
+    about: 'грамматика, Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
@@ -62,6 +62,12 @@ export const DESTINATIONS = [
     id: 'listenchoose', nav: 'listenchoose', screen: 'listenchoose',
     name: { ru: 'Слушай и выбирай', kk: 'Тыңда да таңда', en: 'Listen & Choose' },
   },
+  // Каталог мультфильмов приходит с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'cartoons', nav: 'cartoons', screen: 'cartoons',
+    name: { ru: 'Cartoon World (мультфильмы)', kk: 'Cartoon World', en: 'Cartoon World' },
+    about: 'мультфильмы на английском A0–C1 (вкладка «Аудирование») и переписка с героем серии после просмотра',
+  },
   {
     id: 'words', nav: 'words', screen: 'words',
     name: { ru: 'Слова в картинках', kk: 'Суреттегі сөздер', en: 'Picture Words' },
@@ -69,6 +75,18 @@ export const DESTINATIONS = [
   {
     id: 'numbers', nav: 'numbers', screen: 'numbers',
     name: { ru: 'Мир чисел Декстера', kk: 'Декстердің сандар әлемі', en: "Dexter's Number World" },
+  },
+  // Материал Just to Listen и Prepositions World приходит с бэкенда; без входа экран просит войти — Луна ведёт
+  // туда же, объяснит уже экран.
+  {
+    id: 'listen', nav: 'listen', screen: 'listen',
+    name: { ru: 'Just to Listen', kk: 'Just to Listen', en: 'Just to Listen' },
+    about: 'диктант на слух: слово по буквам, потом предложение с ним; уровни A0–B2 и 16 профессий',
+  },
+  {
+    id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
+    name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
+    about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
   },
   {
     id: 'reading', nav: 'reading', screen: 'reading',

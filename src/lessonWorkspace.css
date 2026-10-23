@@ -1253,6 +1253,12 @@
   pointer-events: auto;
 }
 
+.lw-gap-key {
+  margin-left: 8px;
+  font-weight: 700;
+  color: var(--lw-ok);
+}
+
 .lw-info__body input.gap.is-correct,
 .lw-practice__html input.gap.is-correct {
   border-color: #1a9e6a;
@@ -5565,3 +5571,129 @@ button.lw-tap-pop__save.is-on:disabled {
   .ls-follow__text { display: none; }
 }
 
+
+/* ================================================================== */
+/* ==========  УРОК ВО ВЕСЬ ЭКРАН (телефон и планшет)  ============== */
+/* ================================================================== */
+
+/* На телефоне рамка урока занимала полэкрана: выше шапка, ряд значков,
+   плашка статуса и вкладки, ниже «Темы / Группа», а урок прокручивался внутри
+   маленького окна поверх прокрутки страницы (видео владельца 21.10.2026).
+   Две правки: рамка в обычном виде — почти в высоту экрана, и кнопка «Во весь
+   экран», после которой на экране остаётся только урок.
+
+   Кнопка — от 1000px и уже: шире рамка стоит в своей колонке на весь экран, и
+   разворачивать её некуда. */
+.ls-expand {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .ls-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    margin-left: auto;
+    padding: 7px 12px;
+    border: 1px solid var(--lv-line, rgba(255, 255, 255, .14));
+    border-radius: var(--lw-r-pill);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--lv-muted, #9a94ad);
+    cursor: pointer;
+  }
+
+  /* «Иду за преподавателем» сам прижат вправо — кнопка встаёт рядом с ним. */
+  .ls-follow + .ls-expand {
+    margin-left: 8px;
+  }
+
+  .ls-expand:focus-visible,
+  .lw-frame-collapse:focus-visible {
+    outline: 2px solid #9047ff;
+    outline-offset: 2px;
+  }
+}
+
+/* Обычный вид на телефоне: прежние 100vh − 240px (и потолок 640) давали
+   уроку половину экрана iPhone. Теперь рамка — высота окна минус ряд вкладок
+   над ней: долистал страницу до урока — урок занимает экран. dvh, а не vh:
+   у Safari vh считается со спрятанными панелями, и низ рамки уходил под них.
+   Поле в 8px вокруг iframe на узком экране — чистая потеря ширины. */
+@media (max-width: 760px) {
+  .lv .lw-material-frame {
+    height: calc(100dvh - 72px);
+    min-height: 360px;
+    padding: 0;
+  }
+}
+
+/* Развёрнутая рамка ложится поверх всей страницы, ниже листов (.lv-modal, 70) —
+   их отсюда всё равно не открыть. Вырезы экрана — полями, иначе урок уходит
+   под чёлку и полоску «домой». */
+.lw-material-frame.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  border-radius: 0;
+}
+
+.lw-material-frame.is-expanded .lw-material-iframe {
+  border-radius: 0;
+}
+
+/* «Свернуть» — в правом верхнем углу: слева сверху у файлов урока хлебные
+   крошки и заголовок, справа там пусто. Полупрозрачная тёмная пилюля читается и
+   на белом уроке. Высота 40 — палец попадает, а урок закрыт по минимуму. */
+.lw-frame-collapse {
+  position: fixed;
+  z-index: 61;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: calc(8px + env(safe-area-inset-right, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: rgba(27, 27, 31, .86);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .25);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Метки «Вас вызывает преподаватель», «Включить звук» и прочие стоят над
+   рамкой — развёрнутая рамка их закрыла бы, а пропустить вызов или кнопку звука
+   трансляции ученику нельзя. Поэтому поверх урока, слева от «Свернуть».
+   Постоянные метки («Класс ведёт преподаватель», «Преподаватель смотрит»)
+   здесь не показываются: они ни к чему не зовут, а висели бы на заголовке урока
+   всё занятие. Пустое место ряда касания пропускает в урок. */
+.lv.is-immersive .lv-flags {
+  position: fixed;
+  z-index: 61;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: calc(8px + env(safe-area-inset-left, 0px));
+  right: calc(128px + env(safe-area-inset-right, 0px));
+  margin: 0;
+  pointer-events: none;
+}
+
+.lv.is-immersive .lv-flag {
+  pointer-events: auto;
+}
+
+.lv.is-immersive .lv-flag--led,
+.lv.is-immersive .lv-flag--watch {
+  display: none;
+}

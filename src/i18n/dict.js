@@ -53,8 +53,11 @@ export const DICT = {
     'tutor.dexter.trait1': 'Русскоязычный',
     'tutor.dexter.trait2': 'Вайбовый',
     'tutor.dexter.trait3': 'Свой парень',
+    // Карточка — «контракт характера» из пакета Speaking Buddy v3.5: выбрать
+    // Декстера после этого текста и есть согласие на его мат и прожарку, другого
+    // вопроса нет (core §11). Тумблера 18+ нет с 14.10, поэтому desc18 не видна.
     'tutor.dexter.desc':
-      'Свой парень из Америки. Говорит как в жизни, а не как в учебнике: сленг, шутки, ноль официоза. Не поправляет свысока — просто по ходу подсказывает, как сказать по-человечески. С ним не стыдно ошибаться. Объясняет на русском, английский показывает на живых примерах.',
+      'Декстер всегда злой и ругается в каждой фразе — в любом возрасте. Взрослым — полная прожарка и крепкий мат, тем, кому нет 18, — тот же Декстер, но слова мягче и без личных оскорблений. Это игра в жёсткого тренера, а не настоящая злость. Если такой стиль не для тебя — выбери другого тьютора.',
     // Описание того же тьютора с включённой кнопкой 18+.
     'tutor.dexter.desc18':
       'Тот же Декстер, только без тормозов. Матерится в каждой фразе, орёт за короткие ответы и за русский вместо английского, хвалит сквозь зубы. Учит ровно тому же и так же — просто больно. Не для тех, кого это выбивает.',
@@ -222,6 +225,7 @@ export const DICT = {
     // Онбординг-тур
     'tour.skip': 'Пропустить',
     'tour.next': 'ОК',
+    'tour.coach.next': 'Далее',
     'tour.done': 'Готово',
     // Тур, который ведёт помощник Луна: она читает шаги вслух
     'tour.luna': 'Рассказывает Луна',
@@ -472,7 +476,7 @@ export const DICT = {
     'tutor.dexter.trait2': 'Вайбты',
     'tutor.dexter.trait3': 'Өз жігіті',
     'tutor.dexter.desc':
-      'Америкадан келген өз жігіті. Оқулықтағыдай емес, өмірдегідей сөйлейді: сленг, әзіл, нөл ресмилік. Жоғарыдан қарап түзетпейді — әңгіме үстінде «мынау былай айтылады» деп қана қояды. Онымен қателесуден ұялмайсың. Орысша түсіндіреді, ағылшынды тірі мысалдармен көрсетеді.',
+      'Декстер әрқашан ашулы және кез келген жаста әр сөйлемінде боқтайды. Ересектерге — аяусыз мазақ пен қатты боқтық сөздер, 18-ге толмағандарға — сол Декстер, бірақ сөздері жұмсағырақ әрі жеке қорлаусыз. Бұл — шын өшпенділік емес, қатал жаттықтырушы ойыны. Бұл стиль саған жат болса, басқа кейіпкерді таңда.',
     'tutor.dexter.desc18':
       'Сол Декстер, бірақ тежеусіз. Әр сөйлемінде боқтайды, қысқа жауап пен ағылшыннан қашқаның үшін айқайлайды, мақтауы тісінің арасынан. Оқытуы дәл сол, тек ауыр. Мұны көтере алмайтындарға емес.',
     'tutor.dexter.listen': 'Декстер дауысын тыңдау',
@@ -616,6 +620,7 @@ export const DICT = {
     // Онбординг-тур
     'tour.skip': 'Өткізу',
     'tour.next': 'ОК',
+    'tour.coach.next': 'Әрі қарай',
     'tour.done': 'Дайын',
     'tour.luna': 'Айзере айтып береді',
     'tour.luna.mute': 'Айзеренің дауысын өшіру',
@@ -859,7 +864,7 @@ export const DICT = {
     'tutor.dexter.trait2': 'Slangy',
     'tutor.dexter.trait3': 'Your boy',
     'tutor.dexter.desc':
-      'Your boy from the States. Talks like people actually talk, not like a textbook: slang, jokes, zero formality. He won\'t correct you from above — he just drops the natural way to say it mid-conversation. Nothing is embarrassing with him. Explains in Russian, shows English through real examples.',
+      "Dexter is always angry and swears in every turn, at every age. Adults get the full roast and strong swearing; under 18 get the same Dexter with milder words and no personal insults. It's a tough-love game, not real hatred. If this style isn't for you, choose another character.",
     'tutor.dexter.desc18':
       'The same Dexter with the brakes off. Swears in every line, shouts at one-word answers and at Russian instead of English, and praises through gritted teeth. Same method, same syllabus — it just hurts. Not for anyone this throws off.',
     'tutor.dexter.listen': "Listen to Dexter's voice",
@@ -1003,6 +1008,7 @@ export const DICT = {
     // Onboarding tour
     'tour.skip': 'Skip',
     'tour.next': 'OK',
+    'tour.coach.next': 'Next',
     'tour.done': 'Done',
     'tour.luna': 'Luna is guiding you',
     'tour.luna.mute': 'Mute Luna',

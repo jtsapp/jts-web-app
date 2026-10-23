@@ -1,0 +1,783 @@
+/* ======================================================================
+   Вход и регистрация по макету «Регистрация» (Figma «pitch JTS (Copy)»,
+   21.10.2026): «1 · Регистрация» — десктоп 1440×1024, «2 · Регистрация» —
+   телефон 440×955 (его правила — в src/mobile/registration.css).
+
+   Своё пространство имён .rg-*: старые .form-card/.email-field/.otp-box
+   остались у приглашения из админки и у класса-аккаунта, и правка здесь не
+   должна их задевать. Гарнитура не задана — экран наследует Manrope от body
+   (макет весь на нём), а казахский интерфейс так же получает Inter.
+
+   Цвета — переменными на .rg: тёмная тема перекрывает их одним блоком в
+   src/theme-dark.css.
+   ====================================================================== */
+
+.rg {
+  --rg-ink: #181818;
+  --rg-text-2: #5a5a66;
+  --rg-muted: #8e8e99;
+  --rg-line: #e8e8ee;
+  --rg-card: #ffffff;
+  --rg-accent: #9047ff;
+  --rg-accent-hover: #7f35f2;
+  --rg-accent-soft: #f6f1ff;
+  --rg-accent-pill: #efe7ff;
+  --rg-seg: #e4daf8;
+  --rg-error: #d9363e;
+  --rg-error-soft: #fdebec;
+  --rg-pill: #f0f0f4;
+  --rg-radio: #c9c9d3;
+  --rg-avatar: #f4ecff;
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #f8f8f8;
+  color: var(--rg-ink);
+}
+
+/* Фон — один кадр стола с предметами по краям (экспорт слоя макета с его
+   фильтрами). Не fixed: обёртка экрана .scr-in анимируется transform'ом, и
+   fixed внутри неё прилипал бы к ней, а не к окну. */
+.rg__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url(/assets/reg/v2/bg-desktop.webp) center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* ---------- Шапка ---------- */
+.rg-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 72px;
+  padding: 0 60px;
+  box-sizing: border-box;
+}
+.rg-top__spacer {
+  flex: 1;
+}
+.rg .logo {
+  display: block;
+  flex: none;
+  width: 150px;
+  height: 29px;
+  font-size: 0;
+  background: url(/assets/reg/logo-purple.svg) left center / contain no-repeat;
+}
+.rg-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--rg-line);
+  border-radius: 999px;
+  background: var(--rg-card);
+  color: var(--rg-ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.rg-iconbtn:hover {
+  border-color: #cfcfd9;
+}
+.rg .lang-selector--globe {
+  gap: 8px;
+  height: 42px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--rg-line);
+  border-radius: 999px;
+  background: var(--rg-card);
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--rg-ink);
+}
+.rg .lang-selector--globe:hover {
+  transform: none;
+  border-color: #cfcfd9;
+}
+.rg .lang-selector--globe > svg,
+.rg .lang-selector--globe .chev {
+  color: var(--rg-text-2);
+}
+.rg .lang-selector--globe .chev--open {
+  transform: rotate(180deg);
+}
+
+/* ---------- Колонка формы ---------- */
+/* По макету: под шапкой 80px, полоска шагов, ещё 80px — и заголовок. На низком
+   окне (ноутбук с масштабом 125% — ~790px) обе отбивки сжимаются, иначе форма
+   уходила бы под край ради пустоты сверху. */
+.rg-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: clamp(24px, 7.8vh, 80px) 60px clamp(32px, 7.8vh, 80px);
+}
+.rg--centered .rg-body {
+  align-items: center;
+}
+.rg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 560px;
+  max-width: 100%;
+}
+.rg-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 7.8vh, 80px);
+}
+.rg-content,
+.rg-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+.rg--done .rg-form,
+.rg--done .rg-content {
+  gap: 32px;
+}
+
+/* ---------- Шаги ---------- */
+.rg-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+}
+.rg-steps--ghost {
+  visibility: hidden;
+}
+.rg-steps__segs {
+  display: flex;
+  gap: 8px;
+}
+.rg-steps__seg {
+  width: 44px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--rg-seg);
+  transition: background 0.3s ease;
+}
+.rg-steps__seg.is-done {
+  background: var(--rg-accent);
+}
+.rg-steps__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--rg-text-2);
+}
+
+/* ---------- Заголовок ---------- */
+.rg-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+.rg-title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 48px;
+  color: var(--rg-ink);
+}
+.rg-sub {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--rg-text-2);
+}
+
+/* ---------- Поле ---------- */
+.rg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rg-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--rg-text-2);
+}
+.rg-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  height: 56px;
+  padding: 0 16px;
+  border: 2px solid var(--rg-line);
+  border-radius: 16px;
+  background: var(--rg-card);
+  transition: border-color 0.15s ease;
+}
+.rg-input:focus-within {
+  border-color: var(--rg-accent);
+}
+.rg-input.is-invalid {
+  border-color: var(--rg-error);
+}
+.rg-input input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--rg-ink);
+}
+.rg-input input::placeholder {
+  color: #b3b3bd;
+  font-weight: 500;
+}
+.rg-input__icon {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rg-muted);
+  cursor: pointer;
+}
+.rg-input__icon:hover {
+  color: var(--rg-text-2);
+}
+.rg-note {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--rg-muted);
+}
+.rg-note--error {
+  font-weight: 600;
+  color: var(--rg-error);
+}
+.rg-note--center {
+  text-align: center;
+}
+
+/* Дата рождения: три поля BirthDateInput складываются в одну строку
+   «14.03.1998», как в макете, коробка — та же, что у остальных полей. */
+.rg-dob .dob-field {
+  height: 56px;
+  padding: 0 12px 0 16px;
+  border: 2px solid var(--rg-line);
+  border-radius: 16px;
+  background: var(--rg-card);
+  transition: border-color 0.15s ease;
+}
+.rg-dob .dob-field:focus-within {
+  border-color: var(--rg-accent);
+  box-shadow: none;
+}
+.rg-dob.is-invalid .dob-field {
+  border-color: var(--rg-error);
+}
+.rg-dob .dob-field {
+  gap: 0;
+}
+.rg-dob .dob-field__part {
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--rg-ink);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+/* Впритык к цифрам: в макете дата — одна строка «14.03.1998», без воздуха
+   вокруг точек. Цифры моноширинные, иначе узкая «1» оставляла бы дырку. */
+.rg-dob .dob-field__part--day,
+.rg-dob .dob-field__part--month {
+  width: 2.1ch;
+}
+.rg-dob .dob-field__part--year {
+  width: 4.1ch;
+}
+.rg-dob .dob-field__part::placeholder {
+  color: #b3b3bd;
+  font-weight: 500;
+}
+.rg-dob .dob-field__sep {
+  color: var(--rg-ink);
+}
+.rg-dob .dob-field__picker {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--rg-muted);
+}
+.rg-dob .dob-field__picker:hover {
+  background: #f2f2f6;
+  color: var(--rg-text-2);
+}
+
+/* Телефон: «KZ +7 │ (700) 000-45-67». */
+.rg-phone {
+  position: relative;
+}
+.rg-phone__country {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rg-text-2);
+  font: inherit;
+  cursor: pointer;
+}
+/* Флаг вместо букв «KZ» из кадра — просьба владельца 23.10.2026: флаги стран. */
+.rg-phone__flag {
+  display: block;
+  flex: none;
+}
+.rg-phone__dial {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--rg-ink);
+}
+.rg-phone__sep {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  background: var(--rg-line);
+}
+.rg-phone__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: 100%;
+  max-height: 288px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  box-sizing: border-box;
+  list-style: none;
+  border: 1px solid var(--rg-line);
+  border-radius: 16px;
+  background: var(--rg-card);
+  box-shadow: 0 18px 44px rgba(23, 19, 38, 0.16);
+}
+.rg-phone__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--rg-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.rg-phone__item:hover {
+  background: #f4f2fa;
+}
+.rg-phone__item.is-active {
+  background: var(--rg-accent-soft);
+  color: var(--rg-accent);
+}
+.rg-phone__item-flag {
+  display: block;
+  flex: none;
+}
+.rg-phone__item-name {
+  flex: 1;
+}
+.rg-phone__item-dial {
+  color: var(--rg-muted);
+}
+
+/* ---------- Кнопки и ссылки ---------- */
+.rg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 56px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--rg-accent);
+  color: #ffffff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.rg-btn:hover:not(:disabled) {
+  background: var(--rg-accent-hover);
+}
+.rg-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.rg-btn--outline {
+  gap: 12px;
+  border: 2px solid var(--rg-line);
+  background: var(--rg-card);
+  color: var(--rg-ink);
+}
+.rg-btn--outline:hover:not(:disabled),
+.rg-google:hover .rg-btn--outline:not(:disabled) {
+  background: #fafafc;
+  border-color: #d9d9e2;
+}
+/* Кнопка Google: под настоящей кнопкой GIS (см. GoogleButton) — её растягивают
+   на всю кнопку макета и делают невидимой, нажатие уходит в неё. Не opacity 0:
+   совсем прозрачный слой браузеры вправе не считать видимым. */
+.rg-google {
+  position: relative;
+}
+.rg-google .rg-btn--outline:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.rg-google__gis {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  transform-origin: 0 0;
+  opacity: 0.01;
+}
+.rg-google__gis:empty {
+  display: none;
+}
+
+.rg-or {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--rg-muted);
+}
+.rg-or::before,
+.rg-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rg-line);
+}
+.rg-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--rg-accent);
+  cursor: pointer;
+}
+.rg-link:hover {
+  text-decoration: underline;
+}
+.rg-link--sm {
+  font-size: 12px;
+  line-height: 16px;
+}
+.rg-alt {
+  align-self: center;
+  font-size: 16px;
+  line-height: 24px;
+}
+.rg-switch {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--rg-text-2);
+  text-align: center;
+}
+.rg-consent {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--rg-muted);
+  text-align: center;
+}
+.rg-consent a {
+  color: inherit;
+  text-decoration: none;
+}
+.rg-consent a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Декстер ---------- */
+.rg-dexter {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.rg-dexter__avatar {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--rg-avatar);
+  object-fit: cover;
+}
+.rg-dexter__bubble {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 16px 16px 16px 0;
+  background: var(--rg-card);
+}
+.rg-dexter__who {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--rg-accent);
+}
+.rg-dexter__text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--rg-ink);
+}
+
+/* ---------- Выбор языка ---------- */
+.rg-langs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rg-lang {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 78px;
+  padding: 16px 20px;
+  border: 2px solid var(--rg-line);
+  border-radius: 24px;
+  background: var(--rg-card);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.rg-lang:hover {
+  border-color: #d3c2fb;
+}
+.rg-lang.is-active {
+  border-color: var(--rg-accent);
+  background: var(--rg-accent-soft);
+}
+/* Флаг языка — эмодзи-флаг из макета: глиф 32-го кегля, ~29×21 в поле 32. */
+.rg-lang__flag {
+  flex: none;
+  display: inline-flex;
+  justify-content: center;
+  width: 32px;
+}
+.rg-lang__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rg-lang__name {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--rg-ink);
+}
+.rg-lang__hello {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--rg-text-2);
+}
+.rg-radio {
+  position: relative;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid var(--rg-radio);
+  border-radius: 50%;
+  background: var(--rg-card);
+}
+.rg-lang.is-active .rg-radio {
+  border: 0;
+  background: var(--rg-accent);
+}
+.rg-lang.is-active .rg-radio::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* ---------- Код ---------- */
+.rg-to {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--rg-text-2);
+}
+.rg-to .rg-link {
+  line-height: 24px;
+}
+.rg-code {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.rg-code__cell {
+  box-sizing: border-box;
+  width: 80px;
+  height: 96px;
+  padding: 0;
+  border: 2px solid var(--rg-line);
+  border-radius: 24px;
+  background: var(--rg-card);
+  outline: none;
+  font: inherit;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 48px;
+  color: var(--rg-ink);
+  text-align: center;
+  caret-color: var(--rg-accent);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+/* Цифра в ячейке выделяется при фокусе (новая цифра заменяет старую), но
+   синяя заливка выделения на красной ячейке ошибки выглядит поломкой. */
+.rg .rg-code__cell::selection {
+  background: transparent;
+  color: inherit;
+}
+.rg-code__cell.is-filled {
+  border-color: var(--rg-ink);
+}
+.rg-code__cell.is-next,
+.rg-code__cell:focus {
+  border-color: var(--rg-accent);
+}
+.rg-code.is-invalid .rg-code__cell {
+  border-color: var(--rg-error);
+  background: var(--rg-error-soft);
+  color: var(--rg-error);
+}
+.rg-code__cell:disabled {
+  opacity: 0.6;
+}
+.rg-resend-wrap {
+  display: flex;
+  justify-content: center;
+}
+.rg-resend {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rg-pill);
+  color: var(--rg-muted);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.rg-resend--ready {
+  background: var(--rg-accent-pill);
+  color: var(--rg-accent);
+  cursor: pointer;
+}
+.rg-resend--ready:hover {
+  background: #e4d6ff;
+}
+.rg-fine {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--rg-muted);
+  text-align: center;
+}
+
+/* ---------- Регистрация пройдена ---------- */
+.rg-done__avatar {
+  align-self: center;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--rg-avatar);
+}
+.rg-done__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Планшет: по бокам меньше воздуха, колонка та же. */
+@media (min-width: 561px) and (max-width: 760px) {
+  .rg-top {
+    padding: 0 24px;
+  }
+  .rg-body {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

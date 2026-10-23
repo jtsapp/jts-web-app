@@ -16,8 +16,8 @@ test.beforeEach(() => {
 
 async function loginToTutorZone(page) {
   const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
-  await page.route('**/auth/otp/request', (r) => r.fulfill(json({ ok: true })))
-  await page.route('**/auth/otp/verify', (r) => r.fulfill(json({ accessToken: 'e2e-token', name: 'Тест' })))
+  await page.route('**/auth/otp/request**', (r) => r.fulfill(json({ ok: true })))
+  await page.route('**/auth/otp/verify**', (r) => r.fulfill(json({ accessToken: 'e2e-token', name: 'Тест' })))
   await page.route('**/user/language-level', (r) => r.fulfill(json({ languageLevel: 'B1' })))
   await page.route('**/api/profile/merge', (r) => r.fulfill(json({ ok: true })))
   await page.route('**/api/profile?**', (r) => r.fulfill(json({ configured: true, profile: null })))
@@ -32,14 +32,14 @@ async function loginToTutorZone(page) {
   await page.goto('/')
   await page.locator('.btn--secondary').click()
   // Вход начинается с пароля; по коду — ссылкой под формой
-  await page.getByRole('link', { name: 'Войти по коду из сообщения' }).click()
-  await page.locator('.phone-field input').fill('7771234567')
-  await page.locator('.form-primary').click()
-  const boxes = page.locator('.otp-box')
+  await page.getByRole('button', { name: 'Войти по коду из сообщения' }).click()
+  await page.locator('#rg-login-id').fill('7771234567')
+  await page.locator('.rg-btn').first().click()
+  const boxes = page.locator('.rg-code__cell')
   await expect(boxes.first()).toBeVisible()
   await boxes.first().click()
+  // Кнопки нет: код проверяется сам после четвёртой цифры.
   await page.keyboard.type('1234')
-  await page.locator('.form-primary').click()
   await expect(page.locator('.t-pick__title')).toBeVisible({ timeout: 10_000 })
 }
 

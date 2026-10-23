@@ -1,0 +1,9899 @@
+{
+ "library": [
+  {
+   "filters": {},
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "peppa-swimming",
+      "peppa-muddy-puddles",
+      "pocoyo-key",
+      "duggee-shopping",
+      "bing-bus-ride",
+      "cat-1mvRDcjjEGA",
+      "cat-QaMZcIp4878",
+      "cat-aCggUR27zxU",
+      "cat-n7wW17lBlCY",
+      "cat-BZxTao33LSY",
+      "cat-LoY1mZj9Fn4",
+      "cat-xd4KfYY_fCs",
+      "cat-cNbQohS_Rek",
+      "ext-8VmRUPPQyds",
+      "ext-4XLQpRI_wOQ",
+      "ext-pZw9veQ76fo",
+      "ext-2S__fbCGwOM",
+      "ext-nrv495corBc",
+      "ext-3r_09QTqBaA",
+      "ext-reH1TLG-FUY",
+      "ext-B84AbYTRjT0"
+     ]
+    },
+    {
+     "level": "A2",
+     "ids": [
+      "ext-kNw8V_Fkw28"
+     ]
+    },
+    {
+     "level": "B1",
+     "ids": [
+      "sintel"
+     ]
+    },
+    {
+     "level": "B2",
+     "ids": [
+      "elephants-dream",
+      "sprite-fright"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "levels": [
+     "A0"
+    ]
+   },
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "peppa-swimming",
+      "peppa-muddy-puddles",
+      "pocoyo-key",
+      "duggee-shopping",
+      "bing-bus-ride",
+      "cat-1mvRDcjjEGA",
+      "cat-QaMZcIp4878",
+      "cat-aCggUR27zxU",
+      "cat-n7wW17lBlCY",
+      "cat-BZxTao33LSY",
+      "cat-LoY1mZj9Fn4",
+      "cat-xd4KfYY_fCs",
+      "cat-cNbQohS_Rek",
+      "ext-8VmRUPPQyds",
+      "ext-4XLQpRI_wOQ",
+      "ext-pZw9veQ76fo",
+      "ext-2S__fbCGwOM",
+      "ext-nrv495corBc",
+      "ext-3r_09QTqBaA",
+      "ext-reH1TLG-FUY",
+      "ext-B84AbYTRjT0"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все21",
+     "Дети21",
+     "Подростки0",
+     "Взрослые0"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "levels": [
+     "A1",
+     "B1"
+    ]
+   },
+   "shelves": [
+    {
+     "level": "B1",
+     "ids": [
+      "sintel"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все1",
+     "Дети0",
+     "Подростки1",
+     "Взрослые0"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "audience": "kids"
+   },
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "peppa-swimming",
+      "peppa-muddy-puddles",
+      "pocoyo-key",
+      "duggee-shopping",
+      "bing-bus-ride",
+      "cat-1mvRDcjjEGA",
+      "cat-QaMZcIp4878",
+      "cat-aCggUR27zxU",
+      "cat-n7wW17lBlCY",
+      "cat-BZxTao33LSY",
+      "cat-LoY1mZj9Fn4",
+      "cat-xd4KfYY_fCs",
+      "cat-cNbQohS_Rek",
+      "ext-8VmRUPPQyds",
+      "ext-4XLQpRI_wOQ",
+      "ext-pZw9veQ76fo",
+      "ext-2S__fbCGwOM",
+      "ext-nrv495corBc",
+      "ext-3r_09QTqBaA",
+      "ext-reH1TLG-FUY",
+      "ext-B84AbYTRjT0"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A20",
+     "B10",
+     "B20",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "audience": "adults"
+   },
+   "shelves": [
+    {
+     "level": "A2",
+     "ids": [
+      "ext-kNw8V_Fkw28"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A00",
+     "A10",
+     "A21",
+     "B10",
+     "B20",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "audience": "teens",
+    "levels": [
+     "B2"
+    ]
+   },
+   "shelves": [
+    {
+     "level": "B2",
+     "ids": [
+      "elephants-dream",
+      "sprite-fright"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все2",
+     "Дети0",
+     "Подростки2",
+     "Взрослые0"
+    ],
+    "levels": [
+     "Все уровни",
+     "A00",
+     "A10",
+     "A20",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "q": "peppa"
+   },
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "peppa-swimming",
+      "peppa-muddy-puddles",
+      "ext-3r_09QTqBaA"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "q": "камп"
+   },
+   "shelves": [],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": true
+  },
+  {
+   "filters": {
+    "length": "short"
+   },
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "cat-BZxTao33LSY",
+      "cat-cNbQohS_Rek"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "length": "long"
+   },
+   "shelves": [
+    {
+     "level": "B1",
+     "ids": [
+      "sintel"
+     ]
+    },
+    {
+     "level": "B2",
+     "ids": [
+      "elephants-dream",
+      "sprite-fright"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  },
+  {
+   "filters": {
+    "topic": "friendship"
+   },
+   "shelves": [
+    {
+     "level": "A0",
+     "ids": [
+      "bing-bus-ride",
+      "ext-8VmRUPPQyds"
+     ]
+    },
+    {
+     "level": "B1",
+     "ids": [
+      "sintel"
+     ]
+    },
+    {
+     "level": "B2",
+     "ids": [
+      "sprite-fright"
+     ]
+    }
+   ],
+   "chips": {
+    "audience": [
+     "Все25",
+     "Дети21",
+     "Подростки3",
+     "Взрослые1"
+    ],
+    "levels": [
+     "Все уровни",
+     "A021",
+     "A10",
+     "A21",
+     "B11",
+     "B22",
+     "C10"
+    ]
+   },
+   "empty": false
+  }
+ ],
+ "pickPath": [
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "Well, I think georges are fine and wet too.",
+   "i": 0,
+   "word": "georges"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "BROTHER! Maybe george.",
+   "i": 0,
+   "word": "george"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "Well, I think daddys are fine and big too.",
+   "i": 1,
+   "word": "daddys"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "DAD! Maybe daddy.",
+   "i": 1,
+   "word": "daddy"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "Well, I think happys are fine and splash too.",
+   "i": 0,
+   "word": "happys"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "FUN! Maybe happy.",
+   "i": 0,
+   "word": "happy"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "Well, I think afraids are fine and worried too.",
+   "i": 1,
+   "word": "afraids"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "SCARED! Maybe afraid.",
+   "i": 1,
+   "word": "afraid"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "Well, I think swims are fine and swimming too.",
+   "i": 0,
+   "word": "swims"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "SWIMS! Maybe swim.",
+   "i": 0,
+   "word": "swims"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "Well, I think helps are fine and hand too.",
+   "i": 1,
+   "word": "helps"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "HELPS! Maybe help.",
+   "i": 1,
+   "word": "helps"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "Well, I think yess are fine and fall too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "JUMP! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "Well, I think nopes are fine and shy too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "SCARED! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "Well, I think swims are fine and race too.",
+   "i": 0,
+   "word": "swims"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "JUMP! Maybe swim.",
+   "i": 0,
+   "word": "swim"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "Well, I think plays are fine and toy too.",
+   "i": 1,
+   "word": "plays"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "GAME! Maybe play.",
+   "i": 1,
+   "word": "play"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "Well, I think reds are fine and colour too.",
+   "i": 0,
+   "word": "reds"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "BLUE! Maybe red.",
+   "i": 0,
+   "word": "red"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "Well, I think news are fine and favourite too.",
+   "i": 1,
+   "word": "news"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "OLD! Maybe new.",
+   "i": 1,
+   "word": "new"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "Well, I think colds are fine and brr too.",
+   "i": 0,
+   "word": "colds"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "FREEZING! Maybe cold.",
+   "i": 0,
+   "word": "cold"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "Well, I think warms are fine and fine too.",
+   "i": 1,
+   "word": "warms"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "HOT! Maybe warm.",
+   "i": 1,
+   "word": "warm"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "Well, I think sandwichs are fine and fruit too.",
+   "i": 0,
+   "word": "sandwichs"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "SANDWICHES! Maybe sandwich.",
+   "i": 0,
+   "word": "sandwiches"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "Well, I think juices are fine and cream too.",
+   "i": 1,
+   "word": "juices"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "MILK! Maybe juice.",
+   "i": 1,
+   "word": "juice"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "Well, I think mondays are fine and sunday too.",
+   "i": 0,
+   "word": "mondays"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "TUESDAY! Maybe monday.",
+   "i": 0,
+   "word": "monday"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "Well, I think tomorrows are fine and next too.",
+   "i": 1,
+   "word": "tomorrows"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "TODAY! Maybe tomorrow.",
+   "i": 1,
+   "word": "tomorrow"
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-swimming",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "Well, I think yess are fine and puddle too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "LIKE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "Well, I think nopes are fine and cold too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "DIRTY! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "Well, I think bootss are fine and feet too.",
+   "i": 0,
+   "word": "bootss"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "BOOT! Maybe boots.",
+   "i": 0,
+   "word": "boots"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "Well, I think coats are fine and hood too.",
+   "i": 1,
+   "word": "coats"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "JACKET! Maybe coat.",
+   "i": 1,
+   "word": "coat"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "Well, I think crys are fine and hug too.",
+   "i": 0,
+   "word": "crys"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "SAD! Maybe cry.",
+   "i": 0,
+   "word": "cry"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "Well, I think jumps are fine and help too.",
+   "i": 1,
+   "word": "jumps"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "AGAIN! Maybe jump.",
+   "i": 1,
+   "word": "jump"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": 0,
+   "word": "sorry"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "Well, I think ones are fine and seven too.",
+   "i": 0,
+   "word": "ones"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "TWO! Maybe one.",
+   "i": 0,
+   "word": "one"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "Well, I think tens are fine and big too.",
+   "i": 1,
+   "word": "tens"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "EIGHT! Maybe ten.",
+   "i": 1,
+   "word": "ten"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "Well, I think muddys are fine and mud too.",
+   "i": 0,
+   "word": "muddys"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "DIRTY! Maybe muddy.",
+   "i": 0,
+   "word": "muddy"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "Well, I think bigs are fine and smile too.",
+   "i": 1,
+   "word": "bigs"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "FUNNY! Maybe big.",
+   "i": 1,
+   "word": "big"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "Well, I think washs are fine and water too.",
+   "i": 0,
+   "word": "washs"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "BATH! Maybe wash.",
+   "i": 0,
+   "word": "wash"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "Well, I think clothess are fine and help too.",
+   "i": 1,
+   "word": "clothess"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "BOOTS! Maybe clothes.",
+   "i": 1,
+   "word": "clothes"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "Well, I think ducks are fine and whale too.",
+   "i": 0,
+   "word": "ducks"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "BOAT! Maybe duck.",
+   "i": 0,
+   "word": "duck"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "Well, I think teddys are fine and toy too.",
+   "i": 1,
+   "word": "teddys"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "DOLL! Maybe teddy.",
+   "i": 1,
+   "word": "teddy"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "Well, I think sandwichs are fine and egg too.",
+   "i": 0,
+   "word": "sandwichs"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "PASTA! Maybe sandwich.",
+   "i": 0,
+   "word": "sandwich"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "Well, I think milks are fine and cake too.",
+   "i": 1,
+   "word": "milks"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "JUICE! Maybe milk.",
+   "i": 1,
+   "word": "milk"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "Well, I think happys are fine and like too.",
+   "i": 0,
+   "word": "happys"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "YES! Maybe happy.",
+   "i": 0,
+   "word": "happy"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "Well, I think sads are fine and cold too.",
+   "i": 1,
+   "word": "sads"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "TIRED! Maybe sad.",
+   "i": 1,
+   "word": "sad"
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "peppa-muddy-puddles",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "Well, I think reds are fine and orange too.",
+   "i": 0,
+   "word": "reds"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "BLUE! Maybe red.",
+   "i": 0,
+   "word": "red"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "Well, I think firsts are fine and old too.",
+   "i": 1,
+   "word": "firsts"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "BIG! Maybe first.",
+   "i": 1,
+   "word": "first"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "Well, I think torchs are fine and sun too.",
+   "i": 0,
+   "word": "torchs"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "LIGHT! Maybe torch.",
+   "i": 0,
+   "word": "torch"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "Well, I think eyess are fine and key too.",
+   "i": 1,
+   "word": "eyess"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "GLASSES! Maybe eyes.",
+   "i": 1,
+   "word": "eyes"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "Well, I think golds are fine and money too.",
+   "i": 0,
+   "word": "golds"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "COIN! Maybe gold.",
+   "i": 0,
+   "word": "gold"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "Well, I think toys are fine and bread too.",
+   "i": 1,
+   "word": "toys"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "FOOD! Maybe toy.",
+   "i": 1,
+   "word": "toy"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "Well, I think asks are fine and call too.",
+   "i": 0,
+   "word": "asks"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "HELP! Maybe ask.",
+   "i": 0,
+   "word": "ask"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "Well, I think trys are fine and new too.",
+   "i": 1,
+   "word": "trys"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "SMALL! Maybe try.",
+   "i": 1,
+   "word": "try"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "Well, I think ellys are fine and quick too.",
+   "i": 0,
+   "word": "ellys"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "NOW! Maybe elly.",
+   "i": 0,
+   "word": "elly"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "Well, I think patos are fine and slow too.",
+   "i": 1,
+   "word": "patos"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "WAIT! Maybe pato.",
+   "i": 1,
+   "word": "pato"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "Well, I think scareds are fine and okay too.",
+   "i": 0,
+   "word": "scareds"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "AFRAID! Maybe scared.",
+   "i": 0,
+   "word": "scared"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "Well, I think togethers are fine and hand too.",
+   "i": 1,
+   "word": "togethers"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "FRIEND! Maybe together.",
+   "i": 1,
+   "word": "together"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "Well, I think trees are fine and hill too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "LAKE! Maybe tree.",
+   "i": 0,
+   "word": "tree"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "Well, I think crosss are fine and path too.",
+   "i": 1,
+   "word": "crosss"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "LINE! Maybe cross.",
+   "i": 1,
+   "word": "cross"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "Well, I think trees are fine and green too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "WOOD! Maybe tree.",
+   "i": 0,
+   "word": "tree"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "Well, I think lakes are fine and duck too.",
+   "i": 1,
+   "word": "lakes"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "WATER! Maybe lake.",
+   "i": 1,
+   "word": "lake"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "Well, I think quiets are fine and careful too.",
+   "i": 0,
+   "word": "quiets"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "SHH! Maybe quiet.",
+   "i": 0,
+   "word": "quiet"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "Well, I think walks are fine and away too.",
+   "i": 1,
+   "word": "walks"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "SNEAK! Maybe walk.",
+   "i": 1,
+   "word": "walk"
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "pocoyo-key",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "Well, I think milks are fine and cow too.",
+   "i": 0,
+   "word": "milks"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "DRINK! Maybe milk.",
+   "i": 0,
+   "word": "milk"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "Well, I think breads are fine and food too.",
+   "i": 1,
+   "word": "breads"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "APPLE! Maybe bread.",
+   "i": 1,
+   "word": "bread"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "Well, I think looks are fine and leave too.",
+   "i": 0,
+   "word": "looks"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "TOYS! Maybe look.",
+   "i": 0,
+   "word": "look"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "Well, I think milks are fine and come too.",
+   "i": 1,
+   "word": "milks"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "WALK! Maybe milk.",
+   "i": 1,
+   "word": "milk"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "Well, I think puts are fine and place too.",
+   "i": 0,
+   "word": "puts"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "BACK! Maybe put.",
+   "i": 0,
+   "word": "put"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "Well, I think buys are fine and money too.",
+   "i": 1,
+   "word": "buys"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "KEEP! Maybe buy.",
+   "i": 1,
+   "word": "buy"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "Well, I think shops are fine and boy too.",
+   "i": 0,
+   "word": "shops"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "MAN! Maybe shop.",
+   "i": 0,
+   "word": "shop"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "Well, I think squirrels are fine and friend too.",
+   "i": 1,
+   "word": "squirrels"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "BETTY! Maybe squirrel.",
+   "i": 1,
+   "word": "squirrel"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "Well, I think ones are fine and five too.",
+   "i": 0,
+   "word": "ones"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "TWO! Maybe one.",
+   "i": 0,
+   "word": "one"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "Well, I think sixs are fine and ten too.",
+   "i": 1,
+   "word": "sixs"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "SEVEN! Maybe six.",
+   "i": 1,
+   "word": "six"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "Well, I think milks are fine and buy too.",
+   "i": 0,
+   "word": "milks"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "NEED! Maybe milk.",
+   "i": 0,
+   "word": "milk"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "Well, I think yess are fine and birthday too.",
+   "i": 1,
+   "word": "yess"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "SMALL! Maybe yes.",
+   "i": 1,
+   "word": "yes"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "Well, I think pleases are fine and sorry too.",
+   "i": 0,
+   "word": "pleases"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "THANK! Maybe please.",
+   "i": 0,
+   "word": "please"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "Well, I think moneys are fine and coins too.",
+   "i": 1,
+   "word": "moneys"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "PAY! Maybe money.",
+   "i": 1,
+   "word": "money"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": 0,
+   "word": "sorry"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "Well, I think toyss are fine and shelf too.",
+   "i": 0,
+   "word": "toyss"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "TOY! Maybe toys.",
+   "i": 0,
+   "word": "toys"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "Well, I think cakess are fine and shop too.",
+   "i": 1,
+   "word": "cakess"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "FOOD! Maybe cakes.",
+   "i": 1,
+   "word": "cakes"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "Well, I think puts are fine and return too.",
+   "i": 0,
+   "word": "puts"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "BACK! Maybe put.",
+   "i": 0,
+   "word": "put"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "Well, I think comes are fine and stay too.",
+   "i": 1,
+   "word": "comes"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "FOLLOW! Maybe come.",
+   "i": 1,
+   "word": "come"
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "duggee-shopping",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "Well, I think yess are fine and thank too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "PLEASE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "Well, I think turns are fine and both too.",
+   "i": 1,
+   "word": "turns"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "FIRST! Maybe turn.",
+   "i": 1,
+   "word": "turn"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "Well, I think trees are fine and road too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "TREES! Maybe tree.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "Well, I think cars are fine and small too.",
+   "i": 1,
+   "word": "cars"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "BUS! Maybe car.",
+   "i": 1,
+   "word": "car"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "Well, I think turns are fine and both too.",
+   "i": 0,
+   "word": "turns"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "TURNS! Maybe turn.",
+   "i": 0,
+   "word": "turns"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "Well, I think firsts are fine and second too.",
+   "i": 1,
+   "word": "firsts"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "FLOP! Maybe first.",
+   "i": 1,
+   "word": "first"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "Well, I think sads are fine and okay too.",
+   "i": 0,
+   "word": "sads"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "HAPPY! Maybe sad.",
+   "i": 0,
+   "word": "sad"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "Well, I think sorrys are fine and wait too.",
+   "i": 1,
+   "word": "sorrys"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "PLEASE! Maybe sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "Well, I think yess are fine and banana too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "PLEASE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "Well, I think sorrys are fine and thanks too.",
+   "i": 1,
+   "word": "sorrys"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "FULL! Maybe sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "Well, I think spys are fine and count too.",
+   "i": 0,
+   "word": "spys"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "GUESS! Maybe spy.",
+   "i": 0,
+   "word": "spy"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "Well, I think sings are fine and dance too.",
+   "i": 1,
+   "word": "sings"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "SONG! Maybe sing.",
+   "i": 1,
+   "word": "sing"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "Well, I think yess are fine and soft too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "LIKE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "Well, I think scareds are fine and sorry too.",
+   "i": 1,
+   "word": "scareds"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "AFRAID! Maybe scared.",
+   "i": 1,
+   "word": "scared"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "Well, I think yess are fine and fresh too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "OPEN! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "Well, I think colds are fine and rain too.",
+   "i": 1,
+   "word": "colds"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "WIND! Maybe cold.",
+   "i": 1,
+   "word": "cold"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "Well, I think blues are fine and turquoise too.",
+   "i": 0,
+   "word": "blues"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "GREEN! Maybe blue.",
+   "i": 0,
+   "word": "blue"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "Well, I think bigs are fine and long too.",
+   "i": 1,
+   "word": "bigs"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "HUGE! Maybe big.",
+   "i": 1,
+   "word": "big"
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "bing-bus-ride",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "Well, I think saws are fine and roar too.",
+   "i": 0,
+   "word": "saws"
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "SEEN! Maybe saw.",
+   "i": 0,
+   "word": "saw"
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "Well, I think nothings are fine and sorry too.",
+   "i": 1,
+   "word": "nothings"
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "NEVER! Maybe nothing.",
+   "i": 1,
+   "word": "nothing"
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "sintel",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "Well, I think rests are fine and morning too.",
+   "i": 0,
+   "word": "rests"
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "SLEEP! Maybe rest.",
+   "i": 0,
+   "word": "rest"
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "Well, I think climbs are fine and hurry too.",
+   "i": 1,
+   "word": "climbs"
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "CONTINUE! Maybe climb.",
+   "i": 1,
+   "word": "climb"
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "Well, I think afraids are fine and hurt too.",
+   "i": 0,
+   "word": "afraids"
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "FEAR! Maybe afraid.",
+   "i": 0,
+   "word": "afraid"
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "Well, I think rumours are fine and unknown too.",
+   "i": 1,
+   "word": "rumours"
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "STORY! Maybe rumour.",
+   "i": 1,
+   "word": "rumour"
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "know"
+  },
+  {
+   "mission": "sintel",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "Well, I think promises are fine and guarantee too.",
+   "i": 0,
+   "word": "promises"
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "WAIT! Maybe promise.",
+   "i": 0,
+   "word": "promise"
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "Well, I think truths are fine and saved too.",
+   "i": 1,
+   "word": "truths"
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "STORY! Maybe truth.",
+   "i": 1,
+   "word": "truth"
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "Well, I think shows are fine and meet too.",
+   "i": 0,
+   "word": "shows"
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "BRING! Maybe show.",
+   "i": 0,
+   "word": "show"
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "Well, I think letters are fine and paper too.",
+   "i": 1,
+   "word": "letters"
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "WRITE! Maybe letter.",
+   "i": 1,
+   "word": "letter"
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "Well, I think goods are fine and brilliant too.",
+   "i": 0,
+   "word": "goods"
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "GREAT! Maybe good.",
+   "i": 0,
+   "word": "good"
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "Well, I think bads are fine and disagree too.",
+   "i": 1,
+   "word": "bads"
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "RISKY! Maybe bad.",
+   "i": 1,
+   "word": "bad"
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "Well, I think norths are fine and icy too.",
+   "i": 0,
+   "word": "norths"
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "PASS! Maybe north.",
+   "i": 0,
+   "word": "north"
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "Well, I think forests are fine and trees too.",
+   "i": 1,
+   "word": "forests"
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "LONG! Maybe forest.",
+   "i": 1,
+   "word": "forest"
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "Well, I think packs are fine and blanket too.",
+   "i": 0,
+   "word": "packs"
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "FOOD! Maybe pack.",
+   "i": 0,
+   "word": "pack"
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "Well, I think watchs are fine and help too.",
+   "i": 1,
+   "word": "watchs"
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "LEAD! Maybe watch.",
+   "i": 1,
+   "word": "watch"
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "Well, I think slowlys are fine and careful too.",
+   "i": 0,
+   "word": "slowlys"
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "QUIET! Maybe slowly.",
+   "i": 0,
+   "word": "slowly"
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "Well, I think calls are fine and whistle too.",
+   "i": 1,
+   "word": "calls"
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "OUTSIDE! Maybe call.",
+   "i": 1,
+   "word": "call"
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sintel",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "Well, I think furthers are fine and continue too.",
+   "i": 0,
+   "word": "furthers"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "FORWARD! Maybe further.",
+   "i": 0,
+   "word": "further"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "Well, I think backs are fine and home too.",
+   "i": 1,
+   "word": "backs"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "RETURN! Maybe back.",
+   "i": 1,
+   "word": "back"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "Well, I think compromises are fine and agree too.",
+   "i": 0,
+   "word": "compromises"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "MIDDLE! Maybe compromise.",
+   "i": 0,
+   "word": "compromise"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "Well, I think listens are fine and calm too.",
+   "i": 1,
+   "word": "listens"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "TALK! Maybe listen.",
+   "i": 1,
+   "word": "listen"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "Well, I think observes are fine and evidence too.",
+   "i": 0,
+   "word": "observes"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "WATCH! Maybe observe.",
+   "i": 0,
+   "word": "observe"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "Well, I think ignores are fine and instinct too.",
+   "i": 1,
+   "word": "ignores"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "AVOID! Maybe ignore.",
+   "i": 1,
+   "word": "ignore"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "Well, I think clevers are fine and wise too.",
+   "i": 0,
+   "word": "clevers"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "USEFUL! Maybe clever.",
+   "i": 0,
+   "word": "clever"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "Well, I think damages are fine and noise too.",
+   "i": 1,
+   "word": "damages"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "TROUBLE! Maybe damage.",
+   "i": 1,
+   "word": "damage"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "Well, I think hours are fine and half too.",
+   "i": 0,
+   "word": "hours"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "MINUTES! Maybe hour.",
+   "i": 0,
+   "word": "hour"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "Well, I think longers are fine and water too.",
+   "i": 1,
+   "word": "longers"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "EXTRA! Maybe longer.",
+   "i": 1,
+   "word": "longer"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "Well, I think alives are fine and kind too.",
+   "i": 0,
+   "word": "alives"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "POLITE! Maybe alive.",
+   "i": 0,
+   "word": "alive"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "Well, I think machines are fine and tool too.",
+   "i": 1,
+   "word": "machines"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "OBJECT! Maybe machine.",
+   "i": 1,
+   "word": "machine"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "Well, I think warns are fine and dangerous too.",
+   "i": 0,
+   "word": "warns"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "WAIT! Maybe warn.",
+   "i": 0,
+   "word": "warn"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "Well, I think pulls are fine and discover too.",
+   "i": 1,
+   "word": "pulls"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "TRY! Maybe pull.",
+   "i": 1,
+   "word": "pull"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "Well, I think firsts are fine and stay too.",
+   "i": 0,
+   "word": "firsts"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "BEHIND! Maybe first.",
+   "i": 0,
+   "word": "first"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "Well, I think signals are fine and sign too.",
+   "i": 1,
+   "word": "signals"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "SHOUT! Maybe signal.",
+   "i": 1,
+   "word": "signal"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "Well, I think strengths are fine and motivate too.",
+   "i": 0,
+   "word": "strengths"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "INSPIRE! Maybe strength.",
+   "i": 0,
+   "word": "strength"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "Well, I think weaknesss are fine and mistakes too.",
+   "i": 1,
+   "word": "weaknesss"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "ARROGANT! Maybe weakness.",
+   "i": 1,
+   "word": "weakness"
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "elephants-dream",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "Well, I think mushrooms are fine and eyes too.",
+   "i": 0,
+   "word": "mushrooms"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "CAP! Maybe mushroom.",
+   "i": 0,
+   "word": "mushroom"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "Well, I think fasts are fine and whisper too.",
+   "i": 1,
+   "word": "fasts"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "MOVED! Maybe fast.",
+   "i": 1,
+   "word": "fast"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "Well, I think firsts are fine and started too.",
+   "i": 0,
+   "word": "firsts"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "AFTER! Maybe first.",
+   "i": 0,
+   "word": "first"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "Well, I think picnics are fine and sat too.",
+   "i": 1,
+   "word": "picnics"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "FOOD! Maybe picnic.",
+   "i": 1,
+   "word": "picnic"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "Well, I think magics are fine and fungus too.",
+   "i": 0,
+   "word": "magics"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "SPIRIT! Maybe magic.",
+   "i": 0,
+   "word": "magic"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "Well, I think pranks are fine and people too.",
+   "i": 1,
+   "word": "pranks"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "COSTUME! Maybe prank.",
+   "i": 1,
+   "word": "prank"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "Well, I think pranks are fine and honest too.",
+   "i": 0,
+   "word": "pranks"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "TRUE! Maybe prank.",
+   "i": 0,
+   "word": "prank"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "Well, I think proofs are fine and everyone too.",
+   "i": 1,
+   "word": "proofs"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "EVIDENCE! Maybe proof.",
+   "i": 1,
+   "word": "proof"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "Well, I think leaves are fine and away too.",
+   "i": 0,
+   "word": "leaves"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "LEFT! Maybe leave.",
+   "i": 0,
+   "word": "leave"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "Well, I think stays are fine and investigate too.",
+   "i": 1,
+   "word": "stays"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "STAYED! Maybe stay.",
+   "i": 1,
+   "word": "stayed"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "Well, I think spores are fine and logical too.",
+   "i": 0,
+   "word": "spores"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "CONVINC! Maybe spore.",
+   "i": 0,
+   "word": "spore"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "Well, I think impossibles are fine and nonsense too.",
+   "i": 1,
+   "word": "impossibles"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "DISAGREE! Maybe impossible.",
+   "i": 1,
+   "word": "impossible"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "Well, I think partials are fine and hours too.",
+   "i": 0,
+   "word": "partials"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "SECTION! Maybe partial.",
+   "i": 0,
+   "word": "partial"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "Well, I think closes are fine and days too.",
+   "i": 1,
+   "word": "closes"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "SAFE! Maybe close.",
+   "i": 1,
+   "word": "close"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "Well, I think signs are fine and phone too.",
+   "i": 0,
+   "word": "signs"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "WARNING! Maybe sign.",
+   "i": 0,
+   "word": "sign"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "Well, I think nights are fine and torch too.",
+   "i": 1,
+   "word": "nights"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "DARK! Maybe night.",
+   "i": 1,
+   "word": "night"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "Well, I think roles are fine and responsible too.",
+   "i": 0,
+   "word": "roles"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "TASK! Maybe role.",
+   "i": 0,
+   "word": "role"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "Well, I think friendss are fine and witness too.",
+   "i": 1,
+   "word": "friendss"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "EVERYONE! Maybe friends.",
+   "i": 1,
+   "word": "friends"
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "sprite-fright",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "Well, I think tents are fine and pillow too.",
+   "i": 0,
+   "word": "tents"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "BAG! Maybe tent.",
+   "i": 0,
+   "word": "tent"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "Well, I think foods are fine and cake too.",
+   "i": 1,
+   "word": "foods"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "WATER! Maybe food.",
+   "i": 1,
+   "word": "food"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "Well, I think plays are fine and walk too.",
+   "i": 0,
+   "word": "plays"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "SING! Maybe play.",
+   "i": 0,
+   "word": "play"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "Well, I think looks are fine and read too.",
+   "i": 1,
+   "word": "looks"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "STARS! Maybe look.",
+   "i": 1,
+   "word": "look"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "Well, I think trees are fine and shade too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "TREES! Maybe tree.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "Well, I think rivers are fine and flat too.",
+   "i": 1,
+   "word": "rivers"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "LAKE! Maybe river.",
+   "i": 1,
+   "word": "river"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "Well, I think torchs are fine and candle too.",
+   "i": 0,
+   "word": "torchs"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "LIGHT! Maybe torch.",
+   "i": 0,
+   "word": "torch"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "Well, I think scareds are fine and sing too.",
+   "i": 1,
+   "word": "scareds"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "AFRAID! Maybe scared.",
+   "i": 1,
+   "word": "scared"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "Well, I think owls are fine and tree too.",
+   "i": 0,
+   "word": "owls"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "BIRD! Maybe owl.",
+   "i": 0,
+   "word": "owl"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "Well, I think mouses are fine and hedgehog too.",
+   "i": 1,
+   "word": "mouses"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "CAT! Maybe mouse.",
+   "i": 1,
+   "word": "mouse"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "Well, I think sausages are fine and bread too.",
+   "i": 0,
+   "word": "sausages"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "SAUSAGES! Maybe sausage.",
+   "i": 0,
+   "word": "sausages"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "Well, I think milks are fine and cocoa too.",
+   "i": 1,
+   "word": "milks"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "TEA! Maybe milk.",
+   "i": 1,
+   "word": "milk"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "Well, I think blankets are fine and sweater too.",
+   "i": 0,
+   "word": "blankets"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "COAT! Maybe blanket.",
+   "i": 0,
+   "word": "blanket"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "Well, I think drinks are fine and hug too.",
+   "i": 1,
+   "word": "drinks"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "MILK! Maybe drink.",
+   "i": 1,
+   "word": "drink"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "Well, I think tents are fine and house too.",
+   "i": 0,
+   "word": "tents"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "INSIDE! Maybe tent.",
+   "i": 0,
+   "word": "tent"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "Well, I think trees are fine and under too.",
+   "i": 1,
+   "word": "trees"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "UMBRELLA! Maybe tree.",
+   "i": 1,
+   "word": "tree"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "Well, I think sunnys are fine and blue too.",
+   "i": 0,
+   "word": "sunnys"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "SUN! Maybe sunny.",
+   "i": 0,
+   "word": "sunny"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "Well, I think colds are fine and snow too.",
+   "i": 1,
+   "word": "colds"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "RAINY! Maybe cold.",
+   "i": 1,
+   "word": "cold"
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-1mvRDcjjEGA",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "Well, I think friends are fine and family too.",
+   "i": 0,
+   "word": "friends"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "MUM! Maybe friend.",
+   "i": 0,
+   "word": "friend"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "Well, I think musics are fine and fun too.",
+   "i": 1,
+   "word": "musics"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "PARTY! Maybe music.",
+   "i": 1,
+   "word": "music"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "Well, I think drums are fine and flute too.",
+   "i": 0,
+   "word": "drums"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "PIANO! Maybe drum.",
+   "i": 0,
+   "word": "drum"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "Well, I think sings are fine and whistle too.",
+   "i": 1,
+   "word": "sings"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "SONG! Maybe sing.",
+   "i": 1,
+   "word": "sing"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "Well, I think drums are fine and shaker too.",
+   "i": 0,
+   "word": "drums"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "PIANO! Maybe drum.",
+   "i": 0,
+   "word": "drum"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "Well, I think claps are fine and box too.",
+   "i": 1,
+   "word": "claps"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "SING! Maybe clap.",
+   "i": 1,
+   "word": "clap"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "Well, I think houses are fine and living too.",
+   "i": 0,
+   "word": "houses"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "INSIDE! Maybe house.",
+   "i": 0,
+   "word": "house"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "Well, I think gardens are fine and wet too.",
+   "i": 1,
+   "word": "gardens"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "OUTSIDE! Maybe garden.",
+   "i": 1,
+   "word": "garden"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "Well, I think quiets are fine and low too.",
+   "i": 0,
+   "word": "quiets"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "SLOW! Maybe quiet.",
+   "i": 0,
+   "word": "quiet"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "Well, I think stops are fine and rest too.",
+   "i": 1,
+   "word": "stops"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "OUTSIDE! Maybe stop.",
+   "i": 1,
+   "word": "stop"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "Well, I think cakes are fine and carrot too.",
+   "i": 0,
+   "word": "cakes"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "PIZZA! Maybe cake.",
+   "i": 0,
+   "word": "cake"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "Well, I think juices are fine and lemonade too.",
+   "i": 1,
+   "word": "juices"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "MILK! Maybe juice.",
+   "i": 1,
+   "word": "juice"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "Well, I think twinkles are fine and row too.",
+   "i": 0,
+   "word": "twinkles"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "BAA! Maybe twinkle.",
+   "i": 0,
+   "word": "twinkle"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "Well, I think happys are fine and short too.",
+   "i": 1,
+   "word": "happys"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "FUNNY! Maybe happy.",
+   "i": 1,
+   "word": "happy"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "Well, I think jumps are fine and stamp too.",
+   "i": 0,
+   "word": "jumps"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "SPIN! Maybe jump.",
+   "i": 0,
+   "word": "jump"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "Well, I think dances are fine and arms too.",
+   "i": 1,
+   "word": "dances"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "MOVE! Maybe dance.",
+   "i": 1,
+   "word": "dance"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "Well, I think sorrys are fine and cry too.",
+   "i": 0,
+   "word": "sorrys"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "SAD! Maybe sorry.",
+   "i": 0,
+   "word": "sorry"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "Well, I think news are fine and box too.",
+   "i": 1,
+   "word": "news"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "MAKE! Maybe new.",
+   "i": 1,
+   "word": "new"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": 0,
+   "word": "sorry"
+  },
+  {
+   "mission": "cat-QaMZcIp4878",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "Well, I think sandwichs are fine and chicken too.",
+   "i": 0,
+   "word": "sandwichs"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "PIZZA! Maybe sandwich.",
+   "i": 0,
+   "word": "sandwich"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "Well, I think apples are fine and biscuit too.",
+   "i": 1,
+   "word": "apples"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "BANANA! Maybe apple.",
+   "i": 1,
+   "word": "apple"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "Well, I think carrots are fine and egg too.",
+   "i": 0,
+   "word": "carrots"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "APPLE! Maybe carrot.",
+   "i": 0,
+   "word": "carrot"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "Well, I think juices are fine and lemonade too.",
+   "i": 1,
+   "word": "juices"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "MILK! Maybe juice.",
+   "i": 1,
+   "word": "juice"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "Well, I think gives are fine and soup too.",
+   "i": 0,
+   "word": "gives"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "SANDWICH! Maybe give.",
+   "i": 0,
+   "word": "give"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "Well, I think shares are fine and cut too.",
+   "i": 1,
+   "word": "shares"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "HALF! Maybe share.",
+   "i": 1,
+   "word": "share"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "Well, I think lunchs are fine and finish too.",
+   "i": 0,
+   "word": "lunchs"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "FIRST! Maybe lunch.",
+   "i": 0,
+   "word": "lunch"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "Well, I think yess are fine and sweet too.",
+   "i": 1,
+   "word": "yess"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "OKAY! Maybe yes.",
+   "i": 1,
+   "word": "yes"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "Well, I think cloths are fine and tissue too.",
+   "i": 0,
+   "word": "cloths"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "TOWEL! Maybe cloth.",
+   "i": 0,
+   "word": "cloth"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "Well, I think helps are fine and again too.",
+   "i": 1,
+   "word": "helps"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "MUM! Maybe help.",
+   "i": 1,
+   "word": "help"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "Well, I think tables are fine and room too.",
+   "i": 0,
+   "word": "tables"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "KITCHEN! Maybe table.",
+   "i": 0,
+   "word": "table"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "Well, I think gardens are fine and park too.",
+   "i": 1,
+   "word": "gardens"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "OUTSIDE! Maybe garden.",
+   "i": 1,
+   "word": "garden"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "Well, I think waits are fine and slow too.",
+   "i": 0,
+   "word": "waits"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "MINUTE! Maybe wait.",
+   "i": 0,
+   "word": "wait"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "Well, I think blows are fine and fan too.",
+   "i": 1,
+   "word": "blows"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "SPOON! Maybe blow.",
+   "i": 1,
+   "word": "blow"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "Well, I think likes are fine and healthy too.",
+   "i": 0,
+   "word": "likes"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "LOVE! Maybe like.",
+   "i": 0,
+   "word": "like"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "Well, I think yuckys are fine and horrible too.",
+   "i": 1,
+   "word": "yuckys"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "HATE! Maybe yucky.",
+   "i": 1,
+   "word": "yucky"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "Well, I think washs are fine and dishes too.",
+   "i": 0,
+   "word": "washs"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "HANDS! Maybe wash.",
+   "i": 0,
+   "word": "wash"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "Well, I think plays are fine and nap too.",
+   "i": 1,
+   "word": "plays"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "GARDEN! Maybe play.",
+   "i": 1,
+   "word": "play"
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-aCggUR27zxU",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "Well, I think beds are fine and bedroom too.",
+   "i": 0,
+   "word": "beds"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "ROOM! Maybe bed.",
+   "i": 0,
+   "word": "bed"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "Well, I think gardens are fine and toys too.",
+   "i": 1,
+   "word": "gardens"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "PARK! Maybe garden.",
+   "i": 1,
+   "word": "garden"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "Well, I think gardens are fine and wardrobe too.",
+   "i": 0,
+   "word": "gardens"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "KITCHEN! Maybe garden.",
+   "i": 0,
+   "word": "garden"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "Well, I think behinds are fine and bed too.",
+   "i": 1,
+   "word": "behinds"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "UNDER! Maybe behind.",
+   "i": 1,
+   "word": "behind"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "Well, I think gardens are fine and yard too.",
+   "i": 0,
+   "word": "gardens"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "OUTSIDE! Maybe garden.",
+   "i": 0,
+   "word": "garden"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "Well, I think kitchens are fine and stairs too.",
+   "i": 1,
+   "word": "kitchens"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "BEDROOM! Maybe kitchen.",
+   "i": 1,
+   "word": "kitchen"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "Well, I think flops are fine and ball too.",
+   "i": 0,
+   "word": "flops"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "FRIEND! Maybe flop.",
+   "i": 0,
+   "word": "flop"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "Well, I think rains are fine and bird too.",
+   "i": 1,
+   "word": "rains"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "WIND! Maybe rain.",
+   "i": 1,
+   "word": "rain"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "Well, I think scareds are fine and fine too.",
+   "i": 0,
+   "word": "scareds"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "AFRAID! Maybe scared.",
+   "i": 0,
+   "word": "scared"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "Well, I think torchs are fine and together too.",
+   "i": 1,
+   "word": "torchs"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "LIGHT! Maybe torch.",
+   "i": 1,
+   "word": "torch"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "Well, I think balls are fine and bag too.",
+   "i": 0,
+   "word": "balls"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "SHOE! Maybe ball.",
+   "i": 0,
+   "word": "ball"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "Well, I think reds are fine and dust too.",
+   "i": 1,
+   "word": "reds"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "BLUE! Maybe red.",
+   "i": 1,
+   "word": "red"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "Well, I think rests are fine and drink too.",
+   "i": 0,
+   "word": "rests"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "STOP! Maybe rest.",
+   "i": 0,
+   "word": "rest"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "Well, I think looks are fine and keep too.",
+   "i": 1,
+   "word": "looks"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "MORE! Maybe look.",
+   "i": 1,
+   "word": "look"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "Well, I think browns are fine and red too.",
+   "i": 0,
+   "word": "browns"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "WHITE! Maybe brown.",
+   "i": 0,
+   "word": "brown"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "Well, I think bigs are fine and funny too.",
+   "i": 1,
+   "word": "bigs"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "SMALL! Maybe big.",
+   "i": 1,
+   "word": "big"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "Well, I think wakes are fine and touch too.",
+   "i": 0,
+   "word": "wakes"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "YES! Maybe wake.",
+   "i": 0,
+   "word": "wake"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "Well, I think quiets are fine and whisper too.",
+   "i": 1,
+   "word": "quiets"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "SLEEP! Maybe quiet.",
+   "i": 1,
+   "word": "quiet"
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-n7wW17lBlCY",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "Well, I think dragons are fine and unicorn too.",
+   "i": 0,
+   "word": "dragons"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "MONSTER! Maybe dragon.",
+   "i": 0,
+   "word": "dragon"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "Well, I think houses are fine and star too.",
+   "i": 1,
+   "word": "houses"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "CASTLE! Maybe house.",
+   "i": 1,
+   "word": "house"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "Well, I think flys are fine and hop too.",
+   "i": 0,
+   "word": "flys"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "RUN! Maybe fly.",
+   "i": 0,
+   "word": "fly"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "Well, I think blues are fine and orange too.",
+   "i": 1,
+   "word": "blues"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "RED! Maybe blue.",
+   "i": 1,
+   "word": "blue"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "Well, I think forests are fine and garden too.",
+   "i": 0,
+   "word": "forests"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "SEA! Maybe forest.",
+   "i": 0,
+   "word": "forest"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "Well, I think moons are fine and farm too.",
+   "i": 1,
+   "word": "moons"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "SPACE! Maybe moon.",
+   "i": 1,
+   "word": "moon"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "Well, I think apples are fine and fruit too.",
+   "i": 0,
+   "word": "apples"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "BANANA! Maybe apple.",
+   "i": 0,
+   "word": "apple"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "Well, I think pizzas are fine and nothing too.",
+   "i": 1,
+   "word": "pizzas"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "MEAT! Maybe pizza.",
+   "i": 1,
+   "word": "pizza"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "Well, I think names are fine and star too.",
+   "i": 0,
+   "word": "names"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "CALLED! Maybe name.",
+   "i": 0,
+   "word": "name"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "Well, I think spots are fine and cloud too.",
+   "i": 1,
+   "word": "spots"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "FLUFFY! Maybe spot.",
+   "i": 1,
+   "word": "spot"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "Well, I think bigs are fine and large too.",
+   "i": 0,
+   "word": "bigs"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "HUGE! Maybe big.",
+   "i": 0,
+   "word": "big"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "Well, I think smalls are fine and short too.",
+   "i": 1,
+   "word": "smalls"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "TINY! Maybe small.",
+   "i": 1,
+   "word": "small"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "Well, I think yess are fine and soft too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "KIND! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "Well, I think shys are fine and sleepy too.",
+   "i": 1,
+   "word": "shys"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "SCARED! Maybe shy.",
+   "i": 1,
+   "word": "shy"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "Well, I think heads are fine and face too.",
+   "i": 0,
+   "word": "heads"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "EYES! Maybe head.",
+   "i": 0,
+   "word": "head"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "Well, I think suns are fine and picture too.",
+   "i": 1,
+   "word": "suns"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "HOUSE! Maybe sun.",
+   "i": 1,
+   "word": "sun"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "Well, I think bettys are fine and norrie too.",
+   "i": 0,
+   "word": "bettys"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "ROLY! Maybe betty.",
+   "i": 0,
+   "word": "betty"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "Well, I think everybodys are fine and friends too.",
+   "i": 1,
+   "word": "everybodys"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "SQUIRRELS! Maybe everybody.",
+   "i": 1,
+   "word": "everybody"
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-BZxTao33LSY",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "Well, I think yess are fine and happy too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "LIKE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "Well, I think nopes are fine and nothing too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "BORING! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "Well, I think funnys are fine and laugh too.",
+   "i": 0,
+   "word": "funnys"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "FUN! Maybe funny.",
+   "i": 0,
+   "word": "funny"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "Well, I think scarys are fine and adventure too.",
+   "i": 1,
+   "word": "scarys"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "ANIMAL! Maybe scary.",
+   "i": 1,
+   "word": "scary"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "Well, I think ones are fine and five too.",
+   "i": 0,
+   "word": "ones"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "TWO! Maybe one.",
+   "i": 0,
+   "word": "one"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "Well, I think sixs are fine and ten too.",
+   "i": 1,
+   "word": "sixs"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "SEVEN! Maybe six.",
+   "i": 1,
+   "word": "six"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "Well, I think saturdays are fine and weekend too.",
+   "i": 0,
+   "word": "saturdays"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "SUNDAY! Maybe saturday.",
+   "i": 0,
+   "word": "saturday"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "Well, I think mondays are fine and tomorrow too.",
+   "i": 1,
+   "word": "mondays"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "TUESDAY! Maybe monday.",
+   "i": 1,
+   "word": "monday"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "Well, I think mornings are fine and breakfast too.",
+   "i": 0,
+   "word": "mornings"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "EARLY! Maybe morning.",
+   "i": 0,
+   "word": "morning"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "Well, I think afternoons are fine and evening too.",
+   "i": 1,
+   "word": "afternoons"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "THREE! Maybe afternoon.",
+   "i": 1,
+   "word": "afternoon"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "Well, I think comes are fine and sam too.",
+   "i": 0,
+   "word": "comes"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "FRIEND! Maybe come.",
+   "i": 0,
+   "word": "come"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "Well, I think mums are fine and grandma too.",
+   "i": 1,
+   "word": "mums"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "DAD! Maybe mum.",
+   "i": 1,
+   "word": "mum"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "Well, I think sweets are fine and honey too.",
+   "i": 0,
+   "word": "sweets"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "SUGAR! Maybe sweet.",
+   "i": 0,
+   "word": "sweet"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "Well, I think saltys are fine and butter too.",
+   "i": 1,
+   "word": "saltys"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "SALT! Maybe salty.",
+   "i": 1,
+   "word": "salty"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "Well, I think quiets are fine and silent too.",
+   "i": 0,
+   "word": "quiets"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "PROMISE! Maybe quiet.",
+   "i": 0,
+   "word": "quiet"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "Well, I think trys are fine and noise too.",
+   "i": 1,
+   "word": "trys"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "LOUD! Maybe try.",
+   "i": 1,
+   "word": "try"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "Well, I think waits are fine and friend too.",
+   "i": 0,
+   "word": "waits"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "STAY! Maybe wait.",
+   "i": 0,
+   "word": "wait"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "Well, I think nows are fine and hurry too.",
+   "i": 1,
+   "word": "nows"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "START! Maybe now.",
+   "i": 1,
+   "word": "now"
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-LoY1mZj9Fn4",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "Well, I think ones are fine and eight too.",
+   "i": 0,
+   "word": "ones"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "TWO! Maybe one.",
+   "i": 0,
+   "word": "one"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "Well, I think yess are fine and please too.",
+   "i": 1,
+   "word": "yess"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "SURE! Maybe yes.",
+   "i": 1,
+   "word": "yes"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "Well, I think tens are fine and tens too.",
+   "i": 0,
+   "word": "tens"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "TENTH! Maybe ten.",
+   "i": 0,
+   "word": "tenth"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "Well, I think thinks are fine and seven too.",
+   "i": 1,
+   "word": "think"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "MAYBE! Maybe think.",
+   "i": 1,
+   "word": "think"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "Well, I think tens are fine and equal too.",
+   "i": 0,
+   "word": "tens"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "AGAIN! Maybe ten.",
+   "i": 0,
+   "word": "ten"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "Well, I think nines are fine and maybe too.",
+   "i": 1,
+   "word": "nines"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "EIGHT! Maybe nine.",
+   "i": 1,
+   "word": "nine"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "Well, I think puts are fine and build too.",
+   "i": 0,
+   "word": "puts"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "TOGETHER! Maybe put.",
+   "i": 0,
+   "word": "put"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "Well, I think adds are fine and push too.",
+   "i": 1,
+   "word": "adds"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "PLUS! Maybe add.",
+   "i": 1,
+   "word": "add"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "Well, I think rockets are fine and fire too.",
+   "i": 0,
+   "word": "rockets"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "FAST! Maybe rocket.",
+   "i": 0,
+   "word": "rocket"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "Well, I think spaceships are fine and room too.",
+   "i": 1,
+   "word": "spaceships"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "SHIP! Maybe spaceship.",
+   "i": 1,
+   "word": "spaceship"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "Well, I think stars are fine and earth too.",
+   "i": 0,
+   "word": "stars"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "MOON! Maybe star.",
+   "i": 0,
+   "word": "star"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "Well, I think darks are fine and bright too.",
+   "i": 1,
+   "word": "darks"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "BLACK! Maybe dark.",
+   "i": 1,
+   "word": "dark"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "Well, I think fives are fine and sky too.",
+   "i": 0,
+   "word": "fives"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "STARS! Maybe five.",
+   "i": 0,
+   "word": "five"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "Well, I think fours are fine and count too.",
+   "i": 1,
+   "word": "fours"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "SIX! Maybe four.",
+   "i": 1,
+   "word": "four"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "Well, I think takes are fine and bring too.",
+   "i": 0,
+   "word": "takes"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "HOME! Maybe take.",
+   "i": 0,
+   "word": "take"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "Well, I think leaves are fine and space too.",
+   "i": 1,
+   "word": "leaves"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "STAY! Maybe leave.",
+   "i": 1,
+   "word": "leave"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "Well, I think goodbyes are fine and later too.",
+   "i": 0,
+   "word": "goodbyes"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "BYE! Maybe goodbye.",
+   "i": 0,
+   "word": "goodbye"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "Well, I think thanks are fine and lovely too.",
+   "i": 1,
+   "word": "thanks"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "THANKS! Maybe thank.",
+   "i": 1,
+   "word": "thanks"
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-xd4KfYY_fCs",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "Well, I think pencils are fine and crayon too.",
+   "i": 0,
+   "word": "pencils"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "PEN! Maybe pencil.",
+   "i": 0,
+   "word": "pencil"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "Well, I think starts are fine and draw too.",
+   "i": 1,
+   "word": "starts"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "DOT! Maybe start.",
+   "i": 1,
+   "word": "start"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "Well, I think nexts are fine and turn too.",
+   "i": 0,
+   "word": "nexts"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "ROUND! Maybe next.",
+   "i": 0,
+   "word": "next"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "Well, I think rights are fine and line too.",
+   "i": 1,
+   "word": "rights"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "LEFT! Maybe right.",
+   "i": 1,
+   "word": "right"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "Well, I think slows are fine and easy too.",
+   "i": 0,
+   "word": "slows"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "SLOWLY! Maybe slow.",
+   "i": 0,
+   "word": "slowly"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "Well, I think holds are fine and stop too.",
+   "i": 1,
+   "word": "holds"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "PENCIL! Maybe hold.",
+   "i": 1,
+   "word": "hold"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "Well, I think lefts are fine and back too.",
+   "i": 0,
+   "word": "lefts"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "WEST! Maybe left.",
+   "i": 0,
+   "word": "left"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "Well, I think rights are fine and forward too.",
+   "i": 1,
+   "word": "rights"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "EAST! Maybe right.",
+   "i": 1,
+   "word": "right"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "Well, I think bigs are fine and tall too.",
+   "i": 0,
+   "word": "bigs"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "LARGE! Maybe big.",
+   "i": 0,
+   "word": "big"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "Well, I think smalls are fine and cute too.",
+   "i": 1,
+   "word": "smalls"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "LITTLE! Maybe small.",
+   "i": 1,
+   "word": "small"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "Well, I think reds are fine and three too.",
+   "i": 0,
+   "word": "reds"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "HOT! Maybe red.",
+   "i": 0,
+   "word": "red"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "Well, I think blues are fine and one too.",
+   "i": 1,
+   "word": "blues"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "SEA! Maybe blue.",
+   "i": 1,
+   "word": "blue"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "Well, I think dots are fine and first too.",
+   "i": 0,
+   "word": "dots"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "START! Maybe dot.",
+   "i": 0,
+   "word": "dot"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "Well, I think tops are fine and paper too.",
+   "i": 1,
+   "word": "tops"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "END! Maybe top.",
+   "i": 1,
+   "word": "top"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "Well, I think rounds are fine and curly too.",
+   "i": 0,
+   "word": "rounds"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "CIRCLE! Maybe round.",
+   "i": 0,
+   "word": "round"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "Well, I think nices are fine and cool too.",
+   "i": 1,
+   "word": "nices"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "GOOD! Maybe nice.",
+   "i": 1,
+   "word": "nice"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "Well, I think carefuls are fine and easy too.",
+   "i": 0,
+   "word": "carefuls"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "SLOW! Maybe careful.",
+   "i": 0,
+   "word": "careful"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "Well, I think pencils are fine and practise too.",
+   "i": 1,
+   "word": "pencils"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "PAPER! Maybe pencil.",
+   "i": 1,
+   "word": "pencil"
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "cat-cNbQohS_Rek",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "Well, I think hellos are fine and welcome too.",
+   "i": 0,
+   "word": "hellos"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "HEY! Maybe hello.",
+   "i": 0,
+   "word": "hello"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "Well, I think names are fine and good too.",
+   "i": 1,
+   "word": "names"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "CALLED! Maybe name.",
+   "i": 1,
+   "word": "name"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "Well, I think yess are fine and friend too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "YEAH! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "Well, I think sorrys are fine and shy too.",
+   "i": 1,
+   "word": "sorrys"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "MAYBE! Maybe sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "Well, I think reds are fine and pink too.",
+   "i": 0,
+   "word": "reds"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "BLUE! Maybe red.",
+   "i": 0,
+   "word": "red"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "Well, I think purples are fine and colour too.",
+   "i": 1,
+   "word": "purples"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "ORANGE! Maybe purple.",
+   "i": 1,
+   "word": "purple"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "Well, I think flowers are fine and heart too.",
+   "i": 0,
+   "word": "flowers"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "SUN! Maybe flower.",
+   "i": 0,
+   "word": "flower"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "Well, I think houses are fine and ball too.",
+   "i": 1,
+   "word": "houses"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "STAR! Maybe house.",
+   "i": 1,
+   "word": "house"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "Well, I think hellos are fine and hola too.",
+   "i": 0,
+   "word": "hellos"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "WELCOME! Maybe hello.",
+   "i": 0,
+   "word": "hello"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "Well, I think friends are fine and happy too.",
+   "i": 1,
+   "word": "friends"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "LOVE! Maybe friend.",
+   "i": 1,
+   "word": "friend"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "Well, I think goodbyes are fine and later too.",
+   "i": 0,
+   "word": "goodbyes"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "BYE! Maybe goodbye.",
+   "i": 0,
+   "word": "goodbye"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "Well, I think tomorrows are fine and school too.",
+   "i": 1,
+   "word": "tomorrows"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "NIGHT! Maybe tomorrow.",
+   "i": 1,
+   "word": "tomorrow"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "Well, I think parks are fine and grass too.",
+   "i": 0,
+   "word": "parks"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "GARDEN! Maybe park.",
+   "i": 0,
+   "word": "park"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "Well, I think schools are fine and playground too.",
+   "i": 1,
+   "word": "schools"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "CLASS! Maybe school.",
+   "i": 1,
+   "word": "school"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "Well, I think balls are fine and game too.",
+   "i": 0,
+   "word": "balls"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "DOLL! Maybe ball.",
+   "i": 0,
+   "word": "ball"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "Well, I think waters are fine and juice too.",
+   "i": 1,
+   "word": "waters"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "APPLE! Maybe water.",
+   "i": 1,
+   "word": "water"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "Well, I think yess are fine and cards too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "YEAH! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "Well, I think rains are fine and puddle too.",
+   "i": 1,
+   "word": "rains"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "UMBRELLA! Maybe rain.",
+   "i": 1,
+   "word": "rain"
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-8VmRUPPQyds",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "Well, I think washs are fine and hands too.",
+   "i": 0,
+   "word": "washs"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "BRUSH! Maybe wash.",
+   "i": 0,
+   "word": "wash"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "Well, I think eats are fine and run too.",
+   "i": 1,
+   "word": "eats"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "BREAKFAST! Maybe eat.",
+   "i": 1,
+   "word": "eat"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "Well, I think eats are fine and rice too.",
+   "i": 0,
+   "word": "eats"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "BREAD! Maybe eat.",
+   "i": 0,
+   "word": "eat"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "Well, I think drinks are fine and coffee too.",
+   "i": 1,
+   "word": "drinks"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "MILK! Maybe drink.",
+   "i": 1,
+   "word": "drink"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "Well, I think buss are fine and metro too.",
+   "i": 0,
+   "word": "buss"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "CAR! Maybe bus.",
+   "i": 0,
+   "word": "bus"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "Well, I think walks are fine and sister too.",
+   "i": 1,
+   "word": "walks"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "FOOT! Maybe walk.",
+   "i": 1,
+   "word": "walk"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "Well, I think slows are fine and gentle too.",
+   "i": 0,
+   "word": "slows"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "CALM! Maybe slow.",
+   "i": 0,
+   "word": "slow"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "Well, I think fasts are fine and loud too.",
+   "i": 1,
+   "word": "fasts"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "QUICK! Maybe fast.",
+   "i": 1,
+   "word": "fast"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "Well, I think reads are fine and count too.",
+   "i": 0,
+   "word": "reads"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "WRITE! Maybe read.",
+   "i": 0,
+   "word": "read"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "Well, I think draws are fine and music too.",
+   "i": 1,
+   "word": "draws"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "SING! Maybe draw.",
+   "i": 1,
+   "word": "draw"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "Well, I think plays are fine and friends too.",
+   "i": 0,
+   "word": "plays"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "OUTSIDE! Maybe play.",
+   "i": 0,
+   "word": "play"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "Well, I think homeworks are fine and clean too.",
+   "i": 1,
+   "word": "homeworks"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "STUDY! Maybe homework.",
+   "i": 1,
+   "word": "homework"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "Well, I think dinners are fine and dad too.",
+   "i": 0,
+   "word": "dinners"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "EAT! Maybe dinner.",
+   "i": 0,
+   "word": "dinner"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "Well, I think watchs are fine and game too.",
+   "i": 1,
+   "word": "watchs"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "TELEVISION! Maybe watch.",
+   "i": 1,
+   "word": "watch"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "Well, I think brushs are fine and pyjamas too.",
+   "i": 0,
+   "word": "brushs"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "TEETH! Maybe brush.",
+   "i": 0,
+   "word": "brush"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "Well, I think reads are fine and mum too.",
+   "i": 1,
+   "word": "reads"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "BOOK! Maybe read.",
+   "i": 1,
+   "word": "read"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "Well, I think eights are fine and night too.",
+   "i": 0,
+   "word": "eights"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "NINE! Maybe eight.",
+   "i": 0,
+   "word": "eight"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "Well, I think earlys are fine and oclock too.",
+   "i": 1,
+   "word": "earlys"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "LATE! Maybe early.",
+   "i": 1,
+   "word": "early"
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-4XLQpRI_wOQ",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "Well, I think fives are fine and group too.",
+   "i": 0,
+   "word": "fives"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "FIFTH! Maybe five.",
+   "i": 0,
+   "word": "five"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "Well, I think fours are fine and one too.",
+   "i": 1,
+   "word": "fours"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "THREE! Maybe four.",
+   "i": 1,
+   "word": "four"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "Well, I think happys are fine and play too.",
+   "i": 0,
+   "word": "happys"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "FUN! Maybe happy.",
+   "i": 0,
+   "word": "happy"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "Well, I think sads are fine and cold too.",
+   "i": 1,
+   "word": "sads"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "TIRED! Maybe sad.",
+   "i": 1,
+   "word": "sad"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "Well, I think ponds are fine and lake too.",
+   "i": 0,
+   "word": "ponds"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "WATER! Maybe pond.",
+   "i": 0,
+   "word": "pond"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "Well, I think trees are fine and grass too.",
+   "i": 1,
+   "word": "trees"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "HILL! Maybe tree.",
+   "i": 1,
+   "word": "tree"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "Well, I think yess are fine and help too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "YEAH! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "Well, I think stays are fine and home too.",
+   "i": 1,
+   "word": "stays"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "WAIT! Maybe stay.",
+   "i": 1,
+   "word": "stay"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "Well, I think yellows are fine and white too.",
+   "i": 0,
+   "word": "yellows"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "ORANGE! Maybe yellow.",
+   "i": 0,
+   "word": "yellow"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "Well, I think browns are fine and small too.",
+   "i": 1,
+   "word": "browns"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "BLACK! Maybe brown.",
+   "i": 1,
+   "word": "brown"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "Well, I think waters are fine and pond too.",
+   "i": 0,
+   "word": "waters"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "DRINK! Maybe water.",
+   "i": 0,
+   "word": "water"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "Well, I think breads are fine and corn too.",
+   "i": 1,
+   "word": "breads"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "FOOD! Maybe bread.",
+   "i": 1,
+   "word": "bread"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "Well, I think fives are fine and four too.",
+   "i": 0,
+   "word": "fives"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "FIFTH! Maybe five.",
+   "i": 0,
+   "word": "five"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "Well, I think ones are fine and three too.",
+   "i": 1,
+   "word": "ones"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "TWO! Maybe one.",
+   "i": 1,
+   "word": "one"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "Well, I think alones are fine and stay too.",
+   "i": 0,
+   "word": "alones"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "AWAY! Maybe alone.",
+   "i": 0,
+   "word": "alone"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "Well, I think dangerouss are fine and together too.",
+   "i": 1,
+   "word": "dangerouss"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "CAREFUL! Maybe dangerous.",
+   "i": 1,
+   "word": "dangerous"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "Well, I think ponds are fine and water too.",
+   "i": 0,
+   "word": "ponds"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "LAKE! Maybe pond.",
+   "i": 0,
+   "word": "pond"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "Well, I think parks are fine and garden too.",
+   "i": 1,
+   "word": "parks"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "FIELD! Maybe park.",
+   "i": 1,
+   "word": "park"
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-pZw9veQ76fo",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "Well, I think ones are fine and ten too.",
+   "i": 0,
+   "word": "ones"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "TWO! Maybe one.",
+   "i": 0,
+   "word": "one"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "Well, I think lotss are fine and marching too.",
+   "i": 1,
+   "word": "lotss"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "SMALL! Maybe lots.",
+   "i": 1,
+   "word": "lots"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "Well, I think trees are fine and garden too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "HOME! Maybe tree.",
+   "i": 0,
+   "word": "tree"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "Well, I think marchs are fine and food too.",
+   "i": 1,
+   "word": "marchs"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "WALK! Maybe march.",
+   "i": 1,
+   "word": "march"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "Well, I think waters are fine and bring too.",
+   "i": 0,
+   "word": "waters"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "DRINK! Maybe water.",
+   "i": 0,
+   "word": "water"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "Well, I think rests are fine and carry too.",
+   "i": 1,
+   "word": "rests"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "SIT! Maybe rest.",
+   "i": 1,
+   "word": "rest"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "Well, I think leafs are fine and flower too.",
+   "i": 0,
+   "word": "leafs"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "UNDER! Maybe leaf.",
+   "i": 0,
+   "word": "leaf"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "Well, I think holes are fine and ground too.",
+   "i": 1,
+   "word": "holes"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "HOME! Maybe hole.",
+   "i": 1,
+   "word": "hole"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "Well, I think fours are fine and two too.",
+   "i": 0,
+   "word": "fours"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "SIX! Maybe four.",
+   "i": 0,
+   "word": "four"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "Well, I think ones are fine and count too.",
+   "i": 1,
+   "word": "ones"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "THREE! Maybe one.",
+   "i": 1,
+   "word": "one"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "Well, I think blacks are fine and colour too.",
+   "i": 0,
+   "word": "blacks"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "RED! Maybe black.",
+   "i": 0,
+   "word": "black"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "Well, I think bigs are fine and long too.",
+   "i": 1,
+   "word": "bigs"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "SMALL! Maybe big.",
+   "i": 1,
+   "word": "big"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "Well, I think sugars are fine and apple too.",
+   "i": 0,
+   "word": "sugars"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "SWEET! Maybe sugar.",
+   "i": 0,
+   "word": "sugar"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "Well, I think breads are fine and biscuit too.",
+   "i": 1,
+   "word": "breads"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "LEAF! Maybe bread.",
+   "i": 1,
+   "word": "bread"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "Well, I think antss are fine and look too.",
+   "i": 0,
+   "word": "antss"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "RUN! Maybe ants.",
+   "i": 0,
+   "word": "ants"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "Well, I think cats are fine and kind too.",
+   "i": 1,
+   "word": "cats"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "STOP! Maybe cat.",
+   "i": 1,
+   "word": "cat"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "Well, I think goodbyes are fine and night too.",
+   "i": 0,
+   "word": "goodbyes"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "BYE! Maybe goodbye.",
+   "i": 0,
+   "word": "goodbye"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "Well, I think thanks are fine and home too.",
+   "i": 1,
+   "word": "thanks"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "LOVE! Maybe thank.",
+   "i": 1,
+   "word": "thank"
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-2S__fbCGwOM",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "Well, I think walls are fine and pieces too.",
+   "i": 0,
+   "word": "walls"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "EGG! Maybe wall.",
+   "i": 0,
+   "word": "wall"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "Well, I think kings are fine and ground too.",
+   "i": 1,
+   "word": "kings"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "HORSE! Maybe king.",
+   "i": 1,
+   "word": "king"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "Well, I think sads are fine and crying too.",
+   "i": 0,
+   "word": "sads"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "HURT! Maybe sad.",
+   "i": 0,
+   "word": "sad"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "Well, I think fines are fine and happy too.",
+   "i": 1,
+   "word": "fines"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "OKAY! Maybe fine.",
+   "i": 1,
+   "word": "fine"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "Well, I think horsess are fine and strong too.",
+   "i": 0,
+   "word": "horsess"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "HORSE! Maybe horses.",
+   "i": 0,
+   "word": "horses"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "Well, I think mens are fine and tom too.",
+   "i": 1,
+   "word": "mens"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "PEOPLE! Maybe men.",
+   "i": 1,
+   "word": "men"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "Well, I think highs are fine and tall too.",
+   "i": 0,
+   "word": "highs"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "WALL! Maybe high.",
+   "i": 0,
+   "word": "high"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "Well, I think winds are fine and careless too.",
+   "i": 1,
+   "word": "winds"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "RAIN! Maybe wind.",
+   "i": 1,
+   "word": "wind"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "Well, I think yess are fine and lower too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "LOW! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "Well, I think okays are fine and keep too.",
+   "i": 1,
+   "word": "okays"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "LEAVE! Maybe okay.",
+   "i": 1,
+   "word": "okay"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "Well, I think goods are fine and smart too.",
+   "i": 0,
+   "word": "goods"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "GREAT! Maybe good.",
+   "i": 0,
+   "word": "good"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "Well, I think bads are fine and hard too.",
+   "i": 1,
+   "word": "bads"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "SILLY! Maybe bad.",
+   "i": 1,
+   "word": "bad"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "Well, I think doctors are fine and nurse too.",
+   "i": 0,
+   "word": "doctors"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "HELP! Maybe doctor.",
+   "i": 0,
+   "word": "doctor"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "Well, I think finds are fine and bring too.",
+   "i": 1,
+   "word": "finds"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "PIECES! Maybe find.",
+   "i": 1,
+   "word": "find"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "Well, I think crys are fine and fear too.",
+   "i": 0,
+   "word": "crys"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "AFRAID! Maybe cry.",
+   "i": 0,
+   "word": "cry"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "Well, I think helps are fine and sorry too.",
+   "i": 1,
+   "word": "helps"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "FRIEND! Maybe help.",
+   "i": 1,
+   "word": "help"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": 1,
+   "word": "sorry"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "Well, I think safes are fine and fall too.",
+   "i": 0,
+   "word": "safes"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "DANGEROUS! Maybe safe.",
+   "i": 0,
+   "word": "safe"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "Well, I think carefuls are fine and low too.",
+   "i": 1,
+   "word": "carefuls"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "OKAY! Maybe careful.",
+   "i": 1,
+   "word": "careful"
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-nrv495corBc",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "Well, I think rains are fine and puddle too.",
+   "i": 0,
+   "word": "rains"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "RAINY! Maybe rain.",
+   "i": 0,
+   "word": "rainy"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "Well, I think suns are fine and grey too.",
+   "i": 1,
+   "word": "suns"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "SUNNY! Maybe sun.",
+   "i": 1,
+   "word": "sunny"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "Well, I think draws are fine and read too.",
+   "i": 0,
+   "word": "draws"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "PICTURE! Maybe draw.",
+   "i": 0,
+   "word": "draw"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "Well, I think plays are fine and hide too.",
+   "i": 1,
+   "word": "plays"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "GAME! Maybe play.",
+   "i": 1,
+   "word": "play"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "Well, I think dinosaurs are fine and robot too.",
+   "i": 0,
+   "word": "dinosaurs"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "DINO! Maybe dinosaur.",
+   "i": 0,
+   "word": "dinosaur"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "Well, I think foods are fine and milk too.",
+   "i": 1,
+   "word": "foods"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "EAT! Maybe food.",
+   "i": 1,
+   "word": "food"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "Well, I think houses are fine and train too.",
+   "i": 0,
+   "word": "houses"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "BOAT! Maybe house.",
+   "i": 0,
+   "word": "house"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "Well, I think paints are fine and colour too.",
+   "i": 1,
+   "word": "paints"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "RED! Maybe paint.",
+   "i": 1,
+   "word": "paint"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "Well, I think apples are fine and healthy too.",
+   "i": 0,
+   "word": "apples"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "BANANA! Maybe apple.",
+   "i": 0,
+   "word": "apple"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "Well, I think cakes are fine and bread too.",
+   "i": 1,
+   "word": "cakes"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "COOKIE! Maybe cake.",
+   "i": 1,
+   "word": "cake"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "Well, I think yess are fine and fun too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "SING! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "Well, I think nopes are fine and listen too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "SHY! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "Well, I think reds are fine and pink too.",
+   "i": 0,
+   "word": "reds"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "BLUE! Maybe red.",
+   "i": 0,
+   "word": "red"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "Well, I think prettys are fine and happy too.",
+   "i": 1,
+   "word": "prettys"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "BEAUTIFUL! Maybe pretty.",
+   "i": 1,
+   "word": "pretty"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "Well, I think bootss are fine and wellies too.",
+   "i": 0,
+   "word": "bootss"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "BOOT! Maybe boots.",
+   "i": 0,
+   "word": "boots"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "Well, I think coats are fine and dress too.",
+   "i": 1,
+   "word": "coats"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "JACKET! Maybe coat.",
+   "i": 1,
+   "word": "coat"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "Well, I think yess are fine and play too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "JUMP! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "Well, I think nopes are fine and careful too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "STOP! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-3r_09QTqBaA",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "Well, I think sunnys are fine and yellow too.",
+   "i": 0,
+   "word": "sunnys"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "SUN! Maybe sunny.",
+   "i": 0,
+   "word": "sunny"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "Well, I think clouds are fine and rainy too.",
+   "i": 1,
+   "word": "clouds"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "RAIN! Maybe cloud.",
+   "i": 1,
+   "word": "cloud"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "Well, I think plays are fine and ball too.",
+   "i": 0,
+   "word": "plays"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "PARK! Maybe play.",
+   "i": 0,
+   "word": "play"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "Well, I think schools are fine and study too.",
+   "i": 1,
+   "word": "schools"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "READ! Maybe school.",
+   "i": 1,
+   "word": "school"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "Well, I think hats are fine and sandals too.",
+   "i": 0,
+   "word": "hats"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "SHIRT! Maybe hat.",
+   "i": 0,
+   "word": "hat"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "Well, I think blues are fine and pink too.",
+   "i": 1,
+   "word": "blues"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "RED! Maybe blue.",
+   "i": 1,
+   "word": "blue"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "Well, I think yess are fine and tulip too.",
+   "i": 0,
+   "word": "yess"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "LIKE! Maybe yes.",
+   "i": 0,
+   "word": "yes"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "Well, I think nopes are fine and allergy too.",
+   "i": 1,
+   "word": "nopes"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "DISLIKE! Maybe nope.",
+   "i": 1,
+   "word": "nope"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "Well, I think birds are fine and kite too.",
+   "i": 0,
+   "word": "birds"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "CLOUD! Maybe bird.",
+   "i": 0,
+   "word": "bird"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "Well, I think blues are fine and orange too.",
+   "i": 1,
+   "word": "blues"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "WHITE! Maybe blue.",
+   "i": 1,
+   "word": "blue"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "Well, I think comes are fine and hello too.",
+   "i": 0,
+   "word": "comes"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "BACK! Maybe come.",
+   "i": 0,
+   "word": "come"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "Well, I think suns are fine and yellow too.",
+   "i": 1,
+   "word": "suns"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "MISTER! Maybe sun.",
+   "i": 1,
+   "word": "sun"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "Well, I think waters are fine and glass too.",
+   "i": 0,
+   "word": "waters"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "DRINK! Maybe water.",
+   "i": 0,
+   "word": "water"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "Well, I think ices are fine and vanilla too.",
+   "i": 1,
+   "word": "ices"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "CREAM! Maybe ice.",
+   "i": 1,
+   "word": "ice"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "Well, I think rices are fine and pasta too.",
+   "i": 0,
+   "word": "rices"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "SOUP! Maybe rice.",
+   "i": 0,
+   "word": "rice"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "Well, I think apples are fine and fruit too.",
+   "i": 1,
+   "word": "apples"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "BANANA! Maybe apple.",
+   "i": 1,
+   "word": "apple"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "Well, I think likes are fine and dance too.",
+   "i": 0,
+   "word": "likes"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "LOVE! Maybe like.",
+   "i": 0,
+   "word": "like"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "Well, I think shines are fine and happy too.",
+   "i": 1,
+   "word": "shines"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "BRIGHT! Maybe shine.",
+   "i": 1,
+   "word": "shine"
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-reH1TLG-FUY",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "Well, I think spells are fine and bingo too.",
+   "i": 0,
+   "word": "spells"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "LETTER! Maybe spell.",
+   "i": 0,
+   "word": "spell"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "Well, I think dogs are fine and pet too.",
+   "i": 1,
+   "word": "dogs"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "PUPPY! Maybe dog.",
+   "i": 1,
+   "word": "dog"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "Well, I think dogs are fine and hamster too.",
+   "i": 0,
+   "word": "dogs"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "PUPPY! Maybe dog.",
+   "i": 0,
+   "word": "dog"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "Well, I think names are fine and none too.",
+   "i": 1,
+   "word": "names"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "CALLED! Maybe name.",
+   "i": 1,
+   "word": "name"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "Well, I think browns are fine and orange too.",
+   "i": 0,
+   "word": "browns"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "BLACK! Maybe brown.",
+   "i": 0,
+   "word": "brown"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "Well, I think reds are fine and colour too.",
+   "i": 1,
+   "word": "reds"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "GREEN! Maybe red.",
+   "i": 1,
+   "word": "red"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "Well, I think runs are fine and sleep too.",
+   "i": 0,
+   "word": "runs"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "JUMP! Maybe run.",
+   "i": 0,
+   "word": "run"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "Well, I think fasts are fine and nothing too.",
+   "i": 1,
+   "word": "fasts"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "SLOW! Maybe fast.",
+   "i": 1,
+   "word": "fast"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "Well, I think bigs are fine and fat too.",
+   "i": 0,
+   "word": "bigs"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "LARGE! Maybe big.",
+   "i": 0,
+   "word": "big"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "Well, I think smalls are fine and thin too.",
+   "i": 1,
+   "word": "smalls"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "LITTLE! Maybe small.",
+   "i": 1,
+   "word": "small"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "Well, I think meats are fine and carrot too.",
+   "i": 0,
+   "word": "meats"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "FISH! Maybe meat.",
+   "i": 0,
+   "word": "meat"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "Well, I think likess are fine and milk too.",
+   "i": 1,
+   "word": "likess"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "LOVES! Maybe likes.",
+   "i": 1,
+   "word": "likes"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "Well, I think spells are fine and called too.",
+   "i": 0,
+   "word": "spells"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "LETTER! Maybe spell.",
+   "i": 0,
+   "word": "spell"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "Well, I think pets are fine and fish too.",
+   "i": 1,
+   "word": "pets"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "DOG! Maybe pet.",
+   "i": 1,
+   "word": "pet"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "Well, I think balls are fine and bounce too.",
+   "i": 0,
+   "word": "balls"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "ROUND! Maybe ball.",
+   "i": 0,
+   "word": "ball"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "Well, I think sticks are fine and throw too.",
+   "i": 1,
+   "word": "sticks"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "WOOD! Maybe stick.",
+   "i": 1,
+   "word": "stick"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "Well, I think trees are fine and sun too.",
+   "i": 0,
+   "word": "trees"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "FLOWER! Maybe tree.",
+   "i": 0,
+   "word": "tree"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "Well, I think greens are fine and bench too.",
+   "i": 1,
+   "word": "greens"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "RED! Maybe green.",
+   "i": 1,
+   "word": "green"
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-B84AbYTRjT0",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "Well, I think goods are fine and nice too.",
+   "i": 0,
+   "word": "goods"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "GREAT! Maybe good.",
+   "i": 0,
+   "word": "good"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "Well, I think bads are fine and problem too.",
+   "i": 1,
+   "word": "bads"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "HARD! Maybe bad.",
+   "i": 1,
+   "word": "bad"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 0,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "Well, I think combs are fine and spray too.",
+   "i": 0,
+   "word": "combs"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "BRUSH! Maybe comb.",
+   "i": 0,
+   "word": "comb"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "Well, I think wets are fine and gentle too.",
+   "i": 1,
+   "word": "wets"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "SHOWER! Maybe wet.",
+   "i": 1,
+   "word": "wet"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 1,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "Well, I think slows are fine and softly too.",
+   "i": 0,
+   "word": "slows"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "GENTLE! Maybe slow.",
+   "i": 0,
+   "word": "slow"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "Well, I think talks are fine and cartoon too.",
+   "i": 1,
+   "word": "talks"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "SING! Maybe talk.",
+   "i": 1,
+   "word": "talk"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 2,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "Well, I think plaits are fine and two too.",
+   "i": 0,
+   "word": "plaits"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "PLAITS! Maybe plait.",
+   "i": 0,
+   "word": "plaits"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "Well, I think puffs are fine and brave too.",
+   "i": 1,
+   "word": "puffs"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "PUFFS! Maybe puff.",
+   "i": 1,
+   "word": "puffs"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 3,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "Well, I think videos are fine and free too.",
+   "i": 0,
+   "word": "videos"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "INTERNET! Maybe video.",
+   "i": 0,
+   "word": "video"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "Well, I think hairdressers are fine and person too.",
+   "i": 1,
+   "word": "hairdressers"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "PROFESSIONAL! Maybe hairdresser.",
+   "i": 1,
+   "word": "hairdresser"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 4,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "Well, I think firsts are fine and before too.",
+   "i": 0,
+   "word": "firsts"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "BREAKFAST! Maybe first.",
+   "i": 0,
+   "word": "first"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "Well, I think times are fine and clock too.",
+   "i": 1,
+   "word": "times"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "MINUTES! Maybe time.",
+   "i": 1,
+   "word": "time"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 5,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "Well, I think practises are fine and promise too.",
+   "i": 0,
+   "word": "practises"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "TRY! Maybe practise.",
+   "i": 0,
+   "word": "practise"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "Well, I think similars are fine and choose too.",
+   "i": 1,
+   "word": "similars"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "DIFFERENT! Maybe similar.",
+   "i": 1,
+   "word": "similar"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 6,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "Well, I think fixs are fine and headband too.",
+   "i": 0,
+   "word": "fixs"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "REDO! Maybe fix.",
+   "i": 0,
+   "word": "fix"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "Well, I think calms are fine and together too.",
+   "i": 1,
+   "word": "calms"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "BREATHE! Maybe calm.",
+   "i": 1,
+   "word": "calm"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 7,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "Well, I think everys are fine and twice too.",
+   "i": 0,
+   "word": "everys"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "DAY! Maybe every.",
+   "i": 0,
+   "word": "every"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "Well, I think sundays are fine and before too.",
+   "i": 1,
+   "word": "sundays"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "SATURDAY! Maybe sunday.",
+   "i": 1,
+   "word": "sunday"
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "I do not know what to say here, sorry.",
+   "i": -1,
+   "word": ""
+  },
+  {
+   "mission": "ext-kNw8V_Fkw28",
+   "turn": 8,
+   "text": "Мне кажется, что это интересно.",
+   "i": -1,
+   "word": ""
+  }
+ ]
+}

@@ -18,8 +18,13 @@
   --asst-bubble: #f3effc;
   --asst-line: #ebe7f3;
   --asst-err: #d93a4a;
+  /* Цвет помощника — фон его аватарки (public/tutor/tutor-<имя>.png): у Луны оранжевый,
+     у Айзере синий. Им залита плашка «Слушаю вас» и ореол кнопки (CmdBadge). Луна — это
+     ровно цвет макета «При вызове Луны», Айзере повторяет ту же анимацию в своём. */
+  --asst-persona: #ff7301;
   font-family: inherit;
 }
+.asst[data-persona="aizere"] { --asst-persona: #2f6fd6; }
 
 /* Размер и место (16.10.2026, «не мешать при работе с платформой»): окно по
    умолчанию компактное, «телефон» — по кнопке в шапке. Здесь — место до
@@ -186,6 +191,101 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .asst__hint { animation: none; }
+}
+
+/* Плашка голосовой команды и ореол кнопки (AssistantWidget: CmdBadge, useBadge) — макет
+   Figma «Помощник» → «При вызове Луны» (22.10.2026). Позвали по имени — плашка цвета
+   помощника выезжает из-под кнопки вверх, а рамка растёт до ширины надписи: переход
+   макета smart animate 0.3 с «ease out back». Уходит обратно в кнопку за 0.2 с «ease in
+   back» (кривые — пресеты Figma). В разметке плашка ДО кнопки, на одном слое с ней, —
+   поэтому видно, как она выходит из-за кнопки. Место — над кнопкой по её внешнему краю;
+   на компьютере top и сторону ставит виджет (is-free, is-left), у кнопки в верхней
+   половине экрана плашка под ней (is-below) и выезжает вниз. */
+.asst__badge {
+  /* Свёрнутая плашка макета — по центру кнопки: полкнопки + зазор + полплашки. */
+  --asst-badge-dy: calc(56px / 2 + 20px + 32px / 2);
+  position: fixed;
+  right: 24px;
+  bottom: calc(24px + 56px + 20px);
+  z-index: 35;
+  width: var(--asst-badge-w, auto);
+  max-width: calc(100vw - 32px);
+  height: 32px;
+  border-radius: 999px;
+  background: var(--asst-persona);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  pointer-events: none;
+  animation: asst-badge-in 0.3s cubic-bezier(0.45, 1.45, 0.8, 1);
+  /* Смена надписи («Слушаю вас» → «Думаю…») — тем же ростом рамки. */
+  transition: width 0.3s cubic-bezier(0.45, 1.45, 0.8, 1);
+}
+.asst__badge.is-free { bottom: auto; }
+.asst__badge.is-below { --asst-badge-dy: calc(-1 * (56px / 2 + 20px + 32px / 2)); }
+.asst__badge-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 8px 16px 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+  animation: asst-badge-fade-in 0.3s cubic-bezier(0.45, 1.45, 0.8, 1);
+}
+.asst__badge-in.is-plain { padding-left: 16px; }
+.asst__badge-in svg { flex: none; }
+.asst__badge .asst__dots i { background: #fff; }
+.asst__badge.is-out { animation: asst-badge-out 0.2s cubic-bezier(0.3, -0.05, 0.7, -0.5) forwards; }
+.asst__badge.is-out .asst__badge-in { animation: asst-badge-fade-out 0.2s cubic-bezier(0.3, -0.05, 0.7, -0.5) forwards; }
+/* Свёрнутая плашка макета — 34 × 32 под кнопкой, у её внешнего края. */
+@keyframes asst-badge-in { from { width: 34px; transform: translateY(var(--asst-badge-dy)); } }
+@keyframes asst-badge-out { to { width: 34px; transform: translateY(var(--asst-badge-dy)); } }
+@keyframes asst-badge-fade-in { from { opacity: 0; } }
+@keyframes asst-badge-fade-out { to { opacity: 0; } }
+
+/* Ореол «слушаю»: петля макета (3.5 с) — круг выходит из-под аватарки до 112/72 кнопки,
+   0.5 с кривой макета (0, −0.008, 0, 0.986), гаснет за 0.5 с (dissolve) и 2 с ждёт.
+   Тенью, а не заливкой: внешняя тень не ложится под саму кнопку и не красит её кольцо. */
+.asst__halo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: asst-halo 3.5s infinite;
+  transition: opacity 0.2s linear;
+}
+.asst__halo.is-off { opacity: 0; }
+/* Свой редкий ореол кнопки на это время молчит — светится один. */
+.asst__launcher.is-wake::before { animation: none; }
+@keyframes asst-halo {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--asst-persona) 50%, transparent);
+    animation-timing-function: cubic-bezier(0, -0.008, 0, 0.986);
+  }
+  14.286% {
+    box-shadow: 0 0 0 15.5px color-mix(in srgb, var(--asst-persona) 12%, transparent);
+    animation-timing-function: linear;
+  }
+  28.571%, 100% { box-shadow: 0 0 0 15.5px color-mix(in srgb, var(--asst-persona) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asst__badge,
+  .asst__badge-in,
+  .asst__badge.is-out,
+  .asst__badge.is-out .asst__badge-in { animation: none; transition: none; }
+  .asst__badge.is-out { visibility: hidden; }
+  /* Ореол стоит, как на статичном кадре макета: кольцо 12 %. */
+  .asst__halo {
+    animation: none;
+    transition: none;
+    box-shadow: 0 0 0 15.5px color-mix(in srgb, var(--asst-persona) 12%, transparent);
+  }
 }
 
 .asst__head {
@@ -410,6 +510,10 @@
     right: calc(16px + 56px + 12px);
     bottom: calc(var(--safe-bottom, 56px) + 72px + 28px);
     max-width: min(248px, calc(100vw - 100px));
+  }
+  .asst__badge {
+    right: 16px;
+    bottom: calc(var(--safe-bottom, 56px) + 72px + 56px + 20px);
   }
   .asst__panel,
   .asst__panel--phone {

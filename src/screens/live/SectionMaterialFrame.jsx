@@ -414,6 +414,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   useEffect(() => {
     function handleMessage(e) {
+      // Верим только окну своей рамки урока — той, что рендерит бэкенд с мостом. postMessage в наше
+      // окно может прислать кто угодно: в урок вложены чужие виджеты (Wordwall), и их код достаёт до
+      // top. Принятое отсюда уходит учителю зеркалом, двигает «Темы» и стадию класса, а у
+      // преподавателя — ещё и показ всему классу. Рамку сверяем в момент сообщения: после смены
+      // документа страница прошлого уже не своя. У простой рамки (видео, PDF, чужая ссылка) ref
+      // нет намеренно: ни моста, ни скрипта стадий в ней нет, и говорить ей здесь нечего.
+      const frameWindow = iframeRef.current?.contentWindow
+      // Рамки нет или она отцеплена (contentWindow === null) — не верим никому: у сообщения без
+      // источника source тоже null, и сравнение «null с null» пропустило бы его.
+      if (!frameWindow || e.source !== frameWindow) return
       const data = e.data
       // Стадия — свой источник и обеим ролям: ученику она двигает «Темы»,
       // преподавателю (если он ведёт урок отсюда) — то же самое.
@@ -511,7 +521,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           src={material.fileUrl}
           title={material.title}
           className="lw-material-iframe"
-          allow="autoplay"
+          // Права — как у рамки урока ниже, там же и объяснено, зачем.
+          allow="autoplay; fullscreen"
           onLoad={() => scheduleCover(setCover, coverTimerRef, documentKeyRef.current, null)}
         />
         {loader}
@@ -534,14 +545,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           сюда реплеем — а синтетический клик жестом пользователя не считается, и
           звук у ученика молчал, пока он сам не ткнёт в материал. Атрибут
           делегирует разрешение родителя внутрь, и ученику не нужно нажимать
-          ничего. */}
+          ничего. fullscreen — так же, для встроенных в урок активностей вроде
+          Wordwall: их кнопка «на весь экран» работает, только если право выдано
+          по всей цепочке рамок сверху вниз. */}
       <iframe
         ref={iframeRef}
         key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"
-        allow="autoplay"
+        allow="autoplay; fullscreen"
         onLoad={handleLoad}
       />
       {loader}

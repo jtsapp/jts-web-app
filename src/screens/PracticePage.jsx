@@ -873,6 +873,48 @@ export default function PracticePage({
           />
         )
 
+      case 'prepositions':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-prepositions"
+            variant="prepositions"
+            wide
+            title={t('practice.prepositions.heading')}
+            desc={t('practice.prepositions.desc')}
+            cta={t('practice.prepositions.cta')}
+            onStart={() => onNav?.('prepositions')}
+          />
+        )
+
+      case 'justListen':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-listen"
+            variant="listen"
+            wide
+            title={t('practice.listen.heading')}
+            desc={t('practice.listen.desc')}
+            cta={t('practice.listen.cta')}
+            onStart={() => onNav?.('listen')}
+          />
+        )
+
+      case 'cartoons':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-cartoons"
+            variant="cartoons"
+            wide
+            title={t('practice.cartoons.heading')}
+            desc={t('practice.cartoons.desc')}
+            cta={t('practice.cartoons.cta')}
+            onStart={() => onNav?.('cartoons')}
+          />
+        )
+
       case 'speakspin':
         return (
           <Banner

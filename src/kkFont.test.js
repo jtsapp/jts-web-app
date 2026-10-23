@@ -16,6 +16,7 @@ const KK = fs.readFileSync(path.join(SRC, 'kk-font.css'), 'utf8')
 const COVERED = {
   'styles.css | body': "html[data-ui-lang='kk'] body",
   'styles.css | .screen': "html[data-ui-lang='kk'] .screen",
+  'mobile/registration.css | .rg': "html[data-ui-lang='kk'] .rg",
   'mobile/base.css | body': "html[data-ui-lang='kk'] body",
   'mobile/home.css | .hm': "html[data-ui-lang='kk'] .hm",
   'trial.css | .trial': "html[data-ui-lang='kk'] .trial",
@@ -24,6 +25,12 @@ const COVERED = {
   'landing.css | .ld-footer': ".ld[lang='kk'] .ld-footer",
   'sat.css | .st-ref__f': "html[data-ui-lang='kk'] .st-ref__f",
   'sat.css | .st-wb__input': "html[data-ui-lang='kk'] .st-wb__input",
+  // порталы первого входа (макет «Первый заход» / «Тест уровня», 21.10.2026)
+  'tutor.css | .t-tour--coach': "html[data-ui-lang='kk'] .t-tour--coach",
+  'mobile/tutor.css | .t-tour--coach': "html[data-ui-lang='kk'] .t-tour--coach",
+  'demo.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
+  'mobile/home.css | .hm-temper': "html[data-ui-lang='kk'] .hm-temper",
+  'placement.css | .pl-speak': "html[data-ui-lang='kk'] .pl-speak",
 }
 
 function cssFiles(dir) {
@@ -71,6 +78,10 @@ const ENGINES = {
   numbers: (css) => expect(css).toContain(`.nw [lang="kk"]{font-family:'Inter'`),
   // Прототип и так на Inter.
   speakspin: (css) => expect(css).toMatch(/font-family:Inter\b/),
+  // Курс английский; казахский — только перевод с lang="kk" (как у «Чисел»).
+  prepositions: (css) => expect(css).toContain(`.pw [lang="kk"]{font-family:'Inter'`),
+  // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
+  cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
 }
 
 describe('казахский интерфейс на Inter', () => {

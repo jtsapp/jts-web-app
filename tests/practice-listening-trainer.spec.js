@@ -3,7 +3,8 @@ import path from 'node:path'
 
 // a real (small) mp3 clip to serve for any audio request so load()/currentSrc work.
 // Playwright runs from the project root, so resolve from cwd.
-const SAMPLE_MP3 = path.resolve(process.cwd(), 'public/practice/listening/audio/a2/01-15__20p25-21p64.mp3')
+// Копия клипа из public/practice/listening — статику раздела удалят после переноса в админку.
+const SAMPLE_MP3 = path.resolve(process.cwd(), 'tests/fixtures/listening-sample.mp3')
 
 // E2E for the native Аудирование trainer: routing from the banner, the intro
 // synced to the user's level, and a full answer→feedback→coin cycle with the
@@ -19,13 +20,18 @@ const CHOICE = {
   explanation: '«I’m a student in <b>Shanghai</b>.»',
 }
 
-async function boot(page, { level = 'A1', content = [CHOICE] } = {}) {
+async function boot(page, { level = 'A1', content = [CHOICE], remote = null } = {}) {
   await page.route('**/api/auth/me', (r) =>
     r.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ user: { userId: 1, name: 'Тест', phone: '7', role: 'USER', languageLevel: level } }),
     }),
+  )
+  // Бэкенд стенда мог уже получить пакет «Аудирования» — тест от этого не зависит:
+  // по умолчанию «пакет не залит», и экран идёт на подменённую ниже статику.
+  await page.route('**/practice-content/listening/**', (r) =>
+    remote ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(remote) }) : r.fulfill({ status: 404, body: '' }),
   )
   await page.route('**/practice/listening/content/*.json', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(content) }),
@@ -36,6 +42,16 @@ async function boot(page, { level = 'A1', content = [CHOICE] } = {}) {
 
 test.describe('Практика — тренажёр «Аудирование»', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'десктопный дизайн')
+
+  test('задания с бэкенда: запись играет по полному URL хранилища', async ({ page }) => {
+    const url = 'https://files.test/development/practice/listening/aaaaaaaaaaaaaaaaaaaaaaaa.mp3'
+    await boot(page, { remote: [{ ...CHOICE, audio: url }] })
+    await page.route(url, (r) => r.fulfill({ path: SAMPLE_MP3, contentType: 'audio/mpeg' }))
+    await page.goto('/?screen=listening')
+    await page.getByRole('button', { name: 'Начать тренировку' }).click()
+    await expect(page.locator('.lt')).toHaveAttribute('data-source', 'api')
+    await expect.poll(async () => page.locator('.lt-audio audio').evaluate((el) => el.currentSrc)).toBe(url)
+  })
 
   test('кнопка баннера открывает интро тренажёра', async ({ page }) => {
     await boot(page)

@@ -65,6 +65,16 @@ test.describe('practiceSyncCore — сериализация и применен
     expect(events).toEqual(['numbers-progress'])
   })
 
+  test('listen: объект прогресса уходит и приходит целиком', () => {
+    const s = { best: { 'A1-L3-0': { ok: 5, n: 6, coins: 110 } } }
+    expect(serializeForPush('listen', s)).toBe(s)
+    const writes = {}
+    const events = []
+    applyHydratedState({ listen: s }, { setItem: (k, v) => (writes[k] = v), dispatch: (e) => events.push(e) })
+    expect(JSON.parse(writes.jts_listen_done)).toEqual(s)
+    expect(events).toEqual(['listen-progress'])
+  })
+
   test('applyHydratedState: мусорный вход игнорируется', () => {
     let called = false
     applyHydratedState(null, { setItem: () => (called = true), dispatch: () => (called = true) })

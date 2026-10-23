@@ -33,6 +33,7 @@ export function useWordBankRoot(rootRef, html, prefix, liveRef) {
       prefix,
       clearMissing: false,
       checked: !!liveRef.current.checked,
+      reveal: !!liveRef.current.revealChecked,
     })
     return () => {
       unbindRef.current?.()
@@ -48,6 +49,7 @@ export function useWordBankRoot(rootRef, html, prefix, liveRef) {
       prefix,
       clearMissing: false,
       checked: !!liveRef.current.checked,
+      reveal: !!liveRef.current.revealChecked,
     })
   })
 }

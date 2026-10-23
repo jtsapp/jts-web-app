@@ -28,7 +28,7 @@ test('регистрация, пришедшая с лендинга, уходи
   // Бэкенд замокан: проверяем, что приложение донесло метку до запроса
   // регистрации, а не то, что с ней сделает amoCRM.
   let initiate = null
-  await page.route('**/registration/initiate', (r) => {
+  await page.route(/\/registration\/initiate/, (r) => {
     initiate = r.request().postDataJSON()
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"messages":["OTP sent"]}' })
   })
@@ -38,20 +38,19 @@ test('регистрация, пришедшая с лендинга, уходи
   await page.goto('/?screen=chat&from=landing&utm_source=instagram&utm_campaign=autumn')
 
   // Метка запомнена, а из адреса убрана — поделись им человек, она метила бы других.
-  await expect(page.locator('.chat__input input')).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('.rg-lang').first()).toBeVisible({ timeout: 20000 })
   expect(page.url()).not.toContain('from=')
 
-  await page.locator('.chat__input input').fill('Алия')
-  await page.locator('.chat__input input').press('Enter')
-  await page.locator('.auth-primary').click({ timeout: 15_000 })
-  await page.locator('.phone-field input').fill('7471634118')
-  await page.locator('.form-primary').click()
-  await page.locator('.email-field').fill('aliya@example.com')
-  await page.locator('.form-primary').click()
+  // Регистрация по макету «Регистрация»: язык → имя и дата → почта и телефон.
+  await page.locator('.rg-btn').click()
+  await page.locator('#rg-name').fill('Алия')
   await page.locator('.dob-field__part--day').fill('15')
   await page.locator('.dob-field__part--month').fill('03')
   await page.locator('.dob-field__part--year').fill('2000')
-  await page.locator('.form-primary').click()
+  await page.locator('.rg-btn').click()
+  await page.locator('#rg-email').fill('aliya@example.com')
+  await page.locator('#rg-phone').fill('7471634118')
+  await page.locator('.rg-btn').first().click()
 
   await expect.poll(() => initiate).not.toBeNull()
   expect(initiate).toMatchObject({ from: 'landing', utmSource: 'instagram', utmCampaign: 'autumn' })
@@ -95,7 +94,7 @@ test('вопросы: открыт один, второй закрывает п�
   await expect(items.nth(0)).not.toHaveAttribute('open', '')
 })
 
-test('форма: маска, ошибки, заявка — и сразу шаг почты в регистрации', async ({ page }) => {
+test('форма: маска, ошибки, заявка — и регистрация с уже данными именем и номером', async ({ page }) => {
   const form = page.locator('.ld-form')
   await form.scrollIntoViewIfNeeded()
 
@@ -114,10 +113,16 @@ test('форма: маска, ошибки, заявка — и сразу ша�
   await form.getByRole('button', { name: 'Отправить заявку' }).click()
   expect((await sent).postDataJSON()).toMatchObject({ name: 'Алия', phone: '7471634118', goal: 'IELTS', lang: 'ru', website: '' })
 
-  // Имя и номер уже даны — регистрация открывается на шаге почты, а код
+  // Имя и номер уже даны — регистрация открывается на «Давайте знакомиться» с
+  // готовым именем (остаётся дата), а на шаге почты номер уже вписан. Код
   // передачи из адреса уже убран.
-  await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('#rg-name')).toHaveValue('Алия', { timeout: 20000 })
   expect(page.url()).not.toContain('handoff')
+  await page.locator('.dob-field__part--day').fill('15')
+  await page.locator('.dob-field__part--month').fill('03')
+  await page.locator('.dob-field__part--year').fill('2000')
+  await page.locator('.rg-btn').click()
+  await expect(page.locator('#rg-phone')).toHaveValue('(747) 163-41-18')
   // Заявка в CRM могла не уйти — тогда тег «Лендинг» принесёт сама регистрация.
   expect(page.url()).not.toContain('from=')
   const attribution = await page.evaluate(() => JSON.parse(localStorage.getItem('jts_attribution')))
@@ -148,8 +153,8 @@ test('ҚАЗ/РУС не теряют метки рекламы', async ({ page 
 
 test('битый код передачи — регистрация с начала', async ({ page }) => {
   await page.goto('/?screen=reg-email&handoff=broken')
-  await expect(page.locator('.reg-header')).toBeVisible({ timeout: 20000 })
-  await expect(page.locator('input[type="email"]')).toHaveCount(0)
+  await expect(page.locator('.rg-lang').first()).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('#rg-email')).toHaveCount(0)
   expect(page.url()).not.toContain('handoff')
 })
 

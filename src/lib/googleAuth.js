@@ -32,7 +32,9 @@ function loadGis() {
 
 // Рисует официальную кнопку Google в container. onCredential получает id_token,
 // который бэкенд проверяет в POST /auth/google. lang — 'ru' | 'en' | 'kk'.
-export async function renderGoogleButton(container, onCredential, lang = 'ru') {
+// text — надпись GIS ('continue_with' | 'signin_with'), width — ширина в px
+// (у GIS потолок 400).
+export async function renderGoogleButton(container, onCredential, lang = 'ru', { text = 'continue_with', width = 220 } = {}) {
   if (!GOOGLE_CLIENT_ID || !container) return false
   const google = await loadGis()
   google.accounts.id.initialize({
@@ -46,10 +48,10 @@ export async function renderGoogleButton(container, onCredential, lang = 'ru') {
     type: 'standard',
     theme: 'outline',
     size: 'large',
-    text: 'continue_with',
+    text,
     shape: 'pill',
     locale: lang,
-    width: 220,
+    width,
   })
   return true
 }

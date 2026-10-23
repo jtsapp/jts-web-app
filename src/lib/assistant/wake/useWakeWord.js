@@ -25,6 +25,7 @@ import { installMicArbiter } from './micArbiter.js'
 import { wakeSet } from './matchWake.js'
 import { WAKE_MODELS } from './model.js'
 import { createWakeEar } from './wakeEar.js'
+import { wav16k } from './preroll.js'
 import { useWakeOn, writeWakeOn } from './wakeSetting.js'
 
 export const WAKE_COOLDOWN_MS = 5000
@@ -42,8 +43,8 @@ const useSupported = () => useSyncExternalStore(noop, isSupported, () => false)
 
 // e2e: настоящий Vosk в headless не гоняем (45 МБ модели и WASM на процессоре; его
 // проверяет tests/wake-lab.spec.js). Тест ставит window.__jtsFakeWakeEar до загрузки —
-// «ухо» становится заглушкой, а window.__jtsWake() изображает позывной. В прод-сборке
-// этой ветки нет.
+// «ухо» становится заглушкой, а window.__jtsWake(текст) изображает итог Vosk с позывным
+// («луна дальше» — с командой; без текста — одно имя). В прод-сборке этой ветки нет.
 function createFakeEar({ onWake, onState }) {
   const ear = {
     state: 'idle',
@@ -65,8 +66,8 @@ function createFakeEar({ onWake, onState }) {
     ear.state = s
     onState(s)
   }
-  window.__jtsWake = () => {
-    if (ear.state === 'listening') onWake()
+  window.__jtsWake = (text = 'луна') => {
+    if (ear.state === 'listening') onWake({ text, words: [], preroll: () => wav16k(new Float32Array(3200), 16000) })
   }
   return ear
 }
@@ -100,10 +101,13 @@ export function useWakeWord({ token, enabled, open, onWake, persona = 'luna' }) 
     earRef.current ??= earFactory()({
       modelUrl: WAKE_MODELS[wake.model],
       wake,
-      onWake: () => {
+      onWake: (detail) => {
         cooldownRef.current = Date.now() + WAKE_COOLDOWN_MS
         earRef.current?.stop()
-        onWakeRef.current?.()
+        // Окно может сократить глухоту: после быстрой команды ученик скажет следующую
+        // («Луна, дальше» … «Луна, дальше») раньше, чем через 5 с.
+        const r = onWakeRef.current?.(detail)
+        if (Number.isFinite(r?.cooldownMs)) cooldownRef.current = Date.now() + r.cooldownMs
       },
       onState: (state, error) => {
         setEar({ state, error: error || null })

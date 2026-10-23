@@ -32,6 +32,7 @@ test.describe('practiceContract — валидация и merge', () => {
       'verbs',
       'listenchoose',
       'numbers',
+      'listen',
       'vocabLearned',
       'vocabMisses',
     ])
@@ -45,6 +46,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(isValidModule('verbs')).toBe(true)
     expect(isValidModule('listenchoose')).toBe(true)
     expect(isValidModule('numbers')).toBe(true)
+    expect(isValidModule('listen')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
   })

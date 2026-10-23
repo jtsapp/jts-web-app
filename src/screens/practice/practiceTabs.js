@@ -27,6 +27,12 @@ export const SKILLS = [
       // «Числа» (13.10.2026) — в макете их нет; широкий баннер под «Словами в
       // картинках»: тоже игра на слух.
       { id: 'numbers' },
+      // Just to Listen (21.10.2026) — диктант слова и предложения; в макете
+      // его нет, широкий баннер после «Чисел»: тоже на слух.
+      { id: 'justListen', modules: ['listen'] },
+      // Cartoon World (22.10.2026) — мультфильмы с письменными миссиями; в макете его нет. Широкий баннер после
+      // Just to Listen: смотрят и слушают, миссия — продолжение просмотра.
+      { id: 'cartoons' },
       { id: 'shadowing', all: 'link' },
       { id: 'karaoke', all: 'pill', small: true },
       { id: 'memes', all: 'pill' },
@@ -49,6 +55,9 @@ export const SKILLS = [
     key: 'writing',
     sections: [
       { id: 'grammar', all: 'pill' },
+      // Prepositions World (22.10.2026) — курс предлогов; в макете его нет. Широкий баннер сразу после
+      // «Грамматики»: предлоги — грамматика.
+      { id: 'prepositions' },
       { id: 'writePair', modules: ['writing', 'verbs'] },
       { id: 'workbooks', all: 'pill' },
     ],

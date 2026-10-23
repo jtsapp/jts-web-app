@@ -252,16 +252,27 @@
     gap: 12px;
     opacity: 0.8;
   }
+  /* Разметка строки идёт в порядке десктопного макета (название, стрелка, процент, полоса — редизайн 21.10.2026),
+     а телефон держит свою строку «название · полоса · процент · стрелка» — поэтому места заданы именами. */
   .hm-skill {
     grid-template-columns: 92px minmax(0, 1fr) 44px 18px;
+    grid-template-areas: 'name bar pct trend';
     gap: 16px;
   }
   .hm-skill__name {
+    grid-area: name;
     font-size: 15px;
     line-height: 20px;
   }
+  .hm-skill__bar {
+    grid-area: bar;
+  }
   .hm-skill__pct {
+    grid-area: pct;
     text-align: left;
+  }
+  .hm-skill__trend {
+    grid-area: trend;
   }
   /* Стрелка в цвет полосы; у «рабочего» уровня (фиолетовая полоса) в макете
      стрелки нет вовсе. */
@@ -280,6 +291,16 @@
   .hm-tag {
     padding: 8px 14px 8px 12px;
     font-size: 13px;
+  }
+  /* подпись «Сильнее всего» над навыком, как на десктопе: в строку они слипались */
+  .hm-tag > span {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm-tag small {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
   }
 
   /* ---------- что сделать сегодня (в макете нет — в языке соседних карточек) ---------- */
@@ -539,5 +560,36 @@
   }
   .ge-plan__head h1 {
     font-size: 24px;
+  }
+}
+
+/* Окно «Жёсткий режим общения» на телефоне: кнопки столбиком, поля уже —
+   две пилюли по 313 px рядом не помещаются. */
+@media (max-width: 560px) {
+  .hm-temper {
+    font-family: 'PT Root UI', Manrope, system-ui, sans-serif;
+  }
+  .hm-temper__card {
+    gap: 20px;
+    padding: 20px;
+    border-radius: 28px;
+  }
+  .hm-temper__title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+  .hm-temper__text {
+    font-size: 15px;
+  }
+  .hm-temper__acts {
+    grid-template-columns: 1fr;
+  }
+  .hm-temper__keep,
+  .hm-temper__try {
+    min-height: 52px;
+    padding: 14px 20px;
+  }
+  .hm-temper__try {
+    order: -1;
   }
 }

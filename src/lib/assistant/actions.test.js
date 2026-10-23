@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { actionMarker, actionTail, createActionFilter, createServiceTailFilter, offeredTourTarget, preferTour } from './actions.js'
+import { actionMarker, actionTail, buttonOnScreen, createActionFilter, createServiceTailFilter, offeredTourTarget, preferTour } from './actions.js'
 import { REPORTED_STREAM_MARKER } from './report.js'
 
 // Прогнать текст через фильтр кусками заданного размера — как стрим модели.
@@ -153,5 +153,41 @@ describe('offeredTourTarget: тур, который Луна предлагал�
     expect(offeredTourTarget(msgs)).toBe('practice')
     expect(offeredTourTarget([{ role: 'assistant', content: 'Открыть?\n[[OPEN vocab]]' }, { role: 'user', content: 'да' }])).toBeNull()
     expect(offeredTourTarget([{ role: 'user', content: 'да' }])).toBeNull()
+  })
+})
+
+describe('метка нажатия', () => {
+  const screenText = 'Урок 3\n[кнопка #1 «Послушать»]\n[кнопка #2 «Проверить» (выбрано)]\n[кнопка «Выйти»]'
+  it('CLICK_NOW с номером из снимка — действие с подписью', () => {
+    const f = createActionFilter({ screenText })
+    expect(f.push('Нажимаю «Проверить».\n[[CLICK_NOW 2]]') + f.flush()).toBe('Нажимаю «Проверить».\n')
+    expect(f.action()).toEqual({ kind: 'click', target: '2', label: 'Проверить', now: true })
+  })
+  it('прощает «#», номер не из снимка — не действие', () => {
+    const a = createActionFilter({ screenText })
+    a.push('[[CLICK #1]]')
+    expect(a.action()).toEqual({ kind: 'click', target: '1', label: 'Послушать', now: false })
+    const b = createActionFilter({ screenText })
+    expect(b.push('[[CLICK_NOW 9]]') + b.flush()).toBe('')
+    expect(b.action()).toBe(null)
+  })
+  it('метка по кускам стрима', () => {
+    const f = createActionFilter({ screenText })
+    expect(['Жму.', '[[CLI', 'CK_NOW', ' 1]]'].map((c) => f.push(c)).join('') + f.flush()).toBe('Жму.')
+    expect(f.action()?.label).toBe('Послушать')
+  })
+  it('buttonOnScreen — только кнопки с номером', () => {
+    expect(buttonOnScreen(screenText, 1)).toBe('Послушать')
+    expect(buttonOnScreen(screenText, '2')).toBe('Проверить')
+    expect(buttonOnScreen(screenText, 3)).toBe(null)
+  })
+  it('хвост стрима и метка истории', () => {
+    const action = { kind: 'click', target: '2', label: 'Проверить', now: true }
+    expect(actionTail(action)).toBe('[[ASST_ACTION click 2 now «Проверить»]]')
+    expect(actionMarker(action)).toBe('[[CLICK_NOW 2]]')
+    const f = createServiceTailFilter()
+    f.push(`Нажимаю.${actionTail(action)}`)
+    f.flush()
+    expect(f.action).toEqual(action)
   })
 })

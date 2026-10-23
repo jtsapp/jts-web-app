@@ -39,6 +39,7 @@ import {
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
 import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@/lib/assistant/actions.js'
+import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
@@ -203,7 +204,8 @@ export async function POST(request) {
   // не показываем) и действие («открыть раздел», «тур» — actions.js). Метка
   // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
-  const actions = createActionFilter()
+  // Снимок запроса — чтобы сверить номер кнопки метки нажатия ([[CLICK_NOW 7]]).
+  const actions = createActionFilter({ screenText: parsed.screen.text })
   // Видимый ответ целиком — из него трекер берёт совет одной строкой (saveNote).
   let shown = ''
   const keep = (out) => {
@@ -227,9 +229,17 @@ export async function POST(request) {
           userText: parsed.messages[parsed.messages.length - 1].content,
           offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
         })
+  // Нажатие кнопки (clickPolicy.js): не в первой реплике — ученик ни о чём не просил, —
+  // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
+  // его же репликой: RULES это просят, но держит их модель через раз.
+  const lastText = parsed.messages[parsed.messages.length - 1].content
   const finalAction = () => {
     if (focusTask || wake) return null
-    return askedTour(actions.action()) || (opening ? inferAdviceOffer(shown, studentContext) : null)
+    const action = askedTour(actions.action())
+    if (action?.kind === 'click') {
+      return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
+    }
+    return action || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {
     const action = finalAction()

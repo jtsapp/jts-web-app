@@ -46,7 +46,7 @@ const CONTENT = [
 // /api/practice/state, — ровно как настоящий /api/practice/entitlement, который
 // считает его по practice-стейту в БД. Поэтому тест заодно ловит порядок: если
 // свежую проверку задать раньше, чем долетит отметка, лимит не сработает.
-function mockServer({ limit, completed = 0, entitlementFails = false }) {
+function mockServer({ limit, completed = 0, entitlementFails = false, remote = [] }) {
   const calls = []
   const base = completed
   const server = { completed }
@@ -54,6 +54,10 @@ function mockServer({ limit, completed = 0, entitlementFails = false }) {
     const method = init.method || 'GET'
     const path = String(url).split('?')[0]
     calls.push(`${method} ${path}`)
+    if (path.includes('/practice-content/listening/')) {
+      // Бэкенд стенда: по умолчанию пакет не залит (пустой список) — экран идёт на статику.
+      return { ok: true, json: async () => remote }
+    }
     if (path.startsWith('/practice/listening/content/')) {
       return { ok: true, json: async () => CONTENT }
     }
@@ -303,5 +307,27 @@ describe('normLevel — уровень вне A1–C1', () => {
     expect(normLevel('A0')).toBe('a1')
     expect(normLevel('B2')).toBe('b2')
     expect(normLevel(undefined)).toBe('a1')
+  })
+})
+
+describe('ListeningPage — источник заданий', () => {
+  it('бэкенд отдал задания — экран берёт их и играет запись по полному URL', async () => {
+    const remote = [{ ...CONTENT[0], audio: 'https://files.test/development/practice/listening/ab.mp3' }]
+    const fetchMock = mockServer({ limit: null, remote })
+    vi.stubGlobal('fetch', fetchMock)
+    renderPage()
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+    await screen.findByText('In Shanghai')
+    expect(document.querySelector('.lt').getAttribute('data-source')).toBe('api')
+    expect(document.querySelector('.lt-audio audio').getAttribute('src')).toBe(remote[0].audio)
+    expect(fetchMock.calls.some((c) => c.includes('/practice/listening/content/'))).toBe(false)
+  })
+
+  it('пакет не залит — статика, как раньше', async () => {
+    vi.stubGlobal('fetch', mockServer({ limit: null }))
+    renderPage()
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+    await screen.findByText('In Shanghai')
+    expect(document.querySelector('.lt').getAttribute('data-source')).toBe('static')
   })
 })

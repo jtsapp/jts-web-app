@@ -21,6 +21,31 @@ describe('build-placement-v16', () => {
     expect(out).toMatch(/\$\{evidence\(p,r\)\}\$\{[^}]*JTSHostSpeakingFeedback[^}]*\}\$\{goalsHTML\(g\)\}/)
   })
 
+  // Скин макета (21.10.2026): патчи вставляют куски шаблонов автора — опечатка в кавычках или ${} сломала бы весь тест
+  // у ученика белым экраном, поэтому скрипты страницы после патчей обязаны хотя бы компилироваться.
+  it('скрипты страницы после патчей скина компилируются', () => {
+    const vm = require('node:vm')
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    const scripts = [...out.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1])
+    expect(scripts.length).toBeGreaterThan(0)
+    for (const code of scripts) expect(() => new vm.Script(code)).not.toThrow()
+  })
+
+  it('скин: панель «Твои цели» рядом с анкетой, кнопки вопроса под карточкой, «назад» в шапке', () => {
+    const out = applyPatches(fs.readFileSync(SRC, 'utf8'))
+    expect(out.indexOf('function jtsGoalsPanel(')).toBeLessThan(out.indexOf('function renderGoals('))
+    expect(out).toContain('</div>${jtsGoalsPanel()}</section>')
+    expect(out).toContain('</article><div class="question-buttons">')
+    expect(out).toContain('data-jts-back')
+    expect(out).toContain('window.JTSHostExit')
+  })
+
+  it('skin.css подключается после стилей автора, но до правила казахского шрифта', () => {
+    const out = injectKkFont('<head><style>.welcome{}</style></head>')
+    expect(out.indexOf('href="skin.css"')).toBeGreaterThan(out.indexOf('.welcome{}'))
+    expect(out.indexOf('href="skin.css"')).toBeLessThan(out.indexOf('jts-host-kk-font'))
+  })
+
   it('патч, который не нашёлся, роняет сборку, а не уезжает молча', () => {
     expect(() => applyPatches('nothing here', [['let a=1;', 'let a=2;', 'x']])).toThrow(/найдено 0/)
     expect(() => applyPatches('a;a;', [['a;', 'b;', 'x']])).toThrow(/найдено 2/)

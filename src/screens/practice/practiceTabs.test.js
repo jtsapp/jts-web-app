@@ -14,7 +14,8 @@ describe('practiceTabs', () => {
 
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
     expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'arcade', 'tales'])
-    expect(skillModules('writing')).toEqual(['grammar', 'writing', 'verbs', 'workbooks'])
+    // Prepositions World (22.10.2026) — вторым в «Письме», сразу после «Грамматики».
+    expect(skillModules('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
     // SpeakSpin (02.10.2026) — шестой у «Говорения».
     expect(skillModules('speaking')).toHaveLength(6)
     expect(skillModules('speaking')).toContain('speakspin')
@@ -42,6 +43,21 @@ describe('practiceTabs', () => {
     expect(skillOfModule('arcade')).toBeTruthy()
     // Игр две, без уровней — полного списка у секции нет.
     expect(EXPANDABLE.has('arcade')).toBe(false)
+  })
+
+  it('Just to Listen — во вкладке «Аудирование», до сказок', () => {
+    const ids = SKILLS.find((s) => s.key === 'listening').sections.map((sec) => sec.id)
+    expect(ids).toContain('justListen')
+    expect(ids.indexOf('justListen')).toBeLessThan(ids.indexOf('tales'))
+    expect(skillOfModule('listen')).toBe('listening')
+  })
+
+  it('Prepositions World — во вкладке «Письмо» сразу после «Грамматики», широким баннером', () => {
+    const ids = SKILLS.find((s) => s.key === 'writing').sections.map((sec) => sec.id)
+    expect(ids.indexOf('prepositions')).toBe(ids.indexOf('grammar') + 1)
+    expect(skillOfModule('prepositions')).toBe('writing')
+    // Курс открывается своим экраном, «Посмотреть все» у него нет.
+    expect(EXPANDABLE.has('prepositions')).toBe(false)
   })
 
   it('развернуть можно только секции-списки', () => {

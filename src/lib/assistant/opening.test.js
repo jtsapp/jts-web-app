@@ -25,6 +25,8 @@ describe('что на экране: задание и проверено ли о
   it('поле ответа или кнопка «Проверить» — задание; пометки проверки — проверенное', () => {
     expect(openingFocus('He ___ football. [поле: ученик ввёл «play»] [кнопка «Проверить»]')).toEqual({ task: true, unchecked: true })
     expect(openingFocus('Complete. [пустое поле] [кнопка «Check»]')).toEqual({ task: true, unchecked: true })
+    // Снимок с номерами кнопок (snapshotWithRefs) — то же задание.
+    expect(openingFocus('I ___ rain. [кнопка #1 «like»] [кнопка #3 «Проверить»]')).toEqual({ task: true, unchecked: true })
     // Поле без кнопки проверки рядом (кнопка вне снимка или ещё не отрисована) — тоже задание.
     expect(openingFocus('Clare is reading. [поле: ученик ввёл «Is Cleare reading?»]')).toEqual({ task: true, unchecked: true })
     expect(openingFocus('Ответ: [пустое поле]')).toEqual({ task: true, unchecked: true })

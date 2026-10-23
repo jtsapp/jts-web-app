@@ -57,6 +57,27 @@ export const NUMBERS_KEY = 'jts_numbers_done'
 // Язык перевода объяснений «Чисел» (en | kk | ru) — настройка устройства, не
 // синкается, но чистится вместе с прогрессом.
 export const NUMBERS_LANG_KEY = 'jts_numbers_lang'
+// Лучшие результаты Just to Listen: { best: { <ключ прогона>: { ok, n, coins } } },
+// ключ — как в прототипе без префикса режима: A1-L3-0 (часть урока), A1-L4-R
+// (урок-повторение), A1-U2 (повторить юнит), A1-T (тест), business-T. Replace со
+// сведением merge (listenProgress.js): лучший результат с любого устройства не теряется.
+export const LISTEN_KEY = 'jts_listen_done'
+// «Свой список» преподавателя — текст поля этого устройства. Не синкается, но
+// чистится вместе с прогрессом: на общей машине список достался бы следующему.
+export const LISTEN_OWN_KEY = 'jts_listen_own'
+// Прогресс Prepositions World: { done: { <id урока>: 1 }, score: { "L:<урок>" | "C:<категория>" | "F":
+// { best: доля 0..1, stars: 0..3 } } } — форма и ключ прототипа (jts_prepositions_v4). Replace со сведением
+// merge (prepositions/progress.js): прочитанный урок не «распрочитывается».
+export const PREPOSITIONS_KEY = 'jts_prepositions_v4'
+// Язык перевода курса (en | kk | ru) — настройка устройства, не синкается, но чистится вместе с прогрессом.
+export const PREPOSITIONS_LANG_KEY = 'jts_prepositions_lang'
+// Прогресс Cartoon World: { missions: { <id видео>: { turns: [{ t, p, w }], done, at, u } } } — ответы ученика
+// по ходам, «пройдено» и время последней правки (u). Replace со сведением merge (cartoons/progress.js):
+// пройденная миссия не «распроходится», а ходы берутся у свежей копии.
+export const CARTOONS_KEY = 'jts_cartoons_v1'
+// Черновики ответов миссий { <id видео>: текст } — только устройство: недописанный текст на другое устройство не
+// везём, но чистим вместе с прогрессом (на общей машине это тексты ученика).
+export const CARTOONS_DRAFTS_KEY = 'jts_cartoons_drafts'
 // «Словарь»: «изучено» по набору { scopes: { <scopeId>: [ключ слова…] } } и
 // «хуже запомненные» { words: { <ключ>: { word, ru, kk, misses, at } } }. До
 // 06.10.2026 жили только в localStorage (jts.vocab.*.v1, блоб на всех учеников
@@ -77,6 +98,9 @@ export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
+export const LISTEN_PROGRESS_EVENT = 'listen-progress'
+export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
+export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

@@ -1,0 +1,300 @@
+/* Звонок урока (LessonVideo). Цвета — только токены экрана урока из
+   lessonWorkspace.css: в тёмной теме они переопределены и без отдельных правил. */
+
+.lw-video {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--lw-r-card);
+}
+
+/* Только в колонку: ниже 1420px блоки колонки идут в ряд с flex: 1 1 320px,
+   и flex: none отнял бы у карточки ширину (как у lw-meet в lessonWorkspace.css). */
+@media (min-width: 1421px) {
+  .lw-live-aside > .lw-video {
+    flex: none;
+  }
+}
+
+.lw-video__tiles {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* В боковой колонке сетка не растёт выше 40% окна: остальное место нужно чату. */
+.lw-video--grid .lw-video__tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Строка не ниже плитки: у плитки overflow: hidden, её минимальная высота для сетки — ноль,
+     и под потолком 40vh строки сжимались, а плитки наезжали друг на друга вместо прокрутки. */
+  grid-auto-rows: max-content;
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lw-video--duo .lw-video__tiles {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lw-video__tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-3);
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 150ms ease-out;
+}
+
+/* Чужое видео SDK рисует на холсте video-player-container под плитками (Chromium без
+   SharedArrayBuffer), поэтому у плитки с видео фона нет: сплошной фон закрывал картинку. */
+.lw-video__tile--video {
+  background: transparent;
+}
+
+.lw-video__tile--speaking {
+  box-shadow: 0 0 0 2px var(--lw-primary);
+}
+
+.lw-video__tile--skeleton {
+  background: var(--lw-track);
+}
+
+/* Своё окно в углу крупной плитки собеседника. */
+.lw-video__self {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 32%;
+  border-radius: var(--lw-r-inner);
+  box-shadow: 0 0 0 2px var(--lw-surface);
+}
+
+/* Подпись собеседника не заходит под своё окно: оно занимает 32% ширины справа внизу. */
+.lw-video--duo .lw-video__tile:not(.lw-video__self) > .lw-video__caption {
+  max-width: calc(68% - 20px);
+  overflow: hidden;
+}
+
+.lw-video__self.lw-video__tile--speaking {
+  box-shadow: 0 0 0 2px var(--lw-primary);
+}
+
+.lw-video__media {
+  position: absolute;
+  inset: 0;
+}
+
+.lw-video__media > *,
+.lw-video__media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lw-video__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lw-video__caption {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-surface);
+  color: var(--lw-ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lw-video__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+/* В узкой плитке первой сжимается роль, а не имя: «О… Преподаватель» не говорит, кто это. */
+.lw-video__role {
+  flex: 0 3 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lw-primary-ink);
+}
+
+.lw-video__muted {
+  display: flex;
+  flex: none;
+  color: var(--lw-error);
+}
+
+.lw-video__mod {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.lw-video__mod-btn,
+.lw-video__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+}
+
+.lw-video__mod-btn {
+  width: 36px;
+  height: 36px;
+}
+
+.lw-video__btn {
+  width: 40px;
+  height: 40px;
+}
+
+.lw-video__btn[aria-pressed="true"] {
+  background: var(--lw-primary);
+  color: var(--lw-surface);
+}
+
+.lw-video__btn--leave {
+  background: var(--lw-error-bg);
+  color: var(--lw-error);
+}
+
+.lw-video__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lw-video__text-btn,
+.lw-video__join {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Подключиться — главное действие карточки, как CTA у lw-meet__link. */
+.lw-video__join {
+  min-height: 64px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-primary);
+  color: var(--lw-surface);
+  font-size: 16px;
+}
+
+.lw-video__join:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lw-video__mod-btn:focus-visible,
+.lw-video__btn:focus-visible,
+.lw-video__text-btn:focus-visible,
+.lw-video__join:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-video__msg {
+  margin: 0;
+  color: var(--lw-ink-2);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lw-video__msg--error {
+  color: var(--lw-error);
+}
+
+/* Развёрнутый вид: поверх материала, 3-4 колонки. */
+.lw-video--expanded {
+  position: fixed;
+  inset: 16px;
+  z-index: 50;
+  overflow: auto;
+  background: var(--lw-bg);
+  box-shadow: 0 0 0 1px var(--lw-track);
+}
+
+.lw-video--expanded .lw-video__tiles {
+  flex: 1 1 auto;
+  max-height: none;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  align-content: center;
+}
+
+.lw-video--expanded .lw-video__avatar {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+}
+
+@media (max-width: 900px) {
+  .lw-video--expanded {
+    inset: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-video__tile {
+    transition: none;
+  }
+}
+
+/* Плашка звонка на вкладке «Доска»: в ряду вкладок справа, инструменты доски не перекрывает. */
+.lw-video-mini {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.lw-video-mini__count {
+  color: var(--lw-ink-2);
+  font-size: 13px;
+}

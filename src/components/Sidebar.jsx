@@ -8,40 +8,30 @@ import DemoOfferCard from './DemoOfferCard.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
-import {
-  HomeIcon,
-  LearningIcon,
-  PracticeIcon,
-  TutorIcon,
-  LessonsIcon,
-  HomeworkIcon,
-  IeltsIcon,
-  SatIcon,
-  VocabIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  UserIcon,
-  SettingsIcon,
-} from './icons.jsx'
+import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 
 // «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
 // первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
 // оплаченного (см. сборку `base` ниже): экран давно перестал быть сводкой
 // демо-доступа и показывает уровень, прогресс, расписание и домашку.
 // Преподаватель — исключение: у него свой набор разделов.
-const HOME_ITEM = { key: 'home', label: 'nav.home', Icon: HomeIcon }
+//
+// Значки пунктов — контурные Material Symbols из макета «Главная · редизайн»
+// (21.10.2026), файлами в public/assets/home-v2/ico. Рисуются маской
+// (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
+const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 
 const NAV_FULL = [
-  { key: 'learning', label: 'nav.learning', Icon: LearningIcon },
-  { key: 'practice', label: 'nav.practice', Icon: PracticeIcon },
-  { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
-  { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
-  { key: 'homework', label: 'nav.homework', Icon: HomeworkIcon },
+  { key: 'learning', label: 'nav.learning', ico: 'map' },
+  { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
+  { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
+  { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
+  { key: 'homework', label: 'nav.homework', ico: 'assignment' },
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
-  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
-  { key: 'sat', label: 'nav.sat', Icon: SatIcon },
-  { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
+  { key: 'ielts', label: 'nav.ielts', ico: 'school' },
+  { key: 'sat', label: 'nav.sat', ico: 'quiz' },
+  { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
 // TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
@@ -193,18 +183,20 @@ export default function Sidebar({
             {userName && <span>{t('kingdom.profile')}</span>}
           </span>
           <span className="sb__profile-chev">
-            <ChevronRightIcon size={16} />
+            <ChevronRightIcon size={24} />
           </span>
         </button>
 
         <nav className="sb__nav">
-          {nav.map(({ key, label, Icon }) => (
+          {nav.map(({ key, label, ico }) => (
             <button
               key={key}
               className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
+              // data-nav читает тур «Главной»: список разделов в нём — ровно те, что в меню этого ученика
+              data-nav={key}
               onClick={() => pick(onNav)(key)}
             >
-              <Icon size={24} />
+              <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
             </button>
           ))}

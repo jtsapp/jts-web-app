@@ -50,6 +50,11 @@ describe('куда Луна умеет вести', () => {
     }
   })
 
+  it('Cartoon World открывается напрямую', () => {
+    expect(validAction('open', 'cartoons')).toEqual({ kind: 'open', target: 'cartoons', now: false })
+    expect(destinationIdForScreen('cartoons')).toBe('cartoons')
+  })
+
   it('действие проверяется по списку: тур — только где он есть', () => {
     expect(validAction('open', 'vocab')).toEqual({ kind: 'open', target: 'vocab', now: false })
     expect(validAction('tour', 'practice', true)).toEqual({ kind: 'tour', target: 'practice', now: true })
@@ -66,6 +71,13 @@ describe('куда Луна умеет вести', () => {
     expect(destinationIdForScreen('lesson-workspace')).toBeNull()
     const block = buildContextBlock({ user: { name: 'А' }, screen: { id: 'practice', text: 'x' }, lang: 'ru' })
     expect(block).toContain('Открытый раздел: Практика (id для метки: practice)')
+  })
+
+  // Разделы, чей материал заливают в админке (22.10.2026): без строки в таблице Луна говорила «такого нет».
+  it('Just to Listen и Prepositions World открываются напрямую', () => {
+    expect(validAction('open', 'listen')).toEqual({ kind: 'open', target: 'listen', now: false })
+    expect(destinationIdForScreen('prepositions')).toBe('prepositions')
+    expect(destinationsText()).toContain('- prepositions — Prepositions World (предлоги): курс английских предлогов')
   })
 
   it('список для модели: id, имя и пометка тура', () => {

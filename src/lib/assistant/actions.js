@@ -4,6 +4,9 @@
 //   [[OPEN practice-speaking]]      — предложить: под ответом кнопка «Открыть…»
 //   [[OPEN_NOW practice-speaking]]  — открыть сразу (ученик попросил или согласился)
 //   [[TOUR practice]] / [[TOUR_NOW practice]] — то же для тура по экрану
+//   [[CLICK 7]] / [[CLICK_NOW 7]] — нажать кнопку экрана с номером 7 из снимка
+//   (screenSnapshot.snapshotWithRefs; 21.10.2026). Номер сверяется со снимком этого
+//   же запроса, подпись берётся оттуда — окно по ней проверит, что жмёт ту же кнопку.
 //
 // Роут вырезает метку из ответа (ученик её не видит, озвучка не читает) и
 // сверяет раздел с белым списком (destinations.js). Клиенту действие уходит
@@ -18,12 +21,29 @@ import { DESTINATIONS, destinationOf, validAction } from './destinations.js'
 
 // Форму модель местами путает (живой прогон 15.10.2026: «[[OPEN id="practice-listening"]]»),
 // поэтому двоеточие, «id=» и кавычки вокруг id прощаем — раздел всё равно сверяется со списком.
-const MODEL_MARK = /^\[\[(OPEN|TOUR)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«]?([A-Za-z0-9_-]{1,40})["'»]?\s*\]\]$/
+// «#» перед номером кнопки — тоже: в снимке номер так и написан («[кнопка #7 …]»).
+const MODEL_MARK = /^\[\[(OPEN|TOUR|CLICK)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«#]?([A-Za-z0-9_-]{1,40})["'»]?\s*\]\]$/
 // Длиннее этого метка модели не бывает: «[[» без закрытия дальше — просто текст.
 const MAX_MARK = 56
 
 export const SERVICE_PREFIX = '[[ASST_'
-const ACTION_TAIL = /\[\[ASST_ACTION (open|tour) ([a-z0-9-]+) (now|offer)\]\]/
+const ACTION_TAIL = /\[\[ASST_ACTION (open|tour|click) ([a-z0-9-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
+
+/** Подпись кнопки с номером ref в снимке экрана; нет такой кнопки — null. */
+export function buttonOnScreen(screenText, ref) {
+  const n = Number(ref)
+  if (!Number.isInteger(n) || n < 1) return null
+  const m = new RegExp(`\\[кнопка #${n} «(.+?)»(?= неактивна| \\(|\\])`).exec(String(screenText ?? ''))
+  return m ? m[1] : null
+}
+
+function clickAction(ref, now, screenText) {
+  const label = buttonOnScreen(screenText, ref)
+  return label ? { kind: 'click', target: String(Number(ref)), label, now: Boolean(now) } : null
+}
+
+// В хвосте подпись — в «»: скобки и кавычки из неё убраны, чтобы не сломать разбор.
+const tailLabel = (s) => String(s ?? '').replace(/[«»[\]]/g, '').slice(0, 80)
 
 /** Метка действия в формате модели — для истории разговора (см. AssistantWidget). */
 export function actionMarker(action) {
@@ -33,7 +53,11 @@ export function actionMarker(action) {
 
 /** Служебный хвост стрима с действием. */
 export function actionTail(action) {
-  return action ? `[[ASST_ACTION ${action.kind} ${action.target} ${action.now ? 'now' : 'offer'}]]` : ''
+  if (!action) return ''
+  const mode = action.now ? 'now' : 'offer'
+  return action.kind === 'click'
+    ? `[[ASST_ACTION click ${action.target} ${mode} «${tailLabel(action.label)}»]]`
+    : `[[ASST_ACTION ${action.kind} ${action.target} ${mode}]]`
 }
 
 /**
@@ -44,8 +68,11 @@ export function actionTail(action) {
  * Кусок стрима может оборвать метку посередине («[[OPE» + «N practice]]»),
  * поэтому всё от «[[» держится, пока метка не закроется или не станет ясно,
  * что это обычный текст.
+ *
+ * screenText — снимок экрана этого запроса: по нему сверяется номер кнопки метки
+ * нажатия (номера нет — метка вырезается, действия нет).
  */
-export function createActionFilter() {
+export function createActionFilter({ screenText = '' } = {}) {
   let hold = ''
   let action = null
   return {
@@ -82,7 +109,10 @@ export function createActionFilter() {
           out += mark
           continue
         }
-        if (!action) action = validAction(m[1].toLowerCase(), m[3].toLowerCase(), Boolean(m[2]))
+        if (!action) {
+          const kind = m[1].toLowerCase()
+          action = kind === 'click' ? clickAction(m[3], Boolean(m[2]), screenText) : validAction(kind, m[3].toLowerCase(), Boolean(m[2]))
+        }
       }
     },
     flush() {
@@ -165,7 +195,9 @@ export function createServiceTailFilter() {
     },
     get action() {
       const m = ACTION_TAIL.exec(tail())
-      return m ? validAction(m[1], m[2], m[3] === 'now') : null
+      if (!m) return null
+      if (m[1] === 'click') return m[4] ? { kind: 'click', target: m[2], label: m[4], now: m[3] === 'now' } : null
+      return validAction(m[1], m[2], m[3] === 'now')
     },
   }
 }
