@@ -144,8 +144,9 @@ describe('MaterialAssignmentDetail — задание делается прям�
   })
 
   /* Заданиям на слух нужен autoplay: разрешение выдаётся документу, а материал
-     живёт в своей рамке — та же причина, что у рамки живого урока. */
-  it('рамка пускает звук', async () => {
+     живёт в своей рамке — та же причина, что у рамки живого урока. fullscreen — для
+     встроенных в задание активностей вроде Wordwall (см. HomeworkFrame). */
+  it('рамка пускает звук и полный экран во вложенных активностях', async () => {
     const { container } = показать()
     кнопкаОткрыть().click()
     const frame = await waitFor(() => {
@@ -153,7 +154,8 @@ describe('MaterialAssignmentDetail — задание делается прям�
       expect(el).not.toBeNull()
       return el
     })
-    expect(frame.getAttribute('allow')).toBe('autoplay')
+    const allow = frame.getAttribute('allow').split(';').map((token) => token.trim())
+    expect(allow).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
   })
 
   /* Экран монтирует компонент с key по id выдачи (HomeworkPage.jsx) — выбрали в
