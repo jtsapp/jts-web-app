@@ -28,3 +28,16 @@ describe('банк SAT', () => {
     expect(b.topics[0].correct).toBe(2)
   })
 })
+
+describe('прогресс домена в дереве «Практики»', async () => {
+  const { skillsProgress } = await import('./bank.js')
+  it('сумма навыков домена — та же метрика, что у темы банка', () => {
+    const b = { topics: [
+      { skillId: 'a', total: 10, answered: 4, correct: 3 },
+      { skillId: 'b', total: 5, answered: 1, correct: 0 },
+      { skillId: 'c', total: 7, answered: 7, correct: 7 },
+    ] }
+    expect(skillsProgress(b, ['a', 'b'])).toEqual({ answered: 5, total: 15, pct: 60 })
+    expect(skillsProgress(null, ['a'])).toEqual({ answered: 0, total: 0, pct: 0 })
+  })
+})

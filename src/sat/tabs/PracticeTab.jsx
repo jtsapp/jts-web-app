@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getSatErrors, getSatPracticePool, getSatProgress, getSatTaxonomy } from '../../api.js'
+import { getSatBank, getSatErrors, getSatPracticePool, getSatProgress, getSatTaxonomy } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon, ExpandMoreIcon, ScheduleIcon } from '../../ielts/icons.jsx'
@@ -10,6 +10,7 @@ import { countForSection, countOptions, moduleSize } from '../model/practice.js'
 import { errorText } from '../../lib/examQuota.js'
 import FilterBlocks, { EMPTY_FILTERS } from '../practice/FilterBlocks.jsx'
 import BankView from '../bank/BankView.jsx'
+import { skillsProgress } from '../bank/bank.js'
 
 const MODES = [
   { key: 'module', Icon: StopwatchIcon },
@@ -59,6 +60,17 @@ export default function PracticeTab({ onStart, onErrors, explainLang }) {
       })
       .catch(() => {})
   }, [token])
+
+  // прогресс по банку для дерева навыков — та же цифра, что у темы в «Все вопросы» (задача 8); в режиме «Все вопросы»
+  // его сразу обновляет BankView после каждого ответа
+  useEffect(() => {
+    let alive = true
+    setBankInfo(null)
+    getSatBank(token, section).then((b) => alive && setBankInfo(b)).catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token, section])
 
   // рекомендация — два самых приоритетных навыка секции (тот же ранг, что строит план)
   useEffect(() => {
@@ -163,7 +175,10 @@ export default function PracticeTab({ onStart, onErrors, explainLang }) {
                     <b>{domainName(d.id, lang)}</b>
                     <span className="st-spacer" />
                     {chosen > 0 && <span className="st-tree__picked">{t('sat.prac.picked', { n: String(chosen), total: String(own.length) })}</span>}
-                    <span className="st-tree__bank">{t('sat.prac.inBank', { n: String(inBank) })}</span>
+                    {bankInfo ? (() => {
+                      const pr = skillsProgress(bankInfo, own.map((x) => x.id))
+                      return <span className="st-tree__bank">{t('sat.bank.progress', { a: String(pr.answered), n: String(pr.total), p: String(pr.pct) })}</span>
+                    })() : <span className="st-tree__bank">{t('sat.prac.inBank', { n: String(inBank) })}</span>}
                   </button>
                   {isOpen && (
                     <ul>

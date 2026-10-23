@@ -13,6 +13,17 @@ export function topicProgress(topic) {
 }
 
 /**
+ * Прогресс домена в дереве «Практики» — сумма его навыков в банке. Та же цифра, что у темы в «Все вопросы»
+ * (ТЗ 21.10, задача 8: «124 из 595 · 71% верно» вместо «595 в банке»), поэтому числа в двух местах совпадают.
+ */
+export function skillsProgress(bank, skillIds) {
+  const own = (bank?.topics || []).filter((t) => skillIds.includes(t.skillId))
+  const sum = own.reduce((a, t) => ({ total: a.total + t.total, answered: a.answered + t.answered, correct: a.correct + t.correct }),
+    { total: 0, answered: 0, correct: 0 })
+  return topicProgress(sum)
+}
+
+/**
  * Клетки, которые оставляют фильтры (те же правила, что у практики): лишние скрываются, порядок и номер в банке
  * сохраняются — [клетка, номер с 1].
  */
