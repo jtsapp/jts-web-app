@@ -133,7 +133,13 @@ assert set(style.by_tag) == {"default", "happy", "excited", "surprised", "sarcas
 assert set(style.by_tag) == set(pack), "строка на каждую эмоцию персоны, не больше"
 sym = style.prompt("sympathy")
 # Обрывок «Calm, sincere…» Gemini читал вслух; «sound calm…» — нет (замер 22.10).
-assert sym == style.base + " For this line, sound calm, sincere and gentle, slower, no laughter, no jokes.", sym
+assert sym == style.base + " For this line, sound calm and sincere, steady pace, no jokes.", sym
+# Слова, от которых Gemini вздыхает и смеётся, клиент из стиля убрал (v3.5 от
+# 23.10, «If Spark still sighs»): вернуть их с таблицей — вернуть вздохи.
+for line in [style.base, *style.by_tag.values()]:
+    for word in ("relaxed", "smiling", "smile", "laugh", "gentle", "slower"):
+        assert word not in line.lower(), (word, line)
+assert "no non-verbal sounds" in style.base
 assert style.prompt("nope") == style.prompt("default"), "неизвестный тег — ровная строка"
 # Русской реплике — одна база: с добавками Gemini повторял реплику дважды.
 assert style.prompt("sympathy", russian=True) == style.base
