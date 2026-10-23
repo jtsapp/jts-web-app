@@ -1910,19 +1910,6 @@ export function submitSatDiagnostic(token, id, body) {
   return authPost(`/mobile/sat/diagnostic/${encodeURIComponent(id)}/submit`, token, body)
 }
 
-export function getSatPlan(token) {
-  return authGet('/mobile/sat/plan', token)
-}
-
-/** Дни (1 = пн) и минуты: первый раз строит план, дальше пересобирает недели впереди. */
-export function saveSatPlan(token, body) {
-  return authPut('/mobile/sat/plan', token, body)
-}
-
-export function rebuildSatPlan(token) {
-  return authPost('/mobile/sat/plan/rebuild', token, {})
-}
-
 /** Фазы плана по ТЗ 21.10 — одна структура для дашборда, «Плана» и счётчиков: { roadmap, examDate, inGroup, selfPrep, tests }. */
 export function getSatRoadmap(token) {
   return authGet('/mobile/sat/roadmap', token)
@@ -1995,17 +1982,7 @@ export function submitSatBluebook(token, test, body) {
   return authPost(`/mobile/sat/bluebook/${encodeURIComponent(test)}`, token, body)
 }
 
-/** { status: 'done' | 'skipped' | 'planned' } или { date: 'ГГГГ-ММ-ДД' } — перенести. */
-export function updateSatLesson(token, lessonId, body) {
-  return authPatch(`/mobile/sat/plan/lessons/${encodeURIComponent(lessonId)}`, token, body)
-}
-
-/** Навык из разбора пробника — в ближайшее занятие плана → { added, lesson, plan }; added=false — уже есть на неделе. */
-export function addSatPlanSkill(token, skillId) {
-  return authPost('/mobile/sat/plan/skills', token, { skillId })
-}
-
-/** Учебная сессия: { lessonId } — занятие плана; { skillIds, count } — по навыкам. Незаконченное занятие продолжается. */
+/** Учебная сессия: { mode, skillIds, count } — практика по навыкам, { unitCode } — набор юнита (продолжается, если не закончен). */
 export function startSatSession(token, body) {
   return authPost('/mobile/sat/sessions', token, body)
 }

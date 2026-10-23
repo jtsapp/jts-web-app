@@ -195,7 +195,7 @@ export default function SatMockPage({ token, onNav }) {
     setBusy(true)
     try {
       const s = await startSatSession(authToken, { mode: 'skills', skillIds, count: 10 })
-      setParams({ satSession: s.id, satLesson: null, satMock: null })
+      setParams({ satSession: s.id, satMock: null })
       onNav?.('sat-study')
     } catch (e) {
       setError(errorText(e, t))

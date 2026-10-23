@@ -250,7 +250,7 @@ const PERSISTABLE_SCREENS = new Set([
   'sat-run',
   // диагностика держит шаг в ?satDiag= сама
   'sat-diagnostic',
-  // учебная сессия держит себя в ?satSession= (или ?satLesson= до старта)
+  // учебная сессия держит себя в ?satSession=
   'sat-study',
   // ежедневная проверка — одна на день, свой экран без меню (с 14.10.2026 из навигации убрана, диплинк остался)
   'sat-daily',

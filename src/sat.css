@@ -7068,14 +7068,6 @@ mark.st-hl {
   padding: 12px 20px;
   font-size: 15px;
 }
-.st-mrev__planNote {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--ih-green);
-}
 .st-mrev__bottom {
   display: flex;
   align-items: center;

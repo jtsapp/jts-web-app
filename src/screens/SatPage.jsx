@@ -175,7 +175,6 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     try {
       const url = new URL(window.location.href)
       url.searchParams.set('satSession', id)
-      url.searchParams.delete('satLesson')
       window.history.replaceState(window.history.state, '', url)
     } catch {
       /* без адреса сессия не откроется */

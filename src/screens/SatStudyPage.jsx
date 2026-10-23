@@ -19,17 +19,6 @@ import { lessonByCode } from '../sat/model/course.js'
 import { BookOpenIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 
-// Один запрос старта на занятие за раз: экран в разработке монтируется дважды (StrictMode), и без этого два POST
-// собирали бы два набора. Сервер тоже держит одну открытую сессию на занятие — это вторая линия.
-const starting = new Map()
-function startOnce(token, lessonId) {
-  if (!starting.has(lessonId)) {
-    const p = startSatSession(token, { lessonId }).finally(() => setTimeout(() => starting.delete(lessonId), 0))
-    starting.set(lessonId, p)
-  }
-  return starting.get(lessonId)
-}
-
 function param(name) {
   try {
     return new URLSearchParams(window.location.search).get(name)
@@ -228,9 +217,9 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
 }
 
 /**
- * Учебный режим SAT — фаза 5 плана (Figma 21–25, 28). `?screen=sat-study&satLesson=<занятие плана>` начинает (или
- * продолжает) занятие; дальше адрес держит `satSession=<id>`, и перезагрузка возвращает ту же сессию: проверенное —
- * с сервера, остальное — черновиком на устройстве. Законченная сессия показывает итог.
+ * Учебный режим SAT — фаза 5 плана (Figma 21–25, 28). Сессию собирает тот, кто зовёт экран (практика, юнит, ошибки), а
+ * адрес держит `satSession=<id>`: перезагрузка возвращает ту же сессию — проверенное с сервера, остальное черновиком на
+ * устройстве. Законченная сессия показывает итог. Занятий своего плана больше нет — занятия ведёт группа (ТЗ 21.10).
  */
 export default function SatStudyPage({ token, onNav }) {
   const { t } = useI18n()
@@ -245,15 +234,10 @@ export default function SatStudyPage({ token, onNav }) {
   useEffect(() => {
     let alive = true
     getSatProfile(authToken).then((p) => alive && p?.explainLang && setExplainLang(p.explainLang)).catch(() => {})
-    const lessonId = param('satLesson')
     const sessionId = param('satSession')
-    const load = sessionId ? getSatSession(authToken, sessionId) : lessonId ? startOnce(authToken, lessonId) : Promise.reject(new Error('no session'))
+    const load = sessionId ? getSatSession(authToken, sessionId) : Promise.reject(new Error('no session'))
     load
-      .then((s) => {
-        if (!alive) return
-        setParams({ satLesson: null, satSession: s.id })
-        setData(s)
-      })
+      .then((s) => alive && setData(s))
       .catch((e) => alive && setError(errorText(e, t)))
     window.scrollTo(0, 0)
     return () => {
@@ -276,7 +260,7 @@ export default function SatStudyPage({ token, onNav }) {
   }, [authToken, finished, isPractice, sid])
 
   const toHub = (tab) => {
-    setParams({ satSession: null, satLesson: null, satUnit: null, satTab: tab || null })
+    setParams({ satSession: null, satUnit: null, satTab: tab || null })
     onNav?.('sat')
   }
   // «Потренировать слабые»: новый набор по навыкам открывается здесь же
@@ -284,7 +268,7 @@ export default function SatStudyPage({ token, onNav }) {
     setBusy(true)
     try {
       const s = await startSatSession(authToken, { mode: 'skills', skillIds, count: 10 })
-      setParams({ satSession: s.id, satLesson: null })
+      setParams({ satSession: s.id })
       setPsum(null)
       setData(await getSatSession(authToken, s.id))
     } catch (e) {
@@ -293,7 +277,7 @@ export default function SatStudyPage({ token, onNav }) {
       setBusy(false)
     }
   }
-  // набор юнита курса возвращается на свой юнит, набор «Практики» — в «Практику», занятие плана — в «План»
+  // набор юнита курса возвращается на свой юнит, набор «Практики» — в «Практику», остальное — в «План»
   const back = () => {
     if (isPractice) return toHub('practice')
     if (!data?.unitCode) return toHub('plan')
