@@ -112,6 +112,7 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
+import { screenNeedsLogin } from './lib/guestLogin.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import PlatformPresence from './components/PlatformPresence.jsx'
@@ -1437,6 +1438,20 @@ export default function App() {
   }, [token])
 
   function handleLogout() {
+    // Сначала экран входа и адрес без ?screen=: иначе кабинет остаётся открытым
+    // (пустые «Уроки», SAT), а обновление страницы снова читает старый раздел.
+    skipPushRef.current = true
+    setScreen('welcome')
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('screen')
+      url.searchParams.delete('live')
+      url.searchParams.delete('catalog')
+      url.searchParams.delete('card')
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    } catch {
+      /* адрес не обязателен: экран входа уже поставлен */
+    }
     endSessionOnServer()
     // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
     // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
@@ -1454,7 +1469,6 @@ export default function App() {
     // вкладке не должен вести по чужим экранам. skipPush — и экран, с которого
     // вышли, в новый путь не кладём.
     setNavStack([])
-    skipPushRef.current = true
     setToken(null)
     setName('')
     setPhone('')
@@ -1608,6 +1622,11 @@ export default function App() {
   // Синхронный аналог этой ветки живёт в view (см. ниже, перед return): он не
   // даёт BoothEntryPage смонтироваться и позвонить /enter даже на один кадр,
   // а этот эффект следом приводит screen в согласие с тем, что нарисовано.
+  useEffect(() => {
+    if (restoring || !screenNeedsLogin(screen, token)) return
+    setScreen('welcome')
+  }, [restoring, screen, token, setScreen])
+
   useEffect(() => {
     if (boothAccount && !BOOTH_SCREENS.has(screen)) setScreen('booth')
     else if (!boothAccount && screen === 'booth') {
