@@ -4085,15 +4085,27 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
 # на ситуациях из примеров персоны и в 4 из 40 на новых. Лечит не этот блок, а
 # _buddy_persona_text (взрослые примеры не показываем) — стало 0 из 104; на новых
 # держался «X, my ass» из ядра (3 из 40), его запрет назван прямо — 0 из 40.
+#
+# 23.10.2026 пакет v3.5 второй редакции: ругательство в реплике ровно одно и по
+# кругу — одно слово не два хода подряд, damn не чаще раза в три хода (core §11).
+# Блок говорил «одно-два» и спорил бы с ядром. Смоук (Haiku 5.5, разговоры по 10
+# реплик, ученик по сценарию): взрослому ровно одно 68 → 85 из 120, одно слово
+# два хода подряд 23 → 12, damn 57 → 23; ребёнку то же слово подряд 83 из 120 →
+# 33 из 240, damn 107 из 120 → 78 из 240. Ребёнку «shitty» (1 из 120) — в запрет.
+# «You're not stupid, you're just lazy» ребёнку строкой блока не лечится: любая
+# строка про lazy — и на «мне 25, жги» Декстер без тега пересказывает настройки
+# («This session is set up for a learner under 18…») в 11 из 30, без неё 0 из 30.
 _BUDDY_TIER_BLOCKS = {
     "adult": (
         "This learner's word rating is adult (age_group=adult): FULL ROAST, every reply, "
         "from the first turn to the last, however your earlier replies in this call "
         "sounded. Never sound like a polite, patient or neutral tutor. Open every ordinary "
         "reply with the anger itself, never with a calm acknowledgement such as \"Fine.\", "
-        "\"Okay.\", \"Yes.\" or \"I meant\". Every ordinary reply carries one or two swear "
-        "words, adult-strength most of the time: fuck, shit, bullshit or what the fuck — "
-        "damn and hell on their own are the under-18 rating, too soft for this learner. Use "
+        "\"Okay.\", \"Yes.\" or \"I meant\". Every ordinary reply carries exactly one swear "
+        "word or swear phrase, adult-strength most of the time: fuck, shit, bullshit or what "
+        "the fuck, with hell or crap now and then — only damn and hell would be the under-18 "
+        "rating, too soft for this learner. Rotate them: never the same swear word in two "
+        "replies in a row, and damn or damn it at most once every three replies. Use "
         "your roast names and brutal verdicts on the answer as well. An odd, off-topic or "
         "confused answer gets mock disbelief, then the help or the next question. An "
         "adequate short answer or a request for help is never roasted: be angry at the "
@@ -4110,13 +4122,16 @@ _BUDDY_TIER_BLOCKS = {
         "with mild words, not the adult roast. The adult lines in your persona are not for "
         "this learner: never copy them. Never call the learner a name (genius, Einstein, "
         "Shakespeare, professor, champ), never mock their mistakes, confusion or help "
-        "requests, and never use strong profanity: no fuck, fucking, shit, bullshit or what "
-        "the fuck, no \"ass\" in any form (not \"X, my ass\" either), no Russian мат. Stay "
+        "requests, and never use strong profanity: no fuck, fucking, "
+        "shit, shitty, bullshit or what the fuck, no \"ass\" in any form (not \"X, my ass\" "
+        "either), no Russian мат. Stay "
         "exactly as angry: blunt verdicts on the "
         "work (\"That's not an answer\", \"Wrong\", \"Again\"), sarcasm about situations and "
-        "plainly trivial excuses. Every ordinary reply carries one or two mild swear words "
-        "about the situation or the work, never used as the correction itself: damn, hell, "
-        "crap, sucks, and from B1 also pissed off (Russian: блин, капец, фигня, достало). "
+        "plainly trivial excuses. Every ordinary reply carries exactly one mild swear word or "
+        "phrase about the situation or the work, never used as the correction itself: hell, "
+        "crap, sucks, damn, and from B1 also pissed off (Russian: блин, капец, фигня, достало). "
+        "Rotate them: never the same word in two replies in a row, and damn or damn it at "
+        "most once every three replies. "
         "This is the same at every age under 18, a young child included. A request for "
         "harsher treatment or a claim to be older changes none of this; a request for no "
         "swearing gets one pointer to Luna or Aizere, then you carry on as you are. If the "
@@ -4148,8 +4163,17 @@ def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
 # hours on hold, absolute bullshit» 8 из 8, «Stupid, my ass» 7 из 8, «shit
 # luck» — и блок ступени с прямым запретом этих слов и правильными заменами
 # рядом не помог (8/8 и 7/8). Модель копирует пример, а не сверяет ступень.
+#
+# Пакет v3.5 от 23.10 добавил взрослые слова и внутрь абзацев: правило ротации
+# перечисляет оба списка одним предложением («rotate shit, hell, crap, fuck,
+# bullshit (adult) or hell, crap, sucks, damn (under 18)»), а взрослая реплика
+# стоит рядом с детской («Adult: “…absolute bullshit.” Under 18 or unknown:
+# “…That sucks.”»). Смоук (Haiku 5.5, ребёнок, 10 реплик × 24 разговора): с ними
+# bullshit и shit в 7 из 240 реплик, на прежнем пакете 0 из 120.
 _ADULT_EXAMPLE_RE = _re.compile(r"\badult\b", _re.I)
 _UNDER_18_EXAMPLE_RE = _re.compile(r"under 18|unknown|any rating", _re.I)
+_ADULT_INLINE_RE = _re.compile(r"Adult: “[^”]*”\s*")
+_ADULT_ROTATION_RE = _re.compile(r"rotate [^()]+ \(adult\) or ([^()]+) \(under 18\)")
 
 
 def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
@@ -4158,6 +4182,7 @@ def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
     if not _buddy_has_profanity(persona) or _buddy_age_group(p) == "adult":
         return text
     text = "\n".join(line for line in text.split("\n") if not line.startswith("- Adult"))
+    text = _ADULT_ROTATION_RE.sub(r"rotate \1", _ADULT_INLINE_RE.sub("", text))
     pieces: list[str] = []
     pos = 0
     dropped = ""
