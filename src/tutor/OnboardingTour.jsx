@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
-import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration } from '../lib/tourBus.js'
+import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration, useToursHeld } from '../lib/tourBus.js'
 import { unlockSpeech } from '../lib/speech.js'
 
 const LUNA_AVATAR = '/assets/luna-assistant.webp'
@@ -188,7 +188,18 @@ export function useScreenTour(storageKey) {
 // виде: макет нарисован только для «Главной». Шаг с optional: true без цели на
 // экране не пропускается, а встаёт по центру — список разделов на телефоне, где
 // сайдбар спрятан в drawer.
-export default function OnboardingTour({ steps, onFinish, storageKey, look, intro }) {
+//
+// Пока App держит своё окно (holdTours в tourBus.js), тура нет вовсе — ни
+// затемнения, ни запертой прокрутки, ни Escape, который закрыл бы его вместе с
+// окном. Открытый тур при этом снимается, а после окна начинается заново с
+// приветствия: окно могло прийти посреди тура (демо-статус после входа
+// приезжает позже, чем «Главная» решает открыть тур).
+export default function OnboardingTour(props) {
+  const held = useToursHeld()
+  return held ? null : <TourOverlay {...props} />
+}
+
+function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const t = useT()
   const coach = look === 'coach'
   const [phase, setPhase] = useState(coach && intro ? 'intro' : 'steps')

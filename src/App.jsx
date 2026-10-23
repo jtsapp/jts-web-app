@@ -118,7 +118,7 @@ import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
-import { useTourRequest } from './lib/tourBus.js'
+import { holdTours, useTourRequest } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
@@ -644,6 +644,12 @@ export default function App() {
   // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
   // приложении нет, см. lib/purchaseCelebration.js.
   const [celebrate, setCelebrate] = useState(false)
+  // Тур экрана ждёт, пока поздравление открыто: иначе он ложился поверх окна
+  // и накрывал его кнопку (см. holdTours в lib/tourBus.js).
+  useEffect(() => {
+    holdTours('celebrate', celebrate)
+    return () => holdTours('celebrate', false)
+  }, [celebrate])
   // Сессия кончилась сама (токен протух), а не человек нажал «Выйти»: на экране
   // входа ему нужно сказать, почему его туда вернуло. Гасится, как только он
   // вошёл снова или закрыл плашку.
