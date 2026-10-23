@@ -26,9 +26,12 @@ function renderFrame(props = {}) {
   return { ...view, ref, iframe: view.container.querySelector('iframe') }
 }
 
-function message(data) {
+// Приложение верит сообщению, только если его прислало окно рамки урока (event.source), поэтому по
+// умолчанию «говорит» рамка, открытая сейчас (после смены документа — уже новая). `source` явно —
+// чужое окно или его отсутствие (null).
+function message(data, source = document.querySelector('iframe.lw-material-iframe')?.contentWindow) {
   return act(async () => {
-    window.dispatchEvent(new MessageEvent('message', { data }))
+    window.dispatchEvent(new MessageEvent('message', { data, source }))
   })
 }
 
@@ -380,8 +383,6 @@ describe('SectionMaterialFrame — стадия класса', () => {
 // одному догоняющему ученику).
 describe('SectionMaterialFrame — снимок и живой показ', () => {
   afterEach(() => vi.useRealTimers())
-
-  const message = (data) => act(async () => { window.dispatchEvent(new MessageEvent('message', { data })) })
 
   // Запрос в рамку, которая ещё грузится, пропал бы молча, а очередь ответов
   // ждала бы его до истечения.
@@ -797,5 +798,158 @@ describe('SectionMaterialFrame — стадии под лоадером', () => 
     await stage(3)
 
     expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { own: false })
+  })
+})
+
+// В урок вложены чужие виджеты (Wordwall), и их код может слать postMessage и в parent, и сразу в top.
+// Всё, что окно приложения примет за сообщение рамки, уходит учителю зеркалом, двигает «Темы» и стадию
+// класса, а у преподавателя ещё и показ всему классу (живая проверка: подделка из рамки
+// Wordwall дошла до учителя). Поэтому верим только окну СВОЕЙ рамки урока (event.source) — той, что
+// рендерит бэкенд с мостом. Простая рамка (видео, PDF, чужая ссылка) моста не несёт и ничего из
+// протокола говорить не может.
+describe('SectionMaterialFrame — кому верим', () => {
+  // Чужие рамки, добавленные тестом в страницу: RTL их не убирает, а они перехватили бы выбор «своей».
+  const strangers = []
+  afterEach(() => {
+    vi.useRealTimers()
+    strangers.splice(0).forEach((frame) => frame.remove())
+  })
+
+  /** Окно стороннего виджета, вложенного в страницу урока: для приложения оно внучатое. */
+  function widgetInside(lessonFrame) {
+    const doc = lessonFrame.contentDocument
+    doc.open()
+    doc.write('<!doctype html><html><body></body></html>')
+    doc.close()
+    const widget = doc.createElement('iframe')
+    doc.body.appendChild(widget)
+    return widget.contentWindow
+  }
+
+  const FOREIGN = [
+    ['сторонний виджет внутри страницы урока (Wordwall)', (lessonFrame) => widgetInside(lessonFrame)],
+    ['другая рамка той же страницы', () => {
+      const other = document.createElement('iframe')
+      document.body.appendChild(other)
+      strangers.push(other)
+      return other.contentWindow
+    }],
+    ['само окно приложения', () => window],
+    ['источник неизвестен', () => null],
+  ]
+  const STAGE = { source: 'jts-lesson', type: 'stage', index: 5, total: 7 }
+  const STAGE_LIST = { source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words'] }
+  const MIRROR = { source: 'jts-bridge', type: 'mirror', selector: '#a', eventType: 'click', value: null }
+
+  it('сообщения своей рамки принимаются: стадия, список стадий, зеркало ученика', async () => {
+    const onStage = vi.fn()
+    const onStageList = vi.fn()
+    const onMirror = vi.fn()
+    renderFrame({ onStage, onStageList, onMirror })
+
+    await message(STAGE)
+    await message(STAGE_LIST)
+    await message(MIRROR)
+
+    expect(onStage).toHaveBeenCalledWith({ index: 5, total: 7 }, { own: false })
+    expect(onStageList).toHaveBeenCalledWith(['Warm-up', 'Words'])
+    expect(onMirror).toHaveBeenCalledWith({ selector: '#a', eventType: 'click', value: null })
+  })
+
+  it.each(FOREIGN)('ученик: подделка не принимается — %s', async (_, foreignWindow) => {
+    const onStage = vi.fn()
+    const onStageList = vi.fn()
+    const onMirror = vi.fn()
+    const { iframe } = renderFrame({ onStage, onStageList, onMirror })
+    const source = foreignWindow(iframe)
+
+    await message(STAGE, source)
+    await message(STAGE_LIST, source)
+    await message(MIRROR, source)
+
+    expect(onStage).not.toHaveBeenCalled()
+    expect(onStageList).not.toHaveBeenCalled()
+    expect(onMirror).not.toHaveBeenCalled()
+
+    // Контроль: те же сообщения от своей рамки слышно — отказы выше не пустые.
+    await message(STAGE)
+    await message(STAGE_LIST)
+    await message(MIRROR)
+    expect(onStage).toHaveBeenCalledTimes(1)
+    expect(onStageList).toHaveBeenCalledTimes(1)
+    expect(onMirror).toHaveBeenCalledTimes(1)
+  })
+
+  // Подделка преподавателю опаснее: показ уходит всему классу, а клик перед стадией считается его
+  // собственным действием — со стадией, которую у ведущего забирает весь класс.
+  it.each(FOREIGN)('преподаватель: подделка не уходит классу и не делает чужую стадию его собственной — %s', async (_, foreignWindow) => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const onPresentEvent = vi.fn()
+    const onSnapshot = vi.fn()
+    const { iframe } = renderFrame({ isStaff: true, presenting: true, reviewStudentId: 7, onStage, onPresentEvent, onSnapshot })
+    const source = foreignWindow(iframe)
+    const click = { source: 'jts-bridge', type: 'present-event', selector: '#rail > button', eventType: 'click' }
+
+    await message(click, source)
+    await message(STAGE, source)
+    await message({ source: 'jts-bridge', type: 'snapshot', events: [{ selector: '#a', eventType: 'click', value: null }] }, source)
+
+    expect(onPresentEvent).not.toHaveBeenCalled()
+    expect(onSnapshot).not.toHaveBeenCalled()
+    expect(onStage).not.toHaveBeenCalled()
+
+    // Контроль: настоящий клик своей рамки и стадия следом — его действие, и показ уходит классу.
+    await message(click)
+    await message(STAGE)
+    expect(onPresentEvent).toHaveBeenCalledTimes(1)
+    expect(onStage).toHaveBeenCalledWith({ index: 5, total: 7 }, { own: true })
+  })
+
+  // Сигнал «идёт проигрывание» закрывает рамку лоадером до 15 с: подделкой урок гасится целиком.
+  it('подделка «идёт проигрывание» не закрывает рамку лоадером', async () => {
+    vi.useFakeTimers()
+    const { container, iframe } = renderFrame()
+    await settle(iframe)
+    const covered = () => !container.querySelector('.lw-frame-cover').classList.contains('is-hidden')
+    expect(covered()).toBe(false)
+
+    await message({ source: 'jts-bridge', type: 'replay', busy: true, size: 40 }, widgetInside(iframe))
+    expect(covered()).toBe(false)
+
+    // Контроль: тот же сигнал от своей рамки лоадер включает.
+    await message({ source: 'jts-bridge', type: 'replay', busy: true, size: 40 })
+    expect(covered()).toBe(true)
+  })
+
+  // Рамку сравниваем в момент сообщения, а не при монтировании: сменился документ — страница
+  // прошлого уже не своя.
+  it('после смены документа сообщения прошлой страницы не принимаются, новой — принимаются', async () => {
+    const onStage = vi.fn()
+    const { ref, container, iframe, rerender } = renderFrame({ onStage })
+    const previous = iframe.contentWindow
+
+    rerender(frame({ ref, onStage, reloadToken: 1 }))
+    expect(container.querySelector('iframe')).not.toBe(iframe)
+
+    await message(STAGE, previous)
+    expect(onStage).not.toHaveBeenCalled()
+
+    await message(STAGE)
+    expect(onStage).toHaveBeenCalledWith({ index: 5, total: 7 }, { own: false })
+  })
+
+  it('простая рамка (видео, PDF, чужая ссылка) моста не несёт — её сообщения не принимаются', async () => {
+    const onStage = vi.fn()
+    const onMirror = vi.fn()
+    const video = { ...MATERIAL, materialType: 'VIDEO', fileUrl: 'https://files/v.mp4' }
+    const { container } = render(frame({ material: video, onStage, onMirror }))
+    const plain = container.querySelector('iframe').contentWindow
+
+    await message(STAGE, plain)
+    await message(MIRROR, plain)
+
+    expect(onStage).not.toHaveBeenCalled()
+    expect(onMirror).not.toHaveBeenCalled()
   })
 })

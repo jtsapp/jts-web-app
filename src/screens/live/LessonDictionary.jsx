@@ -82,6 +82,11 @@ export default function LessonDictionary({ token, defaultOpen = false, incoming 
 
   useEffect(() => {
     function onVocab(event) {
+      // Слово берём только у непосредственной дочерней рамки этого окна — самой страницы урока.
+      // postMessage в окно может прислать кто угодно: вложенный в урок виджет (Wordwall) достаёт до
+      // top, но для нас он внучатый — его parent это страница урока. Читать .parent чужого окна можно
+      // и между источниками. Своё же окно отсекаем явно: у корневого окна parent — оно само.
+      if (!event.source || event.source === window || event.source.parent !== window) return
       const data = event.data
       if (!data || data.source !== 'jts-lesson' || data.type !== 'vocab-add' || !data.word) return
       const word = String(data.word)
