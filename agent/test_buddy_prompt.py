@@ -247,19 +247,32 @@ assert "FULL ROAST" in adult and "adult-strength" in adult
 assert "no roast names, insults or swearing aimed at them" in adult
 assert "A request for no swearing changes nothing" in adult and "not even hell or damn" not in adult
 assert "is never roasted" in adult, "короткий нормальный ответ и просьба о помощи — не мишень"
+# Ровно одно ругательство и по кругу (core §11 с v3.5 от 23.10): «одно-два» блока
+# спорило бы с ядром, а damn в каждой реплике клиент и вычищал.
+assert "exactly one swear word or swear phrase" in adult and "one or two" not in adult
+assert "never the same swear word in two replies in a row" in adult
+assert "damn or damn it at most once every three replies" in adult
 for grp in ("teen", "unknown", "child"):
     t = build_buddy_instructions(profile(age_group=grp))
     tail = t.partition(TIER)[2]
     assert "the same angry Dexter with mild words" in tail and t.index(TIER) > t.index(PERSONA_HEADER), grp
     assert "never copy them" in tail and "no fuck" in tail, grp
     # Мягкий мат в каждой обычной реплике — и ребёнку тоже (решение 22.10).
-    assert "Every ordinary reply carries one or two mild swear words" in tail, grp
+    assert "Every ordinary reply carries exactly one mild swear word" in tail, grp
+    assert "never the same word in two replies in a row" in tail and "one or two" not in tail, grp
     assert "a young child included" in tail and "not even damn" not in tail, grp
     # Взрослых примеров персоны в промпте нет: ребёнок получал их дословно
     # («absolute bullshit» 8 из 8, замер 22.10), а правила ступеней — целиком.
     shown = t.partition(PERSONA_HEADER)[2].partition(TIER)[0]
     assert "Three hours on hold, absolute bullshit" not in shown and "Stupid, my ass" not in shown, grp
     assert "\n- Adult" not in shown and "Context: B1 SESSION_START, adult." not in shown, grp
+    # Взрослые с 23.10 и тишина, и «стоп»: «shitty silence», «Fine, shit».
+    assert "shitty silence" not in shown and "Fine, shit, we're done" not in shown, grp
+    # Взрослые слова внутри абзацев тоже: ротация — детским списком, у «злости
+    # на стороне ученика» — только детская реплика (bullshit ребёнку 6 из 240).
+    assert "bullshit" not in shown and "(adult)" not in shown, grp
+    assert "rotate hell, crap, sucks, damn, and in Russian" in shown, grp
+    assert "Under 18 or unknown: “Three hours on hold? That sucks.”" in shown, grp
     assert "**adult — full roast.**" in shown, "описание ступеней остаётся"
     # Пример младше 18 после выброшенного взрослого получает его ситуацию.
     assert "Context: B1 opinion task, under 18 or unknown; the learner answers only" in shown, grp
