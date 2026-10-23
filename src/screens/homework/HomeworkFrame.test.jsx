@@ -30,10 +30,20 @@ describe('HomeworkFrame', () => {
     const { container } = показать()
     const frame = container.querySelector('iframe')
     expect(frame.getAttribute('src')).toBe(SRC)
-    expect(frame.getAttribute('allow')).toBe('autoplay')
     expect(container.querySelector('.hw-frame--full')).toBeNull()
     expect(container.querySelector('.hw-frame__title')).toBeNull()
     expect(screen.getByRole('button', { name: 'Во весь экран' }).getAttribute('aria-pressed')).toBe('false')
+  })
+
+  // autoplay: разрешение выдаётся документу, а материал живёт в своём iframe — у заданий на слух без него
+  // молчала бы запись. fullscreen — для встроенных в задание активностей вроде Wordwall: их кнопка «на
+  // весь экран» работает, только если право выдано по всей цепочке рамок сверху вниз. Своя кнопка
+  // «Во весь экран» от него не зависит: рамка разворачивается классом, а не Fullscreen API.
+  it('рамка пускает звук и полный экран во вложенных активностях', () => {
+    const { container } = показать()
+    const allow = container.querySelector('iframe').getAttribute('allow').split(';').map((token) => token.trim())
+
+    expect(allow).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
   })
 
   it('разворачивает ту же рамку — iframe не пересоздаётся, урок не перезагружается', () => {

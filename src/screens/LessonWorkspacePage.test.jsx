@@ -72,6 +72,16 @@ describe('урок в воркспейсе', () => {
     expect(container.querySelector('.lw-material-iframe').getAttribute('src')).toContain('mode=self')
   })
 
+  // Файл конструктора с Wordwall открывается и здесь: кнопка «на весь экран» внутри Wordwall работает,
+  // только если право выдано по всей цепочке рамок сверху вниз, а звук заданий на слух — при autoplay.
+  it('рамка материала пускает звук и полный экран во вложенных активностях', async () => {
+    const { container } = show(async () => ({ id: 42, title: 'L01', fileUrl: FILE_URL, steps: [] }))
+
+    await waitFor(() => expect(container.querySelector('.lw-material-iframe')).toBeTruthy())
+    const allow = container.querySelector('.lw-material-iframe').getAttribute('allow').split(';').map((token) => token.trim())
+    expect(allow).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
+  })
+
   it('из материала есть выход', async () => {
     // Раньше документ и материал открывались вообще без выхода — уйти можно
     // было только через сайдбар, и то догадавшись.
