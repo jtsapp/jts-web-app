@@ -82,6 +82,8 @@ const ENGINES = {
   prepositions: (css) => expect(css).toContain(`.pw [lang="kk"]{font-family:'Inter'`),
   // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
+  // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).
+  'grammar-games': (css) => expect(css).toContain('font-family:var(--gg-font,inherit)'),
 }
 
 describe('казахский интерфейс на Inter', () => {
