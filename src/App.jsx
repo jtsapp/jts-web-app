@@ -382,14 +382,14 @@ export default function App() {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
     }
-    // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
-    // проверить набор по ссылке, не проходя меню.
     // ?screen=grammar-games&topic=L1-01 — сразу тема «Грамматики · игр»: ссылку «Открыть на сайте» даёт
     // админка, методист проверяет залитую тему, не проходя хаб.
     if (deepLink === 'grammar-games') {
       const topic = searchParams.get('topic')
       if (topic) setGrammarGamesTarget({ topic })
     }
+    // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
+    // проверить набор по ссылке, не проходя меню.
     if (deepLink === 'listen') {
       const set = searchParams.get('set')
       if (set) setListenTarget({ set })

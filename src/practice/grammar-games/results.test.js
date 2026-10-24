@@ -43,6 +43,14 @@ describe('очередь сдач «Грамматики · игр»', () => {
     expect(q.pendingStars()).toEqual({})
   })
 
+  it('401 (сессия протухла) не теряет сдачу — она уйдёт со следующей', async () => {
+    const send = vi.fn().mockRejectedValueOnce(status(401)).mockResolvedValue({ best: 2, coins: 3 })
+    const q = createResultQueue(send, noWait)
+    expect(await q.submit({ topicId: 'L1-01', game: 'fix', stars: 2 })).toBeNull()
+    expect(q.pendingStars()).toEqual({ 'L1-01': { fix: 2 } })
+    await expect(q.flush()).resolves.toBe(3)
+  })
+
   it('ждущая сдача той же игры держит лучшие звёзды', async () => {
     const send = vi.fn().mockRejectedValue(new Error('net'))
     const q = createResultQueue(send, noWait)

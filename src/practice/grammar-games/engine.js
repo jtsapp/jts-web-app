@@ -142,6 +142,11 @@ function answered(ok){try{onAnswer(!!ok);}catch{/* рейтинг навыка �
 const plain=html=>{const d=doc.createElement('div');d.innerHTML=html;return d.textContent.replace(/\s+/g,' ').trim();};
 // Кнопка разметки: имя действия и аргументы в data-*, обработчик один — на корне (см. шапку файла).
 const act=(name,...args)=>`data-act="${name}"${args.length?` data-args="${esc(JSON.stringify(args))}"`:''}`;
+// Темы и уровни приходят из заливки методиста и правки JSON в админке, а не из файла прототипа: всё, что из них
+// попадает в разметку, экранируется (прототип вставлял иконки, картинки заданий и названия уровней как есть — на
+// домене сайта это XSS), цвет и градиент берутся только в известной форме, иначе — цвета прототипа.
+const col=c=>/^#[0-9a-fA-F]{3,8}$/.test(String(c))?c:'#874BF6';
+const grad=g=>/^linear-gradient\([#\w\s.,%-]+\)$/.test(String(g))?g:'linear-gradient(110.8deg,#9047FF 15.5%,#6932BB 94.2%)';
 /* ================= sound & voice ================= */
 let AC=null;
 function beep(type){if(!G.sound)return;try{AC=AC||new (globalThis.AudioContext||globalThis.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const now=AC.currentTime+.01;
@@ -183,7 +188,11 @@ on(root,'click',e=>{const a=e.target.closest&&e.target.closest('[data-act]');
  if(w&&w.isConnected){e.stopPropagation();openWord(w);return;}
  if(!(e.target.closest&&e.target.closest('#pop')))hidePop();});
 on(root,'mousemove',e=>{const c=e.target.closest&&e.target.closest('.c3d');root.querySelectorAll('.c3d.tilt').forEach(x=>{if(x!==c){x.classList.remove('tilt');x.style.transform='';}});if(!c)return;const r=c.getBoundingClientRect();const px=(e.clientX-r.left)/r.width-.5,py=(e.clientY-r.top)/r.height-.5;c.classList.add('tilt');c.style.transform=`perspective(900px) rotateY(${px*16}deg) rotateX(${-py*14}deg) translateZ(10px)`;});
-on(root,'keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Enter'&&e.target&&e.target.id==='tin')typeCheck();});
+on(root,'keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='tin')typeCheck();});
+// Escape и клик мимо окна слова — на документе, как в прототипе: после клика по карточке фокус уходит на body, и
+// keydown до корня тени не доходит. Снимаются вместе с остальными слушателями (тот же AbortController).
+on(doc,'keydown',e=>{if(e.key==='Escape')closeModal();});
+on(doc,'click',e=>{if(!(e.composedPath&&e.composedPath().includes(root)))hidePop();});
 /* ================= navigation ================= */
 let loadSeq=0;
 function go(v,a,b){loadSeq++;stopLoops();closeModal();hidePop();
@@ -200,14 +209,14 @@ function vWait(fail){return `<button class="back" ${act('go','hub')}>${t('back')
 function vHub(){const total=TOPICS.reduce((a,tp)=>a+topicStars(tp),0);
  const lvl=LEVELS.find(l=>l.id===G.lv)||LEVELS[0];if(!lvl)return '';const list=PROGRAM.filter(p=>p.lv===lvl.id);
  return `<div class="hero"><img src="${IMG.cheer}" alt=""><div><h1>${t('heroT')}</h1><p>${t('heroP')}</p></div><div class="stat"><b>⭐ ${total}</b>${t('stars')}</div></div>
- <div class="levels">${LEVELS.map(l=>{const tps=TOPICS.filter(x=>x.lv===l.id);const s=tps.reduce((a,x)=>a+topicStars(x),0),m=tps.reduce((a,x)=>a+topicMax(x),0)||1;return `<button class="lvcard ${l.id===G.lv?'on':''}" style="background:${l.bg}" ${act('lv',l.id)}><div class="big">${l.range}</div><div class="nm">${l.name}</div><div class="bar"><i style="width:${Math.round(s/m*100)}%"></i></div><div class="cnt">${PROGRAM.filter(p=>p.lv===l.id).length} ${t('topics')} · ⭐ ${s}</div></button>`;}).join('')}</div>
- <div class="lvhead"><div><div class="sub" style="margin:0;font-weight:800;letter-spacing:2px;font-size:12px">${lvl.name.toUpperCase()}</div><h2>${lvl.range}</h2></div><div class="stk">${lvl.stk.map(s=>`<span>${esc(s)}</span>`).join('')}</div></div>
- <div class="tgrid">${list.map(p=>{const tp=IDX[p.id];if(!tp)return `<div class="tcard soon"><span class="num">${String(p.n).padStart(2,'0')}</span><div class="ic" style="background:#F1EEF8">⏳</div><div><h3>${esc(p.t)}</h3><p>${t('soon')}</p></div></div>`;const s=topicStars(tp),m=topicMax(tp);
-  return `<button class="tcard" ${act('go','topic',tp.id)}><span class="num">${String(tp.n).padStart(2,'0')}</span><div class="ic" style="background:${tp.color}1A">${tp.icon}</div><div style="flex:1;min-width:0"><h3>${esc(L(tp.title))}</h3><p>${esc(L(tp.sub))}</p><div class="prog"><div class="bar"><i style="width:${Math.round(s/m*100)}%;background:${tp.color}"></i></div>⭐ ${s}/${m}</div></div></button>`;}).join('')}</div>`;}
+ <div class="levels">${LEVELS.map(l=>{const tps=TOPICS.filter(x=>x.lv===l.id);const s=tps.reduce((a,x)=>a+topicStars(x),0),m=tps.reduce((a,x)=>a+topicMax(x),0)||1;return `<button class="lvcard ${l.id===G.lv?'on':''}" style="background:${grad(l.bg)}" ${act('lv',l.id)}><div class="big">${esc(l.range)}</div><div class="nm">${esc(l.name)}</div><div class="bar"><i style="width:${Math.round(s/m*100)}%"></i></div><div class="cnt">${PROGRAM.filter(p=>p.lv===l.id).length} ${t('topics')} · ⭐ ${s}</div></button>`;}).join('')}</div>
+ <div class="lvhead"><div><div class="sub" style="margin:0;font-weight:800;letter-spacing:2px;font-size:12px">${esc(String(lvl.name||'').toUpperCase())}</div><h2>${esc(lvl.range)}</h2></div><div class="stk">${(lvl.stk||[]).map(s=>`<span>${esc(s)}</span>`).join('')}</div></div>
+ <div class="tgrid">${list.map(p=>{const tp=IDX[p.id];if(!tp)return `<div class="tcard soon"><span class="num">${esc(String(p.n).padStart(2,'0'))}</span><div class="ic" style="background:#F1EEF8">⏳</div><div><h3>${esc(p.t)}</h3><p>${t('soon')}</p></div></div>`;const s=topicStars(tp),m=topicMax(tp);
+  return `<button class="tcard" ${act('go','topic',tp.id)}><span class="num">${esc(String(tp.n).padStart(2,'0'))}</span><div class="ic" style="background:${col(tp.color)}1A">${esc(tp.icon)}</div><div style="flex:1;min-width:0"><h3>${esc(L(tp.title))}</h3><p>${esc(L(tp.sub))}</p><div class="prog"><div class="bar"><i style="width:${Math.round(s/m*100)}%;background:${col(tp.color)}"></i></div>⭐ ${s}/${m}</div></div></button>`;}).join('')}</div>`;}
 /* ================= RULE ================= */
-function fhtml(f){return `<div class="formula">${f.map((b,i)=>`${i?'<span class="plus">+</span>':''}<span class="brick ${b[0]}">${esc(b[1])}</span>`).join('')}</div>`;}
+function fhtml(f){return `<div class="formula">${f.map((b,i)=>`${i?'<span class="plus">+</span>':''}<span class="brick ${esc(b[0])}">${esc(b[1])}</span>`).join('')}</div>`;}
 function headTabs(tp){const lv=LEVELS.find(l=>l.id===tp.lv)||{range:tp.lv};return `<button class="back" ${act('go','hub')}>${t('back')}</button>
- <div class="thead"><div class="ic" style="background:${tp.color}1A">${tp.icon}</div><div style="flex:1;min-width:0"><span class="lvb">${lv.range} · ${String(tp.n).padStart(2,'0')}</span><h1>${esc(L(tp.title))}</h1>${G.tab==='rule'?`<p class="intro">${esc(L(tp.intro))}</p>`:`<p class="intro" style="color:var(--muted)">${esc(L(tp.sub))}</p>`}</div><img src="${G.tab==='rule'?IMG.read:IMG.fly}" alt=""></div>
+ <div class="thead"><div class="ic" style="background:${col(tp.color)}1A">${esc(tp.icon)}</div><div style="flex:1;min-width:0"><span class="lvb">${esc(lv.range)} · ${esc(String(tp.n).padStart(2,'0'))}</span><h1>${esc(L(tp.title))}</h1>${G.tab==='rule'?`<p class="intro">${esc(L(tp.intro))}</p>`:`<p class="intro" style="color:var(--muted)">${esc(L(tp.sub))}</p>`}</div><img src="${G.tab==='rule'?IMG.read:IMG.fly}" alt=""></div>
  <div class="tabs"><button class="${G.tab==='rule'?'on':''}" ${act('go','topic',tp.id,'rule')}>${t('tabRule')}</button><button class="${G.tab==='quest'?'on':''}" ${act('go','topic',tp.id,'quest')}>${t('tabQuest')} · ⭐ ${topicStars(tp)}/${topicMax(tp)}</button></div>`;}
 function hcell(h){if(typeof h==='object')return `<span>${esc(L(h))}</span>`;if(h==='➕')return `<span class="hc p">＋ ${t('pos')}</span>`;if(h==='➖')return `<span class="hc m">− ${t('neg')}</span>`;if(h==='❓')return `<span class="hc q">? ${t('que')}</span>`;return esc(h);}
 function vRule(){const tp=topic();const lg=t('legend').split('|');
@@ -236,7 +245,7 @@ let R=null,loops=[],GEN=0;function stopLoops(){GEN++;loops.forEach(f=>f());loops
 // Прототип подменял window.setTimeout на всю страницу; здесь та же обёртка поколений — только внутри движка.
 const setTimeout=(f,d,...a)=>{const g=GEN;const id=rawT(()=>{timers.delete(id);if(!dead&&g===GEN&&typeof f==='function')f(...a);},d);timers.add(id);return id;};
 const clearTimeout=id=>{timers.delete(id);globalThis.clearTimeout(id);};
-function frame(inner,{progress,right}={}){const tp=topic();return `<div class="gtop"><button class="back" style="margin:0" ${act('go','topic',tp.id,'quest')}>${t('backQuest')}</button><div class="title">${GAMES[G.stage].i} ${L(GAMES[G.stage].n)} · <span style="color:${tp.color}">${esc(L(tp.title))}</span></div><div class="sp"></div><button class="icon-btn" title="Rule" ${act('ruleSheet')}>📖</button>${right!=null?right:`<span class="pill">${t('score')}: ${R.score}</span>`}</div>${progress!=null?`<div class="pbar"><i style="width:${progress}%"></i></div>`:''}<div class="stage">${inner}</div>`;}
+function frame(inner,{progress,right}={}){const tp=topic();return `<div class="gtop"><button class="back" style="margin:0" ${act('go','topic',tp.id,'quest')}>${t('backQuest')}</button><div class="title">${GAMES[G.stage].i} ${L(GAMES[G.stage].n)} · <span style="color:${col(tp.color)}">${esc(L(tp.title))}</span></div><div class="sp"></div><button class="icon-btn" title="Rule" ${act('ruleSheet')}>📖</button>${right!=null?right:`<span class="pill">${t('score')}: ${R.score}</span>`}</div>${progress!=null?`<div class="pbar"><i style="width:${progress}%"></i></div>`:''}<div class="stage">${inner}</div>`;}
 // Звёзды уходят на бэкенд (HOOK.finish прототипа); монеты он считает сам и возвращает их число.
 function report(tid,game,stars){let p;try{p=Promise.resolve(onResult(tid,game,stars));}catch{return;}
  p.then(r=>{if(dead||!r)return;const c=Number(r.coins)||0;if(c>0)toast(t('coins').replace('{n}',c));const b=Number(r.best);if(Number.isFinite(b)){P[tid]=P[tid]||{};P[tid][game]=Math.max(P[tid][game]||0,b);}},()=>{});}
@@ -251,7 +260,7 @@ const nextOr=(fn,res)=>{R.i++;if(R.i>=R.items.length)finish(...res());else fn();
 /* ---- 1. pick ---- */
 function gPick(tp){R.items=shuffle(tp.gap).map(g=>({...g,opts:shuffle([{x:g.a,ok:1},...g.o.map(x=>({x}))])}));drawPick();}
 function qhtml(g,fill){return esc(g.s).replace('___',`<span class="blank" id="blank">${fill?esc(fill):'?'}</span>`)+(g.h?` <span class="hint">(${esc(g.h)})</span>`:'');}
-function drawPick(){const g=R.items[R.i];R.lock=false;$('app').innerHTML=frame(`<div class="pic">${g.pic||'✏️'}</div><div class="q">${qhtml(g)}</div><div class="opts">${g.opts.map((o,k)=>`<button class="opt" id="o${k}" ${act('pickAns',k)}>${esc(o.x)}</button>`).join('')}</div><div class="fb" id="fb"></div>`,{progress:prog()});}
+function drawPick(){const g=R.items[R.i];R.lock=false;$('app').innerHTML=frame(`<div class="pic">${esc(g.pic||'✏️')}</div><div class="q">${qhtml(g)}</div><div class="opts">${g.opts.map((o,k)=>`<button class="opt" id="o${k}" ${act('pickAns',k)}>${esc(o.x)}</button>`).join('')}</div><div class="fb" id="fb"></div>`,{progress:prog()});}
 function pickAns(k){if(R.lock)return;R.lock=true;const g=R.items[R.i],o=g.opts[k],right=g.opts.findIndex(x=>x.ok);$('blank').textContent=g.a;
  if(o.ok){R.ok++;R.score+=10;$('o'+k).classList.add('ok');fb('ok',R.ok%4===0?'great':'ok');answered(1);}else{R.miss++;$('o'+k).classList.add('bad');$('o'+right).classList.add('ok');fb('bad','bad');answered(0);mist(g.s+(g.h?' ('+g.h+')':''),[g.a,...g.o],g.a);}
  say(sentOf(g.s,g.a));setTimeout(()=>nextOr(drawPick,()=>[acc(R.ok,R.items.length),`${R.ok} / ${R.items.length} ${t('correctOf')}`]),o.ok?1100:2000);}
@@ -273,7 +282,7 @@ function sortDrop(ci){if(R.sel==null){toast(t('sortHint'));return;}const it=R.it
 function gBuild(tp){R.items=shuffle(tp.order);newBuild();}
 function newBuild(){const it=R.items[R.i];R.target=it.s.split(' ');R.pool=shuffle([...R.target.map(w=>({w})),{w:it.x,extra:1}]);R.sel=[];R.tries=0;R.solved=false;R.showSol=false;drawBuild();}
 function drawBuild(state){const it=R.items[R.i];const full=R.sel.length===R.target.length;
- $('app').innerHTML=frame(`<div class="pic">${it.pic||'🧩'}</div><p class="ginst">${t('build')}</p><div class="answer ${state||''}">${R.sel.map((pi,k)=>`<button class="word" ${act('unpick',k)}>${esc(R.pool[pi].w)}</button>`).join('')||'&nbsp;'}</div>
+ $('app').innerHTML=frame(`<div class="pic">${esc(it.pic||'🧩')}</div><p class="ginst">${t('build')}</p><div class="answer ${state||''}">${R.sel.map((pi,k)=>`<button class="word" ${act('unpick',k)}>${esc(R.pool[pi].w)}</button>`).join('')||'&nbsp;'}</div>
  <div class="bubbles">${R.pool.map((p,k)=>`<button class="bub ${R.sel.includes(k)?'used':''}" ${act('bpick',k)}>${esc(p.w)}</button>`).join('')}</div>
  ${R.solved?'':`<div class="row"><button class="btn line" ${act('bclear')}>${t('clear')}</button><button class="btn" ${full?'':'disabled'} ${act('bcheck')}>${t('check')}</button></div>`}
  <div class="fb ${state==='ok'?'ok':state==='bad'?'bad':''}">${state==='ok'?t('ok'):state==='bad'?t('again'):''}</div>
@@ -304,10 +313,10 @@ function fixPick(k){if(R.step!==1)return;const it=R.items[R.i];const o=R.opts[k]
 const ZONES={on:[220,108],in:[220,190],under:[220,268],next:[82,262],between:[362,262],front:[268,322],behind:[304,150]};
 function gPlace(tp){R.items=shuffle(tp.place);drawPlace();}
 function drawPlace(state,zk){const it=R.items[R.i];const pos=zk?ZONES[zk]:null;R.lock=!!state;
- $('app').innerHTML=frame(`<div class="taskline" style="font-size:22px" data-s="${esc(it.s)}">${esc(it.s)} <button class="spk" ${act('sayParent')}>🔊</button></div><p class="ginst">${t('placeHint')} ${it.item}</p>
+ $('app').innerHTML=frame(`<div class="taskline" style="font-size:22px" data-s="${esc(it.s)}">${esc(it.s)} <button class="spk" ${act('sayParent')}>🔊</button></div><p class="ginst">${t('placeHint')} ${esc(it.item)}</p>
  <div class="scenewrap" id="sw"><div class="scene" id="scene"><div class="boxA"></div><div class="legA" style="left:158px"></div><div class="legA" style="left:270px"></div><div class="boxB"></div>
  ${Object.entries(ZONES).map(([k,[x,y]])=>`<div class="zone ${zk===k?state:''}" style="left:${x}px;top:${y}px" ${act('placeAt',k)}></div>`).join('')}
- ${pos?`<div class="thing z-${['behind','in','front'].includes(zk)?zk:'other'}" style="left:${pos[0]}px;top:${pos[1]}px">${it.item}</div>`:''}</div></div>
+ ${pos?`<div class="thing z-${['behind','in','front'].includes(zk)?zk:'other'}" style="left:${pos[0]}px;top:${pos[1]}px">${esc(it.item)}</div>`:''}</div></div>
  <div class="fb ${state||''}">${state==='ok'?t('ok'):state==='bad'?t('bad'):''}</div>`,{progress:prog()});fitScene();}
 function fitScene(){const w=$('sw'),s=$('scene');if(!w||!s)return;const k=Math.min(1,w.clientWidth/580);s.style.transform=`scale(${k})`;w.style.height=(360*k)+'px';}
 on(globalThis,'resize',fitScene);
@@ -316,7 +325,7 @@ function placeAt(k){if(R.lock)return;const it=R.items[R.i];if(k===it.z){R.ok++;R
 /* ---- 8. type ---- */
 function gType(tp){R.items=shuffle(tp.gap).slice(0,10);newType();}
 function newType(){R.tries=0;R.hint=0;drawType();setTimeout(()=>{const i=$('tin');if(i)i.focus();},50);}
-function drawType(state,val){const g=R.items[R.i];$('app').innerHTML=frame(`<div class="pic">${g.pic||'⌨️'}</div><p class="ginst">${t('typeHint')}</p><div class="q">${qhtml(g,state==='ok'||state==='show'?g.a:null)}</div>
+function drawType(state,val){const g=R.items[R.i];$('app').innerHTML=frame(`<div class="pic">${esc(g.pic||'⌨️')}</div><p class="ginst">${t('typeHint')}</p><div class="q">${qhtml(g,state==='ok'||state==='show'?g.a:null)}</div>
  <div class="tin"><input id="tin" autocomplete="off" autocapitalize="off" spellcheck="false" class="${state==='ok'?'ok':state==='bad'?'bad':''}" value="${esc(val||'')}" ${state==='ok'||state==='show'?'disabled':''}><button class="btn" ${act('typeCheck')} ${state==='ok'||state==='show'?'disabled':''}>${t('check')}</button></div>
  <div class="row" style="margin-top:12px">${state==='ok'||state==='show'?'':`<button class="btn line" ${act('typeHint')}>${t('hintBtn')}</button>`}</div>
  <div class="fb ${state==='ok'?'ok':state?'bad':''}">${state==='ok'?t('ok'):state==='bad'?t('again'):state==='show'?t('answerIs')+' '+esc(g.a):''}</div>
@@ -332,8 +341,8 @@ function dialogStep(){if(R.over)return;if(R.i>=R.items.length){finish(acc(R.ok,R
  if(!l.a){R.shown.push({who:l.who,html:esc(l.t)});drawDialog();say(l.t);R.i++;const tm=setTimeout(dialogStep,Math.min(2600,900+l.t.length*35));loops.push(()=>clearTimeout(tm));}
  else{R.opts=shuffle([l.a,...l.o]);R.lock=false;drawDialog(true);}}
 function drawDialog(ask){const l=R.items[R.i];const av={A:'🙋‍♀️',B:'🙋‍♂️'};
- $('app').innerHTML=frame(`<div class="taskline">💬 ${esc(L(R.d.title))}</div><p class="ginst">${t('dialogHint')}</p><div class="chat" id="chat">${R.shown.map(m=>`<div class="msg ${m.who}"><span class="av">${av[m.who]}</span><div class="bb">${m.html}</div></div>`).join('')}
- ${ask?`<div class="msg ${l.who}"><span class="av">${av[l.who]}</span><div class="bb">${esc(l.t).replace('___','<span class="blank">?</span>')}</div></div>`:''}</div>
+ $('app').innerHTML=frame(`<div class="taskline">💬 ${esc(L(R.d.title))}</div><p class="ginst">${t('dialogHint')}</p><div class="chat" id="chat">${R.shown.map(m=>`<div class="msg ${esc(m.who)}"><span class="av">${av[m.who]}</span><div class="bb">${m.html}</div></div>`).join('')}
+ ${ask?`<div class="msg ${esc(l.who)}"><span class="av">${av[l.who]}</span><div class="bb">${esc(l.t).replace('___','<span class="blank">?</span>')}</div></div>`:''}</div>
  ${ask?`<div class="opts chatopts">${R.opts.map((o,k)=>`<button class="opt" id="o${k}" ${act('dialogAns',k)}>${esc(o)}</button>`).join('')}</div>`:''}<div class="fb" id="fb"></div>`,{progress:R.i/R.items.length*100});
  const c=$('chat');if(c)c.scrollTop=c.scrollHeight;}
 function dialogAns(k){if(R.lock)return;const l=R.items[R.i];const o=R.opts[k];

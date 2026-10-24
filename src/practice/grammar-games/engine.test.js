@@ -166,6 +166,40 @@ describe('«Грамматика · игры»: связь с приложени
     expect($('.tabs button').textContent).toContain('Ереже')
   })
 
+  // Темы правят в админке: разметка из данных — текст, а не HTML (прототип вставлял иконки и названия как есть).
+  it('иконка, картинка задания и уровень из данных не становятся разметкой', async () => {
+    const evil = '<img src=x onerror="window.__gg_xss=1">'
+    const index = JSON.parse(JSON.stringify(bundle.index))
+    index.levels[0] = { ...index.levels[0], name: evil, range: evil, bg: 'red;background-image:url(//x)', stk: undefined }
+    index.topics[0] = { ...index.topics[0], icon: evil, color: 'red;x:1' }
+    const body = JSON.parse(JSON.stringify(bundle.topics['L1-01']))
+    body.icon = evil
+    body.gap = body.gap.map((g) => ({ ...g, pic: evil }))
+    vi.useFakeTimers()
+    mount({ index, level: 'L1', loadTopic: async () => body })
+    expect($('.lvcard .big').textContent).toBe(evil)
+    expect($('.lvcard').getAttribute('style')).toContain('linear-gradient(110.8deg')
+    expect($('.tcard:not(.soon) .ic').textContent).toBe(evil)
+    await api.go('topic', 'L1-01')
+    expect($('.thead .ic').textContent).toBe(evil)
+    await api.go('game', 'pick')
+    expect($('.pic').textContent).toBe(evil)
+    expect(root.querySelector('img[onerror]')).toBeNull()
+    expect(window.__gg_xss).toBeUndefined()
+  })
+
+  it('Escape с фокусом на странице закрывает окно карточки, клик вне раздела — окно слова', async () => {
+    mount()
+    await api.go('topic', 'L1-01')
+    $('.c3d').click()
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect($('.ov')).toBeNull()
+    $('.gt td .w').click()
+    expect($('#pop').style.display).toBe('block')
+    document.body.click()
+    expect($('#pop').style.display).toBe('none')
+  })
+
   it('исходник не трогает document, location, хранилище, синтез браузера и крючки прототипа', () => {
     expect(source).not.toMatch(/\bdocument\./)
     expect(source).not.toMatch(/\blocation\./)

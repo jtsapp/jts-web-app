@@ -95,9 +95,14 @@ export default function GrammarGamesPage({ userName, userLevel, token, onNav, on
   }, [index, owner, loadTopic, loadGloss, submit])
 
   useEffect(() => {
-    const host = hostRef.current
-    if (host) host.style.setProperty('--gg-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
     apiRef.current?.setLang(lang)
+    // Шрифт — кадром позже: html[data-ui-lang] (в kk — Inter) ставит эффект I18nProvider, а эффекты потомков идут
+    // раньше родительских — в этом же тике хост ещё на шрифте прежнего языка.
+    const id = requestAnimationFrame(() => {
+      const host = hostRef.current
+      if (host) host.style.setProperty('--gg-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")
+    })
+    return () => cancelAnimationFrame(id)
   }, [lang])
 
   const toggleSound = () => {
