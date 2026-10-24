@@ -166,6 +166,8 @@ test('360px: хаб, правило и игра без горизонтальн�
   await expect(h.locator('.thead h1')).toBeVisible({ timeout: 60_000 })
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(await overflow(), 'правило').toBeLessThanOrEqual(0)
+  // иконка темы — эмодзи-картинка; мобильное правило прототипа для маскота прятало и её
+  await expect(h.locator('.thead .ic img.emj')).toBeVisible()
   await h.locator('.tabs button').nth(1).click()
   for (const g of ['pick', 'place', 'race', 'boss']) {
     await h.locator(`.gcard.g-${g}`).click()

@@ -305,6 +305,12 @@ table.gt{border-collapse:collapse;width:100%;min-width:520px}
 .gg-wait{display:grid;place-items:center;align-content:center;gap:12px;text-align:center;min-height:300px}
 .gg-wait img{width:120px;height:120px;object-fit:contain}
 .gg-wait .sub{margin:0;max-width:420px}
+/* починка прототипа: пилюля «? Вопрос» в шапке таблицы носит класс q и ловила правило вопроса игры .q
+   (25px, по центру) — заголовок столбца выходил крупнее всей таблицы */
+.gt th .hc.q{font-size:inherit;line-height:inherit;margin:0;text-align:left}
+/* починка прототипа: на телефоне .thead img{display:none} прячет маскота шапки темы — и заодно эмодзи-картинку
+   иконки темы (emojify делает её тоже <img>), квадрат иконки оставался пустым */
+.thead .ic .emj{display:inline-block}
 .pop .acts{flex-wrap:wrap}
 .pop .acts button:disabled{opacity:.6;cursor:default;background:#F1EEF8;color:var(--acc)}
 `
