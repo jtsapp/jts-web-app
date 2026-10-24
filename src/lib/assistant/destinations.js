@@ -45,7 +45,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
     name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'грамматика, Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
+    about: 'грамматика, «Грамматика · игры», Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
@@ -82,6 +82,12 @@ export const DESTINATIONS = [
     id: 'listen', nav: 'listen', screen: 'listen',
     name: { ru: 'Just to Listen', kk: 'Just to Listen', en: 'Just to Listen' },
     about: 'диктант на слух: слово по буквам, потом предложение с ним; уровни A0–B2 и 16 профессий',
+  },
+  // Темы «Грамматики · игр» тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
+    name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
+    about: '125 тем грамматики A0–C1 (вкладка «Письмо»): правило с формулами и примерами, потом игры по теме и финальный бой',
   },
   {
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',

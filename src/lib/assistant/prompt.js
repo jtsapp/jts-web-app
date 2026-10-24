@@ -33,6 +33,7 @@ export const SCREEN_NAMES = {
   shadowing: 'Практика → Шэдоуинг',
   writing: 'Практика → Письмо',
   prepositions: 'Практика → Письмо → Prepositions World (курс предлогов)',
+  'grammar-games': 'Практика → Письмо → Грамматика · игры (темы, правило и игры)',
   workbook: 'Практика → Воркбуки',
   words: 'Практика → Слова в картинках',
   verbs: 'Практика → Глаголы',
