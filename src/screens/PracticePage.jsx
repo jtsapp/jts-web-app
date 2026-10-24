@@ -873,6 +873,20 @@ export default function PracticePage({
           />
         )
 
+      case 'grammarGames':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-grammar-games"
+            variant="grammar-games"
+            wide
+            title={t('practice.grammarGames.heading')}
+            desc={t('practice.grammarGames.desc')}
+            cta={t('practice.grammarGames.cta')}
+            onStart={() => onNav?.('grammar-games')}
+          />
+        )
+
       case 'prepositions':
         return (
           <Banner

@@ -4211,6 +4211,17 @@ textarea {
 @media (max-width: 560px) {
   .prp-top { padding: 8px 16px 0; }
 }
+/* «Грамматика · игры» в макете тоже нет — градиент уровня L1 прототипа (спека A3). Оболочка — как у Prepositions
+   World; тумблер звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
+.pk-banner--grammar-games { background: linear-gradient(110.8deg, #9047ff 15.5%, #6932bb 94.2%); }
+.ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }
+.ggp-sound { width: 40px; height: 40px; flex: none; border: 1px solid #efedf4; border-radius: 999px; background: #fff; font-size: 17px; line-height: 1; cursor: pointer; }
+.ggp-sound[aria-pressed='false'] { opacity: 0.55; }
+.ggp-host { display: block; }
+.ggp-host[hidden] { display: none; }
+@media (max-width: 560px) {
+  .ggp-top { padding: 8px 16px 0; }
+}
 /* Cartoon World в макете тоже нет — фирменный фиолетовый прототипа (#6332ff) в розовый его акцента. */
 .pk-banner--cartoons { background: linear-gradient(99.4deg, #6332ff 17%, #b62ab8 95.5%); }
 
