@@ -50,7 +50,8 @@ function write(file, buf) {
 function main() {
   const src = arg('--html')
   if (!src) throw new Error('--html <путь к прототипу «Грамматики · игр»>')
-  const lines = fs.readFileSync(src, 'utf8').split('\n')
+  // рабочая копия в Windows приходит с CRLF (autocrlf) — строки режем по обоим
+  const lines = fs.readFileSync(src, 'utf8').split(/\r?\n/)
 
   // IMG — JS-литерал с одинарными кавычками и голыми ключами, не JSON: вычисляем в пустом контексте.
   const img = vm.runInNewContext(`(${literal(lines, 'IMG')})`)
