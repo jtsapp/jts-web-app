@@ -168,3 +168,54 @@ describe('Словарь в уроке — «Словарь школы»', () =>
     expect(await findByText('Не удалось загрузить словарь')).toBeTruthy()
   })
 })
+
+/* Слово в «Мои слова» приходит и со страницы урока: скрипт в файле шлёт vocab-add в window.parent, когда
+   ученик забирает слово из карточки перевода. Сообщение может прислать кто угодно (в урок вложены чужие
+   виджеты — Wordwall, и они достают до top), поэтому берём его только у непосредственной дочерней рамки
+   этого окна (в уроке это страница урока). Окно вложенного виджета для приложения внучатое. */
+describe('Словарь в уроке — слова со страницы урока (vocab-add)', () => {
+  /* В jsdom у iframe.contentWindow.parent — окно jsdom, а не глобал vitest (window), поэтому окна
+     собираем слепками: у потомка parent — то окно, которое слушает. */
+  const lessonPage = { parent: window }
+  const widgetInLesson = { parent: lessonPage }
+  const popup = {}
+  popup.parent = popup
+
+  const vocabAdd = (word, translation) => ({ source: 'jts-lesson', type: 'vocab-add', word, translation })
+  const post = (data, source) => act(() => {
+    window.dispatchEvent(new MessageEvent('message', { data, source }))
+  })
+
+  /* Личный список уже приехал: ответ сервера не затрёт слово, пришедшее сообщением. */
+  async function openLoaded() {
+    const view = mount()
+    open(view.container)
+    await view.findByText('fashion show')
+    return view
+  }
+
+  it('слово со страницы урока (дочерняя рамка) появляется в «Моих словах»', async () => {
+    const { findByText } = await openLoaded()
+
+    await post(vocabAdd('serendipity', 'везение'), lessonPage)
+
+    expect(await findByText('serendipity')).toBeTruthy()
+    expect(await findByText('везение')).toBeTruthy()
+  })
+
+  it.each([
+    ['виджет, вложенный в страницу урока (Wordwall)', widgetInLesson],
+    ['окно верхнего уровня (всплывающее)', popup],
+    ['само окно приложения', window],
+    ['источник неизвестен', null],
+  ])('слово от чужого окна не принимается: %s', async (_, source) => {
+    const { findByText, queryByText } = await openLoaded()
+
+    await post(vocabAdd('forged', 'подделка'), source)
+
+    /* Контроль: слово со страницы урока после отказа принимается, подделки в списке нет. */
+    await post(vocabAdd('real', 'настоящее'), lessonPage)
+    expect(await findByText('real')).toBeTruthy()
+    expect(queryByText('forged')).toBeNull()
+  })
+})

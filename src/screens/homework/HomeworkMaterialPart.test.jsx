@@ -235,6 +235,25 @@ describe('HomeworkMaterialPart — действие в рамке оживляе
     expect(onTouched).toHaveBeenCalledTimes(1)
     чужаяРамка.remove()
   })
+
+  // Конструктор вкладывает в страницу задания рамку Wordwall (чужой сайт), и её код достаёт до top, то есть
+  // до окна приложения. Для приложения такая рамка внучатая: её окно — не окно рамки части.
+  it('виджет, вложенный в страницу задания (Wordwall), в счёт не идёт', async () => {
+    const { frame, onTouched } = await открытьРамку()
+    const страница = frame.contentDocument
+    страница.open()
+    страница.write('<!doctype html><html><body></body></html>')
+    страница.close()
+    const виджет = страница.createElement('iframe')
+    страница.body.appendChild(виджет)
+
+    прислать(виджет.contentWindow, клик)
+    expect(onTouched).not.toHaveBeenCalled()
+
+    // Контроль: настоящее действие страницы задания слышно — отказ выше не пустой.
+    прислать(frame.contentWindow, клик)
+    expect(onTouched).toHaveBeenCalledTimes(1)
+  })
 })
 
 // Регрессия из разведки: materialCard теперь прокидывает closedWithoutSubmission

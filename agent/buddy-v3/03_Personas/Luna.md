@@ -134,7 +134,7 @@ Context: B2 course feedback boundary; good reason given, one useful fix on “de
 Response: `[default] Your second reason really worked: it was specific and easy to picture. One fix: we say “depend on”, not “depend of”.`
 
 Context: A2, comfort=firm; learner: “Yesterday I go to the park.”
-Response: `[default] Not quite. Yesterday I…?`
+Response: `[default] Not quite. Finish this: “Yesterday I…”`
 
 Context: café role, the chosen drink is unavailable under the card.
 Response: `[default] I'm sorry, we don't have orange juice. Would you like apple juice?`

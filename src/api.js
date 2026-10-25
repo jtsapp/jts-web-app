@@ -2089,6 +2089,33 @@ export function getPrepositions(token, onFresh) {
   return cachedAuthGet('/mobile/prepositions', token, onFresh)
 }
 
+// «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
+// ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
+// localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и
+// словарь экран держит в памяти вкладки сам (screens/grammar-games/useGrammarGamesData.js). 404 у списка —
+// раздел ещё не залит через админку.
+export function getGrammarGames(token) {
+  return authGet('/mobile/grammar-games', token)
+}
+
+export function getGrammarGamesTopic(token, id) {
+  return authGet(`/mobile/grammar-games/topics/${encodeURIComponent(id)}`, token)
+}
+
+export function getGrammarGamesGloss(token) {
+  return authGet('/mobile/grammar-games/gloss', token)
+}
+
+export function getGrammarGamesProgress(token) {
+  return authGet('/mobile/grammar-games/progress', token)
+}
+
+// Ровно три поля: бэкенд строгий, лишнее поле — 400. Монеты считает он (только прирост лучшего результата),
+// ответ — { best, coins, balance }; 409 — та же сдача уже записывается, повторить (practice/grammar-games/results.js).
+export function postGrammarGamesResult(token, { topicId, game, stars }) {
+  return authPost('/mobile/grammar-games/result', token, { topicId, game, stars })
+}
+
 // Cartoon World: каталог (~330 КБ — источники прототипа как есть, ссылки на фоны, нерабочие видео). Большой ответ
 // cachedAuthGet держит только в памяти вкладки.
 export function getCartoons(token, onFresh) {
