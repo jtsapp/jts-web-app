@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pronunciationBand, speakingBand, speakingQuestions, wordsPerMinute } from './speaking.js'
+import { gradeErrorKey, pronunciationBand, speakingBand, speakingQuestions, wordsPerMinute } from './speaking.js'
 
 describe('Speaking: вопросы, темп и band', () => {
   it('у Part 2 отвечают на саму карточку, у Part 1 — на вопросы темы', () => {
@@ -23,5 +23,17 @@ describe('Speaking: вопросы, темп и band', () => {
   it('произношение — accuracy Azure, взвешенная по длительности ответов', () => {
     expect(pronunciationBand([{ accuracy: 80, durationSec: 30 }, { accuracy: 60, durationSec: 10 }, { mock: true, accuracy: 0, durationSec: 50 }])).toBe(7) // (80·30 + 60·10) / 40 = 75 → 6.75 → 7
     expect(pronunciationBand([])).toBeNull()
+  })
+})
+
+describe('gradeErrorKey', () => {
+  it('отдаёт свои фразы известным кодам роута, остальное — общей', () => {
+    expect(gradeErrorKey('no_speech')).toBe('no_speech')
+    expect(gradeErrorKey('grading_unavailable')).toBe('grading_unavailable')
+    expect(gradeErrorKey('auth_required')).toBe('auth_required')
+    expect(gradeErrorKey('model_failed')).toBe('busy')
+    expect(gradeErrorKey('timeout')).toBe('busy')
+    expect(gradeErrorKey('start_failed')).toBe('other')
+    expect(gradeErrorKey(undefined)).toBe('other')
   })
 })

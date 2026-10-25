@@ -9,7 +9,7 @@ import { setIeltsParams } from '../ielts/urlParams.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { CueCard } from '../ielts/speaking/SpeakingTaskView.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
-import { TIMING, formatSec, speakingQuestions } from '../ielts/speaking/speaking.js'
+import { TIMING, formatSec, gradeErrorKey, speakingQuestions } from '../ielts/speaking/speaking.js'
 import { useLiveAcoustics } from '../ielts/speaking/liveAcoustics.js'
 import { CheckIcon, CloseIcon, EditIcon, MicIcon, Replay5Icon } from '../ielts/icons.jsx'
 
@@ -237,7 +237,9 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
       const view = await assessIeltsSpeaking(authToken, { testId, mode, uiLang: lang, answers })
       onDone?.(view.attempt.id)
     } catch (e) {
-      setError(t(`ieltsSpeaking.gradeError.${['quota', 'grading_unavailable', 'no_speech', 'too_large'].includes(e?.code) ? e.code : 'other'}`))
+      // код ошибки — в консоль: на экране причины сведены к нескольким фразам, а «other» иначе не разобрать
+      console.warn('ielts speaking grading failed:', e?.code || e?.status || e?.message)
+      setError(t(`ieltsSpeaking.gradeError.${gradeErrorKey(e?.code)}`))
       setBusy(false)
     }
   }
