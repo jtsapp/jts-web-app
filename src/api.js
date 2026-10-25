@@ -2114,6 +2114,24 @@ export function postGrammarGamesResult(token, { topicId, game, stars }) {
   return authPost('/mobile/grammar-games/result', token, { topicId, game, stars })
 }
 
+// «Скорочтение»: тексты (с готовым образцом озвучки или без него — тогда его создаёт роут сайта
+// /api/practice/speed-reading/sample), свои попытки и сдача попытки (контракт — backend
+// docs/practice/SPEED_READING.md). Без кэша: тексты правит админка, попытки приходят и с других устройств.
+// Пустой список — раздел ещё не наполнен. Ответ разбирает practice/speed-reading/data.js.
+export function getSpeedReadingTexts(token) {
+  return authGet('/mobile/speed-reading/texts', token)
+}
+
+export function getSpeedReadingAttempts(token, limit = 20) {
+  return authGet(`/mobile/speed-reading/attempts?limit=${encodeURIComponent(limit)}`, token)
+}
+
+// Тело — attemptBody() (ровно девять полей: цифры попытки, записи нет — Д6). Ответ — { attempt, coins, balance };
+// монеты считает бэкенд (раз в сутки на текст, Д16).
+export function postSpeedReadingAttempt(token, body) {
+  return authPost('/mobile/speed-reading/attempts', token, body)
+}
+
 // Cartoon World: каталог (~330 КБ — источники прототипа как есть, ссылки на фоны, нерабочие видео). Большой ответ
 // cachedAuthGet держит только в памяти вкладки.
 export function getCartoons(token, onFresh) {

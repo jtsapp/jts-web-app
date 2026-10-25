@@ -740,6 +740,46 @@ Apple — статикой `public/practice/grammar-games/` (`scripts/grammar-ga
 `rules.test.js` — чинить порт. `allTopics.test.js` проходит каждую игру всех 125 настоящих тем верными ответами до
 результата (~80 с). E2E — `tests/grammar-games.spec.js` (ручки — `page.route` на `bundle.json`).
 
+**«Скорочтение» в «Практике» — читать вслух за телесуфлёром, тексты и попытки на бэкенде (25.10.2026).** Вкладка
+«Аудирование», баннер с бейджем «Новое» сразу после Just to Listen (Д5). Ученик выбирает текст и скорость (ровно
+0.5/0.7/1/1.5/2/2.5/3x; 1x — темп образца `sample.wpm`, без него 150 сл/мин), слушает образец диктора с подсветкой
+слов, читает вслух бегущую строку после отсчёта 3-2-1 и получает процент прочитанного, звёзды (85/60/30 %), свой
+темп и свою запись. Спека — та же, что у «Грамматики · игр» (часть B, Д5–Д7, Д9, Д12, Д15, Д16), план сайта —
+`docs/superpowers/plans/2026-10-25-speed-reading-web.md`, контракт ручек — backend `docs/practice/SPEED_READING.md`.
+Источник правды текстов — админка («Практика и тесты» → «Скорочтение»); первые 8 — из прототипа кабинета
+`data/jts-student-cabinet.html`: `node scripts/speed-reading/export-texts.js` пишет `build/speed-reading/texts.json`
+для «Импорт JSON». Экран `?screen=speed-reading[&text=<id>]` (`src/screens/SpeedReadingPage.jsx`, данные —
+`src/screens/speed-reading/useSpeedReadingData.js`: `GET /mobile/speed-reading/texts` и `…/attempts` на каждый заход,
+`POST …/attempts` ровно с девятью полями `attemptBody`, обрыв сети и 409 — повтор). Движок —
+`src/practice/speed-reading/engine.js`: `pSpeed`/`sr*` прототипа почти дословно в Shadow DOM, отличия — в шапке
+файла; чистые правила (`srAlign`, звёзды, темп, длительности) — `rules.js` под оракулом самого прототипа
+(`scripts/speed-reading/extract-oracle.js` исполняет его функции в `node:vm` → `__fixtures__/oracle.json`; красный
+`rules.test.js` — чинить порт).
+Образец — запись ElevenLabs `/with-timestamps`, один раз на пару «текст + голос»: если в списке `sample: null`,
+движок при открытии текста зовёт `POST /api/practice/speed-reading/sample` (только со входом) — роут берёт у
+бэкенда `sample-claim` (`x-integration-key` = `SPEED_READING_KEY`, по умолчанию `IELTS_GRADER_KEY`), синтезирует
+(`src/lib/speedReading/sample.js`: голоса `uk-female`/`uk-male` → id в `SPEED_READING_VOICES`, разметка
+`wordsFromAlignment` — по слову на каждый пробельный кусок текста, как режет телесуфлёр) и отдаёт mp3 бэкенду
+`PUT …/sample`; 409 claim — «готовит другой запрос», клиент спрашивает снова через 3 с (`sampleClient.js`). Без
+ключа ElevenLabs — 503 (до claim, чтобы не вешать отметку «готовится») и «Образец недоступен», запись и итог
+работают. Бегущая строка не медленнее 75 сл/мин (`MIN_WPM`): у медленного голоса 0,5x иначе не влезло бы в 3 минуты
+записи. Звучит образец общим `<audio>` через
+`playUrl` с опцией `onTime` (кадры rAF, пока звук идёт — `timeupdate` для подсветки на 3x редок).
+Запись — `recorder.js` (MediaRecorder → WAV 16 кГц `blobToWav16kMono`, потолок 3 мин; `useRecorder` IELTS не
+трогаем). Итог — по `/api/transcribe` (Azure, запасной Soniox) во всех браузерах; не ответил — по живому Web Speech
+(`browser`; он же — если сервер вернул пустой текст, а живое слова слышало); ни того, ни другого — «оценка
+недоступна» (`none`, ★0, `percent: null`). Числа распознавание пишет цифрами («412» за «four hundred and twelve») —
+`expandHeard` дописывает их словами перед выравниванием. Живая подсветка — `live.js`, только Chrome и Edge на
+компьютере (`liveAllowed`: на телефонах распознаватель и запись делят микрофон и глушат друг друга), со сторожем,
+как у Аркады: нет `start` за 2 с или ни слова за 6 с — выключена до конца попытки. Запись ученика не хранится
+нигде (Д6): WAV — только в `/api/transcribe`, на бэкенд — цифры; плеер и «Скачать» (WAV) живут до ухода с экрана,
+«Мои попытки» с сервера — без плеера. Живую подсветку распознаёт сам браузер (в Chrome — сервис Google), как в
+прототипе. Пока браузер спрашивает микрофон, экран показывает ожидание с «Отменой»: выбор текста посреди запроса
+разводил текст попытки и итога. Монеты считает бэкенд — раз в сутки на текст за попытку с ★ (Д16).
+Демо без микрофона ничего не отправляет. E2E — `tests/speed-reading.spec.js` (фальшивый микрофон с файлом тона,
+ручки и `/api/transcribe` — `page.route`). Образцы голосов на выбор — `node scripts/speed-reading/voice-samples.js`
+→ `build/speed-reading/voices/` (на 25.10 стоят Alice и George, владелец выбирает).
+
 **Cartoon World в «Практике» — мультфильмы с YouTube и письменная миссия, данные в MinIO.**
 Источник правды — standalone-прототип «cartoons.html» (726 видео A0–C1 и по миссии
 на каждое: переписка с героем на 10 ходов). Методист заливает его ЦЕЛИКОМ в web-admin

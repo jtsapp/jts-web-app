@@ -84,6 +84,8 @@ const ENGINES = {
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).
   'grammar-games': (css) => expect(css).toContain('font-family:var(--gg-font,inherit)'),
+  // Тот же приём у Скорочтения: --sr-font от шрифта хоста.
+  'speed-reading': (css) => expect(css).toContain('font-family:var(--sr-font,inherit)'),
 }
 
 describe('казахский интерфейс на Inter', () => {

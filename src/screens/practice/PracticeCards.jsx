@@ -141,11 +141,15 @@ export function Rail({ grid, className, children }) {
 // Промо-баннер тренажёра: градиент, заголовок, описание и белая кнопка.
 // Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
 // с артом — в макете заголовок в одну строку, перенос делает ширина.
-export function Banner({ id, variant, wide, title, desc, cta, onStart, badge }) {
+// tag — короткая пометка у заголовка («Новое» у свежего тренажёра).
+export function Banner({ id, variant, wide, title, desc, cta, onStart, badge, tag }) {
   return (
     <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
       <div className="pk-banner__text">
-        <h3 className="pk-banner__title">{title.replace(/\n/g, ' ')}</h3>
+        <h3 className="pk-banner__title">
+          {title.replace(/\n/g, ' ')}
+          {tag && <span className="pk-banner__tag">{tag}</span>}
+        </h3>
         <p className="pk-banner__desc">{desc}</p>
       </div>
       <button type="button" className="pk-banner__cta" onClick={onStart}>
