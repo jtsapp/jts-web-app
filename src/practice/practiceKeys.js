@@ -78,6 +78,14 @@ export const CARTOONS_KEY = 'jts_cartoons_v1'
 // Черновики ответов миссий { <id видео>: текст } — только устройство: недописанный текст на другое устройство не
 // везём, но чистим вместе с прогрессом (на общей машине это тексты ученика).
 export const CARTOONS_DRAFTS_KEY = 'jts_cartoons_drafts'
+// Прогресс Word Hunt: { stars: { <область|атом>: время }, pl: { <планета>: { x: [шаги кроссворда], h: { easy |
+// medium | hard: { best? } } } }, comets, ach, days, gals, games, cleared, pure, last?, optTimed?, cleanHunt? } —
+// форма и ключ прототипа (jts_lexiverse_v1). Replace со сведением merge (wordhunt/progress.js): собранное слово
+// и пройденный шаг не «распроходятся».
+export const WORDHUNT_KEY = 'jts_lexiverse_v1'
+// Недорешённые сетки кроссворда { <планета:шаг | comet>: { seed, keys, v, r, h } } — только устройство (wip
+// прототипа): недописанные буквы на другое устройство не везём, но чистим вместе с прогрессом.
+export const WORDHUNT_WIP_KEY = 'jts_lexiverse_wip'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -104,6 +112,7 @@ export const NUMBERS_PROGRESS_EVENT = 'numbers-progress'
 export const LISTEN_PROGRESS_EVENT = 'listen-progress'
 export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
+export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

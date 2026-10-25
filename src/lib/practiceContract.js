@@ -45,6 +45,10 @@ import { mergeReadingState } from './readingState.js'
 // 'cartoons' — стейт-объект Cartoon World {missions: {<id видео>: {turns, done, at, u}}}. Replace; клиент сводит
 // с серверным (cartoons/progress.js merge): пройденное остаётся пройденным, ходы — у свежей копии. Area
 // 'cartoons' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'wordhunt' — стейт-объект Word Hunt (ключ прототипа jts_lexiverse_v1: собранные слова, шаги и сложности по
+// планетам, кометы, награды, дни). Replace; клиент сводит с серверным (wordhunt/progress.js merge): собранное
+// остаётся собранным. Недорешённые сетки сюда не идут — только устройство. Area 'wordhunt' бэкенду неизвестна —
+// в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -65,6 +69,7 @@ export const PRACTICE_MODULES = [
   'listen',
   'prepositions',
   'cartoons',
+  'wordhunt',
   'vocabLearned',
   'vocabMisses',
 ]
