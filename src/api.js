@@ -930,12 +930,6 @@ export function setLessonMeetingUrl(token, id, meetingUrl, wholeSeries = false) 
   return authPut(`/admin/lessons/${id}/meeting-url`, token, { meetingUrl, wholeSeries })
 }
 
-// Пропуск в звонок урока (Zoom Video SDK). 503 — звонок не настроен на окружении,
-// 409 — урок офлайн или уже завершён; экран по коду решает, что показать вместо звонка.
-export function getLessonVideoToken(token, lessonId) {
-  return authPost(`/lessons/${lessonId}/video/token`, token)
-}
-
 export function pauseLiveLesson(token, id, minutes) {
   return authPut(`/admin/lessons/${id}/pause?minutes=${encodeURIComponent(minutes)}`, token)
 }
