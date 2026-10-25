@@ -17,6 +17,7 @@ import TourSections from './home/TourSections.jsx'
 import TemperInvite from './home/TemperInvite.jsx'
 import { armTemperInvite, closeTemperInvite, isTemperInvitePending, temperInviteKey } from './home/temperInvite.js'
 import NewReportCard from '../feedback/NewReportCard.jsx'
+import TeacherMatchingPanel from '../matching/TeacherMatchingPanel.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
@@ -342,6 +343,7 @@ export default function HomePage({
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
+        <TeacherMatchingPanel token={token} compact onOpen={() => onNav?.('lessons')} />
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}

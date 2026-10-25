@@ -788,6 +788,16 @@ export function getMyLessonOccurrences(token) {
   return authGet('/admin/lessons/occurrences', token)
 }
 
+export const getMatchingCase = token => authGet('/student/matching', token)
+export const getMatchingCandidates = token => authGet('/student/matching/candidates', token)
+export const saveMatchingPreferences = (token, preferences) => authPut('/student/matching/preferences', token, preferences)
+export const askMatchingManager = (token, preferences) => authPost('/student/matching/ask-manager', token, preferences)
+export const sendMatchingRequests = (token, teacherIds) => authPost('/student/matching/requests', token, {teacherIds})
+export const confirmMatchingSchedule = token => authPost('/student/matching/confirm', token, {})
+export const requestTeacherChange = (token, reason, text) => authPost('/student/matching/change', token, {reason, text})
+export const getMatchingHandoffs = token => authGet('/student/matching/handoffs', token)
+export const chooseMatchingHandoff = (token, id, choice) => authPost('/student/matching/handoffs/'+id+'/choice', token, {choice})
+
 export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
