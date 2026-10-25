@@ -115,8 +115,8 @@ describe('PracticePage — навыки и уровень', () => {
     const { container } = renderWith(null)
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
     // У «Чтения» шесть: + Word Hunt и «Аркада»; у «Говорения» шесть: + SpeakSpin; у
-    // «Аудирования» десять: + «Числа», Just to Listen и Cartoon World; у «Письма»
-    // шесть: + Prepositions World и «Грамматика · игры».
-    expect(counts).toEqual(['10 тренажеров', '6 тренажеров', '6 тренажеров', '6 тренажеров'])
+    // «Аудирования» одиннадцать: + «Числа», Just to Listen, «Скорочтение» и Cartoon World;
+    // у «Письма» шесть: + Prepositions World и «Грамматика · игры».
+    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '6 тренажеров', '6 тренажеров'])
   })
 })

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { buildSystemPrompt, normalizeAssessment, userMessage, normalizeDetails } from './writingGrader.js'
+import { describe, it, expect, vi } from 'vitest'
+import { buildCoachPrompt, buildSystemPrompt, coachWriting, normalizeAssessment, normalizeCoach, userMessage, normalizeDetails } from './writingGrader.js'
 
 const text = 'The graph shows cycling. Northport rose sharply.'
 
@@ -51,5 +51,51 @@ describe('normalizeDetails', () => {
     expect(d.paragraphs).toHaveLength(1)
     expect(d.vocabulary.map((v) => v.word)).toEqual(['good'])
     expect(d.nextSteps).toHaveLength(3)
+  })
+})
+
+describe('«наставник» Writing: как развить эссе и улучшить по предложениям', () => {
+  const text = 'Education is very important. It give people chance.\n\nFirstly, free education help poor students. They can study.\n\nIn conclusion, it is good.'
+  const raw = {
+    sentences: [
+      { paragraph: 1, original: "It give people chance.", improved: "It gives people a chance to succeed.", why: "Согласование и артикль", criterion: "grammaticalRange" },
+      // номер абзаца модель перепутала — берётся по тексту
+      { paragraph: 1, original: "Firstly, free education help poor students.", improved: "Firstly, free education helps students from poor families.", why: "Согласование", criterion: "grammaticalRange" },
+      { paragraph: 2, original: "Firstly, free education help poor students.", improved: "Дубль", why: "x", criterion: "lexicalResource" },
+      { paragraph: 2, original: "A sentence the student never wrote.", improved: "Better.", why: "x", criterion: "lexicalResource" },
+      { paragraph: 3, original: "In conclusion, it is good.", improved: "In conclusion, it is good.", why: "без изменений", criterion: "nonsense" },
+    ],
+    developmentTips: [
+      { paragraph: 2, area: "examples", tip: "Добавьте пример.", example: "For instance, ..." },
+      { paragraph: 9, area: "weird", tip: "Общий совет.", example: "" },
+      { paragraph: 1, area: "ideas", tip: "", example: "x" },
+    ],
+    improvedEssay: ["Education matters.", "", "To conclude, it pays off."],
+  }
+
+  it("берёт только дословные предложения, абзац — по тексту, без дублей и «улучшений» без изменений", () => {
+    const c = normalizeCoach(raw, text)
+    expect(c.sentences.map((x) => [x.paragraph, x.original])).toEqual([[1, "It give people chance."], [2, "Firstly, free education help poor students."]])
+    expect(c.sentences[0].criterion).toBe("grammaticalRange")
+    expect(c.developmentTips).toEqual([
+      { paragraph: 2, area: "examples", tip: "Добавьте пример.", example: "For instance, ..." },
+      { paragraph: 0, area: "ideas", tip: "Общий совет.", example: "" },
+    ])
+    expect(c.improvedEssay).toEqual(["Education matters.", "To conclude, it pays off."])
+  })
+
+  it("промпт: язык пояснений, данные в тегах, без выдуманной статистики", () => {
+    const p = buildCoachPrompt({ taskKind: "task2" }, "kk")
+    expect(p).toContain("in Kazakh")
+    expect(p).toContain("<response>")
+    expect(p).toContain("Never invent statistics")
+  })
+
+  it("сбой или пустой ответ модели — null, а не исключение: оценка сохраняется без этих блоков", async () => {
+    const job = { taskKind: "task2", text, task: {} }
+    expect(await coachWriting({ run: vi.fn().mockRejectedValue(new Error("529")), model: "m", job, uiLang: "ru", timeoutMs: 1000 })).toBeNull()
+    expect(await coachWriting({ run: vi.fn().mockResolvedValue({}), model: "m", job, uiLang: "ru", timeoutMs: 1000 })).toBeNull()
+    const ok = await coachWriting({ run: vi.fn().mockResolvedValue(raw), model: "m", job, uiLang: "ru", timeoutMs: 1000 })
+    expect(ok.sentences).toHaveLength(2)
   })
 })

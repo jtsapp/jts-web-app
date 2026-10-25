@@ -942,6 +942,21 @@ export default function PracticePage({
           />
         )
 
+      case 'speedReading':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-speed-reading"
+            variant="speed-reading"
+            wide
+            title={t('practice.speedReading.heading')}
+            desc={t('practice.speedReading.desc')}
+            cta={t('practice.speedReading.cta')}
+            tag={t('practice.speedReading.tag')}
+            onStart={() => onNav?.('speed-reading')}
+          />
+        )
+
       case 'cartoons':
         return (
           <Banner

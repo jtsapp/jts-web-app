@@ -91,6 +91,12 @@ describe('куда Луна умеет вести', () => {
     expect(destinationsText()).toContain('- grammar-games — Грамматика · игры: 125 тем')
   })
 
+  it('«Скорочтение» открывается напрямую', () => {
+    expect(validAction('open', 'speed-reading')).toEqual({ kind: 'open', target: 'speed-reading', now: false })
+    expect(destinationIdForScreen('speed-reading')).toBe('speed-reading')
+    expect(destinationsText()).toContain('- speed-reading — Скорочтение: ')
+  })
+
   it('список для модели: id, имя и пометка тура', () => {
     const text = destinationsText()
     expect(text).toContain('- practice-speaking — Практика → Говорение: ')

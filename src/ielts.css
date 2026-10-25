@@ -13278,6 +13278,129 @@
   flex-basis: 100%;
   color: var(--ih-ink-2);
 }
+
+/* «Наставник» разбора Writing (WritingCoach.jsx): как развить эссе и как улучшить его по предложениям / целиком */
+.ih-wcoach {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ih-wcoach h3,
+.ih-wcoach h4,
+.ih-wcoach p {
+  margin: 0;
+}
+.ih-wcoach h4 {
+  font-size: 15px;
+}
+.ih-wcoach__tips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-wcoach__tip {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f7f6fb;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ih-wcoach__tip > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ih-wcoach__num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--ih-violet);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ih-wcoach__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ih-wcoach__example {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px dashed #c9b3ff;
+}
+.ih-wcoach small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ih-ink-2);
+}
+.ih-wcoach__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ih-wcoach__group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ih-wcoach__sent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f7f6fb;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ih-wcoach__was {
+  color: var(--ih-ink-2);
+}
+.ih-wcoach__now {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #eefaf2;
+  font-weight: 600;
+}
+.ih-wcoach__why {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+}
+.ih-wcoach__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.ih-wcoach__pair > div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f7f6fb;
+}
+.ih-wcoach__pair > div + div {
+  background: #eefaf2;
+}
+@media (max-width: 760px) {
+  .ih-wcoach__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .ih-wmine__err {
   border-radius: 4px;
   background: #fde3e6;

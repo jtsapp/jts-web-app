@@ -53,6 +53,13 @@ describe('practiceTabs', () => {
     expect(skillOfModule('listen')).toBe('listening')
   })
 
+  it('«Скорочтение» — в «Аудировании» сразу после Just to Listen (Д5), своим экраном', () => {
+    const ids = SKILLS.find((s) => s.key === 'listening').sections.map((sec) => sec.id)
+    expect(ids.indexOf('speedReading')).toBe(ids.indexOf('justListen') + 1)
+    expect(skillOfModule('speedReading')).toBe('listening')
+    expect(EXPANDABLE.has('speedReading')).toBe(false)
+  })
+
   it('«Грамматика · игры» — в «Письме» сразу после «Грамматики» (Д4), своим экраном', () => {
     const ids = SKILLS.find((s) => s.key === 'writing').sections.map((sec) => sec.id)
     expect(ids.indexOf('grammarGames')).toBe(ids.indexOf('grammar') + 1)

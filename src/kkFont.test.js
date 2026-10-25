@@ -90,6 +90,8 @@ const ENGINES = {
     expect(own.length).toBeGreaterThan(0)
     expect(own.filter((v) => v !== 'inherit')).toEqual([])
   },
+  // Тот же приём у Скорочтения: --sr-font от шрифта хоста.
+  'speed-reading': (css) => expect(css).toContain('font-family:var(--sr-font,inherit)'),
 }
 
 describe('казахский интерфейс на Inter', () => {

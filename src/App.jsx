@@ -32,6 +32,7 @@ import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
 import PrepositionsPage from './screens/PrepositionsPage.jsx'
 import GrammarGamesPage from './screens/GrammarGamesPage.jsx'
+import SpeedReadingPage from './screens/SpeedReadingPage.jsx'
 import CartoonsPage from './screens/CartoonsPage.jsx'
 import WordHuntPage from './screens/WordHuntPage.jsx'
 import ListenPage from './screens/ListenPage.jsx'
@@ -169,7 +170,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
@@ -390,6 +391,12 @@ export default function App() {
     if (deepLink === 'grammar-games') {
       const topic = searchParams.get('topic')
       if (topic) setGrammarGamesTarget({ topic })
+    }
+    // ?screen=speed-reading&text=hello — сразу этот текст «Скорочтения»: ссылку «Открыть на сайте» даёт админка, и
+    // первое открытие текста создаёт его образец озвучки.
+    if (deepLink === 'speed-reading') {
+      const text = searchParams.get('text')
+      if (text) setSpeedReadingTarget({ text })
     }
     // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
     // проверить набор по ссылке, не проходя меню.
@@ -833,6 +840,7 @@ export default function App() {
   const [situationsTarget, setSituationsTarget] = useState(null)
   const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just to Listen
   const [grammarGamesTarget, setGrammarGamesTarget] = useState(null) // { topic? } — тема «Грамматики · игр» по ссылке
+  const [speedReadingTarget, setSpeedReadingTarget] = useState(null) // { text? } — текст «Скорочтения» по ссылке
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -1713,6 +1721,7 @@ export default function App() {
     else if (key === 'numbers') setScreen('numbers')
     else if (key === 'prepositions') setScreen('prepositions')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
+    else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') setScreen('cartoons')
     else if (key === 'wordhunt') setScreen('wordhunt')
     // Уровень приносит карточка Практики — она же и списала квоту.
@@ -2418,6 +2427,18 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={grammarGamesTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'speed-reading':
+      return (
+        <SpeedReadingPage
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={speedReadingTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
