@@ -31,7 +31,7 @@ describe('Sidebar — аккаунт IELTS', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT'])
+    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()

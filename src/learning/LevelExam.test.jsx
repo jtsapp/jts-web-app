@@ -116,7 +116,7 @@ describe('LevelExam', () => {
     expect(screen.getByText('Экзамен сдан!')).toBeTruthy()
     expect(container.querySelector('.ex-res__score b').textContent).toBe('5')
     expect(screen.getByText('Все навыки на уровне')).toBeTruthy()
-    expect(onPassed).toHaveBeenCalledWith(50)
+    expect(onPassed).toHaveBeenCalledWith(50, {level: 'a1', version: EXAM.version, answers: {gd1: 1, g1: 1, v1: 0, r1q1: 0, l1q1: 1}})
     expect(localStorage.getItem('jts_level_exam')).toBe(null)
   })
 

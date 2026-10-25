@@ -102,6 +102,73 @@ async function authGet(path, token) {
   return res.json()
 }
 
+// Баланс токенов, действующие призы и собственные заявки ученика. Источник
+// баланса — серверный журнал начислений, поэтому экран не пересчитывает его
+// из локального прогресса.
+export function getMyTokens(token) {
+  return authGet('/cabinet/my-tokens', token)
+}
+
+export function getCabinetFeedback(token) {
+  return authGet('/cabinet/feedback/mine', token)
+}
+
+export function getPublishedGrammar(token, level) {
+  const query = level ? `?level=${encodeURIComponent(level)}` : ''
+  return authGet(`/mobile/grammar${query}`, token)
+}
+
+export function getCabinetFeedbackTargets(token) {
+  return authGet('/cabinet/feedback/targets', token)
+}
+
+export function submitCabinetFeedback(token, body) {
+  return authPost('/cabinet/feedback', token, body)
+}
+
+export function getCabinetFeedbackMessages(token, id) {
+  return authGet(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token)
+}
+
+export function replyCabinetFeedback(token, id, body) {
+  return authPost(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token, body)
+}
+
+/** Сервер сам сверяет ответы внутреннего финального теста с версией экзамена и пишет результат в рейтинг. */
+export function submitRankingFinalTest(token, body) {
+  return authPost('/cabinet/ranking/final-test', token, body)
+}
+
+export async function uploadCabinetFeedbackFile(token, file) {
+  const form = new FormData()
+  form.append('file', file)
+  let res
+  try {
+    res = await fetch(`${BASE}/cabinet/feedback/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+  } catch {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) {
+    if (res.status === 401) reportUnauthorized(token)
+    const error = new Error(`Ошибка сервера (${res.status})`)
+    error.status = res.status
+    error.serverMessage = await rejectionText(res, error)
+    throw error
+  }
+  return res.json()
+}
+
+// Запрос приза списывает стоимость атомарно на сервере. requestKey остаётся
+// тем же при повторах после сетевой ошибки, поэтому двойной клик не создаёт
+// вторую заявку и не списывает токены повторно.
+export function claimPrize(token, prizeId, requestKey) {
+  return authPost(`/cabinet/prizes/${encodeURIComponent(prizeId)}/claim`, token, { requestKey })
+}
+
 async function authPut(path, token, body, { keepalive = false } = {}) {
   let res
   try {

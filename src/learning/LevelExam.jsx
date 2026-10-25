@@ -72,7 +72,7 @@ export default function LevelExam({ exam, level, token, restricted = false, onEx
     setPhase('result')
     setRestored(false)
     clearExamDraft(token, lvl)
-    if (s.passed) onPassed?.(s.correct * REWARD)
+    if (s.passed) onPassed?.(s.correct * REWARD, {level: lvl, version: exam.version, answers})
     scrollTop()
   }
 

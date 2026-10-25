@@ -6935,7 +6935,9 @@ function enterChapterResume(){
   enterChapter();
 }
 function finishStory(){ const st=curStory(); stopWorldLife(); stopAmbient(); stopBeds(); fadeMaster(0,2);
-  if(S){ S._ended=true; save(); } award("end", t(st.ending.title));
+  if(S){ S._ended=true; save(); }
+  try{ window.dispatchEvent(new CustomEvent("jts:fairytale-completed",{detail:{id:st.id}})); }catch(e){}
+  award("end", t(st.ending.title));
   $("#endTitle").textContent=t(st.ending.title); $("#endText").textContent=t(st.ending.text); show("ending"); }
 
 /* stage tap: advance story (guided) */

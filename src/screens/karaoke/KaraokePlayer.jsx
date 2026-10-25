@@ -80,7 +80,7 @@ function applyRate(audio, rate) {
 }
 
 /** Разбор дубля целиком: метрики, медаль, строки для повтора. */
-function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRate }) {
+function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRate, completed }) {
   const ref = referenceMask(lines, duration)
   const rhythm = rhythmScore(ref, mask)
   const { score: coverage, perLine } = coverageScore(lines, mask)
@@ -127,6 +127,7 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRa
     // не идёт — замедлившись, петь заметно легче, и «Лучший: N» в каталоге
     // перестал бы что-либо значить.
     offRate,
+    completed,
   }
 }
 
@@ -163,6 +164,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   // дубль: вернуть ползунок на 1× в конце песни и получить рекорд нельзя.
   const offRateRef = useRef(false)
   const finishingRef = useRef(false)
+  const completedRef = useRef(false)
   // Номер запуска: выход или «Начать заново» посреди калибровки не должен
   // дать старому start() доиграть до play() — он сверяет номер после каждого
   // await и молча сходит с дистанции.
@@ -305,6 +307,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
         // тумблер на последней строке.
         instrumental: Boolean(track.instrumentalUrl) && !vocalUsedRef.current,
         offRate: offRateRef.current,
+        completed: completedRef.current,
       }),
     )
   }
@@ -561,7 +564,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
       <span className="kk-play__glow kk-play__glow--violet" aria-hidden="true" />
       <span className="kk-play__glow kk-play__glow--orange" aria-hidden="true" />
       <span className="kk-play__glow kk-play__glow--pink" aria-hidden="true" />
-      {doc && <audio ref={audioRef} src={src} preload="auto" onEnded={callFinish} onLoadedMetadata={onMeta} />}
+      {doc && <audio ref={audioRef} src={src} preload="auto" onEnded={() => { completedRef.current = true; callFinish() }} onLoadedMetadata={onMeta} />}
 
       <header className="kk-top">
         <button type="button" className="kk-pill kk-top__exit" onClick={onExitClick}>

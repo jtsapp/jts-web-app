@@ -23,6 +23,7 @@ let world = null
 let host = null
 let styleEls = []
 let onExitCb = null
+let onCompleteCb = null
 let bridgeReady = false
 
 // Ответ моста движку (vwAddCurrent в engine.js): true — слово в «Моём словаре»,
@@ -95,6 +96,7 @@ function closeOverlay() {
   removeStyles()
   const cb = onExitCb
   onExitCb = null
+  onCompleteCb = null
   if (cb) cb()
 }
 
@@ -114,6 +116,10 @@ function ensureWorld() {
   host.innerHTML = MARKUP
   document.body.appendChild(host)
   world = createTaleWorld()
+  window.addEventListener('jts:fairytale-completed', (event) => {
+    const taleId = event?.detail?.id
+    if (taleId && onCompleteCb) onCompleteCb(taleId)
+  })
   // Попапы словаря движок вешает на document.body — переносим внутрь host,
   // чтобы они прятались вместе с оверлеем.
   ;['vocabPop', 'dictionary'].forEach((id) => {
@@ -132,8 +138,9 @@ function ensureWorld() {
 
 // Открыть мир на конкретной сказке: с сохранённым прогрессом — сразу в мир,
 // иначе — на выбор персонажа. Неизвестный id откроет библиотеку движка.
-export function openTaleWorld(taleId, { onExit } = {}) {
+export function openTaleWorld(taleId, { onExit, onComplete } = {}) {
   onExitCb = onExit || null
+  onCompleteCb = onComplete || null
   // До движка: при первом открытии он читает «Мои слова» уже при создании
   // (счётчик на кнопке).
   const existed = !!world

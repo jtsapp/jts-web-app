@@ -38,6 +38,7 @@ import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
+import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -96,6 +97,7 @@ import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
+import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import BoothEntryPage from './screens/BoothEntryPage.jsx'
@@ -166,7 +168,7 @@ function phoneErrorKey(e) {
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
   'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'cartoons', 'arcade', 'homework', 'lessons',
-  'ielts', 'vocab', 'course-catalog', 'profile',
+  'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -1671,6 +1673,8 @@ export default function App() {
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
+    else if (key === 'feedback') setScreen('feedback')
+    else if (key === 'tokens' || key === 'prizes') setScreen(key)
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
     else if (key === 'course') {
@@ -2280,6 +2284,8 @@ export default function App() {
           backLabel={backLabel('home')}
         />
       )
+    case 'feedback':
+      return <FeedbackCenter token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage
@@ -2480,6 +2486,10 @@ export default function App() {
       return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
+    case 'tokens':
+      return <TokensPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'prizes':
+      return <PrizesPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => goBack(() => setScreen('lessons'))} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':

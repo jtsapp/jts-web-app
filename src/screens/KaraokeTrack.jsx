@@ -5,6 +5,7 @@ import { loadLyrics, trackProgress, saveKaraokeResult } from '../practice/karaok
 import KaraokePlayer from './karaoke/KaraokePlayer.jsx'
 import KaraokeResult from './karaoke/KaraokeResult.jsx'
 import { useTimeOnTask } from '../lib/useTimeOnTask.js'
+import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 
 // Один караоке-трек: плеер → результат (макет Figma «Караоке», 24.09.2026).
 //
@@ -65,6 +66,9 @@ export default function KaraokeTrack({ track, token, onBack }) {
           // в каталоге перестал бы сравниваться с чужими и со своими же
           // прошлыми попытками.
           if (!res.offRate) saveKaraokeResult(track.slug, { score: res.score, weakLines: res.repeat.map((r) => r.id) })
+          if (res.completed && res.coverage >= 60) {
+            countUnitTowardsHomework('karaoke', null, `track-${track.id ?? track.slug}`)
+          }
           setRepeats({})
           setResult(res)
         }}
