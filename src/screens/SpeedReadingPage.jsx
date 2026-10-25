@@ -62,6 +62,13 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
   })
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))
 
+  // Из «Практики» сюда приходят с прокрученной лентой, а App прокрутку между экранами не сбрасывает: без этого
+  // экран открывался серединой — без кнопки «назад» и начала карточки.
+  useEffect(() => {
+    document.querySelector('.learn__main')?.scrollTo?.(0, 0)
+    window.scrollTo(0, 0)
+  }, [])
+
   useEffect(() => {
     const host = hostRef.current
     if (!host || !texts) return undefined

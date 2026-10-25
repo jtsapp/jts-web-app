@@ -211,7 +211,7 @@ describe('запись и итог', () => {
     expect(text()).toContain('Прочитано 55%')
     expect($('audio').getAttribute('src')).toBe('blob:rec')
     expect($('a[download]').getAttribute('download')).toMatch(/^speed-a-\d{4}-\d{2}-\d{2}\.wav$/)
-    expect(text()).toContain('+4')
+    expect(text()).toContain('+4 монеты')
   })
 
   it('сервер не распознал — итог по живому распознаванию', async () => {

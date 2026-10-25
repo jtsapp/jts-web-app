@@ -118,6 +118,14 @@ export function mountSpeedReading(root, cfg) {
     root.append(d)
     later(() => d.remove(), 1800)
   }
+  // «+4 монеты», «+5 монет», «+1 монета»: число монет задаёт админка, склонение нужно любое.
+  function coinWord(n) {
+    if (lang === 'kk') return 'тиын'
+    if (lang === 'en') return n === 1 ? 'coin' : 'coins'
+    const d = n % 10
+    const dd = n % 100
+    return d === 1 && dd !== 11 ? 'монета' : d >= 2 && d <= 4 && (dd < 12 || dd > 14) ? 'монеты' : 'монет'
+  }
   const coinImg = () => {
     const src = img('coin')
     return src ? `<img src="${esc(src)}" alt="">` : '🪙'
@@ -518,7 +526,7 @@ export function mountSpeedReading(root, cfg) {
         tr.saving = false
         tr.coins = Number(resp?.coins) || 0
         tr.id = resp?.attempt?.id ?? null
-        if (tr.coins > 0) toast(`+${tr.coins} ${X('монет', 'тиын', 'coins')}`)
+        if (tr.coins > 0) toast(`+${tr.coins} ${coinWord(tr.coins)}`)
         updateSave(tr)
       })
       .catch(() => {
@@ -537,7 +545,7 @@ export function mountSpeedReading(root, cfg) {
     if (tr.demo) return ''
     if (tr.saving) return `<span class="srwait">${icon('hourglass')}${X('Сохраняем попытку…', 'Әрекетті сақтап жатырмыз…', 'Saving your try…')}</span>`
     if (tr.saveFailed) return `⚠️ ${X('Попытка не сохранилась — проверьте интернет', 'Әрекет сақталмады — интернетті тексеріңіз', "Your try wasn't saved — check your connection")}`
-    if (tr.coins > 0) return `${coinImg()} +${tr.coins} ${X('монет', 'тиын', 'coins')}`
+    if (tr.coins > 0) return `${coinImg()} +${tr.coins} ${coinWord(tr.coins)}`
     return `✓ ${X('Попытка сохранена', 'Әрекет сақталды', 'Try saved')}`
   }
 
