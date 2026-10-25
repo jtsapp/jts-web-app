@@ -256,6 +256,7 @@ export function mountSpeedReading(root, cfg) {
       .map((a) => ({
         server: true,
         text: a.textId,
+        title: a.title,
         mult: a.speed,
         dur: a.durationSec || 0,
         pct: a.percent,
@@ -567,7 +568,7 @@ export function mountSpeedReading(root, cfg) {
 
   function tryRow(t) {
     const tt = byId.get(t.text)
-    const name = tt ? L(tt.title) : t.text
+    const name = tt ? L(tt.title) : L(t.title) || t.text
     const pct = t.pct != null ? ` · ${t.pct}%` : ''
     const right = t.url ? `<audio controls src="${esc(t.url)}"></audio>` : t.server ? `<span class="cpill st-grey">${t.stars ? '★'.repeat(t.stars) : '—'}</span>` : `<span class="cpill st-grey">${X('без записи', 'жазбасыз', 'no audio')}</span>`
     return `<div class="lrow"><div class="ic" style="background:#F3EBFF">${esc(tt?.icon || '📄')}</div><div class="ti"><b>${esc(name)} · ${t.mult}x</b><span>${esc(whenOf(t))} · ${Math.round(t.dur)} ${X('сек', 'сек', 'sec')}${pct}</span></div>${right}</div>`

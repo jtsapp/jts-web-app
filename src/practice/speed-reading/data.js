@@ -67,6 +67,8 @@ export function normalizeAttempt(raw) {
   return {
     id: r.id ?? null,
     textId: String(pick('textId', 'text_id') ?? ''),
+    // Название приходит с попыткой: по нему строка «Мои попытки» подписана и тогда, когда текст уже скрыли.
+    title: r.title && typeof r.title === 'object' ? titleOf(r.title, '') : null,
     speed: num(r.speed),
     durationSec: num(pick('durationSec', 'duration_sec')),
     wordsTotal: num(pick('wordsTotal', 'words_total')),
@@ -83,8 +85,9 @@ export function normalizeAttempt(raw) {
 const clampInt = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)))
 
 /**
- * Тело POST /mobile/speed-reading/attempts — ровно поля из проверки бэкенда: скорость из семи, длительность
- * не больше 200 с, прочитано не больше слов, звёзды 0–3. Записи здесь нет и быть не может (Д6).
+ * Тело POST /mobile/speed-reading/attempts — ровно поля из проверки бэкенда (docs/practice/SPEED_READING.md):
+ * скорость из семи, длительность не больше 200 с, прочитано не больше слов, звёзды 0–3, темп не больше 1000.
+ * Записи здесь нет и быть не может (Д6).
  */
 export function attemptBody(a) {
   const wordsTotal = clampInt(a.wordsTotal, 0, 100000)
@@ -97,7 +100,7 @@ export function attemptBody(a) {
     wordsRead: clampInt(a.wordsRead, 0, wordsTotal),
     percent: a.percent == null ? null : clampInt(a.percent, 0, 100),
     stars: clampInt(a.stars, 0, 3),
-    wpm: a.wpm == null ? null : clampInt(a.wpm, 0, 10000),
+    wpm: a.wpm == null ? null : clampInt(a.wpm, 0, 1000),
     scoredBy: SCORED_BY.has(a.scoredBy) ? a.scoredBy : 'none',
   }
 }

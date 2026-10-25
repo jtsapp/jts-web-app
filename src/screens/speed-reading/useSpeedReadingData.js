@@ -16,7 +16,8 @@ import { ownerOf } from '../../practice/progressStore.js'
 import { normalizeAttempt, normalizeText } from '../../practice/speed-reading/data.js'
 
 // Сеть оборвалась на сдаче — ещё две попытки через 2 с: монеты и «Мои попытки» на другом устройстве держатся на
-// том, что попытка дошла. Ответ сервера (400, 404…) не повторяем — он не изменится.
+// том, что попытка дошла. 409 — бэкенд как раз записывает попытку того же текста с монетами (две сдачи разом):
+// повтор запишется уже без монет. Остальные ответы сервера (400, 404…) не повторяем — они не изменятся.
 const SUBMIT_RETRIES = 2
 const SUBMIT_DELAY_MS = 2000
 
@@ -62,7 +63,7 @@ export function useSpeedReadingData(token) {
         // Токен — свежий на момент отправки: повтор после обрыва уйдёт уже с обновлённым access.
         return await postSpeedReadingAttempt(tokenRef.current, body)
       } catch (e) {
-        if (e?.status || i >= SUBMIT_RETRIES) throw e
+        if ((e?.status && e.status !== 409) || i >= SUBMIT_RETRIES) throw e
         await new Promise((resolve) => setTimeout(resolve, SUBMIT_DELAY_MS))
       }
     }
