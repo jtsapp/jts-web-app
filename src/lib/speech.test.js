@@ -274,3 +274,78 @@ describe('prefetchTts', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/tts?v=Oliver&l=en&s=1&t=Next%20line')
   })
 })
+
+// onTime — кадры подсветки Скорочтения: идут только пока звук играет, и чужая реплика их не наследует.
+describe('playUrl onTime', () => {
+  let frames
+  beforeEach(() => {
+    frames = []
+    vi.stubGlobal('requestAnimationFrame', (fn) => {
+      frames.push(fn)
+      return frames.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', (id) => {
+      frames[id - 1] = null
+    })
+  })
+  const step = () => {
+    const fns = frames.splice(0)
+    frames.length = 0
+    fns.forEach((f) => f && f(0))
+  }
+
+  it('кадры — только пока звук играет', () => {
+    const onTime = vi.fn()
+    speech.playUrl('/a.mp3', { onTime })
+    step()
+    expect(onTime).not.toHaveBeenCalled()
+    const a = elements[0]
+    a.currentTime = 1.5
+    a.onplaying()
+    step()
+    expect(onTime).toHaveBeenLastCalledWith(1.5)
+    a.currentTime = 1.6
+    step()
+    expect(onTime).toHaveBeenLastCalledWith(1.6)
+    a.paused = true
+    a.onpause()
+    step()
+    expect(onTime).toHaveBeenCalledTimes(2)
+    a.paused = false
+    a.onplaying()
+    step()
+    expect(onTime).toHaveBeenCalledTimes(3)
+  })
+
+  it('прекращаются на ended и на обрыве', () => {
+    const onTime = vi.fn()
+    speech.playUrl('/a.mp3', { onTime })
+    elements[0].onplaying()
+    elements[0].onended()
+    step()
+    expect(onTime).not.toHaveBeenCalled()
+    speech.playUrl('/b.mp3', { onTime })
+    elements[0].onplaying()
+    speech.stopTts()
+    step()
+    expect(onTime).not.toHaveBeenCalled()
+  })
+
+  it('чужая реплика без onTime не получает кадров прошлой', () => {
+    const onTime = vi.fn()
+    speech.playUrl('/a.mp3', { onTime })
+    elements[0].onplaying()
+    speech.playUrl('/b.mp3', {})
+    elements[0].onplaying()
+    step()
+    expect(onTime).not.toHaveBeenCalled()
+  })
+
+  it('провал до старта — кадров нет', () => {
+    const onTime = vi.fn()
+    speech.playUrl('/a.mp3', { onTime })
+    elements[0].onerror()
+    step()
+    expect(onTime).not.toHaveBeenCalled()
+  })
+})

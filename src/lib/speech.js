@@ -34,6 +34,8 @@ let el = null
 let seq = 0
 let current = null // { my, onEnd, onCancel, started, settled, fail }
 let watchdog = null
+// Кадр onTime текущей реплики (подсветка слов образца в Скорочтении): один на приложение, как и сама реплика.
+let frame = null
 const prefetched = new Set()
 
 function element() {
@@ -42,6 +44,12 @@ function element() {
     el.preload = 'auto'
   }
   return el
+}
+
+function stopFrames() {
+  if (frame === null) return
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
+  frame = null
 }
 
 function clearWatchdog() {
@@ -96,6 +104,7 @@ export function unlockSpeech() {
  */
 export function stopTts() {
   clearWatchdog()
+  stopFrames()
   seq++
   const cur = current
   current = null
@@ -116,7 +125,11 @@ export function stopTts() {
  * @param {string} text
  * @param {{ voice?: string, lang?: string, speed?: number, rate?: number, volume?: number,
  *   onStart?: () => void, onEnd?: (reason: 'ended'|'stopped') => void, onCancel?: () => void,
- *   onFail?: (reason: 'empty'|'error'|'timeout'|'blocked') => void }} [opts]
+ *   onFail?: (reason: 'empty'|'error'|'timeout'|'blocked') => void,
+ *   onTime?: (currentTime: number) => void }} [opts]
+ *   onTime — каждый кадр requestAnimationFrame, пока звук идёт (между «playing» и паузой, концом или
+ *   обрывом): по нему Скорочтение подсвечивает слово образца. timeupdate для этого редок — 4 раза в секунду,
+ *   а на 3x слово звучит быстрее.
  *   onFail приходит, только если звук так и не начался: сеть, 429/503 от
  *   сервера, отказ браузера без жеста. После onStart провала уже не бывает —
  *   обрыв посреди реплики считается её концом (onEnd('stopped')), обрыв до
@@ -139,7 +152,7 @@ export function playUrl(src, opts = {}) {
 }
 
 function playSrc(url, opts) {
-  const { rate, volume, onStart, onEnd, onCancel, onFail } = opts
+  const { rate, volume, onStart, onEnd, onCancel, onFail, onTime } = opts
   if (!url) {
     onFail?.('empty')
     return false
@@ -155,6 +168,7 @@ function playSrc(url, opts) {
     if (!live() || cur.settled || cur.started) return
     cur.settled = true
     clearWatchdog()
+    stopFrames()
     current = null
     detach(a)
     onFail?.(reason)
@@ -164,15 +178,29 @@ function playSrc(url, opts) {
     if (!live() || cur.settled) return
     cur.settled = true
     clearWatchdog()
+    stopFrames()
     current = null
     onEnd?.('ended')
   }
 
+  const tick = () => {
+    frame = null
+    if (!live() || cur.settled || a.paused) return
+    onTime(a.currentTime)
+    frame = requestAnimationFrame(tick)
+  }
   a.onplaying = () => {
-    if (!live() || cur.started) return
+    if (!live()) return
+    // Кадры — и на первом старте, и после паузы (повторный «playing» приходит и тогда).
+    if (onTime && frame === null && !cur.settled && typeof requestAnimationFrame === 'function') frame = requestAnimationFrame(tick)
+    if (cur.started) return
     cur.started = true
     clearWatchdog()
     onStart?.()
+  }
+  // Ставится всегда: обработчик прошлой реплики не должен жить на общем элементе.
+  a.onpause = () => {
+    if (live()) stopFrames()
   }
   a.onended = finish
   a.onerror = () => (cur.started ? finish() : fail('error'))
