@@ -16,9 +16,6 @@ import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroa
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
 import LiveHeader from './live/LiveHeader.jsx'
-import LessonVideo from './live/LessonVideo.jsx'
-import LessonVideoMini from './live/LessonVideoMini.jsx'
-import { useLessonVideo } from './live/useLessonVideo.js'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
@@ -1724,11 +1721,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Отменённого занятия не было — там вместо урока стоит баннер.
   const lessonOpen = status !== 'CANCELLED' || followMode
 
-  // Звонок живёт на уровне страницы, а не колонки «Урок»: иначе переход на доску размонтирует
-  // колонку и рвёт связь. Звонок доступен только в онлайн-уроке, который ещё не завершён.
-  const videoEnabled = lessonOpen && lesson?.format === 'ONLINE' && status !== 'COMPLETED'
-  const video = useLessonVideo({ token, lessonId, teacherUserId: lesson?.teacherId, enabled: videoEnabled })
-
   // Урок сеанса дошёл до терминального статуса — сообщаем об этом наружу ОДИН
   // раз. Проп необязательный и приходит только у аккаунта класса преподавателя
   // (см. App.jsx: onLessonClosed уводит его на экран класса и забывает урок) —
@@ -1867,7 +1859,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Карточка звонка по ссылке. Ученику она не нужна: ссылка на Meet теперь в шапке урока,
   // и вторая кнопка с тем же действием только отнимала место у чата. У преподавателя
-  // карточка остаётся — ссылкой управляет он, — а в онлайн-уроке служит запасным видом звонка.
+  // карточка остаётся — ссылкой управляет он.
   function renderMeetCard() {
     return (
       <div className="lw-card lw-meet">
@@ -1995,7 +1987,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <button className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`} onClick={() => setTab('board')}>
                     {t('lesson.ws.tabBoard')}
                   </button>
-                  {tab === 'board' && <LessonVideoMini video={video} onBack={() => setTab('lesson')} />}
                   {/* Следовать за преподавателем или смотреть своё. Раньше выбора
                       не было вовсе: экран ученика переносило за преподавателем
                       всегда, и вернуться к своему заданию было нечем. */}
@@ -2286,7 +2277,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     </div>
 
                     <div className="lw-live-aside">
-                      {/* Звонок — первым в колонке, над темами (решение владельца 23.10).
+                      {/* Карточка звонка — первой в колонке, над темами (решение владельца 23.10).
                           Урок кончился — звонка на его месте быть не должно:
                           звонить уже некуда. Вместо него итог (спека §3.4). */}
                       {status === 'COMPLETED' ? (
@@ -2296,13 +2287,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                             {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
                           </p>
                         </div>
-                      ) : lesson.format === 'ONLINE' ? (
-                        <LessonVideo
-                          video={video}
-                          lessonType={lesson.lessonType}
-                          enabled={videoEnabled}
-                          renderFallback={() => (isStaff ? renderMeetCard() : null)}
-                        />
                       ) : isStaff ? renderMeetCard() : null}
                       {/* Маршрут урока и «Топики урока» были двумя списками в
                           двух колонках — в макете это один список справа, и
