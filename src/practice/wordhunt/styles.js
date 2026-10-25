@@ -30,7 +30,7 @@ export const WORDHUNT_CSS = `/* ================================================
   --top:62px; --zc:var(--gold); --zd:var(--amber-dk);
 }
 *{box-sizing:border-box}
-.wh{color:var(--ink);font-family:inherit;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;
+.wh{color:var(--ink);font-family:inherit;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:clip;
   background:
     radial-gradient(720px 440px at 90% -80px,rgba(180,140,255,.55),transparent 70%) no-repeat,
     radial-gradient(640px 440px at -10% 240px,rgba(100,200,255,.45),transparent 70%) no-repeat,
