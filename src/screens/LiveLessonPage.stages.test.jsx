@@ -101,10 +101,16 @@ async function renderAsStudent() {
   return view
 }
 
+/** Окно рамки урока: приложение верит сообщениям только ему (SectionMaterialFrame). */
+const lessonFrameWindow = () => document.querySelector('iframe.lw-material-iframe')?.contentWindow
+
 /** Скрипт в файле сообщил, на какой стадии стоит рамка. */
 function frameStage(index, total = STAGES.length) {
   return act(async () => {
-    window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage', index, total } }))
+    window.dispatchEvent(new MessageEvent('message', {
+      data: { source: 'jts-lesson', type: 'stage', index, total },
+      source: lessonFrameWindow(),
+    }))
   })
 }
 
@@ -141,9 +147,7 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   it('клик по стадии шлёт готовой рамке goto-stage', async () => {
     const { container, getByRole } = await renderAsStudent()
     const iframe = container.querySelector('iframe.lw-material-iframe')
-    await act(async () => {
-      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage', index: 0, total: 6 } }))
-    })
+    await frameStage(0, 6)
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     fireEvent.click(getByRole('button', { name: 'Listening' }))
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')

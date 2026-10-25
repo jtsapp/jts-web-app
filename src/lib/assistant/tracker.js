@@ -32,21 +32,29 @@ const AREA_NAMES = {
   words: 'Слова в картинках',
   verbs: 'Неправильные глаголы',
   listenchoose: 'Слушай и выбирай',
+  cartoons: 'Cartoon World',
   numbers: 'Мир чисел',
+  listen: 'Just to Listen',
+  prepositions: 'Prepositions World',
+  wordhunt: 'Word Hunt',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
 // «сделал». Вкладка навыка — любой её тренажёр, который пишет прогресс.
 const TARGET_AREAS = {
-  'practice-listening': ['listening', 'listenchoose'],
-  'practice-reading': ['reading'],
-  'practice-writing': ['writing'],
+  'practice-listening': ['listening', 'listenchoose', 'listen'],
+  'practice-reading': ['reading', 'wordhunt'],
+  'practice-writing': ['writing', 'prepositions'],
   'practice-speaking': ['shadowing', 'situations'],
   listening: ['listening'],
   listenchoose: ['listenchoose'],
+  cartoons: ['cartoons'],
   words: ['words'],
   numbers: ['numbers'],
+  listen: ['listen'],
+  prepositions: ['prepositions'],
   reading: ['reading'],
+  wordhunt: ['wordhunt'],
   writing: ['writing'],
   verbs: ['verbs'],
   shadowing: ['shadowing'],

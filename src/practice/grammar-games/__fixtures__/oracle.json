@@ -1,0 +1,10043 @@
+{
+ "seed": 42,
+ "stages": {
+  "L1-01": [
+   "pick",
+   "match",
+   "sort",
+   "build",
+   "trans",
+   "fix",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ],
+  "L1-10": [
+   "pick",
+   "match",
+   "sort",
+   "build",
+   "trans",
+   "fix",
+   "place",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ],
+  "L2-22": [
+   "pick",
+   "match",
+   "build",
+   "trans",
+   "fix",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ],
+  "L3-01": [
+   "pick",
+   "match",
+   "sort",
+   "build",
+   "trans",
+   "fix",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ],
+  "L4-01": [
+   "pick",
+   "match",
+   "sort",
+   "build",
+   "trans",
+   "fix",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ],
+  "L5-01": [
+   "pick",
+   "match",
+   "sort",
+   "build",
+   "trans",
+   "fix",
+   "type",
+   "dialog",
+   "listen",
+   "race",
+   "catch",
+   "boss"
+  ]
+ },
+ "acc": [
+  [
+   0,
+   8,
+   0
+  ],
+  [
+   0.5,
+   8,
+   0
+  ],
+  [
+   1,
+   8,
+   0
+  ],
+  [
+   1.5,
+   8,
+   0
+  ],
+  [
+   2,
+   8,
+   0
+  ],
+  [
+   2.5,
+   8,
+   0
+  ],
+  [
+   3,
+   8,
+   0
+  ],
+  [
+   3.5,
+   8,
+   1
+  ],
+  [
+   4,
+   8,
+   1
+  ],
+  [
+   4.5,
+   8,
+   1
+  ],
+  [
+   5,
+   8,
+   1
+  ],
+  [
+   5.5,
+   8,
+   1
+  ],
+  [
+   6,
+   8,
+   2
+  ],
+  [
+   6.5,
+   8,
+   2
+  ],
+  [
+   7,
+   8,
+   2
+  ],
+  [
+   7.5,
+   8,
+   3
+  ],
+  [
+   8,
+   8,
+   3
+  ],
+  [
+   0,
+   10,
+   0
+  ],
+  [
+   0.5,
+   10,
+   0
+  ],
+  [
+   1,
+   10,
+   0
+  ],
+  [
+   1.5,
+   10,
+   0
+  ],
+  [
+   2,
+   10,
+   0
+  ],
+  [
+   2.5,
+   10,
+   0
+  ],
+  [
+   3,
+   10,
+   0
+  ],
+  [
+   3.5,
+   10,
+   0
+  ],
+  [
+   4,
+   10,
+   1
+  ],
+  [
+   4.5,
+   10,
+   1
+  ],
+  [
+   5,
+   10,
+   1
+  ],
+  [
+   5.5,
+   10,
+   1
+  ],
+  [
+   6,
+   10,
+   1
+  ],
+  [
+   6.5,
+   10,
+   1
+  ],
+  [
+   7,
+   10,
+   2
+  ],
+  [
+   7.5,
+   10,
+   2
+  ],
+  [
+   8,
+   10,
+   2
+  ],
+  [
+   8.5,
+   10,
+   2
+  ],
+  [
+   9,
+   10,
+   3
+  ],
+  [
+   9.5,
+   10,
+   3
+  ],
+  [
+   10,
+   10,
+   3
+  ],
+  [
+   0,
+   12,
+   0
+  ],
+  [
+   0.5,
+   12,
+   0
+  ],
+  [
+   1,
+   12,
+   0
+  ],
+  [
+   1.5,
+   12,
+   0
+  ],
+  [
+   2,
+   12,
+   0
+  ],
+  [
+   2.5,
+   12,
+   0
+  ],
+  [
+   3,
+   12,
+   0
+  ],
+  [
+   3.5,
+   12,
+   0
+  ],
+  [
+   4,
+   12,
+   0
+  ],
+  [
+   4.5,
+   12,
+   0
+  ],
+  [
+   5,
+   12,
+   1
+  ],
+  [
+   5.5,
+   12,
+   1
+  ],
+  [
+   6,
+   12,
+   1
+  ],
+  [
+   6.5,
+   12,
+   1
+  ],
+  [
+   7,
+   12,
+   1
+  ],
+  [
+   7.5,
+   12,
+   1
+  ],
+  [
+   8,
+   12,
+   1
+  ],
+  [
+   8.5,
+   12,
+   2
+  ],
+  [
+   9,
+   12,
+   2
+  ],
+  [
+   9.5,
+   12,
+   2
+  ],
+  [
+   10,
+   12,
+   2
+  ],
+  [
+   10.5,
+   12,
+   2
+  ],
+  [
+   11,
+   12,
+   3
+  ],
+  [
+   11.5,
+   12,
+   3
+  ],
+  [
+   12,
+   12,
+   3
+  ],
+  [
+   0,
+   16,
+   0
+  ],
+  [
+   0.5,
+   16,
+   0
+  ],
+  [
+   1,
+   16,
+   0
+  ],
+  [
+   1.5,
+   16,
+   0
+  ],
+  [
+   2,
+   16,
+   0
+  ],
+  [
+   2.5,
+   16,
+   0
+  ],
+  [
+   3,
+   16,
+   0
+  ],
+  [
+   3.5,
+   16,
+   0
+  ],
+  [
+   4,
+   16,
+   0
+  ],
+  [
+   4.5,
+   16,
+   0
+  ],
+  [
+   5,
+   16,
+   0
+  ],
+  [
+   5.5,
+   16,
+   0
+  ],
+  [
+   6,
+   16,
+   0
+  ],
+  [
+   6.5,
+   16,
+   1
+  ],
+  [
+   7,
+   16,
+   1
+  ],
+  [
+   7.5,
+   16,
+   1
+  ],
+  [
+   8,
+   16,
+   1
+  ],
+  [
+   8.5,
+   16,
+   1
+  ],
+  [
+   9,
+   16,
+   1
+  ],
+  [
+   9.5,
+   16,
+   1
+  ],
+  [
+   10,
+   16,
+   1
+  ],
+  [
+   10.5,
+   16,
+   1
+  ],
+  [
+   11,
+   16,
+   1
+  ],
+  [
+   11.5,
+   16,
+   2
+  ],
+  [
+   12,
+   16,
+   2
+  ],
+  [
+   12.5,
+   16,
+   2
+  ],
+  [
+   13,
+   16,
+   2
+  ],
+  [
+   13.5,
+   16,
+   2
+  ],
+  [
+   14,
+   16,
+   2
+  ],
+  [
+   14.5,
+   16,
+   3
+  ],
+  [
+   15,
+   16,
+   3
+  ],
+  [
+   15.5,
+   16,
+   3
+  ],
+  [
+   16,
+   16,
+   3
+  ]
+ ],
+ "look": {
+  "snakes": null,
+  "worked": [
+   "работала",
+   "жұмыс істеді"
+  ],
+  "better": [
+   "лучше",
+   "жақсырақ"
+  ],
+  "1st": [
+   "1-й (порядковое числительное)",
+   "1-ші/-шы (реттік сан есім)"
+  ],
+  "22nd": [
+   "22-й (порядковое числительное)",
+   "22-ші/-шы (реттік сан есім)"
+  ],
+  "i'm": [
+   "я (есть) = I am",
+   "мен = I am"
+  ],
+  "cats'": [
+   "кошки",
+   "мысықтар"
+  ],
+  "studies": [
+   "учит, изучает",
+   "оқиды, үйренеді"
+  ],
+  "stopped": [
+   "остановился",
+   "тоқтады"
+  ],
+  "making": [
+   "делать, готовить",
+   "жасау, пісіру"
+  ],
+  "bigger": [
+   "больше",
+   "үлкенірек"
+  ],
+  "quickly": [
+   "быстро",
+   "тез"
+  ],
+  "tallest": [
+   "высокий",
+   "ұзын бойлы"
+  ],
+  "cried": [
+   "плакал",
+   "жылады"
+  ],
+  "running": [
+   "бегать (бег)",
+   "жүгіру"
+  ],
+  "xyz": null,
+  "am": [
+   "есть (форма to be для I)",
+   "-мын/-мін (I үшін to be)"
+  ],
+  "is": [
+   "есть (форма to be для he/she/it)",
+   "(he/she/it үшін to be)"
+  ]
+ },
+ "wrap": {
+  "I'm twelve years old.": "<span class=\"w\" data-k=\"i'm\">I'm</span> <span class=\"w\" data-k=\"twelve\">twelve</span> <span class=\"w\" data-k=\"years\">years</span> <span class=\"w\" data-k=\"old\">old</span>.",
+  "She isn't at home / at school.": "<span class=\"w\" data-k=\"she\">She</span> <span class=\"w\" data-k=\"isn't\">isn't</span> <span class=\"w\" data-k=\"at\">at</span> <span class=\"w\" data-k=\"home\">home</span> / <span class=\"w\" data-k=\"at\">at</span> <span class=\"w\" data-k=\"school\">school</span>.",
+  "He came 1st, she came 22nd.": "<span class=\"w\" data-k=\"he\">He</span> <span class=\"w\" data-k=\"came\">came</span> <span class=\"w\" data-k=\"1st\">1st</span>, <span class=\"w\" data-k=\"she\">she</span> <span class=\"w\" data-k=\"came\">came</span> <span class=\"w\" data-k=\"22nd\">22nd</span>.",
+  "\"Don't go!\" — he said.": "&<span class=\"w\" data-k=\"quot;don't\">quot;Don't</span> <span class=\"w\" data-k=\"go!&amp;quot\">go!&quot</span>; — <span class=\"w\" data-k=\"he\">he</span> <span class=\"w\" data-k=\"said\">said</span>.",
+  "The students' books are on the table.": "<span class=\"w\" data-k=\"the\">The</span> <span class=\"w\" data-k=\"students\">students'</span> <span class=\"w\" data-k=\"books\">books</span> <span class=\"w\" data-k=\"are\">are</span> <span class=\"w\" data-k=\"on\">on</span> <span class=\"w\" data-k=\"the\">the</span> <span class=\"w\" data-k=\"table\">table</span>.",
+  "Is it 5 o'clock?": "<span class=\"w\" data-k=\"is\">Is</span> <span class=\"w\" data-k=\"it\">it</span> 5 <span class=\"w\" data-k=\"o'clock\">o'clock</span>?"
+ },
+ "norm": {
+  "  I’m   here. ": "i'm here.",
+  "Hello!": "hello",
+  "don`t": "don't",
+  "A, B.": "a, b",
+  "ok?!": "ok"
+ },
+ "sets": {
+  "L1-01": {
+   "pick": [
+    {
+     "s": "We ___ at school.",
+     "opts": [
+      [
+       "are",
+       true
+      ],
+      [
+       "is",
+       false
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "I ___ a student.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "am",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "They ___ not at home.",
+     "opts": [
+      [
+       "are",
+       true
+      ],
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "I ___ not tired.",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "am",
+       true
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "My parents ___ in Almaty.",
+     "opts": [
+      [
+       "are",
+       true
+      ],
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ I late?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Is",
+       false
+      ],
+      [
+       "Am",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The cat ___ black.",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "My mum ___ a doctor.",
+     "opts": [
+      [
+       "am",
+       false
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "It ___ very hot today.",
+     "opts": [
+      [
+       "is",
+       true
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ he your teacher?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Am",
+       false
+      ],
+      [
+       "Is",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "You ___ my best friend.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       true
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ you hungry?",
+     "opts": [
+      [
+       "Is",
+       false
+      ],
+      [
+       "Are",
+       true
+      ],
+      [
+       "Am",
+       false
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "you",
+     0,
+     6
+    ],
+    [
+     "is",
+     1,
+     3
+    ],
+    [
+     "I",
+     0,
+     0
+    ],
+    [
+     "are",
+     1,
+     7
+    ],
+    [
+     "we",
+     0,
+     2
+    ],
+    [
+     "am",
+     1,
+     0
+    ],
+    [
+     "is",
+     1,
+     1
+    ],
+    [
+     "Tom and Ann",
+     0,
+     7
+    ],
+    [
+     "it",
+     0,
+     5
+    ],
+    [
+     "are",
+     1,
+     6
+    ],
+    [
+     "are",
+     1,
+     2
+    ],
+    [
+     "she",
+     0,
+     1
+    ],
+    [
+     "they",
+     0,
+     4
+    ],
+    [
+     "is",
+     1,
+     5
+    ],
+    [
+     "my dog",
+     0,
+     3
+    ],
+    [
+     "are",
+     1,
+     4
+    ]
+   ],
+   "sort": [
+    [
+     "she",
+     1
+    ],
+    [
+     "I",
+     0
+    ],
+    [
+     "the dog",
+     1
+    ],
+    [
+     "the children",
+     2
+    ],
+    [
+     "my friends",
+     2
+    ],
+    [
+     "Ali",
+     1
+    ],
+    [
+     "it",
+     1
+    ],
+    [
+     "he",
+     1
+    ],
+    [
+     "you",
+     2
+    ],
+    [
+     "they",
+     2
+    ],
+    [
+     "my mother",
+     1
+    ],
+    [
+     "we",
+     2
+    ]
+   ],
+   "build": {
+    "items": [
+     "I am twelve years old.",
+     "The books are on the table.",
+     "Are you from Kazakhstan?",
+     "They are in the park.",
+     "We are not at home.",
+     "She is a good singer.",
+     "I'm not hungry now.",
+     "Is your sister a nurse?",
+     "My brother isn't tall.",
+     "Is it your bag?"
+    ],
+    "pool": [
+     [
+      "old.",
+      false
+     ],
+     [
+      "I",
+      false
+     ],
+     [
+      "is",
+      true
+     ],
+     [
+      "years",
+      false
+     ],
+     [
+      "am",
+      false
+     ],
+     [
+      "twelve",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "I am hungry.",
+     "opts": [
+      [
+       "I'm not hungry.",
+       true
+      ],
+      [
+       "I isn't hungry.",
+       false
+      ],
+      [
+       "I amn't hungry.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "My dad is at work.",
+     "opts": [
+      [
+       "My dad not at work.",
+       false
+      ],
+      [
+       "My dad isn't at work.",
+       true
+      ],
+      [
+       "My dad aren't at work.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "You are ready.",
+     "opts": [
+      [
+       "Are you ready?",
+       true
+      ],
+      [
+       "You are ready?",
+       false
+      ],
+      [
+       "Is you ready?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "She is a teacher.",
+     "opts": [
+      [
+       "She aren't a teacher.",
+       false
+      ],
+      [
+       "She not is a teacher.",
+       false
+      ],
+      [
+       "She isn't a teacher.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "We are late.",
+     "opts": [
+      [
+       "Are we late?",
+       true
+      ],
+      [
+       "We are late?",
+       false
+      ],
+      [
+       "Is we late?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "He is your brother.",
+     "opts": [
+      [
+       "He your brother is?",
+       false
+      ],
+      [
+       "Is he your brother?",
+       true
+      ],
+      [
+       "Are he your brother?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "It is cold.",
+     "opts": [
+      [
+       "Is it cold?",
+       true
+      ],
+      [
+       "Are it cold?",
+       false
+      ],
+      [
+       "It is cold?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "They are at school.",
+     "opts": [
+      [
+       "They not are at school.",
+       false
+      ],
+      [
+       "They isn't at school.",
+       false
+      ],
+      [
+       "They aren't at school.",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "They is at the cinema.",
+    "Is you ready?",
+    "I is ten years old.",
+    "She are my best friend.",
+    "We isn't late.",
+    "Are he a pilot?",
+    "You is very kind.",
+    "My cats is hungry."
+   ],
+   "type": [
+    "We ___ at school.",
+    "I ___ a student.",
+    "They ___ not at home.",
+    "I ___ not tired.",
+    "My parents ___ in Almaty.",
+    "___ I late?",
+    "The cat ___ black.",
+    "My mum ___ a doctor.",
+    "It ___ very hot today.",
+    "___ he your teacher?"
+   ],
+   "listen": [
+    {
+     "right": "We are at school.",
+     "opts": [
+      [
+       "We are at school.",
+       true
+      ],
+      [
+       "We is at school.",
+       false
+      ],
+      [
+       "We am at school.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "I am a student.",
+     "opts": [
+      [
+       "I is a student.",
+       false
+      ],
+      [
+       "I are a student.",
+       false
+      ],
+      [
+       "I am a student.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "They are not at home.",
+     "opts": [
+      [
+       "They are not at home.",
+       true
+      ],
+      [
+       "They am not at home.",
+       false
+      ],
+      [
+       "They is not at home.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "I am not tired.",
+     "opts": [
+      [
+       "I are not tired.",
+       false
+      ],
+      [
+       "I am not tired.",
+       true
+      ],
+      [
+       "I is not tired.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "My parents are in Almaty.",
+     "opts": [
+      [
+       "My parents are in Almaty.",
+       true
+      ],
+      [
+       "My parents am in Almaty.",
+       false
+      ],
+      [
+       "My parents is in Almaty.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Am I late?",
+     "opts": [
+      [
+       "Are I late?",
+       false
+      ],
+      [
+       "Is I late?",
+       false
+      ],
+      [
+       "Am I late?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "The cat is black.",
+     "opts": [
+      [
+       "The cat are black.",
+       false
+      ],
+      [
+       "The cat am black.",
+       false
+      ],
+      [
+       "The cat is black.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "My mum is a doctor.",
+     "opts": [
+      [
+       "My mum am a doctor.",
+       false
+      ],
+      [
+       "My mum are a doctor.",
+       false
+      ],
+      [
+       "My mum is a doctor.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "It is very hot today.",
+     "opts": [
+      [
+       "It is very hot today.",
+       true
+      ],
+      [
+       "It are very hot today.",
+       false
+      ],
+      [
+       "It am very hot today.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Is he your teacher?",
+     "opts": [
+      [
+       "Are he your teacher?",
+       false
+      ],
+      [
+       "Am he your teacher?",
+       false
+      ],
+      [
+       "Is he your teacher?",
+       true
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "Is I late?",
+     false
+    ],
+    [
+     "The cat is black.",
+     true
+    ],
+    [
+     "They are not at home.",
+     true
+    ],
+    [
+     "Are you hungry?",
+     true
+    ],
+    [
+     "We am at school.",
+     false
+    ],
+    [
+     "Is he your teacher?",
+     true
+    ],
+    [
+     "My mum is a doctor.",
+     true
+    ],
+    [
+     "My parents is in Almaty.",
+     false
+    ],
+    [
+     "I is a student.",
+     false
+    ],
+    [
+     "I am not tired.",
+     true
+    ],
+    [
+     "It is very hot today.",
+     true
+    ],
+    [
+     "You are my best friend.",
+     true
+    ],
+    [
+     "My mum is a doctor.",
+     true
+    ],
+    [
+     "I am not tired.",
+     true
+    ],
+    [
+     "We am at school.",
+     false
+    ],
+    [
+     "You am my best friend.",
+     false
+    ],
+    [
+     "It is very hot today.",
+     true
+    ],
+    [
+     "My parents is in Almaty.",
+     false
+    ],
+    [
+     "Are he your teacher?",
+     false
+    ],
+    [
+     "I am a student.",
+     true
+    ],
+    [
+     "Am I late?",
+     true
+    ],
+    [
+     "They are not at home.",
+     true
+    ],
+    [
+     "Are you hungry?",
+     true
+    ],
+    [
+     "The cat am black.",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "fix",
+     "say": "She is my best friend.",
+     "opts": [
+      [
+       "She am my best friend.",
+       false
+      ],
+      [
+       "She are my best friend.",
+       false
+      ],
+      [
+       "She is my best friend.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Is he a pilot?",
+     "opts": [
+      [
+       "Am he a pilot?",
+       false
+      ],
+      [
+       "Are he a pilot?",
+       false
+      ],
+      [
+       "Is he a pilot?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The cat is black.",
+     "opts": [
+      [
+       "am",
+       false
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "We are at school.",
+     "opts": [
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Is he your brother?",
+     "opts": [
+      [
+       "Are he your brother?",
+       false
+      ],
+      [
+       "He your brother is?",
+       false
+      ],
+      [
+       "Is he your brother?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "They are not at home.",
+     "opts": [
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "They are at the cinema.",
+     "opts": [
+      [
+       "They are at the cinema.",
+       true
+      ],
+      [
+       "They is at the cinema.",
+       false
+      ],
+      [
+       "They am at the cinema.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "It is very hot today.",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "She isn't a teacher.",
+     "opts": [
+      [
+       "She aren't a teacher.",
+       false
+      ],
+      [
+       "She not is a teacher.",
+       false
+      ],
+      [
+       "She isn't a teacher.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I am a student.",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "am",
+       true
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Am I late?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Am",
+       true
+      ],
+      [
+       "Is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Are you a new student?",
+     "opts": [
+      [
+       "Is",
+       false
+      ],
+      [
+       "Are",
+       true
+      ],
+      [
+       "Am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Is it cold?",
+     "opts": [
+      [
+       "Are it cold?",
+       false
+      ],
+      [
+       "It is cold?",
+       false
+      ],
+      [
+       "Is it cold?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "I am ten years old.",
+     "opts": [
+      [
+       "I is ten years old.",
+       false
+      ],
+      [
+       "I are ten years old.",
+       false
+      ],
+      [
+       "I am ten years old.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My mum is a doctor.",
+     "opts": [
+      [
+       "is",
+       true
+      ],
+      [
+       "am",
+       false
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "No, we aren't in class 5B. We're in 5A.",
+     "opts": [
+      [
+       "not",
+       false
+      ],
+      [
+       "isn't",
+       false
+      ],
+      [
+       "aren't",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Are you ready?",
+     "opts": [
+      [
+       "Is you ready?",
+       false
+      ],
+      [
+       "Are you ready?",
+       true
+      ],
+      [
+       "Am you ready?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "You are very kind.",
+     "opts": [
+      [
+       "You am very kind.",
+       false
+      ],
+      [
+       "You are very kind.",
+       true
+      ],
+      [
+       "You is very kind.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "We aren't late.",
+     "opts": [
+      [
+       "We aren't late.",
+       true
+      ],
+      [
+       "We isn't late.",
+       false
+      ],
+      [
+       "We amn't late.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "My dad isn't at work.",
+     "opts": [
+      [
+       "My dad isn't at work.",
+       true
+      ],
+      [
+       "My dad not at work.",
+       false
+      ],
+      [
+       "My dad aren't at work.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "I'm not hungry.",
+     "opts": [
+      [
+       "I isn't hungry.",
+       false
+      ],
+      [
+       "I'm not hungry.",
+       true
+      ],
+      [
+       "I amn't hungry.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "My cats are hungry.",
+     "opts": [
+      [
+       "My cats is hungry.",
+       false
+      ],
+      [
+       "My cats am hungry.",
+       false
+      ],
+      [
+       "My cats are hungry.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I am not tired.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "am",
+       true
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Are you hungry?",
+     "opts": [
+      [
+       "Am",
+       false
+      ],
+      [
+       "Is",
+       false
+      ],
+      [
+       "Are",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Cool! This is Ali. He is my friend.",
+     "opts": [
+      [
+       "am",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Is he your teacher?",
+     "opts": [
+      [
+       "Is",
+       true
+      ],
+      [
+       "Are",
+       false
+      ],
+      [
+       "Am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Yes, I am. I am from Shymkent.",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "is",
+       false
+      ],
+      [
+       "am",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My parents are in Almaty.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "am",
+       false
+      ],
+      [
+       "are",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "They aren't at school.",
+     "opts": [
+      [
+       "They aren't at school.",
+       true
+      ],
+      [
+       "They not are at school.",
+       false
+      ],
+      [
+       "They isn't at school.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Are you ready?",
+     "opts": [
+      [
+       "Is you ready?",
+       false
+      ],
+      [
+       "You are ready?",
+       false
+      ],
+      [
+       "Are you ready?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Oh, OK. Is our teacher nice?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Is",
+       true
+      ],
+      [
+       "Am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Yes, she is great!",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Nice to meet you, Ali. Are you in class 5B too?",
+     "opts": [
+      [
+       "Are",
+       true
+      ],
+      [
+       "Am",
+       false
+      ],
+      [
+       "Is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You are my best friend.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       true
+      ],
+      [
+       "am",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Hello! I am Arman.",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "am",
+       true
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Are we late?",
+     "opts": [
+      [
+       "Is we late?",
+       false
+      ],
+      [
+       "We are late?",
+       false
+      ],
+      [
+       "Are we late?",
+       true
+      ]
+     ]
+    }
+   ]
+  },
+  "L1-10": {
+   "pick": [
+    {
+     "s": "The cafe is ___ the bank and the post office.",
+     "opts": [
+      [
+       "next",
+       false
+      ],
+      [
+       "between",
+       true
+      ],
+      [
+       "under",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "The children are ___ the classroom.",
+     "opts": [
+      [
+       "under",
+       false
+      ],
+      [
+       "on",
+       false
+      ],
+      [
+       "in",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The milk is ___ the fridge. It's nice and cold.",
+     "opts": [
+      [
+       "in",
+       true
+      ],
+      [
+       "on",
+       false
+      ],
+      [
+       "under",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Our flat is ___ the park. It's only a five-minute walk.",
+     "opts": [
+      [
+       "between",
+       false
+      ],
+      [
+       "under",
+       false
+      ],
+      [
+       "near",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The car is ___ of the house.",
+     "opts": [
+      [
+       "behind",
+       false
+      ],
+      [
+       "in front",
+       true
+      ],
+      [
+       "next",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "My cat is ___ the bed. I can't see it!",
+     "opts": [
+      [
+       "next",
+       false
+      ],
+      [
+       "under",
+       true
+      ],
+      [
+       "on",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "My pen is ___ my pencil case.",
+     "opts": [
+      [
+       "between",
+       false
+      ],
+      [
+       "next",
+       false
+      ],
+      [
+       "in",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The lamp is next ___ the sofa.",
+     "opts": [
+      [
+       "at",
+       false
+      ],
+      [
+       "of",
+       false
+      ],
+      [
+       "to",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "There is a picture ___ the wall.",
+     "opts": [
+      [
+       "between",
+       false
+      ],
+      [
+       "on",
+       true
+      ],
+      [
+       "in",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Aruzhan is ___ home now.",
+     "opts": [
+      [
+       "on",
+       false
+      ],
+      [
+       "in",
+       false
+      ],
+      [
+       "at",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The keys are ___ the table, next to the phone.",
+     "opts": [
+      [
+       "on",
+       true
+      ],
+      [
+       "between",
+       false
+      ],
+      [
+       "in",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "The bus stop is in front ___ our school.",
+     "opts": [
+      [
+       "to",
+       false
+      ],
+      [
+       "at",
+       false
+      ],
+      [
+       "of",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "The garden is ___ the house, so we can't see it from the street.",
+     "opts": [
+      [
+       "in front of",
+       false
+      ],
+      [
+       "in",
+       false
+      ],
+      [
+       "behind",
+       true
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "Where are the children?",
+     0,
+     6
+    ],
+    [
+     "Under the bed.",
+     1,
+     3
+    ],
+    [
+     "Where is the milk?",
+     0,
+     0
+    ],
+    [
+     "Next to the sofa.",
+     1,
+     7
+    ],
+    [
+     "Where is Mum?",
+     0,
+     2
+    ],
+    [
+     "In the fridge.",
+     1,
+     0
+    ],
+    [
+     "On the wall.",
+     1,
+     1
+    ],
+    [
+     "Where is the lamp?",
+     0,
+     7
+    ],
+    [
+     "Where is the cafe?",
+     0,
+     5
+    ],
+    [
+     "At school.",
+     1,
+     6
+    ],
+    [
+     "At work.",
+     1,
+     2
+    ],
+    [
+     "Where is the picture?",
+     0,
+     1
+    ],
+    [
+     "Where is the bus stop?",
+     0,
+     4
+    ],
+    [
+     "Between the bank and the shop.",
+     1,
+     5
+    ],
+    [
+     "Where is the cat?",
+     0,
+     3
+    ],
+    [
+     "In front of the school.",
+     1,
+     4
+    ]
+   ],
+   "sort": [
+    [
+     "work",
+     0
+    ],
+    [
+     "the shelf",
+     2
+    ],
+    [
+     "home",
+     0
+    ],
+    [
+     "the floor",
+     2
+    ],
+    [
+     "the sofa",
+     2
+    ],
+    [
+     "the kitchen",
+     1
+    ],
+    [
+     "the table",
+     2
+    ],
+    [
+     "Almaty",
+     1
+    ],
+    [
+     "school",
+     0
+    ],
+    [
+     "the fridge",
+     1
+    ],
+    [
+     "the wall",
+     2
+    ],
+    [
+     "the bag",
+     1
+    ],
+    [
+     "the car",
+     1
+    ]
+   ],
+   "build": {
+    "items": [
+     "Is the dog under the bed?",
+     "The cat is under the table.",
+     "Where are my shoes?",
+     "The bank is next to the school.",
+     "My parents are at work.",
+     "The bus stop is in front of the cafe.",
+     "My phone is on the desk.",
+     "The ball is between the two boxes.",
+     "The garden is behind the house.",
+     "Our house is near the river.",
+     "The keys are in my bag."
+    ],
+    "pool": [
+     [
+      "dog",
+      false
+     ],
+     [
+      "the",
+      false
+     ],
+     [
+      "Is",
+      false
+     ],
+     [
+      "of",
+      true
+     ],
+     [
+      "under",
+      false
+     ],
+     [
+      "bed?",
+      false
+     ],
+     [
+      "the",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "The lamp is near the bed.",
+     "opts": [
+      [
+       "The lamp is next the bed.",
+       false
+      ],
+      [
+       "The lamp is next to the bed.",
+       true
+      ],
+      [
+       "The lamp is next of the bed.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "The ball is on the box.",
+     "opts": [
+      [
+       "The ball is down the box.",
+       false
+      ],
+      [
+       "The ball is under of the box.",
+       false
+      ],
+      [
+       "The ball is under the box.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "The shoes are under the bed.",
+     "opts": [
+      [
+       "Where is the shoes?",
+       false
+      ],
+      [
+       "Where are the shoes?",
+       true
+      ],
+      [
+       "Where the shoes are?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "The keys are in the bag.",
+     "opts": [
+      [
+       "Is the keys in the bag?",
+       false
+      ],
+      [
+       "The keys are in the bag?",
+       false
+      ],
+      [
+       "Are the keys in the bag?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "The cat is in front of the box.",
+     "opts": [
+      [
+       "The cat is behind the box.",
+       true
+      ],
+      [
+       "The cat is behind of the box.",
+       false
+      ],
+      [
+       "The cat is back the box.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "The dog is behind the sofa.",
+     "opts": [
+      [
+       "The dog is in front the sofa.",
+       false
+      ],
+      [
+       "The dog is front of the sofa.",
+       false
+      ],
+      [
+       "The dog is in front of the sofa.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "The cafe is next to the bank.",
+     "opts": [
+      [
+       "The cafe is between the bank or the shop.",
+       false
+      ],
+      [
+       "The cafe is between the bank and the shop.",
+       true
+      ],
+      [
+       "The cafe is between of the bank and the shop.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "The bank is near the school.",
+     "opts": [
+      [
+       "Where are the bank?",
+       false
+      ],
+      [
+       "Where is the bank?",
+       true
+      ],
+      [
+       "Where the bank is?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "My phone is on the desk.",
+     "opts": [
+      [
+       "My phone not on the desk.",
+       false
+      ],
+      [
+       "My phone aren't on the desk.",
+       false
+      ],
+      [
+       "My phone isn't on the desk.",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "The bank is next of the cafe.",
+    "There is a bus stop in front from the park.",
+    "The picture is in the wall.",
+    "The lamp is next with the sofa.",
+    "My mum is in work now.",
+    "The car is in front to the house.",
+    "Is your phone at the bag?",
+    "The cups are in the table.",
+    "The shop is between the bank or the cafe.",
+    "The children are on school."
+   ],
+   "place": [
+    "The cat is under the box.",
+    "The apple is on the box.",
+    "The dog is next to the box.",
+    "The bag is in front of the box.",
+    "The books are on the box.",
+    "The ball is in the box.",
+    "The keys are in the box.",
+    "The shoes are under the box.",
+    "The teddy bear is between the boxes.",
+    "The mouse is behind the box."
+   ],
+   "type": [
+    "The cafe is ___ the bank and the post office.",
+    "The children are ___ the classroom.",
+    "The milk is ___ the fridge. It's nice and cold.",
+    "Our flat is ___ the park. It's only a five-minute walk.",
+    "The car is ___ of the house.",
+    "My cat is ___ the bed. I can't see it!",
+    "My pen is ___ my pencil case.",
+    "The lamp is next ___ the sofa.",
+    "There is a picture ___ the wall.",
+    "Aruzhan is ___ home now."
+   ],
+   "listen": [
+    {
+     "right": "The cafe is between the bank and the post office.",
+     "opts": [
+      [
+       "The cafe is next the bank and the post office.",
+       false
+      ],
+      [
+       "The cafe is between the bank and the post office.",
+       true
+      ],
+      [
+       "The cafe is under the bank and the post office.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "The children are in the classroom.",
+     "opts": [
+      [
+       "The children are under the classroom.",
+       false
+      ],
+      [
+       "The children are on the classroom.",
+       false
+      ],
+      [
+       "The children are in the classroom.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "The milk is in the fridge. It's nice and cold.",
+     "opts": [
+      [
+       "The milk is in the fridge. It's nice and cold.",
+       true
+      ],
+      [
+       "The milk is on the fridge. It's nice and cold.",
+       false
+      ],
+      [
+       "The milk is under the fridge. It's nice and cold.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Our flat is near the park. It's only a five-minute walk.",
+     "opts": [
+      [
+       "Our flat is between the park. It's only a five-minute walk.",
+       false
+      ],
+      [
+       "Our flat is under the park. It's only a five-minute walk.",
+       false
+      ],
+      [
+       "Our flat is near the park. It's only a five-minute walk.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "The car is in front of the house.",
+     "opts": [
+      [
+       "The car is behind of the house.",
+       false
+      ],
+      [
+       "The car is in front of the house.",
+       true
+      ],
+      [
+       "The car is next of the house.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "My cat is under the bed. I can't see it!",
+     "opts": [
+      [
+       "My cat is next the bed. I can't see it!",
+       false
+      ],
+      [
+       "My cat is under the bed. I can't see it!",
+       true
+      ],
+      [
+       "My cat is on the bed. I can't see it!",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "My pen is in my pencil case.",
+     "opts": [
+      [
+       "My pen is between my pencil case.",
+       false
+      ],
+      [
+       "My pen is next my pencil case.",
+       false
+      ],
+      [
+       "My pen is in my pencil case.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "The lamp is next to the sofa.",
+     "opts": [
+      [
+       "The lamp is next at the sofa.",
+       false
+      ],
+      [
+       "The lamp is next of the sofa.",
+       false
+      ],
+      [
+       "The lamp is next to the sofa.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "There is a picture on the wall.",
+     "opts": [
+      [
+       "There is a picture between the wall.",
+       false
+      ],
+      [
+       "There is a picture on the wall.",
+       true
+      ],
+      [
+       "There is a picture in the wall.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Aruzhan is at home now.",
+     "opts": [
+      [
+       "Aruzhan is on home now.",
+       false
+      ],
+      [
+       "Aruzhan is in home now.",
+       false
+      ],
+      [
+       "Aruzhan is at home now.",
+       true
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "The garden is behind the house, so we can't see it from the street.",
+     true
+    ],
+    [
+     "The bus stop is in front of our school.",
+     true
+    ],
+    [
+     "The children are in the classroom.",
+     true
+    ],
+    [
+     "There is a picture between the wall.",
+     false
+    ],
+    [
+     "The lamp is next to the sofa.",
+     true
+    ],
+    [
+     "The keys are on the table, next to the phone.",
+     true
+    ],
+    [
+     "The cafe is next the bank and the post office.",
+     false
+    ],
+    [
+     "The car is behind of the house.",
+     false
+    ],
+    [
+     "My pen is in my pencil case.",
+     true
+    ],
+    [
+     "My cat is under the bed. I can't see it!",
+     true
+    ],
+    [
+     "The milk is in the fridge. It's nice and cold.",
+     true
+    ],
+    [
+     "Our flat is under the park. It's only a five-minute walk.",
+     false
+    ],
+    [
+     "Aruzhan is at home now.",
+     true
+    ],
+    [
+     "The keys are between the table, next to the phone.",
+     false
+    ],
+    [
+     "The bus stop is in front of our school.",
+     true
+    ],
+    [
+     "The garden is in front of the house, so we can't see it from the street.",
+     false
+    ],
+    [
+     "The cafe is next the bank and the post office.",
+     false
+    ],
+    [
+     "My cat is under the bed. I can't see it!",
+     true
+    ],
+    [
+     "My pen is in my pencil case.",
+     true
+    ],
+    [
+     "The children are in the classroom.",
+     true
+    ],
+    [
+     "The car is in front of the house.",
+     true
+    ],
+    [
+     "Aruzhan is on home now.",
+     false
+    ],
+    [
+     "The lamp is next to the sofa.",
+     true
+    ],
+    [
+     "Our flat is under the park. It's only a five-minute walk.",
+     false
+    ],
+    [
+     "The milk is in the fridge. It's nice and cold.",
+     true
+    ],
+    [
+     "There is a picture in the wall.",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "gap",
+     "say": "She's next to the window. She loves the sun.",
+     "opts": [
+      [
+       "of",
+       false
+      ],
+      [
+       "to",
+       true
+      ],
+      [
+       "at",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The lamp is next to the sofa.",
+     "opts": [
+      [
+       "The lamp is next with the sofa.",
+       false
+      ],
+      [
+       "The lamp is next to the sofa.",
+       true
+      ],
+      [
+       "The lamp is next of the sofa.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The milk is in the fridge. It's nice and cold.",
+     "opts": [
+      [
+       "under",
+       false
+      ],
+      [
+       "in",
+       true
+      ],
+      [
+       "on",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Is Dad at home?",
+     "opts": [
+      [
+       "at",
+       true
+      ],
+      [
+       "on",
+       false
+      ],
+      [
+       "in",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My cat is under the bed. I can't see it!",
+     "opts": [
+      [
+       "next",
+       false
+      ],
+      [
+       "on",
+       false
+      ],
+      [
+       "under",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Is your phone in the bag?",
+     "opts": [
+      [
+       "Is your phone at the bag?",
+       false
+      ],
+      [
+       "Is your phone to the bag?",
+       false
+      ],
+      [
+       "Is your phone in the bag?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Our flat is near the park. It's only a five-minute walk.",
+     "opts": [
+      [
+       "between",
+       false
+      ],
+      [
+       "near",
+       true
+      ],
+      [
+       "under",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The bus stop is in front of our school.",
+     "opts": [
+      [
+       "at",
+       false
+      ],
+      [
+       "to",
+       false
+      ],
+      [
+       "of",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Where are the shoes?",
+     "opts": [
+      [
+       "Where are the shoes?",
+       true
+      ],
+      [
+       "Where the shoes are?",
+       false
+      ],
+      [
+       "Where is the shoes?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The lamp is next to the sofa.",
+     "opts": [
+      [
+       "of",
+       false
+      ],
+      [
+       "to",
+       true
+      ],
+      [
+       "at",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "There is a bus stop in front of the park.",
+     "opts": [
+      [
+       "There is a bus stop in front from the park.",
+       false
+      ],
+      [
+       "There is a bus stop in front of the park.",
+       true
+      ],
+      [
+       "There is a bus stop in front to the park.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The dog is in front of the sofa.",
+     "opts": [
+      [
+       "The dog is in front the sofa.",
+       false
+      ],
+      [
+       "The dog is front of the sofa.",
+       false
+      ],
+      [
+       "The dog is in front of the sofa.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "It's on the table in the kitchen.",
+     "opts": [
+      [
+       "on",
+       true
+      ],
+      [
+       "between",
+       false
+      ],
+      [
+       "in",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Are the keys in the bag?",
+     "opts": [
+      [
+       "Is the keys in the bag?",
+       false
+      ],
+      [
+       "The keys are in the bag?",
+       false
+      ],
+      [
+       "Are the keys in the bag?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The picture is on the wall.",
+     "opts": [
+      [
+       "The picture is at the wall.",
+       false
+      ],
+      [
+       "The picture is in the wall.",
+       false
+      ],
+      [
+       "The picture is on the wall.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The car is in front of the house.",
+     "opts": [
+      [
+       "The car is in front at the house.",
+       false
+      ],
+      [
+       "The car is in front of the house.",
+       true
+      ],
+      [
+       "The car is in front to the house.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The cat is behind the box.",
+     "opts": [
+      [
+       "The cat is back the box.",
+       false
+      ],
+      [
+       "The cat is behind of the box.",
+       false
+      ],
+      [
+       "The cat is behind the box.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My pen is in my pencil case.",
+     "opts": [
+      [
+       "in",
+       true
+      ],
+      [
+       "between",
+       false
+      ],
+      [
+       "next",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "There is a picture on the wall.",
+     "opts": [
+      [
+       "on",
+       true
+      ],
+      [
+       "in",
+       false
+      ],
+      [
+       "between",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "My phone isn't on the desk.",
+     "opts": [
+      [
+       "My phone not on the desk.",
+       false
+      ],
+      [
+       "My phone aren't on the desk.",
+       false
+      ],
+      [
+       "My phone isn't on the desk.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The bank is next to the cafe.",
+     "opts": [
+      [
+       "The bank is next to the cafe.",
+       true
+      ],
+      [
+       "The bank is next of the cafe.",
+       false
+      ],
+      [
+       "The bank is next at the cafe.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Aruzhan is at home now.",
+     "opts": [
+      [
+       "in",
+       false
+      ],
+      [
+       "at",
+       true
+      ],
+      [
+       "on",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "OK. Bye, Mum! The school bus is here, in front of our house!",
+     "opts": [
+      [
+       "of",
+       true
+      ],
+      [
+       "at",
+       false
+      ],
+      [
+       "to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The cafe is between the bank and the post office.",
+     "opts": [
+      [
+       "under",
+       false
+      ],
+      [
+       "next",
+       false
+      ],
+      [
+       "between",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The garden is behind the house, so we can't see it from the street.",
+     "opts": [
+      [
+       "in",
+       false
+      ],
+      [
+       "in front of",
+       false
+      ],
+      [
+       "behind",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The cups are on the table.",
+     "opts": [
+      [
+       "The cups are to the table.",
+       false
+      ],
+      [
+       "The cups are on the table.",
+       true
+      ],
+      [
+       "The cups are in the table.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Look under the sofa. Maybe they're on the floor.",
+     "opts": [
+      [
+       "between",
+       false
+      ],
+      [
+       "under",
+       true
+      ],
+      [
+       "next",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "They're in your bag.",
+     "opts": [
+      [
+       "next",
+       false
+      ],
+      [
+       "between",
+       false
+      ],
+      [
+       "in",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The children are at school.",
+     "opts": [
+      [
+       "The children are on school.",
+       false
+      ],
+      [
+       "The children are at school.",
+       true
+      ],
+      [
+       "The children are of school.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The lamp is next to the bed.",
+     "opts": [
+      [
+       "The lamp is next of the bed.",
+       false
+      ],
+      [
+       "The lamp is next the bed.",
+       false
+      ],
+      [
+       "The lamp is next to the bed.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The shop is between the bank and the cafe.",
+     "opts": [
+      [
+       "The shop is between the bank and the cafe.",
+       true
+      ],
+      [
+       "The shop is between the bank or the cafe.",
+       false
+      ],
+      [
+       "The shop is between the bank with the cafe.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The ball is under the box.",
+     "opts": [
+      [
+       "The ball is down the box.",
+       false
+      ],
+      [
+       "The ball is under the box.",
+       true
+      ],
+      [
+       "The ball is under of the box.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The keys are on the table, next to the phone.",
+     "opts": [
+      [
+       "in",
+       false
+      ],
+      [
+       "between",
+       false
+      ],
+      [
+       "on",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "My mum is at work now.",
+     "opts": [
+      [
+       "My mum is in work now.",
+       false
+      ],
+      [
+       "My mum is on work now.",
+       false
+      ],
+      [
+       "My mum is at work now.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The children are in the classroom.",
+     "opts": [
+      [
+       "under",
+       false
+      ],
+      [
+       "in",
+       true
+      ],
+      [
+       "on",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "No, he's at work. His office is between the bank and the post office.",
+     "opts": [
+      [
+       "under",
+       false
+      ],
+      [
+       "next",
+       false
+      ],
+      [
+       "between",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The car is in front of the house.",
+     "opts": [
+      [
+       "behind",
+       false
+      ],
+      [
+       "next",
+       false
+      ],
+      [
+       "in front",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The cafe is between the bank and the shop.",
+     "opts": [
+      [
+       "The cafe is between the bank or the shop.",
+       false
+      ],
+      [
+       "The cafe is between of the bank and the shop.",
+       false
+      ],
+      [
+       "The cafe is between the bank and the shop.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Where is the bank?",
+     "opts": [
+      [
+       "Where is the bank?",
+       true
+      ],
+      [
+       "Where are the bank?",
+       false
+      ],
+      [
+       "Where the bank is?",
+       false
+      ]
+     ]
+    }
+   ]
+  },
+  "L2-22": {
+   "pick": [
+    {
+     "s": "Tomorrow is Sunday, so I ___ get up early.",
+     "opts": [
+      [
+       "have to",
+       false
+      ],
+      [
+       "doesn't have to",
+       false
+      ],
+      [
+       "don't have to",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "You ___ talk on your phone in the cinema. It's rude.",
+     "opts": [
+      [
+       "shouldn't",
+       true
+      ],
+      [
+       "don't have",
+       false
+      ],
+      [
+       "should",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Students ___ wear a uniform at our school. It's a rule.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ],
+      [
+       "has to",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "You look ill. You ___ see a doctor.",
+     "opts": [
+      [
+       "should",
+       true
+      ],
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "shouldn't",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Timur's office is next to his house, so he ___ take a bus.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "has to",
+       false
+      ],
+      [
+       "doesn't have to",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "You should ___ more vegetables.",
+     "opts": [
+      [
+       "to eat",
+       false
+      ],
+      [
+       "eating",
+       false
+      ],
+      [
+       "eat",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "I ___ go now. My lesson starts in five minutes.",
+     "opts": [
+      [
+       "has to",
+       false
+      ],
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "In Kazakhstan, cars ___ drive on the right.",
+     "opts": [
+      [
+       "have to",
+       true
+      ],
+      [
+       "has to",
+       false
+      ],
+      [
+       "don't have to",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "My mum is a nurse. She ___ work at night sometimes.",
+     "opts": [
+      [
+       "have to",
+       false
+      ],
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "has to",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "You ___ eat so many sweets. It's bad for you.",
+     "opts": [
+      [
+       "should",
+       false
+      ],
+      [
+       "shouldn't",
+       true
+      ],
+      [
+       "have to",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "It's a free museum. You ___ pay.",
+     "opts": [
+      [
+       "have to",
+       false
+      ],
+      [
+       "don't have to",
+       true
+      ],
+      [
+       "doesn't have to",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Aruzhan's exam is next week. She ___ study hard.",
+     "opts": [
+      [
+       "should to",
+       false
+      ],
+      [
+       "should",
+       true
+      ],
+      [
+       "shouldn't",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ I take an umbrella? — Yes, it's going to rain.",
+     "opts": [
+      [
+       "Have",
+       false
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Should",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "___ your brother have to work on Saturdays?",
+     "opts": [
+      [
+       "Is",
+       false
+      ],
+      [
+       "Does",
+       true
+      ],
+      [
+       "Do",
+       false
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "My English is weak.",
+     0,
+     6
+    ],
+    [
+     "You don't have to buy a ticket.",
+     1,
+     3
+    ],
+    [
+     "I'm always tired.",
+     0,
+     0
+    ],
+    [
+     "We don't have to hurry.",
+     1,
+     7
+    ],
+    [
+     "My tooth hurts.",
+     0,
+     2
+    ],
+    [
+     "You should sleep more.",
+     1,
+     0
+    ],
+    [
+     "You should put on a jacket.",
+     1,
+     1
+    ],
+    [
+     "There's lots of time.",
+     0,
+     7
+    ],
+    [
+     "I'm hungry.",
+     0,
+     5
+    ],
+    [
+     "You should practise every day.",
+     1,
+     6
+    ],
+    [
+     "You should see a dentist.",
+     1,
+     2
+    ],
+    [
+     "I'm cold.",
+     0,
+     1
+    ],
+    [
+     "The lesson starts at 8.",
+     0,
+     4
+    ],
+    [
+     "You should have a sandwich.",
+     1,
+     5
+    ],
+    [
+     "It's a free concert.",
+     0,
+     3
+    ],
+    [
+     "I have to leave at 7:30.",
+     1,
+     4
+    ]
+   ],
+   "build": {
+    "items": [
+     "You should go to bed before eleven.",
+     "He doesn't have to cook tonight.",
+     "You shouldn't drink cold water.",
+     "Do you have to work tomorrow?",
+     "She has to feed the cat.",
+     "Students don't have to wear a uniform on Fridays.",
+     "You should try this soup.",
+     "Does Dana have to pay for the lessons?",
+     "Should I call the teacher?",
+     "My dad has to drive to Astana."
+    ],
+    "pool": [
+     [
+      "go",
+      false
+     ],
+     [
+      "bed",
+      false
+     ],
+     [
+      "You",
+      false
+     ],
+     [
+      "eleven.",
+      false
+     ],
+     [
+      "goes",
+      true
+     ],
+     [
+      "before",
+      false
+     ],
+     [
+      "should",
+      false
+     ],
+     [
+      "to",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "We have to wear a tie at work.",
+     "opts": [
+      [
+       "We don't have to wear a tie at work.",
+       true
+      ],
+      [
+       "We doesn't have to wear a tie at work.",
+       false
+      ],
+      [
+       "We not have to wear a tie at work.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Dana should study more.",
+     "opts": [
+      [
+       "Should Dana studies more?",
+       false
+      ],
+      [
+       "Should Dana study more?",
+       true
+      ],
+      [
+       "Does Dana should study more?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "I should call him.",
+     "opts": [
+      [
+       "Should I call him?",
+       true
+      ],
+      [
+       "Do I should call him?",
+       false
+      ],
+      [
+       "Should I to call him?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "You should watch this film.",
+     "opts": [
+      [
+       "You don't should watch this film.",
+       false
+      ],
+      [
+       "You shouldn't to watch this film.",
+       false
+      ],
+      [
+       "You shouldn't watch this film.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "You have to buy a ticket.",
+     "opts": [
+      [
+       "Do you have to buy a ticket?",
+       true
+      ],
+      [
+       "Do you has to buy a ticket?",
+       false
+      ],
+      [
+       "Have you to buy a ticket?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "I have to finish my homework.",
+     "opts": [
+      [
+       "He has to finishes his homework.",
+       false
+      ],
+      [
+       "He has to finish his homework.",
+       true
+      ],
+      [
+       "He have to finish his homework.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "She has to work on Sunday.",
+     "opts": [
+      [
+       "Does she have to work on Sunday?",
+       true
+      ],
+      [
+       "Do she have to work on Sunday?",
+       false
+      ],
+      [
+       "Does she has to work on Sunday?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "He has to get up early.",
+     "opts": [
+      [
+       "He don't have to get up early.",
+       false
+      ],
+      [
+       "He doesn't has to get up early.",
+       false
+      ],
+      [
+       "He doesn't have to get up early.",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "Do he have to go?",
+    "My sister don't have to work today.",
+    "She have to walk the dog every morning.",
+    "You should drinks more water.",
+    "Ali has to gets up at six.",
+    "Should I calling my mum?",
+    "We doesn't have to hurry.",
+    "You shouldn't worrying about it."
+   ],
+   "type": [
+    "Tomorrow is Sunday, so I ___ get up early.",
+    "You ___ talk on your phone in the cinema. It's rude.",
+    "Students ___ wear a uniform at our school. It's a rule.",
+    "You look ill. You ___ see a doctor.",
+    "Timur's office is next to his house, so he ___ take a bus.",
+    "You should ___ more vegetables.",
+    "I ___ go now. My lesson starts in five minutes.",
+    "In Kazakhstan, cars ___ drive on the right.",
+    "My mum is a nurse. She ___ work at night sometimes.",
+    "You ___ eat so many sweets. It's bad for you."
+   ],
+   "listen": [
+    {
+     "right": "Tomorrow is Sunday, so I don't have to get up early.",
+     "opts": [
+      [
+       "Tomorrow is Sunday, so I have to get up early.",
+       false
+      ],
+      [
+       "Tomorrow is Sunday, so I doesn't have to get up early.",
+       false
+      ],
+      [
+       "Tomorrow is Sunday, so I don't have to get up early.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "You shouldn't talk on your phone in the cinema. It's rude.",
+     "opts": [
+      [
+       "You shouldn't talk on your phone in the cinema. It's rude.",
+       true
+      ],
+      [
+       "You don't have talk on your phone in the cinema. It's rude.",
+       false
+      ],
+      [
+       "You should talk on your phone in the cinema. It's rude.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Students have to wear a uniform at our school. It's a rule.",
+     "opts": [
+      [
+       "Students don't have to wear a uniform at our school. It's a rule.",
+       false
+      ],
+      [
+       "Students have to wear a uniform at our school. It's a rule.",
+       true
+      ],
+      [
+       "Students has to wear a uniform at our school. It's a rule.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "You look ill. You should see a doctor.",
+     "opts": [
+      [
+       "You look ill. You should see a doctor.",
+       true
+      ],
+      [
+       "You look ill. You don't have to see a doctor.",
+       false
+      ],
+      [
+       "You look ill. You shouldn't see a doctor.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Timur's office is next to his house, so he doesn't have to take a bus.",
+     "opts": [
+      [
+       "Timur's office is next to his house, so he don't have to take a bus.",
+       false
+      ],
+      [
+       "Timur's office is next to his house, so he has to take a bus.",
+       false
+      ],
+      [
+       "Timur's office is next to his house, so he doesn't have to take a bus.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "You should eat more vegetables.",
+     "opts": [
+      [
+       "You should to eat more vegetables.",
+       false
+      ],
+      [
+       "You should eating more vegetables.",
+       false
+      ],
+      [
+       "You should eat more vegetables.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "I have to go now. My lesson starts in five minutes.",
+     "opts": [
+      [
+       "I has to go now. My lesson starts in five minutes.",
+       false
+      ],
+      [
+       "I don't have to go now. My lesson starts in five minutes.",
+       false
+      ],
+      [
+       "I have to go now. My lesson starts in five minutes.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "In Kazakhstan, cars have to drive on the right.",
+     "opts": [
+      [
+       "In Kazakhstan, cars have to drive on the right.",
+       true
+      ],
+      [
+       "In Kazakhstan, cars has to drive on the right.",
+       false
+      ],
+      [
+       "In Kazakhstan, cars don't have to drive on the right.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "My mum is a nurse. She has to work at night sometimes.",
+     "opts": [
+      [
+       "My mum is a nurse. She have to work at night sometimes.",
+       false
+      ],
+      [
+       "My mum is a nurse. She don't have to work at night sometimes.",
+       false
+      ],
+      [
+       "My mum is a nurse. She has to work at night sometimes.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "You shouldn't eat so many sweets. It's bad for you.",
+     "opts": [
+      [
+       "You should eat so many sweets. It's bad for you.",
+       false
+      ],
+      [
+       "You shouldn't eat so many sweets. It's bad for you.",
+       true
+      ],
+      [
+       "You have to eat so many sweets. It's bad for you.",
+       false
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "You shouldn't talk on your phone in the cinema. It's rude.",
+     true
+    ],
+    [
+     "Is your brother have to work on Saturdays?",
+     false
+    ],
+    [
+     "It's a free museum. You don't have to pay.",
+     true
+    ],
+    [
+     "You shouldn't eat so many sweets. It's bad for you.",
+     true
+    ],
+    [
+     "Do I take an umbrella? — Yes, it's going to rain.",
+     false
+    ],
+    [
+     "My mum is a nurse. She have to work at night sometimes.",
+     false
+    ],
+    [
+     "You should eat more vegetables.",
+     true
+    ],
+    [
+     "You look ill. You should see a doctor.",
+     true
+    ],
+    [
+     "Tomorrow is Sunday, so I don't have to get up early.",
+     true
+    ],
+    [
+     "Aruzhan's exam is next week. She should to study hard.",
+     false
+    ],
+    [
+     "In Kazakhstan, cars have to drive on the right.",
+     true
+    ],
+    [
+     "I has to go now. My lesson starts in five minutes.",
+     false
+    ],
+    [
+     "Students have to wear a uniform at our school. It's a rule.",
+     true
+    ],
+    [
+     "Timur's office is next to his house, so he don't have to take a bus.",
+     false
+    ],
+    [
+     "I have to go now. My lesson starts in five minutes.",
+     true
+    ],
+    [
+     "Should I take an umbrella? — Yes, it's going to rain.",
+     true
+    ],
+    [
+     "You shouldn't talk on your phone in the cinema. It's rude.",
+     true
+    ],
+    [
+     "It's a free museum. You don't have to pay.",
+     true
+    ],
+    [
+     "You shouldn't eat so many sweets. It's bad for you.",
+     true
+    ],
+    [
+     "Is your brother have to work on Saturdays?",
+     false
+    ],
+    [
+     "Timur's office is next to his house, so he doesn't have to take a bus.",
+     true
+    ],
+    [
+     "My mum is a nurse. She don't have to work at night sometimes.",
+     false
+    ],
+    [
+     "You should eat more vegetables.",
+     true
+    ],
+    [
+     "Tomorrow is Sunday, so I have to get up early.",
+     false
+    ],
+    [
+     "Aruzhan's exam is next week. She should to study hard.",
+     false
+    ],
+    [
+     "You look ill. You should see a doctor.",
+     true
+    ],
+    [
+     "Students don't have to wear a uniform at our school. It's a rule.",
+     false
+    ],
+    [
+     "In Kazakhstan, cars has to drive on the right.",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "trans",
+     "say": "Do you have to buy a ticket?",
+     "opts": [
+      [
+       "Do you has to buy a ticket?",
+       false
+      ],
+      [
+       "Have you to buy a ticket?",
+       false
+      ],
+      [
+       "Do you have to buy a ticket?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "We don't have to hurry.",
+     "opts": [
+      [
+       "We isn't have to hurry.",
+       false
+      ],
+      [
+       "We doesn't have to hurry.",
+       false
+      ],
+      [
+       "We don't have to hurry.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Tomorrow is Sunday, so I don't have to get up early.",
+     "opts": [
+      [
+       "doesn't have to",
+       false
+      ],
+      [
+       "have to",
+       false
+      ],
+      [
+       "don't have to",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "In Kazakhstan, cars have to drive on the right.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "has to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Does she have to work on Sunday?",
+     "opts": [
+      [
+       "Does she has to work on Sunday?",
+       false
+      ],
+      [
+       "Do she have to work on Sunday?",
+       false
+      ],
+      [
+       "Does she have to work on Sunday?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Should I take an umbrella? — Yes, it's going to rain.",
+     "opts": [
+      [
+       "Have",
+       false
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Should",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "You should drink more water.",
+     "opts": [
+      [
+       "You should drink more water.",
+       true
+      ],
+      [
+       "You should drinks more water.",
+       false
+      ],
+      [
+       "You should drinking more water.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Students have to wear a uniform at our school. It's a rule.",
+     "opts": [
+      [
+       "has to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ],
+      [
+       "don't have to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You should eat more vegetables.",
+     "opts": [
+      [
+       "to eat",
+       false
+      ],
+      [
+       "eating",
+       false
+      ],
+      [
+       "eat",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You look ill. You should see a doctor.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "should",
+       true
+      ],
+      [
+       "shouldn't",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Timur's office is next to his house, so he doesn't have to take a bus.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "doesn't have to",
+       true
+      ],
+      [
+       "has to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "My sister doesn't have to work today.",
+     "opts": [
+      [
+       "My sister don't have to work today.",
+       false
+      ],
+      [
+       "My sister doesn't have to work today.",
+       true
+      ],
+      [
+       "My sister isn't have to work today.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Should I call him?",
+     "opts": [
+      [
+       "Should I to call him?",
+       false
+      ],
+      [
+       "Do I should call him?",
+       false
+      ],
+      [
+       "Should I call him?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Should Dana study more?",
+     "opts": [
+      [
+       "Does Dana should study more?",
+       false
+      ],
+      [
+       "Should Dana studies more?",
+       false
+      ],
+      [
+       "Should Dana study more?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You shouldn't eat so many sweets. It's bad for you.",
+     "opts": [
+      [
+       "shouldn't",
+       true
+      ],
+      [
+       "should",
+       false
+      ],
+      [
+       "have to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Good idea. Should I drink coffee to stay awake?",
+     "opts": [
+      [
+       "Have",
+       false
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Should",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Should I call my mum?",
+     "opts": [
+      [
+       "Should I calling my mum?",
+       false
+      ],
+      [
+       "Should I call my mum?",
+       true
+      ],
+      [
+       "Should I called my mum?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "She has to walk the dog every morning.",
+     "opts": [
+      [
+       "She is to walk the dog every morning.",
+       false
+      ],
+      [
+       "She has to walk the dog every morning.",
+       true
+      ],
+      [
+       "She have to walk the dog every morning.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "You shouldn't worry about it.",
+     "opts": [
+      [
+       "You shouldn't worry about it.",
+       true
+      ],
+      [
+       "You shouldn't worrying about it.",
+       false
+      ],
+      [
+       "You shouldn't worried about it.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "He has to finish his homework.",
+     "opts": [
+      [
+       "He has to finish his homework.",
+       true
+      ],
+      [
+       "He has to finishes his homework.",
+       false
+      ],
+      [
+       "He have to finish his homework.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "You shouldn't watch this film.",
+     "opts": [
+      [
+       "You shouldn't to watch this film.",
+       false
+      ],
+      [
+       "You shouldn't watch this film.",
+       true
+      ],
+      [
+       "You don't should watch this film.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Does he have to go?",
+     "opts": [
+      [
+       "Do he have to go?",
+       false
+      ],
+      [
+       "Is he have to go?",
+       false
+      ],
+      [
+       "Does he have to go?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Aruzhan's exam is next week. She should study hard.",
+     "opts": [
+      [
+       "shouldn't",
+       false
+      ],
+      [
+       "should",
+       true
+      ],
+      [
+       "should to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "It's a free museum. You don't have to pay.",
+     "opts": [
+      [
+       "doesn't have to",
+       false
+      ],
+      [
+       "have to",
+       false
+      ],
+      [
+       "don't have to",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "All night? You shouldn't do that! You need sleep.",
+     "opts": [
+      [
+       "have to",
+       false
+      ],
+      [
+       "shouldn't",
+       true
+      ],
+      [
+       "should",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Does your brother have to work on Saturdays?",
+     "opts": [
+      [
+       "Does",
+       true
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Not really. I have an exam tomorrow, so I have to study all night.",
+     "opts": [
+      [
+       "has to",
+       false
+      ],
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You shouldn't talk on your phone in the cinema. It's rude.",
+     "opts": [
+      [
+       "should",
+       false
+      ],
+      [
+       "don't have",
+       false
+      ],
+      [
+       "shouldn't",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "We don't have to wear a tie at work.",
+     "opts": [
+      [
+       "We don't have to wear a tie at work.",
+       true
+      ],
+      [
+       "We doesn't have to wear a tie at work.",
+       false
+      ],
+      [
+       "We not have to wear a tie at work.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I have to go now. My lesson starts in five minutes.",
+     "opts": [
+      [
+       "don't have to",
+       false
+      ],
+      [
+       "has to",
+       false
+      ],
+      [
+       "have to",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "No, you shouldn't drink coffee in the evening. Drink some water.",
+     "opts": [
+      [
+       "should",
+       false
+      ],
+      [
+       "shouldn't",
+       true
+      ],
+      [
+       "not",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "OK. And do we have to bring a dictionary?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "do",
+       true
+      ],
+      [
+       "should",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "You don't have to learn them all tonight. Learn twenty now and thirty in the morning.",
+     "opts": [
+      [
+       "don't have to",
+       true
+      ],
+      [
+       "have to",
+       false
+      ],
+      [
+       "doesn't have to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My mum is a nurse. She has to work at night sometimes.",
+     "opts": [
+      [
+       "have to",
+       false
+      ],
+      [
+       "has to",
+       true
+      ],
+      [
+       "don't have to",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Ali has to get up at six.",
+     "opts": [
+      [
+       "Ali has to gets up at six.",
+       false
+      ],
+      [
+       "Ali has to get up at six.",
+       true
+      ],
+      [
+       "Ali has to got up at six.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "He doesn't have to get up early.",
+     "opts": [
+      [
+       "He doesn't has to get up early.",
+       false
+      ],
+      [
+       "He don't have to get up early.",
+       false
+      ],
+      [
+       "He doesn't have to get up early.",
+       true
+      ]
+     ]
+    }
+   ]
+  },
+  "L3-01": {
+   "pick": [
+    {
+     "s": "When ___ you finish school? — In 2019.",
+     "opts": [
+      [
+       "did",
+       true
+      ],
+      [
+       "have",
+       false
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ your brother play the piano? — Yes, he can.",
+     "opts": [
+      [
+       "Is",
+       false
+      ],
+      [
+       "Can",
+       true
+      ],
+      [
+       "Does",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ you like spicy food?",
+     "opts": [
+      [
+       "Do",
+       true
+      ],
+      [
+       "Are",
+       false
+      ],
+      [
+       "Does",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Does Arman ___ in a bank?",
+     "opts": [
+      [
+       "working",
+       false
+      ],
+      [
+       "works",
+       false
+      ],
+      [
+       "work",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Why ___ Aruzhan crying?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "did",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Where ___ your parents live?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "do",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "___ you go to the concert last night?",
+     "opts": [
+      [
+       "Did",
+       true
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Were",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Did she ___ the email this morning?",
+     "opts": [
+      [
+       "sent",
+       false
+      ],
+      [
+       "sends",
+       false
+      ],
+      [
+       "send",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Where ___ Timur from?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ you be at the meeting tomorrow?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Will",
+       true
+      ],
+      [
+       "Do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ you ever been to London?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Have",
+       true
+      ],
+      [
+       "Did",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "What time ___ the film start?",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "do",
+       false
+      ],
+      [
+       "does",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "What ___ you doing at the moment?",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "are",
+       true
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ it rain a lot in Almaty in spring?",
+     "opts": [
+      [
+       "Do",
+       false
+      ],
+      [
+       "Does",
+       true
+      ],
+      [
+       "Is",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "How long ___ it take you to get to work every day?",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "do",
+       false
+      ],
+      [
+       "does",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Who ___ you talking to on the phone a minute ago?",
+     "opts": [
+      [
+       "were",
+       true
+      ],
+      [
+       "did",
+       false
+      ],
+      [
+       "was",
+       false
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "Were you at home?",
+     0,
+     6
+    ],
+    [
+     "Yes, she can.",
+     1,
+     3
+    ],
+    [
+     "Are you hungry?",
+     0,
+     0
+    ],
+    [
+     "Yes, I will.",
+     1,
+     7
+    ],
+    [
+     "Did you win?",
+     0,
+     2
+    ],
+    [
+     "Yes, I am.",
+     1,
+     0
+    ],
+    [
+     "No, he doesn't.",
+     1,
+     1
+    ],
+    [
+     "Will you come?",
+     0,
+     7
+    ],
+    [
+     "Is it raining?",
+     0,
+     5
+    ],
+    [
+     "No, I wasn't.",
+     1,
+     6
+    ],
+    [
+     "Yes, we did.",
+     1,
+     2
+    ],
+    [
+     "Does he smoke?",
+     0,
+     1
+    ],
+    [
+     "Have they arrived?",
+     0,
+     4
+    ],
+    [
+     "Yes, it is.",
+     1,
+     5
+    ],
+    [
+     "Can she cook?",
+     0,
+     3
+    ],
+    [
+     "No, they haven't.",
+     1,
+     4
+    ]
+   ],
+   "sort": [
+    [
+     "___ they sleeping now?",
+     2
+    ],
+    [
+     "___ she work here?",
+     0
+    ],
+    [
+     "___ it rain last night?",
+     1
+    ],
+    [
+     "___ you feeling OK?",
+     2
+    ],
+    [
+     "___ they move house last May?",
+     1
+    ],
+    [
+     "___ he lost his keys?",
+     3
+    ],
+    [
+     "___ you ever eaten sushi?",
+     3
+    ],
+    [
+     "___ you see Tom yesterday?",
+     1
+    ],
+    [
+     "___ he wearing a hat?",
+     2
+    ],
+    [
+     "___ we need tickets?",
+     0
+    ],
+    [
+     "___ your dad drive?",
+     0
+    ],
+    [
+     "___ she finished yet?",
+     3
+    ]
+   ],
+   "build": {
+    "items": [
+     "What kind of music do you like?",
+     "Where did you spend your summer holiday?",
+     "Is Dana coming to the party?",
+     "What book are you reading?",
+     "Why didn't you answer my message?",
+     "Does your brother live in Astana?",
+     "How often do you check your phone?",
+     "Who are you waiting for?",
+     "How much does this jacket cost?",
+     "Have you finished your homework yet?",
+     "Can you open the window?"
+    ],
+    "pool": [
+     [
+      "music",
+      false
+     ],
+     [
+      "of",
+      false
+     ],
+     [
+      "you",
+      false
+     ],
+     [
+      "What",
+      false
+     ],
+     [
+      "likes",
+      true
+     ],
+     [
+      "do",
+      false
+     ],
+     [
+      "like?",
+      false
+     ],
+     [
+      "kind",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "They will arrive tomorrow.",
+     "opts": [
+      [
+       "When they will arrive?",
+       false
+      ],
+      [
+       "When will they arrive?",
+       true
+      ],
+      [
+       "When do they will arrive?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "They went to Turkey last summer.",
+     "opts": [
+      [
+       "Where did they went last summer?",
+       false
+      ],
+      [
+       "Where they went last summer?",
+       false
+      ],
+      [
+       "Where did they go last summer?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "Arman is talking to his boss.",
+     "opts": [
+      [
+       "To who Arman is talking?",
+       false
+      ],
+      [
+       "Who is Arman talking to?",
+       true
+      ],
+      [
+       "Who Arman is talking to?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "You are learning Chinese.",
+     "opts": [
+      [
+       "You are learning Chinese?",
+       false
+      ],
+      [
+       "Do you learning Chinese?",
+       false
+      ],
+      [
+       "Are you learning Chinese?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "She works in a hospital.",
+     "opts": [
+      [
+       "Does she work in a hospital?",
+       true
+      ],
+      [
+       "Does she works in a hospital?",
+       false
+      ],
+      [
+       "Works she in a hospital?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Aigerim has finished the report.",
+     "opts": [
+      [
+       "Did Aigerim has finished the report?",
+       false
+      ],
+      [
+       "Does Aigerim finished the report?",
+       false
+      ],
+      [
+       "Has Aigerim finished the report?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "She bought a new phone.",
+     "opts": [
+      [
+       "What did she bought?",
+       false
+      ],
+      [
+       "What did she buy?",
+       true
+      ],
+      [
+       "What she bought?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "He can ride a horse.",
+     "opts": [
+      [
+       "Can he rides a horse?",
+       false
+      ],
+      [
+       "Can he ride a horse?",
+       true
+      ],
+      [
+       "Does he can ride a horse?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "The lesson starts at nine.",
+     "opts": [
+      [
+       "What time the lesson starts?",
+       false
+      ],
+      [
+       "What time does the lesson starts?",
+       false
+      ],
+      [
+       "What time does the lesson start?",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "Does she likes chocolate?",
+    "Have you ever went to Japan?",
+    "What time do the bank open?",
+    "Why is your friends laughing?",
+    "Where does you live?",
+    "Did you saw the match last night?",
+    "Did they visited their grandparents?",
+    "What are you do this weekend?",
+    "Are you understand the question?",
+    "How many languages does Ali speaks?"
+   ],
+   "type": [
+    "When ___ you finish school? — In 2019.",
+    "___ your brother play the piano? — Yes, he can.",
+    "___ you like spicy food?",
+    "Does Arman ___ in a bank?",
+    "Why ___ Aruzhan crying?",
+    "Where ___ your parents live?",
+    "___ you go to the concert last night?",
+    "Did she ___ the email this morning?",
+    "Where ___ Timur from?",
+    "___ you be at the meeting tomorrow?"
+   ],
+   "listen": [
+    {
+     "right": "When did you finish school? — In 2019.",
+     "opts": [
+      [
+       "When did you finish school? — In 2019.",
+       true
+      ],
+      [
+       "When have you finish school? — In 2019.",
+       false
+      ],
+      [
+       "When do you finish school? — In 2019.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Can your brother play the piano? — Yes, he can.",
+     "opts": [
+      [
+       "Is your brother play the piano? — Yes, he can.",
+       false
+      ],
+      [
+       "Can your brother play the piano? — Yes, he can.",
+       true
+      ],
+      [
+       "Does your brother play the piano? — Yes, he can.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Do you like spicy food?",
+     "opts": [
+      [
+       "Do you like spicy food?",
+       true
+      ],
+      [
+       "Are you like spicy food?",
+       false
+      ],
+      [
+       "Does you like spicy food?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Does Arman work in a bank?",
+     "opts": [
+      [
+       "Does Arman working in a bank?",
+       false
+      ],
+      [
+       "Does Arman works in a bank?",
+       false
+      ],
+      [
+       "Does Arman work in a bank?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Why is Aruzhan crying?",
+     "opts": [
+      [
+       "Why does Aruzhan crying?",
+       false
+      ],
+      [
+       "Why did Aruzhan crying?",
+       false
+      ],
+      [
+       "Why is Aruzhan crying?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Where do your parents live?",
+     "opts": [
+      [
+       "Where does your parents live?",
+       false
+      ],
+      [
+       "Where are your parents live?",
+       false
+      ],
+      [
+       "Where do your parents live?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Did you go to the concert last night?",
+     "opts": [
+      [
+       "Did you go to the concert last night?",
+       true
+      ],
+      [
+       "Do you go to the concert last night?",
+       false
+      ],
+      [
+       "Were you go to the concert last night?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Did she send the email this morning?",
+     "opts": [
+      [
+       "Did she sent the email this morning?",
+       false
+      ],
+      [
+       "Did she sends the email this morning?",
+       false
+      ],
+      [
+       "Did she send the email this morning?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Where is Timur from?",
+     "opts": [
+      [
+       "Where does Timur from?",
+       false
+      ],
+      [
+       "Where is Timur from?",
+       true
+      ],
+      [
+       "Where do Timur from?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Will you be at the meeting tomorrow?",
+     "opts": [
+      [
+       "Are you be at the meeting tomorrow?",
+       false
+      ],
+      [
+       "Will you be at the meeting tomorrow?",
+       true
+      ],
+      [
+       "Do you be at the meeting tomorrow?",
+       false
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "Do you like spicy food?",
+     true
+    ],
+    [
+     "Why does Aruzhan crying?",
+     false
+    ],
+    [
+     "Do you go to the concert last night?",
+     false
+    ],
+    [
+     "Does Arman work in a bank?",
+     true
+    ],
+    [
+     "Does it rain a lot in Almaty in spring?",
+     true
+    ],
+    [
+     "Did she send the email this morning?",
+     true
+    ],
+    [
+     "Is your brother play the piano? — Yes, he can.",
+     false
+    ],
+    [
+     "How long does it take you to get to work every day?",
+     true
+    ],
+    [
+     "What time do the film start?",
+     false
+    ],
+    [
+     "What are you doing at the moment?",
+     true
+    ],
+    [
+     "Do you be at the meeting tomorrow?",
+     false
+    ],
+    [
+     "Where does your parents live?",
+     false
+    ],
+    [
+     "When did you finish school? — In 2019.",
+     true
+    ],
+    [
+     "Who were you talking to on the phone a minute ago?",
+     true
+    ],
+    [
+     "Have you ever been to London?",
+     true
+    ],
+    [
+     "Where do Timur from?",
+     false
+    ],
+    [
+     "Who did you talking to on the phone a minute ago?",
+     false
+    ],
+    [
+     "Are you be at the meeting tomorrow?",
+     false
+    ],
+    [
+     "Did she sends the email this morning?",
+     false
+    ],
+    [
+     "Why is Aruzhan crying?",
+     true
+    ],
+    [
+     "Does Arman working in a bank?",
+     false
+    ],
+    [
+     "Do you go to the concert last night?",
+     false
+    ],
+    [
+     "Does you like spicy food?",
+     false
+    ],
+    [
+     "Where does Timur from?",
+     false
+    ],
+    [
+     "When do you finish school? — In 2019.",
+     false
+    ],
+    [
+     "How long does it take you to get to work every day?",
+     true
+    ],
+    [
+     "Are you ever been to London?",
+     false
+    ],
+    [
+     "Where are your parents live?",
+     false
+    ],
+    [
+     "What are you doing at the moment?",
+     true
+    ],
+    [
+     "Does your brother play the piano? — Yes, he can.",
+     false
+    ],
+    [
+     "Does it rain a lot in Almaty in spring?",
+     true
+    ],
+    [
+     "What time do the film start?",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "fix",
+     "say": "Does she like chocolate?",
+     "opts": [
+      [
+       "Does she liking chocolate?",
+       false
+      ],
+      [
+       "Does she likes chocolate?",
+       false
+      ],
+      [
+       "Does she like chocolate?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Really? Who did you go with?",
+     "opts": [
+      [
+       "did",
+       true
+      ],
+      [
+       "were",
+       false
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "What are you doing this weekend?",
+     "opts": [
+      [
+       "What are you do this weekend?",
+       false
+      ],
+      [
+       "What are you doing this weekend?",
+       true
+      ],
+      [
+       "What are you does this weekend?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Cool! Do you like cooking? I'm making plov tonight.",
+     "opts": [
+      [
+       "Do",
+       true
+      ],
+      [
+       "Does",
+       false
+      ],
+      [
+       "Are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Why are your friends laughing?",
+     "opts": [
+      [
+       "Why is your friends laughing?",
+       false
+      ],
+      [
+       "Why do your friends laughing?",
+       false
+      ],
+      [
+       "Why are your friends laughing?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Do you like spicy food?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Do",
+       true
+      ],
+      [
+       "Does",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Where did they go last summer?",
+     "opts": [
+      [
+       "Where they went last summer?",
+       false
+      ],
+      [
+       "Where did they went last summer?",
+       false
+      ],
+      [
+       "Where did they go last summer?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "How long does it take you to get to work every day?",
+     "opts": [
+      [
+       "do",
+       false
+      ],
+      [
+       "does",
+       true
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Where do your parents live?",
+     "opts": [
+      [
+       "do",
+       true
+      ],
+      [
+       "does",
+       false
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "What time does the bank open?",
+     "opts": [
+      [
+       "What time do the bank open?",
+       false
+      ],
+      [
+       "What time does the bank open?",
+       true
+      ],
+      [
+       "What time are the bank open?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Will you be at the meeting tomorrow?",
+     "opts": [
+      [
+       "Do",
+       false
+      ],
+      [
+       "Are",
+       false
+      ],
+      [
+       "Will",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Has Aigerim finished the report?",
+     "opts": [
+      [
+       "Does Aigerim finished the report?",
+       false
+      ],
+      [
+       "Did Aigerim has finished the report?",
+       false
+      ],
+      [
+       "Has Aigerim finished the report?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Does she work in a hospital?",
+     "opts": [
+      [
+       "Does she work in a hospital?",
+       true
+      ],
+      [
+       "Works she in a hospital?",
+       false
+      ],
+      [
+       "Does she works in a hospital?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "What are you doing at the moment?",
+     "opts": [
+      [
+       "are",
+       true
+      ],
+      [
+       "do",
+       false
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "What did she buy?",
+     "opts": [
+      [
+       "What did she bought?",
+       false
+      ],
+      [
+       "What she bought?",
+       false
+      ],
+      [
+       "What did she buy?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Have you ever been to London?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Did",
+       false
+      ],
+      [
+       "Have",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Does it rain a lot in Almaty in spring?",
+     "opts": [
+      [
+       "Do",
+       false
+      ],
+      [
+       "Does",
+       true
+      ],
+      [
+       "Is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I work in a travel agency. Have you ever travelled abroad?",
+     "opts": [
+      [
+       "Have",
+       true
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Did",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Can your brother play the piano? — Yes, he can.",
+     "opts": [
+      [
+       "Is",
+       false
+      ],
+      [
+       "Does",
+       false
+      ],
+      [
+       "Can",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "How many languages does Ali speak?",
+     "opts": [
+      [
+       "How many languages does Ali spoke?",
+       false
+      ],
+      [
+       "How many languages does Ali speak?",
+       true
+      ],
+      [
+       "How many languages does Ali speaks?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Did she send the email this morning?",
+     "opts": [
+      [
+       "sends",
+       false
+      ],
+      [
+       "send",
+       true
+      ],
+      [
+       "sent",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Hi, I'm Dana. So, where are you from?",
+     "opts": [
+      [
+       "do",
+       false
+      ],
+      [
+       "are",
+       true
+      ],
+      [
+       "is",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Why is Aruzhan crying?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "did",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Do you understand the question?",
+     "opts": [
+      [
+       "Are you understand the question?",
+       false
+      ],
+      [
+       "Do you understand the question?",
+       true
+      ],
+      [
+       "Is you understand the question?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Oh, nice! What do you study?",
+     "opts": [
+      [
+       "do",
+       true
+      ],
+      [
+       "does",
+       false
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "What time does the lesson start?",
+     "opts": [
+      [
+       "What time the lesson starts?",
+       false
+      ],
+      [
+       "What time does the lesson starts?",
+       false
+      ],
+      [
+       "What time does the lesson start?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Yes, I do! What do you need? I can go to the shop.",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "are",
+       false
+      ],
+      [
+       "do",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "What time does the film start?",
+     "opts": [
+      [
+       "is",
+       false
+      ],
+      [
+       "do",
+       false
+      ],
+      [
+       "does",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Did you see the match last night?",
+     "opts": [
+      [
+       "Did you see the match last night?",
+       true
+      ],
+      [
+       "Did you saw the match last night?",
+       false
+      ],
+      [
+       "Did you seen the match last night?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "When will they arrive?",
+     "opts": [
+      [
+       "When do they will arrive?",
+       false
+      ],
+      [
+       "When will they arrive?",
+       true
+      ],
+      [
+       "When they will arrive?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Who were you talking to on the phone a minute ago?",
+     "opts": [
+      [
+       "did",
+       false
+      ],
+      [
+       "was",
+       false
+      ],
+      [
+       "were",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Who is Arman talking to?",
+     "opts": [
+      [
+       "Who is Arman talking to?",
+       true
+      ],
+      [
+       "To who Arman is talking?",
+       false
+      ],
+      [
+       "Who Arman is talking to?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Did you go to the concert last night?",
+     "opts": [
+      [
+       "Were",
+       false
+      ],
+      [
+       "Do",
+       false
+      ],
+      [
+       "Did",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Where is Timur from?",
+     "opts": [
+      [
+       "does",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Can he ride a horse?",
+     "opts": [
+      [
+       "Can he ride a horse?",
+       true
+      ],
+      [
+       "Can he rides a horse?",
+       false
+      ],
+      [
+       "Does he can ride a horse?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Does Arman work in a bank?",
+     "opts": [
+      [
+       "working",
+       false
+      ],
+      [
+       "works",
+       false
+      ],
+      [
+       "work",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Have you ever been to Japan?",
+     "opts": [
+      [
+       "Have you ever been to Japan?",
+       true
+      ],
+      [
+       "Have you ever go to Japan?",
+       false
+      ],
+      [
+       "Have you ever went to Japan?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Medicine. It's hard, but I love it. And you? Do you work or study?",
+     "opts": [
+      [
+       "Does",
+       false
+      ],
+      [
+       "Are",
+       false
+      ],
+      [
+       "Do",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Where do you live?",
+     "opts": [
+      [
+       "Where does you live?",
+       false
+      ],
+      [
+       "Where do you live?",
+       true
+      ],
+      [
+       "Where are you live?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Did they visit their grandparents?",
+     "opts": [
+      [
+       "Did they visits their grandparents?",
+       false
+      ],
+      [
+       "Did they visited their grandparents?",
+       false
+      ],
+      [
+       "Did they visit their grandparents?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Are you learning Chinese?",
+     "opts": [
+      [
+       "Do you learning Chinese?",
+       false
+      ],
+      [
+       "You are learning Chinese?",
+       false
+      ],
+      [
+       "Are you learning Chinese?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "When did you finish school? — In 2019.",
+     "opts": [
+      [
+       "do",
+       false
+      ],
+      [
+       "have",
+       false
+      ],
+      [
+       "did",
+       true
+      ]
+     ]
+    }
+   ]
+  },
+  "L4-01": {
+   "pick": [
+    {
+     "s": "I can't talk right now — I ___ dinner.",
+     "opts": [
+      [
+       "cook",
+       false
+      ],
+      [
+       "have cooked",
+       false
+      ],
+      [
+       "am cooking",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "I ___ three cups of coffee today, and it's only 11 o'clock!",
+     "opts": [
+      [
+       "have had",
+       true
+      ],
+      [
+       "am having",
+       false
+      ],
+      [
+       "have",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "___ you ever tried beshbarmak?",
+     "opts": [
+      [
+       "Are",
+       false
+      ],
+      [
+       "Have",
+       true
+      ],
+      [
+       "Do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Listen! The baby next door ___ again.",
+     "opts": [
+      [
+       "is crying",
+       true
+      ],
+      [
+       "has cried",
+       false
+      ],
+      [
+       "cries",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "He ___ to the gym twice a week.",
+     "opts": [
+      [
+       "has gone",
+       false
+      ],
+      [
+       "is going",
+       false
+      ],
+      [
+       "goes",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Sorry, Timur ___ to the bank and he isn't back yet.",
+     "opts": [
+      [
+       "goes",
+       false
+      ],
+      [
+       "go",
+       false
+      ],
+      [
+       "has gone",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "She ___ her homework yet, so she can't go out.",
+     "opts": [
+      [
+       "doesn't finish",
+       false
+      ],
+      [
+       "isn't finishing",
+       false
+      ],
+      [
+       "hasn't finished",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "We ___ in this flat since 2020.",
+     "opts": [
+      [
+       "have lived",
+       true
+      ],
+      [
+       "live",
+       false
+      ],
+      [
+       "are living",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Dana ___ her phone, so she can't call you back.",
+     "opts": [
+      [
+       "loses",
+       false
+      ],
+      [
+       "is losing",
+       false
+      ],
+      [
+       "has lost",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Arman usually ___ from home on Fridays.",
+     "opts": [
+      [
+       "is working",
+       false
+      ],
+      [
+       "works",
+       true
+      ],
+      [
+       "has worked",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "At the moment, food prices ___ by about 2% a month.",
+     "opts": [
+      [
+       "rise",
+       false
+      ],
+      [
+       "are rising",
+       true
+      ],
+      [
+       "have risen",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "How long ___ you known your best friend?",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "have",
+       true
+      ],
+      [
+       "do",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "The museum ___ at 10 a.m. every day except Monday.",
+     "opts": [
+      [
+       "has opened",
+       false
+      ],
+      [
+       "is opening",
+       false
+      ],
+      [
+       "opens",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "My sister normally lives in Almaty, but this month she ___ with us in Shymkent.",
+     "opts": [
+      [
+       "has stayed",
+       false
+      ],
+      [
+       "is staying",
+       true
+      ],
+      [
+       "stays",
+       false
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "Water freezes",
+     0,
+     6
+    ],
+    [
+     "been to Turkistan?",
+     1,
+     3
+    ],
+    [
+     "We've known each other",
+     0,
+     0
+    ],
+    [
+     "faster than salaries.",
+     1,
+     7
+    ],
+    [
+     "The shop usually",
+     0,
+     2
+    ],
+    [
+     "since primary school.",
+     1,
+     0
+    ],
+    [
+     "is coming.",
+     1,
+     1
+    ],
+    [
+     "Prices are rising",
+     0,
+     7
+    ],
+    [
+     "Arman hasn't replied",
+     0,
+     5
+    ],
+    [
+     "at zero degrees.",
+     1,
+     6
+    ],
+    [
+     "closes at nine.",
+     1,
+     2
+    ],
+    [
+     "Look! The bus",
+     0,
+     1
+    ],
+    [
+     "I'm staying with Dana",
+     0,
+     4
+    ],
+    [
+     "to my message yet.",
+     1,
+     5
+    ],
+    [
+     "Have you ever",
+     0,
+     3
+    ],
+    [
+     "until I find a flat.",
+     1,
+     4
+    ]
+   ],
+   "sort": [
+    [
+     "on Mondays",
+     0
+    ],
+    [
+     "so far",
+     2
+    ],
+    [
+     "every Sunday",
+     0
+    ],
+    [
+     "yet",
+     2
+    ],
+    [
+     "ever",
+     2
+    ],
+    [
+     "as a rule",
+     0
+    ],
+    [
+     "since 2015",
+     2
+    ],
+    [
+     "right now",
+     1
+    ],
+    [
+     "twice a year",
+     0
+    ],
+    [
+     "Look!",
+     1
+    ],
+    [
+     "for ages",
+     2
+    ],
+    [
+     "at the moment",
+     1
+    ],
+    [
+     "Listen!",
+     1
+    ]
+   ],
+   "build": {
+    "items": [
+     "They have known each other since school.",
+     "She has never been to London.",
+     "The sun rises in the east.",
+     "How long have you lived in Astana?",
+     "Who is Aruzhan talking to on the phone?",
+     "My brother works in a hospital.",
+     "Why are you wearing a coat today?",
+     "Does your father often travel for work?",
+     "Has the film started yet?",
+     "We haven't decided where to go yet.",
+     "Prices are going up all the time."
+    ],
+    "pool": [
+     [
+      "each",
+      false
+     ],
+     [
+      "known",
+      false
+     ],
+     [
+      "since",
+      false
+     ],
+     [
+      "They",
+      false
+     ],
+     [
+      "know",
+      true
+     ],
+     [
+      "other",
+      false
+     ],
+     [
+      "school.",
+      false
+     ],
+     [
+      "have",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "You have visited Turkistan.",
+     "opts": [
+      [
+       "Did you ever visited Turkistan?",
+       false
+      ],
+      [
+       "Have you ever visited Turkistan?",
+       true
+      ],
+      [
+       "Have you visited ever Turkistan?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "She works at home on Fridays.",
+     "opts": [
+      [
+       "Does she works at home on Fridays?",
+       false
+      ],
+      [
+       "Is she work at home on Fridays?",
+       false
+      ],
+      [
+       "Does she work at home on Fridays?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "The kids are playing football.",
+     "opts": [
+      [
+       "The kids don't playing football.",
+       false
+      ],
+      [
+       "The kids aren't playing football.",
+       true
+      ],
+      [
+       "The kids isn't playing football.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "They are watching a series.",
+     "opts": [
+      [
+       "Are they watch a series?",
+       false
+      ],
+      [
+       "Do they watching a series?",
+       false
+      ],
+      [
+       "Are they watching a series?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "I live in Almaty. I moved here five years ago.",
+     "opts": [
+      [
+       "I have lived in Almaty for five years.",
+       true
+      ],
+      [
+       "I live in Almaty for five years.",
+       false
+      ],
+      [
+       "I am living in Almaty since five years.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "I usually drink tea.",
+     "opts": [
+      [
+       "I drink tea right now.",
+       false
+      ],
+      [
+       "I drinking tea right now.",
+       false
+      ],
+      [
+       "I'm drinking tea right now.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "Arman lost his passport, and he still doesn't have it.",
+     "opts": [
+      [
+       "Arman is losing his passport.",
+       false
+      ],
+      [
+       "Arman has lost his passport.",
+       true
+      ],
+      [
+       "Arman loses his passport.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "He has finished the project.",
+     "opts": [
+      [
+       "He hasn't finish the project yet.",
+       false
+      ],
+      [
+       "He hasn't finished the project yet.",
+       true
+      ],
+      [
+       "He didn't finished the project yet.",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Aruzhan met Timur in 2018.",
+     "opts": [
+      [
+       "Aruzhan knows Timur since 2018.",
+       false
+      ],
+      [
+       "Aruzhan is knowing Timur since 2018.",
+       false
+      ],
+      [
+       "Aruzhan has known Timur since 2018.",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "It's the first time I visit Astana.",
+    "Listen! Somebody knocks at the door.",
+    "Our team hasn't won a match since two months.",
+    "My parents live in Taraz all their lives.",
+    "I know Aruzhan since we were children.",
+    "Have you seen my keys? I can't find them, and I look everywhere.",
+    "The population of the city grows quickly at the moment.",
+    "Water boil at 100 degrees Celsius.",
+    "This week I work from home because the office is closed."
+   ],
+   "type": [
+    "I can't talk right now — I ___ dinner.",
+    "I ___ three cups of coffee today, and it's only 11 o'clock!",
+    "___ you ever tried beshbarmak?",
+    "Listen! The baby next door ___ again.",
+    "He ___ to the gym twice a week.",
+    "Sorry, Timur ___ to the bank and he isn't back yet.",
+    "She ___ her homework yet, so she can't go out.",
+    "We ___ in this flat since 2020.",
+    "Dana ___ her phone, so she can't call you back.",
+    "Arman usually ___ from home on Fridays."
+   ],
+   "listen": [
+    {
+     "right": "I can't talk right now — I am cooking dinner.",
+     "opts": [
+      [
+       "I can't talk right now — I cook dinner.",
+       false
+      ],
+      [
+       "I can't talk right now — I have cooked dinner.",
+       false
+      ],
+      [
+       "I can't talk right now — I am cooking dinner.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "I have had three cups of coffee today, and it's only 11 o'clock!",
+     "opts": [
+      [
+       "I have had three cups of coffee today, and it's only 11 o'clock!",
+       true
+      ],
+      [
+       "I am having three cups of coffee today, and it's only 11 o'clock!",
+       false
+      ],
+      [
+       "I have three cups of coffee today, and it's only 11 o'clock!",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Have you ever tried beshbarmak?",
+     "opts": [
+      [
+       "Are you ever tried beshbarmak?",
+       false
+      ],
+      [
+       "Have you ever tried beshbarmak?",
+       true
+      ],
+      [
+       "Do you ever tried beshbarmak?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Listen! The baby next door is crying again.",
+     "opts": [
+      [
+       "Listen! The baby next door is crying again.",
+       true
+      ],
+      [
+       "Listen! The baby next door has cried again.",
+       false
+      ],
+      [
+       "Listen! The baby next door cries again.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "He goes to the gym twice a week.",
+     "opts": [
+      [
+       "He has gone to the gym twice a week.",
+       false
+      ],
+      [
+       "He is going to the gym twice a week.",
+       false
+      ],
+      [
+       "He goes to the gym twice a week.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Sorry, Timur has gone to the bank and he isn't back yet.",
+     "opts": [
+      [
+       "Sorry, Timur goes to the bank and he isn't back yet.",
+       false
+      ],
+      [
+       "Sorry, Timur go to the bank and he isn't back yet.",
+       false
+      ],
+      [
+       "Sorry, Timur has gone to the bank and he isn't back yet.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "She hasn't finished her homework yet, so she can't go out.",
+     "opts": [
+      [
+       "She doesn't finish her homework yet, so she can't go out.",
+       false
+      ],
+      [
+       "She isn't finishing her homework yet, so she can't go out.",
+       false
+      ],
+      [
+       "She hasn't finished her homework yet, so she can't go out.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "We have lived in this flat since 2020.",
+     "opts": [
+      [
+       "We have lived in this flat since 2020.",
+       true
+      ],
+      [
+       "We live in this flat since 2020.",
+       false
+      ],
+      [
+       "We are living in this flat since 2020.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Dana has lost her phone, so she can't call you back.",
+     "opts": [
+      [
+       "Dana loses her phone, so she can't call you back.",
+       false
+      ],
+      [
+       "Dana is losing her phone, so she can't call you back.",
+       false
+      ],
+      [
+       "Dana has lost her phone, so she can't call you back.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Arman usually works from home on Fridays.",
+     "opts": [
+      [
+       "Arman usually is working from home on Fridays.",
+       false
+      ],
+      [
+       "Arman usually works from home on Fridays.",
+       true
+      ],
+      [
+       "Arman usually has worked from home on Fridays.",
+       false
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "I have had three cups of coffee today, and it's only 11 o'clock!",
+     true
+    ],
+    [
+     "My sister normally lives in Almaty, but this month she has stayed with us in Shymkent.",
+     false
+    ],
+    [
+     "At the moment, food prices are rising by about 2% a month.",
+     true
+    ],
+    [
+     "Arman usually works from home on Fridays.",
+     true
+    ],
+    [
+     "The museum is opening at 10 a.m. every day except Monday.",
+     false
+    ],
+    [
+     "Dana loses her phone, so she can't call you back.",
+     false
+    ],
+    [
+     "Sorry, Timur has gone to the bank and he isn't back yet.",
+     true
+    ],
+    [
+     "Listen! The baby next door is crying again.",
+     true
+    ],
+    [
+     "I can't talk right now — I am cooking dinner.",
+     true
+    ],
+    [
+     "How long are you known your best friend?",
+     false
+    ],
+    [
+     "We have lived in this flat since 2020.",
+     true
+    ],
+    [
+     "She doesn't finish her homework yet, so she can't go out.",
+     false
+    ],
+    [
+     "Have you ever tried beshbarmak?",
+     true
+    ],
+    [
+     "He has gone to the gym twice a week.",
+     false
+    ],
+    [
+     "She hasn't finished her homework yet, so she can't go out.",
+     true
+    ],
+    [
+     "The museum opens at 10 a.m. every day except Monday.",
+     true
+    ],
+    [
+     "I have had three cups of coffee today, and it's only 11 o'clock!",
+     true
+    ],
+    [
+     "At the moment, food prices are rising by about 2% a month.",
+     true
+    ],
+    [
+     "Arman usually works from home on Fridays.",
+     true
+    ],
+    [
+     "My sister normally lives in Almaty, but this month she has stayed with us in Shymkent.",
+     false
+    ],
+    [
+     "He goes to the gym twice a week.",
+     true
+    ],
+    [
+     "Dana is losing her phone, so she can't call you back.",
+     false
+    ],
+    [
+     "Sorry, Timur has gone to the bank and he isn't back yet.",
+     true
+    ],
+    [
+     "I can't talk right now — I cook dinner.",
+     false
+    ],
+    [
+     "How long are you known your best friend?",
+     false
+    ],
+    [
+     "Listen! The baby next door is crying again.",
+     true
+    ],
+    [
+     "Are you ever tried beshbarmak?",
+     false
+    ],
+    [
+     "We live in this flat since 2020.",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "fix",
+     "say": "Our team hasn't won a match for two months.",
+     "opts": [
+      [
+       "Our team hasn't won a match since two months.",
+       false
+      ],
+      [
+       "Our team hasn't won a match for two months.",
+       true
+      ],
+      [
+       "Our team hasn't won a match during two months.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Dana has lost her phone, so she can't call you back.",
+     "opts": [
+      [
+       "loses",
+       false
+      ],
+      [
+       "has lost",
+       true
+      ],
+      [
+       "is losing",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Water boils at 100 degrees Celsius.",
+     "opts": [
+      [
+       "Water boils at 100 degrees Celsius.",
+       true
+      ],
+      [
+       "Water boil at 100 degrees Celsius.",
+       false
+      ],
+      [
+       "Water is boiling at 100 degrees Celsius.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I have had three cups of coffee today, and it's only 11 o'clock!",
+     "opts": [
+      [
+       "have",
+       false
+      ],
+      [
+       "am having",
+       false
+      ],
+      [
+       "have had",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I can't talk right now — I am cooking dinner.",
+     "opts": [
+      [
+       "have cooked",
+       false
+      ],
+      [
+       "cook",
+       false
+      ],
+      [
+       "am cooking",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Listen! The baby next door is crying again.",
+     "opts": [
+      [
+       "has cried",
+       false
+      ],
+      [
+       "is crying",
+       true
+      ],
+      [
+       "cries",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Sounds amazing! Have you ever taken a group to Charyn Canyon?",
+     "opts": [
+      [
+       "Do",
+       false
+      ],
+      [
+       "Have",
+       true
+      ],
+      [
+       "Are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Have you seen my keys? I can't find them, and I have looked everywhere.",
+     "opts": [
+      [
+       "Have you seen my keys? I can't find them, and I look everywhere.",
+       false
+      ],
+      [
+       "Have you seen my keys? I can't find them, and I have looked everywhere.",
+       true
+      ],
+      [
+       "Have you seen my keys? I can't find them, and I looks everywhere.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "But this week I am working until midnight every day because of a big project.",
+     "opts": [
+      [
+       "works",
+       false
+      ],
+      [
+       "have worked",
+       false
+      ],
+      [
+       "am working",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "He hasn't finished the project yet.",
+     "opts": [
+      [
+       "He didn't finished the project yet.",
+       false
+      ],
+      [
+       "He hasn't finish the project yet.",
+       false
+      ],
+      [
+       "He hasn't finished the project yet.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Listen! Somebody is knocking at the door.",
+     "opts": [
+      [
+       "Listen! Somebody knocks at the door.",
+       false
+      ],
+      [
+       "Listen! Somebody has knocked at the door.",
+       false
+      ],
+      [
+       "Listen! Somebody is knocking at the door.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Hi, Arman! I'm great. I have lived in Astana since last spring.",
+     "opts": [
+      [
+       "have lived",
+       true
+      ],
+      [
+       "am living",
+       false
+      ],
+      [
+       "live",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Are they watching a series?",
+     "opts": [
+      [
+       "Are they watching a series?",
+       true
+      ],
+      [
+       "Are they watch a series?",
+       false
+      ],
+      [
+       "Do they watching a series?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "No, I've graduated. I have worked as a programmer for six months now.",
+     "opts": [
+      [
+       "have worked",
+       true
+      ],
+      [
+       "am working",
+       false
+      ],
+      [
+       "work",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "At the moment, food prices are rising by about 2% a month.",
+     "opts": [
+      [
+       "have risen",
+       false
+      ],
+      [
+       "rise",
+       false
+      ],
+      [
+       "are rising",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Arman usually works from home on Fridays.",
+     "opts": [
+      [
+       "works",
+       true
+      ],
+      [
+       "is working",
+       false
+      ],
+      [
+       "has worked",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Not yet, but at the moment I am planning a new tour there.",
+     "opts": [
+      [
+       "plan",
+       false
+      ],
+      [
+       "am planning",
+       true
+      ],
+      [
+       "have planned",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "I have lived in Almaty for five years.",
+     "opts": [
+      [
+       "I am living in Almaty since five years.",
+       false
+      ],
+      [
+       "I have lived in Almaty for five years.",
+       true
+      ],
+      [
+       "I live in Almaty for five years.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The museum opens at 10 a.m. every day except Monday.",
+     "opts": [
+      [
+       "has opened",
+       false
+      ],
+      [
+       "is opening",
+       false
+      ],
+      [
+       "opens",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "This week I am working from home because the office is closed.",
+     "opts": [
+      [
+       "This week I work from home because the office is closed.",
+       false
+      ],
+      [
+       "This week I am working from home because the office is closed.",
+       true
+      ],
+      [
+       "This week I working from home because the office is closed.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "We have lived in this flat since 2020.",
+     "opts": [
+      [
+       "are living",
+       false
+      ],
+      [
+       "live",
+       false
+      ],
+      [
+       "have lived",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Have you ever tried beshbarmak?",
+     "opts": [
+      [
+       "Do",
+       false
+      ],
+      [
+       "Have",
+       true
+      ],
+      [
+       "Are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Sorry, Timur has gone to the bank and he isn't back yet.",
+     "opts": [
+      [
+       "goes",
+       false
+      ],
+      [
+       "go",
+       false
+      ],
+      [
+       "has gone",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "The population of the city is growing quickly at the moment.",
+     "opts": [
+      [
+       "The population of the city has grown quickly at the moment.",
+       false
+      ],
+      [
+       "The population of the city is growing quickly at the moment.",
+       true
+      ],
+      [
+       "The population of the city grows quickly at the moment.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "It's the first time I have visited Astana.",
+     "opts": [
+      [
+       "It's the first time I visit Astana.",
+       false
+      ],
+      [
+       "It's the first time I visits Astana.",
+       false
+      ],
+      [
+       "It's the first time I have visited Astana.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "My parents have lived in Taraz all their lives.",
+     "opts": [
+      [
+       "My parents are living in Taraz all their lives.",
+       false
+      ],
+      [
+       "My parents live in Taraz all their lives.",
+       false
+      ],
+      [
+       "My parents have lived in Taraz all their lives.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "I'm drinking tea right now.",
+     "opts": [
+      [
+       "I drink tea right now.",
+       false
+      ],
+      [
+       "I drinking tea right now.",
+       false
+      ],
+      [
+       "I'm drinking tea right now.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "I have known Aruzhan since we were children.",
+     "opts": [
+      [
+       "I am knowing Aruzhan since we were children.",
+       false
+      ],
+      [
+       "I have known Aruzhan since we were children.",
+       true
+      ],
+      [
+       "I know Aruzhan since we were children.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "She hasn't finished her homework yet, so she can't go out.",
+     "opts": [
+      [
+       "isn't finishing",
+       false
+      ],
+      [
+       "doesn't finish",
+       false
+      ],
+      [
+       "hasn't finished",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "My sister normally lives in Almaty, but this month she is staying with us in Shymkent.",
+     "opts": [
+      [
+       "is staying",
+       true
+      ],
+      [
+       "stays",
+       false
+      ],
+      [
+       "has stayed",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Arman has lost his passport.",
+     "opts": [
+      [
+       "Arman has lost his passport.",
+       true
+      ],
+      [
+       "Arman is losing his passport.",
+       false
+      ],
+      [
+       "Arman loses his passport.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "How long have you known your best friend?",
+     "opts": [
+      [
+       "do",
+       false
+      ],
+      [
+       "have",
+       true
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Aruzhan has known Timur since 2018.",
+     "opts": [
+      [
+       "Aruzhan has known Timur since 2018.",
+       true
+      ],
+      [
+       "Aruzhan is knowing Timur since 2018.",
+       false
+      ],
+      [
+       "Aruzhan knows Timur since 2018.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "He goes to the gym twice a week.",
+     "opts": [
+      [
+       "has gone",
+       false
+      ],
+      [
+       "goes",
+       true
+      ],
+      [
+       "is going",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "The kids aren't playing football.",
+     "opts": [
+      [
+       "The kids isn't playing football.",
+       false
+      ],
+      [
+       "The kids don't playing football.",
+       false
+      ],
+      [
+       "The kids aren't playing football.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Does she work at home on Fridays?",
+     "opts": [
+      [
+       "Does she works at home on Fridays?",
+       false
+      ],
+      [
+       "Is she work at home on Fridays?",
+       false
+      ],
+      [
+       "Does she work at home on Fridays?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I'm a tour guide. I usually take groups around Burabay.",
+     "opts": [
+      [
+       "have taken",
+       false
+      ],
+      [
+       "am taking",
+       false
+      ],
+      [
+       "take",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Have you ever visited Turkistan?",
+     "opts": [
+      [
+       "Did you ever visited Turkistan?",
+       false
+      ],
+      [
+       "Have you visited ever Turkistan?",
+       false
+      ],
+      [
+       "Have you ever visited Turkistan?",
+       true
+      ]
+     ]
+    }
+   ]
+  },
+  "L5-01": {
+   "pick": [
+    {
+     "s": "I wonder ___ they've received our invoice yet.",
+     "opts": [
+      [
+       "that",
+       false
+      ],
+      [
+       "what",
+       false
+      ],
+      [
+       "whether",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "___ you finished the report yet? I thought it was due this morning.",
+     "opts": [
+      [
+       "Haven't",
+       true
+      ],
+      [
+       "Aren't",
+       false
+      ],
+      [
+       "Don't",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Who are you waiting ___?",
+     "opts": [
+      [
+       "at",
+       false
+      ],
+      [
+       "for",
+       true
+      ],
+      [
+       "to",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Who ___ the Best Director award at the Astana film festival?",
+     "opts": [
+      [
+       "won",
+       true
+      ],
+      [
+       "did won",
+       false
+      ],
+      [
+       "did win",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Can you remind me what the deadline ___?",
+     "opts": [
+      [
+       "be",
+       false
+      ],
+      [
+       "does",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Whose idea ___ the client most at last week's pitch?",
+     "opts": [
+      [
+       "did impress",
+       false
+      ],
+      [
+       "did impressed",
+       false
+      ],
+      [
+       "impressed",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "What ___ Timur say when you told him the news?",
+     "opts": [
+      [
+       "was",
+       false
+      ],
+      [
+       "has",
+       false
+      ],
+      [
+       "did",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Do you know what time the bank ___ on Saturdays?",
+     "opts": [
+      [
+       "opens",
+       true
+      ],
+      [
+       "does open",
+       false
+      ],
+      [
+       "open",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "What ___ to the old cinema on Abay Avenue?",
+     "opts": [
+      [
+       "did happen",
+       false
+      ],
+      [
+       "was happen",
+       false
+      ],
+      [
+       "happened",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Who ___ you invite to last year's conference?",
+     "opts": [
+      [
+       "was",
+       false
+      ],
+      [
+       "did",
+       true
+      ],
+      [
+       "has",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "What exactly is the novel ___? I couldn't follow the plot.",
+     "opts": [
+      [
+       "of",
+       false
+      ],
+      [
+       "about",
+       true
+      ],
+      [
+       "on",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "How many people ___ the webinar yesterday?",
+     "opts": [
+      [
+       "did they attend",
+       false
+      ],
+      [
+       "attended",
+       true
+      ],
+      [
+       "did attend",
+       false
+      ]
+     ]
+    },
+    {
+     "s": "Which laptop ___ the longest battery life?",
+     "opts": [
+      [
+       "have",
+       false
+      ],
+      [
+       "does have",
+       false
+      ],
+      [
+       "has",
+       true
+      ]
+     ]
+    },
+    {
+     "s": "Nobody could explain ___ the flight had been cancelled.",
+     "opts": [
+      [
+       "what",
+       false
+      ],
+      [
+       "why",
+       true
+      ],
+      [
+       "why had",
+       false
+      ]
+     ]
+    }
+   ],
+   "match": [
+    [
+     "How much is it?",
+     0,
+     6
+    ],
+    [
+     "…what it means",
+     1,
+     3
+    ],
+    [
+     "Where is the exit?",
+     0,
+     0
+    ],
+    [
+     "…why it was cancelled",
+     1,
+     7
+    ],
+    [
+     "Did she call?",
+     0,
+     2
+    ],
+    [
+     "…where the exit is",
+     1,
+     0
+    ],
+    [
+     "…when it starts",
+     1,
+     1
+    ],
+    [
+     "Why was it cancelled?",
+     0,
+     7
+    ],
+    [
+     "Who did they hire?",
+     0,
+     5
+    ],
+    [
+     "…how much it is",
+     1,
+     6
+    ],
+    [
+     "…whether she called",
+     1,
+     2
+    ],
+    [
+     "When does it start?",
+     0,
+     1
+    ],
+    [
+     "Has he left?",
+     0,
+     4
+    ],
+    [
+     "…who they hired",
+     1,
+     5
+    ],
+    [
+     "What does it mean?",
+     0,
+     3
+    ],
+    [
+     "…if he has left",
+     1,
+     4
+    ]
+   ],
+   "sort": [
+    [
+     "What did she say?",
+     1
+    ],
+    [
+     "Who are you texting?",
+     1
+    ],
+    [
+     "Do you know where he lives?",
+     2
+    ],
+    [
+     "Who called you?",
+     0
+    ],
+    [
+     "How many people came?",
+     0
+    ],
+    [
+     "What do you mean?",
+     1
+    ],
+    [
+     "Nobody knows why she left.",
+     2
+    ],
+    [
+     "What happened?",
+     0
+    ],
+    [
+     "Which team won?",
+     0
+    ],
+    [
+     "Who did you call?",
+     1
+    ],
+    [
+     "I wonder if it's true.",
+     2
+    ],
+    [
+     "Could you tell me what it costs?",
+     2
+    ],
+    [
+     "Which team do you support?",
+     1
+    ],
+    [
+     "Who lives next door?",
+     0
+    ]
+   ],
+   "build": {
+    "items": [
+     "Can you explain what this clause means?",
+     "Who sent you this message?",
+     "Nobody knows why the project was cancelled.",
+     "I wonder whether they have signed the contract.",
+     "Which department does your sister work in?",
+     "What are you looking for?",
+     "Could you tell me where the conference is?",
+     "What happened at the board meeting?",
+     "Who did Arman recommend for the position?",
+     "Do you know how much the tickets cost?",
+     "Haven't you heard about the new policy?"
+    ],
+    "pool": [
+     [
+      "what",
+      false
+     ],
+     [
+      "explain",
+      false
+     ],
+     [
+      "clause",
+      false
+     ],
+     [
+      "Can",
+      false
+     ],
+     [
+      "does",
+      true
+     ],
+     [
+      "this",
+      false
+     ],
+     [
+      "means?",
+      false
+     ],
+     [
+      "you",
+      false
+     ]
+    ]
+   },
+   "trans": [
+    {
+     "from": "What does this abbreviation stand for?",
+     "opts": [
+      [
+       "Can you explain what does this abbreviation stand for?",
+       false
+      ],
+      [
+       "Can you explain what this abbreviation stands for?",
+       true
+      ],
+      [
+       "Can you explain what stands this abbreviation for?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Did the courier deliver the parcel?",
+     "opts": [
+      [
+       "I wonder whether did the courier deliver the parcel.",
+       false
+      ],
+      [
+       "I wonder did the courier deliver the parcel.",
+       false
+      ],
+      [
+       "I wonder whether the courier delivered the parcel.",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "Timur is waiting for someone.",
+     "opts": [
+      [
+       "Who is waiting Timur for?",
+       false
+      ],
+      [
+       "Who is Timur waiting for?",
+       true
+      ],
+      [
+       "For who Timur is waiting?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Aruzhan organised the charity concert.",
+     "opts": [
+      [
+       "Who was organised the charity concert?",
+       false
+      ],
+      [
+       "Who did organised the charity concert?",
+       false
+      ],
+      [
+       "Who organised the charity concert?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "Where is the nearest metro station?",
+     "opts": [
+      [
+       "Could you tell me where the nearest metro station is?",
+       true
+      ],
+      [
+       "Could you tell me where is the nearest metro station?",
+       false
+      ],
+      [
+       "Could you tell me where does the nearest metro station is?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "How long does the visa process take?",
+     "opts": [
+      [
+       "Do you have any idea how long does the visa process take?",
+       false
+      ],
+      [
+       "Do you have any idea how long the visa process does take?",
+       false
+      ],
+      [
+       "Do you have any idea how long the visa process takes?",
+       true
+      ]
+     ]
+    },
+    {
+     "from": "Something unexpected happened during the interview.",
+     "opts": [
+      [
+       "What was happened during the interview?",
+       false
+      ],
+      [
+       "What happened during the interview?",
+       true
+      ],
+      [
+       "What did happened during the interview?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "Aruzhan organised the charity concert.",
+     "opts": [
+      [
+       "What did Aruzhan organised?",
+       false
+      ],
+      [
+       "What did Aruzhan organise?",
+       true
+      ],
+      [
+       "What Aruzhan organised?",
+       false
+      ]
+     ]
+    },
+    {
+     "from": "You have read the terms and conditions.",
+     "opts": [
+      [
+       "Don't you have read the terms and conditions?",
+       false
+      ],
+      [
+       "Didn't you have read the terms and conditions?",
+       false
+      ],
+      [
+       "Haven't you read the terms and conditions?",
+       true
+      ]
+     ]
+    }
+   ],
+   "fix": [
+    "How many guests comes to the wedding last Saturday?",
+    "Which team win the cup last season?",
+    "I wonder that the committee will approve the budget.",
+    "Do you know where Dana live now?",
+    "Who know the answer to this riddle?",
+    "Who does you meet at the airport yesterday?",
+    "Could you tell me how long the flight take?",
+    "What is the documentary of?",
+    "Don't you finished the essay yet?"
+   ],
+   "type": [
+    "I wonder ___ they've received our invoice yet.",
+    "___ you finished the report yet? I thought it was due this morning.",
+    "Who are you waiting ___?",
+    "Who ___ the Best Director award at the Astana film festival?",
+    "Can you remind me what the deadline ___?",
+    "Whose idea ___ the client most at last week's pitch?",
+    "What ___ Timur say when you told him the news?",
+    "Do you know what time the bank ___ on Saturdays?",
+    "What ___ to the old cinema on Abay Avenue?",
+    "Who ___ you invite to last year's conference?"
+   ],
+   "listen": [
+    {
+     "right": "I wonder whether they've received our invoice yet.",
+     "opts": [
+      [
+       "I wonder that they've received our invoice yet.",
+       false
+      ],
+      [
+       "I wonder what they've received our invoice yet.",
+       false
+      ],
+      [
+       "I wonder whether they've received our invoice yet.",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Haven't you finished the report yet? I thought it was due this morning.",
+     "opts": [
+      [
+       "Haven't you finished the report yet? I thought it was due this morning.",
+       true
+      ],
+      [
+       "Aren't you finished the report yet? I thought it was due this morning.",
+       false
+      ],
+      [
+       "Don't you finished the report yet? I thought it was due this morning.",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Who are you waiting for?",
+     "opts": [
+      [
+       "Who are you waiting at?",
+       false
+      ],
+      [
+       "Who are you waiting for?",
+       true
+      ],
+      [
+       "Who are you waiting to?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Who won the Best Director award at the Astana film festival?",
+     "opts": [
+      [
+       "Who won the Best Director award at the Astana film festival?",
+       true
+      ],
+      [
+       "Who did won the Best Director award at the Astana film festival?",
+       false
+      ],
+      [
+       "Who did win the Best Director award at the Astana film festival?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "Can you remind me what the deadline is?",
+     "opts": [
+      [
+       "Can you remind me what the deadline be?",
+       false
+      ],
+      [
+       "Can you remind me what the deadline does?",
+       false
+      ],
+      [
+       "Can you remind me what the deadline is?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Whose idea impressed the client most at last week's pitch?",
+     "opts": [
+      [
+       "Whose idea did impress the client most at last week's pitch?",
+       false
+      ],
+      [
+       "Whose idea did impressed the client most at last week's pitch?",
+       false
+      ],
+      [
+       "Whose idea impressed the client most at last week's pitch?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "What did Timur say when you told him the news?",
+     "opts": [
+      [
+       "What was Timur say when you told him the news?",
+       false
+      ],
+      [
+       "What has Timur say when you told him the news?",
+       false
+      ],
+      [
+       "What did Timur say when you told him the news?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Do you know what time the bank opens on Saturdays?",
+     "opts": [
+      [
+       "Do you know what time the bank opens on Saturdays?",
+       true
+      ],
+      [
+       "Do you know what time the bank does open on Saturdays?",
+       false
+      ],
+      [
+       "Do you know what time the bank open on Saturdays?",
+       false
+      ]
+     ]
+    },
+    {
+     "right": "What happened to the old cinema on Abay Avenue?",
+     "opts": [
+      [
+       "What did happen to the old cinema on Abay Avenue?",
+       false
+      ],
+      [
+       "What was happen to the old cinema on Abay Avenue?",
+       false
+      ],
+      [
+       "What happened to the old cinema on Abay Avenue?",
+       true
+      ]
+     ]
+    },
+    {
+     "right": "Who did you invite to last year's conference?",
+     "opts": [
+      [
+       "Who was you invite to last year's conference?",
+       false
+      ],
+      [
+       "Who did you invite to last year's conference?",
+       true
+      ],
+      [
+       "Who has you invite to last year's conference?",
+       false
+      ]
+     ]
+    }
+   ],
+   "race": [
+    [
+     "Haven't you finished the report yet? I thought it was due this morning.",
+     true
+    ],
+    [
+     "Nobody could explain what the flight had been cancelled.",
+     false
+    ],
+    [
+     "What exactly is the novel about? I couldn't follow the plot.",
+     true
+    ],
+    [
+     "Who did you invite to last year's conference?",
+     true
+    ],
+    [
+     "Which laptop does have the longest battery life?",
+     false
+    ],
+    [
+     "What did happen to the old cinema on Abay Avenue?",
+     false
+    ],
+    [
+     "Whose idea impressed the client most at last week's pitch?",
+     true
+    ],
+    [
+     "Who won the Best Director award at the Astana film festival?",
+     true
+    ],
+    [
+     "I wonder whether they've received our invoice yet.",
+     true
+    ],
+    [
+     "How many people did they attend the webinar yesterday?",
+     false
+    ],
+    [
+     "Do you know what time the bank opens on Saturdays?",
+     true
+    ],
+    [
+     "What was Timur say when you told him the news?",
+     false
+    ],
+    [
+     "Who are you waiting for?",
+     true
+    ],
+    [
+     "Can you remind me what the deadline be?",
+     false
+    ],
+    [
+     "What did Timur say when you told him the news?",
+     true
+    ],
+    [
+     "Which laptop has the longest battery life?",
+     true
+    ],
+    [
+     "Haven't you finished the report yet? I thought it was due this morning.",
+     true
+    ],
+    [
+     "What exactly is the novel about? I couldn't follow the plot.",
+     true
+    ],
+    [
+     "Who did you invite to last year's conference?",
+     true
+    ],
+    [
+     "Nobody could explain what the flight had been cancelled.",
+     false
+    ],
+    [
+     "Can you remind me what the deadline is?",
+     true
+    ],
+    [
+     "What was happen to the old cinema on Abay Avenue?",
+     false
+    ],
+    [
+     "Whose idea impressed the client most at last week's pitch?",
+     true
+    ],
+    [
+     "I wonder that they've received our invoice yet.",
+     false
+    ],
+    [
+     "How many people did they attend the webinar yesterday?",
+     false
+    ],
+    [
+     "Who won the Best Director award at the Astana film festival?",
+     true
+    ],
+    [
+     "Who are you waiting at?",
+     false
+    ],
+    [
+     "Do you know what time the bank does open on Saturdays?",
+     false
+    ]
+   ],
+   "boss": [
+    {
+     "kind": "gap",
+     "say": "How nice! Which treatment did she enjoy most?",
+     "opts": [
+      [
+       "was",
+       false
+      ],
+      [
+       "did",
+       true
+      ],
+      [
+       "has",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Who did you meet at the airport yesterday?",
+     "opts": [
+      [
+       "Who does you meet at the airport yesterday?",
+       false
+      ],
+      [
+       "Who did you meet at the airport yesterday?",
+       true
+      ],
+      [
+       "Who do you meet at the airport yesterday?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Who won the Best Director award at the Astana film festival?",
+     "opts": [
+      [
+       "did won",
+       false
+      ],
+      [
+       "won",
+       true
+      ],
+      [
+       "did win",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "The hot stone massage, I think. Oh, and do you know who I should speak to about a late checkout?",
+     "opts": [
+      [
+       "do",
+       true
+      ],
+      [
+       "have",
+       false
+      ],
+      [
+       "are",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "I wonder whether they've received our invoice yet.",
+     "opts": [
+      [
+       "what",
+       false
+      ],
+      [
+       "that",
+       false
+      ],
+      [
+       "whether",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "How many guests came to the wedding last Saturday?",
+     "opts": [
+      [
+       "How many guests comes to the wedding last Saturday?",
+       false
+      ],
+      [
+       "How many guests come to the wedding last Saturday?",
+       false
+      ],
+      [
+       "How many guests came to the wedding last Saturday?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "How many people attended the webinar yesterday?",
+     "opts": [
+      [
+       "did attend",
+       false
+      ],
+      [
+       "attended",
+       true
+      ],
+      [
+       "did they attend",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Which laptop has the longest battery life?",
+     "opts": [
+      [
+       "have",
+       false
+      ],
+      [
+       "does have",
+       false
+      ],
+      [
+       "has",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Haven't you read the terms and conditions?",
+     "opts": [
+      [
+       "Haven't you read the terms and conditions?",
+       true
+      ],
+      [
+       "Didn't you have read the terms and conditions?",
+       false
+      ],
+      [
+       "Don't you have read the terms and conditions?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "What happened to the old cinema on Abay Avenue?",
+     "opts": [
+      [
+       "did happen",
+       false
+      ],
+      [
+       "happened",
+       true
+      ],
+      [
+       "was happen",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "I wonder whether the committee will approve the budget.",
+     "opts": [
+      [
+       "I wonder that the committee will approve the budget.",
+       false
+      ],
+      [
+       "I wonder whether the committee will approve the budget.",
+       true
+      ],
+      [
+       "I wonder what the committee will approve the budget.",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "What did Aruzhan organise?",
+     "opts": [
+      [
+       "What Aruzhan organised?",
+       false
+      ],
+      [
+       "What did Aruzhan organised?",
+       false
+      ],
+      [
+       "What did Aruzhan organise?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Good afternoon. Could you tell me what time breakfast is served?",
+     "opts": [
+      [
+       "is",
+       true
+      ],
+      [
+       "it is",
+       false
+      ],
+      [
+       "does",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "I wonder whether the courier delivered the parcel.",
+     "opts": [
+      [
+       "I wonder whether did the courier deliver the parcel.",
+       false
+      ],
+      [
+       "I wonder did the courier deliver the parcel.",
+       false
+      ],
+      [
+       "I wonder whether the courier delivered the parcel.",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Do you know where Dana lives now?",
+     "opts": [
+      [
+       "Do you know where Dana living now?",
+       false
+      ],
+      [
+       "Do you know where Dana live now?",
+       false
+      ],
+      [
+       "Do you know where Dana lives now?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Who knows the answer to this riddle?",
+     "opts": [
+      [
+       "Who knowing the answer to this riddle?",
+       false
+      ],
+      [
+       "Who knows the answer to this riddle?",
+       true
+      ],
+      [
+       "Who know the answer to this riddle?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "What did Timur say when you told him the news?",
+     "opts": [
+      [
+       "has",
+       false
+      ],
+      [
+       "was",
+       false
+      ],
+      [
+       "did",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Nobody could explain why the flight had been cancelled.",
+     "opts": [
+      [
+       "why",
+       true
+      ],
+      [
+       "why had",
+       false
+      ],
+      [
+       "what",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Who did you invite to last year's conference?",
+     "opts": [
+      [
+       "did",
+       true
+      ],
+      [
+       "was",
+       false
+      ],
+      [
+       "has",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Do you have any idea how long the visa process takes?",
+     "opts": [
+      [
+       "Do you have any idea how long does the visa process take?",
+       false
+      ],
+      [
+       "Do you have any idea how long the visa process does take?",
+       false
+      ],
+      [
+       "Do you have any idea how long the visa process takes?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "What happened during the interview?",
+     "opts": [
+      [
+       "What happened during the interview?",
+       true
+      ],
+      [
+       "What was happened during the interview?",
+       false
+      ],
+      [
+       "What did happened during the interview?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Who are you waiting for?",
+     "opts": [
+      [
+       "to",
+       false
+      ],
+      [
+       "for",
+       true
+      ],
+      [
+       "at",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "No, I don't think so. I wonder whether it went to my spam folder.",
+     "opts": [
+      [
+       "whether",
+       true
+      ],
+      [
+       "does",
+       false
+      ],
+      [
+       "that",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Do you know what time the bank opens on Saturdays?",
+     "opts": [
+      [
+       "open",
+       false
+      ],
+      [
+       "does open",
+       false
+      ],
+      [
+       "opens",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "What exactly is the novel about? I couldn't follow the plot.",
+     "opts": [
+      [
+       "on",
+       false
+      ],
+      [
+       "of",
+       false
+      ],
+      [
+       "about",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Could you tell me how long the flight takes?",
+     "opts": [
+      [
+       "Could you tell me how long the flight taking?",
+       false
+      ],
+      [
+       "Could you tell me how long the flight takes?",
+       true
+      ],
+      [
+       "Could you tell me how long the flight take?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "It is, yes. Who told you about our spa, if you don't mind me asking?",
+     "opts": [
+      [
+       "did told",
+       false
+      ],
+      [
+       "told",
+       true
+      ],
+      [
+       "was told",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Lovely. And do you know whether the spa is open on Sundays?",
+     "opts": [
+      [
+       "are",
+       false
+      ],
+      [
+       "does",
+       false
+      ],
+      [
+       "is",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Haven't you finished the essay yet?",
+     "opts": [
+      [
+       "Don't you finished the essay yet?",
+       false
+      ],
+      [
+       "Haven't you finished the essay yet?",
+       true
+      ],
+      [
+       "Didn't you finished the essay yet?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Who is Timur waiting for?",
+     "opts": [
+      [
+       "For who Timur is waiting?",
+       false
+      ],
+      [
+       "Who is waiting Timur for?",
+       false
+      ],
+      [
+       "Who is Timur waiting for?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "What is the documentary about?",
+     "opts": [
+      [
+       "What is the documentary about?",
+       true
+      ],
+      [
+       "What is the documentary of?",
+       false
+      ],
+      [
+       "What is the documentary in?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Could you tell me where the nearest metro station is?",
+     "opts": [
+      [
+       "Could you tell me where does the nearest metro station is?",
+       false
+      ],
+      [
+       "Could you tell me where the nearest metro station is?",
+       true
+      ],
+      [
+       "Could you tell me where is the nearest metro station?",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Haven't you finished the report yet? I thought it was due this morning.",
+     "opts": [
+      [
+       "Don't",
+       false
+      ],
+      [
+       "Aren't",
+       false
+      ],
+      [
+       "Haven't",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "fix",
+     "say": "Which team won the cup last season?",
+     "opts": [
+      [
+       "Which team win the cup last season?",
+       false
+      ],
+      [
+       "Which team winned the cup last season?",
+       false
+      ],
+      [
+       "Which team won the cup last season?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Can you remind me what the deadline is?",
+     "opts": [
+      [
+       "be",
+       false
+      ],
+      [
+       "is",
+       true
+      ],
+      [
+       "does",
+       false
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "That would be our duty manager. Haven't you received our welcome email? It explains everything.",
+     "opts": [
+      [
+       "Aren't",
+       false
+      ],
+      [
+       "Don't",
+       false
+      ],
+      [
+       "Haven't",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "gap",
+     "say": "Whose idea impressed the client most at last week's pitch?",
+     "opts": [
+      [
+       "did impress",
+       false
+      ],
+      [
+       "did impressed",
+       false
+      ],
+      [
+       "impressed",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Can you explain what this abbreviation stands for?",
+     "opts": [
+      [
+       "Can you explain what does this abbreviation stand for?",
+       false
+      ],
+      [
+       "Can you explain what stands this abbreviation for?",
+       false
+      ],
+      [
+       "Can you explain what this abbreviation stands for?",
+       true
+      ]
+     ]
+    },
+    {
+     "kind": "trans",
+     "say": "Who organised the charity concert?",
+     "opts": [
+      [
+       "Who organised the charity concert?",
+       true
+      ],
+      [
+       "Who was organised the charity concert?",
+       false
+      ],
+      [
+       "Who did organised the charity concert?",
+       false
+      ]
+     ]
+    }
+   ]
+  }
+ },
+ "raceSpeed": {
+  "L1-01": 3.6,
+  "L1-10": 3.6,
+  "L2-22": 3.3,
+  "L3-01": 3,
+  "L4-01": 2.8,
+  "L5-01": 2.6
+ }
+}

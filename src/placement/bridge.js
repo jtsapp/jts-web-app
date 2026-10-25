@@ -47,7 +47,7 @@ export function readEnvelope(win, now) {
 
 /**
  * Ставит крючки в окно теста. handlers: { onResult(env), onContinue(env), onActivity(rec), onSection(section),
- * startSpeaking(args) → Promise }. Возвращает функцию снятия.
+ * startSpeaking(args) → Promise, onExit() }. Возвращает функцию снятия.
  */
 export function installBridge(win, handlers) {
   if (!win) return () => {}
@@ -85,10 +85,14 @@ export function installBridge(win, handlers) {
     },
   }
   win.JTSHostSpeakingFeedback = (speaking, lang) => feedbackHtml(speaking, lang)
+  // Круглая «назад» в шапке теста (патч skin-back-button сборки): своя полоса «← На главную» над iframe ушла
+  // вместе с макетом, и выйти из теста теперь можно только отсюда.
+  win.JTSHostExit = () => handlers.onExit?.()
   return () => {
     try {
       delete win.JTSSpeakingBuddy
       delete win.JTSHostSpeakingFeedback
+      delete win.JTSHostExit
       win.JTSPlacementConfig = prev
     } catch {
       /* окно уже выгружено */

@@ -395,7 +395,9 @@ export default function LessonWorkspacePage({
                   src={selfStudyUrl(lesson.fileUrl)}
                   title={lesson.title || t('lessons.tabSelf')}
                   className="lw-material-iframe"
-                  allow="autoplay"
+                  // fullscreen — для встроенных в урок активностей вроде Wordwall: их кнопка «на весь
+                  // экран» работает, только если право выдано по всей цепочке рамок сверху вниз.
+                  allow="autoplay; fullscreen"
                 />
               </div>
             </div>

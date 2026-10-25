@@ -26,6 +26,16 @@ describe('wordBankCheck', () => {
     expect(gaps[0].classList.contains('is-correct')).toBe(true)
     expect(gaps[1].classList.contains('is-wrong')).toBe(true)
     expect(gaps[2].classList.contains('is-correct')).toBe(false)
+    expect(root.querySelector('.lw-gap-key')).toBeNull()
+  })
+
+  it('при reveal пишет рядом с ошибкой первый принятый вариант', () => {
+    const root = document.createElement('div')
+    root.innerHTML = `<input class="gap" data-answer="explain|say" value="repeat">`
+    gradeWordBankInRoot(root, { reveal: true })
+    expect(root.querySelector('.lw-gap-key').textContent).toBe('explain')
+    gradeWordBankInRoot(root, { reveal: false })
+    expect(root.querySelector('.lw-gap-key')).toBeNull()
   })
 
   it('собирает id только у пропусков с ключом', () => {

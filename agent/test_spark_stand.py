@@ -7,7 +7,12 @@
 что KZ TEST (сборка пакета v3.4; мозг с 14.10.2026 — Haiku 5.5), но персона — новый Спарк, а
 сессия — живого Спарка (Soniox, Owen). Карточка с лицом, чтобы видеть эмоции:
 у KZ TEST вместо лица шар.
+
+22.10.2026 — пакет v3.5: Спарк говорит en/ru (казахский — у Айзере), и у стенда
+свой голос — Gemini TTS Fenrir со стилем по тегу эмоции (05_App_Settings пакета).
+Живой Спарк остаётся на Soniox.
 """
+import asyncio
 import io
 import json
 import os
@@ -74,15 +79,16 @@ os.environ["VOICE_STACK"] = "cascade"
 # ── Промпт: тот же пакет, персона Спарка ─────────────────────────────────────
 text = build_buddy_instructions(p, buddy_persona_for(p))
 persona = text.partition(PERSONA_HEADER)[2]
-assert "# SPARK — PERSONA v3.4" in persona and "# DEXTER" not in text
+assert "# SPARK — PERSONA v3.5" in persona and "# DEXTER" not in text
 assert context_of(text)["selection"]["persona_id"] == "spark"
 # Ступени ростинга — только персоне с матом; у Спарка его нет.
-assert "==== YOUR TIER IN THIS CALL" not in text
+assert "==== YOUR WORD RATING IN THIS CALL" not in text
 assert "==== LIMITS FOR EVERY REPLY" in text
-# Спарк говорит en/ru/kk — язык объяснений не чинится, как у Декстера.
+# С v3.5 Спарк говорит en/ru: казахский выбор чинится в русский, как у Декстера.
+assert "- supported_languages: en, ru\n" in BUDDY_PERSONAS["spark"]
 assert context_of(text)["language"]["support_language"] == "ru"
 kz = build_buddy_instructions(profile(explanation_lang="kz"), "spark")
-assert context_of(kz)["language"]["support_language"] == "kk"
+assert context_of(kz)["language"]["support_language"] == "ru"
 
 # ── Эмоции: весь набор Спарка ложится на разрешённые стенду, злости нет ──────
 allowed = TUTOR_MOODS[SPARK_TEST_STAND]
@@ -96,17 +102,101 @@ assert A.build_mood_block(SPARK_TEST_STAND), "без записи в TUTOR_MOODS
 # Эмоция персоны по умолчанию — ровная: публиковать до первого тега нечего.
 assert buddy_default_mood("spark") is None
 
-# ── Сессия — живого Спарка, язык синтеза — персоны ───────────────────────────
+# ── Сессия — живого Спарка, голос — свой (Gemini Fenrir) ─────────────────────
 vp = buddy_voice_profile(p)
 assert vp.tutor == "hype" and p.tutor == SPARK_TEST_STAND, "исходный профиль не трогаем"
-assert _tts_provider_for(vp) == _tts_provider_for(LearnerProfile(tutor="hype"))
-assert vp.tts_lang == "ru", "голос Спарка настроен на kk — русский читался бы с акцентом"
-assert buddy_voice_profile(profile(explanation_lang="kz")).tts_lang == "kk"
+assert _tts_provider_for(vp) == "gemini" and A.TUTOR_VOICE[vp.tutor] == "Fenrir"
+assert _tts_provider_for(LearnerProfile(tutor="hype")) == "soniox", "живой Спарк — на Soniox, как был"
+assert vp.tts_lang == "ru"
+assert buddy_voice_profile(profile(explanation_lang="kz")).tts_lang == "ru"
 assert buddy_voice_profile(profile(english_only=True)).tts_lang == "en"
 assert _pronunciation_lang(vp) == "", "казахский словарь цифр — не для русской речи"
-# Сценарий с карточки — голосом живого Спарка, язык синтеза — как у живого.
+# Откат голоса секретом стенда, без деплоя; секрет живого Спарка стенд не трогает.
+os.environ["TTS_PROVIDER_SPARKTEST"] = "soniox"
+assert _tts_provider_for(buddy_voice_profile(p)) == "soniox"
+os.environ.pop("TTS_PROVIDER_SPARKTEST")
+os.environ["TTS_PROVIDER_HYPE"] = "eleven"
+assert _tts_provider_for(buddy_voice_profile(p)) == "gemini"
+os.environ.pop("TTS_PROVIDER_HYPE")
+# Сценарий с карточки — тем же голосом стенда, язык синтеза — как у живого.
 scen = buddy_voice_profile(profile(mode="scenario", scenario_id="ordering-coffee"))
-assert scen.tutor == "hype" and scen.tts_lang == ""
+assert scen.tutor == "hype" and scen.tts_lang == "" and _tts_provider_for(scen) == "gemini"
+# Чужой секрет TTS_PROVIDER_<КЛЮЧ> стенду без своего голоса ничего не меняет.
+os.environ["TTS_PROVIDER_JARVIS"] = "fish"
+assert buddy_voice_profile(LearnerProfile(tutor="jarvis", lang="ru")).tts_provider == ""
+os.environ.pop("TTS_PROVIDER_JARVIS")
+
+# ── Стиль голоса: таблица клиента из 05_App_Settings ─────────────────────────
+style = A.BUDDY_VOICE_STYLES[SPARK_TEST_STAND]
+assert style.base.startswith("Speak as Spark, a 20-year-old guy")
+assert set(style.by_tag) == {"default", "happy", "excited", "surprised", "sarcastic", "sympathy", "confused"}
+assert set(style.by_tag) == set(pack), "строка на каждую эмоцию персоны, не больше"
+sym = style.prompt("sympathy")
+# Обрывок «Calm, sincere…» Gemini читал вслух; «sound calm…» — нет (замер 22.10).
+assert sym == style.base + " For this line, sound calm and sincere, steady pace, no jokes.", sym
+# Слова, от которых Gemini вздыхает и смеётся, клиент из стиля убрал (v3.5 от
+# 23.10, «If Spark still sighs»): вернуть их с таблицей — вернуть вздохи.
+for line in [style.base, *style.by_tag.values()]:
+    for word in ("relaxed", "smiling", "smile", "laugh", "gentle", "slower"):
+        assert word not in line.lower(), (word, line)
+assert "no non-verbal sounds" in style.base
+assert style.prompt("nope") == style.prompt("default"), "неизвестный тег — ровная строка"
+# Русской реплике — одна база: с добавками Gemini повторял реплику дважды.
+assert style.prompt("sympathy", russian=True) == style.base
+assert A._parse_voice_style("# no table") is None
+
+
+class FakeGemini(A._GeminiTTS):
+    """Ловит update_options, ничего не синтезирует."""
+
+    def __init__(self):  # noqa: D401 — без ключей и клиента
+        self.prompts = []
+
+    def update_options(self, **kw):
+        self.prompts.append(kw.get("prompt"))
+
+
+async def _drive(agent, chunks):
+    async def _text():
+        for c in chunks:
+            yield c
+
+    seen = []
+
+    async def fake_default_tts_node(self, text, model_settings):
+        # Поток синтеза открывается здесь — стиль к этому моменту уже задан.
+        seen.append(list(fake.prompts))
+        async for c in text:
+            seen.append(c)
+        if False:
+            yield None
+
+    orig = A.Agent.default.tts_node
+    A.Agent.default.tts_node = fake_default_tts_node
+    try:
+        async for _ in agent.tts_node(_text(), None):
+            pass
+    finally:
+        A.Agent.default.tts_node = orig
+    return seen
+
+
+fake = FakeGemini()
+agent = A.TutorAgent("x", "dev", "http://x", tutor=SPARK_TEST_STAND, voice_style=style)
+type(agent).session = property(lambda self: types.SimpleNamespace(tts=fake))
+agent._shown_mood = ("celebrate", 2)
+seen = asyncio.run(_drive(agent, ["Let's go, you ", "actually sent it! ", "How do you feel now?"]))
+assert seen[0] == [style.prompt("excited")], seen[0]
+assert "".join(seen[1:]) == "Let's go, you actually sent it! How do you feel now?", "текст не теряется"
+agent._shown_mood = None
+seen = asyncio.run(_drive(agent, ["Без проблем, го по-русски! ", "Но отвечай по-английски."]))
+assert seen[0][-1] == style.prompt("default", russian=True)
+# Синтез не Gemini (откат, фолбэк) — стиль некому отдать.
+fake.prompts.clear()
+type(agent).session = property(lambda self: types.SimpleNamespace(tts=object()))
+seen = asyncio.run(_drive(agent, ["Hi there."]))
+assert fake.prompts == [] and "".join(seen[1:]) == "Hi there."
+del type(agent).session
 # Остальные — как были.
 luna = LearnerProfile(tutor="gentle")
 assert buddy_voice_profile(luna) is luna

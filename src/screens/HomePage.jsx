@@ -2,21 +2,23 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
 import AssetImage from '../components/AssetImage.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { isTourSeen, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
-import { GoalDialog, GoalPicker } from './home/GoalPicker.jsx'
+import { GoalDialog } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
-import GePlanInvite from './home/GePlanInvite.jsx'
-import GeLockedRoadmap from './home/GeLockedRoadmap.jsx'
-import PlacementReport from './home/PlacementReport.jsx'
+import GeStartHero, { StartHereCard } from './home/GeStartHero.jsx'
+import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
+import TourSections from './home/TourSections.jsx'
+import TemperInvite from './home/TemperInvite.jsx'
+import { armTemperInvite, closeTemperInvite, isTemperInvitePending, temperInviteKey } from './home/temperInvite.js'
 import NewReportCard from '../feedback/NewReportCard.jsx'
+import TeacherMatchingPanel from '../matching/TeacherMatchingPanel.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
-import { todayView } from '../ge/plan/planModel.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -69,6 +71,8 @@ export default function HomePage({
   // Ученик учился до теста v16 (аккаунт старше выкатки, src/placement/existingStudent.js): тест ему не навязываем —
   // роадмап не размывается, а на «Главной» тест числится непройденным (решение владельца 14.10.2026).
   existingStudent = false,
+  // «Попробовать жёсткий режим» в окне после тура (App пишет нрав тьютора 'harsh').
+  onTemperChoice,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -143,6 +147,8 @@ export default function HomePage({
   // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
   const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
   const geToday = gePlan.status === 'ready' && gePlan.plan?.state === 'ready'
+  // Отчёт теста уровня — одни данные на две карточки: «Результаты теста уровня» в колонке и «Что делать дальше» внизу.
+  const report = usePlacementReport(ieltsAccount ? null : token, placementVersion)
   // Срок выбранного формата — для реплики маскота («идём по плану» / «не успеваем»). Та же формула, что на маршруте.
   // Без useMemo: три вызова калькулятора дешевле, а ручную мемоизацию React Compiler здесь сохранить не может.
   const geCur = geProfile?.journey?.current || {}
@@ -164,59 +170,75 @@ export default function HomePage({
   // Тур общего курса — другой (анкета, план), поэтому и отметка своя: видевшие прежний увидят обновлённый один раз.
   const tourStorageKey = tourKey && geMode ? `${tourKey}:ge` : tourKey
   const tour = useScreenTour(tourReady ? tourStorageKey : null)
-  // Тур новой «Главной» — по каждому блоку сверху вниз. Шаги собираются по тому, что на экране (приглашение или блок
-  // цели, «Сегодня» или прежняя подсказка, кабинет демо без практики и расписания): шаг без элемента тур пропустил бы
-  // и сам, но счётчик «2/11» на первом шаге выглядел бы сломанным. Функцией, а не значением: домашка и расписание
-  // объявлены ниже, а шаги нужны только открытому туру.
+  // Тур «Главной» по макету «Первый заход и подсказки» (21.10.2026): приветствие с именем и три подсказки — прогресс,
+  // пробный урок (демо) или «Расписание» с «Домашним заданием» одной рамкой, разделы меню. Прежние девять шагов по
+  // каждому блоку макет сменил: тур видит в основном новый ученик, а у него блок цели ещё закрыт и рассказывать про
+  // план по дням рано. Размеры карточек и маскоты — из макета (ширина карточки и колонки текста, рендер маскота).
+  // Функцией, а не значением: шаги нужны только открытому туру.
+  // Цель в туре не спрашиваем (владелец, 21.10.2026): её спрашивает анкета теста уровня. У прежней «Главной» без
+  // анкеты GE цель по-прежнему меняется медалью на карточке уровня.
   const tourSteps = () => {
-    const todayTasks = geToday ? todayView(gePlan.plan) : null
-    return geMode
-      ? [
-          ...(geTop === 'goal'
-            ? [
-                { selector: '.ge-goal', title: t('tour.home.goal2.title'), text: t('tour.home.goal2.text') },
-                { selector: '.ge-goal .ih-gb__journey', title: t('tour.home.journey.title'), text: t('tour.home.journey.text') },
-              ]
-            : geTop === 'locked'
-              ? [{ selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }]
-              : [{ selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }]),
-          // Без уровня карточки навыков нет — и шага про неё тоже.
-          ...(levelUnknown ? [] : [{ selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') }]),
-          ...(isDemoAccount
-            ? []
-            : geToday
-              ? [
-                  { selector: '.ge-today', title: t('tour.home.plan.title'), text: t('tour.home.plan.text') },
-                  ...(todayTasks.tasks.length || todayTasks.ahead.length
-                    ? [{ selector: '.ge-today .ge-task', title: t('tour.home.task.title'), text: t('tour.home.task.text') }]
-                    : []),
-                  { selector: '.ge-today__all', title: t('tour.home.allPlan.title'), text: t('tour.home.allPlan.text') },
-                ]
-              : pickRecommendation({ summary, homework, occurrences })
-                ? [{ selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.ge.recommend.text') }]
-                : []),
-          ...(isDemoAccount
-            ? []
-            : [
-                { selector: '.hm-prac', title: t('tour.home.prac.title'), text: t('tour.home.prac.text') },
-                { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.ge.schedule.text') },
-                { selector: '.hm-hw', title: t('tour.home.hw.title'), text: t('tour.home.hw.text') },
-              ]),
-        ]
-      : [
-          {
-            selector: '.hm-level',
-            title: t('tour.home.goal.title'),
-            text: t('tour.home.goal.text'),
-            content: options.length ? <GoalPicker options={options} value={goalValue} onPick={pickGoal} /> : null,
-            // «Далее» — после выбора: ради него шаг и стоит первым. Пропустить тур
-            // целиком можно всегда, тогда дорожка остаётся прежней.
-            canNext: !options.length || !!goalValue,
+    const top =
+      geTop === 'goal'
+        ? { selector: '.ge-goal', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
+        : geTop === 'locked'
+          ? { selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }
+          : geMode
+            ? { selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
+            : { selector: '.hm-level', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
+    return [
+      { ...top, art: { src: '/assets/first-login/coach-progress.webp', w: 252, h: 236 }, width: 576, textWidth: 330 },
+      isDemoAccount
+        ? {
+            selector: '.hm-trial',
+            title: t('tour.home.trial.title'),
+            text: t('tour.home.trial.text'),
+            art: { src: '/assets/first-login/coach-trial.webp', w: 274, h: 260 },
+            width: 535,
+            textWidth: 277,
+          }
+        : {
+            selector: ['.hm-sched', '.hm-hw'],
+            title: t('tour.home.lessons.title'),
+            text: t('tour.home.lessons.text'),
+            art: { src: '/assets/first-login/coach-schedule.webp', w: 227, h: 235 },
+            width: 576,
+            textWidth: 330,
           },
-          { selector: '.hm-skills', title: t('tour.home.skills.title'), text: t('tour.home.skills.text') },
-          { selector: '.hm-recommend', title: t('tour.home.recommend.title'), text: t('tour.home.recommend.text') },
-          { selector: '.hm-sched', title: t('tour.home.schedule.title'), text: t('tour.home.schedule.text') },
-        ]
+      // Сайдбар на телефоне спрятан в drawer — тогда список встаёт по центру без прожектора (optional).
+      { selector: '.sb', optional: true, title: t('tour.home.sections.title'), content: <TourSections />, width: 520 },
+    ]
+  }
+  // Приветствие перед подсказками — по имени, как в макете; имени нет — только «Добро пожаловать!».
+  const firstName = (userName || '').trim().split(/\s+/)[0] || ''
+  const tourIntro = {
+    title: t('tour.home.intro.title'),
+    name: firstName,
+    text: t('tour.home.intro.text'),
+    cta: t('tour.home.intro.cta'),
+    skip: t('tour.home.intro.skip'),
+  }
+
+  // После тура (решения владельца 21.10.2026): новый ученик сразу уходит в тест — у него закрыт роадмап, и тест и есть
+  // следующий шаг; учившимся до теста v16 тест остаётся кнопкой на «Главной». Окно «Жёсткий режим общения» — один раз
+  // после тура; новому — когда он вернётся с пройденным тестом (поверх закрытого роадмапа окно не выходит).
+  const temperKey = temperInviteKey(tourStorageKey)
+  const finishTour = () => {
+    tour.finish()
+    // Тур закрылся, ничего не показав (на экране не нашлось ни одного блока), — это не «пройден»: ни окна, ни теста.
+    if (!isTourSeen(tourStorageKey)) return
+    armTemperInvite(temperKey)
+    if (geTop === 'locked') onGeStart?.()
+  }
+  const [temperOpen, setTemperOpen] = useState(false)
+  useEffect(() => {
+    if (tour.open || !geLoaded || geTop === 'locked') return
+    if (isTemperInvitePending(temperKey)) setTemperOpen(true)
+  }, [tour.open, geLoaded, geTop, temperKey])
+  const closeTemper = (temper) => {
+    closeTemperInvite(temperKey)
+    setTemperOpen(false)
+    if (temper) onTemperChoice?.(temper)
   }
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
@@ -313,8 +335,15 @@ export default function HomePage({
       onProfile={onProfile}
       onHelp={levelUnknown ? undefined : tour.start}
     >
-      <div className="hm">
+      {/* Макет «Главная · редизайн» (21.10.2026): заголовок, баннер маршрута во всю ширину, ниже две колонки —
+          слева «Сегодня», практика и результаты теста, справа расписание с домашкой (у демо — пробный урок) и
+          сильные и слабые стороны, — и внизу во всю ширину «Что делать дальше». */}
+      <div className="hm hm--v2">
+        <header className="hm-top">
+          <h1 className="hm-top__title">{t('nav.home')}</h1>
+        </header>
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
+        <TeacherMatchingPanel token={token} compact onOpen={() => onNav?.('lessons')} />
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}
@@ -328,19 +357,18 @@ export default function HomePage({
           // профиль анкеты ещё в пути: заглушка вместо прежней карточки уровня, иначе она мелькала до блока цели
           <section className="hm-card ge-skel" aria-busy="true" aria-label={t('gePlan.loading')} />
         ) : geTop === 'goal' ? (
+          // Под дорожкой у макета только «Как дойти до цели»: строки «ещё N материалов» и «+N% за неделю» он убрал.
           <GeGoalBanner
             profile={geProfile}
             option={geOption}
-            planLine={planLine}
-            week={week}
+            planLine={null}
+            week={0}
             onEdit={() => onGeEdit?.()}
             onOpenRoute={() => onGeRoute?.()}
             onBuy={() => onOpenPricing?.()}
           />
-        ) : geTop === 'locked' ? (
-          <GeLockedRoadmap onStart={onGeStart} />
         ) : geMode ? (
-          <GePlanInvite state={geTop} level={summary.level} percent={summary.percent} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
+          <GeStartHero state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
         ) : levelUnknown ? (
           <section className="hm-card hm-placement">
             <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>
@@ -442,136 +470,62 @@ export default function HomePage({
         </section>
         )}
 
-        {/* Подробный отчёт теста уровня v16 — под роадмапом, который тест открыл. Нет пройденного теста — нет и блока. */}
-        {/* Учившемуся до теста отметка «не пройден» — только когда сверху на тест никто не зовёт: у карточки
-            «тест не пройден» и у прежней карточки «нет уровня» своя кнопка. */}
-        {!ieltsAccount && (
-          <PlacementReport
-            token={token}
-            version={placementVersion}
-            onNav={onNav}
-            onRetake={onStartLevelTest}
-            showMissing={existingStudent && !levelUnknown && (geTop === 'goal' || geTop === 'needRoute' || geTop === 'legacy')}
-          />
-        )}
-
-        <div className="hm-row">
-          <div className="hm-col">
-          {/* Сильные и слабые стороны. Без пройденного теста профиль навыков
-              не показываем: считать его не от чего, и на макете его там нет. */}
-          {!levelUnknown && !ieltsAccount && (
-          <section className="hm-card hm-skills">
-            <h2 className="hm-card__title">{t('home.skills.title')}</h2>
-            {hasData ? (
-              <>
-                <div className="hm-skills__list">
-                  {summary.ranked.map(({ skill, percent }) => (
-                    <div className="hm-skill" key={skill}>
-                      <span className="hm-skill__name">{t(`profile.skills.${skill}`)}</span>
-                      <div className="hm-skill__bar">
-                        <i
-                          className={`hm-skill__fill hm-skill__fill--${band(percent)}`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                      <span className="hm-skill__pct">{percent}%</span>
-                      <span className={`hm-skill__trend hm-skill__trend--${band(percent)}`} aria-hidden="true">
-                        <TrendIcon up={percent >= 60} size={18} />
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="hm-skills__tags">
-                  {summary.strongest && (
-                    <span className="hm-tag hm-tag--up">
-                      <TrendIcon up />
-                      {t('home.skills.best', { skill: t(`profile.skills.${summary.strongest.skill}`) })}
-                    </span>
-                  )}
-                  {summary.weakest && (
-                    <span className="hm-tag hm-tag--down">
-                      <TrendIcon />
-                      {t('home.skills.worst', { skill: t(`profile.skills.${summary.weakest.skill}`) })}
-                    </span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p className="hm-skills__empty">{t('home.skills.empty')}</p>
+        <div className="hm-grid">
+          <div className="hm-grid__main">
+            {/* «Сегодня»: план по дням, если он собран; пока плана нет (тест, формат) — «Начните отсюда» (решение
+                владельца 21.10.2026); у прежней «Главной» — подсказка дня. План или профиль ещё в пути — пусто, а не
+                подсказка, которая через секунду сменится на «Сегодня». */}
+            {geToday ? (
+              <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} token={token} onReload={gePlan.reload} onNav={onNav} />
+            ) : !geLoaded || (geTop === 'goal' && gePlan.status === 'loading') ? null : geMode && geTop !== 'goal' ? (
+              <StartHereCard state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
+            ) : isDemoAccount ? null : (
+              <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
             )}
-          </section>
-          )}
-
-          {/* Практика, расписание и домашка — кабинет оплаченного ученика.
-              У демо на их месте пусто по макету: там разговор про доступ, а не
-              про сегодняшние занятия, которых у него ещё нет. */}
-          {!isDemoAccount && (geToday ? (
-            <GeTodayCard plan={gePlan.plan} frontier={gePlan.frontier} level={summary.level || userLevel} token={token} onReload={gePlan.reload} onNav={onNav} />
-          ) : (geTop === 'goal' && gePlan.status === 'loading') || !geLoaded ? null : (
-            // план или профиль ещё в пути — пусто, а не прежняя подсказка, которая через секунду сменится на «Сегодня»
-            <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
-          ))}
-          {!isDemoAccount && <PracticeToday t={t} onNav={onNav} />}
+            <PracticeToday t={t} onNav={onNav} />
+            {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
+            {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} />}
           </div>
 
-          <div className="hm-col">
-          {/* Пробный урок: назначенное занятие → заявка → приглашение.
-              Платящему он не нужен — у него уже есть и преподаватель, и уроки,
-              а «Записаться на пробный» рядом с расписанием читается как ошибка. */}
-          {isDemoAccount && (
-          <section className="hm-card hm-trial">
-            <div className="hm-trial__art">
-              <AssetImage src="/assets/demo/trial-call.webp" alt="" />
-            </div>
-            {/* Состояние меняется под курсором после нажатия — озвучиваем смену
-                тем, кто кнопку не видит. */}
-            <div className="hm-trial__body" aria-live="polite">
-              <b className="hm-trial__title">
-                {nextLesson
-                  ? t('home.trial.scheduled')
-                  : trial?.requested
-                    ? t('trial.doneTitle')
-                    : t('home.trial.title')}
-              </b>
-              <span className="hm-trial__sub">
-                {nextLesson
-                  ? lessonWhen(nextLesson, lang, t)
-                  : trial?.requested
-                    ? t(trial.managerAssigned ? 'trial.doneManager' : 'trial.doneText')
-                    : t('home.trial.sub')}
-              </span>
-            </div>
-            {nextLesson ? (
-              <button
-                type="button"
-                className="hm-trial__cta"
-                onClick={() => onOpenLesson?.(nextLesson.lessonId)}
-              >
-                {t('home.trial.open')}
-                <Arrow />
-              </button>
-            ) : trial?.requested ? null : (
-              <button type="button" className="hm-trial__cta" disabled={sending} onClick={book}>
-                {t(sending ? 'trial.sending' : 'home.trial.cta')}
-                <Arrow />
-              </button>
+          <div className="hm-grid__side">
+            {/* Пробный урок: назначенное занятие → заявка → приглашение. Платящему он не нужен — у него уже есть и
+                преподаватель, и уроки, а «Записаться на пробный» рядом с расписанием читается как ошибка. */}
+            {isDemoAccount ? (
+              <TrialCard
+                t={t}
+                lang={lang}
+                trial={trial}
+                nextLesson={nextLesson}
+                sending={sending}
+                failed={failed}
+                onBook={book}
+                onOpenLesson={onOpenLesson}
+              />
+            ) : (
+              <>
+                <ScheduleCard t={t} lang={lang} occurrences={occurrences} onOpenLesson={onOpenLesson} onNav={onNav} />
+                <HomeworkCard t={t} lang={lang} items={homework} onNav={onNav} />
+              </>
             )}
-            {/* role="alert" на самом абзаце: живая область объявляет изменения
-                внутри себя, а этот абзац появляется её соседом. */}
-            {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
-          </section>
-          )}
-
-          {!isDemoAccount && (
-            <>
-              <ScheduleCard t={t} lang={lang} occurrences={occurrences} onOpenLesson={onOpenLesson} onNav={onNav} />
-              <HomeworkCard t={t} lang={lang} items={homework} onNav={onNav} />
-            </>
-          )}
+            {!ieltsAccount && (
+              <SkillsCard
+                t={t}
+                summary={summary}
+                hasData={hasData}
+                levelUnknown={levelUnknown}
+                onTest={geMode ? onGeStart : onStartLevelTest}
+              />
+            )}
           </div>
         </div>
+
+        {!ieltsAccount && <PlacementNext report={report} onNav={onNav} onRetake={onStartLevelTest} />}
       </div>
-      {tour.open && <OnboardingTour steps={tourSteps()} storageKey={tourStorageKey} onFinish={tour.finish} />}
+      {tour.open && (
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps()} storageKey={tourStorageKey} onFinish={finishTour} />
+      )}
+      {/* «Оставить обычный» нрав не пишет: окно могло выйти и тому, у кого жёсткий уже включён (тур по «?»). */}
+      {temperOpen && <TemperInvite onKeep={() => closeTemper(null)} onTry={() => closeTemper('harsh')} />}
       {goalOpen && (
         <GoalDialog options={options} value={goalValue} onPick={pickGoal} onClose={() => setGoalOpen(false)} />
       )}
@@ -828,6 +782,111 @@ function HomeworkCard({ t, lang, items, onNav }) {
 }
 
 /**
+ * Пробный урок демо: назначенное занятие → заявка → приглашение. Состояние меняется под курсором после нажатия —
+ * озвучиваем смену тем, кто кнопку не видит.
+ */
+function TrialCard({ t, lang, trial, nextLesson, sending, failed, onBook, onOpenLesson }) {
+  return (
+    <section className="hm-card hm-trial">
+      <div className="hm-trial__art">
+        <AssetImage src="/assets/demo/trial-call.webp" alt="" />
+      </div>
+      <div className="hm-trial__body" aria-live="polite">
+        <b className="hm-trial__title">
+          {nextLesson ? t('home.trial.scheduled') : trial?.requested ? t('trial.doneTitle') : t('home.trial.title')}
+        </b>
+        <span className="hm-trial__sub">
+          {nextLesson
+            ? lessonWhen(nextLesson, lang, t)
+            : trial?.requested
+              ? t(trial.managerAssigned ? 'trial.doneManager' : 'trial.doneText')
+              : t('home.trial.sub')}
+        </span>
+      </div>
+      {nextLesson ? (
+        <button type="button" className="hm-trial__cta" onClick={() => onOpenLesson?.(nextLesson.lessonId)}>
+          {t('home.trial.open')}
+          <Arrow />
+        </button>
+      ) : trial?.requested ? null : (
+        <button type="button" className="hm-trial__cta" disabled={sending} onClick={onBook}>
+          {t(sending ? 'trial.sending' : 'home.trial.cta')}
+          <Arrow />
+        </button>
+      )}
+      {/* role="alert" на самом абзаце: живая область объявляет изменения внутри себя, а этот абзац — её сосед. */}
+      {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
+    </section>
+  )
+}
+
+const SKILL_ROWS = ['speaking', 'listening', 'vocab', 'grammar', 'writing']
+
+/**
+ * Сильные и слабые стороны (макет: строка навыка — название, тренд и процент, под ней полоса; ниже две плашки
+ * «Сильнее всего» и «Стоит подтянуть»). Без теста — те же строки с «???» и пустыми полосами и приглашение пройти тест
+ * (кадр «новый ученик»); тест есть, а заданий в практике нет — та же заглушка с прежним текстом и без кнопки.
+ */
+function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
+  const rows = hasData ? summary.ranked : SKILL_ROWS.map((skill) => ({ skill, percent: null }))
+  return (
+    <section className="hm-card hm-skills">
+      <h2 className="hm-card__title">{t('home.skills.title')}</h2>
+      <div className="hm-skills__list">
+        {rows.map(({ skill, percent }) => (
+          <div className="hm-skill" key={skill}>
+            <span className="hm-skill__name">{t(`profile.skills.${skill}`)}</span>
+            {percent != null && (
+              <span className={`hm-skill__trend hm-skill__trend--${band(percent)}`} aria-hidden="true">
+                <TrendIcon up={percent >= 60} size={18} />
+              </span>
+            )}
+            <span className="hm-skill__pct">{percent != null ? `${percent}%` : '???'}</span>
+            <div className="hm-skill__bar">
+              {percent != null && <i className={`hm-skill__fill hm-skill__fill--${band(percent)}`} style={{ width: `${percent}%` }} />}
+            </div>
+          </div>
+        ))}
+      </div>
+      {hasData ? (
+        <div className="hm-skills__tags">
+          {summary.strongest && (
+            <span className="hm-tag hm-tag--up">
+              <TrendIcon up size={24} />
+              <span>
+                <small>{t('home.skills.bestLabel')}</small>
+                <b>{t(`profile.skills.${summary.strongest.skill}`)}</b>
+              </span>
+            </span>
+          )}
+          {summary.weakest && (
+            <span className="hm-tag hm-tag--down">
+              <TrendIcon size={24} />
+              <span>
+                <small>{t('home.skills.worstLabel')}</small>
+                <b>{t(`profile.skills.${summary.weakest.skill}`)}</b>
+              </span>
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="hm-skills__msg">
+          <span className="hm-skills__msgIco" aria-hidden="true" />
+          <b>{t(levelUnknown ? 'home.skills.noTest.title' : 'home.skills.noData.title')}</b>
+          <p>{t(levelUnknown ? 'home.skills.noTest.sub' : 'home.skills.empty')}</p>
+          {levelUnknown && onTest && (
+            <button type="button" className="hm-skills__cta" onClick={() => onTest()}>
+              {t('geStart.test.cta')}
+              <Arrow />
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/**
  * Практика на сегодня — четыре входа в разделы, а не подобранные задания.
  *
  * Подборки на бэкенде нет: ни ручки, ни признака «что человеку сегодня
@@ -870,14 +929,17 @@ function PracticeToday({ t, onNav }) {
   // «Аудирование» открывали «Практику» целиком, и нажавший на книги искал их
   // заново. Аудирование — отдельный экран, книги — фильтр «Практики».
   const tiles = [
-    { key: 'books', emoji: '📚', to: 'practice', payload: { filter: 'books' } },
-    { key: 'tutor', emoji: '🖥️', to: 'tutor' },
-    { key: 'listening', emoji: '🎧', to: 'listening' },
-    { key: 'vocab', emoji: '📖', to: 'vocab' },
+    { key: 'books', img: 'book', emoji: '📚', to: 'practice', payload: { filter: 'books' } },
+    { key: 'tutor', img: 'tutor', emoji: '🖥️', to: 'tutor' },
+    { key: 'listening', img: 'listening', emoji: '🎧', to: 'listening' },
+    { key: 'vocab', img: 'vocab', emoji: '📖', to: 'vocab' },
   ]
   return (
     <section className="hm-card hm-prac">
-      <h2 className="hm-card__title">{t('home.practice.title')}</h2>
+      <div className="hm-card__head">
+        <h2 className="hm-card__title">{t('home.practice.title')}</h2>
+        <p className="hm-card__sub">{t('home.practice.sub')}</p>
+      </div>
       <div className="hm-prac__grid">
         {tiles.map((tile) => (
           <button
@@ -894,7 +956,7 @@ function PracticeToday({ t, onNav }) {
             {/* Телефонный макет рисует плитки картинками вместо эмодзи (CSS
                 переключает одно на другое). lazy: на десктопе картинка скрыта и
                 грузиться ей незачем. */}
-            <AssetImage className="hm-prac__img" src={`/assets/m/home/prac-${tile.key}.webp`} alt="" loading="lazy" />
+            <AssetImage className="hm-prac__img" src={`/assets/home-v2/prac-${tile.img}.webp`} alt="" loading="lazy" />
           </button>
         ))}
       </div>

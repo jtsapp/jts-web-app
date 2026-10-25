@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronRightIcon } from './icons.jsx'
+import { ExpandMoreIcon, LanguageIcon } from './authIcons.jsx'
 import { LANGS, useI18n } from '../i18n.jsx'
 
 /**
@@ -12,9 +13,12 @@ import { LANGS, useI18n } from '../i18n.jsx'
  * `flagOnly` — полоса урока: пилюля 58×33 с одним флагом и шевроном (макет
  * «Обучение»), подписи там нет — рядом стоит название шага, и места не остаётся.
  *
+ * `globe` — шапка входа и регистрации (макет «Регистрация», 21.10.2026):
+ * значок глобуса вместо флага и стрелка вниз, как в кадрах.
+ *
  * В самом списке названия всегда полные — там их и читают.
  */
-export default function LangSelector({ compact = false, flagOnly = false }) {
+export default function LangSelector({ compact = false, flagOnly = false, globe = false }) {
   const { lang, setLang, t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -35,16 +39,21 @@ export default function LangSelector({ compact = false, flagOnly = false }) {
   return (
     <div className="lang-wrap" ref={ref}>
       <button
-        className={`lang-selector ${compact ? 'lang-selector--compact' : ''}${flagOnly ? ' lang-selector--flag' : ''}`}
+        className={`lang-selector ${compact ? 'lang-selector--compact' : ''}${flagOnly ? ' lang-selector--flag' : ''}${globe ? ' lang-selector--globe' : ''}`}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={current.label}
       >
-        <CurrentFlag />
+        {globe ? <LanguageIcon /> : <CurrentFlag />}
         {!flagOnly && <span>{compact ? current.short : current.label}</span>}
-        {!compact && (
+        {globe && (
+          <span className={`chev ${open ? 'chev--open' : ''}`}>
+            <ExpandMoreIcon />
+          </span>
+        )}
+        {!compact && !globe && (
           <span className={`chev ${open ? 'chev--open' : ''}`}>
             <ChevronRightIcon size={14} />
           </span>

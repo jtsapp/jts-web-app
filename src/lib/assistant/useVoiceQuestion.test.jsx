@@ -167,4 +167,30 @@ describe('useVoiceQuestion', () => {
     const { result } = mount()
     expect(result.current.error).toBe('denied')
   })
+
+  // Позывной «Луна» (21.10.2026): запись без нажатия и звук, уже снятый «ухом».
+  it('transcribeAudio — готовая запись сразу в распознавание, текст — своему получателю', async () => {
+    const own = vi.fn()
+    const { result } = mount()
+    await act(() => result.current.transcribeAudio(new Blob([new Uint8Array(10)]), { onText: own }))
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/assistant/transcribe')
+    expect(own).toHaveBeenCalledWith('где домашка')
+    expect(onText).not.toHaveBeenCalled()
+  })
+
+  it('listen — запись со своим получателем; кнопка микрофона после неё — прежний', async () => {
+    const own = vi.fn()
+    const { result } = mount()
+    act(() => result.current.listen({ noVoiceMs: 6000, onText: own }))
+    resolveGate(true)
+    await flush()
+    await act(async () => rec.starts[0].onDone(out()))
+    expect(own).toHaveBeenCalledWith('где домашка')
+    rec.gate = Promise.resolve(true)
+    act(() => result.current.toggle())
+    await flush()
+    await act(async () => rec.starts[1].onDone(out()))
+    expect(onText).toHaveBeenCalledWith('где домашка')
+    expect(own).toHaveBeenCalledTimes(1)
+  })
 })

@@ -1,0 +1,2979 @@
+/* Скин теста уровня v16 по макету «Регистрация → 2 · Цели и маршрут (онбординг), 3 · Тест уровня» (Figma «pitch JTS»,
+   21.10.2026). Пишется РУКАМИ: scripts/build-placement-v16.js только подключает его после стилей автора и накладывает
+   патчи разметки (кнопка «назад», панель «Твои цели», строка кнопок вопроса). Логику и разметку автора не трогаем —
+   перекрываем его классы. Селекторы начинаются с #app: у автора правила вида «.welcome .eyebrow», и одним классом
+   их не перебить, а !important потом не перебить уже нам.
+
+   Токены макета: фон #f8f8f8 с двумя сиреневыми пятнами, текст #181818 / #5a5a66 / #8e8e99, акцент #9047ff,
+   светлый акцент #efe7ff / #f6f1ff, рамки #e8e8ee, карточки белые r32 с тенью 0 8 32 6 %, кнопки 48 r16. */
+
+:root {
+  --jts-ink: #181818;
+  --jts-sec: #5a5a66;
+  --jts-mut: #8e8e99;
+  --jts-ac: #9047ff;
+  --jts-ac-dis: #dccff9;
+  --jts-lav: #efe7ff;
+  --jts-lav2: #f6f1ff;
+  --jts-lav3: #e4daf8;
+  --jts-line: #e8e8ee;
+  --jts-gray: #f0f0f4;
+  --jts-radio: #c9c9d3;
+  --jts-ok: #1f9d55;
+  --jts-ok-bg: #e3f6ea;
+  --jts-err: #d92d20;
+  --jts-err-bg: #fdebec;
+  --jts-warn: #c2560a;
+  --jts-warn-bg: #fff1e3;
+  --jts-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  /* у автора свои токены — переводим их на палитру макета, чтобы мелочи без своего правила не выпадали из неё */
+  --p: #9047ff;
+  --p2: #7a2fe6;
+  --ink: #181818;
+  --text: #181818;
+  --sub: #5a5a66;
+  --border: #e8e8ee;
+  --bg: #f8f8f8;
+  --pale: #efe7ff;
+  --green: #1f9d55;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Основа: фон с пятнами ---------- */
+html body {
+  background: #f8f8f8;
+  color: var(--jts-ink);
+}
+html body::before,
+html body::after {
+  content: '';
+  position: fixed;
+  z-index: 0;
+  border-radius: 50%;
+  background: var(--jts-lav);
+  pointer-events: none;
+}
+html body::before {
+  left: -220px;
+  top: -260px;
+  width: 640px;
+  height: 640px;
+  opacity: 0.9;
+}
+html body::after {
+  right: -260px;
+  bottom: -136px;
+  width: 520px;
+  height: 520px;
+  opacity: 0.7;
+}
+#app {
+  position: relative;
+  z-index: 1;
+  display: block;
+  padding: 0;
+  background: transparent;
+}
+#app .main,
+#app .main.no-sidebar {
+  position: relative;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+}
+#app .main-content {
+  max-width: none;
+  margin: 0;
+  padding: 40px 60px 48px;
+  min-height: calc(100vh - 72px);
+}
+
+/* Значки макета (Material Symbols, экспорт Figma) — маской, цвет из currentColor. */
+#app [class*='jts-ico-']::before,
+#app .jts-back::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  -webkit-mask: var(--ico) center / contain no-repeat;
+  mask: var(--ico) center / contain no-repeat;
+}
+#app .jts-ico-my_location,
+#app .jts-ico-goal { --ico: url(skin/ico/my_location.svg); }
+#app .jts-ico-role { --ico: url(skin/ico/person.svg); }
+#app .jts-ico-motivation { --ico: url(skin/ico/bolt.svg); }
+#app .jts-ico-format { --ico: url(skin/ico/psychology.svg); }
+#app .jts-ico-time { --ico: url(skin/ico/schedule.svg); }
+#app .jts-ico-feedback { --ico: url(skin/ico/comment.svg); }
+#app .jts-ico-info { --ico: url(skin/ico/info.svg); }
+
+/* ---------- Шапка 72: «назад» + логотип слева, разделы по центру, чипы справа ---------- */
+#app .topbar {
+  position: relative;
+  height: 72px;
+  max-width: none;
+  margin: 0;
+  padding: 0 60px;
+  gap: 24px;
+  border: 0;
+  background: transparent;
+}
+#app .jts-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+}
+#app .jts-back {
+  --ico: url(skin/ico/arrow_back.svg);
+  display: block;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 1px solid var(--jts-line);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--jts-ink);
+  cursor: pointer;
+}
+#app .jts-back:hover {
+  border-color: #d6d6de;
+}
+#app .wordmark {
+  display: block;
+  width: 150px;
+  height: 29px;
+  margin: 0;
+  font-size: 0;
+  color: transparent;
+  background: url(/assets/reg/logo-purple.svg) left center / contain no-repeat;
+}
+#app .wordmark span,
+#app .header-caption {
+  display: none;
+}
+#app .top-actions {
+  gap: 8px;
+  margin-left: auto;
+}
+#app .header-sections,
+#app .header-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 8px 16px;
+  border: 1px solid var(--jts-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  box-shadow: none;
+}
+#app .header-audio {
+  color: var(--jts-ac);
+}
+#app .header-audio::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+  mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+}
+#app .language {
+  height: 42px;
+  padding: 8px 40px 8px 41px;
+  border: 1px solid var(--jts-line);
+  border-radius: 999px;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+  background:
+    url(skin/ico/language.svg) 17px center / 16px no-repeat,
+    url(skin/ico/expand_more.svg) right 17px center / 16px no-repeat,
+    #ffffff;
+  cursor: pointer;
+}
+/* Правая часть шапки — как в макете по экранам: на анкете целей только язык, на экранах теста только чипы (язык
+   там уже выбран, а без него разделам по центру хватает места). */
+#app .top-actions:has([data-sectionlist]) .language {
+  display: none;
+}
+#app .main:has(.goals-shell) .top-actions .language {
+  display: block;
+}
+#app .main:has(.goals-shell) .header-sections,
+#app .main:has(.goals-shell) .header-audio {
+  display: none;
+}
+
+/* Разделы теста — пилюлями по центру шапки (у автора — строкой вкладок над вопросом). */
+#app .test-tabs {
+  position: absolute;
+  z-index: 2;
+  top: 19px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#app .test-tabs .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--jts-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  box-shadow: none;
+  white-space: nowrap;
+}
+#app .test-tabs .tab.active {
+  border-color: var(--jts-ink);
+  background: var(--jts-ink);
+  color: #ffffff;
+}
+#app .test-tabs .tab.done:not(.active) {
+  flex-direction: row-reverse;
+  border-color: var(--jts-ok-bg);
+  background: var(--jts-ok-bg);
+  color: var(--jts-ok);
+}
+#app .test-tabs .tab.done span {
+  font-size: 0;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/check.svg) center / contain no-repeat;
+  mask: url(skin/ico/check.svg) center / contain no-repeat;
+}
+#app .test-tabs .tab.done.active span {
+  display: none;
+}
+/* «← Все разделы» над вопросом заменила кнопка «К разделам» в шапке. */
+#app .backlink {
+  display: none;
+}
+
+/* ---------- Общие: чип-метка, заголовки, кнопки ---------- */
+#app .eyebrow,
+#app .go-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+}
+#app .body-muted {
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .gradbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  min-height: 0;
+  padding: 0 32px;
+  border: none;
+  border-radius: 16px;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  box-shadow: none;
+  transition: filter 0.15s ease;
+}
+#app .gradbtn:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: none;
+  box-shadow: none;
+}
+#app .gradbtn:disabled {
+  background: var(--jts-ac-dis);
+  color: #ffffff;
+  opacity: 1;
+  cursor: default;
+}
+#app .ghostbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  min-height: 0;
+  padding: 0 24px;
+  border: 2px solid var(--jts-ac);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  box-shadow: none;
+}
+/* «← Назад» у макета — текстовая кнопка со стрелкой, без рамки. */
+#app #selfBack,
+#app #goBack,
+#app #previous,
+#app #previousReading,
+#app #previousListening {
+  padding: 0 16px;
+  border-color: transparent;
+  background: transparent;
+}
+
+/* ---------- Приветствие ---------- */
+#app .welcome {
+  display: grid;
+  grid-template-columns: minmax(0, 600px) 520px;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+  max-width: 1320px;
+  min-height: calc(100vh - 72px - 88px);
+  margin: 0 auto;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .welcome .copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  max-width: none;
+  padding: 0;
+}
+#app .welcome .eyebrow {
+  padding: 8px 12px;
+}
+#app .welcome h1 {
+  margin: 0;
+  font-size: 56px;
+  line-height: 64px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--jts-ink);
+}
+#app .welcome .body-muted {
+  max-width: 600px;
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+}
+#app .hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+}
+#app .hero-facts .fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--jts-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  box-shadow: none;
+}
+#app .welcome #begin {
+  height: 56px;
+  padding: 0 40px;
+  margin: 0;
+}
+#app .landing-footer {
+  margin: 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+/* Маскот с линейкой на сиреневом диске с кольцом (макет: диск 480, кольцо 540, фигура 506×674 с выносом вверх). */
+#app .mascot-visual {
+  position: relative;
+  width: 520px;
+  height: 648px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+#app .mascot-visual::before,
+#app .mascot-visual::after {
+  content: '';
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  transform: none;
+  animation: none;
+}
+#app .mascot-visual::before {
+  left: 20px;
+  top: 84px;
+  width: 480px;
+  height: 480px;
+  border: 0;
+  background: var(--jts-lav);
+}
+#app .mascot-visual::after {
+  left: -10px;
+  top: 54px;
+  width: 540px;
+  height: 540px;
+  border: 2px solid var(--jts-lav3);
+  background: none;
+}
+#app .mascot-visual .hero-figure {
+  position: absolute;
+  z-index: 1;
+  left: -6px;
+  top: -55px;
+  right: auto;
+  bottom: auto;
+  width: 506px;
+  height: 674px;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  transform: none;
+  animation: none;
+  filter: none;
+}
+#app .mascot-visual .decor-tag {
+  display: none;
+}
+
+/* ---------- Шаг 1 «О твоём английском» ---------- */
+#app .self-shell {
+  display: block;
+  max-width: 720px;
+  margin: 46px auto 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .self-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  text-align: center;
+}
+#app .self-main .eyebrow {
+  text-transform: uppercase;
+}
+#app .self-main h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--jts-ink);
+}
+#app .self-main > .body-muted {
+  margin: -8px 0 0;
+}
+#app .self-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+}
+#app .self-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  height: 64px;
+  min-height: 0;
+  padding: 0 20px;
+  border: 2px solid var(--jts-line);
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+#app .self-option > span:nth-child(2) {
+  flex: 1;
+}
+#app .self-option .self-num {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+}
+/* Радио 24: пустое — рамка 2 #c9c9d3, выбранное — заливка акцентом с белой точкой. Глиф автора («○/✓») гасим. */
+#app .self-option .self-tick,
+#app .go-choice-grid.is-single .go-check {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--jts-radio);
+  border-radius: 50%;
+  background: #ffffff;
+  font-size: 0;
+  color: transparent;
+}
+#app .self-option.chosen {
+  border-color: var(--jts-ac);
+  background: var(--jts-lav2);
+}
+#app .self-option.chosen .self-tick,
+#app .go-choice-grid.is-single .go-choice.is-selected .go-check {
+  border: 8px solid var(--jts-ac);
+  background: #ffffff;
+}
+#app .self-footnote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .routing-preview {
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+  text-align: left;
+  box-shadow: none;
+}
+#app .self-actions {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+}
+#app .self-visual {
+  display: none;
+}
+
+/* ---------- Анкета целей (шаги 1–6): колонка 780 + панель «Твои цели» 360 ---------- */
+#app .goals-shell {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(0, 780px) 360px;
+  justify-content: center;
+  align-items: start;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .jts-goals-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* Шаги анкеты — шесть отрезков по центру шапки (макет: 40×8 с шагом 48) и «Шаг 1 из 6» под ними. Полосу автора
+   режем маской на отрезки: заливка остаётся его, ширина — его же процент. */
+#app .go-topline {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  width: 280px;
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .go-topline .go-badge {
+  display: none;
+}
+#app .go-progress {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 8px;
+  margin: 0;
+  border-radius: 0;
+  background: var(--jts-lav3);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 40px, transparent 40px 48px);
+  mask: repeating-linear-gradient(90deg, #000 0 40px, transparent 40px 48px);
+}
+#app .go-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  background: var(--jts-ac);
+}
+#app .go-heading {
+  max-width: none;
+  margin: 0 0 32px;
+  padding: 0;
+  text-align: left;
+}
+#app .go-heading h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--jts-ink);
+}
+#app .go-heading p {
+  margin: 12px 0 0;
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .go-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+  padding: 40px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+/* Шаг 1: категории — две колонки строк 84 (плашка значка 48, название, квадратная галочка 24 r8). */
+#app .go-category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 0;
+}
+#app .go-category {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 84px;
+  height: auto;
+  padding: 16px 20px;
+  border: 2px solid var(--jts-line);
+  border-radius: 24px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+#app .go-category:last-child:nth-child(odd) {
+  grid-column: auto;
+}
+#app .go-category strong {
+  flex: 1;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .go-category .go-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--jts-lav2);
+  color: var(--jts-ac);
+}
+#app .go-category .go-icon svg {
+  width: 24px;
+  height: 24px;
+}
+#app .go-category.is-selected {
+  border-color: var(--jts-ac);
+  background: var(--jts-lav2);
+}
+#app .go-category.is-selected .go-icon {
+  background: #ffffff;
+}
+#app .go-category .go-check {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--jts-radio);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0;
+  color: transparent;
+}
+#app .go-category.is-selected .go-check {
+  border-color: var(--jts-ac);
+  background: var(--jts-ac) url(skin/ico/check.svg) center / 16px no-repeat;
+  filter: none;
+}
+/* Галочка на заливке — белая: экспорт значка с цветом макета, поэтому белим маской через псевдоэлемент. */
+#app .go-category.is-selected .go-check {
+  background-image: none;
+  position: relative;
+}
+#app .go-category.is-selected .go-check::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #ffffff;
+  -webkit-mask: url(skin/ico/check.svg) center / contain no-repeat;
+  mask: url(skin/ico/check.svg) center / contain no-repeat;
+}
+
+/* Шаг 2: группы целей — без аккордеона, заголовок группы со счётчиком, цели пилюлями. */
+#app .go-category-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .go-category-group + .go-category-group {
+  padding-top: 24px;
+  border-top: 1px solid var(--jts-gray);
+}
+#app .go-category-group summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  list-style: none;
+  cursor: pointer;
+}
+#app .go-category-group summary::-webkit-details-marker {
+  display: none;
+}
+#app .go-category-group summary::after {
+  display: none;
+}
+#app .go-category-group summary .go-small-icon {
+  display: none;
+}
+#app .go-category-group summary strong {
+  flex: 1;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+  color: var(--jts-ink);
+}
+#app .go-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+#app .go-group-body {
+  padding: 0;
+}
+
+/* Пилюли множественного выбора (цели, мотивация, форматы): 16 жирный, «+» серый / галочка акцентом. */
+#app .go-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+#app .go-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  min-height: 0;
+  height: auto;
+  padding: 12px 16px;
+  border: 2px solid var(--jts-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+#app .go-choice.is-selected {
+  border-color: var(--jts-ac);
+  background: var(--jts-lav);
+  font-weight: 800;
+}
+#app .go-choice-grid:not(.is-single) .go-check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  background: var(--jts-mut);
+  font-size: 0;
+  color: transparent;
+  -webkit-mask: url(skin/ico/add.svg) center / contain no-repeat;
+  mask: url(skin/ico/add.svg) center / contain no-repeat;
+}
+#app .go-choice-grid:not(.is-single) .go-choice.is-selected .go-check {
+  background: var(--jts-ac);
+  -webkit-mask-image: url(skin/ico/check.svg);
+  mask-image: url(skin/ico/check.svg);
+}
+/* Одиночный выбор (роль, срок, время, обратная связь) — строки-радио в две колонки (макет: 48, r20, радио справа). */
+#app .go-choice-grid.is-single {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+#app .go-choice-grid.is-single .go-choice {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border-radius: 20px;
+}
+#app .go-choice-grid.is-single .go-choice.is-selected {
+  background: var(--jts-lav2);
+  font-weight: 800;
+}
+
+/* Шаг 3: главная цель плашкой, вопросы с «Необязательно» справа от заголовка, разделители между вопросами. */
+#app .go-primary-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--jts-lav2);
+}
+#app .go-primary-banner span {
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .go-primary-banner strong {
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .go-fieldset {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 24px 0 0;
+  border: 0;
+  border-top: 1px solid var(--jts-gray);
+}
+#app .go-card > .go-fieldset:first-child,
+#app .go-more > .go-fieldset:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+#app .go-fieldset legend {
+  float: left;
+  width: calc(100% - 120px);
+  margin: 0;
+  padding: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .go-fieldset legend + * {
+  clear: both;
+}
+#app .go-optional {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .go-card > .go-fieldset:first-child .go-optional {
+  top: 4px;
+}
+#app .go-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 16px;
+  border: 2px solid var(--jts-line);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  resize: vertical;
+  box-shadow: none;
+}
+#app .go-input::placeholder {
+  color: var(--jts-mut);
+  font-weight: 500;
+}
+#app .go-input:focus {
+  border-color: var(--jts-ac);
+  outline: none;
+}
+#app textarea[data-follow-text].go-input {
+  height: 56px;
+}
+#app textarea[data-expectations].go-input {
+  height: 80px;
+}
+#app .go-custom-label {
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .go-more {
+  padding-top: 8px;
+}
+#app .go-more summary {
+  color: var(--jts-ac);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#app .go-primary h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .go-help {
+  margin: 0 0 12px;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+}
+#app .go-error {
+  margin: 12px 0 0;
+  color: var(--jts-err);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .go-error:empty {
+  display: none;
+}
+
+/* Шаг 6: сводка — каждая строка отдельной рамкой, подпись сверху мелко, ответ жирно. */
+#app .go-review {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+#app .go-review-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 16px;
+  border: 2px solid var(--jts-line);
+  border-radius: 16px;
+  background: #ffffff;
+}
+#app .go-review-row dt {
+  margin: 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .go-review-row dd {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  white-space: pre-line;
+}
+#app .go-review-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .go-review-note::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: var(--jts-ac);
+  -webkit-mask: url(skin/ico/info.svg) center / contain no-repeat;
+  mask: url(skin/ico/info.svg) center / contain no-repeat;
+}
+
+/* Кнопки анкеты: «← Назад» слева, «Пропустить этот шаг» / «Изменить ответы» и «Продолжить» справа. */
+#app .go-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 32px 0 0;
+}
+#app .go-actions #goBack {
+  margin-right: auto;
+}
+/* у автора «Продолжить» с margin-left: auto — вместе с нашим auto у «Назад» он делил место пополам */
+#app .go-actions #goNext {
+  margin-left: 0;
+}
+#app .go-skip {
+  height: 48px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+#app #goEdit.go-skip {
+  padding: 0 24px;
+  background: var(--jts-lav);
+}
+#app .go-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 16px 0 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  text-align: center;
+}
+#app .go-footer > * {
+  width: auto;
+  margin: 0;
+  text-align: center;
+  justify-self: center;
+}
+#app .go-footer span:first-child {
+  color: var(--jts-sec);
+  font-weight: 700;
+}
+
+/* Панель «Твои цели» (патч skin-goals-panel): 360, r28, рамка 1 и тень; липнет к верху при прокрутке длинных шагов. */
+#app .jts-goals-plan {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 116px;
+  padding: 24px;
+  border: 1px solid var(--jts-line);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+#app .jts-gp-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#app .jts-gp-head b {
+  flex: 1;
+  color: var(--jts-ink);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+}
+#app .jts-gp-plate {
+  display: block;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--jts-gray);
+  color: var(--jts-mut);
+}
+#app .jts-gp-head .jts-gp-plate,
+#app .jts-gp-item.is-set .jts-gp-plate {
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+}
+#app .jts-gp-count {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--jts-gray);
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+#app .jts-goals-plan:has(.jts-gp-item.is-set) .jts-gp-count {
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+}
+#app .jts-gp-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--jts-lav3);
+  overflow: hidden;
+}
+#app .jts-gp-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--jts-ac);
+}
+#app .jts-gp-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#app .jts-gp-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+#app .jts-gp-text small {
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .jts-gp-text b {
+  color: var(--jts-mut);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#app .jts-gp-item.is-set .jts-gp-text b {
+  color: var(--jts-ink);
+}
+#app .jts-gp-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .jts-gp-note .jts-ico-info {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- Проверка звука: одна белая карточка 1016 — текст слева, маскот с микрофоном справа ---------- */
+#app .sound-step {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+  max-width: 1016px;
+  margin: 150px auto 0;
+  padding: 40px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+  overflow: hidden;
+}
+#app .sound-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  flex: 1 1 559px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Чипы со значком макета: динамик у проверки звука, микрофон у Speaking (глифы автора снимают патчи skin-chip-*). */
+#app .jts-chip-sound::before,
+#app .jts-chip-mic::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+  mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+}
+#app .jts-chip-mic::before {
+  -webkit-mask-image: url(skin/ico/mic.svg);
+  mask-image: url(skin/ico/mic.svg);
+}
+#app .sound-panel h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--jts-ink);
+}
+#app .sound-panel .body-muted {
+  margin: 0;
+}
+#app .sound-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+}
+#app .sound-play {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 0;
+  box-shadow: none;
+}
+#app .sound-play::before {
+  content: '';
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  -webkit-mask: url(skin/ico/play_arrow.svg) center / contain no-repeat;
+  mask: url(skin/ico/play_arrow.svg) center / contain no-repeat;
+}
+#app .sound-row b {
+  display: block;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .sound-check-val {
+  display: block;
+  margin-top: 2px;
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .audio-health {
+  color: var(--jts-mut);
+  font-size: 12px;
+}
+#app .sound-actions {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+}
+#app .sound-art {
+  position: relative;
+  flex: 0 0 357px;
+  min-height: 342px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .sound-art .jts-sound-art {
+  position: absolute;
+  left: 23px;
+  top: 18px;
+  width: 370px;
+  height: 364px;
+  max-width: none;
+  object-fit: cover;
+  object-position: top left;
+}
+#app .sound-art .headphone-figure,
+#app .sound-art .sound-wave-bars {
+  display: none;
+}
+
+/* ---------- Разделы: центр 880, заголовок по центру, карточки 432×128 в две колонки ---------- */
+#app .section-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 880px;
+  margin: 70px auto 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+}
+#app .section-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+#app .section-header h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--jts-ink);
+}
+#app .section-header > div > p:not(.start-route-label) {
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .start-route-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .start-route-label b {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+#app .start-route-label span {
+  color: var(--jts-mut);
+}
+/* «Общий прогресс ……… 50%» над карточками во всю ширину. */
+#app .progress-mini {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 24px 0 0;
+  padding-top: 24px;
+}
+#app .progress-mini::before {
+  content: 'Общий прогресс';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+html[lang='en'] #app .progress-mini::before {
+  content: 'Overall progress';
+}
+html[lang='kk'] #app .progress-mini::before {
+  content: 'Жалпы прогресс';
+}
+#app .progress-mini .track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--jts-lav3);
+}
+#app .progress-mini .track div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--jts-ac);
+}
+#app .progress-mini span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+#app .section-area {
+  display: block;
+  max-width: 880px;
+  margin: 24px auto 0;
+  padding: 0;
+}
+#app .section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 0;
+}
+#app .section-card {
+  display: grid;
+  grid-template-columns: 56px 1fr 24px;
+  grid-template-areas:
+    'icon title arrow'
+    'icon desc arrow'
+    'icon state arrow';
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+  min-height: 128px;
+  height: auto;
+  padding: 24px;
+  border: 2px solid var(--jts-line);
+  border-radius: 28px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+#app .section-card:hover {
+  border-color: var(--jts-lav3);
+  transform: none;
+  box-shadow: none;
+}
+#app .section-card .iicon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 800;
+}
+/* Значки разделов — из макета; «Aa» у Grammar оставляем текстом, как там же. */
+#app .section-card:not([data-skill='LU']) .iicon {
+  font-size: 0;
+}
+#app .section-card:not([data-skill='LU']) .iicon::before {
+  content: '';
+  width: 28px;
+  height: 28px;
+  background: currentColor;
+  -webkit-mask: var(--ico) center / contain no-repeat;
+  mask: var(--ico) center / contain no-repeat;
+}
+#app .section-card[data-skill='R'] { --ico: url(skin/ico/menu_book.svg); }
+#app .section-card[data-skill='L'] { --ico: url(skin/ico/headphones.svg); }
+#app .section-card[data-skill='S'] { --ico: url(skin/ico/mic.svg); }
+#app .section-card h3 {
+  grid-area: title;
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+  color: var(--jts-ink);
+}
+#app .section-card p {
+  grid-area: desc;
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .section-card .card-bottom {
+  display: contents;
+}
+#app .section-card .state-label {
+  grid-area: state;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--jts-gray);
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .section-card .card-bottom > span:last-child {
+  grid-area: arrow;
+  width: 24px;
+  height: 24px;
+  font-size: 0;
+  background: var(--jts-mut);
+  -webkit-mask: url(skin/ico/arrow_forward.svg) center / contain no-repeat;
+  mask: url(skin/ico/arrow_forward.svg) center / contain no-repeat;
+}
+#app .section-card:has(.state-label.done) {
+  border-color: var(--jts-ok);
+}
+#app .section-card:has(.state-label.done) .iicon {
+  background: var(--jts-ok-bg);
+  color: var(--jts-ok);
+}
+#app .section-card .state-label.done {
+  background: var(--jts-ok-bg);
+  color: var(--jts-ok);
+}
+#app .section-card .state-label.done::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/check_circle.svg) center / contain no-repeat;
+  mask: url(skin/ico/check_circle.svg) center / contain no-repeat;
+}
+/* Под карточками: «Проверить звук» обводкой слева, «Изменить стартовый ответ» и «Перейти к Speaking» справа. */
+#app .section-area > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+#app .section-area .section-grid {
+  flex: 1 1 100%;
+}
+#app .section-info {
+  display: contents;
+}
+#app .section-info > span {
+  display: none;
+}
+#app #soundAgain {
+  order: 1;
+  margin: 12px auto 0 0;
+}
+#app #soundAgain::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+  mask: url(skin/ico/volume_up.svg) center / contain no-repeat;
+}
+#app .self-edit {
+  order: 2;
+  height: 48px;
+  margin: 12px 0 0;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  text-decoration: none;
+}
+#app #proceedSpeaking {
+  order: 3;
+  margin: 12px 0 0;
+}
+#app .section-aside {
+  display: none;
+}
+
+/* ---------- Вопрос: прогресс над карточкой 720, кнопки строкой под ней ---------- */
+#app .test-layout {
+  display: block;
+  max-width: 720px;
+  margin: 70px auto 0;
+}
+#app .test-side {
+  display: none;
+}
+#app .test-header {
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .test-header,
+#app .test-head-left {
+  width: 100%;
+  max-width: none;
+}
+#app .test-head-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* У автора .track — flex: 1 (полоса в строке); в нашей колонке это схлопывало её в ноль. */
+#app .test-head-left .track {
+  display: block;
+  flex: none;
+  margin: 0;
+}
+#app .test-caption {
+  display: block;
+  width: 100%;
+}
+#app .test-caption .circle {
+  display: none;
+}
+#app .test-caption > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+#app .test-caption .tiny {
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#app .test-head-left .track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--jts-lav3);
+}
+#app .test-head-left .track > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--jts-ac);
+}
+#app .question-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+  padding: 40px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+#app .question-brief {
+  margin: 0;
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+#app .question-text {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+#app .options,
+#app .reading-answers,
+#app .listening-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+#app .answer-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 64px;
+  height: auto;
+  padding: 12px 20px;
+  border: 2px solid var(--jts-line);
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+#app .answer-option > span:nth-child(2) {
+  flex: 1;
+}
+#app .answer-option .letter {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--jts-gray);
+  color: var(--jts-sec);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+}
+#app .answer-option.selected {
+  border-color: var(--jts-ac);
+  background: var(--jts-lav);
+  font-weight: 800;
+}
+#app .answer-option.selected .letter {
+  background: var(--jts-ac);
+  color: #ffffff;
+}
+#app .answer-option .check {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  font-size: 0;
+  background: var(--jts-ac);
+  -webkit-mask: url(skin/ico/check_circle.svg) center / contain no-repeat;
+  mask: url(skin/ico/check_circle.svg) center / contain no-repeat;
+}
+#app .answer-option:disabled {
+  opacity: 1;
+  cursor: default;
+}
+#app .field,
+#app #wordAnswer {
+  width: 100%;
+  height: 56px;
+  margin: 0;
+  padding: 0 16px;
+  border: 2px solid var(--jts-ac);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--jts-ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  box-shadow: none;
+}
+#app #wordAnswer::placeholder {
+  color: var(--jts-mut);
+  font-weight: 500;
+}
+#app #wordAnswer:focus {
+  outline: none;
+}
+/* «Используй слово NOT»: слово акцентной меткой. Трансформация — исходная фраза, метка и предложение с пропуском. */
+#app .keyword-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .keyword-note b {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+#app .transformation {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--jts-ink);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 800;
+}
+#app .question-card:has(.transformation) .question-text {
+  order: 0;
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+#app .question-card .message {
+  margin: 0;
+  color: var(--jts-ok);
+  font-size: 14px;
+  font-weight: 600;
+}
+#app .question-buttons,
+#app .reading-actions,
+#app .listening-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 0;
+}
+#app .question-buttons #previous {
+  margin-right: auto;
+}
+#app .question-skip,
+#app .reading-unknown {
+  height: 48px;
+  min-height: 0;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: none;
+}
+#app .question-skip:disabled {
+  opacity: 0.5;
+}
+#app .jts-hint {
+  margin: 24px 0 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ---------- Reading и Listening: две колонки по 640 — текст или плеер слева, вопросы справа ---------- */
+#app .reading-screen,
+#app .listen-screen {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+#app .reading-screen .test-header,
+#app .listen-screen .test-header {
+  margin-bottom: 24px;
+}
+#app .listen-screen .test-head-left .track {
+  display: block;
+}
+#app .reading-workspace,
+#app .listening-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 40px;
+  margin: 0;
+}
+#app .reading-passage-card,
+#app .audio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 32px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+#app .reading-passage-card .eyebrow {
+  padding: 0;
+  background: none;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+#app .reading-passage {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 28px;
+  font-weight: 500;
+  white-space: pre-line;
+}
+#app .reading-help,
+#app .audio-note {
+  margin: 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+#app .reading-mascot,
+#app .listen-mascot {
+  display: none;
+}
+#app .reading-questions-card,
+#app .listening-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .reading-intro,
+#app .listening-questions > .question-brief {
+  display: none;
+}
+#app .reading-question,
+#app .listening-question {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+#app .reading-q-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+#app .reading-count {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 800;
+}
+#app .reading-q-heading h3 {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .reading-answers,
+#app .listening-options {
+  gap: 8px;
+}
+#app .reading-question .answer-option,
+#app .listening-question .answer-option {
+  min-height: 56px;
+  padding: 12px 16px;
+  gap: 12px;
+  border-radius: 16px;
+}
+#app .reading-question .answer-option .letter,
+#app .listening-question .answer-option .letter {
+  width: 28px;
+  height: 28px;
+}
+#app .listening-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+#app .listening-question .answer-option {
+  padding: 12px;
+}
+#app .reading-unknown {
+  align-self: flex-start;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+#app .reading-unknown.marked {
+  background: var(--jts-ac);
+  color: #ffffff;
+}
+#app .reading-questions-card .message {
+  margin: 0;
+  color: var(--jts-ok);
+  font-size: 14px;
+  font-weight: 600;
+}
+#app .reading-actions,
+#app .listening-actions {
+  justify-content: flex-end;
+}
+#app .reading-actions #previousReading,
+#app .listening-actions .ghostbtn:first-child {
+  margin-right: auto;
+}
+
+/* Плеер записи: чип «Запись 1», круглая кнопка 72, подпись, дорожка — волной (маска полос, заливка = прогресс). */
+#app .audio-panel .eyebrow {
+  align-self: flex-start;
+  padding: 8px 12px;
+}
+#app .audio-panel .eyebrow::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(skin/ico/headphones.svg) center / contain no-repeat;
+  mask: url(skin/ico/headphones.svg) center / contain no-repeat;
+}
+#app .audio-panel h1 {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+#app .audio-panel > p:not(.audio-note) {
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .audio-control {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  grid-template-areas:
+    'play label speed'
+    'wave wave wave';
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .audio-control-text {
+  display: contents;
+}
+#app .audio-play {
+  grid-area: play;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 0;
+  box-shadow: none;
+}
+#app .audio-play::before {
+  content: '';
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  -webkit-mask: url(skin/ico/play_arrow.svg) center / contain no-repeat;
+  mask: url(skin/ico/play_arrow.svg) center / contain no-repeat;
+}
+#app .audio-play.playing::before,
+#app .audio-play[aria-pressed='true']::before {
+  -webkit-mask-image: url(skin/ico/pause.svg);
+  mask-image: url(skin/ico/pause.svg);
+}
+#app .audio-play:disabled {
+  background: var(--jts-ac-dis);
+}
+#app #audioPlayLabel {
+  grid-area: label;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .audio-speed {
+  grid-area: speed;
+  color: var(--jts-sec);
+  font-size: 12px;
+  font-weight: 600;
+}
+#app .audio-track {
+  grid-area: wave;
+  position: relative;
+  width: 100%;
+  height: 56px;
+  border-radius: 0;
+  background: var(--jts-lav3);
+  -webkit-mask: url(skin/wave.svg) left center / auto 56px repeat-x;
+  mask: url(skin/wave.svg) left center / auto 56px repeat-x;
+  overflow: hidden;
+}
+#app #audioProgress {
+  height: 100%;
+  border-radius: 0;
+  background: var(--jts-ac);
+}
+#app .audio-trouble {
+  color: var(--jts-sec);
+  font-size: 12px;
+}
+#app .audio-trouble summary {
+  color: var(--jts-ac);
+  font-weight: 700;
+  cursor: pointer;
+}
+#app .technical-skip,
+#app #retryAudio {
+  height: 40px;
+  padding: 0 16px;
+  border: 2px solid var(--jts-ac);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--jts-ac);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ---------- Переход к Speaking: текст слева, Speaking Buddy на диске 480 справа ---------- */
+#app .speaking-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) 480px;
+  justify-content: center;
+  align-items: center;
+  gap: 80px;
+  max-width: 1200px;
+  margin: 76px auto 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .speaking-illustration {
+  order: 2;
+  position: relative;
+  width: 480px;
+  height: 480px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--jts-lav) url(skin/buddy-stage.webp) center / 428px no-repeat;
+  box-shadow: none;
+}
+#app .speaking-illustration > *,
+#app .speaking-illustration::before,
+#app .speaking-illustration::after {
+  display: none;
+}
+#app .speaking-panel {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+#app .speaking-panel .eyebrow {
+  padding: 8px 12px;
+}
+#app .speaking-panel h2 {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+#app .speaking-panel > p {
+  margin: 0;
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 28px;
+  font-weight: 500;
+}
+#app .checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+#app .checklist p {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+#app .checklist p::before {
+  content: '';
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--jts-ok-bg) url(skin/ico/check-ok.svg) center / 16px no-repeat;
+}
+#app .speaking-wait {
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+  color: var(--jts-sec);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+/* ---------- Итог ---------- */
+#app .personal-results {
+  max-width: 1112px;
+  margin: 0 auto;
+}
+#app .pr-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 400px;
+  margin: 0 0 24px;
+  padding: 56px;
+  border: 0;
+  border-radius: 40px;
+  background: linear-gradient(135deg, #9a55ff 0%, #8a3ff8 100%);
+  color: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+}
+#app .pr-hero > div:first-child {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 560px;
+}
+#app .pr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#app .pr-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+#app .pr-level {
+  margin: 0;
+  color: #ffffff;
+  font-size: 64px;
+  line-height: 72px;
+  font-weight: 800;
+  letter-spacing: 0;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+#app .pr-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .pr-hero .pr-note {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  line-height: 16px;
+}
+/* Декстер итога — справа, уходит под нижний край баннера (макет: 435×518 на круге). Размеры маскотов автор задаёт
+   с !important по data-pose — перебиваем тем же оружием, иначе остаётся его фигурка 173 px. */
+#app .pr-mascot {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  bottom: 0;
+  width: 420px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+#app .pr-mascot::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-50%);
+}
+#app .pr-mascot .mascot {
+  position: absolute;
+  left: 0;
+  bottom: -40px;
+  width: 420px !important;
+  height: auto;
+  max-height: none !important;
+  max-width: none;
+  object-fit: contain;
+  transform: none !important;
+  filter: none !important;
+  animation: none;
+}
+#app .pr-skills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0 0 24px;
+}
+#app .pr-skill {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 24px;
+  border: 1px solid var(--jts-line);
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: none;
+}
+#app .pr-skill h3 {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .pr-skill strong {
+  color: var(--jts-sec);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .pr-skill p {
+  margin: 0;
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+}
+#app .pr-evidence {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 0 0 24px;
+}
+#app .pr-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 32px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+#app .pr-evidence .pr-panel {
+  margin: 0;
+}
+#app .pr-kicker {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: var(--jts-lav);
+  color: var(--jts-ac);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+#app .pr-panel h2 {
+  margin: -56px 0 0 56px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: var(--jts-ink);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+#app .pr-panel p,
+#app .pr-muted {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#app .pr-panel .pr-note {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--jts-lav2);
+  color: var(--jts-ac);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+#app .pr-goal-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: var(--jts-lav2);
+  color: var(--jts-ink);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+}
+#app .pr-goal-main::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  background: var(--jts-ac);
+  -webkit-mask: url(skin/ico/my_location.svg) center / contain no-repeat;
+  mask: url(skin/ico/my_location.svg) center / contain no-repeat;
+}
+#app .pr-text-button {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  color: var(--jts-ac);
+  font-size: 14px;
+  font-weight: 700;
+}
+#app .pr-comparison {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  align-items: center;
+  gap: 16px;
+}
+#app .pr-comparison article {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 24px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--jts-gray);
+}
+#app .pr-comparison article.pr-target {
+  background: var(--jts-lav);
+}
+#app .pr-comparison article span {
+  color: var(--jts-mut);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+#app .pr-comparison article.pr-target span {
+  color: var(--jts-ac);
+}
+#app .pr-comparison article strong {
+  color: var(--jts-ink);
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 800;
+}
+#app .pr-comparison article.pr-target strong {
+  color: var(--jts-ac);
+}
+#app .pr-arrow {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--jts-line);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--jts-ac);
+  font-size: 18px;
+}
+#app .pr-subtitle {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .pr-source {
+  color: var(--jts-mut);
+  font-size: 12px;
+}
+#app .pr-source a {
+  color: var(--jts-ac);
+  font-weight: 700;
+}
+#app .pr-priorities {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#app .pr-priorities article {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  column-gap: 16px;
+  row-gap: 4px;
+  padding: 20px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--jts-gray);
+}
+#app .pr-number {
+  grid-row: 1 / span 3;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--jts-ac);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+#app .pr-priorities h3 {
+  margin: 0;
+  color: var(--jts-ink);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+}
+#app .pr-priorities p {
+  font-size: 14px;
+  line-height: 20px;
+}
+#app .pr-priorities small {
+  color: var(--jts-mut);
+  font-size: 12px;
+}
+#app .pr-first {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 32px;
+  border: 0;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: var(--jts-shadow);
+}
+
+/* ---------- Узкие экраны. Макет только десктопный (1440): ниже 1180 двухколоночные экраны встают в колонку,
+   ниже 760 — телефонная раскладка (поля 16, кегли меньше, разделы теста — прокручиваемой строкой под шапкой). ---------- */
+@media (max-width: 1180px) {
+  #app .welcome,
+  #app .goals-shell,
+  #app .speaking-screen {
+    grid-template-columns: minmax(0, 720px);
+    justify-content: center;
+    gap: 32px;
+  }
+  #app .mascot-visual {
+    order: -1;
+    justify-self: center;
+    width: 360px;
+    height: 360px;
+  }
+  #app .mascot-visual::before {
+    left: 30px;
+    top: 30px;
+    width: 300px;
+    height: 300px;
+  }
+  #app .mascot-visual::after {
+    left: 10px;
+    top: 10px;
+    width: 340px;
+    height: 340px;
+  }
+  #app .mascot-visual .hero-figure {
+    left: 30px;
+    top: -30px;
+    width: 300px;
+    height: 400px;
+  }
+  #app .jts-goals-plan {
+    position: static;
+    margin-top: 0;
+  }
+  #app .speaking-illustration {
+    order: -1;
+    justify-self: center;
+    width: 320px;
+    height: 320px;
+    background-size: 290px;
+  }
+  #app .pr-hero {
+    min-height: 0;
+    padding-right: 320px;
+  }
+  #app .pr-mascot {
+    width: 300px;
+  }
+  #app .pr-mascot .mascot {
+    width: 300px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  #app .topbar {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  #app .jts-back {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+  }
+  #app .wordmark {
+    width: 112px;
+    height: 22px;
+  }
+  #app .top-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  #app .header-sections,
+  #app .header-audio {
+    height: 30px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  #app #newStudent {
+    display: none;
+  }
+  #app .language {
+    height: 36px;
+    padding: 6px 32px 6px 34px;
+    font-size: 14px;
+    background-position: 12px center, right 12px center, 0 0;
+  }
+  #app .test-tabs {
+    position: static;
+    transform: none;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #app .main-content {
+    padding: 16px 16px 32px;
+    min-height: 0;
+  }
+  #app .welcome {
+    min-height: 0;
+    gap: 16px;
+    padding: 0;
+  }
+  #app .welcome .copy {
+    gap: 16px;
+  }
+  #app .welcome h1 {
+    font-size: 34px;
+    line-height: 42px;
+  }
+  #app .welcome .body-muted {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  #app .welcome #begin {
+    width: 100%;
+  }
+  #app .mascot-visual {
+    width: 260px;
+    height: 260px;
+  }
+  #app .mascot-visual::before {
+    left: 20px;
+    top: 20px;
+    width: 220px;
+    height: 220px;
+  }
+  #app .mascot-visual::after {
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 260px;
+  }
+  #app .mascot-visual .hero-figure {
+    left: 30px;
+    top: -24px;
+    width: 200px;
+    height: 266px;
+  }
+  #app .self-shell,
+  #app .test-layout,
+  #app .section-header {
+    margin-top: 8px;
+  }
+  #app .self-main h1,
+  #app .go-heading h1,
+  #app .section-header h1,
+  #app .sound-panel h1,
+  #app .speaking-panel h2 {
+    font-size: 28px;
+    line-height: 36px;
+  }
+  #app .self-option {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 14px;
+  }
+  #app .go-topline,
+  #app .go-progress {
+    position: static;
+    transform: none;
+    margin: 0 auto;
+  }
+  #app .go-topline {
+    order: 1;
+    margin: 8px auto 20px;
+  }
+  #app .go-progress {
+    order: 0;
+    width: 280px;
+    max-width: 100%;
+  }
+  #app .jts-goals-main {
+    display: flex;
+  }
+  #app .go-heading {
+    order: 2;
+    margin-bottom: 20px;
+  }
+  #app .jts-goals-main > :not(.go-topline):not(.go-progress):not(.go-heading) {
+    order: 3;
+  }
+  #app .go-card,
+  #app .question-card,
+  #app .sound-step,
+  #app .pr-panel,
+  #app .pr-first {
+    padding: 20px;
+    border-radius: 24px;
+  }
+  #app .go-category-grid,
+  #app .go-choice-grid.is-single,
+  #app .section-grid,
+  #app .reading-workspace,
+  #app .listening-workspace,
+  #app .listening-options,
+  #app .pr-evidence,
+  #app .pr-comparison {
+    grid-template-columns: 1fr;
+  }
+  #app .go-category {
+    min-height: 64px;
+    padding: 12px 14px;
+  }
+  #app .go-actions,
+  #app .question-buttons {
+    flex-wrap: wrap;
+  }
+  #app .go-actions #goNext,
+  #app .question-buttons #nextButton {
+    flex: 1 1 auto;
+  }
+  #app .sound-step {
+    flex-direction: column;
+    margin-top: 8px;
+  }
+  #app .sound-art {
+    flex: none;
+    min-height: 220px;
+  }
+  #app .sound-art .jts-sound-art {
+    left: 50%;
+    top: 0;
+    width: 230px;
+    height: 226px;
+    transform: translateX(-50%);
+  }
+  #app .sound-actions {
+    flex-wrap: wrap;
+  }
+  #app .question-text,
+  #app .transformation {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  #app .answer-option {
+    min-height: 56px;
+    padding: 10px 14px;
+  }
+  #app .speaking-screen {
+    margin-top: 8px;
+  }
+  #app .speaking-illustration {
+    width: 240px;
+    height: 240px;
+    background-size: 210px;
+  }
+  #app .pr-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px 24px 220px;
+    border-radius: 28px;
+  }
+  #app .pr-level {
+    font-size: 44px;
+    line-height: 52px;
+  }
+  #app .pr-mascot {
+    left: 50%;
+    right: auto;
+    top: auto;
+    width: 240px;
+    height: 220px;
+    transform: translateX(-50%);
+  }
+  #app .pr-mascot .mascot {
+    width: 240px !important;
+    bottom: -30px;
+  }
+  #app .pr-skills {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  #app .pr-panel h2 {
+    font-size: 18px;
+    line-height: 24px;
+  }
+}
+
+/* Наклейки автора («YOU GOT THIS!», «WELL DONE!», «STEP BY STEP») — в макете их нет ни на одном экране. */
+#app .decor-tag,
+#app .self-decor,
+#app .star-note {
+  display: none;
+}

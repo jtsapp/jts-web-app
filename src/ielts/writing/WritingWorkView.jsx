@@ -9,6 +9,7 @@ import { formatDate } from '../format.js'
 import { formatClock } from '../reading/run.js'
 import { CheckCircleIcon, EditIcon, InfoIcon, TimerIcon } from '../icons.jsx'
 import WritingTaskBody from './WritingTaskBody.jsx'
+import { WritingDevelop, WritingImprove } from './WritingCoach.jsx'
 import { CRITERIA, countWords, kindKey, selfCheckFor } from './writing.js'
 import { categoryLabel } from './WritingListView.jsx'
 import { useI18n } from '../../i18n.jsx'
@@ -233,6 +234,10 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
         </section>
       )}
 
+      {/* «наставник»: как развить это эссе и как улучшить его по предложениям или целиком (у старых работ — нет) */}
+      {status === 'done' && <WritingDevelop tips={det?.developmentTips} />}
+      {status === 'done' && <WritingImprove sentences={det?.sentences} essay={det?.improvedEssay} paragraphs={paras} kind={kind} />}
+
       {status === 'done' && (r.errors?.length > 0 || r.rewrites?.length > 0) && (
         <section className="ih-card ih-wfix">
           <h3>{t('ieltsWriting.errorsTitle')}</h3>
@@ -243,8 +248,9 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
               <p className="ih-muted">{e.issue}</p>
             </div>
           ))}
-          {(r.rewrites || []).length > 0 && <h3>{t('ieltsWriting.rewritesTitle')}</h3>}
-          {(r.rewrites || []).map((w, i) => (
+          {!det?.sentences?.length && (r.rewrites || []).length > 0 && <h3>{t('ieltsWriting.rewritesTitle')}</h3>}
+          {/* по предложениям (WritingImprove) уже переписан весь текст — 1–4 старых переписывания рядом его бы дублировали */}
+          {!det?.sentences?.length && (r.rewrites || []).map((w, i) => (
             <div key={`w${i}`} className="ih-wfix__row" lang="en">
               <p className="ih-muted">{w.original}</p>
               <p><b>{w.improved}</b></p>

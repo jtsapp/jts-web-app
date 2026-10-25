@@ -44,7 +44,13 @@ const PRELUDE =
   '<script>/* jts host prelude (scripts/build-placement-v16.js) */' +
   "(function(){try{var q=new URLSearchParams(location.search);var l=q.get('lang');" +
   "window.JTS_HOST={lang:['ru','kk','en'].indexOf(l)>=0?l:null,ns:(q.get('ns')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,64)}" +
-  '}catch(e){window.JTS_HOST={lang:null,ns:\'\'}}})();</script>'
+  '}catch(e){window.JTS_HOST={lang:null,ns:\'\'}}' +
+  // Картинки макета по позам экрана (патч skin-images): остальные позы рисует автор.
+  "window.JTS_SKIN_IMG={welcome:'skin/intro.webp',result:'skin/result.webp'};})();</script>"
+
+// Скин макета — после стилей автора, чтобы перекрывать их без !important. Отдельным файлом: правится руками, а
+// браузер кэширует его отдельно от страницы.
+const SKIN_LINK = '<link rel="stylesheet" href="skin.css"/>'
 
 // Казахский интерфейс — на Inter, как во всём приложении (src/kk-font.css). Правила приложения в iframe не доходят: у
 // теста свой документ и своя вшитая гарнитура «JTS Manrope». Тест сам ставит <html lang="kk"> при казахском (chrome()
@@ -97,7 +103,130 @@ const PATCHES = [
     // speakingFeedback.js): у автора панели отзыва нет, а текст модели надо экранировать.
     'speaking-feedback-result',
   ],
+  ...skinPatches(),
 ]
+
+// Скин по макету «Регистрация → 2 · Цели и маршрут, 3 · Тест уровня» (Figma, 21.10.2026). Вид задаёт skin.css (рядом
+// со страницей, пишется руками — сборка его только подключает), а патчи ниже — то, чего стилями не сделать: текст
+// заголовка приветствия, кнопка «назад» в шапке, картинки макета вместо маскотов автора, панель «Твои цели» у анкеты
+// и строка кнопок вопроса под карточкой. Логику автора (подсчёт, адаптив, итог) патчи не трогают.
+function skinPatches() {
+  // Панель «Твои цели» справа от анкеты (у автора её нет). Функция встаёт внутрь installStudentGoals, рядом с
+  // renderGoals, — там видны помощники анкеты (state, displayGoal, prefLabel, answerLabel). repaint автора
+  // перерисовывает анкету целиком на каждый клик, поэтому панель живая без своих слушателей.
+  const goalsPanel =
+    'function jtsGoalsPanel(){try{const {g,d}=state();' +
+    "const T9={ru:['Твои цели','Главная цель','Роль сейчас','Мотивация','Формат занятий','Время в день','Обратная связь','Пока не выбрано','из','Уровень определит сам тест']," +
+    "kk:['Сенің мақсаттарың','Негізгі мақсат','Қазіргі рөлің','Мотивация','Сабақ форматы','Күніне уақыт','Кері байланыс','Әлі таңдалмаған','/','Деңгейді тесттің өзі анықтайды']," +
+    "en:['Your goals','Main goal','Current role','Motivation','Learning format','Time per day','Feedback','Not chosen yet','of','The test itself will set your level']};" +
+    'const L=T9[lang]||T9.ru;const has=v=>Array.isArray(v)?v.length>0:!!v;' +
+    'const role=(d.followUpDrafts||{}).career_role||(g.followUpAnswers||{}).career_role;' +
+    "const pref=k=>has(g[k])?prefLabel(k):'';" +
+    "const items=[['goal',g.primaryGoal?displayGoal(g.primaryGoal):''],['role',role&&has(role.value)?answerLabel('career_role',role):'']," +
+    "['motivation',pref('motivationFactors')],['format',pref('preferredActivities')],['time',pref('studyAvailability')],['feedback',pref('feedbackPreference')]];" +
+    'const n=items.filter(i=>i[1]).length;' +
+    'return `<aside class="jts-goals-plan" aria-label="${esc(L[0])}"><div class="jts-gp-head"><span class="jts-gp-plate jts-ico-my_location"></span>' +
+    '<b>${esc(L[0])}</b><span class="jts-gp-count">${n} ${esc(L[8])} 6</span></div><div class="jts-gp-track"><i style="width:${Math.max(n,0.5)/6*100}%"></i></div>' +
+    "${items.map(([k,v],i)=>`<div class=\"jts-gp-item${v?' is-set':''}\"><span class=\"jts-gp-plate jts-ico-${k}\"></span>" +
+    "<span class=\"jts-gp-text\"><small>${esc(L[i+1])}</small><b>${esc(v||L[7])}</b></span></div>`).join('')}" +
+    '<div class="jts-gp-note"><span class="jts-ico-info"></span><span>${esc(L[9])}</span></div></aside>`' +
+    "}catch(e){return ''}}"
+  return [
+    [
+      // Язык — названием, как в макете («Русский ⌄»), а не кодом.
+      '<option value="ru" ${lang===\'ru\'?\'selected\':\'\'}>RU</option><option value="en" ${lang===\'en\'?\'selected\':\'\'}>EN</option><option value="kk" ${lang===\'kk\'?\'selected\':\'\'}>KZ</option>',
+      '<option value="ru" ${lang===\'ru\'?\'selected\':\'\'}>Русский</option><option value="en" ${lang===\'en\'?\'selected\':\'\'}>English</option><option value="kk" ${lang===\'kk\'?\'selected\':\'\'}>Қазақша</option>',
+      'skin-language-names',
+    ],
+    [
+      // Круглая «назад» слева от логотипа: выход из теста в приложение (JTSHostExit ставит bridge.js). Своя полоса
+      // «← На главную» над iframe ушла — у макета одна шапка.
+      '<header class="topbar"><a href="#" class="wordmark" data-home aria-label="JTS">just to study<span>.</span></a>',
+      '<header class="topbar"><div class="jts-brand"><button type="button" class="jts-back" data-jts-back aria-label="${lang===\'ru\'?\'Назад\':lang===\'kk\'?\'Артқа\':\'Back\'}"></button><a href="#" class="wordmark" data-home aria-label="JTS">just to study<span>.</span></a></div>',
+      'skin-back-button',
+    ],
+    [
+      // Нота «♫» в чипе — значок динамика макета рисует skin.css.
+      "${lang==='ru'?'♫ Проверить звук':lang==='kk'?'♫ Дыбысты тексеру':'♫ Sound check'}",
+      "${lang==='ru'?'Проверить звук':lang==='kk'?'Дыбысты тексеру':'Sound check'}",
+      'skin-sound-chip',
+    ],
+    [
+      "document.querySelector('#language').onchange=e=>{stopCurrentMedia();lang=e.target.value;save();render()};",
+      "document.querySelector('#language').onchange=e=>{stopCurrentMedia();lang=e.target.value;save();render()};" +
+        "document.querySelectorAll('[data-jts-back]').forEach(el=>el.onclick=()=>{stopCurrentMedia();if(window.JTSHostExit)window.JTSHostExit();else{app.screen='welcome';save();render()}});",
+      'skin-back-bind',
+    ],
+    [
+      "<h1>${t('welcome')}<br><span>JTS Placement Test</span></h1>",
+      "<h1>${lang==='ru'?'Давайте определим<br>ваш уровень':lang==='kk'?'Деңгейіңізді<br>анықтайық':'Let’s find<br>your level'}</h1>",
+      'skin-welcome-title',
+    ],
+    [
+      // Картинки макета (маскот с линейкой, с микрофоном, Декстер итога) — по позе экрана, остальные позы — авторские.
+      'src="${visual[pose]||POSES[pose]||POSES.welcome}"',
+      'src="${(window.JTS_SKIN_IMG||{})[pose]||visual[pose]||POSES[pose]||POSES.welcome}"',
+      'skin-images',
+    ],
+    [
+      // Поздняя обёртка автора («approved existing assets») подменяет маскота приветствия мимо img() — и её туда же.
+      'if(poseName()===\'welcome\')return `<img class="mascot ${cls||\'\'}" data-pose="welcome" src="${PHASE1_STANDING_MASCOT}"',
+      'if(poseName()===\'welcome\')return `<img class="mascot ${cls||\'\'}" data-pose="welcome" src="${(window.JTS_SKIN_IMG||{}).welcome||PHASE1_STANDING_MASCOT}"',
+      'skin-images-welcome',
+    ],
+    // Глифы автора в чипах («◖», «▤», «◎», «✦») — у макета на их месте значки (рисует skin.css) или ничего.
+    ['<span class="eyebrow">◖ ${t(\'soundTitle\')}</span>', '<span class="eyebrow jts-chip-sound">${t(\'soundTitle\')}</span>', 'skin-chip-sound'],
+    ['<span class="eyebrow">▤ ${esc(st(\'readingTitle\'))}</span>', '<span class="eyebrow">${esc(st(\'readingTitle\'))}</span>', 'skin-chip-reading'],
+    ['<span class="eyebrow">◎ ${t(\'speaking\')}</span>', '<span class="eyebrow jts-chip-mic">${t(\'speaking\')}</span>', 'skin-chip-speaking'],
+    ['<span class="eyebrow">✦ ${esc(st(\'eyebrow\'))}</span>', '<span class="eyebrow">${esc(st(\'eyebrow\'))}</span>', 'skin-chip-self'],
+    [
+      '<div class="sound-art" aria-hidden="true">',
+      '<div class="sound-art" aria-hidden="true"><img class="jts-sound-art" src="skin/sound.webp" alt="" draggable="false">',
+      'skin-sound-art',
+    ],
+    [
+      // «Вопрос 3 из 14» над карточкой, как в макете (у автора — «Вопрос 3 · 2 завершено»).
+      '<div class="tiny">${t(\'q\')} ${questionNum} · ${totalAnswered(skill)} ${t(\'completed\').toLowerCase()}</div>',
+      '<div class="tiny">${t(\'q\')} ${questionNum} ${lang===\'en\'?\'of\':lang===\'kk\'?\'/\':\'из\'} ${skillCountLimit(skill)}</div>',
+      'skin-question-count',
+    ],
+    [
+      // Кнопки вопроса — под карточкой одной строкой «Назад · Не знаю · Далее» и подсказка под ними (макет). Обработчики
+      // автор вешает по id — они переезжают вместе с кнопками.
+      '<div class="question-bottom"><button class="question-skip" id="skip" ${readonly?\'disabled\':\'\'}>${t(\'dontKnow\')}</button><span class="tiny">${t(\'q\')} ${questionNum}</span></div><div class="question-buttons"><button class="ghostbtn" id="previous">← ${t(\'prev\')}</button><button class="gradbtn" id="nextButton" ${!readonly&&String(draft).trim()===\'\'?\'disabled\':\'\'}>${t(\'next\')} →</button></div></article></div>',
+      '</article><div class="question-buttons"><button class="ghostbtn" id="previous">← ${t(\'prev\')}</button><button class="question-skip" id="skip" ${readonly?\'disabled\':\'\'}>${t(\'dontKnow\')}</button><button class="gradbtn" id="nextButton" ${!readonly&&String(draft).trim()===\'\'?\'disabled\':\'\'}>${t(\'next\')} →</button></div><p class="jts-hint">${t(\'hint\')}</p></div>',
+      'skin-question-buttons',
+    ],
+    [
+      // Одиночный выбор у макета — строки-радио в две колонки, множественный — пилюли: метка решает, как рисовать.
+      '<div class="go-choice-grid" role="group">',
+      '<div class="go-choice-grid${single?\' is-single\':\'\'}" role="group">',
+      'skin-goals-single',
+    ],
+    [
+      // Группы целей у макета раскрыты все (у автора — только первая).
+      '<details class="go-category-group" ${index===0||g.selectedCategories.length===1?\'open\':\'\'}>',
+      '<details class="go-category-group" open>',
+      'skin-goals-groups-open',
+    ],
+    [
+      '<span>${esc(u(\'step\'))} ${d.step+1} / 6</span>',
+      '<span>${esc(u(\'step\'))} ${d.step+1} ${lang===\'en\'?\'of\':lang===\'kk\'?\'/\':\'из\'} 6</span>',
+      'skin-goals-step',
+    ],
+    ['function renderGoals(focusHeading=false){', goalsPanel + 'function renderGoals(focusHeading=false){', 'skin-goals-panel-fn'],
+    [
+      'chrome(`<section class="goals-shell"><div class="go-topline">',
+      'chrome(`<section class="goals-shell"><div class="jts-goals-main"><div class="go-topline">',
+      'skin-goals-columns',
+    ],
+    [
+      '<small>${esc(u(\'saveNote\'))}</small></footer></section>`,u(\'goalsLabel\'));',
+      '<small>${esc(u(\'saveNote\'))}</small></footer></div>${jtsGoalsPanel()}</section>`,u(\'goalsLabel\'));',
+      'skin-goals-panel',
+    ],
+  ]
+}
 
 function count(haystack, needle) {
   let n = 0
@@ -128,7 +257,7 @@ function injectPrelude(html) {
 function injectKkFont(html) {
   const at = html.indexOf('</head>')
   if (at < 0) throw new Error('[build-placement-v16] в странице нет </head>')
-  return html.slice(0, at) + KK_FONT + html.slice(at)
+  return html.slice(0, at) + SKIN_LINK + KK_FONT + html.slice(at)
 }
 
 /**

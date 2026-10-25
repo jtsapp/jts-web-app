@@ -850,6 +850,11 @@ class LearnerProfile:
     # звучал бы с казахским акцентом. Из metadata не приходит — ставит
     # buddy_voice_profile.
     tts_lang: str = ""
+    # Провайдер синтеза, когда его задаёт стенд, а не тьютор, чей голос взят:
+    # «Спарк тест» с пакета v3.5 говорит голосом Gemini Fenrir, а живой Спарк
+    # остаётся на Soniox. Пусто → по тьютору (_tts_provider_for). Из metadata не
+    # приходит — ставит buddy_voice_profile.
+    tts_provider: str = ""
     # Тумблер «только английский» с дашборда (общий для всех тьюторов). Перебивает
     # и explanation_lang, и зеркалирование языка ученика, и смешанный режим A1/A2:
     # весь разговор идёт по-английски. Приходит в metadata как englishOnly.
@@ -2378,6 +2383,50 @@ async def _tap_echo(text, echo):
         echo.end_reply()
 
 
+async def _fix_pronunciation(text, lang: str):
+    """Текст реплики с правленым под синтез написанием (_PronunciationStream).
+    Придерживается только до ближайшего пробела — на слово, не на реплику."""
+    stream = _PronunciationStream(lang)
+    async for chunk in text:
+        out = stream.feed(chunk)
+        if out:
+            yield out
+    tail = stream.flush()
+    if tail:
+        yield tail
+
+
+# Конец предложения: знак, кавычка-скобка, пробел. Без пробела точка ещё может
+# оказаться частью «3.5» или «e.g.», а следующий кусок — её продолжением.
+_SENTENCE_END_RE = _re.compile(r"[.!?…]['\"»”’)]*\s")
+_CYRILLIC_RE = _re.compile(r"[А-Яа-яЁё]")
+# Сколько придерживать начало реплики, если конца предложения всё нет.
+STYLE_HEAD_MAX_CHARS = 160
+
+
+async def _split_head(text) -> tuple[str, Any]:
+    """Начало реплики до конца первого предложения — и поток, который отдаст
+    реплику целиком (начало, потом остаток).
+
+    Нужно стилю голоса: он задаётся до открытия потока синтеза и зависит от
+    того, есть ли в реплике русский. Задержки это не добавляет — плагин Google
+    всё равно шлёт текст в Gemini по предложениям."""
+    it = text.__aiter__()
+    head = ""
+    async for chunk in it:
+        head += chunk
+        if _SENTENCE_END_RE.search(head) or len(head) >= STYLE_HEAD_MAX_CHARS:
+            break
+
+    async def _whole():
+        if head:
+            yield head
+        async for chunk in it:
+            yield chunk
+
+    return head, _whole()
+
+
 class TutorAgent(Agent):
     """Agent subclass that exposes log_mistake / log_topic as Gemini tools.
 
@@ -2403,8 +2452,12 @@ class TutorAgent(Agent):
         prefill_tag: bool = False,
         fallback_mood: tuple[str, int] | None = None,
         tag_history: bool = False,
+        voice_style: "VoiceStyle | None" = None,
     ):
         super().__init__(instructions=instructions)
+        # Стиль голоса по тегу эмоции (см. _apply_voice_style). None — синтез
+        # без стиля, как у всех тьюторов до «Спарк теста» на Gemini.
+        self._voice_style = voice_style
         # Эталон фильтра эха (noise_guard.EchoReference) — ставит entrypoint,
         # когда фильтр включён; tts_node кормит его текстом реплик.
         self._echo = None
@@ -2609,6 +2662,9 @@ class TutorAgent(Agent):
                 if out:
                     self._spoke = self._spoke or bool(out.strip())
                     said.append(out)
+                if not published:
+                    published = self._publish_reply_mood(cleaner)
+                if out:
                     yield out
             else:
                 delta = getattr(chunk, "delta", None)
@@ -2619,15 +2675,18 @@ class TutorAgent(Agent):
                     delta.content = cleaner.feed(content)
                     self._spoke = self._spoke or bool(delta.content.strip())
                     said.append(delta.content)
+                if not published:
+                    published = self._publish_reply_mood(cleaner)
                 # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
                 # ниже по потоку ничего не добавит, а delta.extra
                 # (провайдерские данные вроде thought signatures) потребитель
                 # читает и терять его нельзя.
                 yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
-            # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
-            if not published:
-                published = self._publish_reply_mood(cleaner)
+            # реплики: иначе цвет догонял бы голос с задержкой во всю фразу. И
+            # ДО того, как кусок уйдёт дальше: стиль голоса (tts_node) берёт
+            # эмоцию реплики, получив её первый текст, — после yield она могла
+            # быть ещё не решена.
 
         # Короткая реплика без тега целиком лежит в буфере — отдать её.
         tail = cleaner.flush()
@@ -2652,37 +2711,50 @@ class TutorAgent(Agent):
             )
 
     async def tts_node(self, text, model_settings):
-        """Починить произношение до синтеза — и ТОЛЬКО его.
+        """Починить произношение до синтеза и задать голосу стиль реплики.
 
         Именно tts_node, а не llm_node: этот хук стоит НИЖЕ субтитров, поэтому
         подменённое написание слышит синтез, а ученик на экране видит нормальный
         текст. В llm_node (там mood-стриппер) костыль уехал бы и на экран.
 
-        Стрим не ломаем: текст придерживается только до ближайшего пробела, то
-        есть на одно слово, а не на всю реплику.
+        Стрим не ломаем: для произношения текст придерживается только до
+        ближайшего пробела, то есть на одно слово, а не на всю реплику. Стиль
+        голоса (только у стенда с ним, см. _apply_voice_style) придерживает
+        начало до конца первого предложения — поток синтеза открывается после.
 
         Здесь же текст реплики уходит в эталон фильтра эха — до правки
         произношения: эхо Soniox распознаёт обычным написанием.
         """
         text = _tap_echo(text, self._echo)
-        if not self._speech_lang:
-            async for frame in Agent.default.tts_node(self, text, model_settings):
-                yield frame
-            return
-
-        stream = _PronunciationStream(self._speech_lang)
-
-        async def _fixed():
-            async for chunk in text:
-                out = stream.feed(chunk)
-                if out:
-                    yield out
-            tail = stream.flush()
-            if tail:
-                yield tail
-
-        async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
+        if self._speech_lang:
+            text = _fix_pronunciation(text, self._speech_lang)
+        if self._voice_style is not None:
+            head, text = await _split_head(text)
+            self._apply_voice_style(head)
+        async for frame in Agent.default.tts_node(self, text, model_settings):
             yield frame
+
+    def _apply_voice_style(self, head: str) -> None:
+        """Стиль голоса этой реплики: база персоны + строка её тега эмоции
+        (05_App_Settings пакета); реплике, что начинается по-русски, — только
+        база (см. VoiceStyle.prompt).
+
+        Gemini TTS берёт стиль текстом (prompt) с первым куском потока, а плагин
+        копирует настройки, когда default tts_node открывает поток. Поэтому
+        меняем их у TTS сессии прямо перед этим — тег к тому времени уже
+        разобран (llm_node решает эмоцию до того, как отдать текст). Синтез не
+        Gemini (откат секретом, фолбэк без ключа Google) — стиль отдать некому."""
+        try:
+            tts_obj = self.session.tts
+        except Exception:  # noqa: BLE001 — агент не в сессии: стиль не нужен
+            return
+        if not isinstance(tts_obj, _GeminiTTS):
+            return
+        tag = _mood_tag_label(self._shown_mood) if self._shown_mood else "default"
+        russian = bool(_CYRILLIC_RE.search(head))
+        tts_obj.update_options(prompt=self._voice_style.prompt(tag, russian))
+        # Только имя тега и флаг языка — текст реплики это разговор ученика.
+        logger.info("Voice style: tag=%s russian=%s (tutor=%s)", tag, russian, self._tutor or "<none>")
 
     def _mark_uncertain(self, chat_ctx):
         """Копия истории с пометкой сомнительных слов к реплике ученика — или
@@ -3523,6 +3595,13 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 # пакета, сессия — живой Луны (gentle: голос, распознавание, детектор). Замки и
 # канарейки шума по-прежнему по ключу jarvis (buddy_guard_tutor) — это стенд
 # для их обкатки.
+#
+# 22.10.2026 — v3.5, владелец принял как прислано. Казахский только у Айзере
+# (Луна и Спарк — en/ru), Айзере — en/kk без русского. Наша правка про казахский
+# у Декстера больше не нужна: клиент вписал её сам. У Декстера две ступени слов
+# вместо трёх, ребёнку тоже мягкий мат (см. _BUDDY_TIER_BLOCKS). «Спарк тест»
+# получил свой голос — Gemini Fenrir со стилем по тегу (BUDDY_STAND_TTS,
+# BUDDY_VOICE_STYLES).
 BUDDY_VOICE_TUTOR = "bro"
 BUDDY_TEST_PERSONA = "dexter"
 # Ключ тьютора в звонке → (персона пакета, тьютор, чью сессию берёт звонок:
@@ -3536,6 +3615,20 @@ BUDDY_STANDS: dict[str, tuple[str, str]] = {
 BUDDY_LEGACY_SWITCH: dict[str, str] = {
     KZ_DEV_STAND_PERSONA: "KZ_TEST_PROMPT",
     BUDDY_VOICE_TUTOR: "DEXTER_PROMPT",
+}
+# Голос стенда, когда он не совпадает с голосом живого тьютора сессии (ключ →
+# провайдер синтеза; голос — TUTOR_VOICE тьютора сессии, у hype это Fenrir).
+# 22.10.2026 «Спарк тест» перешёл на Gemini TTS (05_App_Settings пакета v3.5):
+# Soniox Спарку достался ради казахского, а новый Спарк казахский не говорит.
+# Живой Спарк остаётся на Soniox. Откат без деплоя — секрет
+# TTS_PROVIDER_SPARKTEST=soniox.
+BUDDY_STAND_TTS: dict[str, str] = {SPARK_TEST_STAND: "gemini"}
+# Стиль голоса по тегу эмоции (ключ стенда → файл пакета). Таблицу пишет клиент,
+# читаем её из файла — один источник правды, как числа уровня в
+# _buddy_level_param. Действует, только если синтез — Gemini: только он берёт
+# стиль текстом (prompt), см. TutorAgent._apply_voice_style.
+BUDDY_VOICE_STYLE_FILES: dict[str, str] = {
+    SPARK_TEST_STAND: "05_App_Settings/Spark_Voice_Fenrir.md",
 }
 _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
@@ -3570,6 +3663,67 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
     _text = _load_buddy_file(f"03_Personas/{_fname}")
     if _text:
         BUDDY_PERSONAS[_pid] = _text
+
+
+@dataclass(frozen=True)
+class VoiceStyle:
+    """Стиль голоса персоны для Gemini TTS: базовая строка на каждую реплику и
+    добавка по тегу эмоции (05_App_Settings пакета)."""
+
+    base: str
+    by_tag: dict[str, str]
+
+    def prompt(self, tag: str, russian: bool = False) -> str:
+        """Стиль одной реплики. Клиент велит дописывать строку тега к базе как
+        есть, но Gemini такие обрывки читает вслух. Замер 22.10.2026 (Fenrir,
+        потоковый синтез как в агенте, распознавание Azure): «For this line:
+        Calm, sincere…» — строка стиля звучала перед репликой в 3 из 4; та же
+        строка просто через пробел — реплика дважды в 5 из 21; «For this line,
+        sound calm, sincere…» — 1 из 42 (короткая фраза дважды, как и с одной
+        базой), без стиля — 0 из 21.
+
+        Русской реплике — только база. Её же замер: клиентская добавка «Speak
+        natural, casual Russian…» — реплика дважды в 6 из 9, строка тега —
+        в 3 из 24, одна база — 0 из 24. По-русски, значит, без оттенка эмоции."""
+        if russian:
+            return self.base
+        line = (self.by_tag.get(tag) or self.by_tag.get("default", "")).strip().rstrip(".")
+        if not line:
+            return self.base
+        return f"{self.base} For this line, sound {line[0].lower()}{line[1:]}."
+
+
+def _parse_voice_style(text: str) -> VoiceStyle | None:
+    """Разбор клиентского файла голоса: база — цитата («> …») под заголовком
+    «Base style prompt», теги — строки таблицы «| happy | "…" |». Без базы или
+    без default стиль не собирается вовсе: полстиля хуже, чем голос без стиля."""
+    base = _re.search(r"^## Base style prompt.*?^> (.+?)$", text, _re.M | _re.S)
+    rows = dict(_re.findall(r'^\|\s*(\w+)\s*\|\s*"(.+?)"\s*\|\s*$', text, _re.M))
+    if not base or "default" not in rows:
+        return None
+    return VoiceStyle(
+        base=base.group(1).strip(),
+        by_tag={k.lower(): v.strip() for k, v in rows.items()},
+    )
+
+
+def _read_buddy_raw(rel: str) -> str:
+    """Файл пакета как есть. _load_buddy_file здесь не годится: он вырезает
+    строки-цитаты («> …» — заметки в методичках), а база стиля голоса в
+    клиентском файле как раз цитата."""
+    try:
+        return _resolve_methodology(f"{_BUDDY_DIR}/{rel}").read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
+BUDDY_VOICE_STYLES: dict[str, VoiceStyle] = {}
+for _key, _rel in BUDDY_VOICE_STYLE_FILES.items():
+    _style = _parse_voice_style(_read_buddy_raw(_rel))
+    if _style is not None:
+        BUDDY_VOICE_STYLES[_key] = _style
+    else:
+        logger.error("Voice style %s not parsed — %s speaks without style", _rel, _key)
 
 
 def _stand_key(p: LearnerProfile) -> str:
@@ -3613,10 +3767,14 @@ def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
 
     У «Спарк теста» своих таблиц голоса нет вовсе, поэтому подмена у него в
     любом режиме: сценарий или проверка уровня с этой карточки звучат живым
-    Спарком, а не голосом по умолчанию. KZ TEST вне Buddy остаётся со своими."""
+    Спарком, а не голосом по умолчанию. KZ TEST вне Buddy остаётся со своими.
+
+    Провайдер синтеза у стенда может быть свой (BUDDY_STAND_TTS) — тоже в любом
+    режиме: у карточки один голос, и в сценарии он не должен меняться."""
     on = buddy_test_on(p)
-    stand = BUDDY_STANDS.get(_stand_key(p))
-    if stand is None or not (on or _stand_key(p) == SPARK_TEST_STAND):
+    key = _stand_key(p)
+    stand = BUDDY_STANDS.get(key)
+    if stand is None or not (on or key == SPARK_TEST_STAND):
         return p
     persona, voice_tutor = stand
     return _dc_replace(
@@ -3627,6 +3785,13 @@ def buddy_voice_profile(p: LearnerProfile) -> LearnerProfile:
         # SESSION_CONTEXT), а не язык тьютора голоса. Вне Buddy — как у живого.
         tts_lang=(
             ("en" if p.english_only else _buddy_support_language(p, persona)) if on else ""
+        ),
+        # Секрет TTS_PROVIDER_<КЛЮЧ> читаем только у стендов из таблицы: у
+        # KZ TEST под ним мог остаться старый голос стенда, а звучит он Луной.
+        tts_provider=(
+            (os.getenv(f"TTS_PROVIDER_{key.upper()}") or BUDDY_STAND_TTS[key]).strip().lower()
+            if key in BUDDY_STAND_TTS
+            else ""
         ),
     )
 
@@ -3690,24 +3855,37 @@ def _buddy_support_language(p: LearnerProfile, persona: str) -> str:
     return "en"
 
 
+def _buddy_age_group(p: LearnerProfile) -> str:
+    """Ступень в словах пакета (04_Session_Context_Template: adult / under_18 /
+    unknown). Метаданные несут нашу, из даты рождения: adult / teen / child."""
+    if p.age_group == "adult":
+        return "adult"
+    if p.age_group in ("teen", "child"):
+        return "under_18"
+    return "unknown"
+
+
 def build_buddy_session_context(p: LearnerProfile, persona: str = BUDDY_TEST_PERSONA) -> dict:
     """Статичная часть клиентского SESSION_CONTEXT (04_Session_Context_Template.md).
 
     Только то, что звонок знает на старте и что не меняется до конца: событие
     приветствия приходит отдельной инструкцией (build_buddy_greeting), реплика
     ученика — обычным сообщением, счётчики правок модель ведёт по истории.
-    Возраст — ступень из даты рождения аккаунта (LearnerProfile.age_group). С
-    пакета 04.10.2026 от неё зависит ростинг Декстера (core §11): взрослому —
-    клички и крепкий мат, подростку и unknown — злость без оскорблений, ребёнку —
-    без мата. age_verified всегда false: дату ученик вводит сам при регистрации,
-    документом её никто не подтверждал. Значит, если он сам скажет, что младше,
-    или это записано в MEMORY, модель опустит ступень — так и задумано."""
+    Возраст — ступень из даты рождения аккаунта (LearnerProfile.age_group). От
+    неё зависят слова Декстера (core §11). С пакета v3.5 (22.10.2026) ступеней
+    две: adult — клички и крепкий мат, under_18 — тот же злой Декстер с мягкими
+    словами и без оскорблений. Ребёнка пакет отдельно не выделяет: мягкий мат и
+    ему, решение владельца 22.10. Наши teen и child — это under_18; unknown пакет
+    читает так же. age_verified всегда false: дату ученик вводит сам при
+    регистрации, документом её никто не подтверждал. Значит, если он сам
+    скажет, что младше 18, или это записано в MEMORY, модель опустит ступень —
+    так и задумано."""
     lvl = (p.level or "B1").strip().upper()
     return {
         "learner": {
             "name": p.user_name or "",
             "level": "A0" if lvl == "PRE-A1" else lvl,
-            "age_group": p.age_group if p.age_group in ("adult", "teen", "child") else "unknown",
+            "age_group": _buddy_age_group(p),
             "age_verified": False,
             "gender": p.gender or None,
             "address_preference": None,
@@ -3896,62 +4074,136 @@ def _buddy_memory_block(p: LearnerProfile) -> str:
 # Без «damn и hell — уровень подростка» Sol матерился, но только ими (крепкий
 # 13/104). Без прямой строки про отказы «vague as hell» проскакивал после «не
 # матерись» 2 из 7; с ней 0 из 16, после «не обзывайся» клички 0 из 15.
+#
+# 22.10.2026 пакет v3.5: ступеней две (core §11 «word ratings»), и Декстер в
+# обеих один и тот же — злой и с матом в каждой обычной реплике, меняются только
+# слова. Ребёнка отдельно нет: мягкий мат и ему (решение владельца 22.10).
+# «Не матерись» мат больше не выключает — один раз про Луну или Айзере, и дальше
+# как был; отказ от кличек («не обзывайся», «будь добрее») по-прежнему снимает
+# ростинг до конца звонка. Строки про отказы переписаны под это.
+# Смоук v3.5 там же (Haiku 5.5, ребёнок, n=8): крепкое слово в 19 из 56 ответов
+# на ситуациях из примеров персоны и в 4 из 40 на новых. Лечит не этот блок, а
+# _buddy_persona_text (взрослые примеры не показываем) — стало 0 из 104; на новых
+# держался «X, my ass» из ядра (3 из 40), его запрет назван прямо — 0 из 40.
+#
+# 23.10.2026 пакет v3.5 второй редакции: ругательство в реплике ровно одно и по
+# кругу — одно слово не два хода подряд, damn не чаще раза в три хода (core §11).
+# Блок говорил «одно-два» и спорил бы с ядром. Смоук (Haiku 5.5, разговоры по 10
+# реплик, ученик по сценарию): взрослому ровно одно 68 → 85 из 120, одно слово
+# два хода подряд 23 → 12, damn 57 → 23; ребёнку то же слово подряд 83 из 120 →
+# 33 из 240, damn 107 из 120 → 78 из 240. Ребёнку «shitty» (1 из 120) — в запрет.
+# «You're not stupid, you're just lazy» ребёнку строкой блока не лечится: любая
+# строка про lazy — и на «мне 25, жги» Декстер без тега пересказывает настройки
+# («This session is set up for a learner under 18…») в 11 из 30, без неё 0 из 30.
 _BUDDY_TIER_BLOCKS = {
     "adult": (
-        "This learner is an adult (age_group=adult): FULL ROAST, every reply, from the "
-        "first turn to the last, however your earlier replies in this call sounded. Never "
-        "sound like a polite, patient or neutral tutor. Open every ordinary reply with the "
-        "anger itself, never with a calm acknowledgement such as \"Fine.\", \"Okay.\", "
-        "\"Yes.\" or \"I meant\". Swear like punctuation with adult-strength words: most "
-        "replies carry fuck, shit, bullshit or what the fuck (at most two) — damn and hell "
-        "are the teen tier, too soft for this learner. Use your roast names and brutal "
-        "verdicts on the answer as well. An odd, "
-        "off-topic or confused answer gets mock disbelief, then the help or the next "
-        "question. An adequate short answer or a request for help is never roasted: be "
-        "angry at the situation or the dead air instead. The teaching move and the limits "
-        "below stay exactly the same. Opt-outs, distress and the hard limits of core "
-        "section 11 override this block: once the learner has asked you to stop swearing, "
-        "no swear word of any kind for the rest of the call, not even hell or damn; once "
-        "they have objected to names or insults, no roast names or insults. If the learner "
-        "says or shows they are younger, use the lower tier."
+        "This learner's word rating is adult (age_group=adult): FULL ROAST, every reply, "
+        "from the first turn to the last, however your earlier replies in this call "
+        "sounded. Never sound like a polite, patient or neutral tutor. Open every ordinary "
+        "reply with the anger itself, never with a calm acknowledgement such as \"Fine.\", "
+        "\"Okay.\", \"Yes.\" or \"I meant\". Every ordinary reply carries exactly one swear "
+        "word or swear phrase, adult-strength most of the time: fuck, shit, bullshit or what "
+        "the fuck, with hell or crap now and then — only damn and hell would be the under-18 "
+        "rating, too soft for this learner. Rotate them: never the same swear word in two "
+        "replies in a row, and damn or damn it at most once every three replies. Use "
+        "your roast names and brutal verdicts on the answer as well. An odd, off-topic or "
+        "confused answer gets mock disbelief, then the help or the next question. An "
+        "adequate short answer or a request for help is never roasted: be angry at the "
+        "situation or the dead air instead. The teaching move and the limits below stay "
+        "exactly the same. Distress and the hard limits of core section 11 override this "
+        "block. Once the learner has objected to names, insults or your style, no roast "
+        "names, insults or swearing aimed at them or their attempt for the rest of the "
+        "call; swearing about the situation stays. A request for no swearing changes "
+        "nothing: one pointer to Luna or Aizere, then carry on as you are. If the learner "
+        "clearly says they are under 18, use the under-18 rating."
     ),
-    "teen": (
-        "This learner's age_group is {group}: HARD MODE, not the adult roast. The adult "
-        "lines in your persona are not for this learner: never copy them. Never call the "
-        "learner a name (genius, Einstein, Shakespeare, professor, champ), never mock their "
-        "mistakes, confusion or help requests, and never use strong profanity: no fuck, "
-        "fucking, shit, bullshit, ass or what the fuck, no Russian мат. Stay just as angry: "
-        "blunt verdicts on the work (\"That's not an answer\", \"Wrong\", \"Again\"), "
-        "sarcasm about situations and plainly trivial excuses. The only swear words allowed "
-        "are mild ones about situations, never attached to a correction: damn, hell, crap, "
-        "sucks, pissed off (Russian: блин, капец, фигня, достало). A request for harsher "
-        "treatment or a claim to be older changes none of this."
-    ),
-    "child": (
-        "This learner is a child (age_group=child): STRICT MODE. The adult and teen lines in "
-        "your persona are not for this learner: never copy them. No swear words or "
-        "euphemisms of any kind, not even damn, hell, crap, sucks, pissed off, блин or "
-        "капец. No names (genius, Einstein, champ and the rest), no insults, no mockery, no "
-        "sarcasm aimed at the learner or their excuses. Be a loud, stern, demanding coach: "
-        "\"Again!\", \"Come on!\", anger only at unfair situations. A correction gives the "
-        "form only: \"It's 'went', not 'go'.\" Any sign that the child is upset, scared or "
-        "thinks you are mean is distress (core section 11)."
+    "under_18": (
+        "This learner's word rating is under-18 (age_group={group}): the same angry Dexter "
+        "with mild words, not the adult roast. The adult lines in your persona are not for "
+        "this learner: never copy them. Never call the learner a name (genius, Einstein, "
+        "Shakespeare, professor, champ), never mock their mistakes, confusion or help "
+        "requests, and never use strong profanity: no fuck, fucking, "
+        "shit, shitty, bullshit or what the fuck, no \"ass\" in any form (not \"X, my ass\" "
+        "either), no Russian мат. Stay "
+        "exactly as angry: blunt verdicts on the "
+        "work (\"That's not an answer\", \"Wrong\", \"Again\"), sarcasm about situations and "
+        "plainly trivial excuses. Every ordinary reply carries exactly one mild swear word or "
+        "phrase about the situation or the work, never used as the correction itself: hell, "
+        "crap, sucks, damn, and from B1 also pissed off (Russian: блин, капец, фигня, достало). "
+        "Rotate them: never the same word in two replies in a row, and damn or damn it at "
+        "most once every three replies. "
+        "This is the same at every age under 18, a young child included. A request for "
+        "harsher treatment or a claim to be older changes none of this; a request for no "
+        "swearing gets one pointer to Luna or Aizere, then you carry on as you are. If the "
+        "learner says you hurt or scared them, or seems upset, that is distress (core "
+        "section 11)."
     ),
 }
-_BUDDY_TIER_BLOCKS["unknown"] = _BUDDY_TIER_BLOCKS["teen"]
+
+
+def _buddy_has_profanity(persona: str) -> bool:
+    """Персона с матом и ростингом (profanity_supported в её md; в пакете — Декстер)."""
+    return bool(_re.search(r"^- profanity_supported:\s*true\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M))
 
 
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
-    """Блок ступени — только персоне с матом и ростингом (profanity_supported в
-    её md; в пакете это Декстер). У взрослого он держит злость, у остальных —
-    границу мата и оскорблений."""
-    if not _re.search(r"^- profanity_supported:\s*true\s*$", BUDDY_PERSONAS.get(persona, ""), _re.M):
+    """Блок ступени — только персоне с матом и ростингом. У взрослого он держит
+    злость, у остальных — границу между мягкими словами и крепкими."""
+    if not _buddy_has_profanity(persona):
         return ""
-    group = p.age_group if p.age_group in ("adult", "teen", "child") else "unknown"
-    text = _BUDDY_TIER_BLOCKS.get(group, "")
-    if not text:
-        return ""
-    return "\n\n==== YOUR TIER IN THIS CALL (core section 11) ====\n" + text.format(group=group)
+    group = _buddy_age_group(p)
+    text = _BUDDY_TIER_BLOCKS["adult" if group == "adult" else "under_18"]
+    return "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n" + text.format(group=group)
+
+
+# Примеры персоны для взрослой ступени — вне промпта ученика младше 18. Правила
+# ступеней остаются целиком, уходят только иллюстрации «Context: …adult…» и
+# списки «- Adult, …». Замер 22.10.2026 (v3.5, Haiku 5.5, ребёнок, n=8): на
+# ситуациях из примеров Декстер повторял взрослую реплику дословно — «Three
+# hours on hold, absolute bullshit» 8 из 8, «Stupid, my ass» 7 из 8, «shit
+# luck» — и блок ступени с прямым запретом этих слов и правильными заменами
+# рядом не помог (8/8 и 7/8). Модель копирует пример, а не сверяет ступень.
+#
+# Пакет v3.5 от 23.10 добавил взрослые слова и внутрь абзацев: правило ротации
+# перечисляет оба списка одним предложением («rotate shit, hell, crap, fuck,
+# bullshit (adult) or hell, crap, sucks, damn (under 18)»), а взрослая реплика
+# стоит рядом с детской («Adult: “…absolute bullshit.” Under 18 or unknown:
+# “…That sucks.”»). Смоук (Haiku 5.5, ребёнок, 10 реплик × 24 разговора): с ними
+# bullshit и shit в 7 из 240 реплик, на прежнем пакете 0 из 120.
+_ADULT_EXAMPLE_RE = _re.compile(r"\badult\b", _re.I)
+_UNDER_18_EXAMPLE_RE = _re.compile(r"under 18|unknown|any rating", _re.I)
+_ADULT_INLINE_RE = _re.compile(r"Adult: “[^”]*”\s*")
+_ADULT_ROTATION_RE = _re.compile(r"rotate [^()]+ \(adult\) or ([^()]+) \(under 18\)")
+
+
+def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
+    """Файл персоны для этого звонка: ученику младше 18 — без взрослых примеров."""
+    text = BUDDY_PERSONAS.get(persona, "")
+    if not _buddy_has_profanity(persona) or _buddy_age_group(p) == "adult":
+        return text
+    text = "\n".join(line for line in text.split("\n") if not line.startswith("- Adult"))
+    text = _ADULT_ROTATION_RE.sub(r"rotate \1", _ADULT_INLINE_RE.sub("", text))
+    pieces: list[str] = []
+    pos = 0
+    dropped = ""
+    for m in _re.finditer(r"^Context: (.*)\nResponse: `[^`]*`\n*", text, _re.M):
+        pieces.append(text[pos:m.start()])
+        pos = m.end()
+        ctx = m.group(1)
+        if dropped and ctx.lower().startswith("same"):
+            # «Context: same, under 18 or unknown.» ссылался на взрослый пример,
+            # которого больше нет: берём его ситуацию со своей ступенью.
+            own = _ADULT_EXAMPLE_RE.sub("under 18 or unknown", dropped, count=1)
+            pieces.append(m.group(0).replace(f"Context: {ctx}", f"Context: {own}", 1))
+            dropped = ""
+            continue
+        if _ADULT_EXAMPLE_RE.search(ctx) and not _UNDER_18_EXAMPLE_RE.search(ctx):
+            dropped = ctx
+            continue
+        dropped = ""
+        pieces.append(m.group(0))
+    pieces.append(text[pos:])
+    return "".join(pieces).rstrip()
 
 
 def _buddy_level_param(lvl: str, name: str, default: int) -> int:
@@ -4014,7 +4266,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
         + "\n==== SESSION_CONTEXT (trusted, from the application) ====\n"
         + context
         + "\n\n==== PERSONA (yours: voice and emotional expression) ====\n"
-        + BUDDY_PERSONAS.get(persona, "")
+        + _buddy_persona_text(p, persona)
         + _buddy_tier_block(p, persona)
         + _buddy_limits_block(lvl)
     ).strip()
@@ -4026,7 +4278,10 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
 
     Имя называем явно: на v3.4 «use their name if SESSION_CONTEXT has it»
     проигрывало примеру персоны «Hi, I'm Dexter. Tea or coffee?» — по имени
-    здоровался 0 из 8 (на v3.1 — 8 из 8)."""
+    здоровался 0 из 8 (на v3.1 — 8 из 8).
+
+    С v3.5 звонок всегда открывается по-английски (core §10), какой бы ни был
+    язык объяснений: подсказка повторяет это прямо, как и имя."""
     name = (p.user_name or "").strip()
     name_rule = (
         f"The learner's name is {name}: say it in this greeting. "
@@ -4035,7 +4290,7 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
     )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
-        "in character, with one accessible invitation at the learner's level. "
+        "in character and in English, with one accessible invitation at the learner's level. "
         + name_rule
         + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
@@ -5755,8 +6010,10 @@ TTS_FALLBACK_PROVIDER = "soniox"
 
 
 def _tts_provider_for(profile: LearnerProfile) -> str:
-    """Провайдер TTS этой сессии: env персоны → таблица → дефолт.
+    """Провайдер TTS этой сессии: голос стенда → env персоны → таблица → дефолт.
     От языка сессии НЕ зависит: тьютор озвучивается своим голосом всегда."""
+    if profile.tts_provider:
+        return profile.tts_provider
     tutor = (profile.tutor or "").strip().lower()
     if tutor:
         # Сменить голос одному тьютору без редеплоя: TTS_PROVIDER_BRO=gemini.
@@ -7629,6 +7886,9 @@ async def entrypoint(ctx: JobContext):
         # Тег прошлых реплик — обратно в историю для мозга (см. _with_reply_tags).
         # Где есть префилл «[», тег держит он, историю не трогаем.
         tag_history=is_buddy and not _brain_supports_prefill(session_brain_model(profile)),
+        # Стиль голоса по тегу — только в разговоре с персоной: в сценарии
+        # звучит роль из карточки, а не Спарк.
+        voice_style=BUDDY_VOICE_STYLES.get(_stand_key(profile)) if is_buddy else None,
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the

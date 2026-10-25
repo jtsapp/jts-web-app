@@ -152,27 +152,42 @@ describe('Главная демо-аккаунта', () => {
 
     expect(screen.getByText('Прогресс вашего обучения недоступен')).toBeTruthy()
     expect(container.querySelector('.hm-level')).toBeNull()
-    expect(container.querySelector('.hm-skills')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Начать тестирование сейчас' }))
-    expect(onStartLevelTest).toHaveBeenCalled()
+    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
   })
 
-  it('на «Главной» нет расписания, домашки и практики — только уровень, навыки и пробный', () => {
-    // Так на макете демо-доступа: те же данные у ученика есть в своих
-    // разделах, и дублировать их здесь значит растить экран без нужды.
+  it('без теста навыки — «???» и приглашение на тест (макет «Главная · редизайн»)', () => {
+    // новичок: ни теста, ни заданий в практике (с заданиями проценты считаются и без теста)
+    localStats.value = {}
+    const onStartLevelTest = vi.fn()
+    const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
+
+    // Цифр нет и выдумывать их нечем: строки навыков стоят пустыми, а под ними — зачем нужен тест.
+    const pcts = [...container.querySelectorAll('.hm-skill__pct')].map((n) => n.textContent)
+    expect(pcts).toEqual(['???', '???', '???', '???', '???'])
+    expect(container.querySelector('.hm-skill__fill')).toBeNull()
+    expect(screen.getByText('Пройдите тест уровня и здесь появится ваш профиль навыков')).toBeTruthy()
+
+    fireEvent.click(container.querySelector('.hm-skills__cta'))
+    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
+  })
+
+  it('у демо на месте расписания и домашки — пробный урок, практика остаётся', () => {
+    // Так на макете демо-доступа: расписания и домашки у демо нет, а входы в
+    // практику — есть (кадр «новый ученик» макета «Главная · редизайн»).
     const { container } = renderHome()
 
     expect(container.querySelector('.hm-sched')).toBeNull()
     expect(container.querySelector('.hm-hw')).toBeNull()
-    expect(screen.queryByText('Ваша практика на сегодня')).toBeNull()
+    expect(screen.getByText('Ваша практика на сегодня')).toBeTruthy()
     expect(container.querySelector('.hm-trial')).not.toBeNull()
   })
 
   it('сильная и слабая стороны названы', () => {
-    renderHome()
-    expect(screen.getByText('Сильнее всего — Говорение')).toBeTruthy()
-    expect(screen.getByText('Стоит подтянуть — Письмо')).toBeTruthy()
+    const { container } = renderHome()
+    expect(container.querySelector('.hm-tag--up').textContent).toBe('Сильнее всегоГоворение')
+    expect(container.querySelector('.hm-tag--down').textContent).toBe('Стоит подтянутьПисьмо')
   })
 
   it('навыки идут от сильного к слабому', () => {
@@ -186,7 +201,8 @@ describe('Главная демо-аккаунта', () => {
     localStats.value = {}
     levelProgress.value = { level: 'B1', next: 'B2', percent: 0, done: 0, total: 20, remaining: 20 }
     const { container } = renderHome({ token: 'T' })
-    expect(container.querySelectorAll('.hm-skill')).toHaveLength(0)
+    expect([...container.querySelectorAll('.hm-skill__pct')].every((n) => n.textContent === '???')).toBe(true)
+    expect(container.querySelector('.hm-skills__tags')).toBeNull()
     expect(screen.getByText(/Пройдите несколько заданий/)).toBeTruthy()
     // Нулевой прогресс — не повод обещать переход: план остаётся честным.
     await waitFor(() => expect(container.querySelector('.hm-level__fill')).not.toBeNull())

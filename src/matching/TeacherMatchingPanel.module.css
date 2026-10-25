@@ -1,0 +1,93 @@
+.panel {
+  background: #fff;
+  border: 1px solid #ece8f5;
+  border-radius: 20px;
+  padding: 22px;
+  margin: 16px 0;
+  color: #15131a;
+  font-size: 14px;
+}
+.panel h2 {
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+.panel h3 {
+  font-size: 16px;
+}
+.panel p {
+  color: #6b6878;
+}
+.panel button {
+  padding: 9px 14px;
+  border: 1px solid #ece8f5;
+  border-radius: 12px;
+  background: white;
+  color: #15131a;
+  cursor: pointer;
+  font: inherit;
+}
+.panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.panel .primary,
+.panel button.on {
+  color: #fff;
+  background: #7432e0;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 96px);
+  gap: 8px;
+  overflow: auto;
+  max-height: 330px;
+  margin: 12px 0;
+}
+.grid button {
+  display: block;
+  width: 90px;
+  margin: 4px 0;
+}
+.panel label {
+  display: block;
+  margin: 12px 0;
+  font-weight: 600;
+}
+.panel input,
+.panel textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #ece8f5;
+  border-radius: 12px;
+  padding: 10px;
+  font: inherit;
+  margin-top: 5px;
+}
+.panel textarea {
+  min-height: 70px;
+}
+.panel .error {
+  color: #d93b3b;
+}
+.candidate {
+  border: 1px solid #ece8f5;
+  border-radius: 14px;
+  padding: 14px;
+  margin: 12px 0;
+}
+.panel summary {
+  cursor: pointer;
+}
+.panel button:focus-visible,
+.panel input:focus-visible,
+.panel textarea:focus-visible {
+  outline: 2px solid #7432e0;
+  outline-offset: 2px;
+}

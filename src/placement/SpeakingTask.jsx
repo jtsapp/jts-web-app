@@ -17,6 +17,9 @@ import { assessSpeaking } from './api.js'
 // остальных навыков, а минута оценки без единой кнопки выглядела зависанием (жалоба 16.10.2026). Отзыв теперь в
 // итоге вместе со всеми (speakingFeedback.js), а ожидание прямо говорит, что нажимать ничего не нужно.
 
+// Полосы «идёт запись» — высоты из макета; анимацию задаёт CSS (качаются, пока идёт запись).
+const WAVE = [16, 28, 40, 24, 48, 32, 20, 44, 36, 24, 52, 28, 16, 40, 32, 48, 24, 36, 20, 44]
+
 const fmt = (sec) => {
   const s = Math.max(0, Math.ceil(sec))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -91,55 +94,79 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
     }
   }
 
+  // Макет «3 · Тест уровня», кадры Speaking: Speaking Buddy сверху (своя поза на каждую фазу), чип «Тема» и тема,
+  // ниже — фаза. Подсказки темы макет не показывает: тема одна строкой, остальное ученик говорит сам.
+  const pose = phase === 'retry' ? 'error' : phase === 'intro' ? 'topic' : phase
+  const skip = () => {
+    skipped.current = true
+    clearInterval(timer.current)
+    rec.stop()
+    onSkip()
+  }
+  const skipButton = (
+    <button type="button" className="pl-speak__skip" onClick={skip}>
+      {t('placement.speaking.skip')}
+    </button>
+  )
+
   return (
     <div className="pl-speak" role="dialog" aria-modal="true" aria-labelledby="pl-speak-title">
-      <div className="pl-speak__card">
-        <span className="pl-speak__eyebrow">{t('placement.speaking.eyebrow')}</span>
-        <h2 id="pl-speak-title" className="pl-speak__topic" lang="en">
-          {topic.prompt}
-        </h2>
-        {phase !== 'assessing' && (
-          <ul className="pl-speak__hints" lang="en">
-            {topic.hints.map((h) => (
-              <li key={h}>{h}</li>
-            ))}
-          </ul>
+      <div className={`pl-speak__card pl-speak__card--${phase}`}>
+        <img className="pl-speak__buddy" src={`/placement/v16/skin/buddy-${pose}.webp`} alt="" width="160" height="160" />
+
+        {phase !== 'assessing' && phase !== 'retry' && (
+          <div className="pl-speak__head">
+            <span className="pl-speak__eyebrow">{t('placement.speaking.topicChip')}</span>
+            <h2 id="pl-speak-title" className="pl-speak__topic" lang="en">
+              {topic.prompt}
+            </h2>
+          </div>
         )}
 
         {phase === 'intro' && (
           <>
-            <p className="pl-speak__text">
-              {t('placement.speaking.intro', { prep: String(PREP_SECONDS), max: String(MAX_SECONDS / 60) })}
-            </p>
+            <p className="pl-speak__text">{t('placement.speaking.intro', { prep: String(PREP_SECONDS) })}</p>
             <div className="pl-speak__actions">
               <button type="button" className="pl-btn pl-btn--main" onClick={startPrep}>
                 {t('placement.speaking.prep')}
               </button>
+              {skipButton}
             </div>
           </>
         )}
 
         {phase === 'prep' && (
           <>
-            <p className="pl-speak__clock" aria-live="polite">
-              {t('placement.speaking.prepLeft')} <b>{fmt(left)}</b>
-            </p>
+            <div className="pl-speak__timer" aria-live="polite">
+              <span>{t('placement.speaking.prepLeft')}</span>
+              <b>{fmt(left)}</b>
+            </div>
+            <div className="pl-speak__bar">
+              <i style={{ width: `${Math.max(0, Math.min(100, (left / PREP_SECONDS) * 100))}%` }} />
+            </div>
             <div className="pl-speak__actions">
-              <button type="button" className="pl-btn pl-btn--main" onClick={startRecording}>
+              <button type="button" className="pl-btn pl-btn--main pl-btn--mic" onClick={startRecording}>
                 {t('placement.speaking.recordNow')}
               </button>
+              {skipButton}
             </div>
           </>
         )}
 
         {phase === 'recording' && (
           <>
-            <p className="pl-speak__clock pl-speak__clock--rec" aria-live="polite">
+            <p className="pl-speak__rec" aria-live="polite">
               <i className="pl-speak__dot" aria-hidden="true" />
-              {fmt(rec.elapsed)} / {fmt(MAX_SECONDS)}
+              {t('placement.speaking.recording')}
             </p>
+            <b className="pl-speak__clock">{fmt(rec.elapsed)}</b>
+            <div className="pl-speak__wave" aria-hidden="true">
+              {WAVE.map((h, i) => (
+                <i key={i} style={{ height: h, animationDelay: `${(i % 7) * 0.12}s` }} />
+              ))}
+            </div>
             <div className="pl-speak__actions">
-              <button type="button" className="pl-btn pl-btn--main" onClick={rec.stop} disabled={rec.state !== 'recording'}>
+              <button type="button" className="pl-btn pl-btn--dark" onClick={rec.stop} disabled={rec.state !== 'recording'}>
                 {t('placement.speaking.stop')}
               </button>
             </div>
@@ -148,31 +175,28 @@ export default function SpeakingTask({ token, args, onDone, onSkip }) {
 
         {phase === 'assessing' && (
           <div className="pl-speak__wait" role="status" aria-live="polite">
-            <i className="pl-speak__spinner" aria-hidden="true" />
-            <div>
-              <p className="pl-speak__waitTitle">{t('placement.speaking.assessing')}</p>
-              <p className="pl-speak__waitHint">{t('placement.speaking.assessingHint')}</p>
+            <p id="pl-speak-title" className="pl-speak__waitTitle">
+              {t('placement.speaking.assessing')}
+            </p>
+            <div className="pl-speak__bar pl-speak__bar--busy">
+              <i />
             </div>
+            <p className="pl-speak__waitHint">{t('placement.speaking.assessingHint')}</p>
           </div>
         )}
 
         {phase === 'retry' && (
           <>
-            <p className="pl-speak__error" role="alert">
+            <p id="pl-speak-title" className={`pl-speak__error${rec.error === 'denied' ? ' pl-speak__error--mic' : ''}`} role="alert">
               {error}
             </p>
             <div className="pl-speak__actions">
-              <button type="button" className="pl-btn pl-btn--main" onClick={startRecording}>
+              <button type="button" className="pl-btn pl-btn--main pl-btn--again" onClick={startRecording}>
                 {t('placement.speaking.again')}
               </button>
+              {skipButton}
             </div>
           </>
-        )}
-
-        {phase !== 'assessing' && (
-          <button type="button" className="pl-speak__skip" onClick={() => { skipped.current = true; clearInterval(timer.current); rec.stop(); onSkip() }}>
-            {t('placement.speaking.skip')}
-          </button>
         )}
       </div>
     </div>

@@ -106,6 +106,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('lesson') // 'lesson' | 'board'
+  // Урок во весь экран. На телефоне рамка материала занимала полэкрана: сверху
+  // шапка, ряд значков, плашка статуса и вкладки, снизу «Темы / Группа», и урок
+  // прокручивался внутри маленького окна поверх прокрутки страницы (видео
+  // владельца 21.10.2026). Развёрнутая рамка закрывает собой весь экран.
+  const [frameExpanded, setFrameExpanded] = useState(false)
+  const expandButtonRef = useRef(null)
   // Выход из живого урока спрашивает подтверждение — тем же диалогом, что и
   // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
   const [confirmExit, setConfirmExit] = useState(false)
@@ -1798,6 +1804,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // и проиграется, когда она загрузится. Отправленная просьба помечается, а не
   // стирается — стирать через setState в эффекте значит каскад рендеров.
   const frameOnScreen = state === 'ready' && lesson != null && lessonOpen && tab === 'lesson' && view === 'file'
+  // Рамка ушла с экрана (доска, указка на шаг разбора, урок закрылся) —
+  // развёрнутость гаснет вместе с ней, а не ждёт возвращения: иначе ученик,
+  // вернувшийся на урок, получил бы экран без шапки, о котором не просил.
+  // Сброс прямо в рендере, а не эффектом — без лишнего кадра с пустым экраном.
+  if (frameExpanded && !frameOnScreen) setFrameExpanded(false)
+  const expanded = frameExpanded && frameOnScreen
+  const collapseFrame = () => {
+    setFrameExpanded(false)
+    // Кнопка «Свернуть» исчезает вместе с режимом — фокус возвращается туда,
+    // откуда режим включили, а не падает на body.
+    requestAnimationFrame(() => expandButtonRef.current?.focus())
+  }
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (e) => { if (e.key === 'Escape') collapseFrame() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [expanded])
   const catchUpSentRef = useRef(null)
   useEffect(() => {
     if (!catchUp || catchUpSentRef.current === catchUp) return
@@ -1833,10 +1857,59 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     materialFrameRef.current.restoreStage(stageRestore.index)
   }, [stageRestore, frameOnScreen, activeMaterialKey])
 
+  // Карточка звонка по ссылке. Ученику она не нужна: ссылка на Meet теперь в шапке урока,
+  // и вторая кнопка с тем же действием только отнимала место у чата. У преподавателя
+  // карточка остаётся — ссылкой управляет он.
+  function renderMeetCard() {
+    return (
+      <div className="lw-card lw-meet">
+        {editingMeetingUrl ? (
+          <div className="lw-meet__form">
+            <input
+              className="lw-meet__input"
+              value={meetingUrlDraft}
+              onChange={(e) => setMeetingUrlDraft(e.target.value)}
+              placeholder={t('lesson.ws.meetPlaceholder')}
+              autoFocus
+            />
+            <div className="lw-meet__form-actions">
+              <button className="lw-meet__save" onClick={saveMeetingUrl}>{t('lesson.ws.meetSave')}</button>
+              <button className="lw-meet__cancel" onClick={() => setEditingMeetingUrl(false)}>{t('lesson.ws.meetCancel')}</button>
+            </div>
+          </div>
+        ) : lesson.meetingUrl ? (
+          <>
+            {/* Свёрнутый звонок по спеке §5.1(B): плоская
+                карточка-CTA, а не строка-ссылка — для ученика
+                это главное действие в правой колонке. */}
+            <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
+              <svg className="lw-meet__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
+                />
+              </svg>
+              {t('lesson.ws.call')}
+            </a>
+            {isStaff && (
+              <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
+            )}
+          </>
+        ) : isStaff ? (
+          <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
+        ) : (
+          // Ученику нечего нажимать, пока учитель не дал ссылку: писать
+          // «Позвонить учителю» здесь — обещание кнопки, которой нет.
+          <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
     // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
-    <div className="lv">
+    <div className={`lv${expanded ? ' is-immersive' : ''}`}>
       {/* Словарь открывается листом поверх урока, а не переходом в раздел
           «Словарь»: onNav увёл бы ученика с урока, ради которого он это слово и
           смотрел, а вернуться в урок было бы нечем. */}
@@ -1929,6 +2002,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       <span className="ls-follow__text">
                         {t(followTeacher ? 'live.followOn' : 'live.followOff')}
                       </span>
+                    </button>
+                  )}
+                  {/* Только на узком экране (CSS): на компьютере рамка и так
+                      занимает колонку целиком. */}
+                  {frameOnScreen && (
+                    <button
+                      ref={expandButtonRef}
+                      type="button"
+                      className="ls-expand"
+                      onClick={() => setFrameExpanded(true)}
+                      aria-pressed={expanded}
+                      aria-label={t('live.expandLessonHint')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                      </svg>
+                      <span className="ls-expand__text">{t('live.expandLesson')}</span>
                     </button>
                   )}
                 </div>
@@ -2111,10 +2201,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               hiddenBlocks={hiddenBlocks}
                               revealedCards={revealedCards}
                               hideStepTitle
-                              // Ключ ответов («Why these answers», эталон после
-                              // «Проверить») — только staff. Ученик видит свой
-                              // выбор и вердикт, но не готовый ответ.
+                              // Спойлер «Why these answers» до проверки — только staff:
+                              // иначе его открывают вместо того, чтобы ответить.
+                              // Эталон после «Проверить» видит и ученик: ошибка
+                              // без правильного слова не разбирается.
                               showAnswerKey={isStaff}
+                              revealChecked
                             />
                           </div>
 
@@ -2139,7 +2231,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className="live__status-msg">{t('lesson.ws.accessDenied')}</p>
                       ) : (
                         <SectionMaterialFrame
-                          className={stageFlags}
+                          className={`${stageFlags}${expanded ? ' is-expanded' : ''}`}
                           ref={materialFrameRef}
                           lessonId={lessonId}
                           token={token}
@@ -2156,6 +2248,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onStageList={handleFrameStageList}
                         />
                       )}
+                      {expanded && (
+                        <button
+                          type="button"
+                          className="lw-frame-collapse"
+                          onClick={collapseFrame}
+                          aria-label={t('live.collapseLessonHint')}
+                          autoFocus
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                            <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+                          </svg>
+                          {t('live.collapseLesson')}
+                        </button>
+                      )}
 
                       {/* Урок проходится кнопками под заданием, а не только
                           кликом по маршруту сбоку — см. StepNav.
@@ -2171,6 +2277,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     </div>
 
                     <div className="lw-live-aside">
+                      {/* Карточка звонка — первой в колонке, над темами (решение владельца 23.10).
+                          Урок кончился — звонка на его месте быть не должно:
+                          звонить уже некуда. Вместо него итог (спека §3.4). */}
+                      {status === 'COMPLETED' ? (
+                        <div className="lw-card lw-summary">
+                          <h3 className="lw-summary__title">{t('live.summaryTitle')}</h3>
+                          <p className="lw-summary__value">
+                            {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
+                          </p>
+                        </div>
+                      ) : isStaff ? renderMeetCard() : null}
                       {/* Маршрут урока и «Топики урока» были двумя списками в
                           двух колонках — в макете это один список справа, и
                           рядом с ним вкладка с составом класса.
@@ -2201,62 +2318,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onCall={sendCall}
                         />
                       )}
-                      {/* Урок кончился — звонка на его месте быть не должно:
-                          звонить уже некуда. Вместо него итог (спека §3.4). */}
-                      {status === 'COMPLETED' ? (
-                        <div className="lw-card lw-summary">
-                          <h3 className="lw-summary__title">{t('live.summaryTitle')}</h3>
-                          <p className="lw-summary__value">
-                            {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
-                          </p>
-                        </div>
-                      ) : isStaff ? (
-                      /* Ученику карточка звонка здесь не нужна: ссылка на Meet
-                         теперь в шапке урока, и вторая кнопка с тем же
-                         действием только отнимала место у чата. У
-                         преподавателя карточка остаётся — ссылкой управляет он. */
-                      <div className="lw-card lw-meet">
-                        {editingMeetingUrl ? (
-                          <div className="lw-meet__form">
-                            <input
-                              className="lw-meet__input"
-                              value={meetingUrlDraft}
-                              onChange={(e) => setMeetingUrlDraft(e.target.value)}
-                              placeholder={t('lesson.ws.meetPlaceholder')}
-                              autoFocus
-                            />
-                            <div className="lw-meet__form-actions">
-                              <button className="lw-meet__save" onClick={saveMeetingUrl}>{t('lesson.ws.meetSave')}</button>
-                              <button className="lw-meet__cancel" onClick={() => setEditingMeetingUrl(false)}>{t('lesson.ws.meetCancel')}</button>
-                            </div>
-                          </div>
-                        ) : lesson.meetingUrl ? (
-                          <>
-                            {/* Свёрнутый звонок по спеке §5.1(B): плоская
-                                карточка-CTA, а не строка-ссылка — для ученика
-                                это главное действие в правой колонке. */}
-                            <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
-                              <svg className="lw-meet__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                                <path
-                                  fill="currentColor"
-                                  d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
-                                />
-                              </svg>
-                              {t('lesson.ws.call')}
-                            </a>
-                            {isStaff && (
-                              <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
-                            )}
-                          </>
-                        ) : isStaff ? (
-                          <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
-                        ) : (
-                          // Ученику нечего нажимать, пока учитель не дал ссылку: писать
-                          // «Позвонить учителю» здесь — обещание кнопки, которой нет.
-                          <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
-                        )}
-                      </div>
-                      ) : null}
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}

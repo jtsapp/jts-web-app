@@ -5,7 +5,7 @@ import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
+import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota, submitRankingFinalTest } from '../api.js'
 import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
@@ -378,7 +378,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // onDone, потому что экзамен рисует итоги сам — экран итогов урока (end) ему
   // не нужен, а путь до бэкенда тот же, с теми же квотой и досылкой.
   const saveDone = useCallback(
-    async (code, points) => {
+    async (code, points, finalTest = null) => {
       setRestricted(false)
       setSaving(true)
       const wasDone = done.has(code)
@@ -437,6 +437,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setDone(new Set(next))
         if (mid == null && token && points > 0) {
           completeLessonModule(token, points).catch(() => {})
+        }
+        if (finalTest && token) {
+          try {
+            await submitRankingFinalTest(token, finalTest)
+            setOpenError(null)
+          } catch {
+            // Прогресс урока сохранён отдельно. Объясняем, почему финальный
+            // результат пока не появился в рейтинге: повторная сдача безопасна,
+            // сервер использует один результат на ученика, уровень и версию.
+            setOpenError('Тест пройден, но результат не попал в рейтинг. Проверьте соединение и отправьте результат ещё раз, пройдя тест повторно.')
+          }
         }
       } finally {
         clearTimeout(giveUp)
@@ -644,7 +655,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               token={token}
               restricted={restricted}
               onExit={(finished) => (finished ? exitLesson() : setConfirmExit(true))}
-              onPassed={(points) => saveDone(EXAM_CODE, points)}
+              onPassed={(points, result) => saveDone(EXAM_CODE, points, result)}
             />
           ) : open.steps ? (
             <CourseStepPlayer

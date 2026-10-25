@@ -50,6 +50,16 @@ describe('куда Луна умеет вести', () => {
     }
   })
 
+  it('Cartoon World открывается напрямую', () => {
+    expect(validAction('open', 'cartoons')).toEqual({ kind: 'open', target: 'cartoons', now: false })
+    expect(destinationIdForScreen('cartoons')).toBe('cartoons')
+  })
+
+  it('Word Hunt открывается напрямую', () => {
+    expect(validAction('open', 'wordhunt')).toEqual({ kind: 'open', target: 'wordhunt', now: false })
+    expect(destinationIdForScreen('wordhunt')).toBe('wordhunt')
+  })
+
   it('действие проверяется по списку: тур — только где он есть', () => {
     expect(validAction('open', 'vocab')).toEqual({ kind: 'open', target: 'vocab', now: false })
     expect(validAction('tour', 'practice', true)).toEqual({ kind: 'tour', target: 'practice', now: true })
@@ -66,6 +76,25 @@ describe('куда Луна умеет вести', () => {
     expect(destinationIdForScreen('lesson-workspace')).toBeNull()
     const block = buildContextBlock({ user: { name: 'А' }, screen: { id: 'practice', text: 'x' }, lang: 'ru' })
     expect(block).toContain('Открытый раздел: Практика (id для метки: practice)')
+  })
+
+  // Разделы, чей материал заливают в админке (22.10.2026): без строки в таблице Луна говорила «такого нет».
+  it('Just to Listen и Prepositions World открываются напрямую', () => {
+    expect(validAction('open', 'listen')).toEqual({ kind: 'open', target: 'listen', now: false })
+    expect(destinationIdForScreen('prepositions')).toBe('prepositions')
+    expect(destinationsText()).toContain('- prepositions — Prepositions World (предлоги): курс английских предлогов')
+  })
+
+  it('«Грамматика · игры» открываются напрямую', () => {
+    expect(validAction('open', 'grammar-games')).toEqual({ kind: 'open', target: 'grammar-games', now: false })
+    expect(destinationIdForScreen('grammar-games')).toBe('grammar-games')
+    expect(destinationsText()).toContain('- grammar-games — Грамматика · игры: 125 тем')
+  })
+
+  it('«Скорочтение» открывается напрямую', () => {
+    expect(validAction('open', 'speed-reading')).toEqual({ kind: 'open', target: 'speed-reading', now: false })
+    expect(destinationIdForScreen('speed-reading')).toBe('speed-reading')
+    expect(destinationsText()).toContain('- speed-reading — Скорочтение: ')
   })
 
   it('список для модели: id, имя и пометка тура', () => {

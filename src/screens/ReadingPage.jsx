@@ -7,6 +7,7 @@ import { READING_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { readView, writeView, viewVars, stepFont } from '../practice/reading/viewSettings.js'
 import { loadReadingFromServer } from '../practice/reading/readingProgress.js'
 import { loadDict } from '../practice/reading/loadDict.js'
+import { loadReadingLevel } from '../practice/reading/readingContent.js'
 import ReadingLibrary from './reading/ReadingLibrary.jsx'
 import ReadingText from './reading/ReadingText.jsx'
 import ReadingResult from './reading/ReadingResult.jsx'
@@ -18,16 +19,21 @@ export const READING_LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 
 // Уровень — сотня-другая килобайт, поэтому грузим лениво и кэшируем промис на
 // уровне модуля (паттерн WritingPage/loadGrammarIndex): возврат в каталог не
-// перекачивает уже прочитанное.
+// перекачивает уже прочитанное. Тексты — с бэкенда, пока пакет не залит — со
+// статики (readingContent.js); источник едет вместе с данными уровня.
 const levelCache = new Map()
+// Запасная статика — не навсегда. Бэкенд мог промолчать разово (мобильная
+// сеть, 5xx), и с вечным кэшем ученик до перезагрузки видел бы скрытые в
+// админке тексты и не видел новых. Ответ бэкенда держим, статику — минуту.
+const STATIC_RETRY_MS = 60_000
 function fetchLevel(level) {
   if (!levelCache.has(level)) {
     levelCache.set(
       level,
-      fetch(`/practice/reading/${level}.json`)
-        .then((r) => {
-          if (!r.ok) throw new Error('bad status ' + r.status)
-          return r.json()
+      loadReadingLevel(level)
+        .then(({ data, source }) => {
+          if (source !== 'api') setTimeout(() => levelCache.delete(level), STATIC_RETRY_MS)
+          return { ...data, source }
         })
         .catch((e) => {
           // Неудачную загрузку выкидываем из кэша, иначе ошибка «прилипает»
@@ -123,6 +129,9 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
   // Текст, который открыли целью (домашка): «назад» из него — туда, откуда
   // пришли, а не в библиотеку, которой ученик не видел.
   const [entryText, setEntryText] = useState(null)
+  // Текст из домашки, которого на стенде больше нет: админ скрыл или удалил
+  // его, пока задание висело. Молча открытая библиотека выглядела бы поломкой.
+  const [goneText, setGoneText] = useState(false)
   useEffect(() => {
     if (!initialTarget) return
     // Уровень приходит с бэкенда как есть: «A1» здесь чужой уровень.
@@ -137,6 +146,8 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
       if (data && data.texts.some((x) => x.id === initialTarget.textId)) {
         setEntryText(initialTarget.textId)
         setView({ name: 'read', textId: initialTarget.textId })
+      } else if (data) {
+        setGoneText(true)
       }
     })
   }, [initialTarget, loadLevel])
@@ -150,6 +161,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
 
   const openText = useCallback((textId) => {
     stopAudio()
+    setGoneText(false)
     setView({ name: 'read', textId })
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [])
@@ -200,15 +212,18 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
     }
     if (view.name === 'library') {
       return (
-        <ReadingLibrary
-          level={level}
-          genre={genre}
-          texts={texts}
-          progressTick={progressTick}
-          onLevel={setLevel}
-          onGenre={setGenre}
-          onOpen={openText}
-        />
+        <>
+          {goneText && <div className="rd-note" role="status">{t('reading.textGone')}</div>}
+          <ReadingLibrary
+            level={level}
+            genre={genre}
+            texts={texts}
+            progressTick={progressTick}
+            onLevel={setLevel}
+            onGenre={setGenre}
+            onOpen={openText}
+          />
+        </>
       )
     }
     if (!current) return <div className="rd-note">{t('reading.loading')}</div>
@@ -250,7 +265,8 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
       {/* data-selectable снимает глобальный запрет выделения (styles.css): весь
           раздел — поверхность чтения, и слово в тексте должно выделяться, чтобы
           его можно было перевести. */}
-      <div className={`rd${viewPrefs.dys ? ' rd--dys' : ''}`} data-selectable="" style={viewVars(viewPrefs)}>
+      {/* data-source: по нему тесты и проверка стенда видят, что раздел уже читает админку, а не статику */}
+      <div className={`rd${viewPrefs.dys ? ' rd--dys' : ''}`} data-selectable="" data-source={levels[level]?.source || undefined} style={viewVars(viewPrefs)}>
         <div className="rd-top">
           <button type="button" className="rd-back" onClick={goBack}>
             ← {backLabel}

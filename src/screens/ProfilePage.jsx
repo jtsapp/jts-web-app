@@ -323,6 +323,7 @@ export default function ProfilePage({
 
   const settings = [
     { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif },
+    { key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') },
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
     { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(PRIVACY_URL, '_blank') },

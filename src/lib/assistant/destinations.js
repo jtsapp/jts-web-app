@@ -35,17 +35,17 @@ export const DESTINATIONS = [
   {
     id: 'practice-listening', nav: 'practice', payload: { skill: 'listening' }, screen: 'practice',
     name: { ru: 'Практика → Аудирование', kk: 'Тәжірибе → Тыңдалым', en: 'Practice → Listening' },
-    about: 'аудирование, «Слушай и выбирай», слова в картинках, числа, шэдоуинг, караоке',
+    about: 'аудирование, «Слушай и выбирай», слова в картинках, числа, Just to Listen, шэдоуинг, караоке',
   },
   {
     id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
     name: { ru: 'Практика → Чтение', kk: 'Тәжірибе → Оқылым', en: 'Practice → Reading' },
-    about: 'тексты с заданиями, книжки, комиксы, Word Rush',
+    about: 'тексты с заданиями, книжки, комиксы, Word Hunt (кроссворд и поиск слов), Word Rush',
   },
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
     name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'грамматика, письмо по шагам, неправильные глаголы, воркбуки',
+    about: 'грамматика, «Грамматика · игры», Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
@@ -62,6 +62,12 @@ export const DESTINATIONS = [
     id: 'listenchoose', nav: 'listenchoose', screen: 'listenchoose',
     name: { ru: 'Слушай и выбирай', kk: 'Тыңда да таңда', en: 'Listen & Choose' },
   },
+  // Каталог мультфильмов приходит с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'cartoons', nav: 'cartoons', screen: 'cartoons',
+    name: { ru: 'Cartoon World (мультфильмы)', kk: 'Cartoon World', en: 'Cartoon World' },
+    about: 'мультфильмы на английском A0–C1 (вкладка «Аудирование») и переписка с героем серии после просмотра',
+  },
   {
     id: 'words', nav: 'words', screen: 'words',
     name: { ru: 'Слова в картинках', kk: 'Суреттегі сөздер', en: 'Picture Words' },
@@ -69,6 +75,30 @@ export const DESTINATIONS = [
   {
     id: 'numbers', nav: 'numbers', screen: 'numbers',
     name: { ru: 'Мир чисел Декстера', kk: 'Декстердің сандар әлемі', en: "Dexter's Number World" },
+  },
+  // Материал Just to Listen и Prepositions World приходит с бэкенда; без входа экран просит войти — Луна ведёт
+  // туда же, объяснит уже экран.
+  {
+    id: 'listen', nav: 'listen', screen: 'listen',
+    name: { ru: 'Just to Listen', kk: 'Just to Listen', en: 'Just to Listen' },
+    about: 'диктант на слух: слово по буквам, потом предложение с ним; уровни A0–B2 и 16 профессий',
+  },
+  // Тексты «Скорочтения» тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'speed-reading', nav: 'speed-reading', screen: 'speed-reading',
+    name: { ru: 'Скорочтение', kk: 'Жылдам оқу', en: 'Speed reading' },
+    about: 'читать вслух английский текст за бегущей строкой (вкладка «Аудирование»): образец озвучки, запись голоса, процент прочитанного и звёзды',
+  },
+  // Темы «Грамматики · игр» тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
+    name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
+    about: '125 тем грамматики A0–C1 (вкладка «Письмо»): правило с формулами и примерами, потом игры по теме и финальный бой',
+  },
+  {
+    id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
+    name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
+    about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
   },
   {
     id: 'reading', nav: 'reading', screen: 'reading',
@@ -85,6 +115,12 @@ export const DESTINATIONS = [
   {
     id: 'speakspin', nav: 'speakspin', screen: 'speakspin',
     name: { ru: 'SpeakSpin', kk: 'SpeakSpin', en: 'SpeakSpin' },
+  },
+  // Словарь Word Hunt приходит с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'wordhunt', nav: 'wordhunt', screen: 'wordhunt',
+    name: { ru: 'Word Hunt (кроссворд и поиск слов)', kk: 'Word Hunt', en: 'Word Hunt' },
+    about: 'кроссворд и поиск слов над словами курса A0–B2 и 16 профессий (вкладка «Чтение»), слова с подсказкой — на повторение',
   },
   {
     id: 'arcade', nav: 'arcade', screen: 'arcade',

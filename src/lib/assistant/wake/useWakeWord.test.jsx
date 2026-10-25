@@ -117,6 +117,19 @@ describe('useWakeWord', () => {
     expect(ears[0].start).toHaveBeenCalled()
   })
 
+  // Быстрая команда («Луна, дальше»): следующую ученик скажет скоро — окно сокращает глухоту.
+  it('позывной с командой: итог уходит окну, окно может сократить глухоту', async () => {
+    const onWake = vi.fn(() => ({ cooldownMs: 0 }))
+    mount({ onWake })
+    await wait()
+    const detail = { text: 'луна дальше', words: [], preroll: () => null }
+    act(() => ears[0].opts.onWake(detail))
+    expect(onWake).toHaveBeenCalledWith(detail)
+    ears[0].start.mockClear()
+    await wait(1000)
+    expect(ears[0].start).toHaveBeenCalled()
+  })
+
   it('отказ в микрофоне — позывной выключается, причина остаётся', async () => {
     const { result } = mount()
     await wait()

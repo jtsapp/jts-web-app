@@ -10,8 +10,8 @@ vi.mock('../api.js', async (importOriginal) => ({
   getBalance: vi.fn().mockResolvedValue({ coins: 7, streak: 2, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   // аккаунт IELTS ставит админка (V304) — сайдбар узнаёт о нём ручкой /mobile/ielts/plan/me
-  getIeltsMe: vi.fn(async () => ({ ieltsAccount: true })),
-  getSatMeCached: vi.fn(async () => ({ access: false })),
+  getIeltsMe: vi.fn(async () => ({ ieltsAccount: true, purchased: true })),
+  getSatMeCached: vi.fn(async () => ({ access: false, purchased: true })),
 }))
 
 function tokenFor(role) {
@@ -31,7 +31,7 @@ describe('Sidebar — аккаунт IELTS', () => {
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT'])
+    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
@@ -39,16 +39,16 @@ describe('Sidebar — аккаунт IELTS', () => {
   })
 
   it('доступ к одному SAT даёт то же меню — с «Повторением», IELTS и SAT', async () => {
-    getIeltsMe.mockResolvedValueOnce({ ieltsAccount: false, access: false })
-    getSatMeCached.mockResolvedValueOnce({ access: true })
+    getIeltsMe.mockResolvedValueOnce({ ieltsAccount: false, access: false, purchased: false })
+    getSatMeCached.mockResolvedValueOnce({ access: true, purchased: true })
     render(
       <I18nProvider>
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'SAT' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toContain('IELTS')
+    expect(items).not.toContain('IELTS')
     expect(items).toContain('SAT')
     expect(items[1]).toBe('Повторение')
   })

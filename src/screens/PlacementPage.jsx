@@ -16,7 +16,7 @@ function storageNs(profileId) {
   return String(profileId || 'guest').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64)
 }
 
-export default function PlacementPage({ token, profileId, onExit, backLabel, onResult, onContinue, onActivity, onSection }) {
+export default function PlacementPage({ token, profileId, onExit, onResult, onContinue, onActivity, onSection }) {
   const { t, lang } = useI18n()
   // Адрес считаем один раз: смена языка приложения посреди теста не должна перезагружать iframe — у теста свой
   // переключатель, и выбор там запоминается.
@@ -27,7 +27,7 @@ export default function PlacementPage({ token, profileId, onExit, backLabel, onR
   // ссылку, иначе сохранял бы результат по токену и уровню, какими они были в момент загрузки страницы теста.
   const handlers = useRef({})
   useEffect(() => {
-    handlers.current = { onResult, onContinue, onActivity, onSection }
+    handlers.current = { onResult, onContinue, onActivity, onSection, onExit }
   })
   const uninstall = useRef(() => {})
 
@@ -41,6 +41,7 @@ export default function PlacementPage({ token, profileId, onExit, backLabel, onR
       onActivity: (rec, env) => handlers.current.onActivity?.(rec, env),
       onSection: (section, env) => handlers.current.onSection?.(section, env),
       startSpeaking: (args) => new Promise((resolve, reject) => setSpeaking({ args, resolve, reject })),
+      onExit: () => handlers.current.onExit?.(),
     })
     // Тест рисует экран раньше события load, то есть до крючков. Открытый после F5 экран говорения проверяет
     // Speaking Buddy при отрисовке и, не найдя его, писал бы «разговор недоступен» — перерисовываем уже с крючками.
@@ -55,11 +56,7 @@ export default function PlacementPage({ token, profileId, onExit, backLabel, onR
 
   return (
     <div className="pl-page">
-      <div className="pl-page__bar">
-        <button type="button" className="pl-page__back" onClick={onExit}>
-          <span aria-hidden="true">←</span> {backLabel || t('placement.back')}
-        </button>
-      </div>
+      {/* «Назад» — круглой кнопкой в шапке самого теста (макет «3 · Тест уровня»), она зовёт onExit через мост. */}
       <iframe
         ref={frame}
         className="pl-page__frame"

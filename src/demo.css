@@ -2826,3 +2826,620 @@ button.hm-level__goal:focus-visible {
   font-size: 13px;
   color: #c2560a;
 }
+
+/* --- Первый заход (макет «Первый заход и подсказки», 21.10.2026) ---------------
+   Список разделов в последней подсказке тура: строка 48 (иконка 40 r12 на
+   #efe7ff + название 16/24 и строка 12/16), шаг 8. */
+.hm-tour-sections {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hm-tour-sections__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.hm-tour-sections__plate {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #efe7ff;
+  color: #9047ff;
+}
+.hm-tour-sections__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-tour-sections__text b {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: #181818;
+}
+.hm-tour-sections__text span {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+
+/* Окно «Жёсткий режим общения»: карточка 714 (p40, gap 32, r32), картинка
+   634×394 — фото r24 и ноги маскота под ним одним рендером, две кнопки-пилюли
+   62 px. Затемнение то же, что у приветствия тура. */
+.hm-temper {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.hm-temper__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 24, 0.55);
+}
+.hm-temper__card {
+  position: relative;
+  width: 714px;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 40px;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: t-tour-in 0.28s ease;
+}
+.hm-temper__art {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.hm-temper__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hm-temper__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+  color: #181818;
+}
+.hm-temper__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #636363;
+}
+.hm-temper__acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.hm-temper__keep,
+.hm-temper__try {
+  min-height: 62px;
+  padding: 20px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hm-temper__keep {
+  border: 2px solid #ededed;
+  background: #ffffff;
+  color: #181818;
+}
+.hm-temper__keep:hover {
+  border-color: #dcdcdc;
+}
+.hm-temper__try {
+  border: none;
+  background: #9047ff;
+  color: #ffffff;
+}
+.hm-temper__try:hover {
+  filter: brightness(1.06);
+}
+
+/* ======================= «Главная» · редизайн (Figma «Главная · редизайн», 21.10.2026) =======================
+   Заголовок «Главная» в строку с кнопками угла, баннер маршрута во всю ширину, под ним две колонки (главная и 349)
+   с шагом 24 и «Что делать дальше» внизу. Карточки белые с рамкой 1 #e8e8ee и полями 24, заголовки 20/28 800.
+   Перекраска карточек — только от 561px: на телефоне у тех же классов своя раскладка (src/mobile/home.css), а
+   правило «.hm--v2 .x» перебило бы её по специфичности. Цвета — токенами, их переопределяет тёмная тема
+   (theme-dark.css). */
+.hm--v2 {
+  --hm-ink: #181818;
+  --hm-sec: #5a5a66;
+  --hm-mut: #8e8e99;
+  --hm-ac: #9047ff;
+  --hm-lav: #efe7ff;
+  --hm-lav2: #f6f1ff;
+  --hm-line: #e8e8ee;
+  --hm-tile: #f8f8f8;
+  --hm-card: #ffffff;
+  --hm-up: #1f9d55;
+  --hm-up-bg: #e3f6ea;
+  --hm-down: #e57a12;
+  --hm-down-bg: #fff0dd;
+  gap: 24px;
+  max-width: 1160px;
+  padding: 24px 32px 40px;
+}
+.hm-top {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  /* справа — кнопки угла (.learn__bell висит поверх абсолютом): заголовок под них не заезжает */
+  padding-right: 300px;
+}
+.hm-top__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+  color: var(--hm-ink);
+}
+.hm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 349px;
+  align-items: start;
+  gap: 24px;
+}
+.hm-grid__main,
+.hm-grid__side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+@media (max-width: 1100px) {
+  .hm-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .hm-top {
+    display: none;
+  }
+  .hm--v2,
+  .hm-grid,
+  .hm-grid__main,
+  .hm-grid__side {
+    gap: 16px;
+  }
+  .hm--v2 {
+    padding: 16px 16px 32px;
+  }
+}
+
+/* Кнопки угла на «Главной» — в строку заголовка, как в макете: «?» и колокольчик круглые 40 с рамкой, язык —
+   пилюля 42. Порядок макета: «?», колокольчик, язык. */
+@media (min-width: 761px) {
+  .learn__main:has(.hm--v2) .learn__bell {
+    top: 24px;
+    right: max(32px, calc((100% - 1160px) / 2 + 32px));
+    gap: 12px;
+  }
+  .learn__main:has(.hm--v2) .learn__bell > .tour-help {
+    order: 1;
+  }
+  .learn__main:has(.hm--v2) .learn__bell > .nbell {
+    order: 2;
+  }
+  .learn__main:has(.hm--v2) .learn__bell > :not(.tour-help):not(.nbell) {
+    order: 3;
+  }
+  .learn__main:has(.hm--v2) .tour-help,
+  .learn__main:has(.hm--v2) .nbell__btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e8e8ee;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #181818;
+  }
+}
+
+/* Баннер нового ученика: фон и маскот блока цели, справа по центру — «Здесь будет ваш маршрут» и кнопка 40 r12. */
+.ge-start .ge-start__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+.ge-start__title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 41px;
+  font-weight: 800;
+  color: #23202b;
+}
+.ge-start__sub {
+  margin: 0;
+  max-width: 480px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #181818;
+}
+.ge-start__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin-top: 12px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #9047ff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ge-start__cta:hover {
+  filter: brightness(1.06);
+}
+.ge-start__cta:focus-visible,
+.hm-start__cta:focus-visible,
+.hm-skills__cta:focus-visible {
+  outline: 2px solid #9047ff;
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .ge-start__title {
+    font-size: 22px;
+    line-height: 28px;
+  }
+}
+
+/* «Начните отсюда» на месте «Сегодня»: плашка с флажком, текст и кнопка справа. */
+.hm-start {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hm-start__plate {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #efe7ff;
+  position: relative;
+}
+.hm-start__plate::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  background: #9047ff;
+  -webkit-mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+}
+.hm-start__text {
+  flex: 1;
+  min-width: 0;
+}
+.hm-start__sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-start__cta {
+  flex: none;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  background: #9047ff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hm-start__cta:hover {
+  filter: brightness(1.06);
+}
+@media (max-width: 760px) {
+  .hm-start {
+    flex-wrap: wrap;
+  }
+  .hm-start__cta {
+    flex: 1 1 100%;
+  }
+}
+
+/* «Сильные и слабые стороны» до теста: серая плашка со значком, заголовком, пояснением и кнопкой теста. */
+.hm-skills__msg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--hm-tile, #f8f8f8);
+}
+.hm-skills__msgIco {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  background: #9047ff;
+  -webkit-mask: url(/assets/home-v2/ico/insights.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/insights.svg) center / contain no-repeat;
+}
+.hm-skills__msg b {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: var(--hm-ink, #181818);
+}
+.hm-skills__msg p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--hm-sec, #5a5a66);
+}
+.hm-skills__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #9047ff;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 561px) {
+  .hm--v2 .hm-card {
+    padding: 24px;
+    border: 1px solid var(--hm-line);
+    border-radius: 24px;
+    background: var(--hm-card);
+    box-shadow: none;
+  }
+  .hm--v2 .hm-prac,
+  .hm--v2 .pl-report,
+  .hm--v2 .pl-next {
+    border-radius: 28px;
+  }
+  /* боковые карточки макета — r20 с рамкой #ededed (расписание и домашка) */
+  .hm--v2 .hm-sched,
+  .hm--v2 .hm-hw {
+    border-color: #ededed;
+    border-radius: 20px;
+  }
+  .hm--v2 .hm-card__title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: var(--hm-ink);
+  }
+  .hm--v2 .hm-card__head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .hm--v2 .hm-card__sub {
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--hm-sec);
+  }
+
+  /* «Сегодня»: строки r20, у первой (главной) задачи сиреневый фон; плашка 40 r12, кнопка 40 r16 мелким шрифтом;
+     «просрочено» — просто оранжевым текстом, без плашки. */
+  .hm--v2 .ge-today__head {
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .hm--v2 .ge-today__week {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--hm-sec);
+  }
+  .hm--v2 .ge-tasks {
+    gap: 8px;
+  }
+  .hm--v2 .ge-task {
+    gap: 12px;
+    padding: 12px 16px 12px 12px;
+    border-color: var(--hm-line);
+    border-radius: 20px;
+  }
+  .hm--v2 .ge-task.is-primary {
+    background: #f4f0ff;
+    border-color: #e3dafb;
+  }
+  .hm--v2 .ge-task .ge-plate {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .hm--v2 .ge-task__meta {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--hm-sec);
+  }
+  .hm--v2 .ge-task__chip.is-late {
+    padding: 0;
+    background: none;
+    color: var(--hm-down);
+  }
+  .hm--v2 .ge-task .ih-btn2 {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 24px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* «Практика на сегодня»: плитки 96 на #f8f8f8 r20, справа 3D-значок 64 вместо эмодзи. */
+  .hm--v2 .hm-prac {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .hm--v2 .hm-prac__grid {
+    gap: 12px;
+    margin: 0;
+  }
+  .hm--v2 .hm-prac__tile {
+    min-height: 96px;
+    padding: 16px;
+    gap: 12px;
+    border-radius: 20px;
+    background: var(--hm-tile);
+  }
+  .hm--v2 .hm-prac__tile:hover {
+    background: #f1edfa;
+  }
+  .hm--v2 .hm-prac__text {
+    gap: 4px;
+  }
+  .hm--v2 .hm-prac__text b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: var(--hm-ink);
+  }
+  .hm--v2 .hm-prac__text i {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--hm-sec);
+  }
+  .hm--v2 .hm-prac__emoji {
+    display: none;
+  }
+  .hm--v2 .hm-prac__img {
+    display: block;
+    flex: none;
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+  }
+
+  /* «Сильные и слабые стороны»: строка «навык · тренд · %», полоса 8 под ней; итоги — две плашки 57 столбиком. */
+  .hm--v2 .hm-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .hm--v2 .hm-skills__list {
+    gap: 16px;
+  }
+  .hm--v2 .hm-skill {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'name trend pct'
+      'bar bar bar';
+    column-gap: 8px;
+    row-gap: 8px;
+  }
+  .hm--v2 .hm-skill__name {
+    grid-area: name;
+    color: var(--hm-ink);
+  }
+  .hm--v2 .hm-skill__trend {
+    grid-area: trend;
+  }
+  .hm--v2 .hm-skill__pct {
+    grid-area: pct;
+    color: var(--hm-ink);
+  }
+  .hm--v2 .hm-skill__bar {
+    grid-area: bar;
+    background: var(--hm-tile);
+  }
+  .hm--v2 .hm-skills__tags {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    margin: 0;
+  }
+  .hm--v2 .hm-tag {
+    display: flex;
+    gap: 12px;
+    min-height: 57px;
+    padding: 8px 16px;
+    border-radius: 16px;
+  }
+  .hm--v2 .hm-tag > span {
+    display: flex;
+    flex-direction: column;
+  }
+  .hm--v2 .hm-tag small {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+  }
+  .hm--v2 .hm-tag b {
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 800;
+  }
+  .hm--v2 .hm-tag--up {
+    background: var(--hm-up-bg);
+    color: var(--hm-up);
+  }
+  .hm--v2 .hm-tag--down {
+    background: var(--hm-down-bg);
+    color: var(--hm-down);
+  }
+}
+@media (min-width: 761px) {
+  /* кнопки угла теперь в строке заголовка, плашке демо запас под них не нужен — она во всю ширину, как в макете */
+  .hm--v2 .dm-banner {
+    margin-right: 0;
+  }
+  .hm--v2 .hm-skill__trend--high {
+    color: var(--hm-up);
+  }
+  .hm--v2 .hm-skill__trend--low {
+    color: var(--hm-down);
+  }
+}
+/* баннер без маршрута ниже блока цели (237 против 325): маскот 300×237 стоит на нижнем крае, справа по центру —
+   заголовок, подпись и кнопка */
+@media (min-width: 1101px) {
+  .ih-gb.ge-start {
+    min-height: 237px;
+  }
+  .ge-start .ge-start__body {
+    padding: 24px 28px 24px 0;
+  }
+}

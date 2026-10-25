@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { notificationTarget, practiceUnitTarget } from './studentDeepLink.js'
 
 describe('notificationTarget', () => {
+  it('opens feedback replies without confusing them with progress reports', () => {
+    expect(notificationTarget('/feedback')).toEqual({ screen: 'feedback', payload: null })
+    expect(notificationTarget('feedback')).toEqual({ screen: 'feedback', payload: null })
+    expect(notificationTarget('/feedback-reports/123')).toEqual({ screen: 'lessons', payload: { tab: 'reports', reportId: '123' } })
+  })
   it('opens a live lesson from the teacher workspace route', () => {
     expect(notificationTarget('/system/schedule/42/workspace')).toEqual({
       screen: 'lessons',

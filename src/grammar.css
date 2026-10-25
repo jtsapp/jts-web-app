@@ -1643,3 +1643,10 @@
   font-size: 13px;
   color: #b91c1c;
 }
+.gr-cms-card { display:flex; flex-direction:column; gap:8px; border:1px solid #e9e6f4; background:var(--card,#fff); border-radius:16px; padding:14px; min-width:0; }
+.gr-cms-card h3 { margin:0; font-size:16px; }
+.gr-cms-card p { margin:0; color:#69667a; font-size:13px; line-height:1.45; white-space:pre-wrap; }
+.gr-cms-card__examples { padding:8px; border-radius:9px; background:#f7f6fb; }
+.gr-cms-card__foot { margin-top:auto; display:flex; flex-wrap:wrap; gap:10px; align-items:center; color:#77748b; font-size:12px; }
+.gr-cms-card__foot a { color:#6556c9; text-decoration:none; }
+.gr-cms-card__open { font-weight:700; }

@@ -69,55 +69,62 @@ describe('HomePage — General English', () => {
     expect(document.querySelector('.ge-invite')).toBe(null)
   })
 
-  // С 14.10.2026 анкету «Главной» заменила анкета теста v16: до него роадмап закрыт блюром и зовёт на тест.
-  it('анкеты нет — роадмап закрыт и зовёт на тест (с уровнем и без)', async () => {
+  // С 14.10.2026 анкету «Главной» заменила анкета теста v16. С редизайна (21.10.2026) до теста сверху баннер
+  // «Здесь будет ваш маршрут», а на месте «Сегодня» — «Начните отсюда»: обе кнопки ведут на тест.
+  it('анкеты нет — баннер «Здесь будет ваш маршрут» и «Начните отсюда» зовут на тест (с уровнем и без)', async () => {
     for (const levelUnknown of [false, true]) {
       const onGeStart = vi.fn()
       const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
-      await waitFor(() => expect(screen.getByText('Пройдите тест — построим ваш маршрут')).toBeTruthy())
+      await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
       expect(document.querySelector('.hm-level')).toBe(null)
-      // образец маршрута под блюром недоступен ни скринридеру, ни клавиатуре
-      const preview = document.querySelector('.ge-locked__preview')
-      expect(preview.getAttribute('aria-hidden')).toBe('true')
-      expect(preview.hasAttribute('inert')).toBe(true)
-      fireEvent.click(within(document.querySelector('.ge-locked__veil')).getByRole('button', { name: 'Пройти тест' }))
-      expect(onGeStart).toHaveBeenCalled()
+      // класс ge-locked — якорь шага тура про закрытый маршрут
+      expect(document.querySelector('.ge-start.ge-locked')).toBeTruthy()
+      fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Пройти тест уровня' }))
+      fireEvent.click(within(document.querySelector('.hm-start')).getByRole('button', { name: 'Пройти тест уровня' }))
+      expect(onGeStart).toHaveBeenCalledTimes(2)
       unmount()
     }
   })
 
-  // Учившимся до теста v16 тест не навязываем (решение владельца 14.10): без блюра, но «не пройден» видно.
-  it('учившийся до теста, анкеты нет — обычная карточка «тест не пройден», без блюра', async () => {
+  // Учившимся до теста v16 тест не навязываем (решение владельца 14.10): тот же баннер, но без класса закрытого
+  // маршрута — тур у них про приглашение, а не про замок.
+  it('учившийся до теста, анкеты нет — баннер зовёт на тест, маршрут не «закрыт»', async () => {
     const onGeStart = vi.fn()
     renderHome({ geProfile: { onboarded: false }, existingStudent: true, onGeStart })
-    await waitFor(() => expect(screen.getByText('Тест уровня не пройден')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
     expect(document.querySelector('.ge-locked')).toBe(null)
-    fireEvent.click(within(document.querySelector('.ge-invite')).getByRole('button', { name: 'Пройти тест' }))
+    fireEvent.click(within(document.querySelector('.ge-start.ge-invite')).getByRole('button', { name: 'Пройти тест уровня' }))
     expect(onGeStart).toHaveBeenCalled()
   })
 
-  it('учившийся до теста с блоком цели — блок на месте, под ним «Тест уровня · Не пройден»', async () => {
+  // Решение владельца 21.10.2026: непройденный тест спрашивается в самом блоке «Результаты теста уровня» — у всех, кто
+  // без теста: «Не пройден», плитки навыков с прочерком и кнопка теста.
+  it('учившийся до теста с блоком цели — блок цели на месте, «Результаты теста уровня» пустые и зовут на тест', async () => {
     const onStartLevelTest = vi.fn()
     renderHome({ geProfile: goal, existingStudent: true, onStartLevelTest })
     await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
     expect(document.querySelector('.ge-goal')).toBeTruthy()
-    expect(document.querySelector('.pl-report--missing').textContent).toContain('Не пройден')
-    fireEvent.click(within(document.querySelector('.pl-report--missing')).getByRole('button', { name: 'Пройти тест' }))
-    expect(onStartLevelTest).toHaveBeenCalled()
+    const card = document.querySelector('.pl-report--missing')
+    expect(within(card).getByText('Результаты теста уровня')).toBeTruthy()
+    expect(within(card).getByText('Не пройден')).toBeTruthy()
+    expect([...card.querySelectorAll('.pl-report__chip')].map((n) => n.textContent)).toEqual(['—', '—', '—', '—'])
+    fireEvent.click(within(card).getByRole('button', { name: 'Пройти тест уровня' }))
+    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
   })
 
-  it('новый ученик с блоком цели и без теста — отметки «не пройден» нет', async () => {
-    renderHome({ geProfile: goal })
-    await waitFor(() => expect(document.querySelector('.ge-goal')).toBeTruthy())
-    expect(document.querySelector('.pl-report--missing')).toBe(null)
+  it('новый ученик без теста — тот же пустой блок результатов', async () => {
+    renderHome({ geProfile: { onboarded: false } })
+    await waitFor(() => expect(document.querySelector('.pl-report--missing')).toBeTruthy())
+    expect(document.querySelector('.pl-report--missing').textContent).toContain('Уровень не определён')
   })
 
   it('анкета есть, формата нет — шаг «выберите формат»', async () => {
     const onGeRoute = vi.fn()
     renderHome({ geProfile: { ...goal, route: null }, onGeRoute })
     await waitFor(() => expect(screen.getByText('Выберите, как будете заниматься')).toBeTruthy())
-    fireEvent.click(screen.getByRole('button', { name: 'Выбрать формат' }))
-    expect(onGeRoute).toHaveBeenCalled()
+    fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Выбрать формат' }))
+    fireEvent.click(within(document.querySelector('.hm-start')).getByRole('button', { name: 'Выбрать формат' }))
+    expect(onGeRoute).toHaveBeenCalledTimes(2)
   })
 
   it('всё есть — блок цели: дорожка, срок не указан, правка', async () => {
@@ -180,7 +187,13 @@ describe('HomePage — тур общего курса', () => {
       </LanguageProvider>
     </I18nProvider>
   )
-  const next = (dialog) => fireEvent.click(within(dialog).getByRole('button', { name: /ОК|Далее|Готово/ }))
+  const next = (dialog) => fireEvent.click(within(dialog).getByRole('button', { name: /Далее|Готово/ }))
+  const intro = () => screen.findByRole('dialog', { name: 'Добро пожаловать!' })
+  const walkHints = async (first) => {
+    next(await screen.findByRole('dialog', { name: first }))
+    next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
+    next(await screen.findByRole('dialog', { name: 'Разделы слева — что за что отвечает' }))
+  }
 
   beforeEach(() => {
     localStorage.removeItem('jts_tours_off')
@@ -193,29 +206,88 @@ describe('HomePage — тур общего курса', () => {
     expect(screen.queryByRole('dialog')).toBe(null)
   })
 
-  it('профиль приехал после монтирования — тур идёт по новой «Главной»: цель, путь, навыки, «Сегодня», задача, весь план', async () => {
+  // Макет «Первый заход и подсказки» (21.10.2026): приветствие по имени и три подсказки вместо девяти шагов по блокам.
+  it('профиль приехал после монтирования — приветствие по имени и три подсказки: прогресс, расписание с домашкой, разделы', async () => {
     getGePlan.mockResolvedValue(plan)
     const { rerender } = render(tree({ geProfile: null, geLoaded: false }))
     await new Promise((r) => setTimeout(r, 30))
     rerender(tree({ geProfile: goal, geLoaded: true }))
-    const first = await screen.findByRole('dialog', { name: 'Ваша цель и срок' })
-    expect(within(first).queryAllByRole('radio')).toHaveLength(0)
-    // шаги — только под блоки на экране: цель, путь, навыки, «Сегодня», задача, весь план, практика, расписание, домашка
-    expect(within(first).getByText('1/9')).toBeTruthy()
+    const hello = await intro()
+    expect(within(hello).getByText('Сакен')).toBeTruthy()
+    fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+
+    const first = await screen.findByRole('dialog', { name: 'Здесь виден ваш прогресс' })
+    expect(first.querySelectorAll('.t-tour__dots i')).toHaveLength(3)
     next(first)
-    next(await screen.findByRole('dialog', { name: 'Путь до цели' }))
-    next(await screen.findByRole('dialog', { name: 'Сильные и слабые стороны' }))
-    next(await screen.findByRole('dialog', { name: 'План на сегодня' }))
-    const task = await screen.findByRole('dialog', { name: 'Задача' })
-    expect(within(task).getByText(/6 \/ 15 мин/)).toBeTruthy()
-    next(task)
-    expect(await screen.findByRole('dialog', { name: 'Весь план' })).toBeTruthy()
+    next(await screen.findByRole('dialog', { name: 'Ближайшие уроки и домашка' }))
+    // разделы — ровно пункты сайдбара этого ученика, без «Главной»
+    const last = await screen.findByRole('dialog', { name: 'Разделы слева — что за что отвечает' })
+    expect(within(last).getByText('Speaking Buddy')).toBeTruthy()
+    expect(within(last).getByText('Разговор с тьютором голосом и ролевые сценарии')).toBeTruthy()
+    expect(within(last).queryByText('Главная')).toBe(null)
+    expect(within(last).queryByRole('button', { name: 'Пропустить' })).toBe(null)
+    next(last)
+    await waitFor(() => expect(localStorage.getItem('jts_tour_home:user-7:ge')).toBe('1'))
     getGePlan.mockReset().mockResolvedValue(null)
   })
 
   it('видевший старый тур увидит обновлённый один раз', async () => {
     localStorage.setItem('jts_tour_home:user-7', '1')
     render(tree({ geProfile: goal, geLoaded: true }))
-    expect(await screen.findByRole('dialog', { name: 'Ваша цель и срок' })).toBeTruthy()
+    expect(await intro()).toBeTruthy()
+  })
+
+  // Решение владельца 21.10.2026: новому ученику тест — сразу после тура, как бы тур ни закрыли.
+  it('новый ученик: после тура сразу тест — и по «Готово», и по «Пропустить»', async () => {
+    for (const how of ['done', 'skip']) {
+      localStorage.clear()
+      const onGeStart = vi.fn()
+      const { unmount } = render(tree({ geProfile: { onboarded: false }, levelUnknown: true, onGeStart }))
+      const hello = await intro()
+      if (how === 'skip') {
+        fireEvent.click(within(hello).getByRole('button', { name: 'Пропустить' }))
+      } else {
+        fireEvent.click(within(hello).getByRole('button', { name: /Показать/ }))
+        await walkHints('Здесь будет ваш маршрут')
+      }
+      await waitFor(() => expect(onGeStart).toHaveBeenCalledTimes(1))
+      // окно «Жёсткий режим» ждёт возвращения с пройденным тестом: поверх закрытого роадмапа его нет
+      expect(screen.queryByRole('dialog', { name: 'Жесткий режим общения' })).toBe(null)
+      unmount()
+    }
+  })
+
+  it('учившийся до теста: тест остаётся на «Главной», после тура — окно «Жёсткий режим» один раз', async () => {
+    const onGeStart = vi.fn()
+    const onTemperChoice = vi.fn()
+    const props = { geProfile: { onboarded: false }, existingStudent: true, onGeStart, onTemperChoice }
+    const { unmount } = render(tree(props))
+    fireEvent.click(within(await intro()).getByRole('button', { name: 'Пропустить' }))
+    const invite = await screen.findByRole('dialog', { name: 'Жесткий режим общения' })
+    expect(onGeStart).not.toHaveBeenCalled()
+    fireEvent.click(within(invite).getByRole('button', { name: 'Попробовать жесткий режим' }))
+    expect(onTemperChoice).toHaveBeenCalledWith('harsh')
+    expect(screen.queryByRole('dialog', { name: 'Жесткий режим общения' })).toBe(null)
+    unmount()
+
+    render(tree(props))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(screen.queryByRole('dialog')).toBe(null)
+  })
+
+  it('«Оставить обычный режим» нрав не трогает; видевшим тур раньше окно не выходит', async () => {
+    const onTemperChoice = vi.fn()
+    const { unmount } = render(tree({ geProfile: goal, onTemperChoice }))
+    fireEvent.click(within(await intro()).getByRole('button', { name: 'Пропустить' }))
+    const invite = await screen.findByRole('dialog', { name: 'Жесткий режим общения' })
+    fireEvent.click(within(invite).getByRole('button', { name: 'Оставить обычный режим' }))
+    expect(onTemperChoice).not.toHaveBeenCalled()
+    unmount()
+
+    localStorage.clear()
+    localStorage.setItem('jts_tour_home:user-7:ge', '1')
+    render(tree({ geProfile: goal, onTemperChoice }))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(screen.queryByRole('dialog')).toBe(null)
   })
 })

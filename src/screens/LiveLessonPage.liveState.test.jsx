@@ -175,6 +175,14 @@ const openTopic = (container) => container.querySelector('.lv-topics__btn[aria-c
 /** Рамка на экране (или null — её нет: доска, шаги разбора). */
 const frameOf = (container) => container.querySelector('iframe.lw-material-iframe')
 
+/** Сообщение «от рамки урока»: приложение верит только окну своей рамки (SectionMaterialFrame). */
+const fromLessonFrame = (data) => act(async () => {
+  window.dispatchEvent(new MessageEvent('message', {
+    data,
+    source: document.querySelector('iframe.lw-material-iframe')?.contentWindow,
+  }))
+})
+
 /** Рамка загрузилась и осела — теперь ей можно писать. */
 async function loadFrame(container) {
   const iframe = container.querySelector('iframe.lw-material-iframe')
@@ -803,7 +811,7 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
 
 describe('LiveLessonPage — преподаватель', () => {
   const presentEvent = { source: 'jts-bridge', type: 'present-event', selector: '#a', eventType: 'click' }
-  const bridge = (data) => act(async () => { window.dispatchEvent(new MessageEvent('message', { data })) })
+  const bridge = fromLessonFrame
 
   // Приёмка §11 п.7: после F5 «ведёт класс» и раздел на месте — действия в
   // рамке снова уходят классу.
@@ -980,9 +988,7 @@ describe('LiveLessonPage — преподаватель', () => {
 
   // Стадию своей рамки ведущий преподаватель сообщает серверу — за ней идут
   // следующие ученики (приёмка §11 п.1 для урока, который ведут отсюда).
-  const frameStage = (index) => act(async () => {
-    window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage', index, total: 7 } }))
-  })
+  const frameStage = (index) => fromLessonFrame({ source: 'jts-lesson', type: 'stage', index, total: 7 })
 
   it('стадия своей рамки уходит серверу, пока ведёт на материале класса', async () => {
     await renderAsTeacher()
@@ -1028,9 +1034,7 @@ describe('LiveLessonPage — преподаватель', () => {
   it('переход по стадии из «Тем» уходит серверу', async () => {
     const { container } = await renderAsTeacher()
     await connectWith(leadingAt(3, 11))
-    await act(async () => {
-      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] } }))
-    })
+    await fromLessonFrame({ source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] })
     await frameStage(0)
 
     const post = await loadFrame(container)
@@ -1048,9 +1052,7 @@ describe('LiveLessonPage — преподаватель', () => {
     sections = [{ ...SECTIONS[0], materials: [{ ...SECTIONS[0].materials[0], focusLessonNo: 5 }] }, SECTIONS[1]]
     const { container } = await renderAsTeacher()
     await connectWith(leadingAt(3, 11))
-    await act(async () => {
-      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] } }))
-    })
+    await fromLessonFrame({ source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] })
     const iframe = frameOf(container)
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
 

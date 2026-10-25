@@ -47,7 +47,9 @@ const AudioCtx = () => globalThis.AudioContext || globalThis.webkitAudioContext 
 /**
  * @returns {{ supported: boolean, state: 'idle'|'starting'|'recording'|'transcribing', elapsed: number,
  *   error: null|'denied'|'not_heard'|'stt_failed'|'rate'|'auth', retryAfterSec: number|null,
- *   toggle: () => void, cancel: () => void, clearError: () => void }}
+ *   toggle: () => void, cancel: () => void, clearError: () => void,
+ *   listen: (opts: { noVoiceMs?: number, onText?: (t: string) => void, onNoVoice?: () => void }) => void,
+ *   transcribeAudio: (wav: Blob, opts?: { onText?: (t: string) => void }) => Promise<void>|undefined }}
  */
 export function useVoiceQuestion({ token, lang, screenId, onText }) {
   const { state: recState, error: recError, elapsed, stream, start: recStart, stop: recStop, release, drop } = useRecorder()
@@ -69,6 +71,9 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
   useLayoutEffect(() => {
     ctx.current = { token, lang, screenId, onText }
   })
+  // Параметры текущей записи (позывной окна, 21.10.2026): своё ожидание первой речи,
+  // свой получатель текста и «промолчал» вместо ошибки. У кнопки микрофона их нет.
+  const optsRef = useRef(null)
 
   // Ушли со страницы (выход из аккаунта размонтирует помощника): запись в
   // мусор, распознавание оборвать, контекст закрыть.
@@ -94,7 +99,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
     const t0 = performance.now()
     let noise = Infinity
     let detect = null
-    const endpoint = createEndpointer()
+    const noVoiceMs = optsRef.current?.noVoiceMs
+    const endpoint = createEndpointer(noVoiceMs ? { noVoiceMs } : undefined)
     const id = setInterval(() => {
       analyser.getFloatTimeDomainData(buf)
       const now = performance.now()
@@ -121,7 +127,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
 
   const transcribe = useCallback(
     async (out) => {
-      const { token: tk, lang: lg, screenId: scr, onText: cb } = ctx.current
+      const { token: tk, lang: lg, screenId: scr, onText: own } = ctx.current
+      const cb = optsRef.current?.onText || own
       const abort = new AbortController()
       sttAbortRef.current = abort
       setBusy(true)
@@ -163,9 +170,10 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
   )
 
   // Зовётся синхронно из нажатия: всё до первого await — ещё в тике жеста.
-  const start = useCallback(async () => {
+  const start = useCallback(async (opts = null) => {
     if (startingRef.current) return
     startingRef.current = true
+    optsRef.current = opts
     setStarting(true)
     setOwnError(null)
     noVoiceRef.current = false
@@ -182,6 +190,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
           if (cancelledRef.current) return drop(out.url)
           if (noVoiceRef.current) {
             drop(out.url)
+            const quiet = optsRef.current?.onNoVoice
+            if (quiet) return quiet()
             return setOwnError('not_heard')
           }
           transcribe(out)
@@ -198,8 +208,29 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
   const toggle = useCallback(() => {
     if (startingRef.current || busy || recState === 'processing') return
     if (recState === 'recording') recStop()
-    else start()
+    else start(null)
   }, [busy, recState, recStop, start])
+
+  /** Запись без нажатия — после позывного «Луна» (opts — см. optsRef). */
+  const listen = useCallback(
+    (opts) => {
+      if (startingRef.current || busy || recState !== 'idle') return
+      start(opts)
+    },
+    [busy, recState, start],
+  )
+
+  /** Готовая запись (звук, снятый «ухом», wake/preroll.js) — сразу в распознавание. */
+  const transcribeAudio = useCallback(
+    (wav, opts = null) => {
+      if (!wav || busy) return undefined
+      optsRef.current = opts
+      cancelledRef.current = false
+      setOwnError(null)
+      return transcribe({ wav, url: null })
+    },
+    [busy, transcribe],
+  )
 
   // Окно закрыли: запись в мусор, распознавание оборвать.
   const cancel = useCallback(() => {
@@ -222,5 +253,5 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
       : busy || recState === 'processing'
         ? 'transcribing'
         : 'idle'
-  return { supported, state, elapsed, error, retryAfterSec, toggle, cancel, clearError }
+  return { supported, state, elapsed, error, retryAfterSec, toggle, cancel, clearError, listen, transcribeAudio }
 }

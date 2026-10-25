@@ -5,6 +5,11 @@
 // web-admin — другого источника у него нет: бэкенд этот контент не хранит и
 // хранить не должен (см. ContentType — PRACTICE_* на бэкенде).
 //
+// Исключение растёт: материалы Практики переезжают в админку раздел за
+// разделом (спека 2026-10-21-practice-content-to-admin-design.md). Счётчики
+// Аудирования и тексты «Чтения» берутся у бэкенда (/practice-content/<раздел>/…),
+// а с диска — только пока пакет на стенде не залит.
+//
 // Отдельная ручка, а не прямая ссылка на статику, по двум причинам:
 //  * статику Next отдаёт без CORS, и запрос с домена админки браузер отклонил бы;
 //  * из индексов нужен СПИСОК юнитов, а не всё их содержимое — теорию, тексты и
@@ -22,6 +27,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { SITUATION_LEVELS } from '../../../../practice/situations/levels.js'
 import { LESSONS as SHADOWING_LESSONS } from '../../../../practice/shadowing/lessons.js'
+import { BACKEND_URL } from '../../../../lib/auth-server.js'
 
 export const runtime = 'nodejs'
 
@@ -32,7 +38,8 @@ const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  // Оглавление меняется вместе с релизом приложения, не чаще.
+  // Пять минут — как у публичных ручек бэкенда: разделы, переехавшие в
+  // админку, меняются без релиза, и скрытое там должно уйти из каталога скоро.
   'Cache-Control': 'public, max-age=300',
 }
 
@@ -88,24 +95,68 @@ async function grammarArea() {
   })
 }
 
-/** «Чтение»: единица — текст, адрес — его id (a1-sci-honey). */
+/**
+ * «Чтение»: единица — текст, адрес — его id (a1-sci-honey).
+ *
+ * Тексты — с бэкенда (их заводят в админке), пока пакет не залит — с диска.
+ * Источник один на весь раздел: упади один уровень с бэкенда, а остальные
+ * возьмись с диска, преподаватель увидел бы смесь двух каталогов — с текстами,
+ * которые на стенде уже скрыты или удалены.
+ */
 async function readingArea() {
   return safe(async () => {
-    const dir = path.join(PRACTICE_DIR(), 'reading')
-    const levels = []
-    for (const code of await levelFiles(dir)) {
-      const data = await readJson(path.join(dir, `${code}.json`))
-      const units = (data.texts || []).map((text) => ({
-        key: text.id,
-        title: stripTags(text.title),
-        section: text.genre || '',
-        minutes: text.mins ?? null,
-        difficulty: null,
-      }))
-      if (units.length) levels.push({ code, label: code.toUpperCase(), units })
+    const levels = (await remoteReadingLevels()) || (await diskReadingLevels())
+    return {
+      key: 'reading',
+      title: 'Чтение',
+      levels: levels.map(({ code, texts }) => ({
+        code,
+        label: code.toUpperCase(),
+        units: texts.map((text) => ({
+          key: text.id,
+          title: stripTags(text.title),
+          section: text.genre || '',
+          minutes: text.mins ?? null,
+          difficulty: null,
+        })),
+      })),
     }
-    return { key: 'reading', title: 'Чтение', levels }
   })
+}
+
+// null — «у бэкенда нет»: пакет не залит, бэкенд молчит или ответил не то.
+async function remoteReadingLevels() {
+  try {
+    const get = async (p) => {
+      const res = await fetch(`${BACKEND_URL}/practice-content/reading/${p}`, {
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error('bad status ' + res.status)
+      return res.json()
+    }
+    const rows = await get('levels')
+    const codes = Array.isArray(rows)
+      ? rows.filter((r) => r && typeof r.level === 'string' && r.count > 0).map((r) => r.level)
+      : []
+    if (!codes.length) return null
+    const texts = await Promise.all(codes.map((code) => get(code)))
+    if (texts.some((list) => !Array.isArray(list))) return null
+    return codes.map((code, i) => ({ code, texts: texts[i] })).filter((l) => l.texts.length)
+  } catch {
+    return null
+  }
+}
+
+async function diskReadingLevels() {
+  const dir = path.join(PRACTICE_DIR(), 'reading')
+  const out = []
+  for (const code of await levelFiles(dir)) {
+    const data = await readJson(path.join(dir, `${code}.json`))
+    const texts = data.texts || []
+    if (texts.length) out.push({ code, texts })
+  }
+  return out
 }
 
 /** «Письмо»: единица — жанр (seed), адрес — его id (a1-form). */
@@ -137,13 +188,11 @@ async function writingArea() {
  */
 async function listeningArea() {
   return safe(async () => {
-    const dir = path.join(PRACTICE_DIR(), 'listening', 'content')
-    const levels = []
-    for (const code of await levelFiles(dir)) {
-      const items = await readJson(path.join(dir, `${code}.json`))
-      const count = Array.isArray(items) ? items.length : 0
-      if (!count) continue
-      levels.push({
+    const levels = (await remoteListeningLevels()) || (await diskListeningLevels())
+    return {
+      key: 'listening',
+      title: 'Аудирование',
+      levels: levels.map(({ code, count }) => ({
         code,
         label: code.toUpperCase(),
         units: [{
@@ -153,10 +202,38 @@ async function listeningArea() {
           minutes: null,
           difficulty: null,
         }],
-      })
+      })),
     }
-    return { key: 'listening', title: 'Аудирование', levels }
   })
+}
+
+// null — «у бэкенда нет»: пакет не залит, бэкенд молчит или ответил не то.
+async function remoteListeningLevels() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/practice-content/listening/levels`, {
+      signal: AbortSignal.timeout(5000),
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const rows = await res.json()
+    const levels = Array.isArray(rows)
+      ? rows.filter((r) => r && typeof r.level === 'string' && r.count > 0).map((r) => ({ code: r.level, count: r.count }))
+      : []
+    return levels.length ? levels : null
+  } catch {
+    return null
+  }
+}
+
+async function diskListeningLevels() {
+  const dir = path.join(PRACTICE_DIR(), 'listening', 'content')
+  const out = []
+  for (const code of await levelFiles(dir)) {
+    const items = await readJson(path.join(dir, `${code}.json`))
+    const count = Array.isArray(items) ? items.length : 0
+    if (count) out.push({ code, count })
+  }
+  return out
 }
 
 /**

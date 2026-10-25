@@ -7,8 +7,9 @@ import { reportUnauthorized } from './lib/session.js'
 import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
+import { API_BASE } from './lib/apiBase.js'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
+const BASE = API_BASE
 
 // Приводим телефон к формату бэкенда: цифры «код страны + национальный номер»
 // без «+» (E.164 без плюса). Бэкенд хранит и ищет номер по точному совпадению
@@ -99,6 +100,77 @@ async function authGet(path, token) {
     throw err
   }
   return res.json()
+}
+
+// Баланс токенов, действующие призы и собственные заявки ученика. Источник
+// баланса — серверный журнал начислений, поэтому экран не пересчитывает его
+// из локального прогресса.
+export function getMyTokens(token) {
+  return authGet('/cabinet/my-tokens', token)
+}
+
+export function getCabinetFeedback(token) {
+  return authGet('/cabinet/feedback/mine', token)
+}
+
+export function getPublishedGrammar(token, level) {
+  const query = level ? `?level=${encodeURIComponent(level)}` : ''
+  return authGet(`/mobile/grammar${query}`, token)
+}
+
+export function getCabinetFeedbackTargets(token) {
+  return authGet('/cabinet/feedback/targets', token)
+}
+
+export function submitCabinetFeedback(token, body) {
+  return authPost('/cabinet/feedback', token, body)
+}
+
+export function getCabinetFeedbackMessages(token, id) {
+  return authGet(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token)
+}
+
+export function getCabinetFeedbackHistory(token, id) {
+  return authGet(`/cabinet/feedback/${encodeURIComponent(id)}/history`, token)
+}
+
+export function replyCabinetFeedback(token, id, body) {
+  return authPost(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token, body)
+}
+
+/** Сервер сам сверяет ответы внутреннего финального теста с версией экзамена и пишет результат в рейтинг. */
+export function submitRankingFinalTest(token, body) {
+  return authPost('/cabinet/ranking/final-test', token, body)
+}
+
+export async function uploadCabinetFeedbackFile(token, file) {
+  const form = new FormData()
+  form.append('file', file)
+  let res
+  try {
+    res = await fetch(`${BASE}/cabinet/feedback/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+  } catch {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) {
+    if (res.status === 401) reportUnauthorized(token)
+    const error = new Error(`Ошибка сервера (${res.status})`)
+    error.status = res.status
+    error.serverMessage = await rejectionText(res, error)
+    throw error
+  }
+  return res.json()
+}
+
+// Запрос приза списывает стоимость атомарно на сервере. requestKey остаётся
+// тем же при повторах после сетевой ошибки, поэтому двойной клик не создаёт
+// вторую заявку и не списывает токены повторно.
+export function claimPrize(token, prizeId, requestKey) {
+  return authPost(`/cabinet/prizes/${encodeURIComponent(prizeId)}/claim`, token, { requestKey })
 }
 
 async function authPut(path, token, body, { keepalive = false } = {}) {
@@ -716,6 +788,16 @@ export function getMyLessonOccurrences(token) {
   return authGet('/admin/lessons/occurrences', token)
 }
 
+export const getMatchingCase = token => authGet('/student/matching', token)
+export const getMatchingCandidates = token => authGet('/student/matching/candidates', token)
+export const saveMatchingPreferences = (token, preferences) => authPut('/student/matching/preferences', token, preferences)
+export const askMatchingManager = (token, preferences) => authPost('/student/matching/ask-manager', token, preferences)
+export const sendMatchingRequests = (token, teacherIds) => authPost('/student/matching/requests', token, {teacherIds})
+export const confirmMatchingSchedule = token => authPost('/student/matching/confirm', token, {})
+export const requestTeacherChange = (token, reason, text) => authPost('/student/matching/change', token, {reason, text})
+export const getMatchingHandoffs = token => authGet('/student/matching/handoffs', token)
+export const chooseMatchingHandoff = (token, id, choice) => authPost('/student/matching/handoffs/'+id+'/choice', token, {choice})
+
 export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
@@ -1116,12 +1198,13 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 3 регистрации (после того как собрали номер и почту — см.
-// RegisterPhonePage/RegisterEmailPage): отправляет оба идентификатора сразу.
+// Запрос кода регистрации (шаг «Как с вами связаться?», screens/auth/
+// ContactsStep): имя, дата, почта и номер собраны — отправляем всё сразу.
 // Бэкенд шлёт код на почту, когда она есть (RegistrationService: email
 // предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
-// веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
-// уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
+// веб-формы: имя и дата → почта и номер → код на почту → пароль. Если телефон
+// или почта уже заняты — не уводим молча в вход, а помечаем ошибку кодом
+// USER_EXISTS.
 export async function sendRegistrationOtp(name, phone, email, birthDate) {
   try {
     await post('/registration/initiate', {
@@ -1135,9 +1218,23 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
     })
     return 'register'
   } catch (e) {
-    if (isUserExistsError(e)) e.code = 'USER_EXISTS'
+    if (isUserExistsError(e)) {
+      e.code = 'USER_EXISTS'
+      // Что именно занято — почта или номер, — бэкенд пишет в тексте
+      // (UserIdentityConflict): экран ставит ошибку под нужное поле.
+      e.field = identityConflictField(e)
+    }
     throw e
   }
+}
+
+// 'email' | 'phone' | null — по тексту ответа бэкенда («с такой почтой…», «с
+// таким телефоном…») или по имени уникального индекса из сырой ошибки базы.
+export function identityConflictField(e) {
+  const msg = (e?.message || '').toLowerCase()
+  if (/почт|email/.test(msg)) return 'email'
+  if (/телефон|phone/.test(msg)) return 'phone'
+  return null
 }
 
 // Шаг 4: проверка кода, присланного на почту. Создаёт пользователя сразу с
@@ -1980,6 +2077,88 @@ export function getVocabScope(token, id, onFresh) {
     token,
     onFresh,
   )
+}
+
+// Just to Listen: оглавление (уровни и направления без слов) и набор целиком.
+// Большой набор cachedAuthGet держит только в памяти вкладки (порог
+// CATALOG_STORE_MAX_CHARS), в localStorage он вытеснял бы прогресс. 404 у
+// оглавления — материалы ещё не загружены через админку.
+export function getListenIndex(token, onFresh) {
+  return cachedAuthGet('/mobile/listen', token, onFresh)
+}
+
+export function getListenSet(token, id, onFresh) {
+  return cachedAuthGet(`/mobile/listen/sets/${encodeURIComponent(id)}`, token, onFresh)
+}
+
+// Prepositions World: весь курс одним бандлом (~1 МБ, форма прототипа, медиа — ссылки MinIO). Большой ответ
+// cachedAuthGet держит только в памяти вкладки — в localStorage он вытеснял бы прогресс.
+export function getPrepositions(token, onFresh) {
+  return cachedAuthGet('/mobile/prepositions', token, onFresh)
+}
+
+// «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
+// ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
+// localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и
+// словарь экран держит в памяти вкладки сам (screens/grammar-games/useGrammarGamesData.js). 404 у списка —
+// раздел ещё не залит через админку.
+export function getGrammarGames(token) {
+  return authGet('/mobile/grammar-games', token)
+}
+
+export function getGrammarGamesTopic(token, id) {
+  return authGet(`/mobile/grammar-games/topics/${encodeURIComponent(id)}`, token)
+}
+
+export function getGrammarGamesGloss(token) {
+  return authGet('/mobile/grammar-games/gloss', token)
+}
+
+export function getGrammarGamesProgress(token) {
+  return authGet('/mobile/grammar-games/progress', token)
+}
+
+// Ровно три поля: бэкенд строгий, лишнее поле — 400. Монеты считает он (только прирост лучшего результата),
+// ответ — { best, coins, balance }; 409 — та же сдача уже записывается, повторить (practice/grammar-games/results.js).
+export function postGrammarGamesResult(token, { topicId, game, stars }) {
+  return authPost('/mobile/grammar-games/result', token, { topicId, game, stars })
+}
+
+// «Скорочтение»: тексты (с готовым образцом озвучки или без него — тогда его создаёт роут сайта
+// /api/practice/speed-reading/sample), свои попытки и сдача попытки (контракт — backend
+// docs/practice/SPEED_READING.md). Без кэша: тексты правит админка, попытки приходят и с других устройств.
+// Пустой список — раздел ещё не наполнен. Ответ разбирает practice/speed-reading/data.js.
+export function getSpeedReadingTexts(token) {
+  return authGet('/mobile/speed-reading/texts', token)
+}
+
+export function getSpeedReadingAttempts(token, limit = 20) {
+  return authGet(`/mobile/speed-reading/attempts?limit=${encodeURIComponent(limit)}`, token)
+}
+
+// Тело — attemptBody() (ровно девять полей: цифры попытки, записи нет — Д6). Ответ — { attempt, coins, balance };
+// монеты считает бэкенд (раз в сутки на текст, Д16).
+export function postSpeedReadingAttempt(token, body) {
+  return authPost('/mobile/speed-reading/attempts', token, body)
+}
+
+// Cartoon World: каталог (~330 КБ — источники прототипа как есть, ссылки на фоны, нерабочие видео). Большой ответ
+// cachedAuthGet держит только в памяти вкладки.
+export function getCartoons(token, onFresh) {
+  return cachedAuthGet('/mobile/cartoons', token, onFresh)
+}
+
+// Одна миссия видео (~8 КБ) — при открытии видео. Без кэша в localStorage: 726 миссий съели бы квоту, а память
+// вкладки держит сам движок.
+export function getCartoonMission(token, id) {
+  return authGet(`/mobile/cartoons/missions/${encodeURIComponent(id)}`, token)
+}
+
+// Word Hunt: прототип целиком одним бандлом (~6,5 МБ: словарь курса, станции, аудит подсказок; записи и картинки —
+// ссылки MinIO). Большой ответ cachedAuthGet держит только в памяти вкладки — в localStorage он вытеснял бы прогресс.
+// 404 — прототип ещё не залит через админку.
+export function getWordHunt(token, onFresh) {
+  return cachedAuthGet('/mobile/word-hunt', token, onFresh)
 }
 
 export function listLessonVocab(token, onFresh) {

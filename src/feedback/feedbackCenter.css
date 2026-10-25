@@ -1,0 +1,42 @@
+.fc { max-width: 760px; margin: 0 auto; padding: 16px 14px 42px; color: var(--text, #24213a); }
+.fc__head { margin-bottom: 16px; }
+.fc__head h1 { margin: 10px 0 4px; font-size: 26px; }
+.fc__head p { color: #77748b; margin: 0; }
+.fc__back { border: 0; background: transparent; color: #6758ce; font: inherit; padding: 8px 0; cursor: pointer; }
+.fc__panel { background: var(--card, #fff); border: 1px solid #eceaf5; border-radius: 18px; padding: 16px; margin-top: 14px; box-shadow: 0 5px 18px #30245d0b; }
+.fc__panel h2 { font-size: 17px; margin: 0 0 14px; }
+.fc form { display: grid; gap: 12px; }
+.fc form > label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
+.fc select, .fc textarea { width: 100%; box-sizing: border-box; border: 1px solid #e1dfeb; border-radius: 11px; padding: 11px 12px; font: inherit; background: #fff; color: inherit; }
+.fc textarea { resize: vertical; min-height: 90px; }
+.fc label small { text-align: right; color: #88849b; font-weight: 400; }
+.fc__filebtn { display: inline-flex; align-items: center; width: fit-content; border: 1px dashed #beb8e6; border-radius: 10px; padding: 9px 12px; color: #6254c6; cursor: pointer; font-size: 13px; }
+.fc__filebtn input { display: none; }
+.fc__files { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.fc__files > span { background: #f3f1fb; border-radius: 20px; padding: 5px 10px; font-size: 12px; }
+.fc__files button { border: 0; background: none; margin-left: 6px; cursor: pointer; }
+.fc__submit, .fc__reply button { border: 0; border-radius: 11px; background: #6958d5; color: white; padding: 12px 16px; font-weight: 700; cursor: pointer; }
+.fc__submit:disabled, .fc__reply button:disabled, .fc__reply-submit:disabled { opacity: .52; cursor: not-allowed; filter: saturate(.65); }
+.fc button:disabled { opacity: .5; cursor: default; }
+.fc__error, .fc__notice { border-radius: 11px; padding: 11px 13px; margin: 10px 0; }
+.fc__error { background: #fff0f0; color: #a83434; }
+.fc__notice { background: #eff9f2; color: #267441; }
+.fc__cases { display: grid; gap: 8px; }
+.fc__case { display: grid; gap: 3px; text-align: left; background: #faf9fd; border: 1px solid #edeaf5; border-radius: 12px; padding: 11px; color: inherit; font: inherit; cursor: pointer; }
+.fc__case.is-active { border-color: #887ce0; background: #f6f4ff; }
+.fc__case span, .fc__case small { color: #77748b; font-size: 12px; }
+.fc__case small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc__thread { border-top: 1px solid #eceaf5; margin-top: 14px; padding-top: 14px; }
+.fc__thread h3 { margin: 0 0 10px; font-size: 15px; }
+.fc__message { border: 1px solid #efedf6; border-radius: 12px; padding: 11px; margin: 8px 0; }
+.fc__message time { float: right; color: #89869a; font-size: 11px; }
+.fc__message p { white-space: pre-wrap; margin: 8px 0; }
+.fc__message a { display: block; font-size: 12px; }
+.fc__reply { margin-top: 12px; }
+.fc__reply textarea { min-height: 70px; }
+@media (max-width: 520px) { .fc { padding: 10px 10px 28px; } .fc__panel { padding: 13px; border-radius: 15px; } .fc__head h1 { font-size: 22px; } }
+.fc__decision { padding: 12px; border-radius: 12px; background: #f2effc; margin: 12px 0; }
+.fc__decision p, .fc__history p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fc__history article { border-left: 3px solid #d8d0f2; padding: 6px 12px; margin: 8px 0; }
+.fc__history time { display: block; font-size: 11px; color: #77748b; }
+.fc__history b { font-size: 13px; }

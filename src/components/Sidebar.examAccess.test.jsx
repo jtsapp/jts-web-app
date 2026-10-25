@@ -34,13 +34,13 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
   })
 
   it('у ученика с доступом к SAT меню экзаменов — с «Повторением» первым', async () => {
-    me.sat = { access: true }
+    me.sat = { access: true, purchased: true }
     draw()
     await waitFor(() => expect(labels()).toContain('SAT'))
     const l = labels()
     expect(l[0]).toBe('Главная')
     expect(l[1]).toBe('Повторение')
-    expect(l).toContain('IELTS')
+    expect(l).not.toContain('IELTS')
   })
 
   it('у аккаунта IELTS — тоже', async () => {
@@ -51,7 +51,7 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
   })
 
   it('нажатие ведёт на экран «Повторения» (learning), а App не уводит его в IELTS', async () => {
-    me.sat = { access: true }
+    me.sat = { access: true, purchased: true }
     const onNav = vi.fn()
     draw(onNav)
     await waitFor(() => expect(labels()).toContain('SAT'))

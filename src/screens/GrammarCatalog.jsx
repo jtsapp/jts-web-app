@@ -92,7 +92,7 @@ export function GrammarCard({ unit, done = false, picked = false, pickMode = fal
 // Полный каталог грамматики: чипы уровней A1–C2, поиск, секции с пилюлей
 // «Unit X-Y» и рейлами карточек.
 export default function GrammarCatalog({
-  index, activeLevel, onLevel, search, onSearch, onOpen,
+  index, activeLevel, onLevel, search, onSearch, onOpen, cmsUnits = [],
   pickMode = false, pickedIds, onTogglePick,
 }) {
   const { t } = useI18n()
@@ -144,15 +144,7 @@ export default function GrammarCatalog({
         ))}
       </div>
 
-      {!level ? (
-        <div className="gr-empty">
-          {t('practice.grammar.soon', {
-            label: GRAMMAR_LEVELS.find((l) => l.code === activeLevel)?.label,
-          })}
-        </div>
-      ) : groups.length === 0 ? (
-        <div className="gr-empty">{t('practice.grammar.nothing', { q: search.trim() })}</div>
-      ) : (
+      {level && groups.length > 0 && (
         groups.map((g) => (
           <section key={g.key} className="pp-sec">
             <div className="pp-sec__head">
@@ -174,6 +166,28 @@ export default function GrammarCatalog({
             </div>
           </section>
         ))
+      )}
+
+      {!level && cmsUnits.length === 0 && <div className="gr-empty">{t('practice.grammar.soon', {label: GRAMMAR_LEVELS.find((l) => l.code === activeLevel)?.label})}</div>}
+      {level && groups.length === 0 && cmsUnits.length === 0 && <div className="gr-empty">{t('practice.grammar.nothing', {q: search.trim()})}</div>}
+      {cmsUnits.filter(unit => !search.trim() || `${unit.topic} ${unit.ruleText || ''} ${unit.examples || ''}`.toLowerCase().includes(search.trim().toLowerCase())).length > 0 && (
+        <section className="pp-sec gr-cms-units">
+          <div className="pp-sec__head"><h2>Материалы преподавателя</h2></div>
+          <div className="gr-grid">
+            {cmsUnits.filter(unit => !search.trim() || `${unit.topic} ${unit.ruleText || ''} ${unit.examples || ''}`.toLowerCase().includes(search.trim().toLowerCase())).map(unit => (
+              <article className="gr-cms-card" key={`cms-${unit.id}`}>
+                <div className="gr-unit-no">{unit.level} · Unit {unit.unitNo}</div>
+                <h3>{unit.topic}</h3>
+                {unit.ruleText && <p>{unit.ruleText}</p>}
+                {unit.examples && <p className="gr-cms-card__examples">{unit.examples}</p>}
+                <div className="gr-cms-card__foot"><span>⏱ {unit.minutes}m</span>
+                  {unit.videoUrl && <a href={unit.videoUrl} target="_blank" rel="noopener noreferrer">Видео ↗</a>}
+                  {unit.exerciseUrl && <a className="gr-cms-card__open" href={unit.exerciseUrl} target="_blank" rel="noopener noreferrer">Открыть {unit.exerciseFileName || unit.exerciseName || 'упражнение'} ↗</a>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   )

@@ -49,7 +49,7 @@ async function гостьСВходом(page, { level }) {
   await бэкенд(page, { level })
   await page.addInitScript(() => localStorage.removeItem('jts_access_token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({})))
-  await page.route('**/auth/login', (r) => r.fulfill(json({
+  await page.route('**/auth/login**', (r) => r.fulfill(json({
     accessToken: TOKEN, refreshToken: 'r', userId: 901, name: 'Ученик', role: 'STUDENT', phone: УЧЕНИК.phone,
   })))
 }
@@ -57,9 +57,9 @@ async function гостьСВходом(page, { level }) {
 async function войти(page) {
   await page.goto('/')
   await page.locator('.btn--secondary').click()
-  await page.getByPlaceholder('Телефон или почта').fill('student@example.com')
-  await page.getByPlaceholder('Пароль').fill('secret')
-  await page.locator('.form-primary').click()
+  await page.locator('#rg-login-id').fill('student@example.com')
+  await page.locator('#rg-login-pass').fill('secret')
+  await page.locator('.rg-btn').first().click()
 }
 
 const строкаТеста = (page) => page.locator('.pf-row', { hasText: 'Тест на уровень' })

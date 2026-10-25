@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { PlayIcon, ChevronLeftIcon, SearchIcon } from '../components/icons.jsx'
-import { getPracticeToken, getMediaClips, getSituativki, getAudiobooks } from '../api.js'
+import { getPracticeToken, getMediaClips, getSituativki, getAudiobooks, getPublishedGrammar } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone } from '../practice/situations/situationsProgress.js'
@@ -20,6 +20,7 @@ import {
   writeBooksAudioMode,
 } from '../practice/books/audioFilter.js'
 import { useShadowingLessons } from '../practice/shadowing/catalog.js'
+import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery } from '../practice/shadowing/mastery.js'
@@ -449,6 +450,15 @@ export default function PracticePage({
   // — он нужен и ленте юнитов, и полному каталогу.
   const [grammarIndex, setGrammarIndex] = useState(null)
   const [grammarLevel, setGrammarLevel] = useState(() => levelToCourse(level))
+  const [cmsGrammarUnits, setCmsGrammarUnits] = useState([])
+  useEffect(() => {
+    let alive = true
+    if (!apiToken) { setCmsGrammarUnits([]); return () => { alive = false } }
+    getPublishedGrammar(apiToken, grammarLevel.toUpperCase())
+      .then(rows => { if (alive) setCmsGrammarUnits(Array.isArray(rows) ? rows : []) })
+      .catch(() => { if (alive) setCmsGrammarUnits([]) })
+    return () => { alive = false }
+  }, [apiToken, grammarLevel])
 
   // Выдача заданий на дом — только преподавателю. Раздел «Практика» до этого был
   // от него скрыт вовсе (Sidebar, TEACHER_SECTIONS), хотя заданий в нём больше,
@@ -665,7 +675,9 @@ export default function PracticePage({
       // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
       // перезагрузится (см. lib/lazyModule.js).
       const mod = await loadModule(() => import('../practice/fairytale/taleWorld.js'))
-      mod?.openTaleWorld(tale.id)
+      mod?.openTaleWorld(tale.id, {
+        onComplete: (completedId) => countUnitTowardsHomework('fairytale', null, completedId),
+      })
     } finally {
       taleLoadingRef.current = false
     }
@@ -777,7 +789,8 @@ export default function PracticePage({
   }
 
   if (openReel !== null) {
-    return layout(<ReelsViewer clips={clips} startIndex={openReel} onActive={watchReel} onBack={() => setOpenReel(null)} />)
+    return layout(<ReelsViewer clips={clips} startIndex={openReel} onActive={watchReel} onBack={() => setOpenReel(null)}
+      onComplete={() => countUnitTowardsHomework('memes', null, 'five-clips', { done: 5, total: 5 })} />)
   }
 
   if (openKaraoke) {
@@ -870,6 +883,91 @@ export default function PracticePage({
             desc={t('practice.numbers.desc')}
             cta={t('practice.numbers.cta')}
             onStart={() => onNav?.('numbers')}
+          />
+        )
+
+      case 'grammarGames':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-grammar-games"
+            variant="grammar-games"
+            wide
+            title={t('practice.grammarGames.heading')}
+            desc={t('practice.grammarGames.desc')}
+            cta={t('practice.grammarGames.cta')}
+            onStart={() => onNav?.('grammar-games')}
+          />
+        )
+
+      case 'prepositions':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-prepositions"
+            variant="prepositions"
+            wide
+            title={t('practice.prepositions.heading')}
+            desc={t('practice.prepositions.desc')}
+            cta={t('practice.prepositions.cta')}
+            onStart={() => onNav?.('prepositions')}
+          />
+        )
+
+      case 'wordhunt':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-wordhunt"
+            variant="wordhunt"
+            wide
+            title={t('practice.wordhunt.heading')}
+            desc={t('practice.wordhunt.desc')}
+            cta={t('practice.wordhunt.cta')}
+            onStart={() => onNav?.('wordhunt')}
+          />
+        )
+
+      case 'justListen':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-listen"
+            variant="listen"
+            wide
+            title={t('practice.listen.heading')}
+            desc={t('practice.listen.desc')}
+            cta={t('practice.listen.cta')}
+            onStart={() => onNav?.('listen')}
+          />
+        )
+
+      case 'speedReading':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-speed-reading"
+            variant="speed-reading"
+            wide
+            title={t('practice.speedReading.heading')}
+            desc={t('practice.speedReading.desc')}
+            cta={t('practice.speedReading.cta')}
+            tag={t('practice.speedReading.tag')}
+            onStart={() => onNav?.('speed-reading')}
+          />
+        )
+
+      case 'cartoons':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-cartoons"
+            variant="cartoons"
+            wide
+            title={t('practice.cartoons.heading')}
+            desc={t('practice.cartoons.desc')}
+            cta={t('practice.cartoons.cta')}
+            onStart={() => onNav?.('cartoons')}
           />
         )
 
@@ -1067,6 +1165,7 @@ export default function PracticePage({
               {grammarIndex ? (
                 <GrammarCatalog
                   index={grammarIndex}
+                  cmsUnits={cmsGrammarUnits}
                   activeLevel={grammarLevel}
                   onLevel={setGrammarLevel}
                   search={grammarSearch}
@@ -1281,11 +1380,13 @@ function Empty({ loading, text, skeleton }) {
 // кнопки и клавиши мотают ленту плавным scrollTo; на мобиле кнопок нет
 // (спрятаны в CSS), сама лента — полноэкранный оверлей.
 // onActive(k) — ролик k встал в кадр; false — смотреть его нельзя (квота).
-function ReelsViewer({ clips, startIndex, onActive, onBack }) {
+function ReelsViewer({ clips, startIndex, onActive, onBack, onComplete }) {
   const { t } = useI18n()
   const [i, setI] = useState(startIndex)
   const [hint, setHint] = useState(true)
   const [paused, setPaused] = useState(false)
+  const completedRef = useRef(new Set())
+  const rewardSentRef = useRef(false)
   const feedRef = useRef(null)
   const iRef = useRef(startIndex)
   // Наблюдатель создаётся один раз на ленту — свежий onActive берём из ref,
@@ -1370,6 +1471,17 @@ function ReelsViewer({ clips, startIndex, onActive, onBack }) {
     }
   }
 
+  const markClipComplete = (index) => {
+    if (index !== iRef.current) return
+    const id = clips[index]?.id ?? index
+    if (completedRef.current.has(id)) return
+    completedRef.current.add(id)
+    if (completedRef.current.size >= 5 && !rewardSentRef.current) {
+      rewardSentRef.current = true
+      onComplete?.()
+    }
+  }
+
   return (
     <div className="rl">
       <div className="vd__head">
@@ -1394,6 +1506,10 @@ function ReelsViewer({ clips, startIndex, onActive, onBack }) {
                   playsInline
                   preload={Math.abs(k - i) <= 1 ? 'auto' : 'none'}
                   onClick={togglePlay}
+                  onTimeUpdate={(event) => {
+                    const video = event.currentTarget
+                    if (k === iRef.current && video.duration > 0 && video.duration - video.currentTime <= 0.35) markClipComplete(k)
+                  }}
                 />
                 {paused && k === i && (
                   <button className="rl__playbtn" onClick={togglePlay} aria-label={t('practice.reels.play')}>

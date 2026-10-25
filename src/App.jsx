@@ -2,16 +2,17 @@
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
-import RegistrationPage from './screens/RegistrationPage.jsx'
-import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
-import OtpPage from './screens/OtpPage.jsx'
-import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
-import RegisterEmailPage from './screens/RegisterEmailPage.jsx'
-import RegisterBirthDatePage from './screens/RegisterBirthDatePage.jsx'
-import SetPasswordPage from './screens/SetPasswordPage.jsx'
+// Вход и регистрация по макету «Регистрация» (21.10.2026): язык → имя и дата →
+// почта и телефон → код из письма → пароль → «Регистрация пройдена».
+import LanguageStep from './screens/auth/LanguageStep.jsx'
+import NameStep from './screens/auth/NameStep.jsx'
+import ContactsStep from './screens/auth/ContactsStep.jsx'
+import CodeStep from './screens/auth/CodeStep.jsx'
+import PasswordStep from './screens/auth/PasswordStep.jsx'
+import DoneStep from './screens/auth/DoneStep.jsx'
+import GoogleGateStep from './screens/auth/GoogleGateStep.jsx'
+import { LoginCodeScreen, LoginPasswordScreen } from './screens/auth/LoginScreens.jsx'
 import CompleteRegistrationPage from './screens/CompleteRegistrationPage.jsx'
-import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
-import SuccessPage from './screens/SuccessPage.jsx'
 import PlacementPage from './screens/PlacementPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import HomePage from './screens/HomePage.jsx'
@@ -29,11 +30,18 @@ import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
+import PrepositionsPage from './screens/PrepositionsPage.jsx'
+import GrammarGamesPage from './screens/GrammarGamesPage.jsx'
+import SpeedReadingPage from './screens/SpeedReadingPage.jsx'
+import CartoonsPage from './screens/CartoonsPage.jsx'
+import WordHuntPage from './screens/WordHuntPage.jsx'
+import ListenPage from './screens/ListenPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
+import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -92,6 +100,7 @@ import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
+import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import BoothEntryPage from './screens/BoothEntryPage.jsx'
@@ -104,17 +113,18 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
+import { screenNeedsLogin } from './lib/guestLogin.js'
 import { isTeacher, userIdFromToken } from './lib/jwt.js'
 import AssistantWidget from './components/AssistantWidget.jsx'
 import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
-import { useTourRequest } from './lib/tourBus.js'
+import { holdTours, useTourRequest } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
@@ -144,6 +154,10 @@ import { KINGDOMS } from './kingdoms.js'
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
 // проставляет api.js: USER_EXISTS (регистрация занятого номера/почты) и
 // USER_NOT_FOUND (вход незарегистрированным номером).
+// Шагов в полоске регистрации: имя и дата → почта и телефон → код из письма → пароль. В макете их пять — с кодом
+// из SMS, который отложен (бэкенд при регистрации подтверждает только почту, решение владельца 21.10.2026).
+const REG_STEPS = 4
+
 function phoneErrorKey(e) {
   if (e?.code === 'USER_EXISTS') return 'err.userExists'
   if (e?.code === 'USER_NOT_FOUND') return 'err.userNotFound'
@@ -156,8 +170,8 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'arcade', 'homework', 'lessons',
-  'ielts', 'vocab', 'course-catalog', 'profile',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -372,6 +386,24 @@ export default function App() {
       const difficulty = searchParams.get('difficulty')
       if (difficulty) setListenChooseTarget({ difficulty })
     }
+    // ?screen=grammar-games&topic=L1-01 — сразу тема «Грамматики · игр»: ссылку «Открыть на сайте» даёт
+    // админка, методист проверяет залитую тему, не проходя хаб.
+    if (deepLink === 'grammar-games') {
+      const topic = searchParams.get('topic')
+      if (topic) setGrammarGamesTarget({ topic })
+    }
+    // ?screen=speed-reading&text=hello — сразу этот текст «Скорочтения»: ссылку «Открыть на сайте» даёт админка, и
+    // первое открытие текста создаёт его образец озвучки.
+    if (deepLink === 'speed-reading') {
+      const text = searchParams.get('text')
+      if (text) setSpeedReadingTarget({ text })
+    }
+    // ?screen=listen&set=A1 — сразу уровень (или направление) Just to Listen:
+    // проверить набор по ссылке, не проходя меню.
+    if (deepLink === 'listen') {
+      const set = searchParams.get('set')
+      if (set) setListenTarget({ set })
+    }
     // ?screen=lessons&tab=reports&report=<id> — вкладка «Уроков» и отчёт в ней
     // (ссылка из уведомления в браузере и проверка вида по адресу).
     if (deepLink === 'lessons') {
@@ -502,12 +534,14 @@ export default function App() {
         // сессия не должна обходить гейт, который он прошёл бы при входе.
         else if (session && session.role === 'STUDENT' && !session.phone && !session.boothAccount) {
           setPhoneGate(true)
-          setScreen('reg-phone')
+          setScreen('reg-google')
         }
-        // Заявка с лендинга: имя и номер человек уже дал там — сразу шаг
-        // почты, как решил владелец (04.10.2026). Код не открылся (просрочен,
-        // подделан) — регистрация с начала. Вошедшему регистрация не нужна:
-        // он идёт на свой экран, как обычно (ветка session ниже).
+        // Заявка с лендинга: имя и номер человек уже дал там (решение владельца
+        // 04.10.2026 — не спрашивать их второй раз). Язык тоже известен, поэтому
+        // сразу «Давайте знакомиться» с готовым именем — там остаётся дата
+        // рождения, а на следующем шаге номер уже вписан. Код не открылся
+        // (просрочен, подделан) — регистрация с начала. Вошедшему регистрация не
+        // нужна: он идёт на свой экран, как обычно (ветка session ниже).
         else if (handoffToken && !session) {
           const lead = await openLandingHandoff(handoffToken)
           if (cancelled) return
@@ -515,9 +549,9 @@ export default function App() {
             setName(lead.name)
             setPhone(lead.phone)
             if (lead.lang === 'kz') setLang('kk')
-            setScreen('reg-email')
+            setScreen('reg-name')
           } else {
-            setScreen('chat')
+            setScreen('reg-lang')
           }
         }
         else if (deepLink && !handoffToken) {
@@ -550,33 +584,56 @@ export default function App() {
   const [name, setName] = useState('')
   const [inviteToken, setInviteToken] = useState('')
   const [phone, setPhone] = useState('')
-  // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
-  // оба идентификатора собираются ДО запроса кода (см. handleRegEmailSubmit).
-  // Для входа не используется — там всё ещё один идентификатор в `phone`.
+  // Почта студента при регистрации: имя и дата → почта и телефон → код (на
+  // почту) → пароль; оба идентификатора собираются ДО запроса кода (см.
+  // handleRegContactsSubmit). Для входа не используется — там один
+  // идентификатор в `phone`.
   const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState('')
+  // Вход через Google не даёт ни телефона, ни даты рождения, а школе нужно и то и другое: пока их нет, дальше
+  // не пускаем (экран 'reg-google' спрашивает недостающее). Тот же гейт ловит и старые Google-аккаунты без номера.
   const [birthDateGate, setBirthDateGate] = useState(false)
-  // Вход через Google не даёт телефон, а школе он нужен всегда: пока номера нет, дальше не пускаем
-  // (экран 'reg-phone' в режиме googleGate). Тот же гейт ловит и старые Google-аккаунты без номера.
   const [phoneGate, setPhoneGate] = useState(false)
+  // Вход завершил регистрацию (пароль задан или Google-гейт пройден): итоговый экран тогда «Регистрация пройдена»
+  // с кнопкой, а после обычного входа — короткое «С возвращением» без кнопки.
+  const [justRegistered, setJustRegistered] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
   // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
   // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
   const [ieltsAccount, setIeltsAccount] = useState(false)
+  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false, ready: false })
   useEffect(() => {
     if (!token) {
       setIeltsAccount(false)
+      setExamTabs({ ielts: false, sat: false, ready: false })
       return
     }
+    setExamTabs({ ielts: false, sat: false, ready: false })
     let alive = true
+    const next = { ielts: false, sat: false }
+    let pending = 2
+    const done = () => {
+      pending -= 1
+      if (alive && pending === 0) setExamTabs({ ...next, ready: true })
+    }
     getIeltsMe(token).then((m) => {
-      if (alive) setIeltsAccount(!!m.ieltsAccount)
-    })
+      if (!alive) return
+      setIeltsAccount(!!m.ieltsAccount)
+      next.ielts = !!(m.purchased || m.ieltsAccount)
+    }).finally(done)
+    getSatMeCached(token).then((m) => {
+      if (alive) next.sat = !!m?.purchased
+    }).finally(done)
     return () => {
       alive = false
     }
   }, [token])
+  useEffect(() => {
+    if (!token || !examTabs.ready) return
+    const exam = screen === 'ielts' || screen.startsWith('ielts-') ? 'ielts' : screen === 'sat' || screen.startsWith('sat-') ? 'sat' : null
+    if (exam && !examTabs[exam]) setScreen('home')
+  }, [token, examTabs, screen, setScreen])
   useEffect(() => {
     // «Повторение» (kingdom*) у ученика IELTS / SAT больше не уводит в IELTS — пункт вернулся в меню (SAT-SYNC-PLAN E3).
     // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
@@ -624,6 +681,12 @@ export default function App() {
   // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
   // приложении нет, см. lib/purchaseCelebration.js.
   const [celebrate, setCelebrate] = useState(false)
+  // Тур экрана ждёт, пока поздравление открыто: иначе он ложился поверх окна
+  // и накрывал его кнопку (см. holdTours в lib/tourBus.js).
+  useEffect(() => {
+    holdTours('celebrate', celebrate)
+    return () => holdTours('celebrate', false)
+  }, [celebrate])
   // Сессия кончилась сама (токен протух), а не человек нажал «Выйти»: на экране
   // входа ему нужно сказать, почему его туда вернуло. Гасится, как только он
   // вошёл снова или закрыл плашку.
@@ -794,6 +857,9 @@ export default function App() {
   // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
+  const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just to Listen
+  const [grammarGamesTarget, setGrammarGamesTarget] = useState(null) // { topic? } — тема «Грамматики · игр» по ссылке
+  const [speedReadingTarget, setSpeedReadingTarget] = useState(null) // { text? } — текст «Скорочтения» по ссылке
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -806,6 +872,9 @@ export default function App() {
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // К какому полю шага «почта и телефон» относится error: 'email' | 'phone' | null (занятая почта или номер
+  // встают под своё поле со ссылкой «Войти», остальное — над кнопкой).
+  const [errorField, setErrorField] = useState(null)
 
   // Единая точка простановки признака класса после входа (было продублировано
   // в трёх обработчиках). Помимо стейта дописывает признак в уже сохранённый
@@ -849,16 +918,23 @@ export default function App() {
   // Жёсткий нрав (кнопка 18+) открыт всем — возрастной замок снят 24.09.2026
   // по решению владельца. «18+» на кнопке — название характера, не гейт.
 
-  // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
-  // см. onOtpLogin в PasswordLoginPage). Регистрация через него больше не
-  // идёт — там свой путь: 'reg-phone' → 'reg-email' → 'otp', см. ниже.
-  async function handlePhoneSubmit(fullPhone) {
+  // Ошибки шагов входа и регистрации живут в одном стейте — переход на другой
+  // экран не должен приносить с собой чужую.
+  function clearError() {
     setError('')
+    setErrorField(null)
+  }
+
+  // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
+  // ссылка «Войти по коду из сообщения» на экране входа). Регистрация через
+  // него не идёт — там свой путь: 'reg-name' → 'reg-contacts' → 'otp'.
+  async function handlePhoneSubmit(identifier) {
+    clearError()
     setLoading(true)
     try {
-      const m = await requestLoginOtp(fullPhone)
+      const m = await requestLoginOtp(identifier)
       setMode(m)
-      setPhone(fullPhone)
+      setPhone(identifier)
       setScreen('otp')
     } catch (e) {
       const key = phoneErrorKey(e)
@@ -868,41 +944,29 @@ export default function App() {
     }
   }
 
-  // Шаг 1 регистрации: только номер — код ещё не запрашиваем, сперва нужна
-  // почта (см. handleRegEmailSubmit), она и есть канал OTP.
-  function handleRegPhoneSubmit(fullPhone) {
-    if (phoneGate) return handleGooglePhoneSubmit(fullPhone)
-    setError('')
-    setPhone(fullPhone)
-    setScreen('reg-email')
+  // Шаг «Давайте знакомиться»: имя и дата рождения. Код ещё не запрашиваем —
+  // сперва нужна почта, она и есть канал кода.
+  function handleRegNameSubmit(nameValue, birthDateValue) {
+    clearError()
+    setName(nameValue)
+    setBirthDate(birthDateValue)
+    setScreen('reg-contacts')
   }
 
-  // Шаг 2 регистрации: почта собрана — дальше дата рождения, потом OTP.
-  function handleRegEmailSubmit(emailValue) {
-    setError('')
+  // Шаг «Как с вами связаться?»: всё собрано — имя, дата, почта и номер, —
+  // запрашиваем код на почту. Занятая почта или номер встают под своё поле.
+  async function handleRegContactsSubmit(emailValue, phoneValue) {
+    clearError()
     setEmail(emailValue)
-    setScreen('reg-birth')
-  }
-
-  // Шаг 3 регистрации: дата рождения — оба идентификатора и birthDate известны,
-  // теперь запрашиваем код на почту.
-  async function handleRegBirthSubmit(birthDateValue) {
-    setError('')
+    setPhone(phoneValue)
     setLoading(true)
     try {
-      if (birthDateGate) {
-        await updateUser(token, { name: name || 'User', birthDate: birthDateValue })
-        setBirthDate(birthDateValue)
-        setBirthDateGate(false)
-        await finishGoogleSession(token)
-        return
-      }
-      setBirthDate(birthDateValue)
-      const m = await sendRegistrationOtp(name, phone, email, birthDateValue)
+      const m = await sendRegistrationOtp(name, phoneValue, emailValue, birthDate)
       setMode(m)
       setScreen('otp')
     } catch (e) {
       const key = phoneErrorKey(e)
+      setErrorField(e?.field || null)
       setError(key ? t(key) : e.message || t('err.send'))
     } finally {
       setLoading(false)
@@ -1008,10 +1072,14 @@ export default function App() {
       // пароля (RegistrationService пишет null) — просим задать его, иначе
       // войти потом можно будет только новым OTP-кодом. Без токена шаг
       // пропускаем: ставить пароль нечем.
+      setJustRegistered(mode === 'register')
       setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
       const key = phoneErrorKey(e)
-      setError(key ? t(key) : e.message || t('err.otp'))
+      // Неверный и просроченный код бэкенд называет одной технической строкой —
+      // под ячейками нужна человеческая.
+      const wrong = /invalid|expired|неверн/i.test(e?.message || '')
+      setError(key ? t(key) : wrong ? t('err.otp') : e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }
@@ -1024,6 +1092,7 @@ export default function App() {
     setLoading(true)
     try {
       await setPassword(token, password)
+      setJustRegistered(true)
       setScreen('success')
     } catch (e) {
       setError(e.message || t('setpass.error'))
@@ -1092,6 +1161,7 @@ export default function App() {
         })
       clearLocalPractice()
       hydratePractice(tok)
+      setJustRegistered(false)
       setScreen('success')
     } catch (e) {
       // Бэкенд на неверную пару отдаёт 401 с техническим текстом — показываем
@@ -1141,31 +1211,37 @@ export default function App() {
   // Вход через Google: GIS уже отдал проверяемый id_token, бэкенд его
   // верифицирует и находит/создаёт пользователя. Дальше — тот же пост-логин,
   // что и после OTP: токен, уровень из профиля, перенос анонимного прогресса.
-  async function handleGoogleCredential(idToken, chatName) {
-    setError('')
+  async function handleGoogleCredential(idToken) {
+    clearError()
     setLoading(true)
     try {
       const data = await loginWithGoogle(idToken)
       const tok = data?.accessToken || null
       if (!tok) throw new Error(t('err.otp'))
-      setName(data?.name || chatName || '')
+      setName(data?.name || name || '')
       setToken(tok)
       saveToken(tok, data?.refreshToken || null)
       saveUserSnapshot({
         userId: data.userId,
-        name: data?.name || chatName || null,
+        name: data?.name || name || null,
         phone: data.phone || null,
         email: data.email || null,
         role: data.role || null,
       })
       const me = await getCurrentUser(tok).catch(() => null)
       // Номер обязателен: бэкенд говорит об этом флагом, а при его отсутствии (старый сервер) смотрим профиль.
-      if (data?.phoneRequired === true || (me && !me.phone)) {
-        setPhoneGate(true)
-        setScreen('reg-phone')
+      // Дата рождения — тоже (бэкенд требует её у каждой регистрации); профиль не прочитался — спросим и её.
+      const needPhone = data?.phoneRequired === true || Boolean(me && !me.phone)
+      const needBirth = !me?.birthDate
+      if (needPhone || needBirth) {
+        setPhoneGate(needPhone)
+        setBirthDateGate(needBirth)
+        setScreen('reg-google')
         return
       }
-      await continueGoogleOnboarding(tok, me)
+      setBirthDate(String(me.birthDate).slice(0, 10))
+      setJustRegistered(false)
+      await finishGoogleSession(tok)
     } catch (e) {
       setError(e.message || t('err.otp'))
     } finally {
@@ -1173,37 +1249,34 @@ export default function App() {
     }
   }
 
-  // После номера (или если он уже был): дата рождения, затем обычный пост-логин.
-  async function continueGoogleOnboarding(tok, knownMe) {
-    const me = knownMe ?? (await getCurrentUser(tok).catch(() => null))
-    if (!me?.birthDate) {
-      setBirthDateGate(true)
-      setScreen('reg-birth')
-      return
-    }
-    setBirthDate(String(me.birthDate).slice(0, 10))
-    await finishGoogleSession(tok)
-  }
-
-  // Номер после Google-входа: сохраняем в профиль (PUT /user/update) БЕЗ подтверждения кодом — SMSC пока не
-  // настроен, ученик просто вводит номер и проходит дальше. Проверку кодом (запрос OTP → ввод → сохранение)
-  // подключать здесь, между экраном номера и updateUser. Смена номера меняет JWT subject, поэтому
-  // бэкенд присылает свежую пару токенов — подменяем её, иначе refresh пойдёт по старому subject.
-  async function handleGooglePhoneSubmit(fullPhone) {
-    setError('')
+  // «Остался один шаг» после Google-входа: недостающие номер и дата уходят в профиль одним PUT /user/update — БЕЗ
+  // подтверждения номера кодом (шаг SMS отложен, решение владельца 21.10.2026; подключать его здесь, между экраном
+  // и updateUser). Смена номера меняет JWT subject, поэтому бэкенд присылает свежую пару токенов — подменяем её,
+  // иначе refresh пойдёт по старому subject.
+  async function handleGoogleGateSubmit({ phone: phoneValue, birthDate: birthValue }) {
+    clearError()
     setLoading(true)
     try {
-      const saved = await updateUser(token, { name: name || 'User', phone: fullPhone })
+      const saved = await updateUser(token, {
+        name: name || 'User',
+        ...(phoneValue ? { phone: phoneValue } : {}),
+        ...(birthValue ? { birthDate: birthValue } : {}),
+      })
       let tok = token
       if (saved?.accessToken) {
         tok = saved.accessToken
         setToken(tok)
         saveToken(tok, saved.refreshToken || null)
       }
-      setPhone(fullPhone)
-      patchUserSnapshot({ phone: saved?.phone || fullPhone })
+      if (phoneValue) {
+        setPhone(phoneValue)
+        patchUserSnapshot({ phone: saved?.phone || phoneValue })
+      }
+      if (birthValue) setBirthDate(birthValue)
       setPhoneGate(false)
-      await continueGoogleOnboarding(tok, null)
+      setBirthDateGate(false)
+      setJustRegistered(true)
+      await finishGoogleSession(tok)
     } catch (e) {
       // Занятый номер бэкенд называет по-русски; показываем текст на языке интерфейса.
       setError(/уже есть/i.test(e?.message || '') ? t('err.userExists') : e?.message || t('regphone.error'))
@@ -1403,6 +1476,20 @@ export default function App() {
   }, [token])
 
   function handleLogout() {
+    // Сначала экран входа и адрес без ?screen=: иначе кабинет остаётся открытым
+    // (пустые «Уроки», SAT), а обновление страницы снова читает старый раздел.
+    skipPushRef.current = true
+    setScreen('welcome')
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('screen')
+      url.searchParams.delete('live')
+      url.searchParams.delete('catalog')
+      url.searchParams.delete('card')
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    } catch {
+      /* адрес не обязателен: экран входа уже поставлен */
+    }
     endSessionOnServer()
     // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
     // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
@@ -1420,7 +1507,6 @@ export default function App() {
     // вкладке не должен вести по чужим экранам. skipPush — и экран, с которого
     // вышли, в новый путь не кладём.
     setNavStack([])
-    skipPushRef.current = true
     setToken(null)
     setName('')
     setPhone('')
@@ -1563,7 +1649,7 @@ export default function App() {
   // Кабинет аккаунту класса закрыт, и закрыт он здесь, а не в каждом экране:
   // сюда сходятся все способы туда попасть — диплинк ?screen=…, кнопка внутри
   // экрана, домашний экран после входа. Признак приезжает ответом сети и может
-  // опоздать (SuccessPage уводит через 1.8 с), поэтому проверка живёт эффектом,
+  // опоздать (итоговый экран входа уводит через 1.2 с), поэтому проверка живёт эффектом,
   // а не одной веткой в момент входа.
   //
   // Обратная сторона того же правила: 'booth' не-классу тоже не положен.
@@ -1574,6 +1660,11 @@ export default function App() {
   // Синхронный аналог этой ветки живёт в view (см. ниже, перед return): он не
   // даёт BoothEntryPage смонтироваться и позвонить /enter даже на один кадр,
   // а этот эффект следом приводит screen в согласие с тем, что нарисовано.
+  useEffect(() => {
+    if (restoring || !screenNeedsLogin(screen, token)) return
+    setScreen('welcome')
+  }, [restoring, screen, token, setScreen])
+
   useEffect(() => {
     if (boothAccount && !BOOTH_SCREENS.has(screen)) setScreen('booth')
     else if (!boothAccount && screen === 'booth') {
@@ -1618,6 +1709,8 @@ export default function App() {
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
     else if (key === 'profile') setScreen('profile')
+    else if (key === 'feedback') setScreen('feedback')
+    else if (key === 'tokens' || key === 'prizes') setScreen(key)
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
     else if (key === 'course') {
@@ -1645,6 +1738,11 @@ export default function App() {
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
+    else if (key === 'prepositions') setScreen('prepositions')
+    else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
+    else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
+    else if (key === 'cartoons') setScreen('cartoons')
+    else if (key === 'wordhunt') setScreen('wordhunt')
     // Уровень приносит карточка Практики — она же и списала квоту.
     // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
     else if (key === 'situations') {
@@ -1653,6 +1751,7 @@ export default function App() {
       setScreen('situations')
     }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
+    else if (key === 'listen') { setListenTarget(payload || null); setScreen('listen') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
@@ -1918,102 +2017,154 @@ export default function App() {
       return (
         <WelcomePage
           onRegister={() => {
-            setError('')
-            setScreen('chat')
+            clearError()
+            setScreen('reg-lang')
           }}
           // Вход — телефон/почта + пароль. Вход по коду остался запасным
           // путём (ссылка на самом экране): у аккаунтов, заведённых до
           // появления шага «задай пароль», пароля нет вовсе.
           onLogin={() => {
-            setError('')
+            clearError()
             setName('')
             setScreen('login-password')
           }}
         />
       )
+    // Регистрация по макету «Регистрация» (21.10.2026). Шагов в полоске четыре, а не пять, как в кадрах: код из SMS
+    // отложен (бэкенд при регистрации подтверждает только почту — решение владельца). 'chat' — прежний адрес
+    // первого шага (лендинг ведёт на ?screen=chat), 'reg-phone' / 'reg-email' / 'reg-birth' — прежние шаги,
+    // их адреса могли остаться в закладках и стеке «назад» старых версий.
     case 'chat':
+    case 'reg-lang':
       return (
-        <RegistrationPage
-          onGoogleToken={handleGoogleCredential}
-          onBack={() => setScreen('welcome')}
-          onPhoneLogin={(userName) => {
-            setName(userName || '')
-            setError('')
-            setScreen('reg-phone')
+        <LanguageStep
+          onBack={() => {
+            clearError()
+            setScreen('welcome')
           }}
-          error={error}
-        />
-      )
-    // Только вход по коду (фолбэк для аккаунтов без пароля) — регистрация
-    // сюда больше не заходит, у неё свой путь: reg-phone → reg-email → otp.
-    case 'phone':
-      return (
-        <PhoneLoginPage
-          onGoogleToken={handleGoogleCredential}
-          onBack={() => { setError(''); setScreen('welcome') }}
-          onSubmit={handlePhoneSubmit}
-          loading={loading}
-          error={error}
-        />
-      )
-    case 'reg-phone':
-      return (
-        <RegisterPhonePage
-          googleGate={phoneGate}
-          onBack={phoneGate ? undefined : () => { setError(''); setScreen('chat') }}
-          onSubmit={handleRegPhoneSubmit}
-          loading={loading}
-          error={error}
-        />
-      )
-    case 'reg-email':
-      return (
-        <RegisterEmailPage
-          onBack={() => { setError(''); setScreen('reg-phone') }}
-          onSubmit={handleRegEmailSubmit}
-          loading={loading}
-          error={error}
+          onContinue={() => setScreen('reg-name')}
         />
       )
     case 'reg-birth':
+    case 'reg-name':
       return (
-        <RegisterBirthDatePage
-          googleGate={birthDateGate}
-          onBack={
-            birthDateGate
-              ? undefined
-              : () => {
-                  setError('')
-                  setScreen('reg-email')
-                }
-          }
-          onSubmit={handleRegBirthSubmit}
-          loading={loading}
+        <NameStep
+          step={1}
+          total={REG_STEPS}
+          initialName={name}
+          initialBirth={birthDate}
+          onBack={() => {
+            clearError()
+            setScreen('reg-lang')
+          }}
+          onSubmit={handleRegNameSubmit}
+          onLogin={() => {
+            clearError()
+            setScreen('login-password')
+          }}
+        />
+      )
+    case 'reg-phone':
+    case 'reg-email':
+    case 'reg-contacts':
+      return (
+        <ContactsStep
+          step={2}
+          total={REG_STEPS}
+          initialEmail={email}
+          initialPhone={phone}
+          onBack={() => {
+            clearError()
+            setScreen('reg-name')
+          }}
+          onSubmit={handleRegContactsSubmit}
+          onGoogleToken={handleGoogleCredential}
+          onLogin={() => {
+            clearError()
+            setScreen('login-password')
+          }}
+          onEdit={clearError}
+          busy={loading}
+          serverError={error ? { field: errorField, text: error } : null}
+        />
+      )
+    case 'reg-google':
+      return (
+        <GoogleGateStep
+          needPhone={phoneGate}
+          needBirth={birthDateGate}
+          onSubmit={handleGoogleGateSubmit}
+          onEdit={clearError}
+          busy={loading}
+          error={error}
+        />
+      )
+    // Вход по коду (фолбэк для аккаунтов без пароля).
+    case 'phone':
+      return (
+        <LoginCodeScreen
+          onBack={() => {
+            clearError()
+            setScreen('login-password')
+          }}
+          onSubmit={handlePhoneSubmit}
+          onPasswordLogin={() => {
+            clearError()
+            setScreen('login-password')
+          }}
+          onGoogleToken={handleGoogleCredential}
+          onRegister={() => {
+            clearError()
+            setScreen('reg-lang')
+          }}
+          onEdit={clearError}
+          busy={loading}
           error={error}
         />
       )
     case 'otp':
       return (
-        <OtpPage
-          phone={mode === 'register' ? email : phone}
+        <CodeStep
           // Куда ушёл код, видно по самому адресату: регистрация шлёт его на
           // почту, вход по коду — туда, что ввели (номер или почту).
-          channel={isEmailIdentifier(mode === 'register' ? email : phone) ? 'email' : 'sms'}
-          onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-birth' : 'phone') }}
+          to={mode === 'register' ? email : phone}
+          title={mode === 'register' ? undefined : t('rg.code.titleLogin')}
+          step={mode === 'register' ? 3 : undefined}
+          total={mode === 'register' ? REG_STEPS : undefined}
+          onBack={() => {
+            clearError()
+            setScreen(mode === 'register' ? 'reg-contacts' : 'phone')
+          }}
+          onChangeTo={() => {
+            clearError()
+            setScreen(mode === 'register' ? 'reg-contacts' : 'phone')
+          }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
-          loading={loading}
+          onEdit={clearError}
+          busy={loading}
           error={error}
         />
       )
     case 'login-password':
       return (
-        <PasswordLoginPage
-          onGoogleToken={handleGoogleCredential}
-          onBack={() => { setError(''); setScreen('welcome') }}
+        <LoginPasswordScreen
+          onBack={() => {
+            clearError()
+            setScreen('welcome')
+          }}
           onSubmit={handlePasswordLogin}
-          onOtpLogin={() => { setError(''); setScreen('phone') }}
-          loading={loading}
+          onCodeLogin={() => {
+            clearError()
+            setScreen('phone')
+          }}
+          onGoogleToken={handleGoogleCredential}
+          onRegister={() => {
+            clearError()
+            setScreen('reg-lang')
+          }}
+          onEdit={clearError}
+          busy={loading}
           error={error}
         />
       )
@@ -2031,19 +2182,30 @@ export default function App() {
       )
     case 'set-password':
       return (
-        <SetPasswordPage
+        <PasswordStep
+          step={4}
+          total={REG_STEPS}
           onSubmit={handleSetPassword}
-          loading={loading}
+          busy={loading}
           error={error}
         />
       )
     case 'success':
       // Куда вести после входа, решает одна функция на все пути (см.
       // lib/homeScreen.js): аккаунт класса — в класс, преподавателя — в
-      // «Уроки», ученику — тест уровня или королевства.
-      return (
-        <SuccessPage
-          onDone={() => setScreen(screenAfterLogin())}
+      // «Уроки», ученику — «Главная» (там новичка ждут анкета и тест уровня).
+      return justRegistered ? (
+        <DoneStep
+          title={t('rg.done.title')}
+          sub={t('rg.done.sub')}
+          onContinue={() => setScreen(screenAfterLogin())}
+        />
+      ) : (
+        <DoneStep
+          auto
+          title={t('rg.welcome.title')}
+          sub={t('rg.welcome.sub')}
+          onContinue={() => setScreen(screenAfterLogin())}
         />
       )
     // Тест уровня v16 методиста (спека 2026-10-14-placement-v16-first-login-design.md): страница теста в iframe, итог —
@@ -2100,6 +2262,12 @@ export default function App() {
           // и запись идёт через него же — тем самым WhatsApp, куда ведут все
           // остальные демо-призывы (src/lib/support.js).
           onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
+          // Окно «Жёсткий режим общения» после тура: та же настройка, что кнопка «18+» у тьютора. Тьютор ещё не выбран —
+          // нрав всё равно пишется в профиль и встанет, когда ученик выберет тьютора с осью нрава (temperFor).
+          onTemperChoice={(next) => {
+            setTemper(temperFor(tutorKey, next) ?? temper)
+            saveTutorPrefs(token, { tutorTemper: next })
+          }}
         />
       )
     case 'minutes':
@@ -2155,6 +2323,8 @@ export default function App() {
           backLabel={backLabel('home')}
         />
       )
+    case 'feedback':
+      return <FeedbackCenter token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage
@@ -2234,10 +2404,79 @@ export default function App() {
           onProfile={() => setScreen('profile')}
         />
       )
+    case 'listen':
+      return (
+        <ListenPage
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={listenTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'numbers':
       return (
         <NumbersPage
           {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'prepositions':
+      return (
+        <PrepositionsPage
+          {...sectionBack('writing')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'grammar-games':
+      return (
+        <GrammarGamesPage
+          {...sectionBack('writing')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={grammarGamesTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'speed-reading':
+      return (
+        <SpeedReadingPage
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={speedReadingTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'cartoons':
+      return (
+        <CartoonsPage
+          {...sectionBack('listening')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'wordhunt':
+      return (
+        <WordHuntPage
+          {...sectionBack('reading')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2321,6 +2560,10 @@ export default function App() {
       return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
+    case 'tokens':
+      return <TokensPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'prizes':
+      return <PrizesPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => goBack(() => setScreen('lessons'))} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':

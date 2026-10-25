@@ -124,7 +124,7 @@ export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
 
 /** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
 function InfoWordBankCard({
-  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, openWord, showAnswerKey = true,
+  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, openWord, showAnswerKey = true, revealChecked = false,
 }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -142,13 +142,13 @@ function InfoWordBankCard({
       return
     }
     if (cardRef.current && hasCheckable) {
-      setWbScore(gradeWordBankInRoot(cardRef.current))
+      setWbScore(gradeWordBankInRoot(cardRef.current, { reveal: showAnswerKey || revealChecked }))
     }
-  }, [checked, hasCheckable, answers])
+  }, [checked, hasCheckable, answers, showAnswerKey, revealChecked])
 
   function handleCheck() {
     if (!canCheck || !cardRef.current) return
-    const score = gradeWordBankInRoot(cardRef.current)
+    const score = gradeWordBankInRoot(cardRef.current, { reveal: showAnswerKey || revealChecked })
     setWbScore(score)
     onCheck(key, collectCheckableGapIds(cardRef.current))
   }
@@ -172,6 +172,7 @@ function InfoWordBankCard({
           gapPrefix={gapPrefix}
           checked={checked}
           showAnswerKey={showAnswerKey}
+          revealChecked={revealChecked}
         />
       ))}
       {!readOnly && hasCheckable && (
@@ -219,7 +220,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true, revealChecked = false }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
@@ -345,6 +346,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               focusCardId={focusCardId}
               openWord={openWord}
               showAnswerKey={showAnswerKey}
+              revealChecked={revealChecked}
             />
           )
         }
@@ -407,6 +409,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 gapPrefix={wordBankGapPrefix(step, anchorId)}
                 cardAnchorId={anchorId}
                 showAnswerKey={showAnswerKey}
+                revealChecked={revealChecked}
               />
             </div>
           )

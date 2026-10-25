@@ -40,9 +40,10 @@ export default function ReadingKeywords({ words, compact, token, source }) {
               <span className="rd-word__en" lang="en">{w.en}</span>
               <span className="rd-word__tr">{w.tr}</span>
             </div>
-            <div className="rd-word__row"><span className="rd-flag">RU</span><span lang="ru">{w.ru}</span></div>
-            <div className="rd-word__row"><span className="rd-flag">KZ</span><span lang="kk">{w.kz}</span></div>
-            {!compact && <div className="rd-word__ex" lang="en">“{w.ex}”</div>}
+            {/* Слова теперь заводят в админке: kz и пример там по желанию, пустая строка «KZ» выглядела бы поломкой */}
+            {w.ru && <div className="rd-word__row"><span className="rd-flag">RU</span><span lang="ru">{w.ru}</span></div>}
+            {w.kz && <div className="rd-word__row"><span className="rd-flag">KZ</span><span lang="kk">{w.kz}</span></div>}
+            {!compact && w.ex && <div className="rd-word__ex" lang="en">“{w.ex}”</div>}
           </div>
           <div className="rd-word__acts">
             <button type="button" className="rd-say" onClick={() => speak([w.en])} aria-label={`🔊 ${w.en}`}>🔊</button>

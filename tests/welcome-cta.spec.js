@@ -36,7 +36,6 @@ test.describe('welcome / панель входа — мобилка', () => {
 
   for (const [name, url, ready] of [
     ['welcome', '/', '.hero'],
-    ['registration', '/?screen=chat', '.reg-header'],
   ]) {
     test(`чёрный футер скрыт на экране ${name}`, async ({ page }) => {
       await page.goto(url)
@@ -48,6 +47,13 @@ test.describe('welcome / панель входа — мобилка', () => {
       await expect(footer).toBeHidden()
     })
   }
+
+  // Регистрация по макету «Регистрация» (21.10.2026) подвала не рисует вовсе: кнопки там прижаты к низу экрана.
+  test('на экране регистрации подвала нет', async ({ page }) => {
+    await page.goto('/?screen=chat')
+    await expect(page.locator('.rg-top')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.footer')).toHaveCount(0)
+  })
 })
 
 test.describe('welcome / панель входа — десктоп', () => {

@@ -8,40 +8,32 @@ import DemoOfferCard from './DemoOfferCard.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
-import {
-  HomeIcon,
-  LearningIcon,
-  PracticeIcon,
-  TutorIcon,
-  LessonsIcon,
-  HomeworkIcon,
-  IeltsIcon,
-  SatIcon,
-  VocabIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  UserIcon,
-  SettingsIcon,
-} from './icons.jsx'
+import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 
 // «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
 // первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
 // оплаченного (см. сборку `base` ниже): экран давно перестал быть сводкой
 // демо-доступа и показывает уровень, прогресс, расписание и домашку.
 // Преподаватель — исключение: у него свой набор разделов.
-const HOME_ITEM = { key: 'home', label: 'nav.home', Icon: HomeIcon }
+//
+// Значки пунктов — контурные Material Symbols из макета «Главная · редизайн»
+// (21.10.2026), файлами в public/assets/home-v2/ico. Рисуются маской
+// (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
+const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 
 const NAV_FULL = [
-  { key: 'learning', label: 'nav.learning', Icon: LearningIcon },
-  { key: 'practice', label: 'nav.practice', Icon: PracticeIcon },
-  { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
-  { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
-  { key: 'homework', label: 'nav.homework', Icon: HomeworkIcon },
+  { key: 'learning', label: 'nav.learning', ico: 'map' },
+  { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
+  { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
+  { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
+  { key: 'homework', label: 'nav.homework', ico: 'assignment' },
   // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
   // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
-  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
-  { key: 'sat', label: 'nav.sat', Icon: SatIcon },
-  { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
+  { key: 'ielts', label: 'nav.ielts', ico: 'school' },
+  { key: 'sat', label: 'nav.sat', ico: 'quiz' },
+  { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
+  { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
+  { key: 'prizes', label: 'nav.prizes', ico: 'school' },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
 // TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
@@ -61,7 +53,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 // General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
 // С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и в нём всегда ОБА экзамена: доступ к
 // одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat']
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
@@ -108,15 +100,20 @@ export default function Sidebar({
   // Аккаунт IELTS спрашиваем у бэкенда (ответ помнится по токену). До ответа — прежнее меню: у обычного ученика
   // ничего не мигает, а у ученика IELTS «Повторение» пропадает с первым ответом.
   const [ieltsAccount, setIeltsAccount] = useState(false)
+  // Вкладки экзаменов только при своей подписке, абонементе или тарифе. Пока ответ не пришёл — прячем,
+  // чтобы ученик General не видел разделы даже на мгновение.
+  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false })
   useEffect(() => {
     const authToken = token || loadToken()
     if (!authToken || teacher) return
     let alive = true
     getIeltsMe(authToken).then((m) => {
-      if (alive && (m.ieltsAccount || m.access)) setIeltsAccount(true)
+      if (!alive) return
+      if (m.ieltsAccount) setIeltsAccount(true)
+      setExamTabs((prev) => ({ ...prev, ielts: !!(m.purchased || m.ieltsAccount) }))
     })
     getSatMeCached(authToken).then((m) => {
-      if (alive && m?.access) setIeltsAccount(true)
+      if (alive) setExamTabs((prev) => ({ ...prev, sat: !!m?.purchased }))
     })
     return () => {
       alive = false
@@ -127,7 +124,11 @@ export default function Sidebar({
   // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
   const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
-  const nav = navAll
+  const nav = navAll.filter((item) => {
+    if (item.key === 'ielts') return examTabs.ielts
+    if (item.key === 'sat') return examTabs.sat
+    return true
+  })
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -193,18 +194,20 @@ export default function Sidebar({
             {userName && <span>{t('kingdom.profile')}</span>}
           </span>
           <span className="sb__profile-chev">
-            <ChevronRightIcon size={16} />
+            <ChevronRightIcon size={24} />
           </span>
         </button>
 
         <nav className="sb__nav">
-          {nav.map(({ key, label, Icon }) => (
+          {nav.map(({ key, label, ico }) => (
             <button
               key={key}
               className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
+              // data-nav читает тур «Главной»: список разделов в нём — ровно те, что в меню этого ученика
+              data-nav={key}
               onClick={() => pick(onNav)(key)}
             >
-              <Icon size={24} />
+              <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
             </button>
           ))}

@@ -61,8 +61,11 @@ export default function HomeworkFrame({ src, title, frameRef }) {
         </button>
       </div>
       {/* allow="autoplay" — разрешение выдаётся документу, а материал живёт в
-          своём iframe; у заданий на слух без этого молчала бы запись. */}
-      <iframe ref={frameRef} src={src} title={title} className="hw-frame__iframe" allow="autoplay" />
+          своём iframe; у заданий на слух без этого молчала бы запись. fullscreen —
+          для встроенных в задание активностей вроде Wordwall: их кнопка «на весь
+          экран» работает, только если право выдано по всей цепочке рамок сверху
+          вниз (своя кнопка «Во весь экран» от него не зависит). */}
+      <iframe ref={frameRef} src={src} title={title} className="hw-frame__iframe" allow="autoplay; fullscreen" />
     </div>
   )
 }
