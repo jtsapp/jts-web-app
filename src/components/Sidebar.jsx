@@ -100,15 +100,20 @@ export default function Sidebar({
   // Аккаунт IELTS спрашиваем у бэкенда (ответ помнится по токену). До ответа — прежнее меню: у обычного ученика
   // ничего не мигает, а у ученика IELTS «Повторение» пропадает с первым ответом.
   const [ieltsAccount, setIeltsAccount] = useState(false)
+  // Вкладки экзаменов только при своей подписке, абонементе или тарифе. Пока ответ не пришёл — прячем,
+  // чтобы ученик General не видел разделы даже на мгновение.
+  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false })
   useEffect(() => {
     const authToken = token || loadToken()
     if (!authToken || teacher) return
     let alive = true
     getIeltsMe(authToken).then((m) => {
-      if (alive && (m.ieltsAccount || m.access)) setIeltsAccount(true)
+      if (!alive) return
+      if (m.ieltsAccount) setIeltsAccount(true)
+      setExamTabs((prev) => ({ ...prev, ielts: !!(m.purchased || m.ieltsAccount) }))
     })
     getSatMeCached(authToken).then((m) => {
-      if (alive && m?.access) setIeltsAccount(true)
+      if (alive) setExamTabs((prev) => ({ ...prev, sat: !!m?.purchased }))
     })
     return () => {
       alive = false
@@ -119,7 +124,11 @@ export default function Sidebar({
   // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
   const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
-  const nav = navAll
+  const nav = navAll.filter((item) => {
+    if (item.key === 'ielts') return examTabs.ielts
+    if (item.key === 'sat') return examTabs.sat
+    return true
+  })
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()

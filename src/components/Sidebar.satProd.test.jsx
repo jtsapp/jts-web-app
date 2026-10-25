@@ -12,7 +12,7 @@ vi.mock('../api.js', async (importOriginal) => ({
   getBalance: vi.fn().mockResolvedValue({ coins: 7, streak: 2, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, access: false })),
-  getSatMeCached: vi.fn(async () => ({ access: true })),
+  getSatMeCached: vi.fn(async () => ({ access: true, purchased: true })),
 }))
 
 function tokenFor(role) {
@@ -28,7 +28,7 @@ describe('Sidebar — SAT виден на проде', () => {
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'SAT' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
     expect(items).toContain('SAT')
     expect(items).toContain('Главная')

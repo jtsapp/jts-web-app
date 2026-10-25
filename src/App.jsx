@@ -113,7 +113,7 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
@@ -602,19 +602,38 @@ export default function App() {
   // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
   // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
   const [ieltsAccount, setIeltsAccount] = useState(false)
+  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false, ready: false })
   useEffect(() => {
     if (!token) {
       setIeltsAccount(false)
+      setExamTabs({ ielts: false, sat: false, ready: false })
       return
     }
+    setExamTabs({ ielts: false, sat: false, ready: false })
     let alive = true
+    const next = { ielts: false, sat: false }
+    let pending = 2
+    const done = () => {
+      pending -= 1
+      if (alive && pending === 0) setExamTabs({ ...next, ready: true })
+    }
     getIeltsMe(token).then((m) => {
-      if (alive) setIeltsAccount(!!m.ieltsAccount)
-    })
+      if (!alive) return
+      setIeltsAccount(!!m.ieltsAccount)
+      next.ielts = !!(m.purchased || m.ieltsAccount)
+    }).finally(done)
+    getSatMeCached(token).then((m) => {
+      if (alive) next.sat = !!m?.purchased
+    }).finally(done)
     return () => {
       alive = false
     }
   }, [token])
+  useEffect(() => {
+    if (!token || !examTabs.ready) return
+    const exam = screen === 'ielts' || screen.startsWith('ielts-') ? 'ielts' : screen === 'sat' || screen.startsWith('sat-') ? 'sat' : null
+    if (exam && !examTabs[exam]) setScreen('home')
+  }, [token, examTabs, screen, setScreen])
   useEffect(() => {
     // «Повторение» (kingdom*) у ученика IELTS / SAT больше не уводит в IELTS — пункт вернулся в меню (SAT-SYNC-PLAN E3).
     // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
