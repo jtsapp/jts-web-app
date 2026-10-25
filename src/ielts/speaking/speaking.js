@@ -50,6 +50,16 @@ export function pronunciationBand(results) {
   return Math.max(0, Math.min(9, Math.round(((sum / w) / 100) * 9 * 2) / 2))
 }
 
+/**
+ * Код ошибки роута оценки → ключ фразы `ieltsSpeaking.gradeError.*`. Модель не ответила или не успела — повтор
+ * помогает, поэтому своя фраза; вход истёк — повтор не поможет, нужно войти заново. Остальное — общая фраза.
+ */
+export function gradeErrorKey(code) {
+  if (['quota', 'grading_unavailable', 'no_speech', 'too_large', 'auth_required'].includes(code)) return code
+  if (code === 'model_failed' || code === 'timeout') return 'busy'
+  return 'other'
+}
+
 export function formatSec(sec) {
   const s = Math.max(0, Math.round(sec || 0))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`

@@ -8,11 +8,9 @@
 
 import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic.js'
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
-import { assessPronunciationChunked, isAzureSpeechConfigured, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
-import { isSonioxConfigured, transcribeWavSoniox } from '@/lib/soniox-stt.js'
 import { WRITING_SCHEMA, buildSystemPrompt as writingPrompt, normalizeAssessment, userMessage as writingMessage } from '@/lib/ielts/writingGrader.js'
-import { SPEAKING_SCHEMA, buildSystemPrompt as speakingPrompt, normalizeSpeaking, userMessage as speakingMessage } from '@/lib/ielts/speakingGrader.js'
-import { pronunciationBand, wordsPerMinute } from '@/ielts/speaking/speaking.js'
+import { gradeSpeaking } from '@/lib/ielts/speakingGrader.js'
+import { answersPronunciation, savedItems, transcribeAnswers } from '@/lib/ielts/speakingAnswers.js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -23,15 +21,8 @@ const MAX_ITEMS = 8
 // Прод за Cloudflare рвёт молчащий запрос через 100 с — бюджет как у speaking/assess
 const TOTAL_BUDGET_MS = 90_000
 const STT_DEADLINE_MS = 40_000
-const MODEL_TIMEOUT_MS = 60_000
-const MIN_MODEL_MS = 20_000
 
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
-
-function withDeadline(promise, ms, fallback) {
-  let timer
-  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() => clearTimeout(timer))
-}
 
 async function backend(path, token, init = {}) {
   const res = await fetch(`${BACKEND_URL}${path}`, {
@@ -41,21 +32,6 @@ async function backend(path, token, init = {}) {
   })
   const body = await res.json().catch(() => null)
   return { ok: res.ok, status: res.status, body }
-}
-
-async function transcribe(buf, pronP) {
-  if (isAzureSpeechConfigured()) {
-    const fast = await transcribeWavFast(buf, { timeoutMs: STT_DEADLINE_MS }).catch(() => null)
-    if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
-    const pron = await pronP
-    const text = String(pron?.transcript || '').trim()
-    if (text) return { text, stt: 'azure' }
-  }
-  if (isSonioxConfigured()) {
-    const text = await transcribeWavSoniox(buf, { lang: 'en', timeoutMs: STT_DEADLINE_MS }).catch(() => '')
-    return { text: String(text || '').trim(), stt: 'soniox' }
-  }
-  return { text: '', stt: null }
 }
 
 export async function POST(request) {
@@ -112,56 +88,56 @@ export async function POST(request) {
   let total = 0
   for (let i = 0; i < meta.length; i++) {
     const f = form.get(`audio_${i}`)
-    if (!(f instanceof File) || !f.size) return Response.json({ error: 'missing_audio' }, { status: 400 })
+    // запись не собралась — этот ответ пропускается, как невнятный (см. speaking/assess)
+    if (!(f instanceof File) || !f.size) {
+      audio.push(null)
+      continue
+    }
     total += f.size
     if (total > MAX_TOTAL_BYTES) return Response.json({ error: 'too_large' }, { status: 413 })
     audio.push(Buffer.from(await f.arrayBuffer()))
   }
+  if (!audio.some(Boolean)) return Response.json({ error: 'no_speech' }, { status: 422 })
   const items = meta.map((m) => ({ itemId: String(m.itemId), durationSec: Math.max(0, Math.min(600, Number(m.durationSec) || 0)) }))
   const claim = await backend(base, token, { method: 'POST', body: JSON.stringify({ items }) })
   if (!claim.ok) return Response.json({ error: claim.status === 409 ? 'already' : 'claim_failed' }, { status: claim.status === 409 ? 409 : claim.status === 400 || claim.status === 404 ? claim.status : 502 })
   const job = claim.body
 
-  const per = await Promise.all(
-    audio.map(async (buf, i) => {
-      const pronP = isAzureSpeechConfigured() ? withDeadline(assessPronunciationChunked(buf).catch(() => null), STT_DEADLINE_MS, null) : Promise.resolve(null)
-      const [{ text, stt }, pron] = await Promise.all([transcribe(buf, pronP), pronP])
-      return { ...items[i], transcript: text, stt, wpm: wordsPerMinute(text, items[i].durationSec), accuracy: pron && !pron.mock ? pron.accuracy : null }
-    }),
-  )
-  if (!per.some((a) => a.transcript)) {
-    await fail('no_speech')
-    return Response.json({ error: 'no_speech' }, { status: 422 })
-  }
-  const modelMs = Math.min(MODEL_TIMEOUT_MS, TOTAL_BUDGET_MS - (Date.now() - startedAt))
-  if (modelMs < MIN_MODEL_MS) {
-    await fail('timeout')
-    return Response.json({ error: 'timeout' }, { status: 504 })
-  }
-  let graded
+  // секция уже взята в оценку: любой сбой — fail и JSON, иначе она так и висела бы «в оценке»
   try {
-    const raw = await structured({ systemPrompt: speakingPrompt(job.task?.part, uiLang), userMessage: speakingMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: modelMs, maxRetries: 0 })
-    graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
+    const per = await transcribeAnswers(items, audio, { deadlineMs: STT_DEADLINE_MS })
+    if (per.every((x) => x.skipped)) {
+      await fail('no_speech')
+      return Response.json({ error: 'no_speech' }, { status: 422 })
+    }
+    let graded
+    try {
+      graded = await gradeSpeaking({ run: structured, model: IELTS_REVIEW_MODEL, job, answers: per, uiLang, pronunciation: answersPronunciation(per), deadline: startedAt + TOTAL_BUDGET_MS })
+    } catch (e) {
+      console.error('ielts/diagnostic/assess speaking model failed:', e?.message || e)
+      await fail('model')
+      return Response.json({ error: 'model_failed' }, { status: 502 })
+    }
+    const saved = await backend(base, token, {
+      method: 'PUT',
+      body: JSON.stringify({
+        criteria: graded.criteria,
+        feedback: graded.feedback,
+        strengths: graded.strengths,
+        improvements: graded.improvements,
+        items: savedItems(per),
+        provider: 'anthropic',
+        feedbackLanguage: uiLang,
+      }),
+    })
+    if (!saved.ok) {
+      await fail('save')
+      return Response.json({ error: 'save_failed' }, { status: 502 })
+    }
+    return Response.json(saved.body)
   } catch (e) {
-    console.error('ielts/diagnostic/assess speaking model failed:', e?.message || e)
-    await fail('model')
-    return Response.json({ error: 'model_failed' }, { status: 502 })
+    console.error('ielts/diagnostic/assess speaking failed:', e?.message || e)
+    await fail('error').catch(() => null)
+    return Response.json({ error: 'failed' }, { status: 500 })
   }
-  const saved = await backend(base, token, {
-    method: 'PUT',
-    body: JSON.stringify({
-      criteria: graded.criteria,
-      feedback: graded.feedback,
-      strengths: graded.strengths,
-      improvements: graded.improvements,
-      items: per.map(({ itemId, durationSec, transcript, wpm, accuracy }) => ({ itemId, durationSec, transcript, wpm, accuracy })),
-      provider: 'anthropic',
-      feedbackLanguage: uiLang,
-    }),
-  })
-  if (!saved.ok) {
-    await fail('save')
-    return Response.json({ error: 'save_failed' }, { status: 502 })
-  }
-  return Response.json(saved.body)
 }

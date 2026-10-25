@@ -119,6 +119,8 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
                 {a.wpm != null && <span className="ih-chip ih-chip--neutral ih-chip--sm"><span>{t('ieltsSpeaking.wpm', { n: String(a.wpm) })}</span></span>}
               </div>
               <p lang="en" className="ih-sanswer__text">{a.transcript || t('ieltsSpeaking.noSpeech')}</p>
+              {/* невнятный ответ оценка пропускает (speakingGrader.isUsableAnswer) — без пометки обрывок выглядел бы оценённым */}
+              {a.skipped && <p className="ih-muted">{t('ieltsSpeaking.skippedAnswer')}</p>}
               {model?.text && (
                 <details className="ih-sanswer__model">
                   <summary>{t('ieltsSpeaking.modelAnswer')} · band {model.band}</summary>
