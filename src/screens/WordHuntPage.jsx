@@ -23,6 +23,7 @@ import { sayWord, stopWords } from '../practice/wordhunt/voice.js'
 import { WORDHUNT_PROGRESS_EVENT } from '../practice/practiceKeys.js'
 import { ownerOf } from '../practice/progressStore.js'
 import { recordSkill } from '../practice/skillStats.js'
+import { loadToken } from '../lib/session.js'
 import { useWordHuntData } from './wordhunt/useWordHuntData.js'
 
 const engineLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
@@ -49,14 +50,18 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
     // attachShadow — один раз на элемент: при пересоздании (вход, новый релиз, StrictMode) — тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
     shadow.innerHTML = `<style>${WORDHUNT_CSS}</style><div class="wh"></div>`
+    // Пишем только за того, кто открыл раздел. Выход из аккаунта (и выход по 401) чистит хранилище практики
+    // синхронно, а движок снимается позже, на коммите React, — и его прощальная запись (недорешённая сетка,
+    // итог партии) легла бы следующему ученику этого компьютера.
+    const mine = () => ownerOf(loadToken()) === owner
     const api = mountWordHunt(shadow.querySelector('.wh'), {
       bundle,
       lang: engineLang(langRef.current),
-      progress: { read: readWordHunt, write: writeWordHunt },
-      wip: { read: readWip, write: writeWip },
+      progress: { read: readWordHunt, write: (s) => mine() && writeWordHunt(s) },
+      wip: { read: readWip, write: (w) => mine() && writeWip(w) },
       say: sayWord,
       stopAudio: stopWords,
-      onWord: (ok) => recordSkill('vocab', ok),
+      onWord: (ok) => mine() && recordSkill('vocab', ok),
     })
     apiRef.current = api
     // Снимок прогресса с сервера приходит позже первого кадра (новое устройство): главная и карта показали бы

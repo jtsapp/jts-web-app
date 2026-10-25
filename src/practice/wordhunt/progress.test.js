@@ -85,6 +85,15 @@ describe('mergeWordHunt: собранное где угодно — собран
     expect(older.optTimed).toBeUndefined()
   })
 
+  // Хранилище сравнивает сведённое с серверным строкой: при расхождении шлёт весь прогресс заново. Сервер (jsonb)
+  // хранит ключи в своём порядке, черновик — в порядке сбора; ничего нового — строка обязана совпасть.
+  it('ничего нового — та же строка, что у серверной копии (без лишней отправки на каждом входе)', () => {
+    const server = normalize(phone)
+    const local = { ...phone, stars: { 'A0|b': 300, 'A0|a': 100 }, last: 'p1' }
+    expect(JSON.stringify(mergeWordHunt(server, local))).toBe(JSON.stringify(server))
+    expect(JSON.stringify(mergeWordHunt(laptop, laptop))).toBe(JSON.stringify(normalize(laptop)))
+  })
+
   it('сведение с пустой копией ничего не теряет', () => {
     expect(mergeWordHunt(phone, {})).toEqual(normalize(phone))
     expect(mergeWordHunt({}, laptop)).toEqual(normalize(laptop))

@@ -122,7 +122,9 @@ export function mergeWordHunt(a, b) {
   const last = fresh.last || other.last
   if (last) out.last = last
   if (fresh.optTimed) out.optTimed = true
-  return out
+  // Порядок полей — как у normalize: хранилище сравнивает сведённое с серверным строкой и при расхождении
+  // отправляет стейт заново; другой порядок ключей слал бы весь прогресс на каждом входе.
+  return normalize(out)
 }
 
 const store = createProgressStore({

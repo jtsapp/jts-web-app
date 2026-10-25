@@ -54,8 +54,9 @@ const APP_CSS = `
    него. Обёртка обрезает его по разделу (clip-path режет и fixed-потомков), а само небо остаётся
    неподвижным при прокрутке, как в прототипе. */
 .sky-clip{position:absolute;inset:0;z-index:0;clip-path:inset(0);pointer-events:none}
-/* Логотип и переключатель RU/KZ сняты (язык — интерфейса приложения): в шапке остаётся название. */
-.brand .sep{display:none}
+/* scroll-padding прототипа стоял на html (документ приложения ему не принадлежит): та же поправка — отступом
+   у элементов, иначе прокрутка к узлу карты и фокус Tab'ом прятали цель под липкую шапку и полосу секторов. */
+.wh *{scroll-margin-top:calc(var(--top) + 84px);scroll-margin-bottom:24px}
 `
 
 function main() {

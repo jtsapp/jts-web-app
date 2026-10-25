@@ -96,7 +96,7 @@ function mount(opts = {}) {
   const shadow = host.attachShadow({ mode: 'open' })
   shadow.innerHTML = '<div class="wh"></div>'
   api = mountWordHunt(shadow.querySelector('.wh'), {
-    bundle,
+    bundle: opts.bundle || bundle,
     lang: opts.lang || 'ru',
     progress: { read: () => JSON.parse(JSON.stringify(state)), write: (s) => { state = JSON.parse(JSON.stringify(s)) } },
     wip: { read: () => JSON.parse(JSON.stringify(wip)), write: (w) => { wip = JSON.parse(JSON.stringify(w)) } },
@@ -135,7 +135,7 @@ function openFirstLesson() {
   expect($('#scrim .sheet')).not.toBeNull()
 }
 
-function solveCrossword() {
+function solveCrossword(wait = true) {
   for (let guard = 0; guard < 400; guard++) {
     const G = api.snapshot().xw
     if (!G || G.over) break
@@ -145,7 +145,7 @@ function solveCrossword() {
     k.value = ' ' + o.sol
     k.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText' }))
   }
-  vi.advanceTimersByTime(1500)
+  if (wait) vi.advanceTimersByTime(1500)
 }
 
 describe('Word Hunt: движок в тени', () => {
@@ -228,6 +228,33 @@ describe('Word Hunt: движок в тени', () => {
     expect(words.filter((ok) => !ok)).toHaveLength(1)
   })
 
+  // Починка прототипа: итог показывается через 1,1 с после последнего слова, и уход в эту паузу его терял.
+  it('кроссворд: ушли с экрана в паузе до итога — итог всё равно записан', () => {
+    mount()
+    openFirstLesson()
+    click($('[data-a="playXw"]'))
+    const n = api.snapshot().xw.ents.length
+    solveCrossword(false)
+    expect(api.snapshot().view).toBe('xw')
+    api.destroy()
+    api = null
+    expect(Object.keys(state.stars)).toHaveLength(n)
+    expect(Object.values(state.pl)[0].x).toEqual([1, 0, 0])
+    expect(wip).toEqual({})
+  })
+
+  it('кроссворд: «назад» движка в паузе до итога — итог записан, отложенный показ не падает', () => {
+    mount()
+    openFirstLesson()
+    click($('[data-a="playXw"]'))
+    solveCrossword(false)
+    click($('#backBtn'))
+    expect(api.snapshot().view).toBe('galaxy')
+    expect(() => vi.advanceTimersByTime(3000)).not.toThrow()
+    expect(api.snapshot().view).toBe('galaxy')
+    expect(state.games).toBe(1)
+  })
+
   it('поиск слов клавиатурой: Enter на первой букве, Enter на последней — слово найдено', () => {
     mount()
     openFirstLesson()
@@ -276,6 +303,18 @@ describe('Word Hunt: движок в тени', () => {
     state = { stars: { 'A0|a1_like': 1 }, pl: {}, comets: {}, ach: {}, days: {}, gals: {}, games: 1, cleared: 0, pure: 0, last: 'nope' }
     api.reload()
     expect($('#topStars').textContent).toBe('1')
+  })
+
+  // Поля заливки идут в разметку: Shadow DOM скрипты не изолирует, а прототип приходит из админки.
+  it('id уровня из заливки экранируется, а не становится разметкой', () => {
+    const evil = 'A0<img src=x onerror=alert(1)>'
+    const b = JSON.parse(JSON.stringify(bundle))
+    b.db.levels[0].id = evil
+    b.db[evil] = b.db.A0
+    mount({ bundle: b })
+    const card = host.shadowRoot.querySelector('.lvl')
+    expect(card.querySelector('img')).toBeNull()
+    expect(card.querySelector('.code').textContent).toBe(evil)
   })
 
   it('ссылки и кнопки не трогают адрес страницы', () => {

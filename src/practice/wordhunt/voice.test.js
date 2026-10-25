@@ -60,6 +60,15 @@ describe('озвучка слов Word Hunt', () => {
     expect(done).toHaveBeenCalledTimes(1)
   })
 
+  it('новое слово глушит запасной голос предыдущего: два голоса разом не звучат', () => {
+    const cancel = vi.fn()
+    globalThis.window = globalThis.window || globalThis
+    window.speechSynthesis = { speak: vi.fn(), cancel }
+    sayWord({ text: 'listen', url: '', done: vi.fn() })
+    expect(cancel).toHaveBeenCalled()
+    expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(playTts.mock.invocationCallOrder[0])
+  })
+
   it('stopWords глушит и общий плеер, и голос устройства', () => {
     const cancel = vi.fn()
     globalThis.window = globalThis.window || globalThis

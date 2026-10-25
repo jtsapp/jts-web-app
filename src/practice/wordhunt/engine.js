@@ -35,11 +35,21 @@
 // - у кнопки звезды в шапке подпись на казахском тоже (в прототипе — только «Собрано слов»);
 // - в полях ввода вне тени (чат Луны) буквы кроссворд не перехватывает: к
 //   INPUT/TEXTAREA прототипа добавлен contenteditable, у поиска слов — и TEXTAREA.
-// Две починки прототипа (помечены «починка порта» на месте):
+// - итог партии записывается отдельно от показа (LX.record): игру, покинутую в
+//   паузе между последним словом и экраном итога (уход с экрана, выход из
+//   аккаунта, «назад»), stop() записывает без отрисовки;
+// - поля заливки, которые прототип вставлял в разметку как есть (id уровня,
+//   полоса CEFR урока, ссылки картинок), экранируются: Shadow DOM скрипты не
+//   изолирует, а прототип теперь приходит из админки;
+// - в небе — последние собранные слова по времени сбора: порядок ключей
+//   сервер (jsonb) не хранит.
+// Починки прототипа (помечены «починка порта» на месте):
 // - после решённого слова курсор вставал на ВТОРУЮ клетку следующего слова —
 //   первая буква следующего ответа пропускалась (проверено на самом прототипе);
 // - «последний урок» из прогресса, оставшийся от станции, которой в новой
-//   заливке нет, ронял главную (planetByPid искал несуществующую область).
+//   заливке нет, ронял главную (planetByPid искал несуществующую область);
+// - уход из решённого кроссворда в паузе до итога терял итог, а отложенный
+//   finish падал на G = null.
 // Правило переноса: правка поведения — здесь и в прототипе одновременно, иначе
 // следующая заливка прототипа предупредит «другой движок» уже ложно.
 
@@ -554,7 +564,8 @@ export function mountWordHunt(root, cfg) {
          word met in another lesson is kept out too */
       var bad = {};
       (avoid || []).forEach(function (it) { bad[C.core(it.en).toLowerCase()] = 1; });
-      var got = Object.keys(P.stars).slice(-80).map(itemByKey).filter(Boolean).map(function (it) { return C.core(it.en); })
+      /* порт: последние собранные — по времени сбора, а не по порядку ключей: сервер (jsonb) их пересортировывает */
+      var got = Object.keys(P.stars).sort(function (a, b) { return P.stars[a] - P.stars[b]; }).slice(-80).map(itemByKey).filter(Boolean).map(function (it) { return C.core(it.en); })
         .filter(function (w) { return !bad[w.toLowerCase()]; });
       var n = innerWidth <= 700 ? 5 : 9, list = shuffle(got).slice(0, n);
       if (list.length < n && !(avoid && avoid.length)) list = list.concat(shuffle(SKYW).slice(0, n - list.length));
@@ -852,7 +863,7 @@ export function mountWordHunt(root, cfg) {
           '</b><small>' + s.lit + ' / ' + s.words + ' ' + esc(t('words')) + '</small></span><i class="ring2" style="--p:' + pct + '"></i></button>';
       }
       var zk = zoneKey(lv);
-      return '<button class="lvl z-' + zk + '" data-a="gal" data-lv="' + esc(lv) + '" style="--zc:' + zc + ';--zd:' + zd + '"><span class="art" aria-hidden="true"><span class="code">' + lv + '</span></span>' +
+      return '<button class="lvl z-' + zk + '" data-a="gal" data-lv="' + esc(lv) + '" style="--zc:' + zc + ';--zd:' + zd + '"><span class="art" aria-hidden="true"><span class="code">' + esc(lv) + '</span></span>' +
         '<span class="info"><span class="spr s-' + ZONES[zk].sp[0] + '" aria-hidden="true"></span><span class="nm"><b>' + esc(zoneName(zk)) + '</b>' + esc(g.nm) + '</span>' +
         '<span class="pct">' + pct + '%</span></span><span class="bar"><i style="width:' + pct + '%"></i></span><span class="meta">' + s.lit + ' / ' + s.words + ' ' + esc(t('words')) +
         ' · ' + esc(pl(s.planets, 'planetsN')) + '</span></button>';
@@ -1030,7 +1041,7 @@ export function mountWordHunt(root, cfg) {
         '<div class="tabs" role="tablist"><button class="tab' + (mode === 'xw' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'xw') + '" data-a="tab" data-m="xw">' + GI.xw + esc(t('xwN')) + '</button>' +
         '<button class="tab ws' + (mode === 'ws' ? ' on' : '') + '" role="tab" aria-selected="' + (mode === 'ws') + '" data-a="tab" data-m="ws"' + (huntable ? '' : ' disabled title="' + esc(t('huntOnly')) + '"') + '>' + GI.ws + esc(t('wsN')) + '</button></div>';
       if (mode === 'xw') {
-        h += '<div class="game"><p class="gd">' + esc(t('xwD')) + ' · ' + esc(t('clueLvl')) + ' ' + p.band + '</p><div class="chips">';
+        h += '<div class="game"><p class="gd">' + esc(t('xwD')) + ' · ' + esc(t('clueLvl')) + ' ' + esc(p.band) + '</p><div class="chips">';
         tiers.forEach(function (tr, i) {
           var open = i === 0 || r.x[i - 1], on = S.tier === i;
           h += '<button class="chip' + (on ? ' on' : '') + (r.x[i] ? ' dn' : '') + '" data-a="tier" data-i="' + i + '"' + (open ? '' : ' disabled title="' + esc(t('locked')) + '"') + '>' +
@@ -1107,7 +1118,9 @@ export function mountWordHunt(root, cfg) {
 
     /* ------------------------------------------------- finishing a game --- */
     /* res: { type, src, words:[{it, ok}], time, timedOut, record } */
-    function finish(res) {
+    /* порт: запись итога (record) отделена от показа (finish) — игра, которую ученик покинул в паузе между
+       последним словом и экраном итога, записывается из stop() без отрисовки */
+    function record(res) {
       var src = res.src, fresh = 0, comets = 0, unlocked = '';
       reloadP();
       P.games++;
@@ -1142,7 +1155,11 @@ export function mountWordHunt(root, cfg) {
       }
       var ach = checkAch();
       save(true);
-      renderResult(res, fresh, comets, unlocked);
+      return { fresh: fresh, comets: comets, unlocked: unlocked };
+    }
+    function finish(res) {
+      var src = res.src, o = record(res);
+      renderResult(res, o.fresh, o.comets, o.unlocked);
       if (res.complete) confetti();
       go('result', src.comet ? lobby : function () { galaxy(src.p.lv, src.p); });
     }
@@ -1262,7 +1279,7 @@ export function mountWordHunt(root, cfg) {
 
     return {
       get LANG() { return LANG; }, t: t, pl: pl, pf: pf, esc: esc, $: $, P: P, save: save, saveWip: saveWip, flushWip: flushWip, reloadP: reloadP, say: say, sndBtn: sndBtn, regSay: regSay,
-      trOf: trOf, burst: burst, chime: chime, rightWords: rightWords, confetti: confetti, finish: finish, fmtTime: fmtTime, tiersOf: tiersOf, lobby: lobby, galaxy: galaxy, boot: boot,
+      trOf: trOf, burst: burst, chime: chime, rightWords: rightWords, confetti: confetti, finish: finish, record: record, fmtTime: fmtTime, tiersOf: tiersOf, lobby: lobby, galaxy: galaxy, boot: boot,
       planetsOf: planetsOf, itemByKey: itemByKey, ICON: ICON, ACH: ACH, topStats: topStats, nav: NAV,
       buddy: buddy, buddyBig: buddyBig, cheer: cheer, offer: offer, hush: hush, praise: praise, guideOf: guideOf,
       setSky: setSky, skyAdd: skyAdd, flyWord: flyWord, riseLetters: riseLetters, sparkleCells: sparkleCells, zoneKey: zoneKey,
@@ -1375,7 +1392,14 @@ export function mountWordHunt(root, cfg) {
       focusKey();
       poke();
     }
-    function stop() { if (G) clearTimeout(G.idle); if (G && !G.over) saveWip(); G = null; }
+    function stop() {
+      if (G) clearTimeout(G.idle);
+      /* починка порта: решённую сетку покинули до экрана итога (1,1 с) — итог записывается без показа; в
+         прототипе он терялся, а отложенный finish падал на G = null */
+      if (G && G.over && !G.done) { G.done = true; delete LX.P.wip[G.wk]; LX.record(resultOf(G)); }
+      else if (G && !G.over) saveWip();
+      G = null;
+    }
     /* the guide notices a learner who is stuck on one word: after 30 s without
        progress, or after a second wrong answer, it offers help — once a word */
     function poke() { if (!G || G.over) return; clearTimeout(G.idle); G.idle = setTimeout(stuck, 30000); }
@@ -1429,7 +1453,7 @@ export function mountWordHunt(root, cfg) {
     }
     function clueText(en, compact) {
       var it = en.it, pic = en.pol.pic && en.kind === 'tr' ? LXClue.picOf(it) : '';
-      return (pic ? '<img class="cpic" src="' + pic + '" alt="">' : '') + (compact ? '' : kindTag(en, en.kind)) +
+      return (pic ? '<img class="cpic" src="' + esc(pic) + '" alt="">' : '') + (compact ? '' : kindTag(en, en.kind)) +
         clueHTML(en, en.kind) + ' <span class="enum">(' + esc(it.enumr) + ')</span>' +
         (en.pol.sup === 'show' ? '<span class="supl">' + esc(trText(it)) + '</span>' : '') +
         ((en.hintOn || en.amb) && en.hint ? '<span class="hint2"><b>' + esc(x('lab_' + (en.hint === 'def' ? (en.pol.band === 'B2' ? 'mean' : /^A/.test(en.pol.band) ? 'defL' : 'def') : en.hint))) + ':</b> ' + clueHTML(en, en.hint) + '</span>' : '');
@@ -1723,10 +1747,15 @@ export function mountWordHunt(root, cfg) {
       G.mc = !filled ? '' : bad ? 'bad' : 'ok';
       live(G.msg); paint();
     }
+    function resultOf(g) {
+      return { type: 'xw', src: g.src, complete: g.ents.every(function (e) { return e.solved; }), words: g.ents.map(function (e) { return { it: e.it, ok: !e.help && !e.shown }; }) };
+    }
     function finish() {
       var g = G;
+      if (!g || g.done) return;
+      g.done = true;
       delete LX.P.wip[g.wk];
-      LX.finish({ type: 'xw', src: g.src, complete: g.ents.every(function (e) { return e.solved; }), words: g.ents.map(function (e) { return { it: e.it, ok: !e.help && !e.shown }; }) });
+      LX.finish(resultOf(g));
     }
 
     /* ----------------------------------------------------------- keyboard --- */
@@ -1841,7 +1870,13 @@ export function mountWordHunt(root, cfg) {
       tick();
       poke();
     }
-    function stop() { clearInterval(TIMER); TIMER = null; if (G) clearTimeout(G.idle); G = null; }
+    function stop() {
+      clearInterval(TIMER); TIMER = null;
+      if (G) clearTimeout(G.idle);
+      /* починка порта: доску покинули в паузе до экрана итога — итог записывается без показа (как у кроссворда) */
+      if (G && G.over && !G.done) { G.done = true; LX.record(resultOf(G)); }
+      G = null;
+    }
     /* stuck for 35 s without a find: the guide offers a flare (while any are left) */
     function poke() {
       if (!G || G.over) return;
@@ -1891,7 +1926,7 @@ export function mountWordHunt(root, cfg) {
         var pic = c.pic ? LXClue.picOf(w.it) : '';
         var showTr = (c.sup === 'show' || peek.tr) && c.kind !== 'tr';
         h += '<div class="wc' + (f ? ' fd' : '') + (miss ? ' miss' : '') + '" id="wsW' + i + '" style="--wc:' + (f ? f.color : 'transparent') + '">' +
-          (pic ? '<img class="cpic" src="' + pic + '" alt="">' : '') +
+          (pic ? '<img class="cpic" src="' + esc(pic) + '" alt="">' : '') +
           '<div class="wb"><span class="ktag k-' + c.kind + '">' + esc(kindLab(c.kind, c.band)) + '</span>' + clueBody(w) +
           ' <span class="enum">(' + esc(w.it.enumr) + ')</span>' +
           (showTr ? '<span class="supl">' + esc(LXClue.trText(w.it, LX.LANG)) + '</span>' : '');
@@ -2095,12 +2130,16 @@ export function mountWordHunt(root, cfg) {
       renderWords(); paint(); drawCaps();
       setTimeout(finish, 2200);
     }
+    function resultOf(g) {
+      return { type: 'ws', src: g.src, timedOut: g.timedOut, complete: !g.timedOut && g.foundN === g.B.words.length, time: Date.now() - g.t0,
+        words: g.B.words.map(function (w) { return { it: w.it, ok: !!g.found[w.it.key] && !g.helped[w.it.key] }; }) };
+    }
     function finish() {
       var g = G;
-      if (!g) return;
+      if (!g || g.done) return;
+      g.done = true;
       clearInterval(TIMER);
-      LX.finish({ type: 'ws', src: g.src, timedOut: g.timedOut, complete: !g.timedOut && g.foundN === g.B.words.length, time: Date.now() - g.t0,
-        words: g.B.words.map(function (w) { return { it: w.it, ok: !!g.found[w.it.key] && !g.helped[w.it.key] }; }) });
+      LX.finish(resultOf(g));
       G = null;
     }
 

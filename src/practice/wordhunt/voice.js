@@ -50,6 +50,13 @@ function speakTts(text, rate, done) {
 
 /** cfg.say движка: { text, url, rate, done }. */
 export function sayWord({ text, url, rate, done = () => {} }) {
+  // Запасной голос предыдущего слова мог ещё звучать (его done уже пришёл по таймеру): новое слово начинается
+  // в тишине, как в прототипе (там перед каждой фразой стоял speechSynthesis.cancel()).
+  try {
+    window.speechSynthesis?.cancel()
+  } catch {
+    /* нет синтеза — молча */
+  }
   let fin = false
   const end = () => {
     if (fin) return
