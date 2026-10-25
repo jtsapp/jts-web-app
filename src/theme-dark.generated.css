@@ -1131,6 +1131,13 @@ html[data-theme="dark"] .pk-banner--prepositions {
 html[data-theme="dark"] .pk-banner--grammar-games {
     background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc-strong) 94.2%)
 }
+html[data-theme="dark"] .pk-banner--speed-reading {
+    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
+}
+html[data-theme="dark"] .pk-banner__tag {
+    background: var(--dk-card);
+    color: var(--dk-acc)
+}
 html[data-theme="dark"] .pk-arcade {
     color: #fff;
     background: radial-gradient(ellipse at 88% 18%, color-mix(in oklab, var(--dk-yellow-soft) 35%, transparent) 0, transparent 34%),

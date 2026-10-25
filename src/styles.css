@@ -4222,6 +4222,17 @@ textarea {
 @media (max-width: 560px) {
   .ggp-top { padding: 8px 16px 0; }
 }
+/* «Скорочтение» в макете тоже нет — фиолетовый в розовый бегущей строки прототипа (#ff5e7e). Бейдж «Новое» —
+   белая пилюля у заголовка (Д5). Оболочка — как у «Грамматики · игр»; поля у хоста свои: у движка в тени их нет. */
+.pk-banner--speed-reading { background: linear-gradient(99.4deg, #9047ff 17%, #e2508a 95.5%); }
+.pk-banner__tag { display: inline-block; margin-left: 10px; padding: 3px 10px; border-radius: 999px; background: #fff; color: #9047ff; font-size: 12px; font-weight: 800; line-height: 16px; vertical-align: 4px; white-space: nowrap; }
+.srp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }
+.srp-host { display: block; padding: 0 32px 32px; }
+.srp-host[hidden] { display: none; }
+@media (max-width: 560px) {
+  .srp-top { padding: 8px 16px 0; }
+  .srp-host { padding: 0 16px 24px; }
+}
 /* Cartoon World в макете тоже нет — фирменный фиолетовый прототипа (#6332ff) в розовый его акцента. */
 .pk-banner--cartoons { background: linear-gradient(99.4deg, #6332ff 17%, #b62ab8 95.5%); }
 

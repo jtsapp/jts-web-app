@@ -83,6 +83,12 @@ export const DESTINATIONS = [
     name: { ru: 'Just to Listen', kk: 'Just to Listen', en: 'Just to Listen' },
     about: 'диктант на слух: слово по буквам, потом предложение с ним; уровни A0–B2 и 16 профессий',
   },
+  // Тексты «Скорочтения» тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'speed-reading', nav: 'speed-reading', screen: 'speed-reading',
+    name: { ru: 'Скорочтение', kk: 'Жылдам оқу', en: 'Speed reading' },
+    about: 'читать вслух английский текст за бегущей строкой (вкладка «Аудирование»): образец озвучки, запись голоса, процент прочитанного и звёзды',
+  },
   // Темы «Грамматики · игр» тоже с бэкенда; без входа экран сам просит войти.
   {
     id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
