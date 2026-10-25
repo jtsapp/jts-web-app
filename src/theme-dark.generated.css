@@ -8686,6 +8686,35 @@ html[data-theme="dark"] .ih-wdet__word s {
 html[data-theme="dark"] .ih-wdet__word small {
     color: var(--ih-ink-2)
 }
+html[data-theme="dark"] .ih-wcoach__tip {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wcoach__num {
+    background: var(--ih-violet);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .ih-wcoach__example {
+    background: var(--dk-card);
+    border: 1px dashed var(--dk-acc-line)
+}
+html[data-theme="dark"] .ih-wcoach small {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wcoach__sent {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wcoach__was {
+    color: var(--ih-ink-2)
+}
+html[data-theme="dark"] .ih-wcoach__now {
+    background: var(--dk-green-tint)
+}
+html[data-theme="dark"] .ih-wcoach__pair > div {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .ih-wcoach__pair > div + div {
+    background: var(--dk-green-tint)
+}
 html[data-theme="dark"] .ih-wmine__err {
     background: var(--dk-red-tint);
     box-shadow: inset 0 -2px 0 var(--dk-red);

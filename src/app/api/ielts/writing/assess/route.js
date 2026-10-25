@@ -2,7 +2,9 @@
 //
 // 1. квота IELTS (Writing — платная секция) — ДО платного вызова;
 // 2. claim на бэкенде (токен ученика + служебный ключ): работа своя и ждёт оценки, текст и задание — оттуда;
-// 3. Sonnet → критерии; 4. результат на бэкенд, общий band считает он. Модель не ответила — fail, работа снова ждёт.
+// 3. Sonnet → критерии и, параллельно, «наставник» (улучшение по предложениям, советы по развитию, эссе целиком —
+//    coachWriting; не ответил — разбор без этих блоков); 4. результат на бэкенд, общий band считает он. Модель
+//    оценки не ответила — fail, работа снова ждёт.
 //
 // Ключ IELTS_GRADER_KEY знает только сервер: без него бэкенд не отдаст работу на оценку и не примет band.
 
@@ -10,7 +12,7 @@ import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
 import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import { isDbConfigured, recordIeltsWriting } from '@/lib/db/ielts.js'
-import { WRITING_SCHEMA, buildSystemPrompt, normalizeAssessment, userMessage } from '@/lib/ielts/writingGrader.js'
+import { WRITING_SCHEMA, buildSystemPrompt, coachWriting, normalizeAssessment, userMessage } from '@/lib/ielts/writingGrader.js'
 
 export const runtime = 'nodejs'
 // оценка эссе Sonnet'ом — 20–40 с; запас под медленный ответ
@@ -19,6 +21,15 @@ export const maxDuration = 120
 // Прод за Cloudflare рвёт молчащий запрос через 100 с. Без maxRetries SDK повторил бы зависший вызов ещё дважды
 // (до 3×90 с): ученик видит 524, а сервер дописывает оценку и платит. Один вызов с запасом под claim и сохранение.
 const MODEL_TIMEOUT_MS = 80_000
+// «наставника» ждём, пока весь роут не дошёл до 85 с: дальше — сохранение и ответ под 100 с Cloudflare. Обычно он
+// приходит вместе с оценкой (~20 с параллельно, замер 25.10.2026).
+const COACH_WAIT_UNTIL_MS = 85_000
+
+// Обещание с потолком: по истечении — fallback. Сама работа не отменяется, но роут её больше не ждёт.
+function withDeadline(promise, ms, fallback) {
+  let timer
+  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() => clearTimeout(timer))
+}
 
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
 
@@ -37,6 +48,7 @@ async function backend(path, token, init = {}) {
 }
 
 export async function POST(request) {
+  const startedAt = Date.now()
   let body
   try {
     body = await request.json()
@@ -57,6 +69,8 @@ export async function POST(request) {
   if (!claim.ok) return Response.json({ error: claim.status === 409 ? 'already' : 'claim_failed' }, { status: claim.status === 409 ? 409 : claim.status === 404 ? 404 : 502 })
   const job = claim.body
 
+  // «наставник» идёт параллельно оценке и не бросает: ждать его дольше оценки незачем, а его сбой оценку не роняет
+  const coachP = coachWriting({ run: structured, model: IELTS_REVIEW_MODEL, job, uiLang, timeoutMs: MODEL_TIMEOUT_MS })
   let assessment
   try {
     const raw = await structured({ systemPrompt: buildSystemPrompt(job, uiLang), userMessage: userMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: MODEL_TIMEOUT_MS, maxRetries: 0 })
@@ -66,6 +80,9 @@ export async function POST(request) {
     await backend(`/mobile/ielts/attempts/${attemptId}/grading/fail`, token, { method: 'POST', body: JSON.stringify({ reason: 'model' }) })
     return Response.json({ error: 'model_failed' }, { status: 502 })
   }
+
+  const coach = await withDeadline(coachP, Math.max(0, startedAt + COACH_WAIT_UNTIL_MS - Date.now()), null)
+  if (coach) assessment.details = { ...assessment.details, ...coach }
 
   const saved = await backend(`/mobile/ielts/attempts/${attemptId}/grading`, token, {
     method: 'PUT',
