@@ -84,6 +84,12 @@ const ENGINES = {
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).
   'grammar-games': (css) => expect(css).toContain('font-family:var(--gg-font,inherit)'),
+  // Интерфейс — на языке приложения (RU/KZ), каждая гарнитура — inherit: корень тени берёт Inter у страницы.
+  wordhunt: (css) => {
+    const own = [...css.matchAll(/(?<![-\w])font-family\s*:\s*([^;}]+)/g)].map((m) => m[1].trim())
+    expect(own.length).toBeGreaterThan(0)
+    expect(own.filter((v) => v !== 'inherit')).toEqual([])
+  },
   // Тот же приём у Скорочтения: --sr-font от шрифта хоста.
   'speed-reading': (css) => expect(css).toContain('font-family:var(--sr-font,inherit)'),
 }

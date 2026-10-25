@@ -40,7 +40,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
     name: { ru: 'Практика → Чтение', kk: 'Тәжірибе → Оқылым', en: 'Practice → Reading' },
-    about: 'тексты с заданиями, книжки, комиксы, Word Rush',
+    about: 'тексты с заданиями, книжки, комиксы, Word Hunt (кроссворд и поиск слов), Word Rush',
   },
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
@@ -115,6 +115,12 @@ export const DESTINATIONS = [
   {
     id: 'speakspin', nav: 'speakspin', screen: 'speakspin',
     name: { ru: 'SpeakSpin', kk: 'SpeakSpin', en: 'SpeakSpin' },
+  },
+  // Словарь Word Hunt приходит с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'wordhunt', nav: 'wordhunt', screen: 'wordhunt',
+    name: { ru: 'Word Hunt (кроссворд и поиск слов)', kk: 'Word Hunt', en: 'Word Hunt' },
+    about: 'кроссворд и поиск слов над словами курса A0–B2 и 16 профессий (вкладка «Чтение»), слова с подсказкой — на повторение',
   },
   {
     id: 'arcade', nav: 'arcade', screen: 'arcade',

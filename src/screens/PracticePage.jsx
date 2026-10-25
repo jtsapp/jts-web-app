@@ -914,6 +914,20 @@ export default function PracticePage({
           />
         )
 
+      case 'wordhunt':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-wordhunt"
+            variant="wordhunt"
+            wide
+            title={t('practice.wordhunt.heading')}
+            desc={t('practice.wordhunt.desc')}
+            cta={t('practice.wordhunt.cta')}
+            onStart={() => onNav?.('wordhunt')}
+          />
+        )
+
       case 'justListen':
         return (
           <Banner

@@ -4235,6 +4235,18 @@ textarea {
 }
 /* Cartoon World в макете тоже нет — фирменный фиолетовый прототипа (#6332ff) в розовый его акцента. */
 .pk-banner--cartoons { background: linear-gradient(99.4deg, #6332ff 17%, #b62ab8 95.5%); }
+/* Word Hunt в макете тоже нет — два цвета прототипа: фиолетовый кроссворда (#874bf8) в голубой поиска слов. */
+.pk-banner--wordhunt { background: linear-gradient(99.4deg, #874bf8 17%, #0aafff 95.5%); }
+/* Word Hunt: оболочка как у Prepositions World (кнопка «назад», статусы загрузки), свой корень тени. */
+.whp-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.whp-host { display: block; }
+.whp-host[hidden] { display: none; }
+/* Шапка раздела и полоса секторов на карте липнут (sticky) — к ОКНУ: у .learn__main стоит overflow: auto, и
+   sticky привязывался к нему, а прокручивается окно (тот же приём, что у «Чтения», reading.css). */
+.learn__main:has(.whp-host) { overflow: visible; }
+@media (max-width: 560px) {
+  .whp-top { padding: 8px 16px 0; }
+}
 
 /* «Аркада» во вкладках «Говорение» и «Чтение» — зал из двух игр. В макете её
    нет — геометрия и кнопка от широкого баннера (поля 24, r20, белая пилюля),

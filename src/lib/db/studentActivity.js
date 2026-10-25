@@ -39,6 +39,7 @@ export const PRACTICE_AREA_BY_MODULE = {
   listen: 'listen',
   prepositions: 'prepositions',
   cartoons: 'cartoons',
+  wordhunt: 'wordhunt',
 }
 
 /** Миграция, с которой кабинет считает решённые задания по суткам (skill_day). */

@@ -2144,6 +2144,13 @@ export function getCartoonMission(token, id) {
   return authGet(`/mobile/cartoons/missions/${encodeURIComponent(id)}`, token)
 }
 
+// Word Hunt: прототип целиком одним бандлом (~6,5 МБ: словарь курса, станции, аудит подсказок; записи и картинки —
+// ссылки MinIO). Большой ответ cachedAuthGet держит только в памяти вкладки — в localStorage он вытеснял бы прогресс.
+// 404 — прототип ещё не залит через админку.
+export function getWordHunt(token, onFresh) {
+  return cachedAuthGet('/mobile/word-hunt', token, onFresh)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }
