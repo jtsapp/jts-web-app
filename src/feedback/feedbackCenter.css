@@ -35,3 +35,8 @@
 .fc__reply { margin-top: 12px; }
 .fc__reply textarea { min-height: 70px; }
 @media (max-width: 520px) { .fc { padding: 10px 10px 28px; } .fc__panel { padding: 13px; border-radius: 15px; } .fc__head h1 { font-size: 22px; } }
+.fc__decision { padding: 12px; border-radius: 12px; background: #f2effc; margin: 12px 0; }
+.fc__decision p, .fc__history p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fc__history article { border-left: 3px solid #d8d0f2; padding: 6px 12px; margin: 8px 0; }
+.fc__history time { display: block; font-size: 11px; color: #77748b; }
+.fc__history b { font-size: 13px; }

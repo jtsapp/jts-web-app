@@ -130,6 +130,10 @@ export function getCabinetFeedbackMessages(token, id) {
   return authGet(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token)
 }
 
+export function getCabinetFeedbackHistory(token, id) {
+  return authGet(`/cabinet/feedback/${encodeURIComponent(id)}/history`, token)
+}
+
 export function replyCabinetFeedback(token, id, body) {
   return authPost(`/cabinet/feedback/${encodeURIComponent(id)}/messages`, token, body)
 }
