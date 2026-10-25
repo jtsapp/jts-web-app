@@ -45,6 +45,7 @@ export const SCREEN_NAMES = {
   numbers: 'Практика → Мир чисел Декстера',
   listen: 'Практика → Аудирование → Just to Listen (диктант слова и предложения)',
   reading: 'Практика → Чтение',
+  wordhunt: 'Практика → Чтение → Word Hunt (кроссворд и поиск слов)',
   lessons: 'Уроки',
   homework: 'Домашняя работа',
   'course-catalog': 'Каталог курсов',
