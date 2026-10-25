@@ -131,7 +131,7 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
         </button>
       </div>
       {notice && (
-        <div className="nmb-state" role={status === 'error' ? 'alert' : 'status'} aria-busy={status === 'loading'} data-status={status}>
+        <div className="nmb-state srp-state" role={status === 'error' ? 'alert' : 'status'} aria-busy={status === 'loading'} data-status={status}>
           <p>{notice}</p>
           {status === 'error' && (
             <button type="button" className="nmb-retry" onClick={retry}>
