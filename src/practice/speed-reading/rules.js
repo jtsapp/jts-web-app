@@ -12,6 +12,11 @@ export const SPEEDS = [0.5, 0.7, 1, 1.5, 2, 2.5, 3]
 export const BASE_WPM = 150
 /** Телесуфлёр останавливает запись сам через 2,5 с после конца текста (srRecord прототипа). */
 export const AUTO_STOP_MS = 2500
+/**
+ * Самая медленная бегущая строка: 225 слов (потолок текста) на 75 сл/мин — ровно 3 минуты, потолок записи (Д15).
+ * Основа «1x» — темп образца, и у медленного голоса 0,5x ушло бы ниже 75: конец текста не влез бы в запись.
+ */
+export const MIN_WPM = 75
 
 export const srWords = (s) => String(s || '').split(/\s+/).filter(Boolean)
 export const srNorm = (w) => String(w).toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9']/g, '')
@@ -61,9 +66,75 @@ export function resultOf({ read, words, dur }) {
   return { pct, stars: starsOf(pct), wpm }
 }
 
-/** Темп скорости: основа (темп образца или 150) × множитель, целым — как SR.wpm прототипа. */
+/** Темп скорости: основа (темп образца или 150) × множитель, целым — как SR.wpm прототипа; не ниже MIN_WPM. */
 export function speedWpm(base, mult) {
-  return Math.round((base > 0 ? base : BASE_WPM) * mult)
+  return Math.max(MIN_WPM, Math.round((base > 0 ? base : BASE_WPM) * mult))
+}
+
+/* ---- числа цифрами в распознанном тексте ----
+   Распознавание (Azure в /api/transcribe, Web Speech в Chrome) пишет числа цифрами: «four hundred and twelve»
+   приходит как «412», «seven» — как «7». Слово текста с цифрой из распознанного не совпадёт, и верно прочитанные
+   числа оставались бы серыми — до 5–9 % слов в текстах с числами, звезда. Поэтому после числа из распознанного
+   дописываем его словами (британская запись, с «and»), а сами цифры оставляем первыми: в тексте бывает и «Flight
+   512». Лишние слова выравнивание переживает — оно ищет слово текста среди пяти следующих услышанных. */
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+const SCALES = [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']]
+
+function below100(n) {
+  if (n < 20) return [ONES[n]]
+  // «twenty-five» в тексте — одно слово с дефисом (srNorm склеит его в twentyfive)
+  return [TENS[Math.floor(n / 10)] + (n % 10 ? ONES[n % 10] : '')]
+}
+function below1000(n, tail) {
+  const out = []
+  const h = Math.floor(n / 100)
+  const r = n % 100
+  if (h) out.push(ONES[h], 'hundred')
+  if (r) {
+    if (h || tail) out.push('and')
+    out.push(...below100(r))
+  }
+  return out
+}
+/** Целое словами: 412 → four hundred and twelve, 12000000 → twelve million. */
+export function numberWords(n) {
+  if (!Number.isSafeInteger(n) || n < 0) return []
+  if (n === 0) return ['zero']
+  const out = []
+  let rest = n
+  for (const [size, name] of SCALES) {
+    if (rest >= size) {
+      out.push(...below1000(Math.floor(rest / size), false), name)
+      rest %= size
+    }
+  }
+  if (rest) out.push(...below1000(rest, out.length > 0))
+  return out
+}
+
+/** Распознанные слова с числами, дописанными словами (цифры остаются на своём месте). */
+export function expandHeard(heard) {
+  const out = []
+  for (const w of heard || []) {
+    out.push(w)
+    const t = String(w).replace(/^[^\d-]+|[^\d]+$/g, '')
+    let m
+    if ((m = /^(-?)(\d{1,3}(?:,\d{3})+|\d+)$/.exec(t))) {
+      const n = Number(m[2].replace(/,/g, ''))
+      if (n <= 999999999999) out.push(...(m[1] ? ['minus'] : []), ...numberWords(n))
+    } else if ((m = /^(\d{1,2}):(\d{2})$/.exec(t))) {
+      const h = Number(m[1])
+      const min = Number(m[2])
+      out.push(...numberWords(h), ...(min ? numberWords(min) : ["o'clock"]))
+    }
+  }
+  return out
+}
+
+/** Выравнивание с числами словами — им считают и итог, и живую подсветку. */
+export function alignHeard(words, heard) {
+  return srAlign(words, expandHeard(heard))
 }
 
 /** «≈ N секунд» подписи скорости. */

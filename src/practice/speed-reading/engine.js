@@ -22,9 +22,12 @@
 //   ищет глобальную функцию, которой у модуля нет); значки Material Symbols → SVG (icons.js); тосты —
 //   внутри корня; звуки beep — свой AudioContext, будится в клике «Начать запись», закрывается в destroy();
 // - починки: стоп во время отсчёта возвращает к выбору (прототип считал длительность от прошлой попытки);
-//   кадр бегущей строки считает время от performance.now(), а не от метки кадра.
+//   кадр бегущей строки считает время от performance.now(), а не от метки кадра; список образца прокручивается
+//   к звучащему слову (прототип вычитал отступ списка и всегда сбрасывал прокрутку наверх); пока браузер
+//   спрашивает микрофон, на экране ожидание с «Отменой», а не рабочий выбор текста (выбор посреди запроса
+//   разводил текст попытки и текст итога); числа цифрами в распознанном засчитываются (rules.js expandHeard).
 
-import { SPEEDS, BASE_WPM, AUTO_STOP_MS, srWords, srAlign, resultOf, speedWpm, paceSeconds, scrollMs, sampleIndexAt, todayCount } from './rules.js'
+import { SPEEDS, BASE_WPM, AUTO_STOP_MS, srWords, alignHeard, resultOf, speedWpm, paceSeconds, scrollMs, sampleIndexAt, todayCount } from './rules.js'
 import { attemptBody } from './data.js'
 import { icon } from './icons.js'
 
@@ -77,7 +80,8 @@ export function mountSpeedReading(root, cfg) {
     try {
       const Ctx = globalThis.AudioContext || globalThis.webkitAudioContext
       if (!AC && Ctx) AC = new Ctx()
-      if (AC && AC.state === 'suspended') AC.resume()
+      // iOS после микрофона оставляет контекст «interrupted», а не «suspended» — будим любой неработающий.
+      if (AC && AC.state !== 'running') AC.resume()
     } catch {
       AC = null
     }
@@ -218,7 +222,8 @@ export function mountSpeedReading(root, cfg) {
         })
         const el = $(`srl${k}`)
         const box = $('srlist')
-        if (el && box) box.scrollTop = Math.max(0, el.offsetTop - box.offsetTop - 50)
+        // У .srlist position:relative — offsetTop слова уже от списка.
+        if (el && box) box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 2)
       },
       onEnd: () => {
         if (SRL !== my) return
@@ -274,7 +279,11 @@ export function mountSpeedReading(root, cfg) {
       }))
     return [...SR.tries.filter((t) => !t.demo), ...server]
   }
-  const sessionToday = () => SR.tries.filter((t) => !t.demo && t.id == null).map((t) => ({ createdAt: t.at.toISOString() }))
+  // Попытки этого захода, которых нет в списке с сервера (он взят при открытии экрана), — к счёту «сегодня».
+  const sessionToday = () => {
+    const known = new Set(serverTries.map((a) => a.id))
+    return SR.tries.filter((t) => !t.demo && (t.id == null || !known.has(t.id))).map((t) => ({ createdAt: t.at.toISOString() }))
+  }
 
   function pSpeed() {
     const tx = srText()
@@ -292,11 +301,12 @@ export function mountSpeedReading(root, cfg) {
  <div class="srlisten">${listenButton(tx)}
  ${SRL ? `<div class="srlist" id="srlist">${words.map((w, i) => `<span id="srl${i}">${esc(w)}</span>`).join(' ')}</div>` : `<span class="muted" style="font-size:13px">${X('Послушай, как правильно читать этот текст, — с той же скоростью', 'Бұл мәтінді қалай дұрыс оқу керегін тыңда — сол жылдамдықпен', 'Hear how to read this text correctly — at the same speed')}</span>`}</div>
  <button class="cbtn srgo" data-act="begin">${icon('mic')}${X('Начать запись', 'Жазуды бастау', 'Start recording')}</button><button class="cbtn line" style="margin-top:8px;width:100%;justify-content:center" data-act="demo">${icon('play_circle')}${X('Посмотреть демо без микрофона', 'Микрофонсыз демоны көру', 'Watch a demo without a microphone')}</button>
- <div class="muted" style="font-size:13px;margin-top:10px">${X('Уровень', 'Деңгей', 'Level')} ${esc(tx.level)} · ${X('Попыток сегодня', 'Бүгінгі әрекеттер', 'Tries today')}: ${todayCount([...serverTries, ...sessionToday()])} · <span class="srcoin">${coinImg()} ${X('монеты — за первую попытку дня с ★', 'тиындар — күннің ★ алған алғашқы әрекеті үшін', 'coins for the first try of the day with ★')}</span></div></div>`
+ <div class="muted" style="font-size:13px;margin-top:10px">${X('Уровень', 'Деңгей', 'Level')} ${esc(tx.level)} · ${X('Попыток сегодня', 'Бүгінгі әрекеттер', 'Tries today')}: ${todayCount([...serverTries, ...sessionToday()])} · <span class="srcoin">${coinImg()} ${X('монеты — раз в день за текст, прочитанный на ★', 'тиындар — күніне бір рет, ★ алған мәтін үшін', 'coins once a day per text read for ★')}</span></div></div>`
   }
 
   /* ---- запись ---- */
   let SRX = null // живая попытка: rec, live, raf, demo
+  let waitSeq = 0 // запрос микрофона: «Отмена» и повторный запрос делают прежний ответ браузера ненужным
   async function srBegin(demo) {
     if (SRX || SR.step === 'count') return
     if (SRL) {
@@ -306,16 +316,25 @@ export function mountSpeedReading(root, cfg) {
     wakeAudio()
     const tx = srText()
     if (!tx) return
+    // Текст и темп попытки фиксируются здесь: итог, подпись и тело попытки берут их отсюда, а не из выбора на экране.
+    SR.cur = tx
+    SR.curMult = SR.mult
+    SR.curWpm = srWpm(tx)
     SR.words = srWords(tx.body)
     SR.heard = []
     SR.asr = false
     SR.liveDead = false
     SR.t0 = 0
     SR.step = 'count'
+    const my = ++waitSeq
     const go = (x) => {
-      if (dead) {
+      if (dead || my !== waitSeq || SR.step !== 'count') {
         x.rec?.cancel()
         return
+      }
+      if (SRL) {
+        SRL = null
+        stopSample()
       }
       SRX = x
       SR.step = 'rec'
@@ -331,15 +350,23 @@ export function mountSpeedReading(root, cfg) {
       render()
       return
     }
+    render() // «Ждём доступ к микрофону…»: окно браузера может висеть, сколько ученик его не трогает
     try {
       const rec = await openRecorder({ onLimit: () => SRX?.rec === rec && srStop() })
       go({ rec })
     } catch (e) {
-      if (dead) return
+      if (dead || my !== waitSeq || SR.step !== 'count') return
       SR.step = 'nomic'
       SR.err = (e && e.name) || ''
       render()
     }
+  }
+
+  function srWaitView() {
+    return `<div class="srstart"><div class="srava"><img src="${esc(img('dexter'))}" alt=""></div><h2>${X('Ждём доступ к микрофону…', 'Микрофонға рұқсат күтілуде…', 'Waiting for the microphone…')}</h2>
+ <p class="muted">${X('Разрешите микрофон в окне браузера — и начнётся отсчёт.', 'Браузер терезесінде микрофонға рұқсат беріңіз — сонда кері санақ басталады.', 'Allow the microphone in the browser window and the countdown will start.')}</p>
+ <span class="srwait">${icon('hourglass')}${X('Ждём ответ браузера', 'Браузердің жауабын күтудеміз', 'Waiting for the browser')}</span>
+ <button class="cbtn line" style="margin-top:16px;width:100%;justify-content:center" data-act="cancel">${icon('arrow_back')}${X('Отмена', 'Болдырмау', 'Cancel')}</button></div>`
   }
 
   function srNoMic() {
@@ -388,7 +415,7 @@ export function mountSpeedReading(root, cfg) {
       try {
         x.rec.start()
       } catch {
-        toast('MediaRecorder error')
+        toast(X('Запись не запустилась', 'Жазба басталмады', "Recording didn't start"))
         srStop(true)
         render()
         return
@@ -406,7 +433,7 @@ export function mountSpeedReading(root, cfg) {
         },
       })
     }
-    const total = scrollMs(SR.words.length, srWpm())
+    const total = scrollMs(SR.words.length, SR.curWpm)
     const el = $('teletext')
     const view = el && el.parentNode
     const H = el ? el.scrollHeight : 0
@@ -439,7 +466,7 @@ export function mountSpeedReading(root, cfg) {
   }
 
   function srMark() {
-    const ok = srAlign(SR.words, SR.heard)
+    const ok = alignHeard(SR.words, SR.heard)
     ok.forEach((v, i) => {
       const s = $(`tw${i}`)
       if (s) s.classList.toggle('said', v)
@@ -475,11 +502,11 @@ export function mountSpeedReading(root, cfg) {
   }
 
   async function srFinish(x) {
-    const tx = srText()
+    const tx = SR.cur
     const words = SR.words
     const dur = SR.dur || 0
-    const mult = SR.mult
-    const wpmTarget = srWpm(tx)
+    const mult = SR.curMult
+    const wpmTarget = SR.curWpm
     let wav = null
     let heard = null
     let scoredBy = 'none'
@@ -491,18 +518,21 @@ export function mountSpeedReading(root, cfg) {
       render()
       wav = await x.rec.stop().catch(() => null)
       if (dead || SRX !== x) return
-      const said = wav ? await Promise.resolve(transcribe(wav)).catch(() => null) : null
+      const said = wav ? await Promise.resolve(transcribe(wav, ac.signal)).catch(() => null) : null
       if (dead || SRX !== x) return
-      if (typeof said === 'string') {
+      const live = SR.asr && SR.heard.length > 0
+      // Пустой ответ сервера при словах живого распознавания — скорее тихая запись, чем молчание ученика:
+      // тогда итог по живому, а не «0 % по серверу».
+      if (typeof said === 'string' && (srWords(said).length || !live)) {
         heard = srWords(said)
         scoredBy = 'server'
-      } else if (SR.asr && SR.heard.length) {
+      } else if (live) {
         heard = SR.heard
         scoredBy = 'browser'
       }
     }
     SRX = null
-    const ok = heard ? srAlign(words, heard) : null
+    const ok = heard ? alignHeard(words, heard) : null
     const read = ok ? ok.filter(Boolean).length : null
     const { pct, stars, wpm: realWpm } = resultOf({ read, words: words.length, dur })
     const url = wav ? URL.createObjectURL(wav) : null
@@ -529,10 +559,11 @@ export function mountSpeedReading(root, cfg) {
         if (tr.coins > 0) toast(`+${tr.coins} ${coinWord(tr.coins)}`)
         updateSave(tr)
       })
-      .catch(() => {
+      .catch((e) => {
         if (dead) return
         tr.saving = false
-        tr.saveFailed = true
+        // Ответ сервера (текст скрыли, пока ученик читал) и обрыв сети — разные подсказки.
+        tr.saveFailed = e?.status ? 'refused' : 'network'
         updateSave(tr)
       })
   }
@@ -544,6 +575,7 @@ export function mountSpeedReading(root, cfg) {
   function saveLine(tr) {
     if (tr.demo) return ''
     if (tr.saving) return `<span class="srwait">${icon('hourglass')}${X('Сохраняем попытку…', 'Әрекетті сақтап жатырмыз…', 'Saving your try…')}</span>`
+    if (tr.saveFailed === 'refused') return `⚠️ ${X('Попытку не приняли: текст изменили или скрыли', 'Әрекет қабылданбады: мәтін өзгертілген не жасырылған', 'Your try was not accepted: the text was changed or hidden')}`
     if (tr.saveFailed) return `⚠️ ${X('Попытка не сохранилась — проверьте интернет', 'Әрекет сақталмады — интернетті тексеріңіз', "Your try wasn't saved — check your connection")}`
     if (tr.coins > 0) return `${coinImg()} +${tr.coins} ${coinWord(tr.coins)}`
     return `✓ ${X('Попытка сохранена', 'Әрекет сақталды', 'Try saved')}`
@@ -588,6 +620,7 @@ export function mountSpeedReading(root, cfg) {
     if (SR.step === 'nomic') return srNoMic()
     if (SR.step === 'result') return srResultView()
     if (SR.step === 'scoring') return srScoringView()
+    if (SR.step === 'count') return srWaitView()
     return pSpeed()
   }
   function render() {
@@ -602,6 +635,12 @@ export function mountSpeedReading(root, cfg) {
     begin: () => srBegin(false),
     demo: () => srBegin(true),
     stop: () => srStop(),
+    cancel: () => {
+      if (SR.step !== 'count') return
+      waitSeq++
+      SR.step = 'start'
+      render()
+    },
     back: () => {
       if (SRL) srListenStop()
       SR.step = 'start'

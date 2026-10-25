@@ -202,7 +202,7 @@ describe('запись и итог', () => {
     await flush()
     await flush()
     expect(env.liveStop).toHaveBeenCalled()
-    expect(env.cfg.transcribe).toHaveBeenCalledWith(expect.any(Blob))
+    expect(env.cfg.transcribe).toHaveBeenCalledWith(expect.any(Blob), expect.any(AbortSignal))
     const body = env.cfg.submitAttempt.mock.calls[0][0]
     expect(Object.keys(body).sort()).toEqual(['durationSec', 'percent', 'scoredBy', 'speed', 'stars', 'textId', 'wordsRead', 'wordsTotal', 'wpm'])
     expect(body).toMatchObject({ textId: 'a', speed: 1, wordsTotal: 11, wordsRead: 6, percent: 55, stars: 1, scoredBy: 'server' })
@@ -220,11 +220,79 @@ describe('запись и итог', () => {
     expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ scoredBy: 'browser', wordsRead: 3, percent: 27 })
   })
 
+  it('пустой ответ сервера при словах живого распознавания — итог по живому', async () => {
+    mount({ transcribe: vi.fn(async () => '') })
+    await record({ talk: ['Hello', 'everyone'] })
+    expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ scoredBy: 'browser', wordsRead: 2 })
+  })
+
+  it('пустой ответ сервера без живого — честные 0 % по серверу', async () => {
+    mount({ transcribe: vi.fn(async () => '') })
+    await record({ talk: null })
+    expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ scoredBy: 'server', wordsRead: 0, percent: 0 })
+  })
+
+  it('числа цифрами в ответе сервера засчитываются', async () => {
+    const texts = TEXTS()
+    texts[0].body = 'Your room is four hundred and twelve'
+    texts[0].sample = null
+    mount({ texts, transcribe: vi.fn(async () => 'Your room is 412') })
+    await record({ talk: null })
+    expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ wordsRead: 7, percent: 100 })
+  })
+
+  it('бэкенд отказал (текст скрыли) — не «проверьте интернет»', async () => {
+    mount({ submitAttempt: vi.fn(async () => { throw Object.assign(new Error('x'), { status: 404 }) }) })
+    await record()
+    expect(text()).toContain('Попытку не приняли')
+    expect(text()).not.toContain('проверьте интернет')
+  })
+
+  it('«Попыток сегодня» считает сохранённую попытку после возврата', async () => {
+    mount()
+    expect(text()).toContain('Попыток сегодня: 0')
+    await record()
+    click('[data-act="back"]')
+    expect(text()).toContain('Попыток сегодня: 1')
+  })
+
   it('ни сервера, ни живого — оценка недоступна, звёзд нет', async () => {
     mount({ transcribe: vi.fn(async () => null) })
     await record({ talk: null })
     expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ scoredBy: 'none', wordsRead: 0, percent: null, stars: 0, wpm: null })
     expect(text()).toContain('Оценка недоступна')
+  })
+
+  it('пока браузер спрашивает микрофон — ожидание с «Отменой», выбора текста нет', async () => {
+    let grant
+    mount({ openRecorder: vi.fn(() => new Promise((r) => (grant = r))) })
+    click('[data-act="listen"]')
+    click('[data-act="begin"]')
+    expect(env.cfg.stopSample).toHaveBeenCalled()
+    expect(text()).toContain('Ждём доступ к микрофону')
+    expect($('[data-act="text"]')).toBeNull()
+    expect($('[data-act="listen"]')).toBeNull()
+    click('[data-act="cancel"]')
+    expect($('.srtexts')).not.toBeNull()
+    grant(env.recorder)
+    await flush()
+    expect(env.recorder.cancel).toHaveBeenCalled()
+    expect($('.tele')).toBeNull()
+  })
+
+  it('текст попытки — тот, с которого начали', async () => {
+    let grant
+    mount({ openRecorder: vi.fn(() => new Promise((r) => (grant = r))) })
+    click('[data-act="begin"]')
+    api.setLang('ru')
+    grant(env.recorder)
+    await flush()
+    vi.advanceTimersByTime(2400)
+    vi.advanceTimersByTime(1000)
+    click('[data-act="stop"]')
+    await flush()
+    await flush()
+    expect(env.cfg.submitAttempt.mock.calls[0][0]).toMatchObject({ textId: 'a', wordsTotal: 11 })
   })
 
   it('распознавание замолчало — подсветка выключена до конца попытки', async () => {
@@ -313,6 +381,21 @@ describe('уход с экрана', () => {
     expect(env.liveStop).toHaveBeenCalled()
     expect(vi.getTimerCount()).toBe(0)
     expect(root.innerHTML).toBe('')
+  })
+
+  it('уход во время распознавания — запрос распознавания отменяется', async () => {
+    let signal
+    mount({ transcribe: vi.fn((wav, s) => { signal = s; return new Promise(() => {}) }) })
+    click('[data-act="begin"]')
+    await flush()
+    vi.advanceTimersByTime(2400 + 1000)
+    click('[data-act="stop"]')
+    await flush()
+    await flush()
+    expect(signal.aborted).toBe(false)
+    api.destroy()
+    api = null
+    expect(signal.aborted).toBe(true)
   })
 
   it('во время образца — образец остановлен; после итога — адреса записей отозваны', async () => {

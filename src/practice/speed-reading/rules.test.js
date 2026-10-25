@@ -12,6 +12,8 @@ import {
   scrollMs,
   sampleIndexAt,
   todayCount,
+  alignHeard,
+  expandHeard,
 } from './rules.js'
 
 // Оракул считает сам прототип кабинета (scripts/speed-reading/extract-oracle.js): красный тест значит, что
@@ -85,5 +87,34 @@ describe('todayCount', () => {
       { createdAt: 'мусор' },
     ]
     expect(todayCount(list, now)).toBe(1)
+  })
+})
+
+describe('числа цифрами в распознанном тексте', () => {
+  const ok = (text, heard) => alignHeard(srWords(text), srWords(heard))
+  it('412 засчитывает «four hundred and twelve», а 512 — цифры текста', () => {
+    expect(ok('Your room is room four hundred and twelve, and the lifts', 'your room is room 412 and the lifts').every(Boolean)).toBe(true)
+    expect(ok('welcome aboard Flight 512 from Astana', 'welcome aboard flight 512 from astana').every(Boolean)).toBe(true)
+  })
+  it('миллионы, запятые, минус и часы', () => {
+    expect(ok('for over twelve million years', 'for over 12 million years').every(Boolean)).toBe(true)
+    expect(ok('for over twelve million years', 'for over 12,000,000 years').every(Boolean)).toBe(true)
+    expect(ok('a temperature of minus five degrees', 'a temperature of -5 degrees').every(Boolean)).toBe(true)
+    expect(ok("this is the eight o'clock news", 'this is the 8:00 news').every(Boolean)).toBe(true)
+    expect(ok('about one hundred and fifty kilometres', 'about 150 kilometres').every(Boolean)).toBe(true)
+    expect(ok('twenty-five students', '25 students').every(Boolean)).toBe(true)
+  })
+  it('expandHeard оставляет цифры и дописывает слова', () => {
+    expect(expandHeard(['412,'])).toEqual(['412,', 'four', 'hundred', 'and', 'twelve'])
+    expect(expandHeard(['hello', '7'])).toEqual(['hello', '7', 'seven'])
+    expect(expandHeard(['1.5'])).toEqual(['1.5'])
+  })
+})
+
+describe('нижний предел темпа', () => {
+  it('бегущая строка не медленнее 75 сл/мин — потолок записи 3 минуты на 225 слов', () => {
+    expect(speedWpm(140, 0.5)).toBe(75)
+    expect(speedWpm(150, 0.5)).toBe(75)
+    expect(speedWpm(180, 0.5)).toBe(90)
   })
 })

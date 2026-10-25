@@ -27,8 +27,26 @@ const REASONS = {
   'audio-capture': 'audio',
 }
 
-/** Распознаватель браузера или null. */
+/**
+ * Живая подсветка — только Chrome и Edge на компьютере (Д7). На телефонах распознаватель браузера и запись делят
+ * один микрофон: на iPhone и Android дорожка записи глохнет или распознаватель отвечает audio-capture, а Android
+ * ещё и пищит на каждом перезапуске сессии. Итог там считает сервер, подсветки просто нет.
+ */
+export function liveAllowed(nav = globalThis.navigator) {
+  if (!nav) return false
+  const uad = nav.userAgentData
+  if (uad && typeof uad.mobile === 'boolean') {
+    if (uad.mobile) return false
+    return (uad.brands || []).some((b) => /Chrom|Edge/i.test(b.brand))
+  }
+  const ua = String(nav.userAgent || '')
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return false
+  return /Chrome\/|Edg\//.test(ua)
+}
+
+/** Распознаватель браузера или null (нет API или браузер не из тех, где живая подсветка включена). */
 export function browserRecognition(env = globalThis) {
+  if (!liveAllowed(env.navigator)) return null
   const Ctor = env.SpeechRecognition || env.webkitSpeechRecognition
   if (!Ctor) return null
   try {

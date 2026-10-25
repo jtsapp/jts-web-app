@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { startLive, START_TIMEOUT, NO_WORDS_MS } from './live.js'
+import { startLive, START_TIMEOUT, NO_WORDS_MS, liveAllowed, browserRecognition } from './live.js'
 
 class FakeRecognition {
   constructor() {
@@ -27,6 +27,33 @@ beforeEach(() => {
   r = new FakeRecognition()
 })
 afterEach(() => vi.useRealTimers())
+
+const UA = {
+  chromeWin: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  edge: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0',
+  safariMac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+  iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  android: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
+  firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+}
+
+describe('liveAllowed — живая подсветка только в Chrome и Edge на компьютере (Д7)', () => {
+  it('по строке браузера', () => {
+    expect(liveAllowed({ userAgent: UA.chromeWin })).toBe(true)
+    expect(liveAllowed({ userAgent: UA.edge })).toBe(true)
+    for (const k of ['safariMac', 'iphone', 'android', 'firefox']) expect(liveAllowed({ userAgent: UA[k] }), k).toBe(false)
+  })
+  it('по userAgentData, если он есть', () => {
+    expect(liveAllowed({ userAgentData: { mobile: false, brands: [{ brand: 'Google Chrome' }, { brand: 'Chromium' }] }, userAgent: '' })).toBe(true)
+    expect(liveAllowed({ userAgentData: { mobile: true, brands: [{ brand: 'Google Chrome' }] }, userAgent: UA.chromeWin })).toBe(false)
+  })
+  it('на телефоне распознаватель не создаётся вовсе', () => {
+    class R {}
+    expect(browserRecognition({ navigator: { userAgent: UA.android }, webkitSpeechRecognition: R })).toBeNull()
+    expect(browserRecognition({ navigator: { userAgent: UA.chromeWin }, webkitSpeechRecognition: R })).toBeInstanceOf(R)
+    expect(browserRecognition({ navigator: { userAgent: UA.chromeWin } })).toBeNull()
+  })
+})
 
 describe('startLive', () => {
   it('английское распознавание, финальные и промежуточные слова', () => {

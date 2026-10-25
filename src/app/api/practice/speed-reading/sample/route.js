@@ -38,6 +38,12 @@ export async function POST(request) {
   const key = speedReadingKey()
   if (!key) return reply({ error: 'not_configured' }, 503)
 
+  // Ключ синтеза — до claim: claim ставит отметку «готовится», и без ключа все, кто откроет текст в ближайшие
+  // 90 с, ждали бы образец, которого никто не делает. Роут зовут только при sample: null в списке, так что
+  // «готовый» ответ claim без ключа почти не нужен.
+  const eleven = elevenKey()
+  if (!eleven) return reply({ error: 'not_configured' }, 503)
+
   const auth = await verifyTokenStatus(token)
   if (auth.status === 'unauthorized') return reply({ error: 'unauthorized' }, 401)
   if (auth.status !== 'ok') return reply({ error: 'backend_unavailable' }, 502)
@@ -64,8 +70,6 @@ export async function POST(request) {
   }
   if (claim?.ready) return reply({ sample: claim.sample })
 
-  const eleven = elevenKey()
-  if (!eleven) return reply({ error: 'not_configured' }, 503)
   if (typeof claim?.body !== 'string' || !claim.body.trim() || !claim.hash) return reply({ error: 'backend_refused' }, 502)
 
   let synth
@@ -73,6 +77,13 @@ export async function POST(request) {
     synth = await synthSample({ text: claim.body, voice: claim.voice, key: eleven, model: sampleModel(), signal: AbortSignal.timeout(SYNTH_TIMEOUT_MS) })
   } catch (e) {
     console.error('[speed-reading.sample] synth failed', e?.message || e)
+    return reply({ error: 'synth_failed' }, 502)
+  }
+
+  // Пустая разметка (wpm 0) бэкенд не примет (400), а отметка claim останется — и каждое открытие текста через
+  // 90 с платило бы за синтез заново. Такой образец не отправляем.
+  if (!synth.words.length || synth.wpm < 1) {
+    console.error('[speed-reading.sample] synth without alignment', id)
     return reply({ error: 'synth_failed' }, 502)
   }
 

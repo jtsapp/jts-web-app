@@ -109,11 +109,19 @@ describe('POST /api/practice/speed-reading/sample', () => {
     expect((await POST(req())).status).toBe(404)
   })
 
-  it('образца нет, а ключа ElevenLabs нет — 503', async () => {
+  it('ключа ElevenLabs нет — 503 до claim: отметку «готовится» не ставим', async () => {
     vi.stubEnv('ELEVENLABS_API_KEY', '')
-    on('/sample-claim', () => json({ ready: false, voice: 'uk-male', body: TEXT, hash: 'h1' }))
     const res = await POST(req())
     expect(res.status).toBe(503)
+    expect(calls).toEqual([])
+  })
+
+  it('синтез без разметки — 502, образец бэкенду не отправляется', async () => {
+    on('/sample-claim', () => json({ ready: false, voice: 'uk-female', body: TEXT, hash: 'h1' }))
+    on('api.elevenlabs.io', () => json({ audio_base64: Buffer.from('ID3').toString('base64'), alignment: null }))
+    const res = await POST(req())
+    expect(res.status).toBe(502)
+    expect(urls().some((u) => u.endsWith('/sample'))).toBe(false)
   })
 
   it('образца нет — синтез голосом текста и PUT на бэкенд', async () => {

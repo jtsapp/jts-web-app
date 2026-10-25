@@ -31,6 +31,7 @@ export function useSpeedReadingData(token) {
   }, [token])
   const [state, setState] = useState({ status: token ? 'loading' : 'guest', texts: null, attempts: [] })
   const [attempt, setAttempt] = useState(0)
+  const ownerRef = useRef(owner)
 
   useEffect(() => {
     const tk = tokenRef.current
@@ -39,7 +40,11 @@ export function useSpeedReadingData(token) {
       return undefined
     }
     let alive = true
-    setState((st) => (st.texts ? st : { status: 'loading', texts: null, attempts: [] }))
+    // Другой ученик (вышли и вошли, не уходя с экрана) — прежние тексты и попытки не показываем ни секунды;
+    // «Ещё раз» того же ученика держит экран, пока не придёт свежий список.
+    const sameOwner = ownerRef.current === owner
+    ownerRef.current = owner
+    setState((st) => (st.texts && sameOwner ? st : { status: 'loading', texts: null, attempts: [] }))
     const attempts = getSpeedReadingAttempts(tk)
       .then((raw) => listOf(raw, 'items').map(normalizeAttempt))
       .catch(() => [])

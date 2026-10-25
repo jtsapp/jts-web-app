@@ -9,8 +9,9 @@
 // прототипа совпадают с глобальными классами сайта. Тексты и попытки приходят с бэкенда (тексты заводит
 // контент-менеджер в web-admin), монеты считает бэкенд — сюда приходит только их число.
 //
-// Голос ученика не хранится нигде (Д6): WAV уходит только в /api/transcribe, который ничего не сохраняет, а
-// на бэкенд — цифры попытки. Образец озвучки создаёт роут сайта /api/practice/speed-reading/sample при первом
+// Запись ученика не хранится нигде (Д6): WAV уходит только в /api/transcribe, который ничего не сохраняет, а
+// на бэкенд — цифры попытки. Живая подсветка — распознавание самого браузера (в Chrome — сервис Google), как в
+// прототипе; включена только в Chrome и Edge на компьютере (live.js liveAllowed). Образец озвучки создаёт роут сайта /api/practice/speed-reading/sample при первом
 // открытии текста и играет общим элементом озвучки (playUrl) — там же разрешение iPhone на звук.
 
 import { useEffect, useRef } from 'react'
@@ -31,12 +32,15 @@ const img = (name) => (name === 'coin' ? '/assets/coin-star.png' : `/practice/gr
 
 // Распознавание записи — наш /api/transcribe (Azure, запасной — Soniox) во всех браузерах (Д7). null — не
 // ответил: движок посчитает итог по живому распознаванию или скажет «оценка недоступна».
+// signal — от движка: ушёл с экрана — платное распознавание не нужно.
 const TRANSCRIBE_TIMEOUT_MS = 90000
-async function transcribe(wav) {
+async function transcribe(wav, signal) {
   try {
     const form = new FormData()
     form.append('audio', wav, 'speed-reading.wav')
-    const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal: AbortSignal.timeout(TRANSCRIBE_TIMEOUT_MS) })
+    const timeout = AbortSignal.timeout(TRANSCRIBE_TIMEOUT_MS)
+    const both = signal && typeof AbortSignal.any === 'function' ? AbortSignal.any([signal, timeout]) : signal || timeout
+    const res = await fetch('/api/transcribe', { method: 'POST', body: form, signal: both })
     if (!res.ok) return null
     const data = await res.json()
     return typeof data?.text === 'string' ? data.text : null
