@@ -46,3 +46,7 @@ export const JARVIS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_JARVIS === '1'
 // Гейта AIZERE_ENABLED больше нет: 03.10.2026 Айзере выкатили в прод, и она
 // видна всем (src/tutor/tutors.js). Агент общий для дева и прода, поэтому
 // голос и характер у неё там с первого дня те же, что на dev-стенде.
+
+// CI passes APP_ENV at build time; dev builds also use NODE_ENV=production.
+export const REWARDS_ENABLED = process.env.NEXT_PUBLIC_APP_ENV !== 'production' && !TUTOR_ONLY
+export const isRewardsScreen = (screen) => screen === 'tokens' || screen === 'prizes'
