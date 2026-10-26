@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
+import MobileTabBar from '../components/MobileTabBar.jsx'
 import Footer from '../components/Footer.jsx'
 import { ArrowLeftIcon } from './TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -9,8 +10,10 @@ import { useT } from '../i18n/LanguageContext.jsx'
 // onBack  — если задан, сверху рисуется белая полоса с кнопкой «Назад».
 // layout  — 'center' (велком/язык, контент по центру) | 'flow' (внутренние экраны, сверху).
 // title   — опциональный заголовок в верхней полосе (рядом с «Назад»).
-// На мобилке: верхняя шапка с гамбургером и профилем, сайдбар — drawer, а
+// На планшете: верхняя шапка с гамбургером и профилем, сайдбар — drawer, а
 // кнопка «Назад» переезжает в правый слот шапки (десктопная .t-topbar скрыта CSS).
+// На телефоне (≤560) шапки нет: внизу панель вкладок, а «Назад» живёт в своей
+// полосе .t-topbar (src/mobile/nav.css).
 export default function TutorShell({
   active = 'tutor',
   user,
@@ -62,6 +65,7 @@ export default function TutorShell({
         </main>
       </div>
 
+      <MobileTabBar active={active} onNav={onNavigate} />
       <Footer />
     </div>
   )

@@ -1,0 +1,162 @@
+/* ======================================================================
+   Навигация телефона по дизайну приложения (Figma «Mobile», кадр
+   «Сервисы» 6419:6295; спека docs/superpowers/specs/2026-10-26-mobile-app-nav-home-design.md).
+
+   До 560px вместо бургера и выезжающего меню — нижняя панель .mtab
+   (MobileTabBar) и экран «Сервисы». Планшет 561–760 остаётся с бургером
+   (styles.css, .mtop). Сайдбар на телефоне не рисуется, но остаётся в DOM:
+   из его data-nav тур «Главной» и Луна берут меню ученика.
+
+   Экраны, где раздел рисует свою полосу во весь экран, панели не получают —
+   там и общей шапки не было: урок (.km-lesson), тропа уровня (.km-scroll),
+   аудирование (.lt), урок грамматики (.gr-lesson), книжки (.bk), сценарий
+   «Ситуаций» (.sit-view). Список повторяется в правилах ниже — менять везде.
+   ====================================================================== */
+
+.mtab {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  /* Высота панели — одна переменная на всё: отступ под контентом, кнопка Луны. */
+  :root:has(.mtab) {
+    --mtab-h: calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) {
+    --mtab-h: 0px;
+  }
+
+  .mtop,
+  .learn > .footer,
+  .t-app > .footer,
+  .learn__body > .sb,
+  .t-body > .sb,
+  .sb-overlay {
+    display: none;
+  }
+
+  /* ---------- панель: 58 + полоска айфона, сверху линия #ececf1 ---------- */
+  .mtab {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #ececf1;
+    background: #fff;
+  }
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .mtab {
+    display: none;
+  }
+  .mtab__item {
+    display: flex;
+    flex: 0 0 70px;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #8e8e99;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mtab__pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 30px;
+    border-radius: 999px;
+  }
+  .mtab__ico {
+    display: block;
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: var(--mtab-ico) center / contain no-repeat;
+    mask: var(--mtab-ico) center / contain no-repeat;
+  }
+  .mtab__label {
+    font-size: 10.5px;
+    line-height: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .mtab__item.is-active {
+    color: #9047ff;
+  }
+  .mtab__item.is-active .mtab__pill {
+    background: #efe7ff;
+  }
+  .mtab__item.is-active .mtab__label {
+    font-weight: 700;
+  }
+
+  /* Контент не уходит под панель; высота экрана — без шапки и подвала, которых на телефоне нет. */
+  .learn,
+  .t-app {
+    padding-bottom: var(--mtab-h, 0px);
+  }
+  .learn__main,
+  .t-main {
+    min-height: calc(100dvh - var(--mtab-h, 0px));
+  }
+
+  /* ---------- кнопки угла: «?», колокольчик, язык ----------
+     Раньше они жили в правом слоте шапки. Теперь — ряд справа вверху экрана,
+     круглые 40 белые с рамкой (IconButton макета; тот же вид, что в углу
+     «Главной» на компьютере). Там, где своя полоса раздела, их нет, как не было
+     и шапки. */
+  .learn__bell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px 0;
+  }
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .learn__bell,
+  .learn__main:has(.cp) .learn__bell {
+    display: none;
+  }
+  .learn__bell > .tour-help {
+    order: 1;
+  }
+  .learn__bell > .nbell {
+    order: 2;
+  }
+  .learn__bell > :not(.tour-help):not(.nbell) {
+    order: 3;
+  }
+  .learn__bell .tour-help,
+  .learn__bell .nbell__btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ececf1;
+    border-radius: 50%;
+    background: #fff;
+    color: #181818;
+  }
+
+  /* «Назад» тьютора — его полоса: правого слота шапки больше нет. */
+  .t-topbar {
+    display: flex;
+    height: 56px;
+    padding: 0 16px;
+  }
+
+  /* Луна над панелью; там, где панели нет, — прежнее место над кнопкой шага урока (assistant.css). */
+  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__launcher {
+    bottom: calc(var(--mtab-h) + 16px);
+  }
+  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__hint {
+    bottom: calc(var(--mtab-h) + 16px + 28px);
+  }
+  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__badge {
+    bottom: calc(var(--mtab-h) + 16px + 56px + 20px);
+  }
+}

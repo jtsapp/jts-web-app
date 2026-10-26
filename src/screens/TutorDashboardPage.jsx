@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
+import MobileTabBar from '../components/MobileTabBar.jsx'
 import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
@@ -214,6 +215,7 @@ export default function TutorDashboardPage({
         </div>
       </div>
 
+      <MobileTabBar active="tutor" onNav={onNavigate} />
       <Footer />
 
       {showTour && (

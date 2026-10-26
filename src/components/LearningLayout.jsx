@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
+import MobileTabBar from './MobileTabBar.jsx'
 import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import LangSelector from './LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
 import { useTourRequest } from '../lib/tourBus.js'
 
-// Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
-// на мобилке — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом.
+// Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал; на
+// планшете — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом; на
+// телефоне (≤560) — нижняя панель вкладок приложения (MobileTabBar), шапки и
+// подвала нет.
 export default function LearningLayout({
   userName,
   userLevel,
@@ -73,6 +76,8 @@ export default function LearningLayout({
           {children}
         </main>
       </div>
+      {/* Телефон (≤560): вместо бургера шапки — нижняя панель приложения; шапка остаётся для планшета 561–760. */}
+      <MobileTabBar active={active} token={token} onNav={onNav} />
       <Footer />
     </div>
     </NotificationProvider>

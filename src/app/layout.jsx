@@ -40,6 +40,7 @@ import '../mobile/learning.css'
 import '../mobile/practice.css'
 import '../mobile/practice-grammar.css'
 import '../mobile/home.css'
+import '../mobile/nav.css'
 // Казахский интерфейс — на Inter: перекрывает шрифты разделов и мобильного слоя
 import '../kk-font.css'
 // Набросок тёмной темы — последним: перекрывает всё выше под html[data-theme=dark]
