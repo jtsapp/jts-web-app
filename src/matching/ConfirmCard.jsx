@@ -32,7 +32,19 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
   const perWeek = view.tariff.perWeek
   const teacher = useTeacher(token, p?.teacherId)
   const [editing, setEditing] = useState(false)
-  const [chosen, setChosen] = useState(() => (p?.slots || []).map(slotKey))
+  // Выбор — только среди общих слотов: предложенное менеджером время может в них не входить, и невидимые ключи
+  // заполнили бы лимит N, после чего ни одна фишка уже не нажималась бы.
+  const commonKeys = (p?.commonSlots || []).map(slotKey)
+  const initialChosen = (p?.slots || []).map(slotKey).filter((k) => commonKeys.includes(k))
+  const [chosen, setChosen] = useState(initialChosen)
+  const proposalKey = (p?.slots || []).map(slotKey).join(',') + '|' + (p?.deadline || '')
+  const [shownFor, setShownFor] = useState(proposalKey)
+  if (shownFor !== proposalKey) {
+    // учитель предложил новое время — прежний выбор к нему не относится
+    setShownFor(proposalKey)
+    setChosen(initialChosen)
+    setEditing(false)
+  }
   const [error, setError] = useState('')
   const [busy, run] = useBusy()
   if (!p) return null
@@ -73,7 +85,11 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
     })
 
   const toggle = (key) =>
-    setChosen((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : cur.length < perWeek ? [...cur, key] : cur))
+    setChosen((cur) => {
+      const visible = cur.filter((k) => commonKeys.includes(k))
+      if (visible.includes(key)) return visible.filter((k) => k !== key)
+      return visible.length < perWeek ? [...visible, key] : visible
+    })
 
   const specs = teacher?.card?.specializations || []
   return (
@@ -131,7 +147,7 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
             </div>
             <div className="mt-row">
               <button type="button" className="mt-btn" disabled={!validOther || busy} onClick={sendOther}>{t('confirm.otherSend')}</button>
-              <button type="button" className="mt-btn mt-btn--line" onClick={() => { setEditing(false); setChosen(p.slots.map(slotKey)) }}>{t('btn.cancel')}</button>
+              <button type="button" className="mt-btn mt-btn--line" onClick={() => { setEditing(false); setChosen(initialChosen) }}>{t('btn.cancel')}</button>
             </div>
           </div>
         ) : (

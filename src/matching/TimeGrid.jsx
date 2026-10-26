@@ -59,7 +59,7 @@ export default function TimeGrid({ cells, duration, tz, picked, onChange, best =
           </tr>
         </thead>
         <tbody>
-          {gridRows(duration).map((minutes) => (
+          {gridRows(duration, tz, at).map((minutes) => (
             <tr key={minutes}>
               <th scope="row" className="mt-num">{hhmm(minutes)}</th>
               {DAYS.map((day) => {

@@ -17,6 +17,13 @@ function requestState(r) {
 const liveCounter = (card) =>
   (card.requests || []).find((r) => r.source === 'student_counter' && r.status === 'sent') || null
 
+// Сроки бэкенда — LocalDateTime школы без пояса (UTC+5).
+function lockActive(local, now) {
+  if (!local) return false
+  const d = new Date(String(local).slice(0, 19) + '+05:00')
+  return !Number.isNaN(d.getTime()) && d.getTime() > now.getTime()
+}
+
 function statusOf(card) {
   const s = card.matchStatus
   // Попросил менеджера ещё до подтверждения тарифа — для ученика это уже «менеджер подбирает» (ТЗ §4).
@@ -64,7 +71,8 @@ export function matchingView(snap, now = new Date()) {
   const counter = liveCounter(card)
   const vacationHandoff = handoffs.find((h) => !h.studentChoice) || null
   const pauseHandoff = handoffs.find((h) => h.studentChoice === 'pause') || null
-  const today = now.toISOString().slice(0, 10)
+  // Даты замены — даты школы (Алматы, UTC+5): с полуночи до 05:00 по UTC это уже следующий день
+  const today = new Date(now.getTime() + 5 * 3600 * 1000).toISOString().slice(0, 10)
   const temporary = card.temporaryFrom && card.temporaryTo && card.temporaryFrom <= today && today <= card.temporaryTo
     ? { from: card.temporaryFrom, to: card.temporaryTo, teacherName: card.assignedTeacherName }
     : null
@@ -110,7 +118,8 @@ export function matchingView(snap, now = new Date()) {
     interests: card.interests || [],
     availableSlots: card.availableSlots || [],
     limits: {
-      formatChangeAvailableAt: card.formatChangeAvailableAt || null,
+      // Срок блокировки, который уже прошёл, — не блокировка: кнопка «Сменить формат» снова доступна.
+      formatChangeAvailableAt: lockActive(card.formatChangeAvailableAt, now) ? card.formatChangeAvailableAt : null,
       teacherChangesLeft: card.teacherChangesLeft ?? 2,
     },
   }

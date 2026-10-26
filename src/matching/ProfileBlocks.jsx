@@ -26,11 +26,14 @@ export default function ProfileBlocks({ token, onNav, onOpenNotifications }) {
   const kids = view.tariff.name === 'Kids'
   const next = a ? nextOccurrence(a.slots) : null
 
+  // Чип отмечается сразу, не дожидаясь сервера; отказ возвращает прежний список.
   const saveInterests = async (list) => {
-    applyMatchingCard({ ...snap.card, interests: list })
+    const before = snap.card
+    applyMatchingCard({ ...before, interests: list })
     try {
       applyMatchingCard(await saveMatchingInterests(token, list))
     } catch (e) {
+      applyMatchingCard(before)
       toast(errorText(e, t))
     }
   }

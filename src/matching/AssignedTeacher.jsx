@@ -13,7 +13,10 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
   const teacher = useTeacher(token, a?.teacherId)
   if (!a) return null
   const c = teacher?.card
+  // прошедший срок matchingView уже отбросил — здесь только действующая блокировка
   const lockedUntil = schoolTimeToDate(view.limits.formatChangeAvailableAt)
+  // Гарантия, IELTS и SAT учатся только по программе платформы (ТЗ §3) — сменить формат им нечего.
+  const fixedFormat = !view.needsFormatStep
   const meta = [(c?.specializations || []).join(', '), c?.yearsExperience ? t('assigned.years', { n: c.yearsExperience }) : null].filter(Boolean)
   return (
     <div className="mt-grid2">
@@ -54,8 +57,8 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
             {view.tariff.guarantee && <span className="mt-pill mt-pill--gray">{t('assigned.guaranteeChip')}</span>}
           </div>
           <p><b>{t('format.' + (a.format || 'platform'))}</b></p>
-          {view.tariff.guarantee ? (
-            <p className="mt-small mt-muted">{t('assigned.guaranteeText')}</p>
+          {fixedFormat ? (
+            view.tariff.guarantee && <p className="mt-small mt-muted">{t('assigned.guaranteeText')}</p>
           ) : (
             <>
               <button type="button" className="mt-btn mt-btn--line mt-btn--sm" style={{ alignSelf: 'flex-start' }} disabled={!!lockedUntil} onClick={onChangeFormat}>

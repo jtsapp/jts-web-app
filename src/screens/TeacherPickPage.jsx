@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMatching, flashMatching } from '../matching/matchingStore.js'
 import { matchingView } from '../matching/matchingState.js'
 import { studentTimezone } from '../matching/slots.js'
@@ -26,6 +26,9 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
   const tz = studentTimezone(snap.card)
   const [toastNode, toast] = useToast()
   const [manager, setManager] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const laterTimer = useRef(null)
+  useEffect(() => () => clearTimeout(laterTimer.current), [])
 
   useEffect(() => {
     if (!view.studentId) return
@@ -50,8 +53,10 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
   const steps = view.needsFormatStep ? ['format', 'time', 'teacher'] : ['time', 'teacher']
   // «Сделаю позже» (ТЗ §2.1): на «Главную», но сначала ученик успевает прочитать, где потом искать учителя.
   const later = () => {
+    if (leaving) return
+    setLeaving(true)
     toast(t('onb.laterToast'))
-    setTimeout(() => onNav('home'), 1200)
+    laterTimer.current = setTimeout(() => onNav('home'), 1200)
   }
 
   return (
@@ -91,18 +96,18 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
             </div>
           </div>
           <div className="mt-row">
-            <button type="button" className="mt-btn mt-btn--lg" disabled={pending || view.status !== 'none'} onClick={() => onNav('teacher-wizard')}>
+            <button type="button" className="mt-btn mt-btn--lg" disabled={leaving || pending || view.status !== 'none'} onClick={() => onNav('teacher-wizard')}>
               {t('btn.pickTeacher')}
             </button>
             <button
               type="button"
               className="mt-btn mt-btn--ghost"
-              disabled={view.status === 'manager_picking'}
+              disabled={leaving || view.status === 'manager_picking'}
               onClick={() => setManager(true)}
             >
               {managerButtonLabel(view, t, tz, lang)}
             </button>
-            <button type="button" className="mt-btn mt-btn--line" onClick={later}>{t('btn.later')}</button>
+            <button type="button" className="mt-btn mt-btn--line" disabled={leaving} onClick={later}>{t('btn.later')}</button>
           </div>
           <p className="mt-tiny">{t('onb.laterNote')}</p>
         </div>

@@ -32,8 +32,11 @@ export default function TeacherWizardPage({ token, userName, userLevel, initialS
   const card = snap.card
   const [toastNode, toast] = useToast()
 
+  // «Добавить время» из «Подтвердите расписание» (ТЗ §2.7): общих часов с учителем мало — ученик дополняет удобное
+  // время, и «Выбрать другое время» берёт уже расширенный набор. Мастер тогда из одного шага «Время».
+  const addTime = initialStep === 'time' && view.status === 'schedule_proposed'
   // Повторный вход при отправленных заявках ведёт на их статус, а не на первый шаг (ТЗ §2.6).
-  const leave = !['idle', 'loading'].includes(view.status) && !WIZARD_STATUSES.has(view.status)
+  const leave = !['idle', 'loading'].includes(view.status) && !WIZARD_STATUSES.has(view.status) && !addTime
   useEffect(() => {
     if (leave) onNav(view.status === 'tariff_pending' ? 'teacher-pick' : 'my-teacher')
   }, [leave, view.status, onNav])
@@ -48,12 +51,12 @@ export default function TeacherWizardPage({ token, userName, userLevel, initialS
   )
 
   if (!card || leave) return layout(<p className="mt-muted">{t('loading')}</p>)
-  return layout(<Wizard key={card.studentId} token={token} card={card} view={view} initialStep={initialStep} onNav={onNav} toast={toast} lang={lang} t={t} />)
+  return layout(<Wizard key={card.studentId} token={token} card={card} view={view} initialStep={initialStep} addTime={addTime} onNav={onNav} toast={toast} lang={lang} t={t} />)
 }
 
-function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
+function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t }) {
   const tz = studentTimezone(card)
-  const steps = view.needsFormatStep ? ['format', 'time', 'teacher'] : ['time', 'teacher']
+  const steps = addTime ? ['time'] : view.needsFormatStep ? ['format', 'time', 'teacher'] : ['time', 'teacher']
   const perWeek = view.tariff.perWeek
   const kids = view.tariff.name === 'Kids'
   const [draft, setDraft] = useState(() => {
@@ -127,7 +130,10 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
           format: draft.format,
         })
         applyMatchingCard(saved)
-        set({ step: 'teacher' })
+        if (addTime) {
+          flashMatching(t('time.added'))
+          onNav('my-teacher')
+        } else set({ step: 'teacher' })
       } catch (e) {
         toast(errorText(e, t))
       }
@@ -142,8 +148,11 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
         onNav('my-teacher')
       } catch (e) {
         toast(errorText(e, t))
-        // время мог занять другой ученик — сетку и список перечитываем
-        if (e?.code === 'slot_taken') setReload((n) => n + 1)
+        // время заняли — к сетке со свежими цифрами: список учителей того же времени дал бы тот же отказ
+        if (e?.code === 'slot_taken') {
+          set({ step: 'time' })
+          setReload((n) => n + 1)
+        }
       }
     })
 
@@ -263,7 +272,7 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
             <span>{t('time.legend.note', { n: view.tariff.duration })}</span>
           </div>
         </div>
-        {enoughDays && grid && fitting.length === 0 && (
+        {!addTime && enoughDays && grid && fitting.length === 0 && (
           <div className="mt-banner mt-banner--warn">
             <p>{t('time.none')}</p>
             <button type="button" className="mt-btn mt-btn--sm mt-btn--ghost" onClick={() => !managerOpen && setModal({ kind: 'manager' })}>
@@ -271,7 +280,7 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
             </button>
           </div>
         )}
-        {enoughDays && fitting.length > 0 && fitting.length < 3 && (
+        {!addTime && enoughDays && fitting.length > 0 && fitting.length < 3 && (
           <div className="mt-banner mt-banner--brand"><p>{t('time.few', { n: fitting.length })}</p></div>
         )}
         <div className="mt-bar">
@@ -284,8 +293,13 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
             })}{' '}
             {!enoughDays && t('time.needDays', { n: perWeek })}
           </span>
-          <button type="button" className="mt-btn" disabled={!enoughDays || fitting.length === 0 || busy} onClick={toTeachers}>
-            {t('time.show', { n: fitting.length })}
+          <button
+            type="button"
+            className="mt-btn"
+            disabled={busy || (addTime ? draft.picked.length === 0 : !enoughDays || fitting.length === 0)}
+            onClick={toTeachers}
+          >
+            {addTime ? t('time.saveAdded') : t('time.show', { n: fitting.length })}
           </button>
         </div>
         {modals}
@@ -312,7 +326,12 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
         onProfile={(id) => setModal({ kind: 'profile', id })}
         onLimit={() => toast(t('interests.limit'))}
         toast={toast}
-        onLoaded={setTeachers}
+        onLoaded={(list) => {
+          setTeachers(list)
+          // выбранный раньше учитель мог выпасть из подбора (другое время, интересы) — убрать его из выбора нечем,
+          // карточки в списке нет, а с ним заявка получала бы отказ при каждой отправке
+          setDraft((d) => ({ ...d, choices: d.choices.filter((id) => list.some((x) => x.id === id)) }))
+        }}
       />
       <ChosenBar choices={draft.choices} teachers={teachers} busy={busy} onSend={send} t={t} />
       {modals}

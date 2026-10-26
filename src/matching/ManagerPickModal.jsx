@@ -13,7 +13,9 @@ const WISH_MAX = 500
 export default function ManagerPickModal({ token, view, slots, interests, format, tz, onClose, onSent }) {
   const { t, lang } = useMatchingT()
   const [wish, setWish] = useState(view?.managerRequest?.wish || '')
-  const [confirmed, setConfirmed] = useState(view?.status !== 'matching')
+  // Заявки учителям или удерживаемое учителем время пропадут — сначала спрашиваем (ТЗ §2.8).
+  const holds = view?.status === 'schedule_proposed' || view?.status === 'change_requested'
+  const [confirmed, setConfirmed] = useState(view?.status !== 'matching' && !holds)
   const [error, setError] = useState('')
   const [busy, run] = useBusy()
   const manager = view?.managerName || t('manager.yourManager')
@@ -35,7 +37,7 @@ export default function ManagerPickModal({ token, view, slots, interests, format
   if (!confirmed) {
     return (
       <MtModal title={t('manager.modalTitle')} onClose={onClose}>
-        <p>{t('manager.cancelRequests')}</p>
+        <p>{t(holds ? 'manager.cancelHold' : 'manager.cancelRequests')}</p>
         <div className="mt-row mt-end">
           <button type="button" className="mt-btn mt-btn--line" onClick={onClose}>{t('btn.cancel')}</button>
           <button type="button" className="mt-btn" onClick={() => setConfirmed(true)}>{t('btn.continue')}</button>

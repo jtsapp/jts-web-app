@@ -15,6 +15,13 @@ describe('slots', () => {
     expect(hhmm(gridRows(30)[1])).toBe('07:30')
   })
 
+  it('shifts rows with a half-hour zone so they land on whole UTC hours', () => {
+    expect(gridRows(60, 'Asia/Almaty', at)[0]).toBe(420)
+    const kolkata = gridRows(60, 'Asia/Kolkata', at)
+    expect(hhmm(kolkata[0])).toBe('07:30')
+    expect(toUtcSlot(1, kolkata[0], 'Asia/Kolkata', at).start).toBe('02:00:00')
+  })
+
   it('reads zone offsets', () => {
     expect(zoneOffsetMin('Asia/Almaty', at)).toBe(300)
     expect(zoneOffsetMin('Europe/Moscow', at)).toBe(180)

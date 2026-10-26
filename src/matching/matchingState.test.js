@@ -98,6 +98,11 @@ describe('matchingView', () => {
     expect(view({ matchStatus: 'done', temporaryFrom: '2026-11-02', temporaryTo: '2026-11-15' }).temporary).toBeNull()
   })
 
+  it('a format-change lock that already passed is no lock', () => {
+    expect(view({ matchStatus: 'done', formatChangeAvailableAt: '2026-11-20T10:00:00' }).limits.formatChangeAvailableAt).toBe('2026-11-20T10:00:00')
+    expect(view({ matchStatus: 'done', formatChangeAvailableAt: '2026-10-01T10:00:00' }).limits.formatChangeAvailableAt).toBeNull()
+  })
+
   it('format step is skipped for guarantee, IELTS and SAT', () => {
     expect(view({}).needsFormatStep).toBe(true)
     expect(view({ guarantee: true }).needsFormatStep).toBe(false)

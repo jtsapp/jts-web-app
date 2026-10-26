@@ -44,7 +44,7 @@ import MyTeacherPage from './screens/MyTeacherPage.jsx'
 import TeacherWizardPage from './screens/TeacherWizardPage.jsx'
 import TeacherPickPage, { teacherPickSeen } from './screens/TeacherPickPage.jsx'
 import MatchingPopups from './matching/MatchingPopups.jsx'
-import { refreshMatching, getMatchingSnapshot } from './matching/matchingStore.js'
+import { refreshMatching, getMatchingSnapshot, resetMatchingStore } from './matching/matchingStore.js'
 import { matchingView, needsTeacherPick } from './matching/matchingState.js'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
@@ -1372,9 +1372,12 @@ export default function App() {
   // Последний шаг онбординга — «Выберите своего учителя» (ТЗ 08 §2.1): после итога теста (и маршрута GE), если у
   // ученика есть подбор, учителя ещё нет и этот шаг он не видел. Карточку перечитываем: тариф мог подтвердиться,
   // пока шёл тест.
+  // Ждём не дольше 2.5 с: медленный бэкенд не должен «замораживать» кнопку итога теста — тогда шаг просто не
+  // показываем, учителя ученик выберет в «Мой учитель».
   async function wantsTeacherPick() {
     if (!token || isTeacher(token)) return false
-    await refreshMatching(token)
+    const late = new Promise((resolve) => setTimeout(() => resolve('late'), 2500))
+    if ((await Promise.race([refreshMatching(token).then(() => 'ok'), late])) === 'late') return false
     const v = matchingView(getMatchingSnapshot())
     return needsTeacherPick(v) && !teacherPickSeen(v.studentId)
   }
@@ -1522,6 +1525,8 @@ export default function App() {
     // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
     // иначе доставались следующему ученику на этом же компьютере.
     clearAccountLeftovers()
+    // Карточка подбора учителя — тоже его: окно «Подтвердите расписание» не должно выйти следующему ученику.
+    resetMatchingStore()
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()

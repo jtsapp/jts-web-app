@@ -69,11 +69,14 @@ function fromWeekMinutes(m) {
   return { weekday: Math.floor(x / 1440) + 1, start: hhmm(x % 1440) + ':00' }
 }
 
-// Старты уроков в поясе ученика 07:00–22:00: тариф 60 — каждый час, 30 — каждые полчаса (ТЗ §2.3).
-export function gridRows(duration) {
+// Старты уроков в поясе ученика 07:00–22:00: тариф 60 — каждый час, 30 — каждые полчаса (ТЗ §2.3). Сетка учителей
+// хранит старты UTC с шагом урока, поэтому в поясах с получасовым смещением (Индия +5:30, Непал +5:45) строки
+// сдвигаются вместе с ним — иначе ни одна строка не попала бы на старт учителя и сетка была бы вся из нулей.
+export function gridRows(duration, tz, at = new Date()) {
   const step = duration === 30 ? 30 : 60
+  const shift = tz ? ((zoneOffsetMin(tz, at) % step) + step) % step : 0
   const out = []
-  for (let m = 7 * 60; m <= 22 * 60; m += step) out.push(m)
+  for (let m = 7 * 60 + shift; m <= 22 * 60 + shift; m += step) out.push(m)
   return out
 }
 
