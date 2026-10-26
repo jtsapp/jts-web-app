@@ -138,6 +138,15 @@ describe('HomePage — General English', () => {
     fireEvent.click(screen.getByRole('button', { name: /Указать срок/ }))
     expect(onGeEdit).toHaveBeenCalled()
   })
+
+  // Телефон (дизайн приложения): блока цели там нет, цель правится «Изменить» в карточке уровня — тем же экраном.
+  it('телефон: «Изменить» в карточке уровня ведёт в правку цели', async () => {
+    const onGeEdit = vi.fn()
+    renderHome({ geProfile: goal, onGeEdit })
+    await waitFor(() => expect(document.querySelector('.hm-level--phone .hm-level__goal')).toBeTruthy())
+    fireEvent.click(document.querySelector('.hm-level--phone .hm-level__goal'))
+    expect(onGeEdit).toHaveBeenCalledTimes(1)
+  })
   it('план собран — «Сегодня» вместо «Что сделать сегодня», «Начать» ведёт в раздел', async () => {
     getGePlan.mockResolvedValueOnce({
       today: '2026-10-14',

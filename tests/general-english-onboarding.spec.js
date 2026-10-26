@@ -62,6 +62,7 @@ async function setup(page, initial) {
 // заменила анкету «Главной», здесь осталась её правка.
 
 test('правка цели с «Главной» — три шага и снова маршрут', async ({ page }) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   await setup(page, profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineDate: null, deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'self_study'))
   await page.goto('/?screen=home')
   await expect(page.locator('.ge-goal')).toBeVisible({ timeout: 20000 })

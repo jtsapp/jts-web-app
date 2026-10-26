@@ -149,6 +149,37 @@
     padding: 0 16px;
   }
 
+  /* Закреплённое у низа экрана поднимается над панелью: тосты, плашки и плавающие кнопки разделов. Отступы — свои у
+     каждого, как в файлах разделов; где панели нет, --mtab-h = 0 и место прежнее. IELTS не трогаем. Новый fixed-элемент
+     у низа экрана на экране с панелью — строка сюда. */
+  .pr-assign {
+    bottom: calc(18px + var(--mtab-h, 0px));
+  }
+  .pf-toast {
+    bottom: calc(34px + var(--mtab-h, 0px));
+  }
+  .wr-toast {
+    bottom: calc(26px + var(--mtab-h, 0px));
+  }
+  .cr-pop {
+    bottom: calc(24px + var(--mtab-h, 0px));
+  }
+  .kd-levelpill {
+    bottom: calc(19px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom, 0px)));
+  }
+  .st-vocab__fab {
+    bottom: calc(24px + var(--mtab-h, 0px));
+  }
+  .st-hint {
+    bottom: calc(130px + var(--mtab-h, 0px));
+  }
+  .st-run__toast {
+    bottom: calc(84px + var(--mtab-h, 0px));
+  }
+  .st-unit__calc {
+    bottom: calc(16px + var(--mtab-h, 0px));
+  }
+
   /* Луна над панелью; там, где панели нет, — прежнее место над кнопкой шага урока (assistant.css). */
   :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__launcher {
     bottom: calc(var(--mtab-h) + 16px);

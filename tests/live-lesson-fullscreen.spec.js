@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSection } from './helpers/nav.js'
 
 // Урок-файл на телефоне (видео владельца 21.10.2026): рамка урока занимала
 // полэкрана — выше шапка, ряд значков, плашка статуса и вкладки, ниже «Темы /
@@ -51,10 +52,9 @@ async function openLesson(page) {
   await page.route('**/student/lessons/14/materials/5/render**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: LESSON_HTML }))
 
   await page.goto('/')
-  const menuButton = page.locator('.mtop__menu')
-  await menuButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-  if (await menuButton.isVisible()) await menuButton.click()
-  await page.getByText('Уроки', { exact: true }).first().click()
+  // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
+  // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
+  await openSection(page, 'Уроки')
   await page.getByRole('button', { name: 'Присоединиться к уроку' }).first().click()
   // Первый тест на холодном next dev ждёт компиляцию урока дольше 5 с.
   await expect(page.locator('.lw-material-iframe')).toBeVisible({ timeout: 15_000 })

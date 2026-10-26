@@ -270,8 +270,11 @@
     line-height: 16px;
     white-space: nowrap;
   }
+  /* Пустой альтернативный текст: иначе читалка экрана слышит «Уровень A2A2». Первая строка — для браузеров без
+     синтаксиса «/ alt»: там подпись остаётся видимой, а вторая молча отбрасывается. */
   .hm-level__lbl::after {
     content: attr(data-short);
+    content: attr(data-short) / '';
     font-size: 12px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.8);

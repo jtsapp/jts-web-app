@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSection } from './helpers/nav.js'
 
 // Регрессия: ответы и отметки «проверено» — свои у каждого материала (и пишутся
 // отдельной строкой прогресса), а id шагов внутри урока сквозные: s1, s2…,
@@ -101,10 +102,9 @@ async function openLesson(page) {
     r.request().method() === 'GET' ? r.fulfill(json({ eventsJson: null })) : r.fulfill(json({})))
 
   await page.goto('/')
-  const menuButton = page.locator('.mtop__menu')
-  await menuButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-  if (await menuButton.isVisible()) await menuButton.click()
-  await page.getByText('Уроки', { exact: true }).first().click()
+  // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
+  // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
+  await openSection(page, 'Уроки')
   await page.getByRole('button', { name: 'Присоединиться к уроку' }).first().click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 }

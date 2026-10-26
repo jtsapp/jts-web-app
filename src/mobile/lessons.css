@@ -113,8 +113,10 @@
     left: 16px;
     right: 16px;
     /* fixed-элемент Safari сам держит над своей панелью, поэтому запас
-       --safe-bottom (он для конца документа) тут не нужен — только жестовая полоса */
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+       --safe-bottom (он для конца документа) тут не нужен — только жестовая полоса.
+       Над нижней панелью вкладок (--mtab-h, src/mobile/nav.css): иначе она
+       ложилась ровно на кнопку. Высота панели уже включает жестовую полосу. */
+    bottom: calc(16px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom, 0px)));
     z-index: 30;
     width: auto;
     justify-content: space-between;
