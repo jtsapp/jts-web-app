@@ -76,7 +76,9 @@ describe('HomePage — General English', () => {
       const onGeStart = vi.fn()
       const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
       await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
-      expect(document.querySelector('.hm-level')).toBe(null)
+      expect(document.querySelector('.hm-level:not(.hm-level--phone)')).toBe(null)
+      // телефон: карточка уровня замещает скрытый там блок GE (дизайн приложения)
+      expect(document.querySelector('.hm-level--phone')).toBeTruthy()
       // класс ge-locked — якорь шага тура про закрытый маршрут
       expect(document.querySelector('.ge-start.ge-locked')).toBeTruthy()
       fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Пройти тест уровня' }))
