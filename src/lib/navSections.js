@@ -64,12 +64,13 @@ export function menuItems({ teacher = false, ieltsAccount = false, exams = { iel
 }
 
 // Нижняя панель телефона — дизайн мобильного приложения (Figma «Mobile», кадр 6419:6295): четыре раздела вкладками и
-// «Сервисы», где профиль и всё остальное. Подпись тьютора своя: в приложении вкладка зовётся «AI-тьютор».
+// «Сервисы», где профиль и всё остальное. Тьютор подписан как в меню — «Speaking Buddy», а не «AI-тьютор» приложения:
+// одно имя раздела в туре, меню и на панели (решение владельца 27.10.2026).
 const TAB_KEYS = ['home', 'practice', 'tutor', 'lessons']
 const TAB_META = {
   home: { label: 'nav.home', ico: 'home' },
   practice: { label: 'nav.practice', ico: 'auto_stories' },
-  tutor: { label: 'mtab.tutor', ico: 'auto_awesome' },
+  tutor: { label: 'nav.tutor', ico: 'auto_awesome' },
   lessons: { label: 'nav.lessons', ico: 'videocam' },
 }
 export const SERVICES_TAB = { key: 'services', label: 'mtab.services', ico: 'grid_view' }

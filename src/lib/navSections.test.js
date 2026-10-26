@@ -34,8 +34,8 @@ describe('нижняя панель телефона', () => {
     expect(keys(mobileTabs(menuItems()))).toEqual(['home', 'practice', 'tutor', 'lessons', 'services'])
   })
 
-  it('вкладка тьютора подписана как в приложении, а не Speaking Buddy', () => {
-    expect(mobileTabs(menuItems()).find((t) => t.key === 'tutor').label).toBe('mtab.tutor')
+  it('вкладка тьютора подписана как в меню — Speaking Buddy', () => {
+    expect(mobileTabs(menuItems()).find((t) => t.key === 'tutor').label).toBe('nav.tutor')
   })
 
   it('преподаватель: Практика, Уроки и Сервисы', () => {

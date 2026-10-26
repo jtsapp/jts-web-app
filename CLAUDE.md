@@ -1857,7 +1857,9 @@ ID нет, кнопка там неактивна.
   `docs/superpowers/specs/2026-10-26-mobile-app-nav-home-design.md`. Шрифт
   телефона — Manrope, как в приложении (`src/mobile/base.css`), казахский —
   Inter. Навигация телефона — нижняя панель `MobileTabBar` (Главная · Практика
-  · AI-тьютор · Уроки · Сервисы) и экран `?screen=services` вместо бургера.
+  · Speaking Buddy · Уроки · Сервисы) и экран `?screen=services` вместо
+  бургера; вкладка тьютора подписана как в меню, а не «AI-тьютор» приложения
+  (решение владельца 27.10.2026), и она по ширине подписи.
   Панель одна на приложение — в `App` вне обёртки `.scr-in` (её `transform`
   на анимации входа сбивал `fixed`); оболочки только сообщают вкладку
   (`useMobileTab`, `src/components/mobileTab.js`), `TutorShell tabs={false}`

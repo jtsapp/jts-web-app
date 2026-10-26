@@ -18,7 +18,7 @@ describe('нижняя панель', () => {
   it('пять вкладок с подписями приложения', () => {
     const { container } = renderBar()
     expect([...container.querySelectorAll('.mtab__label')].map((n) => n.textContent)).toEqual([
-      'Главная', 'Практика', 'AI-тьютор', 'Уроки', 'Сервисы',
+      'Главная', 'Практика', 'Speaking Buddy', 'Уроки', 'Сервисы',
     ])
   })
 

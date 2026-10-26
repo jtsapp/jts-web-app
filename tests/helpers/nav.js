@@ -1,6 +1,6 @@
 // Переход в раздел так, как это делает человек на этой ширине: на телефоне (≤560) — вкладкой нижней панели или
 // плиткой «Сервисов», на планшете — через бургер, на компьютере — пунктом сайдбара (спека 2026-10-26).
-const TABS = { Главная: 'home', Практика: 'practice', 'AI-тьютор': 'tutor', Уроки: 'lessons' }
+const TABS = { Главная: 'home', Практика: 'practice', 'Speaking Buddy': 'tutor', Уроки: 'lessons' }
 
 export async function openSection(page, label) {
   const tabBar = page.locator('.mtab')

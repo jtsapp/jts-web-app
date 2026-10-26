@@ -23,7 +23,7 @@ export default function MobileTabBar({ active, token, onNav }) {
           <span className="mtab__pill">
             <i className="mtab__ico" style={{ '--mtab-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
           </span>
-          <span className="mtab__label">{t(label)}</span>
+          <span className="mtab__label" data-label={t(label)}>{t(label)}</span>
         </button>
       ))}
     </nav>
