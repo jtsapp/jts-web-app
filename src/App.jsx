@@ -103,6 +103,7 @@ import ProfilePage from './screens/ProfilePage.jsx'
 import ServicesPage from './screens/ServicesPage.jsx'
 import MobileTabBar from './components/MobileTabBar.jsx'
 import { MobileTabContext } from './components/mobileTab.js'
+import { showsTabBar } from './lib/navSections.js'
 import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -2006,7 +2007,7 @@ export default function App() {
           панель на каждом переходе пропадала): одна на приложение, как в мобильном приложении. Вкладку сообщает
           оболочка экрана (mobileTab.js); без оболочки панель прячет CSS (src/mobile/nav.css). Аккаунту класса
           разделы не положены. */}
-      {mobileTab !== null && token && !boothAccount && (
+      {mobileTab !== null && token && !boothAccount && showsTabBar(view) && (
         <MobileTabBar active={mobileTab} token={token} onNav={handleNav} />
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана

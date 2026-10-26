@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { menuItems, mobileTabs, serviceItems, tabFor } from './navSections.js'
+import { menuItems, mobileTabs, serviceItems, tabFor, showsTabBar } from './navSections.js'
 
 const keys = (list) => list.map((i) => i.key)
 
@@ -56,6 +56,20 @@ describe('нижняя панель телефона', () => {
     expect(tabFor('lessons')).toBe('lessons')
     for (const a of ['learning', 'homework', 'ielts', 'sat', 'vocab', 'services', '', undefined]) {
       expect(tabFor(a)).toBe('services')
+    }
+  })
+})
+
+describe('где видна нижняя панель', () => {
+  it('на корнях вкладок и экранах без своей «назад» — есть', () => {
+    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'profile']) {
+      expect(showsTabBar(s)).toBe(true)
+    }
+  })
+
+  it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'numbers', 'ge-plan', 'course-catalog']) {
+      expect(showsTabBar(s)).toBe(false)
     }
   })
 })

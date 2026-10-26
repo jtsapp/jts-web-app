@@ -85,6 +85,23 @@ export function serviceItems(items) {
   return items.filter((i) => !TAB_KEYS.includes(i.key))
 }
 
+// Внутренние экраны разделов: в приложении панели там нет, вместо неё своя «назад» экрана (решение владельца
+// 27.10.2026). Список явный, а не «всё, кроме корней вкладок»: экран без своей «назад» (IELTS, домашка, Словарь,
+// карта уровней) без панели стал бы тупиком — на телефоне нет ни бургера, ни сайдбара. Новый внутренний экран с
+// «назад» — строка сюда.
+const INNER_SCREENS = new Set([
+  // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
+  'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
+  'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
+  'ge-plan', 'ge-route', 'course-catalog',
+])
+
+/** Видна ли нижняя панель на этом экране (ключ screen App): на внутренних экранах разделов — нет. */
+export function showsTabBar(screen) {
+  return !INNER_SCREENS.has(screen)
+}
+
 /** Какая вкладка горит на экране с этим `active` оболочки: свой раздел — своя, всё прочее (и профиль) — «Сервисы». */
 export function tabFor(active) {
   return TAB_KEYS.includes(active) ? active : 'services'

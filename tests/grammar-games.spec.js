@@ -146,10 +146,13 @@ test('ссылка на тему открывает её сразу', async ({ p
   await expect(host(page).locator('.gcard')).toHaveCount(11)
 })
 
-test('гость видит просьбу войти, без заливки — «Раздел готовится»', async ({ page }) => {
+// Гостя приложение до экрана раздела не пускает: ?screen= без входа ведёт на приветствие с «Войти». Статус guest
+// раздела тест ловил только вспышкой кадра до этого перехода и падал, когда переход успевал раньше отрисовки.
+test('гость попадает на вход, без заливки — «Раздел готовится»', async ({ page }) => {
   await mockBackend(page, { token: null })
   await page.goto('/?screen=grammar-games')
-  await expect(page.locator('.ggp-state[data-status="guest"]')).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByRole('button', { name: 'Войти' })).toBeVisible({ timeout: 60_000 })
+  await expect(page.locator('.ggp-host')).toHaveCount(0)
 
   const page2 = await page.context().newPage()
   await mockBackend(page2, { indexStatus: 404 })
