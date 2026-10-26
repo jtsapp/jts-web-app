@@ -3542,6 +3542,189 @@
   background: var(--lw-surface);
 }
 
+/* --- PDF в уроке (screens/live/pdf/PdfViewer.jsx) ---------------------
+   Своя прокрутка страниц внутри рамки той же высоты: панель сверху, лента
+   под ней. Отступы ленты (12px) и зазор между страницами (12px) — те же
+   числа, что PAGE_PAD/PAGE_GAP в pdfLayout.js: по ним считается, где какая
+   страница, и разойтись они не должны. */
+.lw-material-frame--pdf {
+  display: flex;
+  flex-direction: column;
+}
+
+.pdfv {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--lw-r-block);
+  overflow: hidden;
+  background: var(--lw-bg);
+}
+
+.pdfv__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 8px;
+  background: var(--lw-surface);
+  border-bottom: 1px solid var(--lw-track);
+}
+
+.pdfv__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 44px — палец попадает с первого раза (на телефоне панель — главный способ листать по одной). */
+.pdfv__btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: var(--lw-r-inner);
+  background: transparent;
+  color: var(--lw-ink);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pdfv__btn:hover:not(:disabled) {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+}
+
+.pdfv__btn[aria-pressed='true'] {
+  color: var(--lw-primary-ink);
+}
+
+.pdfv__btn:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.pdfv__btn:focus-visible,
+.pdfv__open:focus-visible,
+.pdfv__scroller:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: -2px;
+}
+
+/* Цифры одной ширины: «9 / 12» → «10 / 12» не толкает кнопки. */
+.pdfv__count,
+.pdfv__zoom {
+  min-width: 64px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--lw-ink);
+}
+
+.pdfv__zoom {
+  min-width: 48px;
+  font-weight: 600;
+  color: var(--lw-ink-2);
+}
+
+.pdfv__open-icon {
+  margin-left: auto;
+}
+
+.pdfv__open {
+  padding: 12px 6px;
+  border-radius: var(--lw-r-inner);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pdfv__scroller {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* Долистал до конца — страница урока под рамкой не уезжает. */
+  overscroll-behavior: contain;
+}
+
+.pdfv__sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* Незагруженный лист — белая заготовка (в тёмной теме генератор делает её
+   карточкой темы, чтобы лента не вспыхивала). Нарисованный лист белый в любой
+   теме: фон страницы закрашивает сам pdf.js — это бумага, а не интерфейс. */
+.pdfv__page {
+  flex: none;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(24, 24, 24, .14);
+}
+
+.pdfv__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pdfv__state {
+  position: absolute;
+  inset: 0;
+}
+
+.pdfv__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  color: var(--lw-ink);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.pdfv__error p {
+  margin: 0;
+}
+
+/* Развёрнутая рамка: справа сверху поверх панели висит «Свернуть» (.lw-frame-collapse). */
+.lw-material-frame.is-expanded .pdfv {
+  border-radius: 0;
+}
+
+.lw-material-frame.is-expanded .pdfv__bar {
+  padding-right: calc(128px + env(safe-area-inset-right, 0px));
+}
+
+/* Узкий просмотрщик (телефон, колонка урока рядом с панелью): всё в одну
+   строку не помещается, а перенос отнимает у листа целую строку. Процент и
+   «По ширине» уходят: −/+ сами возвращают к 100%. Считается по ширине самого
+   просмотрщика, а не экрана — на компьютере колонка урока бывает уже телефона. */
+@container (max-width: 479px) {
+  .pdfv__zoom,
+  .pdfv__fit {
+    display: none;
+  }
+
+  .pdfv__count {
+    min-width: 56px;
+  }
+}
+
 .lw-material-empty {
   display: flex;
   align-items: center;
