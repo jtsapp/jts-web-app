@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { GRAMMAR_GAMES_CSS } from './styles.js'
 
 // Раздел на шрифте сайта: гарнитуру отдаёт экран (--gg-font от шрифта хоста — Manrope,
-// на телефоне PT Root UI, в kk — Inter). Своя гарнитура прототипа (Manrope с Google
+// в kk — Inter). Своя гарнитура прототипа (Manrope с Google
 // Fonts) увела бы казахский интерфейс с Inter, а запрос к Google Fonts — за пределы сайта.
 describe('GRAMMAR_GAMES_CSS', () => {
   it('без :root, html и body — тень их не видит', () => {

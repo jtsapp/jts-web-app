@@ -48,7 +48,7 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
     if (!host || !bundle) return undefined
     // attachShadow — один раз на элемент: при пересоздании (вход, новый релиз, StrictMode) — тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
-    // Шрифт сайта внутрь тени: --sans прототипа берёт его отсюда (Manrope, на телефоне PT Root UI, в kk — Inter).
+    // Шрифт сайта внутрь тени: --sans прототипа берёт его отсюда (Manrope, в kk — Inter).
     // Ставим ДО отрисовки содержимого тени, иначе первый кадр пойдёт системным шрифтом. Пустая строка
     // (элемент вне документа) сделала бы var(--pw-font) невалидным — подстраховываемся шрифтом десктопа.
     host.style.setProperty('--pw-font', getComputedStyle(host).fontFamily || "'Manrope', sans-serif")

@@ -80,7 +80,7 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
     let mounted = true
     // attachShadow — один раз на элемент: при пересоздании (вход, перезапрос списка, StrictMode) — тот же корень.
     const shadow = host.shadowRoot || host.attachShadow({ mode: 'open' })
-    // Шрифт сайта внутрь тени (Manrope, на телефоне PT Root UI, в kk — Inter) — до отрисовки.
+    // Шрифт сайта внутрь тени (Manrope, в kk — Inter) — до отрисовки.
     host.style.setProperty('--sr-font', hostFont(host))
     shadow.innerHTML = `<style>${SPEED_READING_CSS}</style><div class="sr"></div>`
     const api = mountSpeedReading(shadow.querySelector('.sr'), {
