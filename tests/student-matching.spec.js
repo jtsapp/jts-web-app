@@ -41,7 +41,8 @@ const proposedCard = () => ({
 async function setup(page, card) {
   const st = { card: { ...BASE_CARD, ...card }, sent: null, asked: null, confirmed: 0 }
   await page.addInitScript((token) => localStorage.setItem('jts_access_token', token), jwt)
-  const me = { userId: 7, name: 'Аружан', role: 'STUDENT', languageLevel: 'A2', isDemoAccount: false }
+  // телефон и дата рождения — иначе вход «как через Google» уводит на шаг «Остался один шаг»
+  const me = { userId: 7, name: 'Аружан', role: 'STUDENT', languageLevel: 'A2', isDemoAccount: false, phone: '77001234567', birthDate: '2000-01-01', createdAt: '2025-01-01T10:00:00' }
   await page.route(/justtostudy\.kz/, async (route) => {
     const req = route.request()
     const url = new URL(req.url())

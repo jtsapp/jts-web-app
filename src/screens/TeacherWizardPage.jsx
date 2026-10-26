@@ -41,7 +41,7 @@ export default function TeacherWizardPage({ token, userName, userLevel, initialS
   const layout = (children) => (
     <LearningLayout userName={userName} userLevel={userLevel} active="my-teacher" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="mt">
-        <div className="mt-wrap">{children}</div>
+        <div className="mt-wrap mt-wrap--bar">{children}</div>
       </div>
       {toastNode}
     </LearningLayout>
@@ -73,6 +73,16 @@ function Wizard({ token, card, view, initialStep, onNav, toast, lang, t }) {
   const [busy, run] = useBusy()
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }))
   const index = steps.indexOf(draft.step)
+
+  // Шаг сменился — к началу экрана: сетка времени длинная, и шаг «Учителя» иначе открывался бы с середины.
+  useEffect(() => {
+    try {
+      document.querySelector('.learn__main')?.scrollTo?.({ top: 0 })
+      window.scrollTo({ top: 0 })
+    } catch {
+      /* jsdom без прокрутки — тестам она не нужна */
+    }
+  }, [draft.step])
 
   useEffect(() => {
     saveDraft(card.studentId, { step: draft.step, format: draft.format, slots: draft.picked.map(keyToSlot), interests: draft.interests, choices: draft.choices })

@@ -62,6 +62,19 @@
   gap: 16px;
   padding-bottom: 40px;
 }
+/* Правый верхний угол кабинета занят «? · язык · колокольчик» (.learn__bell, z-index выше контента): первая строка
+   экрана уступает ему место, иначе кнопки угла ложатся на заголовок и карточки (память learn-bell-overlaps). */
+@media (min-width: 761px) {
+  .mt-wrap > :first-child {
+    padding-right: 150px;
+    min-height: 44px;
+  }
+}
+/* Онбординг идёт во всё окно, без оболочки кабинета: фон страницы задаём сами. */
+.mt-page {
+  min-height: 100vh;
+  background: var(--mt-bg);
+}
 .mt-h1 {
   font-size: 24px;
   font-weight: 800;
@@ -529,11 +542,18 @@
   overflow: hidden;
 }
 
-/* закреплённая снизу панель мастера */
+/* Закреплённая снизу панель мастера. Не sticky: .learn__main — контейнер прокрутки без своей высоты (прокручивается
+   документ), и sticky внутри него не прилипает. Поэтому fixed у низа окна: слева — после сайдбара (280), справа —
+   место под кнопку Луны; контенту мастера — запас снизу (.mt-wrap--bar). */
+.mt-wrap--bar {
+  padding-bottom: 110px;
+}
 .mt-bar {
-  position: sticky;
+  position: fixed;
+  left: 296px;
+  right: 88px;
   bottom: 12px;
-  z-index: 5;
+  z-index: 30;
   background: var(--mt-bar);
   color: var(--mt-bar-fg);
   border-radius: 18px;
@@ -1073,6 +1093,15 @@ textarea.mt-input {
   }
 }
 
+@media (max-width: 760px) {
+  .mt-bar {
+    left: 12px;
+    right: 80px;
+  }
+  .mt-wrap--bar {
+    padding-bottom: 150px;
+  }
+}
 @media (max-width: 900px) {
   .mt-layout3,
   .mt-grid2 {

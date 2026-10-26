@@ -43,7 +43,7 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
   }, [off, view.status, onNav])
 
   if (view.status === 'idle' || view.status === 'loading' || off) {
-    return <div className="mt"><div className="mt-onb"><p className="mt-muted">{t('loading')}</p></div></div>
+    return <div className="mt mt-page"><div className="mt-onb"><p className="mt-muted">{t('loading')}</p></div></div>
   }
 
   const pending = view.status === 'tariff_pending'
@@ -55,7 +55,7 @@ export default function TeacherPickPage({ token, userLevel, onNav }) {
   }
 
   return (
-    <div className="mt">
+    <div className="mt mt-page">
       <div className="mt-onb">
         <div className="mt-onb__steps" aria-label={t('onb.step')}>
           {[0, 1, 2, 3, 4].map((i) => <span key={i} />)}
