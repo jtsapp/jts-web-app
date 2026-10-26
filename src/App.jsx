@@ -40,6 +40,12 @@ import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import MyTeacherPage from './screens/MyTeacherPage.jsx'
+import TeacherWizardPage from './screens/TeacherWizardPage.jsx'
+import TeacherPickPage, { teacherPickSeen } from './screens/TeacherPickPage.jsx'
+import MatchingPopups from './matching/MatchingPopups.jsx'
+import { refreshMatching, getMatchingSnapshot } from './matching/matchingStore.js'
+import { matchingView, needsTeacherPick } from './matching/matchingState.js'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -172,6 +178,8 @@ function phoneErrorKey(e) {
 const PERSISTABLE_SCREENS = new Set([
   'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
+  // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
+  'my-teacher', 'teacher-wizard', 'teacher-pick',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -722,6 +730,8 @@ export default function App() {
   // «Уроки» уже открыты, не сменил бы вкладку (initialTab читается только при
   // монтировании).
   const [lessonsTarget, setLessonsTarget] = useState(null)
+  // Шаг мастера подбора, с которого его открыли («Выбрать учителей» после отказов — сразу к учителям)
+  const [wizardTarget, setWizardTarget] = useState(null)
   // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
   // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
   // прекращается, иначе она крутила бы уже следующий экран.
@@ -1359,10 +1369,21 @@ export default function App() {
 
   // «Продолжить» на итоге теста: анкета только что легла в профиль GE и формат не выбран — на маршрут (формат
   // обучения спрашивает он, решение 14.10); иначе туда, откуда пришли.
+  // Последний шаг онбординга — «Выберите своего учителя» (ТЗ 08 §2.1): после итога теста (и маршрута GE), если у
+  // ученика есть подбор, учителя ещё нет и этот шаг он не видел. Карточку перечитываем: тариф мог подтвердиться,
+  // пока шёл тест.
+  async function wantsTeacherPick() {
+    if (!token || isTeacher(token)) return false
+    await refreshMatching(token)
+    const v = matchingView(getMatchingSnapshot())
+    return needsTeacherPick(v) && !teacherPickSeen(v.studentId)
+  }
+
   async function continueAfterPlacement(env) {
     await finalizePlacement(env)
     const ge = placementState.current.geProfile
-    const next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    let next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    if (next !== 'ge-route' && (await wantsTeacherPick())) next = 'teacher-pick'
     setTestReturn(null)
     setScreen(next)
   }
@@ -1762,6 +1783,9 @@ export default function App() {
     else if (key === 'listen') { setListenTarget(payload || null); setScreen('listen') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
+    else if (key === 'my-teacher') setScreen('my-teacher')
+    else if (key === 'teacher-wizard') { setWizardTarget(payload?.step ? { step: payload.step, at: Date.now() } : null); setScreen('teacher-wizard') }
+    else if (key === 'teacher-pick') setScreen('teacher-pick')
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
         setLiveLessonId(payload.lessonId)
@@ -2014,6 +2038,8 @@ export default function App() {
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !isTeacher(token) && <PlatformPresence token={token} />}
+      {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
+      {token && !boothAccount && !isTeacher(token) && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
@@ -2332,6 +2358,12 @@ export default function App() {
           backLabel={backLabel('home')}
         />
       )
+    case 'my-teacher':
+      return <MyTeacherPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'teacher-wizard':
+      return <TeacherWizardPage key={wizardTarget?.at ?? 'wizard'} userLevel={userLevel} userName={name} token={token} initialStep={wizardTarget?.step ?? null} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'teacher-pick':
+      return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
       return <FeedbackCenter token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
@@ -2652,7 +2684,11 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onLoaded={setGeProfile}
-          onChosen={(p) => { if (p) setGeProfile(p); goBack(() => setScreen('home')) }}
+          onChosen={async (p) => {
+            if (p) setGeProfile(p)
+            if (await wantsTeacherPick()) setScreen('teacher-pick')
+            else goBack(() => setScreen('home'))
+          }}
           onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={() => openPlacement('ge-route')}

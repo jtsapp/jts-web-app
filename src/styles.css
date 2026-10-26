@@ -2480,6 +2480,20 @@ textarea {
   color: #fff;
   font-weight: 800;
 }
+/* Цифра «ждём действия» на пункте меню («Мой учитель», ТЗ 08 §2.12) — тем же красным, что у колокольчика */
+.sb__badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
 /* С IELTS пунктов меню восемь (у демо ещё плашка скидки), и на ноутбучных
    ~768–900px по высоте ранг и стрик уезжали под край — сайдбар скроллился сам
    по себе. На низких окнах пункты ужимаем по вертикали, ширина та же. */

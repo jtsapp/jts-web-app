@@ -18,6 +18,8 @@ import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { PRIVACY_URL } from '../lib/support.js'
 import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
+import { isTeacher } from '../lib/jwt.js'
+import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
 
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
 
@@ -412,6 +414,9 @@ export default function ProfilePage({
           </div>
         </section>
 
+        {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
+        {!isTeacher(token) && <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} />}
+
         <SkillRatings stats={skillStats} loading={skillStats === null} />
 
         {onLevelTest && (
@@ -528,6 +533,7 @@ export default function ProfilePage({
               <span className="pf-switch__knob" />
             </span>
           </button>
+          {!isTeacher(token) && <NotificationChannels phone={phone} />}
         </Modal>
       )}
 

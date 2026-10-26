@@ -75,7 +75,7 @@ ALTER TABLE teacher_matching_profiles
 |---|---|---|
 | `GET /` | `StudentCard` (см. ниже) | как сейчас, но без чужого: `history` пустая, у заявок нет `comment` |
 | `PUT /preferences` | `+ format` | формат пишется в карточку; для гарантии/IELTS/SAT принудительно `platform` |
-| `POST /ask-manager` | как сейчас | ставит `asked_at`; второй открытый запрос → 409 `already_asked`; разрешён и из `sent` — тогда активные заявки учителям отменяются (сайт до этого спросил подтверждение) |
+| `POST /ask-manager` | как сейчас | ставит `asked_at`; второй открытый запрос → 409 `already_asked`; разрешён и из `sent` и `confirm` — тогда активные заявки и резерв отменяются (сайт до этого спросил подтверждение; из `confirm` кнопка — когда общих часов с учителем меньше N) |
 | `PATCH /ask-manager` | `{wish}` | правка пожелания открытого запроса |
 | `GET /grid?format=` | `{lessonDuration, lessonsPerWeek, formats:{platform,books,own}, slots:[{weekday,start,teacherIds[]}]}` | см. §3.4 |
 | `GET /candidates` | `StudentCandidate[]` | только подходящие; после одобренной смены текущий учитель исключён; фильтр по формату |

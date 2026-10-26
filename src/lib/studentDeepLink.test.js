@@ -7,6 +7,10 @@ describe('notificationTarget', () => {
     expect(notificationTarget('feedback')).toEqual({ screen: 'feedback', payload: null })
     expect(notificationTarget('/feedback-reports/123')).toEqual({ screen: 'lessons', payload: { tab: 'reports', reportId: '123' } })
   })
+  // Уведомления подбора учителя (бэкенд пишет 'teacher-matching') ведут в «Мой учитель», а не в расписание (ТЗ 08 §2.12)
+  it('opens teacher matching notices in My teacher', () => {
+    expect(notificationTarget('teacher-matching')).toEqual({ screen: 'my-teacher', payload: null })
+  })
   it('opens a live lesson from the teacher workspace route', () => {
     expect(notificationTarget('/system/schedule/42/workspace')).toEqual({
       screen: 'lessons',
