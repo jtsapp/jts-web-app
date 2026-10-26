@@ -189,7 +189,7 @@ function MatchingPanel({
         <p>
           {card.tariff} · {card.lessonDuration} мин · {card.lessonsPerWeek}×/нед
         </p>
-        <button className={styles.primary} onClick={onOpen}>
+        <button className={`${styles.control} ${styles.primary}`} onClick={onOpen}>
           Открыть подбор
         </button>
       </section>
@@ -245,13 +245,10 @@ function MatchingPanel({
                       aria-pressed={slots.some((s) =>
                         sameSlot(s, localSlot(index + 1, time)),
                       )}
-                      className={
-                        slots.some((s) =>
-                          sameSlot(s, localSlot(index + 1, time)),
-                        )
-                          ? styles.on
-                          : ""
-                      }
+                      className={`${styles.control} ${
+                        slots.some((s) => sameSlot(s, localSlot(index + 1, time)))
+                          ? styles.on : ""
+                      }`}
                       disabled={busy}
                       onClick={() => toggle(index + 1, time)}
                     >
@@ -280,13 +277,14 @@ function MatchingPanel({
           </details>
           <div className={styles.actions}>
             <button
-              className={styles.primary}
+              className={`${styles.control} ${styles.primary}`}
               disabled={busy || !card.tariffConfirmed || !slots.length}
               onClick={find}
             >
               Выбрать преподавателя
             </button>
             <button
+              className={styles.control}
               disabled={busy}
               onClick={() =>
                 run(
@@ -307,7 +305,7 @@ function MatchingPanel({
               <p>{t.suggestedSlots.map(slotLabel).join(", ")}</p>
               <button
                 aria-pressed={selected.includes(t.id)}
-                className={selected.includes(t.id) ? styles.on : ""}
+                className={`${styles.control} ${selected.includes(t.id) ? styles.on : ""}`}
                 onClick={() => choose(t.id)}
                 disabled={
                   busy || (!selected.includes(t.id) && selected.length >= 3)
@@ -321,7 +319,7 @@ function MatchingPanel({
           ))}
           {!!candidates.length && (
             <button
-              className={styles.primary}
+              className={`${styles.control} ${styles.primary}`}
               disabled={busy || !selected.length}
               onClick={() =>
                 run(
@@ -359,7 +357,7 @@ function MatchingPanel({
             {new Date(card.deadline).toLocaleString("ru-RU")}.
           </p>
           <button
-            className={styles.primary}
+            className={`${styles.control} ${styles.primary}`}
             disabled={busy}
             onClick={() =>
               run(
@@ -376,7 +374,7 @@ function MatchingPanel({
         <>
           <h3>{card.assignedTeacherName}</h3>
           <p>{card.finalSlots.map(slotLabel).join(", ")}</p>
-          <button onClick={() => setChange((v) => !v)} disabled={busy}>
+          <button className={styles.control} onClick={() => setChange((v) => !v)} disabled={busy}>
             Сменить учителя
           </button>
         </>
@@ -414,7 +412,7 @@ function MatchingPanel({
               onChange={(e) => setText(e.target.value)}
             />
           </label>
-          <button className={styles.primary} disabled={busy || !reason.trim()}>
+          <button className={`${styles.control} ${styles.primary}`} disabled={busy || !reason.trim()}>
             Отправить запрос
           </button>
         </form>
@@ -434,7 +432,7 @@ function MatchingPanel({
             ].map(([key, label]) => (
               <button
                 key={key}
-                className={h.studentChoice === key ? styles.on : ""}
+                className={`${styles.control} ${h.studentChoice === key ? styles.on : ""}`}
                 disabled={busy}
                 onClick={() =>
                   run(

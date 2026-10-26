@@ -128,6 +128,11 @@ export function scanDisabledControls({ jsxFiles, cssFiles }) {
   const components = []
 
   for (const { path, text } of jsxFiles) {
+    // CSS Modules экспортируют имена классов как свойства: строкового литерала
+    // в className нет. Учитываем только импорты .module.css, чтобы случайное
+    // props.control не маскировало отсутствие стиля выключенной кнопки.
+    const modules = [...text.matchAll(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"][^'"]+\.module\.css['"]/g)]
+      .map(([, binding]) => binding.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     for (const [start, end] of tagSpans(text)) {
       const tag = text.slice(start, end + 1)
       if (!DISABLED_ATTR.test(tag)) continue
@@ -140,6 +145,9 @@ export function scanDisabledControls({ jsxFiles, cssFiles }) {
         classes = variable
           ? resolveVariableClasses(text, variable[1])
           : classesFromLiteral(stripInterpolations(value))
+        for (const binding of modules) {
+          classes.push(...[...value.matchAll(new RegExp(`\\b${binding}\\.([A-Za-z_$][\\w$]*)`, 'g'))].map(([, name]) => name))
+        }
       }
       if (classes.some((cls) => styled.has(cls))) continue
       const row = { path, name, classes: [...new Set(classes)].sort() }

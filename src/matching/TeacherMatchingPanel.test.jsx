@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import TeacherMatchingPanel from "./TeacherMatchingPanel.jsx";
 import * as api from "../api.js";
 vi.mock("../api.js", () => ({
@@ -61,6 +61,10 @@ describe("Выбор преподавателя учеником", () => {
     );
   });
   it("сохраняет выбранный приоритет и не позволяет выбрать больше трёх преподавателей", async () => {
+    let finishRefresh;
+    api.getMatchingCase.mockResolvedValueOnce(card()).mockImplementationOnce(
+      () => new Promise((resolve) => { finishRefresh = resolve; }),
+    );
     api.getMatchingCandidates.mockResolvedValue(
       [1, 2, 3, 4].map((id) => ({
         id,
@@ -74,10 +78,13 @@ describe("Выбор преподавателя учеником", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Выбрать преподавателя" }),
     );
-    const choices = await screen.findAllByRole("button", {
-      name: "Выбрать",
-      exact: true,
-    });
+    const teachers = await screen.findAllByRole("article");
+    const choices = teachers.map((teacher) => within(teacher).getByRole("button", { name: "Выбрать", exact: true }));
+    // Карточки появляются до завершения refresh: до снятия busy они ещё
+    // выключены. Ждём доступного действия, чтобы быстрый mock не скрывал гонку.
+    expect(choices.every((button) => button.disabled)).toBe(true);
+    await act(async () => finishRefresh(card()));
+    await waitFor(() => expect(choices.every((button) => !button.disabled)).toBe(true));
     fireEvent.click(choices[2]);
     fireEvent.click(choices[0]);
     fireEvent.click(choices[1]);

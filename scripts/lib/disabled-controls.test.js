@@ -73,6 +73,18 @@ describe('сканер', () => {
     expect(scanDisabledControls({ jsxFiles: jsx, cssFiles: css }).gaps).toHaveLength(0)
   })
 
+  it('понимает имена классов из CSS Modules, включая составной className', () => {
+    const jsx = [{path: 'a.jsx', text: 'import styles from "./a.module.css"; <button className={`${styles.control} ${styles.primary}`} disabled={busy} />'}]
+    expect(scanDisabledControls({jsxFiles: jsx, cssFiles: [{path: 'a.module.css', text: '.control:disabled {opacity: .4}'}]}).gaps).toHaveLength(0)
+  })
+
+  it('свойство обычного объекта за CSS Module не принимает и отсутствие стиля не прячет', () => {
+    const jsx = [{path: 'a.jsx', text: '<button className={props.control} disabled={busy} />'}]
+    expect(scanDisabledControls({jsxFiles: jsx, cssFiles: [{path: 'a.css', text: '.control:disabled {opacity: .4}'}]}).gaps).toHaveLength(1)
+    const moduleJsx = [{path: 'a.jsx', text: 'import styles from "./a.module.css"; <button className={styles.missing} disabled={busy} />'}]
+    expect(scanDisabledControls({jsxFiles: moduleJsx, cssFiles: css}).gaps).toHaveLength(1)
+  })
+
   it('выражения внутри `${…}` за классы не принимаются', () => {
     expect(stripInterpolations('a-b${cond ? "c-d" : ""}e-f')).toBe('a-be-f')
   })

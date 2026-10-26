@@ -26,7 +26,7 @@
   cursor: pointer;
   font: inherit;
 }
-.panel button:disabled {
+.panel .control:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

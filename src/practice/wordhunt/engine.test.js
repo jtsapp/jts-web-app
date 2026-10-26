@@ -4,10 +4,15 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCores } from './cores.js'
 import { mountWordHunt } from './engine.js'
+import { extractOracle } from '../../../scripts/wordhunt/extract-oracle.js'
 
 const DIR = path.join(__dirname, '__fixtures__')
 const bundle = JSON.parse(fs.readFileSync(path.join(DIR, 'bundle.json'), 'utf8'))
-const oracle = JSON.parse(fs.readFileSync(path.join(DIR, 'oracle.json'), 'utf8'))
+const recordedOracle = JSON.parse(fs.readFileSync(path.join(DIR, 'oracle.json'), 'utf8'))
+// В прототипе компаратор раскладки вызывает RNG: порядок сравнений зависит от
+// версии V8. Сверяем все клетки с живым прототипом в том же Node, а стабильные
+// данные дополнительно держим прежним снимком — ни порт, ни эталон не переписываем.
+const oracle = extractOracle(fs.readFileSync(path.join(DIR, 'prototype-mini.html'), 'utf8'))
 const source = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8')
 const DIFFS = ['easy', 'medium', 'hard']
 
@@ -56,6 +61,12 @@ function portPlanets() {
 
 describe('Word Hunt: ядра порта = ядра прототипа (оракул)', () => {
   const port = portPlanets()
+
+  it('данные, доски поиска и подсказки прототипа не изменились относительно снимка', () => {
+    const stable = ({ xw: _xw, ...rest }) => rest
+    expect(oracle.planets.map(stable)).toEqual(recordedOracle.planets.map(stable))
+    expect(oracle.tiers).toEqual(recordedOracle.tiers)
+  })
 
   it('те же планеты в том же порядке', () => {
     expect(port.planets.map((p) => p.pid)).toEqual(oracle.planets.map((p) => p.pid))
