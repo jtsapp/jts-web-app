@@ -26,6 +26,7 @@ import '../trial.css'
 import '../feedback.css'
 import '../demo.css'
 import '../placement.css'
+import '../matching.css'
 import '../assistant.css'
 // Вход и регистрация (макет «Регистрация», 21.10.2026)
 import '../auth.css'

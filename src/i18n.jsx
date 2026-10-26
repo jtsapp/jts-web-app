@@ -46,6 +46,7 @@ const dict = {
     'demo.expired.manager': 'Написать менеджеру',
     // --- Демо-аккаунт: «Главная», срок доступа, витрина тарифов ---
     'nav.home': 'Главная',
+    'nav.myTeacher': 'Мой учитель',
     'demo.badge': 'ДЕМО',
     'demo.banner': 'Демо-доступ открыт — часть разделов работает с ограничениями',
     'demo.bannerExpired': 'Демо-доступ закончился — откройте полный, чтобы продолжить',
@@ -7153,6 +7154,7 @@ const dict = {
     'demo.expired.body': 'This section is locked right now. Contact your manager or get a plan to unlock it.',
     'demo.expired.manager': 'Contact manager',
     'nav.home': 'Home',
+    'nav.myTeacher': 'My teacher',
     'demo.badge': 'DEMO',
     'demo.banner': 'Demo access is open — some sections work with limits',
     'demo.bannerExpired': 'Demo access has ended — open full access to continue',
@@ -14224,6 +14226,7 @@ const dict = {
     'demo.expired.body': 'Қазір бұл бөлім жабық. Менеджерге жазыңыз немесе тариф сатып алыңыз — қолжетімділік ашылады.',
     'demo.expired.manager': 'Менеджерге жазу',
     'nav.home': 'Басты бет',
+    'nav.myTeacher': 'Менің мұғалімім',
     'demo.badge': 'ДЕМО',
     'demo.banner': 'Демо-қолжетімділік ашық — кейбір бөлімдер шектеулі жұмыс істейді',
     'demo.bannerExpired': 'Демо-қолжетімділік аяқталды — жалғастыру үшін толық қолжетімділікті ашыңыз',

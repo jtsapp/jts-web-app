@@ -788,8 +788,6 @@ export function getMyLessonOccurrences(token) {
   return authGet('/admin/lessons/occurrences', token)
 }
 
-export const getMatchingCase = token => authGet('/student/matching', token)
-export const getMatchingCandidates = token => authGet('/student/matching/candidates', token)
 export const saveMatchingPreferences = (token, preferences) => authPut('/student/matching/preferences', token, preferences)
 export const askMatchingManager = (token, preferences) => authPost('/student/matching/ask-manager', token, preferences)
 export const sendMatchingRequests = (token, teacherIds) => authPost('/student/matching/requests', token, {teacherIds})
@@ -797,6 +795,44 @@ export const confirmMatchingSchedule = token => authPost('/student/matching/conf
 export const requestTeacherChange = (token, reason, text) => authPost('/student/matching/change', token, {reason, text})
 export const getMatchingHandoffs = token => authGet('/student/matching/handoffs', token)
 export const chooseMatchingHandoff = (token, id, choice) => authPost('/student/matching/handoffs/'+id+'/choice', token, {choice})
+
+// Подбор учителя v2 (спека 2026-10-26-student-teacher-matching-design.md). Карточку читаем своим fetch: 404 бывает
+// двух видов — «ученика нет в подборе» (тело с code: 'not_added', нужен абонемент) и «ручки на стенде нет» (старый
+// бэкенд), и различает их только тело, а authGet тело у 404 не читает.
+export async function getStudentMatching(token) {
+  let res
+  try {
+    res = await fetch(BASE + '/student/matching', { headers: { Authorization: `Bearer ${token}` } })
+  } catch {
+    return { status: 'unavailable' }
+  }
+  if (res.status === 401) reportUnauthorized(token)
+  if (res.ok) return { status: 'ready', card: await res.json().catch(() => null) }
+  if (res.status === 404) {
+    const body = await res.json().catch(() => null)
+    if (body?.code === 'not_added') return { status: 'not_added' }
+  }
+  return { status: 'unavailable' }
+}
+export const getMatchingGrid = (token, format) =>
+  authGet('/student/matching/grid' + (format ? '?format=' + encodeURIComponent(format) : ''), token)
+export const getMatchingTeachers = token => authGet('/student/matching/candidates', token)
+export const getMatchingTeacher = (token, id) => authGet(`/student/matching/teachers/${id}`, token)
+// Фото отдаётся только с токеном, поэтому не <img src>, а blob — object URL держит TeacherPhoto.
+export async function getMatchingTeacherPhoto(token, id) {
+  try {
+    const res = await fetch(`${BASE}/student/matching/teachers/${id}/photo`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
+export const saveMatchingInterests = (token, interests) => authPut('/student/matching/interests', token, { interests })
+export const saveMatchingTimezone = (token, timezone) => authPut('/student/matching/timezone', token, { timezone })
+export const changeMatchingFormat = (token, format) => authPost('/student/matching/format', token, { format })
+export const counterMatchingSchedule = (token, slots) => authPost('/student/matching/counter', token, { slots })
+export const reconfirmMatchingSchedule = token => authPost('/student/matching/reconfirm', token, {})
+export const patchMatchingWish = (token, wish) => authPatch('/student/matching/ask-manager', token, { wish })
 
 export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
