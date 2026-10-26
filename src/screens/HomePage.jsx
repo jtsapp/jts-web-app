@@ -208,8 +208,15 @@ export default function HomePage({
             textWidth: 330,
           },
       // Разделы: на компьютере — сайдбар, на телефоне — нижняя панель (кадр 6856:12612); на планшете сайдбар спрятан
-      // в drawer — тогда список встаёт по центру без прожектора (optional).
-      { selector: ['.sb', '.mtab'], optional: true, title: t('tour.home.sections.title'), content: <TourSections />, width: 520 },
+      // в drawer — тогда список встаёт по центру без прожектора (optional). «Слева» на телефоне неправда — там свой
+      // заголовок из макета. Ширину читаем здесь без риска для гидратации: шаги строятся только у открытого тура.
+      {
+        selector: ['.sb', '.mtab'],
+        optional: true,
+        title: t(phoneWidth() ? 'tour.home.sections.titlePhone' : 'tour.home.sections.title'),
+        content: <TourSections />,
+        width: 520,
+      },
     ]
   }
   // Приветствие перед подсказками — по имени, как в макете; имени нет — только «Добро пожаловать!».
@@ -629,6 +636,11 @@ function ChevronIcon() {
 // неё. На компьютере скрыта (demo.css), значок — маской из public/assets/home-v2/ico.
 function Plate({ ico }) {
   return <span className="hm-plate" style={{ '--hm-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
+}
+
+// Телефонная ширина мобильного слоя (src/mobile/*.css) — только для того, что рисуется после монтирования.
+function phoneWidth() {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 560px)').matches
 }
 
 /** «Сегодня» / «Завтра» / «8 августа» — день урока в строке расписания телефона. */

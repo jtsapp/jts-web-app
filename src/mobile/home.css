@@ -1,159 +1,221 @@
 /* ======================================================================
-   «Главная» на телефоне — макет Figma «Web Адаптивка», секция «Главная»
-   (5922:2684): кадры 440px «демо-аккаунт», «демо без теста», «полный
-   доступ», «новый уровень».
+   «Главная» на телефоне — дизайн мобильного приложения (Figma «Mobile»,
+   кадр «Главная · с данными» 6125:6209; пустые состояния 6135:11558 и
+   6135:11595; пробный урок — фрейм Trial в 6856:12401). Спека —
+   docs/superpowers/specs/2026-10-26-mobile-app-nav-home-design.md.
 
-   Карточки те же, что на десктопе (demo.css, hm-*), здесь только их
-   телефонная раскладка. Макет главной нарисован на Manrope, а не на PT Root
-   UI, как остальной мобильный слой (base.css), — шрифт возвращаем на .hm,
-   шапка (MobileTopBar) остаётся на PT Root UI, как в кадре.
+   Строго по макету (решение владельца 26.10.2026): на телефоне шесть блоков
+   по порядку макета, остальное, что «Главная» показывает на компьютере,
+   скрыто. Разметка общая (HomePage.jsx); элементы только для телефона по
+   умолчанию скрыты в demo.css.
    ====================================================================== */
 
 @media (max-width: 560px) {
-  .hm {
+  .learn__main:has(.hm--v2) {
+    background: #f8f8f8;
+  }
+  .hm--v2 {
     gap: 16px;
-    padding: 16px 16px 32px;
+    padding: 0 16px 24px;
   }
-  .hm-row,
-  .hm-col {
-    gap: 16px;
-  }
-
-  /* ---------- плашка демо (DemoStrip 408×158, r16, p16) ----------
-     Сверху значок «ДЕМО» и остаток времени по краям, ниже текст, кнопка во
-     всю ширину. */
-  .dm-banner {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 12px;
-    padding: 16px;
-  }
-  /* Строки заданы явно: в разметке таймер идёт после текста, и автоматическая
-     раскладка увела бы его под текст, а не в правый угол первой строки. */
-  .dm-banner__badge {
-    grid-row: 1;
-    grid-column: 1;
-    justify-self: start;
-    align-self: center;
-  }
-  .dm-banner__timer {
-    grid-row: 1;
-    grid-column: 2;
-    justify-self: end;
-  }
-  .dm-banner__text {
-    order: 0;
-    grid-row: 2;
-    grid-column: 1 / -1;
-  }
-  .dm-banner__cta {
-    grid-row: 3;
-    grid-column: 1 / -1;
-    justify-content: center;
-    margin-left: 0;
-    padding: 8px 14px 8px 16px;
-  }
-
-  /* ---------- карточка уровня (LevelHero 408, r24, p20, gap 16) ----------
-     Сетка из двух колонок: слева подпись, уровень и прирост, справа плашка
-     цели 101×101; дорожка и подпись под ними — во всю ширину. Обёртка
-     .hm-level__body растворяется (display: contents), чтобы её дети встали в
-     сетку карточки напрямую. */
-  .hm-level {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 101px;
-    /* Лишняя высота плашки цели (101 против подписи с уровнем) уходит во
-       вторую строку: иначе сетка делит её поровну и уровень отъезжает от
-       подписи «ВАШ УРОВЕНЬ», когда плашки прироста нет. */
-    grid-template-rows: auto 1fr;
-    /* row-gap — ноль: десктопный gap флекса в сетке стал бы зазором между
-       строками и раздвинул бы карточку. Отступы — у самих строк. */
-    gap: 0 12px;
-    align-items: start;
-    padding: 20px;
-    border-radius: 24px;
-  }
-  .hm-level__body {
+  /* Колонки компьютера растворяются: порядок блоков — макета, а не разметки. */
+  .hm-grid,
+  .hm-grid__main,
+  .hm-grid__side {
     display: contents;
   }
-  .hm-level__label {
-    grid-column: 1;
-    grid-row: 1;
+
+  /* ---------- заголовок «Главная» 32 и кнопки угла справа ---------- */
+  .hm-top {
+    display: flex;
+    order: 0;
+    min-height: 52px;
+    padding: 4px 160px 0 0;
   }
-  .hm-level__head {
-    grid-column: 1;
-    grid-row: 2;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    margin-top: 12px;
-  }
-  .hm-level__name {
+  .hm-top__title {
     font-size: 32px;
     line-height: 44px;
+    font-weight: 800;
+    color: #181818;
   }
-  .hm-level__week {
-    padding: 6px 12px 6px 10px;
+  .learn__main:has(.hm--v2) .learn__bell {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    z-index: 5;
+    padding: 0;
   }
 
-  /* Плашка цели: медаль 101×101 выглядывает над плашкой на 24px, подпись —
-     у нижнего края. */
-  .hm-level__goal {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    flex-direction: column;
-    justify-content: flex-end;
+  .ge-skel,
+  .hm-level {
+    order: 1;
+  }
+  .hm-trial {
+    order: 2;
+  }
+  .hm-skills {
+    order: 3;
+  }
+  .hm-prac {
+    order: 4;
+  }
+  .hm-sched {
+    order: 5;
+  }
+  .hm-hw {
+    order: 6;
+  }
+
+  /* На телефоне только блоки макета (решение владельца 26.10.2026). */
+  .hm .dm-banner,
+  .hm-matching,
+  .hm .hm-report,
+  .hm .ge-goal,
+  .hm .ge-start,
+  .hm .hm-placement,
+  .hm .ge-today,
+  .hm .hm-start,
+  .hm .hm-recommend,
+  .hm .pl-report,
+  .hm .pl-next {
+    display: none;
+  }
+
+  /* ---------- общая карточка: белая, r24, рамка #ececf1, p16 ---------- */
+  .hm-card {
+    position: relative;
+    padding: 16px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .hm-card__title {
+    margin: 0 0 12px;
+    font-size: 17px;
+    line-height: 23px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .hm-card__sub {
+    display: none;
+  }
+  /* «Всё расписание ›» и «Все ›» — справа в строке заголовка. */
+  .hm-card__more,
+  .hm-card__all {
+    position: absolute;
+    top: 19px;
+    right: 16px;
+    display: inline-flex;
     align-items: center;
-    align-self: start;
-    width: 101px;
-    height: 101px;
-    min-height: 0;
-    gap: 0;
-    padding: 11px 6px;
-    border-radius: 14.4px;
-    font-size: 11.5px;
-    line-height: 16px;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    color: #9047ff;
+    cursor: pointer;
   }
-  /* Арт медали в файле занимает поле плотнее, чем в макете, — рамка на
-     8px меньше, чтобы сама медаль совпала с кадром по размеру и месту. */
-  .hm-level__medal {
-    position: absolute;
-    left: 4px;
-    top: -15px;
-    transform: none;
-    width: 93px;
-    height: 93px;
+  .hm-card__more::after,
+  .hm-card__all::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
   }
 
-  /* Достигнутая цель: большая медаль срезана правым краем карточки, как в
-     кадре «новый уровень» (150×150, x+290 и y−34 от верхнего ряда). */
-  .hm-level__trophy {
+  /* ---------- плашка со значком 40 r12 ---------- */
+  .hm-plate {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .hm-plate::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: var(--hm-ico) center / contain no-repeat;
+    mask: var(--hm-ico) center / contain no-repeat;
+  }
+
+  /* ---------- карточка уровня (Container 370×228, r28, p20/16) ---------- */
+  .hm-level {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px;
+    border-radius: 28px;
+    background: linear-gradient(250deg, #6d28d9 0%, #a06bff 100%);
+    color: #fff;
+  }
+  .hm-level__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hm-level__label {
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .hm-level__head {
+    margin: -12px 0 0;
+  }
+  .hm-level__name {
+    margin: 0;
+    padding-right: 84px;
+    font-size: 28px;
+    line-height: 38px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .hm-level__week,
+  .hm-level__plan,
+  .hm-level__medal {
+    display: none;
+  }
+  .hm-level__medal-m {
+    display: block;
     position: absolute;
-    top: -14px;
-    right: -52px;
-    width: 150px;
-    height: 150px;
+    top: -22px;
+    right: -20px;
+    width: 124px;
+    height: 124px;
     pointer-events: none;
   }
 
-  /* ---------- дорожка: кружки 32px, подписи под ними ----------
-     Отрезки — флекс между кружками на высоте их центра, поэтому линия
-     непрерывна от «Старта» до «Финиша» при любом числе ступеней. Подписи
-     вынесены абсолютом под кружок: шириной они больше кружка, и в потоке
-     раздвигали бы дорожку неравномерно. */
+  /* Дорожка: кружки 32 (текущий белый с точкой 10), линия 3 #ac75ff, пройденное — белым. Значки ступеней — те же
+     golf_course и flag_circle, что у компьютера (в макете приложения они называются milestone и finish). */
   .hm-level__track {
-    grid-column: 1 / -1;
     position: relative;
     display: flex;
     align-items: flex-start;
-    flex-wrap: nowrap;
     gap: 0;
-    margin-top: 16px;
-    padding: 0 0 28px;
+    margin: 0;
+    padding: 0 0 22px;
     border-radius: 0;
     background: none;
   }
   .hm-level__seg {
+    position: relative;
+    overflow: hidden;
     flex: 1 1 0;
     min-width: 8px;
     height: 3px;
@@ -161,9 +223,19 @@
     border-radius: 2px;
     background: #ac75ff;
   }
+  .hm-level__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 2px;
+    background: #fff;
+  }
   .hm-level__stop {
     position: relative;
+    display: flex;
     flex: none;
+    align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
@@ -172,34 +244,6 @@
     border-radius: 999px;
     background: #ac75ff;
     color: #fff;
-  }
-  .hm-level__ico {
-    width: 18px;
-    height: 18px;
-  }
-  .hm-level__lbl {
-    position: absolute;
-    top: 38px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
-    white-space: nowrap;
-  }
-  /* Крайние подписи прижаты к краям дорожки, а не к центру кружка: «Финиш · B2»
-     иначе вылезал бы за карточку. */
-  .hm-level__stop--now .hm-level__lbl {
-    left: 0;
-    transform: none;
-    font-weight: 600;
-    color: #fff;
-  }
-  .hm-level__stop--finish .hm-level__lbl {
-    left: auto;
-    right: 0;
-    transform: none;
   }
   .hm-level__stop--now {
     background: #fff;
@@ -211,336 +255,573 @@
     border-radius: 50%;
     background: #9047ff;
   }
-
-  /* В кадре — во всю ширину карточки, капсула ростом 26. */
-  .hm-level__buy {
-    grid-column: 1 / -1;
-    width: 100%;
-    margin-top: 16px;
-    padding: 3px 6px 4px;
-    border-radius: 16px;
-  }
-  /* Подпись под дорожкой в макете — просто текст, без капсулы. */
-  .hm-level__plan {
-    grid-column: 1 / -1;
+  .hm-level__ico {
     display: block;
-    margin: 16px 0 0;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    font-size: 14px;
-    line-height: 19px;
+    width: 18px;
+    height: 18px;
+  }
+  /* Подписи — коды из data-short; полный текст остаётся для читалок экрана. */
+  .hm-level__lbl {
+    position: absolute;
+    top: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .hm-level__lbl::after {
+    content: attr(data-short);
+    font-size: 12px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.8);
   }
-
-  /* ---------- общая карточка (r24, p24/20, обводка #ededed) ---------- */
-  .hm-card {
-    padding: 24px 20px;
-    border-radius: 24px;
+  .hm-level__stop--now .hm-level__lbl {
+    left: 0;
+    transform: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
   }
-  .hm-card__title {
-    margin: 0 0 24px;
-    font-size: 20px;
-    line-height: 28px;
-    letter-spacing: -0.01em;
+  .hm-level__stop--finish .hm-level__lbl {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  /* Строка цели (Goal: белая 16%, r16, p10/14): флажок, «Цель — A2», справа «Изменить». */
+  .hm-level__goal {
+    position: static;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 19px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+  .hm-level__goal > span {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .hm-level__flag {
+    display: block;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    background: currentColor;
+    -webkit-mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/flag.svg) center / contain no-repeat;
+  }
+  .hm-level__edit {
+    display: block;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  /* Без теста: белая кнопка теста на месте строки цели. */
+  .hm-level__test {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border: 0;
+    border-radius: 16px;
+    background: #fff;
+    color: #9047ff;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  /* Цель достигнута — кубок срезан краем, кнопка покупки во всю ширину. */
+  .hm-level__trophy {
+    position: absolute;
+    top: -14px;
+    right: -52px;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+  }
+  .hm-level__buy {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 16px;
+  }
+
+  /* ---------- пробный урок (Trial 370×80, r24, тень) ---------- */
+  .hm-trial {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+    min-height: 80px;
+    padding: 16px;
+    border: 0;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  }
+  .hm-trial .hm-plate::before {
+    width: 24px;
+    height: 24px;
+  }
+  .hm-trial__art,
+  .hm-trial__sub {
+    display: none;
+  }
+  .hm-trial__body {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .hm-trial__title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .hm-trial__cta {
+    flex: none;
+    height: 40px;
+    margin: 0;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .hm-trial__cta svg {
+    display: none;
+  }
+  .hm-trial__error {
+    width: 100%;
+    margin: 0;
   }
 
   /* ---------- сильные и слабые стороны ---------- */
   .hm-skills__list {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    opacity: 0.8;
+    opacity: 1;
   }
-  /* Разметка строки идёт в порядке десктопного макета (название, стрелка, процент, полоса — редизайн 21.10.2026),
-     а телефон держит свою строку «название · полоса · процент · стрелка» — поэтому места заданы именами. */
+  /* Колонка названия шире макетных 76: там навыки по-английски, а «Аудирование» в 76 не помещается. */
   .hm-skill {
-    grid-template-columns: 92px minmax(0, 1fr) 44px 18px;
-    grid-template-areas: 'name bar pct trend';
-    gap: 16px;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    grid-template-areas: 'name bar pct';
+    align-items: center;
+    gap: 10px;
   }
   .hm-skill__name {
     grid-area: name;
-    font-size: 15px;
-    line-height: 20px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    color: #4a4a55;
   }
   .hm-skill__bar {
     grid-area: bar;
+    height: 8px;
+    border-radius: 4px;
+    background: #eeeef4;
+  }
+  .hm-skill__fill {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+  }
+  .hm-skill__fill--high {
+    background: #31b423;
+  }
+  .hm-skill__fill--mid {
+    background: #9047ff;
+  }
+  .hm-skill__fill--low {
+    background: #e8a020;
+  }
+  .hm-skill__fill.is-bad {
+    background: #ff5c5c;
   }
   .hm-skill__pct {
     grid-area: pct;
-    text-align: left;
-  }
-  .hm-skill__trend {
-    grid-area: trend;
-  }
-  /* Стрелка в цвет полосы; у «рабочего» уровня (фиолетовая полоса) в макете
-     стрелки нет вовсе. */
-  .hm-skill__trend--high {
-    color: #31b423;
-  }
-  .hm-skill__trend--mid {
-    visibility: hidden;
-  }
-  .hm-skill__trend--low {
-    color: #e8a020;
-  }
-  .hm-skills__tags {
-    margin-top: 24px;
-  }
-  .hm-tag {
-    padding: 8px 14px 8px 12px;
+    min-width: 28px;
+    text-align: right;
     font-size: 13px;
+    line-height: 18px;
+    font-weight: 700;
+    color: #4a4a55;
   }
-  /* подпись «Сильнее всего» над навыком, как на десктопе: в строку они слипались */
-  .hm-tag > span {
+  .hm-skill__trend,
+  .hm-skills__tags {
+    display: none;
+  }
+  .hm-skills__sum {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 17px;
+    font-weight: 500;
+    color: #8a8a8a;
   }
-  .hm-tag small {
-    font-size: 11px;
-    line-height: 14px;
-    font-weight: 600;
+  .hm-skills__sumIco {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: #31b423;
+    -webkit-mask: url(/assets/home-v2/ico/trending_up.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/trending_up.svg) center / contain no-repeat;
+  }
+  /* Заданий ещё нет (кадр 6135:11595): плашка 44 со значком insights и текст, без строк навыков. */
+  .hm-skills--empty .hm-skills__list,
+  .hm-skills--empty .hm-skills__msg b {
+    display: none;
+  }
+  /* Без теста — прежняя плашка со строками «???» и кнопкой теста; здесь только строка «значок + текст». */
+  .hm-skills--empty .hm-skills__msg {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+  .hm-skills--empty .hm-skills__msgIco {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    border-radius: 14px;
+    background: #efe7ff;
+    -webkit-mask: none;
+    mask: none;
+  }
+  .hm-skills--empty .hm-skills__msgIco::before {
+    content: '';
+    width: 22px;
+    height: 22px;
+    background: #9047ff;
+    -webkit-mask: url(/assets/home-v2/ico/insights.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/insights.svg) center / contain no-repeat;
+  }
+  .hm-skills--empty .hm-skills__msg p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 19px;
+    font-weight: 500;
+    color: #8a8a8a;
   }
 
-  /* ---------- что сделать сегодня (в макете нет — в языке соседних карточек) ---------- */
-  .hm-recommend__cta {
-    flex-wrap: wrap;
-    padding: 16px;
-    border-radius: 16px;
-    background: #f8f8f8;
-  }
-
-  /* ---------- практика на сегодня: плитки 88px с картинкой справа ---------- */
-  .hm-prac {
-    padding: 20px 20px 24px;
-  }
+  /* ---------- практика на сегодня: 2×2, плитка 163×151 ---------- */
   .hm-prac__grid {
-    grid-template-columns: minmax(0, 1fr);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
   .hm-prac__tile {
-    position: relative;
-    height: 88px;
-    padding: 24px;
-    border-radius: 16px;
-    background: #f8f8f8;
+    position: static;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px;
+    height: auto;
+    min-height: 149px;
+    padding: 12px;
+    border: 0;
+    border-radius: 18px;
+    background: #f8f8fb;
+    text-align: left;
   }
-  .hm-prac__text {
-    gap: 4px;
-    max-width: calc(100% - 64px);
-  }
-  .hm-prac__text b {
-    font-size: 16px;
-    line-height: 20px;
-  }
-  .hm-prac__text i {
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 500;
-    color: #8a8a8a;
+  .hm-prac__img {
+    display: block;
+    position: static;
+    order: -1;
+    width: 68px;
+    height: 68px;
+    object-fit: contain;
+    background: none;
   }
   .hm-prac__emoji {
     display: none;
   }
-  .hm-prac__img {
-    display: block;
-    position: absolute;
-    top: 4px;
-    right: 12px;
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    background: none;
-  }
-
-  /* ---------- расписание ----------
-     Строка: число и день недели колонкой 24px, вертикальная черта, урок.
-     Сегодняшнее число — в красной плашке. Неделя длиннее карточки: низ списка
-     тает (в макете — белая вуаль 111px поверх). */
-  .hm-sched {
-    padding: 24px 20px 20px;
-    border-radius: 20px;
-  }
-  .hm-sched__list {
+  .hm-prac__text {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-height: 265px;
-    margin: 0;
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(#000 calc(100% - 111px), rgba(0, 0, 0, 0.2));
-    mask-image: linear-gradient(#000 calc(100% - 111px), rgba(0, 0, 0, 0.2));
+    gap: 2px;
+    max-width: none;
   }
-  .hm-sched__day {
-    align-items: stretch;
-    gap: 0;
-    padding: 0;
-    border-top: 0;
-  }
-  .hm-sched__date {
-    width: 24px;
-    margin-right: 12px;
-    padding-top: 0;
-  }
-  .hm-sched__date b,
-  .hm-sched__date.is-busy b {
-    display: block;
-    width: 24px;
-    height: 18px;
-    margin: 0;
-    padding: 0 2px;
-    border-radius: 8px;
-    background: none;
-    font-size: 14px;
-    line-height: 18px;
+  .hm-prac__text b {
+    font-size: 13px;
+    line-height: 17px;
     font-weight: 700;
     color: #181818;
-    text-align: center;
   }
-  .hm-sched__date.is-today b {
-    background: #ff5c5c;
+  .hm-prac__text i {
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 500;
+    font-style: normal;
+    color: #8a8a8a;
+  }
+
+  /* ---------- расписание: полоса дней и уроки выбранного дня ---------- */
+  .hm-sched__week {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .hm-sched__wday {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 44px;
+    height: 56px;
+    padding: 8px 0;
+    border: 0;
+    border-radius: 14px;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .hm-sched__wday b {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .hm-sched__wday i {
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 500;
+    font-style: normal;
+    color: #8a8a8a;
+  }
+  .hm-sched__wday.is-busy::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 50%;
+    background: #9047ff;
+  }
+  .hm-sched__wday.is-picked {
+    background: #9047ff;
+  }
+  .hm-sched__wday.is-picked b,
+  .hm-sched__wday.is-picked i {
     color: #fff;
   }
-  .hm-sched__date i {
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 500;
-    color: #8a8a8a;
+  /* У выбранного дня точки нет: его уроки и так показаны под полосой. */
+  .hm-sched__wday.is-picked::after {
+    display: none;
   }
-  .hm-sched__empty,
+  .hm-sched__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hm-sched__day {
+    display: none;
+  }
+  .hm-sched__day.is-picked {
+    display: block;
+  }
+  .hm-sched__date {
+    display: none;
+  }
   .hm-sched__items {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding-left: 12px;
-    border-left: 2px solid #f8f8f8;
-  }
-  .hm-sched__empty {
     display: flex;
-    align-items: center;
-    min-height: 34px;
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 600;
-    color: #8a8a8a;
-  }
-  .hm-sched__items {
+    flex-direction: column;
     gap: 8px;
   }
+  /* Урок (Lesson: #efe7ff, r16, p12/14): плашка 40 #9047ff с белой камерой, имя, «Сегодня · 18:00–19:00», шеврон. */
   .hm-sched__item {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 16px;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    grid-template-areas: 'plate name chev' 'plate when chev';
     column-gap: 12px;
-    row-gap: 4px;
+    row-gap: 2px;
     align-items: center;
     width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 16px;
+    background: #efe7ff;
+    text-align: left;
+  }
+  .hm-sched__item .hm-plate {
+    grid-area: plate;
+    background: #9047ff;
+    color: #fff;
   }
   .hm-sched__item b {
+    grid-area: name;
     font-size: 14px;
-    line-height: 20px;
+    line-height: 19px;
+    font-weight: 700;
     color: #181818;
   }
   .hm-sched__item i {
-    grid-column: 1;
+    grid-area: when;
     font-size: 12px;
     line-height: 16px;
     font-weight: 500;
-    color: #8a8a8a;
+    font-style: normal;
+    color: #4a4a55;
+  }
+  .hm-sched__when {
+    display: inline;
   }
   .hm-sched__chev {
     display: grid;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    color: #c4c4c4;
+    grid-area: chev;
+    color: #9047ff;
   }
-  .hm-card__more {
-    margin-top: 16px;
-    font-size: 14px;
+  /* Нет уроков (EmptyState 6135:11558): #f6f2ff, рамка 1.5 #cdb8ff, r18, белая плашка 44 со значком event. */
+  .hm-sched__empty {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-areas: 'plate title' 'plate sub';
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+    padding: 14px;
+    border: 1.5px solid #cdb8ff;
+    border-radius: 18px;
+    background: #f6f2ff;
   }
-
-  /* ---------- домашнее задание: пункты #f8f8f8 r11 p12 ---------- */
-  .hm-hw {
-    padding: 24px 20px 20px;
-    border-radius: 20px;
+  .hm-sched__empty .hm-plate {
+    grid-area: plate;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #fff;
   }
-  .hm-hw__list {
-    gap: 12px;
-    margin: 0;
+  .hm-sched__empty .hm-plate::before {
+    width: 22px;
+    height: 22px;
   }
-  .hm-hw__item {
-    padding: 12px;
-    border-radius: 11px;
-    background: #f8f8f8;
-  }
-  .hm-hw__item b {
-    font-size: 14px;
+  .hm-sched__empty > span:not(.hm-plate) {
+    grid-area: title;
+    font-size: 15px;
     line-height: 20px;
+    font-weight: 700;
     color: #181818;
   }
-  .hm-hw__item span {
+  .hm-sched__empty small {
+    display: block;
+    grid-area: sub;
+    font-size: 12px;
+    line-height: 17px;
+    font-weight: 500;
+    color: #4a4a55;
+  }
+
+  /* ---------- домашнее задание: строка #f8f8fb r16 p10/12 ---------- */
+  .hm-hw__list {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hm-hw__item {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    grid-template-areas: 'plate title chev' 'plate meta chev';
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 16px;
+    background: #f8f8fb;
+    text-align: left;
+  }
+  .hm-hw__item .hm-plate {
+    grid-area: plate;
+  }
+  .hm-hw__item b {
+    grid-area: title;
+    font-size: 14px;
+    line-height: 19px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .hm-hw__item > span:not(.hm-plate) {
+    grid-area: meta;
+    display: flex;
+    gap: 0;
   }
   .hm-hw__item i {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 16px;
     font-weight: 500;
-    color: #898787;
+    font-style: normal;
+    color: #8a8a8a;
+  }
+  .hm-hw__item i + i::before {
+    content: ' · ';
+    white-space: pre;
   }
   .hm-hw__ico {
-    display: block;
-    flex: none;
+    display: none;
+  }
+  .hm-hw__item::after {
+    content: '';
+    grid-area: chev;
+    width: 20px;
+    height: 20px;
+    background: #b5b5c4;
+    -webkit-mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/chevron_right.svg) center / contain no-repeat;
   }
   .hm-hw__empty {
     margin: 0;
-  }
-
-  /* ---------- пробный урок (демо): кадр 368×238 r14 ---------- */
-  .hm-trial {
-    padding: 18px 20px;
-    border-radius: 20px;
-  }
-  .hm-trial__art {
-    aspect-ratio: 368 / 238;
-    max-width: none;
-    margin: 0 0 14px;
-  }
-
-  /* ---------- уровень не определён (демо без теста) ---------- */
-  /* Отступы — у элементов (16 под заголовком, 20 над кнопкой), поэтому
-     десктопный gap флекса гасим: иначе они складывались. */
-  .hm-placement {
-    gap: 0;
-    min-height: 0;
-    padding: 28px 24px;
-    border-radius: 24px;
-  }
-  .hm-placement__title {
-    font-size: 26px;
-    line-height: 32px;
-  }
-  .hm-placement__sub {
-    margin-top: 16px;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 500;
-    color: #181818;
-  }
-  .hm-placement__cta {
-    width: 100%;
-    height: 48px;
-    margin-top: 20px;
-    border-radius: 60px;
-    font-size: 15px;
+    font-size: 13px;
+    color: #8a8a8a;
   }
 }
 
-/* На самых узких (360) две ступени с полными подписями и «Финиш · B2»
-   касаются друг друга — подписи на пункт меньше. */
+/* На самых узких (360) «A1 · Elementary» рядом с медалью в строку не входит — кегль на ступень меньше. */
 @media (max-width: 380px) {
-  .hm-level__track:not(.is-short) .hm-level__lbl {
-    font-size: 11px;
+  .hm-level__name {
+    font-size: 24px;
+    line-height: 32px;
   }
 }
 
