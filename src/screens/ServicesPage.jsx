@@ -32,7 +32,7 @@ const TILE_ICO = {
 // (на «Главной» в этом случае «?»).
 export default function ServicesPage({ userName, userLevel, levelUnknown = false, token, onNav, onProfile }) {
   const { t } = useI18n()
-  const { items, teacher, ieltsAccount } = useMenuItems(token)
+  const { items, teacher, ieltsAccount, badges } = useMenuItems(token)
   const [demo, setDemo] = useState(false)
   const [balance, setBalance] = useState(null)
   useEffect(() => {
@@ -111,6 +111,8 @@ export default function ServicesPage({ userName, userLevel, levelUnknown = false
                     <i style={{ '--svc-ico': `url(/assets/home-v2/ico/${TILE_ICO[key] || ico}.svg)` }} aria-hidden="true" />
                   </span>
                   <span className="svc-tile__go" aria-hidden="true" />
+                  {/* Ждут действия ученика (подбор учителя) — как бейдж пункта в сайдбаре */}
+                  {badges[key] > 0 && <b className="svc-tile__badge">{badges[key]}</b>}
                 </span>
                 <span className="svc-tile__name">{t(label)}</span>
               </button>

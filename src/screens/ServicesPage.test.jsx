@@ -15,6 +15,9 @@ vi.mock('../api.js', () => ({
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false })),
   getSatMeCached: vi.fn(async () => null),
 }))
+// Подбор учителя — по умолчанию его на стенде нет; тест бейджа ставит свой ответ.
+vi.mock('../matching/matchingStore.js', () => ({ useMatching: vi.fn() }))
+import { useMatching } from '../matching/matchingStore.js'
 
 function renderServices(props = {}) {
   const onNav = vi.fn()
@@ -29,6 +32,7 @@ function renderServices(props = {}) {
 
 beforeEach(() => {
   demo.value = false
+  useMatching.mockReturnValue({ status: 'unavailable', card: null, handoffs: [] })
 })
 
 describe('Сервисы', () => {
@@ -45,9 +49,17 @@ describe('Сервисы', () => {
   it('плитки — разделы меню, которые не стали вкладками', () => {
     const { container, onNav } = renderServices()
     const grid = container.querySelector('.svc-grid')
-    expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual(['Повторение', 'Домашняя работа', 'Словарь'])
+    expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual(['Повторение', 'Домашняя работа', 'Словарь', 'Feedback'])
     fireEvent.click(within(grid).getByText('Словарь'))
     expect(onNav).toHaveBeenCalledWith('vocab')
+  })
+
+  it('«Мой учитель» — первой плиткой и с бейджем, когда ждут действия ученика', () => {
+    useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
+    const { container } = renderServices()
+    const first = container.querySelector('.svc-grid .svc-tile')
+    expect(first.classList.contains('svc-tile--my-teacher')).toBe(true)
+    expect(first.querySelector('.svc-tile__badge').textContent).toBe('1')
   })
 
   it('монеты и стрик — плашками рядом с уровнем', async () => {

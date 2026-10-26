@@ -12,6 +12,10 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen } from '../config.js'
 // public/assets/home-v2/ico. Рисуются маской, поэтому цвет берут от пункта.
 export const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 
+// «Мой учитель» (ТЗ 08 §1): сразу под «Главной», только ученику и только когда на стенде есть подбор v2 —
+// без него пункт вёл бы на «раздел скоро появится». Есть ли подбор, решает хук меню (useMenuItems).
+const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
+
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
@@ -25,6 +29,8 @@ const NAV_FULL = [
   { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
   { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
+  // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
+  { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
 ]
 // Тьютор-онли (прод, main): в меню остаются только разделы из TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) —
 // остальные скрыты от обычных пользователей (доступны диплинком ?screen=… для отладки).
@@ -46,15 +52,23 @@ const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только
- * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны.
+ * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. «Мой учитель» — когда на стенде
+ * есть подбор учителя (myTeacher).
  */
-export function menuItems({ teacher = false, ieltsAccount = false, exams = { ielts: false, sat: false }, rewards = false } = {}) {
+export function menuItems({
+  teacher = false,
+  ieltsAccount = false,
+  exams = { ielts: false, sat: false },
+  rewards = false,
+  myTeacher = false,
+} = {}) {
+  const head = myTeacher && !teacher ? [HOME_ITEM, MY_TEACHER_ITEM] : [HOME_ITEM]
   const all = teacher
     ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key))
     : ieltsAccount
       // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
-      ? [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
-      : [HOME_ITEM, ...NAV]
+      ? [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
+      : [...head, ...NAV]
   return all.filter((item) => {
     if (!rewards && isRewardsScreen(item.key)) return false
     if (item.key === 'ielts') return exams.ielts
@@ -96,6 +110,8 @@ const INNER_SCREENS = new Set([
   'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
+  // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё
+  'teacher-wizard',
 ])
 
 /** Видна ли нижняя панель на этом экране (ключ screen App): на внутренних экранах разделов — нет. */

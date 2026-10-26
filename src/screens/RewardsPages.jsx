@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import Image from 'next/image'
-import { claimPrize, getMyTokens } from '../api.js'
+import { claimPrize, getBalance, getMyTokens } from '../api.js'
 import { useI18n } from '../i18n.jsx'
+import { CoinLegend, TokenPilotBar } from '../components/TokenBlocks.jsx'
 import './rewards.css'
 
 function number(value) {
@@ -19,6 +20,16 @@ function date(value, lang) {
     day: 'numeric', month: 'short', year: 'numeric',
   }).format(parsed)
 }
+
+// Период обнуляется на следующий день после последнего дня накопления.
+function nextDay(value) {
+  const parsed = new Date(`${String(value || '').slice(0, 10)}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) return value
+  parsed.setDate(parsed.getDate() + 1)
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`
+}
+
+const PRIZE_KINDS = ['discount', 'lesson', 'club', 'access', 'other']
 
 function prizeName(item, lang) {
   if (lang === 'en' && item.nameEn) return item.nameEn
@@ -79,12 +90,23 @@ function LoadingOrError({ loading, error, retry, t }) {
 export function TokensPage({ userLevel, userName, token, onNav, onProfile }) {
   const { t, lang } = useI18n()
   const { data, loading, error, reload } = useRewards(token)
+  // Монеты — отдельный счёт (магазин косметики), токены периода — для призов: показываем оба.
+  const [coins, setCoins] = useState(null)
+  useEffect(() => {
+    let alive = true
+    Promise.resolve(getBalance(token)).then((b) => { if (alive) setCoins(Number(b?.coins) || 0) }).catch(() => {})
+    return () => { alive = false }
+  }, [token])
   const period = data?.period
   const max = Math.max(0, Number(period?.max) || 0)
   const balance = Math.max(0, Number(period?.balance) || 0)
   const fill = max ? Math.min(100, Math.round(balance / max * 100)) : 0
   const tierKey = period?.tier === 'gold' ? 'gold' : period?.tier === 'purple' ? 'purple' : 'silver'
-  const sortedHistory = useMemo(() => [...(data?.history || [])].filter((entry) => Number(entry.points) !== 0), [data?.history])
+  // Нулевые строки показываем только пилотные: штраф, который в пилоте не списали («Нет активности за день · пилот, не списано (−15)»)
+  const sortedHistory = useMemo(
+    () => [...(data?.history || [])].filter((entry) => Number(entry.points) !== 0 || /пилот/i.test(entry.reason || '')),
+    [data?.history],
+  )
 
   return (
     <Shell active="tokens" userLevel={userLevel} userName={userName} token={token} onNav={onNav} onProfile={onProfile}>
@@ -97,6 +119,14 @@ export function TokensPage({ userLevel, userName, token, onNav, onProfile }) {
       </header>
       <LoadingOrError loading={loading} error={error} retry={reload} t={t} />
       {!loading && !error && period && <>
+        <p className="rw-coins-note">
+          <Image src="/assets/world/coin.png" width={20} height={20} alt="" />
+          <span>{t('rewards.coins.note', { n: coins === null ? '—' : number(coins) })}</span>
+        </p>
+        <TokenPilotBar pilot={data?.pilot} />
+        {Number(period.idlePoints) > 0 && (
+          <p className="rw-idle-warning" role="note">{t('rewards.idleWarning', { n: number(period.idlePoints) })}</p>
+        )}
         <div className="rw-overview">
           <article className="rw-balance-card">
             <div className="rw-balance-card__top">
@@ -114,7 +144,7 @@ export function TokensPage({ userLevel, userName, token, onNav, onProfile }) {
             </div>
             <div className="rw-balance-card__foot">
               <span>{t('rewards.period.current')}: {date(period.startsOn, lang)} – {date(period.endsOn, lang)}</span>
-              <span>{t('rewards.period.left')}: <b>{number(period.daysLeft)} {t('rewards.days')}</b></span>
+              <span>{t('rewards.period.left')}: <b>{number(period.daysLeft)} {t('rewards.days')}</b> · {t('rewards.reset', { date: date(nextDay(period.endsOn), lang) })}</span>
             </div>
           </article>
           <div className="rw-stat-stack">
@@ -126,15 +156,18 @@ export function TokensPage({ userLevel, userName, token, onNav, onProfile }) {
           </div>
         </div>
 
+        <CoinLegend period={period} />
+
         <section className="rw-panel">
           <div className="rw-panel__head"><div><span className="rw-eyebrow">ACTIVITY</span><h2>{t('rewards.history')}</h2></div></div>
           {sortedHistory.length ? <div className="rw-history">
             {sortedHistory.map((entry) => {
               const positive = Number(entry.points) > 0
+              const simulated = Number(entry.points) === 0
               return <article className="rw-history-row" key={entry.id}>
-                <span className={`rw-history-icon ${positive ? 'is-plus' : 'is-minus'}`}>{positive ? '+' : '−'}</span>
+                <span className={`rw-history-icon ${positive ? 'is-plus' : 'is-minus'}`}>{simulated ? '0' : positive ? '+' : '−'}</span>
                 <div className="rw-history-copy"><b>{entry.reason}</b><time>{date(entry.createdAt, lang)}</time></div>
-                <strong className={positive ? 'rw-positive' : 'rw-negative'}>{positive ? '+' : '−'}{number(Math.abs(Number(entry.points)))}</strong>
+                <strong className={positive ? 'rw-positive' : 'rw-negative'}>{simulated ? '0' : `${positive ? '+' : '−'}${number(Math.abs(Number(entry.points)))}`}</strong>
               </article>
             })}
           </div> : <div className="rw-empty"><span>◈</span><p>{t('rewards.historyEmpty')}</p></div>}
@@ -196,6 +229,8 @@ export function PrizesPage({ userLevel, userName, token, onNav, onProfile }) {
       <LoadingOrError loading={loading} error={error} retry={reload} t={t} />
       {!loading && !error && data && <>
         {message && <div className="rw-toast" role="status">{message}</div>}
+        <TokenPilotBar pilot={data.pilot} />
+        <div className="rw-balance-line"><Image src="/assets/world/coin.png" width={28} height={28} alt="" /><b>{number(data.period?.balance)}</b><span>{t('rewards.balanceCard', { period: data.period?.label || '—' })}</span></div>
         <div className="rw-prize-period"><div><span className="rw-eyebrow">{t('rewards.period.current')}</span><b>{data.period?.label || '—'}</b></div><span>{date(data.period?.startsOn, lang)} – {date(data.period?.endsOn, lang)}</span></div>
         {data.prizes?.length ? <div className="rw-prize-grid">
           {data.prizes.map((item, index) => {
@@ -209,7 +244,7 @@ export function PrizesPage({ userLevel, userName, token, onNav, onProfile }) {
             return <article className={`rw-prize-card ${index % 3 === 1 ? 'rw-prize-card--lilac' : ''}`} key={item.id}>
               <div className="rw-prize-art"><span className="rw-prize-art__orbit" /><span className="rw-prize-art__symbol">{item.kind === 'lesson' ? '◉' : item.kind === 'discount' ? '%' : item.kind === 'club' ? '✦' : '◆'}</span><span className="rw-prize-art__shine">✧</span></div>
               <div className="rw-prize-card__body">
-                <div className="rw-prize-card__top"><span className="rw-kind">{item.kind || 'prize'}</span><div className="rw-prize-card__badges">{issued && <span className="rw-stock rw-stock--issued">{t('rewards.prizes.issued')}</span>}{item.pieceLimit > 0 && <span className="rw-stock">{soldOut ? t('rewards.prizes.soldOut') : t('rewards.prizes.stock', { n: item.remainingPieces })}</span>}</div></div>
+                <div className="rw-prize-card__top"><span className="rw-kind">{t(`rewards.kind.${PRIZE_KINDS.includes(item.kind) ? item.kind : 'other'}`)}</span><div className="rw-prize-card__badges">{issued && <span className="rw-stock rw-stock--issued">{t('rewards.prizes.issued')}</span>}{item.pieceLimit > 0 && <span className="rw-stock">{soldOut ? t('rewards.prizes.soldOut') : t('rewards.prizes.stock', { n: item.remainingPieces })}</span>}</div></div>
                 <h2>{prizeName(item, lang)}</h2>
                 <div className="rw-cost"><Image src="/assets/world/coin.png" width={23} height={23} alt="" /><strong>{number(item.costTokens)}</strong><span>{t('nav.tokens')}</span></div>
                 <div className="rw-prize-progress"><i style={{ width: `${progress}%` }} /></div>
@@ -224,7 +259,8 @@ export function PrizesPage({ userLevel, userName, token, onNav, onProfile }) {
 
         {next && <section className="rw-next-period">
           <div className="rw-next-period__icon">✧</div><div className="rw-next-period__copy"><span className="rw-eyebrow">{t('rewards.next.title')}</span><b>{next.label}</b><small>{t('rewards.next.starts', { date: date(next.startsOn, lang) })}</small></div>
-          <div className="rw-next-period__items">{(next.items || []).slice(0, 3).map((item) => <span key={item.id}>{prizeName(item, lang)}</span>)}</div>
+          <div className="rw-next-period__items">{(next.items || []).slice(0, 4).map((item) => <span key={item.id}>{prizeName(item, lang)} · {number(item.costTokens)}</span>)}</div>
+          <p className="rw-next-period__note">{t('rewards.next.note')}</p>
         </section>}
 
         {claims.length > 0 && <section className="rw-panel rw-claims-panel">

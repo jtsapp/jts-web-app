@@ -83,6 +83,18 @@
     height: 30px;
     border-radius: 999px;
   }
+  .mtab__pill {
+    position: relative;
+  }
+  .mtab__dot {
+    position: absolute;
+    top: 3px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e11d48;
+  }
   .mtab__ico {
     display: block;
     width: 24px;
@@ -198,6 +210,9 @@
      у низа экрана на экране с панелью — строка сюда. */
   .pr-assign {
     bottom: calc(18px + var(--mtab-h, 0px));
+  }
+  .mt-toast {
+    bottom: calc(16px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom, 0px)));
   }
   .pf-toast {
     bottom: calc(34px + var(--mtab-h, 0px));

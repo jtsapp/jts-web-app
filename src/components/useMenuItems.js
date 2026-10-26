@@ -4,12 +4,18 @@ import { areRewardsEnabled } from '../config.js'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
 import { menuItems } from '../lib/navSections.js'
+import { useMatching } from '../matching/matchingStore.js'
+import { matchingView } from '../matching/matchingState.js'
+
+// Подбора учителя на стенде нет или он ещё не ответил — «Мой учитель» в меню не ставим.
+const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
 
 /**
  * Меню этого ученика — одно на сайдбар, нижнюю панель телефона и «Сервисы» (lib/navSections.js). Роль читается из
  * токена; аккаунт IELTS и подписки на экзамены — у бэкенда (ответ помнится по токену в api.js, поэтому переход между
  * экранами запроса не стоит). До ответа экзаменов в меню нет: ученик General не должен видеть их даже на мгновение,
- * а у ученика IELTS меню сменится с первым ответом.
+ * а у ученика IELTS меню сменится с первым ответом. Бейдж «Мой учитель» — когда от ученика ждут действия
+ * (matchingView).
  */
 export function useMenuItems(token) {
   const teacher = isTeacher(token)
@@ -32,5 +38,8 @@ export function useMenuItems(token) {
       alive = false
     }
   }, [token, teacher])
-  return { items: menuItems({ teacher, ieltsAccount, exams, rewards }), teacher, ieltsAccount }
+  const matching = matchingView(useMatching(teacher ? null : token || loadToken()))
+  const myTeacher = !teacher && !MATCHING_HIDDEN.has(matching.status)
+  const badges = { 'my-teacher': matching.badge || 0 }
+  return { items: menuItems({ teacher, ieltsAccount, exams, rewards, myTeacher }), teacher, ieltsAccount, badges }
 }

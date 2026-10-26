@@ -52,6 +52,9 @@ import {
   ArcadeCard,
 } from './practice/PracticeCards.jsx'
 import { isTeacher } from '../lib/jwt.js'
+import { plural } from '../lib/plural.js'
+import { sectionTokenPoints, useStudentTokens } from '../practice/practiceTokens.js'
+import { PracticeTokenSub, PracticeTokenTable } from '../components/TokenBlocks.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse } from '../practice/grammar/grammarData.js'
 import {
@@ -464,6 +467,14 @@ export default function PracticePage({
   // от него скрыт вовсе (Sidebar, TEACHER_SECTIONS), хотя заданий в нём больше,
   // чем в самих уроках, — с этого и началась просьба.
   const teacher = isTeacher(token)
+  // «+N токенов» на плитках: правила приходят с сервера и совпадают с тем, что начисляется за прохождение.
+  const tokenData = useStudentTokens(apiToken)
+  const tokenRules = Array.isArray(tokenData?.practiceRules) ? tokenData.practiceRules : []
+  const tokensOf = (sectionId) => sectionTokenPoints(tokenRules, sectionId)
+  const tokenTag = (sectionId) => {
+    const points = tokensOf(sectionId)
+    return points > 0 ? plural(t, lang, 'practice.tokenBadge', points) : undefined
+  }
 
   // Отмеченное хранится ВМЕСТЕ с уровнем, а не рядом с ним. Уровень входит в
   // адрес юнита, а не только в его показ: «Unit 3» уровня A2 и «Unit 3» уровня
@@ -815,6 +826,7 @@ export default function PracticePage({
       small={sec.small}
       expanded={expanded === sec.id}
       onAll={toggle(sec.id)}
+      tokens={tokensOf(sec.id)}
     >
       {expanded === sec.id ? children : null}
     </SectionHead>
@@ -845,6 +857,7 @@ export default function PracticePage({
               desc={t('practice.listening.desc')}
               cta={t('practice.listening.cta')}
               onStart={() => onNav?.('listening')}
+              tag={tokenTag('listenPair')}
               badge={{ caption: t('practice.listening.byLevel'), level: listeningLevel(userLevel).toUpperCase() }}
             />
             <Banner
@@ -996,6 +1009,7 @@ export default function PracticePage({
             desc={t('practice.reading.desc')}
             cta={t('practice.reading.cta')}
             onStart={() => onNav?.('reading')}
+            tag={tokenTag('reading')}
           />
         )
 
@@ -1009,6 +1023,7 @@ export default function PracticePage({
               desc={t('practice.writing.desc')}
               cta={t('practice.writing.cta')}
               onStart={() => onNav?.('writing')}
+              tag={tokenTag('writePair')}
             />
             <Banner
               id="sec-verbs"
@@ -1162,6 +1177,7 @@ export default function PracticePage({
           return (
             <section key={sec.id} id="sec-grammar" className="pk-sec">
               {head(sec, t('practice.chip.grammar'))}
+              {tokensOf('grammar') > 0 && <p className="tb-sub">{t('grammar.tokens.sub', { n: tokensOf('grammar') })}</p>}
               {grammarIndex ? (
                 <GrammarCatalog
                   index={grammarIndex}
@@ -1190,7 +1206,7 @@ export default function PracticePage({
             ) : (
               <Rail className="pk-rail--tiles">
                 {units.map((u) => (
-                  <GrammarTile key={u.id} unit={u} onOpen={(unit) => setOpenUnit({ level: grammarLevel, unit })} />
+                  <GrammarTile key={u.id} unit={u} tokens={tokensOf('grammar')} onOpen={(unit) => setOpenUnit({ level: grammarLevel, unit })} />
                 ))}
               </Rail>
             )}
@@ -1287,9 +1303,13 @@ export default function PracticePage({
           ))}
         </div>
 
+        <PracticeTokenSub data={tokenData} />
+
         {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
 
         {sections.map(renderSection)}
+
+        {expanded === null && <PracticeTokenTable data={tokenData} />}
       </div>
 
       {openSituation && (

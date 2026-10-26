@@ -7,7 +7,9 @@ import { mobileTabs, tabFor } from '../lib/navSections.js'
 // того же меню ученика, что сайдбар (lib/navSections.js), поэтому у преподавателя и в тьютор-онли их меньше.
 export default function MobileTabBar({ active, token, onNav }) {
   const { t } = useI18n()
-  const { items } = useMenuItems(token)
+  const { items, badges } = useMenuItems(token)
+  // Раздел из «Сервисов» ждёт действия (бейдж в сайдбаре) — точка на вкладке, иначе на телефоне его не заметить.
+  const servicesAlert = Object.values(badges).some((n) => n > 0)
   const current = tabFor(active)
   return (
     <nav className="mtab" aria-label={t('mtab.label')}>
@@ -22,6 +24,7 @@ export default function MobileTabBar({ active, token, onNav }) {
         >
           <span className="mtab__pill">
             <i className="mtab__ico" style={{ '--mtab-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
+            {key === 'services' && servicesAlert && <b className="mtab__dot" aria-hidden="true" />}
           </span>
           <span className="mtab__label" data-label={t(label)}>{t(label)}</span>
         </button>

@@ -45,7 +45,7 @@ export default function Sidebar({
   }, [token])
 
   // Роль, аккаунт IELTS и подписки на экзамены — в общем хуке меню (тот же список у панели телефона и «Сервисов»).
-  const { items: nav, teacher, ieltsAccount } = useMenuItems(token)
+  const { items: nav, teacher, ieltsAccount, badges } = useMenuItems(token)
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -126,6 +126,7 @@ export default function Sidebar({
             >
               <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
+              {badges[key] > 0 && <b className="sb__badge">{badges[key]}</b>}
             </button>
           ))}
         </nav>

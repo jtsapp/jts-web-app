@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import MobileTabBar from './MobileTabBar.jsx'
+
+vi.mock('../matching/matchingStore.js', () => ({ useMatching: vi.fn() }))
+import { useMatching } from '../matching/matchingStore.js'
+
+beforeEach(() => {
+  useMatching.mockReturnValue({ status: 'unavailable', card: null, handoffs: [] })
+})
 
 function renderBar(props = {}) {
   const onNav = vi.fn()
@@ -33,5 +40,12 @@ describe('нижняя панель', () => {
     const { container, onNav } = renderBar()
     fireEvent.click(container.querySelector('[data-tab="practice"]'))
     expect(onNav).toHaveBeenCalledWith('practice')
+  })
+
+  it('раздел в «Сервисах» ждёт действия — точка на вкладке «Сервисы»', () => {
+    expect(renderBar().container.querySelector('.mtab__dot')).toBeNull()
+    useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
+    const { container } = renderBar({ token: 'T' })
+    expect(container.querySelector('[data-tab="services"] .mtab__dot')).not.toBeNull()
   })
 })

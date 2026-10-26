@@ -5,17 +5,23 @@ const keys = (list) => list.map((i) => i.key)
 
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
-    expect(keys(menuItems())).toEqual(['home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab'])
+    expect(keys(menuItems())).toEqual(['home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'feedback'])
+  })
+
+  it('«Мой учитель» — сразу под «Главной», когда на стенде есть подбор, и не у преподавателя', () => {
+    expect(keys(menuItems({ myTeacher: true })).slice(0, 3)).toEqual(['home', 'my-teacher', 'learning'])
+    expect(keys(menuItems({ myTeacher: true, ieltsAccount: true })).slice(0, 2)).toEqual(['home', 'my-teacher'])
+    expect(keys(menuItems({ myTeacher: true, teacher: true }))).toEqual(['practice', 'lessons'])
   })
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab',
+      'home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback',
     ])
   })
 
   it('награды — только там, где они включены', () => {
-    expect(keys(menuItems({ rewards: true })).slice(-2)).toEqual(['tokens', 'prizes'])
+    expect(keys(menuItems({ rewards: true })).slice(-3)).toEqual(['tokens', 'prizes', 'feedback'])
   })
 
   it('преподаватель: только Практика и Уроки', () => {
@@ -44,7 +50,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'learning', 'homework', 'ielts', 'sat', 'vocab',
+      'learning', 'homework', 'ielts', 'sat', 'vocab', 'feedback',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })
@@ -62,13 +68,13 @@ describe('нижняя панель телефона', () => {
 
 describe('где видна нижняя панель', () => {
   it('на корнях вкладок и экранах без своей «назад» — есть', () => {
-    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'profile']) {
+    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'profile', 'my-teacher']) {
       expect(showsTabBar(s)).toBe(true)
     }
   })
 
   it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
-    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'numbers', 'ge-plan', 'course-catalog']) {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard']) {
       expect(showsTabBar(s)).toBe(false)
     }
   })

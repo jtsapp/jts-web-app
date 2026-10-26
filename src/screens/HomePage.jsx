@@ -5,6 +5,7 @@ import AssetImage from '../components/AssetImage.jsx'
 import OnboardingTour, { isTourSeen, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
+import { sectionTokenPoints, taskTokenPoints, useStudentTokens } from '../practice/practiceTokens.js'
 import { goalOptions, levelSummary, levelTrack, sanitizeGoal, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.js'
 import { GoalDialog } from './home/GoalPicker.jsx'
@@ -17,7 +18,7 @@ import TourSections from './home/TourSections.jsx'
 import TemperInvite from './home/TemperInvite.jsx'
 import { armTemperInvite, closeTemperInvite, isTemperInvitePending, temperInviteKey } from './home/temperInvite.js'
 import NewReportCard from '../feedback/NewReportCard.jsx'
-import TeacherMatchingPanel from '../matching/TeacherMatchingPanel.jsx'
+import TokenBlocks from '../components/TokenBlocks.jsx'
 import { useGePlan } from '../ge/plan/useGePlan.js'
 import { homeTopState } from '../ge/homeState.js'
 import { routeOptions } from '../ge/route.js'
@@ -467,14 +468,13 @@ export default function HomePage({
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
-        {/* Обёртка — чтобы спрятать панель на телефоне (её классы — CSS-модуль); на компьютере display: contents. */}
-        <div className="hm-matching">
-          <TeacherMatchingPanel token={token} compact onOpen={() => onNav?.('lessons')} />
-        </div>
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}
         <NewReportCard token={token} onNav={onNav} />
+
+        {/* Токены, призы и «Заходите каждый день» — блок кабинета студента (ТЗ кабинетов, раздел 5). */}
+        <TokenBlocks token={token} onNav={onNav} />
 
         {/* Уровня нет — тест не пройден. Вместо карточки с чужими цифрами
             зовём пройти тест: это единственный способ её наполнить. */}
@@ -523,7 +523,7 @@ export default function HomePage({
             ) : isDemoAccount ? null : (
               <RecommendCard t={t} summary={summary} homework={homework} occurrences={occurrences} onNav={onNav} />
             )}
-            <PracticeToday t={t} onNav={onNav} />
+            <PracticeToday t={t} lang={lang} token={token} onNav={onNav} />
             {/* Отчёт теста уровня v16; теста нет — тот же блок пустым и зовёт на тест (решение владельца 21.10.2026). */}
             {!ieltsAccount && <PlacementResults report={report} onRetake={onStartLevelTest} />}
           </div>
@@ -1039,7 +1039,13 @@ function RecommendCard({ t, summary, homework, occurrences, onNav }) {
   )
 }
 
-function PracticeToday({ t, onNav }) {
+function PracticeToday({ t, lang, token, onNav }) {
+  // «+N токенов» на плитках, за которые токены начисляются (макет кабинета студента, «Сегодня»)
+  const tokenData = useStudentTokens(token)
+  const tileTokens = {
+    tutor: taskTokenPoints(tokenData, { kind: 'practice', module: 'ai_tutor' }),
+    listening: sectionTokenPoints(tokenData?.practiceRules, 'listenPair'),
+  }
   // Плитка ведёт в свой раздел, а не в общую ленту: раньше «Книги» и
   // «Аудирование» открывали «Практику» целиком, и нажавший на книги искал их
   // заново. Аудирование — отдельный экран, книги — фильтр «Практики».
@@ -1066,6 +1072,9 @@ function PracticeToday({ t, onNav }) {
             <span className="hm-prac__text">
               <b>{t(`home.practice.${tile.key}.title`)}</b>
               <i>{t(`home.practice.${tile.key}.sub`)}</i>
+              {tileTokens[tile.key] > 0 && (
+                <em className="hm-prac__tokens" data-testid="tile-tokens">{plural(t, lang, 'practice.tokenBadge', tileTokens[tile.key])}</em>
+              )}
             </span>
             <span className="hm-prac__emoji" aria-hidden="true">{tile.emoji}</span>
             {/* Телефонный макет рисует плитки картинками вместо эмодзи (CSS
