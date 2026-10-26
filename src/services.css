@@ -13,6 +13,12 @@
   max-width: 402px;
   padding: 16px 16px 24px;
 }
+/* Фон экрана в кадре — #f8f8f8, как у «Главной» телефона. */
+@media (max-width: 560px) {
+  .learn__main:has(.svc) {
+    background: #f8f8f8;
+  }
+}
 
 /* ---------- профиль (ProfileHero 370×144, r28, p16) ---------- */
 .svc-hero {
@@ -156,6 +162,27 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
+}
+/* Фон плитки и цвет значка — у каждого раздела свои (кадр 6419:6295); тёмная тема перекрашивает их в theme-dark.css. */
+.svc-tile--learning {
+  --svc-bg: #e6dcfc;
+  --svc-ink: #7b3fe4;
+}
+.svc-tile--homework {
+  --svc-bg: #ffe3cf;
+  --svc-ink: #e57a12;
+}
+.svc-tile--ielts {
+  --svc-bg: #d6edfb;
+  --svc-ink: #2f7bf5;
+}
+.svc-tile--sat {
+  --svc-bg: #d6dcff;
+  --svc-ink: #5b4bdb;
+}
+.svc-tile--vocab {
+  --svc-bg: #cff0e5;
+  --svc-ink: #1f9d55;
 }
 .svc-tile {
   position: relative;

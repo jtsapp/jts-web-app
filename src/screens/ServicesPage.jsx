@@ -11,14 +11,15 @@ import { loadToken } from '../lib/session.js'
 import { getBalance, getDemoAccess } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 
-// Фон плитки, значок и его цвет — из кадра «Сервисы» (Figma «Mobile», 6419:6295). Раздел, которого в макете нет
-// (награды на dev-стенде), берёт лавандовый фон и свой значок из меню.
-const TILE = {
-  learning: { bg: '#e6dcfc', ink: '#7b3fe4', ico: 'restart_alt' },
-  homework: { bg: '#ffe3cf', ink: '#e57a12', ico: 'assignment' },
-  ielts: { bg: '#d6edfb', ink: '#2f7bf5', ico: 'school' },
-  sat: { bg: '#d6dcff', ink: '#5b4bdb', ico: 'calculate' },
-  vocab: { bg: '#cff0e5', ink: '#1f9d55', ico: 'menu_book' },
+// Значок плитки — из кадра «Сервисы» (Figma «Mobile», 6419:6295); фон и цвет значка — модификатором .svc-tile--<раздел>
+// в services.css (классом, а не инлайном: тёмная тема перекрашивает их токенами, theme-dark.css). Раздел, которого в
+// макете нет (награды на dev-стенде), берёт лавандовую плитку и свой значок из меню.
+const TILE_ICO = {
+  learning: 'restart_alt',
+  homework: 'assignment',
+  ielts: 'school',
+  sat: 'calculate',
+  vocab: 'menu_book',
 }
 
 /**
@@ -99,26 +100,17 @@ export default function ServicesPage({ userName, userLevel, token, onNav, onProf
 
         {tiles.length > 0 && (
           <div className="svc-grid">
-            {tiles.map(({ key, label, ico }) => {
-              const tile = TILE[key] || { bg: '#efe7ff', ink: '#7b3fe4', ico }
-              return (
-                <button
-                  type="button"
-                  key={key}
-                  className="svc-tile"
-                  style={{ '--svc-bg': tile.bg, '--svc-ink': tile.ink }}
-                  onClick={() => onNav?.(key)}
-                >
-                  <span className="svc-tile__top">
-                    <span className="svc-tile__plate">
-                      <i style={{ '--svc-ico': `url(/assets/home-v2/ico/${tile.ico}.svg)` }} aria-hidden="true" />
-                    </span>
-                    <span className="svc-tile__go" aria-hidden="true" />
+            {tiles.map(({ key, label, ico }) => (
+              <button type="button" key={key} className={`svc-tile svc-tile--${key}`} onClick={() => onNav?.(key)}>
+                <span className="svc-tile__top">
+                  <span className="svc-tile__plate">
+                    <i style={{ '--svc-ico': `url(/assets/home-v2/ico/${TILE_ICO[key] || ico}.svg)` }} aria-hidden="true" />
                   </span>
-                  <span className="svc-tile__name">{t(label)}</span>
-                </button>
-              )
-            })}
+                  <span className="svc-tile__go" aria-hidden="true" />
+                </span>
+                <span className="svc-tile__name">{t(label)}</span>
+              </button>
+            ))}
           </div>
         )}
 

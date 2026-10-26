@@ -132,6 +132,15 @@
   .learn__bell > :not(.tour-help):not(.nbell) {
     order: 3;
   }
+  /* Карта уровней — во весь экран (шапка раньше лежала поверх острова): кнопки угла тоже поверх, а не полосой над
+     картой. */
+  .learn__main:has(.lp--map) .learn__bell {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    z-index: 13;
+    padding: 0;
+  }
   .learn__bell .tour-help,
   .learn__bell .nbell__btn {
     width: 40px;

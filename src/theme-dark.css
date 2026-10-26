@@ -144,6 +144,36 @@ html[data-theme="dark"] .pk-skill.is-on {
   --sk-bg: var(--sk-tint);
 }
 
+/* Плитки «Сервисов» (services.css): фон и значок — переменными модификатора, генератор до них не достаёт. На графите
+   пастельные фоны светлой темы слепили бы с белой подписью — здесь мягкий тинт семейства бренда, значок — цветом
+   семейства. SAT в светлой теме сине-лиловый, ближайший цвет бренда — фиолетовый. */
+html[data-theme="dark"] .svc-tile {
+  --svc-bg: var(--dk-acc-soft);
+  --svc-ink: var(--dk-acc-text);
+}
+html[data-theme="dark"] .svc-tile--homework {
+  --svc-bg: var(--dk-orange-soft);
+  --svc-ink: var(--dk-orange);
+}
+html[data-theme="dark"] .svc-tile--ielts {
+  --svc-bg: var(--dk-blue-soft);
+  --svc-ink: var(--dk-blue);
+}
+html[data-theme="dark"] .svc-tile--vocab {
+  --svc-bg: var(--dk-green-soft);
+  --svc-ink: var(--dk-green);
+}
+html[data-theme="dark"] .svc-tile::before {
+  background: color-mix(in srgb, var(--dk-text) 5%, transparent);
+}
+/* Круг со стрелкой в светлой теме — чёрный с белой стрелкой; на графите тёмный круг пропадал — инвертируем. */
+html[data-theme="dark"] .svc-tile__go {
+  background: var(--dk-text);
+}
+html[data-theme="dark"] .svc-tile__go::before {
+  background: var(--dk-page);
+}
+
 /* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
    ни генератор, ни токены до него не достают. На тёмном фоне по брендбуку
    (2.2) знак белый, а «to» — жёлтое #fffb05. Белый вариант (на цветных
