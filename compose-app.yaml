@@ -13,7 +13,6 @@ services:
       args:
         # NEXT_PUBLIC_* вшивается в бандл на этапе `next build` — должен быть
         # доступен уже на build-стадии, обычный `environment:` тут не поможет.
-        NEXT_PUBLIC_APP_ENV: ${APP_ENV:-production}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         # Джарвис (dev-only тьютор). Переменная задаётся только в dev-scope
         # GitLab CI; в прод-окружении её быть не должно.

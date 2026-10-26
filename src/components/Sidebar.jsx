@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, REWARDS_ENABLED, isRewardsScreen } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance, getDemoAccess, getIeltsMe, getSatMeCached } from '../api.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
@@ -78,6 +78,7 @@ export default function Sidebar({
   // Роль читается из токена прямо здесь: сайдбар и так его получает, а
   // прокидывать признак сверху пришлось бы через полдюжины экранов.
   const teacher = isTeacher(token)
+  const rewardsEnabled = areRewardsEnabled()
   // Демо-статус сайдбар выясняет сам — как и баланс ниже. Тянуть его пропсом
   // пришлось бы через полтора десятка экранов ради двух элементов меню; ответ
   // мемоизирован в api.js, так что переход по разделам не стоит запроса.
@@ -125,7 +126,7 @@ export default function Sidebar({
   const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
   const nav = navAll.filter((item) => {
-    if (!REWARDS_ENABLED && isRewardsScreen(item.key)) return false
+    if (!rewardsEnabled && isRewardsScreen(item.key)) return false
     if (item.key === 'ielts') return examTabs.ielts
     if (item.key === 'sat') return examTabs.sat
     return true

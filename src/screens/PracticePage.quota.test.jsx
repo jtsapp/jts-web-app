@@ -7,7 +7,7 @@
 // открытых сказок не считает — completed у них всегда 0, и свежий ответ
 // всегда «можно». Поэтому счёт ведёт сам экран (overlaySeen.js).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, fireEvent, waitFor, act, cleanup } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Всё API — пустыми ответами: экрану нужны только карточки сказок из статики.
@@ -107,13 +107,16 @@ describe('PracticePage — квота мемов на каждый ролик л
   })
 
   afterEach(() => {
+    // Unmount the viewer while its observer still exists; only then remove browser mocks.
+    cleanup()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
-  function scrollTo(container, k) {
+  async function scrollTo(container, k) {
     const el = container.querySelector(`.rl__item[data-idx="${k}"]`)
-    act(() => io.cb([{ isIntersecting: true, target: el }]))
+    expect(el).not.toBeNull()
+    await act(async () => io.cb([{ isIntersecting: true, target: el }]))
   }
 
   async function openFirstMeme() {
@@ -129,14 +132,16 @@ describe('PracticePage — квота мемов на каждый ролик л
     })
     fireEvent.click(cards[0])
     await waitFor(() => expect(view.container.querySelector('.rl')).toBeTruthy())
+    // The overlay DOM appears before its passive effect installs the observer.
+    await waitFor(() => expect(io).not.toBeNull())
     return view
   }
 
   it('лимит 1: долистал до второго ролика — экран лимита', async () => {
     const { container } = await openFirstMeme()
-    scrollTo(container, 0)
+    await scrollTo(container, 0)
     expect(container.querySelector('.pl-limit')).toBeNull()
-    scrollTo(container, 1)
+    await scrollTo(container, 1)
     await waitFor(() => expect(container.querySelector('.pl-limit')).toBeTruthy())
     expect(container.querySelector('.rl')).toBeNull()
   })
@@ -145,7 +150,7 @@ describe('PracticePage — квота мемов на каждый ролик л
     localStorage.setItem('jts_memes_seen', JSON.stringify(['c2']))
     check.mockResolvedValueOnce({ loading: false, allowed: true, limit: 2, completed: 0, source: 'PLAN' })
     const { container } = await openFirstMeme()
-    scrollTo(container, 1)
+    await scrollTo(container, 1)
     expect(container.querySelector('.pl-limit')).toBeNull()
     expect(container.querySelector('.rl')).toBeTruthy()
   })

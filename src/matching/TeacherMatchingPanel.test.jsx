@@ -14,6 +14,9 @@ vi.mock("../api.js", () => ({
   getMatchingHandoffs: vi.fn(),
   chooseMatchingHandoff: vi.fn(),
 }));
+// The panel renders 336 time-slot buttons. Keep a bounded cold-render budget for the shared CI runner.
+vi.setConfig({ testTimeout: 30_000 });
+
 const card = () => ({
   matchStatus: "self",
   tariff: "General",
@@ -31,12 +34,14 @@ const card = () => ({
   finalSlots: [],
 });
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   api.getMatchingCase.mockResolvedValue(card());
   api.getMatchingHandoffs.mockResolvedValue([]);
   api.getMatchingCandidates.mockResolvedValue([]);
   api.saveMatchingPreferences.mockResolvedValue(card());
   api.askMatchingManager.mockResolvedValue(card());
+  api.sendMatchingRequests.mockResolvedValue(card());
+  api.confirmMatchingSchedule.mockResolvedValue(card());
 });
 describe("Выбор преподавателя учеником", () => {
   it("блокирует самостоятельный подбор до подтверждения тарифа, но разрешает помощь менеджера", async () => {
@@ -46,12 +51,10 @@ describe("Выбор преподавателя учеником", () => {
       matchStatus: "tariff",
     });
     render(<TeacherMatchingPanel token="student" />);
-    const choose = await screen.findByRole("button", {
-      name: "Выбрать преподавателя",
-    });
+    const choose = await screen.findByText("Выбрать преподавателя", {selector: "button"});
     expect(choose.disabled).toBe(true);
     fireEvent.click(
-      screen.getByRole("button", { name: "Пусть менеджер подберёт" }),
+      screen.getByText("Пусть менеджер подберёт", {selector: "button"}),
     );
     await waitFor(() =>
       expect(api.askMatchingManager).toHaveBeenCalledWith(
@@ -76,13 +79,14 @@ describe("Выбор преподавателя учеником", () => {
     );
     render(<TeacherMatchingPanel token="student" />);
     fireEvent.click(
-      await screen.findByRole("button", { name: "Выбрать преподавателя" }),
+      await screen.findByText("Выбрать преподавателя", {selector: "button"}),
     );
     const teachers = await screen.findAllByRole("article");
     const choices = teachers.map((teacher) => within(teacher).getByRole("button", { name: "Выбрать", exact: true }));
     // Карточки появляются до завершения refresh: до снятия busy они ещё
     // выключены. Ждём доступного действия, чтобы быстрый mock не скрывал гонку.
     expect(choices.every((button) => button.disabled)).toBe(true);
+    await waitFor(() => expect(typeof finishRefresh).toBe("function"));
     await act(async () => finishRefresh(card()));
     await waitFor(() => expect(choices.every((button) => !button.disabled)).toBe(true));
     fireEvent.click(choices[2]);
@@ -90,7 +94,7 @@ describe("Выбор преподавателя учеником", () => {
     fireEvent.click(choices[1]);
     expect(choices[3].disabled).toBe(true);
     fireEvent.click(
-      screen.getByRole("button", { name: "Отправить заявки (3/3)" }),
+      screen.getByText("Отправить заявки (3/3)", {selector: "button"}),
     );
     await waitFor(() =>
       expect(api.sendMatchingRequests).toHaveBeenCalledWith(
@@ -109,7 +113,7 @@ describe("Выбор преподавателя учеником", () => {
     });
     render(<TeacherMatchingPanel token="student" />);
     fireEvent.click(
-      await screen.findByRole("button", { name: "Подтвердить расписание" }),
+      await screen.findByText("Подтвердить расписание", {selector: "button"}),
     );
     await waitFor(() =>
       expect(api.confirmMatchingSchedule).toHaveBeenCalledWith("student"),
