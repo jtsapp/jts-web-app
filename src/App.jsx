@@ -100,6 +100,7 @@ import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
+import ServicesPage from './screens/ServicesPage.jsx'
 import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -1711,8 +1712,10 @@ export default function App() {
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
     if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
+    else if (key === 'services') setScreen('services')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
@@ -1908,7 +1911,8 @@ export default function App() {
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
     if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'tutor') setScreen(tutorHome)
     // Остальное — обычная навигация без адреса: она же сбрасывает цели
     // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
@@ -2310,6 +2314,17 @@ export default function App() {
             setKingdom(k)
             setScreen('kingdom-interior')
           }}
+        />
+      )
+    case 'services':
+      // Вкладка телефона «Сервисы» (дизайн приложения, спека 2026-10-26): профиль и разделы, не ставшие вкладками.
+      return (
+        <ServicesPage
+          userName={name}
+          userLevel={userLevel}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
         />
       )
     case 'profile':
