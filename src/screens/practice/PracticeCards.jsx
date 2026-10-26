@@ -105,15 +105,28 @@ export function SkillCard({ skill, count, active, onClick }) {
   )
 }
 
+// «+5 токенов» за прохождение: бейдж на плитке практики (ТЗ кабинетов, раздел 6).
+export function TokenBadge({ points }) {
+  const { t, lang } = useI18n()
+  return (
+    <span className="pk-tokens" data-testid="practice-token-badge">
+      {plural(t, lang, 'practice.tokenBadge', points)}
+    </span>
+  )
+}
+
 // Шапка секции. «Посмотреть все» в макете двух видов: рамка-пилюля со
 // стрелкой в кружке (`pill`) и простая ссылка с шевроном (`link`). В полном
 // списке та же кнопка сворачивает его обратно.
-export function SectionHead({ title, all, small, expanded, onAll, children }) {
+export function SectionHead({ title, all, small, expanded, onAll, tokens = 0, children }) {
   const { t } = useI18n()
   const label = expanded ? t('practice.collapse') : t('practice.seeAll')
   return (
     <div className="pk-sec__head">
-      <h2 className={`pk-sec__title${small ? ' pk-sec__title--sm' : ''}`}>{title}</h2>
+      <h2 className={`pk-sec__title${small ? ' pk-sec__title--sm' : ''}`}>
+        {title}
+        {tokens > 0 && <TokenBadge points={tokens} />}
+      </h2>
       <div className="pk-sec__tools">
         {children}
         {all === 'link' && (
@@ -378,11 +391,12 @@ export function ComicCard({ comic, status, onOpen }) {
   )
 }
 
-export function GrammarTile({ unit, onOpen }) {
-  const { t } = useI18n()
+export function GrammarTile({ unit, tokens = 0, onOpen }) {
+  const { t, lang } = useI18n()
   return (
     <button type="button" className="pk-tile" onClick={() => onOpen(unit)}>
       <span className="pk-tile__badge">Unit {unit.id}</span>
+      {tokens > 0 && <span className="pk-tokens pk-tokens--tile">{plural(t, lang, 'practice.tokenBadge', tokens)}</span>}
       <span className="pk-tile__text">
         <span className="pk-tile__title">{stripTags(unit.title)}</span>
         <span className="pk-meta">

@@ -25376,3 +25376,13 @@ html[data-theme="dark"] .asst-ask {
         color: var(--dk-text)
     }
 }
+
+/* Метки «+N токенов» (styles.css, demo.css) — как их выдаёт генератор; перегенерация даст те же правила. */
+html[data-theme="dark"] .pk-tokens {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-task__chip.is-tokens {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}

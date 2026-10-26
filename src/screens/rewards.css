@@ -177,3 +177,30 @@
   .rw-modal__actions { flex-direction: column-reverse; }
   .rw-secondary-btn { min-height: 40px; }
 }
+
+.rw-idle-warning {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff3de;
+  color: #b86e00;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.rw-coins-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: #6b6878;
+}
+
+.rw-balance-line { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 12px 16px; border: 1px solid #eeeaf5; border-radius: 16px; background: #fff; }
+.rw-balance-line b { font-size: 22px; }
+.rw-balance-line span { color: var(--rw-muted); font-size: 14px; }
+.rw-kind { letter-spacing: .06em; }
+
+.rw-next-period { flex-wrap: wrap; }
+.rw-next-period__note { flex: 0 0 100%; margin: 6px 0 0; color: var(--rw-muted); font-size: 13px; }

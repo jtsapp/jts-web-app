@@ -3,6 +3,7 @@ import { formatDate } from '../../ielts/format.js'
 import {
   CheckCircleIcon, EditIcon, FlagIcon, MenuBookIcon, MicIcon, QuizIcon, SchoolIcon, TaskAltIcon, TranslateIcon, VideoIcon, VolumeIcon,
 } from '../../ielts/icons.jsx'
+import { plural } from '../../lib/plural.js'
 import { isTeacherTask, minutesLabel, plateOf, taskAction, taskTitle } from './planModel.js'
 
 // Строка задачи плана — общая для «Сегодня» на «Главной» и панели дня экрана «План»: значок раздела, название, минуты
@@ -58,7 +59,7 @@ export function startLabel(t, task, action) {
   return task.kind === 'live' || task.kind === 'homework' ? t('gePlan.open') : t('gePlan.start')
 }
 
-export default function GeTaskRow({ task, title, primary = false, showDate = false, onStart }) {
+export default function GeTaskRow({ task, title, primary = false, showDate = false, tokens = 0, onStart }) {
   const { t, lang } = useI18n()
   const done = task.status === 'completed'
   const teacher = isTeacherTask(task)
@@ -77,6 +78,9 @@ export default function GeTaskRow({ task, title, primary = false, showDate = fal
             </span>
           )}
           {task.overdue && !done && <span className="ge-task__chip is-late">{t('gePlan.overdue')}</span>}
+          {tokens > 0 && !done && (
+            <span className="ge-task__chip is-tokens" data-testid="task-tokens">{plural(t, lang, 'practice.tokenBadge', tokens)}</span>
+          )}
         </span>
         {teacher && task.extra?.note && <span className="ge-task__note">{task.extra.note}</span>}
       </div>

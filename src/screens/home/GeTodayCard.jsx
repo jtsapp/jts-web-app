@@ -4,6 +4,7 @@ import { ArrowForwardIcon } from '../../ielts/icons.jsx'
 import GeTaskRow from '../../ge/plan/GeTaskRow.jsx'
 import { courseTitles, todayView } from '../../ge/plan/planModel.js'
 import { useGeTaskStart } from '../../ge/plan/useGeTaskStart.js'
+import { taskTokenPoints, useStudentTokens } from '../../practice/practiceTokens.js'
 
 /**
  * «Сегодня» на «Главной» общего курса (спека 2026-10-13, секция 4): задачи дня из плана бэкенда вместо прежней
@@ -17,6 +18,8 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
   const { tasks, ahead } = todayView(plan)
   const firstOpen = tasks.findIndex((x) => x.status !== 'completed')
   const { start, markFailed } = useGeTaskStart({ token, level, onNav, reload: onReload })
+  // «+N токенов» у задач дня: урок с преподавателем, домашка, разговор — как в макете кабинета студента
+  const tokenData = useStudentTokens(token)
   return (
     <section className="hm-card ge-today ge-skin" aria-labelledby="ge-today-title">
       <header className="ge-today__head">
@@ -39,7 +42,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
       {tasks.length > 0 && (
         <ul className="ge-tasks">
           {tasks.map((task, i) => (
-            <GeTaskRow key={task.id} task={task} title={titles[task.id]} primary={i === firstOpen} onStart={start} />
+            <GeTaskRow key={task.id} task={task} title={titles[task.id]} primary={i === firstOpen} tokens={taskTokenPoints(tokenData, task)} onStart={start} />
           ))}
         </ul>
       )}
@@ -52,7 +55,7 @@ export default function GeTodayCard({ plan, frontier, level, token, onReload, on
               <h3 className="ge-today__ahead">{t('gePlan.today.ahead')}</h3>
               <ul className="ge-tasks">
                 {ahead.map((task) => (
-                  <GeTaskRow key={task.id} task={task} title={titles[task.id]} showDate onStart={start} />
+                  <GeTaskRow key={task.id} task={task} title={titles[task.id]} showDate tokens={taskTokenPoints(tokenData, task)} onStart={start} />
                 ))}
               </ul>
             </>

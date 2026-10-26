@@ -41,6 +41,8 @@ const NAV_FULL = [
   { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
   { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
+  // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
+  { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
 // TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от

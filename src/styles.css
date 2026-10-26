@@ -3653,6 +3653,21 @@ textarea {
 }
 /* «Караоке» и «Ситуации» в макете 18px — сверено по узлам. */
 .pk-sec__title--sm { font-size: 18px; line-height: 20px; }
+/* «+5 токенов» за прохождение рядом с названием секции (ТЗ кабинетов, раздел 6). */
+.pk-tokens {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #F1E8FF;
+  color: #7432E0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.pk-tokens--tile { align-self: flex-start; margin: 4px 0 0; }
 .pk-sec__tools {
   display: flex;
   align-items: center;
