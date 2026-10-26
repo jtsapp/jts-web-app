@@ -18,8 +18,10 @@
 }
 
 @media (max-width: 560px) {
-  /* Высота панели — одна переменная на всё: отступ под контентом, кнопка Луны. */
-  :root:has(.mtab) {
+  /* Высота панели — одна переменная на всё: отступ под контентом, кнопка Луны, липкие полосы разделов. Панель
+     одна на приложение (App, вне обёртки экрана); её видно только на экранах с оболочкой кабинета (.learn, .t-app) —
+     вход, тесты и уроки во весь экран оболочки не имеют. */
+  :root:has(.mtab):has(.learn, .t-app) {
     --mtab-h: calc(58px + env(safe-area-inset-bottom, 0px));
   }
   :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) {
@@ -48,12 +50,20 @@
     border-top: 1px solid #ececf1;
     background: #fff;
   }
-  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .mtab {
+  :root:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view) .mtab,
+  :root:not(:has(.learn, .t-app)) .mtab {
     display: none;
   }
+  /* Окно выбора языка с затемнением — поверх всего: панель над затемнением нажималась бы. */
+  :root:has(.lang-overlay) .mtab {
+    visibility: hidden;
+  }
+  /* 70 по макету, но на 320–360 пять вкладок по 70 шире экрана — вкладки сжимаются. */
   .mtab__item {
     display: flex;
-    flex: 0 0 70px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 70px;
     flex-direction: column;
     align-items: center;
     gap: 2px;
@@ -82,6 +92,9 @@
     mask: var(--mtab-ico) center / contain no-repeat;
   }
   .mtab__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 10.5px;
     line-height: 14px;
     font-weight: 500;
@@ -188,15 +201,23 @@
   .st-unit__calc {
     bottom: calc(16px + var(--mtab-h, 0px));
   }
+  /* Липкие полосы действий разделов (sticky bottom: 0) — над панелью, а не под ней: у этих экранов прокручивается
+     окно (.learn__main overflow: visible), и полоса липнет как раз к низу окна, где лежит панель. В разделах в
+     Shadow DOM (Числа, Предлоги, SpeakSpin, Word Hunt) та же поправка в их styles.js: --mtab-h проходит сквозь тень. */
+  .wb-actionbar,
+  .vp-sticky-cta,
+  .wr-padbar {
+    bottom: var(--mtab-h, 0px);
+  }
 
   /* Луна над панелью; там, где панели нет, — прежнее место над кнопкой шага урока (assistant.css). */
-  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__launcher {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__launcher {
     bottom: calc(var(--mtab-h) + 16px);
   }
-  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__hint {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__hint {
     bottom: calc(var(--mtab-h) + 16px + 28px);
   }
-  :root:has(.mtab):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__badge {
+  :root:has(.mtab):has(.learn, .t-app):not(:has(.km-lesson, .km-scroll, .lt, .gr-lesson, .bk, .sit-view)) .asst__badge {
     bottom: calc(var(--mtab-h) + 16px + 56px + 20px);
   }
 }

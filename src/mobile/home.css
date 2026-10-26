@@ -797,8 +797,10 @@
     font-style: normal;
     color: #8a8a8a;
   }
+  /* Разделитель — только глазу: с пустым альтернативным текстом читалка экрана его не произносит. */
   .hm-hw__item i + i::before {
     content: ' · ';
+    content: ' · ' / '';
     white-space: pre;
   }
   .hm-hw__ico {

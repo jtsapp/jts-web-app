@@ -314,7 +314,9 @@
 }
 .hm-hw__item:hover { background: #f0edfb; }
 .hm-hw__item b { font-size: 13.5px; font-weight: 700; color: #171326; }
-.hm-hw__item span { display: flex; flex-wrap: wrap; gap: 10px; }
+/* :not(.hm-plate) — плашка значка только для телефона (mobile/home.css), на компьютере её прячет demo.css, а это
+   правило сильнее и показывало бы пустой элемент, сдвигая название строки. */
+.hm-hw__item span:not(.hm-plate) { display: flex; flex-wrap: wrap; gap: 10px; }
 .hm-hw__item i { font-style: normal; font-size: 11.5px; color: #8b8a97; }
 
 /* --- что сделать сегодня: одна карточка-рекомендация по реальным данным

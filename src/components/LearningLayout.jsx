@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
-import MobileTabBar from './MobileTabBar.jsx'
+import { useMobileTab } from './mobileTab.js'
 import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import LangSelector from './LangSelector.jsx'
@@ -33,6 +33,9 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
+  // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
+  useMobileTab(active)
   // Тур просит Луна — нажимаем ту же «?»: у экрана свой старт тура (вкладка,
   // с которой тур начинается), и повторять его в помощнике незачем.
   useTourRequest(onHelp)
@@ -76,8 +79,6 @@ export default function LearningLayout({
           {children}
         </main>
       </div>
-      {/* Телефон (≤560): вместо бургера шапки — нижняя панель приложения; шапка остаётся для планшета 561–760. */}
-      <MobileTabBar active={active} token={token} onNav={onNav} />
       <Footer />
     </div>
     </NotificationProvider>

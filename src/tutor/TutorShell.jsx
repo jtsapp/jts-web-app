@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
-import MobileTabBar from '../components/MobileTabBar.jsx'
+import { useMobileTab } from '../components/mobileTab.js'
 import Footer from '../components/Footer.jsx'
 import { ArrowLeftIcon } from './TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -14,6 +14,8 @@ import { useT } from '../i18n/LanguageContext.jsx'
 // кнопка «Назад» переезжает в правый слот шапки (десктопная .t-topbar скрыта CSS).
 // На телефоне (≤560) шапки нет: внизу панель вкладок, а «Назад» живёт в своей
 // полосе .t-topbar (src/mobile/nav.css).
+// tabs    — false: на этом экране нижней панели телефона нет (звонок, тест
+//           говорения — случайное касание вкладки увело бы из разговора).
 export default function TutorShell({
   active = 'tutor',
   user,
@@ -22,10 +24,13 @@ export default function TutorShell({
   onBack,
   title,
   layout = 'center',
+  tabs = true,
   children,
 }) {
   const t = useT()
   const [drawer, setDrawer] = useState(false)
+  // Панель одна на приложение (App, mobileTab.js): оболочка только говорит, какая вкладка горит.
+  useMobileTab(tabs ? active : null)
 
   const backBtn = onBack && (
     <button className="t-back" type="button" onClick={onBack}>
@@ -65,7 +70,6 @@ export default function TutorShell({
         </main>
       </div>
 
-      <MobileTabBar active={active} onNav={onNavigate} />
       <Footer />
     </div>
   )

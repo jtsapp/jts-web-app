@@ -44,6 +44,21 @@ test.describe('нижняя панель — телефон', () => {
     await expect(page.locator('.mtab__item.is-active')).toHaveAttribute('data-tab', 'services')
   })
 
+  // Панель одна на приложение (App, вне анимированной обёртки экрана): раньше она жила в оболочке экрана,
+  // создавалась заново на каждом переходе и на время анимации входа съезжала за низ окна.
+  test('переход по вкладке не пересоздаёт панель и не сдвигает её', async ({ page }) => {
+    await page.goto('/?screen=home')
+    const bar = page.locator('.mtab')
+    await expect(bar).toBeVisible({ timeout: 15_000 })
+    await bar.evaluate((el) => { el.dataset.probe = '1' })
+    await page.locator('.mtab [data-tab="practice"]').click()
+    // Сразу после нажатия, пока идёт анимация входа экрана, — низ панели у низа окна.
+    const bottom = await bar.evaluate((el) => Math.round(window.innerHeight - el.getBoundingClientRect().bottom))
+    expect(bottom).toBe(0)
+    await expect(page.locator('.mtab__item.is-active')).toHaveAttribute('data-tab', 'practice')
+    await expect(page.locator('.mtab[data-probe="1"]')).toHaveCount(1)
+  })
+
   test('контент не уходит под панель', async ({ page }) => {
     await page.goto('/?screen=services')
     await expect(page.locator('.mtab')).toBeVisible({ timeout: 15_000 })

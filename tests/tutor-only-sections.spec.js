@@ -12,7 +12,9 @@ import { TUTOR_ONLY } from '../src/config.js'
 // спек скипается, а не краснеет.
 test.beforeEach(({ viewport }) => {
   test.skip(!TUTOR_ONLY, 'Контракт режима «только тьютор»: TUTOR_ONLY=false')
-  // На телефоне меню — нижняя панель (mobile-tabbar.spec.js), её состав в тьютор-онли — src/lib/navSections.test.js.
+  // На телефоне меню — нижняя панель (mobile-tabbar.spec.js), а этот спек проверяет пункты сайдбара. Панель берёт
+  // разделы из того же меню, что сайдбар (lib/navSections.js), поэтому в тьютор-онли у неё те же разделы; отдельной
+  // e2e-проверки панели в этом режиме нет — флаг в develop выключен, и прогнать её здесь не на чем.
   test.skip((viewport?.width ?? 0) <= 560, 'на телефоне сайдбара нет')
 })
 

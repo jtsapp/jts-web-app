@@ -44,6 +44,22 @@ test.describe('профиль / идентификация без имени —
   })
 })
 
+// Планшет (561–760): шапка с бургером и чипом профиля осталась — проверка чипа, которая раньше шла на всех узких.
+test.describe('профиль / идентификация без имени — планшет', () => {
+  test.use({ viewport: { width: 700, height: 900 } })
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'одного прогона на 700 достаточно')
+  })
+
+  test('чип профиля в шапке — силуэт без буквы «П»', async ({ page }) => {
+    await page.goto('/?screen=profile')
+    await expect(page.locator('.pf')).toBeVisible({ timeout: 20_000 })
+    const topAvatar = page.locator('.mtop__avatar')
+    await expect(topAvatar.locator('svg')).toHaveCount(1)
+    await expect(topAvatar).not.toContainText('П')
+  })
+})
+
 test.describe('профиль / идентификация без имени — десктоп', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) <= 720, 'только широкий вьюпорт')
 

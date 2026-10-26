@@ -144,6 +144,8 @@ describe('HomePage — General English', () => {
     const onGeEdit = vi.fn()
     renderHome({ geProfile: goal, onGeEdit })
     await waitFor(() => expect(document.querySelector('.hm-level--phone .hm-level__goal')).toBeTruthy())
+    // Цель — из профиля GE (B2), а не прежнего level_goal: его зеркало снято 13.10, и он отстаёт.
+    expect(document.querySelector('.hm-level--phone .hm-level__goal').textContent).toContain('Цель — B2')
     fireEvent.click(document.querySelector('.hm-level--phone .hm-level__goal'))
     expect(onGeEdit).toHaveBeenCalledTimes(1)
   })

@@ -135,7 +135,15 @@ export default function HomePage({
 
   // Дорожка: без цели — ближайший уровень и следующий за ним, с целью — все
   // ступени до неё (lib/levelProgress.js, levelTrack).
-  const track = useMemo(() => levelTrack(summary, goal), [summary, goal])
+  // У ученика с анкетой GE цель живёт в профиле бэкенда, а прежний level_goal после 13.10 не обновляется (зеркало
+  // снято, ge/legacyGoal.js). На компьютере его дорожку рисует блок цели GE; карточка уровня телефона обязана
+  // показывать ту же цель — иначе «Изменить» правило бы одну цель, а карточка писала бы другую.
+  const geTarget = (!ieltsAccount && geProfile?.targetLevel) || null
+  const geFrom = geProfile?.fromLevel || geProfile?.journey?.start || null
+  const track = useMemo(
+    () => levelTrack(summary, geTarget ? { target: geTarget, from: geFrom || summary.level } : goal),
+    [summary, goal, geTarget, geFrom],
+  )
   const reached = track.mode === 'reached'
   // Выбранная цель, если она ещё впереди, — её и подсвечиваем в выборе.
   const goalValue = track.mode === 'goal' ? track.goal : null
@@ -737,6 +745,11 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
             key={date.toISOString()}
             className={`hm-sched__wday${i === picked ? ' is-picked' : ''}${items.length ? ' is-busy' : ''}`}
             aria-pressed={i === picked}
+            // Точку «есть урок» читалка экрана не видит — она словом в имени кнопки, вместе с полной датой.
+            aria-label={
+              date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }) +
+              (items.length ? `, ${t('home.schedule.hasLesson')}` : '')
+            }
             onClick={() => setPicked(i)}
           >
             <b>{date.getDate()}</b>

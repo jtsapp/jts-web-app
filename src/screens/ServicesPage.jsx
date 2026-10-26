@@ -28,7 +28,9 @@ const TILE_ICO = {
  * рисует (решение владельца 26.10.2026). У преподавателя и аккаунта IELTS плашек уровня и счётчиков нет, у демо —
  * счётчиков (вместо них плашка скидки), как в их сайдбаре.
  */
-export default function ServicesPage({ userName, userLevel, token, onNav, onProfile }) {
+// levelUnknown — тест уровня не пройден: плашки уровня нет, иначе подставной «A1» читался бы как свой уровень
+// (на «Главной» в этом случае «?»).
+export default function ServicesPage({ userName, userLevel, levelUnknown = false, token, onNav, onProfile }) {
   const { t } = useI18n()
   const { items, teacher, ieltsAccount } = useMenuItems(token)
   const [demo, setDemo] = useState(false)
@@ -73,10 +75,12 @@ export default function ServicesPage({ userName, userLevel, token, onNav, onProf
           </span>
           {student && (
             <span className="svc-hero__chips">
-              <span className="svc-chip">
-                <i className="svc-chip__ico" aria-hidden="true" />
-                {t('home.level.stop', { level: (userLevel || 'A1').toUpperCase() })}
-              </span>
+              {!levelUnknown && (
+                <span className="svc-chip">
+                  <i className="svc-chip__ico" aria-hidden="true" />
+                  {t('home.level.stop', { level: (userLevel || 'A1').toUpperCase() })}
+                </span>
+              )}
               {!demo && balance && (
                 <>
                   <span className="svc-chip" title={t('services.streak')}>

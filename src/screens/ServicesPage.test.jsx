@@ -63,6 +63,12 @@ describe('Сервисы', () => {
     expect(container.querySelectorAll('.svc-chip')).toHaveLength(1)
   })
 
+  it('без пройденного теста плашки уровня нет — «A1» по умолчанию читался бы как свой уровень', async () => {
+    const { container } = renderServices({ levelUnknown: true })
+    await waitFor(() => expect(container.querySelectorAll('.svc-chip')).toHaveLength(2))
+    expect(container.querySelector('.svc-hero').textContent).not.toContain('Уровень')
+  })
+
   it('без имени — «Профиль» один раз', () => {
     const { container } = renderServices({ userName: '' })
     const name = container.querySelector('.svc-hero__name')

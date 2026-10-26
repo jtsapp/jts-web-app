@@ -225,6 +225,8 @@ export default function SpeakingTestPage({
       onProfile={onProfile}
       onBack={onBack}
       layout="flow"
+      // Тест говорения — без нижней панели телефона: вкладка посреди записи уводила бы с теста.
+      tabs={false}
     >
       {children}
     </TutorShell>

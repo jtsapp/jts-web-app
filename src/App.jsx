@@ -101,6 +101,8 @@ import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import ServicesPage from './screens/ServicesPage.jsx'
+import MobileTabBar from './components/MobileTabBar.jsx'
+import { MobileTabContext } from './components/mobileTab.js'
 import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -171,7 +173,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
@@ -1828,6 +1830,8 @@ export default function App() {
   // экран читает только при монтировании. Ключ обёртки .scr-in несёт счётчик
   // таких повторных открытий.
   const [screenNonce, setScreenNonce] = useState(0)
+  // Вкладка нижней панели телефона, которую сообщила оболочка текущего экрана (mobileTab.js); null — панели нет.
+  const [mobileTab, setMobileTab] = useState(null)
   const handleNavRef = useRef(null)
   useEffect(() => {
     handleNavRef.current = handleNav
@@ -1992,11 +1996,18 @@ export default function App() {
         : screen)
   const page = renderScreen(view)
   return (
-    <>
+    <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
           {page}
         </div>
+      )}
+      {/* Нижняя панель телефона — вне обёртки с key и её анимации (transform делал .scr-in опорой для fixed, и
+          панель на каждом переходе пропадала): одна на приложение, как в мобильном приложении. Вкладку сообщает
+          оболочка экрана (mobileTab.js); без оболочки панель прячет CSS (src/mobile/nav.css). Аккаунту класса
+          разделы не положены. */}
+      {mobileTab !== null && token && !boothAccount && (
+        <MobileTabBar active={mobileTab} token={token} onNav={handleNav} />
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
@@ -2021,7 +2032,7 @@ export default function App() {
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
-    </>
+    </MobileTabContext.Provider>
   )
 
   function renderScreen(view) {
@@ -2322,6 +2333,7 @@ export default function App() {
         <ServicesPage
           userName={name}
           userLevel={userLevel}
+          levelUnknown={needsLevelTest}
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
