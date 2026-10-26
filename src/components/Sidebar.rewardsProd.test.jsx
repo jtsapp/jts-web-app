@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
+// @vitest-environment-options {"url":"https://ai-tutor.justtostudy.kz/"}
 import {describe,it,expect,vi} from 'vitest'
 import {render,screen} from '@testing-library/react'
 import {I18nProvider} from '../i18n.jsx'
 import Sidebar from './Sidebar.jsx'
-vi.mock('../config.js',async(load)=>({...await load(),REWARDS_ENABLED:false,TUTOR_ONLY:false}))
 vi.mock('../api.js',async(load)=>({...await load(),
   getBalance:vi.fn().mockResolvedValue({coins:0,streak:0}),getDemoAccess:vi.fn().mockResolvedValue({isDemo:false}),
   getIeltsMe:vi.fn().mockResolvedValue({}),getSatMeCached:vi.fn().mockResolvedValue({})}))

@@ -30,8 +30,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # NEXT_PUBLIC_* уходят в браузерный бандл на этапе сборки — должны быть
 # доступны здесь, а не только в рантайм-environment контейнера.
-ARG NEXT_PUBLIC_APP_ENV=production
-ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # Джарвис — dev-only тьютор (см. JARVIS_ENABLED в src/config.js). Задавать

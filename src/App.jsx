@@ -145,7 +145,7 @@ import { navForActivity, navForSection } from './placement/activityRoutes.js'
 import { saveAttempt } from './placement/api.js'
 import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, REWARDS_ENABLED, isRewardsScreen } from './config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from './config.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -230,6 +230,7 @@ function sessionStore() {
 }
 
 export default function App() {
+  const rewardsEnabled = areRewardsEnabled()
   const { t, lang, setLang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
   // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
@@ -1685,10 +1686,10 @@ export default function App() {
   }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   useEffect(() => {
-    if (!REWARDS_ENABLED && isRewardsScreen(screen)) {
+    if (!rewardsEnabled && isRewardsScreen(screen)) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen])
+  }, [screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -1709,7 +1710,7 @@ export default function App() {
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
-    if (!REWARDS_ENABLED && isRewardsScreen(key)) return
+    if (!rewardsEnabled && isRewardsScreen(key)) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
@@ -1906,7 +1907,7 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
-    if (!REWARDS_ENABLED && isRewardsScreen(key)) return
+    if (!rewardsEnabled && isRewardsScreen(key)) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'tutor') setScreen(tutorHome)
     // Остальное — обычная навигация без адреса: она же сбрасывает цели
@@ -1982,7 +1983,7 @@ export default function App() {
     // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
     // успел бы сходить в сеть за чужим содержимым (та же грабля, что была у
     // BoothEntryPage с повторным /enter).
-    : ((screen === 'booth' || (!REWARDS_ENABLED && isRewardsScreen(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
+    : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
   const page = renderScreen(view)
