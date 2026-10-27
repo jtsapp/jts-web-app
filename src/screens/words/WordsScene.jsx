@@ -19,6 +19,7 @@ import { makeRng, shuffle } from '../../practice/words/session.js'
 import { placeRound, stageAR } from '../../practice/words/layout.js'
 import { sceneBgUrl, spriteUrl } from '../../practice/words/assets.js'
 import { translate } from '../../practice/words/loc.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 import { IconCheck, IconSound } from './WordsIcons.jsx'
 import { playSuccessTick } from './successTick.js'
 
@@ -191,6 +192,7 @@ function WordsRound({
   }, [target, lock, voice])
 
   const justFound = lock && target ? target : null
+  const phone = usePhoneWidth()
 
   return (
     <div className="wd-play">
@@ -289,6 +291,23 @@ function WordsRound({
           {toast && <div className="wd-toast">{toast}</div>}
         </div>
       </div>
+
+      {/* Телефон (макет приложения, кадры 3–5): карточка «Найдено в раунде» —
+          круг на каждое слово раунда, найденное показывает свою картинку. Те же
+          данные, что у точек в строке задания, поэтому скринридеру она не нужна. */}
+      {phone && (
+        <div className="wd-roundfound" aria-hidden="true">
+          <span>{t('words.foundRound')}</span>
+          <div>
+            {words.map((w) => (
+              <i key={w.id} className={found.has(w.id) ? 'on' : ''}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- тот же спрайт, что на сцене */}
+                {found.has(w.id) && <img src={spriteUrl(w.id)} alt="" draggable="false" decoding="async" />}
+              </i>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="wd-foot">
         <span>

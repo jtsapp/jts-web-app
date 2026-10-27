@@ -10,42 +10,57 @@
 
 import { useRef, useState } from 'react'
 import { COUNT_PRESETS, MAX_COUNT } from '../../practice/listenchoose/engine.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 export default function LcSetup({ snap, t, onCount, onNewSet }) {
   const [mode, setMode] = useState(COUNT_PRESETS.includes(snap.count) ? String(snap.count) : 'custom')
   const [custom, setCustom] = useState(String(snap.count))
   const customRef = useRef(null)
+  const phone = usePhoneWidth()
 
   const raw = mode === 'custom' ? custom : mode
   const n = Number(raw)
   const valid = raw.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= MAX_COUNT
 
+  // Выбор размера: из селекта (компьютер) и из чипов окна настроек (телефон,
+  // макет приложения) — один и тот же путь.
+  const pickMode = (v) => {
+    setMode(v)
+    if (v === 'custom') {
+      setCustom(String(snap.count))
+      // Поле появляется только после рендера — фокус на следующий кадр.
+      requestAnimationFrame(() => customRef.current?.focus())
+    } else onCount(Number(v))
+  }
+
   return (
     <div className="lc-setup">
       <div className="lc-setup__left">
-        <label htmlFor="lc-count">
-          <span>{t('listenchoose.countLabel')}</span>
-          <select
-            id="lc-count"
-            value={mode}
-            onChange={(e) => {
-              const v = e.target.value
-              setMode(v)
-              if (v === 'custom') {
-                setCustom(String(snap.count))
-                // Поле появляется только после рендера — фокус на следующий кадр.
-                requestAnimationFrame(() => customRef.current?.focus())
-              } else onCount(Number(v))
-            }}
-          >
+        {phone ? (
+          <div className="lc-count-chips" role="group" aria-labelledby="lc-count-lbl">
+            <span id="lc-count-lbl">{t('listenchoose.countLabel')}</span>
             {COUNT_PRESETS.map((c) => (
-              <option key={c} value={String(c)}>
+              <button key={c} type="button" aria-pressed={mode === String(c)} onClick={() => pickMode(String(c))}>
                 {c}
-              </option>
+              </button>
             ))}
-            <option value="custom">{t('listenchoose.customCount')}</option>
-          </select>
-        </label>
+            <button type="button" aria-pressed={mode === 'custom'} onClick={() => pickMode('custom')}>
+              {t('listenchoose.customCount')}
+            </button>
+          </div>
+        ) : (
+          <label htmlFor="lc-count">
+            <span>{t('listenchoose.countLabel')}</span>
+            <select id="lc-count" value={mode} onChange={(e) => pickMode(e.target.value)}>
+              {COUNT_PRESETS.map((c) => (
+                <option key={c} value={String(c)}>
+                  {c}
+                </option>
+              ))}
+              <option value="custom">{t('listenchoose.customCount')}</option>
+            </select>
+          </label>
+        )}
         {mode === 'custom' && (
           <label htmlFor="lc-custom" className="lc-setup__custom">
             <span className="lc-sr">{t('listenchoose.customCount')}</span>

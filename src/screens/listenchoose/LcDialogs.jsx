@@ -52,6 +52,23 @@ export function LcHelpDialog({ open, onClose, t }) {
   )
 }
 
+// Только телефон: сложность и размер набора по макету приложения живут в окне
+// «Настройка подхода» (значок в шапке), а не над заданием. Внутри — те же
+// LcDifficulty и LcSetup, что на компьютере, с теми же колбэками.
+export function LcSettingsDialog({ open, onClose, t, children }) {
+  return (
+    <LcDialog open={open} onClose={onClose} label={t('listenchoose.settings')} className="lc-dialog--settings">
+      <div className="lc-dialog__head">
+        <h2>{t('listenchoose.settings')}</h2>
+        <button type="button" className="lc-dialog__x" aria-label={t('listenchoose.close')} onClick={onClose}>
+          ×
+        </button>
+      </div>
+      {children}
+    </LcDialog>
+  )
+}
+
 /** index — позиция на экране (0–3) или null, когда окно закрыто. */
 export function LcZoomDialog({ index, onIndex, onClose, question, options, order, t }) {
   const open = index != null && !!question
