@@ -1624,84 +1624,114 @@
     color: var(--dk-text);
   }
 
-  /* Пары: белые плашки r20; выбранная — фиолетовой рамкой. */
+  /* Пары (кадр «Mobile» 6605:14630 «12 · Соедини ответы»): белые плашки r16
+     с рамкой 2 #e8e8ee, текст 12–14/600; выбранная — фиолетовая рамка на
+     лавандовом, занятый ответ — серый #f0f0f4. */
   .gr-lesson :is(.gr-match-l, .gr-match-r) {
-    border: 2px solid transparent;
-    border-radius: 20px;
+    min-height: 56px;
+    padding: 12px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
     color: #181818;
   }
   .gr-lesson .gr-match-l.sel {
     border-color: #9047ff;
-    background: #fff;
+    background: #efe7ff;
     box-shadow: none;
   }
   .gr-lesson .gr-match-r:hover:not(:disabled) {
-    border-color: #ebdeff;
+    border-color: #d8ccf2;
+  }
+  .gr-lesson .gr-match-r:disabled {
+    border-color: #f0f0f4;
+    background: #f0f0f4;
+    color: #8e8e99;
   }
   .gr-lesson .gr-match-l.correct {
-    border-color: #19c119;
-    background: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
   }
   .gr-lesson .gr-match-l.wrong {
-    border-color: #ea4f4f;
-    background: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
   }
   .gr-lesson .gr-match-asg {
     color: #9047ff;
   }
   .gr-lesson .gr-match-asg.ok {
-    color: #19c119;
+    color: #1f9d55;
   }
   .gr-lesson .gr-match-asg.no {
-    color: #ea4f4f;
+    color: #e5484d;
   }
 
-  /* Диалог: реплики как в «Примерах» — фиолетовая слева, оранжевая справа. */
+  /* Диалог (кадр 6605:14585 «11 · Диалог»): реплики — пузыри r16, у
+     собеседника белый с рамкой, у ученика лавандовый; варианты — те же
+     карточки, что в «Выбери форму». */
   .gr-lesson .gr-chat {
-    gap: 10px;
+    gap: 8px;
   }
   .gr-lesson .gr-msg {
-    padding: 10px 16px;
-    border: 0;
-    border-radius: 18px;
-    font-size: 16px;
-    line-height: 19px;
-    color: #fff;
+    padding: 10px 14px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #181818;
   }
   .gr-lesson .gr-msg.a {
-    background: #9047ff;
-    border-bottom-left-radius: 6px;
+    background: #fff;
   }
   .gr-lesson .gr-msg.b {
-    background: #ff7300;
-    border-bottom-right-radius: 6px;
+    border-color: #efe7ff;
+    background: #efe7ff;
   }
   .gr-lesson .gr-dlg-opts {
     gap: 12px;
-    margin-top: 24px;
+    margin-top: 16px;
   }
 
-  /* «Когда это происходит»: белые плашки r20, ответ — заливкой. */
+  /* «Когда это происходит» (кадр 6605:14686 «13»): варианты — белые
+     карточки r16 с рамкой 2, ответ — зелёная или красная плашка. */
   .gr-lesson .gr-tzones {
-    gap: 8px;
+    gap: 12px;
   }
   .gr-lesson .gr-tzone {
-    border: 0;
-    border-radius: 20px;
+    min-height: 56px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
+    font-size: 16px;
+    font-weight: 600;
     color: #181818;
   }
   .gr-lesson .gr-tzone:hover:not(:disabled) {
     background: #fff;
   }
   .gr-lesson .gr-tzone.correct {
-    background: #19c119;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-tzone.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-match-l, .gr-match-r, .gr-tzone, .gr-msg.a) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-match-l.sel, .gr-msg.b) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
   }
 
   /* Говорение и диктант: фраза — белая плашка, кнопка — фиолетовый круг без
