@@ -1564,4 +1564,17 @@
     background: var(--dk-acc-soft);
     color: var(--dk-acc-text);
   }
+  /* Каталоги книжек и комиксов в тёмной. */
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__title,
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back,
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid :is(.pk-book__title, .pk-comic__title) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search input {
+    color: var(--dk-text);
+  }
 }
