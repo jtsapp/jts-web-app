@@ -792,4 +792,193 @@
     background: var(--dk-yellow-tint);
     color: var(--dk-text);
   }
+
+  /* ---------- Уровни тетрадей (кадр 6605:14739 «1 · Уровни тетрадей») ----------
+     Отдельного экрана уровней у воркбука нет: это развёрнутая секция
+     «Воркбуки» хаба Практики («Посмотреть все»). На телефоне она — экран
+     «← Воркбуки» (шапку хаба, вкладки навыков и уровни прячем, как у
+     развёрнутой «Грамматики»), уровни — карточки r24 с обложкой 120 сверху
+     (те же постеры public/practice/workbooks/covers — тот же арт, что в кадре),
+     ниже плитка уровня 40 r12, название 16/800, «юниты, уроки · минуты» и
+     шеврон. Разметка карточки общая с хабом — постер ставим по aria-label. */
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-head,
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-skills {
+    display: none;
+  }
+  #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head {
+    position: relative;
+    justify-content: flex-start;
+    min-height: 52px;
+    margin: 0 -12px 8px;
+    padding: 0 0 0 52px;
+  }
+  #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head .pk-sec__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  #sec-workbooks .pk-all.is-back {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+  }
+  #sec-workbooks .pk-all.is-back::after,
+  #sec-workbooks .pk-all.is-back > svg {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+    text-align: left;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__cover {
+    display: block;
+    width: 100%;
+    height: 120px;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: var(--wb-bg) center top / cover no-repeat;
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A0'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a0.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A1'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a1.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A2'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a2.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook B1'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/b1.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook B2'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/b2.webp);
+  }
+  /* Плитка уровня — из подписи обложки, переносим в строку под обложкой. */
+  #sec-workbooks .pk-rail--grid .pk-wb__label {
+    position: absolute;
+    top: 136px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border-radius: 12px;
+    background: #efe7ff;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 20px;
+    color: #9047ff;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__body {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 4px;
+    min-height: 72px;
+    padding: 16px 52px 16px 68px;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__head {
+    display: contents;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__desc {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  #sec-workbooks .pk-rail--grid :is(.pk-wb__sum, .pk-meta) {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__sum {
+    display: inline;
+    flex: none;
+    width: auto;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta {
+    display: inline-flex;
+    flex: none;
+    width: auto;
+  }
+  /* Значок книги хаба (плитка над подписью) в кадре уровней не нарисован. */
+  #sec-workbooks .pk-rail--grid .pk-wb::before {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta::before {
+    content: '·';
+    margin-right: 4px;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta svg {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb::after {
+    content: '';
+    position: absolute;
+    top: 144px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb__desc,
+  html[data-theme='dark'] body #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head .pk-sec__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid :is(.pk-wb__sum, .pk-meta) {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb__label {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-all.is-back {
+    background: var(--dk-text);
+    -webkit-mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb::after {
+    background: var(--dk-muted);
+    -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
 }
