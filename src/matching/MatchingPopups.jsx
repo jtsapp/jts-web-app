@@ -3,7 +3,8 @@ import { assistantAllowedOn } from '../lib/assistant/visibility.js'
 import { useMatching } from './matchingStore.js'
 import { matchingView, popupFor } from './matchingState.js'
 import { studentTimezone } from './slots.js'
-import { MtModal } from './ui.jsx'
+import { MtModal, useToast } from './ui.jsx'
+import ManagerPickModal from './ManagerPickModal.jsx'
 import ConfirmCard from './ConfirmCard.jsx'
 import { CelebrateModal } from './StatusViews.jsx'
 import { shortDate } from './ChangeModals.jsx'
@@ -40,11 +41,34 @@ export default function MatchingPopups({ token, screen, onNav }) {
   const popup = popupFor(view)
   const [closed, setClosed] = useState(null)
   const [done, setDone] = useState(null)
+  const [manager, setManager] = useState(false)
+  const [toastNode, toast] = useToast()
   const tz = studentTimezone(snap.card)
 
   if (done) return <CelebrateModal done={done} tz={tz} onClose={() => setDone(null)} />
-  if (!popup || !view.studentId || OWN_SCREENS.has(screen) || !assistantAllowedOn(screen, { token })) return null
-  if (closed === popup.key || wasSeen(view.studentId, popup.key)) return null
+  if (manager) {
+    return (
+      <>
+        <ManagerPickModal
+          token={token}
+          view={view}
+          slots={view.availableSlots}
+          interests={view.interests}
+          format={view.format}
+          tz={tz}
+          onClose={() => setManager(false)}
+          onSent={(text) => {
+            setManager(false)
+            toast(text)
+          }}
+        />
+        {toastNode}
+      </>
+    )
+  }
+  // Тост («другое время отправлено», «менеджер подберёт») переживает закрытое окно.
+  if (!popup || !view.studentId || OWN_SCREENS.has(screen) || !assistantAllowedOn(screen, { token })) return toastNode
+  if (closed === popup.key || wasSeen(view.studentId, popup.key)) return toastNode
 
   const close = () => {
     markSeen(view.studentId, popup.key)
@@ -57,6 +81,7 @@ export default function MatchingPopups({ token, screen, onNav }) {
 
   if (popup.kind === 'proposal') {
     return (
+      <>
       <MtModal onClose={close} label={t('confirm.title')}>
         <div className="mt-row mt-end">
           <button type="button" className="mt-x" onClick={close} aria-label={t('btn.close')}>✕</button>
@@ -71,9 +96,17 @@ export default function MatchingPopups({ token, screen, onNav }) {
           }}
           onProfile={() => go('my-teacher')}
           onAddTime={() => go('teacher-wizard', { step: 'time' })}
-          onManager={() => go('my-teacher')}
+          onManager={() => {
+            close()
+            setManager(true)
+          }}
+          // «другое время» отправлено — окно своё дело сделало: помечаем, иначе оно всплыло бы снова тем же событием
+          onCountered={close}
+          toast={toast}
         />
       </MtModal>
+      {toastNode}
+      </>
     )
   }
 
@@ -83,7 +116,10 @@ export default function MatchingPopups({ token, screen, onNav }) {
       text: [t('declined.text'), view.managerName ? t('declined.manager', { name: view.managerName }) : ''].join(' '),
       actions: [
         [t('declined.pick'), () => go('teacher-wizard', { step: 'teacher' })],
-        [t('btn.managerPick'), () => go('my-teacher')],
+        [t('btn.managerPick'), () => {
+          close()
+          setManager(true)
+        }],
       ],
     },
     expired: {

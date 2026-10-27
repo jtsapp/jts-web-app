@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { askMatchingManager } from '../api.js'
-import { applyMatchingCard } from './matchingStore.js'
+import { applyMatchingCard, refreshMatching } from './matchingStore.js'
+import { clearDraft } from './wizardDraft.js'
 import { MtModal, errorText, useBusy } from './ui.jsx'
 import { interestLabel } from './interests.js'
 import { formatDateTime, schoolTimeToDate, slotLabel, sortSlots } from './slots.js'
@@ -27,10 +28,13 @@ export default function ManagerPickModal({ token, view, slots, interests, format
       try {
         const card = await askMatchingManager(token, { slots: slots || [], interests: interests || [], wish: wish.trim() || null, format: format || null })
         applyMatchingCard(card)
+        // время и интересы ушли менеджеру — черновик мастера больше не нужен и не должен вернуться через месяц
+        clearDraft(view?.studentId)
         const due = schoolTimeToDate(card?.deadline)
         onSent?.(due ? t('manager.sent', { date: formatDateTime(due, tz, lang) }) : t('manager.sentNoDate'))
       } catch (e) {
         setError(errorText(e, t))
+        refreshMatching(token)
       }
     })
 
@@ -75,7 +79,7 @@ export default function ManagerPickModal({ token, view, slots, interests, format
         onChange={(e) => setWish(e.target.value)}
       />
       <span className="mt-counter">{wish.length} / {WISH_MAX}</span>
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
       <div className="mt-row mt-end">
         <button type="button" className="mt-btn mt-btn--line" onClick={onClose}>{t('btn.cancel')}</button>
         <button type="button" className="mt-btn" disabled={busy} onClick={send}>{t('manager.send')}</button>

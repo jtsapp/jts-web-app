@@ -12,7 +12,8 @@
   --mt-surface: #fff;
   --mt-fg: #171326;
   --mt-fg-2: #656172;
-  --mt-fg-3: #8b8a97;
+  /* Мелкий текст: не ниже 4.5:1 на белом и на фонах раздела (WCAG AA). */
+  --mt-fg-3: #6e6c7b;
   --mt-line: #e9e6f2;
   --mt-ok: #22a55b;
   --mt-ok-soft: #e6f6ec;
@@ -20,6 +21,10 @@
   --mt-warn-soft: #fdf3e1;
   --mt-bad: #d6408b;
   --mt-bad-soft: #fce8f2;
+  /* Цвета статусов для ТЕКСТА: яркие --mt-ok/--mt-warn/--mt-bad на своих бледных фонах дают 2.9–4.2:1. */
+  --mt-ok-ink: #157a3f;
+  --mt-warn-ink: #8a5a0f;
+  --mt-bad-ink: #b0306f;
   --mt-gold: #e8a020;
   --mt-bar: #171326;
   --mt-bar-fg: #fff;
@@ -222,11 +227,11 @@
 }
 .mt-pill--ok {
   background: var(--mt-ok-soft);
-  color: var(--mt-ok);
+  color: var(--mt-ok-ink);
 }
 .mt-pill--warn {
   background: var(--mt-warn-soft);
-  color: var(--mt-warn);
+  color: var(--mt-warn-ink);
 }
 .mt-pill--bad {
   background: var(--mt-bad-soft);
@@ -439,7 +444,8 @@
   background: var(--mt-soft);
   color: var(--mt-brand);
 }
-.mt-slot--zero {
+.mt-slot--zero,
+.mt-slot:disabled {
   background: var(--mt-bg);
   color: var(--mt-fg-3);
   cursor: not-allowed;
@@ -1152,4 +1158,12 @@ textarea.mt-input {
   .mt-bar .mt-btn {
     width: 100%;
   }
+}
+
+/* Срок «Подтвердите до…» и текст ошибки — цветом статуса, но с контрастом AA. */
+.mt-deadline {
+  color: var(--mt-warn-ink);
+}
+.mt-error {
+  color: var(--mt-bad-ink);
 }
