@@ -297,10 +297,10 @@
     top: -52px;
     right: 4px;
   }
-  .rd-tb__btn:not(:last-child) {
+  .rd-toolbar .rd-tb__btn:not(:last-child) {
     display: none;
   }
-  .rd-tb__btn:last-child {
+  .rd-toolbar .rd-tb__btn:last-child {
     width: 48px;
     min-width: 0;
     height: 48px;
@@ -311,7 +311,7 @@
     color: #181818;
     font-size: 0;
   }
-  .rd-tb__btn:last-child::before {
+  .rd-toolbar .rd-tb__btn:last-child::before {
     content: '';
     display: block;
     width: 24px;
@@ -722,5 +722,117 @@
     height: 56px;
     border-radius: 16px;
     font-size: 16px;
+  }
+
+  /* ---------- 3 · Перевод слова ----------
+     Карточка перевода — шторкой снизу, как в кадре. Позицию у слова ставит
+     ReadingArticle inline-стилем; на телефоне шторка от неё не зависит. Закрывать
+     её на скролле не нужно: шторка не привязана к строке текста. */
+  .rd-pop {
+    position: fixed !important;
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    z-index: 75;
+    min-width: 0;
+    max-width: none;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(24, 24, 24, 0.16);
+  }
+  .rd-pop__close {
+    display: none;
+  }
+  .rd-pop__head {
+    justify-content: space-between;
+    padding-right: 0;
+  }
+  .rd-pop__en {
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+  }
+  .rd-pop__row {
+    align-items: center;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .rd-pop__save {
+    height: 48px;
+    margin-top: 16px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 14px;
+  }
+
+  /* ---------- 4 · Настройки чтения ----------
+     Боковая панель становится шторкой снизу. */
+  .rd-drawer {
+    top: auto;
+    left: 0;
+    width: auto;
+    max-height: 88vh;
+    gap: 16px;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(24, 24, 24, 0.16);
+  }
+  .rd-drawer__head h2 {
+    color: #181818;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .rd-drawer__head .rd-tb__btn {
+    width: 40px;
+    min-width: 0;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #8e8e99;
+    font-size: 18px;
+  }
+  .rd-set__lbl {
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .rd-seg {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .rd-seg button {
+    height: 40px;
+    border-radius: 12px;
+    color: #5a5a66;
+    font-size: 14px;
+  }
+  .rd-seg button[aria-pressed='true'] {
+    color: #181818;
+    box-shadow: none;
+  }
+  .rd-switch {
+    padding: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #f3edff;
+    font-size: 16px;
+  }
+  .rd-switch__knob {
+    background: #d9d9e0;
+  }
+  .rd-preview {
+    border-radius: 16px;
+    background: #f3edff;
   }
 }
