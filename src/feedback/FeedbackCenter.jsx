@@ -193,7 +193,7 @@ export default function FeedbackCenter({ token, onBack, userName, userLevel, onN
         <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf" disabled={locked || rows.length >= 5} onChange={e => { void uploadFiles(e.target.files, forReply); e.target.value = '' }} />
       </label>
       <small>{tr('JPG, PNG или PDF · до 10 МБ · до 5 файлов')}</small>
-      {rows.map((file, index) => <span className="fc__file" key={`${file.url}-${index}`}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.name}</a><button type="button" disabled={locked} aria-label={tr('Удалить файл {name}', { name: file.name })} onClick={() => setter(current => current.filter((_, i) => i !== index))}>×</button></span>)}
+      {rows.map((file, index) => <span className="fc__file" key={`${file.url}-${index}`}><a href={file.url} target="_blank" rel="noopener noreferrer">{file.name}</a><button type="button" className="fc__remove" disabled={locked} aria-label={tr('Удалить файл {name}', { name: file.name })} onClick={() => setter(current => current.filter((_, i) => i !== index))}>×</button></span>)}
     </div>
   }
   function fileLinks(raw) {

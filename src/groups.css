@@ -1,0 +1,163 @@
+/* «Выбрать группу» и выбор формата (ТЗ кабинетов, 14). Корень — .mt (токены «Моего учителя» и их тёмная тема), поэтому
+   здесь только раскладка: цвета берутся токенами --mt-*, литеральных цветов нет. */
+.gp-lead {
+  color: var(--mt-fg-2);
+  max-width: 720px;
+}
+.gp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gp-field__label {
+  font-weight: 700;
+}
+.gp-field__hint {
+  color: var(--mt-fg-3);
+  font-size: 12.5px;
+}
+.gp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.gp-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gp-toggle {
+  border: 1px solid var(--mt-line);
+  background: var(--mt-surface);
+  color: var(--mt-fg);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+}
+.gp-toggle[aria-pressed='true'] {
+  background: var(--mt-brand);
+  border-color: transparent;
+  color: #fff;
+}
+.gp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gp-item {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.gp-item--best {
+  border-color: var(--mt-brand);
+  box-shadow: var(--mt-shadow);
+}
+.gp-item--full {
+  opacity: 0.85;
+}
+.gp-item__main {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gp-item__title {
+  font-weight: 700;
+  font-size: 16px;
+}
+.gp-item__meta {
+  color: var(--mt-fg-2);
+}
+.gp-item__act {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.gp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gp-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.gp-step {
+  border: 1px solid var(--mt-line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--mt-fg-3);
+}
+.gp-step__n {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--mt-softer);
+}
+.gp-step--done {
+  color: var(--mt-fg);
+  border-color: var(--mt-ok);
+}
+.gp-step--done .gp-step__n {
+  background: var(--mt-ok);
+  color: #fff;
+}
+.gp-step--on {
+  color: var(--mt-fg);
+  border-color: var(--mt-brand);
+}
+.gp-step--on .gp-step__n {
+  background: var(--mt-brand);
+  color: #fff;
+}
+.gp-format {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.gp-format__opt {
+  text-align: left;
+  border: 1px solid var(--mt-line);
+  background: var(--mt-surface);
+  color: var(--mt-fg);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gp-format__opt:hover {
+  border-color: var(--mt-brand);
+}
+.gp-format__opt b {
+  font-size: 15px;
+}
+.gp-format__opt span {
+  color: var(--mt-fg-2);
+}
+@media (max-width: 560px) {
+  .gp-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+  .gp-item__act {
+    align-items: stretch;
+    width: 100%;
+  }
+}

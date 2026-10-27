@@ -125,6 +125,7 @@ export function ManagerPicking({ token, view, tz, toast }) {
         toast(t('manager.wishSaved'))
       } catch (e) {
         toast(errorText(e, t))
+        refreshMatching(token)
       }
     })
   return (

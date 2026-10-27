@@ -51,7 +51,7 @@ describe('ProfilePage — только работающие элементы', (
   it('переключатель в «Уведомлениях» управляет звуком уведомлений кабинета', () => {
     renderProfile()
     expect(isSoundEnabled()).toBe(true)
-    fireEvent.click(screen.getByText('Уведомления'))
+    fireEvent.click(document.querySelector('.pf-row[data-key="notif"]'))
     fireEvent.click(screen.getByText('Звук уведомлений'))
     expect(isSoundEnabled()).toBe(false)
     fireEvent.click(screen.getByText('Звук уведомлений'))

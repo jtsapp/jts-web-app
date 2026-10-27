@@ -12,6 +12,8 @@ import { useEffect } from 'react'
  * @param {{current: HTMLElement|null}} ref  корень окна
  * @param {() => void} onClose              что делать по Esc
  */
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+
 export function useDialogKeys(ref, onClose) {
   useEffect(() => {
     const onKey = (e) => {
@@ -20,7 +22,9 @@ export function useDialogKeys(ref, onClose) {
         return
       }
       if (e.key !== 'Tab') return
-      const nodes = [...(ref.current?.querySelectorAll('a[href], button') || [])]
+      // Все элементы, куда встаёт Tab, кроме выключенных: поле ввода тоже в окне, а выключенная кнопка фокус не
+      // берёт и не может быть краем замка.
+      const nodes = [...(ref.current?.querySelectorAll(FOCUSABLE) || [])].filter((n) => !n.disabled)
       if (!nodes.length) return
       const i = nodes.indexOf(document.activeElement)
       const last = nodes.length - 1

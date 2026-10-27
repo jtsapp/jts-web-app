@@ -1,4 +1,5 @@
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen } from '../config.js'
+import { isSectionOpen } from './studentSections.js'
 
 // Меню ученика — одно на сайдбар (компьютер и планшет), нижнюю панель телефона и экран «Сервисы». Правила
 // перенесены из Sidebar.jsx без изменений (26.10.2026): панель и «Сервисы» обязаны показывать ровно те разделы, что
@@ -16,6 +17,10 @@ export const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 // без него пункт вёл бы на «раздел скоро появится». Есть ли подбор, решает хук меню (useMenuItems).
 const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
 
+// «Выбрать группу» (ТЗ кабинетов, 14): рядом с «Моим учителем», только ученику. Видимость по тарифу и формату решает 14е —
+// раздел `group` открыт только формату «в группе», а пока абонемента нет (онбординг), меню полное.
+const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
+
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
@@ -31,6 +36,10 @@ const NAV_FULL = [
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
   // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
   { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
+  // «Уведомления» видны всем ученикам независимо от тарифа и формата (ТЗ кабинетов, 14е).
+  { key: 'notifications', label: 'nav.notifications', ico: 'notifications' },
+  // «Договоры» тоже видны всем (ТЗ кабинетов, 14е); значок — сколько договоров ждут подписи.
+  { key: 'contracts', label: 'nav.contracts', ico: 'edit_note' },
 ]
 // Тьютор-онли (прод, main): в меню остаются только разделы из TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) —
 // остальные скрыты от обычных пользователей (доступны диплинком ?screen=… для отладки).
@@ -48,12 +57,13 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 // счётчиков и плашки уровня в макете нет. С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и
 // в нём всегда ОБА экзамена: доступ к одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в
 // меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback']
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только
  * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. «Мой учитель» — когда на стенде
- * есть подбор учителя (myTeacher).
+ * есть подбор учителя (myTeacher). Разделы по тарифу и формату (sections, ТЗ кабинетов 14е): закрытый раздел в меню не
+ * показываем; до ответа сервера и без абонемента (null) меню полное.
  */
 export function menuItems({
   teacher = false,
@@ -61,8 +71,9 @@ export function menuItems({
   exams = { ielts: false, sat: false },
   rewards = false,
   myTeacher = false,
+  sections = null,
 } = {}) {
-  const head = myTeacher && !teacher ? [HOME_ITEM, MY_TEACHER_ITEM] : [HOME_ITEM]
+  const head = teacher ? [HOME_ITEM] : myTeacher ? [HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM] : [HOME_ITEM, GROUP_ITEM]
   const all = teacher
     ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key))
     : ieltsAccount
@@ -73,7 +84,7 @@ export function menuItems({
     if (!rewards && isRewardsScreen(item.key)) return false
     if (item.key === 'ielts') return exams.ielts
     if (item.key === 'sat') return exams.sat
-    return true
+    return isSectionOpen(sections, item.key)
   })
 }
 

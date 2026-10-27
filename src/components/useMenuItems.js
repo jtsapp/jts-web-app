@@ -6,6 +6,8 @@ import { isTeacher } from '../lib/jwt.js'
 import { menuItems } from '../lib/navSections.js'
 import { useMatching } from '../matching/matchingStore.js'
 import { matchingView } from '../matching/matchingState.js'
+import { useStudentSections } from '../lib/studentSections.js'
+import { useContractsBadge } from '../contracts/useContracts.js'
 
 // Подбора учителя на стенде нет или он ещё не ответил — «Мой учитель» в меню не ставим.
 const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
@@ -38,8 +40,11 @@ export function useMenuItems(token) {
       alive = false
     }
   }, [token, teacher])
-  const matching = matchingView(useMatching(teacher ? null : token || loadToken()))
+  const studentToken = teacher ? null : token || loadToken()
+  const sections = useStudentSections(studentToken)
+  const matching = matchingView(useMatching(studentToken))
   const myTeacher = !teacher && !MATCHING_HIDDEN.has(matching.status)
-  const badges = { 'my-teacher': matching.badge || 0 }
-  return { items: menuItems({ teacher, ieltsAccount, exams, rewards, myTeacher }), teacher, ieltsAccount, badges }
+  const contractsToSign = useContractsBadge(studentToken)
+  const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign }
+  return { items: menuItems({ teacher, ieltsAccount, exams, rewards, myTeacher, sections }), teacher, ieltsAccount, badges }
 }

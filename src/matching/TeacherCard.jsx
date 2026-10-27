@@ -40,6 +40,11 @@ export default function TeacherCard({ token, teacher, tz, pickedTotal, priority,
             ))}
           </div>
         )}
+        {(teacher.studentAgeGroups || []).length > 0 && (
+          <div className="mt-tags" aria-label={t('teachers.studentAge')}>
+            {teacher.studentAgeGroups.map((a) => <span key={a} className="mt-tag">{t('studentAge.' + a)}</span>)}
+          </div>
+        )}
         {(teacher.formats || []).length > 0 && (
           <div className="mt-tags">
             {teacher.formats.map((f) => (

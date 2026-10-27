@@ -49,7 +49,9 @@ describe('Сервисы', () => {
   it('плитки — разделы меню, которые не стали вкладками', () => {
     const { container, onNav } = renderServices()
     const grid = container.querySelector('.svc-grid')
-    expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual(['Повторение', 'Домашняя работа', 'Словарь', 'Feedback'])
+    expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual([
+      'Выбрать группу', 'Повторение', 'Домашняя работа', 'Словарь', 'Feedback', 'Уведомления', 'Договоры',
+    ])
     fireEvent.click(within(grid).getByText('Словарь'))
     expect(onNav).toHaveBeenCalledWith('vocab')
   })

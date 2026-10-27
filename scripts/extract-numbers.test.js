@@ -40,7 +40,7 @@ describe('extract-numbers', () => {
   })
 
   it('CRLF в прототипе не меняет результат', () => {
-    const crlf = extract(html.replace(/\n/g, '\r\n')).files
+    const crlf = extract(html.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')).files
     expect(crlf['data.json'].equals(files['data.json'])).toBe(true)
   })
 

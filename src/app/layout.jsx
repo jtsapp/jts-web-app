@@ -28,6 +28,7 @@ import '../demo.css'
 import '../services.css'
 import '../placement.css'
 import '../matching.css'
+import '../groups.css'
 import '../assistant.css'
 // Вход и регистрация (макет «Регистрация», 21.10.2026)
 import '../auth.css'

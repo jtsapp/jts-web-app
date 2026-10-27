@@ -12,7 +12,8 @@
   --mt-surface: #fff;
   --mt-fg: #171326;
   --mt-fg-2: #656172;
-  --mt-fg-3: #8b8a97;
+  /* Мелкий текст: не ниже 4.5:1 на белом и на фонах раздела (WCAG AA). */
+  --mt-fg-3: #6e6c7b;
   --mt-line: #e9e6f2;
   --mt-ok: #22a55b;
   --mt-ok-soft: #e6f6ec;
@@ -20,6 +21,10 @@
   --mt-warn-soft: #fdf3e1;
   --mt-bad: #d6408b;
   --mt-bad-soft: #fce8f2;
+  /* Цвета статусов для ТЕКСТА: яркие --mt-ok/--mt-warn/--mt-bad на своих бледных фонах дают 2.9–4.2:1. */
+  --mt-ok-ink: #157a3f;
+  --mt-warn-ink: #8a5a0f;
+  --mt-bad-ink: #b0306f;
   --mt-gold: #e8a020;
   --mt-bar: #171326;
   --mt-bar-fg: #fff;
@@ -53,18 +58,26 @@
 .mt p {
   margin: 0;
 }
+/* Поля у раздела свои: у .learn__main отступов нет, и уже ниже 1160 (колонка 1120 + два поля) заголовок и карточки
+   ложились вплотную к краю окна и сайдбара. Поле прибавлено к max-width, поэтому на широком экране колонка
+   по-прежнему 1120. Сверху поле только с 761: ниже отступ задаёт шапка .mtop. */
 .mt-wrap {
-  max-width: 1120px;
+  --mt-gutter: 20px;
+  max-width: calc(1120px + 2 * var(--mt-gutter));
   margin: 0 auto;
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-inline: var(--mt-gutter);
   padding-bottom: 40px;
 }
 /* Правый верхний угол кабинета занят «? · язык · колокольчик» (.learn__bell, z-index выше контента): первая строка
    экрана уступает ему место, иначе кнопки угла ложатся на заголовок и карточки (память learn-bell-overlaps). */
 @media (min-width: 761px) {
+  .mt-wrap {
+    padding-top: 20px;
+  }
   .mt-wrap > :first-child {
     padding-right: 150px;
     min-height: 44px;
@@ -222,11 +235,11 @@
 }
 .mt-pill--ok {
   background: var(--mt-ok-soft);
-  color: var(--mt-ok);
+  color: var(--mt-ok-ink);
 }
 .mt-pill--warn {
   background: var(--mt-warn-soft);
-  color: var(--mt-warn);
+  color: var(--mt-warn-ink);
 }
 .mt-pill--bad {
   background: var(--mt-bad-soft);
@@ -439,9 +452,14 @@
   background: var(--mt-soft);
   color: var(--mt-brand);
 }
-.mt-slot--zero {
+.mt-slot--zero,
+.mt-slot:disabled {
   background: var(--mt-bg);
   color: var(--mt-fg-3);
+  cursor: not-allowed;
+}
+.mt-slot:disabled {
+  opacity: .45;
   cursor: not-allowed;
 }
 .mt-slot--best {
@@ -1094,6 +1112,9 @@ textarea.mt-input {
 }
 
 @media (max-width: 760px) {
+  .mt-wrap {
+    --mt-gutter: 16px;
+  }
   .mt-bar {
     left: 12px;
     right: 80px;
@@ -1152,4 +1173,12 @@ textarea.mt-input {
   .mt-bar .mt-btn {
     width: 100%;
   }
+}
+
+/* Срок «Подтвердите до…» и текст ошибки — цветом статуса, но с контрастом AA. */
+.mt-deadline {
+  color: var(--mt-warn-ink);
+}
+.mt-error {
+  color: var(--mt-bad-ink);
 }
