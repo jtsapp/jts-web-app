@@ -96,7 +96,9 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
       <div className="rd-grid2" data-tab={tab}>
         <aside className="rd-pane rd-pane--text" id="rd-pane-text" role="tabpanel" aria-labelledby="rd-tab-text">
           <div className={`rd-texthero rd-g-${text.genre}`}>
-            <span className="rd-texthero__emoji" aria-hidden="true">{text.cover.emoji}</span>
+            <span className="rd-texthero__emoji" aria-hidden="true">
+              {phone ? <i className={`rd-gico rd-gico--${text.genre}`} /> : text.cover.emoji}
+            </span>
             <h1 lang="en">{text.title}</h1>
             <div className="rd-texthero__meta">
               <span>{text.level} · {t('reading.levelName.' + text.level.toLowerCase())}</span>

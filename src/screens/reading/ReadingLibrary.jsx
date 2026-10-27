@@ -4,12 +4,16 @@ import { GENRES, genreOf } from '../../practice/reading/genres.js'
 import { readMin, wordCount } from '../../practice/reading/engine.js'
 import { readState, progressOf } from '../../practice/reading/readingProgress.js'
 import { READING_LEVELS } from '../ReadingPage.jsx'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 // Библиотека: уровень + жанр фильтруют сетку карточек (viewLibrary прототипа,
 // jtsreading.html:718). Уровень и жанр держит родитель — возврат из текста
 // обязан вернуть в тот же срез каталога.
 export default function ReadingLibrary({ level, genre, texts, progressTick, onLevel, onGenre, onOpen }) {
   const { t } = useI18n()
+  // На телефоне жанр рисуется контурным значком макета приложения (экспорт
+  // Figma, public/assets/m/reading/genre/) вместо эмодзи — и в чипах, и на обложке.
+  const phone = usePhoneWidth()
 
   // progressTick в зависимостях — пересчёт на каждую отметку и на гидратацию с
   // сервера: readState() читает localStorage, и без тика проценты замирали бы
@@ -58,7 +62,8 @@ export default function ReadingLibrary({ level, genre, texts, progressTick, onLe
             aria-pressed={genre === g.id}
             onClick={() => onGenre(g.id)}
           >
-            <span aria-hidden="true">{g.emoji}</span> {t('reading.genre.' + g.id)}
+            {phone ? <i className={`rd-gico rd-gico--${g.id}`} aria-hidden="true" /> : <span aria-hidden="true">{g.emoji}</span>}{' '}
+            {t('reading.genre.' + g.id)}
           </button>
         ))}
       </div>
@@ -70,7 +75,7 @@ export default function ReadingLibrary({ level, genre, texts, progressTick, onLe
       ) : (
         <div className="rd-grid">
           {list.map((x) => (
-            <Card key={x.id} text={x} state={state} onOpen={onOpen} />
+            <Card key={x.id} text={x} state={state} onOpen={onOpen} phone={phone} />
           ))}
         </div>
       )}
@@ -78,7 +83,7 @@ export default function ReadingLibrary({ level, genre, texts, progressTick, onLe
   )
 }
 
-function Card({ text, state, onOpen }) {
+function Card({ text, state, onOpen, phone }) {
   const { t } = useI18n()
   const g = genreOf(text.genre)
   const sc = progressOf(text, state)
@@ -94,7 +99,9 @@ function Card({ text, state, onOpen }) {
       <div className="rd-card__cover">
         <span className="rd-card__lvl">{text.level}</span>
         {complete && <span className="rd-card__done">✓ {t('reading.done')}</span>}
-        <span className="rd-card__emoji" aria-hidden="true">{text.cover.emoji}</span>
+        <span className="rd-card__emoji" aria-hidden="true">
+          {phone ? <i className={`rd-gico rd-gico--${text.genre}`} /> : text.cover.emoji}
+        </span>
       </div>
       <div className="rd-card__body">
         <h2 className="rd-card__title" lang="en">{text.title}</h2>

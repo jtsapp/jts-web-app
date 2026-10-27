@@ -1584,6 +1584,43 @@
     font-size: 12px;
   }
 
+  /* ---------- Значки жанров (разметка по usePhoneWidth) ----------
+     Контурные значки макета вместо эмодзи: в чипе 16, на обложке карточки 28,
+     в плашке текста 32. Маской — цвет от currentColor (белый на активном чипе). */
+  .rd-gico {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: var(--rd-gico) center / contain no-repeat;
+    mask: var(--rd-gico) center / contain no-repeat;
+  }
+  .rd-chip .rd-gico {
+    color: #9047ff;
+  }
+  .rd-chip[aria-pressed='true'] .rd-gico {
+    color: #fff;
+  }
+  .rd-card__emoji .rd-gico {
+    width: 28px;
+    height: 28px;
+    color: #9047ff;
+  }
+  .rd-texthero__emoji .rd-gico {
+    width: 32px;
+    height: 32px;
+    color: #9047ff;
+  }
+  .rd-gico--science { --rd-gico: url('/assets/m/reading/genre/science.svg'); }
+  .rd-gico--adventure { --rd-gico: url('/assets/m/reading/genre/adventure.svg'); }
+  .rd-gico--mystery { --rd-gico: url('/assets/m/reading/genre/mystery.svg'); }
+  .rd-gico--history { --rd-gico: url('/assets/m/reading/genre/history.svg'); }
+  .rd-gico--technology { --rd-gico: url('/assets/m/reading/genre/technology.svg'); }
+  .rd-gico--nature { --rd-gico: url('/assets/m/reading/genre/nature.svg'); }
+  .rd-gico--people { --rd-gico: url('/assets/m/reading/genre/people.svg'); }
+  .rd-gico--culture { --rd-gico: url('/assets/m/reading/genre/culture.svg'); }
+
   /* ---------- Тёмная тема ----------
      Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
      (генератор theme-dark.generated.css этот файл не знает). */
