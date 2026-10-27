@@ -793,6 +793,11 @@ export const askMatchingManager = (token, preferences) => authPost('/student/mat
 export const sendMatchingRequests = (token, teacherIds) => authPost('/student/matching/requests', token, {teacherIds})
 export const confirmMatchingSchedule = token => authPost('/student/matching/confirm', token, {})
 export const requestTeacherChange = (token, reason, text) => authPost('/student/matching/change', token, {reason, text})
+
+// Оспаривание отметки «не пришёл» (ТЗ «Кабинеты», раздел 11): что ещё можно оспорить (со сроком) и свои заявки.
+export const getMyNoShowDisputes = (token) => authGet('/cabinet/no-show-disputes/mine', token)
+export const disputeNoShow = (token, lessonId, reason) =>
+  authPost(`/cabinet/no-show-disputes/mine/lessons/${lessonId}`, token, { reason })
 export const getMatchingHandoffs = token => authGet('/student/matching/handoffs', token)
 export const chooseMatchingHandoff = (token, id, choice) => authPost('/student/matching/handoffs/'+id+'/choice', token, {choice})
 

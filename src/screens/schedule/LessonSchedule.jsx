@@ -4,6 +4,7 @@ import { getMyLessonOccurrences, getLessonsSummary } from '../../api.js'
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
 import { pickFeaturedOccurrence } from './liveNow.js'
 import { useLessonCards, useLessonTopic } from './useLessonDetails.js'
+import { useNoShowDisputes } from './useNoShowDisputes.js'
 import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
@@ -69,6 +70,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   // грузим их одним списком, чтобы общий урок не запрашивался дважды.
   const cards = useLessonCards(token, [featured?.lessonId, ...dayItems.map((o) => o.lessonId)])
   const featuredTopic = useLessonTopic(token, featured?.lessonId ?? null)
+  const disputes = useNoShowDisputes(token)
 
   // Гость расписания не имеет: уроки висят на аккаунте. Раньше здесь стоял
   // возврат null, и вкладка «Онлайн-уроки» открывалась пустым белым полем без
@@ -122,6 +124,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
               items={dayItems}
               cards={cards}
               onOpenLesson={onOpenLesson}
+              disputes={disputes}
             />
           </div>
         </>

@@ -2,7 +2,7 @@ import { useI18n } from '../../i18n.jsx'
 import { dayLabelKey } from './lessonFormat.js'
 import LessonRow from './LessonRow.jsx'
 
-export default function DayPanel({ dayDate, items, cards, onOpenLesson }) {
+export default function DayPanel({ dayDate, items, cards, onOpenLesson, disputes }) {
   const { t, lang } = useI18n()
   const labelKey = dayLabelKey(dayDate)
   const heading = labelKey
@@ -20,6 +20,11 @@ export default function DayPanel({ dayDate, items, cards, onOpenLesson }) {
               occ={o}
               card={cards?.get(String(o.lessonId))}
               onOpenLesson={onOpenLesson}
+              dispute={disputes && {
+                deadline: disputes.disputable.get(String(o.lessonId)),
+                status: disputes.disputed.get(String(o.lessonId)),
+                onRaise: disputes.raise,
+              }}
             />
           ))}
     </div>
