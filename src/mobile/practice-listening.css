@@ -990,6 +990,97 @@
   }
 }
 
+/* ---------- Тренажёр: «Вы уверены, что хотите выйти?» (кадр 12) ----------
+   Не окно по центру, а лист снизу r24: без маскота и крестика (закрывает
+   тап по затемнению и «Продолжить»), заголовок 24/800 и подпись 14 по
+   левому краю, основная кнопка 56 и «Выйти» текстом фиолетовым. */
+@media (max-width: 560px) {
+  .lt-modal {
+    place-items: end stretch;
+  }
+  .lt-modal__backdrop {
+    background: rgba(24, 24, 24, 0.4);
+  }
+  .lt-modal__card {
+    width: 100%;
+    margin: 0;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    text-align: left;
+  }
+  .lt-modal__close,
+  .lt-modal__close:hover,
+  .lt-modal__icon {
+    display: none;
+  }
+  .lt-modal__title {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+  .lt-modal__sub {
+    margin: 8px 0 24px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #5a5a66;
+  }
+  .lt-modal__leave {
+    width: 100%;
+    height: 56px;
+    margin-top: 8px;
+    border-radius: 16px;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+}
+
+/* ---------- «Слова в картинках»: все слова найдены (кадр 6) ----------
+   Карточка итога r24 с подложкой сцены остаётся, текст 28/800 и 16/500;
+   кнопки — «Сыграть снова» 56 и «Другие сцены» с фиолетовой рамкой, во
+   всю ширину столбиком. */
+@media (max-width: 560px) {
+  .wd-result__card {
+    margin-bottom: 16px;
+    padding: 24px 16px;
+    border-radius: 24px;
+  }
+  .wd-result__kicker {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wd-result__card h1 {
+    font-size: 28px;
+    line-height: 36px;
+    color: #181818;
+  }
+  .wd-result__card p {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+  .wd-result__btns {
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 24px;
+  }
+  .wd-result__btns .wd-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .wd-result__btns .wd-btn--ghost {
+    border: 2px solid #9047ff;
+    color: #9047ff;
+  }
+}
+
 /* ---------- Тёмная тема тренажёра: токены брендбука (theme-dark.css) ----------
    Через .lt — сгенерированный слой (theme-dark.generated.css) подключён позже
    с той же специфичностью и иначе перекрасил бы всё обратно. */
@@ -1203,6 +1294,29 @@
   }
   html[data-theme='dark'] .wd .wd-task__round {
     background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+}
+
+/* ---------- Тёмная: лист выхода тренажёра и итог «Слов» ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .lt .lt-modal__card {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .lt .lt-modal__title,
+  html[data-theme='dark'] .wd .wd-result__card h1 {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lt .lt-modal__sub,
+  html[data-theme='dark'] .wd .wd-result__card p {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .lt .lt-modal__leave {
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .wd .wd-result__btns .wd-btn--ghost {
+    border-color: var(--dk-acc);
     color: var(--dk-acc-text);
   }
 }
