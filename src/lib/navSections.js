@@ -48,7 +48,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 // счётчиков и плашки уровня в макете нет. С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и
 // в нём всегда ОБА экзамена: доступ к одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в
 // меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes']
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback']
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только

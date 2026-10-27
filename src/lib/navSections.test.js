@@ -30,7 +30,7 @@ describe('меню ученика', () => {
 
   it('аккаунт IELTS — свой порядок', () => {
     expect(keys(menuItems({ ieltsAccount: true, exams: { ielts: true, sat: true } }))).toEqual([
-      'home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat',
+      'home', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'feedback',
     ])
   })
 })
