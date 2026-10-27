@@ -1789,6 +1789,120 @@
     padding: 0 12px;
     border-radius: 16px;
   }
+  /* Настройка практики (кадр 5, открывается «Изменить»): уровни — карточки
+     2×2, выбранная сиреневая; формы — серые сегменты; набор и подход — два
+     выпадающих рядом; «Перемешать» — пилюлей справа. */
+  .vb .vb-choices {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-choices h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .vb .vb-levels button {
+    border: 1.5px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-levels button[aria-pressed='true'] {
+    border-color: #9047ff;
+    background: #efe7ff;
+  }
+  .vb .vb-formswitch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-formswitch button {
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-formswitch button strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb .vb-formswitch button span {
+    font-family: inherit;
+    font-size: 12px;
+  }
+  .vb .vb-formswitch button[aria-pressed='true'] {
+    border: 0;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+    color: var(--vb-ink);
+  }
+  .vb .vb-scope {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .vb .vb-scope > label {
+    grid-column: auto;
+    min-width: 0;
+  }
+  .vb .vb-scope label span {
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-scope select {
+    min-height: 48px;
+    border: 1.5px solid #e8e8ee;
+    border-radius: 12px;
+    background-color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .vb .vb-scope > .vb-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  html[data-theme='dark'] .vb .vb-choices {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-levels button,
+  html[data-theme='dark'] .vb .vb-scope select {
+    border-color: var(--dk-line);
+    background-color: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-levels button[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch {
+    background: var(--dk-line);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch button {
+    border: 0;
+    background: none;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch button[aria-pressed='true'] {
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+
   /* Итог набора (кадр 11): заголовок и счёт по центру сиреневой плашки,
      кнопки столбиком во всю ширину — первая заливкой, остальные контуром. */
   .vb :has(> .vb-finish) {
