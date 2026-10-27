@@ -5,4 +5,98 @@
    разделов Практики не спорили за строку импорта.
    ====================================================================== */
 @media (max-width: 560px) {
+  /* ---------- Карточка караоке на хабе (Karaoke 300, кадр 6605:16715) ----------
+     Белая карточка r24 с рамкой, обложка 276×128 r16; трек без обложки —
+     сиреневая плашка с нотой в белом круге 60. Под названием и исполнителем —
+     пилюли: сложность, уровень, число строк (или лучший результат). */
+  .pk-song {
+    gap: 10px;
+    width: 300px;
+    padding: 12px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .pk-song__cover {
+    position: relative;
+    width: 100%;
+    height: 128px;
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .pk-song__cover:not(:has(img)) {
+    background: #e6dcfc;
+  }
+  .pk-song:nth-child(3n + 2) .pk-song__cover:not(:has(img)) {
+    background: #ffe3cf;
+  }
+  .pk-song:nth-child(3n + 3) .pk-song__cover:not(:has(img)) {
+    background: #d6edfb;
+  }
+  .pk-song__cover:not(:has(img))::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    margin: -30px 0 0 -30px;
+    border-radius: 50%;
+    background: #fff url(/assets/m/practice/ico/music_note.svg) center / 36px no-repeat;
+  }
+  .pk-song__body {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 2px 8px;
+  }
+  .pk-song__title,
+  .pk-song__sub {
+    flex-basis: 100%;
+  }
+  .pk-song__title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #181818;
+  }
+  .pk-song__sub {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 18px;
+    color: #8a8a8a;
+  }
+  .pk-song .pk-dots {
+    margin-top: 8px;
+  }
+  .pk-song__lines {
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f3f3f8;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #4a4a55;
+  }
+  html[data-theme='dark'] .pk .pk-song {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .pk .pk-song__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .pk .pk-song__cover:not(:has(img)) {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .pk .pk-song__cover:not(:has(img))::after {
+    background-color: var(--dk-chip);
+  }
+  html[data-theme='dark'] .pk .pk-song__lines {
+    background: var(--dk-chip);
+    color: var(--dk-text-2);
+  }
 }
