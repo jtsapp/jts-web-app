@@ -1513,6 +1513,7 @@
   .lc {
     position: relative;
   }
+  .lc-help-btn,
   .lc-settings-btn {
     position: absolute;
     top: 2px;
@@ -1527,6 +1528,10 @@
     background: transparent;
     color: #181818;
   }
+  .lc-help-btn {
+    right: 48px;
+  }
+  .lc-help-btn .lc-i,
   .lc-settings-btn .lc-i {
     width: 24px;
     height: 24px;
@@ -1659,6 +1664,7 @@
     background: none;
     box-shadow: none;
   }
+  html[data-theme='dark'] .lc .lc-help-btn,
   html[data-theme='dark'] .lc .lc-settings-btn {
     color: var(--dk-text);
   }

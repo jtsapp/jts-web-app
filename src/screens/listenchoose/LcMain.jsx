@@ -147,11 +147,17 @@ export default function LcMain({ session, data, t }) {
   return (
     <>
       {phone ? (
-        // Телефон: значок «Настройка подхода» стоит в строке шапки (CSS), сами
-        // настройки — в окне; новый набор заодно закрывает окно.
-        <button type="button" className="lc-settings-btn" aria-label={t('listenchoose.settings')} onClick={() => setSettingsOpen(true)}>
-          <LcIcon name="tune" />
-        </button>
+        // Телефон: «?» и «Настройка подхода» стоят в строке шапки (CSS), сами
+        // настройки — в окне; новый набор заодно закрывает окно. Справка снизу
+        // на телефоне не рисуется — одна кнопка «Как заниматься», а не две.
+        <>
+          <button type="button" className="lc-help-btn" aria-label={t('listenchoose.help')} onClick={() => setHelpOpen(true)}>
+            <LcIcon name="help" />
+          </button>
+          <button type="button" className="lc-settings-btn" aria-label={t('listenchoose.settings')} onClick={() => setSettingsOpen(true)}>
+            <LcIcon name="tune" />
+          </button>
+        </>
       ) : (
         <LcSetup key={snap.level} snap={snap} t={t} onCount={(n) => session.setCount(n)} onNewSet={() => session.startNewSet()} />
       )}
@@ -222,10 +228,12 @@ export default function LcMain({ session, data, t }) {
 
       <div className="lc-bottom">
         <span>{t('listenchoose.sessionNote')}</span>
-        <button type="button" className="lc-quiet" onClick={() => setHelpOpen(true)}>
-          <LcIcon name="help" />
-          <span>{t('listenchoose.help')}</span>
-        </button>
+        {!phone && (
+          <button type="button" className="lc-quiet" onClick={() => setHelpOpen(true)}>
+            <LcIcon name="help" />
+            <span>{t('listenchoose.help')}</span>
+          </button>
+        )}
       </div>
       {isDeviceStorageBroken() && <p className="lc-storage">{t('listenchoose.storageError')}</p>}
 
