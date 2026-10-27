@@ -513,4 +513,214 @@
   .rd-article {
     color: #181818;
   }
+
+  /* ---------- 5–11 · Задания ----------
+     В макете задание — отдельный экран с полосой прогресса «1 / 5»; у нас они
+     списком под вкладкой (поток «по одному» — вопрос владельцу). Вид карточки
+     взят из кадров: тип — лавандовой пилюлей, вопрос 24/32, варианты 56 r16,
+     «Проверить» во всю ширину, «Показать ответ» — ссылкой. */
+  /* Задание лежит прямо на сером фоне экрана — белые здесь варианты и карточки
+     утверждений, а не рамка всего задания. */
+  .rd-ex {
+    margin-bottom: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .rd-ex__head {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .rd-ex__num {
+    display: none;
+  }
+  .rd-ex__type {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .rd-ex__inst {
+    margin-bottom: 8px;
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+  }
+  .rd-ex__hint {
+    margin-bottom: 16px;
+    color: #5a5a66;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  .rd-q__text {
+    margin-bottom: 12px;
+    color: #181818;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+  }
+  .rd-opts {
+    gap: 12px;
+  }
+  .rd-opt,
+  .rd-mt,
+  .rd-ord__item {
+    min-height: 56px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+  }
+  .rd-opt {
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .rd-opt[aria-checked='true'] {
+    border-color: #9047ff;
+    background: #f3edff;
+  }
+  /* 8 · Правда или ложь: утверждение — белой карточкой, «Правда | Ложь» в строку
+     контурными кнопками. */
+  .rd-q:has(> .rd-opts--row) {
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .rd-q:has(> .rd-opts--row) .rd-q__text {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .rd-opts--row {
+    grid-auto-flow: column;
+    gap: 8px;
+  }
+  .rd-opts--row .rd-opt {
+    min-height: 40px;
+    padding: 8px;
+    border: 1.5px solid #9047ff;
+    border-radius: 12px;
+    color: #9047ff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .rd-opts--row .rd-opt[aria-checked='true'] {
+    border-color: #efe7ff;
+    background: #efe7ff;
+  }
+  /* 9 · Соедини: слова слева, картинки справа, как в кадре. */
+  .rd-match {
+    gap: 12px;
+  }
+  .rd-match__row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .rd-mt {
+    padding: 12px 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+  }
+  .rd-mt--emoji {
+    font-size: 28px;
+    text-align: center;
+  }
+  .rd-mt.is-sel {
+    border-color: #9047ff;
+    background: #efe7ff;
+  }
+  .rd-ord__item {
+    padding: 12px;
+    background: #fff;
+  }
+  .rd-ex__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .rd-ex__foot .rd-btn {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .rd-ex__foot .rd-btn--ghost {
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: #9047ff;
+    font-size: 14px;
+  }
+  .rd-expl {
+    border-radius: 16px;
+    background: #f3edff;
+    color: #181818;
+  }
+  .rd-gap {
+    border-bottom-color: #9047ff;
+    color: #9047ff;
+  }
+  .rd-bank {
+    border-radius: 16px;
+    background: #f7f7f8;
+  }
+  .rd-chipw {
+    border-color: #ececf1;
+    font-size: 14px;
+  }
+  .rd-ord__num {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .rd-finish {
+    padding: 20px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .rd-finish .rd-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  /* ---------- 12 · Результат ---------- */
+  .rd-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .rd-stat {
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+  }
+  .rd-stat b {
+    color: #9047ff;
+  }
+  .rd-result .rd-panel {
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+  }
+  .rd-review li {
+    border-radius: 16px;
+    background: #f7f7f8;
+  }
+  .rd-actions .rd-btn {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
 }
