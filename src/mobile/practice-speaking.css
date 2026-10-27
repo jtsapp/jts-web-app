@@ -636,6 +636,71 @@
     background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
   }
 
+  /* ── «Сказки» · 2 · Выбор героя (кадр 6605:20228) ───────────────────────
+     Движок сказок — оверлей #taleworld со стилями в <head> (не тень), поэтому правила здесь; его стили вставляются
+     позже и местами с !important — отсюда #taleworld в селекторе и !important. Раньше «◂ Library» растягивалась на
+     телефоне в белую плашку поверх заголовка; в приложении — стрелка 48 слева, язык — чипом справа. */
+  #taleworld #select .detail-back {
+    top: calc(2px + env(safe-area-inset-top)) !important;
+    left: 4px !important;
+    right: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    transform: none !important;
+  }
+  #taleworld #select .lib-lang {
+    top: calc(14px + env(safe-area-inset-top));
+    right: 16px;
+  }
+  #taleworld #select .langchip {
+    padding: 4px 12px !important;
+    font-size: 12px !important;
+    line-height: 16px;
+  }
+  #taleworld #select .langchip:not(.sel) {
+    background: #efe7ff !important;
+    color: #9047ff !important;
+  }
+  #taleworld #select .hall-head {
+    padding: calc(64px + env(safe-area-inset-top)) 16px 0;
+  }
+  #taleworld #select .hall-head h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  #taleworld #select .hall-head p {
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 20px;
+    font-style: normal;
+  }
+  /* Карточка 224 по центру, соседи выглядывают по краям — как карусель кадра. */
+  #taleworld #select .hall {
+    padding: 150px calc(50% - 112px) 48px;
+  }
+  #taleworld #select .hero-card {
+    width: 224px;
+    height: min(352px, 56vh);
+    border-radius: 28px;
+  }
+  #taleworld #select .hall-nav {
+    font-size: 13px;
+    font-style: normal;
+  }
+
   /* Тёмная: генератор (theme-dark.generated.css) подключён позже и бьёт тем же весом — поэтому через .sit. */
   html[data-theme='dark'] .learn__main .sit {
     color: var(--dk-text);
