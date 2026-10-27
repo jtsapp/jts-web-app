@@ -3,6 +3,496 @@
    страница «Mobile» → «Практика» → «Аудирование»: «Тренируй Listening», «Услышь детали», «Слушай слово».
    Файл заведён заранее и подключён в layout.jsx, чтобы параллельные ветки
    разделов Практики не спорили за строку импорта.
+
+   Подключён после practice.css, поэтому прежний телефонный слой раздела
+   (по «Web Адаптивке») здесь не удалён, а перекрыт: так ветки не правят
+   общий файл хаба.
    ====================================================================== */
+
+/* ---------- «Тренируй Listening в мини-игре» (6605:16944): ?screen=listening ----------
+   Шапка — строка 52 на сером фоне: стрелка «назад» и заголовок раздела по
+   центру (интро, кадр 1), в задании — крестик и полоса прогресса в той же
+   строке (кадр 2). Языка и словаря в кадре нет; функции сайта, поэтому
+   остаются справа, на месте пустого слота макета. */
 @media (max-width: 560px) {
+  .lt-top {
+    position: relative;
+    height: 52px;
+    margin: -16px -16px 0;
+    padding: 0 8px 0 4px;
+    gap: 4px;
+    background: transparent;
+  }
+  .lt-back,
+  .lt-back:hover {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 12px;
+    background: transparent;
+    filter: none;
+  }
+  .lt-back::before {
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+  }
+  .lt:has(> .lt-task) .lt-back::before {
+    background-image: url(/assets/m/practice/listening/close.svg);
+  }
+  /* Заголовок по центру строки, а не следом за кнопкой: справа ещё язык и
+     словарь, и флекс увёл бы его влево. */
+  .lt-crumb {
+    position: absolute;
+    left: 56px;
+    right: 56px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .lt-crumb b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .lt-crumb span {
+    display: none;
+  }
+  .lt:has(> .lt-task) .lt-crumb {
+    display: none;
+  }
+  /* Язык и словарь — к правому краю: заголовок вынут из потока. */
+  .lt-top > .lt-crumb + * {
+    margin-left: auto;
+  }
+  .lt-top .lang-selector--flag {
+    background: transparent;
+  }
+  .lt-dict {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+  }
+
+  /* Интро (кадр 1): маскот 192×216 в сиреневом круге 224, заголовок 28/800,
+     подпись 16/500 серым, плашка про наушники #efe7ff с гарнитурой, кнопка
+     56 r16 и «Уровень A1» прижаты к низу экрана. */
+  .lt:has(> .lt-intro) {
+    min-height: 100dvh;
+  }
+  .lt-intro {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    text-align: center;
+  }
+  .lt-intro::before {
+    content: '';
+    flex: 1 0 12px;
+  }
+  .lt-intro__mascot {
+    width: 224px;
+    height: 224px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: #e6dcfc url(/assets/m/practice/listening/mascot-intro.webp) center 4px / 192px 216px no-repeat;
+  }
+  .lt-intro__title {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 36px;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .lt-intro__sub {
+    margin: 16px 0 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #5a5a66;
+  }
+  .lt-intro__hint {
+    gap: 12px;
+    margin: 24px 0 0;
+    padding: 16px;
+    border-radius: 20px;
+    background: #efe7ff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .lt-intro__hint::before {
+    background-image: url(/assets/m/practice/listening/headphones.svg);
+  }
+  /* Пустое место делится поровну над и под героем: в макете он стоит по
+     центру области между шапкой и кнопкой. */
+  .lt-intro .lt-primary {
+    margin-top: auto;
+  }
+  .lt-intro__hint {
+    margin-bottom: 24px;
+  }
+  .lt-intro__level {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .lt-intro__done {
+    margin: 2px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .lt-intro__level:last-child,
+  .lt-intro__done {
+    margin-bottom: 8px;
+  }
+
+  /* Кнопка шага — 56 r16, 16/700. Неактивная — бледный фиолетовый с белой
+     подписью (кадр 2), а не серая. */
+  .lt .lt-primary {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .lt .lt-primary:disabled:not(.is-cooldown) {
+    background: #dcc7fd;
+    color: #fff;
+  }
+  .lt-dock {
+    margin: auto -16px 0;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: #f8f8f8;
+  }
+
+  /* Задание (кадр 2): полоса прогресса 8 #e4daf8 в строке шапки между крестиком
+     и правым краем, процента нет; вопрос 24/800 чёрным. Полоса живёт в
+     .lt-task — поднимаем её в строку шапки (52 над заданием). */
+  .lt-task {
+    position: relative;
+    padding-top: 24px;
+  }
+  .lt-bar {
+    position: absolute;
+    top: -30px;
+    left: 40px;
+    right: 92px;
+    height: 8px;
+    margin: 0;
+    padding: 0;
+    border-radius: 999px;
+    background: transparent;
+    z-index: 1;
+  }
+  .lt-bar__track {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .lt-bar__track span {
+    border-radius: 999px;
+    background: #9047ff;
+  }
+  .lt-bar__pct {
+    display: none;
+  }
+  .lt-heading {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+
+  /* Плеер: кнопка 96 в ореоле 128 (#efe7ff), под ним через 12 — пилюля 32
+     «Прослушать медленно» со значком скорости. */
+  .lt-audio {
+    gap: 28px;
+    margin: 40px 0 24px;
+  }
+  .lt-audio__btn {
+    width: 96px;
+    height: 96px;
+    box-shadow: 0 0 0 16px #efe7ff, 0 12px 24px rgba(0, 0, 0, 0.12);
+  }
+  .lt-audio__btn::before {
+    width: 40px;
+    height: 40px;
+    background-size: 40px 40px;
+  }
+  .lt-audio__slow {
+    gap: 4px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .lt-audio__slow::before {
+    width: 16px;
+    height: 16px;
+    background: url(/assets/m/practice/listening/speed.svg) center / 16px 16px no-repeat;
+  }
+
+  /* Варианты 60 r16: белые с рамкой 2 #e8e8ee, 16/600 по левому краю;
+     выбранный — сиреневый с фиолетовой рамкой и галочкой в круге справа. */
+  .lt-opts {
+    gap: 12px;
+  }
+  .lt-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 60px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: left;
+    color: #181818;
+  }
+  .lt-opt.is-on {
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
+  }
+  .lt-opt.is-on::after {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/practice/listening/check-violet.svg) center / 24px 24px no-repeat;
+  }
+  .lt-opt.is-correct {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .lt-opt.is-wrong {
+    border-color: #d9363e;
+    background: #fdebec;
+    color: #181818;
+  }
+
+  /* Ответ (кадры 4 и 7): панель во всю ширину у низа, зелёная #e3f6ea или
+     красная #fdebec; значок 28 и заголовок 20/800 цветом исхода, разбор
+     16/500 под ними; «Продолжить» той же панели — цветом исхода. */
+  .lt-task > .lt-fb {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 12px;
+    margin: auto -16px 0;
+    padding: 20px 16px 4px;
+    border-radius: 0;
+  }
+  .lt-fb--ok {
+    background: #e3f6ea;
+  }
+  .lt-fb--no {
+    background: #fdebec;
+  }
+  .lt-fb__icon,
+  .lt-fb--ok .lt-fb__icon,
+  .lt-fb--no .lt-fb__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    background: url(/assets/m/practice/listening/check-green.svg) center / 28px 28px no-repeat;
+  }
+  .lt-fb--no .lt-fb__icon {
+    background-image: url(/assets/m/practice/listening/cancel-red.svg);
+  }
+  .lt-fb__text {
+    display: contents;
+  }
+  .lt-fb__title,
+  .lt-fb--ok .lt-fb__title,
+  .lt-fb--no .lt-fb__title {
+    grid-column: 2;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #1f9d55;
+  }
+  .lt-fb--no .lt-fb__title {
+    color: #d9363e;
+  }
+  .lt-fb__body {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #181818;
+  }
+  .lt-fb__coin {
+    grid-column: 3;
+    grid-row: 1;
+    height: 32px;
+    padding: 0 12px;
+  }
+  .lt-task > .lt-fb + .lt-dock {
+    margin-top: 0;
+  }
+  .lt-task:has(> .lt-fb--ok) .lt-dock {
+    background: #e3f6ea;
+  }
+  .lt-task:has(> .lt-fb--no) .lt-dock {
+    background: #fdebec;
+  }
+  .lt-task:has(> .lt-fb--ok) .lt-dock .lt-primary {
+    background: #1f9d55;
+  }
+  .lt-task:has(> .lt-fb--no) .lt-dock .lt-primary {
+    background: #d9363e;
+  }
+
+  /* Сборка фразы и диктант (кадры 5, 6, 8): те же белые карточки r16 с рамкой
+     2 #e8e8ee, что у вариантов; выбранные слова — сиреневые. */
+  .lt-asm__slot {
+    border-bottom-color: #e8e8ee;
+  }
+  .lt-tile {
+    min-height: 48px;
+    padding: 12px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .lt-tile--on {
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
+  }
+  .lt-input {
+    height: 60px;
+    padding: 0 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #181818;
+  }
+  .lt-input:focus {
+    border-color: #9047ff;
+  }
+  .lt-input::placeholder {
+    color: #8e8e99;
+  }
+}
+
+/* ---------- Тёмная тема тренажёра: токены брендбука (theme-dark.css) ----------
+   Через .lt — сгенерированный слой (theme-dark.generated.css) подключён позже
+   с той же специфичностью и иначе перекрасил бы всё обратно. */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .lt .lt-crumb b,
+  html[data-theme='dark'] .lt .lt-intro__title,
+  html[data-theme='dark'] .lt .lt-intro__hint,
+  html[data-theme='dark'] .lt .lt-heading,
+  html[data-theme='dark'] .lt .lt-opt,
+  html[data-theme='dark'] .lt .lt-fb__body,
+  html[data-theme='dark'] .lt .lt-tile,
+  html[data-theme='dark'] .lt .lt-input {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lt .lt-back,
+  html[data-theme='dark'] .lt .lt-intro {
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .lt .lt-intro__mascot {
+    background: var(--dk-acc-soft) url(/assets/m/practice/listening/mascot-intro.webp) center 4px / 192px 216px no-repeat;
+  }
+  html[data-theme='dark'] .lt .lt-audio__slow {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .lt .lt-intro__hint::before {
+    filter: brightness(1.3);
+  }
+  /* Сгенерированный слой повторяет и телефонные значки прежнего макета
+     (крестик в круге, словарь на плашке) — ставим значки этого кадра. */
+  html[data-theme='dark'] .lt .lt-dict {
+    background: transparent;
+  }
+  html[data-theme='dark'] .lt .lt-back::before {
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .lt:has(> .lt-task) .lt-back::before {
+    background-image: url(/assets/m/practice/listening/close.svg);
+  }
+  html[data-theme='dark'] .lt .lt-fb__icon {
+    background: url(/assets/m/practice/listening/check-green.svg) center / 28px 28px no-repeat;
+  }
+  html[data-theme='dark'] .lt .lt-fb--no .lt-fb__icon {
+    background-image: url(/assets/m/practice/listening/cancel-red.svg);
+  }
+  html[data-theme='dark'] .lt .lt-intro__sub,
+  html[data-theme='dark'] .lt .lt-intro__level,
+  html[data-theme='dark'] .lt .lt-intro__done {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .lt .lt-intro__hint,
+  html[data-theme='dark'] .lt .lt-audio__slow,
+  html[data-theme='dark'] .lt .lt-opt.is-on,
+  html[data-theme='dark'] .lt .lt-tile--on {
+    background-color: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .lt .lt-audio__btn {
+    box-shadow: 0 0 0 16px var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .lt .lt-bar__track {
+    background: var(--dk-raised);
+  }
+  html[data-theme='dark'] .lt .lt-opt,
+  html[data-theme='dark'] .lt .lt-tile,
+  html[data-theme='dark'] .lt .lt-input {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .lt .lt-opt.is-on,
+  html[data-theme='dark'] .lt .lt-tile--on {
+    border-color: var(--dk-acc);
+  }
+  html[data-theme='dark'] .lt .lt-opt.is-correct {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .lt .lt-opt.is-wrong {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] .lt .lt-dock {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .lt .lt-fb--ok,
+  html[data-theme='dark'] .lt .lt-task:has(> .lt-fb--ok) .lt-dock {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .lt .lt-fb--no,
+  html[data-theme='dark'] .lt .lt-task:has(> .lt-fb--no) .lt-dock {
+    background: var(--dk-red-tint);
+  }
 }
