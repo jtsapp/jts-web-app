@@ -100,6 +100,82 @@
     color: var(--dk-text-2);
   }
 
+  /* ---------- Караоке · библиотека (кадр 6605:19543) ----------
+     «Посмотреть все» у караоке: поиск 60 r16 с рамкой 2, треки строками —
+     белая карточка r24 p12, обложка 64 r16 (без обложки — фиолетовый
+     градиент с нотой), название 16/800, исполнитель, пилюли, справа ▶. */
+  #sec-karaoke .pk-sec__head .pp-search {
+    height: 60px;
+    border-width: 2px;
+    border-color: #e8e8ee;
+    border-radius: 16px;
+  }
+  #sec-karaoke .pk-rail--grid {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 16px;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__cover {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__cover:not(:has(img)) {
+    background: linear-gradient(135deg, #8a4dfb, #c9a8ff);
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__cover:not(:has(img))::after {
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    border-radius: 0;
+    background: #fff;
+    -webkit-mask: url(/assets/m/practice/ico/music_note.svg) center / 32px no-repeat;
+    mask: url(/assets/m/practice/ico/music_note.svg) center / 32px no-repeat;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__body {
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__title {
+    white-space: normal;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song__sub {
+    font-size: 12px;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song .pk-dots,
+  #sec-karaoke .pk-rail--grid .pk-song__lines {
+    margin-top: 0;
+  }
+  #sec-karaoke .pk-rail--grid .pk-song::after {
+    content: '';
+    flex: none;
+    margin-right: 6px;
+    border-style: solid;
+    border-width: 7px 0 7px 11px;
+    border-color: transparent transparent transparent #9047ff;
+  }
+  html[data-theme='dark'] #sec-karaoke .pk-sec__head .pp-search {
+    border-color: var(--dk-line);
+  }
+  html[data-theme='dark'] #sec-karaoke .pk-rail--grid .pk-song__sub {
+    color: var(--dk-text-2);
+  }
+
   /* ---------- «Аркада»: шапка всех экранов (Navbar 52, кадр 6605:10811) ----------
      Стрелка-«назад» 48 слева, название раздела 16/700 по центру. Подпись
      кнопки («← В Практику» / «← К играм») остаётся для скринридера. Кнопки
