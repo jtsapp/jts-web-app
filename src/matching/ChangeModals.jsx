@@ -33,6 +33,7 @@ export function ChangeFormatModal({ token, current, teacherFormats, onClose, onD
       } catch (e) {
         if (e?.code === 'teacher_format') return onNeedTeacherChange()
         setError(errorText(e, t))
+        refreshMatching(token)
       }
     })
   return (
@@ -45,11 +46,11 @@ export function ChangeFormatModal({ token, current, teacherFormats, onClose, onD
               <h3 className="mt-h3">{t('format.' + f)}</h3>
               {current === f && <span className="mt-pill">{t('fmt.current')}</span>}
             </div>
-            <p className="mt-small" style={{ color: can ? 'var(--mt-fg-2)' : 'var(--mt-warn)' }}>{t(can ? 'fmt.can' : 'fmt.cannot')}</p>
+            <p className="mt-small" style={{ color: can ? 'var(--mt-fg-2)' : 'var(--mt-warn-ink)' }}>{t(can ? 'fmt.can' : 'fmt.cannot')}</p>
           </button>
         )
       })}
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
       <button type="button" className="mt-btn mt-btn--line" onClick={onClose}>{t('btn.cancel')}</button>
     </MtModal>
   )
@@ -63,10 +64,12 @@ export function ChangeTeacherModal({ token, limits, initialReason = 'schedule', 
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [busy, run] = useBusy()
+  // Лимит смен сервер мог исчерпать раньше, чем это увидела карточка (смена из другой вкладки).
+  const [overLimit, setOverLimit] = useState(false)
   const complaint = reason === 'complaint'
   const ready = !complaint || text.trim().length > 0
 
-  if ((limits?.teacherChangesLeft ?? 2) <= 0) {
+  if (overLimit || (limits?.teacherChangesLeft ?? 2) <= 0) {
     return (
       <MtModal title={t('chg.title')} onClose={onClose}>
         <p>{t('chg.limit')}</p>
@@ -86,14 +89,16 @@ export function ChangeTeacherModal({ token, limits, initialReason = 'schedule', 
         applyMatchingCard(await requestTeacherChange(token, label, text.trim() || null))
         onSent(t('chg.sent'))
       } catch (e) {
+        refreshMatching(token)
+        if (e?.code === 'limit_reached') return setOverLimit(true)
         setError(errorText(e, t))
       }
     })
 
   return (
     <MtModal title={t('chg.title')} onClose={onClose}>
-      <p className="mt-small mt-muted">{t('chg.text')}</p>
-      <div className="mt-stack" style={{ gap: 8 }} role="radiogroup">
+      <p className="mt-small mt-muted" id="mt-change-reason-title">{t('chg.text')}</p>
+      <div className="mt-stack" style={{ gap: 8 }} role="radiogroup" aria-labelledby="mt-change-reason-title">
         {REASONS.map(([key]) => (
           <label key={key} className="mt-reason">
             <input type="radio" name="mt-change-reason" checked={reason === key} onChange={() => setReason(key)} />
@@ -110,7 +115,7 @@ export function ChangeTeacherModal({ token, limits, initialReason = 'schedule', 
         onChange={(e) => setText(e.target.value)}
       />
       <p className="mt-tiny">{t('chg.note')}</p>
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
       <div className="mt-row mt-end">
         <button type="button" className="mt-btn mt-btn--line" onClick={onClose}>{t('btn.cancel')}</button>
         <button type="button" className="mt-btn" disabled={!ready || busy} onClick={send}>{t('chg.send')}</button>
@@ -166,7 +171,7 @@ export function VacationModal({ token, vacation, tz, onClose, onDone }) {
         <p className="mt-small mt-muted">{t('vac.tempText', { date: back })}</p>
       </button>
       {until && <p className="mt-tiny">{t('vac.deadline', { date: until })}</p>}
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
     </MtModal>
   )
 }
