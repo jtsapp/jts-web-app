@@ -237,4 +237,253 @@
   html[data-theme='dark'] body .wb-lrow__bar {
     background: var(--dk-chip);
   }
+
+  /* ---------- Экран задания (кадры 6605:14941 «Разложи», 6605:15028 «Выбор») ----------
+     Полоса кадра — «← название урока / Шаг N из M» и пилюля урока справа,
+     под ней сегменты шагов. У нас это строка rail-meta внутри полосы шагов:
+     ставим её над сегментами. Над ней остаётся выход к урокам уровня
+     (wb-backbtn) — в кадре его нет, но это единственный путь к списку,
+     поэтому он сжат в пилюлю 32, а крошка «Воркбуки · урок» скрыта —
+     название урока и так в полосе. */
+  .wb:has(.wb-rail) .wb-top {
+    margin: 0 0 4px;
+  }
+  .wb:has(.wb-rail) .wb-crumb {
+    display: none;
+  }
+  .wb:has(.wb-rail) .wb-backbtn {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+    box-shadow: none;
+  }
+  .wb-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .wb-railmeta {
+    order: -1;
+    gap: 8px;
+    min-height: 52px;
+  }
+  .wb-back,
+  .wb-open {
+    flex: none;
+    box-shadow: none;
+  }
+  .wb-back {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 20px;
+    color: #181818;
+  }
+  .wb-open {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wb-railmeta__t b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-railmeta__t span {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  /* Сегменты 4 r2 через 2; пройденные — светло-фиолетовые, текущий — фиолетовый. */
+  .wb-seg {
+    gap: 2px;
+  }
+  .wb-seg i {
+    height: 4px;
+    border-radius: 2px;
+    background: #e4daf8;
+  }
+  .wb-seg i.is-on {
+    background: #c9a8ff;
+  }
+  .wb-seg i.is-cur {
+    background: #9047ff;
+  }
+
+  /* Тип задания — пилюля 32 (12/700), рядом инструкция 16/500 серым. */
+  .wb-brief {
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .wb-tag {
+    height: 32px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .wb-tag--words {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .wb-brief__tx {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+
+  /* Задание лежит прямо на фоне экрана, без белой карточки. */
+  .wb-card {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* Подсказка — лавандовая плашка r16, 12/700 фиолетовым. */
+  .wb-note--tell {
+    padding: 12px;
+    border: 0;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  /* Слова банка — белые плашки r12 с рамкой 2 #e8e8ee, 16/700. */
+  .wb-tok {
+    padding: 12px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    box-shadow: none;
+  }
+  /* Группы — две в ряд (181 в кадре; общий мобильный слой workbook.css ставил
+     столбиком), лавандовые r20 с рамкой #d8ccf2, заголовок 12/700 фиолетовым.
+     Три группы на 370 не влезают — их оставляем столбиком. */
+  .wb-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .wb-cols--3 {
+    grid-template-columns: 1fr;
+  }
+  /* Группы — лавандовые r20 с рамкой #d8ccf2, заголовок 12/700 фиолетовым. */
+  .wb-col {
+    padding: 12px;
+    border: 1px solid #d8ccf2;
+    border-radius: 20px;
+    background: #f6f1ff;
+  }
+  .wb-col.is-armed {
+    border-color: #9047ff;
+  }
+  .wb-col h4 {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+
+  /* Нижняя полоса на фоне экрана: точки 8 через 4, счёт 12/700 серым,
+     «Дальше» 48 r16; до ответа — бледная #dccff9 с белым текстом. */
+  .wb-actionbar {
+    gap: 12px;
+    margin: 12px -16px 0;
+    padding: 8px 16px;
+    border-radius: 0;
+    background: #f8f8f8;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .wb-dot {
+    background: #e4daf8;
+  }
+  .wb-dot.is-on {
+    background: #9047ff;
+  }
+  .wb-tally__n {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8e8e99;
+  }
+  .wb-actionbar .wb-primary {
+    height: 48px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    box-shadow: none;
+  }
+  .wb-actionbar .wb-primary:disabled {
+    background: #dccff9;
+    color: #fff;
+  }
+
+  /* Тёмная экрана задания. */
+  html[data-theme='dark'] body .wb:has(.wb-rail) .wb-backbtn,
+  html[data-theme='dark'] body .wb-open,
+  html[data-theme='dark'] body .wb-note--tell {
+    border: 0;
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-back {
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-railmeta__t b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-seg i {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-seg i.is-on {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] body .wb-seg i.is-cur {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] body .wb-card,
+  html[data-theme='dark'] body .wb-actionbar {
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] body .wb-tok {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-col {
+    border-color: var(--dk-acc-line);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-dot {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-dot.is-on {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] body .wb-actionbar .wb-primary:disabled {
+    background: var(--dk-acc-tint);
+    color: var(--dk-muted);
+  }
 }
