@@ -492,6 +492,18 @@
     line-height: 24px;
     box-shadow: none;
   }
+  /* У заданий без проверки вместо точек — фраза «Здесь нет правильного
+     ответа»: без сжатия она выталкивала «Завершить урок» за край экрана. */
+  .wb-tally--free {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wb-actionbar .wb-primary {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
   .wb-actionbar .wb-primary:disabled {
     background: #dccff9;
     color: #fff;
