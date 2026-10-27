@@ -575,3 +575,14 @@
     box-shadow: 0 0 0 16px var(--dk-page);
   }
 }
+
+@media (max-width: 560px) {
+  /* Генератор держит у задания прежнюю тёмную подложку и круг у крестика
+     файла — в макете их нет. */
+  html[data-theme='dark'] .learn .hw-detail {
+    background: transparent;
+  }
+  html[data-theme='dark'] .learn .hw-file__remove {
+    background: transparent url(/assets/m/homework/close.svg) center / 20px 20px no-repeat;
+  }
+}

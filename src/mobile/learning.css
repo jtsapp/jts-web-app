@@ -1793,3 +1793,18 @@
     border-color: var(--dk-acc-line);
   }
 }
+@media (max-width: 560px) {
+  /* Генератор тёмной темы красит кнопки полосы урока шорткатом фона (круг
+     без значка) — перебиваем через .cp. */
+  html[data-theme='dark'] .cp .cp-bar__exit {
+    background: transparent url(/assets/m/homework/close.svg) center / 24px 24px no-repeat;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .cp .cp-bar__dict {
+    background: var(--dk-acc-soft) url(/assets/m/learning/dict-book.svg) center / 20px 20px no-repeat;
+  }
+  html[data-theme='dark'] .cp .cp-bar__place b {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+}
