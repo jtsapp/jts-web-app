@@ -58,13 +58,13 @@ describe('zip — свой писатель архива', () => {
    */
   const распаковщики = [
     // zipfile из стандартной библиотеки Python — строгая независимая реализация.
-    { cmd: 'python3', args: (file) => ['-c',
+    { cmd: 'python3', probe: ['-c', 'import zipfile'], args: (file) => ['-c',
       'import sys,zipfile\n' +
       'z=zipfile.ZipFile(sys.argv[1])\n' +
       'n=z.namelist()[0]\n' +
       'sys.stdout.write(n + "|" + z.read(n).decode())', file] },
-    { cmd: 'unzip', args: (file) => ['-p', file, 'yellow/index.json'], prefix: 'yellow/index.json|' },
-    { cmd: 'powershell', args: (file) => ['-NoProfile', '-Command',
+    { cmd: 'unzip', probe: ['-v'], args: (file) => ['-p', file, 'yellow/index.json'], prefix: 'yellow/index.json|' },
+    { cmd: 'powershell', probe: ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'], args: (file) => ['-NoProfile', '-Command',
       `Add-Type -A System.IO.Compression.FileSystem;` +
       `$z=[IO.Compression.ZipFile]::OpenRead('${file.replace(/\\/g, '\\\\')}');` +
       `$e=$z.Entries[0];$r=New-Object IO.StreamReader($e.Open());` +
@@ -74,7 +74,8 @@ describe('zip — свой писатель архива', () => {
   /** Первый распаковщик, который вообще есть на этой машине. */
   const доступный = распаковщики.find((u) => {
     try {
-      execFileSync(process.platform === 'win32' ? 'where' : 'which', [u.cmd], { stdio: 'ignore' })
+      // Windows can resolve python3 to a Store placeholder that cannot run Python.
+      execFileSync(u.cmd, u.probe, { stdio: 'ignore', timeout: 5000, windowsHide: true })
       return true
     } catch {
       return false

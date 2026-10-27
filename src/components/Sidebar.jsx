@@ -11,6 +11,8 @@ import { isTeacher } from '../lib/jwt.js'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 import { useMatching } from '../matching/matchingStore.js'
 import { matchingView } from '../matching/matchingState.js'
+import { isSectionOpen, useStudentSections } from '../lib/studentSections.js'
+import { useContractsBadge } from '../contracts/useContracts.js'
 
 // «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
 // первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
@@ -28,6 +30,10 @@ const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
 const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
 const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
 
+// «Выбрать группу» (ТЗ кабинетов, 14): рядом с «Моим учителем», только ученику. Видимость по тарифу и формату решает 14е —
+// раздел `group` открыт только формату «в группе», а пока абонемента нет (онбординг), меню полное.
+const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
+
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
@@ -43,6 +49,10 @@ const NAV_FULL = [
   { key: 'prizes', label: 'nav.prizes', ico: 'school' },
   // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
   { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
+  // «Уведомления» видны всем ученикам независимо от тарифа и формата (ТЗ кабинетов, 14е).
+  { key: 'notifications', label: 'nav.notifications', ico: 'notifications' },
+  // «Договоры» тоже видны всем (ТЗ кабинетов, 14е); значок — сколько договоров ждут подписи.
+  { key: 'contracts', label: 'nav.contracts', ico: 'edit_note' },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
 // TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
@@ -62,7 +72,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 // General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
 // С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и в нём всегда ОБА экзамена: доступ к
 // одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes']
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
@@ -130,9 +140,13 @@ export default function Sidebar({
     }
   }, [token, teacher])
 
+  // Разделы по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел в меню не показываем. До ответа сервера и без
+  // абонемента меню полное.
+  const sections = useStudentSections(teacher ? null : token || loadToken())
   const matching = matchingView(useMatching(teacher ? null : token || loadToken()))
-  const head = !teacher && !MATCHING_HIDDEN.has(matching.status) ? [HOME_ITEM, MY_TEACHER_ITEM] : [HOME_ITEM]
-  const badges = { 'my-teacher': matching.badge || 0 }
+  const head = teacher ? [HOME_ITEM] : !MATCHING_HIDDEN.has(matching.status) ? [HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM] : [HOME_ITEM, GROUP_ITEM]
+  const contractsToSign = useContractsBadge(teacher ? null : token || loadToken())
+  const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign }
 
   const base = [...head, ...NAV]
   // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
@@ -142,7 +156,7 @@ export default function Sidebar({
     if (!rewardsEnabled && isRewardsScreen(item.key)) return false
     if (item.key === 'ielts') return examTabs.ielts
     if (item.key === 'sat') return examTabs.sat
-    return true
+    return isSectionOpen(sections, item.key)
   })
   const { t } = useI18n()
   const role = roleForLevel(userLevel)

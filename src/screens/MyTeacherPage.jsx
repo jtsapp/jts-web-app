@@ -14,6 +14,7 @@ import ManagerPickModal, { managerButtonLabel } from '../matching/ManagerPickMod
 import TimezoneBanner from '../matching/TimezoneBanner.jsx'
 import { ChangeFormatModal, ChangeTeacherModal, VacationModal, shortDate } from '../matching/ChangeModals.jsx'
 import { CelebrateModal, InfoHero, ManagerPicking, NoTeacherHero, RequestsStatus } from '../matching/StatusViews.jsx'
+import FormatChoice from '../groups/FormatChoice.jsx'
 
 // «Мой учитель» (ТЗ 08 §2.9): один экран на все статусы подбора — какой показать, решает matchingView по карточке
 // бэкенда. Кнопки «Написать в чат» нет ни в одном состоянии (ТЗ).
@@ -71,12 +72,16 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
       break
     case 'none':
       body = (
-        <NoTeacherHero
-          view={view}
-          managerLabel={managerLabel}
-          onStart={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)}
-          onManager={openManager}
-        />
+        <>
+          {/* Формат (ТЗ кабинетов, 14): «индивидуально» ведёт в подбор учителя, «в группе» — в «Выбрать группу». */}
+          <FormatChoice token={token} onIndividual={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)} onGroup={() => onNav('group')} />
+          <NoTeacherHero
+            view={view}
+            managerLabel={managerLabel}
+            onStart={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)}
+            onManager={openManager}
+          />
+        </>
       )
       break
     case 'matching':

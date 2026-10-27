@@ -444,6 +444,10 @@
   color: var(--mt-fg-3);
   cursor: not-allowed;
 }
+.mt-slot:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 .mt-slot--best {
   box-shadow: 0 0 0 2px var(--mt-gold);
 }
