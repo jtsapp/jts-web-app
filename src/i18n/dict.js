@@ -34,6 +34,11 @@ export const DICT = {
 
     // Выбор тьютора
     'choose.title': 'Выбери подходящего тьютора',
+    // Подпись под именем на карточке выбора (телефон, кадр Mobile 6132:5848).
+    'tutor.dexter.tagline': 'Путеводитель и тьютор',
+    'tutor.luna.tagline': 'Спокойная и вдумчивая',
+    'tutor.spark.tagline': 'Энергия и юмор',
+    'tutor.aizere.tagline': 'Говорит на казахском',
     // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
     // голоса (comingSoon в tutors.js; сейчас таких нет — Айзере заговорила).
     'choose.soon': 'Скоро',
@@ -461,6 +466,10 @@ export const DICT = {
     'lang.title': 'Ең алдымен,\nтьютормен сөйлесу\nтілін таңда',
 
     'choose.title': 'Өзіңе лайық тьюторды таңда',
+    'tutor.dexter.tagline': 'Жолбасшы әрі тьютор',
+    'tutor.luna.tagline': 'Сабырлы әрі ойшыл',
+    'tutor.spark.tagline': 'Қуат пен әзіл',
+    'tutor.aizere.tagline': 'Қазақша сөйлейді',
     'choose.soon': 'Жақында',
     'tutor.aizere.trait1': 'Дана',
     'tutor.aizere.trait2': 'Қамқор',
@@ -849,6 +858,10 @@ export const DICT = {
     'lang.title': 'First of all,\nchoose the language\nto talk with your tutor',
 
     'choose.title': 'Choose the right tutor',
+    'tutor.dexter.tagline': 'Guide and tutor',
+    'tutor.luna.tagline': 'Calm and thoughtful',
+    'tutor.spark.tagline': 'Energy and humor',
+    'tutor.aizere.tagline': 'Speaks Kazakh',
     'choose.soon': 'Coming soon',
     'tutor.aizere.trait1': 'Wise',
     'tutor.aizere.trait2': 'Caring',

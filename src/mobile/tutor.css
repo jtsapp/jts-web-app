@@ -111,73 +111,219 @@
     line-height: 20px;
   }
 
-  /* ---------- Приветствие + выбор тьютора (кадры 4338:1182, 4338:1568) ----------
-     В макете приветствие и выбор — два кадра, выбор каруселью. В приложении это
-     один экран нового макета «Speaking Buddy» (баннер + ряд фигурок), поэтому
-     на телефоне он идёт двумя шагами (TutorChoosePage): сначала баннер —
-     карточка кадра приветствия, панель 400 с той же группой маскотов, что на
-     выборе языка, — а по кнопке карусель (TutorCarousel). Ряд фигурок и его
-     заголовок на телефоне не показываются: выбор живёт в карусели. */
+  /* ---------- Приветствие + выбор тьютора (кадр «Mobile» 6132:5848) ----------
+     Один экран, как в приложении (27.10.2026): заголовок раздела, белая
+     карточка баннера (r28, рамка #ececf1, p12, между частями 14) — картинка
+     344×200 r20 (экспорт узла 6132:5893: та же сцена, что на компьютере, но
+     кадрирована под телефон), текст и кнопка; ниже «Выбери подходящего
+     тьютора» и сетка карточек 2×2 (r24, p12, фигурка 120×136, имя Bold 16,
+     подпись Medium 12). Выбранная — #efe7ff с рамкой 2 #9047ff и галочкой 24 в
+     углу; соседи не гаснут. Между блоками колонки — 16, как в кадре. Числа сняты
+     мостом Figma. */
   .t-pick {
-    padding-top: 16px;
-    gap: 32px;
+    padding-top: 4px;
+    gap: 16px;
   }
-  .t-pick__heading,
-  .t-pick__row {
-    display: none;
+  .t-pick__page {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 44px;
+    letter-spacing: -0.01em;
+    color: #181818;
   }
   .t-pick__hero {
-    gap: 0;
-    padding: 0;
-    border-radius: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px;
+    border: 1px solid #ececf1;
+    border-radius: 28px;
   }
   .t-pick__art {
-    content: url(/assets/m/tutor/mascots.webp);
-    height: 400px;
-    aspect-ratio: auto;
-    object-fit: contain;
-    border-radius: 30px;
-    background: var(--t-purple);
+    content: url(/assets/m/tutor/hero.webp);
+    width: 100%;
+    aspect-ratio: 344 / 200;
+    object-fit: cover;
+    border-radius: 20px;
   }
   .t-pick__intro {
+    gap: 14px;
     align-items: stretch;
-    gap: 32px;
-    padding: 24px;
   }
   .t-pick__text {
-    gap: 12px;
-    text-align: center;
+    gap: 8px;
+    padding: 0 4px;
   }
-  /* Переносы словаря (\n) рассчитаны на десктопные 420px — в 360 они дают
-     три строки вместо двух из кадра. max-width 340: у Figma метрики PT Root
-     UI чуть шире браузерных, и «…на обучение с» в её 360 уже не влезает —
-     без потолка предлог висел бы в конце первой строки. */
+  /* Переносы словаря (\n) — десктопные: в 336 они дали бы четыре строки вместо
+     трёх из кадра. */
   .t-pick__title {
-    max-width: 340px;
-    margin: 0 auto;
     white-space: normal;
-    font-size: 24px;
-    line-height: 29px;
-    letter-spacing: -0.03em;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
   }
   .t-pick__sub {
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 22px;
-    color: #afafaf;
+    font-size: 14px;
+    line-height: 20px;
+    color: #8a8a8a;
   }
   .t-pick__start {
-    width: 100%;
-    height: 58px;
-    border-radius: 60px;
-    line-height: 18px;
+    height: 52px;
   }
   .t-pick__start:hover:not(:disabled) {
     transform: none;
   }
+  .t-pick__heading {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 27px;
+    letter-spacing: -0.004em;
+    text-align: left;
+    color: #181818;
+  }
+  .t-pick__row {
+    gap: 12px;
+  }
+  .t-pick__row.has-pick .t-pick__card:not(.is-picked) {
+    opacity: 1;
+  }
+  .t-pick__card {
+    position: relative;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+    background: #ffffff;
+  }
+  /* Рамка выбранной — 2px наружу (кадр: 180×210 против 178×208 у соседей):
+     вторым пикселем — тень, иначе карточка раздвигала бы свою строку. */
+  .t-pick__card.is-picked {
+    padding-top: 12px;
+    border-color: #9047ff;
+    background: #efe7ff;
+    box-shadow: 0 0 0 1px #9047ff;
+  }
+  .t-pick__card:focus-visible {
+    outline: 2px solid var(--t-purple);
+    outline-offset: 2px;
+  }
+  .t-pick__card:focus-visible .t-pick__plate {
+    outline: none;
+  }
+  .t-pick__figure {
+    width: 120px;
+    height: 136px;
+  }
+  .t-pick__figure--orb {
+    width: 116px;
+    height: 116px;
+    margin: 10px 0;
+  }
+  .t-pick__plate,
+  .t-pick__card.is-picked .t-pick__plate {
+    margin-top: 0;
+    min-height: 0;
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .t-pick__name,
+  .t-pick__card.is-picked .t-pick__name {
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .t-pick__tag {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: center;
+    color: #8a8a8a;
+  }
+  .t-pick__check {
+    position: absolute;
+    top: 9px;
+    right: 27px;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/tutor/check.svg) center / 24px 24px no-repeat;
+  }
 
-  /* Шаг-карусель (кадр 4338:1568). Фон у кадра белый, у остальных экранов
-     раздела — #f8f8f8. Колонка тянется до низа экрана: кнопки прижаты к низу,
+  /* Описание и визитка выделенного — в кадре их нет (в карусели «Web Адаптивка»
+     были): карточкой того же вида, что баннер. */
+  .t-pick__about {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+    background: #ffffff;
+  }
+  .t-pick__desc {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #4a4a55;
+  }
+  .t-pick__listen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 20px;
+    cursor: pointer;
+  }
+
+  /* Тёмная: правила сгенерированного слоя (theme-dark.generated.css) идут позже — у
+     этих лишний класс .t-pick, иначе их фон и рамка карточек перебивались. */
+  html[data-theme='dark'] .t-pick .t-pick__page,
+  html[data-theme='dark'] .t-pick .t-pick__title,
+  html[data-theme='dark'] .t-pick .t-pick__heading,
+  html[data-theme='dark'] .t-pick .t-pick__name {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .t-pick .t-pick__sub,
+  html[data-theme='dark'] .t-pick .t-pick__tag {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .t-pick .t-pick__desc {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .t-pick .t-pick__hero,
+  html[data-theme='dark'] .t-pick .t-pick__about,
+  html[data-theme='dark'] .t-pick .t-pick__card {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .t-pick .t-pick__plate,
+  html[data-theme='dark'] .t-pick .t-pick__card.is-picked .t-pick__plate {
+    background: none;
+  }
+  html[data-theme='dark'] .t-pick .t-pick__card.is-picked {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-soft);
+    box-shadow: 0 0 0 1px var(--dk-acc);
+  }
+  html[data-theme='dark'] .t-pick .t-pick__listen {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+
+  /* Карусель «Web Адаптивка» (кадр 4338:1568) — экран выбора её больше не
+     зовёт (выбор по кадру «Mobile» выше), компонент TutorCarousel оставлен.
+     Фон у кадра белый, у остальных экранов раздела — #f8f8f8. Колонка тянется до низа экрана: кнопки прижаты к низу,
      блок «аватар + подписи» — по центру между ними и шапкой, с полями 40, как
      в кадре. */
   .t-app:has(.t-car) {
