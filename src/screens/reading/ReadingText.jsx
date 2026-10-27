@@ -9,6 +9,7 @@ import ReadingArticle from './ReadingArticle.jsx'
 import ReadingKeywords from './ReadingKeywords.jsx'
 import ReadingTasks, { checkUnchecked } from './ReadingTasks.jsx'
 import useReadingVoice from './useReadingVoice.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
 // экране две панели превращаются в вкладки — на телефоне читать текст в
@@ -19,6 +20,9 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
   // Телефон показывает задания по одному (кадры «Задания» макета приложения);
   // «Открыть» из итогов ставит сразу нужное.
   const [step, setStep] = useState(() => (focusEx == null ? 0 : focusEx))
+  // На телефоне значки «Ваша задача» и «Ключевые слова» — из макета (флажок и
+  // лампочка рисует мобильный слой), у слов — счётчик справа, как в кадре.
+  const phone = usePhoneWidth()
 
   // «Открыть» из итогов ведёт к конкретному заданию, как data-goto прототипа
   // (:1115): вкладка заданий + прокрутка. Раньше вкладка не передавалась, и на
@@ -102,10 +106,13 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
             </div>
           </div>
 
-          <div className="rd-task"><b>🎯 {t('reading.task')}</b> {loc(text.task, lang)}</div>
+          <div className="rd-task"><b>{phone ? '' : '🎯 '}{t('reading.task')}</b> {loc(text.task, lang)}</div>
 
           <section className="rd-panel">
-            <h2 className="rd-label">🔑 {t('reading.keyWords')}</h2>
+            <h2 className="rd-label">
+              {phone ? '' : '🔑 '}{t('reading.keyWords')}
+              {phone && <span className="rd-label__count">{text.words.length}</span>}
+            </h2>
             <ReadingKeywords words={text.words} token={token} source={text.title} />
           </section>
 

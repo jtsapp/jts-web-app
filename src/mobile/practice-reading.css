@@ -1519,6 +1519,71 @@
     font-size: 12px;
   }
 
+  /* ---------- 2 · Текст: значки и счётчик (разметка по usePhoneWidth) ----------
+     Флажок у «Ваша задача», лампочка и число слов у «Ключевые слова» — экспорт
+     Figma вместо эмодзи 🎯 / 🔑, которые на телефоне не рисуются. */
+  .rd-task b {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rd-task b::before,
+  .rd-pane--text .rd-panel > .rd-label::before {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: url('/assets/m/reading/flag.svg') center / 20px no-repeat;
+  }
+  .rd-pane--text .rd-panel > .rd-label:has(.rd-label__count) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rd-pane--text .rd-panel > .rd-label::before {
+    display: none;
+  }
+  .rd-pane--text .rd-panel > .rd-label:has(.rd-label__count)::before {
+    display: block;
+    background-image: url('/assets/m/reading/lightbulb.svg');
+  }
+  .rd-label__count {
+    margin-left: auto;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+
+  /* ---------- Книжки · 3 · полоса «Прочитано из главы» ----------
+     Подпись кадра берётся из aria-label самой полосы (i18n) — ::after встаёт
+     между дорожкой и процентом через order, разметку не трогаем. */
+  .bk-readbar {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 16px;
+  }
+  .bk-readbar__track {
+    height: 8px;
+  }
+  .bk-readbar::after {
+    content: attr(aria-label) ' ·';
+    order: 1;
+    flex: none;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .bk-readbar__pct {
+    order: 2;
+    min-width: 0;
+    color: #8e8e99;
+    font-size: 12px;
+  }
+
   /* ---------- Тёмная тема ----------
      Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
      (генератор theme-dark.generated.css этот файл не знает). */
