@@ -8,21 +8,7 @@ import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
 import NextLessonCard from './NextLessonCard.jsx'
-
-// Телефонная ширина мобильного слоя (src/mobile/*.css). Узнаём после монтирования
-// и следим за поворотом: первый рендер совпадает с серверным, без hydration mismatch.
-function usePhoneWidth() {
-  const [phone, setPhone] = useState(false)
-  useEffect(() => {
-    const mq = typeof window !== 'undefined' ? window.matchMedia?.('(max-width: 560px)') : null
-    if (!mq) return undefined
-    const sync = () => setPhone(mq.matches)
-    sync()
-    mq.addEventListener?.('change', sync)
-    return () => mq.removeEventListener?.('change', sync)
-  }, [])
-  return phone
-}
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 export default function LessonSchedule({ token, onOpenLesson }) {
   const { t } = useI18n()

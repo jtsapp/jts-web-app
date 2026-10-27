@@ -74,7 +74,8 @@
   /* У ученика с Self Study три вкладки (+ «Отчёты»): макетный кегль 16
      «Самостоятельно» в треть сегмента не влезает. */
   .ls__tabs:has(.ls-tab:nth-child(3)) .ls-tab {
-    padding: 8px 4px;
+    flex: 1 1 auto;
+    padding: 8px 6px;
     font-size: 13px;
   }
   .ls__body--wide {
@@ -491,6 +492,441 @@
   }
   :root[data-theme='dark'] .cal__day:hover {
     background: var(--dk-chip);
+  }
+}
+
+/* ---------- «Самостоятельно» (секция «Уроки» → «Самостоятельно», кадр 6428:6533) ----------
+   Чипы уровней лентой, «Следующий материал», прогресс уровня, «Материалы» и строки материалов вместо
+   обложек. Блоки .ss-phone и название в теле карточки рисует SelfStudy.jsx, на компьютере они скрыты
+   (courseCatalog.css). Юниты остаются подзаголовками списка: по ним курс читается частями. */
+@media (max-width: 560px) {
+  .ss > .cc__subtitle {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+  .ss .gr-levels {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ss .gr-levels::-webkit-scrollbar {
+    display: none;
+  }
+  .ss .gr-levelchip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 42px;
+    padding: 8px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+    box-shadow: none;
+  }
+  .ss .gr-levelchip.on {
+    border-color: #181818;
+    background: #181818;
+    color: #fff;
+  }
+  .ss .gr-levelchip.is-locked {
+    color: #8e8e99;
+  }
+  /* Замок в макете — после кода уровня */
+  .ss .gr-levelchip > svg {
+    order: 1;
+    width: 16px;
+    height: 16px;
+  }
+
+  .ss-phone {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .ss-next {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, #9047ff, #6b2fd6);
+  }
+  .ss-next__chip {
+    align-self: flex-start;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #fff;
+  }
+  .ss-next__title {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #fff;
+  }
+  .ss-next__go {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .ss-next__go::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/lessons/play_arrow.svg) center / contain no-repeat;
+    mask: url(/assets/m/lessons/play_arrow.svg) center / contain no-repeat;
+  }
+
+  .ss-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .ss-progress__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ss-progress__t {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ss-progress__name {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  .ss-progress__sub {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .ss-progress__num {
+    flex: none;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #9047ff;
+  }
+  .ss-progress__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+    overflow: hidden;
+  }
+  .ss-progress__bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #9047ff;
+  }
+  .ss-phone__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  .ss-phone__count {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+
+  /* Юнит — подзаголовок списка */
+  .ss .pp-sec {
+    margin: 0 0 16px;
+  }
+  .ss .pp-sec__head {
+    margin: 0 0 8px;
+  }
+  .ss .pp-sec__head h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #5a5a66;
+  }
+  .ss .gr-unitpill {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e99;
+    background: none;
+    padding: 0;
+  }
+
+  /* Строка материала (Material 370, p16 gap12 r20): плашка 48 со значком, название ExtraBold 16,
+     чипы типа и «Пройдено»; справа отметка «пройдено» (.ss-mark). */
+  /* У .gr-grid на телефоне своя лента карточек грамматики (grammar.css: перенос по горизонтали,
+     .gr-grid > * шириной 236) — здесь список, поэтому всё это гасим. */
+  .ss .gr-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    scroll-snap-type: none;
+    gap: 8px;
+  }
+  .ss .gr-grid > .ss-card {
+    flex: none;
+  }
+  .ss .ss-card {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+  }
+  .ss .ss-card > .gr-gcard {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 90px;
+    height: auto;
+    padding: 16px 56px 16px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+    text-align: left;
+    transform: none;
+  }
+  .ss .ss-card > .gr-gcard::before {
+    content: '';
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #efe7ff;
+  }
+  .ss .ss-card > .gr-gcard::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 28px;
+    width: 24px;
+    height: 24px;
+    margin-top: -12px;
+    background: #9047ff;
+    -webkit-mask: url(/assets/home-v2/ico/assignment.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/assignment.svg) center / contain no-repeat;
+  }
+  .ss .ss-card--read > .gr-gcard::after {
+    -webkit-mask-image: url(/assets/home-v2/ico/menu_book.svg);
+    mask-image: url(/assets/home-v2/ico/menu_book.svg);
+  }
+  .ss .ss-card.is-done > .gr-gcard::before {
+    background: #e3f6ea;
+  }
+  .ss .ss-card.is-done > .gr-gcard::after {
+    background: #1f9d55;
+    -webkit-mask-image: url(/assets/m/lessons/check_circle.svg);
+    mask-image: url(/assets/m/lessons/check_circle.svg);
+  }
+  .ss .ss-card > .gr-gcard > .gr-cover,
+  .ss .ss-card .gr-unit-no,
+  .ss .ss-card .gr-gcard__t,
+  .ss .ss-card .gr-gcard__done {
+    display: none;
+  }
+  .ss .ss-card > .gr-gcard > .gr-gcard__body {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+  }
+  .ss .ss-card__title {
+    display: block;
+    flex-basis: 100%;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  .ss .ss-card .gr-gcard__desc,
+  .ss .ss-card__done {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    height: 24px;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .ss .ss-card__done {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  /* Отметка «пройдено»: пустой круг, пройденный — зелёный с галочкой */
+  .ss .ss-mark {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    left: auto;
+    bottom: auto;
+    width: 28px;
+    height: 28px;
+    margin-top: -14px;
+    border: 2px solid #8e8e99;
+    border-radius: 50%;
+    background: transparent;
+    color: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+  .ss .ss-card.is-done .ss-mark {
+    border-color: #1f9d55;
+    background: #1f9d55;
+    color: #fff;
+  }
+  /* Закрытый материал — серая плашка с замком */
+  .ss .ss-card > .ss-paywall::before {
+    background: #f0f0f4;
+  }
+  .ss .ss-card > .ss-paywall::after {
+    background: #8e8e99;
+    -webkit-mask-image: url(/assets/m/lessons/lock.svg);
+    mask-image: url(/assets/m/lessons/lock.svg);
+  }
+  .ss .ss-card > .ss-paywall {
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root[data-theme='dark'] .ss > .cc__subtitle,
+  :root[data-theme='dark'] .ss-progress__sub,
+  :root[data-theme='dark'] .ss .pp-sec__head h2,
+  :root[data-theme='dark'] .ss .ss-card .gr-gcard__desc {
+    color: var(--dk-text-2);
+  }
+  :root[data-theme='dark'] .ss .gr-levelchip,
+  :root[data-theme='dark'] .ss-progress,
+  :root[data-theme='dark'] .ss .ss-card > .gr-gcard {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  :root[data-theme='dark'] .ss .gr-levelchip.on {
+    border-color: var(--dk-text);
+    background: var(--dk-text);
+    color: var(--dk-on-bright);
+  }
+  :root[data-theme='dark'] .ss .gr-levelchip.is-locked {
+    color: var(--dk-muted);
+  }
+  :root[data-theme='dark'] .ss-progress__name,
+  :root[data-theme='dark'] .ss-phone__head,
+  :root[data-theme='dark'] .ss .ss-card__title {
+    color: var(--dk-text);
+  }
+  :root[data-theme='dark'] .ss .gr-unitpill {
+    background: none;
+    color: var(--dk-muted);
+  }
+  :root[data-theme='dark'] .ss-progress__num {
+    color: var(--dk-acc-text);
+  }
+  :root[data-theme='dark'] .ss-progress__bar {
+    background: var(--dk-acc-soft);
+  }
+  :root[data-theme='dark'] .ss-progress__bar > span {
+    background: var(--dk-acc);
+  }
+  :root[data-theme='dark'] .ss-next {
+    background: linear-gradient(135deg, var(--dk-acc), var(--dk-acc-strong));
+  }
+  :root[data-theme='dark'] .ss-next__go {
+    background: var(--dk-text);
+    color: var(--dk-on-bright);
+  }
+  :root[data-theme='dark'] .ss .ss-card > .gr-gcard::before {
+    background: var(--dk-acc-soft);
+  }
+  :root[data-theme='dark'] .ss .ss-card > .gr-gcard::after {
+    background: var(--dk-acc-text);
+  }
+  :root[data-theme='dark'] .ss .ss-card.is-done > .gr-gcard::before,
+  :root[data-theme='dark'] .ss .ss-card__done {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+  }
+  :root[data-theme='dark'] .ss .ss-card.is-done > .gr-gcard::after {
+    background: var(--dk-green);
+  }
+  :root[data-theme='dark'] .ss .ss-card__done {
+    color: var(--dk-green);
+  }
+  :root[data-theme='dark'] .ss .ss-card .gr-gcard__desc,
+  :root[data-theme='dark'] .ss .ss-card > .ss-paywall::before {
+    background: var(--dk-chip);
+  }
+  :root[data-theme='dark'] .ss .ss-mark {
+    border-color: var(--dk-muted);
+    background: transparent;
+    color: transparent;
+  }
+  :root[data-theme='dark'] .ss .ss-card.is-done .ss-mark {
+    border-color: var(--dk-green);
+    background: var(--dk-green);
+    color: var(--dk-on-bright);
   }
 }
 
