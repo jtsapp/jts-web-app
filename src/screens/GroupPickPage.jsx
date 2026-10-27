@@ -1,5 +1,7 @@
 'use client'
 
+import {serverActionError} from '../lib/serverActionError.js'
+
 import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import {
@@ -12,7 +14,7 @@ import { useGroupState } from '../groups/useGroupState.js'
 import WishesForm from '../groups/WishesForm.jsx'
 import SuggestionList from '../groups/SuggestionList.jsx'
 import EnrollmentCard from '../groups/EnrollmentCard.jsx'
-import { errorText, useBusy, useToast } from '../matching/ui.jsx'
+import { useBusy, useToast } from '../matching/ui.jsx'
 
 // «Выбрать группу» (ТЗ кабинетов, 14): пожелания → подходящие группы → запись → оплата или пробный урок → подтверждение
 // менеджера. Одна запись на ученика (сервер держит это уникальным индексом), поэтому смена группы — отмена и новый выбор.
@@ -35,7 +37,7 @@ export default function GroupPickPage({ token, userName, userLevel, onNav, onPro
         after?.(state)
         if (doneKey) toast(t(doneKey))
       } catch (e) {
-        toast(errorText(e, t))
+        toast(serverActionError(e, t))
       }
     })
 
@@ -45,7 +47,7 @@ export default function GroupPickPage({ token, userName, userLevel, onNav, onPro
         setAsked(false)
         setSuggestions(await suggestGroups(token, wishes))
       } catch (e) {
-        toast(errorText(e, t))
+        toast(serverActionError(e, t))
       }
     })
 
@@ -55,7 +57,7 @@ export default function GroupPickPage({ token, userName, userLevel, onNav, onPro
         await askGroupManager(token, wishes)
         setAsked(true)
       } catch (e) {
-        toast(errorText(e, t))
+        toast(serverActionError(e, t))
       }
     })
 

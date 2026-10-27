@@ -1,5 +1,7 @@
 'use client'
 
+import {serverActionError} from '../lib/serverActionError.js'
+
 import { useCallback, useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import {
@@ -8,7 +10,7 @@ import {
 import { notificationTarget } from '../lib/studentDeepLink.js'
 import { channelMarks, normalizeChannels } from '../notifications/channelMarks.js'
 import { useNoticeT } from '../notifications/texts.js'
-import { errorText, useBusy, useToast } from '../matching/ui.jsx'
+import { useBusy, useToast } from '../matching/ui.jsx'
 
 const LIMIT = 100
 
@@ -57,7 +59,7 @@ export default function NotificationsPage({ token, userName, userLevel, onNav, o
         await markAllNotificationsRead(token)
         setItems((prev) => prev.map((n) => ({ ...n, isRead: true })))
       } catch (e) {
-        toast(errorText(e, t))
+        toast(serverActionError(e, t))
       }
     })
 
@@ -71,7 +73,7 @@ export default function NotificationsPage({ token, userName, userLevel, onNav, o
         toast(t('channels.saved'))
       } catch (e) {
         setChannels(channels)
-        toast(errorText(e, t))
+        toast(serverActionError(e, t))
       }
     })
 
