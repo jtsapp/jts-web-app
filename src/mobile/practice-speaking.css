@@ -329,6 +329,152 @@
     color: #e57a12;
   }
 
+  /* ── «Ситуации» · 3–5 · Запись (кадры 6605:16417, 16449, 16481) ──────────
+     Карточка по центру: заголовок, подсказка, чип состояния с таймером, круглая кнопка записи 88 с подписью под
+     ней, ниже «Удалить» и «Послушать» пилюлями и «Разобрать ответ» во всю ширину. Разметку и порядок кнопок не
+     трогаем — раскладывает сетка: логика записи в SpeakingRecorder.jsx. */
+  .sit-rec {
+    padding: 24px 16px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    text-align: center;
+  }
+  .sit-rec__head {
+    justify-content: center;
+    margin-bottom: 8px;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .sit-rec__ic {
+    display: none;
+  }
+  .sit-rec__hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .sit-rec__bar {
+    display: inline-flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+  }
+  .sit-rec__state {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .sit-rec__state.is-live {
+    color: #ff5c5c;
+  }
+  .sit-rec__timer {
+    font-size: 12px;
+    line-height: 16px;
+    color: #181818;
+  }
+  .sit-rec__controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'mic mic' 'del play';
+    gap: 12px 8px;
+  }
+  .sit-rec__controls > :first-child {
+    grid-area: del;
+    justify-self: end;
+  }
+  .sit-rec__controls > :last-child {
+    grid-area: play;
+    justify-self: start;
+  }
+  .sit-rec__mic {
+    grid-area: mic;
+    position: relative;
+    justify-self: center;
+    min-width: 0;
+    padding: 100px 8px 0;
+    border-radius: 0;
+    background: none;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .sit-rec__mic:hover:not(:disabled),
+  .sit-rec__mic.is-live {
+    background: none;
+  }
+  .sit-rec__mic::before,
+  .sit-rec__mic::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .sit-rec__mic::before {
+    top: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #9047ff;
+    box-shadow: 0 10px 24px -8px rgba(144, 71, 255, 0.6);
+  }
+  .sit-rec__mic::after {
+    top: 28px;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    mask: url('/assets/home-v2/ico/mic.svg') center / contain no-repeat;
+  }
+  /* Идёт запись — красный круг и белый квадрат «стоп». */
+  .sit-rec__mic.is-live::before {
+    background: #ff5c5c;
+    box-shadow: 0 0 0 10px rgba(255, 92, 92, 0.16);
+  }
+  .sit-rec__mic.is-live::after {
+    top: 32px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    mask: none;
+  }
+  .sit-rec__tool {
+    padding: 6px 14px;
+    border-color: #e8e8ee;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .sit-rec__assess {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .sit-rec__go {
+    height: 56px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .sit-rec__budget {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .sit-rec__guest,
+  .sit-rec__error {
+    text-align: left;
+  }
+
   /* Тёмная: генератор (theme-dark.generated.css) подключён позже и бьёт тем же весом — поэтому через .sit. */
   html[data-theme='dark'] .learn__main .sit {
     color: var(--dk-text);
@@ -431,5 +577,46 @@
   html[data-theme='dark'] .sit .sit-view__flag {
     background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
     color: var(--dk-green);
+  }
+
+  html[data-theme='dark'] .sit .sit-rec {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sit .sit-rec__hint,
+  html[data-theme='dark'] .sit .sit-rec__state {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-rec__state.is-live {
+    color: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__bar {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .sit .sit-rec__timer,
+  html[data-theme='dark'] .sit .sit-rec__mic {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic,
+  html[data-theme='dark'] .sit .sit-rec__mic:hover:not(:disabled) {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic::before {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic.is-live::before {
+    background: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__tool {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-rec__go {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .sit .sit-rec__budget {
+    color: var(--dk-muted);
   }
 }
