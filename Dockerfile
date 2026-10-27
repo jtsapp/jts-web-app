@@ -24,6 +24,8 @@ RUN --mount=type=cache,id=jts-npm,target=/root/.npm \
            "@next/swc-linux-x64-gnu@$(node -p "require('next/package.json').version")" ) \
  && node -e "require('@next/swc-linux-x64-gnu'); console.log('swc native ok')"
 
+# Потолок только стадии сборки: на деве 3,8 ГБ, и next build без лимита
+# вытесняет бэкенд в своп. В финальный образ эта переменная не копируется.
 FROM node:20-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -50,6 +52,7 @@ ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 RUN --mount=type=cache,id=jts-wake-models,target=/wake-cache \
     mkdir -p public/assistant/wake \
  && node scripts/fetch-wake-model.js --soft --cache /wake-cache
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN npm run build
 
 FROM node:20-slim AS runner
