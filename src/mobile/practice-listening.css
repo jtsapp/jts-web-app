@@ -854,6 +854,142 @@
   }
 }
 
+/* ---------- «Слова в картинках»: сцена и игра (кадры 2–3) ----------
+   В шапке — имя сцены (крошка), а не название раздела. Превью: обложка во
+   всю ширину r24 без цветной подложки, «СЦЕНА» 12/700, имя 28/800, слова
+   двумя колонками белых карточек r16 со значком звука; кнопка «Начать» —
+   56 r16 внизу (верхняя дублирующая скрыта, нижняя та же функция).
+   Игра: задание 16/500 серым, сцена r20, кнопка повтора — круг 56. */
+@media (max-width: 560px) {
+  .wd:has(.wd-preview, .wd-play) .wd-crumb b {
+    display: none;
+  }
+  .wd:has(.wd-preview, .wd-play) .wd-crumb span {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wd-preview__hero {
+    display: block;
+    margin: 0 0 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .wd-preview__cover {
+    width: 100%;
+    height: 200px;
+    border-radius: 24px;
+    object-fit: cover;
+  }
+  .wd-preview__text {
+    min-width: 0;
+    margin-top: 16px;
+  }
+  .wd-preview__kicker {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wd-preview__text h1 {
+    margin: 4px 0 8px;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 36px;
+    color: #181818;
+  }
+  .wd-preview__text p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+  .wd-preview__text .wd-btn {
+    display: none;
+  }
+  .wd-words {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .wd-word {
+    min-width: 0;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .wd-word img {
+    width: 32px;
+    height: 32px;
+  }
+  .wd-word__text {
+    flex: 1;
+    min-width: 0;
+  }
+  .wd-word__text b {
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .wd-word__text em {
+    font-size: 12px;
+    color: #8e8e99;
+  }
+  .wd-word .wd-i,
+  .wd-word svg {
+    color: #9047ff;
+  }
+  /* Липкой полосе нужен скроллер-страница: у .learn__main overflow:auto,
+     и без этого sticky цеплялся бы к блоку, который сам не катится. */
+  .learn__main:has(.wd-preview) {
+    overflow: visible;
+  }
+  .wd-preview__foot {
+    position: sticky;
+    bottom: 0;
+    margin: 16px -16px 0;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: #f8f8f8;
+  }
+  .wd-preview__foot .wd-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .wd-task__text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .wd-task__round {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    line-height: 28px;
+    color: #9047ff;
+  }
+  .wd-speak {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+  }
+  .wd-stage {
+    border-radius: 20px;
+  }
+}
+
 /* ---------- Тёмная тема тренажёра: токены брендбука (theme-dark.css) ----------
    Через .lt — сгенерированный слой (theme-dark.generated.css) подключён позже
    с той же специфичностью и иначе перекрасил бы всё обратно. */
@@ -1041,5 +1177,32 @@
   }
   html[data-theme='dark'] .wd .wd-bar {
     background: var(--dk-raised);
+  }
+}
+
+/* ---------- Тёмная «Слова в картинках»: сцена и игра ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .wd .wd-crumb span,
+  html[data-theme='dark'] .wd .wd-preview__text h1,
+  html[data-theme='dark'] .wd .wd-word__text b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .wd .wd-preview__text p,
+  html[data-theme='dark'] .wd .wd-task__text {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .wd .wd-preview__hero {
+    background: none;
+  }
+  html[data-theme='dark'] .wd .wd-word {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .wd .wd-preview__foot {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .wd .wd-task__round {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
   }
 }
