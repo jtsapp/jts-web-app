@@ -60,3 +60,26 @@ describe('тур на паузе, пока App держит своё окно', 
     expect(onFinish).not.toHaveBeenCalled()
   })
 })
+
+describe('маскоты приветствия', () => {
+  const srcs = () => [...document.querySelectorAll('.t-tour__intro-art')].map((img) => img.getAttribute('src'))
+
+  it('без intro.art — нарезка макета «Главной» на всех четырёх местах', () => {
+    render(<OnboardingTour look="coach" intro={intro} steps={[]} />)
+    expect(document.querySelector('.t-tour__intro--cast')).toBeNull()
+    expect(srcs()).toEqual([
+      '/assets/first-login/welcome-top1.webp',
+      '/assets/first-login/welcome-top2.webp',
+      '/assets/first-login/welcome-left.webp',
+      '/assets/first-login/welcome-right.webp',
+    ])
+  })
+
+  it('intro.art экрана — свои фигуры, пустое место остаётся пустым', () => {
+    const art = { top1: '/a.webp', left: '/b.webp', right: '/c.webp' }
+    render(<OnboardingTour look="coach" intro={{ ...intro, art }} steps={[]} />)
+    expect(document.querySelector('.t-tour__intro--cast')).not.toBeNull()
+    expect(srcs()).toEqual(['/a.webp', '/b.webp', '/c.webp'])
+    expect(document.querySelector('.t-tour__intro-art--top2')).toBeNull()
+  })
+})

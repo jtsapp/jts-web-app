@@ -2533,6 +2533,11 @@ const dict = {
     'tour.home.recommend.text': 'Одна подсказка по твоим данным: горящая домашка, слабый навык или давно не было практики.',
     'tour.home.schedule.title': 'Расписание',
     'tour.home.schedule.text': 'Занятия на неделю вперёд. Нажми на урок, чтобы открыть его.',
+    // Приветствие тура «Практики» (вид «Главной»): имя раздела крупно, как имя ученика.
+    'tour.practice.intro.title': 'Это раздел',
+    'tour.practice.intro.name': 'Практика',
+    'tour.practice.intro.text':
+      'Тренажёры на все четыре навыка — занимайся сам, в своём темпе. Покажем за минуту, что где лежит.',
     'tour.practice.skills.title': 'Четыре навыка',
     'tour.practice.skills.text':
       'Аудирование, чтение, письмо и говорение: выбери навык — под ним соберутся его тренажёры.',
@@ -9723,6 +9728,10 @@ const dict = {
     'tour.home.recommend.text': 'One tip based on your data: homework due soon, a weak skill or a long break from practice.',
     'tour.home.schedule.title': 'Schedule',
     'tour.home.schedule.text': 'Your classes for the week ahead. Tap a lesson to open it.',
+    'tour.practice.intro.title': 'This is',
+    'tour.practice.intro.name': 'Practice',
+    'tour.practice.intro.text':
+      "Trainers for all four skills — practise on your own, at your own pace. We'll show you around in a minute.",
     'tour.practice.skills.title': 'Four skills',
     'tour.practice.skills.text':
       'Listening, reading, writing and speaking: pick a skill and its trainers gather below.',
@@ -16904,6 +16913,10 @@ const dict = {
     'tour.home.recommend.text': 'Сенің деректерің бойынша бір кеңес: мерзімі жеткен үй жұмысы, әлсіз дағды немесе ұзақ уақыт практика болмаған.',
     'tour.home.schedule.title': 'Кесте',
     'tour.home.schedule.text': 'Алдағы аптаның сабақтары. Ашу үшін сабақты бас.',
+    'tour.practice.intro.title': 'Бұл бөлім —',
+    'tour.practice.intro.name': 'Практика',
+    'tour.practice.intro.text':
+      'Төрт дағдының бәріне жаттығулар — өз қарқыныңмен өзің жаттық. Бір минутта бәрін көрсетеміз.',
     'tour.practice.skills.title': 'Төрт дағды',
     'tour.practice.skills.text':
       'Тыңдалым, оқылым, жазылым және айтылым: дағдыны таңда — оның жаттықтырғыштары астында жиналады.',

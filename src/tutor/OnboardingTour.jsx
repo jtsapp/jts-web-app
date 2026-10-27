@@ -5,6 +5,8 @@ import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration, u
 import { unlockSpeech } from '../lib/speech.js'
 
 const LUNA_AVATAR = '/assets/luna-assistant.webp'
+// Места маскотов вокруг карточки приветствия: двое сверху, по одному сбоку.
+const INTRO_SLOTS = ['top1', 'top2', 'left', 'right']
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 
@@ -184,10 +186,11 @@ export function useScreenTour(storageKey) {
 //
 // look="coach" — вид «Главной» по макету «Первый заход и подсказки» (21.10.2026):
 // приветствие с именем (intro) перед шагами, точки вместо счётчика, маскот в
-// карточке (step.art), белая рамка прожектора. Остальные экраны пока на прежнем
-// виде: макет нарисован только для «Главной». Шаг с optional: true без цели на
-// экране не пропускается, а встаёт по центру — список разделов на телефоне, где
-// сайдбар спрятан в drawer.
+// карточке (step.art), белая рамка прожектора. С 28.10.2026 этот вид берут и
+// другие экраны (первой — «Практика»): макета у них нет, маскоты — целые фигуры
+// из public/assets/mascots (intro.art, step.art с top/right), а не нарезка
+// макета «Главной». Шаг с optional: true без цели на экране не пропускается, а
+// встаёт по центру — список разделов на телефоне, где сайдбар спрятан в drawer.
 //
 // Пока App держит своё окно (holdTours в tourBus.js), тура нет вовсе — ни
 // затемнения, ни запертой прокрутки, ни Escape, который закрыл бы его вместе с
@@ -359,16 +362,25 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
 
   if (phase === 'intro') {
     // Приветствие (макет: «Демо · приглашение в тур»): карточка по центру, маскоты
-    // выглядывают из-за её краёв. Картинки — готовый рендер Figma, обрезанный
-    // ровно так, как он виден в макете.
+    // выглядывают из-за её краёв. У «Главной» картинки — готовый рендер Figma,
+    // обрезанный ровно так, как он виден в макете. Другие экраны отдают свои фигуры
+    // в intro.art ({ top1, top2, left, right }) целиком: обрезает их сама карточка —
+    // она выше по слою и непрозрачна (.t-tour__intro--cast в tutor.css).
+    const cast = intro.art
     return createPortal(
       <div className="t-tour t-tour--coach" role="dialog" aria-modal="true" aria-label={intro.title}>
         <div className="t-tour__veil t-tour__veil--intro" />
-        <div className="t-tour__intro">
-          <img className="t-tour__intro-art t-tour__intro-art--top1" src="/assets/first-login/welcome-top1.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--top2" src="/assets/first-login/welcome-top2.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--left" src="/assets/first-login/welcome-left.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--right" src="/assets/first-login/welcome-right.webp" alt="" />
+        <div className={`t-tour__intro${cast ? ' t-tour__intro--cast' : ''}`}>
+          {INTRO_SLOTS.map((slot) =>
+            cast && !cast[slot] ? null : (
+              <img
+                key={slot}
+                className={`t-tour__intro-art t-tour__intro-art--${slot}`}
+                src={cast ? cast[slot] : `/assets/first-login/welcome-${slot}.webp`}
+                alt=""
+              />
+            ),
+          )}
           <div className="t-tour__intro-card">
             <div className="t-tour__intro-copy">
               <h2 className="t-tour__intro-title">
@@ -450,7 +462,16 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
     // Карточка «Главной»: точки прогресса, заголовок, текст, «Далее» и
     // «Пропустить» слева; на последнем шаге — одна «Готово» справа. Маскот
     // справа снизу, под текстом (ширина колонки текста — из макета шага).
+    // Целая фигура (art.top) стоит головой от верха карточки, а ноги уходят за
+    // её низ: высота карточки зависит от длины текста, и прижатая к низу фигура
+    // то упиралась бы головой в край, то висела в пустоте.
     const art = step.art
+    const artStyle = art && {
+      width: art.w,
+      height: art.h,
+      right: art.right,
+      ...(art.top != null ? { top: art.top, bottom: 'auto' } : null),
+    }
     return createPortal(
       <div className="t-tour t-tour--coach" role="dialog" aria-modal="true" aria-label={step.title}>
         {hole ? <div className="t-tour__hole" style={hole} /> : <div className="t-tour__veil" />}
@@ -487,7 +508,7 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
               )}
             </div>
           </div>
-          {art && <img className="t-tour__art" src={art.src} alt="" style={{ width: art.w, height: art.h }} />}
+          {art && <img className="t-tour__art" src={art.src} alt="" style={artStyle} />}
         </div>
       </div>,
       document.body,

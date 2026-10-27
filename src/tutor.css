@@ -4090,6 +4090,33 @@
   width: 160px;
   height: 212px;
 }
+/* Приветствие других экранов (intro.art): целые фигуры, а не нарезка макета. Низ
+   фигуры уходит под карточку — она выше по слою и непрозрачна, — так фигура и
+   «выглядывает». Высота по пропорции картинки. */
+.t-tour__intro--cast .t-tour__intro-art {
+  height: auto;
+}
+.t-tour__intro--cast .t-tour__intro-art--top1 {
+  left: 48px;
+  bottom: calc(100% - 72px);
+  width: 150px;
+}
+.t-tour__intro--cast .t-tour__intro-art--top2 {
+  left: auto;
+  right: 48px;
+  bottom: calc(100% - 72px);
+  width: 150px;
+}
+.t-tour__intro--cast .t-tour__intro-art--left {
+  right: calc(100% - 80px);
+  top: 110px;
+  width: 200px;
+}
+.t-tour__intro--cast .t-tour__intro-art--right {
+  left: calc(100% - 80px);
+  top: 130px;
+  width: 200px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .t-tour__hole,

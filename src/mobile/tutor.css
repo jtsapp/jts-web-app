@@ -1126,4 +1126,17 @@
     left: auto;
     right: 8%;
   }
+  /* Целые фигуры других экранов: правило десктопа сильнее по селектору, поэтому
+     размеры телефона повторены с тем же префиксом. */
+  .t-tour__intro--cast .t-tour__intro-art--top1,
+  .t-tour__intro--cast .t-tour__intro-art--top2 {
+    width: 112px;
+    bottom: calc(100% - 52px);
+  }
+  .t-tour__intro--cast .t-tour__intro-art--top1 {
+    left: 8%;
+  }
+  .t-tour__intro--cast .t-tour__intro-art--top2 {
+    right: 8%;
+  }
 }

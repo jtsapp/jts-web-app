@@ -618,15 +618,33 @@ export default function PracticePage({
   // Тур — ученический: преподаватель пользуется экраном как витриной заданий
   // для выдачи на дом (AssignPracticeBar), и объяснения ему не про него.
   const tour = useScreenTour(teacher ? null : tourKey)
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой
+  // карточке. Маскоты — целые фигуры, голова от верха карточки (OnboardingTour).
+  const mascot = (name, w) => ({ src: `/assets/mascots/${name}.webp`, w, top: 20, right: -12 })
+  const coachCard = { width: 560, textWidth: 320 }
   const tourSteps = [
-    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text') },
-    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text') },
-    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
-    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text') },
-    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
-    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
+    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: mascot('sport-wave', 236), ...coachCard },
+    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: mascot('grad-cool', 200), ...coachCard },
+    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: mascot('pink-thumbs', 216), ...coachCard },
+    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: mascot('artist-paint', 236), ...coachCard },
+    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: mascot('pink-book', 210), ...coachCard },
+    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: mascot('sport-fly', 250), ...coachCard },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: mascot('grad-book', 220), ...coachCard },
   ]
+  const tourIntro = {
+    title: t('tour.practice.intro.title'),
+    name: t('tour.practice.intro.name'),
+    text: t('tour.practice.intro.text'),
+    cta: t('tour.home.intro.cta'),
+    skip: t('tour.home.intro.skip'),
+    art: {
+      top1: '/assets/mascots/artist-coffee.webp',
+      top2: '/assets/mascots/sport-handstand.webp',
+      // Сбоку из-за карточки видна только внешняя половина фигуры — жест должен быть на ней.
+      left: '/assets/mascots/grad-ball.webp',
+      right: '/assets/mascots/pink-cheer.webp',
+    },
+  }
   // Перед стартом возвращаем обзор «Аудирования»: под развёрнутым разделом или
   // другой вкладкой шагов в DOM нет, и тур свёлся бы к двум.
   const startTour = () => {
@@ -1338,7 +1356,7 @@ export default function PracticePage({
       )}
 
       {tour.open && (
-        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </LearningLayout>
   )
