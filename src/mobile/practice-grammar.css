@@ -754,6 +754,71 @@
     text-decoration: none;
   }
 
+  /* Вкладка «Примеры» (кадр «Mobile» 6605:14181 «3 · Примеры»): модельные
+     фразы — пилюли r12 слева без серой плашки (первая фиолетовая, вторая
+     лавандовая); ситуации — сетка 2×2 лавандовых карточек r12, подпись
+     12/700 фиолетовым, пример 12/500 тёмным. В «Теории» те же блоки прежние. */
+  .gr-lesson .gr-examples .gr-rich .g-chat {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0;
+    background: none;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-msg {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    background: #efe7ff;
+    color: #181818;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sits {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit {
+    padding: 12px;
+    border-radius: 12px;
+    background: #f6f1ff;
+  }
+  /* В лавандовом переводе карточки белые — иначе сливаются с фоном. */
+  .gr-lesson .gr-examples .gr-block-tr .gr-rich .g-sit {
+    background: #fff;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-h {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-ex {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #181818;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-ex .g-hl {
+    color: #181818;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-sit {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-sit .g-ex,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-chat {
+    background: none;
+  }
+
   /* Ошибки: серая плашка r20, красный крестик и зачёркнутое красным; верный
      вариант — второй строкой зелёным с галочкой (обе иконки — экспорт). В
      кадре это две плашки, но в данных пара — одна строка с ✗ и ✓ внутри. */
