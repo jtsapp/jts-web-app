@@ -1050,55 +1050,80 @@
     color: #181818;
   }
 
-  /* Плашка ответа над кнопкой: капсула 77, круг 42 с иконкой (экспорт),
-     подпись 16/700; у верного — белая пилюля монет 45. */
+  /* Плашка ответа — нижний лист во всю ширину (кадр «6 · Выбери форму»):
+     светло-зелёный #e3f6ea у верного, светло-красный у ошибки, скругление
+     сверху 24; значок 28, заголовок 20/800 цветом ответа, пояснение 16/500.
+     Кнопка под ним стоит на том же фоне (правило ниже). */
   .gr-lesson .gr-fb {
-    gap: 12px;
-    min-height: 77px;
-    margin: 16px 0 0;
-    padding: 16px;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+    margin: 16px -16px 0;
+    padding: 20px 16px 4px;
     border: 0;
-    border-radius: 100px;
+    border-radius: 24px 24px 0 0;
   }
   .gr-lesson .gr-fb.ok {
-    background: #aeffc7;
+    background: #e3f6ea;
   }
   .gr-lesson .gr-fb.no {
-    background: #fff0e8;
+    background: #fdecec;
   }
   .gr-lesson .gr-fb__ic {
-    width: 42px;
-    height: 42px;
+    flex: none;
+    width: 28px;
+    height: 28px;
     font-size: 0;
   }
   /* Шорткатом: в базе `background: var(--correct)` на той же паре классов
      сбрасывает повтор и размер фона. */
   .gr-lesson .gr-fb.ok .gr-fb__ic {
-    background: #1eb04b url(/assets/m/grammar/fb-ok.svg) center / 24px 24px no-repeat;
+    background: #1f9d55 url(/assets/m/grammar/fb-ok.svg) center / 16px 16px no-repeat;
   }
   .gr-lesson .gr-fb.no .gr-fb__ic {
-    background: #ff4646 url(/assets/m/grammar/fb-wrong.svg) center / 24px 24px no-repeat;
+    background: #e5484d url(/assets/m/grammar/fb-wrong.svg) center / 16px 16px no-repeat;
   }
   .gr-lesson .gr-fb__text > b {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 18px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
   }
   .gr-lesson .gr-fb.ok .gr-fb__text > b {
-    color: #067a32;
+    color: #1f9d55;
   }
   .gr-lesson .gr-fb.no .gr-fb__text > b {
-    color: #ff4646;
+    color: #e5484d;
   }
   .gr-lesson .gr-fb .gr-fb__why b {
     font-size: inherit;
     color: inherit;
   }
   .gr-lesson .gr-fb__why {
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 17px;
+    line-height: 24px;
     color: #181818;
+  }
+  /* Полоса кнопки под листом — того же цвета, кнопка верного — зелёная. */
+  .gr-lesson .gr-fb.ok + .gr-act__foot {
+    background: #e3f6ea;
+  }
+  .gr-lesson .gr-fb.no + .gr-act__foot {
+    background: #fdecec;
+  }
+  .gr-lesson .gr-fb.ok + .gr-act__foot .gr-next {
+    background: #1f9d55;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.ok,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.ok + .gr-act__foot {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.no,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.no + .gr-act__foot {
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb__why {
+    color: var(--dk-text);
   }
   /* Пилюля монет в кадре фиксированная 80×45, содержимое по центру. */
   .gr-lesson .gr-reward {
