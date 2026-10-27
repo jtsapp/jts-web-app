@@ -516,6 +516,187 @@
   }
 }
 
+/* ---------- «Услышь детали — найди свою картинку» (6605:17495): ?screen=listenchoose ----------
+   Шапка оболочки (колокольчик, язык) в кадрах раздела не стоит — как у
+   «Ситуаций», её место занимает строка 52 со стрелкой и названием. Заголовок
+   и подпись раздела ушли в эту строку; переключатель сложности и размер
+   набора в макете живут в окне «Настройка подхода» (кадр 8) — у нас
+   пока на экране, но в виде белых карточек макета (вопрос владельцу).
+   Палитра раздела — токенами .lc, поэтому большую часть цвета меняют они. */
+@media (max-width: 560px) {
+  .learn:has(.lc) .mtop,
+  :root:has(.lc) .learn__bell {
+    display: none;
+  }
+  .learn__main:has(.lc) {
+    background: #f8f8f8;
+  }
+  .lc {
+    --lc-violet: #9047ff;
+    --lc-violet-600: #9047ff;
+    --lc-violet-700: #7a32eb;
+    --lc-accent: #9047ff;
+    --lc-surface: #fff;
+    --lc-surface-2: #f8f8f8;
+    --lc-soft: #efe7ff;
+    --lc-text: #181818;
+    --lc-muted: #5a5a66;
+    --lc-line: #e8e8ee;
+    --lc-ok: #1f9d55;
+    --lc-ok-bg: #e3f6ea;
+    --lc-error: #d9363e;
+    --lc-error-bg: #fdebec;
+    --lc-shadow: none;
+    padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .lc-top {
+    position: relative;
+    height: 52px;
+    margin: 0 -12px 8px;
+    gap: 4px;
+  }
+  .lc-back,
+  .lc-back:hover {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 12px;
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+    filter: none;
+  }
+  .lc-crumb {
+    position: absolute;
+    left: 56px;
+    right: 56px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .lc-crumb b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .lc-head .lc-eyebrow,
+  .lc-head h1,
+  .lc-head .lc-sub {
+    display: none;
+  }
+  .lc-head {
+    margin: 0 0 12px;
+  }
+  .lc-difficulty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+  .lc-seg {
+    border: 0;
+    border-radius: 999px;
+    background: #efe7ff;
+  }
+  .lc-seg button[aria-pressed='true'] {
+    color: #9047ff;
+    background: #fff;
+    box-shadow: none;
+  }
+  .lc-levelhint {
+    margin: 0;
+    font-size: 12px;
+    color: #8e8e99;
+  }
+  .lc-setup {
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .lc-primary {
+    border-radius: 16px;
+  }
+
+  /* Задание (кадры 1–3): без общей карточки — полоса раунда, заголовок
+     20/800, пилюли «Попытка / правильно», плеер — белая карточка r20, под ним
+     сетка картинок 2×2 r16 через 16. */
+  .lc-bench {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .lc-shead {
+    padding: 0 0 16px;
+    border: 0;
+  }
+  .lc-round strong {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .lc-score {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #e3f6ea;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .lc-exercise {
+    padding: 0;
+  }
+  .lc-instruction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .lc-instruction h2 {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    letter-spacing: 0;
+  }
+  .lc-step {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .lc-player {
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .lc-play {
+    flex: none;
+    width: 56px;
+    min-width: 0;
+    height: 56px;
+    min-height: 0;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+  }
+  .lc-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 12px;
+  }
+  .lc-opt {
+    border-radius: 16px;
+    aspect-ratio: 178 / 130;
+  }
+}
+
 /* ---------- Тёмная тема тренажёра: токены брендбука (theme-dark.css) ----------
    Через .lt — сгенерированный слой (theme-dark.generated.css) подключён позже
    с той же специфичностью и иначе перекрасил бы всё обратно. */
@@ -623,5 +804,47 @@
   html[data-theme='dark'] .lt .lt-fb--no,
   html[data-theme='dark'] .lt .lt-task:has(> .lt-fb--no) .lt-dock {
     background: var(--dk-red-tint);
+  }
+}
+
+/* ---------- Тёмная «Слушай и выбирай»: токены раздела поверх сгенерированного слоя ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .learn .lc {
+    --lc-text: var(--dk-text);
+    --lc-line: var(--dk-line);
+    --lc-ok-bg: var(--dk-green-tint);
+    --lc-error-bg: var(--dk-red-tint);
+    --lc-shadow: none;
+  }
+  html[data-theme='dark'] .lc .lc-back {
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+    color: transparent !important;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .lc .lc-crumb b,
+  html[data-theme='dark'] .lc .lc-instruction h2 {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lc .lc-bench,
+  html[data-theme='dark'] .lc .lc-shead {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .lc .lc-step,
+  html[data-theme='dark'] .lc .lc-seg {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .lc .lc-score {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .lc .lc-setup,
+  html[data-theme='dark'] .lc .lc-player {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .learn__main:has(.lc) {
+    background: var(--dk-page);
   }
 }
