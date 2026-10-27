@@ -527,6 +527,62 @@
     color: var(--dk-acc-text);
   }
 
+  /* ---------- Speak or Die · раунд (кадр 6605:11085) ----------
+     Таймер 56/64 и подпись 12 строчными; тема 20/800, перевод 12 сиреневым;
+     «Отвечайте на английском» и статус — стеклянные чипы; «Завершить раунд»
+     — стеклянная кнопка 56 r16, а не красная пилюля. Стеклянной карточки
+     вокруг темы нет: у темы в разметке нет общей обёртки. */
+  .ar-timer span {
+    font-size: 56px;
+    line-height: 64px;
+    letter-spacing: -1px;
+  }
+  .ar-timer small {
+    margin-top: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #c8bee0;
+  }
+  .ar-topic-label {
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.08em;
+    color: #c9a8ff;
+  }
+  .ar-topic {
+    font-size: 20px;
+    line-height: 28px;
+    letter-spacing: 0;
+  }
+  .ar-topic-note {
+    font-size: 12px;
+    line-height: 16px;
+    color: #c8bee0;
+  }
+  .ar-hint,
+  .ar-status {
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #fff;
+  }
+  .ar-start.is-stop {
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 16px;
+    color: #fff;
+  }
+
   /* ---------- Шэдоуинг · урок (кадр 6605:18917) ----------
      Навбар как у «Аркады» (стрелка, «Шэдоуинг» по центру); спикеры —
      пилюлями 32 с номером в круге 24; видео r20 прямо на фоне, без карточки;
