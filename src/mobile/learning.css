@@ -1253,3 +1253,360 @@
     filter: invert(1);
   }
 }
+
+/* ======================================================================
+   Урок «Повторения» (CourseStepPlayer) по дизайну приложения (27.10.2026)
+   Кадры секции «Урок» 6609:22574: «Разминка · вступление» 6609:22575,
+   «Вопрос · верно» 6609:22798. Только вид — шаги, проверка и счёт прежние.
+   - Полоса 48: крестик без круга, прогресс урока прямо в ней (полоса HUD
+     закреплена поверх), словарь кругом 40; строкой ниже — плашка стадии и
+     название урока серым, язык — справа в той же строке.
+   - Вопрос лежит на фоне экрана: заголовок 24 слева, варианты — белые
+     плашки r20 с рамкой; верный — зелёный, неверный — красный.
+   - Кнопка шага закреплена у низа (ButtonBar 56 r16), разбор ответа —
+     лист над ней в цвете ответа, кнопка тогда того же цвета.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .cp-bar {
+    flex-wrap: wrap;
+    align-items: center;
+    height: auto;
+    min-height: 0;
+    gap: 0 8px;
+    padding: 0 8px 8px;
+    background: #f8f8f8;
+    box-shadow: none;
+  }
+  .cp-bar__exit {
+    order: 1;
+    width: 48px;
+    height: 48px;
+    border-radius: 0;
+    background: transparent url(/assets/m/homework/close.svg) center / 24px 24px no-repeat;
+    filter: brightness(0.25);
+  }
+  .cp-bar__dict {
+    order: 2;
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #efe7ff;
+  }
+  /* Строка стадии: занимает остаток второй строки, язык — справа от неё. */
+  .cp-bar__place {
+    order: 3;
+    flex: 1 0 calc(100% - 80px);
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-left: 16px;
+  }
+  .cp-bar__place b {
+    flex: none;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .cp-bar__place span {
+    min-width: 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: #8e8e99;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cp-bar .lang-wrap {
+    order: 4;
+  }
+  /* Прогресс — в строке крестика (Progress 290×12 от 60). Сам блок HUD
+     живёт в прокрутке, поэтому закреплён поверх полосы. */
+  .cp-hud {
+    position: fixed;
+    top: 18px;
+    left: 60px;
+    right: 60px;
+    z-index: 21;
+    width: auto;
+    height: 12px;
+    padding: 0;
+    border-radius: 999px;
+    background: transparent;
+  }
+  .cp-hud__track {
+    height: 12px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .cp-hud__fill {
+    border-radius: 999px;
+    background: #9047ff;
+  }
+
+  .cp-scroll {
+    align-items: stretch;
+    padding: 8px 16px 104px;
+  }
+  .cp:has(.cp-fb) .cp-scroll {
+    padding-bottom: 240px;
+  }
+
+  /* Вступление урока (IntroCard 370, r28, рамка, p24). */
+  .cp-note {
+    padding: 24px;
+    border: 1px solid #e8e8ee;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .cp-note__h {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+    color: #181818;
+    text-align: left;
+  }
+  .cp-note__body {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  /* Цели урока — галочка в сиреневом кружке 24, текст 16 SemiBold. */
+  .cp-note__body ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cp-note__body ul > li {
+    position: relative;
+    padding-left: 36px;
+    font-weight: 600;
+    color: #181818;
+  }
+  .cp-note__body ul > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #efe7ff;
+  }
+  .cp-note__body ul > li::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 7px;
+    width: 8px;
+    height: 5px;
+    border-left: 2px solid #9047ff;
+    border-bottom: 2px solid #9047ff;
+    transform: rotate(-45deg);
+  }
+
+  /* Вопрос: заголовок 24 ExtraBold слева, подсказка под ним серым. */
+  .cp-step__prompt {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    color: #181818;
+    text-align: left;
+  }
+  .cp-step__title {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #8e8e99;
+    text-align: left;
+  }
+  .cp-step__sub {
+    text-align: left;
+  }
+
+  /* Варианты (Option 370×60): белые, рамка 2, r20, текст слева. */
+  .cp-choices:not(.is-pics) .cp-choice {
+    min-height: 60px;
+    padding: 16px 20px;
+    border: 2px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    color: #181818;
+    text-align: left;
+  }
+  .cp-choices:not(.is-pics) .cp-choice.is-sel {
+    border-color: #9047ff;
+    background: #f6f1ff;
+    color: #181818;
+  }
+  .cp-choices:not(.is-pics) .cp-choice.is-right {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+    font-weight: 700;
+  }
+  .cp-choices:not(.is-pics) .cp-choice.is-wrong {
+    border-color: #d9363e;
+    background: #fdebec;
+    color: #181818;
+  }
+  .cp-choices:not(.is-pics) .cp-choice.is-missed {
+    border: 2px dashed #1f9d55;
+  }
+
+  /* Кнопка шага — закреплена у низа (ButtonBar). */
+  .cp-foot {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    background: #f8f8f8;
+  }
+  .cp-cta {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+  }
+  .cp-cta.is-go,
+  .cp-cta.is-check {
+    background: #9047ff;
+    color: #fff;
+  }
+  .cp-cta:disabled,
+  .cp-cta.is-check:disabled {
+    background: #e4daf8;
+    color: #fff;
+  }
+
+  /* Разбор ответа — лист над кнопкой в цвете ответа (Feedback 402×160). */
+  .cp-fb {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 15;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 20px 16px 8px;
+    border-radius: 24px 24px 0 0;
+    align-items: flex-start;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .cp-fb.is-ok {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .cp-fb.is-no {
+    background: #fdebec;
+    color: #d9363e;
+  }
+  .cp-fb__ic {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+  }
+  .cp-fb.is-ok .cp-fb__ic {
+    background: #1f9d55;
+  }
+  .cp-fb.is-no .cp-fb__ic {
+    background: #d9363e;
+  }
+  .cp-fb__ic svg {
+    width: 18px;
+    height: 18px;
+  }
+  .cp-fb__why {
+    display: block;
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #181818;
+  }
+  .cp:has(.cp-fb.is-ok) .cp-foot {
+    background: #e3f6ea;
+  }
+  .cp:has(.cp-fb.is-no) .cp-foot {
+    background: #fdebec;
+  }
+  .cp:has(.cp-fb.is-ok) .cp-cta.is-go {
+    background: #1f9d55;
+  }
+  .cp:has(.cp-fb.is-no) .cp-cta.is-go {
+    background: #d9363e;
+  }
+
+  html[data-theme='dark'] .cp-bar,
+  html[data-theme='dark'] .cp-foot {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .cp-bar__exit {
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .learn .cp-note,
+  html[data-theme='dark'] .cp-choices:not(.is-pics) .cp-choice {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .cp-note__h,
+  html[data-theme='dark'] .cp-step__prompt,
+  html[data-theme='dark'] .cp-note__body ul > li,
+  html[data-theme='dark'] .cp-fb__why {
+    color: var(--dk-text);
+  }
+}
+@media (max-width: 560px) {
+  /* Шаг сразу под строкой стадии (Content p8 в макете). */
+  .cp-step {
+    margin-top: 8px;
+  }
+  /* Опрос «Разминки» (6609:22669): те же плашки, что у вариантов, выбранная —
+     сиреневая с фиолетовой рамкой. */
+  .cp-picks.is-rows .cp-pick {
+    min-height: 60px;
+    padding: 16px 20px;
+    border: 2px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    color: #181818;
+    text-align: left;
+  }
+  .cp-picks.is-rows .cp-pick.is-on,
+  .cp-picks.is-rows .cp-pick.is-on:hover {
+    border-color: #9047ff;
+    background: #f6f1ff;
+    color: #181818;
+  }
+  html[data-theme='dark'] .cp-picks.is-rows .cp-pick {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .cp-picks.is-rows .cp-pick.is-on {
+    background: var(--dk-acc-tint);
+    border-color: var(--dk-acc);
+  }
+}
