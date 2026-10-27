@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSection } from './helpers/nav.js'
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -37,20 +38,9 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
 
   await page.goto('/')
 
-  // On narrow viewports the sidebar (and its «Уроки» nav item) is off-canvas
-  // behind a hamburger drawer (see tests/mobile-shell.spec.js) — open it first
-  // so the nav item is actually actionable. On desktop `.mtop` stays hidden via
-  // CSS, so the wait below times out and we just proceed to the static sidebar.
-  // Session restore renders a spinner first, so `.mtop__menu` isn't mounted
-  // immediately after goto() — an un-awaited isVisible() check would race it.
-  const menuButton = page.locator('.mtop__menu')
-  await menuButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-  if (await menuButton.isVisible()) {
-    await menuButton.click()
-  }
-
-  // Open the «Уроки» section from the nav.
-  await page.getByText('Уроки', { exact: true }).first().click()
+  // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
+  // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
+  await openSection(page, 'Уроки')
 
   // Обе секции экрана: карточка идущего урока и календарь под ней.
   await expect(page.getByText('Мой график')).toBeVisible()

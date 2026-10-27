@@ -27,7 +27,7 @@ import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMy
 import { ieltsHomeworkCards } from './homework/ieltsHomework.js'
 import { pickRecommendation } from '../lib/assistant/recommend.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
-import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
+import { parseLessonDate, lessonTimeRange, dayLabelKey } from './schedule/lessonFormat.js'
 
 // «Главная» демо-аккаунта (макет демо-доступа, экран 1): срок демо, свой
 // уровень с прогрессом до следующего, сильные и слабые стороны, вход на
@@ -136,7 +136,15 @@ export default function HomePage({
 
   // Дорожка: без цели — ближайший уровень и следующий за ним, с целью — все
   // ступени до неё (lib/levelProgress.js, levelTrack).
-  const track = useMemo(() => levelTrack(summary, goal), [summary, goal])
+  // У ученика с анкетой GE цель живёт в профиле бэкенда, а прежний level_goal после 13.10 не обновляется (зеркало
+  // снято, ge/legacyGoal.js). На компьютере его дорожку рисует блок цели GE; карточка уровня телефона обязана
+  // показывать ту же цель — иначе «Изменить» правило бы одну цель, а карточка писала бы другую.
+  const geTarget = (!ieltsAccount && geProfile?.targetLevel) || null
+  const geFrom = geProfile?.fromLevel || geProfile?.journey?.start || null
+  const track = useMemo(
+    () => levelTrack(summary, geTarget ? { target: geTarget, from: geFrom || summary.level } : goal),
+    [summary, goal, geTarget, geFrom],
+  )
   const reached = track.mode === 'reached'
   // Выбранная цель, если она ещё впереди, — её и подсвечиваем в выборе.
   const goalValue = track.mode === 'goal' ? track.goal : null
@@ -179,13 +187,15 @@ export default function HomePage({
   // Цель в туре не спрашиваем (владелец, 21.10.2026): её спрашивает анкета теста уровня. У прежней «Главной» без
   // анкеты GE цель по-прежнему меняется медалью на карточке уровня.
   const tourSteps = () => {
+    // Цели шагов — списком: тур берёт из него видимый элемент. На телефоне блоки GE скрыты, и их место занимает
+    // карточка уровня (дизайн приложения).
     const top =
       geTop === 'goal'
-        ? { selector: '.ge-goal', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
+        ? { selector: ['.ge-goal', '.hm-level--phone'], title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
         : geTop === 'locked'
-          ? { selector: '.ge-locked', title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }
+          ? { selector: ['.ge-locked', '.hm-level--phone'], title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }
           : geMode
-            ? { selector: '.ge-invite', title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
+            ? { selector: ['.ge-invite', '.hm-level--phone'], title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
             : { selector: '.hm-level', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
     return [
       { ...top, art: { src: '/assets/first-login/coach-progress.webp', w: 252, h: 236 }, width: 576, textWidth: 330 },
@@ -206,8 +216,16 @@ export default function HomePage({
             width: 576,
             textWidth: 330,
           },
-      // Сайдбар на телефоне спрятан в drawer — тогда список встаёт по центру без прожектора (optional).
-      { selector: '.sb', optional: true, title: t('tour.home.sections.title'), content: <TourSections />, width: 520 },
+      // Разделы: на компьютере — сайдбар, на телефоне — нижняя панель (кадр 6856:12612); на планшете сайдбар спрятан
+      // в drawer — тогда список встаёт по центру без прожектора (optional). «Слева» на телефоне неправда — там свой
+      // заголовок из макета. Ширину читаем здесь без риска для гидратации: шаги строятся только у открытого тура.
+      {
+        selector: ['.sb', '.mtab'],
+        optional: true,
+        title: t(phoneWidth() ? 'tour.home.sections.titlePhone' : 'tour.home.sections.title'),
+        content: <TourSections />,
+        width: 520,
+      },
     ]
   }
   // Приветствие перед подсказками — по имени, как в макете; имени нет — только «Добро пожаловать!».
@@ -326,6 +344,112 @@ export default function HomePage({
   const hasData = summary.ranked.some((r) => r.percent > 0)
   const levelName = t(`cefr.${summary.level}`)
 
+  // Карточка уровня. На компьютере — только у прежней «Главной» с известным уровнем. На телефоне (дизайн приложения,
+  // кадр 6125:6209) — всегда: у ученика с анкетой GE и без теста она замещает блок цели, баннер маршрута и заглушку,
+  // скрытые там (src/mobile/home.css). Такой экземпляр помечен hm-level--phone и на компьютере скрыт (demo.css).
+  const openGoal = () => (geMode ? onGeEdit?.() : setGoalOpen(true))
+  const renderLevel = (phoneOnly) => {
+    const unknown = levelUnknown
+    const stops = unknown ? [] : track.stops
+    return (
+      <section className={`hm-level hm-level--${unknown ? 'unknown' : track.mode}${phoneOnly ? ' hm-level--phone' : ''}`}>
+        {/* Медаль телефона — справа вверху, обрезана краем карточки. На компьютере медаль внутри кнопки цели. */}
+        {!reached && <AssetImage className="hm-level__medal-m" src="/assets/m/home/medal.webp" alt="" loading="lazy" />}
+        <div className="hm-level__body">
+          <span className="hm-level__label">{t(reached ? 'home.level.labelReached' : 'home.level.label')}</span>
+          <div className="hm-level__head">
+            <h1 className="hm-level__name">{unknown ? '?' : `${summary.level} · ${levelName}`}</h1>
+            {!unknown && !reached && week > 0 && (
+              <span className="hm-level__week">
+                <TrendIcon up />
+                {t('home.level.week', { n: String(week) })}
+              </span>
+            )}
+          </div>
+
+          {/* Дорожка «Старт → ступени → Финиш». Одинокая полоса показывала
+              только «сколько до соседнего уровня» — по ней не было видно, куда
+              путь ведёт дальше. Заполнен только первый отрезок: процент
+              считается до ближайшей ступени, дальние знать неоткуда. У
+              достигнутой цели залито всё (класс hm-level--reached). На телефоне
+              подписи — коды уровней из data-short: полные «Уровень B2» и
+              «Финиш · C1» в 370 не помещаются. */}
+          <div className={`hm-level__track${track.short ? ' is-short' : ''}`}>
+            <span className="hm-level__stop hm-level__stop--now">
+              <i className="hm-level__dot" aria-hidden="true" />
+              <span className="hm-level__lbl">{t('home.level.start')}</span>
+            </span>
+            {[...stops, null].map((code, i) => (
+              <Fragment key={code || 'finish'}>
+                <span className="hm-level__seg">
+                  {i === 0 && !unknown && !reached && summary.percent !== null && (
+                    <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />
+                  )}
+                </span>
+                {code ? (
+                  <span className="hm-level__stop">
+                    <FlagIcon />
+                    <span className="hm-level__lbl" data-short={code}>
+                      {track.short ? code : t('home.level.stop', { level: code })}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="hm-level__stop hm-level__stop--finish">
+                    <FinishIcon />
+                    <span className="hm-level__lbl" data-short={t('home.level.finish')}>
+                      {!unknown && track.finish ? t('home.level.finishAt', { level: track.finish }) : t('home.level.finish')}
+                    </span>
+                  </span>
+                )}
+              </Fragment>
+            ))}
+          </div>
+
+          {/* Цель достигнута — дальше учиться можно только следующим курсом,
+              и подпись «ещё N материалов» тут уже не про что. */}
+          {reached && (
+            <button type="button" className="hm-level__buy" onClick={() => onOpenPricing?.()}>
+              {t('home.level.buy')}
+              <ChevronIcon />
+            </button>
+          )}
+
+          {/* Остаток — в материалах курса, а не в «примерно четырёх уроках»:
+              раньше его выводили из процента по средней отдаче занятия, потому
+              что самого курса в этих числах не было. Пока сервер не ответил,
+              подписи нет вовсе: правдоподобное число человек примет за своё. */}
+          {!unknown && (reached
+            ? <p className="hm-level__plan">{t('home.level.reached')}</p>
+            : planLine && <p className="hm-level__plan">{planLine}</p>)}
+        </div>
+
+        {/* Без теста цели нет — вместо строки цели зовём на тест (на телефоне баннер маршрута скрыт, и начать тест
+            иначе негде). Медаль — она же вход в смену цели; без выбора (потолок C2) это просто плашка: кнопка,
+            которая ничего не открывает, хуже никакой. */}
+        {unknown ? (
+          <button type="button" className="hm-level__test" onClick={() => (geMode ? onGeStart?.() : onStartLevelTest?.())}>
+            {t('geStart.test.cta')}
+          </button>
+        ) : reached ? (
+          <AssetImage className="hm-level__trophy" src="/assets/m/home/trophy.webp" alt="" />
+        ) : track.goal && (options.length ? (
+          <button type="button" className="hm-level__goal" title={t('home.goal.change')} onClick={openGoal}>
+            <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
+            <i className="hm-level__flag" aria-hidden="true" />
+            <span>{t('home.level.goal', { level: track.goal })}</span>
+            <b className="hm-level__edit">{t('home.level.goalEdit')}</b>
+          </button>
+        ) : (
+          <div className="hm-level__goal">
+            <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
+            <i className="hm-level__flag" aria-hidden="true" />
+            <span>{t('home.level.goal', { level: track.goal })}</span>
+          </div>
+        ))}
+      </section>
+    )
+  }
+
   return (
     <LearningLayout
       userName={userName}
@@ -359,118 +483,32 @@ export default function HomePage({
         ) : !geLoaded ? (
           // профиль анкеты ещё в пути: заглушка вместо прежней карточки уровня, иначе она мелькала до блока цели
           <section className="hm-card ge-skel" aria-busy="true" aria-label={t('gePlan.loading')} />
-        ) : geTop === 'goal' ? (
-          // Под дорожкой у макета только «Как дойти до цели»: строки «ещё N материалов» и «+N% за неделю» он убрал.
-          <GeGoalBanner
-            profile={geProfile}
-            option={geOption}
-            planLine={null}
-            week={0}
-            onEdit={() => onGeEdit?.()}
-            onOpenRoute={() => onGeRoute?.()}
-            onBuy={() => onOpenPricing?.()}
-          />
-        ) : geMode ? (
-          <GeStartHero state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
-        ) : levelUnknown ? (
-          <section className="hm-card hm-placement">
-            <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>
-            <p className="hm-placement__sub">{t('home.level.unknown.sub')}</p>
-            <button type="button" className="hm-placement__cta" onClick={() => onStartLevelTest?.()}>
-              {t('test.start')}
-            </button>
-          </section>
         ) : (
-        <section className={`hm-level hm-level--${track.mode}`}>
-          <div className="hm-level__body">
-            <span className="hm-level__label">{t(reached ? 'home.level.labelReached' : 'home.level.label')}</span>
-            <div className="hm-level__head">
-              <h1 className="hm-level__name">
-                {summary.level} · {levelName}
-              </h1>
-              {!reached && week > 0 && (
-                <span className="hm-level__week">
-                  <TrendIcon up />
-                  {t('home.level.week', { n: String(week) })}
-                </span>
-              )}
-            </div>
-
-            {/* Дорожка «Старт → ступени → Финиш». Одинокая полоса показывала
-                только «сколько до соседнего уровня» — по ней не было видно, куда
-                путь ведёт дальше. Заполнен только первый отрезок: процент
-                считается до ближайшей ступени, дальние знать неоткуда. У
-                достигнутой цели залито всё (класс hm-level--reached). */}
-            <div className={`hm-level__track${track.short ? ' is-short' : ''}`}>
-              <span className="hm-level__stop hm-level__stop--now">
-                <i className="hm-level__dot" aria-hidden="true" />
-                <span className="hm-level__lbl">{t('home.level.start')}</span>
-              </span>
-              {[...track.stops, null].map((code, i) => (
-                <Fragment key={code || 'finish'}>
-                  <span className="hm-level__seg">
-                    {i === 0 && !reached && summary.percent !== null && (
-                      <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />
-                    )}
-                  </span>
-                  {code ? (
-                    <span className="hm-level__stop">
-                      <FlagIcon />
-                      <span className="hm-level__lbl">
-                        {track.short ? code : t('home.level.stop', { level: code })}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="hm-level__stop hm-level__stop--finish">
-                      <FinishIcon />
-                      <span className="hm-level__lbl">
-                        {track.finish ? t('home.level.finishAt', { level: track.finish }) : t('home.level.finish')}
-                      </span>
-                    </span>
-                  )}
-                </Fragment>
-              ))}
-            </div>
-
-            {/* Цель достигнута — дальше учиться можно только следующим курсом,
-                и подпись «ещё N материалов» тут уже не про что. */}
-            {reached && (
-              <button type="button" className="hm-level__buy" onClick={() => onOpenPricing?.()}>
-                {t('home.level.buy')}
-                <ChevronIcon />
-              </button>
-            )}
-
-            {/* Остаток — в материалах курса, а не в «примерно четырёх уроках»:
-                раньше его выводили из процента по средней отдаче занятия, потому
-                что самого курса в этих числах не было. Пока сервер не ответил,
-                подписи нет вовсе: правдоподобное число человек примет за своё. */}
-            {reached
-              ? <p className="hm-level__plan">{t('home.level.reached')}</p>
-              : planLine && <p className="hm-level__plan">{planLine}</p>}
-          </div>
-
-          {/* Медаль — она же вход в смену цели. Без выбора (потолок C2) это
-              просто плашка: кнопка, которая ничего не открывает, хуже никакой. */}
-          {reached ? (
-            <AssetImage className="hm-level__trophy" src="/assets/m/home/trophy.webp" alt="" />
-          ) : track.goal && (options.length ? (
-            <button
-              type="button"
-              className="hm-level__goal"
-              title={t('home.goal.change')}
-              onClick={() => setGoalOpen(true)}
-            >
-              <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
-              <span>{t('home.level.goal', { level: track.goal })}</span>
-            </button>
-          ) : (
-            <div className="hm-level__goal">
-              <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
-              <span>{t('home.level.goal', { level: track.goal })}</span>
-            </div>
-          ))}
-        </section>
+          <>
+            {geTop === 'goal' ? (
+              // Под дорожкой у макета только «Как дойти до цели»: строки «ещё N материалов» и «+N% за неделю» он убрал.
+              <GeGoalBanner
+                profile={geProfile}
+                option={geOption}
+                planLine={null}
+                week={0}
+                onEdit={() => onGeEdit?.()}
+                onOpenRoute={() => onGeRoute?.()}
+                onBuy={() => onOpenPricing?.()}
+              />
+            ) : geMode ? (
+              <GeStartHero state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
+            ) : levelUnknown ? (
+              <section className="hm-card hm-placement">
+                <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>
+                <p className="hm-placement__sub">{t('home.level.unknown.sub')}</p>
+                <button type="button" className="hm-placement__cta" onClick={() => onStartLevelTest?.()}>
+                  {t('test.start')}
+                </button>
+              </section>
+            ) : null}
+            {renderLevel(geMode || levelUnknown)}
+          </>
         )}
 
         <div className="hm-grid">
@@ -602,6 +640,23 @@ function ChevronIcon() {
   )
 }
 
+// Плашка со значком — только телефон (дизайн приложения): строки расписания, домашки и пробного урока начинаются с
+// неё. На компьютере скрыта (demo.css), значок — маской из public/assets/home-v2/ico.
+function Plate({ ico }) {
+  return <span className="hm-plate" style={{ '--hm-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
+}
+
+// Телефонная ширина мобильного слоя (src/mobile/*.css) — только для того, что рисуется после монтирования.
+function phoneWidth() {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 560px)').matches
+}
+
+/** «Сегодня» / «Завтра» / «8 августа» — день урока в строке расписания телефона. */
+function dayWord(date, locale, t) {
+  const key = dayLabelKey(date)
+  return key ? t(`schedule.${key}`) : date.toLocaleDateString(locale, { day: 'numeric', month: 'long' })
+}
+
 function TrendIcon({ up = false, size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -676,12 +731,35 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
     return out
   }, [occurrences])
 
+  // Телефон (дизайн приложения): полоса из семи дней, под ней уроки одного выбранного дня — по умолчанию сегодня.
+  // На компьютере полосы нет, а список показывает все семь дней, как раньше.
+  const [picked, setPicked] = useState(0)
+
   return (
     <section className="hm-card hm-sched">
       <h2 className="hm-card__title">{t('home.schedule.title')}</h2>
+      <div className="hm-sched__week">
+        {days.map(({ date, items }, i) => (
+          <button
+            type="button"
+            key={date.toISOString()}
+            className={`hm-sched__wday${i === picked ? ' is-picked' : ''}${items.length ? ' is-busy' : ''}`}
+            aria-pressed={i === picked}
+            // Точку «есть урок» читалка экрана не видит — она словом в имени кнопки, вместе с полной датой.
+            aria-label={
+              date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }) +
+              (items.length ? `, ${t('home.schedule.hasLesson')}` : '')
+            }
+            onClick={() => setPicked(i)}
+          >
+            <b>{date.getDate()}</b>
+            <i>{date.toLocaleDateString(locale, { weekday: 'short' })}</i>
+          </button>
+        ))}
+      </div>
       <ul className="hm-sched__list">
         {days.map(({ date, items }, i) => (
-          <li className="hm-sched__day" key={date.toISOString()}>
+          <li className={`hm-sched__day${i === picked ? ' is-picked' : ''}`} key={date.toISOString()}>
             {/* Сегодня — первая строка: на телефоне по макету её число в
                 красной плашке, чтобы неделя читалась от «сейчас». */}
             <span className={`hm-sched__date${items.length ? ' is-busy' : ''}${i === 0 ? ' is-today' : ''}`}>
@@ -689,7 +767,11 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
               <i>{date.toLocaleDateString(locale, { weekday: 'short' })}</i>
             </span>
             {items.length === 0 ? (
-              <span className="hm-sched__empty">{t('home.schedule.free')}</span>
+              <span className="hm-sched__empty">
+                <Plate ico="event" />
+                <span>{t('home.schedule.free')}</span>
+                <small>{t('home.schedule.freeSub')}</small>
+              </span>
             ) : (
               <span className="hm-sched__items">
                 {items.map((o) => (
@@ -699,8 +781,12 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
                     key={o.lessonId}
                     onClick={() => onOpenLesson?.(o.lessonId)}
                   >
+                    <Plate ico="videocam" />
                     <b>{o.teacherName || t('home.schedule.lesson')}</b>
-                    <i>{lessonTimeRange(o, lang === 'kk' ? 'kk' : 'ru')}</i>
+                    <i>
+                      <span className="hm-sched__when">{dayWord(date, locale, t)} · </span>
+                      {lessonTimeRange(o, lang === 'kk' ? 'kk' : 'ru')}
+                    </i>
                     <span className="hm-sched__chev" aria-hidden="true"><ChevronIcon /></span>
                   </button>
                 ))}
@@ -741,6 +827,10 @@ function HomeworkCard({ t, lang, items, onNav }) {
   return (
     <section className="hm-card hm-hw">
       <h2 className="hm-card__title">{t('home.homework.title')}</h2>
+      {/* «Все ›» в заголовке — телефон (макет приложения); на компьютере раздел открывается из меню. */}
+      <button type="button" className="hm-card__all" onClick={() => onNav?.('homework')}>
+        {t('home.homework.all')}
+      </button>
       {open.length === 0 ? (
         <p className="hm-hw__empty">{t('home.homework.empty')}</p>
       ) : (
@@ -757,6 +847,7 @@ function HomeworkCard({ t, lang, items, onNav }) {
             return (
               <li key={h.id}>
                 <button type="button" className="hm-hw__item" onClick={() => onNav?.('homework', { id: h.id })}>
+                  <Plate ico="assignment" />
                   <b>{h.title}</b>
                   <span>
                     {h.dueDate && (
@@ -791,6 +882,7 @@ function HomeworkCard({ t, lang, items, onNav }) {
 function TrialCard({ t, lang, trial, nextLesson, sending, failed, onBook, onOpenLesson }) {
   return (
     <section className="hm-card hm-trial">
+      <Plate ico="videocam" />
       <div className="hm-trial__art">
         <AssetImage src="/assets/demo/trial-call.webp" alt="" />
       </div>
@@ -833,7 +925,7 @@ const SKILL_ROWS = ['speaking', 'listening', 'vocab', 'grammar', 'writing']
 function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
   const rows = hasData ? summary.ranked : SKILL_ROWS.map((skill) => ({ skill, percent: null }))
   return (
-    <section className="hm-card hm-skills">
+    <section className={`hm-card hm-skills${!hasData && !levelUnknown ? ' hm-skills--empty' : ''}`}>
       <h2 className="hm-card__title">{t('home.skills.title')}</h2>
       <div className="hm-skills__list">
         {rows.map(({ skill, percent }) => (
@@ -846,32 +938,52 @@ function SkillsCard({ t, summary, hasData, levelUnknown, onTest }) {
             )}
             <span className="hm-skill__pct">{percent != null ? `${percent}%` : '???'}</span>
             <div className="hm-skill__bar">
-              {percent != null && <i className={`hm-skill__fill hm-skill__fill--${band(percent)}`} style={{ width: `${percent}%` }} />}
+              {percent != null && (
+                <i
+                  // Красная ступень ниже 45% — только телефон (макет приложения); на компьютере полоса оранжевая.
+                  className={`hm-skill__fill hm-skill__fill--${band(percent)}${percent < 45 ? ' is-bad' : ''}`}
+                  style={{ width: `${percent}%` }}
+                />
+              )}
             </div>
           </div>
         ))}
       </div>
       {hasData ? (
-        <div className="hm-skills__tags">
-          {summary.strongest && (
-            <span className="hm-tag hm-tag--up">
-              <TrendIcon up size={24} />
-              <span>
-                <small>{t('home.skills.bestLabel')}</small>
-                <b>{t(`profile.skills.${summary.strongest.skill}`)}</b>
+        <>
+          <div className="hm-skills__tags">
+            {summary.strongest && (
+              <span className="hm-tag hm-tag--up">
+                <TrendIcon up size={24} />
+                <span>
+                  <small>{t('home.skills.bestLabel')}</small>
+                  <b>{t(`profile.skills.${summary.strongest.skill}`)}</b>
+                </span>
               </span>
-            </span>
-          )}
-          {summary.weakest && (
-            <span className="hm-tag hm-tag--down">
-              <TrendIcon size={24} />
-              <span>
-                <small>{t('home.skills.worstLabel')}</small>
-                <b>{t(`profile.skills.${summary.weakest.skill}`)}</b>
+            )}
+            {summary.weakest && (
+              <span className="hm-tag hm-tag--down">
+                <TrendIcon size={24} />
+                <span>
+                  <small>{t('home.skills.worstLabel')}</small>
+                  <b>{t(`profile.skills.${summary.weakest.skill}`)}</b>
+                </span>
               </span>
+            )}
+          </div>
+          {/* Телефон: одна строка вместо двух плашек (кадр 6125:6209). */}
+          <p className="hm-skills__sum">
+            <i className="hm-skills__sumIco" aria-hidden="true" />
+            <span>
+              {[
+                summary.strongest && t('home.skills.best', { skill: t(`profile.skills.${summary.strongest.skill}`) }),
+                summary.weakest && t('home.skills.worst', { skill: t(`profile.skills.${summary.weakest.skill}`) }),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
-          )}
-        </div>
+          </p>
+        </>
       ) : (
         <div className="hm-skills__msg">
           <span className="hm-skills__msgIco" aria-hidden="true" />

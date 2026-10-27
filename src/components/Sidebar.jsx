@@ -1,83 +1,17 @@
 import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
-import { getBalance, getDemoAccess, getIeltsMe, getSatMeCached } from '../api.js'
+import { getBalance, getDemoAccess } from '../api.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
-import { isTeacher } from '../lib/jwt.js'
+import { groupNum } from '../lib/groupNum.js'
+import { useMenuItems } from './useMenuItems.js'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
-import { useMatching } from '../matching/matchingStore.js'
-import { matchingView } from '../matching/matchingState.js'
-import { isSectionOpen, useStudentSections } from '../lib/studentSections.js'
-import { useContractsBadge } from '../contracts/useContracts.js'
 
-// «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
-// первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
-// оплаченного (см. сборку `base` ниже): экран давно перестал быть сводкой
-// демо-доступа и показывает уровень, прогресс, расписание и домашку.
-// Преподаватель — исключение: у него свой набор разделов.
-//
-// Значки пунктов — контурные Material Symbols из макета «Главная · редизайн»
-// (21.10.2026), файлами в public/assets/home-v2/ico. Рисуются маской
-// (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
-const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
-
-// «Мой учитель» (ТЗ 08 §1): сразу под «Главной», только ученику и только когда на стенде есть подбор v2 —
-// без него пункт вёл бы на «раздел скоро появится». Бейдж — когда от ученика ждут действия (matchingView).
-const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
-const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
-
-// «Выбрать группу» (ТЗ кабинетов, 14): рядом с «Моим учителем», только ученику. Видимость по тарифу и формату решает 14е —
-// раздел `group` открыт только формату «в группе», а пока абонемента нет (онбординг), меню полное.
-const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
-
-const NAV_FULL = [
-  { key: 'learning', label: 'nav.learning', ico: 'map' },
-  { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
-  { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
-  { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
-  { key: 'homework', label: 'nav.homework', ico: 'assignment' },
-  // IELTS вернулся в меню вместе с хабом раздела (макет Screen MS, 01.10.2026).
-  // Пунктов стало восемь — на низких экранах их ужимает CSS (.sb в styles.css).
-  { key: 'ielts', label: 'nav.ielts', ico: 'school' },
-  { key: 'sat', label: 'nav.sat', ico: 'quiz' },
-  { key: 'vocab', label: 'nav.vocab', ico: 'menu_book' },
-  { key: 'tokens', label: 'nav.tokens', ico: 'insights' },
-  { key: 'prizes', label: 'nav.prizes', ico: 'school' },
-  // «Feedback» — отзывы и жалобы ученика (ТЗ кабинетов, раздел 5); раньше экран открывался только из профиля.
-  { key: 'feedback', label: 'nav.feedback', ico: 'forum' },
-  // «Уведомления» видны всем ученикам независимо от тарифа и формата (ТЗ кабинетов, 14е).
-  { key: 'notifications', label: 'nav.notifications', ico: 'notifications' },
-  // «Договоры» тоже видны всем (ТЗ кабинетов, 14е); значок — сколько договоров ждут подписи.
-  { key: 'contracts', label: 'nav.contracts', ico: 'edit_note' },
-]
-// Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
-// TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
-// обычных пользователей (доступны диплинком ?screen=… для отладки).
-const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
-
-// Разделы преподавателя. Остальное в списке — его собственное обучение, которого
-// у него нет: Тьютор, IELTS и Словарь ученические (design-spec §4.2).
-//
-// «Практика» — исключение, и по просьбе самих преподавателей: заданий там
-// больше, чем в уроках, а выдать их на дом было неоткуда. Прогресс и лимиты у
-// преподавателя при этом свои, пустые, — он раздел не проходит, а выдаёт из
-// него задания (см. AssignPracticeBar).
-const TEACHER_SECTIONS = ['lessons', 'practice']
-
-// Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке — без «Повторения» (курс
-// General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
-// С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и в нём всегда ОБА экзамена: доступ к
-// одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
-
-// 1253 → «1 253» (как в мобильном HUD)
-function groupNum(n) {
-  return String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-}
+// Состав меню по роли — lib/navSections.js: его же показывают нижняя панель телефона и «Сервисы».
+// Значки пунктов рисуются маской (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
 
 // Левый сайдбар обучающей зоны. Монеты и стрик — из бэкенда
 // (GET /mobile/balance/info), логика начисления живёт там же.
@@ -94,10 +28,6 @@ export default function Sidebar({
   onClose,
   rail = false,
 }) {
-  // Роль читается из токена прямо здесь: сайдбар и так его получает, а
-  // прокидывать признак сверху пришлось бы через полдюжины экранов.
-  const teacher = isTeacher(token)
-  const rewardsEnabled = areRewardsEnabled()
   // Демо-статус сайдбар выясняет сам — как и баланс ниже. Тянуть его пропсом
   // пришлось бы через полтора десятка экранов ради двух элементов меню; ответ
   // мемоизирован в api.js, так что переход по разделам не стоит запроса.
@@ -114,50 +44,8 @@ export default function Sidebar({
     }
   }, [token])
 
-  // «Главная» теперь у всех: сводка уровня, расписания и домашки нужна и
-  // платящему. Раньше пункт был только у демо, потому что экран показывал
-  // только демо-блоки.
-  // Аккаунт IELTS спрашиваем у бэкенда (ответ помнится по токену). До ответа — прежнее меню: у обычного ученика
-  // ничего не мигает, а у ученика IELTS «Повторение» пропадает с первым ответом.
-  const [ieltsAccount, setIeltsAccount] = useState(false)
-  // Вкладки экзаменов только при своей подписке, абонементе или тарифе. Пока ответ не пришёл — прячем,
-  // чтобы ученик General не видел разделы даже на мгновение.
-  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false })
-  useEffect(() => {
-    const authToken = token || loadToken()
-    if (!authToken || teacher) return
-    let alive = true
-    getIeltsMe(authToken).then((m) => {
-      if (!alive) return
-      if (m.ieltsAccount) setIeltsAccount(true)
-      setExamTabs((prev) => ({ ...prev, ielts: !!(m.purchased || m.ieltsAccount) }))
-    })
-    getSatMeCached(authToken).then((m) => {
-      if (alive) setExamTabs((prev) => ({ ...prev, sat: !!m?.purchased }))
-    })
-    return () => {
-      alive = false
-    }
-  }, [token, teacher])
-
-  // Разделы по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел в меню не показываем. До ответа сервера и без
-  // абонемента меню полное.
-  const sections = useStudentSections(teacher ? null : token || loadToken())
-  const matching = matchingView(useMatching(teacher ? null : token || loadToken()))
-  const head = teacher ? [HOME_ITEM] : !MATCHING_HIDDEN.has(matching.status) ? [HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM] : [HOME_ITEM, GROUP_ITEM]
-  const contractsToSign = useContractsBadge(teacher ? null : token || loadToken())
-  const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign }
-
-  const base = [...head, ...NAV]
-  // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
-  const ieltsNav = [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
-  const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
-  const nav = navAll.filter((item) => {
-    if (!rewardsEnabled && isRewardsScreen(item.key)) return false
-    if (item.key === 'ielts') return examTabs.ielts
-    if (item.key === 'sat') return examTabs.sat
-    return isSectionOpen(sections, item.key)
-  })
+  // Роль, аккаунт IELTS и подписки на экзамены — в общем хуке меню (тот же список у панели телефона и «Сервисов»).
+  const { items: nav, teacher, ieltsAccount, badges } = useMenuItems(token)
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()

@@ -135,6 +135,14 @@ test('тариф не подтверждён: выбрать нельзя, а п
 test('пункт «Мой учитель» в меню с цифрой, когда ждут действия', async ({ page }) => {
   await setup(page, proposedCard())
   await page.goto('/?screen=lessons')
+  // На телефоне (≤560) меню — «Сервисы» нижней панели: точка на вкладке и цифра на плитке. «Сервисы» — адресом, а не
+  // кликом: вкладку перекрывает окно «Подтвердите расписание» того же подбора.
+  if ((page.viewportSize()?.width ?? 0) <= 560) {
+    await expect(page.locator('.mtab [data-tab="services"] .mtab__dot')).toBeVisible()
+    await page.goto('/?screen=services')
+    await expect(page.locator('.svc-tile--my-teacher .svc-tile__badge')).toHaveText('1')
+    return
+  }
   const item = page.locator('.sb__nav [data-nav="my-teacher"]')
   await expect(item).toBeVisible()
   await expect(item.locator('.sb__badge')).toHaveText('1')

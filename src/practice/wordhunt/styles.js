@@ -716,4 +716,7 @@ h1,h2,h3,h4{font-family:inherit;color:var(--ink);margin:0;letter-spacing:-.015em
 /* scroll-padding прототипа стоял на html (документ приложения ему не принадлежит): та же поправка — отступом
    у элементов, иначе прокрутка к узлу карты и фокус Tab'ом прятали цель под липкую шапку и полосу секторов. */
 .wh *{scroll-margin-top:calc(var(--top) + 84px);scroll-margin-bottom:24px}
+/* Пузырь подсказки на телефоне прижат к низу экрана — над нижней панелью вкладок приложения: --mtab-h
+   (src/mobile/nav.css) проходит сквозь тень; без панели она 0, и остаётся запас под полоску айфона. */
+@media (max-width:700px){.buddy .bub{bottom:calc(12px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom)))}}
 `

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
+import { useMobileTab } from '../components/mobileTab.js'
 import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
@@ -33,6 +34,8 @@ export default function TutorDashboardPage({
 }) {
   const t = useT()
   const [drawer, setDrawer] = useState(false)
+  // Дашборд рисует оболочку сам (без TutorShell) — и сам сообщает вкладку нижней панели телефона (mobileTab.js).
+  useMobileTab('tutor')
   // avatar не разбираем — см. TutorThumb: у Джарвиса картинки нет, и дефолт
   // подставил бы ему аватарку Спарка.
   const { name = 'Спарк', mood = 'idle' } = tutor

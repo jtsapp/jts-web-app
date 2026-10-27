@@ -941,7 +941,7 @@
      всю ширину без маскота — рядом с колонкой текста 330 ему места нет; в
      приветствии остаются двое верхних маскотов, боковые ушли бы за край. */
   .t-tour--coach {
-    font-family: 'PT Root UI', Manrope, system-ui, sans-serif;
+    font-family: Manrope, system-ui, sans-serif;
   }
   .t-tour--coach .t-tour__pop {
     padding: 20px;

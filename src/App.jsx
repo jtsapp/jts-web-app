@@ -109,6 +109,10 @@ import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
+import ServicesPage from './screens/ServicesPage.jsx'
+import MobileTabBar from './components/MobileTabBar.jsx'
+import { MobileTabContext } from './components/mobileTab.js'
+import { showsTabBar } from './lib/navSections.js'
 import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -181,7 +185,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -1747,8 +1751,10 @@ export default function App() {
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
     if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
+    else if (key === 'services') setScreen('services')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
@@ -1867,6 +1873,8 @@ export default function App() {
   // экран читает только при монтировании. Ключ обёртки .scr-in несёт счётчик
   // таких повторных открытий.
   const [screenNonce, setScreenNonce] = useState(0)
+  // Вкладка нижней панели телефона, которую сообщила оболочка текущего экрана (mobileTab.js); null — панели нет.
+  const [mobileTab, setMobileTab] = useState(null)
   const handleNavRef = useRef(null)
   useEffect(() => {
     handleNavRef.current = handleNav
@@ -1950,7 +1958,8 @@ export default function App() {
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
     if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'tutor') setScreen(tutorHome)
     // Остальное — обычная навигация без адреса: она же сбрасывает цели
     // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
@@ -2033,11 +2042,18 @@ export default function App() {
     ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     : renderScreen(view)
   return (
-    <>
+    <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
           {page}
         </div>
+      )}
+      {/* Нижняя панель телефона — вне обёртки с key и её анимации (transform делал .scr-in опорой для fixed, и
+          панель на каждом переходе пропадала): одна на приложение, как в мобильном приложении. Вкладку сообщает
+          оболочка экрана (mobileTab.js); без оболочки панель прячет CSS (src/mobile/nav.css). Аккаунту класса
+          разделы не положены. */}
+      {mobileTab !== null && token && !boothAccount && showsTabBar(view) && (
+        <MobileTabBar active={mobileTab} token={token} onNav={handleNav} />
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
@@ -2064,7 +2080,7 @@ export default function App() {
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
-    </>
+    </MobileTabContext.Provider>
   )
 
   function renderScreen(view) {
@@ -2357,6 +2373,18 @@ export default function App() {
             setKingdom(k)
             setScreen('kingdom-interior')
           }}
+        />
+      )
+    case 'services':
+      // Вкладка телефона «Сервисы» (дизайн приложения, спека 2026-10-26): профиль и разделы, не ставшие вкладками.
+      return (
+        <ServicesPage
+          userName={name}
+          userLevel={userLevel}
+          levelUnknown={needsLevelTest}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
         />
       )
     case 'profile':

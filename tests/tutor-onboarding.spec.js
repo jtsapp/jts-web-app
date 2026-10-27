@@ -105,7 +105,7 @@ test.describe('онбординг тьютора — мобилка', () => {
     await page.goto('/?screen=tutor-welcome')
     await page.locator('.t-pick__start').click()
     await expect(page.locator('.t-car')).toBeVisible()
-    await page.locator('.mtop .t-back').click()
+    await page.locator('.t-topbar .t-back').click()
     await expect(page.locator('.t-pick__title')).toBeVisible()
     await expect(page.locator('.t-car')).toHaveCount(0)
   })

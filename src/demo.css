@@ -314,7 +314,9 @@
 }
 .hm-hw__item:hover { background: #f0edfb; }
 .hm-hw__item b { font-size: 13.5px; font-weight: 700; color: #171326; }
-.hm-hw__item span { display: flex; flex-wrap: wrap; gap: 10px; }
+/* :not(.hm-plate) — плашка значка только для телефона (mobile/home.css), на компьютере её прячет demo.css, а это
+   правило сильнее и показывало бы пустой элемент, сдвигая название строки. */
+.hm-hw__item span:not(.hm-plate) { display: flex; flex-wrap: wrap; gap: 10px; }
 .hm-hw__item i { font-style: normal; font-size: 11.5px; color: #8b8a97; }
 
 /* --- что сделать сегодня: одна карточка-рекомендация по реальным данным
@@ -2990,6 +2992,20 @@ button.hm-level__goal:focus-visible {
   gap: 24px;
   max-width: 1160px;
   padding: 24px 32px 40px;
+}
+/* Элементы «Главной» только для телефона (дизайн приложения, src/mobile/home.css): на планшете и компьютере их нет.
+   Обёртка панели подбора преподавателя растворяется — она нужна только чтобы спрятать панель на телефоне. */
+.hm-level--phone,
+.hm-level__medal-m,
+.hm-level__flag,
+.hm-level__edit,
+.hm-plate,
+.hm-sched__week,
+.hm-sched__when,
+.hm-sched__empty small,
+.hm-card__all,
+.hm-skills__sum {
+  display: none;
 }
 .hm-top {
   display: flex;
