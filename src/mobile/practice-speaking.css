@@ -3,6 +3,962 @@
    страница «Mobile» → «Практика» → «Говорение»: SpeakSpin, «Ситуации»; «Аудирование»: «Мемы и рилсы», «Сказки».
    Файл заведён заранее и подключён в layout.jsx, чтобы параллельные ветки
    разделов Практики не спорили за строку импорта.
+   SpeakSpin живёт в Shadow DOM — его телефонные правила в src/practice/speakspin/, сюда глобальный css не доходит.
    ====================================================================== */
 @media (max-width: 560px) {
+  /* ── «Ситуации» · 1 · Каталог (кадр 6605:16268) ─────────────────────────
+     Полоса приложения: стрелка 48 слева, название раздела по центру Bold 16. Своей шапки у экрана нет — заголовок
+     .sit-cat__title поднимается в полосу, а подпись «← В Практику» остаётся у кнопки для чтения с экрана (текст
+     уходит в нулевой кегль, видна стрелка). Чип уровня — в правом слоте полосы: в кадре слот пустой, но уровень
+     ученику нужен, его квоту считает Практика. */
+  .sit {
+    padding-bottom: 32px;
+    color: #181818;
+  }
+  .sit-cat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sit-top {
+    height: 52px;
+    margin: 0 -12px;
+    padding: 0 4px;
+  }
+  .sit-back {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    font-size: 0;
+    color: transparent;
+    flex: none;
+    border-radius: 50%;
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+  }
+  .sit-level {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .sit-cat__title {
+    position: absolute;
+    top: 14px;
+    left: 52px;
+    right: 52px;
+    margin: 0;
+    text-align: center;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  .sit-cat__sub {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+
+  /* Прогресс — сиреневая плашка: подпись и счёт колонкой слева, полоса справа. */
+  .sit-prog {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 16px;
+    border: none;
+    border-radius: 20px;
+    background: #efe7ff;
+  }
+  .sit-prog__top {
+    flex-direction: column;
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .sit-prog__count {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .sit-prog__count b {
+    color: inherit;
+  }
+  .sit-prog__bar {
+    height: 8px;
+    background: #e4daf8;
+  }
+  .sit-prog__bar i {
+    background: #9047ff;
+  }
+
+  /* Сцены — одна колонка: фото 160 во всю ширину, ниже название ExtraBold 16 и чип статуса справа. */
+  .sit-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .sit-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0 8px;
+    padding: 0;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+  }
+  .sit-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .sit-card__thumb {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    height: 160px;
+  }
+  /* Номер сцены в кадре не рисуется: порядок и так виден по списку. */
+  .sit-card__seq {
+    display: none;
+  }
+  .sit-card__check {
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    background: #31b423;
+  }
+  .sit-card__title {
+    padding: 16px 0 16px 16px;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+  }
+  .sit-card__flag {
+    margin-right: 16px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #5a5a66;
+    white-space: nowrap;
+  }
+  .sit-card.is-done .sit-card__flag {
+    background: #e3f6e0;
+    color: #2a8f1e;
+  }
+
+  /* ── «Ситуации» · 2 · Сцена (кадр 6605:16357) ───────────────────────────
+     Прежняя телефонная шапка сцены («Web Адаптивка», src/mobile/practice.css) — белая полоса с фиолетовым крестиком
+     и подписью «Ситуации». В приложении та же полоса, что у каталога: стрелка, название по центру, справа номер.
+     Видео в кадре первое — поднимаем его порядком, разметку не трогаем. */
+  .sit-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .sit-view > * {
+    margin: 0;
+  }
+  .sit-view .sit-top {
+    order: -2;
+    height: 52px;
+    gap: 0;
+    margin: 0 -12px;
+    padding: 0 4px;
+    background: none;
+  }
+  .sit-view .sit-back {
+    width: 48px;
+    height: 48px;
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+  }
+  .sit-view .sit-back::before {
+    display: none;
+  }
+  .sit-top__title {
+    align-items: center;
+    text-align: center;
+  }
+  .sit-top__title b {
+    font-size: 16px;
+    line-height: 24px;
+    color: #181818;
+  }
+  /* «Ситуации» под названием в кадре нет — раздел и так ясен по экрану. */
+  .sit-top__title span {
+    display: none;
+  }
+  .sit-video {
+    order: -1;
+  }
+  .sit-video video {
+    max-height: 62vh;
+    border-radius: 24px;
+  }
+  .sit-view__head {
+    align-items: center;
+  }
+  .sit-ml__title {
+    font-size: 20px;
+    line-height: 28px;
+    letter-spacing: 0;
+  }
+  .sit-view__flag {
+    background: #e3f6e0;
+    color: #2a8f1e;
+  }
+
+  /* Переключатели перевода — чипы 24: белый с рамкой, выбранный — фиолетовый. */
+  .sit-ml__toggle {
+    padding: 4px 12px;
+    border-color: #e8e8ee;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .sit-ml__toggle.is-on {
+    background: #9047ff;
+    border-color: #9047ff;
+  }
+  .sit-ml__tr {
+    font-size: 14px;
+    line-height: 20px;
+    color: #5a5a66;
+  }
+
+  /* «Вы здесь» — сиреневая плашка с рамкой 2: и вступление сцены, и реплика ученика в диалоге. */
+  .sit-view__intro,
+  .sit-beat--you {
+    padding: 12px;
+    border: 2px solid #9047ff;
+    border-radius: 16px;
+    background: #efe7ff;
+  }
+  .sit-view__youtag,
+  .sit-beat__tag {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: #9047ff;
+  }
+
+  /* Блоки материала — белые карточки r24, заголовок ExtraBold 20; строки внутри — серые плашки без рамки. */
+  .sit-block {
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .sit-block__head {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .sit-block__list {
+    gap: 8px;
+  }
+  .sit-block__list > li {
+    padding: 10px 12px;
+    border: none;
+    border-radius: 16px;
+    background: #f8f8fb;
+  }
+  /* Диалог — облачка: реплика героя серая, собеседника — сиреневая справа. */
+  .sit-scene {
+    gap: 12px;
+  }
+  .sit-beat {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .sit-beat--them {
+    max-width: 88%;
+    padding: 12px;
+    border: none;
+    border-radius: 16px;
+    background: #f0f0f4;
+  }
+  .sit-beat--them.is-alt {
+    justify-self: end;
+    background: #efe7ff;
+  }
+  .sit-beat--scene {
+    padding: 12px;
+    border-radius: 16px;
+    background: #f8f8fb;
+  }
+  .sit-beat__who {
+    margin-bottom: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #9047ff;
+  }
+
+  /* «Ваше задание» — жёлтая плашка, подпись оранжевая. */
+  .sit-task {
+    padding: 16px;
+    border: none;
+    border-radius: 20px;
+    background: #fff0c2;
+  }
+  .sit-task__label {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: #e57a12;
+  }
+
+  /* ── «Ситуации» · 3–5 · Запись (кадры 6605:16417, 16449, 16481) ──────────
+     Карточка по центру: заголовок, подсказка, чип состояния с таймером, круглая кнопка записи 88 с подписью под
+     ней, ниже «Удалить» и «Послушать» пилюлями и «Разобрать ответ» во всю ширину. Разметку и порядок кнопок не
+     трогаем — раскладывает сетка: логика записи в SpeakingRecorder.jsx. */
+  .sit-rec {
+    padding: 24px 16px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    text-align: center;
+  }
+  .sit-rec__head {
+    justify-content: center;
+    margin-bottom: 8px;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .sit-rec__ic {
+    display: none;
+  }
+  .sit-rec__hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .sit-rec__bar {
+    display: inline-flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+  }
+  .sit-rec__state {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .sit-rec__state.is-live {
+    color: #ff5c5c;
+  }
+  .sit-rec__timer {
+    font-size: 12px;
+    line-height: 16px;
+    color: #181818;
+  }
+  .sit-rec__controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'mic mic' 'del play';
+    gap: 12px 8px;
+  }
+  .sit-rec__controls > :first-child {
+    grid-area: del;
+    justify-self: end;
+  }
+  .sit-rec__controls > :last-child {
+    grid-area: play;
+    justify-self: start;
+  }
+  .sit-rec__mic {
+    grid-area: mic;
+    position: relative;
+    justify-self: center;
+    min-width: 0;
+    padding: 100px 8px 0;
+    border-radius: 0;
+    background: none;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .sit-rec__mic:hover:not(:disabled),
+  .sit-rec__mic.is-live {
+    background: none;
+  }
+  .sit-rec__mic::before,
+  .sit-rec__mic::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .sit-rec__mic::before {
+    top: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #9047ff;
+    box-shadow: 0 10px 24px -8px rgba(144, 71, 255, 0.6);
+  }
+  .sit-rec__mic::after {
+    top: 28px;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    mask: url('/assets/home-v2/ico/mic.svg') center / contain no-repeat;
+  }
+  /* Идёт запись — красный круг и белый квадрат «стоп». */
+  .sit-rec__mic.is-live::before {
+    background: #ff5c5c;
+    box-shadow: 0 0 0 10px rgba(255, 92, 92, 0.16);
+  }
+  .sit-rec__mic.is-live::after {
+    top: 32px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    mask: none;
+  }
+  .sit-rec__tool {
+    padding: 6px 14px;
+    border-color: #e8e8ee;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .sit-rec__assess {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .sit-rec__go {
+    height: 56px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .sit-rec__budget {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .sit-rec__guest,
+  .sit-rec__error {
+    text-align: left;
+  }
+
+  /* ── «Ситуации» · 6 · Разбор ответа (кадр 6605:16527) ────────────────────
+     Балл крупно на сиреневой плашке (подпись → число → оценка чипом), оси белой карточкой, блоки — белыми
+     карточками; «ошибок нет» — зелёной плашкой, «что улучшить» — сиреневой. Кольцо процента в кадре не рисуется —
+     число остаётся, кольцо прячется. Обёртка подписи раскрывается (display: contents), чтобы расставить порядок. */
+  .sit-fb {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 0;
+    background: none;
+    text-align: left;
+  }
+  .sit-fb__top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 20px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+    text-align: center;
+  }
+  .sit-fb__top > div:not(.sit-fb__ring) {
+    display: contents;
+  }
+  .sit-fb__top p {
+    order: -1;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .sit-fb__ring {
+    width: auto;
+    height: auto;
+    background: none;
+  }
+  .sit-fb__ring span {
+    width: auto;
+    height: auto;
+    background: none;
+    font-size: 56px;
+    line-height: 64px;
+    font-weight: 800;
+    color: #9047ff;
+  }
+  .sit-fb__top h5 {
+    margin: 4px 0 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #e3f6e0;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 700;
+    color: #2a8f1e;
+  }
+  .sit-fb__axes {
+    gap: 12px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .sit-fb__axis {
+    grid-template-columns: 100px 1fr 28px;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #4a4a55;
+  }
+  .sit-fb__axis-bar {
+    background: #ebe5fb;
+  }
+  .sit-fb__axis-bar i {
+    background: #22a35a;
+  }
+  .sit-fb__axis-bar.is-warn i {
+    background: #e8800f;
+  }
+  .sit-fb__axis-val {
+    color: #181818;
+  }
+  .sit-fb__block {
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+  }
+  .sit-fb__block h6 {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .sit-fb__transcript {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    font-style: normal;
+    color: #4a4a55;
+  }
+  .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) {
+    border: none;
+    background: #e3f6e0;
+  }
+  .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) .sit-fb__good {
+    padding: 0;
+    background: none;
+    font-size: 16px;
+    color: #2a8f1e;
+  }
+  .sit-fb__block:has(.sit-fb__recs) {
+    border: none;
+    background: #efe7ff;
+  }
+  .sit-fb__summary,
+  .sit-fb__note-small {
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .sit-fb__summary {
+    font-size: 14px;
+    line-height: 20px;
+    color: #4a4a55;
+  }
+
+  /* ── SpeakSpin: полоса над тенью (кадр 6605:15868) ───────────────────────
+     Всё остальное — в стилях движка (src/practice/speakspin/styles.js). Название «SpeakSpin» — имя тренажёра, не
+     переводится, поэтому без ключа словаря. */
+  .spsp-top {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 4px;
+    background: #f8f8f8;
+  }
+  .spsp-top::after {
+    content: 'SpeakSpin';
+    position: absolute;
+    left: 52px;
+    right: 52px;
+    text-align: center;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    color: #181818;
+    pointer-events: none;
+  }
+  .spsp-back {
+    width: 48px;
+    height: 48px;
+    font-size: 0;
+    color: transparent;
+    border-radius: 50%;
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+  }
+
+  /* ── «Сказки» · 2 · Выбор героя (кадр 6605:20228) ───────────────────────
+     Движок сказок — оверлей #taleworld со стилями в <head> (не тень), поэтому правила здесь; его стили вставляются
+     позже и местами с !important — отсюда #taleworld в селекторе и !important. Раньше «◂ Library» растягивалась на
+     телефоне в белую плашку поверх заголовка; в приложении — стрелка 48 слева, язык — чипом справа. */
+  #taleworld #select .detail-back {
+    top: calc(2px + env(safe-area-inset-top)) !important;
+    left: 4px !important;
+    right: auto !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    transform: none !important;
+  }
+  #taleworld #select .lib-lang {
+    top: calc(14px + env(safe-area-inset-top));
+    right: 16px;
+  }
+  #taleworld #select .langchip {
+    padding: 4px 12px !important;
+    font-size: 12px !important;
+    line-height: 16px;
+  }
+  #taleworld #select .langchip:not(.sel) {
+    background: #efe7ff !important;
+    color: #9047ff !important;
+  }
+  #taleworld #select .hall-head {
+    padding: calc(64px + env(safe-area-inset-top)) 16px 0;
+  }
+  #taleworld #select .hall-head h2 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  #taleworld #select .hall-head p {
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 20px;
+    font-style: normal;
+  }
+  /* Карточка 224 по центру, соседи выглядывают по краям — как карусель кадра. */
+  #taleworld #select .hall {
+    padding: 150px calc(50% - 112px) 48px;
+  }
+  #taleworld #select .hero-card {
+    width: 224px;
+    height: min(352px, 56vh);
+    border-radius: 28px;
+  }
+  #taleworld #select .hall-nav {
+    font-size: 13px;
+    font-style: normal;
+  }
+
+  /* ── «Ситуации» · 7 · Сообщения об ошибках (кадр 6605:16597) ─────────────
+     Плашка r20 p16, текст Bold 15 цветом плашки и значок 24 слева (экспорт кадра, рисуется маской цветом текста):
+     микрофон — красная с перечёркнутым микрофоном, тишина и короткая запись — оранжевая с «i», дневной лимит —
+     сиреневая с замком, прочее — красная с «i». */
+  .sit-rec__error {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0 0;
+    padding: 16px;
+    border-radius: 20px;
+    background: #fde8e8;
+    color: #d9363e;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 700;
+  }
+  .sit-rec__error::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-top: 0;
+    background: currentColor;
+    mask: url('/assets/m/speaking/info.svg') center / 24px no-repeat;
+  }
+  .sit-rec__error--denied::before,
+  .sit-rec__error--unsupported::before {
+    mask-image: url('/assets/m/speaking/mic_off.svg');
+  }
+  .sit-rec__error--daily_limit_reached::before {
+    mask-image: url('/assets/m/speaking/lock.svg');
+  }
+  .sit-rec__error--empty,
+  .sit-rec__error--too_short,
+  .sit-rec__error--recording_too_long {
+    background: #ffeedd;
+    color: #e57a12;
+  }
+  .sit-rec__error--daily_limit_reached {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+
+  /* Тёмная: генератор (theme-dark.generated.css) подключён позже и бьёт тем же весом — поэтому через .sit. */
+  html[data-theme='dark'] .learn__main .sit {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-back {
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .sit .sit-level,
+  html[data-theme='dark'] .sit .sit-prog {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .sit .sit-level,
+  html[data-theme='dark'] .sit .sit-prog__top {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .sit .sit-prog__count,
+  html[data-theme='dark'] .sit .sit-prog__count b,
+  html[data-theme='dark'] .sit .sit-card__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-cat__sub {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-prog__bar {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .sit .sit-prog__bar i {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] .sit .sit-card {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+  }
+  html[data-theme='dark'] .sit .sit-card__flag {
+    background: var(--dk-chip);
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .sit .sit-card.is-done .sit-card__flag {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+    color: var(--dk-green);
+  }
+
+  html[data-theme='dark'] .sit .sit-view .sit-top {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-view .sit-back {
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .sit .sit-view .sit-back::before {
+    display: none;
+  }
+  html[data-theme='dark'] .sit .sit-top__title b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-ml__toggle {
+    background: var(--dk-card);
+    border-color: var(--dk-line-strong);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-ml__toggle.is-on {
+    background: var(--dk-acc);
+    border-color: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .sit .sit-ml__tr {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-view__intro,
+  html[data-theme='dark'] .sit .sit-beat--you {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .sit .sit-view__youtag,
+  html[data-theme='dark'] .sit .sit-beat__tag,
+  html[data-theme='dark'] .sit .sit-beat__who {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .sit .sit-block {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sit .sit-block__list > li,
+  html[data-theme='dark'] .sit .sit-beat--scene,
+  html[data-theme='dark'] .sit .sit-beat--them {
+    border: none;
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .sit .sit-beat--them.is-alt {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .sit .sit-task {
+    border: none;
+    background: color-mix(in srgb, var(--dk-yellow) var(--dk-soft), var(--dk-card));
+  }
+  html[data-theme='dark'] .sit .sit-task__label {
+    color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .sit .sit-view__flag {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+    color: var(--dk-green);
+  }
+
+  html[data-theme='dark'] .sit .sit-rec {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sit .sit-rec__hint,
+  html[data-theme='dark'] .sit .sit-rec__state {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-rec__state.is-live {
+    color: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__bar {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .sit .sit-rec__timer,
+  html[data-theme='dark'] .sit .sit-rec__mic {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic,
+  html[data-theme='dark'] .sit .sit-rec__mic:hover:not(:disabled) {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic::before {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] .sit .sit-rec__mic.is-live::before {
+    background: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__tool {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sit .sit-rec__go {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .sit .sit-rec__budget {
+    color: var(--dk-muted);
+  }
+
+  html[data-theme='dark'] .sit .sit-fb {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-fb__top,
+  html[data-theme='dark'] .sit .sit-fb__block:has(.sit-fb__recs) {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .sit .sit-fb__ring,
+  html[data-theme='dark'] .sit .sit-fb__ring span {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-fb__ring span {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .sit .sit-fb__top p,
+  html[data-theme='dark'] .sit .sit-fb__axis,
+  html[data-theme='dark'] .sit .sit-fb__transcript,
+  html[data-theme='dark'] .sit .sit-fb__summary {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-fb__top h5,
+  html[data-theme='dark'] .sit .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+    color: var(--dk-green);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axes,
+  html[data-theme='dark'] .sit .sit-fb__block {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-bar {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-val {
+    color: var(--dk-text);
+  }
+
+  html[data-theme='dark'] .learn__main .spsp-top {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .learn__main .spsp-top::after {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .learn__main .spsp-back {
+    background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
+    filter: invert(1);
+  }
+
+  html[data-theme='dark'] .sit .sit-fb__axis-bar i {
+    background: var(--dk-green);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-bar.is-warn i {
+    background: var(--dk-orange);
+  }
+  html[data-theme='dark'] .sit .sit-fb__block h6 {
+    color: var(--dk-text);
+  }
+
+  html[data-theme='dark'] .sit .sit-rec__error {
+    background: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card));
+    color: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__error--empty,
+  html[data-theme='dark'] .sit .sit-rec__error--too_short,
+  html[data-theme='dark'] .sit .sit-rec__error--recording_too_long {
+    background: color-mix(in srgb, var(--dk-orange) var(--dk-soft), var(--dk-card));
+    color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .sit .sit-rec__error--daily_limit_reached {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
 }
