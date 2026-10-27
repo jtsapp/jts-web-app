@@ -2233,47 +2233,48 @@
     color: var(--dk-text);
   }
 
-  /* Настройки практики (кадр 12): в макете — нижний лист, у нас раскрывашка
-     под упражнением (лист — разметка). Наполнение по кадру: заголовок 20,
+  /* Настройки практики (кадр 12): на телефоне — лист снизу (VerbsPractice по
+     usePhoneWidth, портал в body — поэтому правила и на .vb-sheet, вне .vb).
+     Наполнение по кадру: заголовок 20,
      темп — серые сегменты, ползунки фиолетовые, «Продолжать…» — сиреневая
      плашка с тумблером, сброс — ссылкой по центру. */
-  .vb .vb-settings {
+  :is(.vb, .vb-sheet) .vb-settings {
     padding: 16px 20px;
     border: 1px solid #e8e8ee;
     border-radius: 24px;
     background: #fff;
     box-shadow: none;
   }
-  .vb .vb-settings summary {
+  :is(.vb, .vb-sheet) .vb-settings summary {
     color: var(--vb-ink);
     font-size: 20px;
     font-weight: 800;
     line-height: 28px;
   }
-  .vb .vb-settings__stack {
+  :is(.vb, .vb-sheet) .vb-settings__stack {
     gap: 12px;
     margin-top: 12px;
   }
-  .vb .vb-settings input[type='range'] {
+  :is(.vb, .vb-sheet) .vb-settings input[type='range'] {
     accent-color: #9047ff;
   }
-  .vb .vb-seg {
+  :is(.vb, .vb-sheet) .vb-seg {
     padding: 4px;
     border: 0;
     border-radius: 12px;
     background: #ececf1;
   }
-  .vb .vb-seg button {
+  :is(.vb, .vb-sheet) .vb-seg button {
     color: #5a5a66;
     font-size: 14px;
     font-weight: 600;
   }
-  .vb .vb-seg button[aria-pressed='true'] {
+  :is(.vb, .vb-sheet) .vb-seg button[aria-pressed='true'] {
     background: #fff;
     box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
     color: var(--vb-ink);
   }
-  .vb .vb-settings .vb-check {
+  :is(.vb, .vb-sheet) .vb-settings .vb-check {
     justify-content: space-between;
     flex-direction: row-reverse;
     padding: 12px 16px;
@@ -2283,7 +2284,7 @@
     font-size: 16px;
     font-weight: 600;
   }
-  .vb .vb-settings .vb-check input {
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input {
     appearance: none;
     flex: none;
     position: relative;
@@ -2294,7 +2295,7 @@
     background: #c9c9d1;
     transition: background 0.15s;
   }
-  .vb .vb-settings .vb-check input::after {
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input::after {
     content: '';
     position: absolute;
     top: 3px;
@@ -2305,42 +2306,132 @@
     background: #fff;
     transition: transform 0.15s;
   }
-  .vb .vb-settings .vb-check input:checked {
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked {
     background: #9047ff;
   }
-  .vb .vb-settings .vb-check input:checked::after {
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked::after {
     transform: translateX(18px);
   }
-  .vb .vb-settings .vb-link {
+  :is(.vb, .vb-sheet) .vb-settings .vb-link {
     justify-self: center;
     color: #9047ff;
     font-size: 14px;
     font-weight: 600;
   }
-  html[data-theme='dark'] .vb .vb-settings {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings {
     border-color: var(--dk-line);
     background: var(--dk-card);
   }
-  html[data-theme='dark'] .vb .vb-settings summary,
-  html[data-theme='dark'] .vb .vb-settings .vb-check {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings summary,
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check {
     color: var(--dk-text);
   }
-  html[data-theme='dark'] .vb .vb-seg {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg {
     border: 0;
     background: var(--dk-line);
   }
-  html[data-theme='dark'] .vb .vb-seg button {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg button {
     color: var(--dk-text-2);
   }
-  html[data-theme='dark'] .vb .vb-seg button[aria-pressed='true'] {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg button[aria-pressed='true'] {
     background: var(--dk-card);
     color: var(--dk-text);
   }
-  html[data-theme='dark'] .vb .vb-settings .vb-check {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check {
     background: var(--dk-acc-soft);
   }
-  html[data-theme='dark'] .vb .vb-settings .vb-check input:checked {
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked {
     background: var(--dk-acc);
+  }
+
+  /* Лист настроек: затемнение, белая карточка снизу со скруглением 24 сверху,
+     заголовок и крестик. Токены раздела (--vb-*) — свои: лист вне .vb. */
+  .vb-sheet {
+    --vb-v: #874bf8;
+    --vb-ink: #171326;
+    --vb-soft: #4a4458;
+    --vb-muted: #8a849a;
+    --vb-line: #edeaf5;
+    --vb-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(24, 24, 24, 0.4);
+    font-family: inherit;
+  }
+  .vb-sheet .vb-sheet__card {
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    color: var(--vb-ink);
+  }
+  .vb-sheet__card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 2px;
+    background: #d6d6dc;
+  }
+  .vb-sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .vb-sheet__head h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb-sheet__close {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: none;
+    color: #8e8e99;
+    font-size: 28px;
+    line-height: 1;
+  }
+  .vb-sheet p {
+    color: var(--vb-soft);
+  }
+  .vb-settings-open {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+  }
+  html[data-theme='dark'] .vb-sheet {
+    --vb-v: var(--dk-acc);
+    --vb-ink: var(--dk-text);
+    --vb-soft: var(--dk-text-2);
+    --vb-muted: var(--dk-muted);
+    --vb-line: var(--dk-line);
+    background: rgba(0, 0, 0, 0.6);
+  }
+  html[data-theme='dark'] .vb-sheet .vb-sheet__card,
+  html[data-theme='dark'] .vb .vb-settings-open {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
   }
 
   /* Итог набора (кадр 11): заголовок и счёт по центру сиреневой плашки,

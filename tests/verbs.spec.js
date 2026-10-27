@@ -330,6 +330,18 @@ test.describe('практика: раскладка', () => {
     await expect(page.locator('.vb-prompt mark')).toBeVisible()
   })
 
+  test('телефон: настройки практики — лист снизу с теми же переключателями', async ({ page, viewport }) => {
+    test.skip(viewport.width > 560, 'раскладка телефона')
+    await open(page, 'practice')
+    await page.locator('.vb-settings-open').click()
+    const sheet = page.getByRole('dialog', { name: 'Настройки практики' })
+    await expect(sheet).toBeVisible()
+    await sheet.locator('.vb-seg button').first().click()
+    await expect(sheet.locator('.vb-seg button').first()).toHaveAttribute('aria-pressed', 'true')
+    await page.keyboard.press('Escape')
+    await expect(sheet).toHaveCount(0)
+  })
+
   test('десктоп: настройки открыты, строки-сводки нет', async ({ page, viewport }) => {
     test.skip(viewport.width <= 560, 'раскладка десктопа')
     await open(page, 'practice')
