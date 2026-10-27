@@ -828,4 +828,14 @@
     background: url('/assets/m/speaking/arrow_back.svg') center / 24px no-repeat;
     filter: invert(1);
   }
+
+  html[data-theme='dark'] .sit .sit-fb__axis-bar i {
+    background: var(--dk-green);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-bar.is-warn i {
+    background: var(--dk-orange);
+  }
+  html[data-theme='dark'] .sit .sit-fb__block h6 {
+    color: var(--dk-text);
+  }
 }
