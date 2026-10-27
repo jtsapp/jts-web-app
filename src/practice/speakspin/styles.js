@@ -18,7 +18,7 @@ const PHONE_CSS = `
 .ss{padding:0 16px 24px;background:#f8f8f8}
 .ss .header,.ss .hero,.ss .footer,.ss .bottom-note,.ss .spin-info{display:none}
 .ss .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 4px;padding:12px 0 12px}
-.ss .steps li{display:flex;flex-wrap:wrap;gap:8px 4px;color:#8e8e99;font-size:12px;line-height:16px;font-weight:500}
+.ss .steps li{display:flex;flex-wrap:wrap;gap:8px 4px;min-width:0;white-space:nowrap;color:#8e8e99;font-size:12px;line-height:16px;font-weight:500}
 .ss .steps li::before{content:'';flex-basis:100%;height:8px;border-radius:4px;background:#e4daf8}
 .ss .steps .active::before{background:#c9a8ff}
 .ss .steps b{width:auto;height:auto;border:0;border-radius:0;background:none!important;color:inherit!important;font-size:12px;font-weight:inherit}
@@ -57,6 +57,26 @@ const PHONE_CSS = `
 .ss .primary{min-height:56px;border-radius:16px;background:#9047ff;box-shadow:none;font-size:16px;font-weight:700}
 .ss .primary:hover:not(:disabled){background:#7c35eb}
 .ss .privacy-note{margin-top:8px;font-size:12px;line-height:16px;font-weight:500;color:#8e8e99}
+.ss .session-strip{margin:0 0 12px;font-size:12px;color:#5a5a66}
+.ss .active-grid{gap:16px}
+.ss .topic-panel{padding:20px 16px;border:0;border-radius:24px;background:#efe7ff;text-align:center}
+.ss .topic-label{justify-content:center}
+.ss .badge{padding:4px 10px;border-radius:999px;background:#fff;color:#181818;font-size:12px;font-weight:700}
+.ss .topic-panel h2{margin:12px 0;font-size:28px;line-height:36px;letter-spacing:0;font-weight:800;color:#181818}
+.ss .support{padding:12px 16px;border-top:0;border-radius:20px;background:#fff0c2;text-align:left}
+.ss .support>summary{min-height:32px;font-size:16px;font-weight:800;color:#181818}
+.ss .timer-panel{order:0;display:flex;flex-direction:column;align-items:center;padding:0;border:0;background:none;text-align:center}
+.ss .timer-panel .status-pill{justify-self:auto}
+.ss .timer{width:160px;height:160px;margin:8px auto}
+.ss .timer .track{stroke:#e4daf8}
+.ss .timer .arc{stroke:#9047ff}
+.ss .timer strong{font-size:56px;letter-spacing:0;font-weight:800;color:#181818}
+.ss .timer small{margin-top:4px;font-size:12px;letter-spacing:0;text-transform:none}
+.ss .timer-panel .mic-status{font-size:12px}
+.ss .timer-panel canvas{height:47px}
+.ss .timer-actions{display:grid;width:100%;gap:8px}
+.ss .timer-actions .primary{min-height:56px;padding:0 24px;font-size:16px}
+.ss .timer-actions .link,.ss .session-strip .link{font-size:14px;font-weight:700;color:#9047ff;text-decoration:none}
 }
 `
 
