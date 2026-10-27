@@ -736,6 +736,178 @@
     color: var(--dk-on-acc);
   }
 
+  /* ---------- 11 · Разбор работы ----------
+     Первая карточка в макете — не карточка: строка пилюль (режим проверки,
+     уровень текста, число слов) и четыре плитки оценок «4/5». Заголовок —
+     в полосе («Разбор»), кольца оценок заменены цифрой, как в кадре. */
+  .wr .wr-card:has(> .wr-res-rings) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-res-head,
+  .wr-card:has(> .wr-res-rings) .wr-res-lvl {
+    display: contents;
+  }
+  .wr-res-head .wr-sec-title {
+    display: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-pill,
+  .wr .wr-res-cefr {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .wr-res-head .wr-pill {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  .wr .wr-res-cefr {
+    background: var(--wr-green-bg);
+    color: var(--wr-green);
+  }
+  .wr-res-lvl .wr-pill {
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink);
+  }
+  .wr .wr-res-rings {
+    display: grid;
+    flex-basis: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 0;
+    order: 2;
+  }
+  .wr .wr-res-ringwrap {
+    padding: 12px 2px;
+    border: 1px solid var(--mw-line);
+    border-radius: 16px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    overflow-wrap: anywhere;
+  }
+  .wr .wr-res-ring {
+    width: auto !important; /* размер кольца задан инлайном для компьютера */
+    height: auto !important;
+    margin: 0 0 4px;
+  }
+  .wr .wr-res-ring svg {
+    display: none;
+  }
+  .wr .wr-res-ring b {
+    position: static;
+    display: block;
+    color: var(--mw-acc);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    transform: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-res-summary {
+    flex-basis: 100%;
+    order: 3;
+    margin: 4px 0 0;
+    color: var(--mw-ink-2);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  /* «Твой текст с пометками»: подсказка мелким текстом и текст прямо в
+     карточке, без вложенных плашек. */
+  .wr .wr-res-howto {
+    margin: 4px 0 8px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-res-text:not(.wr-res-diff) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 28px;
+  }
+  html[data-theme='dark'] .wr .wr-res-howto,
+  html[data-theme='dark'] .wr .wr-res-text:not(.wr-res-diff) {
+    border: 0;
+    background: none;
+  }
+  /* «К заданиям · Доработать» — две кнопки у низа, как в кадре. */
+  .wr-res-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-res-nav .wr-ghost {
+    order: -1;
+  }
+  .wr-res-nav .wr-ghost,
+  .wr-res-nav .wr-primary {
+    height: 56px;
+    padding: 0 12px;
+    border-radius: 16px;
+    box-shadow: none;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .wr-res-nav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  .wr-res-nav .wr-primary {
+    background: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-res-rings) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .wr .wr-res-cefr {
+    background: var(--dk-green-soft);
+    color: var(--dk-green);
+  }
+  html[data-theme='dark'] .wr .wr-res-ringwrap {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+  }
+  html[data-theme='dark'] .wr .wr-res-ring b {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-head .wr-pill {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-lvl .wr-pill {
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-res-nav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-nav .wr-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+
   /* ---------- «Неправильные глаголы»: полоса раздела ----------
      Navbar — общий компонент всех кадров «Mobile» (сверен по «Письму»): стрелка
      48 и название по центру, кнопки угла скрыты. Часть (Разберись / Изучи /
@@ -1085,7 +1257,7 @@
     color: var(--mw-ink);
   }
   html[data-theme='dark'] .wr .wr-footnav .wr-ghost {
-    border-color: var(--mw-acc);
+    border: 2px solid var(--mw-acc);
     background: var(--mw-card);
     color: var(--mw-acc);
   }
