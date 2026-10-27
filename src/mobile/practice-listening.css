@@ -990,6 +990,47 @@
   }
 }
 
+/* ---------- «Слушай и выбирай»: разбор набора (кадр 11) ----------
+   Каждое задание — белая карточка r20 с рамкой: фраза 16/600 сверху,
+   ключевая деталь 12 фиолетовым под ней (в разметке наоборот — переставляем
+   column-reverse, номер остаётся в строке детали). */
+@media (max-width: 560px) {
+  .lc-review {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0 0;
+  }
+  .lc-review li {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .lc-review li b {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .lc-review li span {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: #181818;
+  }
+  html[data-theme='dark'] .lc .lc-review li {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .lc .lc-review li span {
+    color: var(--dk-text);
+  }
+}
+
 /* ---------- «Слова в картинках»: не то животное / найдено (кадры 4–5) ----------
    Подсказка после промаха — плашка #fff0dd r16 со значком «i» и текстом
    16/600 оранжевым; найденное слово — плашка #e3f6ea с галочкой в круге и
