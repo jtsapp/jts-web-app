@@ -611,6 +611,103 @@
     color: var(--mw-ink);
   }
 
+  /* ---------- 5 · Шаг 3 «Связки» ----------
+     Таблица «смысл · слова · когда» на телефоне — стопка карточек: смысл
+     заголовком, слова чипами, «когда» подписью. Шапку таблицы прячем. */
+  .wr .wr-card:has(> .wr-scroll-x .wr-tbl) {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-sec-title {
+    display: none;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-howto {
+    margin: 0 0 12px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) .wr-scroll-x {
+    overflow: visible;
+  }
+  .wr-card .wr-tbl,
+  .wr-card .wr-tbl tbody,
+  .wr-card .wr-tbl tr,
+  .wr-card .wr-tbl td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+  .wr-card .wr-tbl thead {
+    display: none;
+  }
+  .wr-card .wr-tbl tr {
+    margin: 0 0 12px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+  }
+  .wr-card .wr-tbl td {
+    padding: 0;
+    border: 0;
+  }
+  .wr-card .wr-tbl td:first-child {
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    white-space: normal;
+  }
+  .wr-card .wr-tbl td:nth-child(2) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .wr-card .wr-tbl .wr-chip {
+    margin: 0;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--mw-acc-soft);
+    box-shadow: none;
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .wr-card .wr-tbl td:last-child {
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-scroll-x .wr-tbl) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-howto {
+    background: none;
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl tr {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl td {
+    border: 0;
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl td:first-child {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl .wr-chip {
+    border: 0;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+
   /* ---------- 9 · Блокнот ----------
      В макете Блокнот — не карточка, а экран: плашка задачи, строка
      инструментов, белое поле письма, счётчики цифрой над подписью, строка
