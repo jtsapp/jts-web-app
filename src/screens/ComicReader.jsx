@@ -24,6 +24,7 @@ import {
   onFullscreenChange,
 } from '../lib/elementFullscreen.js'
 import { useTimeOnTask } from '../lib/useTimeOnTask.js'
+import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 
 // Читалка комикса: одна страница на экран, вперёд-назад стрелками, свайпом и
 // клавишами. Пролистывание, а не вертикальная лента — так страница целиком
@@ -72,6 +73,9 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   useTimeOnTask('media_practice', { token })
   const { t, lang } = useI18n()
   const tl = lang === 'kk' ? 'kk' : 'ru'
+  // Пока комикс не загрузился (и при ошибке), в навбаре телефона — название
+  // раздела, как в кадре «Ошибка загрузки» макета приложения.
+  const phone = usePhoneWidth()
   // Ключ закладки, а не адрес запроса: адресуется комикс по id (см. loadComic).
   const key = comicKey(comic)
   const [doc, setDoc] = useState(null)
@@ -310,6 +314,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
         {full ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
         <span className="cr__fullLabel">{full ? t('comics.exitFull') : t('comics.full')}</span>
       </button>
+      {!doc && phone && <div className="cr__title">{t('practice.chip.comics')}</div>}
       {doc && (
         <>
           <div className="cr__title">
