@@ -175,8 +175,9 @@
     background: #efe7ff;
     color: #9047ff;
   }
+  /* Рамка — цвет статуса на 40% (stroke 2 · opacity 0.4 в макете). */
   .hw-card:has(.hw-badge--assigned) {
-    border-color: #9047ff;
+    border-color: rgba(144, 71, 255, 0.4);
   }
   .hw-badge--needsRevision {
     background: #fdebec;
@@ -186,7 +187,7 @@
     --hw-tile: #fdebec;
     --hw-ico-color: #d9363e;
     --hw-ico: url(/assets/home-v2/ico/replay.svg);
-    border-color: #d9363e;
+    border-color: rgba(217, 54, 62, 0.4);
   }
   .hw-badge--overdue {
     background: #fff0dd;
@@ -196,7 +197,7 @@
     --hw-tile: #fff0dd;
     --hw-ico-color: #e57a12;
     --hw-ico: url(/assets/home-v2/ico/schedule.svg);
-    border-color: #e57a12;
+    border-color: rgba(229, 122, 18, 0.4);
   }
   .hw-badge--submitted,
   .hw-badge--inReview {
@@ -228,6 +229,40 @@
     --hw-tile: #f0f0f4;
     --hw-ico-color: #5a5a66;
     --hw-ico: url(/assets/m/homework/block.svg);
+  }
+
+  /* Значок 16 в плашке статуса (Badge макета: отступ 8 слева, 12 справа). */
+  .hw-badge {
+    --hw-badge-ico: url(/assets/home-v2/ico/edit_note.svg);
+    padding-left: 8px;
+  }
+  .hw-badge::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: var(--hw-badge-ico) center / 16px 16px no-repeat;
+    mask: var(--hw-badge-ico) center / 16px 16px no-repeat;
+  }
+  .hw-badge--needsRevision {
+    --hw-badge-ico: url(/assets/home-v2/ico/replay.svg);
+  }
+  .hw-badge--overdue {
+    --hw-badge-ico: url(/assets/home-v2/ico/schedule.svg);
+  }
+  .hw-badge--submitted,
+  .hw-badge--inReview {
+    --hw-badge-ico: url(/assets/m/homework/hourglass_top.svg);
+  }
+  .hw-badge--completed,
+  .hw-badge--done {
+    --hw-badge-ico: url(/assets/m/homework/check_circle.svg);
+  }
+  .hw-badge--closed,
+  .hw-badge--closedNoSubmission,
+  .hw-badge--unknown {
+    --hw-badge-ico: url(/assets/m/homework/block.svg);
   }
 
   /* ---------- «Все задания» ---------- */
