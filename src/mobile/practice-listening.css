@@ -1089,6 +1089,68 @@
   }
 }
 
+/* ---------- «Слова в картинках»: кнопка повтора внизу (кадры 3–5) ----------
+   В макете «Повторить слово» — круг 72 по центру под сценой с подписью, а не
+   кнопка в строке задания. Разметку не меняем: строка задания раскрывается
+   (display: contents), и порядок её частей и сцены задаёт order; подпись —
+   aria-label той же кнопки. */
+@media (max-width: 560px) {
+  .wd-play {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wd-task {
+    display: contents;
+  }
+  .wd-task__row {
+    order: 1;
+  }
+  .wd-fb {
+    order: 2;
+  }
+  .wd-hint {
+    order: 3;
+  }
+  .wd-stagewrap {
+    order: 4;
+  }
+  .wd-foot {
+    order: 5;
+    margin: 0 2px;
+  }
+  /* «Пробел — повторить слово» — про клавиатуру, на телефоне её нет. */
+  .wd-foot span + span {
+    display: none;
+  }
+  .wd-speak {
+    order: 6;
+    position: relative;
+    align-self: center;
+    width: 72px;
+    height: 72px;
+    margin: 12px 0 36px;
+    box-shadow: 0 8px 24px rgba(144, 71, 255, 0.3);
+  }
+  .wd-speak svg,
+  .wd-speak .wd-i {
+    width: 28px;
+    height: 28px;
+  }
+  .wd-speak::after {
+    content: attr(aria-label);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+}
+
 /* ---------- Тренажёр: «Вы уверены, что хотите выйти?» (кадр 12) ----------
    Не окно по центру, а лист снизу r24: без маскота и крестика (закрывает
    тап по затемнению и «Продолжить»), заголовок 24/800 и подпись 14 по
