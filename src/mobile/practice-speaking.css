@@ -701,6 +701,41 @@
     font-style: normal;
   }
 
+  /* ── «Ситуации» · 7 · Сообщения об ошибках (кадр 6605:16597) ─────────────
+     Плашка r20 p16, текст Bold 15 цветом плашки и значок 24 слева: микрофон — красная, тишина и короткая запись —
+     оранжевая, дневной лимит — сиреневая (с замком), прочее — красная. */
+  .sit-rec__error {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0 0;
+    padding: 16px;
+    border-radius: 20px;
+    background: #fde8e8;
+    color: #e23b3b;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 700;
+  }
+  .sit-rec__error::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-top: 0;
+    background: currentColor;
+    mask: url('/assets/home-v2/ico/help.svg') center / 22px no-repeat;
+  }
+  .sit-rec__error--empty,
+  .sit-rec__error--too_short,
+  .sit-rec__error--recording_too_long {
+    background: #ffeedd;
+    color: #e8800f;
+  }
+  .sit-rec__error--daily_limit_reached {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+
   /* Тёмная: генератор (theme-dark.generated.css) подключён позже и бьёт тем же весом — поэтому через .sit. */
   html[data-theme='dark'] .learn__main .sit {
     color: var(--dk-text);
@@ -902,5 +937,20 @@
   }
   html[data-theme='dark'] .sit .sit-fb__block h6 {
     color: var(--dk-text);
+  }
+
+  html[data-theme='dark'] .sit .sit-rec__error {
+    background: color-mix(in srgb, var(--dk-red) var(--dk-soft), var(--dk-card));
+    color: var(--dk-red);
+  }
+  html[data-theme='dark'] .sit .sit-rec__error--empty,
+  html[data-theme='dark'] .sit .sit-rec__error--too_short,
+  html[data-theme='dark'] .sit .sit-rec__error--recording_too_long {
+    background: color-mix(in srgb, var(--dk-orange) var(--dk-soft), var(--dk-card));
+    color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .sit .sit-rec__error--daily_limit_reached {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
   }
 }
