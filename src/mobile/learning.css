@@ -875,3 +875,381 @@
     color: #ff4646;
   }
 }
+
+/* ======================================================================
+   «Повторение» · карта уровней по дизайну приложения (27.10.2026)
+   Figma «pitch JTS (Copy)», страница «Mobile» → «Сервисы» → «Повторение»,
+   кадр 6609:21701 (402×874). Поверх слоя «Web Адаптивка» выше: шапка
+   «Повторение» с подписью белым поверх затемнения, узлы 72 (свой уровень
+   84) двумя колонками, подпись — белая пилюля 12, внизу плашка «Текущий
+   уровень» с полосой «пройдено N/M» (LearningPage, .lp-cur).
+   «Назад» из шапки макета не переносили: на сайте у карты нижняя панель, и
+   выход с неё — любая вкладка (вопрос владельцу — в отчёте).
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* Затемнение 170 сверху (TopScrim). */
+  .lp-isle__head {
+    height: 170px;
+  }
+  .lp-isle__title,
+  .lp-isle__sub {
+    display: block;
+    position: absolute;
+    left: 16px;
+    right: 180px;
+    margin: 0;
+    color: #fff;
+    text-align: left;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  }
+  /* Заголовок на высоте кнопок угла (40 от 12), подпись под ним. */
+  .lp-isle__title {
+    top: 12px;
+    font-size: 16px;
+    line-height: 40px;
+    font-weight: 800;
+  }
+  .lp-isle__sub {
+    top: 52px;
+    right: 16px;
+    max-width: none;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+  }
+
+  /* Узлы: 72, свой уровень 84; центры колонок — 87 и 278 из 402
+     (от центра экрана −114 и +77, в vw — чтобы 375 и 440 держали ту же
+     раскладку). Высоты — доли кадра: центры 186…658 из 874. */
+  .lp-node {
+    width: 72px;
+    height: 72px;
+  }
+  .lp-node.is-current {
+    width: 84px;
+    height: 84px;
+  }
+  .lp-node:nth-of-type(odd) {
+    left: calc(50% - 28.4vw) !important;
+  }
+  .lp-node:nth-of-type(even) {
+    left: calc(50% + 19.2vw) !important;
+  }
+  .lp-node:nth-of-type(6) {
+    top: 21.3% !important;
+  }
+  .lp-node:nth-of-type(5) {
+    top: 31.1% !important;
+  }
+  .lp-node:nth-of-type(4) {
+    top: 42.6% !important;
+  }
+  .lp-node:nth-of-type(3) {
+    top: 53.3% !important;
+  }
+  .lp-node:nth-of-type(2) {
+    top: 64.3% !important;
+  }
+  .lp-node:nth-of-type(1) {
+    top: 75.3% !important;
+  }
+  .lp-node.is-current .lp-node__ring {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  }
+  /* Подпись: пилюля 24, Manrope ExtraBold 12, 4 под кружком. */
+  .lp-node__label {
+    top: calc(100% + 4px);
+    min-width: 0;
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 800;
+    color: #9047ff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  .lp-node.is-locked .lp-node__label {
+    color: #8e8e99;
+  }
+  /* Замок: тёмная вуаль 62% на фото и белый замок 28. */
+  .lp-node__lock {
+    inset: 6px;
+    background: rgba(24, 24, 24, 0.62);
+  }
+  .lp-node__lock svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* ---------- «Текущий уровень» (6609:21780): 370×72, r28, над панелью ---------- */
+  .lp-cur {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--mtab-h, 0px) + 12px);
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 72px;
+    padding: 12px 48px 12px 12px;
+    border: 0;
+    border-radius: 28px;
+    background: #fff url(/assets/home-v2/ico/chevron_right.svg) right 18px center / 24px 24px no-repeat;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .lp-cur__av {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+  .lp-cur__av img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .lp-cur__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lp-cur__title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lp-cur__prog {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  /* Полоса — в цвете уровня (--ring из kingdoms.js), дорожка — его тинт. */
+  .lp-cur__bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ring, #9047ff) 18%, #fff);
+    overflow: hidden;
+  }
+  .lp-cur__bar > span {
+    display: block;
+    height: 100%;
+    min-width: 6px;
+    border-radius: 999px;
+    background: var(--ring, #9047ff);
+  }
+  .lp-cur__num {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: #8e8e99;
+  }
+  /* Остров не уходит под плашку целиком: снизу место под неё. Луна — над
+     плашкой (селектор сильнее общего правила nav.css). */
+  html:root:has(.mtab):has(.lp-cur):not(:has(.km-lesson, .km-scroll)) .asst__launcher.asst__launcher {
+    bottom: calc(var(--mtab-h) + 96px);
+  }
+  html:root:has(.mtab):has(.lp-cur):not(:has(.km-lesson, .km-scroll)) .asst__hint.asst__hint {
+    bottom: calc(var(--mtab-h) + 96px + 28px);
+  }
+  html:root:has(.mtab):has(.lp-cur):not(:has(.km-lesson, .km-scroll)) .asst__badge.asst__badge {
+    bottom: calc(var(--mtab-h) + 96px + 56px + 20px);
+  }
+
+  html[data-theme='dark'] .lp-cur {
+    background-color: var(--dk-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .lp-cur__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lp-cur__bar {
+    background: color-mix(in srgb, var(--ring, #9047ff) 22%, transparent);
+  }
+}
+/* Плашка «Текущий уровень» — только телефон: на компьютере и планшете тропу
+   открывают с острова. */
+@media (min-width: 561px) {
+  .lp-cur {
+    display: none;
+  }
+}
+
+/* ======================================================================
+   «Повторение» · тропа уровня по дизайну приложения (27.10.2026), кадр
+   6609:22182. Полоса — стрелка 24 без кружка и по центру «Уровень A2» 16 с
+   именем города 12 серым. Шапка юнита — белая карточка 72 r24: плитка 48 с
+   номером в цвете уровня, «ЮНИТ N» капсом и следующий урок (или
+   «Пройдено»), справа кольцо 44 «2/4». Карточки-героя с маскотом в макете
+   нет — общий счёт «Пройдено N/M» теперь на плашке карты «Текущий уровень».
+   ====================================================================== */
+@media (max-width: 560px) {
+  .kt-bar {
+    position: relative;
+    height: 52px;
+    gap: 0;
+    padding: 2px 52px 2px 4px;
+    background: #f8f8f8;
+  }
+  .kt-bar__back {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: transparent url(/assets/m/learning/arrow_back.svg) center / 24px 24px no-repeat;
+  }
+  .kt-bar__place {
+    align-items: center;
+    text-align: center;
+  }
+  .kt-bar__place b {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .kt-bar__place span {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .km-scroll,
+  .kt-body {
+    background: #f8f8f8;
+  }
+  .kt-hero {
+    display: none;
+  }
+
+  .kt-unit__head {
+    gap: 12px;
+    height: 72px;
+    padding: 12px 14px 12px 12px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  /* Плитка номера: цвет уровня и «полка» снизу — тот же цвет темнее. */
+  .kt-unit__num {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: var(--ring, #9047ff);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--ring, #9047ff) 70%, #000);
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    color: #fff;
+  }
+  /* У финального экзамена номера нет — в плитке значок экзамена. */
+  .kt-unit__num:empty {
+    background: #f5b82e url(/assets/home-v2/ico/school.svg) center / 24px 24px no-repeat;
+    box-shadow: 0 4px 0 #c98f12;
+  }
+  .kt-unit__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .kt-unit__title {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ring, #9047ff);
+  }
+  .kt-unit__sub {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Кольцо 44: дуга пройденного в цвете уровня по тинту, внутри «2/4». */
+  .kt-unit__count {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(closest-side, #fff 80%, transparent 82%),
+      conic-gradient(var(--ring, #9047ff) calc(var(--p, 0) * 360deg), color-mix(in srgb, var(--ring, #9047ff) 20%, #fff) 0);
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  /* Юнит пройден: сплошной круг с галочкой, цифр нет. */
+  .kt-unit__count.is-done {
+    font-size: 0;
+    background: var(--ring, #9047ff);
+  }
+  .kt-unit__count.is-done::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    -webkit-mask: url(/assets/m/homework/check_circle.svg) center / 20px 20px no-repeat;
+    mask: url(/assets/m/homework/check_circle.svg) center / 20px 20px no-repeat;
+  }
+
+  html[data-theme='dark'] .kt-bar,
+  html[data-theme='dark'] .km-scroll,
+  html[data-theme='dark'] .kt-body {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .kt-bar__place span,
+  html[data-theme='dark'] .kt-unit__sub,
+  html[data-theme='dark'] .kt-unit__count {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .learn .kt-unit__head {
+    background: var(--dk-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .kt-unit__count:not(.is-done) {
+    background:
+      radial-gradient(closest-side, var(--dk-card) 80%, transparent 82%),
+      conic-gradient(var(--ring, #9047ff) calc(var(--p, 0) * 360deg), color-mix(in srgb, var(--ring, #9047ff) 25%, transparent) 0);
+  }
+  html[data-theme='dark'] .learn .lp-node__lock {
+    background: rgba(24, 24, 24, 0.62);
+  }
+}
+/* Номер юнита плиткой и вторая строка шапки — только телефон. */
+@media (min-width: 561px) {
+  .kt-unit__num,
+  .kt-unit__sub {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  /* Генератор тёмной темы возвращал «назад» тропы прежний кружок со
+     стрелкой — точнее, через .learn. */
+  html[data-theme='dark'] .learn .kt-bar__back {
+    background: transparent url(/assets/m/learning/arrow_back.svg) center / 24px 24px no-repeat;
+    filter: invert(1);
+  }
+}

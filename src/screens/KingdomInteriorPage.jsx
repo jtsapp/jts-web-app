@@ -585,13 +585,29 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                 и повторяется с периодом 4: центр, влево, вправо, центр. */}
             {units.map((g) => {
               const doneN = g.items.filter(({ l }) => done.has(l.code)).length
+              const unitDone = g.items.length > 0 && doneN === g.items.length
+              // Вторая строка шапки юнита в макете телефона (6609:22182): юнит
+              // пройден — «Пройдено», иначе название следующего урока. Номер
+              // юнита плиткой и вторая строка — только телефон (на компьютере
+              // скрыты в src/mobile/learning.css), там шапка прежняя.
+              const next = unitDone ? null : g.items.find(({ l }) => !done.has(l.code))?.l
+              const sub = unitDone ? t('learn.done') : next?.title || ''
               return (
-                <section key={g.unit} className="kt-unit">
+                <section key={g.unit} className="kt-unit" style={{ '--ring': k.ring }}>
                   <div className="kt-unit__head">
-                    <span className="kt-unit__title">
-                      {g.unit === 0 ? t('lesson.examUnit') : t('lesson.unit', { n: g.unit })}
+                    <span className="kt-unit__num" aria-hidden="true">
+                      {g.unit === 0 ? '' : g.unit}
                     </span>
-                    <span className="kt-unit__count">
+                    <span className="kt-unit__text">
+                      <span className="kt-unit__title">
+                        {g.unit === 0 ? t('lesson.examUnit') : t('lesson.unit', { n: g.unit })}
+                      </span>
+                      {sub && <span className="kt-unit__sub">{sub}</span>}
+                    </span>
+                    <span
+                      className={`kt-unit__count${unitDone ? ' is-done' : ''}`}
+                      style={{ '--p': g.items.length ? doneN / g.items.length : 0 }}
+                    >
                       {doneN}/{g.items.length}
                     </span>
                   </div>
