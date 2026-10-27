@@ -1847,4 +1847,26 @@
     background: var(--dk-chip);
     color: var(--dk-muted);
   }
+  /* Навбары книжки и комикса в тёмной: генерированный слой красит стрелку
+     плашкой и главу фиолетовым — тут селекторы сильнее. */
+  html[data-theme='dark'] .bk:has(> :is(.bk-ov, .bk-read)) .vd__back,
+  html[data-theme='dark'] .cr .cr__back,
+  html[data-theme='dark'] .cr .cr__full {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk:has(> .bk-read) .vd__headtitle b,
+  html[data-theme='dark'] .bk:has(> .bk-ov) .vd__headtitle span {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-pop__save:not(:disabled),
+  html[data-theme='dark'] .bk .bk-pop__save:disabled:not(.bk-pop__save--on) {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  /* Генерированный слой рисует в ::before крестик фоном — возвращаем стрелку-маску. */
+  html[data-theme='dark'] .bk:has(> :is(.bk-ov, .bk-read)) .vd__back::before {
+    background: currentColor;
+  }
 }
