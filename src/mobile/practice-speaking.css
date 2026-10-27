@@ -475,6 +475,135 @@
     text-align: left;
   }
 
+  /* ── «Ситуации» · 6 · Разбор ответа (кадр 6605:16527) ────────────────────
+     Балл крупно на сиреневой плашке (подпись → число → оценка чипом), оси белой карточкой, блоки — белыми
+     карточками; «ошибок нет» — зелёной плашкой, «что улучшить» — сиреневой. Кольцо процента в кадре не рисуется —
+     число остаётся, кольцо прячется. Обёртка подписи раскрывается (display: contents), чтобы расставить порядок. */
+  .sit-fb {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 0;
+    background: none;
+    text-align: left;
+  }
+  .sit-fb__top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 20px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+    text-align: center;
+  }
+  .sit-fb__top > div:not(.sit-fb__ring) {
+    display: contents;
+  }
+  .sit-fb__top p {
+    order: -1;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .sit-fb__ring {
+    width: auto;
+    height: auto;
+    background: none;
+  }
+  .sit-fb__ring span {
+    width: auto;
+    height: auto;
+    background: none;
+    font-size: 56px;
+    line-height: 64px;
+    font-weight: 800;
+    color: #9047ff;
+  }
+  .sit-fb__top h5 {
+    margin: 4px 0 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #e3f6e0;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 700;
+    color: #2a8f1e;
+  }
+  .sit-fb__axes {
+    gap: 12px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .sit-fb__axis {
+    grid-template-columns: 100px 1fr 28px;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    color: #4a4a55;
+  }
+  .sit-fb__axis-bar {
+    background: #ebe5fb;
+  }
+  .sit-fb__axis-bar i {
+    background: #22a35a;
+  }
+  .sit-fb__axis-bar.is-warn i {
+    background: #e8800f;
+  }
+  .sit-fb__axis-val {
+    color: #181818;
+  }
+  .sit-fb__block {
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+  }
+  .sit-fb__block h6 {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .sit-fb__transcript {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    font-style: normal;
+    color: #4a4a55;
+  }
+  .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) {
+    border: none;
+    background: #e3f6e0;
+  }
+  .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) .sit-fb__good {
+    padding: 0;
+    background: none;
+    font-size: 16px;
+    color: #2a8f1e;
+  }
+  .sit-fb__block:has(.sit-fb__recs) {
+    border: none;
+    background: #efe7ff;
+  }
+  .sit-fb__summary,
+  .sit-fb__note-small {
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .sit-fb__summary {
+    font-size: 14px;
+    line-height: 20px;
+    color: #4a4a55;
+  }
+
   /* Тёмная: генератор (theme-dark.generated.css) подключён позже и бьёт тем же весом — поэтому через .sit. */
   html[data-theme='dark'] .learn__main .sit {
     color: var(--dk-text);
@@ -618,5 +747,42 @@
   }
   html[data-theme='dark'] .sit .sit-rec__budget {
     color: var(--dk-muted);
+  }
+
+  html[data-theme='dark'] .sit .sit-fb {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-fb__top,
+  html[data-theme='dark'] .sit .sit-fb__block:has(.sit-fb__recs) {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .sit .sit-fb__ring,
+  html[data-theme='dark'] .sit .sit-fb__ring span {
+    background: none;
+  }
+  html[data-theme='dark'] .sit .sit-fb__ring span {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .sit .sit-fb__top p,
+  html[data-theme='dark'] .sit .sit-fb__axis,
+  html[data-theme='dark'] .sit .sit-fb__transcript,
+  html[data-theme='dark'] .sit .sit-fb__summary {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sit .sit-fb__top h5,
+  html[data-theme='dark'] .sit .sit-fb__block:has(> .sit-fb__issue:only-of-type > .sit-fb__good:only-child) {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+    color: var(--dk-green);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axes,
+  html[data-theme='dark'] .sit .sit-fb__block {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-bar {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .sit .sit-fb__axis-val {
+    color: var(--dk-text);
   }
 }
