@@ -1,0 +1,22 @@
+'use client'
+
+import LearningLayout from '../components/LearningLayout.jsx'
+import { useI18n } from '../i18n.jsx'
+import './rewards.css'
+
+// Прямая ссылка на раздел, которого нет в тарифе ученика (ТЗ кабинетов, 14е). В меню такой пункт не показывается,
+// а здесь ученик видит, что раздел не сломан, и к кому идти.
+export default function SectionClosedPage({ active, userLevel, userName, token, onNav, onProfile }) {
+  const { t } = useI18n()
+  return (
+    <LearningLayout userName={userName} userLevel={userLevel} active={active} token={token} onNav={onNav} onProfile={onProfile}>
+      <section className="rw-page" data-testid="section-closed">
+        <div className="rw-state" role="status">
+          <h1>{t('section.closed.title')}</h1>
+          <p>{t('section.closed.text')}</p>
+          <button type="button" onClick={() => onNav?.('home')}>{t('section.closed.home')}</button>
+        </div>
+      </section>
+    </LearningLayout>
+  )
+}

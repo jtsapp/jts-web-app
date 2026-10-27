@@ -77,9 +77,15 @@ export function initials(name) {
     .join('')
 }
 
-// Ошибка ручки подбора — текстом сервера (у MatchingException он для показа), иначе общая фраза.
+// Отказы подбора, у которых есть свой текст для ученика. Текст сервера ученику не показываем: в нём бывают
+// внутренние причины («Лимит учеников», «Нет доступа…», ТЗ §2.4) и он всегда по-русски.
+export const ERROR_CODES = [
+  'slot_taken', 'tariff_pending', 'not_enough_days', 'limit_reached', 'already_asked', 'guarantee',
+  'teacher_format', 'teacher_unavailable', 'format_locked',
+]
+
 export function errorText(e, t) {
-  return e?.serverMessage || t('error.generic')
+  return t(ERROR_CODES.includes(e?.code) ? 'error.' + e.code : 'error.generic')
 }
 
 // Двойной клик не должен отправлять действие дважды (ТЗ §2.7: «двойной клик не создаёт дублей»): кнопка

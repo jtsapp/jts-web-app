@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { confirmMatchingSchedule, counterMatchingSchedule } from '../api.js'
-import { applyMatchingCard } from './matchingStore.js'
+import { applyMatchingCard, refreshMatching } from './matchingStore.js'
 import TeacherPhoto from './TeacherPhoto.jsx'
 import { useTeacher } from './useTeacher.js'
 import { errorText, useBusy } from './ui.jsx'
@@ -26,7 +26,7 @@ export function lessonDateLabel(date, tz, lang) {
 // «Подтвердите расписание» (ТЗ §2.7): что предложил учитель или менеджер, до какого срока он держит эти часы, и
 // «Выбрать другое время» — только из общего времени (удобное ученика ∩ окошки учителя), ровно N в разных днях.
 // Прежние часы держатся за учеником, пока учитель не ответит на новое время (это решает бэкенд).
-export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddTime, onManager, toast }) {
+export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddTime, onManager, onCountered, toast }) {
   const { t, lang } = useMatchingT()
   const p = view.proposal
   const perWeek = view.tariff.perWeek
@@ -50,7 +50,7 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
   if (!p) return null
   const counter = view.status === 'change_requested'
   const slots = sortSlots(p.slots, tz)
-  const first = nextOccurrence(p.slots)
+  const first = nextOccurrence(p.slots, new Date(), view.lessonWindow)
   const deadline = schoolTimeToDate(p.deadline)
   const common = sortSlots(p.commonSlots || [], tz)
   const enoughCommon = schoolDaysCount(common) >= perWeek
@@ -66,6 +66,8 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
         onDone?.({ teacherName: p.teacherName, slots: p.slots, first })
       } catch (e) {
         setError(errorText(e, t))
+        // отказ значит, что карточка на сервере уже другая (срок истёк, время заняли) — не держим старый экран
+        refreshMatching(token)
       }
     })
 
@@ -79,8 +81,10 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
         const live = (card?.requests || []).find((r) => r.source === 'student_counter' && r.status === 'sent')
         const until = schoolTimeToDate(live?.expiresAt)
         toast?.(until ? t('confirm.sentOther', { date: formatDateTime(until, tz, lang) }) : t('counter.title'))
+        onCountered?.()
       } catch (e) {
         setError(errorText(e, t))
+        refreshMatching(token)
       }
     })
 
@@ -125,13 +129,15 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
           {t('counter.text', { date: formatDateTime(schoolTimeToDate(view.counter.expiresAt), tz, lang) })}
         </p>
       )}
-      {!counter && deadline && <p className="mt-small" style={{ color: 'var(--mt-warn)' }}><b>{t('confirm.until', { date: formatDateTime(deadline, tz, lang) })}</b></p>}
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {deadline && <p className="mt-small mt-deadline"><b>{t('confirm.until', { date: formatDateTime(deadline, tz, lang) })}</b></p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
 
-      {!counter && !editing && (
+      {/* Пока учитель отвечает на «другое время», прежнее время всё ещё можно подтвердить: сервер тогда отменит
+          встречную заявку — иначе резерв мог бы сгореть, пока учитель молчит. */}
+      {!editing && (
         <div className="mt-row">
           <button type="button" className="mt-btn" disabled={busy} onClick={confirm}>{t('confirm.btn')}</button>
-          <button type="button" className="mt-btn mt-btn--line" onClick={() => setEditing(true)}>{t('confirm.other')}</button>
+          {!counter && <button type="button" className="mt-btn mt-btn--line" onClick={() => setEditing(true)}>{t('confirm.other')}</button>}
         </div>
       )}
 

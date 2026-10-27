@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { reconfirmMatchingSchedule } from '../api.js'
-import { useMatching, applyMatchingCard, takeMatchingFlash } from '../matching/matchingStore.js'
+import { useMatching, applyMatchingCard, refreshMatching, takeMatchingFlash } from '../matching/matchingStore.js'
 import { matchingView } from '../matching/matchingState.js'
-import { studentTimezone } from '../matching/slots.js'
+import { schoolDay, studentTimezone } from '../matching/slots.js'
 import { useMatchingT } from '../matching/texts.js'
 import { errorText, useBusy, useToast } from '../matching/ui.jsx'
 import { useTeacher } from '../matching/useTeacher.js'
@@ -14,6 +14,7 @@ import ManagerPickModal, { managerButtonLabel } from '../matching/ManagerPickMod
 import TimezoneBanner from '../matching/TimezoneBanner.jsx'
 import { ChangeFormatModal, ChangeTeacherModal, VacationModal, shortDate } from '../matching/ChangeModals.jsx'
 import { CelebrateModal, InfoHero, ManagerPicking, NoTeacherHero, RequestsStatus } from '../matching/StatusViews.jsx'
+import FormatChoice from '../groups/FormatChoice.jsx'
 
 // «Мой учитель» (ТЗ 08 §2.9): один экран на все статусы подбора — какой показать, решает matchingView по карточке
 // бэкенда. Кнопки «Написать в чат» нет ни в одном состоянии (ТЗ).
@@ -43,6 +44,8 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
         applyMatchingCard(await reconfirmMatchingSchedule(token))
       } catch (e) {
         toast(errorText(e, t))
+        // время заняли или срок вышел — перечитываем, чтобы кнопка не оставалась на старых данных
+        await refreshMatching(token)
       }
     })
 
@@ -71,12 +74,16 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
       break
     case 'none':
       body = (
-        <NoTeacherHero
-          view={view}
-          managerLabel={managerLabel}
-          onStart={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)}
-          onManager={openManager}
-        />
+        <>
+          {/* Формат (ТЗ кабинетов, 14): «индивидуально» ведёт в подбор учителя, «в группе» — в «Выбрать группу». */}
+          <FormatChoice token={token} onIndividual={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)} onGroup={() => onNav('group')} />
+          <NoTeacherHero
+            view={view}
+            managerLabel={managerLabel}
+            onStart={() => onNav('teacher-wizard', view.allDeclined ? { step: 'teacher' } : undefined)}
+            onManager={openManager}
+          />
+        </>
       )
       break
     case 'matching':
@@ -234,7 +241,8 @@ function VacationBanners({ view, tz, onChoose }) {
   return null
 }
 
-// Сколько уроков ученика попадает на отпуск: по дням недели его постоянных слотов (UTC-день) в границах периода.
+// Сколько уроков ученика попадает на отпуск. Даты отпуска — даты школы (Алматы), поэтому и день урока берём по
+// Алматы: слот вс 19:00 UTC — это пн 00:00 в школе и попадает в отпуск, начинающийся в понедельник.
 export function lessonsInPeriod(slots, from, to) {
   if (!slots.length || !from || !to) return 0
   const start = new Date(from + 'T00:00:00Z').getTime()
@@ -242,7 +250,7 @@ export function lessonsInPeriod(slots, from, to) {
   let n = 0
   for (let d = start; d <= end; d += 86400000) {
     const wd = new Date(d).getUTCDay() || 7
-    n += slots.filter((s) => s.weekday === wd).length
+    n += slots.filter((s) => schoolDay(s) === wd).length
   }
   return n
 }

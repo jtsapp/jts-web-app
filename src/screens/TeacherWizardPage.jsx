@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { getMatchingGrid, saveMatchingPreferences, sendMatchingRequests } from '../api.js'
-import { useMatching, applyMatchingCard, flashMatching } from '../matching/matchingStore.js'
+import { useMatching, applyMatchingCard, flashMatching, refreshMatching } from '../matching/matchingStore.js'
 import { matchingView } from '../matching/matchingState.js'
 import { useMatchingT, FORMAT_CODES, pluralForm } from '../matching/texts.js'
-import { loadDraft, saveDraft, clearDraft } from '../matching/wizardDraft.js'
+import { loadDraft, saveDraft, clearDraft, draftIsCurrent } from '../matching/wizardDraft.js'
 import {
-  bestCells, schoolDaysCount, slotKey, studentTimezone, teachersFitting,
+  bestCells, localOf, schoolDaysCount, slotKey, studentTimezone, teachersFitting,
 } from '../matching/slots.js'
 import WizardHead from '../matching/WizardHead.jsx'
 import TimeGrid from '../matching/TimeGrid.jsx'
@@ -60,7 +60,8 @@ function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t
   const perWeek = view.tariff.perWeek
   const kids = view.tariff.name === 'Kids'
   const [draft, setDraft] = useState(() => {
-    const d = loadDraft(card.studentId)
+    const saved = loadDraft(card.studentId)
+    const d = draftIsCurrent(saved, card.statusChangedAt) ? saved : loadDraft(null)
     return {
       step: steps.includes(initialStep) ? initialStep : steps.includes(d.step) ? d.step : steps[0],
       format: view.needsFormatStep ? d.format || card.format || null : 'platform',
@@ -113,6 +114,9 @@ function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t
   const days = schoolDaysCount(draft.picked.map(keyToSlot))
   const fitting = teachersFitting(cells, draft.picked, perWeek)
   const enoughDays = days >= perWeek
+  // У ученика не в UTC+5 два разных своих дня могут оказаться одним днём школы — объясняем, а не молчим.
+  const localDays = new Set(draft.picked.map((k) => localOf(keyToSlot(k), tz).day)).size
+  const schoolDayHint = localDays > days
   const best = enoughDays && fitting.length === 0 ? bestCells(cells, draft.picked) : []
 
   const back = () => {
@@ -131,11 +135,14 @@ function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t
         })
         applyMatchingCard(saved)
         if (addTime) {
+          // время добавлено в карточку — черновик своё отслужил и не должен вернуть эти клетки потом
+          clearDraft(card.studentId)
           flashMatching(t('time.added'))
           onNav('my-teacher')
         } else set({ step: 'teacher' })
       } catch (e) {
         toast(errorText(e, t))
+        refreshMatching(token)
       }
     })
 
@@ -148,9 +155,11 @@ function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t
         onNav('my-teacher')
       } catch (e) {
         toast(errorText(e, t))
-        // время заняли — к сетке со свежими цифрами: список учителей того же времени дал бы тот же отказ
-        if (e?.code === 'slot_taken') {
-          set({ step: 'time' })
+        refreshMatching(token)
+        // время заняли или учитель больше не подходит — к сетке со свежими цифрами: список учителей того же
+        // времени дал бы тот же отказ; выбор сбрасываем, он строился на старых данных
+        if (e?.code === 'slot_taken' || e?.code === 'teacher_unavailable') {
+          set({ step: 'time', choices: [] })
           setReload((n) => n + 1)
         }
       }
@@ -292,6 +301,7 @@ function Wizard({ token, card, view, initialStep, addTime, onNav, toast, lang, t
               days: t('time.day.' + (days === 1 ? 'one' : 'many')),
             })}{' '}
             {!enoughDays && t('time.needDays', { n: perWeek })}
+            {schoolDayHint && <span className="mt-tiny" style={{ display: 'block' }}>{t('time.schoolDays')}</span>}
           </span>
           <button
             type="button"

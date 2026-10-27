@@ -16,6 +16,7 @@ html[data-theme="dark"] .fc {
 .fc button, .fc input, .fc textarea, .fc select { font: inherit; }
 .fc button { cursor: pointer; }
 .fc button:disabled { opacity: .5; cursor: not-allowed; }
+.fc__remove:disabled, .fc__cancel:disabled, .fc__case:disabled, .fc__textbtn:disabled { opacity: .5; cursor: not-allowed; }
 .fc :is(button, select, textarea, input, a, summary):focus-visible { outline: 3px solid var(--fc-accent); outline-offset: 3px; }
 .fc__head { margin-bottom: 20px; }
 .fc__head h1 { margin: 0 0 5px; font-size: 32px; font-weight: 750; letter-spacing: -.8px; line-height: 1.25; }

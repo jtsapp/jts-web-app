@@ -109,6 +109,24 @@ export function getMyTokens(token) {
   return authGet('/cabinet/my-tokens', token)
 }
 
+// Разделы кабинета, открытые ученику по тарифу и формату (ТЗ кабинетов, 14е): { known, tariff, format, allowed }.
+// Любая осечка (нет ручки на стенде, сеть) — null: меню остаётся полным, ученика из-за сети не закрываем.
+const _mySections = new Map()
+export function getMySections(token) {
+  if (!token) return Promise.resolve(null)
+  if (_mySections.has(token)) return _mySections.get(token)
+  const p = authGet('/cabinet/my-sections', token)
+    .then((d) => (d && Array.isArray(d.allowed) ? d : null))
+    .catch(() => {
+      _mySections.delete(token)
+      return null
+    })
+  _mySections.set(token, p)
+  // Тариф меняет менеджер: помним ответ недолго, чтобы новый раздел появился без перелогина.
+  setTimeout(() => _mySections.get(token) === p && _mySections.delete(token), 5 * 60 * 1000)
+  return p
+}
+
 export function getCabinetFeedback(token) {
   return authGet('/cabinet/feedback/mine', token)
 }
@@ -816,7 +834,9 @@ export async function getStudentMatching(token) {
 }
 export const getMatchingGrid = (token, format) =>
   authGet('/student/matching/grid' + (format ? '?format=' + encodeURIComponent(format) : ''), token)
-export const getMatchingTeachers = token => authGet('/student/matching/candidates', token)
+// age — «Кого учит» (kids | teens | adults); учителя без отметок возраста сервер не отсекает.
+export const getMatchingTeachers = (token, age) =>
+  authGet('/student/matching/candidates' + (age ? '?age=' + encodeURIComponent(age) : ''), token)
 export const getMatchingTeacher = (token, id) => authGet(`/student/matching/teachers/${id}`, token)
 // Фото отдаётся только с токеном, поэтому не <img src>, а blob — object URL держит TeacherPhoto.
 export async function getMatchingTeacherPhoto(token, id) {
@@ -833,6 +853,75 @@ export const changeMatchingFormat = (token, format) => authPost('/student/matchi
 export const counterMatchingSchedule = (token, slots) => authPost('/student/matching/counter', token, { slots })
 export const reconfirmMatchingSchedule = token => authPost('/student/matching/reconfirm', token, {})
 export const patchMatchingWish = (token, wish) => authPatch('/student/matching/ask-manager', token, { wish })
+
+// «Выбрать группу» (ТЗ кабинетов, 14): подбор по пожеланиям, запись, оплата или пробный урок, лист ожидания. Ручек может
+// не быть на старом стенде — экран читает это как «раздел скоро появится», а не как поломку.
+export async function getGroupState(token) {
+  try {
+    return await authGet('/enrollment/student/state', token)
+  } catch (e) {
+    if (e?.status === 404 || e?.status === 403) return null
+    throw e
+  }
+}
+export const suggestGroups = (token, wishes) => authPost('/enrollment/student/suggest', token, wishes)
+export const enrollInGroup = (token, groupId) => authPost(`/enrollment/student/groups/${groupId}/enroll`, token, {})
+// «Оплатить»: статус «Оплачено» ставит менеджер или действующий абонемент, а не это нажатие — ответ несёт `payRequested`.
+export const payForGroup = (token) => authPost('/enrollment/student/pay', token, {})
+export const startGroupTrial = (token) => authPost('/enrollment/student/trial', token, {})
+export const cancelGroupEnrollment = (token) => authDelete('/enrollment/student/enrollment', token)
+export const joinGroupWaitlist = (token, groupId) => authPost(`/enrollment/student/groups/${groupId}/waitlist`, token, {})
+export const leaveGroupWaitlist = (token, groupId) => authDelete(`/enrollment/student/groups/${groupId}/waitlist`, token)
+export const askGroupManager = (token, wishes) => authPost('/enrollment/student/ask-manager', token, wishes)
+
+// «Договоры» (ТЗ кабинетов, 14а): список, текст, оферта галочкой, код из SMS и подпись. Ответ списка помним полминуты —
+// его читают меню (счётчик) и сам раздел; после подписи или принятия оферты кэш сбрасывается. Нет ручки на стенде — null.
+let _contractsCache = null
+export function dropContractsCache() {
+  _contractsCache = null
+}
+export async function getMyContracts(token) {
+  if (!token) return null
+  if (_contractsCache && _contractsCache.token === token && Date.now() - _contractsCache.at < 30000) return _contractsCache.value
+  try {
+    const value = await authGet('/contracts/mine', token)
+    _contractsCache = { token, at: Date.now(), value }
+    return value
+  } catch (e) {
+    if (e?.status === 404 || e?.status === 403 || e?.status === 400) return null
+    throw e
+  }
+}
+export const getContractDetail = (token, id) => authGet(`/contracts/${id}`, token)
+export const getPaperContract = (token,id) => authGet(`/contracts/${id}/paper`,token)
+export const preparePaperContract = (token,id,fields) => authPut(`/contracts/${id}/paper`,token,fields)
+export async function submitContractScan(token,id,file,signedOn,confirmed){
+  const body=new FormData();body.append('file',file);body.append('signedOn',signedOn);body.append('confirmed',String(confirmed))
+  const res=await fetch(`${BASE}/contracts/${id}/scan`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body})
+  if(!res.ok){if(res.status===401)reportUnauthorized();const data=await res.json().catch(()=>({}));const message=data.messages?.[0]||data.message;const error=new Error(message||'Could not upload the scan');error.serverMessage=message;error.status=res.status;throw error}
+  dropContractsCache();return res.json()
+}
+export async function getContractScanPdf(token,id){const res=await fetch(`${BASE}/contracts/scans/${id}/pdf`,{headers:{Authorization:`Bearer ${token}`}});if(!res.ok)throw new Error('Could not open the scan');return res.blob()}
+export async function acceptContractOffer(token) {
+  const result = await authPost('/contracts/offer/accept', token, {})
+  dropContractsCache()
+  return result
+}
+export const requestContractCode = (token, id, fields) => authPost(`/contracts/${id}/code`, token, fields)
+export async function signContract(token, id, code) {
+  const result = await authPost(`/contracts/${id}/sign`, token, { code })
+  dropContractsCache()
+  return result
+}
+// PDF отдаётся только с токеном, поэтому не ссылка, а blob: экран открывает его object URL в новой вкладке.
+export async function getContractPdf(token, id) {
+  try {
+    const res = await fetch(`${BASE}/contracts/${id}/pdf`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
 
 export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
@@ -1176,6 +1265,15 @@ export function markNotificationRead(token, id) {
 
 export function markAllNotificationsRead(token) {
   return authPut('/notifications/read-all', token)
+}
+
+// Каналы дублирования уведомлений: { email, push } (ТЗ кабинетов, 14). Кабинет работает всегда и не настраивается.
+export function getNotificationChannels(token) {
+  return authGet('/notifications/channels', token)
+}
+
+export function saveNotificationChannels(token, channels) {
+  return authPut('/notifications/channels', token, channels)
 }
 
 export function deleteNotification(token, id) {

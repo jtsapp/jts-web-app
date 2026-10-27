@@ -112,6 +112,8 @@ export function matchingView(snap, now = new Date()) {
       ? { id: vacationHandoff.id, teacherName: vacationHandoff.teacherName, from: vacationHandoff.dateFrom, to: vacationHandoff.dateTo }
       : null,
     temporary,
+    // Даты, в которых сервер ставит уроки (временная замена) — для «Первого урока».
+    lessonWindow: { from: card.temporaryFrom || null, through: card.temporaryTo || null },
     paused: pauseHandoff ? { from: pauseHandoff.dateFrom, to: pauseHandoff.dateTo } : null,
     change: card.change || null,
     format: card.format || null,

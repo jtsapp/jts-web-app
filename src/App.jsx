@@ -41,6 +41,9 @@ import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import MyTeacherPage from './screens/MyTeacherPage.jsx'
+import GroupPickPage from './screens/GroupPickPage.jsx'
+import NotificationsPage from './screens/NotificationsPage.jsx'
+import ContractsPage from './screens/ContractsPage.jsx'
 import TeacherWizardPage from './screens/TeacherWizardPage.jsx'
 import TeacherPickPage, { teacherPickSeen } from './screens/TeacherPickPage.jsx'
 import MatchingPopups from './matching/MatchingPopups.jsx'
@@ -119,6 +122,8 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
+import { isSectionOpen, useStudentSections } from './lib/studentSections.js'
+import SectionClosedPage from './screens/SectionClosedPage.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
@@ -180,6 +185,8 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
+  // Запись в группу и уведомления (ТЗ кабинетов, 14): состояние живёт на сервере
+  'group', 'notifications', 'contracts',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -651,6 +658,9 @@ export default function App() {
     const to = ieltsAccountRedirect(ieltsAccount, screen)
     if (to) setScreen(to)
   }, [ieltsAccount, screen, setScreen])
+  // Разделы кабинета ученика по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел по прямой ссылке показывает
+  // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
+  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
   // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
@@ -1789,6 +1799,9 @@ export default function App() {
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'my-teacher') setScreen('my-teacher')
+    else if (key === 'group') setScreen('group')
+    else if (key === 'notifications') setScreen('notifications')
+    else if (key === 'contracts') setScreen('contracts')
     else if (key === 'teacher-wizard') { setWizardTarget(payload?.step ? { step: payload.step, at: Date.now() } : null); setScreen('teacher-wizard') }
     else if (key === 'teacher-pick') setScreen('teacher-pick')
     else if (key === 'lessons') {
@@ -2015,7 +2028,10 @@ export default function App() {
     : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
-  const page = renderScreen(view)
+  const sectionClosed = !!token && !boothAccount && !isTeacher(token) && !isSectionOpen(sectionAccess, view)
+  const page = sectionClosed
+    ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    : renderScreen(view)
   return (
     <>
       {page && (
@@ -2363,6 +2379,12 @@ export default function App() {
           backLabel={backLabel('home')}
         />
       )
+    case 'contracts':
+      return <ContractsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'notifications':
+      return <NotificationsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'group':
+      return <GroupPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'my-teacher':
       return <MyTeacherPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'teacher-wizard':
