@@ -4119,11 +4119,13 @@
   top: calc(50% - 105px);
   height: 210px;
 }
+/* За карточку боковые заходят только краем: Айзере узкая, и при заходе 64 px у
+   неё пряталась половина лица («слишком закрыта», владелец 28.10.2026). */
 .t-tour__intro--cast .t-tour__intro-art--left {
-  right: calc(100% - 64px);
+  right: calc(100% - 24px);
 }
 .t-tour__intro--cast .t-tour__intro-art--right {
-  left: calc(100% - 64px);
+  left: calc(100% - 24px);
 }
 
 @media (prefers-reduced-motion: reduce) {
