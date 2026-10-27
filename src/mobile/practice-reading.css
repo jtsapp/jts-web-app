@@ -1374,6 +1374,151 @@
     line-height: 22px;
   }
 
+  /* ---------- Комиксы · 4 · Ошибка загрузки ----------
+     Кадр 6605:10781: экран светлый (тёмная — только у самой читалки), в навбаре
+     «Комиксы», по центру знак ошибки в розовом круге 96, текст 20/28 и
+     «Повторить» во всю ширину со значком restart_alt (экспорт Figma). */
+  .learn__main:has(.cr__retry) {
+    background: #f7f7f8;
+  }
+  .cr:has(.cr__retry) {
+    min-height: calc(100dvh - 32px);
+    color: #181818;
+  }
+  .cr:has(.cr__retry) :is(.cr__back, .cr__full, .cr__title) {
+    color: #181818;
+  }
+  .cr:has(.cr__retry) .cr__full {
+    visibility: hidden;
+  }
+  /* Без строки «N / M» название одно — по центру всей высоты навбара. */
+  .cr__bar > .cr__title:last-child {
+    grid-row: 1 / span 2;
+  }
+  .cr__empty:has(.cr__retry) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 0 64px;
+    border: 0;
+    background: transparent;
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    text-align: center;
+  }
+  .cr__empty:has(.cr__retry)::before {
+    content: '';
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #fdebec url('/assets/m/reading/error.svg') center / 48px no-repeat;
+  }
+  .cr__retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 56px;
+    margin: 0;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .cr__retry::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: url('/assets/m/reading/restart.svg') center / 24px no-repeat;
+  }
+
+  /* ---------- Книжки · 4 · Перевод слова ----------
+     Кадр 6605:10625: шторка снизу поверх затемнённого текста — слово 20/28,
+     перевод с чипом RU, «Сохранить в словарь» во всю ширину. Позицию у слова
+     ставит BookRead inline-стилем; на телефоне шторка от неё не зависит (как у
+     «Чтения»). Затемнение — тенью самой шторки: закрывает её прежний тап мимо. */
+  .bk-pop {
+    position: fixed !important;
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    z-index: 75;
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    box-shadow: 0 0 0 100vmax rgba(24, 24, 24, 0.4);
+  }
+  .bk-pop__word {
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .bk-pop__tr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .bk-pop__tr::before {
+    content: 'RU';
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .bk-pop__alts {
+    margin-top: 6px;
+    color: #8e8e99;
+    font-size: 14px;
+  }
+  .bk-pop__save,
+  .bk-pop__save:disabled {
+    display: block;
+    width: 100%;
+    height: 48px;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    -webkit-mask: none;
+    mask: none;
+  }
+  .bk-pop__save:disabled:not(.bk-pop__save--on) {
+    opacity: 0.55;
+  }
+  .bk-pop__save--on:disabled {
+    background: #e6fbec;
+    color: #03832c;
+  }
+  .bk-pop__hint {
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 12px;
+  }
+
   /* ---------- Тёмная тема ----------
      Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
      (генератор theme-dark.generated.css этот файл не знает). */
@@ -1576,5 +1721,28 @@
   }
   html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search input {
     color: var(--dk-text);
+  }
+  /* Ошибка комикса и шторка книги в тёмной. */
+  html[data-theme='dark'] .learn__main:has(.cr__retry) {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .cr:has(.cr__retry),
+  html[data-theme='dark'] .cr:has(.cr__retry) :is(.cr__back, .cr__title),
+  html[data-theme='dark'] .cr__empty:has(.cr__retry) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .cr__empty:has(.cr__retry)::before {
+    background-color: var(--dk-red-soft);
+  }
+  html[data-theme='dark'] .bk .bk-pop {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .bk .bk-pop__word,
+  html[data-theme='dark'] .bk .bk-pop__tr {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-pop__tr::before {
+    background: var(--dk-chip);
+    color: var(--dk-muted);
   }
 }
