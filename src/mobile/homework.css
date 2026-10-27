@@ -426,3 +426,152 @@
     border-color: var(--dk-acc);
   }
 }
+
+/* ======================================================================
+   «Мой ответ» и сдача (кадры 6617:8970, 6617:9065, 6617:9310): блок — белая
+   карточка r24, файл — строка #f8f8f8 с плашкой формата, «Прикрепить файл» —
+   пунктирная зона во всю ширину (весь блок кликабелен: ::after метки), кнопка
+   сдачи закреплена над нижней панелью полосой фона (ButtonBar).
+   ====================================================================== */
+@media (max-width: 560px) {
+  .hw-block {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .hw-block__title {
+    margin-bottom: 12px;
+  }
+  .hw-file {
+    gap: 12px;
+    padding: 8px;
+    border: 0;
+    border-radius: 16px;
+    background: #f8f8f8;
+  }
+  .hw-file__glyph {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .hw-file__glyph--pdf {
+    background: #fdebec;
+    color: #d9363e;
+  }
+  .hw-file__name {
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    color: #181818;
+  }
+  /* Крестик 20 серым в кнопке 40 (IconButton макета). */
+  .hw-file__remove {
+    width: 40px;
+    height: 40px;
+    background: transparent url(/assets/m/homework/close.svg) center / 20px 20px no-repeat;
+    font-size: 0;
+    color: transparent;
+  }
+
+  .hw-upload {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 2px;
+    align-items: center;
+    margin-top: 12px;
+    padding: 16px;
+    border: 2px dashed rgba(144, 71, 255, 0.5);
+    border-radius: 20px;
+    background: #f6f1ff;
+  }
+  .hw-upload::before {
+    content: '';
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #efe7ff url(/assets/m/homework/upload.svg) center / 24px 24px no-repeat;
+  }
+  .hw-upload__btn {
+    grid-column: 2;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    color: #9047ff;
+    text-align: left;
+  }
+  .hw-upload__btn:hover {
+    background: transparent;
+  }
+  /* Вся зона — цель нажатия, как в макете, а не только подпись. */
+  .hw-upload__btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+  }
+  .hw-upload > .hw__hint {
+    grid-column: 2;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+
+  /* :has внутри :has браузер не принимает — поэтому «после зоны загрузки», а не
+     «блок с загрузкой». Сдача — закреплена над панелью: «Отправить на проверку» и «Сдать работу»
+     задания с урока (но не «Открыть задание» и не «Проверить» упражнений). */
+  .hw-upload ~ .hw-submit,
+  .hw-block > .hw-submit:first-child:has(+ .hw__hint) {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--mtab-h, 0px) + 8px);
+    z-index: 20;
+    width: auto;
+    margin: 0;
+    /* Полоса фона во всю ширину вокруг кнопки; снизу её прячет панель (z 30). */
+    box-shadow: 0 0 0 16px #f8f8f8, 0 -12px 16px 8px rgba(0, 0, 0, 0.04);
+  }
+  .hw__body:has(.hw-upload ~ .hw-submit, .hw-submit:first-child + .hw__hint) {
+    padding-bottom: 96px;
+  }
+  html:root:has(.mtab):has(.hw-upload ~ .hw-submit) .asst__launcher.asst__launcher,
+  html:root:has(.mtab):has(.hw-block > .hw-submit:first-child + .hw__hint) .asst__launcher.asst__launcher {
+    bottom: calc(var(--mtab-h) + 88px);
+  }
+  html:root:has(.mtab):has(.hw-upload ~ .hw-submit) .asst__hint.asst__hint,
+  html:root:has(.mtab):has(.hw-block > .hw-submit:first-child + .hw__hint) .asst__hint.asst__hint {
+    bottom: calc(var(--mtab-h) + 88px + 28px);
+  }
+
+  html[data-theme='dark'] .learn .hw-block {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .learn .hw-file {
+    background: var(--dk-raised);
+  }
+  html[data-theme='dark'] .hw-file__name {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .learn .hw-upload {
+    background: var(--dk-acc-tint);
+    border-color: var(--dk-acc-line);
+  }
+  html[data-theme='dark'] .hw-upload::before {
+    background-color: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .hw-upload ~ .hw-submit,
+  html[data-theme='dark'] .hw-block > .hw-submit:first-child:has(+ .hw__hint) {
+    box-shadow: 0 0 0 16px var(--dk-page);
+  }
+}
