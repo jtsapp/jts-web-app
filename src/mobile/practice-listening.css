@@ -1081,6 +1081,209 @@
   }
 }
 
+/* ---------- «Слушай и выбирай»: ответ и ошибки (кадры 1, 4–6) ----------
+   Подсказка и разбор — панель у низа экрана во всю ширину r24 сверху:
+   сиреневая до ответа, красная #fdebec после ошибки, зелёная #e3f6ea при
+   верном. Заголовок 16/700 цветом исхода, текст 14/500; «Показать текст» —
+   кнопка с фиолетовой рамкой, «Дальше» — основная, пополам; стенограмма —
+   белая карточка r16 на той же подложке. Выбранная неверная картинка —
+   рамка 3 #d9363e, верная — #1f9d55. */
+@media (max-width: 560px) {
+  .lc-opt.is-wrong {
+    border-color: #d9363e;
+    box-shadow: none;
+  }
+  .lc-opt.is-correct,
+  .lc-opt.is-revealed {
+    border-color: #1f9d55;
+    box-shadow: none;
+  }
+  .lc-feedback {
+    margin: 16px -16px 0;
+    padding: 16px 16px 20px;
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    background: #efe7ff;
+  }
+  .lc-feedback[data-state='retry'],
+  .lc-feedback[data-state='failed'] {
+    background: #fdebec;
+  }
+  .lc-feedback[data-state='correct'] {
+    background: #e3f6ea;
+  }
+  .lc-feedback__copy strong {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .lc-feedback[data-state='retry'] .lc-feedback__copy strong,
+  .lc-feedback[data-state='failed'] .lc-feedback__copy strong {
+    color: #d9363e;
+  }
+  .lc-feedback[data-state='correct'] .lc-feedback__copy strong {
+    color: #1f9d55;
+  }
+  .lc-feedback__copy p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #181818;
+  }
+  .lc-feedback__actions {
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: stretch;
+    flex-wrap: nowrap;
+  }
+  .lc-feedback__actions .lc-quiet,
+  .lc-feedback__actions .lc-primary {
+    flex: 1;
+    max-width: none;
+    height: 56px;
+    padding: 0 12px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .lc-feedback__actions .lc-quiet {
+    border: 2px solid #9047ff;
+    background: #fff;
+    color: #9047ff;
+  }
+  /* Стенограмма идёт после панели отдельным блоком — продолжаем ту же
+     подложку, чтобы она читалась частью панели. */
+  .lc-transcript {
+    margin: 0 -16px;
+    padding: 0 16px 20px;
+    border: 0;
+    background: #efe7ff;
+  }
+  .lc-bench:has(.lc-feedback[data-state='failed']) .lc-transcript {
+    background: #fdebec;
+  }
+  .lc-bench:has(.lc-feedback[data-state='correct']) .lc-transcript {
+    background: #e3f6ea;
+  }
+  .lc-transcript p {
+    margin: 0;
+    padding: 12px 16px 4px;
+    border-radius: 16px 16px 0 0;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .lc-transcript p.lc-transcript__key {
+    padding: 0 16px 12px;
+    border-radius: 0 0 16px 16px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #9047ff;
+  }
+}
+
+/* ---------- «Слушай и выбирай»: окна (кадры 7 и 9) ----------
+   Просмотр картинки — во весь экран на тёмном: крестик слева сверху, номер
+   по центру, «Назад / Дальше» внизу пополам. «Как заниматься» — лист снизу
+   r24, заголовок 20/800, «Закрыть» 56 во всю ширину. */
+@media (max-width: 560px) {
+  .lc-dialog:not(.lc-dialog--zoom) {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 24px 24px 0 0;
+  }
+  .lc-dialog h2 {
+    margin-bottom: 16px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .lc-dialog p {
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #181818;
+  }
+  .lc-dialog:not(.lc-dialog--zoom) .lc-dialog__actions .lc-primary {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .lc-dialog--zoom {
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 64px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 0;
+    background: #16141a;
+    color: #fff;
+  }
+  .lc-dialog--zoom[open] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .lc-dialog--zoom img {
+    width: 100%;
+    max-height: 60dvh;
+    border-radius: 16px;
+    object-fit: cover;
+  }
+  .lc-dialog--zoom .lc-dialog__actions {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    margin: 0;
+  }
+  .lc-dialog--zoom .lc-dialog__label {
+    position: fixed;
+    top: 16px;
+    left: 64px;
+    right: 64px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: center;
+    color: #fff;
+  }
+  .lc-dialog--zoom .lc-secondary {
+    flex: 1;
+    height: 56px;
+    border: 0;
+    border-radius: 16px;
+    background: #2a2830;
+    font-size: 18px;
+    color: #fff;
+  }
+  .lc-dialog--zoom .lc-primary {
+    position: fixed;
+    top: 4px;
+    left: 4px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 12px;
+    background: url(/assets/m/practice/listening/close.svg) center / 24px 24px no-repeat;
+    filter: invert(1);
+    font-size: 0;
+  }
+}
+
 /* ---------- «Слушай и выбирай»: итоги (кадр 10) ----------
    Кольцо 176 с толстой сиреневой дорожкой и счётом 40/800 (дуги прогресса
    нет: доля не передаётся в разметку числом), заголовок 24/800, три белые
@@ -1410,5 +1613,39 @@
   html[data-theme='dark'] .lc .lc-result__actions .lc-secondary {
     border-color: var(--dk-acc);
     color: var(--dk-acc-text);
+  }
+}
+
+/* ---------- Тёмная: ответ и окна «Слушай и выбирай» ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .lc .lc-feedback,
+  html[data-theme='dark'] .lc .lc-transcript {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .lc .lc-feedback[data-state='retry'],
+  html[data-theme='dark'] .lc .lc-feedback[data-state='failed'],
+  html[data-theme='dark'] .lc .lc-bench:has(.lc-feedback[data-state='failed']) .lc-transcript {
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] .lc .lc-feedback[data-state='correct'],
+  html[data-theme='dark'] .lc .lc-bench:has(.lc-feedback[data-state='correct']) .lc-transcript {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .lc .lc-feedback__copy p,
+  html[data-theme='dark'] .lc .lc-transcript p,
+  html[data-theme='dark'] .lc .lc-dialog p {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lc .lc-dialog--zoom {
+    border: 0;
+    background: #16141a;
+  }
+  html[data-theme='dark'] .lc .lc-feedback__actions .lc-quiet {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .lc .lc-transcript p {
+    background: var(--dk-card);
   }
 }
