@@ -1116,15 +1116,74 @@
     order: 4;
   }
   .wd-foot {
-    order: 5;
+    order: 6;
     margin: 0 2px;
+  }
+  /* «Найдено в раунде» (только телефон, WordsScene по usePhoneWidth): белая
+     карточка r20, подпись 12/700 капсом, круги 40 #efe7ff; найденный — с
+     картинкой слова и зелёной рамкой. */
+  .wd-roundfound {
+    order: 5;
+    padding: 12px 16px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .wd-roundfound > span {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #5a5a66;
+  }
+  .wd-roundfound > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .wd-roundfound i {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border: 2px solid #e4daf8;
+    border-radius: 50%;
+    background: #efe7ff;
+  }
+  .wd-roundfound i.on {
+    border-color: #1f9d55;
+    background: #fff;
+  }
+  .wd-roundfound img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+  html[data-theme='dark'] .wd .wd-roundfound {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .wd .wd-roundfound > span {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .wd .wd-roundfound i {
+    border-color: var(--dk-acc-soft);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .wd .wd-roundfound i.on {
+    border-color: var(--dk-green);
+    background: var(--dk-raised);
   }
   /* «Пробел — повторить слово» — про клавиатуру, на телефоне её нет. */
   .wd-foot span + span {
     display: none;
   }
   .wd-speak {
-    order: 6;
+    order: 7;
     position: relative;
     align-self: center;
     width: 72px;
@@ -2005,6 +2064,9 @@
   html[data-theme='dark'] .wd .wd-hint:not(:empty) {
     background: var(--dk-orange-tint);
     color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .wd .wd-fb__ok {
+    background: url(/assets/m/practice/listening/check-green.svg) center / 24px 24px no-repeat;
   }
   html[data-theme='dark'] .wd .wd-fb--show {
     border: 0;
