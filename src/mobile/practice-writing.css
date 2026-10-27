@@ -333,6 +333,65 @@
     color: var(--mw-orange);
   }
 
+  /* ---------- «Неправильные глаголы»: полоса раздела ----------
+     Navbar — общий компонент всех кадров «Mobile» (сверен по «Письму»): стрелка
+     48 и название по центру, кнопки угла скрыты. Часть (Разберись / Изучи /
+     Практикуй) остаётся вкладками ниже, во второй строке крошки она лишняя.
+     Кадры самих экранов глаголов не сверены — мост Figma отключился. */
+  .learn__main:has(.vb) .learn__bell {
+    display: none;
+  }
+  .vb-top {
+    gap: 0;
+    min-height: 52px;
+    margin: 0 -12px 4px;
+    padding-right: 0;
+  }
+  .vb .vb-back {
+    flex: none;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: none;
+    color: transparent;
+    font-size: 0;
+  }
+  .vb .vb-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: var(--vb-ink);
+    -webkit-mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+  }
+  .vb .vb-crumb {
+    padding-right: 48px;
+    text-align: center;
+  }
+  .vb .vb-crumb b {
+    overflow: hidden;
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .vb .vb-crumb span {
+    display: none;
+  }
+  html[data-theme='dark'] .vb .vb-back {
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-back::before {
+    background: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-crumb b {
+    color: var(--dk-text);
+  }
+
   /* ---------- тёмная тема ---------- */
   html[data-theme='dark'] .wr {
     --mw-ink: var(--dk-text);
