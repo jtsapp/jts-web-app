@@ -990,6 +990,64 @@
   }
 }
 
+/* ---------- «Слова в картинках»: не то животное / найдено (кадры 4–5) ----------
+   Подсказка после промаха — плашка #fff0dd r16 со значком «i» и текстом
+   16/600 оранжевым; найденное слово — плашка #e3f6ea с галочкой в круге и
+   «слово — перевод» 16/700 зелёным. Пустая подсказка места не занимает. */
+@media (max-width: 560px) {
+  .wd-hint:empty {
+    display: none;
+  }
+  .wd-hint:not(:empty) {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #fff0dd;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: #e57a12;
+  }
+  .wd-hint:not(:empty)::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/practice/listening/info-orange.svg) center / 24px 24px no-repeat;
+  }
+  .wd-fb--show {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #e3f6ea;
+  }
+  .wd-fb__ok {
+    width: 24px;
+    height: 24px;
+    border-radius: 0;
+    background: url(/assets/m/practice/listening/check-green.svg) center / 24px 24px no-repeat;
+  }
+  .wd-fb__ok svg,
+  .wd-fb__ok .wd-i {
+    display: none;
+  }
+  .wd-fb b,
+  .wd-fb em {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #1f9d55;
+  }
+  .wd-fb em::before {
+    content: '— ';
+  }
+}
+
 /* ---------- Тренажёр: «Вы уверены, что хотите выйти?» (кадр 12) ----------
    Не окно по центру, а лист снизу r24: без маскота и крестика (закрывает
    тап по затемнению и «Продолжить»), заголовок 24/800 и подпись 14 по
@@ -1647,5 +1705,21 @@
   }
   html[data-theme='dark'] .lc .lc-transcript p {
     background: var(--dk-card);
+  }
+}
+
+/* ---------- Тёмная: подсказки игры «Слов» ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .wd .wd-hint:not(:empty) {
+    background: var(--dk-orange-tint);
+    color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .wd .wd-fb--show {
+    border: 0;
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .wd .wd-fb b,
+  html[data-theme='dark'] .wd .wd-fb em {
+    color: var(--dk-green);
   }
 }
