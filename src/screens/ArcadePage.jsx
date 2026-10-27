@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
+import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 import ArcadeGame from './arcade/ArcadeGame.jsx'
 import ArcadeHub, { ARCADE_GAMES } from './arcade/ArcadeHub.jsx'
 import RunnerGame from './arcade/runner/RunnerGame.jsx'
@@ -46,6 +47,9 @@ export default function ArcadePage({ userName, userLevel, token, onNav, onProfil
   const exit = () => (onBack ? onBack() : onNav?.('practice', { skill: fromSkill }))
   const inHub = !game || game === entryGame
   const back = () => (inHub ? exit() : setGame(null))
+  // На телефоне строка над экраном — навбар приложения: в игре в нём её
+  // название (Figma «Mobile», Speak or Die 6605:10888), в зале — «Аркада».
+  const phone = usePhoneWidth()
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ar">
@@ -54,7 +58,7 @@ export default function ArcadePage({ userName, userLevel, token, onNav, onProfil
             ← {inHub ? backLabel || t('arcade.toPractice') : t('arcade.toHub')}
           </button>
           <div className="ar-crumb">
-            <b>{t('practice.chip.arcade')}</b>
+            <b>{phone && game ? t(head.title) : t('practice.chip.arcade')}</b>
           </div>
         </div>
 

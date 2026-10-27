@@ -208,6 +208,20 @@
     font-weight: 700;
     line-height: 16px;
   }
+  /* Шапка «поём» по кадру: «Выйти» слева и белый «Закончить» справа,
+     ниже трек, ещё ниже — переключатели (без оценки, минус, микрофон). */
+  .kk-top__finish {
+    background: #fff;
+    color: #181818;
+  }
+  .kk-top__finish:disabled {
+    opacity: 0.5;
+  }
+  .kk-top__free,
+  .kk-top__minus,
+  .kk-top__mic {
+    order: 2;
+  }
 
   /* ---------- Караоке · итог (кадр 6605:19909) ----------
      Вердикт 20/800 и балл 56/800 фиолетовым — по центру; медали — сплошные
@@ -422,10 +436,29 @@
     padding: 16px;
   }
   .ar-hub__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 20px;
     font-weight: 800;
     line-height: 28px;
     color: #181818;
+  }
+  /* Чип «Бета» у названия — рендерится только на телефоне (ArcadeHub). */
+  .ar-hub__beta {
+    flex: none;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  html[data-theme='dark'] .ar .ar-hub__beta {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
   }
   .ar-hub__desc {
     font-size: 16px;
