@@ -1212,61 +1212,6 @@
     color: var(--dk-text);
   }
 
-  /* ---------- Порядок слов (кадры 4273:6259…6800) ---------- */
-
-  /* Собранная фраза над линией #afafaf, банк под ней; слова — пилюли 65. */
-  .gr-lesson .gr-slots {
-    justify-content: center;
-    gap: 8px;
-    min-height: 81px;
-    margin: 0 0 16px;
-    padding: 0 0 16px;
-    border: 0;
-    border-bottom: 1px solid #afafaf;
-    border-radius: 0;
-    background: none;
-  }
-  .gr-lesson .gr-slots.correct,
-  .gr-lesson .gr-slots.wrong {
-    border-color: #afafaf;
-    background: none;
-  }
-  .gr-lesson .gr-bank {
-    justify-content: center;
-    gap: 8px;
-  }
-  .gr-lesson :is(.gr-word, .gr-slot-word) {
-    height: 65px;
-    padding: 13px 24px;
-    border: 0;
-    border-radius: 100px;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 22px;
-  }
-  .gr-lesson .gr-word {
-    background: #fff;
-    color: #181818;
-  }
-  .gr-lesson .gr-word:hover:not(:disabled) {
-    background: #fff;
-    transform: none;
-  }
-  /* Взятое слово в кадре уходит из банка, а не бледнеет на месте. */
-  .gr-lesson .gr-word.used {
-    display: none;
-  }
-  .gr-lesson .gr-slot-word {
-    background: #9047ff;
-    color: #fff;
-  }
-  .gr-lesson .gr-slots.correct .gr-slot-word {
-    background: #31b423;
-  }
-  .gr-lesson .gr-slots.wrong .gr-slot-word {
-    background: #ea4f4f;
-  }
-
   /* ---------- True/False (кадр «Mobile» 6605:14306 «5 · Верно / неверно») ----------
      Строки — белые карточки r16 с рамкой #e8e8ee, фраза 16/500; кнопки —
      контурные r10 (рамка 2 фиолетовая, 12/700), выбранная — лавандовая. */
@@ -1394,84 +1339,191 @@
     color: var(--dk-text);
   }
 
-  /* ---------- Свободный ответ: transform / dictation (кадры 4273:8524…) ---------- */
+  /* ---------- Порядок слов (кадр «Mobile» 6605:14448 «8 · Собери предложение») ----------
+     Собранная фраза — белая карточка r20 с рамкой #e8e8ee, в ней слова
+     лавандовые r10 с фиолетовой рамкой; банк под ней слева, слова — белые
+     плашки r12 с рамкой 2 #e8e8ee. Взятое слово оставляет серое место. */
+  .gr-lesson .gr-slots {
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 72px;
+    margin: 0 0 16px;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .gr-lesson .gr-slots.correct {
+    border-color: #1f9d55;
+    background: #fff;
+  }
+  .gr-lesson .gr-slots.wrong {
+    border-color: #e5484d;
+    background: #fff;
+  }
+  .gr-lesson .gr-bank {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .gr-lesson :is(.gr-word, .gr-slot-word) {
+    height: 44px;
+    padding: 10px 14px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+  .gr-lesson .gr-word {
+    background: #fff;
+    color: #181818;
+  }
+  .gr-lesson .gr-word:hover:not(:disabled) {
+    background: #fff;
+    transform: none;
+  }
+  .gr-lesson .gr-word.used {
+    border-color: #f0f0f4;
+    background: #f0f0f4;
+    color: transparent;
+  }
+  .gr-lesson .gr-slot-word {
+    border-color: #9047ff;
+    border-radius: 10px;
+    background: #efe7ff;
+    color: #181818;
+  }
+  .gr-lesson .gr-slots.correct .gr-slot-word {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+  }
+  .gr-lesson .gr-slots.wrong .gr-slot-word {
+    border-color: #e5484d;
+    background: #fdecec;
+  }
 
-  /* Инструкция 24, образец 32 фиолетовым (inline font-size 18 перебиваем),
-     поле — белая плашка 70 r20, текст 18/500. */
+  /* ---------- Свободный ответ: transform / dictation (кадр 6605:14545 «10 · Преобразуй») ----------
+     Образец — лавандовая плашка r16, фраза 20/800 тёмным (inline font-size
+     перебиваем); поле — белое r16 с рамкой 2, верное — зелёная плашка. */
   .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-gap-sentence[style]) {
-    margin-bottom: 6px;
+    margin-bottom: 12px;
   }
   .gr-lesson .gr-act__body > .gr-gap-sentence[style] {
-    margin-bottom: 24px;
-    font-size: 32px !important;
-    line-height: 38px;
-    color: #9047ff;
+    margin-bottom: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 20px !important;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
   }
   .gr-lesson .gr-gap-input.gr-tf-input {
     display: block;
     width: 100%;
     min-width: 0;
-    height: 70px;
-    padding: 24px 16px 24px 20px;
-    border: 0;
-    border-radius: 20px;
+    height: 56px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 22px;
-    color: #9047ff;
+    line-height: 24px;
+    color: #181818;
     text-align: left;
   }
   .gr-lesson .gr-gap-input.gr-tf-input::placeholder {
-    color: #9c9c9c;
+    color: #8e8e99;
     opacity: 1;
   }
   .gr-lesson .gr-gap-input.gr-tf-input:focus {
+    border-color: #9047ff;
     background: #fff;
     box-shadow: none;
   }
   .gr-lesson .gr-gap-input.gr-tf-input.correct {
-    background: #fff;
-    color: #19c119;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-gap-input.gr-tf-input.wrong {
-    background: #fff;
-    color: #ff4646;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
   }
 
-  /* ---------- Найди ошибку (кадры 4273:8221…8393) ---------- */
-
-  /* Слова — белые пилюли 52 (16/600 фиолетовым), зазор 4. */
+  /* ---------- Найди ошибку (кадр 6605:14496 «9 · Найди ошибку») ----------
+     Фраза — белая карточка r20 с рамкой; слова — белые плашки r10 с рамкой
+     2 #e8e8ee (16/600 тёмным), выбранное — фиолетовая рамка, ошибка —
+     красная, верное — зелёное. */
   .gr-lesson .gr-error-sentence {
-    gap: 4px;
+    gap: 8px;
     margin: 0;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
     font-size: 16px;
     line-height: 20px;
   }
   .gr-lesson .gr-eword {
-    min-height: 52px;
-    padding: 16px 24px;
-    border: 0;
-    border-radius: 999px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 2px solid #e8e8ee;
+    border-radius: 10px;
     background: #fff;
     font-weight: 600;
-    color: #9047ff;
+    color: #181818;
   }
   .gr-lesson .gr-eword:hover {
     background: #fff;
   }
   .gr-lesson .gr-eword.sel,
   .gr-lesson .gr-eword.sel:hover {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
   }
   .gr-lesson .gr-eword.correct {
-    background: #19c119;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-eword.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  /* Лист «Не совсем» — красная кнопка, как в кадре. */
+  .gr-lesson .gr-fb.no + .gr-act__foot .gr-next {
+    background: #e5484d;
+  }
+
+  /* Тёмная: порядок, свободный ответ, ошибка. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-slots, .gr-error-sentence) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-word, .gr-eword, .gr-gap-input.gr-tf-input) {
+    border-color: var(--dk-line);
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-word.used {
+    border-color: var(--dk-chip);
+    background: var(--dk-chip);
+    color: transparent;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-slot-word,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-eword.sel {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-act__body > .gr-gap-sentence[style] {
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
   }
 
   /* ---------- Типы без своего кадра: та же система ----------
