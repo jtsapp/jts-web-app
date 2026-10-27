@@ -26,6 +26,7 @@
     --mw-step: #ece4ff;
     --mw-step-on: #c8adff;
     --mw-page: #fff;
+    --mw-chip-muted: #ececf1;
     padding: 0 16px 32px;
   }
   /* Своя полоса раздела (Navbar макета: «назад» 48 и заголовок по центру) —
@@ -499,6 +500,242 @@
     background: var(--mw-acc);
   }
 
+  /* ---------- 9 · Блокнот ----------
+     В макете Блокнот — не карточка, а экран: плашка задачи, строка
+     инструментов, белое поле письма, счётчики цифрой над подписью, строка
+     действий и «Проверить» у низа. Название жанра — в полосе (крошка), объём
+     и таймер — пилюлями в углу плашки задачи. Кнопки «Помощники» из кадра у
+     нас нет: помощники (PadPanes) остаются под редактором. */
+  .wr .wr-card.wr-pad__main {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-padhead {
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+  .wr-padhead .wr-sec-title {
+    display: none;
+  }
+  .wr-pad__main:has(.wr-padtask) .wr-padhead {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 1;
+    margin: 0;
+  }
+  .wr-padhead .wr-pill,
+  .wr .wr-padtimer {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--mw-card);
+    color: var(--mw-ink);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .wr .wr-padtimer--low {
+    background: var(--wr-red-bg);
+    color: var(--wr-red);
+  }
+  .wr .wr-padtask {
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+  }
+  .wr .wr-padtask h4 {
+    margin: 4px 0 6px;
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    line-height: 16px;
+    text-transform: uppercase;
+  }
+  .wr-padtask p {
+    margin: 0 0 6px;
+    color: var(--mw-ink);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-padtask__meta .wr-pill {
+    padding: 2px 8px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 11px;
+  }
+  /* Инструменты — строка чипов с прокруткой вбок, а не перенос. */
+  .wr-padtools,
+  .wr-padbar__extras {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wr-padtools::-webkit-scrollbar,
+  .wr-padbar__extras::-webkit-scrollbar {
+    display: none;
+  }
+  .wr-padtools .wr-ghost--sm,
+  .wr-padbar__extras .wr-ghost--sm {
+    flex: none;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--mw-line);
+    border-radius: 999px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .wr-padtools .wr-padtools__zen {
+    margin-left: 0;
+    border-color: transparent;
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink-2);
+  }
+  .wr-padbar__extras .wr-ghost--sm:first-child {
+    border-color: transparent;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  .wr .wr-editor {
+    min-height: 380px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr .wr-editor:focus {
+    border-color: var(--mw-acc);
+    box-shadow: none;
+  }
+  /* Счётчик: цифра крупно, под ней подпись (в разметке подпись идёт первой). */
+  .wr-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 8px 20px;
+    margin-top: 12px;
+  }
+  .wr .wr-metric {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    column-gap: 3px;
+    max-width: 104px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-metric b {
+    order: -1;
+    flex-basis: 100%;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  .wr .wr-metric i {
+    opacity: 1;
+  }
+  .wr .wr-metric--ok b {
+    color: var(--wr-green);
+  }
+  .wr .wr-metric--warn b,
+  .wr .wr-metric--warn {
+    color: var(--wr-red);
+  }
+  .wr .wr-metric--gold b {
+    color: var(--wr-gold);
+  }
+  .wr-savedline {
+    margin-top: 8px;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+  }
+  .wr-padbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin: 12px -16px 0;
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-padbar__extras {
+    margin-bottom: 0;
+  }
+  .wr .wr-padbar__check {
+    width: 100%;
+    margin: 0;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--mw-acc);
+    box-shadow: none;
+    font-size: 16px;
+  }
+  html[data-theme='dark'] .wr .wr-padtask {
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-padtask h4 {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-metric {
+    background: none;
+    color: var(--mw-ink-3);
+  }
+  html[data-theme='dark'] .wr .wr-padhead .wr-pill,
+  html[data-theme='dark'] .wr .wr-padtask__meta .wr-pill {
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padtimer {
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-editor {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padbar {
+    background: var(--mw-page);
+  }
+  html[data-theme='dark'] .wr .wr-padtools .wr-ghost--sm,
+  html[data-theme='dark'] .wr .wr-padbar__extras .wr-ghost--sm {
+    border-color: var(--mw-line);
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padbar__extras .wr-ghost--sm:first-child {
+    border-color: transparent;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-padbar__check {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+
   /* ---------- «Неправильные глаголы»: полоса раздела ----------
      Navbar — общий компонент всех кадров «Mobile» (сверен по «Письму»): стрелка
      48 и название по центру, кнопки угла скрыты. Часть (Разберись / Изучи /
@@ -780,6 +1017,7 @@
     --mw-step: var(--dk-line);
     --mw-step-on: var(--dk-acc);
     --mw-page: var(--dk-card);
+    --mw-chip-muted: var(--dk-line);
   }
   /* Слой theme-dark.generated.css красит те же классы правилами
      html[data-theme="dark"] .wr-… — перебиваем их на один класс сильнее. */
