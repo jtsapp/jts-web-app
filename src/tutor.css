@@ -4092,30 +4092,38 @@
 }
 /* Приветствие других экранов (intro.art): целые фигуры, а не нарезка макета. Низ
    фигуры уходит под карточку — она выше по слою и непрозрачна, — так фигура и
-   «выглядывает». Высота по пропорции картинки. */
+   «выглядывает». Размер — по ВЫСОТЕ, ширина по пропорции: позы разной ширины, и при
+   общей ширине фигуры выходили разного роста и выглядывали на разную величину
+   («стоят криво», владелец 28.10.2026). Пары симметричны, боковые — по центру
+   карточки и целиком в её высоту, чтобы ноги не торчали из-под низа. */
 .t-tour__intro--cast .t-tour__intro-art {
-  height: auto;
+  width: auto;
 }
+.t-tour__intro--cast .t-tour__intro-art--top1,
+.t-tour__intro--cast .t-tour__intro-art--top2 {
+  bottom: calc(100% - 64px);
+  height: 170px;
+}
+/* Верхняя пара — зеркально от центра карточки (как в макете «Главной»): от краёв
+   фигуры разной ширины стояли бы не по центру. */
 .t-tour__intro--cast .t-tour__intro-art--top1 {
-  left: 48px;
-  bottom: calc(100% - 72px);
-  width: 150px;
+  left: auto;
+  right: calc(50% + 12px);
 }
 .t-tour__intro--cast .t-tour__intro-art--top2 {
-  left: auto;
-  right: 48px;
-  bottom: calc(100% - 72px);
-  width: 150px;
+  left: calc(50% + 12px);
+  right: auto;
+}
+.t-tour__intro--cast .t-tour__intro-art--left,
+.t-tour__intro--cast .t-tour__intro-art--right {
+  top: calc(50% - 105px);
+  height: 210px;
 }
 .t-tour__intro--cast .t-tour__intro-art--left {
-  right: calc(100% - 80px);
-  top: 110px;
-  width: 200px;
+  right: calc(100% - 64px);
 }
 .t-tour__intro--cast .t-tour__intro-art--right {
-  left: calc(100% - 80px);
-  top: 130px;
-  width: 200px;
+  left: calc(100% - 64px);
 }
 
 @media (prefers-reduced-motion: reduce) {

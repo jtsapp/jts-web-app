@@ -637,12 +637,14 @@ export default function PracticePage({
     text: t('tour.practice.intro.text'),
     cta: t('tour.home.intro.cta'),
     skip: t('tour.home.intro.skip'),
+    // Позы — прямые, лицом к ученику: наклонённые и вверх ногами рядом с ровной
+    // карточкой смотрелись криво. Сбоку из-за карточки видна только внешняя
+    // половина фигуры — жест должен быть на ней (флаг слева, рука справа).
     art: {
-      top1: '/assets/mascots/artist-coffee.webp',
-      top2: '/assets/mascots/sport-handstand.webp',
-      // Сбоку из-за карточки видна только внешняя половина фигуры — жест должен быть на ней.
-      left: '/assets/mascots/grad-ball.webp',
-      right: '/assets/mascots/pink-cheer.webp',
+      top1: '/assets/mascots/artist-stand.webp',
+      top2: '/assets/mascots/sport-stand.webp',
+      left: '/assets/mascots/grad-book.webp',
+      right: '/assets/mascots/pink-book.webp',
     },
   }
   // Перед стартом возвращаем обзор «Аудирования»: под развёрнутым разделом или

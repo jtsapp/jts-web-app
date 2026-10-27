@@ -1130,13 +1130,15 @@
      размеры телефона повторены с тем же префиксом. */
   .t-tour__intro--cast .t-tour__intro-art--top1,
   .t-tour__intro--cast .t-tour__intro-art--top2 {
-    width: 112px;
-    bottom: calc(100% - 52px);
+    height: 136px;
+    bottom: calc(100% - 48px);
   }
   .t-tour__intro--cast .t-tour__intro-art--top1 {
-    left: 8%;
+    left: auto;
+    right: calc(50% + 8px);
   }
   .t-tour__intro--cast .t-tour__intro-art--top2 {
-    right: 8%;
+    left: calc(50% + 8px);
+    right: auto;
   }
 }
