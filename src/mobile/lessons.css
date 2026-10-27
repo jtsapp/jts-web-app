@@ -163,6 +163,9 @@
   .cal__day--today {
     background: #efe7ff;
   }
+  .cal__day--today:not(.cal__day--sel) .cal__num {
+    color: #9047ff;
+  }
   .cal__nav:hover {
     background: #e3d6ff;
   }
