@@ -1383,6 +1383,180 @@
   }
 }
 
+/* ---------- «Слушай и выбирай»: «Настройка подхода» (кадр 8) ----------
+   На телефоне сложность и размер набора — в окне по значку настроек в строке
+   шапки (LcMain рендерит их туда по usePhoneWidth). Лист снизу: заголовок
+   20/800 и крестик, «Уровень» — сегменты на всю ширину, размер — чипы,
+   «Новый случайный набор» 56 во всю ширину. */
+@media (max-width: 560px) {
+  .lc {
+    position: relative;
+  }
+  .lc-settings-btn {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #181818;
+  }
+  .lc-settings-btn .lc-i {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+  }
+  .lc-dialog__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .lc-dialog__head h2 {
+    margin: 0;
+  }
+  .lc-dialog__x {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 32px;
+    color: #8e8e99;
+  }
+  .lc-dialog p.lc-dialog__label-sm,
+  .lc-count-chips > span {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .lc-dialog--settings .lc-difficulty {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .lc-dialog--settings .lc-seg {
+    display: flex;
+    width: 100%;
+    padding: 4px;
+    border-radius: 16px;
+    background: #f3f3f6;
+  }
+  .lc-dialog--settings .lc-seg button {
+    flex: 1;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #5a5a66;
+  }
+  .lc-dialog--settings .lc-seg button[aria-pressed='true'] {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+  }
+  .lc-dialog--settings p.lc-levelhint {
+    margin: 0 0 16px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  /* Сложность ушла в окно — шапка раздела над заданием пуста. */
+  .lc-head:not(:has(.lc-difficulty)) {
+    display: none;
+  }
+  .lc-dialog--settings .lc-setup {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .lc-count-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .lc-count-chips > span {
+    flex-basis: 100%;
+    margin: 0;
+  }
+  .lc-count-chips button {
+    min-width: 44px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    color: #181818;
+  }
+  .lc-count-chips button[aria-pressed='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .lc-dialog--settings .lc-setup__custom {
+    display: block;
+    margin-top: 8px;
+  }
+  .lc-dialog--settings .lc-setup__custom input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 12px;
+    font-size: 16px;
+  }
+  .lc-dialog--settings p.lc-note {
+    margin: 8px 0 16px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .lc-dialog--settings .lc-setup__right .lc-primary {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  html[data-theme='dark'] .lc .lc-dialog--settings .lc-setup {
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .lc .lc-settings-btn {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lc .lc-dialog--settings .lc-seg {
+    background: var(--dk-raised);
+  }
+  html[data-theme='dark'] .lc .lc-dialog--settings .lc-seg button[aria-pressed='true'],
+  html[data-theme='dark'] .lc .lc-count-chips button {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .lc .lc-count-chips button[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+}
+
 /* ---------- «Слушай и выбирай»: итоги (кадр 10) ----------
    Кольцо 176 с толстой сиреневой дорожкой и счётом 40/800 (дуги прогресса
    нет: доля не передаётся в разметку числом), заголовок 24/800, три белые
