@@ -40,6 +40,7 @@ import '../mobile/tutor.css'
 import '../mobile/learning.css'
 import '../mobile/practice.css'
 import '../mobile/practice-grammar.css'
+import '../mobile/homework.css'
 import '../mobile/home.css'
 import '../mobile/nav.css'
 // Казахский интерфейс — на Inter: перекрывает шрифты разделов и мобильного слоя

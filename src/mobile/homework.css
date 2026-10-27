@@ -1,0 +1,393 @@
+/* ======================================================================
+   «Домашняя работа» на телефоне — дизайн мобильного приложения
+   (Figma «pitch JTS (Copy)», страница «Mobile» → «Сервисы» → «Домашняя
+   работа», кадры 402: список 6616:8637, другие статусы 6619:10557,
+   задание 6616:8811).
+
+   Только вид. Порядок экранов сайта прежний: на телефоне сразу открыто
+   задание, к списку ведёт «Все задания» (tests/homework-layout.spec.js) — в
+   приложении список первым, но это решение сайта, а не вёрстки.
+   Значок статуса на плитке карточки и рамка — по классу бейджа статуса
+   (`:has(.hw-badge--…)`): разметку карточки (HomeworkList) не трогаем, её
+   же рисует компьютер. Значки — экспорт из макета (/assets/m/homework) и
+   общие контурные (/assets/home-v2/ico).
+   ====================================================================== */
+@media (max-width: 560px) {
+  .hw {
+    background: #f8f8f8;
+  }
+
+  /* Заголовок слева, кнопки угла справа поверх — как «Главная» части 1. Кнопки
+     с плашкой языка занимают ~162 справа, поэтому кегль 22, а не 24: «Домашняя
+     работа» на 24 упиралась в «?» на 402. */
+  .learn__main:has(.hw) .learn__bell {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    z-index: 5;
+    padding: 0;
+  }
+  .hw__head {
+    min-height: 52px;
+    padding: 15px 178px 0 16px;
+    background: transparent;
+    border-bottom: 0;
+  }
+  .hw__title {
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .hw__body {
+    padding: 16px 16px 24px;
+  }
+
+  /* ---------- Список (6616:8637): карточка 370, r24, p16, плитка 48 ---------- */
+  .hw-list {
+    gap: 12px;
+  }
+  .hw-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 84px;
+    padding: 16px 52px 16px 76px;
+    border: 2px solid transparent;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    text-align: left;
+  }
+  .hw-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  .hw-card--sel {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  /* Плитка статуса слева по центру карточки: фон и значок — по статусу ниже. */
+  .hw-card::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    margin-top: -24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: var(--hw-tile, #efe7ff);
+  }
+  /* Значок плитки: плитка 48 на отступе 16, значок 24 в её середине. */
+  .hw-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 28px;
+    width: 24px;
+    height: 24px;
+    margin-top: -12px;
+    background: var(--hw-ico-color, #9047ff);
+    -webkit-mask: var(--hw-ico, url(/assets/home-v2/ico/edit_note.svg)) center / 24px 24px no-repeat;
+    mask: var(--hw-ico, url(/assets/home-v2/ico/edit_note.svg)) center / 24px 24px no-repeat;
+  }
+  .hw-card__title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .hw-card .hw-assigned {
+    font-size: 13px;
+    line-height: 18px;
+    color: #5a5a66;
+  }
+  .hw-card__meta {
+    gap: 8px;
+  }
+  /* Шеврон справа — фоном самой кнопки: ::after занят значком плитки. */
+  .hw-card {
+    background:
+      url(/assets/home-v2/ico/chevron_right.svg) right 16px center / 24px 24px no-repeat,
+      #fff;
+  }
+  .hw-badge,
+  .hw-card__lesson,
+  .hw-card__parts {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 24px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .hw-card__lesson,
+  .hw-card__parts {
+    background: #f0f0f4;
+    color: #5a5a66;
+  }
+  /* Срок — отдельной строкой со значком календаря (Due в макете). */
+  .hw-card__due {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-basis: 100%;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .hw-card__due::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: #8e8e99;
+    -webkit-mask: url(/assets/home-v2/ico/event.svg) center / 16px 16px no-repeat;
+    mask: url(/assets/home-v2/ico/event.svg) center / 16px 16px no-repeat;
+  }
+  /* Оценка — кругом 40 справа вместо шеврона (Grade). */
+  .hw-card:has(.hw-card__grade) {
+    background: #fff;
+  }
+  .hw-card__grade {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+    display: grid;
+    place-items: center;
+    border-radius: 20px;
+    background: #e3f6ea;
+    color: #1f9d55;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+
+  /* ---------- Статусы: плитка, значок, бейдж, рамка ---------- */
+  .hw-badge {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .hw-card:has(.hw-badge--assigned) {
+    border-color: #9047ff;
+  }
+  .hw-badge--needsRevision {
+    background: #fdebec;
+    color: #d9363e;
+  }
+  .hw-card:has(.hw-badge--needsRevision) {
+    --hw-tile: #fdebec;
+    --hw-ico-color: #d9363e;
+    --hw-ico: url(/assets/home-v2/ico/replay.svg);
+    border-color: #d9363e;
+  }
+  .hw-badge--overdue {
+    background: #fff0dd;
+    color: #e57a12;
+  }
+  .hw-card:has(.hw-badge--overdue) {
+    --hw-tile: #fff0dd;
+    --hw-ico-color: #e57a12;
+    --hw-ico: url(/assets/home-v2/ico/schedule.svg);
+    border-color: #e57a12;
+  }
+  .hw-badge--submitted,
+  .hw-badge--inReview {
+    background: #e3eeff;
+    color: #2f6fdb;
+  }
+  .hw-card:has(.hw-badge--submitted, .hw-badge--inReview) {
+    --hw-tile: #e3eeff;
+    --hw-ico-color: #2f6fdb;
+    --hw-ico: url(/assets/m/homework/hourglass_top.svg);
+  }
+  .hw-badge--completed,
+  .hw-badge--done {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .hw-card:has(.hw-badge--completed, .hw-badge--done) {
+    --hw-tile: #e3f6ea;
+    --hw-ico-color: #1f9d55;
+    --hw-ico: url(/assets/m/homework/check_circle.svg);
+  }
+  .hw-badge--closed,
+  .hw-badge--closedNoSubmission,
+  .hw-badge--unknown {
+    background: #f0f0f4;
+    color: #5a5a66;
+  }
+  .hw-card:has(.hw-badge--closed, .hw-badge--closedNoSubmission, .hw-badge--unknown) {
+    --hw-tile: #f0f0f4;
+    --hw-ico-color: #5a5a66;
+    --hw-ico: url(/assets/m/homework/block.svg);
+  }
+
+  /* ---------- «Все задания» ---------- */
+  .hw__back {
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #ececf1;
+    box-shadow: none;
+    font-weight: 700;
+  }
+
+  /* ---------- Задание (6616:8811): статус, заголовок 24, срок со значками ----------
+     В приложении задание не в карточке, а прямо на фоне экрана. */
+  .hw-detail {
+    padding: 4px 0 0;
+    background: transparent;
+    border-radius: 0;
+  }
+  .hw-detail__head {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .hw-detail__title {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .hw-detail__meta {
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .hw-detail__meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .hw-detail__meta > span::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: #8e8e99;
+    -webkit-mask: url(/assets/home-v2/ico/person.svg) center / 16px 16px no-repeat;
+    mask: url(/assets/home-v2/ico/person.svg) center / 16px 16px no-repeat;
+  }
+  .hw-detail__meta > span:nth-child(2)::before,
+  .hw-detail__meta > span:only-child:not(:first-child)::before {
+    -webkit-mask-image: url(/assets/home-v2/ico/event.svg);
+    mask-image: url(/assets/home-v2/ico/event.svg);
+  }
+  .hw-block {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .hw-block__title {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .hw-file {
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid #ececf1;
+  }
+  .hw-upload__btn {
+    border-radius: 16px;
+  }
+  /* «Отправить на проверку» — во всю ширину, 56, r16 (ButtonBar макета). */
+  .hw-submit {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .hw-submit:disabled {
+    background: #d9ccff;
+    color: #fff;
+  }
+  .hw-submit--batch {
+    width: auto;
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .hw-block--review {
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Тёмная тема — токенами брендбука (theme-dark.css), генератор не трогаем. */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .hw {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .hw-card,
+  html[data-theme='dark'] .hw-card:has(.hw-card__grade) {
+    background-color: var(--dk-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .hw__title,
+  html[data-theme='dark'] .hw-card__title,
+  html[data-theme='dark'] .hw-detail__title,
+  html[data-theme='dark'] .hw-block__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .hw__back,
+  html[data-theme='dark'] .hw-file,
+  html[data-theme='dark'] .hw-block--review {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+  }
+}
+/* Генератор тёмной темы красит шапку и карточку прежнего вида (фон-шорткат
+   стирал шеврон) — перебиваем точнее: .learn в цепочке. Плитки — мягкими
+   ступенями цветов бренда. */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .learn .hw__head {
+    background: transparent;
+    border-bottom: 0;
+  }
+  html[data-theme='dark'] .learn .hw-card {
+    background: url(/assets/home-v2/ico/chevron_right.svg) right 16px center / 24px 24px no-repeat, var(--dk-card);
+    --hw-tile: var(--dk-acc-soft);
+    --hw-ico-color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-card__grade) {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--needsRevision) {
+    --hw-tile: var(--dk-red-soft);
+    --hw-ico-color: var(--dk-red);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--overdue) {
+    --hw-tile: var(--dk-orange-soft);
+    --hw-ico-color: var(--dk-orange);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--submitted, .hw-badge--inReview) {
+    --hw-tile: var(--dk-blue-soft);
+    --hw-ico-color: var(--dk-blue);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--completed, .hw-badge--done) {
+    --hw-tile: var(--dk-green-soft);
+    --hw-ico-color: var(--dk-green);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--closed, .hw-badge--closedNoSubmission, .hw-badge--unknown) {
+    --hw-tile: var(--dk-chip);
+    --hw-ico-color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .learn .hw-card:has(.hw-badge--assigned) {
+    border-color: var(--dk-acc);
+  }
+}
