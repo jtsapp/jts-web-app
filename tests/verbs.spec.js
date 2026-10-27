@@ -67,6 +67,12 @@ test.describe('урок', () => {
 })
 
 test.describe('таблица', () => {
+  // На телефоне (≤560) таблицы нет: уровень и схема — чипами, группы — списком,
+  // группа — своим экраном (VerbsTable по usePhoneWidth). Её тесты — ниже.
+  test.beforeEach(({ viewport }) => {
+    test.skip(viewport.width <= 560, 'на телефоне — список групп, а не таблица')
+  })
+
   test('поиск по трём языкам сужает таблицу', async ({ page }) => {
     await open(page, 'table')
     await expect(page.locator('.vb-table tbody tr')).toHaveCount(DATA.verbs.length)
@@ -97,24 +103,6 @@ test.describe('таблица', () => {
     await expect(page.locator('.vb-table tbody tr')).toHaveCount(1)
   })
 
-  // Семь колонок шире телефона: перевод и кнопки уезжали вбок в каждой группе.
-  test('на телефоне строка глагола — карточка без прокрутки вбок', async ({ page, viewport }) => {
-    test.skip(viewport.width > 640, 'раскладка телефона')
-    await open(page, 'table')
-    const row = page.locator('.vb-table tbody tr', { hasText: 'think' }).first()
-    await row.scrollIntoViewIfNeeded()
-    for (const cell of [row.locator('td[lang="ru"]'), row.locator('.vb-icon-btn').nth(1)]) {
-      const box = await cell.boundingBox()
-      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
-    }
-    await expect(row.locator('td[lang="ru"]')).toHaveText(BY.think.ru)
-    await expect(page.locator('.vb-scroll-hint').first()).toBeHidden()
-    const wide = await page.evaluate(() =>
-      [...document.querySelectorAll('.vb-table tbody tr')].filter((tr) => tr.getBoundingClientRect().right > innerWidth).length,
-    )
-    expect(wide).toBe(0)
-  })
-
   test('прослушивание группы грузит записи форм и подсвечивает строку', async ({ page }) => {
     await open(page, 'table')
     const group = page.locator('.vb-group').first()
@@ -126,6 +114,44 @@ test.describe('таблица', () => {
     await expect(page.locator('.vb-table tr.is-playing')).toHaveCount(1)
     await page.locator('.vb-listen__now .vb-btn', { hasText: 'Остановить' }).click()
     await expect(page.locator('.vb-listen__now')).toHaveCount(0)
+  })
+})
+
+test.describe('таблица на телефоне', () => {
+  test.beforeEach(({ viewport }) => {
+    test.skip(viewport.width > 560, 'раскладка телефона')
+  })
+
+  test('чипы уровня и схемы сужают список групп, группа — свой экран без прокрутки вбок', async ({ page, viewport }) => {
+    await open(page, 'table')
+    await expect(page.locator('.vb-mgroup')).toHaveCount(DATA.groups.length)
+    await page.locator('.vb-mchip', { hasText: 'AAA' }).click()
+    await expect(page.locator('.vb-mchip', { hasText: 'AAA' })).toHaveAttribute('aria-pressed', 'true')
+    const aaa = DATA.verbs.filter((v) => pattern(v) === 'AAA')
+    await expect(page.locator('.vb-filters__count')).toContainText(`${aaa.length} из ${DATA.verbs.length}`)
+    await page.locator('.vb-mchip', { hasText: 'Все схемы' }).click()
+
+    await page.locator('.vb-mgroup').first().click()
+    const first = DATA.verbs.filter((v) => v.group === DATA.groups[0])
+    await expect(page.locator('.vb-vcard')).toHaveCount(first.length)
+    const card = page.locator('.vb-vcard').first()
+    await expect(card.locator('.vb-vcard__forms')).toContainText(first[0].v1)
+    await expect(card.locator('[lang="ru"]')).toHaveText(first[0].ru)
+    const box = await card.locator('.vb-icon-btn').nth(1).boundingBox()
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+
+    await page.locator('.vb-gscreen__back').click()
+    await expect(page.locator('.vb-mgroup')).toHaveCount(DATA.groups.length)
+  })
+
+  test('«Скрыть V2 и V3» на экране группы — формы открываются по одной', async ({ page }) => {
+    await open(page, 'table')
+    await page.getByRole('switch', { name: 'Скрыть V2 и V3' }).click()
+    await page.locator('.vb-mgroup').first().click()
+    const card = page.locator('.vb-vcard').first()
+    await expect(card.locator('.vb-hidden')).toHaveCount(2)
+    await card.locator('.vb-hidden').first().click()
+    await expect(card.locator('.vb-hidden')).toHaveCount(1)
   })
 })
 
@@ -302,6 +328,18 @@ test.describe('практика: раскладка', () => {
     // Режимы — лента вбок: пятый режим за краем, но нажимается.
     await pickMode(page, 'fix')
     await expect(page.locator('.vb-prompt mark')).toBeVisible()
+  })
+
+  test('телефон: настройки практики — лист снизу с теми же переключателями', async ({ page, viewport }) => {
+    test.skip(viewport.width > 560, 'раскладка телефона')
+    await open(page, 'practice')
+    await page.locator('.vb-settings-open').click()
+    const sheet = page.getByRole('dialog', { name: 'Настройки практики' })
+    await expect(sheet).toBeVisible()
+    await sheet.locator('.vb-seg button').first().click()
+    await expect(sheet.locator('.vb-seg button').first()).toHaveAttribute('aria-pressed', 'true')
+    await page.keyboard.press('Escape')
+    await expect(sheet).toHaveCount(0)
   })
 
   test('десктоп: настройки открыты, строки-сводки нет', async ({ page, viewport }) => {

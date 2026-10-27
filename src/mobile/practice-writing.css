@@ -3,6 +3,2681 @@
    страница «Mobile» → «Практика» → «Письмо»: «Учись писать», «Три формы глагола».
    Файл заведён заранее и подключён в layout.jsx, чтобы параллельные ветки
    разделов Практики не спорили за строку импорта.
+
+   Цвета — переменными на корне раздела (.wr), а не литералами в правилах:
+   тёмная тема ниже переопределяет только их (генератор тёмной темы мобильный
+   слой не трогает). Значки — экспорт Figma в public/assets/m/practice/writing/,
+   рисуются маской, чтобы тёмная перекрашивала их тем же цветом текста.
    ====================================================================== */
 @media (max-width: 560px) {
+  /* ---------- «Письмо»: общие токены и шапка ---------- */
+  .wr {
+    --mw-ink: #181818;
+    --mw-ink-2: #5a5a66;
+    --mw-ink-3: #8e8e99;
+    --mw-card: #fff;
+    --mw-line: #e8e8ee;
+    --mw-acc: #9047ff;
+    --mw-acc-soft: #efe7ff;
+    --mw-track: #e6dcff;
+    --mw-orange: #ff7a1a;
+    --mw-orange-soft: #fff0e3;
+    --mw-yellow-soft: #fff1c2;
+    --mw-step: #ece4ff;
+    --mw-step-on: #c8adff;
+    --mw-page: #fff;
+    --mw-chip-muted: #ececf1;
+    padding: 0 16px 32px;
+  }
+  /* Своя полоса раздела (Navbar макета: «назад» 48 и заголовок по центру) —
+     кнопки угла здесь не показываем, как у остальных разделов со своей полосой
+     (nav.css). Язык и колокольчик остаются на хабе Практики. */
+  .learn__main:has(.wr) .learn__bell {
+    display: none;
+  }
+  .wr-top {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-height: 52px;
+    margin: 0 -12px 0;
+  }
+  /* Подпись «← В Практику» остаётся текстом кнопки (её читает скринридер и
+     помощник), на экране — только стрелка макета. */
+  .wr-back {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    background: none;
+    color: transparent;
+    font-size: 0;
+    border-radius: 50%;
+    box-shadow: none;
+  }
+  .wr-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: var(--mw-ink);
+    -webkit-mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+  }
+  .wr-crumb {
+    flex: 1;
+    min-width: 0;
+    padding-right: 48px;
+    text-align: center;
+  }
+  .wr-crumb b,
+  .wr-crumb span {
+    overflow: hidden;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* В макете полоса называет место: на каталоге — «Письмо», глубже — уровень,
+     жанр или Блокнот (то, что на компьютере вторая строка крошки). */
+  .wr:has(.wr-lvgrid) .wr-crumb span,
+  .wr:not(:has(.wr-lvgrid)) .wr-crumb b {
+    display: none;
+  }
+
+  /* ---------- 1 · Уровни ---------- */
+  .wr-hero {
+    padding: 12px 0 12px;
+  }
+  .wr-hero h1 {
+    margin: 0 0 4px;
+    color: var(--mw-ink);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: 0;
+  }
+  .wr-hero p {
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .wr-lvgrid,
+  .wr-gngrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wr-lvcard {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto 24px;
+    grid-template-areas:
+      'tag title title chev'
+      'tag sub   sub   chev'
+      'tag bar   stats chev';
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+    text-align: left;
+  }
+  .wr-lvcard:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .wr-lvcard__tag {
+    grid-area: tag;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .wr-lvcard__title {
+    grid-area: title;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  .wr-lvcard__sub {
+    grid-area: sub;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-lvcard__bar {
+    grid-area: bar;
+    height: 6px;
+    margin: 0;
+    background: var(--mw-track);
+  }
+  /* Полоса макета видна и на нуле — короткий штрих, а не пустая дорожка. */
+  .wr-lvcard__bar i,
+  .wr-gncard__bar i {
+    min-width: 16px;
+    background: var(--mw-acc);
+  }
+  .wr-lvcard__stats {
+    grid-area: stats;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .wr-lvcard::after {
+    content: '';
+    grid-area: chev;
+    width: 24px;
+    height: 24px;
+    background: var(--mw-ink-3);
+    -webkit-mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+  }
+
+  /* Блокнот: сиреневая плашка со значком, кнопка во всю ширину. */
+  .wr-padpromo {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 20px;
+    border: 0;
+    border-radius: 24px;
+    background: var(--mw-acc-soft);
+    box-shadow: none;
+  }
+  .wr-padpromo::before {
+    content: '';
+    width: 32px;
+    height: 32px;
+    background: var(--mw-acc);
+    -webkit-mask: url('/assets/m/practice/writing/edit_note.svg') center / 32px no-repeat;
+    mask: url('/assets/m/practice/writing/edit_note.svg') center / 32px no-repeat;
+  }
+  .wr-padpromo__body h3 {
+    margin: 0 0 8px;
+    color: var(--mw-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .wr-padpromo__body p {
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .wr-padpromo .wr-primary {
+    width: 100%;
+    height: 56px;
+    margin-top: 8px;
+    border-radius: 16px;
+    background: var(--mw-acc);
+    box-shadow: none;
+    font-size: 16px;
+  }
+  .wr-padpromo .wr-primary::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    -webkit-mask: url('/assets/m/practice/writing/edit_note.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/edit_note.svg') center / 24px no-repeat;
+  }
+
+  /* ---------- 2 · Жанры уровня ---------- */
+  /* Название уровня — в полосе; на экране остаётся подзаголовок. */
+  .wr:has(.wr-gngrid) .wr-hero h1 {
+    display: none;
+  }
+  .wr-gncard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'title title'
+      'sub   sub'
+      'meta  meta'
+      'bar   stats';
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+    text-align: left;
+  }
+  .wr-gncard:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .wr-gncard__title {
+    grid-area: title;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  .wr-gncard__sub {
+    grid-area: sub;
+    margin-top: -4px;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-gncard__meta {
+    grid-area: meta;
+  }
+  .wr-gncard__meta .wr-pill {
+    padding: 4px 10px;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .wr-gncard__meta .wr-pill--score {
+    background: var(--mw-orange-soft);
+    color: var(--mw-orange);
+  }
+  .wr-gncard__bar {
+    grid-area: bar;
+    height: 6px;
+    margin: 0;
+    background: var(--mw-track);
+  }
+  .wr-gncard .wr-lvcard__stats {
+    grid-area: stats;
+  }
+  .wr-gncard--done {
+    outline: 0;
+    border-color: var(--wr-green);
+  }
+
+  /* ---------- 3–8 · Тренажёр жанра (кадр «Шаг 1 · Зачем это нужно») ----------
+     Название жанра — в полосе; под ним мелкой строкой регистр и объём (в
+     макете это подпись полосы). Монеты остаются пилюлей — их в кадре нет, а
+     убирать функцию нельзя. */
+  .wr-taskhead--top {
+    justify-content: center;
+    gap: 6px;
+    margin: -10px 0 8px;
+  }
+  .wr-taskhead--top .wr-sec-title {
+    display: none;
+  }
+  .wr-taskhead--top .wr-pill:not(.wr-pill--coins) {
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-taskhead--top .wr-pill--score::before {
+    content: '·';
+    margin-right: 2px;
+  }
+  .wr-taskhead--top .wr-pill--coins {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  /* Шаги — шесть отрезков прогресса; кнопки остаются кнопками (на отрезок
+     можно нажать — высота нажатия 20, рисуется 6). Название шага под полосой
+     — подпись активной кнопки. */
+  .wr-steps {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin: 0 0 40px;
+  }
+  .wr-stepchip {
+    display: block;
+    min-height: 0;
+    padding: 7px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .wr-stepchip::before {
+    content: '';
+    display: block;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--mw-step);
+  }
+  .wr-stepchip.is-done::before,
+  .wr-stepchip.is-on::before {
+    background: var(--mw-step-on);
+  }
+  .wr-stepchip i,
+  .wr-stepchip span {
+    display: none;
+  }
+  .wr-stepchip.is-on {
+    background: none;
+    color: inherit;
+  }
+  .wr-stepchip.is-on span {
+    position: absolute;
+    top: 24px;
+    left: 0;
+    display: block;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .wr .wr-card {
+    padding: 20px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+  }
+  .wr-card > .wr-sec-title {
+    color: var(--mw-ink);
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .wr-card > .wr-sec-sub {
+    margin: 8px 0 12px;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr-card > p {
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  /* Цель и пример — свои плашки макета: сиреневая и жёлтая. */
+  .wr .wr-banner-task,
+  .wr-card > .wr-howto {
+    margin: 12px 0 0;
+    padding: 16px 20px;
+    border-radius: 20px;
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr .wr-banner-task {
+    background: var(--mw-acc-soft);
+  }
+  .wr .wr-banner-task h4 {
+    margin: 0 0 4px;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .wr .wr-banner-task p {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr-card:has(> .wr-banner-task) > .wr-howto {
+    background: var(--mw-yellow-soft);
+    color: var(--mw-ink);
+  }
+  .wr-card:has(> .wr-banner-task) > .wr-howto b {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--mw-ink);
+  }
+  .wr .wr-fb--tip {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--mw-line);
+    border-radius: 12px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-fb--tip::before {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: var(--mw-acc);
+    -webkit-mask: url('/assets/m/practice/writing/info.svg') center / 20px no-repeat;
+    mask: url('/assets/m/practice/writing/info.svg') center / 20px no-repeat;
+  }
+  /* «Назад · Дальше» прижаты к низу экрана, две равные кнопки 56. */
+  .wr-footnav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-footnav .wr-ghost,
+  .wr-footnav .wr-primary {
+    height: 56px;
+    padding: 0 16px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    box-shadow: none;
+  }
+  .wr-footnav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  .wr-footnav .wr-ghost:disabled {
+    border-color: var(--mw-line);
+    color: var(--mw-ink-3);
+    opacity: 1;
+  }
+  .wr-footnav .wr-primary {
+    background: var(--mw-acc);
+  }
+
+  /* ---------- 4 · Шаг 2 «Лексика и фразы» ----------
+     В кадре банк фраз лежит прямо на экране, без общей карточки: название
+     шага уже под отрезками, вводная — абзацем, функция — сиреневой
+     капителью с пояснением, фраза — белой карточкой со значком «копировать». */
+  .wr .wr-card:has(.wr-phrase) {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-card:has(.wr-phrase) > .wr-sec-title {
+    display: none;
+  }
+  .wr-card:has(.wr-phrase) > .wr-sec-sub {
+    margin: 0 0 4px;
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr .wr-fnhead {
+    margin: 16px 0 8px;
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    line-height: 16px;
+  }
+  .wr .wr-fnhead small {
+    margin-top: 4px;
+    color: var(--mw-ink-3);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 16px;
+    text-transform: none;
+  }
+  .wr .wr-phrase {
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 16px;
+    background: var(--mw-card);
+    box-shadow: none;
+  }
+  .wr .wr-phrase::after {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    background: var(--mw-acc);
+    -webkit-mask: url('/assets/m/practice/writing/description.svg') center / 20px no-repeat;
+    mask: url('/assets/m/practice/writing/description.svg') center / 20px no-repeat;
+  }
+  .wr .wr-phrase__lv {
+    flex: none;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wr .wr-phrase b {
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .wr .wr-phrase small {
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr-card:has(.wr-phrase) > .wr-howto {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+    color: var(--mw-ink);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(.wr-phrase) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .wr .wr-fnhead {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-fnhead small,
+  html[data-theme='dark'] .wr .wr-phrase small {
+    color: var(--mw-ink-3);
+  }
+  html[data-theme='dark'] .wr .wr-phrase {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+  }
+  html[data-theme='dark'] .wr .wr-phrase__lv {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-phrase b {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-card:has(.wr-phrase) > .wr-howto {
+    background: var(--mw-acc-soft);
+    color: var(--mw-ink);
+  }
+
+  /* ---------- 5 · Шаг 3 «Связки» ----------
+     Таблица «смысл · слова · когда» на телефоне — стопка карточек: смысл
+     заголовком, слова чипами, «когда» подписью. Шапку таблицы прячем. */
+  .wr .wr-card:has(> .wr-scroll-x .wr-tbl) {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-sec-title {
+    display: none;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-howto {
+    margin: 0 0 12px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr-card:has(> .wr-scroll-x .wr-tbl) .wr-scroll-x {
+    overflow: visible;
+  }
+  .wr-card .wr-tbl,
+  .wr-card .wr-tbl tbody,
+  .wr-card .wr-tbl tr,
+  .wr-card .wr-tbl td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+  .wr-card .wr-tbl thead {
+    display: none;
+  }
+  .wr-card .wr-tbl tr {
+    margin: 0 0 12px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+  }
+  .wr-card .wr-tbl td {
+    padding: 0;
+    border: 0;
+  }
+  .wr-card .wr-tbl td:first-child {
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    white-space: normal;
+  }
+  .wr-card .wr-tbl td:nth-child(2) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+  }
+  .wr-card .wr-tbl .wr-chip {
+    margin: 0;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--mw-acc-soft);
+    box-shadow: none;
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .wr-card .wr-tbl td:last-child {
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-scroll-x .wr-tbl) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-scroll-x .wr-tbl) > .wr-howto {
+    background: none;
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl tr {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl td {
+    border: 0;
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl td:first-child {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-card .wr-tbl .wr-chip {
+    border: 0;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+
+  /* ---------- 6 · Шаг 4 «Уровень предложения» (задания шагов 4–6) ----------
+     Инструкция задания — мелкой строкой, а не плашкой; пункт — сиреневой
+     капителью; строка сборки — сиреневое поле; слова — белые плитки 48;
+     поле ответа — белое 56 с рамкой. */
+  .wr-card:not(:has(> .wr-banner-task)) > .wr-howto {
+    margin: 8px 0 12px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-item-n {
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .wr .wr-slotline {
+    min-height: 56px;
+    padding: 12px;
+    border: 1px solid var(--mw-track);
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+  }
+  .wr .wr-chipbank {
+    gap: 8px;
+  }
+  .wr .wr-chipbank .wr-chip,
+  .wr .wr-slotline .wr-chip {
+    min-height: 48px;
+    padding: 0 16px;
+    border: 1.5px solid var(--mw-line);
+    border-radius: 12px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .wr .wr-inp {
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1.5px solid var(--mw-line);
+    border-radius: 16px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+  }
+  .wr .wr-inp:focus {
+    border-color: var(--mw-acc);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-card:not(:has(> .wr-banner-task)) > .wr-howto {
+    background: none;
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-item-n {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-slotline {
+    border-color: var(--mw-track);
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-chipbank .wr-chip,
+  html[data-theme='dark'] .wr .wr-slotline .wr-chip,
+  html[data-theme='dark'] .wr .wr-inp {
+    border-color: var(--mw-line);
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+
+  /* ---------- 9 · Блокнот ----------
+     В макете Блокнот — не карточка, а экран: плашка задачи, строка
+     инструментов, белое поле письма, счётчики цифрой над подписью, строка
+     действий и «Проверить» у низа. Название жанра — в полосе (крошка), объём
+     и таймер — пилюлями в углу плашки задачи. Кнопки «Помощники» из кадра у
+     нас нет: помощники (PadPanes) остаются под редактором. */
+  .wr .wr-card.wr-pad__main {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-padhead {
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+  .wr-padhead .wr-sec-title {
+    display: none;
+  }
+  .wr-pad__main:has(.wr-padtask) .wr-padhead {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 1;
+    margin: 0;
+  }
+  .wr-padhead .wr-pill,
+  .wr .wr-padtimer {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--mw-card);
+    color: var(--mw-ink);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .wr .wr-padtimer--low {
+    background: var(--wr-red-bg);
+    color: var(--wr-red);
+  }
+  .wr .wr-padtask {
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+  }
+  .wr .wr-padtask h4 {
+    margin: 4px 0 6px;
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    line-height: 16px;
+    text-transform: uppercase;
+  }
+  .wr-padtask p {
+    margin: 0 0 6px;
+    color: var(--mw-ink);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-padtask__meta .wr-pill {
+    padding: 2px 8px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 11px;
+  }
+  /* Инструменты — строка чипов с прокруткой вбок, а не перенос. */
+  .wr-padtools,
+  .wr-padbar__extras {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wr-padtools::-webkit-scrollbar,
+  .wr-padbar__extras::-webkit-scrollbar {
+    display: none;
+  }
+  .wr-padtools .wr-ghost--sm,
+  .wr-padbar__extras .wr-ghost--sm {
+    flex: none;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--mw-line);
+    border-radius: 999px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .wr-padtools .wr-padtools__zen {
+    margin-left: 0;
+    border-color: transparent;
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink-2);
+  }
+  .wr-padbar__extras .wr-ghost--sm:first-child {
+    border-color: transparent;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  .wr .wr-editor {
+    min-height: 380px;
+    padding: 16px;
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr .wr-editor:focus {
+    border-color: var(--mw-acc);
+    box-shadow: none;
+  }
+  /* Счётчик: цифра крупно, под ней подпись (в разметке подпись идёт первой). */
+  .wr-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 8px 20px;
+    margin-top: 12px;
+  }
+  .wr .wr-metric {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    column-gap: 3px;
+    max-width: 104px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-metric b {
+    order: -1;
+    flex-basis: 100%;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  .wr .wr-metric i {
+    opacity: 1;
+  }
+  .wr .wr-metric--ok b {
+    color: var(--wr-green);
+  }
+  .wr .wr-metric--warn b,
+  .wr .wr-metric--warn {
+    color: var(--wr-red);
+  }
+  .wr .wr-metric--gold b {
+    color: var(--wr-gold);
+  }
+  .wr-savedline {
+    margin-top: 8px;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+  }
+  .wr-padbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin: 12px -16px 0;
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-padbar__extras {
+    margin-bottom: 0;
+  }
+  .wr .wr-padbar__check {
+    width: 100%;
+    margin: 0;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--mw-acc);
+    box-shadow: none;
+    font-size: 16px;
+  }
+  html[data-theme='dark'] .wr .wr-padtask {
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-padtask h4 {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-metric {
+    background: none;
+    color: var(--mw-ink-3);
+  }
+  html[data-theme='dark'] .wr .wr-padhead .wr-pill,
+  html[data-theme='dark'] .wr .wr-padtask__meta .wr-pill {
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padtimer {
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-editor {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padbar {
+    background: var(--mw-page);
+  }
+  html[data-theme='dark'] .wr .wr-padtools .wr-ghost--sm,
+  html[data-theme='dark'] .wr .wr-padbar__extras .wr-ghost--sm {
+    border-color: var(--mw-line);
+    background: var(--mw-card);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-padbar__extras .wr-ghost--sm:first-child {
+    border-color: transparent;
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-padbar__check {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+
+  /* ---------- 11 · Разбор работы ----------
+     Первая карточка в макете — не карточка: строка пилюль (режим проверки,
+     уровень текста, число слов) и четыре плитки оценок «4/5». Заголовок —
+     в полосе («Разбор»), кольца оценок заменены цифрой, как в кадре. */
+  .wr .wr-card:has(> .wr-res-rings) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-res-head,
+  .wr-card:has(> .wr-res-rings) .wr-res-lvl {
+    display: contents;
+  }
+  .wr-res-head .wr-sec-title {
+    display: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-pill,
+  .wr .wr-res-cefr {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .wr-res-head .wr-pill {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  .wr .wr-res-cefr {
+    background: var(--wr-green-bg);
+    color: var(--wr-green);
+  }
+  .wr-res-lvl .wr-pill {
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink);
+  }
+  .wr .wr-res-rings {
+    display: grid;
+    flex-basis: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 0;
+    order: 2;
+  }
+  .wr .wr-res-ringwrap {
+    padding: 12px 2px;
+    border: 1px solid var(--mw-line);
+    border-radius: 16px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    overflow-wrap: anywhere;
+  }
+  .wr .wr-res-ring {
+    width: auto !important; /* размер кольца задан инлайном для компьютера */
+    height: auto !important;
+    margin: 0 0 4px;
+  }
+  .wr .wr-res-ring svg {
+    display: none;
+  }
+  .wr .wr-res-ring b {
+    position: static;
+    display: block;
+    color: var(--mw-acc);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    transform: none;
+  }
+  .wr-card:has(> .wr-res-rings) .wr-res-summary {
+    flex-basis: 100%;
+    order: 3;
+    margin: 4px 0 0;
+    color: var(--mw-ink-2);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  /* «Твой текст с пометками»: подсказка мелким текстом и текст прямо в
+     карточке, без вложенных плашек. */
+  .wr .wr-res-howto {
+    margin: 4px 0 8px;
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-res-text:not(.wr-res-diff) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 28px;
+  }
+  html[data-theme='dark'] .wr .wr-res-howto,
+  html[data-theme='dark'] .wr .wr-res-text:not(.wr-res-diff) {
+    border: 0;
+    background: none;
+  }
+  /* «К заданиям · Доработать» — две кнопки у низа, как в кадре. */
+  .wr-res-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-res-nav .wr-ghost {
+    order: -1;
+  }
+  .wr-res-nav .wr-ghost,
+  .wr-res-nav .wr-primary {
+    height: 56px;
+    padding: 0 12px;
+    border-radius: 16px;
+    box-shadow: none;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .wr-res-nav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  .wr-res-nav .wr-primary {
+    background: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-res-rings) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .wr .wr-res-cefr {
+    background: var(--dk-green-soft);
+    color: var(--dk-green);
+  }
+  html[data-theme='dark'] .wr .wr-res-ringwrap {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+  }
+  html[data-theme='dark'] .wr .wr-res-ring b {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-head .wr-pill {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-lvl .wr-pill {
+    background: var(--mw-chip-muted);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-res-nav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-res-nav .wr-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+
+  /* ---------- «Неправильные глаголы»: полоса раздела ----------
+     Navbar — общий компонент всех кадров «Mobile» (сверен по «Письму»): стрелка
+     48 и название по центру, кнопки угла скрыты. Часть (Разберись / Изучи /
+     Практикуй) остаётся вкладками ниже, во второй строке крошки она лишняя.
+     Кадры самих экранов глаголов не сверены — мост Figma отключился. */
+  .learn__main:has(.vb) .learn__bell {
+    display: none;
+  }
+  .vb-top {
+    gap: 0;
+    min-height: 52px;
+    margin: 0 -12px 4px;
+    padding-right: 0;
+  }
+  .vb .vb-back {
+    flex: none;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: none;
+    color: transparent;
+    font-size: 0;
+  }
+  .vb .vb-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: var(--vb-ink);
+    -webkit-mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/arrow_back.svg') center / 24px no-repeat;
+  }
+  .vb .vb-crumb {
+    padding-right: 48px;
+    text-align: center;
+  }
+  .vb .vb-crumb b {
+    overflow: hidden;
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .vb .vb-crumb span {
+    display: none;
+  }
+  /* Кадр «1 · Глава · Разберись»: под полосой — вкладки частей, три карточки
+     цифр, сиреневый блок героя. Заголовок главы и подзаголовок — в полосе
+     и в герое, поэтому шапку главы прячем; порядок меняем order-ом, разметку
+     (её делят компьютер и планшет) не трогаем. */
+  .vb {
+    display: flex;
+    flex-direction: column;
+  }
+  .vb > * {
+    order: 3;
+  }
+  .vb > .vb-top {
+    order: 0;
+  }
+  .vb > .vb-nav {
+    order: 1;
+  }
+  .vb > .vb-head {
+    order: 2;
+  }
+  .vb-head {
+    display: block;
+    padding: 0 0 12px;
+  }
+  .vb-head > div:first-child {
+    display: none;
+  }
+  .vb-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .vb .vb-stats > div {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 88px;
+    padding: 12px 4px;
+    border: 1px solid var(--vb-m-line, #e8e8ee);
+    border-radius: 20px;
+    background: #fff;
+  }
+  .vb-stats strong {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 36px;
+  }
+  .vb-stats span {
+    margin-top: 4px;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .vb-nav {
+    gap: 0;
+    margin: 0 0 12px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-nav button {
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+    min-height: 36px;
+    padding: 6px 4px;
+    border-radius: 9px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb-nav button[aria-selected='true'] {
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+  }
+  .vb-nav__num,
+  .vb-nav button[aria-selected='true'] .vb-nav__num {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .vb-nav__dot {
+    display: none;
+  }
+  /* Герой: строки V1–V3 плоскими плашками между текстом и кнопкой. */
+  .vb .vb-hero {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px;
+    border: 0;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .vb-hero__text {
+    display: contents;
+  }
+  .vb .vb-hero .vb-eyebrow {
+    align-self: flex-start;
+    text-align: left;
+    order: 0;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .vb-hero h2 {
+    order: 1;
+    margin: 8px 0;
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: 0;
+  }
+  .vb-hero p {
+    order: 2;
+    color: #5a5a66;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .vb .vb-hero .vb-hero__stack {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-self: stretch;
+    width: auto;
+    max-width: none;
+    margin: 16px 0 0;
+    padding: 0;
+  }
+  .vb .vb-hero .vb-hero__stack > div {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-width: 0;
+    gap: 16px;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 16px;
+    box-shadow: none;
+    font-size: 24px;
+    transform: none;
+  }
+  .vb .vb-hero .vb-hero__stack span {
+    display: block;
+  }
+  .vb-hero .vb-hero__stack > div:nth-child(2) {
+    background: #fff;
+    color: var(--vb-ink);
+  }
+  .vb-hero .vb-btn {
+    order: 4;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    margin-top: 8px;
+    border-radius: 16px;
+  }
+  /* Карточки цифр в макете только у «Разберись»; «Изучи» и «Практикуй»
+     начинаются сразу с поиска и настроек. */
+  .vb:not(:has(#vb-part-learn)) > .vb-head {
+    display: none;
+  }
+  /* «Изучи»: поле поиска макета — белое 56 с рамкой и лупой справа. Чипы
+     уровня и схемы вместо выпадающих списков и экран группы — JSX, не сделано. */
+  .vb .vb-search {
+    flex-direction: row-reverse;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #8e8e99;
+  }
+  .vb .vb-search input {
+    font-size: 16px;
+  }
+  html[data-theme='dark'] .vb .vb-search {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-muted);
+  }
+  /* «Разберись · продолжение» (кадр 2): разделы урока — белые карточки
+     с рамкой; «где пригодится» — списком с номером в кружке; V1–V3 — каждая
+     своей карточкой под общим заголовком; схемы — строками с пилюлей;
+     ошибки — розовой карточкой, неверное красным без зачёркивания. */
+  .vb .vb-lesson {
+    gap: 12px;
+  }
+  .vb .vb-lesson > .vb-card {
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-lesson > .vb-card > h3 {
+    margin: 0 0 12px;
+    color: var(--vb-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb .vb-reasons {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vb .vb-reasons > div {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+  }
+  .vb .vb-reasons .vb-num {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+  }
+  .vb .vb-reasons h4 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vb .vb-reasons p {
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .vb .vb-lesson > .vb-card:has(.vb-formcards) {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .vb .vb-formcards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vb .vb-formcard {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-formcard > :not(.vb-pill):not(h4) {
+    grid-column: 1 / -1;
+  }
+  .vb .vb-formcard .vb-pill {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .vb .vb-formcard h4 {
+    margin: 0;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb .vb-formcard p {
+    margin: 8px 0 4px;
+    color: var(--vb-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vb .vb-formcard .vb-examples {
+    color: #9047ff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .vb .vb-patterns {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .vb .vb-pattern {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-pattern summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .vb .vb-pattern .vb-pill {
+    min-width: 46px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    text-align: center;
+  }
+  .vb .vb-pattern summary strong {
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .vb .vb-lesson > .vb-card:has(.vb-fix) {
+    border: 0;
+    background: #fdecec;
+  }
+  .vb .vb-fix s,
+  .vb .vb-fix strong {
+    display: block;
+    padding: 2px 0;
+    border-radius: 0;
+    background: none;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .vb .vb-fix s {
+    color: #e5343a;
+  }
+  .vb .vb-fix strong {
+    color: #1f9d55;
+  }
+  .vb .vb-fix p {
+    margin: 4px 0 12px;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card,
+  html[data-theme='dark'] .vb .vb-formcard {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card:has(.vb-formcards) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card:has(.vb-fix) {
+    border: 0;
+    background: var(--dk-red-soft);
+  }
+  html[data-theme='dark'] .vb .vb-reasons .vb-num,
+  html[data-theme='dark'] .vb .vb-pattern .vb-pill {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-formcard p,
+  html[data-theme='dark'] .vb .vb-pattern summary strong {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-formcard .vb-examples {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-fix s,
+  html[data-theme='dark'] .vb .vb-fix strong {
+    background: none;
+  }
+
+  /* «Практикуй · Повтори за мной» (кадр 6): режимы — чипы с прокруткой,
+     упражнение — не карточка, фазы — серые сегменты, доли — серые плитки,
+     формы V1–V3 — сиреневые плитки без рамки. Только вид: бит, микрофон и
+     машина попытки не тронуты. */
+  .vb .vb-modes {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vb .vb-modes::-webkit-scrollbar {
+    display: none;
+  }
+  .vb .vb-modes button {
+    flex: none;
+    gap: 4px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: none;
+    color: var(--vb-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .vb .vb-modes button[aria-selected='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    box-shadow: none;
+    color: #fff;
+  }
+  .vb .vb-modes__num,
+  .vb .vb-modes button[aria-selected='true'] .vb-modes__num {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .vb .vb-drill {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-phases {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-phases span {
+    padding: 8px 2px;
+    border-radius: 9px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .vb .vb-phases span.is-on {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+    color: var(--vb-ink);
+  }
+  .vb .vb-counts {
+    gap: 8px;
+    margin: 12px 0 8px;
+  }
+  .vb .vb-counts > span {
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    padding: 0 4px;
+    border-radius: 12px;
+    background: #ececf1;
+    color: #5a5a66;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .vb .vb-counts > span.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+  .vb .vb-tile {
+    border: 0;
+    border-radius: 20px;
+    background: #efe7ff;
+    box-shadow: none;
+  }
+  /* Письменные режимы (кадры 7–10: пропущенная форма, напиши формы, вставь,
+     исправь): V1 — по центру сиреневой плашки, поля одно под другим 56,
+     верное — зелёное, неверное — красное; «Проверить» во всю ширину,
+     «Показать ответ» — ссылкой под ней. */
+  .vb .vb-prompt {
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #efe7ff;
+    font-size: 20px;
+    line-height: 32px;
+    text-align: center;
+  }
+  .vb .vb-prompt > .vb-pill {
+    padding: 0;
+    background: none;
+    color: #8e8e99;
+    font-size: 12px;
+  }
+  .vb .vb-prompt > strong {
+    margin-top: 0;
+    color: var(--vb-ink);
+    font-size: 36px;
+    line-height: 44px;
+  }
+  .vb .vb-form {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vb .vb-field__label {
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-answer {
+    min-height: 56px;
+    margin-top: 6px;
+    padding: 0 16px;
+    border: 1.5px solid #e8e8ee;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+  .vb .vb-answer.is-correct {
+    border-color: #1f9d55;
+    background: #e6f7ec;
+  }
+  .vb .vb-answer.is-wrong {
+    border-color: #e5343a;
+    background: #fdecec;
+  }
+  .vb .vb-form .vb-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .vb .vb-form .vb-row .vb-btn {
+    justify-content: center;
+    min-height: 56px;
+    border-radius: 16px;
+  }
+  .vb .vb-form .vb-row .vb-btn--ghost {
+    min-height: 40px;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: #9047ff;
+  }
+  .vb .vb-result-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .vb .vb-result-actions .vb-btn {
+    justify-content: center;
+    min-height: 56px;
+    padding: 0 12px;
+    border-radius: 16px;
+  }
+  /* «Изучи» (кадр 3) в пределах разметки: фильтры без общей карточки,
+     «Слушай и повторяй» — сиреневая плашка с кнопкой-заливкой и «Пауза и
+     повтор» контурной пилюлей, группа — белая карточка с номером в сиреневом
+     квадрате и счётчиком. Чипы уровня/схемы вместо выпадающих и группа
+     отдельным экраном (кадр 4) — разметка, не сделано. */
+  .vb .vb-filters {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-listen {
+    padding: 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #efe7ff;
+  }
+  .vb .vb-listen__top {
+    flex-wrap: wrap;
+  }
+  .vb .vb-listen__top > .vb-btn {
+    flex-basis: 100%;
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: #9047ff;
+    box-shadow: none;
+    color: #fff;
+  }
+  .vb .vb-listen__settings summary {
+    display: flex;
+    justify-content: center;
+    min-height: 40px;
+    align-items: center;
+    margin-top: 8px;
+    border: 1.5px solid #9047ff;
+    border-radius: 999px;
+    color: #9047ff;
+    font-weight: 600;
+  }
+  .vb .vb-group {
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+  .vb .vb-group__head {
+    padding: 16px;
+    background: #fff;
+  }
+  .vb .vb-group__num {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+    border-radius: 10px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+  }
+  .vb .vb-group__meta .vb-pill {
+    background: none;
+    color: #8e8e99;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  html[data-theme='dark'] .vb .vb-filters {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-listen {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-listen__top > .vb-btn {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb .vb-listen__settings summary {
+    border-color: var(--dk-acc-text);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-group {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .vb .vb-group__head {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .vb .vb-group__num {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+
+  /* «Изучи» на телефоне (разметка по usePhoneWidth в VerbsTable): уровень и
+     схема — чипами в строку с прокруткой, «Повторить позже» и «Скрыть V2 и
+     V3» — контурными пилюлями рядом со счётчиком; группы — списком карточек
+     (номер в сиреневом квадрате, название, число, шеврон). */
+  .vb-mfilters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .vb-mfilters__label {
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .vb-mchips {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vb-mchips::-webkit-scrollbar {
+    display: none;
+  }
+  .vb-mchip {
+    flex: none;
+    min-height: 36px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--vb-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .vb-mchip[aria-pressed='true'],
+  .vb-mchip[aria-checked='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .vb-mchip--line[aria-pressed='true'],
+  .vb-mchip--line[aria-checked='true'] {
+    border-color: transparent;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vb-mfilters__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .vb-mfilters__bottom .vb-filters__count {
+    flex: 1 0 auto;
+    font-size: 12px;
+  }
+  .vb-mgroups {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .vb-mgroup {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto 24px;
+    align-items: center;
+    column-gap: 12px;
+    min-height: 72px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    color: var(--vb-ink);
+    text-align: left;
+  }
+  .vb-mgroup::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: #8e8e99;
+    -webkit-mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+  }
+  .vb-mgroup__num {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .vb-mgroup__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+  }
+  .vb-mgroup__count {
+    color: #8e8e99;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  /* Экран группы: карточка глагола — формы крупно, уровень и кнопки справа,
+     перевод под формами; «Послушать группу» прижата к низу. */
+  .vb-gscreen__back {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9047ff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .vb-gscreen__title {
+    margin: 4px 0 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb .vb-gscreen__count {
+    margin: 0 0 12px;
+    font-size: 12px;
+  }
+  .vb-vcards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .vb-vcard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 4px;
+    padding: 12px 12px 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .vb-vcard.is-playing {
+    border-color: #9047ff;
+  }
+  .vb-vcard__forms {
+    color: var(--vb-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb-vcard__forms i {
+    color: #8e8e99;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+  }
+  .vb-vcard .vb-pill {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+  }
+  .vb-vcard__acts {
+    display: flex;
+    gap: 4px;
+  }
+  .vb-vcard__acts .vb-icon-btn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: none;
+    color: #9047ff;
+  }
+  .vb-vcard__tr {
+    grid-column: 1 / -1;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-gscreen__listen {
+    position: sticky;
+    bottom: 12px;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    margin-top: 16px;
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .vb-mchip,
+  html[data-theme='dark'] .vb-mgroup,
+  html[data-theme='dark'] .vb-vcard {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb-mchip[aria-pressed='true'],
+  html[data-theme='dark'] .vb-mchip[aria-checked='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb-mchip--line[aria-pressed='true'],
+  html[data-theme='dark'] .vb-mchip--line[aria-checked='true'] {
+    border-color: transparent;
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb-mgroup__num,
+  html[data-theme='dark'] .vb-vcard .vb-pill {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb-vcard__forms {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb-mfilters__label,
+  html[data-theme='dark'] .vb-vcard__tr {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb-vcard__acts .vb-icon-btn {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text);
+  }
+
+  /* Настройка практики (кадр 5, открывается «Изменить»): уровни — карточки
+     2×2, выбранная сиреневая; формы — серые сегменты; набор и подход — два
+     выпадающих рядом; «Перемешать» — пилюлей справа. */
+  .vb .vb-choices {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-choices h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .vb .vb-levels button {
+    border: 1.5px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-levels button[aria-pressed='true'] {
+    border-color: #9047ff;
+    background: #efe7ff;
+  }
+  .vb .vb-formswitch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-formswitch button {
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-formswitch button strong {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb .vb-formswitch button span {
+    font-family: inherit;
+    font-size: 12px;
+  }
+  .vb .vb-formswitch button[aria-pressed='true'] {
+    border: 0;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+    color: var(--vb-ink);
+  }
+  .vb .vb-scope {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .vb .vb-scope > label {
+    grid-column: auto;
+    min-width: 0;
+  }
+  .vb .vb-scope label span {
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-scope select {
+    min-height: 48px;
+    border: 1.5px solid #e8e8ee;
+    border-radius: 12px;
+    background-color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .vb .vb-scope > .vb-btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  html[data-theme='dark'] .vb .vb-choices {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-levels button,
+  html[data-theme='dark'] .vb .vb-scope select {
+    border-color: var(--dk-line);
+    background-color: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-levels button[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch {
+    background: var(--dk-line);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch button {
+    border: 0;
+    background: none;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb .vb-formswitch button[aria-pressed='true'] {
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+
+  /* Настройки практики (кадр 12): на телефоне — лист снизу (VerbsPractice по
+     usePhoneWidth, портал в body — поэтому правила и на .vb-sheet, вне .vb).
+     Наполнение по кадру: заголовок 20,
+     темп — серые сегменты, ползунки фиолетовые, «Продолжать…» — сиреневая
+     плашка с тумблером, сброс — ссылкой по центру. */
+  :is(.vb, .vb-sheet) .vb-settings {
+    padding: 16px 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+  }
+  :is(.vb, .vb-sheet) .vb-settings summary {
+    color: var(--vb-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  :is(.vb, .vb-sheet) .vb-settings__stack {
+    gap: 12px;
+    margin-top: 12px;
+  }
+  :is(.vb, .vb-sheet) .vb-settings input[type='range'] {
+    accent-color: #9047ff;
+  }
+  :is(.vb, .vb-sheet) .vb-seg {
+    padding: 4px;
+    border: 0;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  :is(.vb, .vb-sheet) .vb-seg button {
+    color: #5a5a66;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  :is(.vb, .vb-sheet) .vb-seg button[aria-pressed='true'] {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+    color: var(--vb-ink);
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-check {
+    justify-content: space-between;
+    flex-direction: row-reverse;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #efe7ff;
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input {
+    appearance: none;
+    flex: none;
+    position: relative;
+    width: 44px;
+    height: 26px;
+    margin: 0;
+    border-radius: 999px;
+    background: #c9c9d1;
+    transition: background 0.15s;
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.15s;
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked {
+    background: #9047ff;
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked::after {
+    transform: translateX(18px);
+  }
+  :is(.vb, .vb-sheet) .vb-settings .vb-link {
+    justify-self: center;
+    color: #9047ff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings summary,
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg {
+    border: 0;
+    background: var(--dk-line);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg button {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-seg button[aria-pressed='true'] {
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] :is(.vb, .vb-sheet) .vb-settings .vb-check input:checked {
+    background: var(--dk-acc);
+  }
+
+  /* Лист настроек: затемнение, белая карточка снизу со скруглением 24 сверху,
+     заголовок и крестик. Токены раздела (--vb-*) — свои: лист вне .vb. */
+  .vb-sheet {
+    --vb-v: #874bf8;
+    --vb-ink: #171326;
+    --vb-soft: #4a4458;
+    --vb-muted: #8a849a;
+    --vb-line: #edeaf5;
+    --vb-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(24, 24, 24, 0.4);
+    font-family: inherit;
+  }
+  .vb-sheet .vb-sheet__card {
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    color: var(--vb-ink);
+  }
+  .vb-sheet__card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 2px;
+    background: #d6d6dc;
+  }
+  .vb-sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .vb-sheet__head h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb-sheet__close {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: none;
+    color: #8e8e99;
+    font-size: 28px;
+    line-height: 1;
+  }
+  .vb-sheet p {
+    color: var(--vb-soft);
+  }
+  .vb-settings-open {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+  }
+  html[data-theme='dark'] .vb-sheet {
+    --vb-v: var(--dk-acc);
+    --vb-ink: var(--dk-text);
+    --vb-soft: var(--dk-text-2);
+    --vb-muted: var(--dk-muted);
+    --vb-line: var(--dk-line);
+    background: rgba(0, 0, 0, 0.6);
+  }
+  html[data-theme='dark'] .vb-sheet .vb-sheet__card,
+  html[data-theme='dark'] .vb .vb-settings-open {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+
+  /* Итог набора (кадр 11): заголовок и счёт по центру сиреневой плашки,
+     кнопки столбиком во всю ширину — первая заливкой, остальные контуром. */
+  .vb :has(> .vb-finish) {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+  .vb :has(> .vb-finish) > h3 {
+    margin: 0;
+    padding: 24px 16px 0;
+    border-radius: 24px 24px 0 0;
+    background: #efe7ff;
+    color: var(--vb-ink);
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .vb .vb-finish {
+    margin: 0;
+    padding: 4px 16px 0;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 40px;
+    line-height: 48px;
+  }
+  .vb .vb-finish + .vb-muted {
+    margin: 0 0 12px;
+    padding: 0 16px 24px;
+    border-radius: 0 0 24px 24px;
+    background: #efe7ff;
+    color: #5a5a66;
+    font-size: 14px;
+  }
+  .vb :has(> .vb-finish) > .vb-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .vb :has(> .vb-finish) > .vb-row .vb-btn {
+    justify-content: center;
+    min-height: 56px;
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .vb :has(> .vb-finish) > h3,
+  html[data-theme='dark'] .vb .vb-finish,
+  html[data-theme='dark'] .vb .vb-finish + .vb-muted {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb :has(> .vb-finish) > h3 {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-finish {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-prompt {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-prompt > strong {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-answer {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-answer.is-correct {
+    border-color: var(--dk-green);
+    background: var(--dk-green-soft);
+  }
+  html[data-theme='dark'] .vb .vb-answer.is-wrong {
+    border-color: var(--dk-red);
+    background: var(--dk-red-soft);
+  }
+  html[data-theme='dark'] .vb .vb-form .vb-row .vb-btn--ghost {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-modes button {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-modes button[aria-selected='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb .vb-drill {
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .vb .vb-phases,
+  html[data-theme='dark'] .vb .vb-counts > span {
+    background: var(--dk-line);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb .vb-phases span.is-on {
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-counts > span.is-on {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb .vb-tile {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-stats > div,
+  html[data-theme='dark'] .vb .vb-hero .vb-hero__stack > div:not(:last-child) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-nav {
+    background: var(--dk-line);
+  }
+  html[data-theme='dark'] .vb .vb-nav__num,
+  html[data-theme='dark'] .vb .vb-nav button[aria-selected='true'] .vb-nav__num {
+    border: 0;
+    background: none;
+    color: inherit;
+  }
+  html[data-theme='dark'] .vb .vb-hero {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-hero .vb-eyebrow {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-back {
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-back::before {
+    background: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-crumb b {
+    color: var(--dk-text);
+  }
+
+  /* ---------- тёмная тема ---------- */
+  html[data-theme='dark'] .wr {
+    --mw-ink: var(--dk-text);
+    --mw-ink-2: var(--dk-text-2);
+    --mw-ink-3: var(--dk-muted);
+    --mw-card: var(--dk-card);
+    --mw-line: var(--dk-line);
+    --mw-acc: var(--dk-acc-text);
+    --mw-acc-soft: var(--dk-acc-soft);
+    --mw-track: var(--dk-acc-tint);
+    --mw-orange: var(--dk-orange);
+    --mw-orange-soft: var(--dk-orange-soft);
+    --mw-yellow-soft: var(--dk-yellow-soft, var(--dk-orange-soft));
+    --mw-step: var(--dk-line);
+    --mw-step-on: var(--dk-acc);
+    --mw-page: var(--dk-card);
+    --mw-chip-muted: var(--dk-line);
+  }
+  /* Слой theme-dark.generated.css красит те же классы правилами
+     html[data-theme="dark"] .wr-… — перебиваем их на один класс сильнее. */
+  html[data-theme='dark'] .wr .wr-back {
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-crumb b,
+  html[data-theme='dark'] .wr .wr-crumb span,
+  html[data-theme='dark'] .wr .wr-hero h1 {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-hero p,
+  html[data-theme='dark'] .wr .wr-padpromo__body p {
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-lvcard,
+  html[data-theme='dark'] .wr .wr-gncard {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-lvcard__tag,
+  html[data-theme='dark'] .wr .wr-gncard__meta .wr-pill {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-gncard__meta .wr-pill--score {
+    background: var(--mw-orange-soft);
+    color: var(--mw-orange);
+  }
+  html[data-theme='dark'] .wr .wr-lvcard__bar,
+  html[data-theme='dark'] .wr .wr-gncard__bar {
+    background: var(--mw-track);
+  }
+  html[data-theme='dark'] .wr .wr-lvcard__bar i,
+  html[data-theme='dark'] .wr .wr-gncard__bar i {
+    background: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-padpromo {
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-card,
+  html[data-theme='dark'] .wr .wr-fb--tip {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-fb--tip {
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-banner-task {
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-banner-task) > .wr-howto {
+    background: var(--mw-yellow-soft);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-stepchip,
+  html[data-theme='dark'] .wr .wr-stepchip.is-on {
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-banner-task) > .wr-howto b {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-ghost:disabled {
+    border-color: var(--mw-line);
+    color: var(--mw-ink-3);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .wr-padpromo .wr-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .wr-padpromo .wr-primary::before {
+    background: var(--dk-on-acc);
+  }
 }
