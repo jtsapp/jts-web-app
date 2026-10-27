@@ -2392,7 +2392,7 @@ export default function App() {
     case 'teacher-pick':
       return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
-      return <FeedbackCenter token={token} onBack={() => goBack(() => setScreen('profile'))} />
+      return <FeedbackCenter userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage
