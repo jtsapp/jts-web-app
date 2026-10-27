@@ -209,6 +209,119 @@
     line-height: 16px;
   }
 
+  /* ---------- Караоке · итог (кадр 6605:19909) ----------
+     Вердикт 20/800 и балл 56/800 фиолетовым — по центру; медали — сплошные
+     круги 48 своего цвета (текущая — 56 с фиолетовой рамкой); метрики —
+     белые карточки r20 с рамкой; «Спеть ещё раз» — фиолетовая 56 r16,
+     «Выбрать другую песню» — белая с фиолетовой рамкой 2. */
+  .kk-res__hero {
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .kk-res__score {
+    align-items: center;
+    text-align: center;
+  }
+  .kk-res__verdict {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  .kk-res__num {
+    justify-content: center;
+  }
+  .kk-res__num b {
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 64px;
+    color: #9047ff;
+  }
+  .kk-res__num span {
+    font-size: 16px;
+    font-weight: 700;
+    color: #8e8e99;
+  }
+  .kk-medal--next {
+    opacity: 1;
+  }
+  .kk-medal__coin {
+    width: 48px;
+    height: 48px;
+  }
+  .kk-medal--bronze .kk-medal__coin {
+    background: #cd8b52;
+  }
+  .kk-medal--silver .kk-medal__coin {
+    background: #a7a9bd;
+  }
+  .kk-medal--gold .kk-medal__coin {
+    background: #f2b73b;
+  }
+  .kk-medal--now .kk-medal__coin {
+    width: 56px;
+    height: 56px;
+    box-shadow: 0 0 0 3px #9047ff;
+  }
+  .kk-medal__name,
+  .kk-medal--now .kk-medal__name {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .kk-medal--now .kk-medal__name {
+    color: #181818;
+  }
+  .kk-medal__from {
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .kk-res__metrics {
+    gap: 12px;
+  }
+  .kk-met {
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .kk-res__btn {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .kk-res__btn--primary {
+    background: #9047ff;
+    color: #fff;
+  }
+  .kk-res__btn--soft {
+    border: 2px solid #9047ff;
+    background: #fff;
+    color: #9047ff;
+  }
+  html[data-theme='dark'] .kk-res .kk-res__hero,
+  html[data-theme='dark'] .kk-res .kk-met {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .kk-res .kk-res__verdict,
+  html[data-theme='dark'] .kk-res .kk-medal--now .kk-medal__name {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .kk-res .kk-res__num b {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .kk-res .kk-res__btn--soft {
+    border-color: var(--dk-acc);
+    background: none;
+    color: var(--dk-acc-text);
+  }
+
   /* ---------- «Аркада»: шапка всех экранов (Navbar 52, кадр 6605:10811) ----------
      Стрелка-«назад» 48 слева, название раздела 16/700 по центру. Подпись
      кнопки («← В Практику» / «← К играм») остаётся для скринридера. Кнопки
