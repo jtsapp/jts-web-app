@@ -702,8 +702,9 @@
   }
 
   /* ── «Ситуации» · 7 · Сообщения об ошибках (кадр 6605:16597) ─────────────
-     Плашка r20 p16, текст Bold 15 цветом плашки и значок 24 слева: микрофон — красная, тишина и короткая запись —
-     оранжевая, дневной лимит — сиреневая (с замком), прочее — красная. */
+     Плашка r20 p16, текст Bold 15 цветом плашки и значок 24 слева (экспорт кадра, рисуется маской цветом текста):
+     микрофон — красная с перечёркнутым микрофоном, тишина и короткая запись — оранжевая с «i», дневной лимит —
+     сиреневая с замком, прочее — красная с «i». */
   .sit-rec__error {
     display: flex;
     gap: 12px;
@@ -711,7 +712,7 @@
     padding: 16px;
     border-radius: 20px;
     background: #fde8e8;
-    color: #e23b3b;
+    color: #d9363e;
     font-size: 15px;
     line-height: 22px;
     font-weight: 700;
@@ -723,13 +724,20 @@
     height: 24px;
     margin-top: 0;
     background: currentColor;
-    mask: url('/assets/home-v2/ico/help.svg') center / 22px no-repeat;
+    mask: url('/assets/m/speaking/info.svg') center / 24px no-repeat;
+  }
+  .sit-rec__error--denied::before,
+  .sit-rec__error--unsupported::before {
+    mask-image: url('/assets/m/speaking/mic_off.svg');
+  }
+  .sit-rec__error--daily_limit_reached::before {
+    mask-image: url('/assets/m/speaking/lock.svg');
   }
   .sit-rec__error--empty,
   .sit-rec__error--too_short,
   .sit-rec__error--recording_too_long {
     background: #ffeedd;
-    color: #e8800f;
+    color: #e57a12;
   }
   .sit-rec__error--daily_limit_reached {
     background: #efe7ff;
