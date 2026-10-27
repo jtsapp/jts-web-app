@@ -58,7 +58,7 @@ export function GrammarCard({ unit, done = false, picked = false, pickMode = fal
         <span className="gr-cov-tex" />
         <span className="gr-cov-orb" />
         <span className="gr-cov-arc" />
-        <span className="gr-cov-no">{String(unit.id).padStart(2, '0')}</span>
+        <span className="gr-cov-no" data-no={unit.id}>{String(unit.id).padStart(2, '0')}</span>
         <span className="gr-cov-brand">
           <span className="gr-cov-mark">JTS</span>
           <span className="gr-cov-wm">Just to Study</span>
@@ -69,7 +69,7 @@ export function GrammarCard({ unit, done = false, picked = false, pickMode = fal
       <span className="gr-gcard__body">
         <span className="gr-unit-no">Unit {unit.id}</span>
         <span className="gr-gcard__desc" dangerouslySetInnerHTML={{ __html: unit.desc }} />
-        <span className="gr-gcard__t">⏱ {unit.min}m</span>
+        <span className="gr-gcard__t" data-min={unit.min}>⏱ {unit.min}m</span>
       </span>
       {done && (
         <span className="gr-gcard__done">

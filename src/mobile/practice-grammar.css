@@ -92,75 +92,149 @@
     line-height: 15px;
   }
 
-  /* Карточка: обложка 236×168 r12 и подписи под ней прямо на сером фоне —
-     без белой подложки, рамки и тени. */
+  /* Карточка юнита — строка списка (кадр «Mobile» 6605:13998): плитка
+     номера 48 r16, «Unit N» 12/700 серым, название 16/800, пилюля минут и
+     шеврон. Разметка карточки общая с компьютером (обложка + подпись), поэтому
+     обложка и подпись раскрыты `display: contents` и их куски разложены
+     сеткой карточки; номер и минуты — из data-атрибутов (на обложке «01»,
+     в подписи «⏱ 7m»). Описание юнита в строке макета не нарисовано. */
   .gr-catalog .gr-grid {
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
   }
   .gr-catalog .gr-gcard {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto 24px;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    flex: none;
+    width: auto;
+    height: auto;
+    min-height: 74px;
+    padding: 12px;
     overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: none;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
     box-shadow: none;
+    text-align: left;
   }
   .gr-catalog .gr-gcard:hover {
     transform: none;
     box-shadow: none;
   }
-  .gr-catalog .gr-cover {
-    height: 168px;
-    border-radius: 12px;
-  }
-  .gr-catalog .gr-cov-ttl {
-    bottom: 30px;
-    font-size: 22px;
-  }
+  .gr-catalog .gr-cover,
   .gr-catalog .gr-gcard__body {
-    gap: 4px;
-    padding: 12px 0 0;
+    display: contents;
+  }
+  .gr-catalog .gr-cov-tex,
+  .gr-catalog .gr-cov-orb,
+  .gr-catalog .gr-cov-arc,
+  .gr-catalog .gr-cov-brand,
+  .gr-catalog .gr-cov-tag,
+  .gr-catalog .gr-gcard__desc {
+    display: none;
+  }
+  .gr-catalog .gr-cov-no {
+    position: static;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 0;
+    line-height: 24px;
+    color: #9047ff;
+    opacity: 1;
+    transform: none;
+  }
+  .gr-catalog .gr-cov-no::after {
+    content: attr(data-no);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0;
   }
   .gr-catalog .gr-unit-no {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
     padding: 0;
     border-radius: 0;
     background: none;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 18px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #8e8e99;
+  }
+  .gr-catalog .gr-cov-ttl {
+    position: static;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    max-width: none;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
     letter-spacing: 0;
     color: #181818;
+    text-shadow: none;
+    transform: none;
   }
-  .gr-catalog .gr-gcard__desc {
-    font-size: 14px;
-    line-height: 20px;
-    color: #181818;
-  }
-  .gr-catalog .gr-gcard__desc em {
-    font-style: normal;
-  }
-  /* Длительности в карточке макета нет: подпись «Unit N + описание» и всё. */
   .gr-catalog .gr-gcard__t {
-    display: none;
+    grid-column: 3;
+    grid-row: 1 / 3;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    font-size: 0;
+    line-height: 16px;
+    white-space: nowrap;
+    color: #5a5a66;
+  }
+  .gr-catalog .gr-gcard__t::after {
+    content: attr(data-min) ' min';
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .gr-catalog .gr-gcard::after {
+    content: '';
+    grid-column: 4;
+    grid-row: 1 / 3;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
   }
 
-  /* «Пройдено» — белая пилюля 32 поверх обложки (кадр 4273:9277): зелёная
-     звезда с галочкой (экспорт макета) и подпись 14/700 зелёным. */
+  /* «Пройдено» в строке макета не нарисовано — оставляем знак прежнего
+     макета (зелёная звезда с галочкой) кружком на углу плитки номера. */
   .gr-catalog .gr-gcard.is-done {
-    border: 0;
+    border-color: #e8e8ee;
   }
   .gr-catalog .gr-gcard__done {
-    top: 8px;
-    left: 8px;
-    gap: 6px;
-    height: 32px;
-    padding: 4px 16px 4px 4px;
+    top: 6px;
+    left: 44px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
     border: 0;
-    border-radius: 20px;
+    border-radius: 50%;
     background: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 14px;
-    color: #19c119;
+    font-size: 0;
   }
   .gr-catalog .gr-gcard__done svg {
     display: none;
@@ -172,7 +246,85 @@
     background: url(/assets/m/grammar/done.svg) center / 24px 24px no-repeat;
   }
 
-  /* ---------- Урок: каркас (кадры 4273:9393, 4273:5957) ---------- */
+  /* Развёрнутая «Грамматика» — отдельный экран макета с полосой «← Грамматика»:
+     шапку хаба и вкладки навыков прячем, заголовок секции становится полосой,
+     «Свернуть» — круглой «назад» слева. Стрелка и шеврон — Material
+     arrow_back / chevron_right, как инстансы кадра (мост Figma был занят). */
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-head,
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-skills {
+    display: none;
+  }
+  /* Заголовок в макете по центру, но справа на телефоне стоит группа «?,
+     колокольчик, язык» кабинета — по центру он под неё уходил, поэтому
+     прижат к стрелке. */
+  #sec-grammar:has(.gr-catalog) > .pk-sec__head {
+    position: relative;
+    justify-content: flex-start;
+    min-height: 52px;
+    margin: 0 -12px 8px;
+    padding: 0 0 0 52px;
+  }
+  #sec-grammar:has(.gr-catalog) > .pk-sec__head .pk-sec__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  /* Инструменты шапки на телефоне — display: contents (practice.css), поэтому
+     к краю ставим саму кнопку. */
+  #sec-grammar:has(.gr-catalog) .pk-all.is-back {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+  }
+  #sec-grammar:has(.gr-catalog) .pk-all.is-back > svg {
+    display: none;
+  }
+
+  /* Тёмная: строки юнитов и полоса «← Грамматика» — токенами брендбука. */
+  html[data-theme='dark'] .gr-catalog .gr-gcard,
+  html[data-theme='dark'] .gr-catalog .gr-gcard.is-done {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-cov-no {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-unit-no {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-cov-ttl,
+  html[data-theme='dark'] #sec-grammar:has(.gr-catalog) > .pk-sec__head .pk-sec__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard__t {
+    background: var(--dk-chip);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard::after {
+    background: var(--dk-muted);
+    -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard__done {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] #sec-grammar:has(.gr-catalog) .pk-all.is-back {
+    background: var(--dk-text);
+    -webkit-mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+  }
+
+  /* ---------- Урок: каркас (кадр «Mobile» 6605:14128 «2 · Теория») ---------- */
 
   /* Урок на весь экран: кнопка шага стоит у нижней кромки даже на коротком
      слайде, как в кадрах, а не сразу под контентом. */
@@ -184,39 +336,59 @@
     background: #f8f8f8;
   }
 
-  /* Полоса урока 69: крестик (экспорт), крошка, язык. Кнопки «Словарь»
-     справа (кадр) в уроке грамматики нет — см. отчёт. */
+  /* Полоса урока 52 на фоне экрана: крестик 48 слева, по центру «Unit N»
+     16/700 и «Грамматика» 12 серым, справа язык. В макете язык — глобус;
+     у нас переключатель с флагом (тот же выбор языка), оставлен пилюлей. */
   .gr-lesson .gr-lesson__bar {
+    position: relative;
     flex: none;
-    gap: 8px;
-    height: 69px;
-    padding: 16px;
+    justify-content: space-between;
+    gap: 0;
+    height: 52px;
+    padding: 0 4px;
     border-bottom: 0;
-    background: #fff;
+    background: transparent;
   }
   .gr-lesson .gr-back {
-    background: #9047ff url(/assets/m/grammar/close.svg) center / 20px 20px no-repeat;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: transparent;
+  }
+  .gr-lesson .gr-back {
+    color: #181818;
   }
   .gr-lesson .gr-back:hover {
     filter: none;
   }
+  /* Крестик — штатный X кнопки (линии 2.4 цветом текста), как close 24 кадра;
+     прежний круг close.svg остался за прошлым макетом. */
   .gr-lesson .gr-back svg {
-    display: none;
+    display: block;
+    width: 24px;
+    height: 24px;
   }
   .gr-lesson .gr-lesson__crumb {
+    position: absolute;
+    left: 52px;
+    right: 52px;
+    align-items: center;
+    text-align: center;
     line-height: normal;
+    pointer-events: none;
   }
   .gr-lesson .gr-lesson__crumb b {
     font-size: 16px;
     font-weight: 700;
-    line-height: 22px;
-    color: #9047ff;
+    line-height: 24px;
+    color: #181818;
   }
   .gr-lesson .gr-lesson__crumb span {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 15px;
-    color: #9d9d9d;
+    line-height: 16px;
+    color: #8e8e99;
   }
   /* Язык — пилюля 58×33: флаг 16 и шеврон вниз 18 (экспорт). */
   .gr-lesson__bar .lang-selector--flag {
@@ -224,7 +396,11 @@
     height: 33px;
     padding: 6px 8px 6px 12px;
   }
+  .gr-lesson__bar .lang-selector--flag,
   .gr-lesson__bar .lang-selector--flag:hover {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     transform: none;
   }
   .gr-lesson__bar .lang-selector--flag > svg {
@@ -241,22 +417,38 @@
     display: none;
   }
 
-  /* Вкладки 38 (r30, 16/700) прижаты вправо, 16 от полосы. */
+  /* Вкладки — сегменты: серая плашка 48 r16 с полем 4, три равных сегмента
+     40 r12; выбранный — белый с тенью, текст 16/700 тёмным. */
   .gr-lesson .gr-lesson__toolbar {
     flex: none;
-    padding: 16px 16px 0;
+    padding: 0 16px 8px;
   }
   .gr-lesson .gr-tabs {
+    flex: 1;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
   }
   .gr-lesson .gr-tab {
-    height: 38px;
-    padding: 10px 20px;
-    border-radius: 30px;
-    line-height: 18px;
+    flex: 1;
+    height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
     white-space: nowrap;
+    color: #5a5a66;
     box-shadow: none;
+  }
+  .gr-lesson .gr-tab.on {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 1px 3px rgba(24, 24, 24, 0.12);
   }
 
   /* Тело вкладки тянется до низа: под ним липкая полоса с кнопкой. */
@@ -269,46 +461,98 @@
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 32px 16px 0;
+    padding: 12px 16px 0;
   }
   .gr-lesson .gr-examples {
-    padding-bottom: 32px;
+    padding-bottom: 24px;
+  }
+
+  /* Тёмная полоса, сегменты и карточки урока — токенами брендбука
+     (генератор красил крестик фиолетовым кругом, а вкладки — пилюлями).
+     Класс урока удвоен: правила генератора той же силы грузятся позже. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__bar,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-back {
+    background: transparent;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-back {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__crumb b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__crumb span,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lhero p {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tabs {
+    border: 0;
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tab {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tab.on {
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lhero,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr {
+    border: 0;
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tr-title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr .gr-rich,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr .gr-rich p {
+    color: var(--dk-text-2);
   }
 
   /* ---------- Теория и примеры: карточки блоков ---------- */
 
-  /* Шапка юнита: бейдж 26, заголовок 28/700, подпись 16 тёмным. */
+  /* Шапка юнита: белая карточка r24 с рамкой #e8e8ee, поле 20; пилюля
+     «Unit N» 12/700 фиолетовым, заголовок 24/800, подпись 12 серым. */
   .gr-lesson .gr-lhero {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    margin: 0 0 8px;
-    padding: 16px;
-    border: 0;
-    border-radius: 20px;
+    gap: 4px;
+    margin: 0 0 12px;
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
   }
   .gr-lesson .gr-lhero__badge {
-    padding: 6px 12px;
-    background: #ebdeff;
+    margin-bottom: 4px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
     font-size: 12px;
-    font-weight: 500;
-    line-height: 14px;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0;
     color: #9047ff;
   }
   .gr-lesson .gr-lhero h1 {
     margin: 0;
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 34px;
-    letter-spacing: -0.01em;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: 0;
     color: #181818;
   }
   .gr-lesson .gr-lhero p {
-    font-size: 16px;
-    line-height: 19px;
-    color: #181818;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
   }
   .gr-lesson .gr-lhero p em {
     font-weight: 400;
@@ -316,26 +560,26 @@
   }
 
   .gr-lesson .gr-block {
-    margin: 0 0 8px;
-    padding: 16px;
-    border: 0;
-    border-radius: 20px;
+    margin: 0 0 12px;
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
     background: #fff;
   }
   .gr-lesson .gr-block__h {
     margin: 0 0 12px;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 29px;
-    letter-spacing: -0.01em;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    letter-spacing: 0;
     color: #181818;
   }
 
-  /* Текст блока 18/140%; абзацы в макете идут без отбивки. */
+  /* Текст блока 16/24; абзацы в макете идут без отбивки. */
   .gr-lesson .gr-rich,
   .gr-lesson .gr-rich p {
-    font-size: 18px;
-    line-height: 25px;
+    font-size: 16px;
+    line-height: 24px;
     color: #181818;
   }
   .gr-lesson .gr-rich p {
@@ -510,6 +754,71 @@
     text-decoration: none;
   }
 
+  /* Вкладка «Примеры» (кадр «Mobile» 6605:14181 «3 · Примеры»): модельные
+     фразы — пилюли r12 слева без серой плашки (первая фиолетовая, вторая
+     лавандовая); ситуации — сетка 2×2 лавандовых карточек r12, подпись
+     12/700 фиолетовым, пример 12/500 тёмным. В «Теории» те же блоки прежние. */
+  .gr-lesson .gr-examples .gr-rich .g-chat {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0;
+    background: none;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-msg {
+    align-self: flex-start;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    background: #efe7ff;
+    color: #181818;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sits {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit {
+    padding: 12px;
+    border-radius: 12px;
+    background: #f6f1ff;
+  }
+  /* В лавандовом переводе карточки белые — иначе сливаются с фоном. */
+  .gr-lesson .gr-examples .gr-block-tr .gr-rich .g-sit {
+    background: #fff;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-h {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-ex {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #181818;
+  }
+  .gr-lesson .gr-examples .gr-rich .g-sit .g-ex .g-hl {
+    color: #181818;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-sit {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-sit .g-ex,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-msg.g-b {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-examples .gr-rich .g-chat {
+    background: none;
+  }
+
   /* Ошибки: серая плашка r20, красный крестик и зачёркнутое красным; верный
      вариант — второй строкой зелёным с галочкой (обе иконки — экспорт). В
      кадре это две плашки, но в данных пара — одна строка с ✗ и ✓ внутри. */
@@ -589,33 +898,46 @@
     background: url(/assets/m/grammar/mistake-ok.svg) center / 24px 24px no-repeat;
   }
 
-  /* Перевод блока в макете не нарисован; оставляем его, но в той же
-     системе: рамка #eee без градиентной полосы. Не серая заливка — внутри
-     лежат те же серые и лавандовые плашки, они бы в ней пропали. */
+  /* Перевод — лавандовая карточка r24 #f6f1ff, поле 20; пилюля «РУС»
+     фиолетовая, заголовок 16/800 тёмным, текст 16/500 серым. В макете она
+     идёт отдельной карточкой под блоком, у нас живёт внутри блока — поэтому
+     вытянута на его поле до краёв. */
   .gr-lesson .gr-block-tr {
-    margin-top: 16px;
-    padding: 20px 16px 16px;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    background: #fff;
+    margin: 16px -20px -20px;
+    padding: 20px;
+    border: 0;
+    border-radius: 24px;
+    background: #f6f1ff;
   }
   .gr-lesson .gr-block-tr::before {
     display: none;
   }
+  /* Пилюля «РУС» — в потоке над заголовком, а не на рамке, как у компьютера. */
   .gr-lesson .gr-tr-flag {
+    position: static;
+    display: inline-flex;
+    margin: 0 0 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
     background: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
     box-shadow: none;
+    transform: none;
   }
   .gr-lesson .gr-tr-title {
     font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    color: #9047ff;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
   }
   .gr-lesson .gr-block-tr .gr-rich,
   .gr-lesson .gr-block-tr .gr-rich p {
     font-size: 16px;
-    line-height: 22px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
   }
 
   /* Точки карусели: белая капсула, точки 12 через 16; пройденные слайды
@@ -649,19 +971,20 @@
     flex-wrap: nowrap;
     gap: 8px;
     margin: auto -16px 0;
-    padding: 16px 16px var(--safe-bottom);
+    padding: 8px 16px calc(8px + var(--safe-bottom, 0px));
     background: #f8f8f8;
   }
+  /* Кнопка 56 r16, 16/700. */
   .gr-lesson .gr-slide-nav .gr-btn {
     flex: 1;
     width: auto;
-    height: 48px;
+    height: 56px;
     padding: 0 24px;
     border: 0;
-    border-radius: 80px;
-    font-size: 15px;
+    border-radius: 16px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 17px;
+    line-height: 24px;
     box-shadow: none;
   }
   .gr-lesson .gr-slide-nav .gr-btn--primary {
@@ -677,25 +1000,39 @@
 
   /* ---------- Практика: прогресс, задание, плашка ответа ---------- */
 
+  /* Кадр «Mobile» 6605:14367 «6 · Выбери форму»: прогресс — полоса 8 r999
+     (#e4daf8, заливка фиолетовая) и процент 12/700 серым без плашки. */
   .gr-lesson .gr-practice {
-    padding-top: 24px;
+    padding-top: 8px;
   }
   .gr-lesson .gr-lprog-row {
     flex: none;
-    gap: 12px;
-    height: 38px;
-    margin-bottom: 24px;
-    padding: 4px 4px 4px 12px;
-    border-radius: 50px;
-    background: #fff;
+    gap: 8px;
+    height: 24px;
+    margin-bottom: 16px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .gr-lesson .gr-lprog {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .gr-lesson .gr-lprog__bar {
+    border-radius: 999px;
+    background: #9047ff;
   }
   .gr-lesson .gr-lprog__pct {
-    min-width: 49px;
-    height: 30px;
-    padding: 4px 12px;
-    font-size: 16px;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 22px;
+    line-height: 16px;
+    color: #5a5a66;
   }
 
   .gr-lesson .gr-act {
@@ -703,127 +1040,155 @@
     display: flex;
     flex-direction: column;
   }
-  .gr-lesson .gr-actq {
-    margin: 0 0 24px;
-    max-width: none;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 29px;
-    color: #17171c;
-  }
-
-  /* В выборе формы у кадра две строки: задание 24 тёмным и сама фраза 32
-     фиолетовым. У mc в данных есть только фраза, а задание — ярлык типа
-     (typeLabel), который в остальных типах дублирует инструкцию и спрятан.
-     Здесь показываем его заголовком. */
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) .gr-act__top {
+  /* Над заданием — пилюля типа (у компьютера ярлык спрятан): 32 r999
+     лавандовая, 12/700 фиолетовым. Этап и счётчик в кадре не нарисованы. */
+  .gr-lesson .gr-act__top {
     display: block;
-    margin: 0 0 6px;
-    text-align: center;
+    margin: 0 0 8px;
   }
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) :is(.gr-act__stage, .gr-act__count) {
+  .gr-lesson .gr-act__stage,
+  .gr-lesson .gr-act__count {
     display: none;
   }
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) .gr-act__type {
-    display: block;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    font-size: 24px;
+  .gr-lesson .gr-act__type {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 29px;
+    line-height: 16px;
     letter-spacing: 0;
     text-transform: none;
-    color: #17171c;
-  }
-  .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-opts) {
-    font-size: 32px;
-    line-height: 38px;
     color: #9047ff;
   }
+  /* Вопрос 24/800 тёмным, по левому краю. */
+  .gr-lesson .gr-actq {
+    margin: 0 0 16px;
+    max-width: none;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    text-align: left;
+    color: #181818;
+  }
 
-  /* Варианты: пилюли 59 (16/700), зазор 12. */
+  /* Варианты — белые карточки 60 r16 с рамкой 2 #e8e8ee, текст 16/600
+     серым слева; выбранный — фиолетовая рамка, верный — зелёная плашка
+     #e3f6ea с рамкой #1f9d55, неверный — красная в той же системе. */
   .gr-lesson .gr-opts {
     gap: 12px;
     max-width: none;
   }
   .gr-lesson .gr-opt {
-    min-height: 59px;
-    padding: 20px 24px;
-    border: 0;
-    border-radius: 999px;
+    justify-content: flex-start;
+    min-height: 60px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
     font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    color: #17171c;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: left;
+    color: #8e8e99;
   }
   .gr-lesson .gr-opt:hover:not(:disabled) {
     background: #fff;
   }
   .gr-lesson .gr-opt.sel,
   .gr-lesson .gr-opt.sel:hover {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    background: #f6f1ff;
+    color: #181818;
   }
   .gr-lesson .gr-opt.correct {
-    background: #31b423;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-opt.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
   }
 
-  /* Плашка ответа над кнопкой: капсула 77, круг 42 с иконкой (экспорт),
-     подпись 16/700; у верного — белая пилюля монет 45. */
+  /* Плашка ответа — нижний лист во всю ширину (кадр «6 · Выбери форму»):
+     светло-зелёный #e3f6ea у верного, светло-красный у ошибки, скругление
+     сверху 24; значок 28, заголовок 20/800 цветом ответа, пояснение 16/500.
+     Кнопка под ним стоит на том же фоне (правило ниже). */
   .gr-lesson .gr-fb {
-    gap: 12px;
-    min-height: 77px;
-    margin: 16px 0 0;
-    padding: 16px;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+    margin: 16px -16px 0;
+    padding: 20px 16px 4px;
     border: 0;
-    border-radius: 100px;
+    border-radius: 24px 24px 0 0;
   }
   .gr-lesson .gr-fb.ok {
-    background: #aeffc7;
+    background: #e3f6ea;
   }
   .gr-lesson .gr-fb.no {
-    background: #fff0e8;
+    background: #fdecec;
   }
   .gr-lesson .gr-fb__ic {
-    width: 42px;
-    height: 42px;
+    flex: none;
+    width: 28px;
+    height: 28px;
     font-size: 0;
   }
   /* Шорткатом: в базе `background: var(--correct)` на той же паре классов
      сбрасывает повтор и размер фона. */
   .gr-lesson .gr-fb.ok .gr-fb__ic {
-    background: #1eb04b url(/assets/m/grammar/fb-ok.svg) center / 24px 24px no-repeat;
+    background: #1f9d55 url(/assets/m/grammar/fb-ok.svg) center / 16px 16px no-repeat;
   }
   .gr-lesson .gr-fb.no .gr-fb__ic {
-    background: #ff4646 url(/assets/m/grammar/fb-wrong.svg) center / 24px 24px no-repeat;
+    background: #e5484d url(/assets/m/grammar/fb-wrong.svg) center / 16px 16px no-repeat;
   }
   .gr-lesson .gr-fb__text > b {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 18px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
   }
   .gr-lesson .gr-fb.ok .gr-fb__text > b {
-    color: #067a32;
+    color: #1f9d55;
   }
   .gr-lesson .gr-fb.no .gr-fb__text > b {
-    color: #ff4646;
+    color: #e5484d;
   }
   .gr-lesson .gr-fb .gr-fb__why b {
     font-size: inherit;
     color: inherit;
   }
   .gr-lesson .gr-fb__why {
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 17px;
+    line-height: 24px;
     color: #181818;
+  }
+  /* Полоса кнопки под листом — того же цвета, кнопка верного — зелёная. */
+  .gr-lesson .gr-fb.ok + .gr-act__foot {
+    background: #e3f6ea;
+  }
+  .gr-lesson .gr-fb.no + .gr-act__foot {
+    background: #fdecec;
+  }
+  .gr-lesson .gr-fb.ok + .gr-act__foot .gr-next {
+    background: #1f9d55;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.ok,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.ok + .gr-act__foot {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.no,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb.no + .gr-act__foot {
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fb__why {
+    color: var(--dk-text);
   }
   /* Пилюля монет в кадре фиксированная 80×45, содержимое по центру. */
   .gr-lesson .gr-reward {
@@ -860,12 +1225,12 @@
   }
   .gr-lesson .gr-check,
   .gr-lesson .gr-next {
-    height: 48px;
-    border-radius: 80px;
+    height: 56px;
+    border-radius: 16px;
     background: #9047ff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 17px;
+    line-height: 24px;
     box-shadow: none;
   }
   .gr-lesson .gr-check:disabled {
@@ -873,37 +1238,208 @@
     color: #cfafff;
   }
 
-  /* ---------- Порядок слов (кадры 4273:6259…6800) ---------- */
-
-  /* Собранная фраза над линией #afafaf, банк под ней; слова — пилюли 65. */
-  .gr-lesson .gr-slots {
-    justify-content: center;
-    gap: 8px;
-    min-height: 81px;
-    margin: 0 0 16px;
-    padding: 0 0 16px;
-    border: 0;
-    border-bottom: 1px solid #afafaf;
-    border-radius: 0;
+  /* Тёмная: прогресс, пилюля задания, варианты — токенами. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog-row {
     background: none;
   }
-  .gr-lesson .gr-slots.correct,
-  .gr-lesson .gr-slots.wrong {
-    border-color: #afafaf;
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog__pct {
     background: none;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-act__type {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-actq {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.sel {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.correct {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.wrong {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+    color: var(--dk-text);
+  }
+
+  /* ---------- True/False (кадр «Mobile» 6605:14306 «5 · Верно / неверно») ----------
+     Строки — белые карточки r16 с рамкой #e8e8ee, фраза 16/500; кнопки —
+     контурные r10 (рамка 2 фиолетовая, 12/700), выбранная — лавандовая. */
+
+  .gr-lesson .gr-tf-rows {
+    gap: 8px;
+  }
+  .gr-lesson .gr-tf-row,
+  .gr-lesson .gr-tf-row.ok,
+  .gr-lesson .gr-tf-row.no {
+    gap: 8px;
+    min-height: 64px;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .gr-lesson .gr-tf-row.ok {
+    border-color: #1f9d55;
+  }
+  .gr-lesson .gr-tf-row.no {
+    border-color: #e5484d;
+  }
+  .gr-lesson .gr-tf-row__s {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #181818;
+  }
+  .gr-lesson .gr-fchip {
+    height: 40px;
+    padding: 8px 12px;
+    border: 2px solid #9047ff;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .gr-lesson .gr-fchip + .gr-fchip {
+    margin-left: 0;
+  }
+  .gr-lesson .gr-fchip:hover:not(:disabled) {
+    color: #9047ff;
+  }
+  .gr-lesson .gr-fchip:disabled {
+    cursor: default;
+  }
+  .gr-lesson .gr-fchip.picked-ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .gr-lesson .gr-fchip.picked-no {
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #e5484d;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tf-row {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tf-row__s,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-gap-sentence {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-fchip {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+
+  /* ---------- Пропуск в предложении (кадр 6605:14412 «7 · Пропуск») ----------
+     Фраза — как вопрос, 24/800 тёмным; поле пропуска — белая плашка r8 с
+     фиолетовой рамкой 2 (в кадре поле под фразой; у нас оно в строке,
+     поэтому та же рамка, но по высоте строки). */
+  .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-gap-sentence) {
+    margin-bottom: 12px;
+  }
+  .gr-lesson .gr-gap-sentence {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 40px;
+    color: #181818;
+  }
+  .gr-lesson .gr-gap-input:not(.gr-tf-input) {
+    width: 120px;
+    min-width: 72px;
+    max-width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 2px solid #9047ff;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 18px;
+    color: #181818;
+    vertical-align: middle;
+  }
+  @supports (field-sizing: content) {
+    .gr-lesson .gr-gap-input:not(.gr-tf-input) {
+      width: auto;
+      field-sizing: content;
+    }
+  }
+  .gr-lesson .gr-gap-input:not(.gr-tf-input):focus {
+    background: #fff;
+    box-shadow: 0 0 0 3px #efe7ff;
+  }
+  .gr-lesson .gr-gap-input:not(.gr-tf-input).correct {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .gr-lesson .gr-gap-input:not(.gr-tf-input).wrong {
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  /* Генератор перекрашивает прежний пунктир (border: 0 + низ dashed) — рамку
+     задаём целиком. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-gap-input:not(.gr-tf-input) {
+    border: 2px solid var(--dk-acc);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+
+  /* ---------- Порядок слов (кадр «Mobile» 6605:14448 «8 · Собери предложение») ----------
+     Собранная фраза — белая карточка r20 с рамкой #e8e8ee, в ней слова
+     лавандовые r10 с фиолетовой рамкой; банк под ней слева, слова — белые
+     плашки r12 с рамкой 2 #e8e8ee. Взятое слово оставляет серое место. */
+  .gr-lesson .gr-slots {
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 72px;
+    margin: 0 0 16px;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .gr-lesson .gr-slots.correct {
+    border-color: #1f9d55;
+    background: #fff;
+  }
+  .gr-lesson .gr-slots.wrong {
+    border-color: #e5484d;
+    background: #fff;
   }
   .gr-lesson .gr-bank {
-    justify-content: center;
+    justify-content: flex-start;
     gap: 8px;
   }
   .gr-lesson :is(.gr-word, .gr-slot-word) {
-    height: 65px;
-    padding: 13px 24px;
-    border: 0;
-    border-radius: 100px;
+    height: 44px;
+    padding: 10px 14px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 700;
-    line-height: 22px;
+    line-height: 20px;
   }
   .gr-lesson .gr-word {
     background: #fff;
@@ -913,196 +1449,148 @@
     background: #fff;
     transform: none;
   }
-  /* Взятое слово в кадре уходит из банка, а не бледнеет на месте. */
   .gr-lesson .gr-word.used {
-    display: none;
+    border-color: #f0f0f4;
+    background: #f0f0f4;
+    color: transparent;
   }
   .gr-lesson .gr-slot-word {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    border-radius: 10px;
+    background: #efe7ff;
+    color: #181818;
   }
   .gr-lesson .gr-slots.correct .gr-slot-word {
-    background: #31b423;
+    border-color: #1f9d55;
+    background: #e3f6ea;
   }
   .gr-lesson .gr-slots.wrong .gr-slot-word {
-    background: #ea4f4f;
+    border-color: #e5484d;
+    background: #fdecec;
   }
 
-  /* ---------- True/False (кадры 4273:7393…7055) ---------- */
-
-  .gr-lesson .gr-tf-rows {
-    gap: 5px;
-  }
-  .gr-lesson .gr-tf-row,
-  .gr-lesson .gr-tf-row.ok,
-  .gr-lesson .gr-tf-row.no {
-    gap: 8px;
-    min-height: 67px;
-    padding: 12px 12px 12px 24px;
-    border: 0;
-    border-radius: 20px;
-    background: #fff;
-  }
-  .gr-lesson .gr-tf-row__s {
-    font-size: 20px;
-    line-height: 24px;
-    color: #000;
-  }
-  .gr-lesson .gr-fchip {
-    height: 43px;
-    padding: 12px 16px;
-    border: 0;
-    border-radius: 30px;
-    background: #ebdeff;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    color: #9047ff;
-  }
-  .gr-lesson .gr-fchip + .gr-fchip {
-    margin-left: -4px;
-  }
-  .gr-lesson .gr-fchip:hover:not(:disabled) {
-    color: #9047ff;
-  }
-  .gr-lesson .gr-fchip:disabled {
-    cursor: default;
-  }
-  .gr-lesson .gr-fchip.picked-ok {
-    background: #19c119;
-    color: #fff;
-  }
-  .gr-lesson .gr-fchip.picked-no {
-    background: #ea4f4f;
-    color: #fff;
-  }
-
-  /* ---------- Пропуск в предложении (кадры 4273:7925…7835) ---------- */
-
-  /* Фраза 32/700 чёрным, пропуск — пунктир 2px фиолетовым по низу строки. */
-  .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-gap-sentence) {
-    margin-bottom: 16px;
-  }
-  .gr-lesson .gr-gap-sentence {
-    margin: 0;
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 42px;
-    color: #000;
-  }
-  .gr-lesson .gr-gap-input:not(.gr-tf-input) {
-    width: 120px;
-    min-width: 72px;
-    max-width: 100%;
-    height: 38px;
-    padding: 0;
-    border: 0;
-    border-bottom: 2px dashed #9047ff;
-    border-radius: 0;
-    background: none;
-    font: inherit;
-    color: #9047ff;
-    vertical-align: bottom;
-  }
-  @supports (field-sizing: content) {
-    .gr-lesson .gr-gap-input:not(.gr-tf-input) {
-      width: auto;
-      field-sizing: content;
-    }
-  }
-  .gr-lesson .gr-gap-input:not(.gr-tf-input):focus {
-    background: none;
-    box-shadow: none;
-  }
-  .gr-lesson .gr-gap-input:not(.gr-tf-input).correct {
-    border-color: #31b423;
-    background: none;
-    color: #31b423;
-  }
-  .gr-lesson .gr-gap-input:not(.gr-tf-input).wrong {
-    border-color: #ff4646;
-    background: none;
-    color: #ff4646;
-  }
-
-  /* ---------- Свободный ответ: transform / dictation (кадры 4273:8524…) ---------- */
-
-  /* Инструкция 24, образец 32 фиолетовым (inline font-size 18 перебиваем),
-     поле — белая плашка 70 r20, текст 18/500. */
+  /* ---------- Свободный ответ: transform / dictation (кадр 6605:14545 «10 · Преобразуй») ----------
+     Образец — лавандовая плашка r16, фраза 20/800 тёмным (inline font-size
+     перебиваем); поле — белое r16 с рамкой 2, верное — зелёная плашка. */
   .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-gap-sentence[style]) {
-    margin-bottom: 6px;
+    margin-bottom: 12px;
   }
   .gr-lesson .gr-act__body > .gr-gap-sentence[style] {
-    margin-bottom: 24px;
-    font-size: 32px !important;
-    line-height: 38px;
-    color: #9047ff;
+    margin-bottom: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 20px !important;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
   }
   .gr-lesson .gr-gap-input.gr-tf-input {
     display: block;
     width: 100%;
     min-width: 0;
-    height: 70px;
-    padding: 24px 16px 24px 20px;
-    border: 0;
-    border-radius: 20px;
+    height: 56px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 22px;
-    color: #9047ff;
+    line-height: 24px;
+    color: #181818;
     text-align: left;
   }
   .gr-lesson .gr-gap-input.gr-tf-input::placeholder {
-    color: #9c9c9c;
+    color: #8e8e99;
     opacity: 1;
   }
   .gr-lesson .gr-gap-input.gr-tf-input:focus {
+    border-color: #9047ff;
     background: #fff;
     box-shadow: none;
   }
   .gr-lesson .gr-gap-input.gr-tf-input.correct {
-    background: #fff;
-    color: #19c119;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-gap-input.gr-tf-input.wrong {
-    background: #fff;
-    color: #ff4646;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
   }
 
-  /* ---------- Найди ошибку (кадры 4273:8221…8393) ---------- */
-
-  /* Слова — белые пилюли 52 (16/600 фиолетовым), зазор 4. */
+  /* ---------- Найди ошибку (кадр 6605:14496 «9 · Найди ошибку») ----------
+     Фраза — белая карточка r20 с рамкой; слова — белые плашки r10 с рамкой
+     2 #e8e8ee (16/600 тёмным), выбранное — фиолетовая рамка, ошибка —
+     красная, верное — зелёное. */
   .gr-lesson .gr-error-sentence {
-    gap: 4px;
+    gap: 8px;
     margin: 0;
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
     font-size: 16px;
     line-height: 20px;
   }
   .gr-lesson .gr-eword {
-    min-height: 52px;
-    padding: 16px 24px;
-    border: 0;
-    border-radius: 999px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 2px solid #e8e8ee;
+    border-radius: 10px;
     background: #fff;
     font-weight: 600;
-    color: #9047ff;
+    color: #181818;
   }
   .gr-lesson .gr-eword:hover {
     background: #fff;
   }
   .gr-lesson .gr-eword.sel,
   .gr-lesson .gr-eword.sel:hover {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
   }
   .gr-lesson .gr-eword.correct {
-    background: #19c119;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-eword.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  /* Лист «Не совсем» — красная кнопка, как в кадре. */
+  .gr-lesson .gr-fb.no + .gr-act__foot .gr-next {
+    background: #e5484d;
+  }
+
+  /* Тёмная: порядок, свободный ответ, ошибка. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-slots, .gr-error-sentence) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-word, .gr-eword, .gr-gap-input.gr-tf-input) {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-word.used {
+    border-color: var(--dk-chip);
+    background: var(--dk-chip);
+    color: transparent;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-slot-word,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-eword.sel {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-act__body > .gr-gap-sentence[style] {
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
   }
 
   /* ---------- Типы без своего кадра: та же система ----------
@@ -1111,149 +1599,247 @@
      соседних кадров: белые пилюли, выбор — фиолетовой заливкой, проверка —
      зелёным/красным, как у True/False. */
 
-  /* Раскладка по группам (первое задание Unit 1 — его видит каждый). */
+  /* Раскладка по группам — кадр «Mobile» 6605:14251 «4 · Сортировка»: банк
+     слева, слова — белые плашки r12 с рамкой 2 #e8e8ee (16/700); группы —
+     во всю ширину столбиком, лавандовые r20 с рамкой #d8ccf2, заголовок
+     20/800 фиолетовым слева; разложенные слова — лавандовые r10 с
+     фиолетовой рамкой. */
   .gr-lesson .gr-cat-items {
+    justify-content: flex-start;
     gap: 8px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
   }
   .gr-lesson .gr-cat-item {
     height: 48px;
-    padding: 13px 20px;
-    border: 0;
-    border-radius: 100px;
+    padding: 12px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
     background: #fff;
     font-size: 16px;
     font-weight: 700;
-    line-height: 22px;
+    line-height: 20px;
     color: #181818;
   }
   .gr-lesson .gr-cat-item.sel {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
     transform: none;
   }
   .gr-lesson .gr-cat-checking {
     font-size: 14px;
     font-weight: 500;
-    color: #9d9d9d;
+    color: #8e8e99;
   }
   .gr-lesson .gr-cat-buckets {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
   .gr-lesson .gr-bucket {
-    min-height: 110px;
-    padding: 16px;
-    border: 0;
+    min-height: 0;
+    padding: 12px 16px 16px;
+    border: 1px solid #d8ccf2;
     border-radius: 20px;
-    background: #fff;
+    background: #f6f1ff;
+    text-align: left;
   }
   .gr-lesson .gr-bucket__h {
-    margin-bottom: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
+    margin-bottom: 8px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    text-align: left;
     color: #9047ff;
   }
   .gr-lesson .gr-bucket__drop {
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 8px;
+    min-height: 40px;
   }
   .gr-lesson .gr-chip-in {
-    height: 43px;
-    padding: 12px 16px;
-    border-radius: 30px;
-    background: #ebdeff;
+    height: 40px;
+    padding: 8px 12px;
+    border: 2px solid #9047ff;
+    border-radius: 10px;
+    background: #efe7ff;
     font-size: 16px;
     font-weight: 700;
-    line-height: 19px;
-    color: #9047ff;
+    line-height: 20px;
+    color: #181818;
   }
   .gr-lesson .gr-chip-in.ok {
-    background: #19c119;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-chip-in.no {
-    background: #ea4f4f;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-cat-item {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-bucket {
+    border-color: var(--dk-acc-line);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-chip-in {
+    background: var(--dk-card);
+    color: var(--dk-text);
   }
 
-  /* Пары: белые плашки r20; выбранная — фиолетовой рамкой. */
+  /* Пары (кадр «Mobile» 6605:14630 «12 · Соедини ответы»): белые плашки r16
+     с рамкой 2 #e8e8ee, текст 12–14/600; выбранная — фиолетовая рамка на
+     лавандовом, занятый ответ — серый #f0f0f4. */
   .gr-lesson :is(.gr-match-l, .gr-match-r) {
-    border: 2px solid transparent;
-    border-radius: 20px;
+    min-height: 56px;
+    padding: 12px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
     color: #181818;
   }
   .gr-lesson .gr-match-l.sel {
     border-color: #9047ff;
-    background: #fff;
+    background: #efe7ff;
     box-shadow: none;
   }
   .gr-lesson .gr-match-r:hover:not(:disabled) {
-    border-color: #ebdeff;
+    border-color: #d8ccf2;
+  }
+  .gr-lesson .gr-match-r:disabled {
+    border-color: #f0f0f4;
+    background: #f0f0f4;
+    color: #8e8e99;
   }
   .gr-lesson .gr-match-l.correct {
-    border-color: #19c119;
-    background: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
   }
   .gr-lesson .gr-match-l.wrong {
-    border-color: #ea4f4f;
-    background: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
   }
   .gr-lesson .gr-match-asg {
     color: #9047ff;
   }
   .gr-lesson .gr-match-asg.ok {
-    color: #19c119;
+    color: #1f9d55;
   }
   .gr-lesson .gr-match-asg.no {
-    color: #ea4f4f;
+    color: #e5484d;
   }
 
-  /* Диалог: реплики как в «Примерах» — фиолетовая слева, оранжевая справа. */
+  /* Диалог (кадр 6605:14585 «11 · Диалог»): реплики — пузыри r16, у
+     собеседника белый с рамкой, у ученика лавандовый; варианты — те же
+     карточки, что в «Выбери форму». */
   .gr-lesson .gr-chat {
-    gap: 10px;
+    gap: 8px;
   }
   .gr-lesson .gr-msg {
-    padding: 10px 16px;
-    border: 0;
-    border-radius: 18px;
-    font-size: 16px;
-    line-height: 19px;
-    color: #fff;
+    padding: 10px 14px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #181818;
   }
   .gr-lesson .gr-msg.a {
-    background: #9047ff;
-    border-bottom-left-radius: 6px;
+    background: #fff;
   }
   .gr-lesson .gr-msg.b {
-    background: #ff7300;
-    border-bottom-right-radius: 6px;
+    border-color: #efe7ff;
+    background: #efe7ff;
   }
   .gr-lesson .gr-dlg-opts {
     gap: 12px;
-    margin-top: 24px;
+    margin-top: 16px;
   }
 
-  /* «Когда это происходит»: белые плашки r20, ответ — заливкой. */
+  /* «Когда это происходит» (кадр 6605:14686 «13»): варианты — белые
+     карточки r16 с рамкой 2, ответ — зелёная или красная плашка. */
   .gr-lesson .gr-tzones {
-    gap: 8px;
+    gap: 12px;
   }
   .gr-lesson .gr-tzone {
-    border: 0;
-    border-radius: 20px;
+    min-height: 56px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
+    font-size: 16px;
+    font-weight: 600;
     color: #181818;
   }
   .gr-lesson .gr-tzone:hover:not(:disabled) {
     background: #fff;
   }
   .gr-lesson .gr-tzone.correct {
-    background: #19c119;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-tzone.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-match-l, .gr-match-r, .gr-tzone, .gr-msg.a) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-match-l.sel, .gr-msg.b) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
+  }
+
+  /* Сверка скриншотом (28.10): в кадрах 7, 9, 10, 12, 13 всё прижато влево,
+     пары — двумя колонками (вопросы слева, ответы справа), шкала «когда» —
+     строки 56 с текстом слева и маленьким значком. */
+  .gr-lesson .gr-gap-sentence,
+  .gr-lesson .gr-act__body > .gr-gap-sentence[style] {
+    text-align: left;
+  }
+  .gr-lesson .gr-error-sentence {
+    justify-content: flex-start;
+  }
+  .gr-lesson .gr-match-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .gr-lesson .gr-match-col {
+    gap: 8px;
+  }
+  .gr-lesson .gr-match-r {
+    text-align: left;
+  }
+  .gr-lesson .gr-match-asg {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .gr-lesson .gr-tzone {
+    display: flex;
+    align-items: center;
+    min-height: 56px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+    text-align: left;
+  }
+  .gr-lesson .gr-tzone__em {
+    display: inline;
+    margin: 0;
+    font-size: 18px;
+    line-height: 24px;
   }
 
   /* Говорение и диктант: фраза — белая плашка, кнопка — фиолетовый круг без
