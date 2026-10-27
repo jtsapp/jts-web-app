@@ -92,75 +92,149 @@
     line-height: 15px;
   }
 
-  /* Карточка: обложка 236×168 r12 и подписи под ней прямо на сером фоне —
-     без белой подложки, рамки и тени. */
+  /* Карточка юнита — строка списка (кадр «Mobile» 6605:13998): плитка
+     номера 48 r16, «Unit N» 12/700 серым, название 16/800, пилюля минут и
+     шеврон. Разметка карточки общая с компьютером (обложка + подпись), поэтому
+     обложка и подпись раскрыты `display: contents` и их куски разложены
+     сеткой карточки; номер и минуты — из data-атрибутов (на обложке «01»,
+     в подписи «⏱ 7m»). Описание юнита в строке макета не нарисовано. */
   .gr-catalog .gr-grid {
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
   }
   .gr-catalog .gr-gcard {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto 24px;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    flex: none;
+    width: auto;
+    height: auto;
+    min-height: 74px;
+    padding: 12px;
     overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: none;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
     box-shadow: none;
+    text-align: left;
   }
   .gr-catalog .gr-gcard:hover {
     transform: none;
     box-shadow: none;
   }
-  .gr-catalog .gr-cover {
-    height: 168px;
-    border-radius: 12px;
-  }
-  .gr-catalog .gr-cov-ttl {
-    bottom: 30px;
-    font-size: 22px;
-  }
+  .gr-catalog .gr-cover,
   .gr-catalog .gr-gcard__body {
-    gap: 4px;
-    padding: 12px 0 0;
+    display: contents;
+  }
+  .gr-catalog .gr-cov-tex,
+  .gr-catalog .gr-cov-orb,
+  .gr-catalog .gr-cov-arc,
+  .gr-catalog .gr-cov-brand,
+  .gr-catalog .gr-cov-tag,
+  .gr-catalog .gr-gcard__desc {
+    display: none;
+  }
+  .gr-catalog .gr-cov-no {
+    position: static;
+    grid-column: 1;
+    grid-row: 1 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 0;
+    line-height: 24px;
+    color: #9047ff;
+    opacity: 1;
+    transform: none;
+  }
+  .gr-catalog .gr-cov-no::after {
+    content: attr(data-no);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0;
   }
   .gr-catalog .gr-unit-no {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
     padding: 0;
     border-radius: 0;
     background: none;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 18px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #8e8e99;
+  }
+  .gr-catalog .gr-cov-ttl {
+    position: static;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    max-width: none;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
     letter-spacing: 0;
     color: #181818;
+    text-shadow: none;
+    transform: none;
   }
-  .gr-catalog .gr-gcard__desc {
-    font-size: 14px;
-    line-height: 20px;
-    color: #181818;
-  }
-  .gr-catalog .gr-gcard__desc em {
-    font-style: normal;
-  }
-  /* Длительности в карточке макета нет: подпись «Unit N + описание» и всё. */
   .gr-catalog .gr-gcard__t {
-    display: none;
+    grid-column: 3;
+    grid-row: 1 / 3;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    font-size: 0;
+    line-height: 16px;
+    white-space: nowrap;
+    color: #5a5a66;
+  }
+  .gr-catalog .gr-gcard__t::after {
+    content: attr(data-min) ' min';
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .gr-catalog .gr-gcard::after {
+    content: '';
+    grid-column: 4;
+    grid-row: 1 / 3;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
   }
 
-  /* «Пройдено» — белая пилюля 32 поверх обложки (кадр 4273:9277): зелёная
-     звезда с галочкой (экспорт макета) и подпись 14/700 зелёным. */
+  /* «Пройдено» в строке макета не нарисовано — оставляем знак прежнего
+     макета (зелёная звезда с галочкой) кружком на углу плитки номера. */
   .gr-catalog .gr-gcard.is-done {
-    border: 0;
+    border-color: #e8e8ee;
   }
   .gr-catalog .gr-gcard__done {
-    top: 8px;
-    left: 8px;
-    gap: 6px;
-    height: 32px;
-    padding: 4px 16px 4px 4px;
+    top: 6px;
+    left: 44px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
     border: 0;
-    border-radius: 20px;
+    border-radius: 50%;
     background: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 14px;
-    color: #19c119;
+    font-size: 0;
   }
   .gr-catalog .gr-gcard__done svg {
     display: none;
@@ -170,6 +244,84 @@
     width: 24px;
     height: 24px;
     background: url(/assets/m/grammar/done.svg) center / 24px 24px no-repeat;
+  }
+
+  /* Развёрнутая «Грамматика» — отдельный экран макета с полосой «← Грамматика»:
+     шапку хаба и вкладки навыков прячем, заголовок секции становится полосой,
+     «Свернуть» — круглой «назад» слева. Стрелка и шеврон — Material
+     arrow_back / chevron_right, как инстансы кадра (мост Figma был занят). */
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-head,
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-skills {
+    display: none;
+  }
+  /* Заголовок в макете по центру, но справа на телефоне стоит группа «?,
+     колокольчик, язык» кабинета — по центру он под неё уходил, поэтому
+     прижат к стрелке. */
+  #sec-grammar:has(.gr-catalog) > .pk-sec__head {
+    position: relative;
+    justify-content: flex-start;
+    min-height: 52px;
+    margin: 0 -12px 8px;
+    padding: 0 0 0 52px;
+  }
+  #sec-grammar:has(.gr-catalog) > .pk-sec__head .pk-sec__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  /* Инструменты шапки на телефоне — display: contents (practice.css), поэтому
+     к краю ставим саму кнопку. */
+  #sec-grammar:has(.gr-catalog) .pk-all.is-back {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+  }
+  #sec-grammar:has(.gr-catalog) .pk-all.is-back > svg {
+    display: none;
+  }
+
+  /* Тёмная: строки юнитов и полоса «← Грамматика» — токенами брендбука. */
+  html[data-theme='dark'] .gr-catalog .gr-gcard,
+  html[data-theme='dark'] .gr-catalog .gr-gcard.is-done {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-cov-no {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-unit-no {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-cov-ttl,
+  html[data-theme='dark'] #sec-grammar:has(.gr-catalog) > .pk-sec__head .pk-sec__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard__t {
+    background: var(--dk-chip);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard::after {
+    background: var(--dk-muted);
+    -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] .gr-catalog .gr-gcard__done {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] #sec-grammar:has(.gr-catalog) .pk-all.is-back {
+    background: var(--dk-text);
+    -webkit-mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
   }
 
   /* ---------- Урок: каркас (кадры 4273:9393, 4273:5957) ---------- */
