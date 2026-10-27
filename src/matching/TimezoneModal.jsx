@@ -55,7 +55,7 @@ export default function TimezoneModal({ token, current, onClose, onSaved }) {
           </optgroup>
         )}
       </select>
-      {error && <p className="mt-small" style={{ color: 'var(--mt-bad)' }} role="alert">{error}</p>}
+      {error && <p className="mt-small mt-error" role="alert">{error}</p>}
       <div className="mt-row mt-end">
         <button type="button" className="mt-btn mt-btn--line" onClick={onClose}>{t('btn.cancel')}</button>
         <button type="button" className="mt-btn" disabled={busy} onClick={save}>{t('btn.save')}</button>
