@@ -22,6 +22,10 @@
     --mw-track: #e6dcff;
     --mw-orange: #ff7a1a;
     --mw-orange-soft: #fff0e3;
+    --mw-yellow-soft: #fff1c2;
+    --mw-step: #ece4ff;
+    --mw-step-on: #c8adff;
+    --mw-page: #fff;
     padding: 0 16px 32px;
   }
   /* Своя полоса раздела (Navbar макета: «назад» 48 и заголовок по центру) —
@@ -308,29 +312,191 @@
     border-color: var(--wr-green);
   }
 
-  /* ---------- 3–8 · Тренажёр жанра: общий вид ----------
-     Кадры шагов не сверены (мост Figma отвалился 27.10 ~22:20): здесь только
-     язык уже сверенных экранов — карточка с рамкой без тени, пилюли регистра
-     и объёма теми же цветами, что на карточке жанра. */
+  /* ---------- 3–8 · Тренажёр жанра (кадр «Шаг 1 · Зачем это нужно») ----------
+     Название жанра — в полосе; под ним мелкой строкой регистр и объём (в
+     макете это подпись полосы). Монеты остаются пилюлей — их в кадре нет, а
+     убирать функцию нельзя. */
+  .wr-taskhead--top {
+    justify-content: center;
+    gap: 6px;
+    margin: -10px 0 8px;
+  }
+  .wr-taskhead--top .wr-sec-title {
+    display: none;
+  }
+  .wr-taskhead--top .wr-pill:not(.wr-pill--coins) {
+    padding: 0;
+    background: none;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .wr-taskhead--top .wr-pill--score::before {
+    content: '·';
+    margin-right: 2px;
+  }
+  .wr-taskhead--top .wr-pill--coins {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  /* Шаги — шесть отрезков прогресса; кнопки остаются кнопками (на отрезок
+     можно нажать — высота нажатия 20, рисуется 6). Название шага под полосой
+     — подпись активной кнопки. */
+  .wr-steps {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin: 0 0 40px;
+  }
+  .wr-stepchip {
+    display: block;
+    min-height: 0;
+    padding: 7px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .wr-stepchip::before {
+    content: '';
+    display: block;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--mw-step);
+  }
+  .wr-stepchip.is-done::before,
+  .wr-stepchip.is-on::before {
+    background: var(--mw-step-on);
+  }
+  .wr-stepchip i,
+  .wr-stepchip span {
+    display: none;
+  }
+  .wr-stepchip.is-on {
+    background: none;
+    color: inherit;
+  }
+  .wr-stepchip.is-on span {
+    position: absolute;
+    top: 24px;
+    left: 0;
+    display: block;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
   .wr .wr-card {
+    padding: 20px;
     border: 1px solid var(--mw-line);
     border-radius: 20px;
     background: var(--mw-card);
     box-shadow: none;
-    padding: 16px;
   }
-  .wr-taskhead .wr-sec-title {
+  .wr-card > .wr-sec-title {
     color: var(--mw-ink);
     font-size: 20px;
     line-height: 28px;
   }
-  .wr-taskhead .wr-pill:not(.wr-pill--coins) {
+  .wr-card > .wr-sec-sub {
+    margin: 8px 0 12px;
+    color: var(--mw-ink-3);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr-card > p {
+    color: var(--mw-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  /* Цель и пример — свои плашки макета: сиреневая и жёлтая. */
+  .wr .wr-banner-task,
+  .wr-card > .wr-howto {
+    margin: 12px 0 0;
+    padding: 16px 20px;
+    border-radius: 20px;
+    color: var(--mw-ink-2);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr .wr-banner-task {
     background: var(--mw-acc-soft);
+  }
+  .wr .wr-banner-task h4 {
+    margin: 0 0 4px;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .wr .wr-banner-task p {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .wr-card > .wr-howto {
+    background: var(--mw-yellow-soft);
+    color: var(--mw-ink);
+  }
+  .wr-card > .wr-howto b {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--mw-ink);
+  }
+  .wr .wr-fb--tip {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--mw-line);
+    border-radius: 12px;
+    background: var(--mw-card);
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-fb--tip::before {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: var(--mw-acc);
+    -webkit-mask: url('/assets/m/practice/writing/info.svg') center / 20px no-repeat;
+    mask: url('/assets/m/practice/writing/info.svg') center / 20px no-repeat;
+  }
+  /* «Назад · Дальше» прижаты к низу экрана, две равные кнопки 56. */
+  .wr-footnav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--mw-page);
+  }
+  .wr-footnav .wr-ghost,
+  .wr-footnav .wr-primary {
+    height: 56px;
+    padding: 0 16px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    box-shadow: none;
+  }
+  .wr-footnav .wr-ghost {
+    border: 2px solid var(--mw-acc);
+    background: var(--mw-card);
     color: var(--mw-acc);
   }
-  .wr-taskhead .wr-pill--score {
-    background: var(--mw-orange-soft);
-    color: var(--mw-orange);
+  .wr-footnav .wr-ghost:disabled {
+    border-color: var(--mw-line);
+    color: var(--mw-ink-3);
+    opacity: 1;
+  }
+  .wr-footnav .wr-primary {
+    background: var(--mw-acc);
   }
 
   /* ---------- «Неправильные глаголы»: полоса раздела ----------
@@ -404,6 +570,10 @@
     --mw-track: var(--dk-acc-tint);
     --mw-orange: var(--dk-orange);
     --mw-orange-soft: var(--dk-orange-soft);
+    --mw-yellow-soft: var(--dk-yellow-soft, var(--dk-orange-soft));
+    --mw-step: var(--dk-line);
+    --mw-step-on: var(--dk-acc);
+    --mw-page: var(--dk-card);
   }
   /* Слой theme-dark.generated.css красит те же классы правилами
      html[data-theme="dark"] .wr-… — перебиваем их на один класс сильнее. */
@@ -445,6 +615,43 @@
   }
   html[data-theme='dark'] .wr .wr-padpromo {
     background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-card,
+  html[data-theme='dark'] .wr .wr-fb--tip {
+    border: 1px solid var(--mw-line);
+    background: var(--mw-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-fb--tip {
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-banner-task {
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-card > .wr-howto {
+    background: var(--mw-yellow-soft);
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-stepchip,
+  html[data-theme='dark'] .wr .wr-stepchip.is-on {
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-card > .wr-howto b {
+    color: var(--mw-ink);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-ghost {
+    border-color: var(--mw-acc);
+    background: var(--mw-card);
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-ghost:disabled {
+    border-color: var(--mw-line);
+    color: var(--mw-ink-3);
+  }
+  html[data-theme='dark'] .wr .wr-footnav .wr-primary {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
   }
   html[data-theme='dark'] .wr-padpromo .wr-primary {
     background: var(--dk-acc);
