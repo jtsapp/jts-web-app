@@ -23,6 +23,22 @@ export default function TimeGrid({ cells, duration, tz, picked, onChange, best =
     latest.current = picked
   }, [picked])
 
+  // Сетка прокручивается внутри блока, и сверху в нём — утро, где учителей обычно нет: ученик видел бы одни «—».
+  // Поэтому при открытии — к первой отмеченной ячейке, иначе к первой со свободными учителями: по вертикали строкой
+  // выше (видно, что сверху есть ещё), по горизонтали — только если ячейка за краем (телефон, 7 дней не влезают).
+  // Только раз: смена пояса или отметки не должна дёргать прокрутку под рукой.
+  const wrap = useRef(null)
+  useEffect(() => {
+    const box = wrap.current
+    const cell = (box?.querySelector('.mt-slot[aria-pressed="true"]') || box?.querySelector('.mt-slot--few, .mt-slot--many'))?.closest('td')
+    const row = cell?.closest('tr')
+    const head = box?.querySelector('thead')
+    if (!cell || !head) return
+    box.scrollTop = Math.max(0, row.offsetTop - head.offsetHeight - row.offsetHeight)
+    const right = cell.offsetLeft + cell.offsetWidth
+    if (right > box.clientWidth) box.scrollLeft = right - box.clientWidth
+  }, [])
+
   useEffect(() => {
     const stop = () => {
       drag.current = null
@@ -48,7 +64,7 @@ export default function TimeGrid({ cells, duration, tz, picked, onChange, best =
   }
 
   return (
-    <div className="mt-gridwrap">
+    <div className="mt-gridwrap" ref={wrap}>
       <table className="mt-slots">
         <thead>
           <tr>
