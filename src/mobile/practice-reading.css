@@ -5,4 +5,242 @@
    разделов Практики не спорили за строку импорта.
    ====================================================================== */
 @media (max-width: 560px) {
+  /* ---------- «Читай по-английски» (.rd) ----------
+     Палитра макета приложения: фиолетовый #9047ff, лавандовая плашка #efe7ff,
+     рамки #ececf1. Токены раздела переопределены на корне, поэтому за ними
+     подтягиваются и задания, и настройки, и итог. */
+  .rd {
+    --rd-purple: #9047ff;
+    --rd-purple-dark: #9047ff;
+    --rd-soft: #efe7ff;
+    --rd-line: #ececf1;
+    --rd-ink-2: #5a5a66;
+    --rd-ink-3: #8e8e99;
+    --rd-field: #f7f7f8;
+    position: relative;
+    padding: 0 16px 32px;
+    color: #181818;
+  }
+  /* Кнопки угла (?, колокольчик, язык) — у внутренних экранов приложения их нет:
+     полосу занимает навбар раздела, как у урока и книжки. */
+  .learn__main:has(.rd) .learn__bell {
+    display: none;
+  }
+
+  /* Навбар: стрелка 48 слева, название по центру. Подпись «← Практика» у
+     кнопки остаётся в разметке (aria), на экране — только стрелка. */
+  .rd-top {
+    position: relative;
+    justify-content: center;
+    min-height: 52px;
+    margin: 0;
+    padding: 0 40px;
+    gap: 0;
+  }
+  .rd-back {
+    position: absolute;
+    left: -12px;
+    top: 2px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    font-size: 0;
+  }
+  .rd-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .rd-crumb {
+    align-items: center;
+    max-width: 100%;
+    text-align: center;
+  }
+  .rd-crumb b {
+    display: none;
+  }
+  .rd-crumb span {
+    max-width: 100%;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .rd-ico {
+    display: none;
+  }
+
+  /* ---------- 1 · Библиотека ---------- */
+  .rd-hero {
+    margin: 12px 0 16px;
+  }
+  /* Заголовок «Библиотека» стоит в навбаре. */
+  .rd-hero h1 {
+    display: none;
+  }
+  .rd-hero p {
+    color: #5a5a66;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .rd-hero ~ .rd-label {
+    margin: 0 0 8px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  /* Жанры не переносятся, а листаются строкой — до края экрана. */
+  .rd-hero ~ .rd-chips {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rd-hero ~ .rd-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .rd-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 16px;
+    border: 1px solid #ececf1;
+    color: #181818;
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip {
+    color: #5a5a66;
+  }
+  .rd-chip > span[aria-hidden] {
+    font-size: 14px;
+  }
+  .rd-chip[aria-pressed='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip[aria-pressed='true'] {
+    color: #fff;
+  }
+
+  .rd-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+    margin-top: 0;
+    align-items: start;
+  }
+  .rd-card {
+    padding: 8px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+  }
+  .rd-card__cover {
+    height: 96px;
+    border-radius: 16px;
+  }
+  .rd-card__emoji {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 26px;
+  }
+  .rd-card__lvl,
+  .rd-card__done {
+    top: 8px;
+    height: 24px;
+    padding: 4px 12px;
+    background: #fff;
+    color: #181818;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-card__lvl {
+    left: 8px;
+  }
+  .rd-card__done {
+    right: 8px;
+    padding: 4px 8px;
+    background: #e6fbec;
+    color: #03832c;
+  }
+  .rd-card__body {
+    gap: 0;
+    padding: 8px 0 0;
+  }
+  .rd-card__title {
+    padding: 0 4px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  /* Жанр — строкой, ниже «1 мин · 98 слов». */
+  .rd-card__meta {
+    display: block;
+    margin-top: 2px;
+    padding: 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .rd-card__meta > span:first-child {
+    display: block;
+    margin-bottom: 2px;
+  }
+  .rd-card__meta > span:nth-child(3)::before {
+    content: ' · ';
+  }
+  .rd-card__bar {
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-bar {
+    height: 8px;
+    background: #e4daf8;
+  }
+  .rd-bar i {
+    min-width: 10px;
+    background: #9047ff;
+  }
+  .rd-card__body .rd-btn {
+    height: 40px;
+    margin-top: 8px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-g-science { --rd-g1: #d6edfb; --rd-g2: #d6edfb; }
+  .rd-g-adventure { --rd-g1: #ffe3cf; --rd-g2: #ffe3cf; }
+  .rd-g-mystery { --rd-g1: #e6dcfc; --rd-g2: #e6dcfc; }
+  .rd-g-history { --rd-g1: #fdefc4; --rd-g2: #fdefc4; }
+  .rd-g-technology { --rd-g1: #d9ddfc; --rd-g2: #d9ddfc; }
+  .rd-g-nature { --rd-g1: #d3f0e1; --rd-g2: #d3f0e1; }
+  .rd-g-people { --rd-g1: #fde0ea; --rd-g2: #fde0ea; }
+  .rd-g-culture { --rd-g1: #dde8fc; --rd-g2: #dde8fc; }
 }

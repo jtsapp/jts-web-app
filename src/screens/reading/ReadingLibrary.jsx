@@ -99,16 +99,16 @@ function Card({ text, state, onOpen }) {
       <div className="rd-card__body">
         <h2 className="rd-card__title" lang="en">{text.title}</h2>
         <div className="rd-card__meta">
-          <span>{g.emoji} {t('reading.genre.' + text.genre)}</span>
-          <span>⏱ {readMin(text.text)} {t('reading.min')}</span>
-          <span>📝 {wordCount(text.text)} {t('reading.words')}</span>
+          <span><span className="rd-ico" aria-hidden="true">{g.emoji}</span> {t('reading.genre.' + text.genre)}</span>
+          <span><span className="rd-ico" aria-hidden="true">⏱</span> {readMin(text.text)} {t('reading.min')}</span>
+          <span><span className="rd-ico" aria-hidden="true">📝</span> {wordCount(text.text)} {t('reading.words')}</span>
         </div>
         <div className="rd-card__bar" aria-label={`${t('reading.progress')} ${sc.pct}%`}>
           <div className="rd-bar"><i style={{ width: sc.pct + '%' }} /></div>
           <span>{sc.pct}%</span>
         </div>
         <button type="button" className="rd-btn rd-btn--primary rd-btn--block" onClick={() => onOpen(text.id)}>
-          {label} →
+          {label} <span className="rd-ico" aria-hidden="true">→</span>
         </button>
       </div>
     </article>
