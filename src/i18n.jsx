@@ -2533,11 +2533,21 @@ const dict = {
     'tour.home.recommend.text': 'Одна подсказка по твоим данным: горящая домашка, слабый навык или давно не было практики.',
     'tour.home.schedule.title': 'Расписание',
     'tour.home.schedule.text': 'Занятия на неделю вперёд. Нажми на урок, чтобы открыть его.',
-    // Приветствие тура «Практики» (вид «Главной»): имя раздела крупно, как имя ученика.
-    'tour.practice.intro.title': 'Это раздел',
-    'tour.practice.intro.name': 'Практика',
+    // Приветствие туров разделов (вид «Главной»): «Это раздел» и крупно — имя раздела из меню.
+    'tour.intro.title': 'Это раздел',
+    'tour.intro.cta': 'Показать',
+    'tour.intro.skip': 'Пропустить',
     'tour.practice.intro.text':
       'Тренажёры на все четыре навыка — занимайся сам, в своём темпе. Покажем за минуту, что где лежит.',
+    'tour.learn.intro.text':
+      'Повторяй то, что прошли на уроках: карта уровней от A0 до C1, внутри — уроки по порядку. Покажем, как тут ходить.',
+    'tour.lessons.intro.text':
+      'Здесь занятия с преподавателем: ближайший урок и календарь всех встреч. Покажем, где что.',
+    'tour.hw.intro.text':
+      'Задания от преподавателя: открываешь работу, прикрепляешь ответ и отправляешь на проверку. Покажем, как это делается.',
+    'tour.vocab.intro.text':
+      'Слова по уровням и по темам, плюс твой личный словарь — туда попадают слова, которые сохраняешь в заданиях. Покажем за минуту.',
+    'tour.plan.intro.text': 'План по дням до вашей цели: что сделать сегодня и на неделе. Покажем, как им пользоваться.',
     'tour.practice.skills.title': 'Четыре навыка',
     'tour.practice.skills.text':
       'Аудирование, чтение, письмо и говорение: выбери навык — под ним соберутся его тренажёры.',
@@ -9728,10 +9738,20 @@ const dict = {
     'tour.home.recommend.text': 'One tip based on your data: homework due soon, a weak skill or a long break from practice.',
     'tour.home.schedule.title': 'Schedule',
     'tour.home.schedule.text': 'Your classes for the week ahead. Tap a lesson to open it.',
-    'tour.practice.intro.title': 'This is',
-    'tour.practice.intro.name': 'Practice',
+    'tour.intro.title': 'This is',
+    'tour.intro.cta': 'Show me',
+    'tour.intro.skip': 'Skip',
     'tour.practice.intro.text':
       "Trainers for all four skills — practise on your own, at your own pace. We'll show you around in a minute.",
+    'tour.learn.intro.text':
+      "Review what you covered in class: a map of levels from A0 to C1, with lessons inside in order. We'll show you how to get around.",
+    'tour.lessons.intro.text':
+      "Classes with your teacher: the next lesson and a calendar of all sessions. We'll show you where everything is.",
+    'tour.hw.intro.text':
+      "Assignments from your teacher: open one, attach your answer and send it for review. We'll show you how.",
+    'tour.vocab.intro.text':
+      "Words by level and by topic, plus your own dictionary — words you save in tasks end up there. We'll show you around in a minute.",
+    'tour.plan.intro.text': "A day-by-day plan to your goal: what to do today and this week. We'll show you how to use it.",
     'tour.practice.skills.title': 'Four skills',
     'tour.practice.skills.text':
       'Listening, reading, writing and speaking: pick a skill and its trainers gather below.',
@@ -16913,10 +16933,20 @@ const dict = {
     'tour.home.recommend.text': 'Сенің деректерің бойынша бір кеңес: мерзімі жеткен үй жұмысы, әлсіз дағды немесе ұзақ уақыт практика болмаған.',
     'tour.home.schedule.title': 'Кесте',
     'tour.home.schedule.text': 'Алдағы аптаның сабақтары. Ашу үшін сабақты бас.',
-    'tour.practice.intro.title': 'Бұл бөлім —',
-    'tour.practice.intro.name': 'Практика',
+    'tour.intro.title': 'Бұл бөлім —',
+    'tour.intro.cta': 'Көрсету',
+    'tour.intro.skip': 'Өткізу',
     'tour.practice.intro.text':
       'Төрт дағдының бәріне жаттығулар — өз қарқыныңмен өзің жаттық. Бір минутта бәрін көрсетеміз.',
+    'tour.learn.intro.text':
+      'Сабақта өткеніңді қайтала: A0-ден C1-ге дейінгі деңгейлер картасы, ішінде — сабақтар ретімен. Қалай жүру керегін көрсетеміз.',
+    'tour.lessons.intro.text':
+      'Мұғаліммен сабақтар: ең жақын сабақ және барлық кездесулер күнтізбесі. Не қайда екенін көрсетеміз.',
+    'tour.hw.intro.text':
+      'Мұғалімнің тапсырмалары: жұмысты ашасың, жауабыңды тіркейсің де, тексеруге жібересің. Қалай істеу керегін көрсетеміз.',
+    'tour.vocab.intro.text':
+      'Деңгейлер мен тақырыптар бойынша сөздер және өз сөздігің — тапсырмаларда сақтаған сөздер сонда түседі. Бір минутта көрсетеміз.',
+    'tour.plan.intro.text': 'Мақсатыңызға дейінгі күнделікті жоспар: бүгін және осы аптада не істеу керек. Қалай пайдалану керегін көрсетеміз.',
     'tour.practice.skills.title': 'Төрт дағды',
     'tour.practice.skills.text':
       'Тыңдалым, оқылым, жазылым және айтылым: дағдыны таңда — оның жаттықтырғыштары астында жиналады.',

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail } from '../learning/courseData.js'
@@ -94,10 +94,19 @@ export default function LearningPage({
     // подписью из макета убран, и подсветка шапки — это светящаяся полоса без
     // содержимого. Остров выше экрана, поэтому прожектор его обрежет (см.
     // OnboardingTour), зато видно, о чём речь.
-    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text') },
-    { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text') },
-    { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text') },
+    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD },
+    { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text'), art: tourMascot('aizere-cheer', 236), ...TOUR_COACH_CARD },
+    { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text'), art: tourMascot('artist-coffee', 170), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.learning'),
+    text: t('tour.learn.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('aizere-book', 'dexter-book'),
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile} onHelp={tour.start}>
@@ -176,7 +185,7 @@ export default function LearningPage({
       </div>
 
       {tour.open && (
-        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </LearningLayout>
   )

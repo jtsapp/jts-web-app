@@ -236,6 +236,12 @@ export const DICT = {
     'tour.luna': 'Рассказывает Луна',
     'tour.luna.mute': 'Выключить голос Луны',
     'tour.luna.unmute': 'Включить голос Луны',
+    // Приветствие тура Speaking Buddy (вид «Главной»).
+    'tour.intro.title': 'Это раздел',
+    'tour.intro.cta': 'Показать',
+    'tour.tutor.intro.name': 'Speaking Buddy',
+    'tour.tutor.intro.text':
+      'Голосовой собеседник на английском: говоришь с тьютором вслух, как с живым человеком. Покажем, с чего начать.',
     'tour.mic.title': 'Поговори с тьютором',
     'tour.mic.text':
       'Нажми на микрофон и общайся с тьютором голосом — как с живым собеседником.',
@@ -634,6 +640,11 @@ export const DICT = {
     'tour.luna': 'Айзере айтып береді',
     'tour.luna.mute': 'Айзеренің дауысын өшіру',
     'tour.luna.unmute': 'Айзеренің дауысын қосу',
+    'tour.intro.title': 'Бұл бөлім —',
+    'tour.intro.cta': 'Көрсету',
+    'tour.tutor.intro.name': 'Speaking Buddy',
+    'tour.tutor.intro.text':
+      'Ағылшынша дауыстық әңгімелесуші: тьютормен тірі адаммен сөйлескендей дауыстап сөйлесесің. Неден бастау керегін көрсетеміз.',
     'tour.mic.title': 'Тьютормен сөйлес',
     'tour.mic.text':
       'Микрофонды бас та, тьютормен дауыспен сөйлес — тірі әңгімелесушідей.',
@@ -1026,6 +1037,11 @@ export const DICT = {
     'tour.luna': 'Luna is guiding you',
     'tour.luna.mute': 'Mute Luna',
     'tour.luna.unmute': 'Unmute Luna',
+    'tour.intro.title': 'This is',
+    'tour.intro.cta': 'Show me',
+    'tour.tutor.intro.name': 'Speaking Buddy',
+    'tour.tutor.intro.text':
+      "A voice conversation partner in English: talk to your tutor out loud, like with a real person. We'll show you where to start.",
     'tour.mic.title': 'Talk to your tutor',
     'tour.mic.text':
       'Tap the microphone and chat with your tutor by voice — like a real conversation partner.',

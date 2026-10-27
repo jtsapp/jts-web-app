@@ -6,7 +6,7 @@ import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import ReportsTab from '../feedback/ReportsTab.jsx'
 import MatchingLinkCard from '../matching/MatchingLinkCard.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import { rememberPlace } from '../lib/navStack.js'
 import { getSelfStudyAccess } from '../api.js'
@@ -121,11 +121,20 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const tourSteps = [
     // Одна вкладка — рассказывать про «две» не о чем: Self Study ученику не открыт.
     ...(showSelf
-      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text') }]
+      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD }]
       : []),
-    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text') },
-    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text') },
+    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text'), art: tourMascot('dexter-laptop', 250), ...TOUR_COACH_CARD },
+    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text'), art: tourMascot('artist-stand', 220), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.lessons'),
+    text: t('tour.lessons.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('artist-coffee', 'dexter-cool'),
+  }
   const startTour = () => {
     selectTab('online')
     tour.start()
@@ -194,7 +203,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         )}
 
         {tour.open && (
-          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+          <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
         )}
       </div>
     </LearningLayout>

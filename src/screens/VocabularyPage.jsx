@@ -27,7 +27,7 @@ import { VOCAB_LEARNED_EVENT, VOCAB_MISSES_EVENT } from '../practice/practiceKey
 import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 import { levelIndex } from '../kingdoms.js'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
 
@@ -473,10 +473,19 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const mineWords = mine?.words || []
 
   const tourSteps = [
-    { selector: '#vsec-levels', title: t('tour.vocab.levels.title'), text: t('tour.vocab.levels.text') },
-    { selector: '#vsec-fields', title: t('tour.vocab.fields.title'), text: t('tour.vocab.fields.text') },
-    { selector: '#vsec-mine', title: t('tour.vocab.mine.title'), text: t('tour.vocab.mine.text') },
+    { selector: '#vsec-levels', title: t('tour.vocab.levels.title'), text: t('tour.vocab.levels.text'), art: tourMascot('dexter-book', 220), ...TOUR_COACH_CARD },
+    { selector: '#vsec-fields', title: t('tour.vocab.fields.title'), text: t('tour.vocab.fields.text'), art: tourMascot('artist-paint', 236), ...TOUR_COACH_CARD },
+    { selector: '#vsec-mine', title: t('tour.vocab.mine.title'), text: t('tour.vocab.mine.text'), art: tourMascot('aizere-thumbs', 216), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.vocab'),
+    text: t('tour.vocab.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('aizere-book', 'artist-stand'),
+  }
 
   return shell(
     <section className="vp-pad">
@@ -627,7 +636,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         </div>
       )}
       {tour.open && (
-        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </section>,
     tour.start,

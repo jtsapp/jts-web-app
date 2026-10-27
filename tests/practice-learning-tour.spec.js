@@ -72,6 +72,8 @@ test.describe('онбординг-тур «Обучения»', () => {
       await route.continue()
     })
     await page.goto('/?screen=kingdom')
+    // Тур вида «Главной» начинается приветствием — шаги после «Показать».
+    await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
     await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
     await page.waitForTimeout(2200)
 
