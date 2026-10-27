@@ -1423,6 +1423,197 @@
     background: var(--dk-card);
     color: var(--dk-muted);
   }
+  /* «Разберись · продолжение» (кадр 2): разделы урока — белые карточки
+     с рамкой; «где пригодится» — списком с номером в кружке; V1–V3 — каждая
+     своей карточкой под общим заголовком; схемы — строками с пилюлей;
+     ошибки — розовой карточкой, неверное красным без зачёркивания. */
+  .vb .vb-lesson {
+    gap: 12px;
+  }
+  .vb .vb-lesson > .vb-card {
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-lesson > .vb-card > h3 {
+    margin: 0 0 12px;
+    color: var(--vb-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb .vb-reasons {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vb .vb-reasons > div {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+  }
+  .vb .vb-reasons .vb-num {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+  }
+  .vb .vb-reasons h4 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vb .vb-reasons p {
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .vb .vb-lesson > .vb-card:has(.vb-formcards) {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .vb .vb-formcards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vb .vb-formcard {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vb .vb-formcard > :not(.vb-pill):not(h4) {
+    grid-column: 1 / -1;
+  }
+  .vb .vb-formcard .vb-pill {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .vb .vb-formcard h4 {
+    margin: 0;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb .vb-formcard p {
+    margin: 8px 0 4px;
+    color: var(--vb-ink);
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vb .vb-formcard .vb-examples {
+    color: #9047ff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .vb .vb-patterns {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .vb .vb-pattern {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-pattern summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .vb .vb-pattern .vb-pill {
+    min-width: 46px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    text-align: center;
+  }
+  .vb .vb-pattern summary strong {
+    color: var(--vb-ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .vb .vb-lesson > .vb-card:has(.vb-fix) {
+    border: 0;
+    background: #fdecec;
+  }
+  .vb .vb-fix s,
+  .vb .vb-fix strong {
+    display: block;
+    padding: 2px 0;
+    border-radius: 0;
+    background: none;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .vb .vb-fix s {
+    color: #e5343a;
+  }
+  .vb .vb-fix strong {
+    color: #1f9d55;
+  }
+  .vb .vb-fix p {
+    margin: 4px 0 12px;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card,
+  html[data-theme='dark'] .vb .vb-formcard {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card:has(.vb-formcards) {
+    border: 0;
+    background: none;
+  }
+  html[data-theme='dark'] .vb .vb-lesson > .vb-card:has(.vb-fix) {
+    border: 0;
+    background: var(--dk-red-soft);
+  }
+  html[data-theme='dark'] .vb .vb-reasons .vb-num,
+  html[data-theme='dark'] .vb .vb-pattern .vb-pill {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-formcard p,
+  html[data-theme='dark'] .vb .vb-pattern summary strong {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-formcard .vb-examples {
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb .vb-fix s,
+  html[data-theme='dark'] .vb .vb-fix strong {
+    background: none;
+  }
+
   /* «Практикуй · Повтори за мной» (кадр 6): режимы — чипы с прокруткой,
      упражнение — не карточка, фазы — серые сегменты, доли — серые плитки,
      формы V1–V3 — сиреневые плитки без рамки. Только вид: бит, микрофон и
