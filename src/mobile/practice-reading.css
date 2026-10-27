@@ -835,4 +835,146 @@
     border-radius: 16px;
     background: #f3edff;
   }
+
+  /* ---------- Тёмная тема ----------
+     Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
+     (генератор theme-dark.generated.css этот файл не знает). */
+  html[data-theme='dark'] .learn__main:has(.rd),
+  html[data-theme='dark'] .rd .rd-top,
+  html[data-theme='dark'] .rd .rd-toolbar {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .rd {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-back,
+  html[data-theme='dark'] .rd .rd-toolbar .rd-tb__btn:last-child {
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-crumb span,
+  html[data-theme='dark'] .rd .rd-chip,
+  html[data-theme='dark'] .rd .rd-card__title,
+  html[data-theme='dark'] .rd .rd-texthero h1,
+  html[data-theme='dark'] .rd .rd-task,
+  html[data-theme='dark'] .rd .rd-pane--text .rd-panel > .rd-label,
+  html[data-theme='dark'] .rd .rd-word__en,
+  html[data-theme='dark'] .rd .rd-word__row,
+  html[data-theme='dark'] .rd .rd-article,
+  html[data-theme='dark'] .rd .rd-ex__inst,
+  html[data-theme='dark'] .rd .rd-q__text,
+  html[data-theme='dark'] .rd .rd-opt,
+  html[data-theme='dark'] .rd .rd-mt,
+  html[data-theme='dark'] .rd .rd-ord__txt,
+  html[data-theme='dark'] .rd .rd-pop__en,
+  html[data-theme='dark'] .rd .rd-pop__row,
+  html[data-theme='dark'] .rd .rd-drawer__head h2,
+  html[data-theme='dark'] .rd .rd-expl,
+  html[data-theme='dark'] .rd .rd-card__lvl,
+  html[data-theme='dark'] .rd .rd-texthero__meta > span,
+  html[data-theme='dark'] .rd .rd-tabs button[aria-selected='true'],
+  html[data-theme='dark'] .rd .rd-seg button[aria-pressed='true'] {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-hero p,
+  html[data-theme='dark'] .rd .rd-hero ~ .rd-label,
+  html[data-theme='dark'] .rd .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip,
+  html[data-theme='dark'] .rd .rd-card__meta,
+  html[data-theme='dark'] .rd .rd-card__bar,
+  html[data-theme='dark'] .rd .rd-word__tr,
+  html[data-theme='dark'] .rd .rd-word__ex,
+  html[data-theme='dark'] .rd .rd-flag,
+  html[data-theme='dark'] .rd .rd-ex__hint,
+  html[data-theme='dark'] .rd .rd-tabs button,
+  html[data-theme='dark'] .rd .rd-seg button,
+  html[data-theme='dark'] .rd .rd-set__lbl {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-chip,
+  html[data-theme='dark'] .rd .rd-card,
+  html[data-theme='dark'] .rd .rd-word,
+  html[data-theme='dark'] .rd .rd-opt,
+  html[data-theme='dark'] .rd .rd-mt,
+  html[data-theme='dark'] .rd .rd-ord__item,
+  html[data-theme='dark'] .rd .rd-q:has(> .rd-opts--row),
+  html[data-theme='dark'] .rd .rd-pop,
+  html[data-theme='dark'] .rd .rd-drawer,
+  html[data-theme='dark'] .rd .rd-stat,
+  html[data-theme='dark'] .rd .rd-result .rd-panel {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .rd .rd-chip[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .rd .rd-card__emoji,
+  html[data-theme='dark'] .rd .rd-texthero__emoji,
+  html[data-theme='dark'] .rd .rd-card__lvl,
+  html[data-theme='dark'] .rd .rd-texthero__meta > span,
+  html[data-theme='dark'] .rd .rd-tabs button[aria-selected='true'],
+  html[data-theme='dark'] .rd .rd-seg button[aria-pressed='true'],
+  html[data-theme='dark'] .rd .rd-switch__knob {
+    background: var(--dk-raised);
+  }
+  html[data-theme='dark'] .rd .rd-tabs,
+  html[data-theme='dark'] .rd .rd-seg,
+  html[data-theme='dark'] .rd .rd-flag,
+  html[data-theme='dark'] .rd .rd-bank,
+  html[data-theme='dark'] .rd .rd-review li {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .rd .rd-card__body .rd-btn,
+  html[data-theme='dark'] .rd .rd-say,
+  html[data-theme='dark'] .rd .rd-save,
+  html[data-theme='dark'] .rd .rd-hint,
+  html[data-theme='dark'] .rd .rd-ex__type,
+  html[data-theme='dark'] .rd .rd-switch,
+  html[data-theme='dark'] .rd .rd-preview,
+  html[data-theme='dark'] .rd .rd-finish,
+  html[data-theme='dark'] .rd .rd-expl,
+  html[data-theme='dark'] .rd .rd-opt[aria-checked='true'],
+  html[data-theme='dark'] .rd .rd-mt.is-sel,
+  html[data-theme='dark'] .rd .rd-ord__num {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-opt[aria-checked='true'],
+  html[data-theme='dark'] .rd .rd-mt.is-sel {
+    border-color: var(--dk-acc);
+  }
+  html[data-theme='dark'] .rd .rd-bar {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-task {
+    background: var(--dk-yellow-soft);
+  }
+  html[data-theme='dark'] .rd .rd-pane--text .rd-panel,
+  html[data-theme='dark'] .rd .rd-ex {
+    border: 0;
+    background: transparent;
+  }
+  html[data-theme='dark'] .rd .rd-listen .rd-btn {
+    border: 2px solid var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-listen .rd-btn--ghost {
+    border-color: var(--dk-line);
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-opts--row .rd-opt {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-opts--row .rd-opt[aria-checked='true'] {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-ex__foot .rd-btn--ghost {
+    background: transparent;
+    border: 0;
+    color: var(--dk-acc-text);
+  }
 }
