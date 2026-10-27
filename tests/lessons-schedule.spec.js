@@ -42,15 +42,31 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
   await openSection(page, 'Уроки')
 
-  // Обе секции экрана: карточка идущего урока и календарь под ней.
-  await expect(page.getByText('Мой график')).toBeVisible()
-  await expect(page.getByText('Расписание')).toBeVisible()
-  await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
-  await expect(page.getByText('Урок начался')).toBeVisible()
-  await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
+  // Телефон — дизайн мобильного приложения: неделя и карточки уроков дня, без «Мой график» и счётчиков
+  // (src/mobile/lessons.css). Вход в класс — кнопкой в карточке урока сегодняшнего дня.
+  const phone = (page.viewportSize()?.width ?? 1440) <= 560
+  if (phone) {
+    await expect(page.locator('.cal--week')).toBeVisible()
+    await expect(page.getByText('Мой график')).toBeHidden()
+    await expect(page.locator('.sch-row').getByText('Test Teacher DEV')).toBeVisible()
+    await expect(page.locator('.sch-row .sch-badge--inProgress')).toBeVisible()
+    await expect(page.locator('.sch-row').getByRole('link', { name: 'Google Meet' })).toHaveAttribute('href', MEET)
+    // Стрелка листает неделю: следующая неделя без уроков сегодняшнего дня.
+    await page.getByRole('button', { name: 'Следующая неделя' }).click()
+    await expect(page.getByText('В этот день занятий нет')).toBeVisible()
+    await page.getByRole('button', { name: 'Предыдущая неделя' }).click()
+    await page.locator('.sch-row').getByRole('button', { name: 'Войти в класс' }).click()
+  } else {
+    // Обе секции экрана: карточка идущего урока и календарь под ней.
+    await expect(page.getByText('Мой график')).toBeVisible()
+    await expect(page.getByText('Расписание')).toBeVisible()
+    await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
+    await expect(page.getByText('Урок начался')).toBeVisible()
+    await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
 
-  // Идущий урок открывается прямо из карточки «Мой график», а не только из дня в календаре.
-  await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
+    // Идущий урок открывается прямо из карточки «Мой график», а не только из дня в календаре.
+    await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
+  }
   await expect(page.getByText('Живой урок')).toBeVisible()
 })

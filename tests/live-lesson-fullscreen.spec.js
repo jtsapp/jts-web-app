@@ -55,7 +55,7 @@ async function openLesson(page) {
   // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
   // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
   await openSection(page, 'Уроки')
-  await page.getByRole('button', { name: 'Присоединиться к уроку' }).first().click()
+  await page.getByRole('button', { name: /Присоединиться к уроку|Войти в класс/ }).filter({ visible: true }).first().click()
   // Первый тест на холодном next dev ждёт компиляцию урока дольше 5 с.
   await expect(page.locator('.lw-material-iframe')).toBeVisible({ timeout: 15_000 })
   // В заглушке нет моста — лоадер снимается по своему потолку ожидания.

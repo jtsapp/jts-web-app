@@ -105,7 +105,7 @@ async function openLesson(page) {
   // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
   // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
   await openSection(page, 'Уроки')
-  await page.getByRole('button', { name: 'Присоединиться к уроку' }).first().click()
+  await page.getByRole('button', { name: /Присоединиться к уроку|Войти в класс/ }).filter({ visible: true }).first().click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 }
 
