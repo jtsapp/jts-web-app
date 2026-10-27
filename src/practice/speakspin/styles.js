@@ -77,6 +77,55 @@ const PHONE_CSS = `
 .ss .timer-actions{display:grid;width:100%;gap:8px}
 .ss .timer-actions .primary{min-height:56px;padding:0 24px;font-size:16px}
 .ss .timer-actions .link,.ss .session-strip .link{font-size:14px;font-weight:700;color:#9047ff;text-decoration:none}
+
+/* «Говори» (кадр 6605:16083): запись — тёмный полноэкранный режим поверх полосы и меню, как в приложении. Класс
+   recording-view ставит сам движок на корень; липкая полоса таймера здесь лишняя — «Закончить» есть под таймером. */
+.ss.recording-view{position:fixed;inset:0;z-index:60;overflow-y:auto;padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#2b1a63 0%,#1b0e3f 100%);color:#fff}
+.ss.recording-view .steps li{color:rgba(255,255,255,.6)}
+.ss.recording-view .steps li::before{background:rgba(255,255,255,.18)}
+.ss.recording-view .steps .active{color:#fff}
+.ss.recording-view .steps .active::before{background:#c9a8ff}
+.ss.recording-view .session-strip{color:rgba(255,255,255,.75)}
+.ss.recording-view .topic-panel{padding:8px 0;background:none}
+.ss.recording-view .badge{background:rgba(255,255,255,.12);color:#e4daf8}
+.ss.recording-view .topic-panel h2{color:#fff}
+.ss.recording-view .support{background:rgba(255,255,255,.08);color:#fff}
+.ss.recording-view .support>summary,.ss.recording-view .starters,.ss.recording-view .think-points{color:#fff}
+.ss.recording-view .status-pill.live{background:rgba(255,92,92,.18);color:#ff9a9a}
+.ss.recording-view .timer-label,.ss.recording-view .timer strong{color:#fff}
+.ss.recording-view .timer small,.ss.recording-view .timer-panel .mic-status{color:rgba(255,255,255,.7)}
+.ss.recording-view .timer .track{stroke:rgba(255,255,255,.15)}
+.ss.recording-view .timer .arc{stroke:#c9a8ff}
+.ss.recording-view .timer-actions .primary{background:#fff;color:#181818}
+.ss.recording-view .timerbar{display:none!important}
+
+/* «Разбери» (кадр 6605:16147): запись и попытки — белая карточка, «следующий шаг» — сиреневая, счётчики — две белые
+   карточки с крупными числами, «дальше» и ИИ-разбор — кнопки во всю ширину. Плеер — родной <audio> движка. */
+.ss .review-grid{gap:12px}
+.ss .review-main{padding:16px;border-radius:24px;border-color:#e8e8ee}
+.ss .review-main .eyebrow{color:#22a35a}
+.ss .review-main h2{margin:4px 0 12px;font-size:20px;line-height:28px;letter-spacing:0;font-weight:800}
+.ss .recording-meta{font-size:12px;color:#5a5a66}
+.ss audio{height:44px;margin-bottom:12px}
+.ss .button-row{gap:8px}
+.ss .button-row button{min-height:36px;padding:6px 14px;border:1px solid #e8e8ee;border-radius:999px;background:#fff;font-size:13px;font-weight:700;color:#181818}
+.ss .attempts{margin-top:16px;padding-top:16px;border-color:#e8e8ee}
+.ss .attempts h3{font-size:16px;line-height:24px;font-weight:800;color:#181818}
+.ss .attempt-row{padding:12px;border-radius:16px;font-size:14px;font-weight:700}
+.ss .attempt-row[aria-pressed=true]{background:#f6f1ff;border-color:transparent;color:#181818}
+.ss .review-side{padding:16px;border:0;border-radius:24px;background:#f6f1ff}
+.ss .review-side h3{font-size:16px;line-height:24px;font-weight:800}
+.ss .review-side p{margin:8px 0;font-size:12px;line-height:16px;color:#5a5a66}
+.ss .review-side .primary{min-height:56px;margin:8px 0;font-size:16px}
+.ss .review-bottom{flex-direction:column;align-items:stretch;gap:12px;margin-top:12px}
+.ss .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ss .stats>span{padding:16px;border:1px solid #e8e8ee;border-radius:24px;background:#fff;text-align:center;font-size:13px;color:#5a5a66}
+.ss .stats b{font-size:32px;line-height:40px;font-weight:800;color:#9047ff}
+.ss .review-bottom>.primary{min-height:56px;font-size:16px}
+.ss .feedback{padding:16px;border-radius:24px}
+.ss .criteria-grid{gap:8px}
+.ss .criterion{border-radius:16px}
+.ss .criterion b{color:#9047ff}
 }
 `
 
