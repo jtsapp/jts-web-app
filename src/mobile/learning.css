@@ -1610,3 +1610,186 @@
     border-color: var(--dk-acc);
   }
 }
+
+/* ======================================================================
+   Финальный экзамен уровня (LevelExam) по дизайну приложения (27.10.2026)
+   Кадры секции «Тест юнита и финальный экзамен» 6609:24409: «Экзамен ·
+   Грамматика» 6609:24505. Только вид — вопросы, подсчёт и сдача прежние.
+   Полоса: крестик и две строки («Финальный экзамен» жирным, уровень и число
+   вопросов серым), язык справа; ниже счёт и полоса прогресса во всю ширину,
+   разделы — тонкими плашками. Вопрос — белая карточка r20 с рамкой и
+   номером в сиреневом кружке; варианты — плашки r16, выбранный —
+   сиреневый. «Завершить экзамен» — кнопка r16 у низа, пока не отвечено
+   всё, — контурная.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .ex .cp-bar {
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
+  .ex .cp-bar__place {
+    order: 2;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding-left: 4px;
+  }
+  .ex .cp-bar__place b {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .ex .cp-bar__place span {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .ex .cp-bar .lang-wrap {
+    order: 3;
+  }
+
+  /* Счёт и полоса — под полосой экрана, разделы — ряд плашек. */
+  .ex-hud {
+    top: 48px;
+    padding: 4px 16px 10px;
+  }
+  .ex-hud__count {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: #8e8e99;
+  }
+  .ex-hud__track {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .ex-hud__fill {
+    border-radius: 999px;
+    background: #9047ff;
+  }
+  .ex-chip {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid #ececf1;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .ex-page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .ex-intro__title {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+  }
+  .ex-intro__lead {
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .ex-sec__title {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    border-bottom: 0;
+  }
+
+  .ex-q,
+  .ex-card {
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .ex-q__num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .ex-q__prompt {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #181818;
+  }
+  .ex-opt {
+    min-height: 52px;
+    padding: 12px 18px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    color: #181818;
+    text-align: left;
+  }
+  .ex-opt.is-sel {
+    border-color: #9047ff;
+    background: #f6f1ff;
+    color: #181818;
+  }
+  .ex-opt.is-right {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .ex-opt.is-wrong {
+    border-color: #d9363e;
+    background: #fdebec;
+    color: #181818;
+  }
+  /* Пропуск в строке — сиреневая плашка r12 с рамкой. */
+  .ex-gap__sel {
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .ex-submit {
+    padding: 12px 0 calc(16px + env(safe-area-inset-bottom));
+  }
+  .ex-finish {
+    max-width: none;
+    border-radius: 16px;
+    box-shadow: none;
+    font-size: 16px;
+  }
+  .ex-finish:disabled {
+    border: 2px solid #d9ccff;
+    background: #fff;
+    color: #b9a3f0;
+  }
+
+  html[data-theme='dark'] .ex-q,
+  html[data-theme='dark'] .ex-card,
+  html[data-theme='dark'] .ex-opt,
+  html[data-theme='dark'] .ex-chip {
+    background: var(--dk-card);
+    border-color: var(--dk-line);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .ex .cp-bar__place b,
+  html[data-theme='dark'] .ex-q__prompt {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .ex-finish:disabled {
+    background: transparent;
+    border-color: var(--dk-acc-line);
+  }
+}
