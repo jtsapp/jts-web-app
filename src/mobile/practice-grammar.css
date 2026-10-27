@@ -1398,8 +1398,10 @@
     background: #fdecec;
     color: #181818;
   }
+  /* Генератор перекрашивает прежний пунктир (border: 0 + низ dashed) — рамку
+     задаём целиком. */
   html[data-theme='dark'] .gr-lesson.gr-lesson .gr-gap-input:not(.gr-tf-input) {
-    border-color: var(--dk-acc);
+    border: 2px solid var(--dk-acc);
     background: var(--dk-card);
     color: var(--dk-text);
   }
@@ -1571,7 +1573,7 @@
     background: var(--dk-card);
   }
   html[data-theme='dark'] .gr-lesson.gr-lesson :is(.gr-word, .gr-eword, .gr-gap-input.gr-tf-input) {
-    border-color: var(--dk-line);
+    border: 2px solid var(--dk-line);
     background: var(--dk-raised);
     color: var(--dk-text);
   }
@@ -1797,6 +1799,47 @@
     border-color: var(--dk-acc);
     background: var(--dk-acc-tint);
     color: var(--dk-text);
+  }
+
+  /* Сверка скриншотом (28.10): в кадрах 7, 9, 10, 12, 13 всё прижато влево,
+     пары — двумя колонками (вопросы слева, ответы справа), шкала «когда» —
+     строки 56 с текстом слева и маленьким значком. */
+  .gr-lesson .gr-gap-sentence,
+  .gr-lesson .gr-act__body > .gr-gap-sentence[style] {
+    text-align: left;
+  }
+  .gr-lesson .gr-error-sentence {
+    justify-content: flex-start;
+  }
+  .gr-lesson .gr-match-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .gr-lesson .gr-match-col {
+    gap: 8px;
+  }
+  .gr-lesson .gr-match-r {
+    text-align: left;
+  }
+  .gr-lesson .gr-match-asg {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .gr-lesson .gr-tzone {
+    display: flex;
+    align-items: center;
+    min-height: 56px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+    text-align: left;
+  }
+  .gr-lesson .gr-tzone__em {
+    display: inline;
+    margin: 0;
+    font-size: 18px;
+    line-height: 24px;
   }
 
   /* Говорение и диктант: фраза — белая плашка, кнопка — фиолетовый круг без
