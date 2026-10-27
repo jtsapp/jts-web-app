@@ -1058,6 +1058,60 @@
     font-size: 16px;
   }
 
+  /* ---------- Книжки · 3 · Чтение главы ----------
+     Кадр 6605:10587: навбар как у раздела — стрелка без круга, глава по центру
+     чёрным 16, книга серым 12 под ней; значок оглавления справа без плашки. */
+  .bk:has(> .bk-read) {
+    background: #f7f7f8;
+  }
+  .bk:has(> .bk-read) > .vd__head {
+    background: #f7f7f8;
+  }
+  .bk:has(> .bk-read) .vd__back {
+    border: 0;
+    background: transparent;
+    color: #181818;
+  }
+  .bk:has(> .bk-read) .vd__back svg {
+    display: none;
+  }
+  .bk:has(> .bk-read) .vd__back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .bk:has(> .bk-read) .vd__headtitle {
+    align-items: center;
+    text-align: center;
+  }
+  .bk:has(> .bk-read) .bk-head__chapter {
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .bk:has(> .bk-read) .vd__headtitle span {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .bk:has(> .bk-read) .bk-head__toc {
+    background-color: transparent;
+  }
+  .bk-read__title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .bk-read__text {
+    color: #181818;
+    font-size: 20px;
+    line-height: 32px;
+  }
+
   /* ---------- Тёмная тема ----------
      Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
      (генератор theme-dark.generated.css этот файл не знает). */
@@ -1198,5 +1252,44 @@
     background: transparent;
     border: 0;
     color: var(--dk-acc-text);
+  }
+
+  /* Книжки в тёмной. */
+  html[data-theme='dark'] .learn__main:has(.bk-ov),
+  html[data-theme='dark'] .bk:has(> .bk-read),
+  html[data-theme='dark'] .bk:has(> .bk-read) > .vd__head {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .bk .vd__back,
+  html[data-theme='dark'] .bk .vd__headtitle span,
+  html[data-theme='dark'] .bk .bk-head__chapter,
+  html[data-theme='dark'] .bk .bk-ov__title,
+  html[data-theme='dark'] .bk .bk-ov__desc,
+  html[data-theme='dark'] .bk .bk-ov__contents-head .bk-ov__label,
+  html[data-theme='dark'] .bk .bk-chapter__title,
+  html[data-theme='dark'] .bk .bk-read__text {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-ov__author,
+  html[data-theme='dark'] .bk:has(> .bk-read) .vd__headtitle span,
+  html[data-theme='dark'] .bk .bk-chapter--locked .bk-chapter__title {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .bk .bk-ov__progress,
+  html[data-theme='dark'] .bk .bk-chapter {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .bk .bk-ov__diff,
+  html[data-theme='dark'] .bk .bk-chapter__idx {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .bk .bk-chapter--locked .bk-chapter__idx {
+    background: var(--dk-chip);
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .bk .vd__back {
+    background: transparent;
   }
 }
