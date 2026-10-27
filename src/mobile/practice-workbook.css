@@ -672,11 +672,16 @@
     text-transform: uppercase;
     color: #9047ff;
   }
+  /* 20/800 кадра рассчитан на короткий вопрос; у «Ситуации» здесь целые
+     описания (сверено скриншотом шага 12) — 16/700. */
   .wb-sit__s {
-    font-size: 20px;
-    font-weight: 800;
-    line-height: 28px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
     color: #181818;
+  }
+  .wb-sit__em {
+    font-size: 24px;
   }
   .wb-rec {
     justify-content: center;
