@@ -126,6 +126,20 @@ const PHONE_CSS = `
 .ss .criteria-grid{gap:8px}
 .ss .criterion{border-radius:16px}
 .ss .criterion b{color:#9047ff}
+
+/* Вращение (кадр 6605:15968): пока крутится барабан, настройки уходят — на экране один барабан во всю высоту и
+   «Пропустить анимацию» обведённой кнопкой. Признак вращения — видимая кнопка пропуска (её показывает движок), так
+   что разметку и состояние движка не трогаем. */
+.ss:has(#jts-skip:not([hidden])) .setup-form{display:none}
+.ss:has(#jts-skip:not([hidden])) .spinner{height:420px}
+.ss #jts-skip{min-height:56px;margin-top:12px;border:2px solid #9047ff;border-radius:16px;background:#fff;color:#9047ff;font-size:16px;font-weight:700;text-decoration:none}
+
+/* Сообщения движка (кадр 6605:16223 «Подготовка прервана» и другие): оранжевая плашка со значком «i» (экспорт
+   кадра), действие — фиолетовой кнопкой во всю ширину. */
+.ss .error-box{margin:0 0 12px}
+.ss .callout.error{display:grid;grid-template-columns:24px 1fr;gap:4px 12px;padding:16px;border:0;border-radius:20px;background:#ffeedd;color:#e57a12;font-size:15px;line-height:22px;font-weight:700}
+.ss .callout.error::before{content:'';width:24px;height:24px;background:currentColor;-webkit-mask:url(/assets/m/speaking/info.svg) center/24px no-repeat;mask:url(/assets/m/speaking/info.svg) center/24px no-repeat}
+.ss .error-box button{grid-column:1/-1;min-height:56px;margin-top:8px;border:0;border-radius:16px;background:#9047ff;color:#fff;font-size:16px;font-weight:700}
 }
 `
 
