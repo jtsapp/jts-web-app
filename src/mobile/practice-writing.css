@@ -435,11 +435,11 @@
     font-size: 16px;
     line-height: 24px;
   }
-  .wr-card > .wr-howto {
+  .wr-card:has(> .wr-banner-task) > .wr-howto {
     background: var(--mw-yellow-soft);
     color: var(--mw-ink);
   }
-  .wr-card > .wr-howto b {
+  .wr-card:has(> .wr-banner-task) > .wr-howto b {
     display: block;
     margin-bottom: 4px;
     color: var(--mw-ink);
@@ -706,6 +706,80 @@
     border: 0;
     background: var(--mw-acc-soft);
     color: var(--mw-acc);
+  }
+
+  /* ---------- 6 · Шаг 4 «Уровень предложения» (задания шагов 4–6) ----------
+     Инструкция задания — мелкой строкой, а не плашкой; пункт — сиреневой
+     капителью; строка сборки — сиреневое поле; слова — белые плитки 48;
+     поле ответа — белое 56 с рамкой. */
+  .wr-card:not(:has(> .wr-banner-task)) > .wr-howto {
+    margin: 8px 0 12px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--mw-ink-2);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wr .wr-item-n {
+    color: var(--mw-acc);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .wr .wr-slotline {
+    min-height: 56px;
+    padding: 12px;
+    border: 1px solid var(--mw-track);
+    border-radius: 16px;
+    background: var(--mw-acc-soft);
+  }
+  .wr .wr-chipbank {
+    gap: 8px;
+  }
+  .wr .wr-chipbank .wr-chip,
+  .wr .wr-slotline .wr-chip {
+    min-height: 48px;
+    padding: 0 16px;
+    border: 1.5px solid var(--mw-line);
+    border-radius: 12px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .wr .wr-inp {
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1.5px solid var(--mw-line);
+    border-radius: 16px;
+    background: var(--mw-card);
+    box-shadow: none;
+    color: var(--mw-ink);
+    font-size: 16px;
+  }
+  .wr .wr-inp:focus {
+    border-color: var(--mw-acc);
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .wr .wr-card:not(:has(> .wr-banner-task)) > .wr-howto {
+    background: none;
+    color: var(--mw-ink-2);
+  }
+  html[data-theme='dark'] .wr .wr-item-n {
+    color: var(--mw-acc);
+  }
+  html[data-theme='dark'] .wr .wr-slotline {
+    border-color: var(--mw-track);
+    background: var(--mw-acc-soft);
+  }
+  html[data-theme='dark'] .wr .wr-chipbank .wr-chip,
+  html[data-theme='dark'] .wr .wr-slotline .wr-chip,
+  html[data-theme='dark'] .wr .wr-inp {
+    border-color: var(--mw-line);
+    background: var(--mw-card);
+    color: var(--mw-ink);
   }
 
   /* ---------- 9 · Блокнот ----------
@@ -1452,7 +1526,7 @@
   html[data-theme='dark'] .wr .wr-banner-task {
     background: var(--mw-acc-soft);
   }
-  html[data-theme='dark'] .wr .wr-card > .wr-howto {
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-banner-task) > .wr-howto {
     background: var(--mw-yellow-soft);
     color: var(--mw-ink);
   }
@@ -1461,7 +1535,7 @@
     background: none;
     box-shadow: none;
   }
-  html[data-theme='dark'] .wr .wr-card > .wr-howto b {
+  html[data-theme='dark'] .wr .wr-card:has(> .wr-banner-task) > .wr-howto b {
     color: var(--mw-ink);
   }
   html[data-theme='dark'] .wr .wr-footnav .wr-ghost {
