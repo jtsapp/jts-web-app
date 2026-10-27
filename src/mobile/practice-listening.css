@@ -697,6 +697,163 @@
   }
 }
 
+/* ---------- «Слушай слово и находи его на картинке» (6605:18380): ?screen=words ----------
+   Каталог (кадр 1): строка 52 со стрелкой, названием и переключателем
+   языка перевода (RU/KZ — пилюлей #efe7ff на месте «RU» макета), подпись
+   16/500 серым, темы — чипами в одну прокручиваемую строку, сцены — двумя
+   колонками белых карточек r20 с обложкой r16 и кнопкой «Начать» #efe7ff.
+   Обложки у нас настоящие картинки сцен, в макете — пастельные плашки. */
+@media (max-width: 560px) {
+  .learn:has(.wd) .mtop,
+  :root:has(.wd) .learn__bell {
+    display: none;
+  }
+  .learn__main:has(.wd) {
+    background: #f8f8f8;
+  }
+  .wd {
+    --wd-purple: #9047ff;
+    --wd-purple-dark: #9047ff;
+    --wd-line: #e8e8ee;
+    --wd-soft: #efe7ff;
+    --wd-ink-2: #181818;
+    --wd-ink-3: #8e8e99;
+    padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .wd-top {
+    position: relative;
+    height: 52px;
+    margin: 0 -12px 8px;
+    gap: 4px;
+  }
+  .wd-back,
+  .wd-back:hover {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 12px;
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+    filter: none;
+  }
+  .wd-crumb {
+    position: absolute;
+    left: 56px;
+    right: 96px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .wd-crumb b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wd-crumb span {
+    display: none;
+  }
+  .wd-lang {
+    margin-left: auto;
+    gap: 2px;
+    padding: 2px;
+    background: #efe7ff;
+  }
+  .wd-lang__btn {
+    min-height: 0;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wd-lang__btn[aria-pressed='true'] {
+    color: #9047ff;
+    box-shadow: none;
+  }
+  .wd-hero {
+    margin: 0 0 16px;
+  }
+  .wd-hero h1,
+  .wd-label {
+    display: none;
+  }
+  .wd-hero p {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+  .wd-chips {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .wd-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .wd-chip {
+    flex: none;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .wd-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .wd-card {
+    padding: 8px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+  }
+  .wd-card__cover {
+    height: 80px;
+    aspect-ratio: auto;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .wd-card__body {
+    gap: 4px;
+    padding: 12px 4px 0;
+  }
+  .wd-card__title {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wd-card__meta {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wd-card__bar {
+    gap: 8px;
+    margin: 8px 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .wd-bar {
+    height: 6px;
+  }
+  .wd-card__body .wd-btn--primary {
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
+    background: #efe7ff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+}
+
 /* ---------- Тёмная тема тренажёра: токены брендбука (theme-dark.css) ----------
    Через .lt — сгенерированный слой (theme-dark.generated.css) подключён позже
    с той же специфичностью и иначе перекрасил бы всё обратно. */
@@ -846,5 +1003,43 @@
   }
   html[data-theme='dark'] .learn__main:has(.lc) {
     background: var(--dk-page);
+  }
+}
+
+/* ---------- Тёмная «Слова в картинках» (каталог) ---------- */
+@media (max-width: 560px) {
+  html[data-theme='dark'] .learn__main:has(.wd) {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .wd .wd-back {
+    background: url(/assets/m/practice/listening/back.svg) center / 24px 24px no-repeat;
+    color: transparent;
+    filter: invert(1);
+  }
+  html[data-theme='dark'] .wd .wd-crumb b,
+  html[data-theme='dark'] .wd .wd-card__title,
+  html[data-theme='dark'] .wd .wd-chip {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .wd .wd-hero p {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .wd .wd-chip,
+  html[data-theme='dark'] .wd .wd-card {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .wd .wd-chip[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .wd .wd-lang,
+  html[data-theme='dark'] .wd .wd-card__body .wd-btn--primary {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .wd .wd-bar {
+    background: var(--dk-raised);
   }
 }
