@@ -1971,3 +1971,98 @@
     border-color: var(--dk-red-line);
   }
 }
+
+/* ======================================================================
+   Итог урока «Результат · отлично» по дизайну приложения (6609:24259):
+   экран — фиолетовый градиент с лучами и маскотом на платформе (Decor
+   кадра — экспорт, /assets/m/learning/lesson-win-bg.webp), поэтому своя
+   картинка карточки скрыта. Заголовок и подпись белым, процент — крупно
+   белым, «верных / неверных» — стеклянная плашка, кнопки — белая и
+   полупрозрачная. Только удачный итог: у провала (.le-card--fail) свой вид.
+   ====================================================================== */
+@media (max-width: 560px) {
+  .le-over--ok:not(:has(.le-card--fail)) {
+    background: #4a1bb9 url(/assets/m/learning/lesson-win-bg.webp) center top / 100% auto no-repeat;
+  }
+  .learn:has(.le-over--ok:not(:has(.le-card--fail))) {
+    background: #4a1bb9;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-art {
+    display: none;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-card {
+    padding-top: 424px;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-info {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-head {
+    order: 1;
+    text-align: center;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-title {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-sub {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-pct {
+    order: 2;
+    align-self: stretch;
+    padding: 12px 20px 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 48px;
+    line-height: 56px;
+    font-weight: 800;
+    text-align: center;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-bottom {
+    order: 3;
+    margin-top: -16px;
+  }
+  /* Нижняя половина стеклянной плашки — «верных / неверных». */
+  .le-over--ok:not(:has(.le-card--fail)) .le-stats {
+    padding: 4px 16px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 0;
+    border-radius: 0 0 24px 24px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-stat {
+    background: transparent;
+    box-shadow: none;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-stat > span {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-stat--right .le-stat__row {
+    color: #7ef0a8;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-stat--wrong .le-stat__row {
+    color: #ffb4a8;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-acts .le-btn {
+    min-height: 56px;
+    border-radius: 16px;
+    background: #fff;
+    color: #2a1580;
+    box-shadow: none;
+  }
+  .le-over--ok:not(:has(.le-card--fail)) .le-acts .le-btn--ghost {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+  }
+}
