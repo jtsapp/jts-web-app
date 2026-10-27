@@ -564,4 +564,232 @@
     background: var(--dk-acc-tint);
     color: var(--dk-muted);
   }
+
+  /* ---------- Выбор и аудирование: варианты (кадры 6605:15028 «4», 6605:15256 «7») ----------
+     Варианты — столбиком во всю ширину, белые карточки 56 r16 с рамкой 2
+     #e8e8ee, 16/600 слева; верный — зелёная плашка, ошибка — красная. */
+  .wb-opts {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wb-opt {
+    width: 100%;
+    min-height: 56px;
+    padding: 14px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: left;
+    color: #181818;
+    box-shadow: none;
+  }
+  .wb-opt.is-ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .wb-opt.is-no {
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #e5484d;
+  }
+
+  /* Плеер: круг 72 фиолетовый с ореолом, «Медленно» — лавандовая пилюля. */
+  .wb-player {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .wb-play {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #9047ff;
+    box-shadow: 0 0 0 12px #efe7ff;
+  }
+  .wb-slow {
+    height: 28px;
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+
+  /* ---------- Соедини (кадр 6605:15176 «6») ----------
+     Карточки пары — белые r16 с рамкой 2, 12–14/600; открытая — фиолетовая
+     рамка на лавандовом, найденная пара — зелёная плашка. */
+  .wb-mcard {
+    min-height: 64px;
+    padding: 12px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    color: #181818;
+    box-shadow: none;
+  }
+  .wb-mcard.is-up {
+    border-color: #9047ff;
+    background: #efe7ff;
+    box-shadow: none;
+  }
+  .wb-mcard.is-got {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+
+  /* ---------- Говорение (кадр 6605:15330 «8») ----------
+     Вопрос — лавандовая карточка r20; запись — белая карточка с фиолетовым
+     кругом микрофона; пример ответа — жёлтая плашка r16. */
+  .wb-sit {
+    padding: 16px;
+    border-radius: 20px;
+    background: #efe7ff;
+  }
+  .wb-sit__ask {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #9047ff;
+  }
+  .wb-sit__s {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  .wb-rec {
+    justify-content: center;
+    padding: 20px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .wb-recbtn {
+    border-radius: 999px;
+    background: #9047ff;
+    box-shadow: none;
+  }
+  .wb-model {
+    border-radius: 16px;
+    background: #fff4d6;
+    color: #181818;
+  }
+
+  /* ---------- Оглавление урока (кадр 6605:15462 «10 · Меню урока») ----------
+     Лист r24 сверху; вкладки — сегменты на серой плашке; шаги — строки
+     столбиком (белые r16 с рамкой), пройденные — с зелёной меткой. */
+  .wb-sheet {
+    border-radius: 24px 24px 0 0;
+  }
+  .wb-sheet__tabs {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .wb-sheet__tab {
+    flex: 1;
+    height: 36px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .wb-sheet__tab.is-on {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 1px 3px rgba(24, 24, 24, 0.12);
+  }
+  .wb-steps {
+    grid-template-columns: 1fr;
+  }
+  .wb-step {
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .wb-step.is-done {
+    border-color: #e8e8ee;
+    background: #fff;
+  }
+
+  /* ---------- Урок пройден (кадр 6605:15556 «11») ----------
+     Итог — лавандовая карточка r24, крупное число/значок и заголовок
+     24/800; блоки ниже — белые карточки r16. */
+  .wb-done {
+    padding: 24px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .wb-done h2 {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+  .wb-done p {
+    font-size: 14px;
+    color: #5a5a66;
+  }
+  .wb-mistakes {
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  /* Тёмная: варианты, пары, говорение, оглавление, итог. */
+  html[data-theme='dark'] body :is(.wb-opt, .wb-mcard, .wb-rec, .wb-step, .wb-mistakes) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-mcard.is-up,
+  html[data-theme='dark'] body :is(.wb-sit, .wb-done, .wb-slow) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body :is(.wb-sit__s, .wb-done h2) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body :is(.wb-opt.is-ok, .wb-mcard.is-got) {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] body .wb-opt.is-no {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] body .wb-play {
+    box-shadow: 0 0 0 12px var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-sheet__tabs {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-sheet__tab {
+    background: transparent;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] body .wb-sheet__tab.is-on {
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-model {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-text);
+  }
 }
