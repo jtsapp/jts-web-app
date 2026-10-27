@@ -5,17 +5,21 @@
 // предлагается, только когда есть что повторять (промах или вторая попытка).
 
 import { useEffect, useRef, useState } from 'react'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 export default function LcResult({ snap, data, t, onNewSet, onRetry }) {
   const { score, total, run, retryCount } = snap
   const [review, setReview] = useState(false)
+  const phone = usePhoneWidth()
   const titleRef = useRef(null)
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true })
   }, [])
   return (
     <section className="lc-result" aria-labelledby="lc-result-title">
-      <div className="lc-result__circle">
+      {/* Телефон: кольцо макета приложения с дугой доли — её длину CSS берёт из
+          --lc-done (0–1). На компьютере кольца нет, и атрибута тоже. */}
+      <div className="lc-result__circle" style={phone && total ? { '--lc-done': (score.first + score.second) / total } : undefined}>
         {score.first + score.second}/{total}
       </div>
       <h2 id="lc-result-title" tabIndex={-1} ref={titleRef}>

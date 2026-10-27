@@ -1627,14 +1627,26 @@
   .lc-result {
     padding: 8px 0 0;
   }
+  /* Дуга доли — conic-gradient по --lc-done (ставит LcResult на телефоне),
+     середина вырезана маской: кольцо 16 по краю круга 176. */
   .lc-result__circle {
+    position: relative;
     width: 176px;
     height: 176px;
     margin: 0 auto 16px;
-    border: 16px solid #efe7ff;
+    border: 0;
     font-size: 40px;
     font-weight: 800;
     color: #181818;
+  }
+  .lc-result__circle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(#9047ff calc(var(--lc-done, 0) * 360deg), #efe7ff 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 15px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 15px));
   }
   .lc-result h2 {
     margin-bottom: 8px;
@@ -1687,7 +1699,7 @@
     background: transparent;
     color: #9047ff;
   }
-  .lc-result__actions .lc-quiet {
+  .lc .lc-result__actions .lc-quiet {
     height: 48px;
     font-size: 16px;
     font-weight: 700;
@@ -1937,8 +1949,11 @@
 
 /* ---------- Тёмная: итоги «Слушай и выбирай» ---------- */
 @media (max-width: 560px) {
+  html[data-theme='dark'] .lc .lc-result__circle::before {
+    background: conic-gradient(var(--dk-acc) calc(var(--lc-done, 0) * 360deg), var(--dk-acc-soft) 0);
+  }
   html[data-theme='dark'] .lc .lc-result__circle {
-    border-color: var(--dk-acc-soft);
+    border: 0;
     color: var(--dk-text);
   }
   html[data-theme='dark'] .lc .lc-stats div {
