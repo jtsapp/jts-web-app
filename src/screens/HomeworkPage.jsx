@@ -188,12 +188,12 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
   // Шаги про ответ есть не всегда: у сданной и проверенной работы ни загрузки
   // файла, ни кнопки отправки нет — тур такие шаги пропускает сам.
   const tourSteps = [
-    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text'), art: tourMascot('dexter-book', 220), ...TOUR_COACH_CARD },
+    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
     // На телефоне список спрятан за кнопкой — показываем её; на десктопе кнопки
     // нет (display: none), и тур шаг пропускает.
-    { selector: '.hw__back', title: t('tour.hw.back.title'), text: t('tour.hw.back.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD },
-    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text'), art: tourMascot('dexter-laptop', 250), ...TOUR_COACH_CARD },
-    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text'), art: tourMascot('sport-fly', 250), ...TOUR_COACH_CARD },
+    { selector: '.hw__back', title: t('tour.hw.back.title'), text: t('tour.hw.back.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
+    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text'), art: tourMascot('dexter-laptop'), ...TOUR_COACH_CARD },
+    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
   ]
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourIntro = {

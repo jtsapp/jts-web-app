@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { SatIcon } from '../../components/icons.jsx'
+import { NAV_ICONS } from '../../lib/navSections.js'
 
 // Последняя подсказка тура «Главной» (макет «Первый заход», «подсказка 3 из 3»):
 // разделы меню с одной строкой о каждом. Список — не свой, а тот, что сейчас в
 // сайдбаре (data-nav у пунктов): у аккаунта IELTS, демо и тьютор-онли разделы
 // разные, и тур не должен рассказывать про пункт, которого у ученика нет.
-// Иконки — экспорт макета (Material Symbols); у SAT в макете строки нет, его
-// иконка — та же, что в меню.
+// Иконки — экспорт макета (Material Symbols); у пунктов, которых в макете нет
+// (SAT и всё, что появилось в меню позже: группа, Feedback, уведомления,
+// договоры…), — значок самого меню маской в цвет плашки: раньше у них стоял
+// значок SAT.
 const ICONS = {
   learning: '/assets/first-login/map.svg',
   practice: '/assets/first-login/auto_stories.svg',
@@ -38,7 +41,13 @@ export default function TourSections() {
       {keys.map((key) => (
         <li className="hm-tour-sections__item" key={key}>
           <span className="hm-tour-sections__plate" aria-hidden="true">
-            {ICONS[key] ? <img src={ICONS[key]} alt="" width="24" height="24" /> : <SatIcon size={24} />}
+            {ICONS[key] ? (
+              <img src={ICONS[key]} alt="" width="24" height="24" />
+            ) : NAV_ICONS[key] ? (
+              <i className="hm-tour-sections__mask" style={{ '--tour-ico': `url(/assets/home-v2/ico/${NAV_ICONS[key]}.svg)` }} />
+            ) : (
+              <SatIcon size={24} />
+            )}
           </span>
           <span className="hm-tour-sections__text">
             <b>{t(`nav.${key}`)}</b>

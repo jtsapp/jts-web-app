@@ -620,13 +620,13 @@ export default function PracticePage({
   const tour = useScreenTour(teacher ? null : tourKey)
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourSteps = [
-    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD },
+    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
-    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: tourMascot('aizere-thumbs', 216), ...TOUR_COACH_CARD },
-    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: tourMascot('artist-paint', 236), ...TOUR_COACH_CARD },
-    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: tourMascot('aizere-book', 210), ...TOUR_COACH_CARD },
-    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: tourMascot('sport-fly', 250), ...TOUR_COACH_CARD },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: tourMascot('dexter-book', 220), ...TOUR_COACH_CARD },
+    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
+    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
+    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: tourMascot('aizere-book'), ...TOUR_COACH_CARD },
+    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
   const tourIntro = {
     title: t('tour.intro.title'),

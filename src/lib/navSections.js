@@ -44,6 +44,8 @@ const NAV_FULL = [
 // Тьютор-онли (прод, main): в меню остаются только разделы из TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) —
 // остальные скрыты от обычных пользователей (доступны диплинком ?screen=… для отладки).
 const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
+// Значок пункта по ключу — для списков разделов вне меню (тур «Главной»).
+export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM, ...NAV_FULL].map((i) => [i.key, i.ico]))
 
 // Разделы преподавателя. Остальное в списке — его собственное обучение, которого у него нет: Тьютор, IELTS и
 // Словарь ученические (design-spec §4.2).

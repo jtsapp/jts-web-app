@@ -473,9 +473,9 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const mineWords = mine?.words || []
 
   const tourSteps = [
-    { selector: '#vsec-levels', title: t('tour.vocab.levels.title'), text: t('tour.vocab.levels.text'), art: tourMascot('dexter-book', 220), ...TOUR_COACH_CARD },
-    { selector: '#vsec-fields', title: t('tour.vocab.fields.title'), text: t('tour.vocab.fields.text'), art: tourMascot('artist-paint', 236), ...TOUR_COACH_CARD },
-    { selector: '#vsec-mine', title: t('tour.vocab.mine.title'), text: t('tour.vocab.mine.text'), art: tourMascot('aizere-thumbs', 216), ...TOUR_COACH_CARD },
+    { selector: '#vsec-levels', title: t('tour.vocab.levels.title'), text: t('tour.vocab.levels.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
+    { selector: '#vsec-fields', title: t('tour.vocab.fields.title'), text: t('tour.vocab.fields.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
+    { selector: '#vsec-mine', title: t('tour.vocab.mine.title'), text: t('tour.vocab.mine.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
   ]
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourIntro = {

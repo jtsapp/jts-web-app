@@ -58,10 +58,12 @@ export default function TutorDashboardPage({
   // элемент по селектору, и подсветка несуществующего .t-scenarios сломала бы
   // тур на первом же ассистенте.
   const tourSteps = [
-    { selector: '.t-dash__orb', title: t('tour.mic.title'), text: t('tour.mic.text'), art: tourMascot('aizere-cheer', 236), ...TOUR_COACH_CARD },
+    // Лицо, а не сама кнопка: картинка квадратная и вылезает из кнопки сверху и снизу — прожектор по кнопке резал
+    // её пополам, а низ уходил под карточку. Вместе с «Начать разговор»: лицо заходит на неё, и рамка резала кнопку.
+    { selector: ['.t-dash__orb .t-dash__face', '.t-dash__talk'], title: t('tour.mic.title'), text: t('tour.mic.text'), art: tourMascot('aizere-cheer'), ...TOUR_COACH_CARD },
     ...(isAssistant
       ? []
-      : [{ selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text'), art: tourMascot('artist-paint', 236), ...TOUR_COACH_CARD }]),
+      : [{ selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD }]),
   ]
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   // Тьюторы Speaking Buddy и есть маскоты — сверху Айзере и Декстер.

@@ -121,10 +121,10 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const tourSteps = [
     // Одна вкладка — рассказывать про «две» не о чем: Self Study ученику не открыт.
     ...(showSelf
-      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD }]
+      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD }]
       : []),
-    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text'), art: tourMascot('dexter-laptop', 250), ...TOUR_COACH_CARD },
-    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text'), art: tourMascot('artist-stand', 220), ...TOUR_COACH_CARD },
+    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text'), art: tourMascot('dexter-laptop'), ...TOUR_COACH_CARD },
+    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text'), art: tourMascot('artist-stand'), ...TOUR_COACH_CARD },
   ]
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourIntro = {

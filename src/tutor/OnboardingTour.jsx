@@ -10,8 +10,16 @@ const INTRO_SLOTS = ['top1', 'top2', 'left', 'right']
 
 // Вид coach на экранах без своего макета (все, кроме «Главной»): маскоты — целые
 // фигуры из public/assets/mascots. Шаг: фигура головой от верха карточки, w — её
-// ширина; карточка и колонка текста одного размера на всех экранах.
-export const tourMascot = (name, w) => ({ src: `/assets/mascots/${name}.webp`, w, top: 20, right: -12 })
+// ширина; карточка и колонка текста одного размера на всех экранах. Шире 212
+// фигура упирается в конец строки текста (560 − 24 − 320 + 12 − зазор) — потолок
+// держит сам помощник.
+const TOUR_ART_MAX_W = 212
+export const tourMascot = (name, w = TOUR_ART_MAX_W) => ({
+  src: `/assets/mascots/${name}.webp`,
+  w: Math.min(w, TOUR_ART_MAX_W),
+  top: 20,
+  right: -12,
+})
 export const TOUR_COACH_CARD = { width: 560, textWidth: 320 }
 // Приветствие: только пара сверху, прямые позы лицом к ученику — наклонённые и
 // вверх ногами рядом с ровной карточкой смотрелись криво, а боковых владелец
@@ -97,6 +105,18 @@ function placePopover(rect, popW, popH) {
 // Раскладка карточки «Главной» (макет «Первый заход и подсказки»): под блоком
 // карточка встаёт по его левому краю, а не по центру; у блока справа — слева от
 // него вровень с верхом; у прижатого к левому краю (сайдбар) — справа.
+// Встаёт ли карточка сбоку от цели: справа от прижатой к левому краю (сайдбар) или
+// слева от прижатой к правому. Одно правило на раскладку и на обрезку прожектора —
+// иначе цель «узкая» по одному и «без места сбоку» по другому, и карточка ложилась
+// на подсветку («Дорога по дням» «Плана»).
+function coachBeside(rect, popW) {
+  const vw = window.innerWidth
+  const right = rect.left + rect.width
+  if (right < vw * 0.3 && vw - right > popW + 28 + 16) return 'right'
+  if (rect.left > vw * 0.55 && rect.left > popW + 16 * 2) return 'left'
+  return null
+}
+
 function placeCoach(rect, popW, popH) {
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -104,11 +124,12 @@ function placeCoach(rect, popW, popH) {
   if (!rect) return { left: (vw - popW) / 2, top: Math.max(m, (vh - popH) / 2) }
   const right = rect.left + rect.width
   const bottom = rect.top + rect.height
-  if (right < vw * 0.3 && vw - right > popW + 28 + m) {
+  const side = coachBeside(rect, popW)
+  if (side === 'right') {
     // 40 от верха самого элемента: rect — уже прожектор с полем 8 вокруг.
     return { left: right + 28, top: clamp(rect.top + 48, m, vh - popH - m) }
   }
-  if (rect.left > vw * 0.55 && rect.left > popW + m * 2) {
+  if (side === 'left') {
     return { left: rect.left - popW - m, top: clamp(rect.top, m, vh - popH - m) }
   }
   const left = clamp(rect.left, m, vw - popW - m)
@@ -294,8 +315,15 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
     })
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
-    // Несколько целей — к началу первой, чтобы рамка влезла целиком.
-    els[0]?.scrollIntoView({ block: els.length > 1 ? 'start' : 'center', behavior: 'auto' })
+    // Несколько целей — к началу первой, чтобы рамка влезла целиком, и с отступом сверху: вплотную к краю верх
+    // рамки уходил за экран (лицо тьютора с «Начать разговор» на телефоне).
+    const first = els[0]
+    if (first) {
+      const prevMargin = first.style.scrollMarginTop
+      if (els.length > 1) first.style.scrollMarginTop = '24px'
+      first.scrollIntoView({ block: els.length > 1 ? 'start' : 'center', behavior: 'auto' })
+      first.style.scrollMarginTop = prevMargin
+    }
     const prevOverflow = document.documentElement.style.overflow
     document.documentElement.style.overflow = 'hidden'
     // Меряем цель не один раз, а следим за ней. Замер на монтировании врёт,
@@ -344,6 +372,32 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [phase])
+
+  // Цель вместе с карточкой под ней помещается в экран, но scrollIntoView поставил её по центру, и карточке не
+  // хватило места ни под ней, ни над ней: докручиваем так, чтобы под целью встала карточка. Иначе прожектор пришлось
+  // бы резать посреди содержимого (подпись «День 1» на дороге «Плана»). Цель выше экрана по-прежнему режется при
+  // раскладке ниже; там, где карточка встаёт сбоку, крутить незачем.
+  useEffect(() => {
+    if (!rect || !popSize || !selector) return
+    const vh = window.innerHeight
+    const pad = coach ? 8 : 10
+    const room = popSize.h + 12 + 16
+    const hole = { left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }
+    if (coach && window.innerWidth > 560 && coachBeside(hole, popSize.w)) return
+    if (vh - (hole.top + hole.height) >= room || hole.top >= room) return
+    if (hole.height + room + 16 > vh) return
+    // Нижняя из целей: у шага бывает несколько, рамка — общая.
+    const el = targetsOf(selector).reduce(
+      (a, b) => (!a || b.getBoundingClientRect().bottom > a.getBoundingClientRect().bottom ? b : a),
+      null,
+    )
+    if (!el) return
+    const prev = el.style.scrollMarginBottom
+    el.style.scrollMarginBottom = `${room + pad}px`
+    el.scrollIntoView({ block: 'end', behavior: 'auto' })
+    el.style.scrollMarginBottom = prev
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectorKey и есть selector, только стабильный
+  }, [rect, popSize, selectorKey, coach])
 
   const blocked = step?.canNext === false
   const next = () => {
@@ -430,17 +484,24 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
       }
     : null
   // У карточки «Главной» на десктопе высокие цели (сайдбар, колонка расписания) стоят сбоку от карточки, и резать
-  // прожектор незачем — он обрезал сайдбар до верхних двух пунктов. Широкой цели (карта уровней «Повторения»)
-  // сбоку места нет — её режем, как в прежнем виде, иначе карточка ложится на подсветку.
-  const sideFits = coach && window.innerWidth > 560 && hole && hole.width < window.innerWidth * 0.45
+  // прожектор незачем — он обрезал сайдбар до верхних двух пунктов. Цели, рядом с которой карточке не встать
+  // (карта уровней «Повторения», дорога «Плана»), режем, как в прежнем виде, иначе карточка ложится на подсветку.
+  const sideFits = coach && window.innerWidth > 560 && hole && popSize && coachBeside(hole, popSize.w)
   if (hole && popSize && !sideFits) {
     // Элемент выше, чем остаток экрана под карточку (на телефоне это почти любая
     // секция ленты): раньше в таком случае поповер прибивался к низу и ложился
     // прямо на подсветку. Обрезаем прожектор сверху экрана и оставляем внизу
     // полосу под карточку — подсвечено начало элемента, а не «всё сразу».
-    const maxH = window.innerHeight - popSize.h - 16 * 3
+    const vh = window.innerHeight
+    const maxH = vh - popSize.h - 16 * 3
     if (hole.height > maxH) {
       hole = { ...hole, top: Math.max(16, hole.top), height: Math.max(80, maxH) }
+    }
+    // Элемент ниже экрана не вышел, но стоит так, что карточке нет места ни под ним, ни над ним (дорога «Плана»
+    // посреди экрана): режем низ прожектора под карточку — иначе её прибивало к низу экрана поверх подсветки.
+    const room = popSize.h + 12 + 16
+    if (vh - (hole.top + hole.height) < room && hole.top < room) {
+      hole = { ...hole, height: Math.max(80, vh - room - hole.top) }
     }
   }
   const pos = popSize ? (coach ? placeCoach : placePopover)(hole, popSize.w, popSize.h) : { left: 0, top: 0 }

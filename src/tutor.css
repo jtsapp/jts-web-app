@@ -3940,6 +3940,10 @@
 .t-tour__acts.is-last {
   justify-content: flex-end;
 }
+/* С маскотом справа «Готово» встаёт к краю колонки текста — прямо на ноги фигуры. */
+.t-tour__pop--art .t-tour__acts.is-last {
+  justify-content: flex-start;
+}
 .t-tour--coach .t-tour__ok {
   height: 40px;
   padding: 0 24px;

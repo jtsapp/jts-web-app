@@ -94,9 +94,10 @@ export default function LearningPage({
     // подписью из макета убран, и подсветка шапки — это светящаяся полоса без
     // содержимого. Остров выше экрана, поэтому прожектор его обрежет (см.
     // OnboardingTour), зато видно, о чём речь.
-    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text'), art: tourMascot('sport-wave', 236), ...TOUR_COACH_CARD },
-    { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text'), art: tourMascot('aizere-cheer', 236), ...TOUR_COACH_CARD },
-    { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text'), art: tourMascot('artist-coffee', 170), ...TOUR_COACH_CARD },
+    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
+    // С подписью «Уровень …»: она стоит под кружком, вне его бокса, и на телефоне уходила под карточку.
+    { selector: ['.lp-node.is-current', '.lp-node.is-current .lp-node__label'], title: t('tour.learn.current.title'), text: t('tour.learn.current.text'), art: tourMascot('aizere-cheer'), ...TOUR_COACH_CARD },
+    { selector: ['.lp-node.is-locked', '.lp-node.is-locked .lp-node__label'], title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text'), art: tourMascot('artist-coffee', 170), ...TOUR_COACH_CARD },
   ]
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourIntro = {
