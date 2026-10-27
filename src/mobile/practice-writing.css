@@ -1789,6 +1789,60 @@
     padding: 0 12px;
     border-radius: 16px;
   }
+  /* Итог набора (кадр 11): заголовок и счёт по центру сиреневой плашки,
+     кнопки столбиком во всю ширину — первая заливкой, остальные контуром. */
+  .vb :has(> .vb-finish) {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+  .vb :has(> .vb-finish) > h3 {
+    margin: 0;
+    padding: 24px 16px 0;
+    border-radius: 24px 24px 0 0;
+    background: #efe7ff;
+    color: var(--vb-ink);
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .vb .vb-finish {
+    margin: 0;
+    padding: 4px 16px 0;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 40px;
+    line-height: 48px;
+  }
+  .vb .vb-finish + .vb-muted {
+    margin: 0 0 12px;
+    padding: 0 16px 24px;
+    border-radius: 0 0 24px 24px;
+    background: #efe7ff;
+    color: #5a5a66;
+    font-size: 14px;
+  }
+  .vb :has(> .vb-finish) > .vb-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .vb :has(> .vb-finish) > .vb-row .vb-btn {
+    justify-content: center;
+    min-height: 56px;
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .vb :has(> .vb-finish) > h3,
+  html[data-theme='dark'] .vb .vb-finish,
+  html[data-theme='dark'] .vb .vb-finish + .vb-muted {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb :has(> .vb-finish) > h3 {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-finish {
+    color: var(--dk-acc-text);
+  }
   html[data-theme='dark'] .vb .vb-prompt {
     border: 0;
     background: var(--dk-acc-soft);
