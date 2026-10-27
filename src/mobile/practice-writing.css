@@ -308,6 +308,31 @@
     border-color: var(--wr-green);
   }
 
+  /* ---------- 3–8 · Тренажёр жанра: общий вид ----------
+     Кадры шагов не сверены (мост Figma отвалился 27.10 ~22:20): здесь только
+     язык уже сверенных экранов — карточка с рамкой без тени, пилюли регистра
+     и объёма теми же цветами, что на карточке жанра. */
+  .wr .wr-card {
+    border: 1px solid var(--mw-line);
+    border-radius: 20px;
+    background: var(--mw-card);
+    box-shadow: none;
+    padding: 16px;
+  }
+  .wr-taskhead .wr-sec-title {
+    color: var(--mw-ink);
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .wr-taskhead .wr-pill:not(.wr-pill--coins) {
+    background: var(--mw-acc-soft);
+    color: var(--mw-acc);
+  }
+  .wr-taskhead .wr-pill--score {
+    background: var(--mw-orange-soft);
+    color: var(--mw-orange);
+  }
+
   /* ---------- тёмная тема ---------- */
   html[data-theme='dark'] .wr {
     --mw-ink: var(--dk-text);
