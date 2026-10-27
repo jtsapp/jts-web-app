@@ -624,12 +624,12 @@ export default function PracticePage({
   const coachCard = { width: 560, textWidth: 320 }
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: mascot('sport-wave', 236), ...coachCard },
-    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: mascot('grad-cool', 200), ...coachCard },
-    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: mascot('pink-thumbs', 216), ...coachCard },
+    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: mascot('dexter-cool', 200), ...coachCard },
+    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: mascot('aizere-thumbs', 216), ...coachCard },
     { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: mascot('artist-paint', 236), ...coachCard },
-    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: mascot('pink-book', 210), ...coachCard },
+    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: mascot('aizere-book', 210), ...coachCard },
     { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: mascot('sport-fly', 250), ...coachCard },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: mascot('grad-book', 220), ...coachCard },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: mascot('dexter-book', 220), ...coachCard },
   ]
   const tourIntro = {
     title: t('tour.practice.intro.title'),
@@ -637,14 +637,15 @@ export default function PracticePage({
     text: t('tour.practice.intro.text'),
     cta: t('tour.home.intro.cta'),
     skip: t('tour.home.intro.skip'),
-    // Позы — прямые, лицом к ученику: наклонённые и вверх ногами рядом с ровной
-    // карточкой смотрелись криво. Сбоку из-за карточки видна только внешняя
-    // половина фигуры — жест должен быть на ней (флаг слева, рука справа).
+    // Сверху — прямые позы лицом к ученику: наклонённые и вверх ногами рядом с
+    // ровной карточкой смотрелись криво. По бокам — Айзере слева и Декстер справа
+    // (владелец, 28.10.2026). Сбоку из-за карточки видна только внешняя половина
+    // фигуры: у Айзере это книга с флагом, у Декстера — кулак и ноутбук.
     art: {
       top1: '/assets/mascots/artist-stand.webp',
       top2: '/assets/mascots/sport-stand.webp',
-      left: '/assets/mascots/grad-book.webp',
-      right: '/assets/mascots/pink-book.webp',
+      left: '/assets/mascots/aizere-book.webp',
+      right: '/assets/mascots/dexter-laptop.webp',
     },
   }
   // Перед стартом возвращаем обзор «Аудирования»: под развёрнутым разделом или
