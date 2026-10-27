@@ -41,7 +41,7 @@
   }
 
   /* Вкладки — сегмент (Segmented 370×48 r16, сегмент 40 r12, Bold 16). */
-  .ls__tabs {
+  .ls > .ls__tabs {
     display: flex;
     flex-wrap: nowrap;
     gap: 4px;
@@ -50,7 +50,7 @@
     border-radius: 16px;
     background: #ececf2;
   }
-  .ls-tab {
+  .ls > .ls__tabs .ls-tab {
     flex: 1 1 0;
     min-width: 0;
     height: 40px;
@@ -67,13 +67,13 @@
     text-overflow: ellipsis;
     box-shadow: none;
   }
-  .ls-tab--active {
+  .ls > .ls__tabs .ls-tab--active {
     background: #fff;
     color: #181818;
   }
   /* У ученика с Self Study три вкладки (+ «Отчёты»): макетный кегль 16
      «Самостоятельно» в треть сегмента не влезает. */
-  .ls__tabs:has(.ls-tab:nth-child(3)) .ls-tab {
+  .ls > .ls__tabs:has(.ls-tab:nth-child(3)) .ls-tab {
     flex: 1 1 auto;
     padding: 8px 6px;
     font-size: 13px;
@@ -415,14 +415,14 @@
   :root[data-theme='dark'] .cal__day {
     color: var(--dk-text);
   }
-  :root[data-theme='dark'] .ls__tabs {
+  :root[data-theme='dark'] .ls > .ls__tabs {
     background: var(--dk-chip);
   }
-  :root[data-theme='dark'] .ls-tab {
+  :root[data-theme='dark'] .ls > .ls__tabs .ls-tab {
     background: transparent;
     color: var(--dk-text-2);
   }
-  :root[data-theme='dark'] .ls-tab--active {
+  :root[data-theme='dark'] .ls > .ls__tabs .ls-tab--active {
     background: var(--dk-raised);
     color: var(--dk-text);
   }
@@ -930,6 +930,182 @@
     border-color: var(--dk-green);
     background: var(--dk-green);
     color: var(--dk-on-bright);
+  }
+}
+
+/* ---------- Живой урок · комната (секция «Уроки» → «Живой урок · индивидуальный», кадр 6431:10213) ----------
+   Шапка тёмная и закреплена: слева «×» (выход), по центру урок и его вид, справа круглая кнопка Google Meet.
+   «Темы», «Чат», «Словарь» и «Aa» — нижней панелью со значком и подписью (подпись — aria-label кнопки), как
+   в кадре. Разметку LiveHeader не меняем: ряд .lv-top__actions на телефоне становится нижней панелью, а выход и
+   звонок из него встают по углам шапки (fixed внутри fixed отсчитывается от экрана — у предков нет transform).
+   Только вид: логика урока, звонка и материалов не тронута. */
+@media (max-width: 560px) {
+  .lv {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  .lv .lv-top {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: calc(64px + env(safe-area-inset-top, 0px));
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 64px 10px;
+    background: #121016;
+  }
+  .lv .lv-top__left {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+  }
+  .lv .lv-top__left > :first-child {
+    order: 0;
+    margin-left: 0;
+  }
+  .lv .lv-top__icon {
+    display: none;
+  }
+  .lv .lv-top__lesson {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .lv .lv-top__lesson-body {
+    align-items: center;
+  }
+  .lv .lv-top__lesson-name {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 22px;
+    color: #fff;
+  }
+  .lv .lv-top__lesson-kind {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #a6a4b0;
+  }
+  /* Состояния — мелкими чипами под названием: в кадре их нет, но «преподаватель не на связи» и «нет
+     соединения» ученику нужны. */
+  .lv .lv-top__left .live-badge,
+  .lv .lv-top__offline {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 16px;
+  }
+  .lv .lv-top__left {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Нижняя панель (кадр: Темы · Чат · Словарь) */
+  .lv .lv-top__actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    gap: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-radius: 0;
+    background: #121016;
+  }
+  .lv .lv-top__sep {
+    display: none;
+  }
+  .lv .lv-top__act {
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 4px;
+    height: 58px;
+    padding: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #a6a4b0;
+  }
+  .lv .lv-top__act svg {
+    width: 24px;
+    height: 24px;
+  }
+  .lv .lv-top__act::after {
+    content: attr(aria-label);
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .lv .lv-top__act--text.is-on {
+    color: #fff;
+  }
+
+  /* Выход — «×» в левом углу шапки */
+  .lv .lv-top__act--exit {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    bottom: auto;
+    z-index: 31;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background:
+      linear-gradient(45deg, transparent calc(50% - 1px), #fff calc(50% - 1px), #fff calc(50% + 1px), transparent calc(50% + 1px)) center / 16px 16px no-repeat,
+      linear-gradient(-45deg, transparent calc(50% - 1px), #fff calc(50% - 1px), #fff calc(50% + 1px), transparent calc(50% + 1px)) center / 16px 16px no-repeat;
+  }
+  .lv .lv-top__act--exit svg,
+  .lv .lv-top__act--exit::after {
+    display: none;
+  }
+  /* Google Meet — круг в правом углу шапки */
+  .lv a.lv-top__act {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    bottom: auto;
+    z-index: 31;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .lv a.lv-top__act::after {
+    display: none;
+  }
+
+  /* «Урок / Доска» — тёмный сегмент */
+  .lv .live > .ls__tabs {
+    gap: 4px;
+    margin: 0 0 12px;
+    padding: 4px 16px 12px;
+    background: #121016;
+  }
+  .lv .live > .ls__tabs .ls-tab {
+    flex: 1 1 0;
+    height: 40px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #8a8896;
+  }
+  .lv .live > .ls__tabs .ls-tab--active {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
   }
 }
 
