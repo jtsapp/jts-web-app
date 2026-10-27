@@ -708,6 +708,30 @@
     margin-top: 8px;
     border-radius: 16px;
   }
+  /* Карточки цифр в макете только у «Разберись»; «Изучи» и «Практикуй»
+     начинаются сразу с поиска и настроек. */
+  .vb:not(:has(#vb-part-learn)) > .vb-head {
+    display: none;
+  }
+  /* «Изучи»: поле поиска макета — белое 56 с рамкой и лупой справа. Чипы
+     уровня и схемы вместо выпадающих списков и экран группы — JSX, не сделано. */
+  .vb .vb-search {
+    flex-direction: row-reverse;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #8e8e99;
+  }
+  .vb .vb-search input {
+    font-size: 16px;
+  }
+  html[data-theme='dark'] .vb .vb-search {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-muted);
+  }
   html[data-theme='dark'] .vb .vb-stats > div,
   html[data-theme='dark'] .vb .vb-hero .vb-hero__stack > div:not(:last-child) {
     border-color: var(--dk-line);
