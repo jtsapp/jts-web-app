@@ -1884,6 +1884,241 @@
     color: var(--dk-acc-text);
   }
 
+  /* «Изучи» на телефоне (разметка по usePhoneWidth в VerbsTable): уровень и
+     схема — чипами в строку с прокруткой, «Повторить позже» и «Скрыть V2 и
+     V3» — контурными пилюлями рядом со счётчиком; группы — списком карточек
+     (номер в сиреневом квадрате, название, число, шеврон). */
+  .vb-mfilters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .vb-mfilters__label {
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .vb-mchips {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vb-mchips::-webkit-scrollbar {
+    display: none;
+  }
+  .vb-mchip {
+    flex: none;
+    min-height: 36px;
+    padding: 0 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--vb-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .vb-mchip[aria-pressed='true'],
+  .vb-mchip[aria-checked='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .vb-mchip--line[aria-pressed='true'],
+  .vb-mchip--line[aria-checked='true'] {
+    border-color: transparent;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vb-mfilters__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .vb-mfilters__bottom .vb-filters__count {
+    flex: 1 0 auto;
+    font-size: 12px;
+  }
+  .vb-mgroups {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .vb-mgroup {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto 24px;
+    align-items: center;
+    column-gap: 12px;
+    min-height: 72px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    color: var(--vb-ink);
+    text-align: left;
+  }
+  .vb-mgroup::after {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: #8e8e99;
+    -webkit-mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+    mask: url('/assets/m/practice/writing/chevron_right.svg') center / 24px no-repeat;
+  }
+  .vb-mgroup__num {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .vb-mgroup__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+  }
+  .vb-mgroup__count {
+    color: #8e8e99;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  /* Экран группы: карточка глагола — формы крупно, уровень и кнопки справа,
+     перевод под формами; «Послушать группу» прижата к низу. */
+  .vb-gscreen__back {
+    align-self: flex-start;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9047ff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .vb-gscreen__title {
+    margin: 4px 0 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb .vb-gscreen__count {
+    margin: 0 0 12px;
+    font-size: 12px;
+  }
+  .vb-vcards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .vb-vcard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 4px;
+    padding: 12px 12px 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .vb-vcard.is-playing {
+    border-color: #9047ff;
+  }
+  .vb-vcard__forms {
+    color: var(--vb-ink);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .vb-vcard__forms i {
+    color: #8e8e99;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+  }
+  .vb-vcard .vb-pill {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+  }
+  .vb-vcard__acts {
+    display: flex;
+    gap: 4px;
+  }
+  .vb-vcard__acts .vb-icon-btn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: none;
+    color: #9047ff;
+  }
+  .vb-vcard__tr {
+    grid-column: 1 / -1;
+    color: #5a5a66;
+    font-size: 12px;
+  }
+  .vb .vb-gscreen__listen {
+    position: sticky;
+    bottom: 12px;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    margin-top: 16px;
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .vb-mchip,
+  html[data-theme='dark'] .vb-mgroup,
+  html[data-theme='dark'] .vb-vcard {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb-mchip[aria-pressed='true'],
+  html[data-theme='dark'] .vb-mchip[aria-checked='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb-mchip--line[aria-pressed='true'],
+  html[data-theme='dark'] .vb-mchip--line[aria-checked='true'] {
+    border-color: transparent;
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb-mgroup__num,
+  html[data-theme='dark'] .vb-vcard .vb-pill {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .vb-vcard__forms {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb-mfilters__label,
+  html[data-theme='dark'] .vb-vcard__tr {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb-vcard__acts .vb-icon-btn {
+    border: 0;
+    background: none;
+    color: var(--dk-acc-text);
+  }
+
   /* Настройка практики (кадр 5, открывается «Изменить»): уровни — карточки
      2×2, выбранная сиреневая; формы — серые сегменты; набор и подход — два
      выпадающих рядом; «Перемешать» — пилюлей справа. */
