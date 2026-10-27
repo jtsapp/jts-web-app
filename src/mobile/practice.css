@@ -313,8 +313,8 @@
     color: var(--bn-ink);
     vertical-align: 4px;
   }
-  .pk .pk-banner__cta,
-  .pk .pk-banner__cta:hover {
+  .pk .pk-banner > .pk-banner__cta,
+  .pk .pk-banner > .pk-banner__cta:hover {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -329,11 +329,11 @@
     font-size: 0;
     color: transparent;
   }
-  .pk .pk-banner__cta svg {
+  .pk .pk-banner > .pk-banner__cta svg {
     display: none;
   }
-  .pk .pk-banner__cta::before,
-  .pk .pk-banner__cta::after {
+  .pk .pk-banner > .pk-banner__cta::before,
+  .pk .pk-banner > .pk-banner__cta::after {
     content: '';
     position: absolute;
     top: 22px;
@@ -341,16 +341,16 @@
     width: 40px;
     height: 40px;
   }
-  .pk .pk-banner__cta::before {
+  .pk .pk-banner > .pk-banner__cta::before {
     border-radius: 50%;
     background: #24202e;
   }
-  .pk .pk-banner__cta::after {
+  .pk .pk-banner > .pk-banner__cta::after {
     background: #fff;
     -webkit-mask: url(/assets/home-v2/ico/north_east.svg) center / 20px no-repeat;
     mask: url(/assets/home-v2/ico/north_east.svg) center / 20px no-repeat;
   }
-  .pk .pk-banner__cta:focus-visible {
+  .pk .pk-banner > .pk-banner__cta:focus-visible {
     outline: 2px solid #9047ff;
     outline-offset: 2px;
   }
@@ -514,8 +514,8 @@
   }
   /* Генератор красит кнопку тренажёра плашкой и баннер градиентом: кнопка
      здесь растянута на весь баннер, плашка закрыла бы текст. */
-  html[data-theme='dark'] .pk .pk-banner__cta,
-  html[data-theme='dark'] .pk .pk-banner__cta:hover {
+  html[data-theme='dark'] .pk .pk-banner > .pk-banner__cta,
+  html[data-theme='dark'] .pk .pk-banner > .pk-banner__cta:hover {
     background: none;
     box-shadow: none;
     color: transparent;
@@ -539,7 +539,7 @@
   html[data-theme='dark'] .pk .pk-banner__tag {
     background: var(--dk-chip);
   }
-  html[data-theme='dark'] .pk .pk-banner__cta::before {
+  html[data-theme='dark'] .pk .pk-banner > .pk-banner__cta::before {
     background: var(--dk-ink-bg);
   }
   html[data-theme='dark'] .pk .pk-banner__badge {
@@ -549,16 +549,443 @@
     color: var(--dk-text-2);
   }
 
-  /* ---------- Ленты ---------- */
-  .pk-rail--books {
-    gap: 6px;
+  /* ---------- Ленты (Carousel: шаг 12) ---------- */
+  .pk-rail {
+    gap: 12px;
   }
-  /* Шэдоуинг — 358 с обложкой 358×201, как на десктопе. */
+
+  /* Пара баннеров — каруселью по 350, как Container 6605:16642: следующий
+     выглядывает из-за края экрана. */
+  .pk-pair {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
+    scrollbar-width: none;
+  }
+  .pk-pair::-webkit-scrollbar {
+    display: none;
+  }
+  .pk-pair > .pk-banner {
+    flex: none;
+    width: min(350px, calc(100vw - 52px));
+    scroll-snap-align: start;
+  }
+
+  /* Шэдоуинг — Video 240: обложка 240×135 r16, название 13/700, счёт серым. */
   .pk-video {
-    width: 358px;
+    gap: 6px;
+    width: 240px;
   }
   .pk-video__cover {
-    height: 201px;
+    height: 135px;
+    border-radius: 16px;
+  }
+  .pk-video__title {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 17px;
+  }
+  .pk-video__count {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8a8a8a;
+  }
+
+  /* Книжка и комикс — Book 140: обложка 140×200 r14, название 13/700 в две
+     строки, сложность — цветной пилюлей (Средне — оранжевая, Тяжело —
+     красная, Легко — зелёная) вместо точек. */
+  .pk-book {
+    gap: 8px;
+    width: 140px;
+  }
+  .pk-book__cover {
+    width: 140px;
+    height: 200px;
+    border-radius: 14px;
+  }
+  .pk-book__title,
+  .pk-comic__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    white-space: normal;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 17px;
+    color: #181818;
+  }
+  .pk-book__body {
+    gap: 8px;
+  }
+  .pk-dots {
+    --df-bg: #dff5ea;
+    --df-ink: #2e9e7a;
+    gap: 8px;
+  }
+  .pk-dots:has(i:nth-child(2).on) {
+    --df-bg: #ffe9d6;
+    --df-ink: #d9701a;
+  }
+  .pk-dots:has(i:nth-child(3).on) {
+    --df-bg: #ffe0e0;
+    --df-ink: #f25a5a;
+  }
+  .pk-dots__row {
+    display: none;
+  }
+  .pk-dots b,
+  .pk-dots em {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--df-bg);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 16px;
+    color: var(--df-ink);
+  }
+  .pk-dots em {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  /* Комикс без обложки — пастельная плашка с книжкой в белом круге 56. */
+  .pk-comic__body {
+    gap: 6px;
+  }
+  .pk-comic__head {
+    gap: 6px;
+  }
+  .pk-comic__sub,
+  .pk-comic__pages {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8a8a8a;
+  }
+  .pk-comic .pk-book__cover:not(:has(img)) {
+    position: relative;
+    border-radius: 16px;
+    background: #e6dcfc;
+  }
+  .pk-comic:nth-child(4n + 2) .pk-book__cover:not(:has(img)) {
+    background: #d6dcff;
+  }
+  .pk-comic:nth-child(4n + 3) .pk-book__cover:not(:has(img)) {
+    background: #ffe3cf;
+  }
+  .pk-comic:nth-child(4n + 4) .pk-book__cover:not(:has(img)) {
+    background: #d6edfb;
+  }
+  .pk-comic .pk-book__cover:not(:has(img))::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+    border-radius: 50%;
+    background: #fff url(/assets/home-v2/ico/menu_book.svg) center / 32px no-repeat;
+  }
+
+  /* Ситуация — Situation 148: квадрат r16, название 13/700. */
+  .pk-situ {
+    gap: 6px;
+    width: 148px;
+  }
+  .pk-situ__pic {
+    width: 148px;
+    height: 148px;
+    border-radius: 16px;
+  }
+  .pk-situ__title {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 17px;
+  }
+
+  /* Мем — Reel 128×210 r16. */
+  .pk-meme {
+    width: 128px;
+    height: 210px;
+    border-radius: 16px;
+  }
+
+  /* Юнит грамматики — Unit 220: в макете над текстом фото юнита, у нас
+     картинок нет — белая карточка с теми же подписями: «Unit 1» 12/600
+     фиолетовым, название 14/700, время серым. */
+  .pk-tile {
+    gap: 6px;
+    width: 220px;
+    padding: 14px;
+    border: 1px solid #ececf1;
+    border-radius: 20px;
+  }
+  .pk-tile__badge {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-weight: 600;
+  }
+  .pk-tile__title {
+    height: 36px;
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .pk-tile .pk-meta,
+  .pk-wb .pk-meta {
+    font-weight: 500;
+  }
+  .pk-tile .pk-meta svg,
+  .pk-wb .pk-meta svg {
+    display: none;
+  }
+
+  /* Воркбук — Workbook 160: белая карточка r20 p14, значок книги в плашке
+     36 #efe7ff, уровень 26/800, название 13/700, состав и время серым.
+     Цветной полосы уровня в макете нет. */
+  .pk-wb {
+    gap: 10px;
+    width: 160px;
+    padding: 14px;
+    border-color: #ececf1;
+    border-radius: 20px;
+  }
+  .pk-wb::before {
+    content: '';
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: #efe7ff url(/assets/home-v2/ico/menu_book.svg) center / 20px no-repeat;
+  }
+  .pk-wb__cover {
+    display: contents;
+  }
+  .pk-wb__label {
+    justify-content: flex-start;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 36px;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .pk-wb__body {
+    gap: 10px;
+    padding: 0;
+  }
+  .pk-wb__head {
+    gap: 10px;
+  }
+  .pk-wb__desc {
+    margin-top: -10px;
+    font-size: 13px;
+    line-height: 18px;
+    letter-spacing: 0;
+    color: #4a4a55;
+  }
+  .pk-wb__sum {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8a8a8a;
+  }
+
+  /* «Аркада» — тёмная карточка Arcade 370 (6605:9444): значок-молния и
+     «МИНИ-ИГРЫ НА СКОРОСТЬ» оранжевым, «БЕТА» справа, «Аркада» 24/800,
+     игры строками. Шапки секции у неё в макете нет, картинки — тоже. */
+  #sec-arcade > .pk-sec__head,
+  .pk-arcade__art {
+    display: none;
+  }
+  .pk-arcade {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 20px;
+    border-radius: 28px;
+    isolation: isolate;
+    background: #24202e;
+  }
+  .pk-arcade::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -60px;
+    right: -40px;
+    width: 240px;
+    height: 150px;
+    border: 26px solid #3f3a50;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .pk-arcade__text {
+    position: static;
+    gap: 12px;
+  }
+  .pk-arcade__tagline {
+    order: -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding-right: 60px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ff9a3d;
+  }
+  .pk-arcade__tagline::before {
+    content: '';
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #3a3547 url(/assets/m/practice/ico/bolt.svg) center / 22px no-repeat;
+  }
+  .pk-arcade__title {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .pk-arcade__title .ar-beta {
+    position: absolute;
+    top: 31px;
+    right: 20px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #3a3547;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+    letter-spacing: 0.06em;
+    color: #ff9a3d;
+  }
+  .pk-arcade__desc {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 18px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .pk-arcade__games {
+    gap: 12px;
+    margin: 0;
+  }
+  .pk-arcade__game {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    min-height: 60px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .pk-arcade__game::before {
+    content: '';
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #3a3547 url(/assets/m/practice/ico/mic-orange.svg) center / 20px no-repeat;
+  }
+  .pk-arcade__game + .pk-arcade__game::before {
+    background-image: url(/assets/m/practice/ico/bolt.svg);
+  }
+  .pk-arcade__game b {
+    grid-column: 2;
+    font-weight: 700;
+  }
+  .pk-arcade__game span {
+    grid-column: 2;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .pk-arcade__game span svg {
+    display: none;
+  }
+  .pk-arcade__game > svg {
+    grid-column: 3;
+  }
+  /* «Все игры» (вход в зал) в макете нет — оставлен ссылкой под играми. */
+  .pk-arcade__foot .pk-banner__cta,
+  .pk-arcade__foot .pk-banner__cta:hover {
+    height: auto;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    color: #ff9a3d;
+  }
+
+  /* Тёмная тема карточек лент. */
+  html[data-theme='dark'] .pk .pk-tile,
+  html[data-theme='dark'] .pk .pk-wb {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .pk .pk-wb__label,
+  html[data-theme='dark'] .pk .pk-book__title,
+  html[data-theme='dark'] .pk .pk-comic__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .pk .pk-wb__desc {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .pk .pk-wb::before {
+    background-color: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .pk .pk-dots {
+    --df-bg: var(--dk-green-soft);
+    --df-ink: var(--dk-green);
+  }
+  html[data-theme='dark'] .pk .pk-dots:has(i:nth-child(2).on) {
+    --df-bg: var(--dk-orange-soft);
+    --df-ink: var(--dk-orange);
+  }
+  html[data-theme='dark'] .pk .pk-dots:has(i:nth-child(3).on) {
+    --df-bg: color-mix(in srgb, var(--dk-red) 16%, var(--dk-card));
+    --df-ink: var(--dk-red);
+  }
+  html[data-theme='dark'] .pk .pk-dots b {
+    background: var(--df-bg);
+    color: var(--df-ink);
+  }
+  html[data-theme='dark'] .pk .pk-dots em {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .pk .pk-comic .pk-book__cover:not(:has(img)) {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .pk .pk-comic:nth-child(even) .pk-book__cover:not(:has(img)) {
+    background: var(--dk-blue-soft);
+  }
+  html[data-theme='dark'] .pk .pk-comic .pk-book__cover:not(:has(img))::after {
+    background-color: var(--dk-chip);
+  }
+  html[data-theme='dark'] .pk .pk-arcade {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .pk .pk-arcade::before {
+    border-color: var(--dk-raised);
+  }
+  html[data-theme='dark'] .pk .pk-arcade__tagline::before,
+  html[data-theme='dark'] .pk .pk-arcade__game::before,
+  html[data-theme='dark'] .pk .pk-arcade__title .ar-beta {
+    background-color: var(--dk-raised);
   }
   /* Сказка — белая карточка 300 (Tale в кадре 6605:9315): r24, рамка
      #ececf1, поля 12, обложка 276×150 r16, описание серым, чипы-плашки. */
