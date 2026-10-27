@@ -548,6 +548,188 @@
   .vb .vb-crumb span {
     display: none;
   }
+  /* Кадр «1 · Глава · Разберись»: под полосой — вкладки частей, три карточки
+     цифр, сиреневый блок героя. Заголовок главы и подзаголовок — в полосе
+     и в герое, поэтому шапку главы прячем; порядок меняем order-ом, разметку
+     (её делят компьютер и планшет) не трогаем. */
+  .vb {
+    display: flex;
+    flex-direction: column;
+  }
+  .vb > * {
+    order: 3;
+  }
+  .vb > .vb-top {
+    order: 0;
+  }
+  .vb > .vb-nav {
+    order: 1;
+  }
+  .vb > .vb-head {
+    order: 2;
+  }
+  .vb-head {
+    display: block;
+    padding: 0 0 12px;
+  }
+  .vb-head > div:first-child {
+    display: none;
+  }
+  .vb-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .vb .vb-stats > div {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 88px;
+    padding: 12px 4px;
+    border: 1px solid var(--vb-m-line, #e8e8ee);
+    border-radius: 20px;
+    background: #fff;
+  }
+  .vb-stats strong {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 36px;
+  }
+  .vb-stats span {
+    margin-top: 4px;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .vb-nav {
+    gap: 0;
+    margin: 0 0 12px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-nav button {
+    flex-direction: row;
+    justify-content: center;
+    gap: 4px;
+    min-height: 36px;
+    padding: 6px 4px;
+    border-radius: 9px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .vb-nav button[aria-selected='true'] {
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+  }
+  .vb-nav__num,
+  .vb-nav button[aria-selected='true'] .vb-nav__num {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .vb-nav__dot {
+    display: none;
+  }
+  /* Герой: строки V1–V3 плоскими плашками между текстом и кнопкой. */
+  .vb .vb-hero {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px;
+    border: 0;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .vb-hero__text {
+    display: contents;
+  }
+  .vb .vb-hero .vb-eyebrow {
+    align-self: flex-start;
+    text-align: left;
+    order: 0;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .vb-hero h2 {
+    order: 1;
+    margin: 8px 0;
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: 0;
+  }
+  .vb-hero p {
+    order: 2;
+    color: #5a5a66;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .vb .vb-hero .vb-hero__stack {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-self: stretch;
+    width: auto;
+    max-width: none;
+    margin: 16px 0 0;
+    padding: 0;
+  }
+  .vb .vb-hero .vb-hero__stack > div {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-width: 0;
+    gap: 16px;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 16px;
+    box-shadow: none;
+    font-size: 24px;
+    transform: none;
+  }
+  .vb .vb-hero .vb-hero__stack span {
+    display: block;
+  }
+  .vb-hero .vb-hero__stack > div:nth-child(2) {
+    background: #fff;
+    color: var(--vb-ink);
+  }
+  .vb-hero .vb-btn {
+    order: 4;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    margin-top: 8px;
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .vb .vb-stats > div,
+  html[data-theme='dark'] .vb .vb-hero .vb-hero__stack > div:not(:last-child) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-nav {
+    background: var(--dk-line);
+  }
+  html[data-theme='dark'] .vb .vb-nav__num,
+  html[data-theme='dark'] .vb .vb-nav button[aria-selected='true'] .vb-nav__num {
+    border: 0;
+    background: none;
+    color: inherit;
+  }
+  html[data-theme='dark'] .vb .vb-hero {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .vb .vb-hero .vb-eyebrow {
+    color: var(--dk-acc-text);
+  }
   html[data-theme='dark'] .vb .vb-back {
     background: none;
   }
