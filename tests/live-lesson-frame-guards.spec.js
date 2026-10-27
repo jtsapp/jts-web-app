@@ -82,7 +82,7 @@ async function openLesson(page) {
 
   await page.goto('/')
   await page.getByText('Уроки', { exact: true }).first().click()
-  await page.getByRole('button', { name: 'Присоединиться к уроку' }).first().click()
+  await page.getByRole('button', { name: /Присоединиться к уроку|Войти в класс/ }).filter({ visible: true }).first().click()
   await expect(page.locator('.lw-material-iframe')).toBeVisible({ timeout: 15_000 })
   // В заглушке нет моста — лоадер снимается по своему потолку ожидания.
   await expect(page.locator('.lw-frame-cover')).toHaveClass(/is-hidden/, { timeout: 15_000 })

@@ -1,195 +1,139 @@
 /* ======================================================================
-   Мобильные «Уроки» → «Онлайн-уроки» (Figma «Web Адаптивка» → «Уроки»,
-   кадры 4676:3903 и 4676:4047). Спикинг-клабы в приложении скрыты
-   (LessonsPage.jsx), их кадры не переносим.
+   Мобильные «Уроки» → «Онлайн-уроки» — дизайн мобильного приложения
+   (Figma «pitch JTS (Copy)», страница «Mobile», секция «Уроки» →
+   «Онлайн-уроки · Мой график», кадры 6425:6395, 6425:6680, 6425:7527; 402px).
+   Заголовок «Уроки», вкладки сегментом, неделя вместо месяца (MonthCalendar
+   week — её включает LessonSchedule по ширине) и карточки уроков выбранного
+   дня. Карточки «ближайший урок» и счётчиков в кадре нет — на телефоне они
+   скрыты: урок дня и вход в класс есть в его карточке под неделей.
    ====================================================================== */
 @media (max-width: 560px) {
-  /* Заголовка «Уроки» в макете нет: вкладки идут сразу под шапкой. Строку
-     оставляем, только если в ней есть кнопка каталога. */
-  .ls__head:not(:has(.cc-entry)) {
-    display: none;
+  .learn__main:has(.ls) {
+    background: #f8f8f8;
+  }
+  /* Кнопки угла — в строку с заголовком, как на «Главной» (src/mobile/home.css). */
+  .learn__main:has(.ls) .learn__bell {
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    z-index: 5;
+    padding: 0;
+  }
+  .ls {
+    background: #f8f8f8;
   }
   .ls__head {
-    padding: 8px 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 6px 16px 0;
     border-bottom: 0;
+    background: none;
   }
   .ls__head .ls__title {
-    display: none;
+    display: block;
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 40px;
+    color: #181818;
   }
+
+  /* Вкладки — сегмент (Segmented 370×48 r16, сегмент 40 r12, Bold 16). */
   .ls__tabs {
-    gap: 8px;
-    padding: 8px 16px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin: 0 16px 12px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
   }
   .ls-tab {
-    height: 38px;
-    padding: 10px 20px;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
     font-size: 16px;
-    line-height: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #5a5a66;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: none;
+  }
+  .ls-tab--active {
+    background: #fff;
+    color: #181818;
+  }
+  /* У ученика с Self Study три вкладки (+ «Отчёты»): макетный кегль 16
+     «Самостоятельно» в треть сегмента не влезает. */
+  .ls__tabs:has(.ls-tab:nth-child(3)) .ls-tab {
+    padding: 8px 4px;
+    font-size: 13px;
   }
   .ls__body--wide {
-    padding: 16px 16px 24px;
+    padding: 12px 16px 24px;
   }
 
   /* ---------- Мой график ---------- */
-  .sch__title {
-    margin: 0 0 16px;
-    font-size: 24px;
-    line-height: 26px;
-    color: #181818;
-  }
-  .sch__title--second {
-    margin-top: 32px;
-  }
+  .sch__title,
   .sch__top {
-    gap: 8px;
+    display: none;
   }
-  .lesson-card {
-    gap: 0;
-    padding: 0;
-    border-radius: 20px;
-  }
-  .lesson-card__head {
-    gap: 16px;
-    padding: 20px;
-  }
-  .lesson-card__avatar {
-    width: 80px;
-    height: 80px;
-    font-size: 26px;
-  }
-  .lesson-card__who {
+  .cal-layout {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-  }
-  .lesson-card__name {
-    font-size: 24px;
-    line-height: 26px;
-    white-space: normal;
-    color: #181818;
-  }
-  .lesson-card__role {
-    margin: 0;
-    font-size: 16px;
-    line-height: 18px;
-    color: #181818;
-  }
-  .lesson-card__sep {
-    background: #e9e9e9;
-  }
-  .lesson-card__foot {
-    padding: 20px;
-  }
-  .lesson-card__topic {
-    font-size: 16px;
-    line-height: 22px;
-    color: #181818;
-  }
-  .lesson-card__meta {
-    gap: 6px 16px;
-    margin-top: 6px;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 17px;
-  }
-  .lesson-card__state--live {
-    color: #19c119;
-  }
-  .lesson-card__dot {
-    width: 8px;
-    height: 8px;
-  }
-  .meet-link {
-    font-size: 14px;
-    font-weight: 700;
-    color: #0066da;
+    align-items: stretch;
+    gap: 16px;
   }
 
-  /* «Присоединиться к уроку» в макете — не в карточке, а плашкой внизу экрана
-     (#f8f8f8, поля 16, кнопка 56 r20, подпись слева, шеврон в белом круге).
-     Кольцо тени того же цвета дорисовывает полосу плашки вокруг кнопки. */
-  .lesson-card__join {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    /* fixed-элемент Safari сам держит над своей панелью, поэтому запас
-       --safe-bottom (он для конца документа) тут не нужен — только жестовая полоса.
-       Над нижней панелью вкладок (--mtab-h, src/mobile/nav.css): иначе она
-       ложилась ровно на кнопку. Высота панели уже включает жестовую полосу. */
-    bottom: calc(16px + max(var(--mtab-h, 0px), env(safe-area-inset-bottom, 0px)));
-    z-index: 30;
-    width: auto;
-    justify-content: space-between;
-    height: 56px;
-    padding: 16px 16px 16px 24px;
-    border-radius: 20px;
-    font-size: 16px;
-    line-height: 18px;
-    box-shadow: 0 0 0 16px #f8f8f8;
-  }
-  .lesson-card__chev {
-    width: 24px;
-    height: 24px;
-    background: #fff;
-    color: #9047ff;
-  }
-  .lesson-card__join:disabled .lesson-card__chev {
-    background: #fff;
-  }
-  .ls:has(.lesson-card__join) .ls__body--wide {
-    padding-bottom: 104px;
-  }
-
-  /* Счётчики 2×2: число фиолетовым 24, подпись 14 */
-  .sch__summary {
-    gap: 8px;
-  }
-  .sch-tile {
-    gap: 4px;
-    min-height: 99px;
-    padding: 12px;
-    border-radius: 20px;
-  }
-  .sch-tile__num {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 26px;
-    color: #9047ff;
-  }
-  .sch-tile__label {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 17px;
-    color: #181818;
-  }
-
-  /* ---------- Расписание ---------- */
-  .cal-layout {
-    gap: 8px;
-  }
+  /* Неделя: белая карточка r24 с рамкой, месяц ExtraBold 16, стрелки 40 сиреневые */
   .cal {
     padding: 16px;
-    border-radius: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
   }
   .cal__head {
-    margin-bottom: 24px;
+    gap: 8px;
+    margin-bottom: 8px;
   }
   .cal__title {
     font-size: 16px;
+    font-weight: 800;
     line-height: 24px;
     color: #181818;
   }
   .cal__navs {
-    gap: 12px;
+    gap: 8px;
   }
   .cal__nav {
-    width: 32px;
-    height: 32px;
-    background: rgba(144, 71, 255, 0.92);
-    font-size: 16px;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 0;
+  }
+  .cal__nav::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    background: #9047ff;
+    -webkit-mask: url(/assets/home-v2/ico/chevron_right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/home-v2/ico/chevron_right.svg) center / 24px 24px no-repeat;
+  }
+  .cal__nav:first-child::before {
+    transform: scaleX(-1);
   }
   .cal__grid {
-    gap: 2px;
+    gap: 4px;
   }
   .cal__grid--head {
     margin-bottom: 8px;
@@ -198,23 +142,41 @@
     padding: 0;
     font-size: 12px;
     font-weight: 500;
-    line-height: 17px;
-    color: #8b8b8b;
+    line-height: 16px;
+    color: #8e8e99;
+    text-transform: capitalize;
   }
-  .cal__day {
-    min-height: 51px;
-    gap: 4px;
-    padding: 12px 2px 11px;
-    background: #f8f8f8;
-  }
+  .cal__day,
   .cal__day--out {
-    background: #fff;
-    color: #8b8b8b;
+    min-height: 48px;
+    height: 48px;
+    gap: 4px;
+    padding: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #181818;
+  }
+  .cal__day:hover {
+    background: #f4f0fc;
+  }
+  .cal__day--today {
+    background: #efe7ff;
+  }
+  .cal__nav:hover {
+    background: #e3d6ff;
+  }
+  .cal__day--sel,
+  .cal__day--sel:hover {
+    background: #9047ff;
+    color: #fff;
   }
   .cal__num {
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .cal__day--sel .cal__num {
+    font-weight: 800;
   }
   .cal__dots {
     height: 4px;
@@ -222,93 +184,313 @@
   .cal__dot {
     width: 4px;
     height: 4px;
-    background: #2b8eff;
+    background: #9047ff;
   }
   .cal__day--sel .cal__dot {
     background: #fff;
   }
 
-  /* День: заголовок 16/24, строки #f8f8f8 r12 */
+  /* Уроки дня — без своего заголовка: день уже выбран в неделе */
   .cal-day {
-    padding: 16px;
-    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
   }
   .cal-day__h {
-    margin: 0 0 16px;
+    display: none;
+  }
+  /* Пусто (6425:7527): карточка со значком календаря */
+  .cal-day > .sch__status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 28px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #5a5a66;
+    text-align: center;
+  }
+  .cal-day > .sch__status::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: #8e8e99;
+    -webkit-mask: url(/assets/home-v2/ico/event.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/event.svg) center / contain no-repeat;
+  }
+
+  /* Карточка урока (LessonRow 370, p16 gap8 r20): тип и состояние чипами
+     сверху, преподаватель ExtraBold 16, время со значком и Google Meet,
+     «Войти в класс» кнопкой 48 во всю ширину. Строки собираются переносом
+     флекса, а не сеткой: у урока может не быть ни чипа типа, ни бейджа, и
+     пустая строка сетки оставила бы дыру. */
+  .sch-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .sch-row__main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+  }
+  .sch-row__meta {
+    display: contents;
+  }
+  .sch-row__main .sch-row__kind {
+    order: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .sch-row__kind--solo {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .sch-row__kind--solo::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: url(/assets/home-v2/ico/person.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/person.svg) center / contain no-repeat;
+  }
+  .sch-badge {
+    order: 2;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    margin-left: auto;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .sch-badge--inProgress,
+  .sch-badge--paused {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .sch-row__teacher {
+    order: 3;
+    flex-basis: 100%;
     font-size: 16px;
+    font-weight: 800;
     line-height: 24px;
     color: #181818;
   }
-  .sch-row {
-    gap: 8px 12px;
-    margin-bottom: 8px;
-    padding: 12px 12px 8px;
-    border-radius: 12px;
-    background: #f8f8f8;
-  }
-  .sch-row__teacher {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 17px;
-    color: #181818;
-  }
   .sch-row__time {
-    margin-top: 4px;
-    font-size: 14px;
+    order: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 17px;
-    color: #8b8b8b;
+    line-height: 16px;
+    color: #5a5a66;
   }
-  .sch-row__meta {
-    gap: 6px 12px;
+  .sch-row__time::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: #8e8e99;
+    -webkit-mask: url(/assets/home-v2/ico/schedule.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/schedule.svg) center / contain no-repeat;
   }
+  .sch-row .meet-link {
+    order: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    color: #5a5a66;
+    text-decoration: none;
+  }
+  /* «Онлайн» — формат по умолчанию, в макете его нет; «Офлайн» оставляем: это
+     другое место урока. */
   .sch-row__format {
-    font-size: 14px;
+    order: 6;
+    flex-basis: 100%;
+    font-size: 12px;
     font-weight: 700;
-    color: #19c119;
+    line-height: 16px;
   }
-}
-
-@media (max-width: 560px) {
-  /* Мой .cal__day грузится позже базового и перебивал фон выбранного дня */
-  .cal__day--sel,
-  .cal__day--sel:hover {
-    background: #9047ff;
-  }
-  .lesson-card__when {
-    font-weight: 500;
-  }
-
-  /* Иконки — экспорт макета: стрелки месяца, шеврон кнопки, логотип Meet */
-  .cal__nav {
-    font-size: 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 20px 20px;
-  }
-  .cal__nav:first-child {
-    background-image: url(/assets/m/lessons/cal-prev.svg);
-  }
-  .cal__nav:last-child {
-    background-image: url(/assets/m/lessons/cal-next.svg);
-  }
-  .lesson-card__chev svg {
+  .sch-row__format--online {
     display: none;
   }
-  .lesson-card__chev {
-    background: #fff url(/assets/m/lessons/join-chev.svg) center / 20px 20px no-repeat;
+  .sch-row__join {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 48px;
+    margin: 0;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #fff;
   }
-  .lesson-card__join:disabled .lesson-card__chev {
-    background-color: #fff;
+  .sch-row__join::before {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    background: #fff;
+    -webkit-mask: url(/assets/home-v2/ico/videocam.svg) center / contain no-repeat;
+    mask: url(/assets/home-v2/ico/videocam.svg) center / contain no-repeat;
   }
+
+  /* Логотип Meet — экспорт макета (прежний svg ссылки скрыт) */
   .meet-link__icon {
     display: none;
   }
   .meet-link::before {
     content: '';
-    width: 14px;
+    width: 16px;
     height: 12px;
     background: url(/assets/m/lessons/meet.png) center / contain no-repeat;
+  }
+
+  .sch__status {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #5a5a66;
+  }
+}
+
+/* Тёмная тема мобильного слоя — токенами брендбука (src/theme-dark.css). Селектор :root[...]
+   сильнее html[...] генерированного слоя: тот подключён позже и перебил бы те же правила. */
+@media (max-width: 560px) {
+  :root[data-theme='dark'] .learn__main:has(.ls),
+  :root[data-theme='dark'] .ls {
+    background: var(--dk-page);
+  }
+  :root[data-theme='dark'] .ls__head .ls__title,
+  :root[data-theme='dark'] .cal__title,
+  :root[data-theme='dark'] .sch-row__teacher,
+  :root[data-theme='dark'] .cal__day {
+    color: var(--dk-text);
+  }
+  :root[data-theme='dark'] .ls__tabs {
+    background: var(--dk-chip);
+  }
+  :root[data-theme='dark'] .ls-tab {
+    background: transparent;
+    color: var(--dk-text-2);
+  }
+  :root[data-theme='dark'] .ls-tab--active {
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  :root[data-theme='dark'] .cal,
+  :root[data-theme='dark'] .sch-row,
+  :root[data-theme='dark'] .cal-day > .sch__status {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  :root[data-theme='dark'] .cal__nav {
+    background: var(--dk-acc-soft);
+  }
+  /* Стрелки месяца прежнего макета («Web Адаптивка») ещё лежат в theme-dark.generated.css — картинкой
+     поверх нашей маски. Уйдут при перегенерации слоя; до тех пор гасим их здесь. */
+  :root[data-theme='dark'] .cal__nav:is(:first-child, :last-child) {
+    background-image: none;
+  }
+  :root[data-theme='dark'] .cal__nav::before {
+    background: var(--dk-acc-text);
+  }
+  :root[data-theme='dark'] .cal__day--out,
+  :root[data-theme='dark'] .cal__day {
+    background: transparent;
+  }
+  :root[data-theme='dark'] .cal__day--today {
+    background: var(--dk-acc-soft);
+  }
+  :root[data-theme='dark'] .cal__day--sel,
+  :root[data-theme='dark'] .cal__day--sel:hover {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  :root[data-theme='dark'] .cal__dot {
+    background: var(--dk-acc-text);
+  }
+  :root[data-theme='dark'] .cal__day--sel .cal__dot {
+    background: var(--dk-on-acc);
+  }
+  :root[data-theme='dark'] .cal__wd,
+  :root[data-theme='dark'] .sch-row__time,
+  :root[data-theme='dark'] .sch__status {
+    color: var(--dk-text-2);
+  }
+  :root[data-theme='dark'] .sch-row__time::before,
+  :root[data-theme='dark'] .cal-day > .sch__status::before {
+    background: var(--dk-muted);
+  }
+  :root[data-theme='dark'] .sch-row__kind--solo {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  :root[data-theme='dark'] .sch-row .meet-link {
+    background: var(--dk-chip);
+    color: var(--dk-text-2);
+  }
+  :root[data-theme='dark'] .sch-row__join {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  :root[data-theme='dark'] .cal__nav:hover {
+    background: var(--dk-acc-deep);
+  }
+  :root[data-theme='dark'] .cal-day {
+    background: none;
+  }
+  :root[data-theme='dark'] .sch-badge--inProgress,
+  :root[data-theme='dark'] .sch-badge--paused {
+    background: color-mix(in srgb, var(--dk-green) var(--dk-soft), var(--dk-card));
+    color: var(--dk-green);
+  }
+  :root[data-theme='dark'] .cal__day:hover {
+    background: var(--dk-chip);
   }
 }
 

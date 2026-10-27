@@ -9,8 +9,26 @@ import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
 import NextLessonCard from './NextLessonCard.jsx'
 
+// Телефонная ширина мобильного слоя (src/mobile/*.css). Узнаём после монтирования
+// и следим за поворотом: первый рендер совпадает с серверным, без hydration mismatch.
+function usePhoneWidth() {
+  const [phone, setPhone] = useState(false)
+  useEffect(() => {
+    const mq = typeof window !== 'undefined' ? window.matchMedia?.('(max-width: 560px)') : null
+    if (!mq) return undefined
+    const sync = () => setPhone(mq.matches)
+    sync()
+    mq.addEventListener?.('change', sync)
+    return () => mq.removeEventListener?.('change', sync)
+  }, [])
+  return phone
+}
+
 export default function LessonSchedule({ token, onOpenLesson }) {
   const { t } = useI18n()
+  // На телефоне календарь — неделя (дизайн приложения): стрелки двигают выбранный
+  // день на семь дней, месяц идёт за ним.
+  const phone = usePhoneWidth()
   const [occ, setOcc] = useState([])
   const [summary, setSummary] = useState(null)
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
@@ -60,6 +78,13 @@ export default function LessonSchedule({ token, onOpenLesson }) {
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [token])
+
+  const shiftWeek = (dir) => {
+    const d = dateFromKey(selectedDayKey)
+    d.setDate(d.getDate() + 7 * dir)
+    setSelectedDayKey(dayKey(d))
+    setView({ year: d.getFullYear(), month: d.getMonth() })
+  }
 
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])
   const featured = useMemo(() => pickFeaturedOccurrence(occ), [occ])
@@ -114,8 +139,9 @@ export default function LessonSchedule({ token, onOpenLesson }) {
               selectedDayKey={selectedDayKey}
               occByDay={occByDay}
               onSelectDay={setSelectedDayKey}
-              onPrevMonth={() => setView((v) => monthShift(v.year, v.month, -1))}
-              onNextMonth={() => setView((v) => monthShift(v.year, v.month, 1))}
+              week={phone}
+              onPrevMonth={phone ? () => shiftWeek(-1) : () => setView((v) => monthShift(v.year, v.month, -1))}
+              onNextMonth={phone ? () => shiftWeek(1) : () => setView((v) => monthShift(v.year, v.month, 1))}
             />
             <DayPanel
               dayDate={dateFromKey(selectedDayKey)}
