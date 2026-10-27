@@ -16,6 +16,9 @@ import useReadingVoice from './useReadingVoice.js'
 export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish, initialTab, focusEx }) {
   const { t, lang } = useI18n()
   const [tab, setTab] = useState(initialTab === 'ex' ? 'ex' : 'text')
+  // Телефон показывает задания по одному (кадры «Задания» макета приложения);
+  // «Открыть» из итогов ставит сразу нужное.
+  const [step, setStep] = useState(() => (focusEx == null ? 0 : focusEx))
 
   // «Открыть» из итогов ведёт к конкретному заданию, как data-goto прототипа
   // (:1115): вкладка заданий + прокрутка. Раньше вкладка не передавалась, и на
@@ -127,8 +130,36 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
         </aside>
 
         <section className="rd-pane rd-pane--ex" id="rd-pane-ex" role="tabpanel" aria-labelledby="rd-tab-ex">
-          <ReadingTasks text={text} unchecked={unchecked} />
-          <div className="rd-finish">
+          {/* Полоса «N / M» и «Назад · Далее» — только для телефона: на компьютере
+              задания идут списком, и hidden прячет их без правки reading.css;
+              мобильный слой открывает их обратно. */}
+          <div className="rd-stepper" hidden>
+            <div className="rd-stepper__bar" aria-hidden="true">
+              <i style={{ width: `${((step + 1) / text.exercises.length) * 100}%` }} />
+            </div>
+            <span className="rd-stepper__count">{step + 1} / {text.exercises.length}</span>
+          </div>
+          <ReadingTasks text={text} unchecked={unchecked} step={step} />
+          <div className="rd-stepper-nav" hidden>
+            <button
+              type="button"
+              className="rd-btn rd-btn--secondary"
+              disabled={step === 0}
+              onClick={() => { setStep((n) => Math.max(0, n - 1)); window.scrollTo({ top: 0, behavior: 'auto' }) }}
+            >
+              ← {t('common.back')}
+            </button>
+            {step < text.exercises.length - 1 && (
+              <button
+                type="button"
+                className="rd-btn rd-btn--primary"
+                onClick={() => { setStep((n) => Math.min(text.exercises.length - 1, n + 1)); window.scrollTo({ top: 0, behavior: 'auto' }) }}
+              >
+                {t('reading.step.next')} →
+              </button>
+            )}
+          </div>
+          <div className={`rd-finish${step === text.exercises.length - 1 ? ' is-last' : ''}`}>
             <p>🏁 {t('reading.finishHint')}</p>
             <button
               type="button"

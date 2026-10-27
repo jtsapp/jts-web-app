@@ -515,10 +515,56 @@
   }
 
   /* ---------- 5–11 · Задания ----------
-     В макете задание — отдельный экран с полосой прогресса «1 / 5»; у нас они
-     списком под вкладкой (поток «по одному» — вопрос владельцу). Вид карточки
-     взят из кадров: тип — лавандовой пилюлей, вопрос 24/32, варианты 56 r16,
-     «Проверить» во всю ширину, «Показать ответ» — ссылкой. */
+     Как в макете — по одному на экран: полоса «N / M» сверху, «Назад · Далее»
+     снизу, «Завершить» — на последнем. Остальные задания смонтированы (держат
+     ответы для «Завершить»), здесь они только спрятаны. Полоса и «Назад · Далее»
+     в разметке с hidden — на компьютере их нет. Вид карточки по кадрам: тип —
+     лавандовой пилюлей, вопрос 24/32, варианты 56 r16, «Проверить» во всю ширину,
+     «Показать ответ» — ссылкой. */
+  .rd-pane--ex .rd-ex:not(.is-step),
+  .rd-pane--ex .rd-finish:not(.is-last) {
+    display: none;
+  }
+  .rd-stepper[hidden] {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .rd-stepper__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+    overflow: hidden;
+  }
+  .rd-stepper__bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #9047ff;
+    transition: width 0.2s ease;
+  }
+  .rd-stepper__count {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .rd-stepper-nav[hidden] {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+  }
+  .rd-stepper-nav .rd-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+  .rd-stepper-nav .rd-btn:disabled {
+    visibility: hidden;
+  }
   /* Задание лежит прямо на сером фоне экрана — белые здесь варианты и карточки
      утверждений, а не рамка всего задания. */
   .rd-ex {
@@ -1507,5 +1553,15 @@
   }
   html[data-theme='dark'] .bk .vd__back {
     background: transparent;
+  }
+  html[data-theme='dark'] .rd .rd-stepper__bar {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-stepper__count {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-stepper-nav .rd-btn--secondary {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
   }
 }
