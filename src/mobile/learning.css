@@ -1808,3 +1808,14 @@
     color: var(--dk-acc-text);
   }
 }
+@media (max-width: 560px) {
+  /* У экзамена в полосе не плашка стадии, а заголовок — без подложки; рамки
+     вариантов генератор красил фиолетовым. */
+  html[data-theme='dark'] .cp.ex .cp-bar__place b {
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .ex .ex-opt:not(.is-sel):not(.is-right):not(.is-wrong) {
+    border-color: var(--dk-line);
+  }
+}
