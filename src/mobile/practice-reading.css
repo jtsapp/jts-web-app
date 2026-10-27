@@ -1112,6 +1112,110 @@
     line-height: 32px;
   }
 
+  /* ---------- Комиксы · 2 · Чтение комикса ----------
+     Кадр 6605:10737: читалка на тёмном фоне в любой теме (страница — белый
+     лист), навбар: стрелка, название и «N / M» по центру, «на весь экран» справа.
+     Кнопки угла (язык, колокольчик) у читалки не нужны, как у книжки. */
+  .learn__main:has(.cr) {
+    background: #121212;
+  }
+  .learn__main:has(.cr) .learn__bell {
+    display: none;
+  }
+  .cr {
+    gap: 12px;
+    padding: 0 16px 16px;
+    color: #fff;
+  }
+  .cr__progress {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .cr__bar {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 0;
+    min-height: 52px;
+    margin: 0 -12px;
+  }
+  .cr__back,
+  .cr__full {
+    grid-row: 1 / span 2;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+  }
+  .cr__back {
+    grid-column: 1;
+    font-size: 0;
+  }
+  .cr__back svg {
+    display: none;
+  }
+  .cr__back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .cr__full {
+    grid-column: 3;
+  }
+  .cr__fullLabel {
+    display: none;
+  }
+  .cr__title {
+    grid-column: 2;
+    grid-row: 1;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: center;
+  }
+  .cr__author {
+    display: none;
+  }
+  .cr__count {
+    grid-column: 2;
+    grid-row: 2;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: center;
+  }
+  .cr__page {
+    padding: 8px;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .cr__text {
+    border: 0;
+    border-radius: 20px;
+    background: #1f1f22;
+    color: #fff;
+  }
+  .cr__textTitle {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .cr__en {
+    color: #fff;
+  }
+  .cr__hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    text-align: center;
+  }
+
   /* ---------- Тёмная тема ----------
      Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
      (генератор theme-dark.generated.css этот файл не знает). */
