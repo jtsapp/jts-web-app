@@ -1307,6 +1307,124 @@
   }
 }
 
+/* Сверка с кадрами «Шаг · теория» (6432:7050) и «Практика · вопрос» (6432:7104): выход — «×» без рамки,
+   «Шаг N из M» серым текстом, заголовок шага 24, теория — сиреневой карточкой с подписью капсом, три формы —
+   белыми строками с цветными чипами, «Частая ошибка» — оранжевой карточкой, неактивная «Проверить» — бледно-
+   фиолетовой. Полосы прогресса в документе нет (у шагов нет доли пройденного) — её не рисуем. */
+@media (max-width: 560px) {
+  .lw-doc__back {
+    border: 0;
+    background:
+      linear-gradient(45deg, transparent calc(50% - 1px), #181818 calc(50% - 1px), #181818 calc(50% + 1px), transparent calc(50% + 1px)) center / 16px 16px no-repeat,
+      linear-gradient(-45deg, transparent calc(50% - 1px), #181818 calc(50% - 1px), #181818 calc(50% + 1px), transparent calc(50% + 1px)) center / 16px 16px no-repeat;
+  }
+  .lw-doc__back > svg {
+    display: none;
+  }
+  .lw-doc__count {
+    display: inline-block;
+    flex: none;
+    white-space: nowrap;
+    padding: 0;
+    background: none;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .lw-doc .lw-step-head__title {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+
+  .lw-doc .lw-theory {
+    padding: 16px;
+    border: 0;
+    border-radius: 20px;
+    background: #f3eeff;
+    box-shadow: none;
+  }
+  .lw-doc .lw-theory__kicker {
+    padding: 0;
+    background: none;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9047ff;
+  }
+  .lw-doc .lw-theory__title {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  .lw-doc .lw-theory__text {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 22px;
+    color: #5a5a66;
+  }
+  .lw-doc .lw-form-chip {
+    border-radius: 12px;
+    background: #fff;
+  }
+  .lw-doc .lw-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: none;
+  }
+  .lw-doc .lw-table__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .lw-doc .lw-table__kind {
+    flex: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .lw-doc .lw-table__row:nth-child(1) .lw-table__kind {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .lw-doc .lw-table__row:nth-child(2) .lw-table__kind {
+    background: #ffeceb;
+    color: #d93a2f;
+  }
+  .lw-doc .lw-table__example {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 22px;
+    color: #181818;
+  }
+  .lw-doc .lw-mistake {
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #fff1e0;
+  }
+  .lw-doc .lw-mistake__icon {
+    color: #ff7d1d;
+  }
+  .lw-doc .lw-practice__check:disabled {
+    border: 0;
+    background: #d9c8ff;
+    color: #fff;
+    opacity: 1;
+  }
+}
+
 /* ---------- Живой урок: листы «Темы урока» и «Чат урока» (4676:4312, 4676:4337) ---------- */
 @media (max-width: 560px) {
   .lv-modal {
