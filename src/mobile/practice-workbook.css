@@ -981,4 +981,122 @@
     -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
     mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
   }
+
+  /* ---------- Зачёт юнита (кадр 6605:15602 «12 · Зачёт юнита») ----------
+     Результат — плашка r20: не сдан — светло-красная, число 48/800
+     красным; сдан — зелёная. Подпись 12/700 капсом серым, вывод 16/700. */
+  .wb-testscore {
+    margin: 0 0 12px;
+    padding: 20px 16px;
+    border-radius: 20px;
+    background: #fdecec;
+  }
+  .wb-testscore__k {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    color: #8e8e99;
+  }
+  .wb-testscore__n {
+    margin: 4px 0;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 56px;
+    color: #e5484d;
+  }
+  .wb-testscore__v {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-testscore.is-pass {
+    background: #e3f6ea;
+  }
+  .wb-testscore.is-pass .wb-testscore__n {
+    color: #1f9d55;
+  }
+  .wb-kick {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wb-wrapt {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  /* Вторая кнопка полосы (к тетради / заново) — контурная r16, как «К тетради»
+     в кадре «Урок пройден». */
+  .wb-actionbar .wb-ghost {
+    flex: none;
+    height: 48px;
+    padding: 0 16px;
+    border: 2px solid #9047ff;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9047ff;
+    box-shadow: none;
+  }
+
+  /* Итог урока: значок — фиолетовый круг 64 в лавандовой карточке (в кадре
+     кубок), самопроверка — белые строки r16 с рамкой. */
+  .wb-done__big {
+    width: 64px;
+    height: 64px;
+    background: #fff;
+    color: #9047ff;
+  }
+  .wb-sect h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .wb-scrow {
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .wb-scrow.is-on {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+  }
+  .wb-scrow__box {
+    border: 2px solid #e8e8ee;
+  }
+  .wb-scrow.is-on .wb-scrow__box {
+    border-color: #1f9d55;
+    background: #1f9d55;
+  }
+  html[data-theme='dark'] body .wb-testscore {
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] body .wb-testscore.is-pass {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] body :is(.wb-testscore__v, .wb-wrapt, .wb-sect h3) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-actionbar .wb-ghost {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-scrow {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-done__big {
+    background: var(--dk-card);
+  }
 }
