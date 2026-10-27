@@ -24,6 +24,7 @@ import { layoutPickups } from '../../../practice/arcade/runner/pickups.js'
 import { missToast } from '../../../practice/arcade/runner/hud.js'
 import { cuesOf } from '../../../practice/arcade/runner/cues.js'
 import { useArcadeFullscreen } from '../useArcadeFullscreen.js'
+import { usePhoneWidth } from '../../../lib/usePhoneWidth.js'
 import { formatNumber } from '../format.js'
 import RunnerResults from './RunnerResults.jsx'
 import { isRunnerSoundOn, playRunnerCue, setRunnerSoundOn, sleepRunnerSound, wakeRunnerSound } from './runnerSound.js'
@@ -396,6 +397,10 @@ export default function RunnerGame({ onExit }) {
   }
 
   const busy = !['ready', 'finished'].includes(status)
+  // На телефоне «На старт!» и «Пауза» — по макету приложения (Figma «Mobile»,
+  // Word Rush 6605:11851 и 6605:11778): правила карточками, пауза листом снизу
+  // с выходом из игры. Кнопки и обработчики те же, меняется только вид.
+  const phone = usePhoneWidth()
 
   let overlay = null
   if (error === 'webgl') {
@@ -414,6 +419,50 @@ export default function RunnerGame({ onExit }) {
       <div className="ar-run-over">
         <span className="ar-spinner" aria-hidden="true" />
         <p role="status">{t(status === 'loading' ? 'arcade.run.loading' : 'arcade.run.loadingWords')}</p>
+      </div>
+    )
+  } else if (status === 'ready' && phone) {
+    const moves = [
+      ['side', 'swap_horiz'],
+      ['up', 'up'],
+      ['down', 'down'],
+      ['edge', 'edge'],
+    ]
+    overlay = (
+      <div className="ar-run-over ar-run-start">
+        <h3>{t('arcade.run.ready')}</h3>
+        <p>{t('arcade.run.readyHint')}</p>
+        <div className="ar-run-start__chips">
+          <span className="ar-run-start__chip ar-run-start__chip--lives">{t('arcade.run.start.lives')}</span>
+          <span className="ar-run-start__chip ar-run-start__chip--speed">{t('arcade.run.start.faster')}</span>
+        </div>
+        <h4>{t('arcade.run.start.how')}</h4>
+        <ul className="ar-run-start__moves">
+          {moves.map(([key, ico]) => (
+            <li key={key} className={`ar-run-start__move ar-run-start__move--${ico}`}>
+              <b>{t(`arcade.run.start.${key}`)}</b>
+              <span>{t(`arcade.run.start.${key}Sub`)}</span>
+            </li>
+          ))}
+        </ul>
+        <h4>{t('arcade.run.start.obstacles')}</h4>
+        <ul className="ar-run-start__obstacles">
+          {['barrier', 'boom', 'bus'].map((key) => (
+            <li key={key} className={`ar-run-start__obstacle ar-run-start__obstacle--${key}`}>
+              <b>{t(`arcade.run.start.${key}`)}</b>
+              <span>{t(`arcade.run.start.${key}Sub`)}</span>
+            </li>
+          ))}
+        </ul>
+        {error === 'words' && (
+          <p className="ar-run-error" role="alert">
+            {t('arcade.run.error.words')}
+          </p>
+        )}
+        <button type="button" className="ar-run-btn" onClick={() => void start()}>
+          <PlayIcon size={18} />
+          {t(error === 'words' ? 'arcade.run.retry' : 'arcade.run.start')}
+        </button>
       </div>
     )
   } else if (status === 'ready') {
@@ -442,13 +491,19 @@ export default function RunnerGame({ onExit }) {
     )
   } else if (status === 'paused') {
     overlay = (
-      <div className="ar-run-over">
+      <div className={`ar-run-over${phone ? ' ar-run-sheet' : ''}`}>
+        {phone && <span className="ar-run-sheet__ico" aria-hidden="true" />}
         <h3>{t('arcade.run.paused')}</h3>
         <p>{t('arcade.run.pausedHint')}</p>
         <button type="button" className="ar-run-btn" onClick={togglePause}>
           <PlayIcon size={16} />
           {t('arcade.run.resume')}
         </button>
+        {phone && onExit && (
+          <button type="button" className="ar-run-btn ar-run-btn--ghost" onClick={onExit}>
+            {t('arcade.run.quit')}
+          </button>
+        )}
       </div>
     )
   } else if (status === 'finished' && result) {

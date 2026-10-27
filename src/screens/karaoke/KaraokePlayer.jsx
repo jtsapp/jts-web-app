@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useI18n } from '../../i18n.jsx'
 import { pluralForm } from '../../lib/plural.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 import { sungSeconds, fullText } from '../../practice/karaoke/karaokeShape.js'
 import {
   referenceMask,
@@ -133,6 +134,9 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRa
 
 export default function KaraokePlayer({ track, doc, failed, range, onResult, onLineResult, onExit }) {
   const { t, lang } = useI18n()
+  // На телефоне «Закончить» — белым чипом в шапке справа (Figma «Mobile»,
+  // караоке 6605:19684), а не кнопкой под перемоткой. Кнопка одна, тот же обработчик.
+  const phone = usePhoneWidth()
   const lines = doc?.lines || []
   const duration = doc?.duration || 0
   const from = range ? range.from : 0
@@ -637,6 +641,11 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
           <MicIco size={16} />
           <span className="kk-top__micLabel">{t('karaoke.mic')}</span>
         </button>
+        {phone && (
+          <button type="button" className="kk-pill kk-top__finish" onClick={callFinish} disabled={!live}>
+            {t('karaoke.finish')}
+          </button>
+        )}
       </header>
 
       <main className="kk-stage">
@@ -740,9 +749,11 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
           </div>
 
           <div className="kk-ctl__right">
-            <button type="button" className="kk-finish" onClick={callFinish} disabled={!live}>
-              {t('karaoke.finish')}
-            </button>
+            {!phone && (
+              <button type="button" className="kk-finish" onClick={callFinish} disabled={!live}>
+                {t('karaoke.finish')}
+              </button>
+            )}
           </div>
         </div>
       </footer>
