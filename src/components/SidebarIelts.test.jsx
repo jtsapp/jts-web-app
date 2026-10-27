@@ -25,18 +25,21 @@ function tokenFor(role) {
 describe('Sidebar — аккаунт IELTS', () => {
   it('показывает только разделы из макета', async () => {
     const onProfile = vi.fn()
+    const onNav = vi.fn()
     render(
       <I18nProvider>
-        <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={onProfile} />
+        <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={onNav} onProfile={onProfile} />
       </I18nProvider>
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
     const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
-    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы'])
+    expect(items).toEqual(['Главная', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы', 'Feedback'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
     expect(onProfile).toHaveBeenCalled()
+    screen.getByRole('button', { name: 'Feedback' }).click()
+    expect(onNav).toHaveBeenCalledWith('feedback')
   })
 
   it('доступ к одному SAT даёт то же меню — с «Повторением», IELTS и SAT', async () => {

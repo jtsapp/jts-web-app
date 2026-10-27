@@ -318,7 +318,40 @@ export const FEEDBACK_TEXTS = {
   "Не удалось сохранить вложения": [
     "Тіркемелер сақталмады",
     "Could not save attachments"
-  ]
+  ],
+  "Хороший отзыв о преподавателе": ["Оқытушы туралы жақсы пікір", "Positive review of a teacher"],
+  "Жалоба на менеджера": ["Менеджерге шағым", "Complaint about a manager"],
+  "Жалоба на платформу": ["Платформаға шағым", "Platform complaint"],
+  "Выберите, о чём хотите написать. Мы сами передадим обращение тому, кто за это отвечает.": ["Не туралы жазғыңыз келетінін таңдаңыз. Өтінішіңізді жауапты маманға өзіміз жібереміз.", "Choose what you would like to write about. We will send your message to the right person."],
+  "Тип обратной связи": ["Кері байланыс түрі", "Feedback type"],
+  "Ваш преподаватель:": ["Сіздің оқытушыңыз:", "Your teacher:"],
+  "Ваш менеджер:": ["Сіздің менеджеріңіз:", "Your manager:"],
+  "Преподаватель пока не назначен": ["Оқытушы әлі тағайындалмаған", "No teacher assigned yet"],
+  "Что понравилось?": ["Сізге не ұнады?", "What did you like?"],
+  "Что случилось?": ["Не болды?", "What happened?"],
+  "Напишите пару предложений": ["Бірнеше сөйлем жазыңыз", "Write a few sentences"],
+  "Скриншот или файл": ["Скриншот немесе файл", "Screenshot or file"],
+  "JPG, PNG или PDF · до 10 МБ · до 5 файлов": ["JPG, PNG немесе PDF · 10 МБ дейін · 5 файлға дейін", "JPG, PNG or PDF · up to 10 MB · up to 5 files"],
+  "Удалить файл {name}": ["{name} файлын жою", "Remove file {name}"],
+  "Отмена": ["Бас тарту", "Cancel"],
+  "Отправляем…": ["Жіберілуде…", "Sending…"],
+  "Спасибо! Ваш отзыв отправлен преподавателю.": ["Рақмет! Пікіріңіз оқытушыға жіберілді.", "Thank you! Your review was sent to the teacher."],
+  "Не удалось загрузить преподавателей.": ["Оқытушылар жүктелмеді.", "Could not load teachers."],
+  "Не удалось загрузить обращения.": ["Өтініштер жүктелмеді.", "Could not load your feedback."],
+  "Не удалось загрузить переписку.": ["Хат алмасу жүктелмеді.", "Could not load the conversation."],
+  "Повторить": ["Қайталау", "Retry"],
+  "Можно обратиться только по своему преподавателю": ["Тек өз оқытушыңыз туралы өтініш беруге болады", "You can only submit feedback about your own teacher"],
+  "Нельзя указать другого менеджера": ["Басқа менеджерді көрсетуге болмайды", "You cannot select another manager"],
+  "Можно приложить не больше 5 файлов": ["5 файлдан артық тіркеуге болмайды", "You can attach no more than 5 files"],
+  "Разрешены только файлы JPG, PNG и PDF": ["Тек JPG, PNG және PDF файлдары рұқсат етіледі", "Only JPG, PNG and PDF files are allowed"],
+  "Не удалось загрузить вложение": ["Тіркеме жүктелмеді", "Could not upload the attachment"],
+  "Не удалось прочитать вложение": ["Тіркеме оқылмады", "Could not read the attachment"],
+  "Доставлено": ["Жеткізілді", "Delivered"],
+  "Новое": ["Жаңа", "New"],
+  "В работе": ["Қаралуда", "In progress"],
+  "Решено": ["Шешілді", "Resolved"],
+  "Отклонено": ["Қабылданбады", "Rejected"],
+  "Отозвано": ["Қайтарып алынды", "Withdrawn"]
 }
 export function feedbackText(lang, source, params = {}) {
   const pair = FEEDBACK_TEXTS[source]
