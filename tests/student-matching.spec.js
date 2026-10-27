@@ -181,3 +181,29 @@ test('сетка открывается на первом времени со с
   await expect(page.getByRole('button', { name: /^Пн 07:00/ })).not.toBeInViewport()
   await expect(page.getByRole('columnheader', { name: 'Пт', exact: true })).toBeInViewport()
 })
+
+// У .learn__main своих полей нет: до 1160 px (колонка подбора — 1120) заголовок и карточки ложились к краю окна.
+test('узкий экран: у «Мой учитель» и мастера поле 16 px по бокам', async ({ page }) => {
+  const gaps = (sel) => page.locator(sel).first().evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    return { left: r.left, right: document.documentElement.clientWidth - r.right }
+  })
+  for (const width of [375, 700]) {
+    await page.setViewportSize({ width, height: 800 })
+    await setup(page, proposedCard())
+    await page.goto('/?screen=my-teacher')
+    await expect(page.getByRole('heading', { name: 'Мой учитель' })).toBeVisible()
+    expect((await gaps('.mt-wrap .mt-h1')).left).toBeGreaterThanOrEqual(16)
+    const card = await gaps('.mt-wrap .mt-card')
+    expect(card.left).toBeGreaterThanOrEqual(16)
+    expect(card.right).toBeGreaterThanOrEqual(16)
+
+    // мастер с чистой карточкой — с шага формата (поздний page.route перекрывает ранний)
+    await setup(page, {})
+    await page.goto('/?screen=teacher-wizard')
+    await expect(page.getByRole('heading', { name: 'Как вы хотите заниматься?' })).toBeVisible()
+    const opt = await gaps('.mt-wrap .mt-opt')
+    expect(opt.left).toBeGreaterThanOrEqual(16)
+    expect(opt.right).toBeGreaterThanOrEqual(16)
+  }
+})

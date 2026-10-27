@@ -62,7 +62,7 @@ const TEACHER_SECTIONS = ['lessons', 'practice']
 // General English), а внизу «Настройки». Игровых счётчиков и плашки уровня в макете нет.
 // С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и в нём всегда ОБА экзамена: доступ к
 // одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в меню — владелец, 13.10.2026.
-const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes']
+const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
