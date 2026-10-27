@@ -1425,6 +1425,73 @@
   }
 }
 
+/* ---------- Выход из урока (кадры 6432:7500 и 6431:12041) ----------
+   Диалог общий (LessonExitConfirm); по умолчанию его телефонный вид — в src/mobile/learning.css другой части.
+   Здесь — только внутри живого (.lv) и самостоятельного урока (lesson-workspace), как в кадрах «Уроков»: лист с
+   ручкой вместо крестика, заголовок 20, главная кнопка — «остаться» (фиолетовая 56), «выйти» — текстом под ней.
+   Разметка ставит «выйти» первой, поэтому колонка перевёрнута. */
+@media (max-width: 560px) {
+  :is(.lv, [data-testid='lesson-workspace']) .lx-card {
+    position: relative;
+    padding-top: 12px;
+    border-radius: 28px 28px 0 0;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-card::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    margin-left: -20px;
+    border-radius: 999px;
+    background: #e0e0e8;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-close {
+    display: none;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-head {
+    padding: 16px 16px 0;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-title {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-sub {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #5a5a66;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-acts {
+    flex-direction: column-reverse;
+    gap: 4px;
+    padding: 16px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-continue {
+    height: 56px;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    box-shadow: none;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  :is(.lv, [data-testid='lesson-workspace']) .lx-leave {
+    height: 48px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 15px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+}
+
 /* ---------- Живой урок: листы «Темы урока» и «Чат урока» (4676:4312, 4676:4337) ---------- */
 @media (max-width: 560px) {
   .lv-modal {
