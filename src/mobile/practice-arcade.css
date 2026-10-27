@@ -176,6 +176,39 @@
     color: var(--dk-text-2);
   }
 
+  /* ---------- Караоке · «поём» (кадр 6605:19684) ----------
+     Управление внизу — прямо на фоне, без стеклянной панели: перемотка ±5
+     прозрачными кругами 48, «плей/пауза» — белый круг 72 с фиолетовым
+     значком. Плашки сверху — стекло 20% r999, подписи 12/700. */
+  .kk-ctl {
+    gap: 16px;
+    padding: 0;
+    border: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .kk-round {
+    border: 0;
+    background: none;
+  }
+  .kk-main {
+    width: 72px;
+    height: 72px;
+    color: #9047ff;
+  }
+  .kk-main__pause i {
+    width: 7px;
+    height: 26px;
+  }
+  .kk-pill {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+
   /* ---------- «Аркада»: шапка всех экранов (Navbar 52, кадр 6605:10811) ----------
      Стрелка-«назад» 48 слева, название раздела 16/700 по центру. Подпись
      кнопки («← В Практику» / «← К играм») остаётся для скринридера. Кнопки
