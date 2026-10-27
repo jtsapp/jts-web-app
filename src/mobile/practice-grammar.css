@@ -935,25 +935,39 @@
 
   /* ---------- Практика: прогресс, задание, плашка ответа ---------- */
 
+  /* Кадр «Mobile» 6605:14367 «6 · Выбери форму»: прогресс — полоса 8 r999
+     (#e4daf8, заливка фиолетовая) и процент 12/700 серым без плашки. */
   .gr-lesson .gr-practice {
-    padding-top: 24px;
+    padding-top: 8px;
   }
   .gr-lesson .gr-lprog-row {
     flex: none;
-    gap: 12px;
-    height: 38px;
-    margin-bottom: 24px;
-    padding: 4px 4px 4px 12px;
-    border-radius: 50px;
-    background: #fff;
+    gap: 8px;
+    height: 24px;
+    margin-bottom: 16px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .gr-lesson .gr-lprog {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .gr-lesson .gr-lprog__bar {
+    border-radius: 999px;
+    background: #9047ff;
   }
   .gr-lesson .gr-lprog__pct {
-    min-width: 49px;
-    height: 30px;
-    padding: 4px 12px;
-    font-size: 16px;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 22px;
+    line-height: 16px;
+    color: #5a5a66;
   }
 
   .gr-lesson .gr-act {
@@ -961,76 +975,79 @@
     display: flex;
     flex-direction: column;
   }
-  .gr-lesson .gr-actq {
-    margin: 0 0 24px;
-    max-width: none;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 29px;
-    color: #17171c;
-  }
-
-  /* В выборе формы у кадра две строки: задание 24 тёмным и сама фраза 32
-     фиолетовым. У mc в данных есть только фраза, а задание — ярлык типа
-     (typeLabel), который в остальных типах дублирует инструкцию и спрятан.
-     Здесь показываем его заголовком. */
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) .gr-act__top {
+  /* Над заданием — пилюля типа (у компьютера ярлык спрятан): 32 r999
+     лавандовая, 12/700 фиолетовым. Этап и счётчик в кадре не нарисованы. */
+  .gr-lesson .gr-act__top {
     display: block;
-    margin: 0 0 6px;
-    text-align: center;
+    margin: 0 0 8px;
   }
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) :is(.gr-act__stage, .gr-act__count) {
+  .gr-lesson .gr-act__stage,
+  .gr-lesson .gr-act__count {
     display: none;
   }
-  .gr-lesson .gr-act:has(.gr-act__body > .gr-opts) .gr-act__type {
-    display: block;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    font-size: 24px;
+  .gr-lesson .gr-act__type {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
     font-weight: 700;
-    line-height: 29px;
+    line-height: 16px;
     letter-spacing: 0;
     text-transform: none;
-    color: #17171c;
-  }
-  .gr-lesson .gr-act__body > .gr-actq:has(+ .gr-opts) {
-    font-size: 32px;
-    line-height: 38px;
     color: #9047ff;
   }
+  /* Вопрос 24/800 тёмным, по левому краю. */
+  .gr-lesson .gr-actq {
+    margin: 0 0 16px;
+    max-width: none;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    text-align: left;
+    color: #181818;
+  }
 
-  /* Варианты: пилюли 59 (16/700), зазор 12. */
+  /* Варианты — белые карточки 60 r16 с рамкой 2 #e8e8ee, текст 16/600
+     серым слева; выбранный — фиолетовая рамка, верный — зелёная плашка
+     #e3f6ea с рамкой #1f9d55, неверный — красная в той же системе. */
   .gr-lesson .gr-opts {
     gap: 12px;
     max-width: none;
   }
   .gr-lesson .gr-opt {
-    min-height: 59px;
-    padding: 20px 24px;
-    border: 0;
-    border-radius: 999px;
+    justify-content: flex-start;
+    min-height: 60px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
     background: #fff;
     font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    color: #17171c;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: left;
+    color: #8e8e99;
   }
   .gr-lesson .gr-opt:hover:not(:disabled) {
     background: #fff;
   }
   .gr-lesson .gr-opt.sel,
   .gr-lesson .gr-opt.sel:hover {
-    background: #9047ff;
-    color: #fff;
+    border-color: #9047ff;
+    background: #f6f1ff;
+    color: #181818;
   }
   .gr-lesson .gr-opt.correct {
-    background: #31b423;
-    color: #fff;
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
   }
   .gr-lesson .gr-opt.wrong {
-    background: #ff4646;
-    color: #fff;
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #181818;
   }
 
   /* Плашка ответа над кнопкой: капсула 77, круг 42 с иконкой (экспорт),
@@ -1118,17 +1135,56 @@
   }
   .gr-lesson .gr-check,
   .gr-lesson .gr-next {
-    height: 48px;
-    border-radius: 80px;
+    height: 56px;
+    border-radius: 16px;
     background: #9047ff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 17px;
+    line-height: 24px;
     box-shadow: none;
   }
   .gr-lesson .gr-check:disabled {
     background: #ebdeff;
     color: #cfafff;
+  }
+
+  /* Тёмная: прогресс, пилюля задания, варианты — токенами. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog-row {
+    background: none;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog {
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lprog__pct {
+    background: none;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-act__type {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-actq {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.sel {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.correct {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-opt.wrong {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+    color: var(--dk-text);
   }
 
   /* ---------- Порядок слов (кадры 4273:6259…6800) ---------- */
