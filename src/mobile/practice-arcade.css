@@ -583,6 +583,142 @@
     color: #fff;
   }
 
+  /* ---------- Word Rush · забег (кадр 6605:11657) ----------
+     Сцену three.js не трогаем — только HUD поверх неё: вопрос в стеклянной
+     плашке r20 с белой рамкой, варианты — белыми карточками r16 с
+     фиолетовой рамкой 3, подписи 18/800. */
+  .ar-run-ask {
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    background: rgba(36, 32, 46, 0.55);
+  }
+  .ar-run-options li {
+    border: 3px solid #b48cff;
+    border-radius: 16px;
+    background: #fff;
+    font-weight: 800;
+    color: #181818;
+  }
+
+  /* ---------- Word Rush · итоги (кадр 6605:11601) ----------
+     Заголовок и «Новый рекорд!» — сиреневой плашкой r24 по центру; цифры —
+     белыми карточками r20 по две в ряд (подпись 12/700, число 24/800);
+     ошибки — белыми строками r16, выбранное — красным; «Ещё забег» —
+     фиолетовая 56 r16, «К играм» — текстовая. */
+  .ar-run-results .ar-results__head {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 20px;
+    border-radius: 24px;
+    background: #efe7ff;
+    text-align: center;
+  }
+  .ar-run-results .ar-results__head h2 {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+  .ar-run-record {
+    align-self: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #fff;
+  }
+  .ar-run-results__grid {
+    gap: 12px;
+  }
+  .ar-run-results .ar-stat {
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .ar-run-results .ar-stat__label {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #5a5a66;
+  }
+  .ar-run-results .ar-stat b,
+  .ar-run-results .ar-stat strong {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+  .ar-run-results__sub {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  .ar-run-mistakes li {
+    padding: 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .ar-run-mistakes small {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #d9363e;
+  }
+  .ar-run-results__actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ar-run-results__actions .ar-run-btn {
+    justify-content: center;
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .ar-run-results__actions .ar-run-btn--ghost {
+    height: 48px;
+    border: 0;
+    background: none;
+    color: #9047ff;
+  }
+  html[data-theme='dark'] .ar .ar-run-results .ar-results__head {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .ar .ar-run-results .ar-results__head h2,
+  html[data-theme='dark'] .ar .ar-run-results .ar-stat b,
+  html[data-theme='dark'] .ar .ar-run-results .ar-stat strong,
+  html[data-theme='dark'] .ar .ar-run-results__sub {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .ar .ar-run-results .ar-stat,
+  html[data-theme='dark'] .ar .ar-run-mistakes li {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .ar .ar-run-results .ar-stat__label {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .ar .ar-run-results__actions .ar-run-btn--ghost {
+    background: none;
+    color: var(--dk-acc-text);
+  }
+
   /* ---------- Шэдоуинг · урок (кадр 6605:18917) ----------
      Навбар как у «Аркады» (стрелка, «Шэдоуинг» по центру); спикеры —
      пилюлями 32 с номером в круге 24; видео r20 прямо на фоне, без карточки;
