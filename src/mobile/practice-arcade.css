@@ -417,4 +417,237 @@
     background: var(--dk-acc-soft);
     color: var(--dk-acc-text);
   }
+
+  /* ---------- Шэдоуинг · урок (кадр 6605:18917) ----------
+     Навбар как у «Аркады» (стрелка, «Шэдоуинг» по центру); спикеры —
+     пилюлями 32 с номером в круге 24; видео r20 прямо на фоне, без карточки;
+     режимы и управление — белыми пилюлями с рамкой, выбранное фиолетовым;
+     прогресс 8 сиреневым; скрипт — белая карточка r24, текущая фраза —
+     сиреневая плашка r16 с номером 28, кнопки фразы — круги 40. */
+  .learn__main:has(.sh) .learn__bell {
+    position: absolute;
+    top: 6px;
+    right: 16px;
+    z-index: 5;
+    padding: 0;
+  }
+  .sh-top {
+    position: relative;
+    justify-content: center;
+    min-height: 52px;
+    margin: 0 -12px 4px;
+  }
+  .sh-back,
+  .sh-back:hover {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    box-shadow: none;
+    filter: none;
+    font-size: 0;
+    color: #181818;
+  }
+  .sh-back svg {
+    display: none;
+  }
+  .sh-back::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    background: currentColor;
+    -webkit-mask: url(/assets/home-v2/ico/arrow_forward.svg) center / 24px no-repeat;
+    mask: url(/assets/home-v2/ico/arrow_forward.svg) center / 24px no-repeat;
+    transform: scaleX(-1);
+  }
+  .sh-crumb {
+    flex: none;
+    text-align: center;
+  }
+  .sh-crumb > :first-child {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .sh-crumb > :not(:first-child) {
+    display: none;
+  }
+  .sh-tabs {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .sh-tabs .pp-chip {
+    gap: 8px;
+    height: 34px;
+    padding: 4px 12px 4px 4px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #181818;
+  }
+  .sh-tabs .pp-chip--on {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .sh-tab__n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .sh-tabs .pp-chip--on .sh-tab__n {
+    background: #fff;
+    color: #9047ff;
+  }
+  .sh .sh-card:not(.sh-dev) {
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .sh-video {
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .sh-modes,
+  .sh-controls {
+    gap: 8px;
+  }
+  .sh-chip {
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .sh-chip--on {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .sh-controls__lbl {
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .sh-prog__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .sh-prog__val {
+    font-size: 12px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .sh-script:not(.sh-script--skeleton) {
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+  }
+  .sh-sec__head {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  .sh-sec__hint {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .sh-seg {
+    border-radius: 16px;
+  }
+  .sh-seg.is-active {
+    border-color: transparent;
+    background: #f6f1ff;
+  }
+  .sh-seg__num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .sh-seg__txt {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .sh-seg__time {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8e8e99;
+  }
+  .sh-seg__act {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  /* Микрофон фразы — фиолетовый круг, как в макете. */
+  .sh-seg__act + .sh-seg__act:not(.is-rec) {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .sh-locked {
+    border-radius: 16px;
+  }
+  html[data-theme='dark'] .sh .sh-back,
+  html[data-theme='dark'] .sh .sh-back:hover {
+    background: none;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sh .sh-crumb > :first-child,
+  html[data-theme='dark'] .sh .sh-sec__head {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .sh .sh-tabs .pp-chip,
+  html[data-theme='dark'] .sh .sh-chip {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .sh .sh-tabs .pp-chip--on,
+  html[data-theme='dark'] .sh .sh-chip--on {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .sh .sh-tab__n,
+  html[data-theme='dark'] .sh .sh-seg__num {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .sh .sh-script:not(.sh-script--skeleton) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .sh .sh-seg.is-active {
+    background: var(--dk-acc-tint);
+  }
 }
