@@ -92,6 +92,7 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
     })
 
   const specs = teacher?.card?.specializations || []
+  const name = teacher?.card?.name || p.teacherName
   return (
     <section className="mt-card mt-stack" style={{ border: '2px solid var(--mt-brand)' }}>
       <div className="mt-row">
@@ -99,9 +100,9 @@ export default function ConfirmCard({ token, view, tz, onDone, onProfile, onAddT
         {!counter && <span className="mt-tiny">{t('confirm.in24')}</span>}
       </div>
       <div className="mt-row">
-        <TeacherPhoto token={token} teacherId={p.teacherId} name={p.teacherName} hasPhoto={teacher?.card?.hasPhoto ?? true} className="mt-ava mt-ava--lg" />
+        <TeacherPhoto token={token} teacherId={p.teacherId} name={name} hasPhoto={teacher?.card?.hasPhoto ?? true} className="mt-ava mt-ava--lg" />
         <div>
-          <h2 className="mt-h2">{p.teacherName}</h2>
+          <h2 className="mt-h2">{name}</h2>
           <p className="mt-small mt-muted">
             {specs.join(', ')}
             {specs.length > 0 && ' · '}
