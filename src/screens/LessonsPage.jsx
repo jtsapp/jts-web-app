@@ -5,7 +5,7 @@ import LessonSchedule from './schedule/LessonSchedule.jsx'
 import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import ReportsTab from '../feedback/ReportsTab.jsx'
-import TeacherMatchingPanel from '../matching/TeacherMatchingPanel.jsx'
+import MatchingLinkCard from '../matching/MatchingLinkCard.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import { rememberPlace } from '../lib/navStack.js'
@@ -167,7 +167,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
           // Расписание — широкая раскладка: календарь и карточка урока занимают
           // всю страницу, в отличие от узкой заглушки «клубов» по центру.
           <div className="ls__body ls__body--wide">
-            {!teacher && <TeacherMatchingPanel token={token} />}
+            {!teacher && <MatchingLinkCard token={token} onOpen={() => onNav?.('my-teacher')} />}
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
           </div>
         )}

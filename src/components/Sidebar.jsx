@@ -9,6 +9,8 @@ import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
+import { useMatching } from '../matching/matchingStore.js'
+import { matchingView } from '../matching/matchingState.js'
 
 // «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
 // первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
@@ -20,6 +22,11 @@ import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx
 // (21.10.2026), файлами в public/assets/home-v2/ico. Рисуются маской
 // (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
 const HOME_ITEM = { key: 'home', label: 'nav.home', ico: 'home' }
+
+// «Мой учитель» (ТЗ 08 §1): сразу под «Главной», только ученику и только когда на стенде есть подбор v2 —
+// без него пункт вёл бы на «раздел скоро появится». Бейдж — когда от ученика ждут действия (matchingView).
+const MY_TEACHER_ITEM = { key: 'my-teacher', label: 'nav.myTeacher', ico: 'person' }
+const MATCHING_HIDDEN = new Set(['idle', 'loading', 'unavailable'])
 
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
@@ -121,9 +128,13 @@ export default function Sidebar({
     }
   }, [token, teacher])
 
-  const base = [HOME_ITEM, ...NAV]
+  const matching = matchingView(useMatching(teacher ? null : token || loadToken()))
+  const head = !teacher && !MATCHING_HIDDEN.has(matching.status) ? [HOME_ITEM, MY_TEACHER_ITEM] : [HOME_ITEM]
+  const badges = { 'my-teacher': matching.badge || 0 }
+
+  const base = [...head, ...NAV]
   // из NAV, а не NAV_FULL: в тьютор-онли аккаунт IELTS не должен видеть скрытые от всех разделы
-  const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
+  const ieltsNav = [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
   const nav = navAll.filter((item) => {
     if (!rewardsEnabled && isRewardsScreen(item.key)) return false
@@ -211,6 +222,7 @@ export default function Sidebar({
             >
               <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
+              {badges[key] > 0 && <b className="sb__badge">{badges[key]}</b>}
             </button>
           ))}
         </nav>

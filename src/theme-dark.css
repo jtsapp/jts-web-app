@@ -423,3 +423,37 @@ html[data-theme="dark"] .rg .lang-selector--globe {
   background: var(--rg-card);
   color: var(--rg-ink);
 }
+
+/* «Мой учитель» (src/matching.css): раздел пишет цвета токенами --mt-* на корне .mt, поэтому тёмной теме
+   хватает переопределить их здесь — правила раздела не трогаем. */
+html[data-theme="dark"] .mt {
+  --mt-brand: var(--dk-acc);
+  --mt-brand-2: var(--dk-acc-strong);
+  --mt-soft: var(--dk-acc-soft);
+  --mt-softer: var(--dk-acc-tint);
+  --mt-bg: var(--dk-chip);
+  --mt-surface: var(--dk-card);
+  --mt-fg: var(--dk-text);
+  --mt-fg-2: var(--dk-text-2);
+  --mt-fg-3: var(--dk-muted);
+  --mt-line: var(--dk-line);
+  --mt-ok: var(--dk-green);
+  --mt-ok-soft: var(--dk-green-soft);
+  --mt-warn: var(--dk-orange);
+  --mt-warn-soft: var(--dk-orange-soft);
+  --mt-bad: var(--dk-red);
+  --mt-bad-soft: var(--dk-red-soft);
+  --mt-gold: var(--dk-yellow);
+  --mt-bar: var(--dk-raised);
+  --mt-bar-fg: var(--dk-text);
+}
+html[data-theme="dark"] .mt .mt-pill,
+html[data-theme="dark"] .mt .mt-btn--ghost,
+html[data-theme="dark"] .mt .mt-slot--few,
+html[data-theme="dark"] .mt .mt-slot--many,
+html[data-theme="dark"] .mt .mt-opt__ic,
+html[data-theme="dark"] .mt .mt-li__ic,
+html[data-theme="dark"] .mt .mt-li__val,
+html[data-theme="dark"] .mt .mt-link {
+  color: var(--dk-acc-text);
+}

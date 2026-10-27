@@ -1,0 +1,1129 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Кабинет студента JTS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: app shell как на платформе — левое меню + рабочая область; сверху переключатель ролей прототипа */
+:root{
+  --brand:#9047FF; --brand-2:#7D33F0; --brand-soft:#F1E9FF; --brand-softer:#F7F4FE;
+  --bg:#F7F6FB; --surface:#FFFFFF; --fg:#171326; --fg-2:#656172; --fg-3:#8B8A97;
+  --line:#E9E6F2; --ok:#22A55B; --ok-soft:#E6F6EC; --warn:#B7791F; --warn-soft:#FDF3E1;
+  --bad:#D6408B; --bad-soft:#FCE8F2; --gold:#E8A020; --shadow:0 1px 2px rgba(23,19,38,.06),0 8px 24px rgba(23,19,38,.06);
+  --font:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --r:20px; --r-sm:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --brand:#A26BFF; --brand-2:#B88CFF; --brand-soft:#2A2140; --brand-softer:#1E1930;
+  --bg:#110E1B; --surface:#1A1626; --fg:#F1EFF7; --fg-2:#B3B0C0; --fg-3:#8B8899;
+  --line:#2E2940; --ok:#3CC57A; --ok-soft:#163223; --warn:#E5A84A; --warn-soft:#33270F;
+  --bad:#F06BAA; --bad-soft:#3A1729; --gold:#F0B440; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --brand:#A26BFF; --brand-2:#B88CFF; --brand-soft:#2A2140; --brand-softer:#1E1930;
+  --bg:#110E1B; --surface:#1A1626; --fg:#F1EFF7; --fg-2:#B3B0C0; --fg-3:#8B8899;
+  --line:#2E2940; --ok:#3CC57A; --ok-soft:#163223; --warn:#E5A84A; --warn-soft:#33270F;
+  --bad:#F06BAA; --bad-soft:#3A1729; --gold:#F0B440; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:24px;font-weight:800} h2{font-size:18px;font-weight:700} h3{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--fg-2)} .small{font-size:12.5px} .tiny{font-size:11.5px;color:var(--fg-3)}
+.num{font-variant-numeric:tabular-nums}
+
+/* верхняя полоса прототипа */
+.proto{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--fg);color:var(--surface);
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--fg)}
+.proto b{font-weight:800;letter-spacing:.02em}
+.roles{display:flex;gap:4px;background:rgba(255,255,255,.08);padding:4px;border-radius:999px;flex-wrap:wrap}
+.roles button{border:0;background:transparent;color:inherit;padding:6px 14px;border-radius:999px;font-weight:600;opacity:.75}
+.roles button[aria-pressed="true"]{background:var(--brand);opacity:1;color:#fff}
+.scen{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12.5px;opacity:.9}
+.scen select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:3px 6px;color:inherit}
+.scen select option{color:#171326}
+.scen label{display:flex;gap:6px;align-items:center}
+
+/* оболочка приложения */
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:calc(100vh - 52px)}
+.side{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:800;color:var(--brand);font-size:17px;padding:4px 10px 12px}
+.me{display:flex;gap:10px;align-items:center;background:var(--bg);border-radius:14px;padding:10px;margin-bottom:10px}
+.ava{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:var(--brand);flex:none}
+.ava.lg{width:72px;height:72px;font-size:24px}
+.nav{border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:14px;color:var(--brand);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nav.admin{color:var(--fg-2)}
+.nav:hover{background:var(--brand-softer)}
+.nav[aria-current="page"]{background:var(--brand);color:#fff}
+.nav .new{font-size:10px;background:var(--gold);color:#171326;border-radius:6px;padding:1px 6px;font-weight:800}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center}
+.main{padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bell{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:12px;width:40px;height:40px;display:grid;place-items:center}
+.bell .badge{position:absolute;top:-6px;right:-8px}
+.bellpop{position:absolute;right:0;top:48px;width:min(360px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);z-index:30;padding:8px;text-align:left}
+.bellpop .n{padding:10px;border-radius:10px;display:flex;gap:10px}
+.bellpop .n.unread{background:var(--brand-softer)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none;margin-top:6px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.btn{border:0;border-radius:14px;padding:11px 18px;font-weight:700;background:var(--brand);color:#fff;display:inline-flex;gap:8px;align-items:center;justify-content:center}
+.btn:hover{background:var(--brand-2)}
+.btn.ghost{background:var(--brand-soft);color:var(--brand)}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.btn.ok{background:var(--ok)} .btn.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;background:var(--brand-soft);color:var(--brand)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.gray{background:var(--bg);color:var(--fg-2)}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.banner{border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.banner.warn{background:var(--warn-soft);color:var(--warn)} .banner.brand{background:var(--brand-soft);color:var(--brand)} .banner.ok{background:var(--ok-soft);color:var(--ok)}
+.banner p{color:var(--fg)}
+
+/* мой учитель */
+.hero{background:linear-gradient(135deg,var(--brand-soft),var(--brand-softer));border:1px solid var(--line);border-radius:var(--r);padding:22px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center}
+.steps{display:flex;gap:8px;flex-wrap:wrap}
+.step{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px;color:var(--fg-2)}
+.step i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font-size:12px;font-weight:800}
+.step.on{color:var(--brand)} .step.on i{background:var(--brand);color:#fff;border-color:var(--brand)}
+.step.done i{background:var(--ok);color:#fff;border-color:var(--ok)}
+.progress{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--brand);border-radius:6px}
+
+/* формат */
+.opt{border:2px solid var(--line);border-radius:18px;padding:18px;background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:8px}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-softer)}
+.opt:disabled{opacity:.5;cursor:not-allowed}
+.opt .ic{width:40px;height:40px;border-radius:12px;background:var(--brand-soft);display:grid;place-items:center;color:var(--brand);font-weight:800}
+
+/* сетка времени */
+.tz{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gridwrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+table.slots{border-collapse:separate;border-spacing:4px;width:100%;min-width:640px}
+.slots th{font-size:12px;color:var(--fg-2);font-weight:700;padding:6px}
+.slots td{padding:0}
+.slot{width:100%;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--fg-2)}
+.slot.l1{background:var(--brand-softer);color:var(--brand)}
+.slot.l2{background:var(--brand-soft);color:var(--brand)}
+.slot.zero{background:var(--bg);color:var(--fg-3);cursor:not-allowed}
+.slot[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.slot.busy{background:var(--fg);color:var(--surface);cursor:not-allowed;font-size:11px}
+.slot.free{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--fg-2)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block;border:1px solid var(--line)}
+
+/* учителя */
+.layout3{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.filters{position:sticky;top:70px}
+.filters h3{margin-bottom:8px}
+.fgroup{display:flex;flex-direction:column;gap:8px;padding-block:12px;border-bottom:1px solid var(--line)}
+.fgroup:last-child{border-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.tcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:start}
+.tcard.sel{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft)}
+.prio{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:grid;place-items:center}
+.match{font-weight:800;color:var(--ok)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;border-radius:8px;padding:2px 8px;background:var(--bg);color:var(--fg-2);font-weight:600}
+.tag.hit{background:var(--ok-soft);color:var(--ok)}
+.sticky-bar{position:sticky;bottom:12px;background:var(--fg);color:var(--surface);border-radius:18px;padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:var(--shadow)}
+
+/* модалки */
+.overlay{position:fixed;inset:0;background:rgba(17,14,27,.55);z-index:60;display:grid;place-items:center;padding:16px;overflow:auto}
+.modal{background:var(--surface);border-radius:24px;max-width:560px;width:100%;padding:24px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 32px);overflow:auto}
+.modal.wide{max-width:980px;padding:0;background:transparent}
+.x{border:0;background:var(--bg);border-radius:10px;width:34px;height:34px;flex:none}
+.reason{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.reason input{margin-top:4px}
+textarea,input[type=text],input[type=date],select.inp{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}
+textarea{resize:vertical;min-height:80px}
+.counter{font-size:11.5px;color:var(--fg-3);text-align:right}
+.counter.lim{color:var(--bad)}
+.toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--surface);padding:12px 18px;border-radius:14px;z-index:80;font-weight:600;box-shadow:var(--shadow);max-width:calc(100vw - 32px)}
+
+/* резюме */
+.resume{background:var(--surface);border-radius:24px;overflow:hidden;border:1px solid var(--line);display:grid;grid-template-columns:300px minmax(0,1fr)}
+.r-left{background:linear-gradient(180deg,#9047FF,#6B2FD0);color:#fff;padding:28px 24px;display:flex;flex-direction:column;gap:20px}
+.r-left h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin:0 0 8px}
+.r-left .tag{background:rgba(255,255,255,.16);color:#fff}
+.r-photo{width:132px;height:132px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:44px;font-weight:800;border:4px solid rgba(255,255,255,.35)}
+.r-right{padding:28px 30px;display:flex;flex-direction:column;gap:22px}
+.r-right h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin:0 0 10px}
+.tl{display:flex;flex-direction:column;gap:14px;border-left:2px solid var(--brand-soft);padding-left:16px}
+.tl .it{position:relative}
+.tl .it::before{content:"";position:absolute;left:-22px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--brand)}
+.lvl{display:flex;gap:4px;flex-wrap:wrap}
+.lvl span{padding:3px 8px;border-radius:8px;font-size:12px;font-weight:700;background:var(--bg);color:var(--fg-3)}
+.lvl span.on{background:var(--brand);color:#fff}
+.r-left .lvl span{background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)} .r-left .lvl span.on{background:#fff;color:#6B2FD0}
+.quote{background:var(--brand-softer);border-radius:14px;padding:14px 16px;font-style:italic}
+
+/* редактор профиля */
+.editor{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.sect{display:flex;flex-direction:column;gap:10px}
+.sect>.hd{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.req{color:var(--bad);font-weight:800}
+.check{display:flex;gap:8px;align-items:center;padding:6px 0;font-size:13px}
+.check .s{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+.check .s.y{background:var(--ok);color:#fff} .check .s.n{background:var(--bad-soft);color:var(--bad)}
+.fmt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:12px}
+.fmt.on{border-color:var(--brand);background:var(--brand-softer)}
+
+/* заявки */
+.req-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:start}
+.timer{font-weight:800;color:var(--warn)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{border:0;background:transparent;padding:10px 14px;font-weight:700;color:var(--fg-2);border-bottom:2px solid transparent;display:flex;gap:6px;align-items:center}
+.tabs button[aria-selected="true"]{color:var(--brand);border-color:var(--brand)}
+table.list{width:100%;border-collapse:collapse}
+.list th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+.list td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.feed .it{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.feed .it:last-child{border-bottom:0}
+
+/* онбординг */
+.onb{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.onb-steps{display:flex;gap:6px}
+.onb-steps span{flex:1;height:6px;border-radius:6px;background:var(--line)}
+.onb-steps span.on{background:var(--brand)}
+.onb-card{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px}
+.why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.why div{background:var(--brand-softer);border-radius:16px;padding:14px}
+/* интересы по категориям */
+details.cat{border:1px solid var(--line);border-radius:14px;padding:0 12px;background:var(--surface)}
+details.cat summary{cursor:pointer;padding:10px 0;font-weight:700;font-size:13px;display:flex;justify-content:space-between;gap:8px;list-style:none}
+details.cat summary::-webkit-details-marker{display:none}
+details.cat summary::after{content:"+";color:var(--brand);font-weight:800}
+details.cat[open] summary::after{content:"–"}
+details.cat .chips{padding-bottom:12px}
+.selrow{display:flex;flex-wrap:wrap;gap:6px}
+.selrow button{border:0;background:var(--brand);color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
+.cathd{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);font-weight:800;margin-top:6px}
+/* фото и файлы */
+.photo-box{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start}
+.ph{width:120px;height:120px;border-radius:50%;overflow:hidden;background:var(--brand-soft);display:grid;place-items:center;font-size:36px;font-weight:800;color:var(--brand);flex:none}
+.ph img{width:100%;height:100%;object-fit:cover}
+.ph.fixed{background:#F1E9FF;box-shadow:0 0 0 4px var(--ok-soft)}
+.ph.fixed img{filter:brightness(1.08) contrast(1.06) saturate(1.05);transform:scale(1.15)}
+.crit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px}
+.score{font-size:28px;font-weight:800}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.gal figure{margin:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.gal .img{aspect-ratio:4/3;background:var(--brand-soft);display:grid;place-items:center;color:var(--brand);font-weight:800;font-size:13px;text-align:center;padding:8px;max-width:100%}
+.gal img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.gal figcaption{font-size:12px;padding:6px 8px;color:var(--fg-2)}
+.gal .add{border:2px dashed var(--line);border-radius:14px;display:grid;place-items:center;aspect-ratio:4/3;color:var(--brand);font-weight:700;font-size:13px;background:transparent}
+.rowf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.rowl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.verified{color:var(--ok);font-weight:800;font-size:12px}
+@media (max-width:600px){.rowf{grid-template-columns:1fr 1fr}.why{grid-template-columns:1fr}.photo-box{grid-template-columns:1fr}.crit{grid-template-columns:1fr}}
+/* профиль (в стиле страницы профиля студента: обложка, аватар по центру, плитки) */
+.pf{max-width:880px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:16px}
+.pf-head{background:var(--surface);border:1px solid var(--line);border-radius:28px;overflow:hidden}
+.cover{height:150px;position:relative;background:
+  radial-gradient(circle at 15% 30%,rgba(255,255,255,.35) 0 38px,transparent 39px),
+  radial-gradient(circle at 82% 70%,rgba(255,255,255,.22) 0 64px,transparent 65px),
+  radial-gradient(circle at 60% 10%,rgba(232,160,32,.55) 0 18px,transparent 19px),
+  linear-gradient(120deg,#9047FF,#C69BFF 55%,#7D33F0)}
+.cover .chg{position:absolute;right:12px;bottom:12px;border:0;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;background:rgba(23,19,38,.45);color:#fff}
+.pf-body{padding:0 24px 24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.pf-ava{width:120px;height:120px;border-radius:50%;margin-top:-62px;border:5px solid var(--surface);background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:40px;font-weight:800;overflow:hidden;position:relative}
+.pf-ava img{width:100%;height:100%;object-fit:cover}
+.pf-name{font-size:26px;font-weight:800}
+.facts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.fact{display:inline-flex;gap:6px;align-items:center;background:var(--bg);border-radius:12px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--fg-2)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.tile{border:1px solid var(--line);border-radius:18px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tile b{font-size:22px;color:var(--brand);font-variant-numeric:tabular-nums}
+.tile span{font-size:11.5px;color:var(--fg-3)}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sec>h3{font-size:16px}
+.sec-hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.video{aspect-ratio:16/9;max-width:100%;border-radius:18px;background:linear-gradient(135deg,var(--fg),#3A2A63);color:#fff;display:grid;place-items:center;font-weight:700;position:relative}
+.video::before{content:"▶";width:64px;height:64px;border-radius:50%;background:var(--brand);display:grid;place-items:center;font-size:22px;padding-left:4px}
+.video span{position:absolute;left:14px;bottom:12px;font-size:12px;opacity:.85}
+.lst{display:flex;flex-direction:column}
+.lst .li{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line)}
+.lst .li:last-child{border-bottom:0}
+.lst .ic{width:36px;height:36px;border-radius:12px;background:var(--brand-softer);color:var(--brand);display:grid;place-items:center;font-weight:800;flex:none}
+.lst .li .grow{flex:1;min-width:0}
+.cert-b{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.cert-b b{font-size:18px;color:var(--brand)}
+.slots-mini{display:flex;flex-wrap:wrap;gap:6px}
+.slots-mini span{background:var(--ok-soft);color:var(--ok);border-radius:10px;padding:4px 10px;font-size:12.5px;font-weight:700}
+.cta-bar{position:sticky;bottom:12px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:var(--shadow)}
+.modal.full{max-width:940px;padding:20px;background:var(--bg)}
+.ptabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;align-self:center}
+.ptabs button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-weight:700;color:var(--fg-2)}
+.ptabs button[aria-pressed="true"]{background:var(--brand);color:#fff}
+@media (max-width:600px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-body{padding:0 16px 20px}.modal.full{padding:12px}}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:10px 12px}
+  .side .logo,.side .me,.side .sp{display:none}
+  .nav{white-space:nowrap;flex:none}
+  .layout3,.editor,.grid2{grid-template-columns:1fr}
+  .filters{position:static}
+  .resume{grid-template-columns:1fr}
+  .hero{grid-template-columns:1fr}
+}
+@media (max-width:600px){
+  .grid3{grid-template-columns:1fr}
+  .tcard,.req-card{grid-template-columns:auto minmax(0,1fr)}
+  .tcard>.act,.req-card>.act{grid-column:1/-1}
+  h1{font-size:20px}
+}
+@media (prefers-reduced-motion:no-preference){.btn,.chip,.slot,.opt{transition:background .15s,border-color .15s}}
+</style>
+
+<div class="proto" role="region" aria-label="Панель прототипа">
+  <b>Прототип · кабинет студента</b>
+  <div class="scen" id="scen"></div>
+</div>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Меню"></nav>
+  <main class="main"><div class="wrap" id="view"></div></main>
+</div>
+<div id="layer"></div>
+
+<script>
+/* ===================== данные-примеры ===================== */
+const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const HOURS=[8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
+const HOBBY_CATS=[
+ ['Кино, музыка и развлечения',['Кино и сериалы','Аниме','K-pop','Музыка','Игры','Блогинг и соцсети']],
+ ['Спорт и активность',['Спорт и фитнес','Футбол','Танцы','Йога и медитация']],
+ ['Творчество и стиль',['Рисование и дизайн','Фотография','Мода','Кулинария']],
+ ['Карьера и технологии',['IT и технологии','Бизнес и стартапы']],
+ ['Знания и саморазвитие',['Книги','Наука','История','Психология']],
+ ['Путешествия и природа',['Путешествия','Природа и животные']]];
+const HOBBIES=HOBBY_CATS.flatMap(c=>c[1]);
+const STU_HOB_MAX=5;
+const PHOTO_CRIT=[['face','Одно лицо, это вы',1],['crop','Лицо крупно: голова и плечи 50–70% кадра',1],['look','Взгляд в камеру, без тёмных очков',1],['light','Хорошее освещение и резкость',1],['bg','Нейтральный фон без посторонних',1],['filter','Без фильтров, текста и сильной ретуши',1],['dress','Опрятный вид, smart casual',1],['smile','Доброжелательное выражение лица',0],['res','Разрешение от 800×800',1]];
+const CERT_TYPES=['IELTS','TOEFL','CAE / CPE','Duolingo English Test','CELTA','DELTA','TKT','TEFL / TESOL','Другое'];
+const FORMATS={
+  platform:{t:'По программе платформы',d:'Уроки, ДЗ и прогресс идут по программе Just to Study. Всё видно в «Уроках» и «Домашней работе».',ic:'JTS'},
+  books:{t:'По учебнику',d:'Учитель ведёт по учебнику: English File, Speakout, Headway и др. Учебник согласуете на первом уроке.',ic:'EF'},
+  own:{t:'Материалы учителя',d:'Учитель готовит материалы под ваши цели и интересы: статьи, видео, разговорные темы.',ic:'✎'}
+};
+// время учителей хранится в часовом поясе школы (Казахстан, UTC+5)
+const SCHOOL_TZ=5;
+function mkAvail(seed,days,hours){const a={};days.forEach(d=>hours.forEach(h=>{if((d*7+h*seed)%5!==0)a[d+'-'+h]=1}));return a}
+const TEACHERS=[
+ {id:1,name:'Айгерим Сапарова',ini:'АС',age:26,ageG:'20–25',years:4,spec:['General English','Speaking Class'],fmt:['platform','own'],hob:['Аниме','K-pop','Путешествия','Кино и сериалы'],lv:['A0','A1–A2','B1–B2'],ages:['Подростки','Взрослые'],students:14,max:20,since:2023,
+  about:'Преподаю английский 4 года, из них 3 года в Just to Study. Лучше всего мне удаётся «разговорить» тех, кто понимает, но боится говорить. На уроках много живой речи на темы, которые вам интересны: от аниме до путешествий. За последний год 9 моих студентов перешли на следующий уровень.',
+  diff:'Каждый урок начинается с 5 минут small talk о вашей неделе. Ошибки записываю и разбираю в конце, чтобы не перебивать. Домашнее задание короткое, 15–20 минут.',
+  exp:[{r:'Преподаватель английского',p:'Just to Study',y:'2023 — н.в.',d:'Индивидуальные и групповые уроки A0–B2, разговорные клубы, подготовка к собеседованиям на английском. Средняя посещаемость моих студентов 94%.'},{r:'Репетитор',p:'Частная практика',y:'2021 — 2023',d:'Школьники 12–17 лет, подготовка к экзаменам, разговорный английский.'}],
+  edu:[{d:'Бакалавр, Иностранная филология',u:'КазНПУ им. Абая',y:'2018 — 2022'}],cert:['CELTA · Pass B','IELTS · 7.5'],lang:[['Казахский','родной'],['Русский','свободно'],['Английский','C1']],focus:['Speaking fluency','Pronunciation'],appr:['Communicative approach','Gamification'],
+  res:'За последний год 9 моих студентов перешли на следующий уровень, трое сдали IELTS на 6.5+.',resPh:[{c:'IELTS 5.5 → 7.0 за 4 месяца'},{c:'Сертификат B2 ученицы'},{c:'Отзыв студента после 3 месяцев'}],
+  avail:mkAvail(3,[0,1,2,3,4],[14,15,16,17,18,19,20])},
+ {id:2,name:'Данияр Ахметов',ini:'ДА',age:31,ageG:'26–35',years:7,spec:['General English','Business English','IELTS'],fmt:['platform','books'],hob:['Футбол','IT и технологии','Бизнес и стартапы','Книги'],lv:['A1–A2','B1–B2','C1'],ages:['Взрослые'],students:18,max:22,since:2021,
+  about:'7 лет преподаю взрослым: айтишникам, менеджерам, студентам, которые готовятся к учёбе за границей. Работаю по программе платформы или по English File. Помогаю выстроить систему, чтобы прогресс был измеримым.',
+  diff:'Каждый месяц мини-тест и короткий отчёт: что улучшилось, что подтянуть.',
+  exp:[{r:'Senior teacher',p:'Just to Study',y:'2021 — н.в.',d:'Взрослые B1–C1, Business English, IELTS 6.5+. Методическая поддержка новых учителей.'},{r:'Преподаватель',p:'Языковой центр (Алматы)',y:'2018 — 2021',d:'Группы и индивидуальные занятия, English File.'}],
+  edu:[{d:'Магистр, Лингвистика',u:'КазУМОиМЯ им. Абылай хана',y:'2015 — 2018'}],cert:['TKT · Band 4','IELTS · 8.0'],lang:[['Казахский','родной'],['Русский','свободно'],['Английский','C2']],focus:['Grammar','Exam preparation'],appr:['CEFR-based','Error correction'],
+  avail:mkAvail(2,[0,2,4,5],[8,9,10,18,19,20,21])},
+ {id:3,name:'Мадина Ким',ini:'МК',age:24,ageG:'20–25',years:2,spec:['Kids 7–12','General English'],fmt:['platform','own'],hob:['Рисование и дизайн','Природа и животные','Музыка','Танцы'],lv:['A0','A1–A2'],ages:['Дети 7–12','Подростки'],students:9,max:15,since:2025,
+  about:'Работаю с детьми и подростками. Уроки строю как игру: карточки, песни, мини-проекты. Родители получают короткий отчёт после каждого месяца.',
+  diff:'Уроки по 3–4 активности, чтобы ребёнок не уставал. Использую игровые платформы и рисование.',
+  exp:[{r:'Учитель английского (Kids)',p:'Just to Study',y:'2025 — н.в.',d:'Дети 7–12 лет, A0–A2, игровая методика.'}],
+  edu:[{d:'Бакалавр, Два иностранных языка',u:'КазНУ им. аль-Фараби',y:'2020 — 2024'}],cert:['TKT YL · Band 3'],lang:[['Русский','родной'],['Корейский','B2'],['Английский','C1']],focus:['Speaking fluency','Pronunciation'],appr:['Gamification','Communicative approach'],
+  avail:mkAvail(4,[0,1,2,3,4,5],[10,11,15,16,17,18])},
+ {id:4,no30:true,name:'Алихан Беков',ini:'АБ',age:38,ageG:'35+',years:12,spec:['IELTS','General English'],fmt:['platform','books','own'],hob:['История','Книги','Путешествия','Наука'],lv:['B1–B2','C1','C2'],ages:['Подростки','Взрослые'],students:20,max:20,since:2020,
+  about:'12 лет готовлю к IELTS и академическому английскому. Средний рост моих студентов +1.0 балл за 3 месяца.',
+  diff:'Работаю с реальными заданиями IELTS. Writing проверяю по критериям экзаменатора.',
+  exp:[{r:'IELTS-преподаватель',p:'Just to Study',y:'2020 — н.в.',d:'IELTS 6.0–8.0, академическое письмо.'}],
+  edu:[{d:'Магистр, TESOL',u:'University of Leeds',y:'2011 — 2012'}],cert:['DELTA · Module 1','IELTS · 8.5'],lang:[['Казахский','родной'],['Английский','C2']],focus:['Exam preparation','Grammar'],appr:['CEFR-based'],
+  avail:mkAvail(3,[1,3,5],[9,10,11,19,20])},
+ {id:5,name:'Сара Нурланова',ini:'СН',age:28,ageG:'26–35',years:5,spec:['General English','Speaking Class'],fmt:['books','own'],hob:['Кулинария','Мода','Блогинг и соцсети','Йога и медитация','Путешествия'],lv:['A1–A2','B1–B2'],ages:['Взрослые'],students:11,max:18,since:2022,
+  about:'Помогаю взрослым заговорить свободно. Работаю по Speakout или по своим материалам на темы ваших интересов.',
+  diff:'Разговорные темы под ваши интересы: блогинг, путешествия, кулинария.',
+  exp:[{r:'Преподаватель',p:'Just to Study',y:'2022 — н.в.',d:'Взрослые A2–B2, разговорный английский.'}],
+  edu:[{d:'Бакалавр, Переводческое дело',u:'ЕНУ им. Гумилёва',y:'2015 — 2019'}],cert:['TEFL · 120 часов'],lang:[['Русский','родной'],['Английский','C1']],focus:['Speaking fluency'],appr:['Communicative approach'],
+  avail:mkAvail(2,[0,1,2,3,4],[12,13,14,18,19,20])},
+ {id:6,name:'Томирис Есенова',ini:'ТЕ',age:23,ageG:'20–25',years:1,spec:['General English'],fmt:['platform'],hob:['Аниме','Игры','Музыка','Кино и сериалы'],lv:['A0','A1–A2'],ages:['Подростки','Взрослые'],students:3,max:15,since:2026,
+  about:'Новый учитель в команде Just to Study. Веду по программе платформы. Помогаю начинающим не бояться ошибок.',
+  diff:'Спокойный темп, много повторения и поддержки.',
+  exp:[{r:'Преподаватель',p:'Just to Study',y:'2026 — н.в.',d:'Начинающие A0–A2.'}],
+  edu:[{d:'Бакалавр, Иностранный язык',u:'КарУ им. Букетова',y:'2021 — 2025'}],cert:['IELTS · 6.5'],lang:[['Казахский','родной'],['Английский','B2+']],focus:['Grammar'],appr:['Communicative approach'],
+  avail:mkAvail(5,[0,1,2,3,4,5,6],[15,16,17,18,19,20,21])}
+];
+
+/* ===================== состояние ===================== */
+const S={
+  role:'student', screen:{student:'onboard',teacher:'home',manager:'requests',resume:'r'},
+  tariff:'general', garant:false, tzMode:'auto', dur:60, tConfirmed:true, proposed:[], mgrWish:'', confirmBy:'teacher',
+  stuState:'none', // none | pending | assigned
+  fmt:null, freq:2, picked:[], filt:{hob:['Аниме'],age:'all',spec:'all',exp:0},
+  choices:[], reqStatus:{}, assigned:null, vacation:false, vacChoice:null,
+  t:{profileShown:false, profile:{about:TEACHERS[0].about.slice(0,120),fmt:['platform'],hob:['Аниме','Путешествия'],ages:['Взрослые'],exp:TEACHERS[0].exp[0].d,photo:false,spec:['General English'],
+       photoUrl:null,photoState:'none',langs:[['Казахский','родной'],['Русский','свободно'],['Английский','C1']],
+       certs:[{t:'CELTA',s:'Pass B',file:null,st:'none'}],edu:[{d:'Бакалавр, Иностранная филология',u:'КазНПУ им. Абая',y:'2018 — 2022'}],resPh:[{c:'IELTS 5.5 → 7.0 за 4 месяца',url:null}],consent:true},
+     avail:JSON.parse(JSON.stringify(TEACHERS[0].avail)), maxSt:20, reqs:null, tab:'new'},
+  m:{changes:[{id:1,st:'Камила Ахметова',from:'Сара Нурланова',reason:'Не подходит расписание',text:'Перешла на вечернюю смену, могу только после 20:00.',status:'new',mgr:'Динара (вы)'},
+              {id:2,st:'Ерлан Сейтов',from:'Данияр Ахметов',reason:'Жалоба на учителя',text:'Учитель дважды опоздал на 15 минут и не предупредил.',status:'new',mgr:'Асель'}]},
+  bellOpen:false
+};
+S.t.reqs=[
+ {id:11,st:'Аружан Т.',lvl:'A2',goal:'Поступить в зарубежный университет',hob:['Аниме','K-pop','Музыка'],fmt:'По программе платформы',slots:'Пн, Ср 19:00',prio:1,left:'9 ч 40 мин',tariff:'Premium · 12 уроков',status:'new'},
+ {id:12,st:'Нурсултан Б.',lvl:'B1',goal:'Работа в IT',hob:['Игры','IT и технологии'],fmt:'Материалы учителя',slots:'Вт, Чт, Пт 18:00',prio:2,left:'3 ч 05 мин',tariff:'General · 36 уроков',status:'new'}
+];
+
+/* ===================== утилиты ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function stuOffset(){ if(S.tzMode==='auto') return -new Date().getTimezoneOffset()/60; return +S.tzMode; }
+function tzName(){ const o=stuOffset(); const names={3:'Москва',5:'Казахстан',6:'Бишкек',4:'Дубай',9:'Сеул',0:'Лондон',1:'Берлин',8:'Пекин'}; return (S.tzMode==='auto'?'авто · ':'')+(names[o]||'ваш пояс')+' (UTC'+(o>=0?'+':'')+o+')'; }
+function toStu(h){ return ((h - SCHOOL_TZ + stuOffset())%24+24)%24; }
+function hh(h){ h=+h; const H=Math.floor(h), M=Math.round((h-H)*60); return String(H).padStart(2,'0')+':'+String(M).padStart(2,'0'); }
+// старты уроков: для 60 мин — каждый час, для 30 мин — каждые полчаса
+function starts(){ return S.dur===30?HOURS.flatMap(h=>[h,h+.5]):HOURS; }
+// учитель свободен в слот k ('день-час', час может быть 19.5) с учётом длительности
+function tf(t,k){ const [d,h]=k.split('-'); const H=Math.floor(+h); if(S.dur===30&&t.no30) return false; return !!t.avail[d+'-'+H]; }
+function slotLbl(k){ const [d,h]=k.split('-'); return DAYS[d]+' '+hh(toStu(+h)); }
+function fitSlots(t){ return S.picked.filter(k=>tf(t,k)); }
+function daysOf(ks){ return new Set(ks.map(k=>k.split('-')[0])).size; }
+// предложение расписания: N слотов в разных днях, по порядку дней
+function propose(ks,n){ const out=[],used=new Set(); [...ks].sort((a,b)=>a.split('-')[0]-b.split('-')[0]||a.split('-')[1]-b.split('-')[1]).forEach(k=>{const d=k.split('-')[0]; if(out.length<n&&!used.has(d)){used.add(d);out.push(k)}}); return out; }
+function toast(t){ const el=document.createElement('div'); el.className='toast'; el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(),2600); }
+function modal(html,cls=''){ $('#layer').innerHTML=`<div class="overlay" id="ov"><div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div></div>`; $('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeModal()}); }
+function closeModal(){ $('#layer').innerHTML=''; }
+function needFormatStep(){ return !S.garant && (S.tariff==='general'||S.tariff==='premium'||S.tariff==='kids'); }
+function tariffName(){ return {general:'General English',premium:'Premium',kids:'Kids English',ielts:'IELTS',sat:'SAT'}[S.tariff]; }
+function tariffLine(){ return tariffName()+(S.garant?' · гарантия':'')+' · уроки по '+S.dur+' мин · '+S.freq+' раза в неделю'; }
+
+/* ===================== уведомления ===================== */
+function notes(){
+  if(S.role==='student'){
+    const n=[];
+    if(S.stuState==='none') n.push({u:1,t:'Подберите своего учителя',d:'Тест пройден. Осталось 3 шага, чтобы начать занятия.'});
+    if(S.stuState==='pending') n.push({u:1,t:'Заявки отправлены',d:'Учителя ответят в течение 12 часов. Мы сообщим.'});
+    if(S.stuState==='mgr') n.push({u:1,t:'Менеджер подбирает учителя',d:'Ответ до завтра, 18:00.'});
+    if(S.stuState==='confirm') n.push({u:1,t:'Подтвердите расписание',d:S.assigned.name+' предлагает: '+S.proposed.map(slotLbl).join(', ')});
+    if(!S.tConfirmed) n.push({u:1,t:'Менеджер подтверждает ваш тариф',d:'Обычно до 2 часов.'});
+    if(S.stuState==='assigned') n.push({u:1,t:'Ваш учитель — '+S.assigned.name,d:'Первый урок: '+firstLesson()});
+    if(S.vacation&&S.stuState==='assigned'&&!S.vacChoice) n.push({u:1,t:'Учитель уходит в отпуск 02.11–15.11',d:'Выберите: пауза или временный учитель.'});
+    return n;
+  }
+  if(S.role==='teacher'){
+    const n=[]; const nw=S.t.reqs.filter(r=>r.status==='new').length;
+    if(pct()<100) n.push({u:1,t:'Заполните профиль, чтобы студенты могли вас выбрать',d:'Заполнено '+pct()+'%. Без профиля вы не участвуете в подборе.'});
+    if(nw) n.push({u:1,t:'Новые заявки от студентов: '+nw,d:'Ответьте в течение 12 часов.'});
+    n.push({u:0,t:'Напоминание: проверьте свои окошки',d:'Последнее обновление 32 дня назад.'});
+    return n;
+  }
+  if(S.role==='manager') return [
+    {u:1,t:'Аружан Т. просит подобрать учителя',d:'Время и интересы указаны. Срок: 24 рабочих часа.'},
+    {u:1,t:'Аружан Т. → Айгерим Сапарова',d:'Учитель назначен. Первый урок пн, 19:00.'},
+    {u:1,t:'Запрос на смену учителя',d:'Ерлан Сейтов · жалоба. Нужно решение.'},
+    {u:0,t:'Нужна помощь с подбором',d:'Нурлан К.: 3 учителя не ответили.'}];
+  return [];
+}
+function bellHTML(){
+  const n=notes(), un=n.filter(x=>x.u).length;
+  return `<div style="position:relative"><button class="bell" id="bell" aria-label="Уведомления, непрочитанных: ${un}">🔔${un?`<span class="badge">${un}</span>`:''}</button>
+  ${S.bellOpen?`<div class="bellpop">${n.map(x=>`<div class="n ${x.u?'unread':''}">${x.u?'<span class="dot"></span>':'<span style="width:8px"></span>'}<div><b>${esc(x.t)}</b><p class="small muted">${esc(x.d)}</p></div></div>`).join('')||'<p class="muted" style="padding:10px">Нет уведомлений</p>'}</div>`:''}</div>`;
+}
+
+/* ===================== меню ===================== */
+function side(){
+  let items=[], who='', sub='';
+  if(S.role==='student'){
+    who='Аружан Т.'; sub='Профиль';
+    const un=S.stuState!=='assigned'?1:(S.vacation&&!S.vacChoice?1:0);
+    items=[['home','Главная'],['myteacher','Мой учитель',un?'<span class="badge">1</span>':'<span class="new">NEW</span>'],['x','Повторение'],['x','Практика'],['x','Speaking Buddy'],['x','Уроки'],['x','Домашняя работа'],['x','Словарь'],['x','IELTS'],['x','SAT'],['x','Настройки']];
+  } else if(S.role==='teacher'){
+    who='Айгерим Сапарова'; sub='Преподаватель';
+    const nw=S.t.reqs.filter(r=>r.status==='new').length;
+    items=[['home','Главная'],['profile','Мой профиль',pct()<100?'<span class="badge">!</span>':''],['avail','Мои окошки','<span class="new">NEW</span>'],['x','Расписание'],['x','Домашние задания'],['x','Материалы'],['students','Мои студенты',nw?`<span class="badge">${nw}</span>`:''],['x','Отчёты о прогрессе'],['vacation','Запросы'],['x','Жалобы']];
+  } else if(S.role==='manager'){
+    who='Динара М.'; sub='Менеджер';
+    const nr=S.m.changes.filter(c=>c.status==='new').length;
+    items=[['x','Главная'],['x','Воронка'],['match','Подбор преподавателя','<span class="badge">4</span>'],['requests','Запросы',nr?`<span class="badge">${nr}</span>`:''],['student','Ученики → Аружан Т.',S.tConfirmed?'':'<span class="badge">!</span>'],['resumes','Резюме преподавателей'],['tariffs','Тарифы и абонементы']];
+  } else { who='Айгерим Сапарова'; sub='Так видит студент'; items=[['r','Резюме (вид для студента)']]; }
+  const cur=S.screen[S.role];
+  const meGo=S.role==='student'?'sprofile':S.role==='teacher'?'profile':'';
+  $('#side').innerHTML=`<div class="logo">just to study</div><button class="me" ${meGo?`data-go="${meGo}"`:''} style="border:0;width:100%;text-align:left;${cur===meGo?'outline:2px solid var(--brand)':''}"><div class="ava">${who[0]}</div><div><b>${esc(who)}</b><div class="tiny">${sub}</div></div></button>`+
+   items.map(([k,l,b])=>`<button class="nav ${S.role!=='student'?'admin':''}" data-go="${k}" ${k===cur?'aria-current="page"':''} ${k==='x'?'title="Существующий раздел — в прототипе не показан"':''}><span>${l}</span>${b||''}</button>`).join('');
+}
+
+/* ===================== СТУДЕНТ ===================== */
+function finalSlots(){ return S.proposed.length?S.proposed:S.picked.slice(0,S.freq); }
+function firstLesson(){ const c=finalSlots()[0]; if(!c) return 'пн, 19:00'; return slotLbl(c).toLowerCase(); }
+function teacherBlock(){
+  if(S.stuState==='none'){
+    const steps=needFormatStep()?['Формат','Время','Учитель']:['Время','Учитель'];
+    return `<section class="hero" aria-label="Мой учитель">
+      <div class="stack"><span class="pill">Мой учитель</span><h1>Подберите своего учителя</h1>
+      <p class="muted">Тест пройден, уровень A2. ${S.garant?'Ваш тариф с гарантией результата, поэтому обучение идёт по программе платформы. ':''}Осталось ${steps.length} шага, около 3 минут.</p>
+      <div class="steps">${steps.map((s,i)=>`<span class="step"><i>${i+1}</i>${s}</span>`).join('<span class="muted">→</span>')}</div></div>
+      <div class="stack"><button class="btn" data-act="start" ${S.tConfirmed?'':'disabled'}>Подобрать учителя →</button><button class="btn line sm" data-act="mgrPick">Пусть менеджер подберёт</button></div></section>`;
+  }
+  if(S.stuState==='mgr') return `<section class="hero"><div class="stack"><span class="pill warn">Менеджер подбирает</span><h1>Ваш менеджер подбирает учителя</h1><p class="muted">Ответ до завтра, 18:00. Потом останется подтвердить расписание.</p></div><button class="btn ghost" data-go="myteacher">Статус</button></section>`;
+  if(S.stuState==='confirm') return `<section class="hero"><div class="stack"><span class="pill ok">Учитель согласен</span><h1>Подтвердите расписание</h1><p class="muted">${esc(S.assigned.name)} · ${S.proposed.map(slotLbl).join(', ')}</p></div><button class="btn" data-go="myteacher">Подтвердить</button></section>`;
+  if(S.stuState==='pending'){
+    return `<section class="hero"><div class="stack"><span class="pill warn">Ждём ответа учителей</span><h1>Заявки отправлены ${S.choices.length} учителям</h1>
+      <p class="muted">Учителя отвечают в течение 12 часов. Как только кто-то примет заявку, первый урок появится в расписании.</p></div>
+      <button class="btn ghost" data-go="myteacher">Посмотреть статус</button></section>`;
+  }
+  const t=S.assigned;
+  return `<section class="hero"><div class="row" style="gap:16px"><div class="ava lg">${t.ini}</div><div class="stack" style="gap:4px">
+    <span class="pill ok">Мой учитель</span><h1>${esc(t.name)}</h1><p class="muted">${FORMATS[S.fmt||'platform'].t} · ${S.freq} раза в неделю · по ${S.dur} мин</p>
+    <p><b>Ближайший урок:</b> ${firstLesson()} <span class="tiny">(${tzName()})</span></p></div></div>
+    <div class="row"><button class="btn line" data-act="resume" data-id="${t.id}">Профиль</button><button class="btn" data-go="myteacher">Открыть</button></div></section>`;
+}
+function stuHome(){
+  return `<div class="topbar"><h1>Главная</h1>${bellHTML()}</div>
+  <p class="tiny">Главная студента не меняется. Учитель и подбор — в онбординге и в новом пункте меню «Мой учитель». Уроки с учителем появляются в виджете «Расписание».</p>
+  <div class="grid2">
+    <div class="card stack"><h2>Срок ≈ январь 2027</h2><p class="muted small">A2 → B1 · сейчас 1%</p><div class="progress"><span style="width:8%"></span></div><p class="tiny">Существующий блок прогресса. В прототипе показан сокращённо.</p></div>
+    <div class="card stack"><div class="row between"><h2>Расписание</h2><span class="tiny">${tzName()}</span></div>
+      ${S.stuState==='assigned'?finalSlots().map(c=>`<div class="row between"><span><b>${slotLbl(c)}</b></span><span class="small muted">${esc(S.assigned.name)}</span></div>`).join(''):'<p class="muted small">Уроки появятся после выбора учителя</p>'}
+    </div>
+  </div>`;
+}
+function stuProfile(){
+  const t=S.assigned;
+  return `<div class="topbar"><h1>Профиль</h1>${bellHTML()}</div><div class="pf">
+   <section class="pf-head"><div class="cover"><button class="chg" data-act="noop">Сменить обложку</button></div><div class="pf-body">
+    <div class="pf-ava">А</div><div class="pf-name">Аружан Т.</div><p class="muted small">Цель: поступить в зарубежный университет · ${tariffName()}${S.garant?' · гарантия':''}</p>
+    <div class="tiles"><div class="tile"><b>A2</b><span>уровень по тесту</span></div><div class="tile"><b>9</b><span>дней подряд</span></div><div class="tile"><b>7</b><span>уроков пройдено</span></div><div class="tile"><b>B2</b><span>цель</span></div></div>
+   </div></section>
+   <section class="sec"><div class="sec-hd"><h3>Мой учитель</h3>${t?'<span class="pill ok">Закреплён</span>':'<span class="pill warn">Не выбран</span>'}</div>
+    ${t?`<div class="lst"><div class="li"><div class="ava">${t.ini}</div><div class="grow"><b>${esc(t.name)}</b><p class="small muted">${FORMATS[S.fmt||'platform'].t} · ближайший урок ${firstLesson()}</p></div><button class="btn ghost sm" data-go="myteacher">Открыть</button></div></div>`
+      :`<p class="small muted">Выберите учителя: это займёт около 3 минут.</p><button class="btn sm" data-act="start" style="align-self:flex-start">Выбрать учителя</button>`}</section>
+   <section class="sec"><div class="sec-hd"><h3>Мои интересы</h3><span class="tiny">${S.filt.hob.length} / ${STU_HOB_MAX} · по ним подбираем учителя</span></div>
+    <div class="selrow">${S.filt.hob.map(h=>`<button data-hob="${h}">${h} ✕</button>`).join('')||'<span class="small muted">Не выбраны</span>'}</div>
+    ${HOBBY_CATS.map(([c,list],i)=>`<details class="cat" ${S.openCat===i?'open':''} data-cat="${i}"><summary><span>${c}</span></summary><div class="chips">${list.map(h=>`<button class="chip" data-hob="${h}" aria-pressed="${S.filt.hob.includes(h)}">${h}</button>`).join('')}</div></details>`).join('')}</section>
+   <section class="sec"><h3>Настройки обучения</h3><div class="lst">
+    <div class="li"><span class="ic">🌍</span><div class="grow"><b>Часовой пояс</b><p class="small muted">Расписание показывается в этом времени</p></div><span class="small" style="color:var(--brand);font-weight:700">${tzName()}</span></div>
+    <div class="li"><span class="ic">📚</span><div class="grow"><b>Формат обучения</b></div><span class="small" style="color:var(--brand);font-weight:700">${S.fmt?FORMATS[S.fmt].t:'не выбран'}</span></div>
+    <div class="li"><span class="ic">↻</span><div class="grow"><b>Занятий в неделю</b></div><span class="small" style="color:var(--brand);font-weight:700">${S.freq}</span></div>
+    <div class="li"><span class="ic">🔔</span><div class="grow"><b>Уведомления</b><p class="small muted">Платформа, push, WhatsApp</p></div><span class="small" style="color:var(--brand);font-weight:700">Включены</span></div></div></section>
+   <p class="tiny">Остальные блоки (навыки, уровень английского, персонализация, настройки, выход) остаются как сейчас.</p></div>`;
+}
+function stuOnboard(){
+  const steps=needFormatStep()?['Формат','Время','Учитель']:['Время','Учитель'];
+  return `<div class="onb">
+   <div class="onb-steps" aria-label="Онбординг: шаг 5 из 5"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
+   <p class="tiny">ОНБОРДИНГ · ШАГ 5 ИЗ 5 · после «Результатов теста»</p>
+   <div class="onb-card">
+    <div class="row"><span class="pill ok">Тест пройден · A2</span>${S.tConfirmed?`<span class="pill gray">Ваш тариф: ${tariffLine()}</span>`:'<span class="pill warn">Тариф подтверждает менеджер</span>'}</div>
+    ${S.tConfirmed?'':'<div class="banner warn"><p class="small"><b>Ваш менеджер подтверждает тариф, обычно до 2 часов.</b> Мы пришлём уведомление, и можно будет выбрать учителя. Или попросите менеджера подобрать учителя за вас.</p></div>'}
+    <h1 style="font-size:28px">Последний шаг — выберите своего учителя</h1>
+    <p class="muted">Подберём учителя под ваше время${needFormatStep()?', формат обучения':''} и интересы. Это займёт около 3 минут. ${S.garant?'По тарифу с гарантией обучение идёт по программе платформы, поэтому выбирать формат не нужно.':''}</p>
+    <div class="why"><div><b>${steps.length} шага</b><p class="small muted">${steps.join(' → ')}</p></div><div><b>До 3 учителей</b><p class="small muted">Отправим заявки всем сразу</p></div><div><b>Ответ до 12 ч</b><p class="small muted">Первый урок сразу в расписании</p></div></div>
+    <div class="row"><button class="btn" data-act="start" style="padding:14px 26px;font-size:15px" ${S.tConfirmed?'':'disabled'}>Выбрать учителя →</button><button class="btn ghost" data-act="mgrPick">Пусть менеджер подберёт</button><button class="btn line" data-act="later">Сделаю позже</button></div>
+    <p class="tiny">«Сделаю позже»: откроется Главная, напоминание придёт в колокольчик, а в меню будет отметка на «Мой учитель». Через 24 часа напомним в WhatsApp, через 48 часов подключится менеджер.</p>
+   </div></div>`;
+}
+function wizardHead(n){
+  const steps=needFormatStep()?['Формат обучения','Время занятий','Выбор учителя']:['Время занятий','Выбор учителя'];
+  const idx=needFormatStep()?n:n-1;
+  return `<div class="row between"><button class="btn line sm" data-act="back">← Назад</button><div class="row"><span class="pill gray" title="Тариф подтверждён менеджером">${tariffLine()}</span><button class="btn ghost sm" data-act="mgrPick">Пусть менеджер подберёт</button></div></div>
+  <div class="steps" aria-label="Шаги">${steps.map((s,i)=>`<span class="step ${i<idx?'done':i===idx?'on':''}"><i>${i<idx?'✓':i+1}</i>${s}</span>`).join('<span class="muted">—</span>')}</div>
+  <div class="progress"><span style="width:${(idx+1)/steps.length*100}%"></span></div>`;
+}
+function stuFormat(){
+  return `${wizardHead(0)}<div><h1>Как вы хотите заниматься?</h1><p class="muted">Формат можно поменять позже в разделе «Мой учитель».</p></div>
+  <div class="grid3">${Object.entries(FORMATS).map(([k,f])=>`<button class="opt" data-fmt="${k}" aria-pressed="${S.fmt===k}"><span class="ic">${f.ic}</span><h3>${f.t}</h3><p class="small muted">${f.d}</p>
+   <span class="tiny">Доступно учителей: ${TEACHERS.filter(t=>t.fmt.includes(k)).length}</span></button>`).join('')}</div>
+  <div class="row" style="justify-content:flex-end"><button class="btn" data-act="toTime" ${S.fmt?'':'disabled'}>Дальше: время →</button></div>`;
+}
+function eligible(){
+  return TEACHERS.filter(t=>{
+    if(S.tariff==='ielts'&&!t.spec.includes('IELTS')) return false;
+    if(S.tariff==='kids'&&!t.spec.includes('Kids 7–12')) return false;
+    if(S.tariff==='sat') return t.id===2||t.id===4;
+    const f=S.garant||!needFormatStep()?'platform':S.fmt; return t.fmt.includes(f)&&t.students<t.max;
+  });
+}
+// цифра в слоте учитывает уже выбранные слоты: показываем только учителей, свободных во всё выбранное время
+function countAt(d,h){ const k=d+'-'+h; return eligible().filter(t=>tf(t,k)).length; }
+function timeOk(){ return daysOf(S.picked)>=S.freq; }
+function stuTime(){
+  const el=eligible();
+  return `${wizardHead(1)}<div><h1>Когда вам удобно заниматься?</h1><p class="muted">Отметьте <b>всё время, когда можете заниматься</b>, минимум ${S.freq} разных дня. Чем больше отметите, тем больше учителей подойдёт. Точное расписание вы подтвердите после того, как учитель примет заявку.</p></div>
+  <div class="card stack">
+    <div class="row between"><div class="row"><span class="small"><b>Уроков в неделю:</b></span><b>${S.freq}</b><span class="pill gray">Урок ${S.dur} мин · по тарифу</span><span class="tiny">Изменить тариф может только ваш менеджер</span></div>
+    <div class="tz small">🌍 Время показано по вашему часовому поясу: <b>${tzName()}</b></div></div>
+    <div class="gridwrap"><table class="slots"><thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>
+    ${starts().map(h=>`<tr><th class="num">${hh(toStu(h))}</th>${DAYS.map((_,d)=>{const c=countAt(d,h),k=d+'-'+h,on=S.picked.includes(k);
+      return `<td><button class="slot ${c===0?'zero':c>=3?'l2':'l1'}" data-slot="${k}" aria-pressed="${on}" ${c===0?'disabled':''} aria-label="${DAYS[d]} ${hh(toStu(h))}: свободно ${c}">${c===0?'—':on?'✓ '+c:c}</button></td>`}).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <div class="legend"><span><i style="background:var(--brand-soft)"></i>3+ учителя</span><span><i style="background:var(--brand-softer)"></i>1–2 учителя</span><span><i style="background:var(--bg)"></i>никого нет</span><span>Уроки по ${S.dur} мин${S.dur===30?', можно начать в :00 или :30':''}. Время, где у учителя уже стоят уроки, скрыто автоматически.</span></div>
+  </div>
+  <div class="sticky-bar"><span>Отмечено: <b>${S.picked.length}</b> ${S.picked.length===1?'слот':'слотов'} в <b>${daysOf(S.picked)}</b> ${daysOf(S.picked)===1?'день':'днях'} ${timeOk()?'':`· нужно минимум ${S.freq} разных дня`}</span>
+  <button class="btn" data-act="toTeachers" ${timeOk()?'':'disabled'}>Показать учителей (${matched().length}) →</button></div>
+  <p class="tiny">В подборе участвуют ${el.length} учителей с заполненным профилем и свободными местами.</p>`;
+}
+function matched(){
+  return eligible().filter(t=>daysOf(fitSlots(t))>=S.freq)
+   .filter(t=>S.filt.age==='all'||t.ageG===S.filt.age)
+   .filter(t=>S.filt.spec==='all'||t.spec.includes(S.filt.spec))
+   .filter(t=>t.years>=S.filt.exp)
+   .map(t=>{const hits=t.hob.filter(h=>S.filt.hob.includes(h)).length, fit=fitSlots(t); const score=Math.min(98,58+hits*12+Math.min(8,fit.length*2)+(t.since>=2026?6:0)); return {...t,hits,score,fit}})
+   .sort((a,b)=>b.score-a.score);
+}
+function stuTeachers(){
+  const list=matched();
+  return `${wizardHead(2)}<div class="row between"><div><h1>Выберите до 3 учителей</h1><p class="muted">Отметьте в порядке приоритета. Заявки уйдут всем сразу со всем вашим временем. Учитель выберет ${S.freq} удобных слота, а вы подтвердите расписание.</p></div></div>
+  <div class="layout3">
+   <aside class="card filters" aria-label="Фильтры"><h3>Фильтры</h3>
+    <div class="fgroup"><div class="row between"><span class="small"><b>Ваши интересы</b></span><span class="tiny">${S.filt.hob.length} / ${STU_HOB_MAX}</span></div>
+     ${S.filt.hob.length?`<div class="selrow">${S.filt.hob.map(h=>`<button data-hob="${h}" aria-label="Убрать ${h}">${h} ✕</button>`).join('')}</div>`:'<p class="tiny">Выберите до 5, найдём учителей с похожими интересами</p>'}
+     ${HOBBY_CATS.map(([c,list],i)=>{const n=list.filter(h=>S.filt.hob.includes(h)).length;return `<details class="cat" ${S.openCat===i?'open':''} data-cat="${i}"><summary><span>${c}${n?` <span class="pill" style="padding:0 7px">${n}</span>`:''}</span></summary><div class="chips">${list.map(h=>`<button class="chip" data-hob="${h}" aria-pressed="${S.filt.hob.includes(h)}">${h}</button>`).join('')}</div></details>`}).join('')}</div>
+    <div class="fgroup"><label class="small" for="fage"><b>Возраст учителя</b></label><select class="inp" id="fage">${['all','20–25','26–35','35+'].map(a=>`<option value="${a}" ${S.filt.age===a?'selected':''}>${a==='all'?'Любой':a}</option>`).join('')}</select></div>
+    <div class="fgroup"><label class="small" for="fspec"><b>Специализация</b></label><select class="inp" id="fspec">${['all','General English','Speaking Class','Business English','IELTS','Kids 7–12'].map(a=>`<option value="${a}" ${S.filt.spec===a?'selected':''}>${a==='all'?'Любая':a}</option>`).join('')}</select></div>
+    <div class="fgroup"><label class="small" for="fexp"><b>Опыт от</b></label><select class="inp" id="fexp">${[0,3,5].map(a=>`<option value="${a}" ${S.filt.exp==a?'selected':''}>${a?a+' лет':'Любой'}</option>`).join('')}</select></div>
+   </aside>
+   <div class="stack">
+    <p class="small muted">В выбранное время свободно <b>${list.length}</b> ${list.length===1?'учитель':'учителей'} · сортировка: лучшее совпадение</p>
+    ${list.length?list.map(t=>{const p=S.choices.indexOf(t.id);return `<article class="card tcard ${p>=0?'sel':''}">
+      <div class="ava lg">${t.ini}</div>
+      <div class="stack" style="gap:8px"><div class="row"><h2>${esc(t.name)}</h2><span class="match">${t.score}% совпадение</span>${t.since>=2026?'<span class="pill">Новый учитель</span>':''}</div>
+       <p class="small muted">${t.years<3?3:t.years} years experience · ${t.spec.join(', ')} · с ${t.since} года</p>
+       <p class="small" style="color:var(--ok)"><b>Подходит ваше время:</b> ${t.fit.map(slotLbl).join(', ')} <span class="tiny">(${t.fit.length} из ${S.picked.length})</span></p>
+       <p class="small">${esc(t.about.slice(0,170))}…</p>
+       <div class="tags">${t.hob.map(h=>`<span class="tag ${S.filt.hob.includes(h)?'hit':''}">${h}</span>`).join('')}</div>
+       <div class="tags">${t.fmt.map(f=>`<span class="tag">${FORMATS[f].t}</span>`).join('')}</div></div>
+      <div class="stack act" style="align-items:stretch">${p>=0?`<div class="row" style="justify-content:center"><span class="prio">${p+1}</span></div><button class="btn line sm" data-unpick="${t.id}">Убрать</button>`:`<button class="btn sm" data-pick="${t.id}" ${S.choices.length>=3?'disabled':''}>Выбрать</button>`}
+       <button class="btn ghost sm" data-act="resume" data-id="${t.id}">Профиль</button></div></article>`}).join('')
+     :`<div class="card stack"><h2>В это время никого с такими фильтрами</h2><p class="muted">Уберите часть интересов или вернитесь и выберите другое время.</p></div>`}
+   </div></div>
+  <div class="sticky-bar"><span>Выбрано: <b>${S.choices.length} из 3</b> ${S.choices.map((id,i)=>(i+1)+'. '+TEACHERS.find(t=>t.id===id).name.split(' ')[0]).join(' · ')}</span>
+   <button class="btn" data-act="send" ${S.choices.length?'':'disabled'}>Отправить заявки</button></div>`;
+}
+function confirmCard(){
+  const t=S.assigned, common=fitSlots(t);
+  return `<section class="card stack" style="border:2px solid var(--brand)">
+   <div class="row"><span class="pill ok">${S.confirmBy==='mgr'?'Менеджер подобрал учителя':'Учитель принял заявку'}</span><span class="tiny">подтвердите в течение 24 ч</span></div>
+   <div class="row"><div class="ava lg">${t.ini}</div><div><h2>${esc(t.name)}</h2><p class="small muted">${t.spec.join(', ')} · <button class="link" data-act="resume" data-id="${t.id}" style="border:0;background:none;color:var(--brand);font-weight:700;padding:0">профиль</button></p></div></div>
+   <h1 style="font-size:22px">Подтвердите расписание</h1>
+   <div class="stack" style="gap:8px">${S.proposed.map(k=>`<div class="row between" style="background:var(--brand-softer);border-radius:12px;padding:10px 14px"><b>${slotLbl(k)}</b><span class="small muted">каждую неделю · ${S.dur} мин</span></div>`).join('')}</div>
+   <p class="small">Первый урок: <b>${firstLesson()}, 02.11</b> · ${tzName()}</p>
+   ${S.editSlots?`<div class="stack"><p class="small"><b>Выберите ${S.freq} слота в разных днях</b> из времени, когда свободен учитель:</p><div class="chips">${common.map(k=>`<button class="chip" data-cslot="${k}" aria-pressed="${S.proposed.includes(k)}">${slotLbl(k)}</button>`).join('')}</div>
+     <div class="row"><button class="btn" data-act="sendNewTime" ${S.proposed.length===S.freq&&daysOf(S.proposed)===S.freq?'':'disabled'}>Отправить учителю на согласование</button><button class="btn line" data-act="cancelEdit">Отмена</button></div></div>`
+    :`<div class="row"><button class="btn" data-act="confirmSched">Подтвердить расписание</button><button class="btn line" data-act="editSlots">Выбрать другое время</button></div>`}
+   <p class="tiny">После подтверждения уроки появятся в «Расписании». Если не подтвердите за 24 часа, с вами свяжется менеджер.</p></section>`;
+}
+function stuMyTeacher(){
+  if(S.stuState==='none') return `<div class="topbar"><h1>Мой учитель</h1>${bellHTML()}</div>${teacherBlock()}`;
+  if(S.stuState==='mgr') return `<div class="topbar"><h1>Мой учитель</h1>${bellHTML()}</div>
+    <div class="card stack"><div class="row"><span class="pill warn">Менеджер подбирает учителя</span><span class="tiny">до завтра, 18:00</span></div>
+     <p>Вашу заявку получил менеджер <b>Динара</b>. Учтём время, интересы и пожелания:</p>
+     <div class="tags">${(S.picked.length?S.picked.map(slotLbl):['время не отмечено']).map(x=>`<span class="tag">${x}</span>`).join('')}</div>
+     ${S.mgrWish?`<p class="quote small">${esc(S.mgrWish)}</p>`:''}
+     <div class="banner brand"><p class="small"><b>Демо:</b> менеджер подобрал учителя</p><button class="btn sm" data-act="simMgr">Менеджер подобрал</button></div></div>`;
+  if(S.stuState==='confirm') return `<div class="topbar"><h1>Мой учитель</h1>${bellHTML()}</div>${confirmCard()}`;
+  if(S.stuState==='pending'){
+    return `<div class="topbar"><h1>Мой учитель</h1>${bellHTML()}</div>
+    <div class="card stack"><h2>Статус заявок</h2><p class="muted small">Учитель отвечает в течение 12 часов, ночь (23:00–08:00) не считается. Если никто не примет, мы предложим новых учителей, а ваш менеджер поможет.</p>
+    ${S.choices.map((id,i)=>{const t=TEACHERS.find(x=>x.id===id),st=S.reqStatus[id]||'wait';return `<div class="row between" style="border-top:1px solid var(--line);padding-top:12px">
+      <div class="row"><span class="prio">${i+1}</span><div class="ava">${t.ini}</div><div><b>${esc(t.name)}</b><div class="tiny">Приоритет ${i+1}</div></div></div>
+      <span class="pill ${st==='wait'?'warn':st==='acc'?'ok':'bad'}">${st==='wait'?'Ждём ответа · осталось 11 ч':st==='acc'?'Принял':'Отклонил'}</span></div>`}).join('')}
+    <div class="banner brand"><p class="small"><b>Демо:</b> смоделируйте ответы учителей</p><div class="row">
+     <button class="btn sm ghost" data-act="simDecline">№1 отклонил</button><button class="btn sm" data-act="simAccept">Учитель принял</button></div></div>
+    <button class="btn ghost sm" data-act="mgrPick" style="align-self:flex-start">Пусть менеджер подберёт</button></div>`;
+  }
+  const t=S.assigned;
+  return `<div class="topbar"><h1>Мой учитель</h1>${bellHTML()}</div>
+  ${S.vacation&&!S.vacChoice?`<div class="banner warn"><p><b>${esc(t.name)} в отпуске 02.11–15.11.</b> 4 урока попадают на эти даты.</p><button class="btn sm" data-act="vac">Пауза или временный учитель</button></div>`:''}
+  ${S.vacChoice==='temp'?`<div class="banner brand"><p><b>Временный учитель 02.11–15.11:</b> Сара Нурланова. С 16.11 занятия снова с ${esc(t.name)}, в прежнее время.</p></div>`:''}
+  ${S.vacChoice==='pause'?`<div class="banner brand"><p><b>Пауза 02.11–15.11.</b> Уроки перенесены, срок абонемента продлён на 14 дней.</p></div>`:''}
+  <div class="grid2">
+   <div class="card stack"><div class="row"><div class="ava lg">${t.ini}</div><div><h2>${esc(t.name)}</h2><p class="small muted">${t.spec.join(', ')} · ${t.years<3?3:t.years} years experience</p></div></div>
+    <p class="small">${esc(t.about)}</p><div class="tags">${t.hob.map(h=>`<span class="tag">${h}</span>`).join('')}</div>
+    <div class="row"><button class="btn ghost sm" data-act="resume" data-id="${t.id}">Профиль учителя</button></div></div>
+   <div class="stack">
+    <div class="card stack"><h3>Расписание</h3>${finalSlots().map(c=>`<div class="row between"><span><b>${slotLbl(c)}</b></span><span class="tiny">${S.dur} мин</span></div>`).join('')}<p class="tiny">${tzName()}</p></div>
+    <div class="card stack"><div class="row between"><h3>Формат обучения</h3>${S.garant?'<span class="pill gray">Гарантия</span>':''}</div><p><b>${FORMATS[S.fmt||'platform'].t}</b></p>
+     ${S.garant?'<p class="small muted">По тарифу с гарантией результата обучение идёт только по программе платформы.</p>':'<button class="btn line sm" data-act="chgFmt">Сменить формат</button>'}</div>
+    <div class="card stack"><h3>Что-то не так?</h3><p class="small muted">Запрос рассмотрят координатор и ваш менеджер, обычно в течение 1 рабочего дня.</p><button class="btn bad sm" data-act="chgTeacher">Сменить учителя</button></div>
+   </div></div>`;
+}
+
+/* ===================== РЕЗЮМЕ ===================== */
+function resumeHTML(t){
+  const LV=['A0','A1–A2','B1–B2','C1','C2'];
+  return `<article class="resume" aria-label="Резюме ${esc(t.name)}">
+  <div class="r-left">
+    <div class="r-photo" style="overflow:hidden">${t.photoUrl?`<img src="${t.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`:t.ini}</div>
+    <div><h2 style="font-size:24px;color:#fff">${esc(t.name)}</h2><p style="opacity:.85">English teacher · Just to Study</p></div>
+    <div class="tags">${t.spec.map(s=>`<span class="tag">${s}</span>`).join('')}<span class="tag">${t.years<3?3:t.years} years experience</span></div>
+    <div><h4>Формат обучения</h4>${t.fmt.map(f=>`<p>✓ ${FORMATS[f].t}</p>`).join('')}</div>
+    <div><h4>Уровни учеников</h4><div class="lvl">${LV.map(l=>`<span class="${t.lv.includes(l)?'on':''}">${l}</span>`).join('')}</div></div>
+    <div><h4>Работаю с</h4><p>${t.ages.join(' · ')}</p></div>
+    <div><h4>Языки</h4>${t.lang.map(l=>`<p>${l[0]} <span style="opacity:.7">· ${l[1]}</span></p>`).join('')}</div>
+    <div><h4>Хобби и интересы</h4><div class="tags">${t.hob.map(h=>`<span class="tag">${h}</span>`).join('')}</div></div>
+  </div>
+  <div class="r-right">
+    <div><h4>Обо мне</h4><p>${esc(t.about)}</p></div>
+    <div class="quote">${esc(t.diff)}</div>
+    <div><h4>Опыт преподавания</h4><div class="tl">${t.exp.map(e=>`<div class="it"><div class="row between"><b>${esc(e.r)}</b><span class="tiny">${e.y}</span></div><p class="small" style="color:var(--brand);font-weight:700">${esc(e.p)}</p><p class="small muted">${esc(e.d)}</p></div>`).join('')}</div></div>
+    <div class="grid2"><div><h4>Образование</h4>${t.edu.map(e=>`<p><b>${esc(e.d)}</b></p><p class="small muted">${esc(e.u)} · ${e.y}</p>`).join('')}</div>
+      <div><h4>Сертификаты</h4>${t.cert.length?t.cert.map(c=>`<p>🏅 <b>${esc(c)}</b> <span class="verified">✔ Проверено</span></p>`).join(''):'<p class="small muted">—</p>'}</div></div>
+    ${t.res?`<div><h4>Результаты моих студентов</h4><p class="small">${esc(t.res)}</p><div class="gal" style="margin-top:10px">${t.resPh.map(r=>`<figure>${r.url?`<img src="${r.url}" alt="${esc(r.c)}">`:`<div class="img">📷 ${esc(r.c)}</div>`}<figcaption>${esc(r.c)}</figcaption></figure>`).join('')}</div></div>`:''}
+    <div class="grid2"><div><h4>Фокус</h4><div class="tags">${t.focus.map(x=>`<span class="tag">${x}</span>`).join('')}</div></div>
+      <div><h4>Подход к обучению</h4><div class="tags">${t.appr.map(x=>`<span class="tag">${x}</span>`).join('')}</div></div></div>
+    <p class="tiny">Learning with Just To Study · online English school · Kazakhstan</p>
+  </div></article>`;
+}
+// профиль учителя: mode 'student' — так видит студент (с совпадениями и кнопкой выбора); 'self' — учитель видит свой профиль
+function teacherProfileHTML(t,mode){
+  const stu=mode==='student', mine=S.filt.hob;
+  const common=t.hob.filter(h=>mine.includes(h));
+  const slots=stu&&S.picked.length?S.picked.map(k=>{const[d,h]=k.split('-');return DAYS[d]+' '+hh(toStu(+h))}):[];
+  const picked=S.choices.indexOf(t.id);
+  const certs=t.cert.map(c=>{const [n,sc]=c.split(' · ');return `<div class="cert-b"><span>🏅 ${esc(n)}</span><b>${esc(sc||'')}</b><span class="verified">✔ Проверено</span></div>`}).join('');
+  return `<div class="pf">
+   <section class="pf-head"><div class="cover">${mode==='self'?'<button class="chg" data-act="noop">Сменить обложку</button>':''}</div>
+    <div class="pf-body">
+     <div class="pf-ava">${t.photoUrl?`<img src="${t.photoUrl}" alt="Фото ${esc(t.name)}">`:t.ini}</div>
+     <div class="pf-name">${esc(t.name)}</div>
+     <div class="row" style="justify-content:center">${stu&&t.score?`<span class="pill ok">${t.score}% совпадение</span>`:''}${t.since>=2026?'<span class="pill">Новый учитель</span>':''}${mode==='self'?(pct()<100?`<span class="pill bad">Не в подборе · профиль ${pct()}%</span>`:'<span class="pill ok">В подборе</span>'):''}</div>
+     <p class="muted">English teacher · ${t.spec.join(' · ')}</p>
+     <div class="facts"><span class="fact">🎓 ${t.years<3?3:t.years} years experience</span><span class="fact">👤 ${t.ageG} лет</span><span class="fact">🗣 ${t.lang.map(l=>l[0]).join(', ')}</span><span class="fact">📚 ${t.fmt.map(f=>FORMATS[f].t).join(' · ')}</span></div>
+     <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="tile"><b>${t.since}</b><span>в Just to Study с</span></div><div class="tile"><b>94%</b><span>посещаемость учеников</span></div><div class="tile"><b>${t.lv[0].split('–')[0]}–${t.lv[t.lv.length-1].split('–').pop()}</b><span>уровни учеников</span></div></div>
+    </div></section>
+   ${stu&&(common.length||slots.length)?`<section class="sec" style="background:var(--ok-soft);border-color:transparent"><h3 style="color:var(--ok)">Почему вам подходит</h3>
+     ${slots.length?`<p class="small"><b>Свободна в ваше время:</b></p><div class="slots-mini">${slots.map(x=>`<span>✓ ${x}</span>`).join('')}</div>`:''}
+     ${common.length?`<p class="small"><b>Общие интересы:</b> ${common.join(', ')}</p>`:''}
+     ${S.fmt?`<p class="small"><b>Формат:</b> ${FORMATS[S.fmt].t} ✓</p>`:''}</section>`:''}
+   ${t.video?`<section class="sec"><h3>Видео-знакомство</h3><div class="video" role="img" aria-label="Видео-визитка учителя"><span>0:45 · Привет! Расскажу, как проходят мои уроки</span></div></section>`:''}
+   <section class="sec"><h3>Обо мне</h3><p>${esc(t.about)}</p><div class="quote">${esc(t.diff)}</div></section>
+   <section class="sec"><h3>Интересы</h3><div class="tags">${t.hob.map(h=>`<span class="tag ${stu&&mine.includes(h)?'hit':''}" style="font-size:13px;padding:4px 10px">${h}</span>`).join('')}</div></section>
+   ${t.res?`<section class="sec"><h3>Результаты моих студентов</h3><p class="small">${esc(t.res)}</p><div class="gal">${(t.resPh||[]).map(r=>`<figure>${r.url?`<img src="${r.url}" alt="${esc(r.c)}">`:`<div class="img">📷 ${esc(r.c)}</div>`}<figcaption>${esc(r.c)}</figcaption></figure>`).join('')}</div></section>`:''}
+   <section class="sec"><h3>Сертификаты</h3><div class="row">${certs||'<span class="muted small">—</span>'}</div><p class="tiny">Документы проверены координатором Just to Study</p></section>
+   <section class="sec"><h3>Опыт преподавания</h3><div class="tl">${t.exp.map(e=>`<div class="it"><div class="row between"><b>${esc(e.r)}</b><span class="tiny">${e.y}</span></div><p class="small" style="color:var(--brand);font-weight:700">${esc(e.p)}</p><p class="small muted">${esc(e.d)}</p></div>`).join('')}</div></section>
+   <div class="grid2">
+    <section class="sec"><h3>Образование</h3><div class="lst">${t.edu.map(e=>`<div class="li"><span class="ic">🎓</span><div class="grow"><b>${esc(e.d)}</b><p class="small muted">${esc(e.u)} · ${e.y}</p></div></div>`).join('')}</div></section>
+    <section class="sec"><h3>Языки</h3><div class="lst">${t.lang.map(l=>`<div class="li"><span class="ic">${esc(l[0].slice(0,2))}</span><div class="grow"><b>${esc(l[0])}</b></div><span class="pill gray">${esc(l[1])}</span></div>`).join('')}</div></section>
+   </div>
+   <section class="sec"><h3>Как я преподаю</h3><div class="lst">
+     <div class="li"><span class="ic">◎</span><div class="grow"><b>Уровни учеников</b></div><div class="lvl">${['A0','A1–A2','B1–B2','C1','C2'].map(l=>`<span class="${t.lv.includes(l)?'on':''}">${l}</span>`).join('')}</div></div>
+     <div class="li"><span class="ic">☺</span><div class="grow"><b>Работаю с</b></div><span class="small">${t.ages.join(', ')}</span></div>
+     <div class="li"><span class="ic">✦</span><div class="grow"><b>Фокус</b></div><span class="small">${t.focus.join(', ')}</span></div>
+     <div class="li"><span class="ic">⚙</span><div class="grow"><b>Подход</b></div><span class="small">${t.appr.join(', ')}</span></div></div></section>
+   ${stu?`<div class="cta-bar"><div class="row"><div class="ava">${t.ini}</div><div><b>${esc(t.name)}</b><div class="tiny">${picked>=0?'В вашем списке: приоритет '+(picked+1):'Можно выбрать до 3 учителей'}</div></div></div>
+     ${picked>=0?`<button class="btn line" data-unpick="${t.id}" data-reopen="${t.id}">Убрать из выбранных</button>`:`<button class="btn" data-pick="${t.id}" data-reopen="${t.id}" ${S.choices.length>=3?'disabled':''}>Выбрать учителя</button>`}</div>`:''}
+  </div>`;
+}
+function openResume(id,tab){ const base=TEACHERS.find(x=>x.id===+id); const t=matched().find(x=>x.id===base.id)||base; S.pfTab=tab||S.pfTab||'profile';
+  modal(`<div class="row between"><div class="ptabs"><button data-pftab="profile" data-id="${t.id}" aria-pressed="${S.pfTab==='profile'}">Профиль</button><button data-pftab="resume" data-id="${t.id}" aria-pressed="${S.pfTab==='resume'}">Резюме (PDF)</button></div><button class="x" data-act="close" aria-label="Закрыть">✕</button></div>
+   ${S.pfTab==='profile'?teacherProfileHTML(t,S.role==='student'&&S.screen.student==='teachers'?'student':'view'):resumeHTML(t)+'<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn ghost sm" data-act="noop">Скачать PDF</button></div>'}`,'full'); }
+
+/* ===================== УЧИТЕЛЬ ===================== */
+const REQ=[['photo','Фото, одобренное проверкой'],['about','О себе (от 200 символов)'],['exp','Опыт работы (минимум 1)'],['edu','Образование'],['lang','Языки (английский обязательно)'],['cert','Сертификат с файлом (минимум 1)'],['spec','Специализации'],['fmt','Формат обучения'],['hob','Хобби и интересы (минимум 3)'],['ages','С какими возрастами работаю'],['avail','Свободные окошки (от 6 ч в неделю)']];
+function reqOk(k){const p=S.t.profile;return k==='photo'?p.photoState==='approved':k==='edu'?p.edu.length>0:k==='lang'?p.langs.some(l=>/англ/i.test(l[0])):k==='cert'?p.certs.some(c=>c.file):k==='about'?p.about.length>=200:k==='exp'?p.exp.length>0:k==='spec'?p.spec.length>0:k==='fmt'?p.fmt.length>0:k==='hob'?p.hob.length>=3:k==='ages'?p.ages.length>0:k==='avail'?Object.keys(S.t.avail).length>=6:true}
+function pct(){return Math.round(REQ.filter(([k])=>reqOk(k)).length/REQ.length*100)}
+function checklist(){return REQ.map(([k,l])=>`<div class="check"><span class="s ${reqOk(k)?'y':'n'}">${reqOk(k)?'✓':'!'}</span>${l}</div>`).join('')}
+function tHome(){
+  const nw=S.t.reqs.filter(r=>r.status==='new').length;
+  return `<div class="topbar"><h1>Добрый день, Айгерим</h1>${bellHTML()}</div>
+  ${pct()<100?`<div class="banner warn"><p><b>Профиль заполнен на ${pct()}%.</b> Пока он не заполнен, студенты не видят вас в подборе. Срок: до 06.11.</p><button class="btn sm" data-go="profileEdit">Заполнить</button></div>`:`<div class="banner ok"><p><b>Профиль заполнен.</b> Вы участвуете в подборе.</p></div>`}
+  <div class="grid3">
+   <button class="card stack" data-go="students" style="text-align:left"><span class="tiny">НОВЫЕ ЗАЯВКИ</span><h1 class="num" style="color:${nw?'var(--bad)':'inherit'}">${nw}</h1><span class="small muted">ответить в течение 12 ч</span></button>
+   <div class="card stack"><span class="tiny">УРОКОВ СЕГОДНЯ</span><h1 class="num">7</h1><span class="small muted">существующий виджет</span></div>
+   <div class="card stack"><span class="tiny">УЧЕНИКОВ</span><h1 class="num">15 / ${S.t.maxSt}</h1><span class="small muted">лимит задаёте в «Мои окошки»</span></div>
+  </div>`;
+}
+function profileModal(){
+  modal(`<div class="row between"><span class="pill warn">Обязательно</span><button class="x" data-act="close" aria-label="Закрыть">✕</button></div>
+   <h2>Заполните профиль, чтобы студенты могли вас выбрать</h2>
+   <p class="muted">С ноября студенты сами выбирают учителя на платформе по резюме, формату обучения, интересам и свободному времени. Учителя без заполненного профиля и окошек в подборе не показываются.</p>
+   <div class="progress"><span style="width:${pct()}%"></span></div><p class="small"><b>Заполнено ${pct()}%</b> · срок до 06.11</p>
+   <div>${checklist()}</div>
+   <div class="row" style="justify-content:flex-end"><button class="btn line" data-act="close">Напомнить позже</button><button class="btn" data-act="goProfile">Заполнить сейчас (≈15 мин)</button></div>
+   <p class="tiny">Окно появляется при каждом входе, пока профиль не заполнен на 100%.</p>`);
+}
+function field(id,label,val,max,min,ph,req=true){
+  const n=val.length;
+  return `<div class="sect"><div class="hd"><label for="${id}"><b>${label}</b> ${req?'<span class="req">*</span>':''}</label></div>
+  <textarea id="${id}" maxlength="${max}" placeholder="${ph}" data-cnt="${id}" rows="${max>900?6:4}">${esc(val)}</textarea>
+  <div class="counter" id="c-${id}">${n} / ${max}${min?` · минимум ${min}`:''}</div></div>`;
+}
+function photoBlock(){
+  const p=S.t.profile, st=p.photoState;
+  const img=p.photoUrl?`<img src="${p.photoUrl}" alt="Фото профиля">`:'АС';
+  return `<div class="photo-box"><div class="ph ${st==='approved'&&p.fixed?'fixed':''}">${img}</div>
+   <div class="stack" style="gap:8px">
+    <div class="row"><b>Фото профиля</b> <span class="req">*</span> ${st==='approved'?'<span class="pill ok">✔ Одобрено · 92/100</span>':st==='needs_fix'?'<span class="pill warn">Нужно исправить · 64/100</span>':st==='checking'?'<span class="pill">ИИ проверяет…</span>':'<span class="pill bad">Не загружено</span>'}</div>
+    <div class="row"><label class="btn line sm filebtn">Загрузить фото<input type="file" accept="image/*" id="photoUp"></label><button class="btn ghost sm" data-act="photoCrit">Требования к фото</button>${!p.photoUrl?'<button class="btn ghost sm" data-act="photoDemo">Пример проверки</button>':''}</div>
+    <span class="tiny">JPG/PNG/HEIC до 10 МБ, от 800×800. После загрузки ИИ проверит фото по 9 критериям и, если нужно, предложит улучшенную версию.</span>
+   </div></div>`;
+}
+function critList(res){return `<div class="crit">${PHOTO_CRIT.map(([k,l,req])=>{const ok=!res||res[k]!==false;return `<div class="check"><span class="s ${res?(ok?'y':'n'):'y'}">${res?(ok?'✓':'✗'):'•'}</span>${l}${req?'':' <span class="tiny">(желательно)</span>'}</div>`}).join('')}</div>`}
+function photoResultModal(){
+  const p=S.t.profile, img=p.photoUrl?`<img src="${p.photoUrl}" alt="">`:'АС';
+  modal(`<div class="row between"><h2>Проверка фото</h2><button class="x" data-act="close" aria-label="Закрыть">✕</button></div>
+   <div class="row"><span class="score num" style="color:var(--warn)">64</span><span class="muted">/ 100 · нужно исправить</span></div>
+   ${critList({crop:false,bg:false})}
+   <div class="banner warn"><p class="small"><b>Что не так:</b> лицо мелковато в кадре и на фоне видна комната. Это можно исправить автоматически.</p></div>
+   <div class="grid2"><div class="stack" style="align-items:center"><div class="ph">${img}</div><span class="tiny">Было</span></div><div class="stack" style="align-items:center"><div class="ph fixed">${img}</div><span class="tiny">Стало: фирменный фон, кадр по плечи, свет выровнен</span></div></div>
+   <p class="tiny">ИИ не меняет лицо и внешность: только фон, кадрирование, яркость и резкость. В прототипе результат проверки показан как пример.</p>
+   <div class="row" style="justify-content:flex-end"><label class="btn line filebtn">Загрузить другое<input type="file" accept="image/*" id="photoUp2"></label><button class="btn" data-act="photoFix">Использовать улучшенное</button></div>`);
+}
+function myTeacherObj(){ const p=S.t.profile, base=TEACHERS[0];
+  return {...base,photoUrl:p.photoState==='approved'?p.photoUrl:null,lang:p.langs.filter(l=>l[0]),edu:p.edu.filter(e=>e.d),hob:p.hob,fmt:p.fmt.length?p.fmt:base.fmt,spec:p.spec.length?p.spec:base.spec,ages:p.ages,
+    cert:p.certs.filter(c=>c.st==='verified').map(c=>c.t+' · '+c.s),resPh:p.resPh,about:p.about.length>=40?p.about:base.about}; }
+function tProfileView(){
+  return `<div class="topbar"><h1>Мой профиль</h1><div class="row"><button class="btn line sm" data-act="previewMe">Как меня видит студент</button><button class="btn sm" data-go="profileEdit">✎ Редактировать</button>${bellHTML()}</div></div>
+  ${pct()<100?`<div class="banner warn"><p><b>Профиль заполнен на ${pct()}%.</b> Осталось: ${REQ.filter(([k])=>!reqOk(k)).map(x=>x[1].split(' (')[0]).join(', ')}.</p><button class="btn sm" data-go="profileEdit">Заполнить</button></div>`:''}
+  ${teacherProfileHTML(myTeacherObj(),'self')}`;
+}
+function tProfile(){
+  const p=S.t.profile;
+  return `<button class="btn line sm" data-go="profile" style="align-self:flex-start">← К профилю</button>
+  <div class="topbar"><div><h1>Редактирование профиля</h1><p class="muted small">Заполняете один раз. Из этих данных автоматически собирается резюме, которое видят студенты, и PDF.</p></div>${bellHTML()}</div>
+  <div class="editor">
+   <div class="stack">
+    <div class="card stack"><h2>Основное</h2>
+     ${photoBlock()}
+     <div class="grid2"><div><label class="small" for="pn"><b>Имя и фамилия</b> <span class="req">*</span></label><input type="text" id="pn" value="Айгерим Сапарова" maxlength="60"></div>
+      <div><label class="small" for="py"><b>Опыт, лет</b> <span class="req">*</span></label><input type="text" id="py" value="4" maxlength="2"><span class="tiny">Если меньше 3, в резюме будет «3 years experience»</span></div></div>
+     <div class="grid2"><div><label class="small" for="pb"><b>Дата рождения</b> <span class="req">*</span></label><input type="date" id="pb" value="2000-04-12"><span class="tiny">Студентам показывается возрастная группа, не дата</span></div>
+      <div><label class="small" for="ptz"><b>Часовой пояс</b></label><select class="inp" id="ptz"><option>Казахстан (UTC+5) · авто</option><option>Другой…</option></select></div></div>
+     <p class="tiny">🔒 Телефон и email в резюме не показываются. Связь со студентом только через чат платформы.</p>
+    </div>
+    <div class="card stack">${field('about','О себе',p.about,1500,200,'3–6 предложений: сколько преподаёте, с кем лучше всего работаете, каких результатов добиваются ваши студенты.')}
+     ${field('diff','Как проходят мои уроки',TEACHERS[0].diff,800,0,'Чем ваши уроки отличаются: структура, домашка, обратная связь.',false)}
+    </div>
+    <div class="card stack"><div class="row between"><h2>Результаты моих студентов</h2><span class="tiny">необязательно · сильно повышает доверие</span></div>
+     ${field('ach','Текст',"За последний год 9 моих студентов перешли на следующий уровень, трое сдали IELTS на 6.5+.",800,0,'Например: 9 студентов за год перешли на следующий уровень; IELTS с 5.5 до 7.0.',false)}
+     <span class="small"><b>Фото результатов</b> <span class="tiny">до 8 · сертификаты учеников, «было / стало», отзывы</span></span>
+     <div class="gal">${p.resPh.map((r,i)=>`<figure>${r.url?`<img src="${r.url}" alt="${esc(r.c)}">`:`<div class="img">Фото ${i+1}</div>`}<figcaption><input type="text" value="${esc(r.c)}" maxlength="120" data-rescap="${i}" aria-label="Подпись к фото ${i+1}" style="padding:4px 6px;border-radius:8px;font-size:12px"></figcaption></figure>`).join('')}
+      ${p.resPh.length<8?`<label class="add filebtn">+ Добавить фото<input type="file" accept="image/*" id="resUp" multiple></label>`:''}</div>
+     <label class="check"><input type="checkbox" id="consent" ${p.consent?'checked':''}> Личные данные учеников скрыты или у меня есть их согласие на публикацию <span class="req">*</span></label>
+     <p class="tiny">Фото проходят модерацию координатора перед показом студентам.</p></div>
+    <div class="card stack"><div class="row between"><h2>Формат обучения <span class="req">*</span></h2><span class="tiny">Можно несколько</span></div>
+     ${Object.entries(FORMATS).map(([k,f])=>`<label class="fmt ${p.fmt.includes(k)?'on':''}"><input type="checkbox" data-tfmt="${k}" ${p.fmt.includes(k)?'checked':''}><div><b>${f.t}</b><p class="small muted">${f.d}</p>${k==='books'&&p.fmt.includes('books')?'<input type="text" placeholder="Какие учебники: English File, Speakout…" style="margin-top:8px">':''}</div></label>`).join('')}
+     <p class="tiny">Студенты с тарифом гарантии видят только учителей, у которых отмечено «По программе платформы».</p></div>
+    <div class="card stack"><div class="row between"><h2>Опыт работы <span class="req">*</span></h2><span class="tiny">до 6 мест</span></div>
+     <div class="grid2"><input type="text" value="Преподаватель английского" aria-label="Должность"><input type="text" value="Just to Study" aria-label="Место работы"></div>
+     <div class="grid2"><input type="text" value="2023" aria-label="С"><input type="text" value="по настоящее время" aria-label="По"></div>
+     ${field('exp1','Что делали, результаты',p.exp,1000,0,'Обязанности, ученики, результаты',false)}
+     <button class="btn ghost sm" style="align-self:flex-start">+ Добавить место работы</button></div>
+    <div class="card stack"><h2>Специализации и уровни <span class="req">*</span></h2>
+     <div class="chips">${['General English','Premium','Kids 7–12','IELTS','SAT','Business English','Speaking Class'].map(s=>`<button class="chip" data-tspec="${s}" aria-pressed="${p.spec.includes(s)}">${s}${s==='SAT'||s==='Premium'?' <span class="new" style="font-size:9px;background:var(--gold);border-radius:4px;padding:0 4px;color:#171326">NEW</span>':''}</button>`).join('')}</div>
+     <span class="small"><b>С какими возрастами работаю</b> <span class="req">*</span></span>
+     <div class="chips">${['Дети 7–12','Подростки','Взрослые'].map(s=>`<button class="chip" data-tage="${s}" aria-pressed="${p.ages.includes(s)}">${s}</button>`).join('')}</div>
+     <span class="small"><b>Уровни учеников</b></span><div class="chips">${['A0','A1–A2','B1–B2','C1','C2'].map((s,i)=>`<button class="chip" aria-pressed="${i<3}">${s}</button>`).join('')}</div>
+     <span class="small"><b>Подход к обучению</b> <span class="tiny">(раньше «Методики»)</span></span><div class="chips">${['Communicative approach','Error correction','Gamification','CEFR-based'].map((s,i)=>`<button class="chip" aria-pressed="${i!==1}">${s}</button>`).join('')}</div></div>
+    <div class="card stack"><div class="row between"><h2>Хобби и интересы <span class="req">*</span></h2><span class="tiny">${p.hob.length} / 10 · минимум 3</span></div>
+     <p class="small muted">Студенты ищут учителя с похожими интересами, так проще разговориться.</p>
+     ${HOBBY_CATS.concat(p.hob.some(h=>!HOBBIES.includes(h))?[['Свои варианты',p.hob.filter(h=>!HOBBIES.includes(h))]]:[]).map(([c,list])=>`<div class="cathd">${c}</div><div class="chips">${list.map(h=>`<button class="chip" data-thob="${esc(h)}" aria-pressed="${p.hob.includes(h)}">${esc(h)}</button>`).join('')}</div>`).join('')}
+     <div class="row"><input type="text" id="customHob" maxlength="30" placeholder="Своё: например, «Скалолазание»" style="flex:1;min-width:0"><button class="btn ghost sm" data-act="addHob">Добавить</button></div></div>
+    <div class="card stack"><div class="row between"><h2>Языки <span class="req">*</span></h2><span class="tiny">до 6 · английский обязательно</span></div>
+     ${p.langs.map((l,i)=>`<div class="rowl"><input type="text" value="${esc(l[0])}" data-lang="${i}" aria-label="Язык ${i+1}"><select class="inp" data-lvl="${i}" aria-label="Уровень">${['родной','свободно','C2','C1','B2','B1','A2'].map(v=>`<option ${v===l[1]?'selected':''}>${v}</option>`).join('')}</select><button class="x" data-dellang="${i}" aria-label="Удалить">✕</button></div>`).join('')}
+     ${p.langs.length<6?'<button class="btn ghost sm" data-act="addLang" style="align-self:flex-start">+ Добавить язык</button>':''}</div>
+    <div class="card stack"><div class="row between"><h2>Образование <span class="req">*</span></h2><span class="tiny">до 3</span></div>
+     ${p.edu.map((e,i)=>`<div class="grid2"><input type="text" value="${esc(e.d)}" aria-label="Степень и специальность"><input type="text" value="${esc(e.u)} · ${e.y}" aria-label="Вуз и годы"></div>`).join('')}
+     <div class="row"><button class="btn ghost sm" data-act="addEdu">+ Добавить образование</button><label class="btn line sm filebtn">Диплом (по желанию)<input type="file" accept="image/*,.pdf"></label></div></div>
+    <div class="card stack"><div class="row between"><h2>Сертификаты <span class="req">*</span></h2><span class="tiny">минимум 1 · до 6</span></div>
+     <div class="banner brand"><p class="small">🔒 Файл сертификата видит только координатор, он проверяет его. Студенту показываются <b>только название и балл</b> с отметкой «✔ Проверено».</p></div>
+     ${p.certs.map((c,i)=>`<div class="rowf"><select class="inp" data-ctype="${i}" aria-label="Тип сертификата">${CERT_TYPES.map(v=>`<option ${v===c.t?'selected':''}>${v}</option>`).join('')}</select>
+       <input type="text" value="${esc(c.s)}" data-cscore="${i}" placeholder="Балл / результат" aria-label="Балл">
+       <label class="btn ${c.file?'ghost':'line'} sm filebtn">${c.file?'📎 '+esc(c.file.slice(0,14)):'Загрузить файл *'}<input type="file" accept="image/*,.pdf" data-cfile="${i}"></label>
+       <span class="pill ${c.st==='verified'?'ok':c.st==='pending'?'warn':'bad'}">${c.st==='verified'?'✔ Проверено':c.st==='pending'?'На проверке':'Нет файла'}</span></div>`).join('')}
+     ${p.certs.length<6?'<button class="btn ghost sm" data-act="addCert" style="align-self:flex-start">+ Добавить сертификат</button>':''}
+     <p class="tiny">Студент увидит: ${p.certs.filter(c=>c.st==='verified').map(c=>esc(c.t)+' · '+esc(c.s)+' ✔').join(', ')||'пока ничего — сертификат появится после проверки'}</p></div>
+    <div class="card stack"><h2>Видео-визитка</h2><span class="tiny">30–60 сек, по желанию</span><label class="btn line sm filebtn" style="align-self:flex-start">Загрузить видео<input type="file" accept="video/*"></label></div>
+   </div>
+   <aside class="stack" style="position:sticky;top:70px">
+    <div class="card stack"><h3>Готовность профиля</h3><div class="progress"><span style="width:${pct()}%"></span></div><b>${pct()}%</b>${checklist()}
+     ${pct()<100?'<p class="small" style="color:var(--bad)">Пока профиль не готов, вы не участвуете в подборе.</p>':'<p class="small" style="color:var(--ok)">Вы участвуете в подборе.</p>'}
+     <button class="btn" data-act="saveProfile">Сохранить</button><button class="btn ghost" data-act="previewMe">Как меня видит студент</button></div>
+   </aside>
+  </div>`;
+}
+function tAvail(){
+  const busy={'0-14':'Тамара А.','0-15':'Айнура Е.','0-16':'Temirlan N.','2-17':'Акерке Ж.','4-18':'Эмилия Н.','4-19':'Дастан З.'};
+  const free=Object.keys(S.t.avail).filter(k=>!busy[k]).length;
+  return `<div class="topbar"><div><h1>Мои окошки</h1><p class="muted small">Отметьте время, когда готовы брать новых студентов. Время с уроками скрывается от студентов автоматически.</p></div>${bellHTML()}</div>
+  <div class="card stack">
+   <div class="row between"><div class="row"><span class="small">Ваш часовой пояс: <b>Казахстан (UTC+5)</b></span><span class="pill ${free>=6?'ok':'bad'}">${free} ч свободно в неделю ${free>=6?'':'· нужно минимум 6'}</span></div>
+    <div class="row"><label class="small" for="maxs"><b>Максимум учеников</b></label><input type="text" id="maxs" value="${S.t.maxSt}" style="width:70px"><span class="tiny">0 = не беру новых</span></div></div>
+   <div class="gridwrap"><table class="slots"><thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead><tbody>
+   ${HOURS.map(h=>`<tr><th class="num">${hh(h)}</th>${DAYS.map((_,d)=>{const k=d+'-'+h; if(busy[k]) return `<td><button class="slot busy" disabled title="Урок">${busy[k]}</button></td>`;
+     const on=S.t.avail[k]; return `<td><button class="slot ${on?'free':''}" data-av="${k}" aria-pressed="false" aria-label="${DAYS[d]} ${hh(h)} ${on?'свободно':'не работаю'}">${on?'свободно':''}</button></td>`}).join('')}</tr>`).join('')}
+   </tbody></table></div>
+   <div class="legend"><span><i style="background:var(--ok-soft);border-color:var(--ok)"></i>Свободно для новых студентов</span><span><i style="background:var(--fg)"></i>Урок (скрыто автоматически)</span><span><i></i>Не работаю</span></div>
+   <div class="row between"><div class="row"><button class="btn line sm" data-act="exc">+ Исключение (разовый выходной)</button><span class="tiny">Последнее обновление: 32 дня назад. Напоминаем проверить окошки раз в 30 дней.</span></div><button class="btn" data-act="saveAvail">Сохранить</button></div>
+  </div>`;
+}
+function tStudents(){
+  const nw=S.t.reqs.filter(r=>r.status==='new');
+  return `<div class="topbar"><h1>Мои студенты</h1>${bellHTML()}</div>
+  <div class="tabs" role="tablist"><button role="tab" aria-selected="${S.t.tab==='cur'}" data-ttab="cur">Текущие · 15</button><button role="tab" aria-selected="${S.t.tab==='new'}" data-ttab="new">Новые заявки ${nw.length?`<span class="badge">${nw.length}</span>`:''}</button><button role="tab" aria-selected="${S.t.tab==='temp'}" data-ttab="temp">Временные</button></div>
+  ${S.t.tab==='new'?(S.t.reqs.length?S.t.reqs.map(r=>`<article class="card req-card">
+    <div class="ava">${r.st[0]}</div>
+    <div class="stack" style="gap:6px"><div class="row"><h2>${esc(r.st)}</h2><span class="pill">${r.lvl}</span><span class="pill gray">${r.tariff}</span>${r.prio===1?'<span class="pill ok">Вы — 1-й выбор</span>':`<span class="pill gray">Вы — ${r.prio}-й выбор</span>`}</div>
+     <p class="small"><b>Время:</b> ${r.slots} (ваш пояс) · <b>Формат:</b> ${r.fmt}</p><p class="small"><b>Цель:</b> ${r.goal}</p>
+     <div class="tags">${r.hob.map(h=>`<span class="tag ${TEACHERS[0].hob.includes(h)?'hit':''}">${h}</span>`).join('')}</div>
+     <p class="tiny">Результаты теста: Grammar A1 · Reading A1 · Listening A2 · Speaking A2. Контакты откроются после закрепления.</p></div>
+    <div class="stack act">${r.status==='new'?`<span class="timer">⏱ ${r.left}</span><button class="btn ok sm" data-acc="${r.id}">Принять</button><button class="btn bad sm" data-dec="${r.id}">Отклонить</button>`
+      :r.status==='acc'?'<span class="pill ok">Принято</span><span class="tiny">Если вы выбор №1, студент закрепится сразу</span>':'<span class="pill gray">Отклонено</span>'}</div></article>`).join(''):'<div class="card"><p class="muted">Новых заявок нет</p></div>')
+   :S.t.tab==='temp'?'<div class="card"><p class="muted">Здесь будут студенты, которых вы ведёте временно, пока их учитель в отпуске. Видны срок замены, прогресс и заметки основного учителя.</p></div>'
+   :'<div class="card"><p class="muted">Существующий список «Мои студенты» (без изменений).</p></div>'}`;
+}
+function tVacation(){
+  return `<div class="topbar"><div><h1>Запросы</h1><p class="muted small">Перерыв и прекращение сотрудничества: подайте заявление координатору.</p></div>${bellHTML()}</div>
+  <div class="card stack"><h2>Взять перерыв</h2>
+   <div class="grid2"><div><label class="small" for="v1"><b>С</b></label><input type="date" id="v1" value="2026-11-02"></div><div><label class="small" for="v2"><b>По</b></label><input type="date" id="v2" value="2026-11-15"></div></div>
+   <select class="inp" aria-label="Причина"><option>Отпуск</option><option>Болезнь</option><option>Учёба / экзамены</option><option>Другое</option></select>
+   <div class="banner brand"><p class="small"><b>Затронуто: 9 студентов, 34 урока.</b> После одобрения координатором каждый студент получит выбор: пауза или временный учитель. Заявку нужно подать минимум за 7 дней.</p></div>
+   <button class="btn" data-act="sendVac" style="align-self:flex-start">Отправить координатору</button></div>
+  <div class="card"><table class="list"><thead><tr><th>Вид</th><th>Период</th><th>Статус</th><th>Студенты</th></tr></thead><tbody>
+   <tr><td>Перерыв</td><td class="num">02.11.2026 — 15.11.2026</td><td><span class="pill warn">На рассмотрении</span></td><td class="small">выбор появится после одобрения</td></tr></tbody></table></div>`;
+}
+
+/* ===================== МЕНЕДЖЕР ===================== */
+function mRequests(){
+  return `<div class="topbar"><div><h1>Запросы</h1><p class="muted small">Смена учителя, перерывы учителей, временные замены</p></div>${bellHTML()}</div>
+  <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Смена учителя <span class="badge">${S.m.changes.filter(c=>c.status==='new').length}</span></button><button role="tab" aria-selected="false">Перерывы учителей · 1</button><button role="tab" aria-selected="false">Временные замены</button></div>
+  ${S.m.changes.map(c=>`<article class="card stack"><div class="row between"><div class="row"><h2>${esc(c.st)}</h2><span class="pill ${c.reason.startsWith('Жалоба')?'bad':'gray'}">${c.reason}</span></div>
+   ${c.status==='new'?'<span class="pill warn">Ждёт решения · 1 раб. день</span>':c.status==='ok'?'<span class="pill ok">Одобрено</span>':'<span class="pill gray">Отклонено</span>'}</div>
+   <p class="small"><b>Текущий учитель:</b> ${esc(c.from)} · <b>Ответственный менеджер:</b> ${esc(c.mgr)}</p>
+   <p class="quote small">${esc(c.text)}</p>
+   ${c.reason.startsWith('Жалоба')?'<p class="small" style="color:var(--bad)">Жалоба автоматически передана в раздел «Жалобы». Учитель даст объяснение.</p>':''}
+   ${c.status==='new'?`<div class="row"><button class="btn ok sm" data-mok="${c.id}">Одобрить: студент выберет нового учителя</button><button class="btn line sm" data-mno="${c.id}">Отклонить с комментарием</button><button class="btn ghost sm">Позвонить студенту</button></div>`:''}</article>`).join('')}`;
+}
+function mMatch(){
+  return `<div class="topbar"><div><h1>Подбор преподавателя</h1><p class="muted small">Этап воронки. Система подбирает сама, менеджер подключается только при проблемах.</p></div>${bellHTML()}</div>
+  <div class="grid3"><div class="card"><span class="tiny">ЖДУТ ОТВЕТА УЧИТЕЛЯ</span><h1 class="num">12</h1></div><div class="card"><span class="tiny">НУЖНА ПОМОЩЬ</span><h1 class="num" style="color:var(--bad)">3</h1></div><div class="card"><span class="tiny">СРЕДНЕЕ ВРЕМЯ ДО НАЗНАЧЕНИЯ</span><h1 class="num">9 ч</h1></div></div>
+  <div class="card"><h2>Нужна помощь</h2><table class="list"><thead><tr><th>Ученик</th><th>Тариф</th><th>Проблема</th><th></th></tr></thead><tbody>
+   <tr><td><b>Аружан Т.</b></td><td>Premium · 12 · 60 мин</td><td><span class="pill">Просит подобрать менеджера</span></td><td><button class="btn sm" data-go="mtool">Подобрать</button></td></tr>
+   <tr><td>Нурлан К.</td><td>General · 36 · 30 мин</td><td>3 учителя не ответили за 12 ч</td><td><button class="btn sm">Подобрать вручную</button></td></tr>
+   <tr><td>Мадина Е.</td><td>General · 8</td><td>Не подтвердила расписание 24 ч</td><td><button class="btn sm">Связаться</button></td></tr>
+   <tr><td>Алия С.</td><td>IELTS IND GARANT</td><td>Нет свободных учителей в выбранное время</td><td><button class="btn sm">Подобрать вручную</button></td></tr>
+   <tr><td>Дильназ Б.</td><td>Kids · 12</td><td>Не выбрала учителя 3 дня после теста</td><td><button class="btn sm">Связаться</button></td></tr></tbody></table></div>
+  <div class="card feed"><h2>Лента назначений</h2>
+   <div class="it"><span class="dot"></span><div><b>Аружан Т. → Айгерим Сапарова</b><p class="small muted">Первый урок пн 02.11, 19:00 · Premium · по программе платформы · менеджер Динара</p></div></div>
+   <div class="it"><span class="dot"></span><div><b>Ерасыл М. → Данияр Ахметов</b><p class="small muted">Первый урок вт 03.11, 09:00 · IELTS IND GARANT</p></div></div>
+   <div class="it"><span class="dot" style="background:var(--gold)"></span><div><b>Временная замена:</b> Камила А. → Сара Нурланова на 02.11–15.11</div></div></div>`;
+}
+function mStudent(){
+  return `<div class="topbar"><div class="row"><div class="ava lg">А</div><div><h1>Аружан Т.</h1><p class="small muted">Учится · A2 · +7 7•• ••• •• •• · ID 2451</p></div></div>${bellHTML()}</div>
+  <div class="tabs"><button aria-selected="true">Обзор</button><button aria-selected="false">Уроки</button><button aria-selected="false">Оплаты</button><button aria-selected="false">Профиль</button><button aria-selected="false">История</button></div>
+  <div class="grid2">
+   <section class="card stack" style="${S.tConfirmed?'':'border:2px solid var(--warn)'}"><div class="row between"><h2>Тариф и подбор</h2>${S.tConfirmed?'<span class="pill ok">Подтверждён</span>':'<span class="pill warn">Ждёт подтверждения</span>'}</div>
+    <p class="small muted">Подставлено из активного абонемента «2026 - PREMIUM / 12 lessons». Проверьте и подтвердите: студент увидит тариф автоматически и не сможет его поменять.</p>
+    <div class="grid2">
+     <div><label class="small" for="mDir"><b>Направление</b></label><select class="inp" id="mDir">${[['general','General English'],['premium','Premium'],['kids','Kids English'],['ielts','IELTS'],['sat','SAT']].map(([v,l])=>`<option value="${v}" ${S.tariff===v?'selected':''}>${l}</option>`).join('')}</select></div>
+     <div><label class="small" for="mGar"><b>Гарантия</b></label><select class="inp" id="mGar"><option value="auto">Авто (по тарифу): ${S.garant?'да':'нет'}</option><option value="1" ${S.garant?'selected':''}>Да</option><option value="0">Нет</option></select></div>
+     <div><span class="small"><b>Длительность урока</b></span><div class="chips">${[60,30].map(v=>`<button class="chip" data-mdur="${v}" aria-pressed="${S.dur===v}">${v} мин</button>`).join('')}</div></div>
+     <div><span class="small"><b>Уроков в неделю</b></span><div class="chips">${[2,3].map(v=>`<button class="chip" data-mfreq="${v}" aria-pressed="${S.freq===v}">${v}</button>`).join('')}</div></div>
+    </div>
+    <p class="small">Абонемент: <b>12 уроков</b> · осталось 12 · до 25.10.2027</p>
+    <button class="btn" data-act="confirmTariff">${S.tConfirmed?'Сохранить изменения':'Подтвердить тариф ученика'}</button>
+    <p class="tiny">Изменение пишется в «Историю». Если тариф не подтверждён, студент не может сам выбрать учителя, только попросить менеджера.</p></section>
+   <section class="card stack"><h2>Подбор учителя</h2>
+    <div class="row between"><span>Статус</span><span class="pill ${S.stuState==='assigned'?'ok':S.stuState==='none'?'gray':'warn'}">${{none:'Не начат',pending:'Ждём ответа учителей',mgr:'Просит подобрать менеджера',confirm:'Ждём подтверждения расписания',assigned:'Учитель назначен'}[S.stuState]}</span></div>
+    <div class="row between"><span>Ответственный менеджер</span><b>Динара М.</b></div>
+    <div class="row between"><span>Удобное время</span><span class="small">${S.picked.length?S.picked.map(slotLbl).join(', '):'не указано'}</span></div>
+    <div class="row between"><span>Интересы</span><span class="small">${S.filt.hob.join(', ')||'—'}</span></div>
+    <button class="btn ghost" data-go="mtool">Подобрать учителя вручную</button></section>
+  </div>`;
+}
+function mTool(){
+  const list=matched();
+  return `<div class="topbar"><div><h1>Подбор учителя: Аружан Т.</h1><p class="small muted">${tariffLine()} · ${S.mgrWish?'Пожелание: «'+esc(S.mgrWish)+'»':'без пожеланий'}</p></div>${bellHTML()}</div>
+  <div class="card stack"><b>Удобное время студента</b><div class="tags">${(S.picked.length?S.picked:['0-19','2-19','4-18','1-18']).map(k=>`<span class="tag">${slotLbl(k)}</span>`).join('')}</div></div>
+  ${list.map(t=>`<article class="card stack"><div class="row between"><div class="row"><div class="ava">${t.ini}</div><div><b>${esc(t.name)}</b><div class="tiny">${t.spec.join(', ')} · ${t.score}% совпадение</div></div></div>
+    <div class="row"><button class="btn sm" data-mpick="${t.id}" data-how="send">Отправить учителю</button><button class="btn ghost sm" data-mpick="${t.id}" data-how="assign">Назначить сразу</button></div></div>
+    <p class="small"><b>Совпадает время:</b> ${t.fit.map(slotLbl).join(', ')} · будет предложено: <b>${propose(t.fit,S.freq).map(slotLbl).join(', ')}</b></p></article>`).join('')||'<div class="card"><p class="muted">Нет учителей под это время. Свяжитесь со студентом.</p></div>'}
+  <p class="tiny">«Отправить учителю» — обычная заявка, ответ 12 ч. «Назначить сразу» — если вы уже договорились с учителем, он получит уведомление. После этого студент подтверждает расписание.</p>`;
+}
+function mTariffs(){
+  return `<div class="topbar"><h1>Тарифы и абонементы · редактирование</h1>${bellHTML()}</div>
+  <div class="card stack" style="max-width:640px"><h2>01A ➜ A1-A2-B1 IND GARANT: 36 уроков</h2>
+   <div class="grid2"><div><span class="small"><b>Цена</b></span><input type="text" value="240000 ₸"></div><div><span class="small"><b>Уроков</b></span><input type="text" value="36"></div></div>
+   <label class="fmt on"><input type="checkbox" checked><div><b>Гарантийный тариф</b> <span class="pill">NEW</span><p class="small muted">Студенты с этим тарифом автоматически получают признак «Гарантия». Формат обучения — только по программе платформы, шаг выбора формата пропускается.</p></div></label>
+   <label class="fmt"><input type="checkbox"><div><b>Направление</b><p class="small muted">General / Premium / Kids / IELTS / SAT. Определяет фильтр учителей по специализации.</p></div></label>
+   <div><span class="small"><b>Длительность урока</b> <span class="pill">NEW</span></span><div class="chips" style="margin-top:6px"><button class="chip" aria-pressed="true">60 мин</button><button class="chip" aria-pressed="false">30 мин</button></div><p class="tiny">Учитываются при подборе: студентам с уроками по 30 мин показываются только учителя, которые их проводят.</p></div>
+   <p class="tiny">В карточке ученика менеджер может вручную включить или выключить признак «Гарантия».</p></div>`;
+}
+function mResumes(){
+  return `<div class="topbar"><div><h1>Резюме преподавателей</h1><p class="muted small">332 в списке · готовы к подбору: 41 (12%)</p></div>${bellHTML()}</div>
+  <div class="card"><div class="row"><span class="pill ok">Готов к подбору 41</span><span class="pill warn">Черновик 23</span><span class="pill bad">Не начато 268</span><button class="btn sm ghost">Напомнить всем незаполнившим</button></div>
+  <table class="list" style="margin-top:12px"><thead><tr><th>Учитель</th><th>Профиль</th><th>Окошки</th><th>Формат</th><th>В подборе</th></tr></thead><tbody>
+  ${TEACHERS.map((t,i)=>`<tr><td><b>${t.name}</b></td><td>${i===5?'<span class="pill warn">60%</span>':'<span class="pill ok">100%</span>'}</td><td class="num">${Object.keys(t.avail).length} ч</td><td class="small">${t.fmt.map(f=>FORMATS[f].t).join(', ')}</td><td>${i===5?'<span class="pill gray">Нет</span>':'<span class="pill ok">Да</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ===================== рендер ===================== */
+function scen(){
+  let h='';
+  if(S.role==='student'){
+    h=`<button class="btn sm ghost" data-act="demo" style="background:rgba(255,255,255,.12);color:inherit" aria-expanded="${!!S.demoOpen}">⚙ Настройки демо ${S.demoOpen?'▴':'▾'}</button>`+(!S.demoOpen?'<span>Студент этих настроек не видит: тариф ставит менеджер</span>':`<span style="opacity:.7">Только для показа, студент этого не видит:</span><label>Тариф <select id="sTariff">${[['general','General English'],['premium','Premium'],['kids','Kids English'],['ielts','IELTS'],['sat','SAT']].map(([v,l])=>`<option value="${v}" ${S.tariff===v?'selected':''}>${l}</option>`).join('')}</select></label>
+     <label><input type="checkbox" id="sGarant" ${S.garant?'checked':''}> Гарантия</label>
+     <label>Урок <select id="sDur"><option value="60" ${S.dur===60?'selected':''}>60 мин</option><option value="30" ${S.dur===30?'selected':''}>30 мин</option></select></label>
+     <label><input type="checkbox" id="sTc" ${S.tConfirmed?'checked':''}> Тариф подтверждён</label>
+     <label>Часовой пояс <select id="sTz">${[['auto','Авто'],['5','Казахстан +5'],['3','Москва +3'],['9','Сеул +9'],['1','Берлин +1']].map(([v,l])=>`<option value="${v}" ${S.tzMode==v?'selected':''}>${l}</option>`).join('')}</select></label>
+     <label><input type="checkbox" id="sVac" ${S.vacation?'checked':''}> Учитель в отпуске</label>
+     <button class="btn sm ghost" data-act="onb" style="background:rgba(255,255,255,.12);color:inherit">С онбординга</button>`);
+  } else if(S.role==='teacher'){ h=`<button class="btn sm ghost" data-act="showPopup" style="background:rgba(255,255,255,.12);color:inherit">Показать окно «Заполните профиль»</button>`; }
+  else if(S.role==='manager'){ h=`<span>Менеджер и координатор видят одни и те же запросы</span>`; }
+  $('#scen').innerHTML=h;
+}
+function render(){
+  scen(); side();
+  const sc=S.screen[S.role]; let html='';
+  if(S.role==='student') html={onboard:stuOnboard,sprofile:stuProfile,home:stuHome,myteacher:stuMyTeacher,format:stuFormat,time:stuTime,teachers:stuTeachers}[sc]();
+  else if(S.role==='teacher') html={home:tHome,profile:tProfileView,profileEdit:tProfile,avail:tAvail,students:tStudents,vacation:tVacation}[sc]();
+  else if(S.role==='manager') html={requests:mRequests,match:mMatch,tariffs:mTariffs,resumes:mResumes,student:mStudent,mtool:mTool}[sc]();
+  else html=`<div><h1>Резюме: так видит студент</h1><p class="muted small">Один дизайн в цветах платформы. Собирается автоматически из профиля учителя. Есть PDF и ссылка.</p></div>${resumeHTML(TEACHERS[0])}`;
+  $('#view').innerHTML=html;
+  try{localStorage.setItem('jts-proto-role',S.role)}catch(e){}
+}
+function go(k){ if(k==='x'){toast('Существующий раздел платформы, в прототипе не показан');return} S.screen[S.role]=k; S.bellOpen=false; render(); window.scrollTo(0,0); }
+function startWizard(){ S.picked=[]; S.choices=[]; go(needFormatStep()?'format':'time'); if(!needFormatStep()) S.fmt='platform'; }
+
+/* ===================== события ===================== */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,[data-go]'); if(!b) return;
+  const d=b.dataset;
+  if(d.role){ S.role=d.role; document.querySelectorAll('.roles button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.role===S.role)); S.bellOpen=false; render(); if(S.role==='teacher'&&!S.t.profileShown&&pct()<100){S.t.profileShown=true;profileModal()} return; }
+  if(d.go){ go(d.go); return; }
+  if(b.id==='bell'){ S.bellOpen=!S.bellOpen; render(); return; }
+  if(d.fmt){ S.fmt=d.fmt; render(); return; }
+  if(d.freq){ S.freq=+d.freq; render(); return; }
+  if(d.slot){ const i=S.picked.indexOf(d.slot); if(i>=0) S.picked.splice(i,1); else S.picked.push(d.slot); render(); return; }
+  if(d.cslot){ const i=S.proposed.indexOf(d.cslot); if(i>=0) S.proposed.splice(i,1); else if(S.proposed.length<S.freq) S.proposed.push(d.cslot); else toast('Сначала уберите один слот'); render(); return; }
+  if(d.mdur){ S.dur=+d.mdur; render(); return; }
+  if(d.mfreq){ S.freq=+d.mfreq; render(); return; }
+  if(d.mpick){ const t=matched().find(x=>x.id==d.mpick); if(!S.picked.length) S.picked=['0-19','2-19','4-18','1-18']; S.assigned=TEACHERS.find(x=>x.id==d.mpick); S.proposed=propose(fitSlots(S.assigned),S.freq); S.stuState='confirm'; S.confirmBy='mgr'; render(); toast(d.how==='assign'?'Назначено. Учитель получил уведомление, студент подтверждает расписание':'Заявка отправлена учителю. После принятия студент подтвердит расписание'); return; }
+  if(d.hob){ const i=S.filt.hob.indexOf(d.hob); if(i>=0) S.filt.hob.splice(i,1); else if(S.filt.hob.length<STU_HOB_MAX) S.filt.hob.push(d.hob); else {toast('Можно выбрать до 5 интересов');return} const dc=b.closest('details'); if(dc) S.openCat=+dc.dataset.cat; render(); return; }
+  if(d.pick){ if(S.choices.length<3) S.choices.push(+d.pick); render(); if(d.reopen) openResume(d.reopen); return; }
+  if(d.unpick){ S.choices=S.choices.filter(x=>x!==+d.unpick); render(); if(d.reopen) openResume(d.reopen); return; }
+  if(d.pftab){ S.pfTab=d.pftab; openResume(d.id,d.pftab); return; }
+  if(d.av){ if(S.t.avail[d.av]) delete S.t.avail[d.av]; else S.t.avail[d.av]=1; render(); return; }
+  if(d.dellang!==undefined){ S.t.profile.langs.splice(+d.dellang,1); render(); return; }
+  if(d.ttab){ S.t.tab=d.ttab; render(); return; }
+  if(d.tfmt!==undefined) return;
+  if(d.tspec){ const a=S.t.profile.spec,i=a.indexOf(d.tspec); i>=0?a.splice(i,1):a.push(d.tspec); render(); return; }
+  if(d.tage){ const a=S.t.profile.ages,i=a.indexOf(d.tage); i>=0?a.splice(i,1):a.push(d.tage); render(); return; }
+  if(d.thob){ const a=S.t.profile.hob,i=a.indexOf(d.thob); if(i>=0)a.splice(i,1); else if(a.length<10)a.push(d.thob); else toast('Максимум 10 интересов'); render(); return; }
+  if(d.acc){ const r=S.t.reqs.find(x=>x.id==d.acc); r.status='acc'; render(); toast(r.prio===1?'Студент закреплён за вами. Первый урок появится в расписании':'Принято. Если студента возьмёт учитель с более высоким приоритетом, мы сообщим'); return; }
+  if(d.dec){ const id=d.dec; modal(`<h2>Почему отклоняете?</h2><p class="small muted">Студент не увидит причину. Она нужна менеджеру для статистики.</p>
+     ${['Нет времени / изменилось расписание','Не мой уровень или направление','Набрал(а) максимум учеников','Другое'].map((r,i)=>`<label class="reason"><input type="radio" name="dr" ${i===0?'checked':''}><span>${r}</span></label>`).join('')}
+     <div class="banner brand"><p class="small">Если причина «нет времени», предложим обновить окошки, чтобы такие заявки больше не приходили.</p></div>
+     <div class="row" style="justify-content:flex-end"><button class="btn line" data-act="close">Отмена</button><button class="btn bad" data-decok="${id}">Отклонить</button></div>`); return; }
+  if(d.decok){ S.t.reqs.find(x=>x.id==d.decok).status='dec'; closeModal(); render(); toast('Заявка отклонена. Студенту предложим других учителей'); return; }
+  if(d.mok){ S.m.changes.find(c=>c.id==d.mok).status='ok'; render(); toast('Одобрено. Студент получил уведомление и выбирает нового учителя'); return; }
+  if(d.mno){ S.m.changes.find(c=>c.id==d.mno).status='no'; render(); toast('Отклонено. Студенту отправлен комментарий'); return; }
+  if(d.vc){ S.vacChoice=d.vc; closeModal(); render(); toast(d.vc==='temp'?'Временный учитель закреплён на 02.11–15.11':'Пауза оформлена, срок абонемента продлён'); return; }
+  if(d.fm){ S.fmt=d.fm; closeModal(); render(); toast('Формат изменён. Учитель получил уведомление'); return; }
+  switch(d.act){
+    case 'start': S.fromOnb=S.screen.student==='onboard'; startWizard(); break;
+    case 'back': { const sc=S.screen.student; go(sc==='teachers'?'time':sc==='time'&&needFormatStep()?'format':S.fromOnb?'onboard':'myteacher'); break; }
+    case 'later': S.fromOnb=false; go('home'); toast('Напомним в колокольчике. Выбрать учителя можно в разделе «Мой учитель»'); break;
+    case 'onb': Object.assign(S,{stuState:'none',fmt:null,picked:[],choices:[],reqStatus:{},assigned:null,vacChoice:null}); S.role='student'; S.screen.student='onboard'; render(); break;
+    case 'toTime': go('time'); break;
+    case 'toTeachers': go('teachers'); break;
+    case 'send': S.stuState='pending'; S.reqStatus={}; go('myteacher'); toast('Заявки отправлены. Ответ в течение 12 часов'); break;
+    case 'simAccept': { const first=S.choices.find(id=>S.reqStatus[id]!=='dec'); S.reqStatus[first]='acc'; S.assigned=TEACHERS.find(t=>t.id===first); S.proposed=propose(fitSlots(S.assigned),S.freq); S.stuState='confirm'; S.confirmBy='teacher'; if(!S.fmt)S.fmt='platform'; render();
+      modal(`<span class="pill ok" style="align-self:flex-start">Учитель принял заявку</span><h2>${esc(S.assigned.name)} предлагает расписание</h2><p>${S.proposed.map(slotLbl).join(' · ')} · по ${S.dur} мин</p>
+       <p class="small muted">Подтвердите его, и уроки появятся в «Расписании». Остальным учителям мы сообщим, что вы выбрали другого.</p><div class="row"><button class="btn" data-act="confirmSched">Подтвердить</button><button class="btn line" data-act="closeEdit">Выбрать другое время</button></div>`); break; }
+    case 'simMgr': { if(!S.picked.length) S.picked=['0-19','2-19','4-18','1-18']; S.assigned=TEACHERS[1]; S.proposed=propose(fitSlots(S.assigned),S.freq); if(S.proposed.length<S.freq) S.proposed=propose(Object.keys(S.assigned.avail),S.freq); S.stuState='confirm'; S.confirmBy='mgr'; if(!S.fmt)S.fmt='platform'; render(); toast('Менеджер подобрал учителя. Подтвердите расписание'); break; }
+    case 'confirmSched': S.stuState='assigned'; S.editSlots=false; closeModal(); go('myteacher'); toast('Расписание подтверждено. Уроки появились в «Расписании»'); break;
+    case 'closeEdit': closeModal(); S.editSlots=true; go('myteacher'); break;
+    case 'editSlots': S.editSlots=true; render(); break;
+    case 'cancelEdit': S.editSlots=false; S.proposed=propose(fitSlots(S.assigned),S.freq); render(); break;
+    case 'sendNewTime': S.editSlots=false; render(); toast('Отправлено учителю. Он согласует новое время в течение 12 часов'); break;
+    case 'mgrPick': modal(`<h2>Пусть менеджер подберёт учителя</h2><p class="small muted">Менеджер Динара подберёт учителя под ваше время и интересы, обычно в течение рабочего дня. Потом вам останется подтвердить расписание.</p>
+      <div class="stack" style="gap:6px"><span class="small"><b>Удобное время</b></span><div class="tags">${S.picked.length?S.picked.map(k=>`<span class="tag">${slotLbl(k)}</span>`).join(''):'<span class="small muted">Не отмечено. Менеджер уточнит при звонке, или отметьте время на шаге «Время».</span>'}</div>
+      <span class="small"><b>Интересы</b></span><div class="tags">${S.filt.hob.map(h=>`<span class="tag">${h}</span>`).join('')||'—'}</div></div>
+      <label class="small" for="wish"><b>Пожелания к учителю</b></label><textarea id="wish" maxlength="500" placeholder="Например: хочу учителя-мужчину, который готовит к собеседованиям в IT"></textarea>
+      <div class="row" style="justify-content:flex-end"><button class="btn line" data-act="close">Отмена</button><button class="btn" data-act="mgrSend">Отправить менеджеру</button></div>`); break;
+    case 'mgrSend': S.mgrWish=($('#wish')||{}).value||''; S.stuState='mgr'; closeModal(); go('myteacher'); toast('Заявка у менеджера. Ответ до завтра, 18:00'); break;
+    case 'demo': S.demoOpen=!S.demoOpen; scen(); break;
+    case 'confirmTariff': S.tConfirmed=true; render(); toast('Тариф подтверждён. Студент получил уведомление и может выбрать учителя'); break;
+    case 'simDecline': { const id=S.choices.find(x=>!S.reqStatus[x]); if(id){S.reqStatus[id]='dec'; toast('Учитель №'+(S.choices.indexOf(id)+1)+' отклонил. Ждём остальных');} if(S.choices.every(x=>S.reqStatus[x]==='dec')){toast('Все отклонили. Показываем новых учителей, менеджер подключён');} render(); break; }
+    case 'resume': openResume(d.id); break;
+    case 'close': closeModal(); break;
+    case 'vac': modal(`<h2>Учитель в отпуске 02.11–15.11</h2><p class="muted">На эти даты приходится 4 урока. Как продолжим?</p>
+      <button class="opt" data-vc="pause"><h3>⏸ Пауза</h3><p class="small muted">Уроки переносятся, срок абонемента продлевается на 14 дней.</p></button>
+      <button class="opt" data-vc="temp"><h3>👩‍🏫 Временный учитель</h3><p class="small muted">Свободна в ваше время: <b>Сара Нурланова</b> (общие интересы: Путешествия). Ещё 2 варианта на выбор. Она видит ваш прогресс и заметки учителя. С 16.11 вы автоматически вернётесь к своему учителю.</p></button>
+      <p class="tiny">Если не выберете до 31.10, ваш менеджер свяжется с вами.</p>`); break;
+    case 'chgFmt': modal(`<h2>Сменить формат обучения</h2>${Object.entries(FORMATS).map(([k,f])=>{const can=S.assigned.fmt.includes(k);return `<button class="opt" data-fm="${k}" aria-pressed="${S.fmt===k}"><h3>${f.t}</h3><p class="small ${can?'muted':''}" style="${can?'':'color:var(--warn)'}">${can?'Ваш учитель работает в этом формате, смена сразу':'Ваш учитель не работает в этом формате, понадобится смена учителя'}</p></button>`}).join('')}<button class="btn line" data-act="close">Отмена</button>`); break;
+    case 'chgTeacher': modal(`<h2>Почему хотите сменить учителя?</h2><p class="small muted">Запрос рассмотрят координатор и ваш менеджер. После одобрения вы выберете нового учителя по расписанию и интересам.</p>
+      ${['Не подходит расписание','Не подходит стиль преподавания','Хочу другой формат обучения','Нет прогресса','Не сложился контакт','Жалоба на учителя (опоздания, качество и т.д.)'].map((r,i)=>`<label class="reason"><input type="radio" name="cr" ${i===0?'checked':''}><span>${r}</span></label>`).join('')}
+      <textarea placeholder="Расскажите подробнее (необязательно)" aria-label="Комментарий"></textarea>
+      <p class="tiny">Учитель не видит ваше имя в жалобе. До решения занятия идут по расписанию.</p>
+      <div class="row" style="justify-content:flex-end"><button class="btn line" data-act="close">Отмена</button><button class="btn" data-act="chgSent">Отправить запрос</button></div>`); break;
+    case 'chgSent': closeModal(); toast('Запрос отправлен. Ответ в течение 1 рабочего дня'); break;
+    case 'reset': Object.assign(S,{stuState:'none',fmt:null,picked:[],choices:[],reqStatus:{},assigned:null,vacChoice:null}); S.screen.student='home'; render(); break;
+    case 'showPopup': S.role='teacher'; render(); profileModal(); break;
+    case 'goProfile': closeModal(); go('profileEdit'); break;
+    case 'saveProfile': toast(pct()<100?'Сохранено. Осталось заполнить: '+REQ.filter(([k])=>!reqOk(k)).map(x=>x[1].split(' (')[0]).join(', '):'Сохранено. Вы участвуете в подборе'); break;
+    case 'previewMe': { const save=S.filt.hob; S.filt.hob=['Аниме','Путешествия'];
+      modal(`<div class="row between"><span class="pill">Так вас видит студент (пример: студент с интересами «Аниме», «Путешествия»)</span><button class="x" data-act="close" aria-label="Закрыть">✕</button></div>${teacherProfileHTML({...myTeacherObj(),score:86},'student').replace(/<div class="cta-bar">[\s\S]*$/,'</div>')}`,'full'); S.filt.hob=save; break; }
+    case 'noop': toast('В прототипе не реализовано'); break;
+    case 'photoCrit': modal(`<div class="row between"><h2>Требования к фото</h2><button class="x" data-act="close" aria-label="Закрыть">✕</button></div><p class="muted small">Фото — первое, что видит студент. ИИ проверяет его по этим пунктам.</p>${critList(null)}<div class="banner brand"><p class="small">Если не хватает только фона, кадра или света, ИИ предложит исправленную версию. Лицо и внешность не меняются.</p></div><button class="btn" data-act="close">Понятно</button>`); break;
+    case 'photoDemo': S.t.profile.photoState='checking'; render(); setTimeout(()=>{S.t.profile.photoState='needs_fix'; render(); photoResultModal();},1200); break;
+    case 'photoFix': S.t.profile.photoState='approved'; S.t.profile.fixed=true; closeModal(); render(); toast('Фото одобрено и добавлено в резюме'); break;
+    case 'addLang': S.t.profile.langs.push(['','B2']); render(); break;
+    case 'addEdu': S.t.profile.edu.push({d:'',u:'',y:''}); render(); break;
+    case 'addCert': S.t.profile.certs.push({t:'IELTS',s:'',file:null,st:'none'}); render(); break;
+    case 'addHob': { const v=$('#customHob').value.trim(); if(v&&!S.t.profile.hob.includes(v)&&S.t.profile.hob.length<10){S.t.profile.hob.push(v); render();} break; }
+    case 'saveAvail': toast('Окошки сохранены. Студенты видят обновлённое время'); break;
+    case 'exc': toast('Выбор даты, когда вы не работаете. Студенты не увидят это время'); break;
+    case 'sendVac': toast('Отправлено координатору'); break;
+  }
+});
+function readImg(file,cb){ const r=new FileReader(); r.onload=()=>cb(r.result); r.readAsDataURL(file); }
+document.addEventListener('toggle',e=>{ const t=e.target; if(t.matches&&t.matches('details.cat')&&t.open) S.openCat=+t.dataset.cat; },true);
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if((t.id==='photoUp'||t.id==='photoUp2')&&t.files[0]){ readImg(t.files[0],url=>{ const p=S.t.profile; p.photoUrl=url; p.fixed=false; p.photoState='checking'; closeModal(); render(); setTimeout(()=>{p.photoState='needs_fix'; render(); photoResultModal();},1400); }); return; }
+  if(t.id==='resUp'){ [...t.files].slice(0,8-S.t.profile.resPh.length).forEach(f=>readImg(f,url=>{S.t.profile.resPh.push({c:'',url}); render();})); return; }
+  if(t.id==='consent'){ S.t.profile.consent=t.checked; return; }
+  if(t.dataset.cfile!==undefined&&t.files[0]){ const c=S.t.profile.certs[+t.dataset.cfile]; c.file=t.files[0].name; c.st='pending'; render(); toast('Файл отправлен координатору на проверку'); setTimeout(()=>{c.st='verified'; render(); toast('Сертификат проверен: студенты видят «'+c.t+' · '+(c.s||'—')+' ✔»');},2500); return; }
+  if(t.dataset.ctype!==undefined){ S.t.profile.certs[+t.dataset.ctype].t=t.value; render(); return; }
+  if(t.dataset.lvl!==undefined){ S.t.profile.langs[+t.dataset.lvl][1]=t.value; return; }
+  if(t.id==='sTariff'){S.tariff=t.value; Object.assign(S,{stuState:'none',fmt:null,picked:[],choices:[]}); S.screen.student='onboard'; render();}
+  if(t.id==='sGarant'){S.garant=t.checked; Object.assign(S,{stuState:'none',fmt:null,picked:[],choices:[]}); S.screen.student='onboard'; render();}
+  if(t.id==='sTz'){S.tzMode=t.value; render();}
+  if(t.id==='sDur'){S.dur=+t.value; S.picked=[]; render();}
+  if(t.id==='sTc'){S.tConfirmed=t.checked; render();}
+  if(t.id==='mDir'){S.tariff=t.value; render();}
+  if(t.id==='mGar'){S.garant=t.value==='1'; render();}
+  if(t.id==='sVac'){S.vacation=t.checked; S.vacChoice=null; if(t.checked&&S.stuState!=='assigned'){S.stuState='assigned';S.assigned=TEACHERS[0];S.fmt=S.fmt||'platform';if(!S.picked.length)S.picked=['0-19','2-19'];} render();}
+  if(t.id==='fage'){S.filt.age=t.value; render();}
+  if(t.id==='fspec'){S.filt.spec=t.value; render();}
+  if(t.id==='fexp'){S.filt.exp=+t.value; render();}
+  if(t.dataset.tfmt){const a=S.t.profile.fmt,k=t.dataset.tfmt,i=a.indexOf(k); i>=0?a.splice(i,1):a.push(k); render();}
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.rescap!==undefined){ S.t.profile.resPh[+t.dataset.rescap].c=t.value; return; }
+  if(t.dataset.cscore!==undefined){ S.t.profile.certs[+t.dataset.cscore].s=t.value; return; }
+  if(t.dataset.lang!==undefined){ S.t.profile.langs[+t.dataset.lang][0]=t.value; return; }
+  if(!t.dataset.cnt) return;
+  if(t.id==='about') S.t.profile.about=t.value;
+  if(t.id==='exp1') S.t.profile.exp=t.value;
+  const c=$('#c-'+t.id); const m=t.maxLength; c.textContent=t.value.length+' / '+m+(t.id==='about'?' · минимум 200':''); c.classList.toggle('lim',t.value.length>=m);
+});
+document.addEventListener('focusout',e=>{ if(e.target.id==='about'||e.target.id==='exp1') side(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeModal(); if(S.bellOpen){S.bellOpen=false;render();}} });
+render();
+</script>
+
+</body></html>
