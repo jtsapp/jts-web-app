@@ -61,13 +61,13 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
             type="button" role="tab" id="rd-tab-text" aria-controls="rd-pane-text"
             aria-selected={tab === 'text'} onClick={() => setTab('text')}
           >
-            📖 {t('reading.text')}
+            <span className="rd-ico" aria-hidden="true">📖</span> {t('reading.text')}
           </button>
           <button
             type="button" role="tab" id="rd-tab-ex" aria-controls="rd-pane-ex"
             aria-selected={tab === 'ex'} onClick={() => setTab('ex')}
           >
-            ✏️ {t('reading.tasks')} ({text.exercises.length})
+            <span className="rd-ico" aria-hidden="true">✏️</span> {t('reading.tasks')} ({text.exercises.length})
           </button>
         </div>
         <div className="rd-tb">
@@ -93,9 +93,9 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
             <h1 lang="en">{text.title}</h1>
             <div className="rd-texthero__meta">
               <span>{text.level} · {t('reading.levelName.' + text.level.toLowerCase())}</span>
-              <span>{g.emoji} {t('reading.genre.' + text.genre)}</span>
-              <span>⏱ {readMin(text.text)} {t('reading.min')}</span>
-              <span>📝 {wordCount(text.text)} {t('reading.words')}</span>
+              <span><span className="rd-ico" aria-hidden="true">{g.emoji}</span> {t('reading.genre.' + text.genre)}</span>
+              <span><span className="rd-ico" aria-hidden="true">⏱</span> {readMin(text.text)} {t('reading.min')}</span>
+              <span><span className="rd-ico" aria-hidden="true">📝</span> {wordCount(text.text)} {t('reading.words')}</span>
             </div>
           </div>
 
