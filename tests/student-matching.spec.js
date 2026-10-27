@@ -149,3 +149,35 @@ test('360 px: сетка времени скроллится внутри бло
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(0)
 })
+
+// Замечание проверяющей (27.10.2026): «пн вт ср должны быть видны при скроллинге». У урока 30 мин в сетке 31 строка —
+// докрутив до вечера, ученик видит одни цифры и не знает, какой столбец какой день.
+test('дни недели видны, когда сетка докручена до вечера', async ({ page }) => {
+  await setup(page, { format: 'platform', lessonDuration: 30 })
+  await page.goto('/?screen=teacher-wizard')
+  await page.getByRole('button', { name: 'Дальше: время →' }).click()
+  // по столбцу за раз: на телефоне все семь дней в ширину не помещаются, и сетка уезжает ещё и вбок
+  for (const day of ['Пн', 'Ср', 'Вс']) {
+    const late = page.getByRole('button', { name: new RegExp(`^${day} 22:00`) })
+    await late.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }))
+    await expect(late).toBeInViewport()
+    const head = page.getByRole('columnheader', { name: day, exact: true })
+    await expect(head).toBeInViewport()
+    // не только в окне, но и сверху всего прочего: прокрученные ячейки не наезжают на подпись
+    const onTop = await head.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))
+    })
+    expect(onTop).toBe(true)
+  }
+})
+
+test('сетка открывается на первом времени со свободными учителями, а не на пустом утре', async ({ page }) => {
+  await setup(page, { format: 'platform', lessonDuration: 30 })
+  await page.goto('/?screen=teacher-wizard')
+  await page.getByRole('button', { name: 'Дальше: время →' }).click()
+  // самое раннее свободное в GRID — пт 18:00 по Алматы; утро 07:00 при этом уезжает вверх
+  await expect(page.getByRole('button', { name: 'Пт 18:00: свободно 1' })).toBeInViewport()
+  await expect(page.getByRole('button', { name: /^Пн 07:00/ })).not.toBeInViewport()
+  await expect(page.getByRole('columnheader', { name: 'Пт', exact: true })).toBeInViewport()
+})
