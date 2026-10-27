@@ -77,6 +77,9 @@ export default function TeacherProfileModal({ token, teacherId, mode = 'view', t
               <div className="mt-facts">
                 {c.yearsExperience > 0 && <span className="mt-fact">🎓 {t('teachers.years', { n: c.yearsExperience })}</span>}
                 {c.ageGroup && <span className="mt-fact">👤 {c.ageGroup}</span>}
+                {(c.studentAgeGroups || []).length > 0 && (
+                  <span className="mt-fact">{t('teachers.studentAge')}: {c.studentAgeGroups.map((a) => t('studentAge.' + a)).join(', ')}</span>
+                )}
                 {(c.languages || []).length > 0 && <span className="mt-fact">🗣 {c.languages.join(', ')}</span>}
                 {(c.formats || []).length > 0 && <span className="mt-fact">📚 {c.formats.map((f) => t('format.' + f)).join(' · ')}</span>}
               </div>

@@ -24,7 +24,7 @@ export default function ProfileBlocks({ token, onNav, onOpenNotifications }) {
   const tz = studentTimezone(snap.card)
   const a = view.assignment
   const kids = view.tariff.name === 'Kids'
-  const next = a ? nextOccurrence(a.slots) : null
+  const next = a ? nextOccurrence(a.slots, new Date(), view.lessonWindow) : null
 
   // Чип отмечается сразу, не дожидаясь сервера; отказ возвращает прежний список.
   const saveInterests = async (list) => {

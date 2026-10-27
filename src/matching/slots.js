@@ -145,21 +145,26 @@ export function schoolTimeToDate(local) {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-// Первый урок не раньше чем через сутки после подтверждения (ТЗ §2.7) — ближайшее такое наступление слотов.
-export function nextOccurrence(slots, at = new Date()) {
+// Первый урок не раньше чем через сутки после подтверждения (ТЗ §2.7, так же ставит сервер — MatchingSlots.occurrences);
+// у временной замены — только в её датах (даты школы, Алматы).
+const schoolDate = (d) => new Date(d.getTime() + 5 * 3600 * 1000).toISOString().slice(0, 10)
+
+export function nextOccurrence(slots, at = new Date(), { from = null, through = null } = {}) {
   if (!slots?.length) return null
-  const from = at.getTime() + 24 * 3600 * 1000
   let best = null
+  const base = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
+  const today = base.getUTCDay() || 7
   for (const s of slots) {
-    const base = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()))
-    const today = base.getUTCDay() || 7
-    for (let w = 0; w < 3; w += 1) {
+    // замена может начаться через несколько недель — ищем дальше, чем на три
+    for (let w = 0; w < 60; w += 1) {
       const d = new Date(base.getTime() + ((s.weekday - today + 7) % 7 + 7 * w) * 86400000)
       d.setUTCHours(Number(s.start.slice(0, 2)), Number(s.start.slice(3, 5)), 0, 0)
-      if (d.getTime() >= from) {
-        if (!best || d < best) best = d
-        break
-      }
+      if (d.getTime() < at.getTime() + 24 * 3600 * 1000) continue
+      const day = schoolDate(d)
+      if (through && day > through) break
+      if (from && day < from) continue
+      if (!best || d < best) best = d
+      break
     }
   }
   return best

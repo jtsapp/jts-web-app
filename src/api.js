@@ -834,7 +834,9 @@ export async function getStudentMatching(token) {
 }
 export const getMatchingGrid = (token, format) =>
   authGet('/student/matching/grid' + (format ? '?format=' + encodeURIComponent(format) : ''), token)
-export const getMatchingTeachers = token => authGet('/student/matching/candidates', token)
+// age — «Кого учит» (kids | teens | adults); учителя без отметок возраста сервер не отсекает.
+export const getMatchingTeachers = (token, age) =>
+  authGet('/student/matching/candidates' + (age ? '?age=' + encodeURIComponent(age) : ''), token)
 export const getMatchingTeacher = (token, id) => authGet(`/student/matching/teachers/${id}`, token)
 // Фото отдаётся только с токеном, поэтому не <img src>, а blob — object URL держит TeacherPhoto.
 export async function getMatchingTeacherPhoto(token, id) {

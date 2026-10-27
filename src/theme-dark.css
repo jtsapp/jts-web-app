@@ -443,6 +443,9 @@ html[data-theme="dark"] .mt {
   --mt-warn-soft: var(--dk-orange-soft);
   --mt-bad: var(--dk-red);
   --mt-bad-soft: var(--dk-red-soft);
+  --mt-ok-ink: var(--dk-green);
+  --mt-warn-ink: var(--dk-orange);
+  --mt-bad-ink: var(--dk-red);
   --mt-gold: var(--dk-yellow);
   --mt-bar: var(--dk-raised);
   --mt-bar-fg: var(--dk-text);

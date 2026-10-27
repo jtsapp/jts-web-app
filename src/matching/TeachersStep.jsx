@@ -11,11 +11,15 @@ const MAX_CHOICES = 3
 // Шаг «Учителя» (ТЗ §2.4): фильтры слева (на телефоне — сверху), список карточек, выбор до трёх с приоритетом.
 // Процент совпадения считает сервер по интересам карточки, поэтому смена интересов сохраняется (с паузой, чтобы
 // не слать запрос на каждый клик) и список перечитывается.
+export const STUDENT_AGES = ['kids', 'teens', 'adults']
+
 export default function TeachersStep({ token, tz, kids, pickedTotal, interests, onInterests, choices, onChoices, onProfile, onLimit, toast, onLoaded }) {
   const { t } = useMatchingT()
   const [list, setList] = useState(null)
   const [error, setError] = useState(false)
   const [filters, setFilters] = useState({ age: 'all', spec: 'all', exp: 0 })
+  // Кого учит учитель — фильтрует сервер, поэтому смена значения перечитывает список.
+  const [students, setStudents] = useState('all')
   const first = useRef(true)
 
   useEffect(() => {
@@ -24,7 +28,7 @@ export default function TeachersStep({ token, tz, kids, pickedTotal, interests, 
       try {
         if (!first.current) await saveMatchingInterests(token, interests)
         first.current = false
-        const next = await getMatchingTeachers(token)
+        const next = await getMatchingTeachers(token, students === 'all' ? null : students)
         if (alive) {
           setList(Array.isArray(next) ? next : [])
           setError(false)
@@ -41,7 +45,7 @@ export default function TeachersStep({ token, tz, kids, pickedTotal, interests, 
     }
     // onLoaded — колбэк родителя, на смену его ссылки список не перечитываем
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, interests])
+  }, [token, interests, students])
 
   const specs = useMemo(() => [...new Set((list || []).flatMap((x) => x.specializations || []))].sort(), [list])
   const shown = (list || [])
@@ -69,6 +73,13 @@ export default function TeachersStep({ token, tz, kids, pickedTotal, interests, 
             <span className="mt-tiny">{interests.length} / 5</span>
           </div>
           <InterestsPicker value={interests} onChange={onInterests} onLimit={onLimit} hint={t('teachers.interestsHint')} />
+        </div>
+        <div className="mt-fgroup">
+          <label className="mt-small" htmlFor="mt-fstudents"><b>{t('teachers.studentAge')}</b></label>
+          <select id="mt-fstudents" className="mt-select" value={students} onChange={(e) => setStudents(e.target.value)}>
+            <option value="all">{t('teachers.any')}</option>
+            {STUDENT_AGES.map((a) => <option key={a} value={a}>{t('studentAge.' + a)}</option>)}
+          </select>
         </div>
         <div className="mt-fgroup">
           <label className="mt-small" htmlFor="mt-fage"><b>{t('teachers.age')}</b></label>

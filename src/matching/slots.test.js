@@ -73,5 +73,9 @@ describe('slots', () => {
     expect(sortSlots(s, 'Asia/Almaty', at).map(slotKey)).toEqual(['1-14:00', '3-14:00'])
     // пн 26.10 10:00 UTC: понедельник 14:00 UTC наступит через 4 ч — раньше суток, значит ближайший — среда
     expect(nextOccurrence(s, at).toISOString()).toBe('2026-10-28T14:00:00.000Z')
+    // временная замена с 02.11 — уроки только в её датах
+    expect(nextOccurrence(s, at, { from: '2026-11-02' }).toISOString()).toBe('2026-11-02T14:00:00.000Z')
+    // замена до 27.10 — среда 28.10 уже вне её
+    expect(nextOccurrence([{ weekday: 3, start: '14:00:00' }], at, { through: '2026-10-27' })).toBeNull()
   })
 })
