@@ -14,6 +14,9 @@ vi.mock('../../api.js', () => ({
   // расписание, как и был. Заявку проверяет отдельный describe ниже.
   getTrialRequestState: vi.fn(async () => ({ requested: false, requestedAt: null, teacherAssigned: true, managerAssigned: false })),
   requestTrialLesson: vi.fn(async () => ({ requested: true, requestedAt: '2026-08-30T12:00:00', teacherAssigned: false, managerAssigned: false })),
+  // Оспаривание пропуска: в этих сценариях оспаривать нечего.
+  getMyNoShowDisputes: vi.fn(async () => ({ disputable: [], items: [] })),
+  disputeNoShow: vi.fn(async () => ({})),
 }))
 
 import LessonSchedule from './LessonSchedule.jsx'

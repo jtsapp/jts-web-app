@@ -1,8 +1,9 @@
 import { useI18n } from '../../i18n.jsx'
 import { lessonStateKey, lessonTimeRange, isLessonLive, canOpenLesson } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
+import NoShowDispute from './NoShowDispute.jsx'
 
-export default function LessonRow({ occ, card, onOpenLesson }) {
+export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
   const { t, lang } = useI18n()
   const stateKey = lessonStateKey(occ)
   const live = isLessonLive(occ.lessonStatus)
@@ -40,6 +41,10 @@ export default function LessonRow({ occ, card, onOpenLesson }) {
             <span className={`sch-badge sch-badge--${stateKey}`}>{t(`schedule.status.${stateKey}`)}</span>
           )}
         </div>
+        {/* Учитель отметил «не пришёл»: 24 часа можно оспорить, потом — статус заявки (ТЗ «Кабинеты», раздел 11). */}
+        {dispute && (dispute.deadline || dispute.status) && (
+          <NoShowDispute lessonId={occ.lessonId} deadline={dispute.deadline} status={dispute.status} onRaise={dispute.onRaise} />
+        )}
       </div>
       {openable && (
         <button type="button" className="sch-row__join" onClick={() => onOpenLesson(occ.lessonId)}>

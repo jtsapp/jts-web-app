@@ -25653,3 +25653,41 @@ html[data-theme="dark"] .ge-task__chip.is-tokens {
     background: var(--dk-yellow-tint);
     color: var(--dk-yellow)
 }
+html[data-theme="dark"] .sch-row__dispute {
+    background: none;
+    border: 0;
+    color: var(--purple)
+}
+html[data-theme="dark"] .sch-row__dispute:focus-visible, html[data-theme="dark"] .sch-dispute button:focus-visible {
+    outline: 2px solid var(--ink)
+}
+html[data-theme="dark"] .sch-dispute__label {
+    color: var(--muted, #6b7280)
+}
+html[data-theme="dark"] .sch-dispute__input {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .sch-dispute__error {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .sch-dispute__cancel {
+    background: none;
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .sch-dispute__send {
+    background: var(--purple);
+    color: var(--dk-on-acc);
+    border: 0
+}
+html[data-theme="dark"] .sch-badge--dispute-new {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .sch-badge--dispute-overturned {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .sch-badge--dispute-upheld {
+    background: var(--dk-chip);
+    color: var(--dk-text-2)
+}
