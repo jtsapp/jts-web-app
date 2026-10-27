@@ -20521,6 +20521,44 @@ html[data-theme="dark"] .lw-material-iframe {
     border: 0;
     background: var(--lw-surface)
 }
+html[data-theme="dark"] .pdfv {
+    background: var(--lw-bg)
+}
+html[data-theme="dark"] .pdfv__bar {
+    background: var(--lw-surface);
+    border-bottom: 1px solid var(--lw-track)
+}
+html[data-theme="dark"] .pdfv__btn {
+    border: none;
+    background: transparent;
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .pdfv__btn:hover:not(:disabled) {
+    background: var(--lw-tint-1);
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__btn[aria-pressed='true'] {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__btn:focus-visible, html[data-theme="dark"] .pdfv__open:focus-visible, html[data-theme="dark"] .pdfv__scroller:focus-visible {
+    outline: 2px solid var(--lw-primary)
+}
+html[data-theme="dark"] .pdfv__count, html[data-theme="dark"] .pdfv__zoom {
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .pdfv__zoom {
+    color: var(--lw-ink-2)
+}
+html[data-theme="dark"] .pdfv__open {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__page {
+    background: var(--dk-card);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28)
+}
+html[data-theme="dark"] .pdfv__error {
+    color: var(--lw-ink)
+}
 html[data-theme="dark"] .lw-material-empty {
     background: var(--lw-surface);
     color: var(--lw-muted)

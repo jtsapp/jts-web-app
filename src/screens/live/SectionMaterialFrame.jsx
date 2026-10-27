@@ -3,6 +3,8 @@ import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
 import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonMessage, GOTO_LESSON_MS } from './lessonStages.js'
 import LiveLoader from './LiveLoader.jsx'
+import PdfViewer from './pdf/PdfViewer.jsx'
+import { isPdfMaterial } from './pdf/isPdfMaterial.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -81,6 +83,13 @@ function scheduleCover(setCover, timerRef, key, phase, maxMs = CATCHUP_MAX_MS) {
 // Только такую стадию ведущему можно отдавать классу: иначе F5, «Внимание»,
 // смена ученика для просмотра или его клики по рельсу двигали бы весь класс.
 //
+// PDF рамки не получает вовсе: его рисует свой просмотрщик (pdf/PdfViewer.jsx),
+// потому что телефоны PDF внутри iframe не показывают. Страница PDF — та же
+// стадия: просмотрщик отдаёт её в onStage с тем же { own }, `stage` листает его
+// к странице класса, gotoStage/restoreStage — к своей. Так ведущий листает
+// PDF, и класс идёт за ним по уже готовой цепочке стадий, без новых сообщений
+// и без правок сервера.
+//
 // Снимок рамки преподавателя (ответ на request-snapshot) уходит в onSnapshot,
 // отдельно от живых действий (onPresentEvent): кому его отдать — классу после
 // «Внимания» или одному догоняющему ученику — решает страница.
@@ -90,6 +99,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 ) {
   const { t } = useI18n()
   const iframeRef = useRef(null)
+  // Просмотрщик PDF, если материал — PDF (тогда рамки нет и iframeRef пуст).
+  const pdfRef = useRef(null)
   const loadedRef = useRef(false)
   // true только ПОСЛЕ окна осадки (LOAD_SETTLE_MS), в отличие от loadedRef —
   // см. использование в setHiddenKeys ниже про то, зачем это разделение.
@@ -253,6 +264,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // бы, а признак засчитал бы своей стадию открытия страницы, — переход ждёт
     // первой стадии и уходит тогда всегда, без сверки с ней.
     gotoStage(index) {
+      if (pdfRef.current) {
+        pdfRef.current.goToPage(index, { own: true })
+        return
+      }
       if (stageReportedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         sendGoto(index, true)
       } else {
@@ -262,6 +277,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // Довести рамку до стадии (класса после F5, своей после «Внимания») — не
     // действие преподавателя. Ждёт осадки; уступает своему переходу.
     restoreStage(index) {
+      if (pdfRef.current) {
+        pdfRef.current.goToPage(index, { own: false })
+        return
+      }
       if (pendingOwnGotoRef.current != null) return
       if (settledRef.current) {
         sendGoto(index, false)
@@ -512,6 +531,21 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // The backend is the actual gatekeeper (only its own catalog URLs get fetched server-side) -
   // this is just routing, so a loose match here is fine.
   const isCatalogHtml = material.materialType === 'LINK' && /\/course-catalog\/.*\.html?(?:[?#]|$)/i.test(material.fileUrl || '')
+
+  if (isPdfMaterial(material)) {
+    return (
+      <div className={`lw-material-frame lw-material-frame--pdf${className}`}>
+        <PdfViewer
+          ref={pdfRef}
+          key={material.fileUrl}
+          url={material.fileUrl}
+          title={material.title}
+          page={stage}
+          onPageChange={(index, { own }) => onStage?.({ index }, { own })}
+        />
+      </div>
+    )
+  }
 
   if (material.materialType !== 'INTERACTIVE_HTML' && !isCatalogHtml) {
     return (
