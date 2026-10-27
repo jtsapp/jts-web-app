@@ -1423,6 +1423,135 @@
     background: var(--dk-card);
     color: var(--dk-muted);
   }
+  /* «Практикуй · Повтори за мной» (кадр 6): режимы — чипы с прокруткой,
+     упражнение — не карточка, фазы — серые сегменты, доли — серые плитки,
+     формы V1–V3 — сиреневые плитки без рамки. Только вид: бит, микрофон и
+     машина попытки не тронуты. */
+  .vb .vb-modes {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vb .vb-modes::-webkit-scrollbar {
+    display: none;
+  }
+  .vb .vb-modes button {
+    flex: none;
+    gap: 4px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: none;
+    color: var(--vb-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .vb .vb-modes button[aria-selected='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    box-shadow: none;
+    color: #fff;
+  }
+  .vb .vb-modes__num,
+  .vb .vb-modes button[aria-selected='true'] .vb-modes__num {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+  .vb .vb-drill {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .vb .vb-phases {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    padding: 4px;
+    border-radius: 12px;
+    background: #ececf1;
+  }
+  .vb .vb-phases span {
+    padding: 8px 2px;
+    border-radius: 9px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .vb .vb-phases span.is-on {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(24, 24, 24, 0.08);
+    color: var(--vb-ink);
+  }
+  .vb .vb-counts {
+    gap: 8px;
+    margin: 12px 0 8px;
+  }
+  .vb .vb-counts > span {
+    display: grid;
+    place-items: center;
+    min-height: 48px;
+    padding: 0 4px;
+    border-radius: 12px;
+    background: #ececf1;
+    color: #5a5a66;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .vb .vb-counts > span.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+  .vb .vb-tile {
+    border: 0;
+    border-radius: 20px;
+    background: #efe7ff;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .vb .vb-modes button {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-modes button[aria-selected='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb .vb-drill {
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] .vb .vb-phases,
+  html[data-theme='dark'] .vb .vb-counts > span {
+    background: var(--dk-line);
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .vb .vb-phases span.is-on {
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .vb .vb-counts > span.is-on {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .vb .vb-tile {
+    border: 0;
+    background: var(--dk-acc-soft);
+  }
   html[data-theme='dark'] .vb .vb-stats > div,
   html[data-theme='dark'] .vb .vb-hero .vb-hero__stack > div:not(:last-child) {
     border-color: var(--dk-line);
