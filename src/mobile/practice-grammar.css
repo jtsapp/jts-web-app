@@ -324,7 +324,7 @@
     mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
   }
 
-  /* ---------- Урок: каркас (кадры 4273:9393, 4273:5957) ---------- */
+  /* ---------- Урок: каркас (кадр «Mobile» 6605:14128 «2 · Теория») ---------- */
 
   /* Урок на весь экран: кнопка шага стоит у нижней кромки даже на коротком
      слайде, как в кадрах, а не сразу под контентом. */
@@ -336,39 +336,59 @@
     background: #f8f8f8;
   }
 
-  /* Полоса урока 69: крестик (экспорт), крошка, язык. Кнопки «Словарь»
-     справа (кадр) в уроке грамматики нет — см. отчёт. */
+  /* Полоса урока 52 на фоне экрана: крестик 48 слева, по центру «Unit N»
+     16/700 и «Грамматика» 12 серым, справа язык. В макете язык — глобус;
+     у нас переключатель с флагом (тот же выбор языка), оставлен пилюлей. */
   .gr-lesson .gr-lesson__bar {
+    position: relative;
     flex: none;
-    gap: 8px;
-    height: 69px;
-    padding: 16px;
+    justify-content: space-between;
+    gap: 0;
+    height: 52px;
+    padding: 0 4px;
     border-bottom: 0;
-    background: #fff;
+    background: transparent;
   }
   .gr-lesson .gr-back {
-    background: #9047ff url(/assets/m/grammar/close.svg) center / 20px 20px no-repeat;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: transparent;
+  }
+  .gr-lesson .gr-back {
+    color: #181818;
   }
   .gr-lesson .gr-back:hover {
     filter: none;
   }
+  /* Крестик — штатный X кнопки (линии 2.4 цветом текста), как close 24 кадра;
+     прежний круг close.svg остался за прошлым макетом. */
   .gr-lesson .gr-back svg {
-    display: none;
+    display: block;
+    width: 24px;
+    height: 24px;
   }
   .gr-lesson .gr-lesson__crumb {
+    position: absolute;
+    left: 52px;
+    right: 52px;
+    align-items: center;
+    text-align: center;
     line-height: normal;
+    pointer-events: none;
   }
   .gr-lesson .gr-lesson__crumb b {
     font-size: 16px;
     font-weight: 700;
-    line-height: 22px;
-    color: #9047ff;
+    line-height: 24px;
+    color: #181818;
   }
   .gr-lesson .gr-lesson__crumb span {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 15px;
-    color: #9d9d9d;
+    line-height: 16px;
+    color: #8e8e99;
   }
   /* Язык — пилюля 58×33: флаг 16 и шеврон вниз 18 (экспорт). */
   .gr-lesson__bar .lang-selector--flag {
@@ -376,7 +396,11 @@
     height: 33px;
     padding: 6px 8px 6px 12px;
   }
+  .gr-lesson__bar .lang-selector--flag,
   .gr-lesson__bar .lang-selector--flag:hover {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     transform: none;
   }
   .gr-lesson__bar .lang-selector--flag > svg {
@@ -393,22 +417,38 @@
     display: none;
   }
 
-  /* Вкладки 38 (r30, 16/700) прижаты вправо, 16 от полосы. */
+  /* Вкладки — сегменты: серая плашка 48 r16 с полем 4, три равных сегмента
+     40 r12; выбранный — белый с тенью, текст 16/700 тёмным. */
   .gr-lesson .gr-lesson__toolbar {
     flex: none;
-    padding: 16px 16px 0;
+    padding: 0 16px 8px;
   }
   .gr-lesson .gr-tabs {
+    flex: 1;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
   }
   .gr-lesson .gr-tab {
-    height: 38px;
-    padding: 10px 20px;
-    border-radius: 30px;
-    line-height: 18px;
+    flex: 1;
+    height: 40px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
     white-space: nowrap;
+    color: #5a5a66;
     box-shadow: none;
+  }
+  .gr-lesson .gr-tab.on {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 1px 3px rgba(24, 24, 24, 0.12);
   }
 
   /* Тело вкладки тянется до низа: под ним липкая полоса с кнопкой. */
@@ -421,46 +461,98 @@
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 32px 16px 0;
+    padding: 12px 16px 0;
   }
   .gr-lesson .gr-examples {
-    padding-bottom: 32px;
+    padding-bottom: 24px;
+  }
+
+  /* Тёмная полоса, сегменты и карточки урока — токенами брендбука
+     (генератор красил крестик фиолетовым кругом, а вкладки — пилюлями).
+     Класс урока удвоен: правила генератора той же силы грузятся позже. */
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__bar,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-back {
+    background: transparent;
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-back {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__crumb b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lesson__crumb span,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lhero p {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tabs {
+    border: 0;
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tab {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tab.on {
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-lhero,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr {
+    border: 0;
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-tr-title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr .gr-rich,
+  html[data-theme='dark'] .gr-lesson.gr-lesson .gr-block-tr .gr-rich p {
+    color: var(--dk-text-2);
   }
 
   /* ---------- Теория и примеры: карточки блоков ---------- */
 
-  /* Шапка юнита: бейдж 26, заголовок 28/700, подпись 16 тёмным. */
+  /* Шапка юнита: белая карточка r24 с рамкой #e8e8ee, поле 20; пилюля
+     «Unit N» 12/700 фиолетовым, заголовок 24/800, подпись 12 серым. */
   .gr-lesson .gr-lhero {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    margin: 0 0 8px;
-    padding: 16px;
-    border: 0;
-    border-radius: 20px;
+    gap: 4px;
+    margin: 0 0 12px;
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
   }
   .gr-lesson .gr-lhero__badge {
-    padding: 6px 12px;
-    background: #ebdeff;
+    margin-bottom: 4px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
     font-size: 12px;
-    font-weight: 500;
-    line-height: 14px;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0;
     color: #9047ff;
   }
   .gr-lesson .gr-lhero h1 {
     margin: 0;
-    font-size: 28px;
-    font-weight: 700;
-    line-height: 34px;
-    letter-spacing: -0.01em;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: 0;
     color: #181818;
   }
   .gr-lesson .gr-lhero p {
-    font-size: 16px;
-    line-height: 19px;
-    color: #181818;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
   }
   .gr-lesson .gr-lhero p em {
     font-weight: 400;
@@ -468,26 +560,26 @@
   }
 
   .gr-lesson .gr-block {
-    margin: 0 0 8px;
-    padding: 16px;
-    border: 0;
-    border-radius: 20px;
+    margin: 0 0 12px;
+    padding: 20px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
     background: #fff;
   }
   .gr-lesson .gr-block__h {
     margin: 0 0 12px;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 29px;
-    letter-spacing: -0.01em;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    letter-spacing: 0;
     color: #181818;
   }
 
-  /* Текст блока 18/140%; абзацы в макете идут без отбивки. */
+  /* Текст блока 16/24; абзацы в макете идут без отбивки. */
   .gr-lesson .gr-rich,
   .gr-lesson .gr-rich p {
-    font-size: 18px;
-    line-height: 25px;
+    font-size: 16px;
+    line-height: 24px;
     color: #181818;
   }
   .gr-lesson .gr-rich p {
@@ -741,33 +833,46 @@
     background: url(/assets/m/grammar/mistake-ok.svg) center / 24px 24px no-repeat;
   }
 
-  /* Перевод блока в макете не нарисован; оставляем его, но в той же
-     системе: рамка #eee без градиентной полосы. Не серая заливка — внутри
-     лежат те же серые и лавандовые плашки, они бы в ней пропали. */
+  /* Перевод — лавандовая карточка r24 #f6f1ff, поле 20; пилюля «РУС»
+     фиолетовая, заголовок 16/800 тёмным, текст 16/500 серым. В макете она
+     идёт отдельной карточкой под блоком, у нас живёт внутри блока — поэтому
+     вытянута на его поле до краёв. */
   .gr-lesson .gr-block-tr {
-    margin-top: 16px;
-    padding: 20px 16px 16px;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    background: #fff;
+    margin: 16px -20px -20px;
+    padding: 20px;
+    border: 0;
+    border-radius: 24px;
+    background: #f6f1ff;
   }
   .gr-lesson .gr-block-tr::before {
     display: none;
   }
+  /* Пилюля «РУС» — в потоке над заголовком, а не на рамке, как у компьютера. */
   .gr-lesson .gr-tr-flag {
+    position: static;
+    display: inline-flex;
+    margin: 0 0 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
     background: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
     box-shadow: none;
+    transform: none;
   }
   .gr-lesson .gr-tr-title {
     font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    color: #9047ff;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
   }
   .gr-lesson .gr-block-tr .gr-rich,
   .gr-lesson .gr-block-tr .gr-rich p {
     font-size: 16px;
-    line-height: 22px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
   }
 
   /* Точки карусели: белая капсула, точки 12 через 16; пройденные слайды
@@ -801,19 +906,20 @@
     flex-wrap: nowrap;
     gap: 8px;
     margin: auto -16px 0;
-    padding: 16px 16px var(--safe-bottom);
+    padding: 8px 16px calc(8px + var(--safe-bottom, 0px));
     background: #f8f8f8;
   }
+  /* Кнопка 56 r16, 16/700. */
   .gr-lesson .gr-slide-nav .gr-btn {
     flex: 1;
     width: auto;
-    height: 48px;
+    height: 56px;
     padding: 0 24px;
     border: 0;
-    border-radius: 80px;
-    font-size: 15px;
+    border-radius: 16px;
+    font-size: 16px;
     font-weight: 700;
-    line-height: 17px;
+    line-height: 24px;
     box-shadow: none;
   }
   .gr-lesson .gr-slide-nav .gr-btn--primary {
