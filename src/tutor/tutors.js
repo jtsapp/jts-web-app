@@ -37,10 +37,12 @@ const BASE_TUTORS = [
     figure: '/tutor/pick/dexter.webp',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],
     mood: 'angry', // злой
-    // Кнопки 18+ нет (14.10.2026): живой Декстер переехал на пакет Speaking
-    // Buddy, где нрав вшит в персону, а мат и ростинг решает ступень возраста
-    // из даты рождения. Агент нрав Декстера больше не читает — кнопка ничего бы
-    // не меняла.
+    // Кнопка 18+ вернулась 29.10.2026: без неё Декстер — «свой пацан», с ней —
+    // хулиган для любого возраста (решения владельца, спека
+    // docs/superpowers/specs/2026-10-29-dexter-two-tempers-design.md). Персону
+    // выбирает агент по нраву звонка (_dexter_temper_persona в agent/agent.py).
+    tempers: TEMPERS,
+    defaultTemper: 'calm',
   },
   {
     key: 'spark',
@@ -213,4 +215,22 @@ export function temperFor(tutorKey, saved) {
   const tutor = getTutor(tutorKey)
   if (!tutor.tempers) return null
   return tutor.tempers.includes(saved) ? saved : tutor.defaultTemper
+}
+
+/** Тьюторы с кнопкой 18+ (осью нрава). */
+export const AXIS_TUTOR_KEYS = TUTORS.filter((t) => t.tempers).map((t) => t.key)
+
+/**
+ * Нрав по тьюторам из профиля. С 29.10.2026 сервер отдаёт словарь tutorTempers;
+ * старый сервер — одно поле tutorTemper, и оно было выбором Спарка (с 14.10 ось
+ * была только у него).
+ */
+export function tempersFromProfile(profile) {
+  if (profile?.tutorTempers && typeof profile.tutorTempers === 'object') return { ...profile.tutorTempers }
+  return profile?.tutorTemper ? { spark: profile.tutorTemper } : {}
+}
+
+/** Один нрав всем тьюторам с осью — окно «Жёсткий режим общения» после тура. */
+export function tempersForAll(temper) {
+  return Object.fromEntries(AXIS_TUTOR_KEYS.map((key) => [key, temper]))
 }
