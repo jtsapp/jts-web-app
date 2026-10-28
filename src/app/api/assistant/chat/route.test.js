@@ -524,6 +524,33 @@ describe('POST /api/assistant/chat', () => {
     })
   })
 
+  // «Подсказать?» (lib/assistant/stuck.js): Луна разбирает задание — без кнопки раздела и заметки.
+  describe('ученик застрял', () => {
+    it('пометка уходит в модель; метку раздела роут не отдаёт; в лог — причина без текста', async () => {
+      authResult = { status: 'ok', user: { userId: 711, name: 'Толик' } }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Толик, посмотрите на подлежащее. Открыть Грамматику?\n[[OPEN grammar]]' }
+      }
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      try {
+        const text = await (
+          await post({
+            messages: [{ role: 'user', content: '[ученик застрял: две ошибки подряд]' }],
+            screen: { id: 'kingdom-interior', text: 'He ___ football. [кнопка «play» (отмечено как неверное)]' },
+            lang: 'ru',
+          })
+        ).text()
+        expect(text).not.toContain('[[ASST_ACTION')
+        expect(saveAdviceNote).not.toHaveBeenCalled()
+        expect(calls[0].messages.at(-1).content).toContain('[ученик застрял: две ошибки подряд]\nЯзык ответа: русский')
+        const row = info.mock.calls.find((c) => c[0] === '[assistant]')
+        expect(JSON.parse(row[1])).toEqual({ kind: 'stuck', reason: 'errors' })
+      } finally {
+        info.mockRestore()
+      }
+    })
+  })
+
   // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
   describe('заметка о совете', () => {
     // «Главная»: не экран задания — первая реплика там может предлагать раздел.

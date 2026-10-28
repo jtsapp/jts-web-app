@@ -16,6 +16,8 @@ import {
   VOICE_MARK,
   OPENING_MARK,
   WAKE_MARK,
+  STUCK_ERRORS_MARK,
+  STUCK_IDLE_MARK,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -457,5 +459,38 @@ describe('ученик позвал голосом', () => {
 
   it('в правилах — пометка и разрешение поздороваться', () => {
     expect(buildSystemPrompt()).toContain(`Пометка ${WAKE_MARK} — ученик сам позвал тебя голосом`)
+  })
+})
+
+describe('ученик застрял и нажал «Подсказать?»', () => {
+  const stuck = (mark, extra = {}) => parseChatRequest(ask(mark, { voice: true, ...extra }))
+  const profile = 'Совет сайта, что сделать сейчас: Словарь — 14 слов ждут повторения (метка [[OPEN vocab]]).'
+
+  it('две ошибки — разобрать задание; ответ — только показанный сайтом; без совета и метки', () => {
+    const screen = { id: 'kingdom-interior', text: 'Choose. [кнопка «went» (отмечено как неверное)]\n [верный ответ по заданию: «goes»] ' }
+    const last = buildTurns({ ...stuck(STUCK_ERRORS_MARK, { screen }), user: null, studentContext: profile }).at(-1).content
+    expect(last).not.toContain('Вопрос ученика:')
+    expect(last).not.toContain('Совет сайта')
+    expect(last).toContain(`</контекст>\n\n${STUCK_ERRORS_MARK}\nЯзык ответа: русский\nУченик застрял на задании на экране (две неверные проверки подряд)`)
+    expect(last).toContain('Сайт уже показал верный ответ')
+    expect(last).toContain('без метки')
+    expect(last).toMatch(/Не больше 4 коротких предложений\.\n\n\[голосом\]$/)
+  })
+
+  // Эталона нет — сайт даёт перепробовать: зонд 28.10 без этого указания 2 из 8 раз ловил «went».
+  it('ошибки, но верного ответа на экране нет — ответ не называть даже вариантом', () => {
+    const screen = { id: 'workbook', text: 'She ___ (go) yesterday. [поле: ученик ввёл «goed» (отмечено как неверное)] [кнопка «Проверить»]' }
+    const last = buildTurns({ ...stuck(STUCK_ERRORS_MARK, { screen }), user: null }).at(-1).content
+    expect(last).toContain('Верного ответа на экране нет: сайт даёт перепробовать')
+    expect(last).toContain('ни как вариант на выбор')
+    expect(last).not.toContain('Сайт уже показал верный ответ')
+  })
+
+  it('простой на непроверенном задании — только подсказка, язык — казахский', () => {
+    const screen = { id: 'workbook', text: 'Fill in. [пустое поле] [кнопка «Проверить»]' }
+    const last = buildTurns({ ...stuck(STUCK_IDLE_MARK, { screen, lang: 'kk' }), user: null }).at(-1).content
+    expect(last).toContain('(полторы минуты ничего не делает)')
+    expect(last).toContain('Задание ещё не проверено: не оценивай введённый ответ и не называй правильный')
+    expect(last).toContain('Язык ответа: казахский')
   })
 })

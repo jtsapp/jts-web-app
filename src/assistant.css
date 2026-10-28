@@ -179,6 +179,16 @@
   border-left: 1px solid var(--asst-line);
 }
 .asst__hint-title { display: block; font-size: 14px; font-weight: 800; line-height: 1.3; }
+/* «Подсказать?» (useStuckWatch.js) — то же облачко, но его нажимают: по нему Луна
+   сразу разбирает задание. Вводное облачко мышь пропускает, это — нет. */
+.asst__hint--stuck {
+  pointer-events: auto;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.asst__hint--stuck .asst__hint-title { color: var(--asst-accent); }
+.asst__hint--stuck:focus-visible { outline: 2px solid var(--asst-accent); outline-offset: 2px; }
 .asst__hint-text { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: #4a4658; }
 .asst__hint-voice { display: block; margin-top: 4px; font-size: 13px; font-weight: 700; line-height: 1.4; color: var(--asst-accent); }
 @keyframes asst-hint-in {
@@ -512,6 +522,14 @@
     bottom: calc(var(--safe-bottom, 56px) + 72px + 28px);
     max-width: min(248px, calc(100vw - 100px));
   }
+  /* «Подсказать?» на телефоне — над кнопкой, а не сбоку: сбоку оно ложилось на плашку
+     «Неверный ответ» урока (она внизу экрана), которую ученику как раз надо прочитать. */
+  .asst__hint--stuck {
+    right: 16px;
+    bottom: calc(var(--safe-bottom, 56px) + 72px + 56px + 12px);
+    transform: none;
+  }
+  .asst__hint--stuck::after { display: none; }
   .asst__badge {
     right: 16px;
     bottom: calc(var(--safe-bottom, 56px) + 72px + 56px + 20px);
