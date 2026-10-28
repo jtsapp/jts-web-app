@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSection } from './helpers/nav.js'
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -40,17 +41,9 @@ async function enterLesson(page, { role, lessonStatus, liveStatus = lessonStatus
   await page.route('**/admin/lessons/14', (r) => r.fulfill(json({ id: 14, status: liveStatus, teacherName: 'Test Teacher DEV', participants: [] })))
   await page.goto('/')
 
-  // On narrow viewports the sidebar (and its «Уроки» nav item) is off-canvas behind
-  // a hamburger drawer — open it first so the nav item is actionable. On desktop
-  // `.mtop` stays hidden via CSS, so the wait below times out and we proceed to the
-  // static sidebar (see tests/lessons-schedule.spec.js for the same pattern).
-  const menuButton = page.locator('.mtop__menu')
-  await menuButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-  if (await menuButton.isVisible()) {
-    await menuButton.click()
-  }
-
-  await page.getByText('Уроки', { exact: true }).first().click()
+  // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
+  // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
+  await openSection(page, 'Уроки')
   await page.getByRole('button', { name: 'Войти в класс' }).first().click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 }

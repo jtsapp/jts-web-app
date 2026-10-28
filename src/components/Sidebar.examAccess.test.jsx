@@ -39,7 +39,8 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
     await waitFor(() => expect(labels()).toContain('SAT'))
     const l = labels()
     expect(l[0]).toBe('Главная')
-    expect(l[1]).toBe('Повторение')
+    expect(l[1]).toBe('Выбрать группу')
+    expect(l[2]).toBe('Повторение')
     expect(l).not.toContain('IELTS')
   })
 
@@ -47,7 +48,9 @@ describe('Sidebar: «Повторение» у учеников IELTS и SAT', (
     me.ielts = { ieltsAccount: true }
     draw()
     await waitFor(() => expect(document.querySelector('.sb__item--settings')).not.toBeNull())
-    expect(labels()[1]).toBe('Повторение')
+    expect(labels()[2]).toBe('Повторение')
+    expect(labels()).toContain('Договоры')
+    expect(labels()).toContain('Уведомления')
   })
 
   it('нажатие ведёт на экран «Повторения» (learning), а App не уводит его в IELTS', async () => {

@@ -98,9 +98,24 @@ async function solve(page, how) {
 
 const next = (page) => page.locator('.lc-feedback__actions .lc-primary').click()
 
+// Телефон (≤560, проект mobile): сложность и размер набора живут в окне
+// «Настройка подхода» за значком в шапке, размер — чипами вместо списка.
+// Помощники открывают окно и выбирают тем же путём, что ученик.
+const isPhone = (page) => page.viewportSize().width <= 560
+async function openSettings(page) {
+  if (!isPhone(page) || (await page.locator('dialog.lc-dialog--settings[open]').count())) return
+  await page.locator('.lc-settings-btn').click()
+}
+async function pickCount(page, v) {
+  await openSettings(page)
+  if (!isPhone(page)) return page.locator('#lc-count').selectOption(v)
+  const name = v === 'custom' ? RU.customCount : v
+  return page.locator('.lc-count-chips button', { hasText: new RegExp(`^${name}$`) }).click()
+}
+
 // Набор из 5 заданий вместо 10: тест на весь набор укладывается в полминуты.
 async function fiveSet(page) {
-  await page.locator('#lc-count').selectOption('5')
+  await pickCount(page, '5')
   await page.locator('.lc-setup .lc-primary').click()
   await expect(page.locator('.lc-round strong')).toHaveText('1 / 5')
 }
@@ -108,8 +123,10 @@ async function fiveSet(page) {
 test.describe('экран', () => {
   test('открывается по диплинку: шапка, сложность, набор, плеер и четыре фото', async ({ page }) => {
     await open(page)
+    await openSettings(page)
     await expect(page.locator('.lc-seg button[aria-pressed="true"]')).toHaveText('Easy')
-    await expect(page.locator('#lc-count')).toHaveValue('10')
+    if (isPhone(page)) await expect(page.locator('.lc-count-chips button[aria-pressed="true"]')).toHaveText('10')
+    else await expect(page.locator('#lc-count')).toHaveValue('10')
     await expect(page.locator('.lc-round strong')).toHaveText('1 / 10')
     await expect(page.locator('.lc-instruction h2')).toHaveText('Listen and choose the correct picture')
     await expect(page.locator('.lc-opt')).toHaveCount(4)
@@ -254,6 +271,7 @@ test.describe('набор и итог', () => {
     await solve(page, 'first')
     await next(page)
     await expect(page.locator('.lc-round strong')).toHaveText('2 / 10')
+    await openSettings(page)
     await page.locator('.lc-seg button', { hasText: 'Hard' }).click()
     await expect(page.locator('.lc-round strong')).toHaveText('1 / 10')
     await expect(page.locator('.lc-seg button[aria-pressed="true"]')).toHaveText('Hard')
@@ -270,6 +288,7 @@ test.describe('набор и итог', () => {
 
   test('диплинк ?difficulty=hard открывает сложную ленту и не рисует лишний лёгкий набор', async ({ page }) => {
     await open(page, '&difficulty=hard')
+    await openSettings(page)
     await expect(page.locator('.lc-seg button[aria-pressed="true"]')).toHaveText('Hard')
     const { q } = await current(page)
     expect(q.level).toBe('hard')
@@ -280,7 +299,7 @@ test.describe('набор и итог', () => {
 
   test('размер набора: своё число, неверное число закрывает «Новый набор»', async ({ page }) => {
     await open(page)
-    await page.locator('#lc-count').selectOption('custom')
+    await pickCount(page, 'custom')
     const input = page.locator('#lc-custom')
     await input.fill('7')
     await expect(page.locator('.lc-note')).toContainText(`${RU.countPending} 7`)

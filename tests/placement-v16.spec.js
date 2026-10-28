@@ -98,6 +98,7 @@ async function finishTestThroughBridge(page) {
 }
 
 test('ученик без анкеты: закрытый роадмап → тест v16 → маршрут → блок цели и отчёт', async ({ page }) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   const state = await setup(page, { level: 'A2' })
   await page.goto('/?screen=home')
 
@@ -133,8 +134,10 @@ test('ученик без анкеты: закрытый роадмап → те
 test('ученик без уровня: тест ставит уровень аккаунта', async ({ page }) => {
   const state = await setup(page, { level: null })
   await page.goto('/?screen=home')
-  await expect(page.locator('.ge-locked')).toBeVisible({ timeout: 20000 })
-  await page.locator('.ge-locked').getByRole('button', { name: 'Пройти тест уровня' }).click()
+  // На телефоне баннера маршрута нет — тест начинается кнопкой карточки уровня (дизайн приложения, спека 2026-10-26).
+  const start = page.locator('.ge-locked:visible, .hm-level--phone:visible')
+  await expect(start).toBeVisible({ timeout: 20000 })
+  await start.getByRole('button', { name: 'Пройти тест уровня' }).click()
   await finishTestThroughBridge(page)
   await expect.poll(() => state.level).toBe('B1')
   // B1 по тесту, цель v16 «уже достигнута» → следующая плитка
@@ -264,6 +267,7 @@ test.describe('учится до теста v16', () => {
   const OLD = '2026-09-01T10:00:00'
 
   test('анкеты нет — баннер зовёт на тест, но маршрут не «закрыт»', async ({ page }) => {
+    test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
     await setup(page, { level: 'A2', createdAt: OLD })
     await page.goto('/?screen=home')
     await expect(page.locator('.ge-invite')).toContainText('Здесь будет ваш маршрут', { timeout: 20000 })
@@ -273,6 +277,7 @@ test.describe('учится до теста v16', () => {
   })
 
   test('маршрут есть — он на месте, «Результаты теста уровня» пустые и зовут на тест', async ({ page }) => {
+    test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
     const goal = profileFrom({ purpose: 'work', targetLevel: 'B2', deadlineWindow: 'none', dailyMinutes: 30, startMode: null }, 'A2', 'self_study')
     await setup(page, { level: 'A2', createdAt: OLD, profile: goal })
     await page.goto('/?screen=home')

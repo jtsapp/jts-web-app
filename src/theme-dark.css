@@ -144,6 +144,36 @@ html[data-theme="dark"] .pk-skill.is-on {
   --sk-bg: var(--sk-tint);
 }
 
+/* Плитки «Сервисов» (services.css): фон и значок — переменными модификатора, генератор до них не достаёт. На графите
+   пастельные фоны светлой темы слепили бы с белой подписью — здесь мягкий тинт семейства бренда, значок — цветом
+   семейства. SAT в светлой теме сине-лиловый, ближайший цвет бренда — фиолетовый. */
+html[data-theme="dark"] .svc-tile {
+  --svc-bg: var(--dk-acc-soft);
+  --svc-ink: var(--dk-acc-text);
+}
+html[data-theme="dark"] .svc-tile--homework {
+  --svc-bg: var(--dk-orange-soft);
+  --svc-ink: var(--dk-orange);
+}
+html[data-theme="dark"] .svc-tile--ielts {
+  --svc-bg: var(--dk-blue-soft);
+  --svc-ink: var(--dk-blue);
+}
+html[data-theme="dark"] .svc-tile--vocab {
+  --svc-bg: var(--dk-green-soft);
+  --svc-ink: var(--dk-green);
+}
+html[data-theme="dark"] .svc-tile::before {
+  background: color-mix(in srgb, var(--dk-text) 5%, transparent);
+}
+/* Круг со стрелкой в светлой теме — чёрный с белой стрелкой; на графите тёмный круг пропадал — инвертируем. */
+html[data-theme="dark"] .svc-tile__go {
+  background: var(--dk-text);
+}
+html[data-theme="dark"] .svc-tile__go::before {
+  background: var(--dk-page);
+}
+
 /* Логотип красится инлайном (Logo.jsx: style={{ color: '#9047ff' }}) —
    ни генератор, ни токены до него не достают. На тёмном фоне по брендбуку
    (2.2) знак белый, а «to» — жёлтое #fffb05. Белый вариант (на цветных
@@ -422,4 +452,100 @@ html[data-theme="dark"] .rg .lang-selector--globe {
   box-shadow: none;
   background: var(--rg-card);
   color: var(--rg-ink);
+}
+
+/* «Мой учитель» (src/matching.css): раздел пишет цвета токенами --mt-* на корне .mt, поэтому тёмной теме
+   хватает переопределить их здесь — правила раздела не трогаем. */
+html[data-theme="dark"] .mt {
+  --mt-brand: var(--dk-acc);
+  --mt-brand-2: var(--dk-acc-strong);
+  --mt-soft: var(--dk-acc-soft);
+  --mt-softer: var(--dk-acc-tint);
+  --mt-bg: var(--dk-chip);
+  --mt-surface: var(--dk-card);
+  --mt-fg: var(--dk-text);
+  --mt-fg-2: var(--dk-text-2);
+  --mt-fg-3: var(--dk-muted);
+  --mt-line: var(--dk-line);
+  --mt-ok: var(--dk-green);
+  --mt-ok-soft: var(--dk-green-soft);
+  --mt-warn: var(--dk-orange);
+  --mt-warn-soft: var(--dk-orange-soft);
+  --mt-bad: var(--dk-red);
+  --mt-bad-soft: var(--dk-red-soft);
+  --mt-ok-ink: var(--dk-green);
+  --mt-warn-ink: var(--dk-orange);
+  --mt-bad-ink: var(--dk-red);
+  --mt-gold: var(--dk-yellow);
+  --mt-bar: var(--dk-raised);
+  --mt-bar-fg: var(--dk-text);
+}
+html[data-theme="dark"] .mt .mt-pill,
+html[data-theme="dark"] .mt .mt-btn--ghost,
+html[data-theme="dark"] .mt .mt-slot--few,
+html[data-theme="dark"] .mt .mt-slot--many,
+html[data-theme="dark"] .mt .mt-opt__ic,
+html[data-theme="dark"] .mt .mt-li__ic,
+html[data-theme="dark"] .mt .mt-li__val,
+html[data-theme="dark"] .mt .mt-link {
+  color: var(--dk-acc-text);
+}
+/* Блоки токенов студента (components/tokenBlocks.css): главная, «Практика», легенда монет. Файл не входит в набор,
+   из которого генерируется theme-dark.generated.css, поэтому тёмные правила написаны здесь токенами --dk-*. */
+html[data-theme="dark"] .tb-pilot {
+  background: var(--dk-blue-soft);
+  color: var(--dk-blue);
+}
+html[data-theme="dark"] .tb-idle {
+  background: var(--dk-yellow-soft);
+  color: var(--dk-yellow);
+}
+html[data-theme="dark"] .tb-idle button {
+  background: var(--dk-acc);
+  color: var(--dk-on-acc);
+}
+html[data-theme="dark"] .tb-card,
+html[data-theme="dark"] .tb-table {
+  border-color: var(--dk-line);
+  background: var(--dk-card);
+}
+html[data-theme="dark"] .tb-card h3,
+html[data-theme="dark"] .tb-table h3,
+html[data-theme="dark"] .tb-legend__max {
+  color: var(--dk-text);
+}
+html[data-theme="dark"] .tb-card strong,
+html[data-theme="dark"] .tb-table td:last-child {
+  color: var(--dk-yellow);
+}
+html[data-theme="dark"] .tb-card small,
+html[data-theme="dark"] .tb-table td:first-child {
+  color: var(--dk-muted);
+}
+html[data-theme="dark"] .tb-link {
+  color: var(--dk-acc-text);
+}
+html[data-theme="dark"] .tb-btn {
+  background: var(--dk-acc-soft);
+  color: var(--dk-acc-on);
+}
+html[data-theme="dark"] .tb-table th,
+html[data-theme="dark"] .tb-table td {
+  border-bottom-color: var(--dk-line);
+}
+html[data-theme="dark"] .tb-table th {
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .tb-sub,
+html[data-theme="dark"] .tb-legend {
+  color: var(--dk-text-2);
+}
+html[data-theme="dark"] .tb-legend__item i {
+  background: var(--dk-muted);
+}
+html[data-theme="dark"] .tb-legend__item--purple i {
+  background: var(--dk-acc);
+}
+html[data-theme="dark"] .tb-legend__item--gold i {
+  background: var(--dk-yellow);
 }

@@ -1,3 +1,5 @@
+import { isProdHost } from './lib/ieltsGate.js'
+
 // Флаги сборки, различающиеся между ветками.
 //
 // TUTOR_ONLY — режим «только тьютор» для прода (ветка main): в интерфейсе
@@ -24,7 +26,7 @@ export const TUTOR_ONLY = false
 // поэтому тоже в списке: handleNav гейтится этим же списком, и без записи
 // здесь раздел мёртв на проде.
 // При TUTOR_ONLY = false список не используется.
-export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing', 'writing', 'home', 'pricing', 'minutes']
+export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing', 'writing', 'home', 'pricing', 'minutes', 'feedback']
 
 // JARVIS_ENABLED — четвёртый тьютор «Джарвис» на экране выбора. Только для
 // разработки и dev-стенда, в прод не идёт.
@@ -53,3 +55,13 @@ export function areRewardsEnabled(hostname = typeof window === 'undefined' ? '' 
   return typeof hostname === 'string' && hostname.toLowerCase() === 'dev-tutor.justtostudy.kz'
 }
 export const isRewardsScreen = (screen) => screen === 'tokens' || screen === 'prizes'
+
+// Временно скрыты у ученика на проде до проверки кабинетов всеми тремя сторонами.
+// Общий список нужен меню, прямым ссылкам и блокам на других экранах.
+const STUDENT_HIDDEN_ON_PROD = new Set([
+  'tokens', 'prizes', 'feedback', 'notifications', 'contracts',
+  'my-teacher', 'teacher-wizard', 'teacher-pick',
+])
+export function isStudentSectionHidden(screen, hostname = typeof window === 'undefined' ? '' : window.location.hostname) {
+  return isProdHost(hostname) && STUDENT_HIDDEN_ON_PROD.has(screen)
+}

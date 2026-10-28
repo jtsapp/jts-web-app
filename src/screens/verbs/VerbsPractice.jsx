@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { useI18n } from '../../i18n.jsx'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 import {
   MODES,
   isContextual,
@@ -89,6 +91,19 @@ export default function VerbsPractice({ drill, data, settings, saved, lang, toke
   // На десктопе строки нет и блок всегда открыт: решает CSS, а не ширина в
   // JS, поэтому первому кадру нечему расходиться с раскладкой.
   const [setupOpen, setSetupOpen] = useState(false)
+  // Телефон по макету приложения: настройки практики — лист снизу (кадр
+  // «Настройки практики»), а не раскрывашка под упражнением. Содержимое и
+  // колбэки те же — settingsStack.
+  const phone = usePhoneWidth()
+  const [sheetOpen, setSheetOpen] = useState(false)
+  useEffect(() => {
+    if (!sheetOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setSheetOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [sheetOpen])
   const levelName = settings.practiceLevel === 'all' ? 'A1–B1' : settings.practiceLevel
   const setName =
     settings.set === 'all'
@@ -112,6 +127,57 @@ export default function VerbsPractice({ drill, data, settings, saved, lang, toke
   // Звучит ли бит: идущие часы знают это сами (предпрослушка слышна всегда),
   // стоящие — по настройке, с которой стартует попытка.
   const beatAudible = snap.running ? snap.audible : settings.beat
+
+  const settingsStack = (
+    <div className="vb-settings__stack">
+      <label>
+        <span>{t('verbs.tempo')}</span>
+        <b>{settings.bpm} BPM</b>
+        <input
+          type="range"
+          min="72"
+          max="116"
+          value={settings.bpm}
+          onChange={(e) => drill.setTempo(Number(e.target.value))}
+        />
+      </label>
+      <div className="vb-seg">
+        {TEMPO_PRESETS.map(([k, bpm]) => (
+          <button key={k} type="button" aria-pressed={settings.bpm === bpm} onClick={() => drill.setTempo(bpm)}>
+            {t('verbs.' + k)}
+          </button>
+        ))}
+      </div>
+      {snap.tempoPending && <p className="vb-muted">{t('verbs.tempoNext')}</p>}
+      <div>
+        <span className="vb-settings__label">{t('verbs.rhythmVoice')}</span>
+        <p className="vb-muted">{t('verbs.rhythmVoiceNote')}</p>
+      </div>
+      <label>
+        <span>{t('verbs.tutorVolume')}</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={settings.tutor}
+          onChange={(e) => drill.setTutorVolume(Number(e.target.value))}
+        />
+      </label>
+      <label className="vb-check">
+        <input type="checkbox" checked={settings.auto} onChange={(e) => drill.setAuto(e.target.checked)} />
+        <span>{t('verbs.auto')}</span>
+      </label>
+      <button
+        type="button"
+        className="vb-link"
+        onClick={() => {
+          if (window.confirm(t('verbs.confirmReset'))) onResetProgress()
+        }}
+      >
+        {t('verbs.resetProgress')}
+      </button>
+    </div>
+  )
 
   return (
     <div className="vb-practice">
@@ -370,57 +436,40 @@ export default function VerbsPractice({ drill, data, settings, saved, lang, toke
                 })}
               </div>
             </section>
-            <details className="vb-card vb-settings">
-              <summary>{t('verbs.settings')}</summary>
-              <div className="vb-settings__stack">
-                <label>
-                  <span>{t('verbs.tempo')}</span>
-                  <b>{settings.bpm} BPM</b>
-                  <input
-                    type="range"
-                    min="72"
-                    max="116"
-                    value={settings.bpm}
-                    onChange={(e) => drill.setTempo(Number(e.target.value))}
-                  />
-                </label>
-                <div className="vb-seg">
-                  {TEMPO_PRESETS.map(([k, bpm]) => (
-                    <button key={k} type="button" aria-pressed={settings.bpm === bpm} onClick={() => drill.setTempo(bpm)}>
-                      {t('verbs.' + k)}
-                    </button>
-                  ))}
-                </div>
-                {snap.tempoPending && <p className="vb-muted">{t('verbs.tempoNext')}</p>}
-                <div>
-                  <span className="vb-settings__label">{t('verbs.rhythmVoice')}</span>
-                  <p className="vb-muted">{t('verbs.rhythmVoiceNote')}</p>
-                </div>
-                <label>
-                  <span>{t('verbs.tutorVolume')}</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.tutor}
-                    onChange={(e) => drill.setTutorVolume(Number(e.target.value))}
-                  />
-                </label>
-                <label className="vb-check">
-                  <input type="checkbox" checked={settings.auto} onChange={(e) => drill.setAuto(e.target.checked)} />
-                  <span>{t('verbs.auto')}</span>
-                </label>
-                <button
-                  type="button"
-                  className="vb-link"
-                  onClick={() => {
-                    if (window.confirm(t('verbs.confirmReset'))) onResetProgress()
-                  }}
-                >
-                  {t('verbs.resetProgress')}
-                </button>
-              </div>
-            </details>
+            {phone ? (
+              <button type="button" className="vb-card vb-settings-open" onClick={() => setSheetOpen(true)}>
+                {t('verbs.settings')}
+              </button>
+            ) : (
+              <details className="vb-card vb-settings">
+                <summary>{t('verbs.settings')}</summary>
+                {settingsStack}
+              </details>
+            )}
+            {phone &&
+              sheetOpen &&
+              createPortal(
+                // Лист — в body: обёртка экрана (.scr-in) с transform сбивала бы
+                // position: fixed. Метка — чтобы помощник видел окно (screenSnapshot).
+                <div className="vb-sheet" data-assistant-overlay="настройки практики глаголов" onClick={() => setSheetOpen(false)}>
+                  <div
+                    className="vb-sheet__card vb-settings"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('verbs.settings')}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="vb-sheet__head">
+                      <h3>{t('verbs.settings')}</h3>
+                      <button type="button" className="vb-sheet__close" aria-label={t('common.close')} onClick={() => setSheetOpen(false)}>
+                        ×
+                      </button>
+                    </div>
+                    {settingsStack}
+                  </div>
+                </div>,
+                document.body,
+              )}
           </aside>
         )}
       </div>

@@ -105,15 +105,28 @@ export function SkillCard({ skill, count, active, onClick }) {
   )
 }
 
+// «+5 токенов» за прохождение: бейдж на плитке практики (ТЗ кабинетов, раздел 6).
+export function TokenBadge({ points }) {
+  const { t, lang } = useI18n()
+  return (
+    <span className="pk-tokens" data-testid="practice-token-badge">
+      {plural(t, lang, 'practice.tokenBadge', points)}
+    </span>
+  )
+}
+
 // Шапка секции. «Посмотреть все» в макете двух видов: рамка-пилюля со
 // стрелкой в кружке (`pill`) и простая ссылка с шевроном (`link`). В полном
 // списке та же кнопка сворачивает его обратно.
-export function SectionHead({ title, all, small, expanded, onAll, children }) {
+export function SectionHead({ title, all, small, expanded, onAll, tokens = 0, children }) {
   const { t } = useI18n()
   const label = expanded ? t('practice.collapse') : t('practice.seeAll')
   return (
     <div className="pk-sec__head">
-      <h2 className={`pk-sec__title${small ? ' pk-sec__title--sm' : ''}`}>{title}</h2>
+      <h2 className={`pk-sec__title${small ? ' pk-sec__title--sm' : ''}`}>
+        {title}
+        {tokens > 0 && <TokenBadge points={tokens} />}
+      </h2>
       <div className="pk-sec__tools">
         {children}
         {all === 'link' && (
@@ -142,9 +155,36 @@ export function Rail({ grid, className, children }) {
 // Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
 // с артом — в макете заголовок в одну строку, перенос делает ширина.
 // tag — короткая пометка у заголовка («Новое» у свежего тренажёра).
+// Надпись над заголовком (значок + «ЧТЕНИЕ») есть только на телефоне — в
+// дизайне приложения (Figma «Mobile», баннеры 6605:16630); на компьютере её
+// прячет src/mobile/practice.css. Значок рисует CSS по варианту баннера.
+const BANNER_KICKER = {
+  listening: 'practice.kicker.game',
+  numbers: 'practice.kicker.game',
+  lc: 'practice.skill.listening',
+  listen: 'practice.skill.listening',
+  cartoons: 'practice.skill.listening',
+  words: 'nav.vocab',
+  wordhunt: 'nav.vocab',
+  reading: 'practice.skill.reading',
+  'speed-reading': 'practice.skill.reading',
+  writing: 'practice.skill.writing',
+  verbs: 'practice.chip.grammar',
+  'grammar-games': 'practice.chip.grammar',
+  prepositions: 'practice.chip.grammar',
+  speakspin: 'practice.skill.speaking',
+}
 export function Banner({ id, variant, wide, title, desc, cta, onStart, badge, tag }) {
+  const { t } = useI18n()
+  const kicker = BANNER_KICKER[variant]
   return (
     <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
+      {kicker && (
+        <span className="pk-banner__kicker" aria-hidden="true">
+          <i className="pk-banner__ico" />
+          {t(kicker)}
+        </span>
+      )}
       <div className="pk-banner__text">
         <h3 className="pk-banner__title">
           {title.replace(/\n/g, ' ')}
@@ -378,11 +418,12 @@ export function ComicCard({ comic, status, onOpen }) {
   )
 }
 
-export function GrammarTile({ unit, onOpen }) {
-  const { t } = useI18n()
+export function GrammarTile({ unit, tokens = 0, onOpen }) {
+  const { t, lang } = useI18n()
   return (
     <button type="button" className="pk-tile" onClick={() => onOpen(unit)}>
       <span className="pk-tile__badge">Unit {unit.id}</span>
+      {tokens > 0 && <span className="pk-tokens pk-tokens--tile">{plural(t, lang, 'practice.tokenBadge', tokens)}</span>}
       <span className="pk-tile__text">
         <span className="pk-tile__title">{stripTags(unit.title)}</span>
         <span className="pk-meta">

@@ -97,6 +97,7 @@ const shot = async (page, name) => {
 }
 
 test('«Сегодня» на «Главной» по плану → весь план → перенос задачи в неделе', async ({ page }, info) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   const state = await setup(page)
   await page.goto('/?screen=home')
   const card = page.locator('.ge-today')
@@ -129,6 +130,7 @@ test('«Сегодня» на «Главной» по плану → весь п
 })
 
 test('без ручки плана (старый бэкенд отвечает {}) — прежняя «Что сделать сегодня»', async ({ page }) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   await setup(page)
   await page.route(/\/mobile\/ge\/plan/, (route) => route.fulfill(json({})))
   await page.goto('/?screen=home')
@@ -137,6 +139,7 @@ test('без ручки плана (старый бэкенд отвечает {
 })
 
 test('задача преподавателя: метка, комментарий и «Отметить выполненным»', async ({ page }) => {
+  test.skip(test.info().project.name === 'mobile', 'на телефоне «Главная» строго по приложению: блоки GE, план и отчёт теста скрыты (спека 2026-10-26)')
   const state = await setup(page)
   await page.goto('/?screen=home')
   const row = page.locator('.ge-today .ge-task.is-teacher')

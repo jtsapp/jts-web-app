@@ -20521,6 +20521,44 @@ html[data-theme="dark"] .lw-material-iframe {
     border: 0;
     background: var(--lw-surface)
 }
+html[data-theme="dark"] .pdfv {
+    background: var(--lw-bg)
+}
+html[data-theme="dark"] .pdfv__bar {
+    background: var(--lw-surface);
+    border-bottom: 1px solid var(--lw-track)
+}
+html[data-theme="dark"] .pdfv__btn {
+    border: none;
+    background: transparent;
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .pdfv__btn:hover:not(:disabled) {
+    background: var(--lw-tint-1);
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__btn[aria-pressed='true'] {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__btn:focus-visible, html[data-theme="dark"] .pdfv__open:focus-visible, html[data-theme="dark"] .pdfv__scroller:focus-visible {
+    outline: 2px solid var(--lw-primary)
+}
+html[data-theme="dark"] .pdfv__count, html[data-theme="dark"] .pdfv__zoom {
+    color: var(--lw-ink)
+}
+html[data-theme="dark"] .pdfv__zoom {
+    color: var(--lw-ink-2)
+}
+html[data-theme="dark"] .pdfv__open {
+    color: var(--lw-primary-ink)
+}
+html[data-theme="dark"] .pdfv__page {
+    background: var(--dk-card);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28)
+}
+html[data-theme="dark"] .pdfv__error {
+    color: var(--lw-ink)
+}
 html[data-theme="dark"] .lw-material-empty {
     background: var(--lw-surface);
     color: var(--lw-muted)
@@ -23347,6 +23385,84 @@ html[data-theme="dark"] .ge-wcard--teacher, html[data-theme="dark"] .ge-mchip--t
 html[data-theme="dark"] .ge-move__error {
     color: var(--dk-orange)
 }
+/*  services.css  */
+@media (max-width: 560px) {
+    html[data-theme="dark"] .learn__main:has(.svc) {
+        background: var(--dk-page)
+    }
+}
+html[data-theme="dark"] .svc-hero {
+    border: 0;
+    background: linear-gradient(106deg, var(--dk-acc) 0%, var(--dk-acc) 100%);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .svc-hero::before {
+    background: rgba(255, 255, 255, 0.12)
+}
+html[data-theme="dark"] .svc-hero::after {
+    background: rgba(255, 255, 255, 0.1)
+}
+html[data-theme="dark"] .svc-hero__avatar {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .svc-hero__name span {
+    color: var(--dk-acc-on)
+}
+html[data-theme="dark"] .svc-chip {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff
+}
+html[data-theme="dark"] .svc-chip__ico {
+    background: currentColor
+}
+html[data-theme="dark"] .svc-head__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .svc-tile--learning {
+    --svc-bg: var(--dk-acc-tint);
+    --svc-ink: var(--dk-acc-text)
+}
+html[data-theme="dark"] .svc-tile--homework {
+    --svc-bg: var(--dk-orange-tint);
+    --svc-ink: var(--dk-orange)
+}
+html[data-theme="dark"] .svc-tile--ielts {
+    --svc-bg: var(--dk-blue-tint);
+    --svc-ink: var(--dk-blue)
+}
+html[data-theme="dark"] .svc-tile--sat {
+    --svc-bg: var(--dk-acc-tint);
+    --svc-ink: var(--dk-acc-text)
+}
+html[data-theme="dark"] .svc-tile--vocab {
+    --svc-bg: var(--dk-green-tint);
+    --svc-ink: var(--dk-green)
+}
+html[data-theme="dark"] .svc-tile {
+    border: 0;
+    background: var(--svc-bg, #efe7ff)
+}
+html[data-theme="dark"] .svc-tile::before {
+    background: rgba(255, 255, 255, 0.45)
+}
+html[data-theme="dark"] .svc-tile__plate {
+    background: var(--dk-card);
+    color: var(--svc-ink, #7b3fe4)
+}
+html[data-theme="dark"] .svc-tile__plate i {
+    background: currentColor
+}
+html[data-theme="dark"] .svc-tile__go {
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .svc-tile__go::before {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .svc-tile__name {
+    color: var(--dk-text)
+}
 /*  placement.css  */
 html[data-theme="dark"] .pl-page {
     background: var(--dk-card)
@@ -25289,22 +25405,58 @@ html[data-theme="dark"] .asst-ask {
 }
 /*  mobile/home.css  */
 @media (max-width: 560px) {
+    html[data-theme="dark"] .learn__main:has(.hm--v2) {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .hm-top__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .hm-card {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .hm-card__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .hm-card__more, html[data-theme="dark"] .hm-card__all {
+        border: 0;
+        background: none;
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .hm-card__more::after, html[data-theme="dark"] .hm-card__all::after {
+        background: currentColor
+    }
+    html[data-theme="dark"] .hm-plate {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .hm-plate::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .hm-level {
+        background: linear-gradient(250deg, var(--dk-acc-strong) 0%, var(--dk-acc) 100%);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .hm-level__label {
+        color: rgba(255, 255, 255, 0.7)
+    }
+    html[data-theme="dark"] .hm-level__name {
+        color: #fff
+    }
     html[data-theme="dark"] .hm-level__track {
         background: none
     }
     html[data-theme="dark"] .hm-level__seg {
         background: var(--dk-acc)
     }
+    html[data-theme="dark"] .hm-level__fill {
+        background: var(--dk-card)
+    }
     html[data-theme="dark"] .hm-level__stop {
         border: 0;
         background: var(--dk-acc);
         color: var(--dk-on-acc)
-    }
-    html[data-theme="dark"] .hm-level__lbl {
-        color: rgba(255, 255, 255, 0.8)
-    }
-    html[data-theme="dark"] .hm-level__stop--now .hm-level__lbl {
-        color: #fff
     }
     html[data-theme="dark"] .hm-level__stop--now {
         background: var(--dk-card)
@@ -25312,58 +25464,144 @@ html[data-theme="dark"] .asst-ask {
     html[data-theme="dark"] .hm-level__dot {
         background: var(--dk-acc)
     }
-    html[data-theme="dark"] .hm-level__plan {
-        background: none;
+    html[data-theme="dark"] .hm-level__lbl::after {
         color: rgba(255, 255, 255, 0.8)
     }
-    html[data-theme="dark"] .hm-skill__trend--high {
-        color: var(--dk-green)
+    html[data-theme="dark"] .hm-level__stop--now .hm-level__lbl {
+        color: #fff
     }
-    html[data-theme="dark"] .hm-skill__trend--low {
-        color: #e8a020
+    html[data-theme="dark"] .hm-level__goal {
+        border: 0;
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff
     }
-    html[data-theme="dark"] .hm-recommend__cta {
-        background: var(--dk-page)
+    html[data-theme="dark"] .hm-level__flag {
+        background: currentColor
+    }
+    html[data-theme="dark"] .hm-level__edit {
+        color: rgba(255, 255, 255, 0.9)
+    }
+    html[data-theme="dark"] .hm-level__test {
+        border: 0;
+        background: var(--dk-card);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .hm-trial {
+        border: 0;
+        background: var(--dk-card);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1)
+    }
+    html[data-theme="dark"] .hm-trial__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .hm-trial__cta {
+        border: 0;
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .hm-skill__name {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .hm-skill__bar {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .hm-skill__fill--high {
+        background: var(--dk-green)
+    }
+    html[data-theme="dark"] .hm-skill__fill--mid {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .hm-skill__fill--low {
+        background: var(--dk-yellow)
+    }
+    html[data-theme="dark"] .hm-skill__fill.is-bad {
+        background: var(--dk-red)
+    }
+    html[data-theme="dark"] .hm-skill__pct {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .hm-skills__sum {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .hm-skills__sumIco {
+        background: var(--dk-green)
+    }
+    html[data-theme="dark"] .hm-skills--empty .hm-skills__msg {
+        background: none
+    }
+    html[data-theme="dark"] .hm-skills--empty .hm-skills__msgIco {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .hm-skills--empty .hm-skills__msgIco::before {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .hm-skills--empty .hm-skills__msg p {
+        color: var(--dk-muted)
     }
     html[data-theme="dark"] .hm-prac__tile {
+        border: 0;
         background: var(--dk-page)
-    }
-    html[data-theme="dark"] .hm-prac__text i {
-        color: var(--dk-muted)
     }
     html[data-theme="dark"] .hm-prac__img {
         background: none
     }
-    html[data-theme="dark"] .hm-sched__day {
-        border-top: 0
-    }
-    html[data-theme="dark"] .hm-sched__date b, html[data-theme="dark"] .hm-sched__date.is-busy b {
-        background: none;
+    html[data-theme="dark"] .hm-prac__text b {
         color: var(--dk-text)
     }
-    html[data-theme="dark"] .hm-sched__date.is-today b {
-        background: var(--dk-red);
-        color: var(--dk-on-bright)
-    }
-    html[data-theme="dark"] .hm-sched__date i {
+    html[data-theme="dark"] .hm-prac__text i {
         color: var(--dk-muted)
     }
-    html[data-theme="dark"] .hm-sched__empty, html[data-theme="dark"] .hm-sched__items {
-        border-left: 2px solid var(--dk-line)
+    html[data-theme="dark"] .hm-sched__wday {
+        border: 0;
+        background: none
     }
-    html[data-theme="dark"] .hm-sched__empty {
+    html[data-theme="dark"] .hm-sched__wday b {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .hm-sched__wday i {
         color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .hm-sched__wday.is-busy::after {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .hm-sched__wday.is-picked {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .hm-sched__wday.is-picked b, html[data-theme="dark"] .hm-sched__wday.is-picked i {
+        color: #fff
+    }
+    html[data-theme="dark"] .hm-sched__item {
+        border: 0;
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .hm-sched__item .hm-plate {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
     }
     html[data-theme="dark"] .hm-sched__item b {
         color: var(--dk-text)
     }
     html[data-theme="dark"] .hm-sched__item i {
-        color: var(--dk-muted)
+        color: var(--dk-text-2)
     }
     html[data-theme="dark"] .hm-sched__chev {
-        color: var(--dk-muted)
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .hm-sched__empty {
+        border: 1.5px solid var(--dk-acc-line);
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .hm-sched__empty .hm-plate {
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .hm-sched__empty > span:not(.hm-plate) {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .hm-sched__empty small {
+        color: var(--dk-text-2)
     }
     html[data-theme="dark"] .hm-hw__item {
+        border: 0;
         background: var(--dk-page)
     }
     html[data-theme="dark"] .hm-hw__item b {
@@ -25372,7 +25610,84 @@ html[data-theme="dark"] .asst-ask {
     html[data-theme="dark"] .hm-hw__item i {
         color: var(--dk-muted)
     }
-    html[data-theme="dark"] .hm-placement__sub {
+    html[data-theme="dark"] .hm-hw__item::after {
+        background: var(--dk-raised)
+    }
+    html[data-theme="dark"] .hm-hw__empty {
+        color: var(--dk-muted)
+    }
+}
+/*  mobile/nav.css  */
+@media (max-width: 560px) {
+    html[data-theme="dark"] .mtab {
+        border-top: 1px solid var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .mtab__item {
+        border: 0;
+        background: none;
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .mtab__ico {
+        background: currentColor
+    }
+    html[data-theme="dark"] .mtab__item.is-active {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .mtab__item.is-active .mtab__pill {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .learn__bell .tour-help, html[data-theme="dark"] .learn__bell .nbell__btn {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
         color: var(--dk-text)
     }
+}
+
+/* Метки «+N токенов» (styles.css, demo.css) — как их выдаёт генератор; перегенерация даст те же правила. */
+html[data-theme="dark"] .pk-tokens {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .ge-task__chip.is-tokens {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .sch-row__dispute {
+    background: none;
+    border: 0;
+    color: var(--purple)
+}
+html[data-theme="dark"] .sch-row__dispute:focus-visible, html[data-theme="dark"] .sch-dispute button:focus-visible {
+    outline: 2px solid var(--ink)
+}
+html[data-theme="dark"] .sch-dispute__label {
+    color: var(--muted, #6b7280)
+}
+html[data-theme="dark"] .sch-dispute__input {
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .sch-dispute__error {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .sch-dispute__cancel {
+    background: none;
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .sch-dispute__send {
+    background: var(--purple);
+    color: var(--dk-on-acc);
+    border: 0
+}
+html[data-theme="dark"] .sch-badge--dispute-new {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
+html[data-theme="dark"] .sch-badge--dispute-overturned {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .sch-badge--dispute-upheld {
+    background: var(--dk-chip);
+    color: var(--dk-text-2)
 }

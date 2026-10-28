@@ -1,0 +1,1119 @@
+/* ======================================================================
+   Телефон (≤560px) по дизайну мобильного приложения: Figma «pitch JTS (Copy)»,
+   страница «Mobile» → «Практика» → «Письмо» → «Воркбуки» (грамматика — practice-grammar.css).
+   Файл заведён заранее и подключён в layout.jsx, чтобы параллельные ветки
+   разделов Практики не спорили за строку импорта.
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* ---------- Тетрадь уровня: шапка, юниты, уроки (кадр 6605:14805) ---------- */
+
+  /* Шапка — белая карточка r24 с рамкой: слева заголовок 20/800, счёт 12
+     серым и «Начать» 40 r12; справа кольцо 64. На телефоне раньше кольцо
+     уезжало под кнопку. */
+  .wb-hero {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 12px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .wb-hero__t {
+    min-width: 0;
+  }
+  .wb-hero h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  .wb-hero p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .wb-hero .wb-primary {
+    height: 40px;
+    margin-top: 4px;
+    padding: 0 20px;
+    border-radius: 12px;
+    background: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    box-shadow: none;
+  }
+  .wb-hero .wb-ring {
+    flex: none;
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  /* Юнит — белая карточка r24 с рамкой #e8e8ee; шапка 72: номер 40 r12
+     лавандовый, название 16/800, счёт 12 серым, шеврон 24 (раскрыт — вверх). */
+  .wb-unit {
+    margin: 0 0 12px;
+    overflow: hidden;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .wb-unit__head {
+    gap: 12px;
+    min-height: 72px;
+    padding: 16px;
+    background: none;
+  }
+  .wb-unit__n {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #efe7ff;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #9047ff;
+  }
+  .wb-unit__t b {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-unit__t em {
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  .wb-unit__chev {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    font-size: 0;
+    background: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    transform: rotate(90deg);
+  }
+  .wb-unit.is-open .wb-unit__chev {
+    transform: rotate(-90deg);
+  }
+  .wb-unit__body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 12px 12px;
+    border: 0;
+    background: none;
+  }
+
+  /* Урок — лавандовая плашка r16 без рамки: номер 12/700 фиолетовым слева,
+     название 16/700, описание 12 серым, ниже полоса прогресса и счёт
+     «0 / 15» в одну строку. Подпись «экранов» у счёта в кадре не нарисована. */
+  .wb-lrow {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 12px;
+    border: 0;
+    border-radius: 16px;
+    background: #f6f1ff;
+    box-shadow: none;
+    text-align: left;
+  }
+  .wb-lrow__n {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  .wb-lrow__b {
+    display: contents;
+  }
+  .wb-lrow__b > b {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-lrow__fn {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .wb-lrow__bar {
+    grid-column: 2;
+    grid-row: 3;
+    height: 6px;
+    margin: 0;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .wb-lrow__bar i {
+    border-radius: 999px;
+    background: #9047ff;
+  }
+  .wb-lrow__c {
+    grid-column: 3;
+    grid-row: 3;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .wb-lrow__c em {
+    display: none;
+  }
+
+  /* Тёмная — токенами брендбука (генератор не трогаем). «body» в селекторе:
+     правила генератора той же силы грузятся позже и иначе перебивают. */
+  html[data-theme='dark'] body .wb-hero,
+  html[data-theme='dark'] body .wb-unit {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] body .wb-hero h1,
+  html[data-theme='dark'] body .wb-unit__t b,
+  html[data-theme='dark'] body .wb-lrow__b > b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-hero p,
+  html[data-theme='dark'] body .wb-lrow__fn,
+  html[data-theme='dark'] body .wb-lrow__c {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] body .wb-unit__t em {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] body .wb-unit__n {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-unit__chev {
+    background: var(--dk-muted);
+    -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] body .wb-unit__body {
+    background: none;
+  }
+  html[data-theme='dark'] body .wb-lrow {
+    border: 0;
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-lrow__n {
+    background: none;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-lrow__bar {
+    background: var(--dk-chip);
+  }
+
+  /* ---------- Экран задания (кадры 6605:14941 «Разложи», 6605:15028 «Выбор») ----------
+     Полоса кадра — «← название урока / Шаг N из M» и пилюля урока справа,
+     под ней сегменты шагов. У нас это строка rail-meta внутри полосы шагов:
+     ставим её над сегментами. Над ней остаётся выход к урокам уровня
+     (wb-backbtn) — в кадре его нет, но это единственный путь к списку,
+     поэтому он сжат в пилюлю 32, а крошка «Воркбуки · урок» скрыта —
+     название урока и так в полосе. */
+  .wb:has(.wb-rail) .wb-top {
+    margin: 0 0 4px;
+  }
+  .wb:has(.wb-rail) .wb-crumb {
+    display: none;
+  }
+  .wb:has(.wb-rail) .wb-backbtn {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+    box-shadow: none;
+  }
+  .wb-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .wb-railmeta {
+    order: -1;
+    gap: 8px;
+    min-height: 52px;
+  }
+  .wb-back,
+  .wb-open {
+    flex: none;
+    box-shadow: none;
+  }
+  .wb-back {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 20px;
+    color: #181818;
+  }
+  .wb-open {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wb-railmeta__t b {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-railmeta__t span {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+  /* Сегменты 4 r2 через 2; пройденные — светло-фиолетовые, текущий — фиолетовый. */
+  .wb-seg {
+    gap: 2px;
+  }
+  .wb-seg i {
+    height: 4px;
+    border-radius: 2px;
+    background: #e4daf8;
+  }
+  .wb-seg i.is-on {
+    background: #c9a8ff;
+  }
+  .wb-seg i.is-cur {
+    background: #9047ff;
+  }
+
+  /* Тип задания — пилюля 32 (12/700), рядом инструкция 16/500 серым. */
+  .wb-brief {
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .wb-tag {
+    height: 32px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  /* В кадрах «Разложи», «Выбор», «Заполни пропуски» пилюля типа зелёная;
+     свои цвета у слушания, чтения и реальных заданий остаются. */
+  .wb-tag:not(.wb-tag--listen, .wb-tag--read, .wb-tag--real, .wb-tag--turn) {
+    background: #e3f6ea;
+    color: #1f9d55;
+  }
+  .wb-brief__tx em {
+    font-size: 12px;
+    line-height: 16px;
+    color: #8e8e99;
+  }
+
+  /* «Заполни пропуски» (кадр 6605:15096): банк «Слова» без плашки, подпись
+     12/700; предложения — белые карточки r20 с рамкой; пропуск 32 r8 с
+     рамкой 2 серой, заполненный — лавандовый с фиолетовой рамкой. */
+  .wb-bank {
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .wb-bank__hint {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  .wb-item {
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .wb-qline {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-qn {
+    background: none;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wb-blank {
+    min-width: 40px;
+    height: 32px;
+    padding: 0 12px;
+    border: 2px solid #8e8e99;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .wb-blank:not(:empty, .is-ok, .is-rev, .is-no) {
+    border-color: #9047ff;
+    background: #efe7ff;
+  }
+  .wb-brief__tx {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #5a5a66;
+  }
+
+  /* Задание лежит прямо на фоне экрана, без белой карточки. */
+  .wb-card {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* Подсказка — лавандовая плашка r16, 12/700 фиолетовым. */
+  .wb-note--tell {
+    padding: 12px;
+    border: 0;
+    border-radius: 16px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+  /* Слова банка — белые плашки r12 с рамкой 2 #e8e8ee, 16/700. */
+  .wb-tok {
+    padding: 12px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    box-shadow: none;
+  }
+  /* Группы — две в ряд (181 в кадре; общий мобильный слой workbook.css ставил
+     столбиком), лавандовые r20 с рамкой #d8ccf2, заголовок 12/700 фиолетовым.
+     Три группы на 370 не влезают — их оставляем столбиком. */
+  .wb-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .wb-cols--3 {
+    grid-template-columns: 1fr;
+  }
+  /* Группы — лавандовые r20 с рамкой #d8ccf2, заголовок 12/700 фиолетовым. */
+  .wb-col {
+    padding: 12px;
+    border: 1px solid #d8ccf2;
+    border-radius: 20px;
+    background: #f6f1ff;
+  }
+  .wb-col.is-armed {
+    border-color: #9047ff;
+  }
+  .wb-col h4 {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #9047ff;
+  }
+
+  /* Нижняя полоса на фоне экрана: точки 8 через 4, счёт 12/700 серым,
+     «Дальше» 48 r16; до ответа — бледная #dccff9 с белым текстом. */
+  .wb-actionbar {
+    gap: 12px;
+    margin: 12px -16px 0;
+    padding: 8px 16px;
+    border-radius: 0;
+    background: #f8f8f8;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .wb-dot {
+    background: #e4daf8;
+  }
+  .wb-dot.is-on {
+    background: #9047ff;
+  }
+  .wb-tally__n {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8e8e99;
+  }
+  .wb-actionbar .wb-primary {
+    height: 48px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    box-shadow: none;
+  }
+  /* У заданий без проверки вместо точек — фраза «Здесь нет правильного
+     ответа»: без сжатия она выталкивала «Завершить урок» за край экрана. */
+  .wb-tally--free {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .wb-actionbar .wb-primary {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .wb-actionbar .wb-primary:disabled {
+    background: #dccff9;
+    color: #fff;
+  }
+
+  /* Тёмная экрана задания. */
+  html[data-theme='dark'] body .wb:has(.wb-rail) .wb-backbtn,
+  html[data-theme='dark'] body .wb-open,
+  html[data-theme='dark'] body .wb-note--tell {
+    border: 0;
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-back {
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-railmeta__t b {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-seg i {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-seg i.is-on {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] body .wb-seg i.is-cur {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] body .wb-card,
+  html[data-theme='dark'] body .wb-actionbar {
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-theme='dark'] body .wb-tok {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-item {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] body .wb-qline {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-bank {
+    background: none;
+  }
+  html[data-theme='dark'] body .wb-blank {
+    border-color: var(--dk-muted);
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-blank:not(:empty, .is-ok, .is-rev, .is-no) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-col {
+    border-color: var(--dk-acc-line);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-dot {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-dot.is-on {
+    background: var(--dk-acc);
+  }
+  html[data-theme='dark'] body .wb-actionbar .wb-primary:disabled {
+    background: var(--dk-acc-tint);
+    color: var(--dk-muted);
+  }
+
+  /* ---------- Выбор и аудирование: варианты (кадры 6605:15028 «4», 6605:15256 «7») ----------
+     Варианты — столбиком во всю ширину, белые карточки 56 r16 с рамкой 2
+     #e8e8ee, 16/600 слева; верный — зелёная плашка, ошибка — красная. */
+  .wb-opts {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .wb-opt {
+    width: 100%;
+    min-height: 56px;
+    padding: 14px 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    text-align: left;
+    color: #181818;
+    box-shadow: none;
+  }
+  .wb-opt.is-ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .wb-opt.is-no {
+    border-color: #e5484d;
+    background: #fdecec;
+    color: #e5484d;
+  }
+
+  /* Плеер: круг 72 фиолетовый с ореолом, «Медленно» — лавандовая пилюля. */
+  .wb-player {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .wb-play {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #9047ff;
+    box-shadow: 0 0 0 12px #efe7ff;
+  }
+  .wb-slow {
+    height: 28px;
+    padding: 4px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #efe7ff;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+
+  /* ---------- Соедини (кадр 6605:15176 «6») ----------
+     Карточки пары — белые r16 с рамкой 2, 12–14/600; открытая — фиолетовая
+     рамка на лавандовом, найденная пара — зелёная плашка. */
+  .wb-mcard {
+    min-height: 64px;
+    padding: 12px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    color: #181818;
+    box-shadow: none;
+  }
+  .wb-mcard.is-up {
+    border-color: #9047ff;
+    background: #efe7ff;
+    box-shadow: none;
+  }
+  .wb-mcard.is-got {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+
+  /* ---------- Говорение (кадр 6605:15330 «8») ----------
+     Вопрос — лавандовая карточка r20; запись — белая карточка с фиолетовым
+     кругом микрофона; пример ответа — жёлтая плашка r16. */
+  .wb-sit {
+    padding: 16px;
+    border-radius: 20px;
+    background: #efe7ff;
+  }
+  .wb-sit__ask {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #9047ff;
+  }
+  /* 20/800 кадра рассчитан на короткий вопрос; у «Ситуации» здесь целые
+     описания (сверено скриншотом шага 12) — 16/700. */
+  .wb-sit__s {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-sit__em {
+    font-size: 24px;
+  }
+  .wb-rec {
+    justify-content: center;
+    padding: 20px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .wb-recbtn {
+    border-radius: 999px;
+    background: #9047ff;
+    box-shadow: none;
+  }
+  .wb-model {
+    border-radius: 16px;
+    background: #fff4d6;
+    color: #181818;
+  }
+
+  /* ---------- Оглавление урока (кадр 6605:15462 «10 · Меню урока») ----------
+     Лист r24 сверху; вкладки — сегменты на серой плашке; шаги — строки
+     столбиком (белые r16 с рамкой), пройденные — с зелёной меткой. */
+  .wb-sheet {
+    border-radius: 24px 24px 0 0;
+  }
+  .wb-sheet__tabs {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .wb-sheet__tab {
+    flex: 1;
+    height: 36px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a5a66;
+  }
+  .wb-sheet__tab.is-on {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 1px 3px rgba(24, 24, 24, 0.12);
+  }
+  .wb-steps {
+    grid-template-columns: 1fr;
+  }
+  .wb-step {
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .wb-step.is-done {
+    border-color: #e8e8ee;
+    background: #fff;
+  }
+
+  /* ---------- Урок пройден (кадр 6605:15556 «11») ----------
+     Итог — лавандовая карточка r24, крупное число/значок и заголовок
+     24/800; блоки ниже — белые карточки r16. */
+  .wb-done {
+    padding: 24px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .wb-done h2 {
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+    color: #181818;
+  }
+  .wb-done p {
+    font-size: 14px;
+    color: #5a5a66;
+  }
+  .wb-mistakes {
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  /* Тёмная: варианты, пары, говорение, оглавление, итог. */
+  html[data-theme='dark'] body :is(.wb-opt, .wb-mcard, .wb-rec, .wb-step, .wb-mistakes) {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-mcard.is-up,
+  html[data-theme='dark'] body :is(.wb-sit, .wb-done, .wb-slow) {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body :is(.wb-sit__s, .wb-done h2) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body :is(.wb-opt.is-ok, .wb-mcard.is-got) {
+    border-color: var(--dk-green);
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] body .wb-opt.is-no {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] body .wb-play {
+    box-shadow: 0 0 0 12px var(--dk-acc-tint);
+  }
+  html[data-theme='dark'] body .wb-sheet__tabs {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] body .wb-sheet__tab {
+    background: transparent;
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] body .wb-sheet__tab.is-on {
+    background: var(--dk-raised);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-model {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-text);
+  }
+
+  /* ---------- Уровни тетрадей (кадр 6605:14739 «1 · Уровни тетрадей») ----------
+     Отдельного экрана уровней у воркбука нет: это развёрнутая секция
+     «Воркбуки» хаба Практики («Посмотреть все»). На телефоне она — экран
+     «← Воркбуки» (шапку хаба, вкладки навыков и уровни прячем, как у
+     развёрнутой «Грамматики»), уровни — карточки r24 с обложкой 120 сверху
+     (те же постеры public/practice/workbooks/covers — тот же арт, что в кадре),
+     ниже плитка уровня 40 r12, название 16/800, «юниты, уроки · минуты» и
+     шеврон. Разметка карточки общая с хабом — постер ставим по aria-label. */
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-head,
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-skills {
+    display: none;
+  }
+  #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head {
+    position: relative;
+    justify-content: flex-start;
+    min-height: 52px;
+    margin: 0 -12px 8px;
+    padding: 0 0 0 52px;
+  }
+  #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head .pk-sec__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  #sec-workbooks .pk-all.is-back {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    font-size: 0;
+    color: transparent;
+  }
+  #sec-workbooks .pk-all.is-back::after,
+  #sec-workbooks .pk-all.is-back > svg {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+    text-align: left;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__cover {
+    display: block;
+    width: 100%;
+    height: 120px;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: var(--wb-bg) center top / cover no-repeat;
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A0'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a0.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A1'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a1.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook A2'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/a2.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook B1'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/b1.webp);
+  }
+  #sec-workbooks .pk-wb[aria-label^='Workbook B2'] .pk-wb__cover {
+    background-image: url(/practice/workbooks/covers/b2.webp);
+  }
+  /* Плитка уровня — из подписи обложки, переносим в строку под обложкой. */
+  #sec-workbooks .pk-rail--grid .pk-wb__label {
+    position: absolute;
+    top: 136px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border-radius: 12px;
+    background: #efe7ff;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 20px;
+    color: #9047ff;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__body {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 4px;
+    min-height: 72px;
+    padding: 16px 52px 16px 68px;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__head {
+    display: contents;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__desc {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    color: #181818;
+  }
+  #sec-workbooks .pk-rail--grid :is(.pk-wb__sum, .pk-meta) {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #5a5a66;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb__sum {
+    display: inline;
+    flex: none;
+    width: auto;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta {
+    display: inline-flex;
+    flex: none;
+    width: auto;
+  }
+  /* Значок книги хаба (плитка над подписью) в кадре уровней не нарисован. */
+  #sec-workbooks .pk-rail--grid .pk-wb::before {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta::before {
+    content: '·';
+    margin-right: 4px;
+  }
+  #sec-workbooks .pk-rail--grid .pk-meta svg {
+    display: none;
+  }
+  #sec-workbooks .pk-rail--grid .pk-wb::after {
+    content: '';
+    position: absolute;
+    top: 144px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    background: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb__desc,
+  html[data-theme='dark'] body #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head .pk-sec__title {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid :is(.pk-wb__sum, .pk-meta) {
+    color: var(--dk-text-2);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb__label {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-all.is-back {
+    background: var(--dk-text);
+    -webkit-mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/arrow-back.svg) center / 24px 24px no-repeat;
+  }
+  html[data-theme='dark'] body #sec-workbooks .pk-rail--grid .pk-wb::after {
+    background: var(--dk-muted);
+    -webkit-mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+    mask: url(/assets/m/grammar/chevron-right.svg) center / 24px 24px no-repeat;
+  }
+
+  /* ---------- Зачёт юнита (кадр 6605:15602 «12 · Зачёт юнита») ----------
+     Результат — плашка r20: не сдан — светло-красная, число 48/800
+     красным; сдан — зелёная. Подпись 12/700 капсом серым, вывод 16/700. */
+  .wb-testscore {
+    margin: 0 0 12px;
+    padding: 20px 16px;
+    border-radius: 20px;
+    background: #fdecec;
+  }
+  .wb-testscore__k {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    color: #8e8e99;
+  }
+  .wb-testscore__n {
+    margin: 4px 0;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 56px;
+    color: #e5484d;
+  }
+  .wb-testscore__v {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #181818;
+  }
+  .wb-testscore.is-pass {
+    background: #e3f6ea;
+  }
+  .wb-testscore.is-pass .wb-testscore__n {
+    color: #1f9d55;
+  }
+  .wb-kick {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .wb-wrapt {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    color: #181818;
+  }
+  /* Вторая кнопка полосы (к тетради / заново) — контурная r16, как «К тетради»
+     в кадре «Урок пройден». */
+  .wb-actionbar .wb-ghost {
+    flex: none;
+    height: 48px;
+    padding: 0 16px;
+    border: 2px solid #9047ff;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    color: #9047ff;
+    box-shadow: none;
+  }
+
+  /* Итог урока: значок — фиолетовый круг 64 в лавандовой карточке (в кадре
+     кубок), самопроверка — белые строки r16 с рамкой. */
+  .wb-done__big {
+    width: 64px;
+    height: 64px;
+    background: #fff;
+    color: #9047ff;
+  }
+  .wb-sect h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .wb-scrow {
+    min-height: 52px;
+    padding: 12px 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .wb-scrow.is-on {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+  }
+  .wb-scrow__box {
+    border: 2px solid #e8e8ee;
+  }
+  .wb-scrow.is-on .wb-scrow__box {
+    border-color: #1f9d55;
+    background: #1f9d55;
+  }
+  html[data-theme='dark'] body .wb-testscore {
+    background: var(--dk-red-tint);
+  }
+  html[data-theme='dark'] body .wb-testscore.is-pass {
+    background: var(--dk-green-tint);
+  }
+  html[data-theme='dark'] body :is(.wb-testscore__v, .wb-wrapt, .wb-sect h3) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-actionbar .wb-ghost {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] body .wb-scrow {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] body .wb-done__big {
+    background: var(--dk-card);
+  }
+}

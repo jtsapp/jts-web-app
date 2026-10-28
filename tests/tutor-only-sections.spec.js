@@ -10,8 +10,12 @@ import { TUTOR_ONLY } from '../src/config.js'
 // Контракт действует только при TUTOR_ONLY=true (main). В develop флаг false,
 // сайдбар показывает все разделы — там эти ожидания заведомо ложны, поэтому
 // спек скипается, а не краснеет.
-test.beforeEach(() => {
+test.beforeEach(({ viewport }) => {
   test.skip(!TUTOR_ONLY, 'Контракт режима «только тьютор»: TUTOR_ONLY=false')
+  // На телефоне меню — нижняя панель (mobile-tabbar.spec.js), а этот спек проверяет пункты сайдбара. Панель берёт
+  // разделы из того же меню, что сайдбар (lib/navSections.js), поэтому в тьютор-онли у неё те же разделы; отдельной
+  // e2e-проверки панели в этом режиме нет — флаг в develop выключен, и прогнать её здесь не на чем.
+  test.skip((viewport?.width ?? 0) <= 560, 'на телефоне сайдбара нет')
 })
 
 async function loginToTutorZone(page) {

@@ -40,6 +40,15 @@ import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import ArcadePage from './screens/ArcadePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import MyTeacherPage from './screens/MyTeacherPage.jsx'
+import GroupPickPage from './screens/GroupPickPage.jsx'
+import NotificationsPage from './screens/NotificationsPage.jsx'
+import ContractsPage from './screens/ContractsPage.jsx'
+import TeacherWizardPage from './screens/TeacherWizardPage.jsx'
+import TeacherPickPage, { teacherPickSeen } from './screens/TeacherPickPage.jsx'
+import MatchingPopups from './matching/MatchingPopups.jsx'
+import { refreshMatching, getMatchingSnapshot, resetMatchingStore } from './matching/matchingStore.js'
+import { matchingView, needsTeacherPick } from './matching/matchingState.js'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import TokensPage, { PrizesPage } from './screens/RewardsPages.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -100,6 +109,10 @@ import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
+import ServicesPage from './screens/ServicesPage.jsx'
+import MobileTabBar from './components/MobileTabBar.jsx'
+import { MobileTabContext } from './components/mobileTab.js'
+import { showsTabBar } from './lib/navSections.js'
 import FeedbackCenter from './feedback/FeedbackCenter.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -113,6 +126,8 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
+import { isSectionOpen, useStudentSections } from './lib/studentSections.js'
+import SectionClosedPage from './screens/SectionClosedPage.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
@@ -145,7 +160,7 @@ import { navForActivity, navForSection } from './placement/activityRoutes.js'
 import { saveAttempt } from './placement/api.js'
 import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from './config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen, isStudentSectionHidden } from './config.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -170,8 +185,12 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
+  // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
+  'my-teacher', 'teacher-wizard', 'teacher-pick',
+  // Запись в группу и уведомления (ТЗ кабинетов, 14): состояние живёт на сервере
+  'group', 'notifications', 'contracts',
   // Прохождение и разбор теста IELTS держат свой id в ?ieltsRun= / ?ieltsAttempt= сами (см. экраны)
   'ielts-reading-run', 'ielts-reading-review', 'ielts-listening-run', 'ielts-dictation', 'ielts-writing-run', 'ielts-speaking-run',
   'ielts-onboarding', 'ielts-diagnostic', 'ielts-diagnostic-result', 'ielts-route', 'ielts-mock',
@@ -643,6 +662,9 @@ export default function App() {
     const to = ieltsAccountRedirect(ieltsAccount, screen)
     if (to) setScreen(to)
   }, [ieltsAccount, screen, setScreen])
+  // Разделы кабинета ученика по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел по прямой ссылке показывает
+  // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
+  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
   // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
@@ -722,6 +744,8 @@ export default function App() {
   // «Уроки» уже открыты, не сменил бы вкладку (initialTab читается только при
   // монтировании).
   const [lessonsTarget, setLessonsTarget] = useState(null)
+  // Шаг мастера подбора, с которого его открыли («Выбрать учителей» после отказов — сразу к учителям)
+  const [wizardTarget, setWizardTarget] = useState(null)
   // Прокрутка, к которой вернуть экран после «назад» (goBack ниже). Только пока
   // на нём и стоим: ушёл дальше раньше, чем страница доросла, — докрутка
   // прекращается, иначе она крутила бы уже следующий экран.
@@ -1359,10 +1383,24 @@ export default function App() {
 
   // «Продолжить» на итоге теста: анкета только что легла в профиль GE и формат не выбран — на маршрут (формат
   // обучения спрашивает он, решение 14.10); иначе туда, откуда пришли.
+  // Последний шаг онбординга — «Выберите своего учителя» (ТЗ 08 §2.1): после итога теста (и маршрута GE), если у
+  // ученика есть подбор, учителя ещё нет и этот шаг он не видел. Карточку перечитываем: тариф мог подтвердиться,
+  // пока шёл тест.
+  // Ждём не дольше 2.5 с: медленный бэкенд не должен «замораживать» кнопку итога теста — тогда шаг просто не
+  // показываем, учителя ученик выберет в «Мой учитель».
+  async function wantsTeacherPick() {
+    if (!token || isTeacher(token) || isStudentSectionHidden('teacher-pick')) return false
+    const late = new Promise((resolve) => setTimeout(() => resolve('late'), 2500))
+    if ((await Promise.race([refreshMatching(token).then(() => 'ok'), late])) === 'late') return false
+    const v = matchingView(getMatchingSnapshot())
+    return needsTeacherPick(v) && !teacherPickSeen(v.studentId)
+  }
+
   async function continueAfterPlacement(env) {
     await finalizePlacement(env)
     const ge = placementState.current.geProfile
-    const next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    let next = ge?.onboarded && !ge.route ? 'ge-route' : testExit()
+    if (next !== 'ge-route' && (await wantsTeacherPick())) next = 'teacher-pick'
     setTestReturn(null)
     setScreen(next)
   }
@@ -1501,6 +1539,8 @@ export default function App() {
     // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
     // иначе доставались следующему ученику на этом же компьютере.
     clearAccountLeftovers()
+    // Карточка подбора учителя — тоже его: окно «Подтвердите расписание» не должно выйти следующему ученику.
+    resetMatchingStore()
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
@@ -1686,10 +1726,11 @@ export default function App() {
   }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   useEffect(() => {
-    if (!rewardsEnabled && isRewardsScreen(screen)) {
+    if (restoring) return
+    if ((!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen))) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
+  }, [restoring, screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -1710,9 +1751,11 @@ export default function App() {
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
-    if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
+    else if (key === 'services') setScreen('services')
     else if (key === 'pricing') setScreen('pricing')
     else if (key === 'minutes') setScreen('minutes')
     // Профиль из меню открывается своей кнопкой; сюда приходит от Луны (destinations.js).
@@ -1762,6 +1805,12 @@ export default function App() {
     else if (key === 'listen') { setListenTarget(payload || null); setScreen('listen') }
     else if (key === 'arcade') { setArcadeTarget(payload || null); setScreen('arcade') }
     else if (key === 'tutor') setScreen(tutorHome)
+    else if (key === 'my-teacher') setScreen('my-teacher')
+    else if (key === 'group') setScreen('group')
+    else if (key === 'notifications') setScreen('notifications')
+    else if (key === 'contracts') setScreen('contracts')
+    else if (key === 'teacher-wizard') { setWizardTarget(payload?.step ? { step: payload.step, at: Date.now() } : null); setScreen('teacher-wizard') }
+    else if (key === 'teacher-pick') setScreen('teacher-pick')
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
         setLiveLessonId(payload.lessonId)
@@ -1825,6 +1874,8 @@ export default function App() {
   // экран читает только при монтировании. Ключ обёртки .scr-in несёт счётчик
   // таких повторных открытий.
   const [screenNonce, setScreenNonce] = useState(0)
+  // Вкладка нижней панели телефона, которую сообщила оболочка текущего экрана (mobileTab.js); null — панели нет.
+  const [mobileTab, setMobileTab] = useState(null)
   const handleNavRef = useRef(null)
   useEffect(() => {
     handleNavRef.current = handleNav
@@ -1907,8 +1958,9 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
-    if (!rewardsEnabled && isRewardsScreen(key)) return
-    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
+    // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'tutor') setScreen(tutorHome)
     // Остальное — обычная навигация без адреса: она же сбрасывает цели
     // разделов (юнит из домашки, уровень, текст; урок шэдоуинга она не
@@ -1983,16 +2035,26 @@ export default function App() {
     // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
     // успел бы сходить в сеть за чужим содержимым (та же грабля, что была у
     // BoothEntryPage с повторным /enter).
-    : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
+    : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
-  const page = renderScreen(view)
+  const sectionClosed = !!token && !boothAccount && !isTeacher(token) && !isSectionOpen(sectionAccess, view)
+  const page = sectionClosed
+    ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    : renderScreen(view)
   return (
-    <>
+    <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
           {page}
         </div>
+      )}
+      {/* Нижняя панель телефона — вне обёртки с key и её анимации (transform делал .scr-in опорой для fixed, и
+          панель на каждом переходе пропадала): одна на приложение, как в мобильном приложении. Вкладку сообщает
+          оболочка экрана (mobileTab.js); без оболочки панель прячет CSS (src/mobile/nav.css). Аккаунту класса
+          разделы не положены. */}
+      {mobileTab !== null && token && !boothAccount && showsTabBar(view) && (
+        <MobileTabBar active={mobileTab} token={token} onNav={handleNav} />
       )}
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
@@ -2014,10 +2076,12 @@ export default function App() {
           переходы между экранами. Смонтирован для любого ученика, а на
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !isTeacher(token) && <PlatformPresence token={token} />}
+      {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
+      {token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
-    </>
+    </MobileTabContext.Provider>
   )
 
   function renderScreen(view) {
@@ -2312,6 +2376,18 @@ export default function App() {
           }}
         />
       )
+    case 'services':
+      // Вкладка телефона «Сервисы» (дизайн приложения, спека 2026-10-26): профиль и разделы, не ставшие вкладками.
+      return (
+        <ServicesPage
+          userName={name}
+          userLevel={userLevel}
+          levelUnknown={needsLevelTest}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'profile':
       return (
         <ProfilePage
@@ -2332,8 +2408,20 @@ export default function App() {
           backLabel={backLabel('home')}
         />
       )
+    case 'contracts':
+      return <ContractsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'notifications':
+      return <NotificationsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'group':
+      return <GroupPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'my-teacher':
+      return <MyTeacherPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'teacher-wizard':
+      return <TeacherWizardPage key={wizardTarget?.at ?? 'wizard'} userLevel={userLevel} userName={name} token={token} initialStep={wizardTarget?.step ?? null} onNav={handleNav} onProfile={() => setScreen('profile')} />
+    case 'teacher-pick':
+      return <TeacherPickPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} />
     case 'feedback':
-      return <FeedbackCenter token={token} onBack={() => goBack(() => setScreen('profile'))} />
+      return <FeedbackCenter userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} token={token} onBack={() => goBack(() => setScreen('profile'))} />
     case 'practice':
       return (
         <PracticePage
@@ -2652,7 +2740,11 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onLoaded={setGeProfile}
-          onChosen={(p) => { if (p) setGeProfile(p); goBack(() => setScreen('home')) }}
+          onChosen={async (p) => {
+            if (p) setGeProfile(p)
+            if (await wantsTeacherPick()) setScreen('teacher-pick')
+            else goBack(() => setScreen('home'))
+          }}
           onPricing={(p) => { if (p) setGeProfile(p); setScreen('pricing') }}
           onEdit={() => { setGeEdit(true); setScreen('ge-onboarding') }}
           onTest={() => openPlacement('ge-route')}

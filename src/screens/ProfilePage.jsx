@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
@@ -18,6 +19,8 @@ import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from
 import { shrinkImage } from '../lib/shrinkImage.js'
 import { PRIVACY_URL } from '../lib/support.js'
 import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
+import { isTeacher } from '../lib/jwt.js'
+import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
 
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
 
@@ -322,8 +325,8 @@ export default function ProfilePage({
   ]
 
   const settings = [
-    { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif },
-    { key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') },
+    ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
+    ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') }]),
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
     { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(PRIVACY_URL, '_blank') },
@@ -411,6 +414,9 @@ export default function ProfilePage({
             </div>
           </div>
         </section>
+
+        {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
+        {!isTeacher(token) && !isStudentSectionHidden('my-teacher') && <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} />}
 
         <SkillRatings stats={skillStats} loading={skillStats === null} />
 
@@ -528,6 +534,7 @@ export default function ProfilePage({
               <span className="pf-switch__knob" />
             </span>
           </button>
+          {!isTeacher(token) && <NotificationChannels phone={phone} />}
         </Modal>
       )}
 

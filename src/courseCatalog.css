@@ -228,6 +228,11 @@
    забирает свободное место, поэтому полоса всегда прижата к низу. */
 .ss-card > .gr-gcard { flex: 1; min-width: 0; height: 100%; }
 .ss-card > .gr-gcard > .gr-gcard__body { flex: 1; }
+/* Телефонные блоки «Самостоятельно» (src/mobile/lessons.css): «Следующий материал», прогресс уровня
+   и название в теле карточки. На компьютере название стоит на обложке, прогресс — у юнитов. */
+.ss-phone,
+.ss-card__title,
+.ss-card__done { display: none; }
 
 .ss-mark {
   position: absolute;

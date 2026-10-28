@@ -15,11 +15,14 @@ import ReflectionTask from './tasks/ReflectionTask.jsx'
 
 // unchecked — реестр читалки «номер задания → досдать его ответ» (см.
 // checkUnchecked). Без него тексты тоже работают: досдавать просто некому.
-export default function ReadingTasks({ text, unchecked }) {
+// step — задание, которое телефон показывает сейчас (по одному на экран, как в
+// макете приложения); остальные смонтированы и держат свои ответы, их прячет
+// src/mobile/practice-reading.css. На компьютере все задания видны списком.
+export default function ReadingTasks({ text, unchecked, step }) {
   return (
     <>
       {text.exercises.map((ex, i) => (
-        <Exercise key={`${text.id}:${i}`} textId={text.id} ex={ex} index={i} unchecked={unchecked} />
+        <Exercise key={`${text.id}:${i}`} textId={text.id} ex={ex} index={i} unchecked={unchecked} current={step === i} />
       ))}
     </>
   )
@@ -39,7 +42,7 @@ export function checkUnchecked(unchecked) {
 // Проверка и «показать ответ» разведены намеренно — как в прототипе: показ
 // правильных ответов рисует ту же разметку, но НЕ пишет прогресс, иначе
 // раздел проходился бы кнопкой «показать ответ».
-function Exercise({ textId, ex, index, unchecked }) {
+function Exercise({ textId, ex, index, unchecked, current }) {
   const { t, lang } = useI18n()
   const [st, setSt] = useState(() => initExercise(ex))
   const [res, setRes] = useState(null)
@@ -161,7 +164,7 @@ function Exercise({ textId, ex, index, unchecked }) {
       : ''
 
   return (
-    <section className="rd-ex" id={`rd-ex-${index}`} aria-labelledby={`rd-ex-t-${index}`}>
+    <section className={`rd-ex${current ? ' is-step' : ''}`} id={`rd-ex-${index}`} aria-labelledby={`rd-ex-t-${index}`}>
       <div className="rd-ex__head">
         <span className="rd-ex__num" aria-hidden="true">{index + 1}</span>
         <span className="rd-ex__type">{t('reading.exType.' + ex.type)}</span>

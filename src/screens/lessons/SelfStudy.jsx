@@ -5,6 +5,7 @@ import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncomplete
 import { levelIndex } from '../../kingdoms.js'
 import { readSelfStudyLevel, writeSelfStudyLevel } from './selfStudyLevel.js'
 import { compareCourses, courseCaptions, courseKey, courseShortName, defaultCourse, findPickedCourse } from './selfStudyCourses.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 /** Замок на чипе закрытого уровня и на карточке-заглушке. */
 function LockIcon({ size = 14 }) {
@@ -84,7 +85,7 @@ function Cover({ lesson, unit, theme, no, children }) {
  * где его нет. Поэтому там карточка не кнопка, а спокойный замок с подсказкой,
  * к кому идти, — нажать её значит никуда не попасть, и обещать нажатие нечего.
  */
-function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy }) {
+function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy, phone = false }) {
   const { t } = useI18n()
   if (byGrant) {
     return (
@@ -94,6 +95,7 @@ function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy }) {
             <span className="ss-paywall__lock"><LockIcon size={20} /></span>
           </Cover>
           <span className="gr-gcard__body">
+            {phone && <span className="ss-card__title">{lesson.title}</span>}
             <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
             <span className="gr-gcard__desc">{t('selfStudy.courseLockNote')}</span>
           </span>
@@ -108,6 +110,7 @@ function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy }) {
           <span className="ss-paywall__lock"><LockIcon size={20} /></span>
         </Cover>
         <span className="gr-gcard__body">
+          {phone && <span className="ss-card__title">{lesson.title}</span>}
           <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
           <span className="gr-gcard__desc">{t('selfStudy.paywallNote')}</span>
           <span className="gr-gcard__t">{t('selfStudy.paywallCta')}</span>
@@ -117,11 +120,11 @@ function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy }) {
   )
 }
 
-function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
+function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle, phone = false }) {
   const { t } = useI18n()
   const markLabel = t(done ? 'selfStudy.unmark' : 'selfStudy.mark')
   return (
-    <div className={`ss-card${done ? ' is-done' : ''}`}>
+    <div className={`ss-card ss-card--${lesson.hasContent ? 'tasks' : 'read'}${done ? ' is-done' : ''}`}>
       <button
         type="button"
         className={`gr-gcard${done ? ' is-done' : ''}`}
@@ -129,6 +132,9 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
       >
         <Cover lesson={lesson} unit={unit} theme={theme} no={no} />
         <span className="gr-gcard__body">
+          {/* Название — на обложке; на телефоне обложки нет (строка списка по
+              макету приложения), и оно встаёт в тело карточки. */}
+          {phone && <span className="ss-card__title">{lesson.title}</span>}
           <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
           {/* Подпись про сам урок, а не про юнит: описание юнита стоит и в
               заголовке секции, и на обложке, и повторять его на каждой
@@ -137,6 +143,8 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
           <span className="gr-gcard__desc">
             {t(lesson.hasContent ? 'selfStudy.withTasks' : 'selfStudy.material')}
           </span>
+          {/* Телефон: «Пройдено» чипом рядом с типом, а не полосой под карточкой. */}
+          {phone && done && <span className="ss-card__done">{t('selfStudy.doneBadge')}</span>}
           <span className="gr-gcard__t">{t('selfStudy.start')}</span>
         </span>
         {done && (
@@ -196,6 +204,10 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
   // Выбранный уровень переживает вход в урок: экран размонтируется, а ученик,
   // вернувшись кнопкой «К урокам», должен попасть туда, откуда уходил.
   const [picked, setPicked] = useState(readSelfStudyLevel)
+  // Телефон — макет приложения: строки материалов с названием в теле, «Следующий материал» и
+  // прогресс уровня. Рисуем их только на телефоне, а не прячем стилями: иначе название урока
+  // и «Пройдено» стояли бы в разметке дважды (для чтения с экрана и поиска по тексту).
+  const phone = usePhoneWidth()
 
   useEffect(() => {
     if (!token) return
@@ -334,6 +346,16 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
   )
   const canBuy = Boolean(onOpenPricing) && !active.separateAccess
 
+  // Телефон (макет приложения «Самостоятельно · список», 6428:6533): сверху
+  // «Следующий материал» — первый открытый непройденный, — и прогресс уровня.
+  // На компьютере этих блоков нет (courseCatalog.css): там прогресс — у юнитов.
+  const courseLessons = active.units.flatMap((unit) => unit.lessons)
+  const openLessons = courseLessons.filter((l) => !active.locked || l.preview)
+  const next = openLessons.find((l) => !done.has(Number(l.id)))
+  const doneCount = courseLessons.filter((l) => done.has(Number(l.id))).length
+  const shortName = courseShortName(active.label, active.code)
+  const showList = !(active.locked && active.previewCount === 0)
+
   return (
     <div className="ss">
       <p className="cc__subtitle">{t('selfStudy.lead')}</p>
@@ -389,6 +411,38 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
         </div>
       )}
 
+      {phone && showList && (
+        <div className="ss-phone">
+          {next && (
+            <div className="ss-next">
+              <span className="ss-next__chip">{t('selfStudy.next')}</span>
+              <span className="ss-next__title">{next.title}</span>
+              <button type="button" className="ss-next__go" onClick={() => onOpenLesson?.(next.id)}>
+                {t('selfStudy.start')}
+              </button>
+            </div>
+          )}
+          <div className="ss-progress">
+            <div className="ss-progress__row">
+              <div className="ss-progress__t">
+                <span className="ss-progress__name">{shortName ? `${active.code} · ${shortName}` : active.code}</span>
+                <span className="ss-progress__sub">{t('selfStudy.levelProgress')}</span>
+              </div>
+              <span className="ss-progress__num">
+                {t('selfStudy.ofTotal', { n: String(doneCount), total: String(courseLessons.length) })}
+              </span>
+            </div>
+            <div className="ss-progress__bar">
+              <span style={{ width: `${courseLessons.length ? Math.round((doneCount / courseLessons.length) * 100) : 0}%` }} />
+            </div>
+          </div>
+          <h2 className="ss-phone__head">
+            {t('selfStudy.materials')}
+            <span className="ss-phone__count">{courseLessons.length}</span>
+          </h2>
+        </div>
+      )}
+
       {/* Старый бэкенд витрины не размечает — тогда остаётся прежняя заглушка:
           закрытый уровень без единого открытого материала это просто стена
           замков, и показывать её россыпью карточек хуже, чем одной фразой. */}
@@ -426,6 +480,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
                   no={li + 1}
                   byGrant={Boolean(active.separateAccess)}
                   onBuy={onOpenPricing}
+                  phone={phone}
                 />
               ) : (
                 <LessonCard
@@ -437,6 +492,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
                   done={done.has(Number(lesson.id))}
                   onOpen={onOpenLesson}
                   onToggle={toggleDone}
+                  phone={phone}
                 />
               )
             ))}

@@ -5,7 +5,12 @@
 export function notificationTarget(deepLink) {
   if (!deepLink || typeof deepLink !== 'string') return { screen: null, payload: null }
   const trimmed = deepLink.trim()
-  if (trimmed === 'teacher-matching') return { screen: 'lessons', payload: null }
+  // Уведомления подбора учителя (бэкенд пишет ссылку 'teacher-matching') — в «Мой учитель» (ТЗ 08 §2.12).
+  if (trimmed === 'teacher-matching') return { screen: 'my-teacher', payload: null }
+  // Запись в группу набора (ТЗ кабинетов, 14): бэкенд пишет ученику ссылку '/group-choice'. Стоит выше общих веток по словам.
+  if (/^\/?group-choice\/?$/.test(trimmed)) return { screen: 'group', payload: null }
+  if (/^\/?notifications\/?$/.test(trimmed)) return { screen: 'notifications', payload: null }
+  if (/^\/?contracts\/?$/.test(trimmed)) return { screen: 'contracts', payload: null }
   if (/^\/?feedback\/?$/.test(trimmed)) return { screen: 'feedback', payload: null }
   // Отчёт о прогрессе (уведомление FEEDBACK_REPORT, спека 2026-10-20 §3.5) —
   // во вкладку «Отчёты» «Уроков», сразу в сам отчёт. Стоит выше общих веток:
