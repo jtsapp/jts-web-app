@@ -51,6 +51,14 @@ vi.mock('@/lib/assistant/callUsage.js', () => ({
   isLiveAssistantCall: vi.fn(async (room, userId) => liveCalls.has(`${room}:${userId}`)),
 }))
 
+// Каталог «Что можно открыть» (items/catalog.js) — подменён: сам он проверен своим тестом.
+const items = vi.hoisted(() => ({ catalog: null, resolved: null }))
+vi.mock('@/lib/assistant/items/catalog.js', () => ({
+  buildItemCatalog: vi.fn(async () => items.catalog),
+  resolveItem: vi.fn(async () => items.resolved),
+}))
+const { buildItemCatalog, resolveItem } = await import('@/lib/assistant/items/catalog.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -525,6 +533,62 @@ describe('POST /api/assistant/chat', () => {
   })
 
   // «Подсказать?» (lib/assistant/stuck.js): Луна разбирает задание — без кнопки раздела и заметки.
+  // «Открой урок 2» (lib/assistant/items/): каталог — только под просьбу; адрес метки
+  // сверяется с ним, закрытый урок не действие; «да» без каталога — по адресу.
+  describe('открыть конкретное', () => {
+    const ask = (content, userId) => {
+      authResult = { status: 'ok', user: { userId, name: 'Толик', languageLevel: 'A1' } }
+      return { messages: [{ role: 'user', content }], screen: { id: 'home', text: 'Главная' }, lang: 'ru' }
+    }
+    const L2 = { ref: 'course.A1.L2', label: 'урок 2 “My family”', locked: false }
+
+    it('просьба — каталог в контексте модели, метка из него — переход с подписью', async () => {
+      items.catalog = { text: '- course.A1.L2 — урок 2 «My family» · следующий', items: new Map([[L2.ref, L2]]) }
+      buildItemCatalog.mockClear()
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Открываю урок 2.\n[[OPEN_NOW course.A1.L2]]' }
+      }
+      const text = await (await post(ask('открой урок 2', 811))).text()
+      expect(buildItemCatalog).toHaveBeenCalledWith(expect.objectContaining({ kinds: ['course'], level: 'A1', token: 'student-token', lang: 'ru' }))
+      expect(calls[0].messages.at(-1).content).toContain('- course.A1.L2 — урок 2 «My family» · следующий')
+      expect(text).toBe('Открываю урок 2.\n[[ASST_ACTION open course.A1.L2 now «урок 2 “My family”»]]')
+    })
+
+    it('закрытый урок — без перехода', async () => {
+      items.catalog = { text: '- course.A1.L9 — урок 9 · закрыт', items: new Map([['course.A1.L9', { ref: 'course.A1.L9', label: 'урок 9', locked: true }]]) }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Урок 9 пока закрыт.\n[[OPEN_NOW course.A1.L9]]' }
+      }
+      const text = await (await post(ask('открой урок 9', 812))).text()
+      expect(text).toBe('Урок 9 пока закрыт.\n')
+    })
+
+    it('«да» без каталога — адрес сверяется по своему виду; не нашёлся — без перехода', async () => {
+      buildItemCatalog.mockClear()
+      items.resolved = L2
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW course.A1.L2]]' }
+      }
+      const yes = await (await post(ask('да', 813))).text()
+      expect(buildItemCatalog).not.toHaveBeenCalled()
+      expect(resolveItem).toHaveBeenCalledWith('course.A1.L2', expect.objectContaining({ token: 'student-token', lang: 'ru' }))
+      expect(yes).toContain('[[ASST_ACTION open course.A1.L2 now «урок 2 “My family”»]]')
+      items.resolved = null
+      const gone = await (await post(ask('да', 814))).text()
+      expect(gone).toBe('Открываю.\n')
+    })
+
+    it('вопрос не о том, чтобы открыть, — каталог не собирается', async () => {
+      buildItemCatalog.mockClear()
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Потому что he — третье лицо.' }
+      }
+      await (await post(ask('почему мой ответ в этом уроке неверный?', 815))).text()
+      expect(buildItemCatalog).not.toHaveBeenCalled()
+      expect(calls.at(-1).messages.at(-1).content).not.toContain('Что можно открыть')
+    })
+  })
+
   describe('ученик застрял', () => {
     it('пометка уходит в модель; метку раздела роут не отдаёт; в лог — причина без текста', async () => {
       authResult = { status: 'ok', user: { userId: 711, name: 'Толик' } }
