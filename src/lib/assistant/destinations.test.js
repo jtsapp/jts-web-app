@@ -60,10 +60,9 @@ describe('куда Луна умеет вести', () => {
     expect(destinationIdForScreen('wordhunt')).toBe('wordhunt')
   })
 
-  it('действие проверяется по списку: тур — только где он есть', () => {
+  it('действие проверяется по списку; тура среди действий нет', () => {
     expect(validAction('open', 'vocab')).toEqual({ kind: 'open', target: 'vocab', now: false })
-    expect(validAction('tour', 'practice', true)).toEqual({ kind: 'tour', target: 'practice', now: true })
-    expect(validAction('tour', 'reading')).toBeNull()
+    expect(validAction('tour', 'practice', true)).toBeNull()
     expect(validAction('open', 'ielts')).toBeNull()
     expect(validAction('delete', 'vocab')).toBeNull()
     expect(destinationOf('__proto__')).toBeNull()
@@ -97,10 +96,10 @@ describe('куда Луна умеет вести', () => {
     expect(destinationsText()).toContain('- speed-reading — Скорочтение: ')
   })
 
-  it('список для модели: id, имя и пометка тура', () => {
+  it('список для модели: id и имя, без пометок тура', () => {
     const text = destinationsText()
     expect(text).toContain('- practice-speaking — Практика → Говорение: ')
-    expect(text).toContain('- practice — Практика: все тренажёры, по вкладкам навыков (есть тур)')
-    expect(text).not.toMatch(/reading — .*есть тур/)
+    expect(text).toContain('- practice — Практика: все тренажёры, по вкладкам навыков')
+    expect(text).not.toMatch(/тур\)/)
   })
 })

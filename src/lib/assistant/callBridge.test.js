@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ASK, CANCEL, COMMIT, REPLY, SAY, attachCallBridge, callSpeech, createCallTourVoice, createReplySender, sayInCall } from './callBridge.js'
+import { ASK, CANCEL, COMMIT, REPLY, SAY, attachCallBridge, callSpeech, createReplySender, sayInCall } from './callBridge.js'
 
 // Комната LiveKit в миниатюре: обработчики RPC и журнал исходящих вызовов.
 function fakeRoom({ failFirst = false } = {}) {
@@ -108,18 +108,10 @@ describe('мост звонка Луне', () => {
     expect(callSpeech('Үй жұмысы: 3 тапсырма.')).toMatch(/3/)
   })
 
-  it('тур в звонке: шаг говорит агент (luna.say), стоп — пустой текст', async () => {
+  it('замолчать в звонке — пустой текст агенту (luna.say)', async () => {
     const room = fakeRoom()
-    const voice = createCallTourVoice((text) => sayInCall(room, 'agent-1', text))
-    voice.prefetch(['не нужен'])
-    voice.say(['Это «Практика».', 'Здесь 3 вкладки.'])
-    await new Promise((r) => setTimeout(r, 30))
-    voice.stop()
-    await new Promise((r) => setTimeout(r, 5))
-    expect(room.sent.map((x) => [x.method, x.body.text])).toEqual([
-      [SAY, expect.stringMatching(/^Это «Практика»\. Здесь три вкладки\.$/)],
-      [SAY, ''],
-    ])
+    await sayInCall(room, 'agent-1', '')
+    expect(room.sent.map((x) => [x.method, x.body.text])).toEqual([[SAY, '']])
     await sayInCall(null, 'agent-1', 'x') // без комнаты — тихо
   })
 })

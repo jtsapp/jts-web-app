@@ -394,7 +394,6 @@
   padding: 8px 14px; border-radius: 999px; cursor: pointer;
 }
 .asst__action::after { content: "→"; }
-.asst__action--tour::after { content: "✦"; }
 .asst__action:hover { filter: brightness(1.08); }
 .asst__action:disabled { opacity: 0.45; cursor: default; }
 

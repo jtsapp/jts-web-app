@@ -140,7 +140,7 @@ import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
-import { holdTours, useTourRequest } from './lib/tourBus.js'
+import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
@@ -1908,9 +1908,6 @@ export default function App() {
       }),
     [],
   )
-  // Тур Speaking Buddy живёт не в экране, а здесь (showTutorTour), поэтому
-  // заявку Луны на него забирает App, пока открыт дашборд тьютора.
-  useTourRequest(screen === 'tutor-dashboard' ? () => setShowTutorTour(true) : null)
 
   function restoreAppPlace(to, place) {
     // Цель перехода в Практику (книги с «Главной», юнит домашки) уже отыграла:

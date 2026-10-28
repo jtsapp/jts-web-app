@@ -390,11 +390,11 @@ describe('POST /api/assistant/chat', () => {
     expect(text.endsWith('[[ASST_ACTION open practice-speaking offer]]')).toBe(true)
   })
 
-  it('«открой сейчас» и тур — свой вид хвоста; раздел не из списка не уходит вовсе', async () => {
+  it('«открой сейчас» — свой вид хвоста; раздел не из списка не уходит вовсе', async () => {
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Начинаю тур по Практике.\n[[TOUR_NOW practice]]' }
+      yield { type: 'text', text: 'Открываю Практику.\n[[OPEN_NOW practice]]' }
     }
-    expect(await (await post(question(402))).text()).toBe('Начинаю тур по Практике.\n[[ASST_ACTION tour practice now]]')
+    expect(await (await post(question(402))).text()).toBe('Открываю Практику.\n[[ASST_ACTION open practice now]]')
 
     streamImpl = async function* () {
       yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW ielts-mock]]' }
@@ -402,28 +402,19 @@ describe('POST /api/assistant/chat', () => {
     expect(await (await post(question(403))).text()).toBe('Открываю.\n')
   })
 
-  // Живой прогон 15.10.2026: на «проведи тур» Haiku 5.5 поставила OPEN_NOW — раздел
-  // открылся, а тур нет. Что просили тур, код видит по словам ученика.
-  it('просили тур, а модель поставила «открыть» — уходит тур', async () => {
+  // Тур «от Луны» убран 28.10.2026: ни метка тура модели, ни слово «тур» у ученика
+  // тура не дают — раздел просто открывается, а тур там выходит сам или по «?».
+  it('тура нет: метка тура — открыть раздел, «проведи тур» — как решила модель', async () => {
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Конечно, открываю Практику и проведу по ней.\n[[OPEN_NOW practice]]' }
+      yield { type: 'text', text: 'Начинаю.\n[[TOUR_NOW practice]]' }
     }
-    const body = { ...question(406), messages: [{ role: 'user', content: 'Привет, можешь провести для меня тур по практике?' }] }
-    expect(await (await post(body)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+    expect(await (await post(question(406))).text()).toBe('Начинаю.\n[[ASST_ACTION open practice now]]')
 
-    // «Да» на её же предложение тура — тоже тур.
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW practice]]' }
+      yield { type: 'text', text: 'Открываю Практику.\n[[OPEN_NOW practice]]' }
     }
-    const agreed = {
-      ...question(407),
-      messages: [
-        { role: 'user', content: 'как тут всё устроено?' },
-        { role: 'assistant', content: 'Провести тур по Практике?\n[[TOUR practice]]' },
-        { role: 'user', content: 'да' },
-      ],
-    }
-    expect(await (await post(agreed)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+    const body = { ...question(407), messages: [{ role: 'user', content: 'Привет, можешь провести для меня тур по практике?' }] }
+    expect(await (await post(body)).text()).toMatch(/\[\[ASST_ACTION open practice now\]\]$/)
   })
 
   it('метка действия и запись поломки в одном ответе — оба хвоста, действие первым', async () => {
@@ -440,7 +431,8 @@ describe('POST /api/assistant/chat', () => {
     await (await post(question(405))).text()
     expect(calls[0].systemPrompt).toContain('## Разделы, которые ты умеешь открывать')
     expect(calls[0].systemPrompt).toContain('- practice-speaking — Практика → Говорение')
-    expect(calls[0].systemPrompt).toContain('[[TOUR_NOW id]]')
+    expect(calls[0].systemPrompt).toContain('[[OPEN_NOW id]]')
+    expect(calls[0].systemPrompt).not.toContain('[[TOUR')
   })
 
   // Ученик открыл окно, и Луна заговаривает первой (lib/assistant/opening.js).
@@ -552,10 +544,8 @@ describe('POST /api/assistant/chat', () => {
       })
     })
 
-    it('«открой» по просьбе ученика, тур и ответ без метки — не советы', async () => {
+    it('«открой» по просьбе ученика и ответ без метки — не советы', async () => {
       offer('Открываю Словарь.\n[[OPEN_NOW vocab]]')
-      await (await post(question(602))).text()
-      offer('Начинаю тур по Главной.\n[[TOUR_NOW home]]')
       await (await post(question(602))).text()
       await (await post(question(602))).text()
       expect(saveAdviceNote).not.toHaveBeenCalled()

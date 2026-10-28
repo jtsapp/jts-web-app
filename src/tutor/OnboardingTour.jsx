@@ -1,11 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
-import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration, useToursHeld } from '../lib/tourBus.js'
-import { unlockSpeech } from '../lib/speech.js'
+import { useToursHeld } from '../lib/tourBus.js'
 import { isTourSeen, markTourSeen } from '../lib/tourMarks.js'
 
-const LUNA_AVATAR = '/assets/luna-assistant.webp'
 // Места маскотов вокруг карточки приветствия: двое сверху, по одному сбоку.
 const INTRO_SLOTS = ['top1', 'top2', 'left', 'right']
 
@@ -241,24 +239,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const selector = step?.selector
   // Ключ эффекта: массив селекторов каждый рендер новый.
   const selectorKey = Array.isArray(selector) ? selector.join('|') : selector
-  // Тур ведёт Луна: шаги она читает вслух (tourBus.js, AssistantWidget), а в
-  // карточке — её строка и кнопка звука.
-  const narration = useTourNarration()
-
-  // Конец тура — Луне замолчать. По размонтированию, а не только в finish:
-  // ушли с экрана посреди тура — тоже конец. Отложенно и со сверкой: в dev
-  // StrictMode гоняет эффект «смонтировать — снять — смонтировать», и без
-  // сверки озвучка гасла бы на первом же шаге.
-  const mountedRef = useRef(false)
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      setTimeout(() => {
-        if (!mountedRef.current) emitTourEnd()
-      }, 0)
-    }
-  }, [])
 
   const finish = () => {
     if (storageKey && shownRef.current) markTourSeen(storageKey)
@@ -284,17 +264,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
       return undefined
     }
     shownRef.current = true
-    // Шаг показан — сообщаем Луне (озвучит, если тур ведёт она). Только
-    // показанный: пропущенный шаг без элемента рассказывать не о чем. next —
-    // чтобы она успела синтезировать следующий шаг, пока звучит этот.
-    const after = steps[i + 1]
-    emitTourStep({
-      index: i,
-      total: steps.length,
-      title: step.title,
-      text: step.text,
-      next: after ? { title: after.title, text: after.text } : null,
-    })
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
     // Несколько целей — к началу первой, чтобы рамка влезла целиком, и с отступом сверху: вплотную к краю верх
@@ -384,14 +353,10 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const blocked = step?.canNext === false
   const next = () => {
     if (phase === 'intro') {
-      if (narration.on && !narration.muted) unlockSpeech()
       setPhase('steps')
       return
     }
     if (blocked) return
-    // Нажатие «Далее» — жест: iPhone разрешит сыграть Луне следующий шаг,
-    // который придёт после синтеза, уже без жеста.
-    if (narration.on && !narration.muted) unlockSpeech()
     if (i + 1 < steps.length) setI(i + 1)
     else finish()
   }
@@ -489,33 +454,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const pos = popSize ? (coach ? placeCoach : placePopover)(hole, popSize.w, popSize.h) : { left: 0, top: 0 }
   const last = i + 1 === steps.length
 
-  const luna = narration.on && (
-    <div className="t-tour__luna">
-      <img src={narration.avatar || LUNA_AVATAR} alt="" width="24" height="24" />
-      <span>{t('tour.luna')}</span>
-      <button
-        type="button"
-        className={`t-tour__luna-sound${narration.muted ? ' is-muted' : ''}`}
-        aria-pressed={!narration.muted}
-        aria-label={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
-        title={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
-        onClick={() => {
-          if (narration.muted) unlockSpeech()
-          toggleTourNarrationMute()
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-          {narration.muted ? (
-            <path d="m17 9 4 6m0-6-4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          ) : (
-            <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          )}
-        </svg>
-      </button>
-    </div>
-  )
-
   if (coach) {
     // Карточка «Главной»: точки прогресса, заголовок, текст, «Далее» и
     // «Пропустить» слева; на последнем шаге — одна «Готово» справа. Маскот
@@ -554,7 +492,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
               {step.text && <p className="t-tour__text">{step.text}</p>}
             </div>
             {step.content && <div className="t-tour__content">{step.content}</div>}
-            {luna}
             <div className={`t-tour__acts${last ? ' is-last' : ''}`}>
               <button className="t-tour__ok" type="button" onClick={next} disabled={blocked}>
                 {last ? t('tour.done') : t('tour.coach.next')}
@@ -594,8 +531,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
         <b className="t-tour__title">{step.title}</b>
         <p className="t-tour__text">{step.text}</p>
         {step.content && <div className="t-tour__content">{step.content}</div>}
-
-        {luna}
 
         <div className="t-tour__bar">
           <span style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
