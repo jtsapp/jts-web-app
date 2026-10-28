@@ -94,7 +94,8 @@ export default function LevelExam({ exam, level, token, restricted = false, onEx
   const exit = () => onExit?.(phase !== 'test' || answered === 0)
 
   return (
-    <div className="cp ex">
+    // Тест уровня: облачка «Подсказать?» здесь нет — подсказка была бы шпаргалкой (useStuckWatch.js).
+    <div className="cp ex" data-assistant-test="">
       <div className="cp-bar">
         <button type="button" className="cp-bar__exit" onClick={exit} aria-label={t('lesson.exitLesson')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -5,7 +5,7 @@ import { actionMarker } from '../lib/assistant/actions.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
-import { OPENING_MARK, WAKE_MARK, screenStateKey } from '../lib/assistant/opening.js'
+import { OPENING_MARK, WAKE_MARK, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
 import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
 import { pressButton } from '../lib/assistant/clicker.js'
 import { playCue } from '../lib/assistant/cue.js'
@@ -21,7 +21,8 @@ import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
 import { timingParts, voiceTimingVisible } from '../lib/assistant/voiceTiming.js'
 import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
-import { unlockSpeech } from '../lib/speech.js'
+import { isTtsActive, unlockSpeech } from '../lib/speech.js'
+import { useStuckWatch } from '../lib/assistant/useStuckWatch.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -1674,6 +1675,29 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   // Облачко команды: запись кончилась, идёт распознавание — уже «Думаю…», а не «Слушаю вас».
   const cmdPhase = cmd?.phase === 'listening' && voiceQ.state === 'transcribing' ? 'thinking' : cmd?.phase
   const badge = useBadge(cmd && !open ? { phase: cmdPhase, label: cmd.label } : null, open)
+
+  // «Подсказать?» (useStuckWatch.js): ученик дважды подряд ошибся или полторы минуты
+  // ничего не делает на задании. Не поверх другого облачка, ответа Луны и её голоса.
+  const stuck = useStuckWatch({
+    active: enabled && Boolean(token) && !open && !call,
+    screen,
+    canOffer: () => !badge && !introHint && !inFlightRef.current && !isTtsActive(),
+  })
+  // Нажал облачко (или кнопку Луны, пока оно на экране): окно и сразу разбор задания.
+  // unlockSpeech — в тике нажатия, как у обычного открытия: иначе iPhone не сыграет ответ.
+  const takeStuck = () => {
+    const reason = stuck.take()
+    if (!reason) return false
+    const cur = stateRef.current
+    unlockSpeech()
+    showCmd(null)
+    setOpen(true)
+    // Обычное открытие окна следом не повторит первую реплику на этот же экран.
+    const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
+    greetedRef.current = screenStateKey(cur.screen, snapshotScreen(root))
+    send(stuckMark(reason), { voice: !cur.muted, opening: true })
+    return true
+  }
   // Плашка — над кнопкой и по её внешнему краю, как в макете; у кнопки в верхней половине
   // экрана — под ней: сверху там полоса колокольчика кабинета (TOP_EDGE).
   const badgeBelow = free && place.v === 't'
@@ -1996,7 +2020,19 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         <CmdBadge badge={badge} style={badgeStyle} free={free} below={badgeBelow} t={t} />
       )}
 
-      {introHint && !open && !badge && (
+      {stuck.offer && !open && !badge && (
+        <button
+          type="button"
+          className={`asst__hint asst__hint--stuck${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
+          style={hintStyle}
+          data-stuck={stuck.offer.reason}
+          onClick={takeStuck}
+        >
+          <b className="asst__hint-title">{t('assistant.stuck')}</b>
+        </button>
+      )}
+
+      {introHint && !open && !badge && !stuck.offer && (
         <div
           className={`asst__hint${free ? ' is-free' : ''}${hintLeft ? ' is-left' : ''}`}
           style={hintStyle}
@@ -2026,7 +2062,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         onClick={() => {
           if (draggedRef.current) return
           if (open) close()
-          else openWindow()
+          else if (!takeStuck()) openWindow()
         }}
       >
         {/* Ореол «слушаю» (макет «При вызове Луны»): только пока Луна ждёт команду. */}

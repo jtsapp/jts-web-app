@@ -157,7 +157,8 @@ export default function WorkbookAct({
         menuLabel={t('workbook.lessonMenu')}
       />
       <ActBrief act={act} meta={meta} />
-      <div className="wb-card">
+      {/* Зачёт воркбука: облачка «Подсказать?» нет — подсказка была бы шпаргалкой (useStuckWatch.js). */}
+      <div className="wb-card" data-assistant-test={lesson.test ? '' : undefined}>
         <div className="wb-items" key={ctl.gen} data-assistant-expected={revealedKey}>
           <WorkbookTestContext.Provider value={!!lesson.test}>
             <ActBody

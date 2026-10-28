@@ -22,13 +22,28 @@ export const WAKE_MARK = '[ученик позвал голосом]'
 /** Служебный ход «ученик позвал голосом». */
 export const isWakeTurn = (content) => String(content ?? '').trim() === WAKE_MARK
 
+// Ученик застрял (stuck.js): дважды подряд ошибся или полторы минуты ничего не делает
+// на задании, и нажал облачко «Подсказать?». Тоже служебный ход: Луна сразу разбирает
+// задание на экране — без приветствия и без совета раздела (решение 28.10.2026).
+export const STUCK_ERRORS_MARK = '[ученик застрял: две ошибки подряд]'
+export const STUCK_IDLE_MARK = '[ученик застрял: долго без действий]'
+
+/** Причина «застрял» по служебному ходу или null. */
+export function stuckReason(content) {
+  const text = String(content ?? '').trim()
+  return text === STUCK_ERRORS_MARK ? 'errors' : text === STUCK_IDLE_MARK ? 'idle' : null
+}
+
+/** Служебный ход для причины из stuck.js. */
+export const stuckMark = (reason) => (reason === 'idle' ? STUCK_IDLE_MARK : STUCK_ERRORS_MARK)
+
 /**
- * Служебный ход — «ученик открыл окно» или «позвал голосом», а не вопрос, набранный
- * учеником. На оба действуют одни защиты: ни паузы «не по теме», ни отчёта о поломке.
+ * Служебный ход — «ученик открыл окно», «позвал голосом» или «застрял», а не вопрос,
+ * набранный учеником. На все действуют одни защиты: ни паузы «не по теме», ни отчёта о поломке.
  */
 export const isOpeningTurn = (content) => {
   const text = String(content ?? '').trim()
-  return text === OPENING_MARK || text === WAKE_MARK
+  return text === OPENING_MARK || text === WAKE_MARK || stuckReason(text) != null
 }
 
 // Что на экране, решает код, а не модель. Правила «посреди задания — только о
