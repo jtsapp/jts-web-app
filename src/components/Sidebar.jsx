@@ -37,6 +37,10 @@ const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
+  // «Грамматика» и «Скорочтение» — отдельные пункты меню ученика (ТЗ кабинетов: Модуль 4, макет «кабинет студента»), а также плитка
+  // и карточка в «Практике». Экраны давно есть (`grammar-games`, `speed-reading`), в меню их раньше не было.
+  { key: 'grammar-games', label: 'nav.grammar', ico: 'spellcheck' },
+  { key: 'speed-reading', label: 'nav.speedReading', ico: 'speed' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
   { key: 'homework', label: 'nav.homework', ico: 'assignment' },
@@ -54,6 +58,9 @@ const NAV_FULL = [
   // «Договоры» тоже видны всем (ТЗ кабинетов, 14е); значок — сколько договоров ждут подписи.
   { key: 'contracts', label: 'nav.contracts', ico: 'edit_note' },
 ]
+// Метка «new» у новых разделов — как в макете кабинета студента: Скорочтение, Призы, Feedback.
+const NEW_ITEMS = new Set(['speed-reading', 'prizes', 'feedback'])
+
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
 // TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
 // обычных пользователей (доступны диплинком ?screen=… для отладки).
@@ -238,7 +245,7 @@ export default function Sidebar({
             >
               <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
-              {badges[key] > 0 && <b className="sb__badge">{badges[key]}</b>}
+              {badges[key] > 0 ? <b className="sb__badge">{badges[key]}</b> : NEW_ITEMS.has(key) && <b className="sb__badge sb__badge--new">{t('nav.badgeNew')}</b>}
             </button>
           ))}
         </nav>

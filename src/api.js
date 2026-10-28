@@ -847,6 +847,30 @@ export async function getMatchingTeacherPhoto(token, id) {
     return null
   }
 }
+// Дополнение профиля учителя (тексты, одобренные фото результатов, наличие видео). На старом стенде ручки нет — тогда блоков просто нет.
+export async function getMatchingTeacherExtras(token, id) {
+  try {
+    return await authGet(`/student/matching/teachers/${id}/extras`, token)
+  } catch {
+    return null
+  }
+}
+export async function getMatchingTeacherResultPhoto(token, id, photoId) {
+  try {
+    const res = await fetch(`${BASE}/student/matching/teachers/${id}/results/${photoId}`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
+export async function getMatchingTeacherVideo(token, id) {
+  try {
+    const res = await fetch(`${BASE}/student/matching/teachers/${id}/video`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
 export const saveMatchingInterests = (token, interests) => authPut('/student/matching/interests', token, { interests })
 export const saveMatchingTimezone = (token, timezone) => authPut('/student/matching/timezone', token, { timezone })
 export const changeMatchingFormat = (token, format) => authPost('/student/matching/format', token, { format })

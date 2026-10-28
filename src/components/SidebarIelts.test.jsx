@@ -32,13 +32,13 @@ describe('Sidebar — аккаунт IELTS', () => {
       </I18nProvider>
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'Настройки' })).toBeTruthy())
-    const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
+    const items = [...document.querySelectorAll('.sb__nav .sb__item > span')].map((b) => b.textContent)
     expect(items).toEqual(['Главная', 'Выбрать группу', 'Повторение', 'Практика', 'Speaking Buddy', 'Уроки', 'Домашняя работа', 'Словарь', 'IELTS', 'SAT', 'Мои токены', 'Призы', 'Feedback', 'Уведомления', 'Договоры'])
     expect(document.querySelector('.sb__balance')).toBeNull()
     expect(document.querySelector('.sb__role')).toBeNull()
     screen.getByRole('button', { name: 'Настройки' }).click()
     expect(onProfile).toHaveBeenCalled()
-    screen.getByRole('button', { name: 'Feedback' }).click()
+    screen.getByRole('button', { name: /^Feedback/ }).click()
     expect(onNav).toHaveBeenCalledWith('feedback')
   })
 
@@ -51,7 +51,7 @@ describe('Sidebar — аккаунт IELTS', () => {
       </I18nProvider>
     )
     await waitFor(() => expect(screen.getByRole('button', { name: 'SAT' })).toBeTruthy())
-    const items = [...document.querySelectorAll('.sb__nav .sb__item')].map((b) => b.textContent)
+    const items = [...document.querySelectorAll('.sb__nav .sb__item > span')].map((b) => b.textContent)
     expect(items).not.toContain('IELTS')
     expect(items).toContain('SAT')
     expect(items[2]).toBe('Повторение')

@@ -20,6 +20,8 @@ const SECTION_OF = {
   'speed-reading': 'speed',
   learning: 'review',
   practice: 'practice',
+  // «Грамматика» (ТЗ: отдельный пункт меню и первая плитка «Практики») открывает раздел `grammar` из настроек координатора.
+  'grammar-games': 'grammar',
   vocab: 'vocabulary',
 }
 
