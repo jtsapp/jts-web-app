@@ -34,6 +34,7 @@ import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
 import BooksAudioFilter from './practice/BooksAudioFilter.jsx'
 import { unitToPayload } from './practice/assignPractice.js'
 import { SKILLS, SKILL_KEYS, skillModules, skillOfModule, EXPANDABLE } from './practice/practiceTabs.js'
+import GrammarGamesView from './grammar-games/GrammarGamesView.jsx'
 import {
   LevelSwitch,
   SkillCard,
@@ -257,6 +258,9 @@ export default function PracticePage({
     if (resumed) return EXPANDABLE.has(resumed.expanded) ? resumed.expanded : null
     return EXPANDABLE.has(openTarget?.filter) ? openTarget.filter : null
   })
+  // Место в шапке вкладки-раздела («Грамматика · игры») под его тумблер звука — узел, а не ref: портал раздела
+  // должен перерисоваться, когда узел появится.
+  const [headTools, setHeadTools] = useState(null)
   // Вкладка, открытая целью перехода (книги с «Главной», ситуации из домашки),
   // тоже запоминается: раньше в сессию писал только клик по вкладке, и раздел,
   // открытый с такой вкладки, возвращал на прошлую — на «Аудирование».
@@ -899,19 +903,9 @@ export default function PracticePage({
           />
         )
 
+      // Своя вкладка: под карточками сразу хаб тем, а не баннер с переходом на экран раздела.
       case 'grammarGames':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-grammar-games"
-            variant="grammar-games"
-            wide
-            title={t('practice.grammarGames.heading')}
-            desc={t('practice.grammarGames.desc')}
-            cta={t('practice.grammarGames.cta')}
-            onStart={() => onNav?.('grammar-games')}
-          />
-        )
+        return <GrammarGamesView key={sec.id} embedded toolsSlot={headTools} token={token} userLevel={userLevel} />
 
       case 'prepositions':
         return (
@@ -1279,6 +1273,9 @@ export default function PracticePage({
   }
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
+  // Вкладка-раздел («Грамматика · игры»): под карточками целое приложение со своими уровнями и экранами игр —
+  // общий переключатель уровня и таблица токенов под игрой были бы чужими.
+  const ownScreen = skill.key === 'grammarGames'
   const sections = expanded
     ? skill.sections.filter((sec) => sec.id === expanded)
     : skill.sections
@@ -1288,7 +1285,9 @@ export default function PracticePage({
       <div className="pk pp--enter">
         <header className="pk-head">
           <h1 className="pk-head__title">{t('practice.title')}</h1>
-          <LevelSwitch value={pickedLevel} onChange={pickLevel} />
+          {/* У «Грамматики · игр» уровни свои — карточки уровней в хабе раздела; общий переключатель там ничего
+              бы не фильтровал. */}
+          {ownScreen ? <div className="pk-head__tools" ref={setHeadTools} /> : <LevelSwitch value={pickedLevel} onChange={pickLevel} />}
         </header>
 
         <div className="pk-skills" role="tablist">
@@ -1297,6 +1296,7 @@ export default function PracticePage({
               key={s.key}
               skill={s.key}
               count={skillModules(s.key).length}
+              sub={s.sub}
               active={tab === s.key}
               onClick={() => pickTab(s.key)}
             />
@@ -1309,7 +1309,7 @@ export default function PracticePage({
 
         {sections.map(renderSection)}
 
-        {expanded === null && <PracticeTokenTable data={tokenData} />}
+        {expanded === null && !ownScreen && <PracticeTokenTable data={tokenData} />}
       </div>
 
       {openSituation && (

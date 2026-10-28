@@ -3556,10 +3556,13 @@ textarea {
 
 /* Карточки навыков 260×136, r20. Неактивная — вся карточка на 60%. Арт — экспорт
    фигур из макета. Обводка активной — «внутрь» 0/4/6/4: рисуем её поверх
-   (::after), а не border самой кнопки, иначе нижние 6px сдвигали бы текст. */
+   (::after), а не border самой кнопки, иначе нижние 6px сдвигали бы текст.
+   С 28.10.2026 карточек пять (пятая — «Грамматика · игры»), и в ряд они встают только от 1200px: уже «Аудирование»
+   не помещается и кеглем 20 (раскладка уже — ниже, в «Узких экранах»). Поля по бокам поэтому 12, а не 20 макета:
+   текст по центру, поле только режет строку. */
 .pk-skills {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
 .pk-skill {
@@ -3571,7 +3574,7 @@ textarea {
   gap: 4px;
   min-width: 0;
   height: 136px;
-  padding: 40px 20px;
+  padding: 16px 12px;
   border: 0;
   border-radius: 20px;
   overflow: hidden;
@@ -3603,6 +3606,9 @@ textarea {
   font-weight: 700;
 }
 .pk-skill__title { font-size: 24px; line-height: 33px; color: #181818; }
+/* «Грамматика · игры» в карточку в одну строку не встаёт ни при какой ширине ряда из пяти — две строки; между
+   словом и точкой в словаре неразрывный пробел, иначе перенос оставлял бы «· игры» отдельной строкой. */
+.pk-skill--grammarGames .pk-skill__title { white-space: normal; text-wrap: balance; }
 .pk-skill__count { font-size: 14px; line-height: 19px; color: var(--sk-ink); }
 .pk-skill--listening {
   --sk-bg: #f4f8ff;
@@ -3627,6 +3633,14 @@ textarea {
   --sk-art: url('/practice/skills/speaking.svg');
   --sk-ink: #1e9e5a;
   --sk-line: #8ebfa4;
+}
+/* Пятая карточка — «Грамматика · игры» (28.10.2026), в макете её нет. Цвет — жёлтый, пятый цвет бренда (четыре
+   других заняты навыками), арт — «кирпичики» формул раздела, нарисован в манере соседних карточек. */
+.pk-skill--grammarGames {
+  --sk-bg: #fff8e3;
+  --sk-art: url('/practice/skills/grammarGames.svg');
+  --sk-ink: #b07d00;
+  --sk-line: #dccb94;
 }
 
 /* Секция: шапка 32 + 16 + лента. */
@@ -4240,10 +4254,11 @@ textarea {
 @media (max-width: 560px) {
   .prp-top { padding: 8px 16px 0; }
 }
-/* «Грамматика · игры» в макете тоже нет — градиент уровня L1 прототипа (спека A3). Оболочка — как у Prepositions
-   World; тумблер звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
-.pk-banner--grammar-games { background: linear-gradient(110.8deg, #9047ff 15.5%, #6932bb 94.2%); }
+/* «Грамматика · игры» своим экраном — оболочка как у Prepositions World; тумблер звука стоит слева, у кнопки
+   «назад»: правый верхний угол занят группой .learn__bell. Во вкладке Практики «назад» нет, а тумблер уходит в
+   шапку Практики (.pk-head__tools, на место переключателя уровня): угол .learn__bell на этом экране скрыт. */
 .ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }
+.pk-head__tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .ggp-sound { width: 40px; height: 40px; flex: none; border: 1px solid #efedf4; border-radius: 999px; background: #fff; font-size: 17px; line-height: 1; cursor: pointer; }
 .ggp-sound[aria-pressed='false'] { opacity: 0.55; }
 .ggp-host { display: block; }
@@ -4401,8 +4416,14 @@ textarea {
 /* ── Узкие экраны. Отдельного макета нет — раскладка десктопа, сложенная в
    колонку: карточки навыков 2×2, баннеры друг под другом, ленты от края до
    края экрана. ── */
-@media (max-width: 1100px) {
+@media (max-width: 1365px) {
   .pk-skill__title { font-size: 20px; line-height: 27px; }
+}
+/* Пять карточек в ряд уже 1200px не помещаются — два ряда, 3 + 2, на всю ширину оба (сетка в шесть долей). */
+@media (min-width: 761px) and (max-width: 1199px) {
+  .pk-skills { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .pk-skill { grid-column: span 2; }
+  .pk-skill:nth-child(n + 4) { grid-column: span 3; }
 }
 @media (max-width: 760px) {
   .pk {
@@ -4422,8 +4443,10 @@ textarea {
   }
   .pk-skill {
     height: 96px;
-    padding: 20px 12px;
+    padding: 12px;
   }
+  /* Пятая карточка — на всю ширину, а не одна в последнем ряду. */
+  .pk-skill--grammarGames { grid-column: 1 / -1; }
   .pk-skill__title { font-size: 18px; line-height: 25px; }
   .pk-skill__count { font-size: 13px; line-height: 18px; }
   .pk-pair {

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 // Мобильная адаптация Практики (вьюпорт 390×844, см. playwright.config.js):
-//   — страница не шире экрана, карточки навыков — сетка 2×2;
+//   — страница не шире экрана, карточки навыков на узком планшете — сетка 2×2 и пятая во всю ширину;
 //   — переключатель уровня во всю ширину, выбран уровень ученика;
 //   — пара баннеров складывается в колонку, ленты листаются вбок;
 //   — рилсы переключаются вертикальным тач-свайпом.
@@ -41,7 +41,7 @@ async function openPractice(page) {
 test.describe('Практика — мобильная адаптация', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
 
-  test('страница не шире экрана; навыки — сетка 2×2', async ({ page }) => {
+  test('страница не шире экрана; навыки на узком планшете — сетка 2×2 и пятая во всю ширину', async ({ page }) => {
     await openPractice(page)
 
     // Нет горизонтального скролла всей страницы.
@@ -50,11 +50,17 @@ test.describe('Практика — мобильная адаптация', () =
     )
     expect(overflow).toBeLessThanOrEqual(1)
 
+    // На телефоне (≤560) навыки — вкладки в строку (дизайн приложения), сетка 2×2 осталась узкому планшету.
+    // Пятая карточка — «Грамматика · игры» (28.10.2026): строкой во всю ширину под сеткой.
+    await page.setViewportSize({ width: 640, height: 900 })
     const cards = page.locator('.pk-skill')
-    await expect(cards).toHaveCount(4)
-    const [a, b, c] = await Promise.all([0, 1, 2].map((i) => cards.nth(i).boundingBox()))
+    await expect(cards).toHaveCount(5)
+    const [a, b, c, , e] = await Promise.all([0, 1, 2, 3, 4].map((i) => cards.nth(i).boundingBox()))
     expect(Math.abs(a.y - b.y)).toBeLessThan(1)
     expect(c.y).toBeGreaterThan(a.y + a.height)
+    expect(e.y).toBeGreaterThan(c.y + c.height)
+    expect(Math.abs(e.x - a.x)).toBeLessThan(1)
+    expect(Math.abs(e.x + e.width - (b.x + b.width))).toBeLessThan(1)
   })
 
   test('переключатель уровня во всю ширину, выбран уровень ученика', async ({ page }) => {
@@ -170,10 +176,12 @@ test.describe('Письмо — мобильная адаптация', () => {
 test.describe('Практика — десктоп не пострадал', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) <= 760, 'только широкий вьюпорт')
 
-  test('навыки — четыре в ряд, баннеры аудирования — парой', async ({ page }) => {
+  // Пятая карточка — «Грамматика · игры» (28.10.2026); в ряд все пять — от 1200px, проект desktop — 1440.
+  test('навыки — пять в ряд, баннеры аудирования — парой', async ({ page }) => {
     await openPractice(page)
     const cards = page.locator('.pk-skill')
-    const boxes = await Promise.all([0, 1, 2, 3].map((i) => cards.nth(i).boundingBox()))
+    await expect(cards).toHaveCount(5)
+    const boxes = await Promise.all([0, 1, 2, 3, 4].map((i) => cards.nth(i).boundingBox()))
     for (const b of boxes) expect(Math.abs(b.y - boxes[0].y)).toBeLessThan(1)
     const first = await page.locator('#sec-listening').boundingBox()
     const second = await page.locator('#sec-listenchoose').boundingBox()

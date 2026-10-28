@@ -27,6 +27,8 @@
 //   снимает всё;
 // - починка: строка разбирается на слова до экранирования (text.js, wrapEN).
 // Каждый ответ в игре — cfg.onAnswer(верно?) → рейтинг навыка «грамматика».
+// Прокрутку на смене вида делает приложение — cfg.scrollTop(вид): во вкладке Практики раздел стоит под карточками
+// навыков, и хаб показывается с верха страницы, а тема и игра — с верха раздела.
 
 import { stagesOf, acc } from './stages.js'
 import { esc, wrapEN, lookUp, norm, trail, sentOf } from './text.js'
@@ -199,8 +201,8 @@ function go(v,a,b){loadSeq++;stopLoops();closeModal();hidePop();
  // Тело темы приходит с бэкенда при первом открытии; дальше — из памяти, как TMAP прототипа.
  if(v==='topic'){const id=a||G.topic;if(!TMAP[id])return openTopic(id,b||'rule');G.topic=id;G.tab=b||'rule';}
  if(v==='game'){G.stage=a;}
- G.view=v;render();scrollTop();return Promise.resolve();}
-function openTopic(id,tab){const seq=++loadSeq;G.view='loading';G.loading=id;G.loadTab=tab;render();scrollTop();
+ G.view=v;render();scrollTop(G.view);return Promise.resolve();}
+function openTopic(id,tab){const seq=++loadSeq;G.view='loading';G.loading=id;G.loadTab=tab;render();scrollTop(G.view);
  return Promise.resolve().then(()=>loadTopic(id)).then(body=>{if(dead||seq!==loadSeq)return;if(!body||body.id!==id)throw new Error('тема не та');TMAP[id]=body;G.topic=id;G.tab=tab;G.view='topic';render();},
   ()=>{if(dead||seq!==loadSeq)return;G.view='loadfail';render();});}
 function render(){const a=$('app');if(G.view==='hub')a.innerHTML=vHub();else if(G.view==='topic')a.innerHTML=G.tab==='rule'?vRule():vQuest();else if(G.view==='game')startGame();else if(G.view==='result')a.innerHTML=vResult();else if(G.view==='loading')a.innerHTML=vWait(false);else if(G.view==='loadfail')a.innerHTML=vWait(true);}
