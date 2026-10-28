@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
 import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration, useToursHeld } from '../lib/tourBus.js'
 import { unlockSpeech } from '../lib/speech.js'
+import { isTourSeen, markTourSeen } from '../lib/tourMarks.js'
 
 const LUNA_AVATAR = '/assets/luna-assistant.webp'
 
@@ -108,29 +109,14 @@ const ArrowIcon = () => (
   </svg>
 )
 
-// Ключ отметки «тур уже показан» и её чтение живут рядом с тем, кто её пишет
-// (finish ниже). Раньше storageKey никто не передавал, отметка не писалась
-// и читать её было некому — тур выходил заново после каждой смены тьютора, потому
-// что смена гоняет ту же онбординг-цепочку, а его включение висит на её конце.
-//
-// Ключ включает id профиля (`user-<id>` у залогиненного, device-id у анонима) —
-// именно из-за этого браузерный флаг когда-то и убрали: он был один на
-// устройство, и второй аккаунт на том же браузере тура не видел.
-//
-// scope разводит туры разных экранов; у дашборда он остался 'dash', поэтому
-// старые отметки в силе и второй раз тьюторский тур никому не выпадет.
-export function tourKeyFor(profileId, scope = 'dash') {
-  return `jts_tour_${scope}:${profileId || 'anon'}`
-}
-
-/** Показывали ли уже тур. localStorage недоступен → false: лучше лишний тур, чем молча пропущенный. */
-export function isTourSeen(key) {
-  try {
-    return localStorage.getItem(key) === '1'
-  } catch {
-    return false
-  }
-}
+// Ключ отметки «тур уже показан» включает владельца (`user-<id>` у аккаунта,
+// device-id у гостя) — браузерный флаг когда-то убрали именно потому, что он
+// был один на устройство, и второй аккаунт на том же браузере тура не видел.
+// Сами отметки аккаунта с 28.10.2026 лежат на сервере (lib/tourMarks.js), а
+// ключ и его разбор — в lib/tourName.js. Отсюда реэкспорт: экраны и моки
+// тестов берут их у тура.
+export { tourKeyFor } from '../lib/tourName.js'
+export { isTourSeen } from '../lib/tourMarks.js'
 
 /**
  * Тумблер «туры не показывать сами». Ключ отметки о показе включает id профиля,
@@ -175,7 +161,7 @@ export function useScreenTour(storageKey) {
 
 // Гайд-тур: затемняет экран, «прожигает» дырку на текущем элементе (по CSS-селектору),
 // рядом рисует поповер с текстом, прогрессом и кнопкой «ОК». По шагам вперёд; в конце
-// ставит флаг в localStorage и вызывает onFinish.
+// ставит отметку (markTourSeen: браузер и сервер) и вызывает onFinish.
 //
 // Шаг может нести свой интерактив: `content` рисуется под текстом (список
 // разделов на «Главной»), а `canNext: false` держит «Далее», пока выбор не сделан. Кликать
@@ -238,11 +224,7 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   }, [])
 
   const finish = () => {
-    try {
-      if (storageKey && shownRef.current) localStorage.setItem(storageKey, '1')
-    } catch {
-      /* localStorage недоступен — просто закрываем */
-    }
+    if (storageKey && shownRef.current) markTourSeen(storageKey)
     onFinish?.()
   }
   // Приветствие — тоже показ: пропустивший его увидел тур и второй раз его не ждёт.
