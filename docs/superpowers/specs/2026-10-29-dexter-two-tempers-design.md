@@ -90,13 +90,15 @@
 
 ### Файлы персоны
 
-- `agent/buddy-v3/03_Personas/Dexter.md` переписывается в хулигана. Оригинал
-  клиента v3.5 — в истории git (`78b8756c`): с ним сверяемся, когда придёт v3.6.
-  В шапке файла — откуда он и что изменено.
-- Новый `agent/buddy-v3/03_Personas/Dexter_Calm.md` — свой пацан, в формате
-  персоны пакета: `persona_id: dexter_calm`, `display_name: Dexter`,
-  `profanity_supported: false`, свой `allowed_emotions`, `default_emotion: default`.
-- `_BUDDY_PERSONA_FILES` получает `"dexter_calm": "Dexter_Calm.md"`.
+- Клиентский `agent/buddy-v3/03_Personas/Dexter.md` v3.5 не меняется: он нужен
+  для отката (`DEXTER_TEMPER=off`) и для сверки, когда придёт v3.6.
+- Новый `agent/buddy-v3/03_Personas/Dexter_Hooligan.md` — хулиган
+  (`persona_id: dexter_hooligan`, `profanity_supported: true`,
+  `default_emotion: angry`), собран из `Dexter.md` v3.5.
+- Новый `agent/buddy-v3/03_Personas/Dexter_Calm.md` — свой пацан
+  (`persona_id: dexter_calm`, `profanity_supported: false`,
+  `default_emotion: default`).
+- `_BUDDY_PERSONA_FILES` получает `dexter_calm` и `dexter_hooligan`.
 
 ### Выбор нрава
 
@@ -105,8 +107,8 @@
 | `temper` в токене | персона |
 |---|---|
 | `calm` | `dexter_calm` |
-| `harsh` | `dexter` (хулиган) |
-| пусто / неизвестно | `dexter` (хулиган) |
+| `harsh` | `dexter_hooligan` |
+| пусто / неизвестно | `dexter_hooligan` |
 
 Пустой нрав — хулиган, а не свой пацан, ради порядка выкатки: агент один на дев и
 прод, а старый веб нрав Декстера не шлёт вовсе. Дефолт «свой пацан» живёт на
@@ -152,8 +154,8 @@ him down», §4 comfort, §8 «Weak / Pathetic», §11 целиком — сту
 ### Откат без деплоя
 
 Секрет агента `DEXTER_TEMPER=off`: оба нрава снова идут на нынешнего Декстера v3.5
-(клиентский файл из истории лежит рядом как `Dexter_v35.md` и грузится только для
-отката). Прежний `DEXTER_PROMPT=legacy` остаётся.
+— персона `dexter` (клиентский файл как есть) и ядро без подмен. Прежний
+`DEXTER_PROMPT=legacy` остаётся.
 
 ## Сайт
 
@@ -161,15 +163,18 @@ him down», §4 comfort, §8 «Weak / Pathetic», §11 целиком — сту
 
 Сейчас в `learner` одна колонка `tutor_temper` на всех.
 
-- Миграция (следующий свободный номер на момент PR; на develop последняя — 0019):
-  `alter table learner add column if not exists tutor_tempers jsonb`. Вид:
-  `{"dexter": "harsh", "spark": "calm"}`.
-- Чтение (`src/lib/db/profile.js`): `tutorTempers = tutor_tempers ?? {}`. Старая
-  `tutor_temper` — запасной нрав только для Спарка: с 14.10 ось была только у него,
-  значит это его выбор. У Декстера записи нет → `defaultTemper` (свой пацан).
-- Запись: `PATCH /api/profile` принимает `tutorTempers: {ключ: 'calm'|'harsh'}`,
-  сервер сливает `tutor_tempers || патч`, не затирая чужие ключи. Старое поле
-  `tutorTemper` (вкладки, открытые до выката) относится к текущему тьютору.
+- Миграция `0020_learner_tutor_temper.sql` (номер сверить с develop перед PR):
+  своя таблица `learner_tutor_temper (profile_id, tutor, temper, updated_at)`,
+  ключ `(profile_id, tutor)`. Не колонка в `learner`: таблица общая с felix, и
+  новые данные кладём рядом (как `tour_seen`, `level_goal`).
+- Чтение (`src/lib/db/profile.js`): `tutorTempers` — словарь
+  `{"dexter": "harsh", "spark": "calm"}` из строк таблицы. Старая колонка
+  `tutor_temper` — запасной нрав только для Спарка: с 14.10 ось была только у
+  него, значит это его выбор. У Декстера записи нет → `defaultTemper` (свой пацан).
+- Запись: `POST /api/profile` принимает `tutorTempers: {ключ: 'calm'|'harsh'}` и
+  пишет строки таблицы upsert'ом, не затирая других тьюторов. Старое поле
+  `tutorTemper` (вкладки, открытые до выката) по-прежнему пишет колонку
+  `learner.tutor_temper`, а при чтении она — запасной нрав Спарка.
 - App: вместо одного `temper` — словарь; нрав звонка — `temperFor(tutor,
   tempers[tutor])`. Токен-роут и агент не меняются: в звонок по-прежнему уходит
   один нрав выбранного тьютора.
@@ -197,8 +202,9 @@ him down», §4 comfort, §8 «Weak / Pathetic», §11 целиком — сту
 ### Замер промпта
 
 Стенд по образцу прошлых (`scratchpad …/stand`: многоходовые разговоры, ученик по
-сценарию): мозг Декстера GPT-6 Sol с параметрами агента, ситуации — таблица клиента
-v3.5 плюс свои, по 20+ реплик на ячейку, судья Sonnet 5.5 вслепую.
+сценарию): мозг живого Декстера Haiku 5.5 (`session_brain_model`) с параметрами
+агента, ситуации — таблица клиента v3.5 плюс свои, по 20+ реплик на ячейку, судья
+Sonnet 5.5 вслепую.
 
 | нрав | что меряем | цель |
 |---|---|---|
