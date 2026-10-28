@@ -82,17 +82,22 @@ async function answerPick(page) {
   }
 }
 
-test('Практика → Письмо → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
+test('Практика → вкладка «Грамматика · игры» → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = watchErrors(page)
   const server = await mockBackend(page)
   await page.goto('/?screen=practice')
-  const writing = page.locator('.pk-skill', { hasText: 'Письмо' })
-  await expect(writing).toBeVisible({ timeout: 60_000 })
-  await writing.click()
-  await page.locator('.pk-banner--grammar-games .pk-banner__cta').click()
-  await expect(page).toHaveURL(/screen=grammar-games/)
-  const h = host(page)
+  // Раздел — пятая вкладка Практики (28.10.2026): хаб тем прямо под карточками, без перехода на свой экран.
+  const tab = page.locator('.pk-skill--grammarGames')
+  await expect(tab).toBeVisible({ timeout: 60_000 })
+  await expect(tab).toContainText('125 тем')
+  await tab.click()
+  await expect(tab).toHaveAttribute('aria-selected', 'true')
+  await expect(page).not.toHaveURL(/screen=grammar-games/)
+  // в «Письме» баннера раздела больше нет, а у вкладки нет общего переключателя уровня — уровни свои
+  await expect(page.locator('.pk-levels')).toHaveCount(0)
+  await expect(page.locator('.pk-head .ggp-sound')).toBeVisible()
+  const h = page.locator('#sec-grammar-games .ggp-host')
   await expect(h).toHaveAttribute('data-topics', '6', { timeout: 30_000 })
   await expect(h).toHaveAttribute('data-source', 'api')
   // уровень профиля A2 → L3 (Д11)
@@ -125,6 +130,7 @@ test('Практика → Письмо → тема → правило → «В
   await h.locator('.gtop .back').click()
   await expect(h.locator('.gcard.g-pick .stars .y')).toHaveCount(3)
 
+  // перезагрузка возвращает на ту же вкладку
   await page.reload()
   await expect(h).toHaveAttribute('data-topics', '6', { timeout: 60_000 })
   await h.locator('.lvcard').first().click()
@@ -135,6 +141,24 @@ test('Практика → Письмо → тема → правило → «В
   await h.locator('.tabs button').nth(1).click()
   await expect(h.locator('.gcard.g-pick .stars .y')).toHaveCount(3)
   expect(errors).toEqual([])
+})
+
+test('в «Письме» раздела больше нет, переключатель уровня там на месте', async ({ page }) => {
+  await mockBackend(page)
+  await page.goto('/?screen=practice')
+  await page.locator('.pk-skill', { hasText: 'Письмо' }).click({ timeout: 60_000 })
+  await expect(page.locator('#sec-grammar')).toBeVisible()
+  await expect(page.locator('#sec-grammar-games')).toHaveCount(0)
+  await expect(page.locator('.pk-levels')).toBeVisible()
+})
+
+test('«назад» с экрана темы (ссылка из админки) ведёт на вкладку раздела', async ({ page }) => {
+  await mockBackend(page)
+  await page.goto('/?screen=grammar-games&topic=L1-01')
+  await expect(host(page).locator('.thead h1')).toBeVisible({ timeout: 60_000 })
+  await page.locator('.ggp-top .nmb-back').click()
+  await expect(page.locator('.pk-skill--grammarGames')).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
+  await expect(page.locator('#sec-grammar-games .ggp-host')).toHaveAttribute('data-topics', '6', { timeout: 30_000 })
 })
 
 test('ссылка на тему открывает её сразу', async ({ page }) => {
