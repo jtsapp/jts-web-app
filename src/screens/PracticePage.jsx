@@ -936,6 +936,20 @@ export default function PracticePage({
           />
         )
 
+      case 'pronunciation':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-pronunciation"
+            variant="pronunciation"
+            wide
+            title={t('practice.pronunciation.heading')}
+            desc={t('practice.pronunciation.desc')}
+            cta={t('practice.pronunciation.cta')}
+            onStart={() => onNav?.('pronunciation')}
+          />
+        )
+
       case 'wordhunt':
         return (
           <Banner

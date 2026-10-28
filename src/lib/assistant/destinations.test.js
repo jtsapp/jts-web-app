@@ -84,6 +84,13 @@ describe('куда Луна умеет вести', () => {
     expect(destinationsText()).toContain('- prepositions — Prepositions World (предлоги): курс английских предлогов')
   })
 
+  it('Pronunciation World открывается напрямую и есть в описании «Говорения»', () => {
+    expect(validAction('open', 'pronunciation')).toEqual({ kind: 'open', target: 'pronunciation', now: false })
+    expect(destinationIdForScreen('pronunciation')).toBe('pronunciation')
+    expect(destinationsText()).toContain('- pronunciation — Pronunciation World (произношение): курс английского произношения')
+    expect(destinationOf('practice-speaking').about).toContain('Pronunciation World')
+  })
+
   it('«Грамматика · игры» открываются напрямую', () => {
     expect(validAction('open', 'grammar-games')).toEqual({ kind: 'open', target: 'grammar-games', now: false })
     expect(destinationIdForScreen('grammar-games')).toBe('grammar-games')

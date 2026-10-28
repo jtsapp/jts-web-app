@@ -54,7 +54,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
     name: { ru: 'Практика → Говорение', kk: 'Тәжірибе → Айтылым', en: 'Practice → Speaking' },
-    about: 'шэдоуинг, ситуации, SpeakSpin, караоке, Speak or Die',
+    about: 'шэдоуинг, Pronunciation World (произношение), ситуации, SpeakSpin, караоке, Speak or Die',
   },
 
   // Тренажёры, которые карточка Практики открывает сразу (без квоты).
@@ -103,6 +103,12 @@ export const DESTINATIONS = [
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
     name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
     about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
+  },
+  // Курс Pronunciation World тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'pronunciation', nav: 'pronunciation', screen: 'pronunciation',
+    name: { ru: 'Pronunciation World (произношение)', kk: 'Pronunciation World', en: 'Pronunciation World' },
+    about: 'курс английского произношения A0–C1 (вкладка «Говорение»): объяснение звука со схемами рта и губ, запись своего голоса для сравнения, игра на слух Echo Gates',
   },
   {
     id: 'reading', nav: 'reading', screen: 'reading',

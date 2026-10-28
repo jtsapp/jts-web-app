@@ -1131,6 +1131,9 @@ html[data-theme="dark"] .pk-banner--numbers {
 html[data-theme="dark"] .pk-banner--prepositions {
     background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
 }
+html[data-theme="dark"] .pk-banner--pronunciation {
+    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-blue) 95.5%)
+}
 html[data-theme="dark"] .pk-banner--grammar-games {
     background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc-strong) 94.2%)
 }

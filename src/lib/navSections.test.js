@@ -81,7 +81,7 @@ describe('где видна нижняя панель', () => {
   })
 
   it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
-    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard']) {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard']) {
       expect(showsTabBar(s)).toBe(false)
     }
   })

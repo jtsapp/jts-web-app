@@ -129,6 +129,7 @@ const PRACTICE_SECTIONS = {
   words: 'nav.back.words',
   numbers: 'nav.back.numbers',
   prepositions: 'nav.back.prepositions',
+  pronunciation: 'nav.back.pronunciation',
   'grammar-games': 'nav.back.grammarGames',
   'speed-reading': 'nav.back.speedReading',
   listen: 'nav.back.listen',

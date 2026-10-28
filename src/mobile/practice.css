@@ -443,6 +443,7 @@
   .pk-banner--verbs { --bn-ico: url(/assets/m/practice/ico/music_note.svg); }
   .pk-banner--grammar-games { --bn-ico: url(/assets/home-v2/ico/quiz.svg); }
   .pk-banner--prepositions { --bn-ico: url(/assets/home-v2/ico/map.svg); }
+  .pk-banner--pronunciation { --bn-ico: url(/assets/home-v2/ico/forum.svg); }
   .pk-banner--speakspin { --bn-ico: url(/assets/home-v2/ico/mic.svg); }
 
   /* ---------- Тёмная тема: токены брендбука, цвет семьи — тинтом ---------- */
