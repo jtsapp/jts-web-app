@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createTourVoice, stepPhrases } from './tourVoice.js'
+import { TICKET_FRESH_MS, createTourVoice, stepPhrases } from './tourVoice.js'
 import { PERSONAS } from './persona.js'
 
 // Плеер подменён: «играет» до тех пор, пока тест не скажет end(), — так видно
@@ -129,6 +129,46 @@ describe('голос тура', () => {
     w.say(['Деңгей.'])
     await tick()
     expect(p.log.at(-1)).toContain('v=Maya')
+  })
+
+  // Билет сервера живёт пять минут: шаг, заготовленный заранее, на котором
+  // ученик задержался дольше, просится заново — иначе <audio> получил бы 404.
+  // Сам билет играется через MediaSource (streamSource.js), и её адрес
+  // одноразовый: свой на каждое проигрывание, после — отпускается.
+  it('поток: билет играется через MediaSource, протухший билет просится заново', async () => {
+    class FakeMediaSource {
+      static isTypeSupported = (mime) => mime === 'audio/mpeg'
+      addEventListener() {}
+    }
+    window.MediaSource = FakeMediaSource
+    try {
+      let clock = 0
+      let n = 0
+      const tickets = vi.fn(async (url, init) => {
+        speakCalls.push(JSON.parse(init.body))
+        return Response.json({ url: `/api/assistant/speak?s=t${++n}` })
+      })
+      const p = fakePlayer()
+      const v = createTourVoice({ token: 't', fetchImpl: tickets, play: p.play, stopSound: p.stopSound, now: () => clock })
+      v.prefetch(['Уровень.'])
+      await tick()
+      expect(speakCalls[0]).toEqual({ text: 'Уровень.', lang: 'ru', persona: 'luna', stream: true })
+      clock = TICKET_FRESH_MS - 1
+      v.say(['Уровень.'])
+      await tick()
+      expect(p.log).toEqual(['blob:1'])
+      expect(URL.createObjectURL.mock.calls[0][0]).toBeInstanceOf(FakeMediaSource)
+      p.end()
+      await tick()
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:1')
+      clock += TICKET_FRESH_MS + 1
+      v.say(['Уровень.'])
+      await tick()
+      expect(tickets).toHaveBeenCalledTimes(2)
+      expect(p.log.at(-1)).toBe('blob:2')
+    } finally {
+      delete window.MediaSource
+    }
   })
 
   it('stop не трогает чужой звук, dispose отпускает записи', async () => {

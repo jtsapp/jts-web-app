@@ -2,9 +2,11 @@
 //
 // Не очередь ответа (voiceQueue.js): реплики тура известны заранее, поэтому
 // СЛЕДУЮЩИЙ шаг синтезируется, пока ученик слушает текущий, и по «Далее» звучит
-// сразу. Gemini не потоковый — ~1.5 с + 40 мс на символ (замер 14.10.2026), — и
-// без запаса каждый шаг начинался бы с 5–7 с тишины: ученик успевал нажать
-// «Далее» раньше, чем Луна заговорит, и тур шёл молча.
+// сразу. Синтез идёт потоком (с 15.10.2026: роут отдаёт адрес билета, а не
+// запись), но и потоку нужна секунда-другая до первого звука, а раньше REST
+// собирал шаг целиком 5–7 с — ученик успевал нажать «Далее» раньше, чем Луна
+// заговорит, и тур шёл молча. Билет живёт на сервере пять минут: шаг, на
+// котором ученик задержался дольше TICKET_FRESH_MS, просит следующий заново.
 //
 // Шаг — две фразы: заголовок (короткий, синтезируется быстро — Луна начинает
 // говорить почти сразу) и текст. Голос и запасной путь — как у ответов чата:
@@ -20,9 +22,13 @@
 
 import { playUrl, stopTts } from '../speech.js'
 import { ttsUrl } from '../ttsShared.js'
-import { phraseLang } from './voiceQueue.js'
+import { phraseLang, speakBody, speakSource } from './voiceQueue.js'
 import { stripEmoji } from './speechChunks.js'
 import { PERSONAS } from './persona.js'
+import { streamSource } from './streamSource.js'
+
+// Билет сервера живёт 5 минут (TICKET_TTL_MS в speakStream.js) — берём с запасом.
+export const TICKET_FRESH_MS = 4 * 60_000
 
 /** Фразы шага: заголовок и текст отдельно (см. шапку). */
 export function stepPhrases(step) {
@@ -44,8 +50,9 @@ export function createTourVoice({
   fetchImpl = (...args) => fetch(...args),
   play = playUrl,
   stopSound = stopTts,
+  now = () => Date.now(),
 } = {}) {
-  const cache = new Map() // фраза → Promise<url|null>
+  const cache = new Map() // фраза → { url: Promise<url|null>, at, ticket }
   const blobUrls = new Set()
   const ctrl = new AbortController()
   let seq = 0
@@ -55,28 +62,35 @@ export function createTourVoice({
   const streamUrl = (text, lang) => ttsUrl({ text, voice: persona.fallbackVoice, lang })
 
   function load(text) {
-    if (cache.has(text)) return cache.get(text)
+    const hit = cache.get(text)
+    // Адрес билета протух — сервер его уже забыл, и <audio> получил бы 404.
+    if (hit && !(hit.ticket && now() - hit.at > TICKET_FRESH_MS)) return hit.url
     const lang = phraseLang(text)
-    const url =
+    const entry = { url: null, at: now(), ticket: false }
+    entry.url =
       lang === 'kk' && !persona.speaksKazakh
         ? Promise.resolve(streamUrl(text, lang))
         : fetchImpl('/api/assistant/speak', {
             method: 'POST',
             headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-            body: JSON.stringify({ text, lang, persona: persona.id }),
+            body: speakBody(text, lang, persona.id),
             signal: ctrl.signal,
           })
-            .then((r) => (r.ok ? r.blob() : null))
+            .then(speakSource)
             .then((b) => {
               if (disposed) return null
               if (!b) return streamUrl(text, lang)
+              if (typeof b === 'string') {
+                entry.ticket = true
+                return b
+              }
               const u = URL.createObjectURL(b)
               blobUrls.add(u)
               return u
             })
             .catch((e) => (disposed || e?.name === 'AbortError' ? null : streamUrl(text, lang)))
-    cache.set(text, url)
-    return url
+    cache.set(text, entry)
+    return entry.url
   }
 
   function stop() {
@@ -104,15 +118,19 @@ export function createTourVoice({
         const url = await load(text)
         if (my !== seq || disposed) return
         if (!url) continue
+        // Билет играется потоком через MediaSource, а её адрес одноразовый:
+        // свой на каждое проигрывание (шаг могут повторить «Назад»/«Далее»).
+        const src = url.startsWith('/api/assistant/speak?') ? streamSource(url) : url
         const finished = await new Promise((resolve) => {
           playing = true
-          const ok = play(url, {
+          const ok = play(src, {
             onEnd: (reason) => resolve(reason !== 'stopped'),
             onCancel: () => resolve(false),
             onFail: () => resolve(true),
           })
           if (ok === false) resolve(true)
         })
+        if (src !== url) URL.revokeObjectURL(src)
         if (my === seq) playing = false
         if (!finished || my !== seq) return
       }

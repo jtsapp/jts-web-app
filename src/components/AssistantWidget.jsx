@@ -20,6 +20,7 @@ import { assistantCallHidden } from '../lib/assistant/callGate.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
 import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
+import { timingParts, voiceTimingVisible } from '../lib/assistant/voiceTiming.js'
 import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
 import { unlockSpeech } from '../lib/speech.js'
 import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequestPending } from '../lib/tourBus.js'
@@ -251,6 +252,20 @@ function subscribePhone(cb) {
   return () => mq.removeEventListener?.('change', cb)
 }
 const usePhone = () => useSyncExternalStore(subscribePhone, isPhone, () => false)
+
+// Подпись замера под голосовым ответом (voiceTiming.js) — на деве и по флагу.
+// Решается в браузере: на сервере адреса нет, и разметка гидратации совпадает.
+const noSubscribe = () => () => {}
+function timingVisible() {
+  let storage = null
+  try {
+    storage = window.localStorage
+  } catch {
+    /* хранилище закрыто */
+  }
+  return voiceTimingVisible(window.location.hostname, storage)
+}
+const useTimingVisible = () => useSyncExternalStore(noSubscribe, timingVisible, () => false)
 
 // Размер экрана — только после гидратации: на сервере его нет, и до первого
 // эффекта кнопка стоит по CSS (правый нижний угол) — разметка совпадает.
@@ -491,6 +506,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   const inputRef = useRef(null)
   // Озвучка текущего ответа: её обрывают печать, новый вопрос, закрытие окна.
   const voiceRef = useRef(null)
+  // Сколько шло распознавание последнего голосового вопроса — для замера ответа.
+  const sttMsRef = useRef(null)
+  const showTiming = useTimingVisible()
   // Виджет снят (выход из аккаунта): распознавание, вернувшееся позже, не
   // должно задать вопрос от имени вышедшего ученика и заговорить на экране входа.
   const mountedRef = useRef(false)
@@ -834,6 +852,15 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
 
     const speaking = voice && !cur.muted
     const vid = speaking ? ++vidRef.current : 0
+    // Замер голосового ответа (voiceTiming.js): от вопроса до первого куска
+    // текста и до первого звука; распознавание — отдельно, из useVoiceQuestion.
+    const startedAt = performance.now()
+    const sttMs = voice ? sttMsRef.current : null
+    sttMsRef.current = null
+    const timing = speaking ? { sttMs, textMs: null, soundMs: null } : null
+    const since = () => Math.round(performance.now() - startedAt)
+    const stamp = () =>
+      setMessages((prev) => prev.map((m) => (m.role === 'assistant' && m.vid === vid ? { ...m, timing: { ...timing } } : m)))
     const history = [...base, { role: 'user', content: text, ...(voice ? { voice: true } : {}), ...(opening ? { opening: true } : {}) }]
     setMessages([...history, { role: 'assistant', content: '', ...(vid ? { vid } : {}) }])
     // Пары «вопрос не по теме — отказ» модели не нужны: они только удлиняют
@@ -878,6 +905,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           if (i === 0) clearTimeout(holdTimer)
           reveal(chunker.ends[i] ?? null)
         },
+        onSound: () => {
+          timing.soundMs = since()
+          stamp()
+        },
         // Чужой звук («послушать» у слова) оборвал Луну — она молчит, текст целиком.
         onInterrupt: () => {
           if (voiceRef.current === speaker) voiceRef.current = null
@@ -896,6 +927,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           // «Открываю…» договорено — теперь сам переход (или тур).
           runDeferred(speaker)
           afterReply?.()
+          if (timing.soundMs == null) stamp()
           if (played) return
           // Ни одна фраза не зазвучала — говорим об этом тихо, текст ответа на месте.
           setMessages((prev) => {
@@ -928,6 +960,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
           // Кусок оборванной первой реплики, уже прочитанный до обрыва, не должен
           // дописаться в ответ на вопрос, который её перебил.
           if (controller.signal.aborted) return
+          if (timing && timing.textMs == null) timing.textMs = since()
           setMessages((prev) => {
             const next = prev.slice()
             const last = next[next.length - 1]
@@ -1463,7 +1496,10 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     token,
     lang,
     screenId: screen,
-    onText: (text) => runTextRef.current?.(text),
+    onText: (text, meta) => {
+      sttMsRef.current = meta?.sttMs ?? null
+      runTextRef.current?.(text)
+    },
   })
   const { cancel: cancelRecording } = voiceQ
   // Для обработчика события открытия: он подписан один раз на send.
@@ -1500,7 +1536,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   }, [send, listenAnswer, showCmd])
 
   // Распознанное после позывного: обращение срезаем, остаток — команда или вопрос.
-  const onWakeText = useCallback((raw) => {
+  const onWakeText = useCallback((raw, meta) => {
+    sttMsRef.current = meta?.sttMs ?? null
     const text = stripWake(raw, stateRef.current?.persona?.id)
     if (!text) {
       greetOnWake()
@@ -1939,6 +1976,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
                   {m.voiceFailed && <p className="asst__voice-failed">{t('assistant.voice.failed')}</p>}
+                  {showTiming && m.timing && !partial && <p className="asst__timing">{timingParts(m.timing, t).join(' · ')}</p>}
                 </div>
               )
             })}
