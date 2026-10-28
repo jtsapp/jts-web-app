@@ -48,8 +48,8 @@ function mediaPlaying(doc) {
  */
 export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_ROOT, opts }) {
   const [offer, setOffer] = useState(null)
-  const trackerRef = useRef(null)
-  if (!trackerRef.current) trackerRef.current = createStuckTracker(opts)
+  // Счётчик живёт весь визит: «дважды не нажал — больше не показываем» держится до перезагрузки.
+  const [tracker] = useState(() => createStuckTracker(opts))
   const idleMs = opts?.idleMs ?? STUCK.idleMs
   const showMs = opts?.showMs ?? STUCK.showMs
   // Свежие значения для слушателей: они живут дольше одного рендера.
@@ -65,8 +65,8 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
     if (!offerRef.current) return
     offerRef.current = null
     setOffer(null)
-    if (ignored) trackerRef.current.ignored()
-  }, [])
+    if (ignored) tracker.ignored()
+  }, [tracker])
 
   const show = useCallback(
     (reason) => {
@@ -83,8 +83,8 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
   useEffect(() => {
     if (!active) return
     const root = document.querySelector(rootSelector)
-    trackerRef.current.baseline({ screen, text: root ? snapshotScreen(root) : '' })
-  }, [active, screen, rootSelector])
+    tracker.baseline({ screen, text: root ? snapshotScreen(root) : '' })
+  }, [active, screen, rootSelector, tracker])
 
   useEffect(() => {
     if (!active) return undefined
@@ -103,7 +103,7 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
     const scan = () => {
       const root = rootIfFree()
       if (!root) return
-      const reason = trackerRef.current.observe({ screen: live.current.screen, text: snapshotScreen(root), now: Date.now() })
+      const reason = tracker.observe({ screen: live.current.screen, text: snapshotScreen(root), now: Date.now() })
       if (reason) show(reason)
     }
     const inScreen = (e) => {
@@ -139,7 +139,7 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
       const root = rootIfFree()
       if (!root) return
       const text = snapshotScreen(root)
-      const reason = trackerRef.current.idle({ screen: live.current.screen, now, lastActionAt, task: openingFocus(text).task })
+      const reason = tracker.idle({ screen: live.current.screen, now, lastActionAt, task: openingFocus(text).task })
       if (reason) show(reason)
     }, IDLE_TICK_MS)
 
@@ -154,7 +154,7 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
       // Окно открылось, начался звонок — облачко не нужно, но и пропущенным оно не было.
       drop(false)
     }
-  }, [active, rootSelector, idleMs, show, drop])
+  }, [active, rootSelector, idleMs, show, drop, tracker])
 
   // Ученик нажал облачко (или кнопку Луны, пока оно на экране): причина — для пометки.
   const take = useCallback(() => {
@@ -163,9 +163,9 @@ export function useStuckWatch({ active, screen, canOffer, rootSelector = SCREEN_
     clearTimeout(hideTimer.current)
     offerRef.current = null
     setOffer(null)
-    trackerRef.current.taken()
+    tracker.taken()
     return o.reason
-  }, [])
+  }, [tracker])
 
   return { offer, take }
 }
