@@ -78,7 +78,7 @@ describe('useVoiceQuestion', () => {
     expect(init.headers.authorization).toBe('Bearer tok')
     expect(init.body.get('lang')).toBe('kk')
     expect(init.body.get('screen')).toBe('home')
-    expect(onText).toHaveBeenCalledWith('где домашка')
+    expect(onText).toHaveBeenCalledWith('где домашка', { sttMs: expect.any(Number) })
     expect(rec.drop).toHaveBeenCalledWith('blob:q')
   })
 
@@ -122,7 +122,7 @@ describe('useVoiceQuestion', () => {
     act(() => result.current.toggle())
     await flush()
     await act(async () => rec.starts[1].onDone(out()))
-    expect(onText).toHaveBeenCalledWith('где домашка')
+    expect(onText).toHaveBeenCalledWith('где домашка', { sttMs: expect.any(Number) })
   })
 
   it('выход из аккаунта посреди распознавания — запрос оборван, вопрос не задан', async () => {
@@ -174,7 +174,7 @@ describe('useVoiceQuestion', () => {
     const { result } = mount()
     await act(() => result.current.transcribeAudio(new Blob([new Uint8Array(10)]), { onText: own }))
     expect(fetchMock.mock.calls[0][0]).toBe('/api/assistant/transcribe')
-    expect(own).toHaveBeenCalledWith('где домашка')
+    expect(own).toHaveBeenCalledWith('где домашка', { sttMs: expect.any(Number) })
     expect(onText).not.toHaveBeenCalled()
   })
 
@@ -185,12 +185,12 @@ describe('useVoiceQuestion', () => {
     resolveGate(true)
     await flush()
     await act(async () => rec.starts[0].onDone(out()))
-    expect(own).toHaveBeenCalledWith('где домашка')
+    expect(own).toHaveBeenCalledWith('где домашка', { sttMs: expect.any(Number) })
     rec.gate = Promise.resolve(true)
     act(() => result.current.toggle())
     await flush()
     await act(async () => rec.starts[1].onDone(out()))
-    expect(onText).toHaveBeenCalledWith('где домашка')
+    expect(onText).toHaveBeenCalledWith('где домашка', { sttMs: expect.any(Number) })
     expect(own).toHaveBeenCalledTimes(1)
   })
 })

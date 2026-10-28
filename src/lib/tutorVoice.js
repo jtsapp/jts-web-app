@@ -253,6 +253,13 @@ async function getAccessToken(creds) {
 // идёт с en-US: с ru-RU Gemini звучал другим диктором (14.10.2026), поэтому
 // цифры русской фразы роут помощника пишет словами, а язык не меняет.
 async function geminiTts(text, voice, languageCode = 'en-us') {
+  const r = await geminiContent(text, voice, languageCode)
+  if (!r.content) return r
+  return { audio: wavFromPcm(r.content), contentType: 'audio/wav' }
+}
+
+// Ответ Cloud TTS LINEAR16 как есть (base64 → байты); без ключа — { status: 503 }.
+async function geminiContent(text, voice, languageCode) {
   const creds = loadServiceAccount()
   if (!creds) return { status: 503 }
   const token = await getAccessToken(creds)
@@ -276,16 +283,34 @@ async function geminiTts(text, voice, languageCode = 'en-us') {
   const data = await upstream.json()
   const b64 = data?.audioContent
   if (!b64) throw new Error('Gemini Cloud TTS returned no audioContent')
-  return { audio: wavFromPcm(Buffer.from(b64, 'base64')), contentType: 'audio/wav' }
+  return { content: Buffer.from(b64, 'base64') }
 }
 
-async function elevenTts(text, tutor) {
+// Голые сэмплы из ответа LINEAR16: Cloud TTS кладёт перед ними свою шапку WAV
+// (её geminiTts по старинке заворачивает ещё раз — 22 сэмпла щелчка, на слух
+// не заметно). Потоковому пути (lib/geminiTtsStream.js) нужен чистый PCM:
+// он кодирует его в MP3, и шапка стала бы шумом в начале фразы.
+function pcmFromLinear16(buf) {
+  if (buf.length < 12 || buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') return buf
+  let at = 12
+  while (at + 8 <= buf.length) {
+    const id = buf.toString('ascii', at, at + 4)
+    const size = buf.readUInt32LE(at + 4)
+    if (id === 'data') return buf.subarray(at + 8, Math.min(buf.length, at + 8 + size))
+    at += 8 + size + (size % 2)
+  }
+  return buf.subarray(44)
+}
+
+// Запрос синтеза ElevenLabs: path '' — запись целиком, '/stream' — та же запись
+// кусками по мере синтеза (тело одинаковое, иначе голос разъедется). null —
+// нет ключа или голоса для этого тьютора.
+function elevenRequest(text, tutor, path, signal) {
   const key = elevenKey(tutor)
   const voiceId = ELEVEN_VOICE[tutor]
-  // Нет ключа или нет голоса для этого тьютора → 503, вызывающий уйдёт в откат.
-  if (!key || !voiceId) return { status: 503 }
-  const upstream = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+  if (!key || !voiceId) return null
+  return fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}${path}?output_format=mp3_44100_128`,
     {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'xi-api-key': key },
@@ -294,8 +319,16 @@ async function elevenTts(text, tutor) {
         model_id: ELEVEN_MODEL[tutor] || DEFAULT_ELEVEN_MODEL,
         voice_settings: ELEVEN_SETTINGS[tutor],
       }),
+      signal,
     },
   )
+}
+
+async function elevenTts(text, tutor) {
+  const request = elevenRequest(text, tutor, '')
+  // Нет ключа или нет голоса для этого тьютора → 503, вызывающий уйдёт в откат.
+  if (!request) return { status: 503 }
+  const upstream = await request
   if (!upstream.ok) {
     const detail = await upstream.text().catch(() => '')
     throw new Error(`ElevenLabs TTS ${upstream.status}: ${detail.slice(0, 200)}`)
@@ -433,4 +466,56 @@ export function providerStatus() {
  */
 export function synthGemini(text, { voice = GEMINI_VOICE.luna, languageCode = 'en-us' } = {}) {
   return geminiTts(text, voice, languageCode)
+}
+
+/**
+ * То же, что synthGemini, но голые сэмплы: { pcm } — 16 бит, 24 кГц, моно.
+ * Запасной путь потокового синтеза помощника (lib/geminiTtsStream.js).
+ */
+export async function synthGeminiPcm(text, { voice = GEMINI_VOICE.luna, languageCode = 'en-us' } = {}) {
+  const r = await geminiContent(text, voice, languageCode)
+  return r.content ? { pcm: pcmFromLinear16(r.content) } : r
+}
+
+/** Модель и адрес Cloud TTS — общие для REST и потока, чтобы голос не разъехался. */
+export const GEMINI_TTS = { model: GEMINI_MODEL, host: GEMINI_HOST }
+
+/**
+ * Токен сервисного аккаунта Google — тот же ключ и тот же кэш, что у REST.
+ * Без ключа — null.
+ * @returns {Promise<{ token: string, project: string | null } | null>}
+ */
+export async function googleAuth() {
+  const creds = loadServiceAccount()
+  if (!creds) return null
+  return { token: await getAccessToken(creds), project: creds.project_id || null }
+}
+
+/**
+ * Голос ElevenLabs потоком: onAudio(mp3) получает куски MP3 по мере синтеза
+ * (/stream — первый звук ~0.8 с против 2–2.7 с у записи целиком, замер
+ * 24.09/01.10.2026). Промис — конец записи или ошибка (AbortError по signal);
+ * без ключа или голоса — ошибка с code 'no_credentials'.
+ * @param {string} text
+ * @param {string} tutor
+ * @param {{ onAudio: (mp3: Buffer) => void, signal?: AbortSignal }} opts
+ */
+export async function streamEleven(text, tutor, { onAudio, signal } = {}) {
+  const request = elevenRequest(text, tutor, '/stream', signal)
+  if (!request) throw Object.assign(new Error(`ElevenLabs: no key or voice for ${tutor}`), { code: 'no_credentials' })
+  const upstream = await request
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => '')
+    throw new Error(`ElevenLabs TTS stream ${upstream.status}: ${detail.slice(0, 200)}`)
+  }
+  const reader = upstream.body.getReader()
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) return
+      if (value?.length) onAudio(Buffer.from(value))
+    }
+  } finally {
+    reader.releaseLock()
+  }
 }

@@ -1,10 +1,14 @@
 // Очередь озвучки ответа помощника: фраза → /api/assistant/speak (голос Луны,
-// Gemini) → blob → общий <audio> из speech.js (разрешение iPhone играть звук
-// живёт на нём, и его выдал тап по микрофону). Пока звучит текущая фраза,
-// готовятся LOOKAHEAD следующих: Gemini не потоковый и медленнее, чем кажется
-// (190 символов — 8–10 с, замер 14.10.2026), и с одной фразой вперёд длинная
-// фраза после короткой не успевала — ответ замолкал посередине. Дальше не
-// забегаем: ученик может оборвать ответ, и синтез остального был бы впустую.
+// Gemini) → адрес потока → общий <audio> из speech.js (разрешение iPhone
+// играть звук живёт на нём, и его выдал тап по микрофону). С 15.10.2026 роут
+// отвечает не записью, а адресом билета ({ stream: true }): синтез идёт
+// потоком, и фраза начинает звучать с первых байт (через MediaSource —
+// streamSource.js), а не через 3–4 с, когда REST соберёт её целиком. Где
+// MediaSource для MP3 нет (iPhone), поток не просим — запись целиком, как
+// раньше. Пока звучит текущая фраза, готовятся LOOKAHEAD
+// следующих — их POST сразу запускает синтез на сервере, и к своей очереди
+// фраза уже лежит там готовой. Дальше не забегаем: ученик может оборвать
+// ответ, и синтез остального был бы впустую.
 //
 // Запасной голос — потоковый /api/tts (Soniox «Grace», откатный голос Луны у
 // агента): первый звук через ~0.6 с. Им же сразу идёт казахский ответ — у
@@ -23,16 +27,42 @@
 //
 // Айзере (помощник при казахском интерфейсе, persona.js) говорит своим голосом
 // ElevenLabs на любом языке, казахском тоже: обходного пути «казахское — сразу
-// потоком» у неё нет, а запасной поток — её откатный голос Soniox «Maya».
+// потоком» у неё нет, а запасной поток — её откатный голос Soniox «Maya». Её
+// фразы с 28.10.2026 тоже идут билетом и потоком (/stream ElevenLabs).
 
 import { playUrl, stopTts } from '../speech.js'
 import { ttsUrl } from '../ttsShared.js'
 import { phraseLang } from './phraseLang.js'
 import { PERSONAS } from './persona.js'
+import { canStream, streamSource } from './streamSource.js'
 
 export const LOOKAHEAD = 2
 
 export { phraseLang }
+
+/**
+ * Тело запроса к /api/assistant/speak: голос — потоком (см. шапку), если
+ * браузер умеет играть его через MediaSource (streamSource.js); иначе — как
+ * раньше, записью целиком. persona — чьим голосом (persona.js).
+ */
+export const speakBody = (text, lang, persona) =>
+  JSON.stringify(canStream() ? { text, lang, persona, stream: true } : { text, lang, persona })
+
+/**
+ * Ответ /api/assistant/speak → адрес билета (поток) или запись целиком (Blob):
+ * казахская фраза и сервер с выключенным потоком отвечают записью. null —
+ * голоса нет, вызывающий берёт запасной.
+ * @returns {Promise<string | Blob | null>}
+ */
+export async function speakSource(r) {
+  if (!r?.ok) return null
+  if ((r.headers.get('content-type') || '').includes('application/json')) {
+    const data = await r.json().catch(() => null)
+    const url = typeof data?.url === 'string' ? data.url : ''
+    return url.startsWith('/api/assistant/speak?') ? url : null
+  }
+  return r.blob()
+}
 
 /**
  * lang (язык интерфейса) голос не выбирает — см. phraseLang; принят для
@@ -40,11 +70,15 @@ export { phraseLang }
  * @param {{ token: string, lang?: string, persona?: { id: string, fallbackVoice: string }, fetchImpl?: typeof fetch,
  *           play?: typeof playUrl, stopSound?: typeof stopTts,
  *           onPhrase?: (index: number) => void,
+ *           onSound?: (index: number) => void,
  *           onInterrupt?: () => void,
  *           onFinish?: (r: { played: number, failed: number }) => void }} opts
  *   onPhrase — фраза номер index (по порядку say) зазвучала — или пропущена,
  *   потому что не зазвучала вовсе: по нему виджет показывает текст ответа
  *   вслед за голосом, и пропущенная фраза не должна держать его скрытым.
+ *   onSound — один раз, когда зазвучала первая фраза (пропущенная не в счёт):
+ *   окно меряет по нему, через сколько после вопроса Луна заговорила
+ *   (voiceTiming.js).
  *   onInterrupt — очередь замолкла от чужого звука (см. шапку); после своего
  *   stop() не зовётся.
  *   onFinish — один раз, когда после end() доиграна вся очередь; после stop()
@@ -57,6 +91,7 @@ export function createVoiceQueue({
   play = playUrl,
   stopSound = stopTts,
   onPhrase,
+  onSound,
   onInterrupt,
   onFinish,
 } = {}) {
@@ -72,6 +107,7 @@ export function createVoiceQueue({
   let played = 0
   let failed = 0
   let reached = -1 // последняя фраза, о которой сказали onPhrase
+  let sounded = false
 
   // Каждой фразе — один раз и по порядку.
   const reach = (i) => {
@@ -96,14 +132,16 @@ export function createVoiceQueue({
     item.url = fetchImpl('/api/assistant/speak', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify({ text: item.text, lang: voiceLang, persona: persona.id }),
+      body: speakBody(item.text, voiceLang, persona.id),
       signal: ctrl.signal,
     })
-      .then((r) => (r.ok ? r.blob() : null))
+      .then(speakSource)
       .then((b) => {
         if (stopped) return null
         if (!b) return streamUrl(item.text)
-        const u = URL.createObjectURL(b)
+        // Адрес билета: фраза играется потоком через MediaSource.
+        const u = typeof b === 'string' ? streamSource(b) : URL.createObjectURL(b)
+        if (u === b) return u
         urls.add(u)
         return u
       })
@@ -147,7 +185,12 @@ export function createVoiceQueue({
     if (url) {
       await new Promise((resolve) => {
         const ok = play(url, {
-          onStart: () => reach(at),
+          onStart: () => {
+            reach(at)
+            if (sounded) return
+            sounded = true
+            onSound?.(at)
+          },
           onEnd: (reason) => {
             if (reason === 'stopped' && !stopped) return yieldToOther(resolve)
             played++
