@@ -826,4 +826,5 @@ main{max-width:1120px;margin:0 auto;padding:22px 16px 40px}
 @media (prefers-reduced-motion: reduce){ .gate.nope .gate-arch,.echo.retry,.g-why.pop{animation:none!important} }
 .pron{container:pron/inline-size;overflow-wrap:break-word}
 .pron [lang="kk"]{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+@container pron (min-width:721px){.lnav{padding-right:max(96px,calc((100cqw - 1120px)/2))}}
 `

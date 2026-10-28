@@ -34,11 +34,6 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
   const { status, bundle, retry } = usePronunciationData(token)
   const owner = ownerOf(token)
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'speaking' }))
-  // «Назад» с главной раздела зовёт движок, а монтируется он один раз на бандл: свежая функция — через ref.
-  const backRef = useRef(goBack)
-  useEffect(() => {
-    backRef.current = goBack
-  })
   // Шрифт интерфейса меняется вместе с языком (kk — Inter): переносим его в тень заново, без пересоздания движка.
   useEffect(() => {
     const host = hostRef.current
@@ -54,21 +49,36 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
     // отрисовки содержимого тени, иначе первый кадр пойдёт системным шрифтом.
     host.style.setProperty('--pron-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)
     shadow.innerHTML = `<style>${PRONUNCIATION_CSS}</style><div class="pron"><div id="app"></div></div>`
+    // Хранилище шлёт событие прогресса и на свою же запись, синхронно. Карта раздела пишет уровень при каждой
+    // отрисовке, и перерисовка «по событию» на свою запись зацикливалась (Maximum call stack) — свои записи
+    // помечаем и событие от них пропускаем.
+    let ownWrite = false
     const api = mountPronunciation(shadow.querySelector('.pron'), {
       bundle,
       progress: readPronunciation,
-      onProgress: writePronunciation,
+      onProgress: (state) => {
+        ownWrite = true
+        try {
+          writePronunciation(state)
+        } finally {
+          ownWrite = false
+        }
+      },
       onAnswer: (ok) => recordSkill('listening', ok),
       playUrl,
       prefetch: prefetchUrl,
       speak: speakPronunciation,
       // и общий плеер, и голос устройства: уход с экрана раздела глушит любую озвучку
       stopSpeech: stopPronunciation,
-      onExit: () => backRef.current(),
+      // onExit не передаём: выход из раздела — кнопка оболочки «← В Практику» (как у Prepositions World). Она же
+      // держит строку под группой «язык · колокольчик» (.learn__bell) — без неё та легла бы на перевод в шапке
+      // раздела, а вторая «назад» в шапке движка была бы лишней.
       // Прототип был страницей и не прокручивал её при переходах: игра у него — fixed на весь экран. У нас она
       // блок высотой с окно, поэтому раунд встаёт верхом к верху окна, а остальные экраны — с начала страницы.
       onRoute: (hash) => {
-        if (hash.startsWith('#/play/')) host.scrollIntoView({ block: 'start' })
+        const play = hash.startsWith('#/play/')
+        host.dataset.game = play ? '1' : ''
+        if (play) host.scrollIntoView({ block: 'start' })
         else window.scrollTo(0, 0)
       },
       fast: typeof window !== 'undefined' && !!window.__PRON_FAST,
@@ -78,6 +88,7 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
     // Снимок прогресса с сервера приходит позже первого кадра (новое устройство): карта показала бы пустые звёзды.
     // Перерисовываем только карту — посреди объяснения или раунда не трогаем.
     const onProgress = () => {
+      if (ownWrite) return
       const h = api.snapshot().hash
       if (h === '#/' || h.startsWith('#/level/')) api.P.route()
     }
@@ -87,6 +98,7 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
       if (window.__pron === api) delete window.__pron
       api.destroy()
       shadow.innerHTML = ''
+      host.dataset.game = ''
     }
     // owner: вошёл или вышел — прогресс уже другого ученика; bundle — методист перезалил курс
   }, [bundle, owner])

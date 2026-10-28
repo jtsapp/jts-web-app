@@ -51,10 +51,13 @@ const PATCHES = [
   [/(\d+)vw\b/g, '$1cqw', 16],
 ]
 
-// Своё приложения: корень — контейнер ширины, казахский перевод — на Inter.
+// Своё приложения: корень — контейнер ширины, казахский перевод — на Inter; полоса «Back / Next» объяснения на
+// широком экране отступает справа на кнопку Луны (fixed, 24 px от угла, 56 px) — иначе она ложилась на «Next». На
+// телефоне кнопка Луны поднята над нижними полосами экранов сама.
 const APP_CSS = `
 .pron{container:pron/inline-size;overflow-wrap:break-word}
 .pron [lang="kk"]{font-family:${KK}}
+@container pron (min-width:721px){.lnav{padding-right:max(96px,calc((100cqw - 1120px)/2))}}
 `
 
 function arg(name) {

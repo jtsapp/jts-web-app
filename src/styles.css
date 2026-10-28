@@ -4249,6 +4249,12 @@ textarea {
 .prn-host { display: block; }
 .prn-host[hidden] { display: none; }
 .learn__main:has(.prn-host) { overflow: visible; }
+/* Раунд Echo Gates — игра на время во всю колонку, а плавающая кнопка Луны ложилась на ворота (на телефоне — на
+   кнопку звука правых ворот). Пока идёт раунд (data-game ставит экран), кнопки Луны и её облачков нет; окно,
+   открытое учеником, остаётся. */
+body:has(.prn-host[data-game='1']) .asst__launcher,
+body:has(.prn-host[data-game='1']) .asst__hint,
+body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .prn-top { padding: 8px 16px 0; }
 }
