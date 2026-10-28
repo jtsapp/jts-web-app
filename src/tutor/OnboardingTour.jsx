@@ -225,8 +225,33 @@ export default function OnboardingTour(props) {
 function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const t = useT()
   const coach = look === 'coach'
-  const [phase, setPhase] = useState(coach && intro ? 'intro' : 'steps')
+  // Тур ведёт Луна: шаги она читает вслух (tourBus.js, AssistantWidget), а в
+  // карточке — её строка и кнопка звука.
+  const narration = useTourNarration()
+  // Приветствие («Это раздел …», «Начать / Пропустить») — приглашение в тур. Тур,
+  // который ведёт Луна, ученик у неё уже попросил, и она сама сказала «провожу тур»:
+  // второе приглашение лишнее, а шагов оно не шлёт — Луна молчала, ждала первого
+  // шага 10 с и писала «тур не запустился», пока на экране висело приветствие
+  // (e2e assistant-navigate, 28.10.2026: приветствие у туров разделов появилось с
+  // видом coach). Поэтому её тур начинается сразу с шагов.
+  const [phase, setPhase] = useState(coach && intro && !narration.on ? 'intro' : 'steps')
   const [i, setI] = useState(0)
+  // Луна взялась за тур, который уже на экране: авто-тур первого захода сам вышел
+  // раньше, чем ученик позвал её голосом (кнопку Луны тур накрывает), или вышел
+  // вместе с её заявкой — тогда «?» экрана тур не перезапускает, он и так открыт.
+  // На приветствии — пролистываем его; посреди шагов — отдаём ей текущий шаг ещё
+  // раз (replay), иначе она молчала бы до «Далее» и тоже писала бы, что тура нет.
+  // Сверка с прошлым значением при рендере, а не эффектом — как prevEnabled у
+  // виджета: один проход, без лишнего кадра приветствия.
+  const [ledBefore, setLedBefore] = useState(narration.on)
+  const [replay, setReplay] = useState(0)
+  if (narration.on !== ledBefore) {
+    setLedBefore(narration.on)
+    if (narration.on) {
+      if (phase === 'intro') setPhase('steps')
+      else setReplay((n) => n + 1)
+    }
+  }
   const [rect, setRect] = useState(null)
   // Реальный размер карточки. Раньше он был зашит числами из макета (393×184),
   // и раскладка считалась по вымыслу: на десктопе карточка 300 шириной, а её
@@ -241,9 +266,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const selector = step?.selector
   // Ключ эффекта: массив селекторов каждый рендер новый.
   const selectorKey = Array.isArray(selector) ? selector.join('|') : selector
-  // Тур ведёт Луна: шаги она читает вслух (tourBus.js, AssistantWidget), а в
-  // карточке — её строка и кнопка звука.
-  const narration = useTourNarration()
 
   // Конец тура — Луне замолчать. По размонтированию, а не только в finish:
   // ушли с экрана посреди тура — тоже конец. Отложенно и со сверкой: в dev
@@ -334,7 +356,7 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
       window.removeEventListener('scroll', measure, true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selectorKey и есть selector, только стабильный
-  }, [selectorKey, i, steps.length])
+  }, [selectorKey, i, steps.length, replay])
 
   // Меряем карточку: текст шага меняет высоту, а на мобилке другая ширина
   // (медиазапрос) — за обоими следит ResizeObserver. offset*, а не
