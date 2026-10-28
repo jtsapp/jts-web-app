@@ -947,6 +947,11 @@ html[data-theme="dark"] .pk-skill--speaking {
     --sk-ink: var(--dk-green);
     --sk-line: var(--dk-green)
 }
+html[data-theme="dark"] .pk-skill--grammarGames {
+    --sk-bg: var(--dk-yellow-tint);
+    --sk-ink: var(--dk-yellow);
+    --sk-line: var(--dk-yellow-line)
+}
 html[data-theme="dark"] .pk-sec__title {
     color: var(--dk-text)
 }
@@ -1130,9 +1135,6 @@ html[data-theme="dark"] .pk-banner--numbers {
 }
 html[data-theme="dark"] .pk-banner--prepositions {
     background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--grammar-games {
-    background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc-strong) 94.2%)
 }
 html[data-theme="dark"] .pk-banner--speed-reading {
     background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)

@@ -110,6 +110,7 @@
   .pk-skill--reading { --sk-ico: url(/assets/home-v2/ico/auto_stories.svg); }
   .pk-skill--writing { --sk-ico: url(/assets/home-v2/ico/edit_note.svg); }
   .pk-skill--speaking { --sk-ico: url(/assets/home-v2/ico/mic.svg); }
+  .pk-skill--grammarGames { --sk-ico: url(/assets/home-v2/ico/quiz.svg); }
   .pk-skill__title {
     font-size: 15px;
     font-weight: 500;
@@ -409,8 +410,7 @@
     --bn-ink: #2e9e7a;
   }
   .pk-banner--reading,
-  .pk-banner--listen,
-  .pk-banner--grammar-games {
+  .pk-banner--listen {
     --bn-bg: #ffe3cf;
     --bn-circle: #fff1e6;
     --bn-arc: #ffd2b2;
@@ -441,7 +441,6 @@
   .pk-banner--cartoons { --bn-ico: url(/assets/home-v2/ico/videocam.svg); }
   .pk-banner--writing { --bn-ico: url(/assets/home-v2/ico/edit_note.svg); }
   .pk-banner--verbs { --bn-ico: url(/assets/m/practice/ico/music_note.svg); }
-  .pk-banner--grammar-games { --bn-ico: url(/assets/home-v2/ico/quiz.svg); }
   .pk-banner--prepositions { --bn-ico: url(/assets/home-v2/ico/map.svg); }
   .pk-banner--speakspin { --bn-ico: url(/assets/home-v2/ico/mic.svg); }
 
@@ -498,8 +497,7 @@
     --bn-ink: var(--dk-green);
   }
   html[data-theme='dark'] .pk .pk-banner--reading,
-  html[data-theme='dark'] .pk .pk-banner--listen,
-  html[data-theme='dark'] .pk .pk-banner--grammar-games {
+  html[data-theme='dark'] .pk .pk-banner--listen {
     --bn-bg: var(--dk-orange-soft);
     --bn-circle: var(--dk-orange-tint);
     --bn-arc: var(--dk-orange-tint);

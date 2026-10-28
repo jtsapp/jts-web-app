@@ -116,7 +116,8 @@ describe('PracticePage — навыки и уровень', () => {
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
     // У «Чтения» шесть: + Word Hunt и «Аркада»; у «Говорения» шесть: + SpeakSpin; у
     // «Аудирования» одиннадцать: + «Числа», Just to Listen, «Скорочтение» и Cartoon World;
-    // у «Письма» шесть: + Prepositions World и «Грамматика · игры».
-    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '6 тренажеров', '6 тренажеров'])
+    // у «Письма» пять: + Prepositions World («Грамматика · игры» с 28.10.2026 — своя вкладка,
+    // под ней не тренажёры, а темы раздела).
+    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '5 тренажеров', '6 тренажеров', '125 тем'])
   })
 })
