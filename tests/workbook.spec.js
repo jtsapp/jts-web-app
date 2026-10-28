@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { bankWords, optOrder, slotCount, taskOf } from '../src/practice/workbook/engine.js'
+import { loginAsStudent } from './helpers/login.js'
 
 // Воркбук A0 (?screen=workbook): каталог юнитов → экран задания → итог урока
-// → разбор ошибок. Тесты гостевые (без токена): квоты гостей не касаются
-// (usePracticeEntitlement), сеть нужна только за JSON уровня.
+// → разбор ошибок. Тесты идут учеником (helpers/login.js): гостю кабинет не
+// рисуется. Квот экран воркбука не спрашивает, сеть нужна только за JSON уровня.
 //
 // Ожидания НЕ захардкожены: порядок вариантов и слов детерминирован (сид из
 // данных), поэтому спека считает его тем же движком из тех же JSON. Тест
@@ -63,6 +64,8 @@ const openScreen = async (page, n, i) => {
   await expect(page.locator('.wb-railmeta__t span')).toContainText(String(i + 1))
 }
 
+test.beforeEach(({ page }) => loginAsStudent(page))
+
 test.describe('Воркбук — каталог и экран задания', () => {
   test('каталог показывает юниты, уроки и общий прогресс', async ({ page }) => {
     await openCatalog(page)
@@ -88,6 +91,10 @@ test.describe('Воркбук — каталог и экран задания', 
     const right = MATCH.items[0].r
     const tok = page.locator('.wb-tok', { hasText: right })
     const gap = page.locator('.wb-blank').first()
+    // Ученику (а не гостю) в углу экрана висит кнопка Луны, и на телефоне первый пропуск оказывается прямо под
+    // ней: слово, отпущенное над кнопкой, в пропуск не попадает. Сдвигаем пропуск в середину экрана, как сделал
+    // бы ученик, — здесь проверяется само перетаскивание.
+    await gap.evaluate((el) => el.scrollIntoView({ block: 'center' }))
     const from = await tok.boundingBox()
     const to = await gap.boundingBox()
 
