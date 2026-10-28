@@ -140,6 +140,11 @@ html[data-theme="dark"] .pk-skill--speaking {
   --sk-art: url('/practice/skills/speaking-dark.svg');
   --sk-line: var(--dk-green-line);
 }
+html[data-theme="dark"] .pk-skill--grammarGames {
+  --sk-tint: var(--dk-yellow-tint);
+  --sk-art: url('/practice/skills/grammarGames-dark.svg');
+  --sk-line: var(--dk-yellow-line);
+}
 html[data-theme="dark"] .pk-skill.is-on {
   --sk-bg: var(--sk-tint);
 }

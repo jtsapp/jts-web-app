@@ -43,7 +43,7 @@ export const SCREEN_NAMES = {
   writing: 'Практика → Письмо',
   prepositions: 'Практика → Письмо → Prepositions World (курс предлогов)',
   pronunciation: 'Практика → Говорение → Pronunciation World (курс произношения и игра Echo Gates)',
-  'grammar-games': 'Практика → Письмо → Грамматика · игры (темы, правило и игры)',
+  'grammar-games': 'Практика → Грамматика · игры (темы, правило и игры)',
   workbook: 'Практика → Воркбуки',
   words: 'Практика → Слова в картинках',
   verbs: 'Практика → Глаголы',

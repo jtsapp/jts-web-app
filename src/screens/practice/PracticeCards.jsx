@@ -89,7 +89,8 @@ export function LevelSwitch({ value, onChange }) {
 // Карточка навыка. Арт фона — экспорт фигур из макета (public/practice/skills/),
 // обводка активной карточки рисуется поверх (::after), как внутренняя обводка
 // Figma: иначе рамка 0/4/6/4 сдвигала бы текст на 3px вверх.
-export function SkillCard({ skill, count, active, onClick }) {
+// sub — подпись вместо «N тренажёров» у вкладки-раздела («Грамматика · игры» — один тренажёр, но 125 тем).
+export function SkillCard({ skill, count, sub, active, onClick }) {
   const { t, lang } = useI18n()
   return (
     <button
@@ -100,7 +101,7 @@ export function SkillCard({ skill, count, active, onClick }) {
       onClick={onClick}
     >
       <span className="pk-skill__title">{t(`practice.skill.${skill}`)}</span>
-      <span className="pk-skill__count">{plural(t, lang, 'practice.trainers', count)}</span>
+      <span className="pk-skill__count">{sub ? t(sub) : plural(t, lang, 'practice.trainers', count)}</span>
     </button>
   )
 }
@@ -170,7 +171,6 @@ const BANNER_KICKER = {
   'speed-reading': 'practice.skill.reading',
   writing: 'practice.skill.writing',
   verbs: 'practice.chip.grammar',
-  'grammar-games': 'practice.chip.grammar',
   prepositions: 'practice.chip.grammar',
   speakspin: 'practice.skill.speaking',
 }

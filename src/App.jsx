@@ -2564,7 +2564,7 @@ export default function App() {
     case 'grammar-games':
       return (
         <GrammarGamesPage
-          {...sectionBack('writing')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
