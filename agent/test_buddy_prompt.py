@@ -86,14 +86,14 @@ wrapper, _, persona = text.partition(PERSONA_HEADER)
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
 assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.5")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
-assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
+assert set(BUDDY_PERSONAS) == {"dexter", "dexter_calm", "luna", "spark", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
 for block in [BUDDY_CORE, *BUDDY_LEVEL_PROFILES.values(), *BUDDY_PERSONAS.values()]:
     assert "<!--" not in block and "Правки JTS" not in block
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(p)
-assert buddy_test_on(profile(temper="harsh")), "тумблера 18+ нет: оба нрава — Декстер v3"
+assert buddy_test_on(profile(temper="harsh")), "оба нрава Декстера — на пакете v3.5"
 for other in ("gentle", "hype", "aizere"):
     assert not buddy_test_on(profile(tutor=other)), other
 # В сценарии характер выключен — там своя сборка, стенд туда не лезет.
@@ -383,6 +383,36 @@ os.environ.pop("ANTHROPIC_BRAIN_EFFORT")
 assert _brain_supports_prefill("jts-voice-router") and _brain_supports_prefill("claude-haiku-4-5")
 for m in ("claude-sonnet-5", "claude-sonnet-5-5", "claude-haiku-5-5", "gpt-6-sol", ""):
     assert not _brain_supports_prefill(m), m
+
+# ── Два нрава живого Декстера (29.10.2026): свой пацан ──────────────────────
+from agent import BUDDY_CORE_VARIANTS, buddy_default_mood, buddy_persona_for  # noqa: E402
+
+CORE_HEADER = "==== SHARED CORE ====\n"
+calm_p = profile(temper="calm")
+assert buddy_persona_for(calm_p) == "dexter_calm"
+calm = build_buddy_instructions(calm_p, "dexter_calm")
+calm_core = calm.partition(CORE_HEADER)[2].partition("==== LEVEL PROFILE")[0]
+assert calm_core.strip() == BUDDY_CORE_VARIANTS["dexter_calm"].strip()
+# Ядро не спорит с персоной: ни «всегда злой», ни ступеней, ни мата в каждой реплике.
+for gone in ("always angry", "Do not water him down", "word ratings", "swears in every ordinary turn",
+             "full roast", "- Frequency:", "adult rating", "adult roast rating", "Dexter's constant anger",
+             "stop-insults opt-out"):
+    assert gone not in calm_core, gone
+assert "calm mode" in calm_core and "18+ mode is off" in calm_core
+assert "# DEXTER — CALM MODE" in calm.partition(PERSONA_HEADER)[2]
+assert TIER not in calm, "у своего пацана нет ступени мата"
+assert LIMITS in calm, "лимиты реплики — и у него"
+assert context_of(calm)["selection"]["persona_id"] == "dexter_calm"
+assert context_of(calm)["language"]["support_language"] == "ru"
+assert buddy_default_mood("dexter_calm") is None, "базовая эмоция ровная"
+# Другие стенды нрав Декстера не трогает.
+assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark"
+# Откат без деплоя — оба нрава на клиентского Декстера v3.5.
+os.environ["DEXTER_TEMPER"] = "off"
+assert buddy_persona_for(calm_p) == "dexter"
+os.environ.pop("DEXTER_TEMPER")
+# Нрав harsh и пустой — пока хулигана нет (Task 3), прежний Декстер v3.5.
+assert buddy_persona_for(profile(temper="harsh")) in ("dexter", "dexter_hooligan")
 
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)

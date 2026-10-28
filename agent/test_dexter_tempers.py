@@ -23,4 +23,18 @@ for bad in ([("text", "zzz", "")], [("text", "e", "")], [("para", "Q", "")], [("
         continue
     raise AssertionError(f"должно было упасть: {bad}")
 
+# Настоящее ядро: каждая подмена нашлась ровно один раз (иначе patch_core упадёт).
+import os  # noqa: E402
+
+os.environ["VOICE_STACK"] = "cascade"
+from agent import BUDDY_CORE  # noqa: E402
+from dexter_tempers import CALM_CORE_PATCHES  # noqa: E402
+
+calm = patch_core(BUDDY_CORE, CALM_CORE_PATCHES)
+for gone in ("always angry", "word ratings", "swears in every ordinary turn", "Frequency:", "full roast",
+             "stays angry", "angrily"):
+    assert gone not in calm, gone
+assert "**Hard limits in every rating.**" in calm, "жёсткие границы остаются"
+assert "**Distress.** Distress includes:" in calm, "беда остаётся"
+
 print("test_dexter_tempers: ok")
