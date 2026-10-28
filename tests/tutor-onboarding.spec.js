@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FRESH_PROFILE } from './tour-helper.js'
+import { FRESH_PROFILE, signIn } from './tour-helper.js'
 
 // Здесь проверяется в том числе сам тур дашборда — значит, профиль чистый:
 // прогон целиком идёт с погашенными турами (storageState в playwright.config.js).
@@ -94,9 +94,12 @@ test.describe('онбординг тьютора — мобилка', () => {
 // краем экрана, а страница свободно скроллилась под туром.
 test.describe('онбординг-тур по дашборду', () => {
   test('поповер в экране, не накрывает подсветку, скролл заперт', async ({ page, viewport }) => {
+    await signIn(page)
     await page.goto('/?screen=tutor-profession')
     // «Пропустить вопрос» ведёт через экран анализа на дашборд с туром.
     await page.locator('button', { hasText: 'Пропустить' }).first().click()
+    // Тур вида «Главной» начинается приветствием — шаги после «Показать».
+    await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
     await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
 
     for (let step = 0; ; step++) {
@@ -130,7 +133,7 @@ test.describe('онбординг-тур по дашборду', () => {
       await page.waitForTimeout(250)
       expect(await page.evaluate(() => scrollY)).toBe(y0)
 
-      const isLast = (await page.locator('.t-tour__count').textContent()).startsWith('2/')
+      const isLast = (await page.locator('.t-tour__acts.is-last').count()) > 0
       await page.locator('.t-tour__ok').click()
       if (isLast) break
     }

@@ -15,7 +15,7 @@ import { isAllowedFile, keepMaterialParts, studentOrder } from './homework/homew
 import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { rememberPlace, resumeOf } from '../lib/navStack.js'
 
@@ -188,13 +188,22 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
   // Шаги про ответ есть не всегда: у сданной и проверенной работы ни загрузки
   // файла, ни кнопки отправки нет — тур такие шаги пропускает сам.
   const tourSteps = [
-    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text') },
+    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
     // На телефоне список спрятан за кнопкой — показываем её; на десктопе кнопки
     // нет (display: none), и тур шаг пропускает.
-    { selector: '.hw__back', title: t('tour.hw.back.title'), text: t('tour.hw.back.text') },
-    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text') },
-    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text') },
+    { selector: '.hw__back', title: t('tour.hw.back.title'), text: t('tour.hw.back.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
+    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text'), art: tourMascot('dexter-laptop'), ...TOUR_COACH_CARD },
+    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.homework'),
+    text: t('tour.hw.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('aizere-thumbs', 'sport-stand'),
+  }
 
   // Файлы грузятся по очереди, а не разом.
   //
@@ -374,7 +383,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, initia
         </div>
 
         {tour.open && (
-          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+          <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
         )}
       </div>
     </LearningLayout>

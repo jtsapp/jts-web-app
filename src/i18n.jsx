@@ -2533,6 +2533,21 @@ const dict = {
     'tour.home.recommend.text': 'Одна подсказка по твоим данным: горящая домашка, слабый навык или давно не было практики.',
     'tour.home.schedule.title': 'Расписание',
     'tour.home.schedule.text': 'Занятия на неделю вперёд. Нажми на урок, чтобы открыть его.',
+    // Приветствие туров разделов (вид «Главной»): «Это раздел» и крупно — имя раздела из меню.
+    'tour.intro.title': 'Это раздел',
+    'tour.intro.cta': 'Показать',
+    'tour.intro.skip': 'Пропустить',
+    'tour.practice.intro.text':
+      'Тренажёры на все четыре навыка — занимайся сам, в своём темпе. Покажем за минуту, что где лежит.',
+    'tour.learn.intro.text':
+      'Повторяй то, что прошли на уроках: карта уровней от A0 до C1, внутри — уроки по порядку. Покажем, как тут ходить.',
+    'tour.lessons.intro.text':
+      'Здесь занятия с преподавателем: ближайший урок и календарь всех встреч. Покажем, где что.',
+    'tour.hw.intro.text':
+      'Задания от преподавателя: открываешь работу, прикрепляешь ответ и отправляешь на проверку. Покажем, как это делается.',
+    'tour.vocab.intro.text':
+      'Слова по уровням и по темам, плюс твой личный словарь — туда попадают слова, которые сохраняешь в заданиях. Покажем за минуту.',
+    'tour.plan.intro.text': 'План по дням до вашей цели: что сделать сегодня и на неделе. Покажем, как им пользоваться.',
     'tour.practice.skills.title': 'Четыре навыка',
     'tour.practice.skills.text':
       'Аудирование, чтение, письмо и говорение: выбери навык — под ним соберутся его тренажёры.',
@@ -3929,6 +3944,14 @@ const dict = {
     'tour.sections.ielts': 'Подготовка к экзамену: анкета, диагностика и план',
     'tour.sections.sat': 'Подготовка к SAT: задания по математике',
     'tour.sections.vocab': 'Слова по уровням, по специальности и ваши сохранённые',
+    // Пункты, появившиеся в меню после макета тура: без строки список показывал сам ключ.
+    'tour.sections.my-teacher': 'Ваш преподаватель: подбор и смена учителя',
+    'tour.sections.group': 'Группа под ваш уровень и удобное время',
+    'tour.sections.tokens': 'Токены за учёбу: сколько накоплено и за что',
+    'tour.sections.prizes': 'Призы за накопленные токены',
+    'tour.sections.feedback': 'Отзывы и предложения о занятиях и платформе',
+    'tour.sections.notifications': 'Напоминания об уроках, домашке и новостях школы',
+    'tour.sections.contracts': 'Договоры на обучение: прочитать и подписать',
     'temper.invite.title': 'Жесткий режим общения',
     'temper.invite.text': 'Получайте мотивацию без лишней вежливости. Вместо привычных подбадриваний — сарказм, колкости и немного провокации, чтобы вам было сложнее бросить обучение.',
     'temper.invite.keep': 'Оставить обычный режим',
@@ -9723,6 +9746,20 @@ const dict = {
     'tour.home.recommend.text': 'One tip based on your data: homework due soon, a weak skill or a long break from practice.',
     'tour.home.schedule.title': 'Schedule',
     'tour.home.schedule.text': 'Your classes for the week ahead. Tap a lesson to open it.',
+    'tour.intro.title': 'This is',
+    'tour.intro.cta': 'Show me',
+    'tour.intro.skip': 'Skip',
+    'tour.practice.intro.text':
+      "Trainers for all four skills — practise on your own, at your own pace. We'll show you around in a minute.",
+    'tour.learn.intro.text':
+      "Review what you covered in class: a map of levels from A0 to C1, with lessons inside in order. We'll show you how to get around.",
+    'tour.lessons.intro.text':
+      "Classes with your teacher: the next lesson and a calendar of all sessions. We'll show you where everything is.",
+    'tour.hw.intro.text':
+      "Assignments from your teacher: open one, attach your answer and send it for review. We'll show you how.",
+    'tour.vocab.intro.text':
+      "Words by level and by topic, plus your own dictionary — words you save in tasks end up there. We'll show you around in a minute.",
+    'tour.plan.intro.text': "A day-by-day plan to your goal: what to do today and this week. We'll show you how to use it.",
     'tour.practice.skills.title': 'Four skills',
     'tour.practice.skills.text':
       'Listening, reading, writing and speaking: pick a skill and its trainers gather below.',
@@ -11115,6 +11152,13 @@ const dict = {
     'tour.sections.ielts': 'Exam preparation: questionnaire, diagnostics and a plan',
     'tour.sections.sat': 'SAT preparation: math practice',
     'tour.sections.vocab': 'Words by level, by profession and the ones you saved',
+    'tour.sections.my-teacher': 'Your teacher: matching and switching teachers',
+    'tour.sections.group': 'A group for your level and a convenient time',
+    'tour.sections.tokens': 'Tokens for studying: how many you have and what for',
+    'tour.sections.prizes': 'Prizes for the tokens you collect',
+    'tour.sections.feedback': 'Reviews and suggestions about classes and the platform',
+    'tour.sections.notifications': 'Reminders about lessons, homework and school news',
+    'tour.sections.contracts': 'Study contracts: read and sign',
     'temper.invite.title': 'Tough talk mode',
     'temper.invite.text': 'Get motivated without the extra politeness. Instead of the usual encouragement — sarcasm, jabs and a bit of provocation, so it’s harder for you to quit.',
     'temper.invite.keep': 'Keep normal mode',
@@ -16904,6 +16948,20 @@ const dict = {
     'tour.home.recommend.text': 'Сенің деректерің бойынша бір кеңес: мерзімі жеткен үй жұмысы, әлсіз дағды немесе ұзақ уақыт практика болмаған.',
     'tour.home.schedule.title': 'Кесте',
     'tour.home.schedule.text': 'Алдағы аптаның сабақтары. Ашу үшін сабақты бас.',
+    'tour.intro.title': 'Бұл бөлім —',
+    'tour.intro.cta': 'Көрсету',
+    'tour.intro.skip': 'Өткізу',
+    'tour.practice.intro.text':
+      'Төрт дағдының бәріне жаттығулар — өз қарқыныңмен өзің жаттық. Бір минутта бәрін көрсетеміз.',
+    'tour.learn.intro.text':
+      'Сабақта өткеніңді қайтала: A0-ден C1-ге дейінгі деңгейлер картасы, ішінде — сабақтар ретімен. Қалай жүру керегін көрсетеміз.',
+    'tour.lessons.intro.text':
+      'Мұғаліммен сабақтар: ең жақын сабақ және барлық кездесулер күнтізбесі. Не қайда екенін көрсетеміз.',
+    'tour.hw.intro.text':
+      'Мұғалімнің тапсырмалары: жұмысты ашасың, жауабыңды тіркейсің де, тексеруге жібересің. Қалай істеу керегін көрсетеміз.',
+    'tour.vocab.intro.text':
+      'Деңгейлер мен тақырыптар бойынша сөздер және өз сөздігің — тапсырмаларда сақтаған сөздер сонда түседі. Бір минутта көрсетеміз.',
+    'tour.plan.intro.text': 'Мақсатыңызға дейінгі күнделікті жоспар: бүгін және осы аптада не істеу керек. Қалай пайдалану керегін көрсетеміз.',
     'tour.practice.skills.title': 'Төрт дағды',
     'tour.practice.skills.text':
       'Тыңдалым, оқылым, жазылым және айтылым: дағдыны таңда — оның жаттықтырғыштары астында жиналады.',
@@ -18296,6 +18354,13 @@ const dict = {
     'tour.sections.ielts': 'Емтиханға дайындық: сауалнама, диагностика және жоспар',
     'tour.sections.sat': 'SAT-қа дайындық: математика тапсырмалары',
     'tour.sections.vocab': 'Деңгей мен мамандық бойынша сөздер және сақтағандарыңыз',
+    'tour.sections.my-teacher': 'Мұғаліміңіз: мұғалім таңдау және ауыстыру',
+    'tour.sections.group': 'Деңгейіңізге және ыңғайлы уақытқа сай топ',
+    'tour.sections.tokens': 'Оқу үшін токендер: қанша жиналды және не үшін',
+    'tour.sections.prizes': 'Жинаған токендерге сыйлықтар',
+    'tour.sections.feedback': 'Сабақтар мен платформа туралы пікірлер мен ұсыныстар',
+    'tour.sections.notifications': 'Сабақ, үй жұмысы және мектеп жаңалықтары туралы еске салулар',
+    'tour.sections.contracts': 'Оқу шарттары: оқып, қол қою',
     'temper.invite.title': 'Қатаң сөйлесу режимі',
     'temper.invite.text': 'Артық сыпайылықсыз мотивация алыңыз. Әдеттегі көтермелеудің орнына — сарказм, шаншу сөздер және аздап арандату, оқуды тастау қиынырақ болуы үшін.',
     'temper.invite.keep': 'Қалыпты режимді қалдыру',
