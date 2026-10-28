@@ -18,6 +18,7 @@ import {
   WAKE_MARK,
   STUCK_ERRORS_MARK,
   STUCK_IDLE_MARK,
+  ITEMS_HINT,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -492,5 +493,26 @@ describe('ученик застрял и нажал «Подсказать?»', 
     expect(last).toContain('(полторы минуты ничего не делает)')
     expect(last).toContain('Задание ещё не проверено: не оценивай введённый ответ и не называй правильный')
     expect(last).toContain('Язык ответа: казахский')
+  })
+})
+
+describe('каталог «Что можно открыть»', () => {
+  const items = '- course.B1.L5 — урок 5 «Why we spend» (юнит 2) · следующий'
+  it('под просьбой открыть — список в контексте и указание рядом с вопросом', () => {
+    const last = buildTurns({ ...parseChatRequest(ask('открой урок 5')), user: null, items }).at(-1).content
+    expect(last).toContain('Что можно открыть (адрес — для метки [[OPEN адрес]] / [[OPEN_NOW адрес]]):')
+    expect(last).toContain(items)
+    expect(last).toContain('Вопрос ученика: открой урок 5')
+    expect(last).toContain(ITEMS_HINT)
+  })
+  it('без каталога — ни списка, ни указания', () => {
+    const last = buildTurns({ ...parseChatRequest(ask('что такое Present Perfect?')), user: null }).at(-1).content
+    expect(last).not.toContain('Что можно открыть')
+    expect(last).not.toContain(ITEMS_HINT)
+  })
+  it('в правилах — адреса только из списка, закрытый урок не открывать', () => {
+    const rules = buildSystemPrompt()
+    expect(rules).toContain('только когда в <контекст> есть список «Что можно открыть»')
+    expect(rules).toContain('Пометка «закрыт» — не открывай')
   })
 })
