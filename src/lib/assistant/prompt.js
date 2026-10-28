@@ -9,13 +9,22 @@
 
 import { destinationIdForScreen, destinationsText } from './destinations.js'
 import { knowledgeText } from './knowledge.js'
-import { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus } from './opening.js'
+import {
+  OPENING_MARK,
+  STUCK_ERRORS_MARK,
+  STUCK_IDLE_MARK,
+  WAKE_MARK,
+  isOpeningTurn,
+  isWakeTurn,
+  openingFocus,
+  stuckReason,
+} from './opening.js'
 import { RECALL_MARK } from './tracker.js'
 import { PERSONAS, assistantPersona } from './persona.js'
 import { REPORT_BUG_MARKER, createReportFilter, splitReport } from './report.js'
 
 export { REPORT_BUG_MARKER, createReportFilter, splitReport }
-export { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus }
+export { OPENING_MARK, STUCK_ERRORS_MARK, STUCK_IDLE_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus, stuckReason }
 
 // Ограничения запроса. Длинный разговор помощнику не нужен — это не тьютор, а
 // справка, — а каждый лишний ход оплачивается на каждом следующем вопросе.
@@ -347,32 +356,46 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
   // Указание — рядом с пометкой по той же причине, что у открытия окна. Совета раздела
   // нет: ученик сейчас скажет, что ему нужно, — поэтому и «Совет сайта» из профиля убран.
   const wake = isWakeTurn(last.content)
+  // «Подсказать?» (stuck.js): ученик застрял и сам нажал облачко — Луна сразу о задании.
+  // Указание рядом с пометкой, как у открытия окна, и по той же причине.
+  const stuck = stuckReason(last.content)
   const answerLang = `Язык ответа: ${LANG_NAMES[lang] || LANG_NAMES.ru}`
   // Обычный вопрос на непроверенном задании — то же указание рядом с вопросом: на
   // «проверь» Haiku 5.5 сама оценивала выбор ученика и называла верный вариант («задание
   // ждало «don't like»» — зонд 21.10.2026, 3 из 3), хотя RULES это запрещают; подсказкой
   // ей служил значок 👎 в задании. С указанием она жмёт «Проверить» и молчит об ответе.
   const unchecked = !opening && !wake && openingFocus(screen?.text).unchecked
-  const ask = wake
+  const ask = stuck
     ? [
-        WAKE_MARK,
+        last.content.trim(),
         answerLang,
-        `Ученик сам позвал тебя голосом («${assistantPersona(lang).wakeExample}»). Поздоровайся коротко — по имени, если оно есть, и на «вы»; одной фразой скажи, что видишь на экране; спроси, чем помочь. Раздел не советуй и метку не ставь.`,
-        ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный.'] : []),
-        'Не больше 3 коротких предложений.',
+        `Ученик застрял на задании на экране (${stuck === 'idle' ? 'полторы минуты ничего не делает' : 'две неверные проверки подряд'}) и нажал «Подсказать?». Разбери именно это задание: что не так или на что посмотреть. Без приветствия.`,
+        focus.unchecked
+          ? 'Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'
+          : 'Верный ответ называй, только если сайт его показал («верный ответ по заданию»); иначе — подсказка, без ответа.',
+        'Без советов про другие разделы, без прошлых советов и без метки.',
+        'Не больше 4 коротких предложений.',
       ].join('\n')
-    : opening
+    : wake
       ? [
-          OPENING_MARK,
+          WAKE_MARK,
           answerLang,
-          ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
-          ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
-          'Не больше 4 коротких предложений.',
+          `Ученик сам позвал тебя голосом («${assistantPersona(lang).wakeExample}»). Поздоровайся коротко — по имени, если оно есть, и на «вы»; одной фразой скажи, что видишь на экране; спроси, чем помочь. Раздел не советуй и метку не ставь.`,
+          ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный.'] : []),
+          'Не больше 3 коротких предложений.',
         ].join('\n')
-      : unchecked
-        ? `Вопрос ученика: ${last.content}\n\nЗадание на экране ещё не проверено: не оценивай выбор или ввод ученика и не называй правильный ответ — только подсказка или нажатие кнопки, о которой он просит.`
-        : `Вопрос ученика: ${last.content}`
-  const context = focus.task || wake ? withoutAdvice(studentContext) : studentContext
+      : opening
+        ? [
+            OPENING_MARK,
+            answerLang,
+            ...(focus.task ? ['На экране задание: говори только о нём — без советов про другие разделы, без прошлых советов и без метки. Ошибку из разговоров со Speaking Buddy на то же правило назвать можно.'] : []),
+            ...(focus.unchecked ? ['Задание ещё не проверено: не оценивай введённый ответ и не называй правильный — только подсказка.'] : []),
+            'Не больше 4 коротких предложений.',
+          ].join('\n')
+        : unchecked
+          ? `Вопрос ученика: ${last.content}\n\nЗадание на экране ещё не проверено: не оценивай выбор или ввод ученика и не называй правильный ответ — только подсказка или нажатие кнопки, о которой он просит.`
+          : `Вопрос ученика: ${last.content}`
+  const context = focus.task || wake || stuck ? withoutAdvice(studentContext) : studentContext
   last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today })}\n\n${ask}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }

@@ -27,6 +27,7 @@ import {
   isOpeningTurn,
   isWakeTurn,
   openingFocus,
+  stuckReason,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
@@ -112,6 +113,10 @@ export async function POST(request) {
   // Позывной (opening.js): Луна здоровается и спрашивает, чем помочь, — без кнопки
   // раздела и без заметки трекера, даже если модель всё же поставила метку.
   const wake = isWakeTurn(parsed.messages[parsed.messages.length - 1].content)
+  // «Подсказать?» (lib/assistant/stuck.js): ученик застрял и нажал облачко — Луна разбирает
+  // задание, раздел не предлагает. Строка лога — сколько раз облачко нажимали, без текста.
+  const stuck = stuckReason(parsed.messages[parsed.messages.length - 1].content)
+  if (stuck) console.info('[assistant]', JSON.stringify({ kind: 'stuck', reason: stuck }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
@@ -226,7 +231,7 @@ export async function POST(request) {
   // его же репликой: RULES это просят, но держит их модель через раз.
   const lastText = parsed.messages[parsed.messages.length - 1].content
   const finalAction = () => {
-    if (focusTask || wake) return null
+    if (focusTask || wake || stuck) return null
     const action = actions.action()
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null

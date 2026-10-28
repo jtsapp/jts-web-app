@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { OPENING_MARK, WAKE_MARK, isOpeningTurn, isWakeTurn, openingFocus, screenStateKey } from './opening.js'
+import {
+  OPENING_MARK,
+  STUCK_ERRORS_MARK,
+  STUCK_IDLE_MARK,
+  WAKE_MARK,
+  isOpeningTurn,
+  isWakeTurn,
+  openingFocus,
+  screenStateKey,
+  stuckMark,
+  stuckReason,
+} from './opening.js'
 
 describe('пометка «ученик открыл окно»', () => {
   it('узнаётся и с пробелами по краям, а вопрос ученика — нет', () => {
@@ -64,5 +75,17 @@ describe('состояние экрана для первой реплики', (
 
   it('пробелы и переносы разметки не в счёт', () => {
     expect(screenStateKey('home', 'Главная\n  Расписание')).toBe(screenStateKey('home', 'Главная Расписание'))
+  })
+})
+
+describe('пометка «ученик застрял»', () => {
+  it('служебный ход с причиной; вопрос ученика — не она', () => {
+    expect(stuckReason(STUCK_ERRORS_MARK)).toBe('errors')
+    expect(stuckReason(`  ${STUCK_IDLE_MARK} `)).toBe('idle')
+    expect(stuckReason('где домашка')).toBe(null)
+    expect(isOpeningTurn(STUCK_IDLE_MARK)).toBe(true)
+    expect(isWakeTurn(STUCK_IDLE_MARK)).toBe(false)
+    expect(stuckMark('idle')).toBe(STUCK_IDLE_MARK)
+    expect(stuckMark('errors')).toBe(STUCK_ERRORS_MARK)
   })
 })
