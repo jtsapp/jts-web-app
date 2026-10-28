@@ -49,6 +49,23 @@ describe('useStuckWatch', () => {
     expect(result.current.offer).toBe(null)
   })
 
+  // Ученик жмёт «Продолжить» быстрее, чем через 0.8 с после ошибки: снимок после
+  // проверки увидел бы уже следующее задание. Поэтому экран снимается и в момент
+  // клика — до того, как клик его поменял (съёмка облачка 28.10 так ошибку теряла).
+  it('ошибка, сразу «Продолжить» — ошибка всё равно засчитана', async () => {
+    const { result } = watch()
+    press('go')
+    markWrong('a')
+    await later(100)
+    press('go') // «Продолжить»: в момент клика на экране ещё пометка первой ошибки
+    markWrong(null)
+    await later(2100)
+    press('go')
+    markWrong('b')
+    await later(900)
+    expect(result.current.offer).toEqual({ reason: 'errors' })
+  })
+
   it('take — причина для пометки и облачко уходит', async () => {
     const { result } = watch()
     press('go')

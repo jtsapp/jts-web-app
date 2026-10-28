@@ -522,6 +522,14 @@
     bottom: calc(var(--safe-bottom, 56px) + 72px + 28px);
     max-width: min(248px, calc(100vw - 100px));
   }
+  /* «Подсказать?» на телефоне — над кнопкой, а не сбоку: сбоку оно ложилось на плашку
+     «Неверный ответ» урока (она внизу экрана), которую ученику как раз надо прочитать. */
+  .asst__hint--stuck {
+    right: 16px;
+    bottom: calc(var(--safe-bottom, 56px) + 72px + 56px + 12px);
+    transform: none;
+  }
+  .asst__hint--stuck::after { display: none; }
   .asst__badge {
     right: 16px;
     bottom: calc(var(--safe-bottom, 56px) + 72px + 56px + 20px);
