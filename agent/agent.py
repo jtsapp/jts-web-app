@@ -66,7 +66,7 @@ except Exception:  # pragma: no cover - plugin missing in some envs
 import noise_guard
 import assistant_call
 # Ядро Speaking Buddy под нрав Декстера (свой пацан / хулиган 18+), 29.10.2026.
-from dexter_tempers import CALM_CORE_PATCHES, patch_core
+from dexter_tempers import CALM_CORE_PATCHES, HOOLIGAN_CORE_PATCHES, HOOLIGAN_TIER_BLOCK, patch_core
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
@@ -3639,6 +3639,7 @@ _BUDDY_PERSONA_FILES = {
     # Два нрава живого Декстера (29.10.2026): «свой пацан» без кнопки 18+ и
     # хулиган с ней. Клиентский Dexter.md v3.5 остаётся для отката DEXTER_TEMPER.
     "dexter_calm": "Dexter_Calm.md",
+    "dexter_hooligan": "Dexter_Hooligan.md",
     "luna": "Luna.md",
     "spark": "Spark.md",
     "aizere": "Aizere.md",
@@ -3675,6 +3676,7 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
 # и так красный.
 _BUDDY_CORE_PATCHES = {
     "dexter_calm": CALM_CORE_PATCHES,
+    "dexter_hooligan": HOOLIGAN_CORE_PATCHES,
 }
 BUDDY_CORE_VARIANTS: dict[str, str] = {}
 for _pid, _patches in _BUDDY_CORE_PATCHES.items():
@@ -4191,6 +4193,10 @@ def _buddy_has_profanity(persona: str) -> bool:
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     """Блок ступени — только персоне с матом и ростингом. У взрослого он держит
     злость, у остальных — границу между мягкими словами и крепкими."""
+    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): возраст
+    # слова не меняет, детский блок ему не положен.
+    if persona == "dexter_hooligan":
+        return "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n" + HOOLIGAN_TIER_BLOCK
     if not _buddy_has_profanity(persona):
         return ""
     group = _buddy_age_group(p)
@@ -4221,7 +4227,10 @@ _ADULT_ROTATION_RE = _re.compile(r"rotate [^()]+ \(adult\) or ([^()]+) \(under 1
 def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
     """Файл персоны для этого звонка: ученику младше 18 — без взрослых примеров."""
     text = BUDDY_PERSONAS.get(persona, "")
-    if not _buddy_has_profanity(persona) or _buddy_age_group(p) == "adult":
+    # Детский фильтр — только у персоны со ступенями по возрасту: у хулигана
+    # ступень одна, и его примеры для всех.
+    if (not _buddy_has_profanity(persona) or persona == "dexter_hooligan"
+            or _buddy_age_group(p) == "adult"):
         return text
     text = "\n".join(line for line in text.split("\n") if not line.startswith("- Adult"))
     text = _ADULT_ROTATION_RE.sub(r"rotate \1", _ADULT_INLINE_RE.sub("", text))

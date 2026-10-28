@@ -37,4 +37,16 @@ for gone in ("always angry", "word ratings", "swears in every ordinary turn", "F
 assert "**Hard limits in every rating.**" in calm, "жёсткие границы остаются"
 assert "**Distress.** Distress includes:" in calm, "беда остаётся"
 
+from dexter_tempers import HOOLIGAN_CORE_PATCHES  # noqa: E402
+
+hool = patch_core(BUDDY_CORE, HOOLIGAN_CORE_PATCHES)
+for gone in ("under 18 or unknown — same Dexter", "never the person", "mocks intelligence only",
+             "stop-insults opt-out", "adult roast rating", "adult rating"):
+    assert gone not in hool, gone
+assert "**Dexter's hooligan rating.**" in hool and "- **hooligan — full attack.**" in hool
+# Слова-ярлыки про инвалидность и мать остаются под запретом.
+for kept in ("“дебил”", "“даун”", "“твою мать”", "“retard”"):
+    assert kept in hool, kept
+assert "**Distress.** Distress includes:" in hool
+
 print("test_dexter_tempers: ok")
