@@ -15,15 +15,13 @@ import { DEFAULT_PLACE, LAUNCHER_SIZE, clampPos, panelSize, placeRect, readPlace
 import { useIntroHint } from '../lib/assistant/introHint.js'
 import { assistantPersona } from '../lib/assistant/persona.js'
 import { createSpeechChunker } from '../lib/assistant/speechChunks.js'
-import { callSpeech, createCallTourVoice } from '../lib/assistant/callBridge.js'
+import { callSpeech } from '../lib/assistant/callBridge.js'
 import { assistantCallHidden } from '../lib/assistant/callGate.js'
 import { useVoiceQuestion } from '../lib/assistant/useVoiceQuestion.js'
-import { createTourVoice, stepPhrases } from '../lib/assistant/tourVoice.js'
 import { createVoiceQueue } from '../lib/assistant/voiceQueue.js'
 import { timingParts, voiceTimingVisible } from '../lib/assistant/voiceTiming.js'
 import { useWakeWord } from '../lib/assistant/wake/useWakeWord.js'
 import { unlockSpeech } from '../lib/speech.js'
-import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequestPending } from '../lib/tourBus.js'
 
 // Помощник по сайту — Луна: плавающая кнопка и окно чата поверх любого экрана
 // ученика. Где он показывается — решает App (lib/assistant/visibility.js).
@@ -41,13 +39,12 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // микрофон, получает ответ голосом сразу, по мере того как он пишется;
 // набранный текстом — только текстом. Озвучку можно выключить кнопкой в шапке.
 //
-// Действия (15.10.2026): Луна умеет открыть раздел и провести тур по экрану
-// (lib/assistant/actions.js, destinations.js). Предложение — кнопка под её
-// ответом; «открой» / «да» — переход сразу, по концу ответа. Переход делает App
-// (navigateTo → handleNav), тур — сам экран, как по своей кнопке «?»
-// (tourBus.js); Луна только просит и потом читает шаги тура вслух. Тур она
-// озвучивает и на набранный вопрос: голос — и есть «объясняет, куда нажимать»;
-// выключается той же кнопкой звука (и в шапке, и в карточке тура).
+// Действия (15.10.2026): Луна умеет открыть раздел (lib/assistant/actions.js,
+// destinations.js). Предложение — кнопка под её ответом; «открой» / «да» — переход
+// сразу, по концу ответа. Переход делает App (navigateTo → handleNav). Туров по
+// экрану Луна не водит (решение владельца 28.10.2026): прежний тур «от Луны» —
+// тур экрана, шаги которого она читала вслух, — убран; новый тур вида coach выходит
+// сам при первом заходе и по кнопке «?» экрана.
 //
 // Нажатия (21.10.2026, владелец: «больше прав — нажимать на кнопки»): снимок вопроса
 // нумерует кнопки, Луна просит нажать по номеру, окно жмёт (clicker.js) — сразу, не
@@ -68,7 +65,7 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // ответ в тишине, а «открываю Практику» уводило его в раздел раньше, чем Луна
 // заговорила. Теперь у озвучиваемого ответа фраза появляется, когда Луна
 // начинает её говорить (held), до того — строка «Думаю… / Смотрю на экран… /
-// Сейчас скажу…» (StatusBubble), а переход и тур — когда она договорила.
+// Сейчас скажу…» (StatusBubble), а переход — когда она договорила.
 //
 // Размер и место (16.10.2026, комментарий руководства: «уменьшить, чтобы не
 // мешал при работе с платформой; по команде — больше, как телефон на экране
@@ -83,9 +80,8 @@ import { cancelTourRequest, onTourEvent, requestTour, setTourNarration, tourRequ
 // голосом Луны (AssistantCall, agent/assistant_call.py), а ответ на каждую его
 // реплику пишет ЭТОТ виджет тем же /api/assistant/chat — со снимком экрана,
 // контекстом ученика и метками действий. Поэтому в звонке Луна видит экран,
-// объясняет ошибки, открывает разделы и водит турами так же, как в чате:
-// разговор идёт в тот же список сообщений, «открываю…» выполняется, когда она
-// договорила, шаги тура читает голос звонка. Окно можно закрыть — звонок
+// объясняет ошибки и открывает разделы так же, как в чате: разговор идёт в тот
+// же список сообщений, «открываю…» выполняется, когда она договорила. Окно можно закрыть — звонок
 // продолжается, кнопка Луны показывает, что она на связи.
 //
 // Позывной (16.10.2026, «Луна» — с 19.10, команды — с 21.10): «Луна, дальше» — быстрая
@@ -109,14 +105,6 @@ const HINT_GAP = 14
 const BADGE_H = 32
 const BADGE_GAP = 20
 const BADGE_OUT_MS = 200
-// Тур не начался за это время (экран без тура, данные не доехали) — честно
-// говорим об этом, а не молчим. Чуть больше срока жизни заявки в tourBus.
-const TOUR_START_TIMEOUT_MS = 10_500
-// Первый шаг тура ждёт, пока Луна договорит ответ («начинаю тур»), но не
-// дольше: очередь ответа, которую оборвал чужой звук, конца уже не сообщит.
-const REPLY_WAIT_MAX_MS = 8_000
-// Состояние тура «Луна не ведёт» (guideRef в компоненте).
-const GUIDE_OFF = { on: false, screen: null, waitReply: false, pending: false, lastKey: null, lastPhrases: [], timer: null, waitTimer: null }
 const PHONE_QUERY = '(max-width: 720px)'
 // Текст озвучиваемого ответа ждёт первого звука, но не дольше: первая фраза
 // (≤ FIRST_MAX символов) у Gemini — до ~5 с; дольше — синтез завис или ушёл в
@@ -287,12 +275,7 @@ const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
   if (action.kind === 'click') return t(action.now ? 'assistant.action.clicking' : 'assistant.action.offerClick', { label: action.label })
-  const name = destinationName(action.target, lang)
-  const tour = action.kind === 'tour'
-  const key = action.now
-    ? (tour ? 'assistant.action.touring' : 'assistant.action.opening')
-    : (tour ? 'assistant.action.offerTour' : 'assistant.action.offerOpen')
-  return t(key, { name })
+  return t(action.now ? 'assistant.action.opening' : 'assistant.action.offerOpen', { name: destinationName(action.target, lang) })
 }
 
 const SCREEN_ROOT = '.scr-in'
@@ -557,7 +540,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
   }, [])
   useEffect(() => () => clearTimeout(cmdTimerRef.current), [])
 
-  // Действие «сейчас» (открыть раздел, тур) ждёт, пока Луна договорит ответ:
+  // Действие «сейчас» (открыть раздел) ждёт, пока Луна договорит ответ:
   // { action, owner — очередь озвучки этого ответа, timer }.
   const deferredRef = useRef(null)
   const performRef = useRef(null)
@@ -587,80 +570,6 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     runDeferred()
   }, [silence, releaseHold, runDeferred])
 
-  // ── Тур, который ведёт Луна ────────────────────────────────────────────
-  // on — тур запустила Луна, и его шаги она читает вслух (tourVoice.js).
-  // screen — экран, на котором попросить тур, когда переход до него доедет.
-  // waitReply — первый шаг ждёт, пока договорит её ответ («начинаю тур…»), и
-  // не обрывает его на полуслове; дальше каждый шаг — по «Далее» ученика —
-  // обрывает прошлый. lastPhrases — текущий шаг: его повторяет включённый звук.
-  const guideRef = useRef({ ...GUIDE_OFF })
-  const tourVoiceRef = useRef(null)
-  const toggleMutedRef = useRef(null)
-
-  const endGuide = useCallback(() => {
-    const g = guideRef.current
-    clearTimeout(g.timer)
-    clearTimeout(g.waitTimer)
-    Object.assign(g, GUIDE_OFF)
-    tourVoiceRef.current?.dispose()
-    tourVoiceRef.current = null
-    setTourNarration({ on: false, muted: false })
-  }, [])
-
-  // Сказать текущий шаг — если ничто не мешает (звук выключен, ответ ещё звучит).
-  const sayStep = useCallback(() => {
-    const g = guideRef.current
-    const cur = stateRef.current
-    if (!g.on || !g.lastPhrases.length || (cur?.muted && !cur?.callLive) || !cur?.enabled) return
-    g.waitReply = false
-    g.pending = false
-    clearTimeout(g.waitTimer)
-    stopVoice()
-    tourVoiceRef.current?.say(g.lastPhrases)
-  }, [stopVoice])
-
-  const narrate = useCallback((phrases, next) => {
-    const g = guideRef.current
-    g.lastPhrases = phrases
-    const cur = stateRef.current
-    if (!g.on || (cur?.muted && !cur?.callLive) || !cur?.enabled) return
-    // Синтез начинаем сразу — и этого шага, и следующего: пока звучит этот,
-    // следующий успеет, и по «Далее» Луна заговорит без паузы.
-    tourVoiceRef.current?.prefetch(phrases)
-    tourVoiceRef.current?.prefetch(next)
-    if (g.waitReply && voiceRef.current) {
-      g.pending = true
-      clearTimeout(g.waitTimer)
-      g.waitTimer = setTimeout(sayStep, REPLY_WAIT_MAX_MS)
-      return
-    }
-    sayStep()
-  }, [sayStep])
-
-  const startGuide = useCallback(({ waitReply }) => {
-    const g = guideRef.current
-    clearTimeout(g.timer)
-    clearTimeout(g.waitTimer)
-    tourVoiceRef.current?.dispose()
-    // В звонке шаг читает агент: второй голос поверх звонка звучал бы
-    // одновременно с ним и попадал бы ему в микрофон.
-    tourVoiceRef.current = stateRef.current?.callLive
-      ? createCallTourVoice((text) => callCtlRef.current?.say(text))
-      : createTourVoice({ token: stateRef.current?.token, persona: stateRef.current?.persona })
-    Object.assign(g, { ...GUIDE_OFF, on: true, waitReply })
-    setTourNarration({ on: true, muted: Boolean(stateRef.current?.muted), avatar: stateRef.current?.persona?.avatar }, () => toggleMutedRef.current?.())
-    g.timer = setTimeout(() => {
-      // Ни одного шага: у экрана нет тура или он не дождался своих данных.
-      // Молча погасший тур выглядел бы как «Луна соврала» — говорим как есть.
-      if (!guideRef.current.on || guideRef.current.lastKey !== null) return
-      cancelTourRequest()
-      endGuide()
-      if (!mountedRef.current || inFlightRef.current || !stateRef.current?.enabled) return
-      setMessages((prev) => [...prev, { role: 'assistant', content: stateRef.current.t('assistant.tour.unavailable') }])
-      setOpen(true)
-    }, TOUR_START_TIMEOUT_MS)
-  }, [endGuide])
-
   // Номера кнопок последнего снимка (screenSnapshot.snapshotWithRefs): по ним окно жмёт
   // кнопку, которую назвала Луна.
   const refsRef = useRef(new Map())
@@ -687,7 +596,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     return res
   }, [])
 
-  // Выполнить действие Луны: открыть раздел, провести тур или нажать кнопку. gesture —
+  // Выполнить действие Луны: открыть раздел или нажать кнопку. gesture —
   // нажата кнопка под ответом (тогда ответ дослушивать незачем, а iPhone даст звук).
   const perform = useCallback((action, { gesture = false } = {}) => {
     // Нажатая кнопка заменяет отложенный переход того же ответа — дважды не ведём.
@@ -698,69 +607,13 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     }
     const dest = destinationOf(action?.target)
     const cur = stateRef.current
-    if (!dest || !cur?.enabled) return
-    const here = dest.screen === cur.screen
-    if (action.kind === 'open') {
-      if (!here || dest.payload) navigateTo(dest.id)
-      if (isPhone()) setOpen(false)
-      return
-    }
-    if (action.kind !== 'tour' || !dest.tour) return
-    if (gesture) {
-      unlockSpeech()
-      stopVoice()
-    }
-    startGuide({ waitReply: !gesture && Boolean(voiceRef.current) })
-    // Тур — затемнение и карточка на весь экран; окно чата ему только мешает.
-    // Не close(): тот глушит голос, а ответ «начинаю тур» пусть договорит.
-    setOpen(false)
-    if (here) requestTour()
-    else {
-      guideRef.current.screen = dest.screen
-      navigateTo(dest.id)
-    }
-  }, [startGuide, stopVoice, dropDeferred, press])
+    if (action?.kind !== 'open' || !dest || !cur?.enabled) return
+    if (dest.screen !== cur.screen || dest.payload) navigateTo(dest.id)
+    if (isPhone()) setOpen(false)
+  }, [dropDeferred, press])
   useLayoutEffect(() => {
     performRef.current = perform
   })
-
-  // Переход до раздела доехал — просим у экрана тур (как кнопкой «?»).
-  useEffect(() => {
-    const g = guideRef.current
-    if (g.on && g.screen && g.screen === screen) {
-      g.screen = null
-      requestTour()
-    }
-  }, [screen])
-
-  // Шаги тура — вслух; конец тура — Луна замолкает.
-  useEffect(
-    () =>
-      onTourEvent((e) => {
-        const g = guideRef.current
-        if (!g.on) return
-        if (e.type === 'step') {
-          const key = `${e.index}:${e.title}`
-          // Тот же шаг ещё раз (перерисовка экрана, dev StrictMode) — не повторяем.
-          if (key === g.lastKey) return
-          if (g.lastKey === null) clearTimeout(g.timer)
-          else g.waitReply = false
-          g.lastKey = key
-          narrate(stepPhrases(e), stepPhrases(e.next))
-        } else if (e.type === 'end') {
-          endGuide()
-        }
-      }),
-    [narrate, endGuide],
-  )
-
-  useEffect(
-    () => () => {
-      if (guideRef.current.on) endGuide()
-      if (tourRequestPending()) cancelTourRequest()
-    },
-    [endGuide],
-  )
 
   // Экран стал запрещённым — окно закрывается. Не эффектом, а при рендере: так
   // окно не успевает мелькнуть на экзамене ни на кадр.
@@ -794,12 +647,11 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       abortRef.current?.abort()
       dropDeferred()
       stopVoice()
-      endGuide()
       greetedRef.current = null
       openingRef.current = null
       dropCallRef.current?.()
     },
-    [token, stopVoice, endGuide, dropDeferred],
+    [token, stopVoice, dropDeferred],
   )
 
   useEffect(() => {
@@ -918,13 +770,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         onFinish: ({ played }) => {
           if (voiceRef.current === speaker) voiceRef.current = null
           reveal(null)
-          // Ответ «начинаю тур» договорён — теперь первый шаг тура, который его ждал.
-          const g = guideRef.current
-          if (g.waitReply) {
-            if (g.pending) sayStep()
-            else g.waitReply = false
-          }
-          // «Открываю…» договорено — теперь сам переход (или тур).
+          // «Открываю…» договорено — теперь сам переход.
           runDeferred(speaker)
           afterReply?.()
           if (timing.soundMs == null) stamp()
@@ -1068,7 +914,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
         if (opening) openingRef.current = null
       }
     }
-  }, [t, stopVoice, sayStep, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot, showCmd])
+  }, [t, stopVoice, perform, releaseHold, runDeferred, dropDeferred, takeSnapshot, showCmd])
 
   // ── Звонок ───────────────────────────────────────────────────────────
   // Выполнить «открываю…» звонка: Луна договорила (или ждать уже нечего).
@@ -1604,9 +1450,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     dropDeferred()
     silence()
     cancelRecording()
-    endGuide()
     dropCallRefs()
-  }, [enabled, silence, cancelRecording, endGuide, dropDeferred, dropCallRefs])
+  }, [enabled, silence, cancelRecording, dropDeferred, dropCallRefs])
 
   // Кнопка «Спросить помощника» из плеера урока: открыть окно и сразу задать
   // вопрос — снимок снимется с того же экрана, где ученик её нажал.
@@ -1653,27 +1498,14 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     inputRef.current?.focus()
   }
 
-  // Звук один на ответы и на тур: кнопка в шапке и кнопка в карточке тура
-  // (tourBus.toggleTourNarrationMute) — одно и то же.
   const toggleMuted = () => {
     const next = !stateRef.current?.muted
     setMuted(next)
     writeMuted(next)
-    // До перерисовки stateRef ещё помнит прежнее — а шаг тура озвучивается сейчас.
+    // До перерисовки stateRef ещё помнит прежнее — а ответ может звучать сейчас.
     stateRef.current = { ...stateRef.current, muted: next }
-    if (next) {
-      stopVoice()
-      tourVoiceRef.current?.stop()
-    }
-    if (guideRef.current.on) {
-      setTourNarration({ on: true, muted: next, avatar: stateRef.current?.persona?.avatar })
-      // Звук включили посреди тура — Луна читает текущий шаг.
-      if (!next) sayStep()
-    }
+    if (next) stopVoice()
   }
-  useLayoutEffect(() => {
-    toggleMutedRef.current = toggleMuted
-  })
 
   // Синхронно в обработчике нажатия: unlockSpeech — это жест, после которого
   // iPhone разрешит сыграть ответ, пришедший через несколько секунд без жеста.
@@ -1684,8 +1516,9 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     voiceQ.toggle()
   }
 
-  // Набранный вопрос — тоже жест. Ответ на него Луна не озвучивает, но если она
-  // в ответ поведёт тур, шаги звучат — и iPhone разрешит их только после жеста.
+  // Набранный вопрос — тоже жест. Ответ на него Луна не озвучивает, но быстрая
+  // команда текстом («послушай», «повтори») жмёт кнопку звука экрана — и iPhone
+  // разрешит звук только после жеста.
   const sendTyped = (text) => {
     unlockSpeech()
     // «дальше», «проверь» набранным текстом — та же быстрая команда, без модели.
@@ -1705,7 +1538,6 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     { text: t('assistant.suggest.rule') },
     { text: t('assistant.suggest.page') },
     { text: t('assistant.suggest.where') },
-    { text: t('assistant.suggest.tour') },
     { text: t('assistant.suggest.bug'), bug: true },
   ]
   const last = messages[messages.length - 1]
@@ -1738,8 +1570,8 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
     : voiceQ.error
       ? t(VOICE_ERRORS[voiceQ.error])
       : null
-  // Кнопка звука — когда Луна говорила: ответ на голосовой вопрос или тур.
-  const spoke = messages.some((m) => m.voice || m.action?.kind === 'tour')
+  // Кнопка звука — когда Луна говорила: ответ на голосовой вопрос.
+  const spoke = messages.some((m) => m.voice)
 
   // ── Перетаскивание (только компьютер) ──────────────────────────────────
   // Пока тянут, элемент двигается напрямую через style — без перерисовки всего
@@ -1969,9 +1801,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                     >
                       {m.action.kind === 'click'
                         ? t('assistant.action.click', { label: m.action.label })
-                        : t(m.action.kind === 'tour' ? 'assistant.action.tour' : 'assistant.action.open', {
-                            name: destinationName(m.action.target, lang),
-                          })}
+                        : t('assistant.action.open', { name: destinationName(m.action.target, lang) })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}

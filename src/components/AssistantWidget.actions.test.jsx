@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import { NAVIGATE_EVENT } from '../lib/assistant/assistantBus.js'
-import { cancelTourRequest, emitTourEnd, emitTourStep, tourRequestPending } from '../lib/tourBus.js'
 
-// Действия Луны: открыть раздел и провести тур. Сам переход делает App, тур —
-// экран; здесь проверяется, что окно просит и когда, и что читает вслух.
-// Очередь озвучки подменена — звук тут не проверить, а что сказано — можно.
+// Действия Луны: открыть раздел. Сам переход делает App; здесь проверяется, что
+// окно просит и когда. Очередь озвучки подменена — звук тут не проверить, а что
+// сказано — можно.
 const queue = vi.hoisted(() => ({ said: [], stopped: 0 }))
 vi.mock('../lib/assistant/voiceQueue.js', () => ({
   createVoiceQueue: (opts) => {
@@ -25,24 +24,6 @@ vi.mock('../lib/assistant/voiceQueue.js', () => ({
   },
 }))
 vi.mock('../lib/speech.js', () => ({ unlockSpeech: () => {}, stopTts: () => {}, playUrl: () => true }))
-// Голос тура — свой модуль (предзагрузка следующего шага); здесь — что и когда сказано.
-const tour = vi.hoisted(() => ({ said: [], prefetched: [], stopped: 0, disposed: 0 }))
-vi.mock('../lib/assistant/tourVoice.js', async (importOriginal) => {
-  const real = await importOriginal()
-  return {
-    ...real,
-    createTourVoice: () => ({
-      say: (phrases) => tour.said.push(phrases.join(' ')),
-      prefetch: (phrases) => tour.prefetched.push(...(phrases || [])),
-      stop: () => {
-        tour.stopped++
-      },
-      dispose: () => {
-        tour.disposed++
-      },
-    }),
-  }
-})
 
 const { default: AssistantWidget } = await import('./AssistantWidget.jsx')
 
@@ -75,7 +56,7 @@ const ask = (text) => {
   fireEvent.submit(screen.getByRole('textbox').closest('form'))
 }
 
-describe('Луна открывает разделы и водит по ним', () => {
+describe('Луна открывает разделы', () => {
   let fetchMock
   let navigations
   const onNavigate = (e) => navigations.push(e.detail.target)
@@ -83,10 +64,6 @@ describe('Луна открывает разделы и водит по ним',
     localStorage.setItem('lang', 'ru')
     queue.said.length = 0
     queue.stopped = 0
-    tour.said.length = 0
-    tour.prefetched.length = 0
-    tour.stopped = 0
-    tour.disposed = 0
     navigations = []
     window.addEventListener(NAVIGATE_EVENT, onNavigate)
     fetchMock = vi.fn()
@@ -94,7 +71,6 @@ describe('Луна открывает разделы и водит по ним',
   })
   afterEach(() => {
     window.removeEventListener(NAVIGATE_EVENT, onNavigate)
-    cancelTourRequest()
     vi.unstubAllGlobals()
     localStorage.clear()
   })
@@ -143,54 +119,15 @@ describe('Луна открывает разделы и водит по ним',
     expect(navigations).toEqual([])
   })
 
-  it('тур: окно уступает экран, экран просят открыть тур, шаги Луна читает вслух', async () => {
-    fetchMock.mockResolvedValueOnce(streamResponse(['Начинаю тур по главной.\n[[ASST_ACTION tour home now]]']))
+  // Тур «от Луны» убран 28.10.2026: хвост тура (прежний сервер) — не действие.
+  it('хвост тура — ни кнопки, ни перехода, ни тура', async () => {
+    fetchMock.mockResolvedValueOnce(streamResponse(['Начинаю тур по Практике.\n[[ASST_ACTION tour practice now]]']))
     renderWidget('home')
-    ask('как тут всё устроено')
-    await waitFor(() => expect(tourRequestPending()).toBe(true), WAIT)
-    expect(screen.queryByRole('dialog')).toBeNull()
+    ask('проведи тур по практике')
+    await screen.findByText(/Начинаю тур по Практике/, {}, WAIT)
+    expect(screen.queryByText(/ASST_ACTION/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Тур:|Открыть: Практика/ })).toBeNull()
     expect(navigations).toEqual([])
-
-    const step0 = { index: 0, total: 3, title: 'Ваш уровень', text: 'Здесь текущий уровень и цель.', next: { title: 'Расписание', text: 'Ближайшие занятия.' } }
-    act(() => emitTourStep(step0))
-    expect(tour.said).toEqual(['Ваш уровень. Здесь текущий уровень и цель.'])
-    // Следующий шаг синтезируется заранее — по «Далее» Луна заговорит сразу.
-    expect(tour.prefetched).toEqual(expect.arrayContaining(['Расписание.', 'Ближайшие занятия.']))
-    // Тот же шаг ещё раз (перерисовка) — не повторяем.
-    act(() => emitTourStep(step0))
-    expect(tour.said).toHaveLength(1)
-
-    act(() => emitTourEnd())
-    expect(tour.disposed).toBeGreaterThan(0)
-    act(() => emitTourStep({ index: 1, total: 3, title: 'Расписание', text: 'Ближайшие занятия.' }))
-    expect(tour.said).toHaveLength(1)
-  })
-
-  it('тур в другом разделе: сначала переход, заявка — когда экран доехал', async () => {
-    fetchMock.mockResolvedValueOnce(streamResponse(['Провести тур по Практике?\n[[ASST_ACTION tour practice offer]]']))
-    const view = renderWidget('home')
-    ask('покажи практику')
-    fireEvent.click(await screen.findByRole('button', { name: /Тур: Практика/ }, WAIT))
-    expect(navigations).toEqual(['practice'])
-    expect(tourRequestPending()).toBe(false)
-    view.rerender(
-      <I18nProvider>
-        <div className="scr-in" />
-        <AssistantWidget token="tok" screen="practice" enabled />
-      </I18nProvider>,
-    )
-    expect(tourRequestPending()).toBe(true)
-  })
-
-  it('без звука тур идёт молча', async () => {
-    localStorage.setItem('jts_assistant_voice_muted', '1')
-    fetchMock.mockResolvedValueOnce(streamResponse(['Начинаю.\n[[ASST_ACTION tour home now]]']))
-    renderWidget('home')
-    ask('проведи тур')
-    await waitFor(() => expect(tourRequestPending()).toBe(true), WAIT)
-    act(() => emitTourStep({ index: 0, total: 2, title: 'Ваш уровень', text: 'Текст.' }))
-    expect(tour.said).toEqual([])
-    expect(tour.prefetched).toEqual([])
   })
 })
 

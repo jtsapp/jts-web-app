@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { actionMarker, actionTail, buttonOnScreen, createActionFilter, createServiceTailFilter, offeredTourTarget, preferTour } from './actions.js'
+import { actionMarker, actionTail, buttonOnScreen, createActionFilter, createServiceTailFilter } from './actions.js'
 import { REPORTED_STREAM_MARKER } from './report.js'
 
 // Прогнать текст через фильтр кусками заданного размера — как стрим модели.
@@ -20,13 +20,17 @@ describe('метки действий в ответе модели', () => {
     }
   })
 
-  it('_NOW — выполнить сразу; тур — только у раздела с туром', () => {
+  it('_NOW — выполнить сразу', () => {
     expect(run('Открываю.\n[[OPEN_NOW vocab]]').action).toEqual({ kind: 'open', target: 'vocab', now: true })
-    expect(run('Начинаю.\n[[TOUR_NOW practice]]').action).toEqual({ kind: 'tour', target: 'practice', now: true })
-    // У «Чтения» тура нет — метку вырезаем, но действия нет.
-    const noTour = run('Покажу.\n[[TOUR reading]]')
-    expect(noTour.out).toBe('Покажу.\n')
-    expect(noTour.action).toBeNull()
+  })
+
+  // Тур «от Луны» убран 28.10.2026, но метку тура модель ещё может написать по
+  // старой истории разговора: ученик её не видит, а раздел просто открывается.
+  it('метка прежнего тура — открыть раздел', () => {
+    const now = run('Начинаю.\n[[TOUR_NOW practice]]')
+    expect(now.out).toBe('Начинаю.\n')
+    expect(now.action).toEqual({ kind: 'open', target: 'practice', now: true })
+    expect(run('Показать?\n[[TOUR reading]]').action).toEqual({ kind: 'open', target: 'reading', now: false })
   })
 
   it('форму метки прощаем: «id=», кавычки, двоеточие', () => {
@@ -57,7 +61,6 @@ describe('метки действий в ответе модели', () => {
 
   it('метка для истории — в формате модели', () => {
     expect(actionMarker({ kind: 'open', target: 'vocab', now: false })).toBe('[[OPEN vocab]]')
-    expect(actionMarker({ kind: 'tour', target: 'home', now: true })).toBe('[[TOUR_NOW home]]')
     expect(actionMarker(null)).toBe('')
   })
 })
@@ -96,63 +99,11 @@ describe('служебный хвост стрима на клиенте', () =>
   it('действие с разделом не из списка клиент не выполнит', () => {
     expect(read('Ок.[[ASST_ACTION open ielts-mock now]]').action).toBeNull()
   })
-})
 
-// Живой прогон 15.10.2026 (Haiku 5.5): «проведи для меня тур по практике» —
-// ответ «открываю Практику и проведу по ней» с меткой [[OPEN_NOW practice]].
-// Раздел открылся, тур — нет. Что ученик просил тур, видно по его словам, и
-// решает это код, а не модель.
-describe('preferTour: просили тур — открытие становится туром', () => {
-  const open = (target, now = true) => ({ kind: 'open', target, now })
-
-  it('слово «тур» у ученика: OPEN_NOW раздела с туром → TOUR_NOW', () => {
-    expect(preferTour(open('practice'), { userText: 'Привет, можешь, пожалуйста, провести для меня тур по практике?' }))
-      .toEqual({ kind: 'tour', target: 'practice', now: true })
-    expect(preferTour(open('home', false), { userText: 'сделай тур по главной' }))
-      .toEqual({ kind: 'tour', target: 'home', now: false })
-    expect(preferTour(open('practice'), { userText: 'Тәжірибе бойынша тур жасап берші' })).toMatchObject({ kind: 'tour' })
-    expect(preferTour(open('practice'), { userText: 'give me a tour of practice' })).toMatchObject({ kind: 'tour' })
-    expect(preferTour(open('practice'), { userText: 'устрой экскурсию по практике' })).toMatchObject({ kind: 'tour' })
-  })
-
-  it('вкладка Практики без своего тура — тур по Практике целиком', () => {
-    expect(preferTour(open('practice-listening'), { userText: 'проведи тур по аудированию' }))
-      .toEqual({ kind: 'tour', target: 'practice', now: true })
-  })
-
-  it('«да» на её предложение тура, а модель поставила OPEN_NOW — тур', () => {
-    expect(preferTour(open('practice'), { userText: 'да', offeredTour: 'practice' }))
-      .toEqual({ kind: 'tour', target: 'practice', now: true })
-    // Предлагала тур по другому разделу — это уже другая просьба.
-    expect(preferTour(open('verbs'), { userText: 'да', offeredTour: 'practice' })).toEqual(open('verbs'))
-    // Отказался от тура — открыть, как и просил.
-    expect(preferTour(open('practice'), { userText: 'нет, просто открой', offeredTour: 'practice' })).toEqual(open('practice'))
-    expect(preferTour(open('practice'), { userText: 'не надо тур, просто открой практику' })).toEqual(open('practice'))
-    // Не согласие, а новая просьба — решает модель.
-    expect(preferTour(open('practice'), { userText: 'открой практику', offeredTour: 'practice' })).toEqual(open('practice'))
-  })
-
-  it('без тура в словах — как решила модель; у раздела без тура — тоже', () => {
-    expect(preferTour(open('practice'), { userText: 'открой практику' })).toEqual(open('practice'))
-    expect(preferTour(open('verbs'), { userText: 'проведи тур по глаголам' })).toEqual(open('verbs'))
-    // «турнир», «туризм» — не тур.
-    expect(preferTour(open('practice'), { userText: 'где турнир по словам? и туризм' })).toEqual(open('practice'))
-    expect(preferTour(null, { userText: 'проведи тур' })).toBeNull()
-    const tour = { kind: 'tour', target: 'home', now: true }
-    expect(preferTour(tour, { userText: 'тур' })).toBe(tour)
-  })
-})
-
-describe('offeredTourTarget: тур, который Луна предлагала прошлым ответом', () => {
-  it('метка тура в её последнем ответе', () => {
-    const msgs = [
-      { role: 'user', content: 'как тут всё устроено' },
-      { role: 'assistant', content: 'Провести тур?\n[[TOUR practice]]' },
-      { role: 'user', content: 'да' },
-    ]
-    expect(offeredTourTarget(msgs)).toBe('practice')
-    expect(offeredTourTarget([{ role: 'assistant', content: 'Открыть?\n[[OPEN vocab]]' }, { role: 'user', content: 'да' }])).toBeNull()
-    expect(offeredTourTarget([{ role: 'user', content: 'да' }])).toBeNull()
+  it('хвост тура (прежний сервер) — не действие', () => {
+    const r = read('Ок.[[ASST_ACTION tour practice now]]')
+    expect(r.out).toBe('Ок.')
+    expect(r.action).toBeNull()
   })
 })
 

@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-// Луна открывает раздел и проводит тур — целиком в браузере: ответ чата с
-// действием (служебный хвост стрима, lib/assistant/actions.js) → переход App →
-// тур экрана → озвучка шагов голосом Луны. Модель и синтез подменены —
-// проверяется цепочка экрана, а не Claude и Gemini.
+// Луна открывает раздел — целиком в браузере: ответ чата с действием (служебный
+// хвост стрима, lib/assistant/actions.js) → переход App. Модель и синтез
+// подменены — проверяется цепочка экрана, а не Claude и Gemini.
 test.use({ launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] } })
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -94,35 +93,24 @@ test('«да» после предложения — раздел открыва
   expect(calls.chat[1].messages[1]).toEqual({ role: 'assistant', content: 'Слова учат в Словаре. Открыть?\n[[OPEN vocab]]' })
 })
 
-test('тур: Луна открывает Практику, ведёт по шагам и читает их вслух — следующий шаг готовится заранее', async ({ page }) => {
-  const calls = await setup(page, ['Хорошо, провожу тур по Практике.\n[[ASST_ACTION tour practice now]]'])
+// Тур «от Луны» убран 28.10.2026 (решение владельца): на просьбу о туре Луна открывает
+// раздел, а тур там новый — выходит сам при первом заходе и по «?». Здесь авто-туры
+// погашены (playwright.config.js), поэтому после перехода тура нет вовсе: Луна его не
+// запускает. Хвост тура от прежнего сервера тоже ничего не запускает.
+test('тур Луна не запускает: открывает раздел, и только', async ({ page }) => {
+  const calls = await setup(page, [
+    'Тур по Практике выходит сам при первом заходе, повторить — кнопка «?» вверху. Открываю Практику.\n[[ASST_ACTION open practice now]]',
+    'Начинаю тур.\n[[ASST_ACTION tour practice now]]',
+  ])
   await page.goto('/?screen=home')
-  await ask(page, 'покажи, как устроена практика')
+  await ask(page, 'проведи тур по практике')
+  await expect(page.locator('.pk-skills')).toBeVisible({ timeout: 15000 })
 
-  const pop = page.locator('.t-tour__pop')
-  await expect(pop).toBeVisible({ timeout: 20000 })
-  await expect(page.getByRole('dialog', { name: 'Луна' })).toHaveCount(0)
-  await expect(page.locator('.t-tour__luna')).toContainText('Рассказывает Луна')
-
-  const title1 = (await page.locator('.t-tour__title').textContent()).trim()
-  const text1 = (await page.locator('.t-tour__text').textContent()).trim()
-  await expect.poll(() => calls.speak).toEqual(expect.arrayContaining([`${title1}.`, text1]))
-  // Следующий шаг синтезирован ещё до «Далее».
-  await expect.poll(() => calls.speak.length).toBeGreaterThanOrEqual(4)
-
-  await page.locator('.t-tour__ok').click()
-  const title2 = (await page.locator('.t-tour__title').textContent()).trim()
-  expect(title2).not.toBe(title1)
-  expect(calls.speak).toContain(`${title2}.`)
-
-  // Звук выключается прямо в карточке тура.
-  await page.getByRole('button', { name: 'Выключить голос Луны' }).click()
-  await expect(page.getByRole('button', { name: 'Включить голос Луны' })).toBeVisible()
-  const before = calls.speak.length
-  await page.locator('.t-tour__ok').click()
-  await page.waitForTimeout(400)
-  expect(calls.speak.length).toBe(before)
-
-  await page.locator('.t-tour__skip').click()
-  await expect(pop).toHaveCount(0)
+  await ask(page, 'проведи тур')
+  await expect(page.locator('.asst__msg--bot').last()).toContainText('Начинаю тур.')
+  await expect(page.locator('.asst__msg--bot').last()).not.toContainText('ASST_')
+  await page.waitForTimeout(1500)
+  await expect(page.locator('.t-tour')).toHaveCount(0)
+  expect(calls.chat).toHaveLength(2)
+  expect(calls.speak).toEqual([])
 })

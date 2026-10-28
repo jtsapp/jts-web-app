@@ -38,7 +38,7 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
-import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@/lib/assistant/actions.js'
+import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
 import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
@@ -201,7 +201,7 @@ export async function POST(request) {
   }
 
   // Две метки в конце ответа: поломка ([[REPORT_BUG]] и отчёт после неё — ученику
-  // не показываем) и действие («открыть раздел», «тур» — actions.js). Метка
+  // не показываем) и действие («открыть раздел», «нажать» — actions.js). Метка
   // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
   // Снимок запроса — чтобы сверить номер кнопки метки нажатия ([[CLICK_NOW 7]]).
@@ -221,21 +221,13 @@ export async function POST(request) {
   // Первая реплика на экране задания — без кнопки вовсе: ученик посреди урока, и
   // уводить его оттуда нельзя, даже если модель всё же позвала (openingFocus).
   const focusTask = opening && openingFocus(parsed.screen.text).task
-  // Ученик просил тур, а модель поставила «открыть» — тур (preferTour).
-  const askedTour = (action) =>
-    opening
-      ? action
-      : preferTour(action, {
-          userText: parsed.messages[parsed.messages.length - 1].content,
-          offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
-        })
   // Нажатие кнопки (clickPolicy.js): не в первой реплике — ученик ни о чём не просил, —
   // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
   // его же репликой: RULES это просят, но держит их модель через раз.
   const lastText = parsed.messages[parsed.messages.length - 1].content
   const finalAction = () => {
     if (focusTask || wake) return null
-    const action = askedTour(actions.action())
+    const action = actions.action()
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
     }
@@ -248,7 +240,7 @@ export async function POST(request) {
   }
   // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
   // открыть раздел, то есть метка [[OPEN id]] без _NOW. «Открой» по прямой просьбе
-  // ученика — уже не совет, а исполнение, тур — объяснение экрана; их не пишем. В
+  // ученика — уже не совет, а исполнение; его не пишем. В
   // первой реплике переход всегда только предложение (виджет снимает _NOW), поэтому
   // там пишем и то, что модель ошибочно пометила _NOW. Переписка не сохраняется:
   // в строку идёт только сам совет (adviceText).

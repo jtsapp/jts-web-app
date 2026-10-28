@@ -22,7 +22,7 @@ export const PERSONAS = {
     // Запасной потоковый голос (/api/tts, Soniox) — откатный голос Луны у агента.
     fallbackVoice: 'Grace',
     // Свой голос Луны (Gemini «Aoede») казахского не знает: казахская фраза
-    // сразу идёт запасным потоком (voiceQueue.js, tourVoice.js).
+    // сразу идёт запасным потоком (voiceQueue.js).
     speaksKazakh: false,
     // Тьютор агента в звонке помощнику (agent.py, run_assistant_call).
     callTutor: 'gentle',

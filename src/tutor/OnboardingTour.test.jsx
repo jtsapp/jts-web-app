@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
-import { holdTours, onTourEvent, setTourNarration } from '../lib/tourBus.js'
+import { holdTours } from '../lib/tourBus.js'
 
 vi.mock('../i18n/LanguageContext.jsx', () => ({ useT: () => (key) => key }))
 
@@ -17,7 +17,6 @@ beforeAll(() => {
 
 afterEach(() => {
   holdTours('celebrate', false)
-  setTourNarration({ on: false, muted: false })
   cleanup()
   document.body.innerHTML = ''
 })
@@ -59,63 +58,6 @@ describe('тур на паузе, пока App держит своё окно', 
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
     expect(onFinish).not.toHaveBeenCalled()
-  })
-})
-
-describe('тур ведёт Луна', () => {
-  const twoSteps = () => {
-    for (const cls of ['one', 'two']) {
-      const el = document.createElement('div')
-      el.className = cls
-      document.body.appendChild(el)
-    }
-    return [
-      { selector: '.one', title: 'Первый', text: 'Раз' },
-      { selector: '.two', title: 'Второй', text: 'Два' },
-    ]
-  }
-  const stepsSeen = () => {
-    const seen = []
-    const off = onTourEvent((e) => {
-      if (e.type === 'step') seen.push(e.title)
-    })
-    return { seen, off }
-  }
-
-  it('без Луны coach начинается с приветствия', () => {
-    render(<OnboardingTour look="coach" intro={intro} steps={twoSteps()} />)
-    expect(document.querySelector('.t-tour__intro-go')).not.toBeNull()
-    expect(document.querySelector('.t-tour__pop')).toBeNull()
-  })
-
-  it('тур, открытый Луной, идёт сразу с первого шага — и шаг уходит ей на озвучку', () => {
-    const { seen, off } = stepsSeen()
-    setTourNarration({ on: true, muted: false })
-    render(<OnboardingTour look="coach" intro={intro} steps={twoSteps()} />)
-    off()
-    expect(document.querySelector('.t-tour__intro-go')).toBeNull()
-    expect(document.querySelector('.t-tour__pop')).not.toBeNull()
-    expect(seen).toEqual(['Первый'])
-  })
-
-  it('Луна взялась за тур, который стоит на приветствии (авто-тур первого захода), — приветствие пролистывается', () => {
-    render(<OnboardingTour look="coach" intro={intro} steps={twoSteps()} />)
-    const { seen, off } = stepsSeen()
-    act(() => setTourNarration({ on: true, muted: false }))
-    off()
-    expect(document.querySelector('.t-tour__intro-go')).toBeNull()
-    expect(document.querySelector('.t-tour__pop')).not.toBeNull()
-    expect(seen).toEqual(['Первый'])
-  })
-
-  it('Луна взялась за тур посреди шагов — текущий шаг уходит ей ещё раз, тур не сбрасывается', () => {
-    render(<OnboardingTour look="coach" intro={intro} steps={twoSteps()} />)
-    act(() => document.querySelector('.t-tour__intro-go').click())
-    act(() => document.querySelector('.t-tour__ok').click())
-    const { seen, off } = stepsSeen()
-    act(() => setTourNarration({ on: true, muted: false }))
-    off()
-    expect(seen).toEqual(['Второй'])
   })
 })
 

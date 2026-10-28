@@ -3811,48 +3811,6 @@
 .t-tour__pop:has(.t-tour__content) {
   width: min(380px, calc(100vw - 32px));
 }
-/* Тур ведёт Луна (AssistantWidget): кто говорит и кнопка звука — прямо в
-   карточке. Окно чата на время тура закрыто, и выключить голос иначе было бы
-   негде. */
-.t-tour__luna {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 6px 6px 8px;
-  border-radius: 12px;
-  background: #f5f0ff;
-  font-size: 13px;
-  font-weight: 600;
-  color: #5b3fa8;
-}
-.t-tour__luna img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: none;
-}
-.t-tour__luna span {
-  flex: 1;
-  min-width: 0;
-}
-.t-tour__luna-sound {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: none;
-  border: none;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--t-purple);
-  cursor: pointer;
-}
-.t-tour__luna-sound.is-muted {
-  color: var(--t-muted);
-}
-
 /* --- Тур «Главной» (look="coach") — макет «Первый заход и подсказки», 21.10.2026.
    Затемнение #181818 (62 % под подсказкой, 55 % под приветствием), прожектор r32
    с белой рамкой 4 px, карточка r28 p24 с тенью 0 12 48. Шрифт — Manrope, как у
@@ -3927,9 +3885,6 @@
   color: #5a5a66;
 }
 .t-tour--coach .t-tour__content {
-  margin-top: 0;
-}
-.t-tour--coach .t-tour__luna {
   margin-top: 0;
 }
 .t-tour__acts {
