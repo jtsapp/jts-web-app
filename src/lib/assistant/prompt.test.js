@@ -472,9 +472,18 @@ describe('ученик застрял и нажал «Подсказать?»', 
     expect(last).not.toContain('Вопрос ученика:')
     expect(last).not.toContain('Совет сайта')
     expect(last).toContain(`</контекст>\n\n${STUCK_ERRORS_MARK}\nЯзык ответа: русский\nУченик застрял на задании на экране (две неверные проверки подряд)`)
-    expect(last).toContain('Верный ответ называй, только если сайт его показал')
+    expect(last).toContain('Сайт уже показал верный ответ')
     expect(last).toContain('без метки')
     expect(last).toMatch(/Не больше 4 коротких предложений\.\n\n\[голосом\]$/)
+  })
+
+  // Эталона нет — сайт даёт перепробовать: зонд 28.10 без этого указания 2 из 8 раз ловил «went».
+  it('ошибки, но верного ответа на экране нет — ответ не называть даже вариантом', () => {
+    const screen = { id: 'workbook', text: 'She ___ (go) yesterday. [поле: ученик ввёл «goed» (отмечено как неверное)] [кнопка «Проверить»]' }
+    const last = buildTurns({ ...stuck(STUCK_ERRORS_MARK, { screen }), user: null }).at(-1).content
+    expect(last).toContain('Верного ответа на экране нет: сайт даёт перепробовать')
+    expect(last).toContain('ни как вариант на выбор')
+    expect(last).not.toContain('Сайт уже показал верный ответ')
   })
 
   it('простой на непроверенном задании — только подсказка, язык — казахский', () => {
