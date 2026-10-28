@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen, isStudentSectionHidden } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance, getDemoAccess, getIeltsMe, getSatMeCached } from '../api.js'
 import DemoOfferCard from './DemoOfferCard.jsx'
@@ -126,6 +126,7 @@ export default function Sidebar({
   const ieltsNav = [HOME_ITEM, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
   const navAll = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : ieltsAccount ? ieltsNav : base
   const nav = navAll.filter((item) => {
+    if (!teacher && isStudentSectionHidden(item.key)) return false
     if (!rewardsEnabled && isRewardsScreen(item.key)) return false
     if (item.key === 'ielts') return examTabs.ielts
     if (item.key === 'sat') return examTabs.sat

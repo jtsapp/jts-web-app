@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
@@ -343,7 +344,7 @@ export default function HomePage({
           <h1 className="hm-top__title">{t('nav.home')}</h1>
         </header>
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
-        <TeacherMatchingPanel token={token} compact onOpen={() => onNav?.('lessons')} />
+        {!isStudentSectionHidden('my-teacher') && <TeacherMatchingPanel token={token} compact onOpen={() => onNav?.('lessons')} />}
 
         {/* Новый отчёт о прогрессе от преподавателя — выше всего остального:
             приходит раз в месяц и сам исчезает, как только ученик его открыл. */}

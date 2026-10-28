@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -167,7 +168,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
           // Расписание — широкая раскладка: календарь и карточка урока занимают
           // всю страницу, в отличие от узкой заглушки «клубов» по центру.
           <div className="ls__body ls__body--wide">
-            {!teacher && <TeacherMatchingPanel token={token} />}
+            {!teacher && !isStudentSectionHidden('my-teacher') && <TeacherMatchingPanel token={token} />}
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
           </div>
         )}

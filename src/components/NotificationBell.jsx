@@ -29,8 +29,8 @@ function formatWhen(iso, locale) {
   })
 }
 
-export function NotificationProvider({ token, onNavigate, children }) {
-  const auth = token || loadToken()
+export function NotificationProvider({ token, onNavigate, children, enabled = true }) {
+  const auth = enabled ? token || loadToken() : null
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [unread, setUnread] = useState(0)
