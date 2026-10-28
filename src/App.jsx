@@ -2654,7 +2654,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'tokens':

@@ -47,7 +47,7 @@ const STUDENT_TAB = { key: 'reports', label: 'lessons.tabReports' }
  * `initialReportId` — отчёт о прогрессе, открытый сразу: уведомление «Новый
  * отчёт» и карточка «Главной» ведут прямо в него, а не в список.
  */
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab, initialReportId = null, tourKey }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab, initialReportId = null, tourKey }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
@@ -184,7 +184,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
 
         {tab === 'self' && (
           <div className="ls__body ls__body--wide">
-            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} onOpenPricing={onOpenPricing} />
+            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} />
           </div>
         )}
 
