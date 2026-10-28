@@ -85,7 +85,7 @@ const KT_OFFSET = [50, 0, 100, 50]
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
 // backLabel — куда ведёт «назад» с тропы (карта, «Главная», план дня — App, lib/navStack.js).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, lessonTarget = null, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
   const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -341,6 +341,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     },
     [level, moduleLocked, lessons, isUnlocked, course, lang, exam, t, showTrailHint],
   )
+
+  // Урок, который просили открыть (Луна: «открой урок 5» — App, lessonTarget): когда тропа
+  // и прогресс загрузились, — тем же openLesson, что и нажатие на узел: закрытый урок он
+  // не откроет и покажет подсказку «урок закрыт». Один раз на просьбу (at).
+  const handledTargetRef = useRef(null)
+  useEffect(() => {
+    if (!lessonTarget || state.loading || handledTargetRef.current === lessonTarget.at) return
+    handledTargetRef.current = lessonTarget.at
+    if (lessons.some((l) => l.code === lessonTarget.code)) openLesson(lessonTarget.code)
+  }, [lessonTarget, state.loading, lessons, openLesson])
 
   const retry = () => {
     setEnd(null)
