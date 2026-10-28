@@ -124,6 +124,7 @@ import { getTutor, temperFor } from './tutor/tutors.js'
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
+import { syncTourMarks, tourMarksReady, useTourMarks } from './lib/tourMarks.js'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { isSectionOpen, useStudentSections } from './lib/studentSections.js'
@@ -1605,18 +1606,31 @@ export default function App() {
     setScreen(nextInChain)
   }
 
-  // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
-  // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
-  const tutorTourKey = tourKeyFor(profileId || getDeviceId())
+  // Отметки «тур показан» — на аккаунт (lib/tourMarks.js). Владелец ключа — аккаунт из токена: он
+  // известен сразу после входа. Прежде им был profileId из /api/profile, а у ученика без строки профиля
+  // (новый, до теста уровня) — device-id; строка появлялась, ключ менялся, и все туры выходили второй
+  // раз (жалоба 28.10.2026). device-id остался гостю.
+  const tourAccount = userIdFromToken(token) ? `user-${userIdFromToken(token)}` : null
+  const tourOwner = tourAccount || profileId || getDeviceId()
+  useEffect(() => {
+    syncTourMarks({ token, account: tourAccount })
+  }, [token, tourAccount])
+  // Экран решает про тур один раз за заход, поэтому до ответа сервера ключа у него нет — иначе тур,
+  // пройденный на другом устройстве, вышел бы здесь снова.
+  const toursReady = tourMarksReady(useTourMarks(), tourAccount)
+  const screenTourKey = (scope) => (toursReady ? tourKeyFor(tourOwner, scope) : null)
+  // Тьюторский тур решается в конце онбординг-цепочки, когда отметки давно приехали, поэтому его ключ
+  // без ожидания: его же получает дашборд, который пишет отметку.
+  const tutorTourKey = tourKeyFor(tourOwner)
   // Туры «Обучения» и «Практики» отмечаются своими ключами: экраны разные, и
   // пройденный тьюторский не должен закрывать их (и наоборот).
-  const learnTourKey = tourKeyFor(profileId || getDeviceId(), 'learn')
-  const practiceTourKey = tourKeyFor(profileId || getDeviceId(), 'practice')
-  const lessonsTourKey = tourKeyFor(profileId || getDeviceId(), 'lessons')
-  const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
-  const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
-  const homeTourKey = tourKeyFor(profileId || getDeviceId(), 'home')
-  const gePlanTourKey = tourKeyFor(profileId || getDeviceId(), 'ge-plan')
+  const learnTourKey = screenTourKey('learn')
+  const practiceTourKey = screenTourKey('practice')
+  const lessonsTourKey = screenTourKey('lessons')
+  const homeworkTourKey = screenTourKey('homework')
+  const vocabTourKey = screenTourKey('vocab')
+  const homeTourKey = screenTourKey('home')
+  const gePlanTourKey = screenTourKey('ge-plan')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
