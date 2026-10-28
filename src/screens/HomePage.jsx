@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
@@ -474,7 +475,7 @@ export default function HomePage({
         <NewReportCard token={token} onNav={onNav} />
 
         {/* Токены, призы и «Заходите каждый день» — блок кабинета студента (ТЗ кабинетов, раздел 5). */}
-        <TokenBlocks token={token} onNav={onNav} />
+        {!isStudentSectionHidden('tokens') && <TokenBlocks token={token} onNav={onNav} />}
 
         {/* Уровня нет — тест не пройден. Вместо карточки с чужими цифрами
             зовём пройти тест: это единственный способ её наполнить. */}

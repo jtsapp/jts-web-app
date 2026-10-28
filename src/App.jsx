@@ -160,7 +160,7 @@ import { navForActivity, navForSection } from './placement/activityRoutes.js'
 import { saveAttempt } from './placement/api.js'
 import { isExistingStudent } from './placement/existingStudent.js'
 import { useI18n } from './i18n.jsx'
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen } from './config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, areRewardsEnabled, isRewardsScreen, isStudentSectionHidden } from './config.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -1389,7 +1389,7 @@ export default function App() {
   // Ждём не дольше 2.5 с: медленный бэкенд не должен «замораживать» кнопку итога теста — тогда шаг просто не
   // показываем, учителя ученик выберет в «Мой учитель».
   async function wantsTeacherPick() {
-    if (!token || isTeacher(token)) return false
+    if (!token || isTeacher(token) || isStudentSectionHidden('teacher-pick')) return false
     const late = new Promise((resolve) => setTimeout(() => resolve('late'), 2500))
     if ((await Promise.race([refreshMatching(token).then(() => 'ok'), late])) === 'late') return false
     const v = matchingView(getMatchingSnapshot())
@@ -1726,10 +1726,11 @@ export default function App() {
   }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded, setScreen])
 
   useEffect(() => {
-    if (!rewardsEnabled && isRewardsScreen(screen)) {
+    if (restoring) return
+    if ((!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen))) {
       setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
     }
-  }, [screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
+  }, [restoring, screen, token, boothAccount, needsLevelTest, tutorOnboarded, setScreen, rewardsEnabled])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -1750,7 +1751,7 @@ export default function App() {
     // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
     // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
     if (boothAccount) return
-    if (!rewardsEnabled && isRewardsScreen(key)) return
+    if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
     // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'home') setScreen('home')
@@ -1957,7 +1958,7 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (boothAccount) return
-    if (!rewardsEnabled && isRewardsScreen(key)) return
+    if ((!rewardsEnabled && isRewardsScreen(key)) || (!isTeacher(token) && isStudentSectionHidden(key))) return
     // «Сервисы» — вкладка телефона с профилем: нужна и в тьютор-онли, иначе из панели не попасть в профиль.
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key) && key !== 'services') return
     if (key === 'tutor') setScreen(tutorHome)
@@ -2034,7 +2035,7 @@ export default function App() {
     // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
     // успел бы сходить в сеть за чужим содержимым (та же грабля, что была у
     // BoothEntryPage с повторным /enter).
-    : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
+    : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
   const sectionClosed = !!token && !boothAccount && !isTeacher(token) && !isSectionOpen(sectionAccess, view)
@@ -2076,7 +2077,7 @@ export default function App() {
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !isTeacher(token) && <PlatformPresence token={token} />}
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
-      {token && !boothAccount && !isTeacher(token) && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
+      {token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}

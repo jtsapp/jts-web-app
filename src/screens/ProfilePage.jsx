@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
@@ -324,8 +325,8 @@ export default function ProfilePage({
   ]
 
   const settings = [
-    { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif },
-    { key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') },
+    ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
+    ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') }]),
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
     { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(PRIVACY_URL, '_blank') },
@@ -415,7 +416,7 @@ export default function ProfilePage({
         </section>
 
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
-        {!isTeacher(token) && <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} />}
+        {!isTeacher(token) && !isStudentSectionHidden('my-teacher') && <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} />}
 
         <SkillRatings stats={skillStats} loading={skillStats === null} />
 

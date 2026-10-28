@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useState } from 'react'
 import { getMyTokens } from '../api.js'
 import { isTeacher } from '../lib/jwt.js'
@@ -93,7 +94,7 @@ let cache = null
 export function useStudentTokens(token) {
   const [data, setData] = useState(cache && cache.token === token ? cache.data : null)
   useEffect(() => {
-    if (!token || isTeacher(token)) return undefined
+    if (!token || isTeacher(token) || isStudentSectionHidden('tokens')) return undefined
     if (cache && cache.token === token && cache.data) {
       setData(cache.data)
       return undefined
@@ -109,7 +110,7 @@ export function useStudentTokens(token) {
     request.then((next) => { if (alive) setData(next) }).catch(() => { if (cache && cache.request === request) cache = null })
     return () => { alive = false }
   }, [token])
-  return data
+  return isStudentSectionHidden('tokens') ? null : data
 }
 
 /** Правила токенов за практику; пусто, пока не пришли или у учителя. */

@@ -1,3 +1,5 @@
+import { isStudentSectionHidden } from '../config.js'
+import { isTeacher } from '../lib/jwt.js'
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
@@ -33,6 +35,7 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  const notificationsEnabled = isTeacher(token) || !isStudentSectionHidden('notifications')
   // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
   // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
   useMobileTab(active)
@@ -46,7 +49,7 @@ export default function LearningLayout({
   ) : null
 
   return (
-    <NotificationProvider token={token} onNavigate={onNav}>
+    <NotificationProvider enabled={notificationsEnabled} token={token} onNavigate={onNav}>
     <div className={`learn ${rail ? 'learn--rail' : ''}`}>
       <MobileTopBar
         userName={userName}
@@ -54,7 +57,7 @@ export default function LearningLayout({
         menuLabel={t('nav.learning')}
         onMenu={() => setDrawer(true)}
         onProfile={onProfile}
-        right={<>{help}<LangSelector compact /><NotificationBell /></>}
+        right={<>{help}<LangSelector compact />{notificationsEnabled && <NotificationBell />}</>}
       />
       <div className="learn__body">
         <Sidebar
@@ -74,7 +77,7 @@ export default function LearningLayout({
           <div className="learn__bell">
             {help}
             <LangSelector compact />
-            <NotificationBell />
+            {notificationsEnabled && <NotificationBell />}
           </div>
           {children}
         </main>

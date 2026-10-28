@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getIeltsMe, getSatMeCached } from '../api.js'
-import { areRewardsEnabled } from '../config.js'
+import { areRewardsEnabled, isStudentSectionHidden } from '../config.js'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
 import { menuItems } from '../lib/navSections.js'
@@ -42,9 +42,9 @@ export function useMenuItems(token) {
   }, [token, teacher])
   const studentToken = teacher ? null : token || loadToken()
   const sections = useStudentSections(studentToken)
-  const matching = matchingView(useMatching(studentToken))
+  const matching = matchingView(useMatching(isStudentSectionHidden('my-teacher') ? null : studentToken))
   const myTeacher = !teacher && !MATCHING_HIDDEN.has(matching.status)
-  const contractsToSign = useContractsBadge(studentToken)
+  const contractsToSign = useContractsBadge(isStudentSectionHidden('contracts') ? null : studentToken)
   const badges = { 'my-teacher': matching.badge || 0, contracts: contractsToSign }
   return { items: menuItems({ teacher, ieltsAccount, exams, rewards, myTeacher, sections }), teacher, ieltsAccount, badges }
 }
