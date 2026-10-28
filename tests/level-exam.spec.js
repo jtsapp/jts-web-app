@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { loginAsStudent } from './helpers/login.js'
 
 // Финальный экзамен уровня: узел в конце тропы → 50 ответов → итоги → разбор.
 // Диплинк с ?unlock=1 (только dev): иначе экзамен ждёт пройденного курса в
@@ -27,6 +28,8 @@ const questions = exam.sections.flatMap((s) => [
 ])
 
 test.beforeEach(async ({ page }) => {
+  // Гостю тропа не рисуется — его встречает экран входа (helpers/login.js).
+  await loginAsStudent(page, { level: 'A1' })
   await page.route('**/exam/a1/audio/*.mp3', (route) => route.fulfill({ status: 200, contentType: 'audio/mpeg', body: SILENCE }))
 })
 

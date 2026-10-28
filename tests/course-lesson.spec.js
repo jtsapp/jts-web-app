@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
+import fs from 'node:fs'
+import path from 'node:path'
 import { unlockStep } from './helpers/course-steps.js'
+import { loginAsStudent } from './helpers/login.js'
 
 // Урок уровня A2/B1 в новом пошаговом плеере (макет Figma «Обучение»).
 // Контент готовит scripts/build-course-steps.js из перенесённого курса, поэтому
@@ -85,11 +88,18 @@ async function pickCorrect(page, answers) {
 
 for (const level of LEVELS) {
   test.describe(`курс ${level}`, () => {
+    // Гостю тропа не рисуется — его встречает экран входа (helpers/login.js).
+    test.beforeEach(({ page }) => loginAsStudent(page, { level }))
+
     test('тропа: 12 юнитов, в каждом три урока и тест', async ({ page }) => {
       await page.goto(`/?screen=kingdom-interior&level=${level}`)
       await expect(page.locator('.kt-unit').first()).toBeVisible({ timeout: 20000 })
-      await expect(page.locator('.kt-unit')).toHaveCount(12)
-      await expect(page.locator('.kt-step')).toHaveCount(48)
+      // Финальный экзамен уровня (public/exam/<level>/) — свой юнит с одним узлом после двенадцати юнитов
+      // курса. У A2 он есть, у B1 исходника нет.
+      const exam = fs.existsSync(path.join(__dirname, '../public/exam', level.toLowerCase(), 'exam.json')) ? 1 : 0
+      await expect(page.locator('.kt-unit')).toHaveCount(12 + exam)
+      await expect(page.locator('.kt-step')).toHaveCount(48 + exam)
+      if (exam) await expect(page.locator('.kt-unit').last().locator('.kt-unit__title')).toHaveText('Финальный экзамен')
       // Юнит-тест — последний узел юнита: золотая печенька с кубком. Подписи у
       // узлов в новом макете нет, название живёт в aria-label.
       const unit1 = page.locator('.kt-unit').first().locator('.kt-step')
@@ -204,8 +214,11 @@ for (const level of LEVELS) {
       const answers = await answerKey(page, level)
       expect(await playThrough(page, answers, 200)).toBeTruthy()
       await expect(page.locator('.le-over')).toBeVisible({ timeout: 15000 })
-      const done = await page.evaluate((lvl) => localStorage.getItem(`jts-${lvl}-done`), level.toLowerCase())
-      expect(JSON.parse(done || '[]')).toContain('L1')
+      // Итоги экран показывает сразу, а зачёт урока пишется следом: у ученика он сначала идёт в бэкенд
+      // (saveDone в KingdomInteriorPage), и только потом в зеркало localStorage.
+      await expect
+        .poll(() => page.evaluate((lvl) => JSON.parse(localStorage.getItem(`jts-${lvl}-done`) || '[]'), level.toLowerCase()))
+        .toContain('L1')
     })
   })
 }
