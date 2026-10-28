@@ -840,18 +840,6 @@
     background: #1f9d55;
     color: #fff;
   }
-  /* Закрытый материал — серая плашка с замком */
-  .ss .ss-card > .ss-paywall::before {
-    background: #f0f0f4;
-  }
-  .ss .ss-card > .ss-paywall::after {
-    background: #8e8e99;
-    -webkit-mask-image: url(/assets/m/lessons/lock.svg);
-    mask-image: url(/assets/m/lessons/lock.svg);
-  }
-  .ss .ss-card > .ss-paywall {
-    padding-right: 16px;
-  }
 }
 
 @media (max-width: 560px) {
@@ -917,8 +905,7 @@
   :root[data-theme='dark'] .ss .ss-card__done {
     color: var(--dk-green);
   }
-  :root[data-theme='dark'] .ss .ss-card .gr-gcard__desc,
-  :root[data-theme='dark'] .ss .ss-card > .ss-paywall::before {
+  :root[data-theme='dark'] .ss .ss-card .gr-gcard__desc {
     background: var(--dk-chip);
   }
   :root[data-theme='dark'] .ss .ss-mark {
