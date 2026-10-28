@@ -23,6 +23,7 @@ import {
   PREPOSITIONS_KEY,
   CARTOONS_KEY,
   WORDHUNT_KEY,
+  PRONUNCIATION_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
@@ -39,12 +40,13 @@ import {
   PREPOSITIONS_PROGRESS_EVENT,
   CARTOONS_PROGRESS_EVENT,
   WORDHUNT_PROGRESS_EVENT,
+  PRONUNCIATION_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'vocabLearned', 'vocabMisses']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'numbers', 'listen', 'prepositions', 'cartoons', 'wordhunt', 'pronunciation', 'vocabLearned', 'vocabMisses']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {
@@ -137,5 +139,9 @@ export function applyHydratedState(serverState, { setItem, dispatch, getItem = (
   if (serverState.wordhunt && typeof serverState.wordhunt === 'object') {
     setItem(WORDHUNT_KEY, JSON.stringify(serverState.wordhunt))
     dispatch(WORDHUNT_PROGRESS_EVENT)
+  }
+  if (serverState.pronunciation && typeof serverState.pronunciation === 'object') {
+    setItem(PRONUNCIATION_KEY, JSON.stringify(serverState.pronunciation))
+    dispatch(PRONUNCIATION_PROGRESS_EVENT)
   }
 }

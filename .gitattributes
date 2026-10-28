@@ -6,3 +6,5 @@
 src/practice/prepositions/__fixtures__/*.html -text
 # Фикстура Cartoon World — по той же причине: оракул снимается с неё как с прототипа.
 src/practice/cartoons/__fixtures__/*.html -text
+# Фикстура «Pronunciation World» — движок байт в байт с прототипом (хэш сверяет бэкенд).
+src/practice/pronunciation/__fixtures__/*.html -text

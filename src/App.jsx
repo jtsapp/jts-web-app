@@ -31,6 +31,7 @@ import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
 import PrepositionsPage from './screens/PrepositionsPage.jsx'
+import PronunciationPage from './screens/PronunciationPage.jsx'
 import GrammarGamesPage from './screens/GrammarGamesPage.jsx'
 import SpeedReadingPage from './screens/SpeedReadingPage.jsx'
 import CartoonsPage from './screens/CartoonsPage.jsx'
@@ -186,7 +187,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -1804,6 +1805,7 @@ export default function App() {
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
     else if (key === 'prepositions') setScreen('prepositions')
+    else if (key === 'pronunciation') setScreen('pronunciation')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') setScreen('cartoons')
@@ -2539,6 +2541,17 @@ export default function App() {
       return (
         <PrepositionsPage
           {...sectionBack('writing')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'pronunciation':
+      return (
+        <PronunciationPage
+          {...sectionBack('speaking')}
           userLevel={userLevel}
           userName={name}
           token={token}

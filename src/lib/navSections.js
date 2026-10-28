@@ -121,7 +121,7 @@ export function serviceItems(items) {
 const INNER_SCREENS = new Set([
   // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
   'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
-  'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  'prepositions', 'pronunciation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё

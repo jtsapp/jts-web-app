@@ -4240,6 +4240,24 @@ textarea {
 @media (max-width: 560px) {
   .prp-top { padding: 8px 16px 0; }
 }
+/* Pronunciation World в макете тоже нет — фиолетовый бренда прототипа (#874bf8) в его голубой (#0aafff). */
+.pk-banner--pronunciation { background: linear-gradient(99.4deg, #874bf8 17%, #0aafff 95.5%); }
+/* Pronunciation World: оболочка как у Prepositions World. overflow: visible — липкие шапка и полоса «Next»
+   прототипа липнут к окну, а не к .learn__main (с overflow: auto она стала бы их прокруткой, а сама не
+   прокручивается). */
+.prn-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.prn-host { display: block; }
+.prn-host[hidden] { display: none; }
+.learn__main:has(.prn-host) { overflow: visible; }
+/* Раунд Echo Gates — игра на время во всю колонку, а плавающая кнопка Луны ложилась на ворота (на телефоне — на
+   кнопку звука правых ворот). Пока идёт раунд (data-game ставит экран), кнопки Луны и её облачков нет; окно,
+   открытое учеником, остаётся. */
+body:has(.prn-host[data-game='1']) .asst__launcher,
+body:has(.prn-host[data-game='1']) .asst__hint,
+body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
+@media (max-width: 560px) {
+  .prn-top { padding: 8px 16px 0; }
+}
 /* «Грамматика · игры» в макете тоже нет — градиент уровня L1 прототипа (спека A3). Оболочка — как у Prepositions
    World; тумблер звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
 .pk-banner--grammar-games { background: linear-gradient(110.8deg, #9047ff 15.5%, #6932bb 94.2%); }
