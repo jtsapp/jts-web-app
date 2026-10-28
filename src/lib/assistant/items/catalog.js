@@ -64,7 +64,33 @@ export const defaultDeps = {
 
 const strip = (s) => String(s ?? '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
 const quote = (s) => `«${strip(s)}»`
-const item = (ref, kind, title, extra = '') => ({ ref, kind, title, line: `- ${ref} — ${title}${extra}` })
+// short — для подписи кнопки «Открыть: …» (labelOf): вид вещи словом языка интерфейса,
+// номер и короткое название. Подпись собирает сервер: язык ученика он знает.
+const item = (ref, kind, title, extra = '', short = {}) => ({ ref, kind, title, line: `- ${ref} — ${title}${extra}`, short })
+
+const WORD = {
+  lesson: { ru: 'урок', kk: 'сабақ', en: 'lesson' },
+  test: { ru: 'тест', kk: 'тест', en: 'test' },
+  exam: { ru: 'финальный экзамен', kk: 'қорытынды емтихан', en: 'final exam' },
+  grammar: { ru: 'тема', kk: 'тақырып', en: 'topic' },
+  ggame: { ru: 'игра', kk: 'ойын', en: 'game' },
+  reading: { ru: 'текст', kk: 'мәтін', en: 'text' },
+  situation: { ru: 'ситуация', kk: 'жағдай', en: 'situation' },
+  shadowing: { ru: 'шэдоуинг', kk: 'шэдоуинг', en: 'shadowing' },
+  words: { ru: 'слова', kk: 'сөздер', en: 'words' },
+  workbook: { ru: 'воркбук', kk: 'воркбук', en: 'workbook' },
+  homework: { ru: 'домашка', kk: 'үй жұмысы', en: 'homework' },
+  live: { ru: 'урок с преподавателем', kk: 'мұғаліммен сабақ', en: 'lesson with teacher' },
+}
+
+/** Подпись кнопки: «урок 5 “Why we spend”». Кавычки — “”: «» в служебном хвосте заняты. */
+export function labelOf(it, lang = 'ru') {
+  const { word = it.kind, n, name } = it.short || {}
+  const l = lang === 'kk' || lang === 'en' ? lang : 'ru'
+  const parts = [WORD[word]?.[l] || WORD[word]?.ru || '', n != null ? String(n) : '', name ? `“${strip(name)}”` : '']
+  const label = parts.filter(Boolean).join(' ')
+  return label.length > 78 ? `${label.slice(0, 76)}…”` : label
+}
 
 async function courseItems(level, { token, deps }) {
   const lvl = String(level || '').toLowerCase()
@@ -115,7 +141,15 @@ async function courseItems(level, { token, deps }) {
         nextShown = true
       }
     }
-    return { ...item(ref, 'course', title, status), locked }
+    const short =
+      node.kind === 'lesson'
+        ? { word: 'lesson', n: node.n, name: node.title }
+        : node.kind === 'exam'
+          ? { word: 'exam' }
+          : String(node.code).startsWith('T')
+            ? { word: 'test', name: `Unit ${node.unit}` }
+            : { word: 'test', name: node.title }
+    return { ...item(ref, 'course', title, status, short), locked }
   })
 }
 
@@ -125,12 +159,12 @@ async function grammarItems(level, { deps }) {
   const levels = index?.[lvl] ? [lvl] : (index?.levels || []).map((l) => l.code)
   return levels.flatMap((code) =>
     (index?.[code]?.units || []).map((u) =>
-      item(`grammar.${code}.${u.id}`, 'grammar', quote(u.title), u.secName ? ` (${strip(u.secName)}, ${code.toUpperCase()})` : ` (${code.toUpperCase()})`),
+      item(`grammar.${code}.${u.id}`, 'grammar', quote(u.title), u.secName ? ` (${strip(u.secName)}, ${code.toUpperCase()})` : ` (${code.toUpperCase()})`, { name: u.title }),
     ),
   )
 }
 
-async function ggameItems(level, { token, deps }) {
+async function ggameItems(level, { token, deps, lang = 'ru' }) {
   const data = await deps.getJson('/mobile/grammar-games', token)
   const topics = Array.isArray(data?.topics) ? data.topics : []
   const ranges = new Map((data?.levels || []).map((l) => [l.id, l.range]))
@@ -141,8 +175,9 @@ async function ggameItems(level, { token, deps }) {
     .filter((t) => t?.id)
     .map((t) => {
       const title = t.title?.ru || t.title?.en || t.id
+      const own = t.title?.[lang] || title
       const sub = t.sub?.ru || t.sub?.en || ''
-      return item(`ggame.${t.id}`, 'ggame', quote(title), `${sub ? `: ${strip(sub)}` : ''} (игра, ${t.lv}${ranges.get(t.lv) ? `, ${ranges.get(t.lv)}` : ''})`)
+      return item(`ggame.${t.id}`, 'ggame', quote(title), `${sub ? `: ${strip(sub)}` : ''} (игра, ${t.lv}${ranges.get(t.lv) ? `, ${ranges.get(t.lv)}` : ''})`, { name: own })
     })
 }
 
@@ -158,10 +193,10 @@ async function readingItems(level, { deps }) {
       return disk?.texts || []
     }),
   )
-  return lists.flat().filter((t) => t?.id).map((t) => item(`reading.${t.id}`, 'reading', quote(t.title), t.genre ? ` (${t.genre})` : ''))
+  return lists.flat().filter((t) => t?.id).map((t) => item(`reading.${t.id}`, 'reading', quote(t.title), t.genre ? ` (${t.genre})` : '', { name: t.title }))
 }
 
-async function situationItems(level, { deps }) {
+async function situationItems(level, { deps, lang = 'ru' }) {
   const lvl = String(level || '').toLowerCase() === 'a0' ? 'a1' : String(level || '').toLowerCase()
   const levels = PRACTICE_LEVELS.includes(lvl) ? [lvl] : PRACTICE_LEVELS
   const lists = await Promise.all(
@@ -169,7 +204,8 @@ async function situationItems(level, { deps }) {
       const data = await deps.readJson(`practice/situations/${code}.json`).catch(() => null)
       return (data?.items || []).map((s) => {
         const ru = s.title?.ru || s.title?.en || `ситуация ${s.id}`
-        return item(`situation.${code}.${s.id}`, 'situation', quote(ru), s.title?.en && s.title.en !== ru ? ` (${strip(s.title.en)}, ${code.toUpperCase()})` : ` (${code.toUpperCase()})`)
+        const own = (lang === 'kk' ? s.title?.kz || s.title?.kk : s.title?.[lang]) || ru
+        return item(`situation.${code}.${s.id}`, 'situation', quote(ru), s.title?.en && s.title.en !== ru ? ` (${strip(s.title.en)}, ${code.toUpperCase()})` : ` (${code.toUpperCase()})`, { name: own })
       })
     }),
   )
@@ -177,25 +213,25 @@ async function situationItems(level, { deps }) {
 }
 
 async function shadowingItems(_level, { token, deps }) {
-  const local = SHADOWING_LESSONS.map((l) => item(`shadowing.${l.id}`, 'shadowing', quote(l.title), l.short ? ` (${strip(l.short)})` : ''))
+  const local = SHADOWING_LESSONS.map((l) => item(`shadowing.${l.id}`, 'shadowing', quote(l.title), l.short ? ` (${strip(l.short)})` : '', { name: l.short || l.title }))
   const remote = await deps.getJson('/mobile/shadowing', token)
   const seen = new Set(SHADOWING_LESSONS.map((l) => l.id))
   const extra = (Array.isArray(remote) ? remote : [])
     .filter((r) => typeof r?.slug === 'string' && r.slug.includes('-') && !seen.has(r.slug) && strip(r.title))
-    .map((r) => item(`shadowing.${r.slug}`, 'shadowing', quote(r.title), r.speaker ? ` (${strip(r.speaker)})` : ''))
+    .map((r) => item(`shadowing.${r.slug}`, 'shadowing', quote(r.title), r.speaker ? ` (${strip(r.speaker)})` : '', { name: r.speaker || r.title }))
   return [...local, ...extra]
 }
 
 async function wordsItems(_level, { deps }) {
   const meta = await deps.readJson('practice/words/meta.json').catch(() => null)
   return (meta?.sections || []).flatMap((s) =>
-    (s.scenes || []).map((sc) => item(`words.${sc.id}`, 'words', quote(sc.name), ` (${strip(s.name)})`)),
+    (s.scenes || []).map((sc) => item(`words.${sc.id}`, 'words', quote(sc.name), ` (${strip(s.name)})`, { name: sc.name })),
   )
 }
 
 async function workbookItems(_level, { deps }) {
   const dirs = await deps.listDirs('practice/workbook').catch(() => [])
-  return dirs.filter((d) => /^(a0|a1|a2|b1|b2|c1)$/.test(d)).map((d) => item(`workbook.${d}`, 'workbook', `воркбук ${d.toUpperCase()}`))
+  return dirs.filter((d) => /^(a0|a1|a2|b1|b2|c1)$/.test(d)).map((d) => item(`workbook.${d}`, 'workbook', `воркбук ${d.toUpperCase()}`, '', { n: d.toUpperCase() }))
 }
 
 const fmtDate = (iso) => {
@@ -209,7 +245,7 @@ async function homeworkItems(_level, { token, deps }) {
   return (Array.isArray(list) ? list : [])
     .filter((h) => h?.id != null && !HOMEWORK_DONE.has(String(h.status || '').toUpperCase()))
     .slice(0, 15)
-    .map((h) => item(`homework.${h.id}`, 'homework', quote(h.title || 'домашняя работа'), h.dueDate ? ` (до ${fmtDate(h.dueDate)})` : ''))
+    .map((h) => item(`homework.${h.id}`, 'homework', quote(h.title || 'домашняя работа'), h.dueDate ? ` (до ${fmtDate(h.dueDate)})` : '', { name: h.title }))
 }
 
 async function liveItems(_level, { token, deps, now = Date.now() }) {
@@ -218,7 +254,7 @@ async function liveItems(_level, { token, deps, now = Date.now() }) {
     .filter((o) => o?.lessonId != null && new Date(o.scheduledAt).getTime() >= now - 2 * 3600_000)
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
     .slice(0, 5)
-    .map((o) => item(`live.${o.lessonId}`, 'live', `урок ${fmtDate(o.scheduledAt)}`, o.teacherName ? ` с ${strip(o.teacherName)}` : ''))
+    .map((o) => item(`live.${o.lessonId}`, 'live', `урок ${fmtDate(o.scheduledAt)}`, o.teacherName ? ` с ${strip(o.teacherName)}` : '', { n: fmtDate(o.scheduledAt) }))
 }
 
 const BUILDERS = {
@@ -251,24 +287,24 @@ const HEADERS = {
  * Каталог видов kinds для уровня level: текст для контекста модели и адреса для сверки.
  * Вид, который не собрался (нет файла, бэкенд молчит), просто пропадает.
  */
-export async function buildItemCatalog({ kinds, level, token, deps = defaultDeps, now }) {
+export async function buildItemCatalog({ kinds, level, token, lang = 'ru', deps = defaultDeps, now }) {
   const uniq = [...new Set(kinds)].filter((k) => BUILDERS[k])
-  const lists = await Promise.all(uniq.map((k) => BUILDERS[k](level, { token, deps, now }).catch(() => [])))
+  const lists = await Promise.all(uniq.map((k) => BUILDERS[k](level, { token, deps, now, lang }).catch(() => [])))
   const items = new Map()
   const sections = []
   uniq.forEach((kind, i) => {
     const list = lists[i].slice(0, MAX_LINES)
     if (!list.length) return
-    for (const it of list) items.set(it.ref, it)
+    for (const it of list) items.set(it.ref, { ...it, label: labelOf(it, lang) })
     sections.push(`${HEADERS[kind](level)}:\n${list.map((it) => it.line).join('\n')}`)
   })
   return { text: sections.length ? sections.join('\n') : null, items }
 }
 
 /** Вещь по адресу — когда каталога в этом запросе нет (ученик ответил «да» на её «Открыть?»). */
-export async function resolveItem(ref, { token, deps = defaultDeps, now } = {}) {
+export async function resolveItem(ref, { token, lang = 'ru', deps = defaultDeps, now } = {}) {
   const parsed = parseItemRef(ref)
   if (!parsed) return null
-  const { items } = await buildItemCatalog({ kinds: [parsed.kind], level: parsed.level, token, deps, now })
+  const { items } = await buildItemCatalog({ kinds: [parsed.kind], level: parsed.level, token, lang, deps, now })
   return items.get(ref) || null
 }

@@ -121,3 +121,16 @@ describe('каталог для Луны', () => {
     expect((await resolveItem('situation.a2.1', { deps: fakeDeps() })).title).toBe('«Вы опоздали на поезд»')
   })
 })
+
+describe('подпись кнопки «Открыть: …»', () => {
+  it('на языке интерфейса, с номером и коротким названием', async () => {
+    const deps = fakeDeps({ backend: COURSE_BACKEND })
+    const ru = await buildItemCatalog({ kinds: ['course', 'situation'], level: 'B1', token: 't', deps })
+    expect(ru.items.get('course.B1.L2').label).toBe('урок 2 “Why we spend”')
+    expect(ru.items.get('course.B1.T1').label).toBe('тест “Unit 1”')
+    const kk = await buildItemCatalog({ kinds: ['course'], level: 'B1', token: 't', lang: 'kk', deps })
+    expect(kk.items.get('course.B1.L2').label).toBe('сабақ 2 “Why we spend”')
+    const sit = await resolveItem('situation.a2.1', { lang: 'en', deps: fakeDeps() })
+    expect(sit.label).toBe('situation “You Missed Your Train”')
+  })
+})

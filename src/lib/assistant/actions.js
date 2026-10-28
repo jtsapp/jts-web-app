@@ -3,6 +3,10 @@
 // Модель просит действие меткой в конце ответа (правила — prompt.js):
 //   [[OPEN practice-speaking]]      — предложить: под ответом кнопка «Открыть…»
 //   [[OPEN_NOW practice-speaking]]  — открыть сразу (ученик попросил или согласился)
+//   [[OPEN_NOW course.B1.L5]]       — открыть конкретную вещь по её адресу (items/refs.js;
+//   29.10.2026): урок курса, тему, текст… Адрес сверяется с каталогом этого запроса
+//   (items/catalog.js) — подпись берётся оттуда, закрытый урок действием не становится;
+//   каталога нет (ученик ответил «да» на её «Открыть?») — адрес сверит роут (unresolved).
 //   [[CLICK 7]] / [[CLICK_NOW 7]] — нажать кнопку экрана с номером 7 из снимка
 //   (screenSnapshot.snapshotWithRefs; 21.10.2026). Номер сверяется со снимком этого
 //   же запроса, подпись берётся оттуда — окно по ней проверит, что жмёт ту же кнопку.
@@ -17,6 +21,7 @@
 
 import { REPORTED_STREAM_MARKER, createHoldbackFilter } from './report.js'
 import { validAction } from './destinations.js'
+import { isItemRef } from './items/refs.js'
 
 // Форму модель местами путает (живой прогон 15.10.2026: «[[OPEN id="practice-listening"]]»),
 // поэтому двоеточие, «id=» и кавычки вокруг id прощаем — раздел всё равно сверяется со списком.
@@ -24,12 +29,13 @@ import { validAction } from './destinations.js'
 // TOUR — метка прежнего тура «от Луны» (убран 28.10.2026): её ещё может написать модель
 // по старой истории разговора. Ученику её не показываем, а делаем из неё «открыть» —
 // тур раздела выйдет там сам (первый заход) или по «?».
-const MODEL_MARK = /^\[\[(OPEN|TOUR|CLICK)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«#]?([A-Za-z0-9_-]{1,40})["'»]?\s*\]\]$/
+// Точка — в адресе вещи (course.B1.L5): он длиннее id раздела, отсюда и длина.
+const MODEL_MARK = /^\[\[(OPEN|TOUR|CLICK)(_NOW)?(?:\s+|\s*:\s*)(?:id\s*=\s*)?["'«#]?([A-Za-z0-9_.-]{1,56})["'»]?\s*\]\]$/
 // Длиннее этого метка модели не бывает: «[[» без закрытия дальше — просто текст.
-const MAX_MARK = 56
+const MAX_MARK = 72
 
 export const SERVICE_PREFIX = '[[ASST_'
-const ACTION_TAIL = /\[\[ASST_ACTION (open|click) ([a-z0-9-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
+const ACTION_TAIL = /\[\[ASST_ACTION (open|click) ([A-Za-z0-9_.-]+) (now|offer)(?: «([^«»[\]]{1,80})»)?\]\]/
 
 /** Подпись кнопки с номером ref в снимке экрана; нет такой кнопки — null. */
 export function buttonOnScreen(screenText, ref) {
@@ -42,6 +48,14 @@ export function buttonOnScreen(screenText, ref) {
 function clickAction(ref, now, screenText) {
   const label = buttonOnScreen(screenText, ref)
   return label ? { kind: 'click', target: String(Number(ref)), label, now: Boolean(now) } : null
+}
+
+// Вещь по адресу: из каталога запроса — с подписью (закрытая — не действие); без
+// каталога или не нашлась в нём — на сверку роуту (unresolved).
+function itemAction(ref, now, items) {
+  const it = items?.get(ref)
+  if (!it) return { kind: 'open', target: ref, now, item: true, unresolved: true }
+  return it.locked ? null : { kind: 'open', target: ref, now, item: true, label: it.label }
 }
 
 // В хвосте подпись — в «»: скобки и кавычки из неё убраны, чтобы не сломать разбор.
@@ -57,8 +71,8 @@ export function actionMarker(action) {
 export function actionTail(action) {
   if (!action) return ''
   const mode = action.now ? 'now' : 'offer'
-  return action.kind === 'click'
-    ? `[[ASST_ACTION click ${action.target} ${mode} «${tailLabel(action.label)}»]]`
+  return action.kind === 'click' || action.label
+    ? `[[ASST_ACTION ${action.kind} ${action.target} ${mode} «${tailLabel(action.label)}»]]`
     : `[[ASST_ACTION ${action.kind} ${action.target} ${mode}]]`
 }
 
@@ -74,7 +88,7 @@ export function actionTail(action) {
  * screenText — снимок экрана этого запроса: по нему сверяется номер кнопки метки
  * нажатия (номера нет — метка вырезается, действия нет).
  */
-export function createActionFilter({ screenText = '' } = {}) {
+export function createActionFilter({ screenText = '', items = null } = {}) {
   let hold = ''
   let action = null
   return {
@@ -113,7 +127,12 @@ export function createActionFilter({ screenText = '' } = {}) {
         }
         if (!action) {
           const kind = m[1].toLowerCase()
-          action = kind === 'click' ? clickAction(m[3], Boolean(m[2]), screenText) : validAction('open', m[3].toLowerCase(), Boolean(m[2]))
+          action =
+            kind === 'click'
+              ? clickAction(m[3], Boolean(m[2]), screenText)
+              : isItemRef(m[3])
+                ? itemAction(m[3], Boolean(m[2]), items)
+                : validAction('open', m[3].toLowerCase(), Boolean(m[2]))
         }
       }
     },
@@ -145,6 +164,7 @@ export function createServiceTailFilter() {
       const m = ACTION_TAIL.exec(tail())
       if (!m) return null
       if (m[1] === 'click') return m[4] ? { kind: 'click', target: m[2], label: m[4], now: m[3] === 'now' } : null
+      if (isItemRef(m[2])) return { kind: 'open', target: m[2], now: m[3] === 'now', item: true, label: m[4] || '' }
       return validAction(m[1], m[2], m[3] === 'now')
     },
   }
