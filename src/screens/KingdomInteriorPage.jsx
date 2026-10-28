@@ -16,6 +16,7 @@ import { isStepLevel, tasksToSteps, stripStageTail, groupBinary } from '../learn
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 import LevelExam from '../learning/LevelExam.jsx'
 import { EXAM_CODE, loadLevelExam } from '../learning/levelExam.js'
+import { lessonUnlocked } from '../learning/courseLock.js'
 import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -241,11 +242,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   //
   // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ ограничения админа: блокировку
   // модуля и квоту не обходит даже просмотр контента.
+  // Само правило — learning/courseLock.js: по нему же Луна говорит ученику «урок закрыт».
   const isUnlocked = useCallback(
-    (i) =>
-      !moduleLocked &&
-      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
-      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    (i) => lessonUnlocked(i, { trail: lessons, done, moduleLocked, moduleQuota, unlockAll }),
     [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
