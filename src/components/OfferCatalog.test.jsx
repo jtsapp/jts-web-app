@@ -34,6 +34,12 @@ it('separates all product categories and shows periods/old prices without fabric
   expect(general.querySelector('[data-offer-code="business-60-8"]')).toBeNull()
   expect(section('Гарантированные тарифы по уровням').textContent).not.toContain('уроков')
   expect(section('Групповой курс').textContent).toContain('До 6 человек')
+  expect(general.querySelector('.pr-sec__title svg')).toBeTruthy()
+  expect(general.querySelector('.pr-bonus__art img[src="/assets/demo/logo-duolingo.png"]')).toBeTruthy()
+  expect(general.querySelector('.pr-bonus__gift')?.getAttribute('src')).toBe('/assets/demo/gift.png')
+  expect(section('Групповой курс').querySelector('.pr-bonus__art img[src="/assets/demo/logo-netflix.png"]')).toBeTruthy()
+  expect(section('Business Premium').querySelector('.pr-bonus')).toBeNull()
+
 })
 it('duration and format controls select the correct server offer independently', () => {
   const choose = vi.fn()

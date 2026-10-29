@@ -1,3 +1,4 @@
+import { PricingExtras, PricingSectionIcon } from './PricingDecorations.jsx'
 import { useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { CATALOG_CATEGORIES, CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails, durationsOf } from '../data/pricing.js'
@@ -20,7 +21,7 @@ function OfferSection({ category, offers, onSelect, quantity, onBump }) {
   const visible = offers.filter((o) => (!mixedKinds || o.kind === kind) && (durations.length < 2 || o.durationMinutes === duration))
   return <section className={`pr-sec pr-sec--${category === 'SELF' ? 'self' : category === 'GENERAL_GROUP' ? 'group' : 'ind'}`}>
     <div className="pr-sec__head">
-      <h2 className="pr-sec__title">{t(`catalog.${category}`)}</h2>
+      <h2 className="pr-sec__title"><PricingSectionIcon kind={category === 'SELF' ? 'self' : category === 'GENERAL_GROUP' || (mixedKinds && kind === 'GROUP') ? 'group' : 'ind'} />{t(`catalog.${category}`)}</h2>
       <div className="catalog-toggles">
         {durations.length > 1 && <div className="pr-toggle" role="group" aria-label={t(`catalog.${category}`)}>
           {durations.map((d) => <button type="button" key={d} className={`pr-toggle__btn${duration === d ? ' is-on' : ''}`}
@@ -50,5 +51,6 @@ function OfferSection({ category, offers, onSelect, quantity, onBump }) {
         </article>
       })}
     </div>
+    <PricingExtras category={category} />
   </section>
 }
