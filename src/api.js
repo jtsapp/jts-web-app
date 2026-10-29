@@ -2764,3 +2764,7 @@ export async function markFeedbackReportOpened(linkToken) {
     throw err
   }
 }
+
+// Explicit account-bound acknowledgement of the immutable legal PDF bundle.
+export const getLegalAcknowledgement = (token) => authGet('/user/legal-documents', token)
+export const acceptLegalDocuments = (token, body) => authPut('/user/legal-documents', token, body)

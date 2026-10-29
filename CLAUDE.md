@@ -1310,8 +1310,8 @@ web-admin «Ученики IELTS», позже биллинг; ручка `/mobi
 хоть один шаг не пройден, хаб SAT рисует вместо вкладок `src/sat/tabs/SatStartView.jsx` (главы → диагностика → доступ от
 менеджера, без маскота IELTS). Замок на сервере — `SatAccessInterceptor` (открыты me, profile, taxonomy, diagnostic/**,
 plan и plan/rebuild); менеджер открывает доступ в web-admin «Ученики → SAT · доступ». Тарифы экзаменов — свои у SAT и
-IELTS: `?screen=sat-pricing|ielts-pricing` (`src/screens/ExamPricingPage.jsx`, состав и цены — `src/data/examPricing.js`;
-цены пока null — «уточнит менеджер», кнопка пишет менеджеру). Банк SAT грузится выгрузкой прототипа
+IELTS: `?screen=sat-pricing|ielts-pricing` (`src/screens/ExamPricingPage.jsx`, состав и цены — общий `/catalog/offers`, `OfferCatalog.jsx`;
+пакеты на месяц и по баллам, кнопка по-прежнему пишет менеджеру). Банк SAT грузится выгрузкой прототипа
 (`scripts/sat/export-sat.js`): с 13.10.2026 в неё входят и материалы College Board (лицензия), метка `licensed`.
 
 **Доступ к IELTS открывает менеджер (backend V324).** Материалы IELTS закрыты, пока менеджер не откроет доступ в
@@ -2055,3 +2055,19 @@ Windows-пайпа — серверный код уже вырезает его;
 Для этого репозитория в первую очередь: **webapp-testing** — изменения экранов
 проверяй прогоном через Playwright (диплинк `?screen=…`), рядом с уже
 существующими `tests/*.spec.js`; **frontend-design** — при работе над UI.
+
+
+## Прайс и документы ученика · 29.10.2026
+
+- Единственный источник 46 тарифов — backend `sales_offers`, миграция V485. `category`, `months`, `previousPrice`,
+  `maxStudents`, `target` — подписи витрины, `kind` и оформление заказа остались прежними. Общий `OfferCatalog`
+  используется в PricingPage и SAT/IELTS; SELF теперь по месяцам. Не возвращать статичные цены в examPricing.js.
+- Исходные документы RU/KK выгружены без редактирования в `public/legal/2026-10-29/`, manifest содержит источники
+  и SHA256. Ссылки доступны вне скрытого раздела «Договоры»: вход, профиль, тарифы, лендинг.
+- `LegalDocumentsGate` перед ученическим кабинетом: один пустой обязательный checkbox, `GET/PUT /user/legal-documents`.
+  Согласие сохраняется на аккаунте с версией, языком и серверным временем (backend V486), локальная отметка его
+  не заменяет. Старый `termsAccepted` не считается согласием с новым комплектом. Платёжные сценарии не менялись;
+  отдельные подтверждения при будущем эквайринге ещё предстоит сделать по исходным документам.
+- На проде Feedback открыт; tokens/prizes/notifications/contracts/my-teacher/teacher-wizard/teacher-pick скрыты
+  общим `isStudentSectionHidden` в меню и маршрутах. Отдельного пункта «Кабинет студента» нет, весь кабинет не закрывать.
+- Выкатывать backend и web вместе: новые поля каталога и endpoint согласия нужны этому интерфейсу.

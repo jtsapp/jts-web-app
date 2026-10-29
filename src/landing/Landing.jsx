@@ -5,7 +5,8 @@
 //
 // Картинки — экспорт из Figma как есть (public/landing/img), не пересборка:
 // маскоты, фото, превью разделов и карта острова — растр рендера макета.
-import { PRIVACY_URL, SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { legalDocumentUrl } from '../lib/legalDocuments.js'
 import LibraryTabs from './LibraryTabs.jsx'
 import TeachersCarousel from './TeachersCarousel.jsx'
 import TrialForm from './TrialForm.jsx'
@@ -13,10 +14,8 @@ import TrialForm from './TrialForm.jsx'
 const IMG = '/landing/img/'
 const IC = '/landing/icons/'
 
-// В макете нет адресов Instagram и публичной оферты; пока их нет, пункт
-// подвала остаётся текстом, а не ссылкой в никуда.
+// Адрес Instagram ещё не задан; документы опубликованы в /legal/.
 const INSTAGRAM_URL = null
-const OFFER_URL = null
 
 function Icon({ src, size, className }) {
   return <img className={className} src={src} width={size} height={size} alt="" aria-hidden="true" />
@@ -438,7 +437,7 @@ function Trial({ c, lang }) {
             ))}
           </ol>
         </div>
-        <TrialForm f={t.form} lang={lang} privacyUrl={PRIVACY_URL} mascot={IMG + 'aizere-form.webp'} icons={{
+        <TrialForm f={t.form} lang={lang} privacyUrl={legalDocumentUrl('privacy', lang)} mascot={IMG + 'aizere-form.webp'} icons={{
           person: IC + 'ic-person.svg', phone: IC + 'ic-call-form.svg', arrow: IC + 'ic-arrow-form.svg',
         }} />
       </div>
@@ -471,7 +470,7 @@ function Faq({ c }) {
   )
 }
 
-function Footer({ c }) {
+function Footer({ c, lang }) {
   const f = c.footer
   const phoneHref = 'tel:+' + f.phone.replace(/\D/g, '')
   return (
@@ -499,8 +498,9 @@ function Footer({ c }) {
       </div>
       <div className="ld-footer__bottom">
         <span>{f.copy}</span>
-        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">{f.privacy}</a>
-        {OFFER_URL ? <a href={OFFER_URL} target="_blank" rel="noopener noreferrer">{f.offer}</a> : <span>{f.offer}</span>}
+        <a href={legalDocumentUrl('privacy', lang)} target="_blank" rel="noopener noreferrer">{f.privacy}</a>
+        <a href={legalDocumentUrl('offer', lang)} target="_blank" rel="noopener noreferrer">{f.offer}</a>
+        <a href={legalDocumentUrl('payment-security', lang)} target="_blank" rel="noopener noreferrer">{f.paymentSecurity}</a>
       </div>
     </footer>
   )
@@ -527,7 +527,7 @@ export default function Landing({ c, lang, links }) {
         <Trial c={c} lang={lang} />
         <Faq c={c} />
       </main>
-      <Footer c={c} />
+      <Footer c={c} lang={lang} />
       {/* Нижняя панель телефона из макета (Buttonbar 5748:7131): на десктопе
           эти кнопки живут в шапке. */}
       <div className="ld-mbar">

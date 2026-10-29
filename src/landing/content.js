@@ -367,6 +367,7 @@ export const ru = {
     whatsapp: 'WhatsApp',
     instagram: 'Instagram',
     copy: '© 2026 Just To Study',
+    paymentSecurity: 'Безопасность онлайн-платежей',
     privacy: 'Политика конфиденциальности',
     offer: 'Публичная оферта',
   },

@@ -1,4 +1,5 @@
 'use client'
+import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
@@ -2075,6 +2076,9 @@ export default function App() {
     ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     : renderScreen(view)
   return (
+    <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
+      required={!!token && !boothAccount && !isTeacher(token) && !['set-password', 'success'].includes(view)}
+      onLogout={handleLogout}>
     <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
@@ -2114,6 +2118,7 @@ export default function App() {
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
     </MobileTabContext.Provider>
+    </LegalDocumentsGate>
   )
 
   function renderScreen(view) {

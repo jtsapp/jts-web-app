@@ -1,3 +1,4 @@
+import LegalDocumentsLinks from '../components/LegalDocumentsLinks.jsx'
 import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
@@ -17,7 +18,7 @@ import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
-import { PRIVACY_URL } from '../lib/support.js'
+import { legalDocumentUrl } from '../lib/legalDocuments.js'
 import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
 import { isTeacher } from '../lib/jwt.js'
 import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
@@ -329,8 +330,8 @@ export default function ProfilePage({
     ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') }]),
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
-    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(PRIVACY_URL, '_blank') },
-    { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => window.open('https://justtostudy.kz/terms', '_blank') },
+    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(legalDocumentUrl('privacy', lang), '_blank') },
+    { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => window.open(legalDocumentUrl('offer', lang), '_blank') },
   ]
 
   return (
@@ -448,6 +449,7 @@ export default function ProfilePage({
           ))}
         </div>
 
+        <section className="pf-card legal-profile"><h2>{t('legal.title')}</h2><LegalDocumentsLinks /></section>
         <button className="pf-logout" onClick={onLogout}>
           <PfLogoutIcon />
           <span>{t('profile.logout')}</span>

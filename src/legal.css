@@ -1,0 +1,25 @@
+/* Documents are available independently of the temporarily hidden Contracts section. */
+.legal-gate { min-height: 100dvh; padding: 40px 24px; display: grid; place-items: center; background: #f7f7fb; color: #201c2f; }
+.legal-card { width: min(100%, 640px); padding: 32px; border: 1px solid #eee8f8; border-radius: 24px; background: #fff; }
+.legal-card__top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.legal-card__top > b { color: #9144ff; font-size: 22px; }
+.legal-card h1 { font-size: 28px; line-height: 1.2; margin: 28px 0 12px; }
+.legal-card > p { line-height: 1.55; }
+.legal-links { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 10px; }
+.legal-links a { color: #7834db; text-decoration: underline; text-underline-offset: 3px; line-height: 1.5; }
+.legal-card .legal-links a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid #eee8f8; border-radius: 12px; }
+.legal-language { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.legal-language select { font: inherit; color: inherit; background: #fff; border: 1px solid #e6e0ef; border-radius: 10px; padding: 10px 12px; }
+.legal-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.5; cursor: pointer; margin-top: 24px; }
+.legal-check input { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; accent-color: #9144ff; }
+.legal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.legal-actions button { min-height: 48px; border: 0; border-radius: 12px; background: #9144ff; color: #fff; padding: 12px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+.legal-primary:disabled, .legal-signout:disabled { opacity: .5; cursor: default; }
+.legal-actions .legal-signout { background: transparent; color: #726b83; }
+.legal-error { color: #ba2947; }
+.legal-profile { padding: 20px; margin-top: 24px; }
+.legal-profile h2 { font-size: 18px; }
+.catalog-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
+.catalog-old { color: #8e889a; font-size: 14px; display: block; margin: 8px 0 4px; }
+.pr-tile h3 { margin: 0; }
+.exam-pr > .pr-sec { margin-bottom: 20px; }

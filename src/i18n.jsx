@@ -1,3 +1,4 @@
+import { LEGAL_AND_PRICING } from './i18n/legalAndPricing.js'
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { RuFlagIcon, GbFlagIcon, KzFlagIcon } from './components/icons.jsx'
 import { SAT_SYNC_DICT } from './sat/i18nSync.js'
@@ -21653,6 +21654,8 @@ const dict = {
 
 // Строки синхронизации SAT с прототипом (SAT-SYNC-PLAN B13) живут в своём файле — вливаем их в каждый язык
 for (const l of Object.keys(SAT_SYNC_DICT)) Object.assign(dict[l], SAT_SYNC_DICT[l])
+
+for (const [language, values] of Object.entries(LEGAL_AND_PRICING)) Object.assign(dict[language === 'kz' ? 'kk' : language], values)
 
 const I18nCtx = createContext(null)
 

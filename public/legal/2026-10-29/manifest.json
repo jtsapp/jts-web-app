@@ -1,0 +1,48 @@
+{
+  "version": "2026-10-29",
+  "sourceFolder": "https://drive.google.com/drive/folders/1uOcHL5_QTqv7fdaRQmKwoauDxDfXgQLr",
+  "documents": [
+    {
+      "kind": "offer",
+      "language": "ru",
+      "file": "offer-ru.pdf",
+      "source": "https://docs.google.com/document/d/1bMbdtcP_ixiTNf7ek4kx3fDYehIpVT2ZIqK6gEME-rg/edit",
+      "sha256": "3fcf816e35490d83c456d3d04259cb26c3cbb5a2be9c4e318df6314c33444c54"
+    },
+    {
+      "kind": "privacy",
+      "language": "ru",
+      "file": "privacy-ru.pdf",
+      "source": "https://docs.google.com/document/d/1_rZyWUP8Zz23hIlV2gBpfbseTGt4jbgy4t4VlAMIO0k/edit",
+      "sha256": "40f85aad73772c48616c2926774b18a457f1a36fbc00fd32eca02eadf8aee983"
+    },
+    {
+      "kind": "payment-security",
+      "language": "ru",
+      "file": "payment-security-ru.pdf",
+      "source": "https://docs.google.com/document/d/1sJ_LrDViAhwFHlz_RreD5BMPksFFNg7MjTkSQGAGLPI/edit",
+      "sha256": "2bcc936c402d4c35ff0f39590ce54587101ad2720cf96f73e7360cd511daefa0"
+    },
+    {
+      "kind": "offer",
+      "language": "kk",
+      "file": "offer-kk.pdf",
+      "source": "https://docs.google.com/document/d/11rj63l8SRLKOb9J4mSlnMG4CRvCLdiVoPnZrLCey7GE/edit",
+      "sha256": "ba1ae6cece6c78c7723a3bab1a8f01632e26b7fe8edf9f6295e8c66358f8e272"
+    },
+    {
+      "kind": "privacy",
+      "language": "kk",
+      "file": "privacy-kk.pdf",
+      "source": "https://docs.google.com/document/d/1XhqqAMlYrj2EDnKJp9VtrxyQ8ycJ0P6tYK9N2cgAEOY/edit",
+      "sha256": "45f6d9b53be9862da38998f26f61d4e2571674e4dd20b522bf464a8515732ee5"
+    },
+    {
+      "kind": "payment-security",
+      "language": "kk",
+      "file": "payment-security-kk.pdf",
+      "source": "https://docs.google.com/document/d/1pRplOYUtcvT7Aa84PoFtwfe0kRutu3zCcGs6S67L49E/edit",
+      "sha256": "56ac5b2b34a31c8595603009ec207c44a2134876174e729b1bdb17383d8214cc"
+    }
+  ]
+}
