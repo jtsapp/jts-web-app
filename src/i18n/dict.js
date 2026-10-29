@@ -58,14 +58,13 @@ export const DICT = {
     'tutor.dexter.trait1': 'Русскоязычный',
     'tutor.dexter.trait2': 'Вайбовый',
     'tutor.dexter.trait3': 'Свой парень',
-    // Карточка — «контракт характера» из пакета Speaking Buddy v3.5: выбрать
-    // Декстера после этого текста и есть согласие на его мат и прожарку, другого
-    // вопроса нет (core §11). Тумблера 18+ нет с 14.10, поэтому desc18 не видна.
+    // Декстер в двух нравах (29.10.2026): desc — «свой пацан» без кнопки 18+,
+    // desc18 — хулиган и его дисклеймер (решение владельца: хулиган для любого
+    // возраста, кто включил кнопку; предупреждение — здесь).
     'tutor.dexter.desc':
-      'Декстер всегда злой и ругается в каждой фразе — в любом возрасте. Взрослым — полная прожарка и крепкий мат, тем, кому нет 18, — тот же Декстер, но слова мягче и без личных оскорблений. Это игра в жёсткого тренера, а не настоящая злость. Если такой стиль не для тебя — выбери другого тьютора.',
-    // Описание того же тьютора с включённой кнопкой 18+.
+      'Свой пацан: на ты, со сленгом и без занудства. Ошибку называет прямо, но без наездов и мата — максимум «блин». Хочешь Декстера без тормозов — включи 18+.',
     'tutor.dexter.desc18':
-      'Тот же Декстер, только без тормозов. Матерится в каждой фразе, орёт за короткие ответы и за русский вместо английского, хвалит сквозь зубы. Учит ровно тому же и так же — просто больно. Не для тех, кого это выбивает.',
+      'Декстер 18+ — хулиган без тормозов. Злой с первого слова, матерится в каждой фразе и оскорбляет лично: «тупой», «лентяй», «мозги в заднице». Для любого возраста, кто включил кнопку. Учит тому же, просто больно. Не готов — выключи 18+ или выбери другого тьютора.',
     'tutor.dexter.listen': 'Послушать голос Декстера',
     'tutor.dexter.choose': 'Выбрать Декстера',
     // Кнопка нрава у имени тьютора (tutors.js → tempers). Не возрастной гейт:
@@ -488,9 +487,9 @@ export const DICT = {
     'tutor.dexter.trait2': 'Вайбты',
     'tutor.dexter.trait3': 'Өз жігіті',
     'tutor.dexter.desc':
-      'Декстер әрқашан ашулы және кез келген жаста әр сөйлемінде боқтайды. Ересектерге — аяусыз мазақ пен қатты боқтық сөздер, 18-ге толмағандарға — сол Декстер, бірақ сөздері жұмсағырақ әрі жеке қорлаусыз. Бұл — шын өшпенділік емес, қатал жаттықтырушы ойыны. Бұл стиль саған жат болса, басқа кейіпкерді таңда.',
+      'Өз жігітің: «сен» деп сөйлейді, сленгпен, іш пыстырмайды. Қатені тура айтады, бірақ ұрыспай, боқтамай — ең көбі «блин». Тежеусіз Декстерді қаласаң — 18+ қос.',
     'tutor.dexter.desc18':
-      'Сол Декстер, бірақ тежеусіз. Әр сөйлемінде боқтайды, қысқа жауап пен ағылшыннан қашқаның үшін айқайлайды, мақтауы тісінің арасынан. Оқытуы дәл сол, тек ауыр. Мұны көтере алмайтындарға емес.',
+      'Декстер 18+ — тежеусіз бұзақы. Бірінші сөзден ашулы, әр сөйлемінде боқтайды және жеке басыңды қорлайды: «ақымақ», «жалқау». Батырманы қосқан кез келген жасқа. Оқытуы сол, тек ауыр. Дайын болмасаң — 18+ өшір немесе басқа тьютор таңда.',
     'tutor.dexter.listen': 'Декстер дауысын тыңдау',
     'tutor.dexter.choose': 'Декстер таңдау',
     'tutor.adult': '18+',
@@ -882,9 +881,9 @@ export const DICT = {
     'tutor.dexter.trait2': 'Slangy',
     'tutor.dexter.trait3': 'Your boy',
     'tutor.dexter.desc':
-      "Dexter is always angry and swears in every turn, at every age. Adults get the full roast and strong swearing; under 18 get the same Dexter with milder words and no personal insults. It's a tough-love game, not real hatred. If this style isn't for you, choose another character.",
+      'Your own guy: casual, slangy, no lecturing. Calls out mistakes straight, but no insults and no swearing — a "damn" at most. Want Dexter with the brakes off? Turn on 18+.',
     'tutor.dexter.desc18':
-      'The same Dexter with the brakes off. Swears in every line, shouts at one-word answers and at Russian instead of English, and praises through gritted teeth. Same method, same syllabus — it just hurts. Not for anyone this throws off.',
+      'Dexter 18+ is a hooligan with the brakes off. Angry from the first word, swears in every line and insults you personally — "dumb", "lazy", "brain on holiday". For any age, once the switch is on. Same method, it just hurts. Not ready? Turn off 18+ or pick another tutor.',
     'tutor.dexter.listen': "Listen to Dexter's voice",
     'tutor.dexter.choose': 'Choose Dexter',
     'tutor.adult': '18+',

@@ -9,6 +9,7 @@
 
 import { getSql } from './sql.js'
 import { matchesReviewItem, splitReviewLists } from './reviewMatch.js'
+import { loadTutorTempers, mergeTutorTempers } from './tutorTempers.js'
 
 function trimText(s, max = 240) {
   if (typeof s !== 'string') return null
@@ -366,6 +367,7 @@ export async function loadProfile(deviceId) {
   `
   if (baseRows.length === 0) return null
   const base = baseRows[0]
+  const temperRows = await loadTutorTempers(deviceId)
 
   const [
     mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows,
@@ -465,6 +467,10 @@ export async function loadProfile(deviceId) {
     // Нрав тьютора (ось 18+): 'calm' | 'harsh' | null. null — ученик не выбирал,
     // дефолт берёт клиент (temperFor в src/tutor/tutors.js).
     tutorTemper: base.tutor_temper,
+    // Нрав по тьютору (29.10.2026): { dexter: 'harsh', spark: 'calm' }. Нет
+    // ключа — дефолт тьютора на клиенте (temperFor). tutorTemper выше остаётся
+    // для вкладок, открытых до выката.
+    tutorTempers: mergeTutorTempers(base.tutor_temper, temperRows),
     interests: Array.isArray(base.interests) ? base.interests : [],
     profession: base.profession,
     minutesPerDay: base.minutes_per_day,

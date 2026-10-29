@@ -119,7 +119,7 @@ import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import BoothEntryPage from './screens/BoothEntryPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
-import { getTutor, temperFor } from './tutor/tutors.js'
+import { getTutor, temperFor, tempersForAll, tempersFromProfile } from './tutor/tutors.js'
 // Звук трансляции учителя разрешается ЗАРАНЕЕ, на жесте входа в урок: на iOS
 // сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
@@ -545,7 +545,7 @@ export default function App() {
         if (profile) {
           if (profile.tutor) {
             setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
+            setTempers(tempersFromProfile(profile))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -670,10 +670,11 @@ export default function App() {
   // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
   const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
-  // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
-  // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
-  // tutorKey, потому что это ровно то же самое решение ученика: кого слушать.
-  const [temper, setTemper] = useState(null)
+  // Нрав (ось 18+) у каждого тьютора свой (29.10.2026): кнопка 18+ у Декстера не
+  // трогает Спарка. temper — нрав выбранного тьютора: 'calm' | 'harsh' | null
+  // (null — у тьютора оси нет). В звонок уходит только он.
+  const [tempers, setTempers] = useState({})
+  const temper = temperFor(tutorKey, tempers[tutorKey])
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
@@ -1062,7 +1063,7 @@ export default function App() {
       // юзера этого браузера (merge анкету тоже не переносит — см. merge.js).
       if (mode === 'register') {
         setTutorKey('spark')
-        setTemper(null)
+        setTempers({})
         setTutorOnboarded(false)
         setInterestIds([])
         setProfession('')
@@ -1089,7 +1090,7 @@ export default function App() {
             }
             if (profile.tutor) {
               setTutorKey(profile.tutor)
-              setTemper(temperFor(profile.tutor, profile.tutorTemper))
+              setTempers(tempersFromProfile(profile))
               setTutorOnboarded(true)
             }
             setInterestIds(enToInterestIds(profile.interests))
@@ -1184,7 +1185,7 @@ export default function App() {
           }
           if (profile.tutor) {
             setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
+            setTempers(tempersFromProfile(profile))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -1228,7 +1229,7 @@ export default function App() {
         }
         if (profile.tutor) {
           setTutorKey(profile.tutor)
-          setTemper(temperFor(profile.tutor, profile.tutorTemper))
+          setTempers(tempersFromProfile(profile))
           setTutorOnboarded(true)
         }
         setInterestIds(enToInterestIds(profile.interests))
@@ -1585,7 +1586,7 @@ export default function App() {
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
-    setTemper(null)
+    setTempers({})
     setTutorOnboarded(false)
     setProfileId(null)
     setInterestIds([])
@@ -2366,11 +2367,12 @@ export default function App() {
           // и запись идёт через него же — тем самым WhatsApp, куда ведут все
           // остальные демо-призывы (src/lib/support.js).
           onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
-          // Окно «Жёсткий режим общения» после тура: та же настройка, что кнопка «18+» у тьютора. Тьютор ещё не выбран —
-          // нрав всё равно пишется в профиль и встанет, когда ученик выберет тьютора с осью нрава (temperFor).
+          // Окно «Жёсткий режим общения» после тура: включает 18+ всем тьюторам с
+          // осью нрава (Декстеру и Спарку); дальше у каждого свой тумблер.
           onTemperChoice={(next) => {
-            setTemper(temperFor(tutorKey, next) ?? temper)
-            saveTutorPrefs(token, { tutorTemper: next })
+            const patch = tempersForAll(next)
+            setTempers((prev) => ({ ...prev, ...patch }))
+            saveTutorPrefs(token, { tutorTempers: patch })
           }}
         />
       )
@@ -2967,17 +2969,19 @@ export default function App() {
           // Из «Управления» — обратно туда; иначе — откуда открыли тьютора
           // (Главная, Практика, план дня), а не всегда на «Главную».
           onBack={() => (tutorEditFrom === 'manage' ? goAfterTutorEdit('home') : goBack(() => setScreen('home')))}
-          tutorKey={tutorKey}
-          temper={temper}
+          tempers={tempers}
           selected={tutorEditFrom === 'manage' ? tutorKey : ''}
           onChoose={(key, chosenTemper = null) => {
             setTutorKey(key)
-            setTemper(chosenTemper)
+            if (chosenTemper) setTempers((prev) => ({ ...prev, [key]: chosenTemper }))
             // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
             setTutorOnboarded(true)
             // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
             // в профиле останется тьютор с чужим характером.
-            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
+            saveTutorPrefs(token, {
+              tutor: key,
+              ...(chosenTemper ? { tutorTempers: { [key]: chosenTemper } } : {}),
+            })
             // Язык спрашиваем только в первый проход. Смена тьютора из
             // «Управления» идёт сразу в загрузку: язык уже выбран, а флаг
             // tutorEditFrom должен дожить до конца цепочки (goAfterTutorEdit).
@@ -3279,8 +3283,8 @@ export default function App() {
           temper={temper}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
-            setTemper(next)
-            saveTutorPrefs(token, { tutorTemper: next })
+            setTempers((prev) => ({ ...prev, [tutorKey]: next }))
+            saveTutorPrefs(token, { tutorTempers: { [tutorKey]: next } })
           }}
           calls={callHistory}
           onOpenCall={(call) => {

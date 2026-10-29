@@ -32,10 +32,9 @@ export default function TutorChoosePage({
   onProfile,
   onBack,
   onChoose,
-  // Сохранённый тьютор и его нрав — чтобы смена тьютора туда-обратно не
-  // сбрасывала выбранный ранее характер.
-  tutorKey = '',
-  temper = null,
+  // Нрав каждого тьютора ({ dexter: 'harsh' }) — чтобы смена тьютора
+  // туда-обратно не сбрасывала выбранный ранее характер.
+  tempers = {},
   // Кого выделить сразу. Пусто при первом проходе (макет 5316:1238: ряд без
   // выделения); при смене тьютора из «Управления» — текущий.
   selected = '',
@@ -48,7 +47,7 @@ export default function TutorChoosePage({
   const current = PICK_TUTORS.find((tt) => tt.key === picked) || null
   const soon = Boolean(current?.comingSoon)
 
-  const temperOf = (tt) => temperFor(tt.key, tt.key === tutorKey ? temper : null)
+  const temperOf = (tt) => temperFor(tt.key, tempers[tt.key])
 
   // Строка словаря, которой может не быть: у dev-only тьюторов подписи и
   // описания нет, и сырой ключ на экране хуже пустого места.
