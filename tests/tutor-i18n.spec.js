@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { loginAsStudent } from './helpers/login.js'
 
 // Синхронизация языка тьютор-раздела с остальным приложением: язык хранит
 // общий I18nProvider (ключ 'lang', казахский — 'kk'), LanguageProvider тьютора
@@ -16,11 +17,18 @@ const readStore = (page) =>
     legacy: localStorage.getItem('jts.lang'),
   }))
 
+// Гостю кабинет не рисуется (lib/guestLogin.js) — экраны тьютора видит только вошедший.
+test.beforeEach(async ({ page }) => {
+  await loginAsStudent(page)
+})
+
+// Язык экрана выбора читаем по кнопке «Выбрать <имя>»: заголовок на телефоне —
+// имя раздела «Speaking Buddy», одинаковое на всех языках.
 test.describe('Тьютор — единый язык приложения', () => {
   test('общий lang=kk переключает тьютор-экраны на казахский', async ({ page }) => {
     await seed(page, { lang: 'kk' })
     await page.goto('/?screen=tutor-welcome')
-    await expect(page.locator('.t-pick__title')).toContainText('қош келдің')
+    await expect(page.locator('.t-pick__start')).toHaveText('Декстер таңдау')
   })
 
   test('выбор «Қазақша» в тьютор-онбординге переключает всё приложение', async ({ page }) => {
@@ -40,7 +48,7 @@ test.describe('Тьютор — единый язык приложения', () 
   test('миграция: старый jts.lang=kz переносится в общий lang=kk', async ({ page }) => {
     await seed(page, { 'jts.lang': 'kz' })
     await page.goto('/?screen=tutor-welcome')
-    await expect(page.locator('.t-pick__title')).toContainText('қош келдің')
+    await expect(page.locator('.t-pick__start')).toHaveText('Декстер таңдау')
     const store = await readStore(page)
     expect(store.lang).toBe('kk')
     expect(store.legacy).toBeNull()
@@ -49,7 +57,7 @@ test.describe('Тьютор — единый язык приложения', () 
   test('приоритет: явный общий lang важнее старого jts.lang', async ({ page }) => {
     await seed(page, { lang: 'en', 'jts.lang': 'kz' })
     await page.goto('/?screen=tutor-welcome')
-    await expect(page.locator('.t-pick__title')).toContainText('Welcome to learning')
+    await expect(page.locator('.t-pick__start')).toHaveText('Choose Dexter')
     const store = await readStore(page)
     expect(store.lang).toBe('en')
     expect(store.legacy).toBeNull()

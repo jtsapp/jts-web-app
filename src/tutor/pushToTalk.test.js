@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { HOLD_MIN_MS, holdVerdict, isEditableTarget, isPushToTalkKey } from './pushToTalk.js'
+import { HOLD_MIN_MS, holdVerdict, isEditableTarget, isPushToTalkKey, isPushToTalkRepeat } from './pushToTalk.js'
 
 /** Событие клавиатуры «как из браузера», с нужными полями по умолчанию. */
 function key(over = {}) {
@@ -32,6 +32,28 @@ describe('isPushToTalkKey', () => {
     // Пока клавишу держат, keydown летит десятками раз: без этого каждый повтор
     // начинал бы новый ход.
     expect(isPushToTalkKey(key({ repeat: true }))).toBe(false)
+  })
+})
+
+describe('isPushToTalkRepeat', () => {
+  // Ход повтор не открывает, но прокрутку браузера гасить нужно и ему: иначе
+  // удержанный пробел листал страницу звонка вниз, к сетке ситуаций.
+  it('узнаёт автоповтор пробела', () => {
+    expect(isPushToTalkRepeat(key({ repeat: true }))).toBe(true)
+  })
+
+  it('первое нажатие — не повтор', () => {
+    expect(isPushToTalkRepeat(key())).toBe(false)
+  })
+
+  it('не трогает другие клавиши и поля ввода', () => {
+    expect(isPushToTalkRepeat(key({ repeat: true, code: 'ArrowDown', key: 'ArrowDown' }))).toBe(false)
+    const input = { nodeType: 1, closest: (sel) => (sel.includes('input') ? {} : null) }
+    expect(isPushToTalkRepeat(key({ repeat: true, target: input }))).toBe(false)
+  })
+
+  it('переживает пустое событие', () => {
+    expect(isPushToTalkRepeat(null)).toBe(false)
   })
 
   it('не ловит пробел с модификатором на нажатии', () => {

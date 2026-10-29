@@ -39,37 +39,37 @@ test.describe('онбординг тьютора — мобилка', () => {
     expect(firstOption.y).toBeGreaterThanOrEqual(panel.y + panel.height - 3)
   })
 
-  // Приветствие и выбор тьютора — один экран и на телефоне (кадр «Mobile»
-  // 6132:5848, 27.10.2026): баннер, под ним сетка карточек 2×2. Регрессии —
-  // горизонтальный скролл страницы и карточки за краем экрана; у выделенного под
-  // сеткой описание и «Послушать голос» (их раньше давала карусель), а выбор
-  // уходит дальше по онбордингу.
-  test('выбор тьютора: сетка в экране, выделенный с описанием, выбор ведёт дальше', async ({ page, viewport }) => {
+  // Выбор тьютора на телефоне — карусель карточек (кадр «Mobile» 7248:17411,
+  // 29.10.2026): по центру Декстер, соседи выглядывают из-за краёв. Регрессии —
+  // горизонтальный скролл страницы и карточка по центру за краем экрана; тап по
+  // соседу листает, «Выбрать <имя>» уводит дальше по онбордингу.
+  test('выбор тьютора: карусель в экране, тап по соседу листает, выбор ведёт дальше', async ({ page, viewport }) => {
     await page.goto('/?screen=tutor-welcome')
-    await expect(page.locator('.t-pick__row')).toBeVisible()
-    await expect(page.locator('.t-car')).toHaveCount(0)
+    await expect(page.locator('.t-car')).toBeVisible()
+    await expect(page.locator('.t-pick__row')).toHaveCount(0)
     await page.waitForTimeout(400)
 
     const sw = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(sw).toBeLessThanOrEqual(viewport.width)
-    for (const card of await page.locator('.t-pick__card').all()) {
-      const box = await card.boundingBox()
-      expect(box.x).toBeGreaterThanOrEqual(0)
-      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
-    }
-    // Пока никого не выделили, описания нет; у карточки — подпись под именем.
-    await expect(page.locator('.t-pick__about')).toHaveCount(0)
-    await expect(page.locator('.t-pick__card', { hasText: 'Декстер' }).locator('.t-pick__tag')).toHaveText(
-      'Путеводитель и тьютор',
-    )
+    const center = page.locator('.t-car__slot.is-center')
+    const box = await center.boundingBox()
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
 
-    await page.locator('.t-pick__card', { hasText: 'Декстер' }).click()
-    await expect(page.locator('.t-pick__card.is-picked .t-pick__check')).toBeVisible()
-    await expect(page.locator('.t-pick__desc')).toContainText('Декстер')
-    await expect(page.locator('.t-pick__listen')).toHaveText('Послушать голос Декстера')
+    // По центру — первый из ряда, Декстер: подпись, описание и визитка.
+    await expect(center.locator('.t-pick__name')).toHaveText('Декстер')
+    await expect(center.locator('.t-pick__tag')).toHaveText('Путеводитель и тьютор')
+    await expect(center.locator('.t-pick__desc')).toContainText('Декстер')
+    await expect(center.locator('.t-pick__listen')).toHaveText('Послушать')
+    await expect(page.locator('.t-pick__start')).toHaveText('Выбрать Декстера')
 
-    await page.locator('.t-pick__card', { hasText: 'Спарк' }).first().click()
-    await expect(page.locator('.t-pick__listen')).toHaveText('Послушать голос Спарка')
+    // 18+ на карточке меняет описание на описание жёсткого нрава.
+    await center.locator('.t-pick__adult').click()
+    await expect(center.locator('.t-pick__adult')).toHaveAttribute('aria-pressed', 'true')
+    await expect(center.locator('.t-pick__desc')).toContainText('18+')
+
+    await pickTutor(page, 'Спарк')
+    await expect(page.locator('.t-pick__start')).toHaveText('Выбрать Спарка')
 
     // Выбор: дальше язык, затем загрузка с выбранным тьютором.
     await page.locator('.t-pick__start').click()
@@ -159,19 +159,37 @@ test.describe('онбординг-тур по дашборду', () => {
   })
 })
 
-// Поток нового экрана: выделил тьютора → «Начать обучение» → выбор языка →
-// загрузка с этим тьютором. Раньше кнопки «Выбрать» стояли на каждой карточке;
-// теперь кнопка одна, в баннере, и работает только с выделенным. Это десктоп
-// (ряд фигурок); на телефоне та же сетка — с 27.10.2026 и там без карусели.
+// Тьютор на экране выбора: на компьютере — клик по карточке ряда, на телефоне
+// — тапы по правому соседу карусели, пока он не встанет по центру.
+async function pickTutor(page, name) {
+  // Ветка — по ширине окна, а не по разметке: до гидратации и на телефоне
+  // сначала рисуется ряд (useMediaQuery), карусель встаёт следом.
+  if (page.viewportSize().width <= 560) {
+    await expect(page.locator('.t-car')).toBeVisible()
+    for (let i = 0; i < 6; i++) {
+      if ((await page.locator('.t-car__slot.is-center .t-pick__name').textContent()) === name) return
+      // Центр соседа за краем экрана (видна полоска 32px) — клик событием, а не мышью.
+      const right = page.locator('.t-car__slot[aria-hidden="false"]:not(.is-center)').nth(1)
+      await right.dispatchEvent('click')
+      await page.waitForTimeout(450)
+    }
+    throw new Error(`в карусели нет ${name}`)
+  }
+  await page.locator('.t-pick__slot', { hasText: name }).first().click()
+  await expect(page.locator('.t-pick__slot.is-picked .t-pick__name')).toHaveText(name)
+}
+
+// Поток экрана выбора: выбранный тьютор (сразу — первый из ряда) →
+// «Выбрать <имя>» → выбор языка → загрузка с этим тьютором.
 test.describe('выбор тьютора — поток', () => {
 
-  test('без выделения кнопка никуда не ведёт, с выделением — на язык, затем загрузка', async ({ page }) => {
+  test('сразу выбран первый из ряда, смена тьютора меняет кнопку, дальше — язык и загрузка', async ({ page }) => {
     await page.goto('/?screen=tutor-welcome')
     const start = page.locator('.t-pick__start')
-    await start.click()
-    await expect(page.locator('.t-pick')).toBeVisible()
+    await expect(start).toHaveText('Выбрать Декстера')
 
-    await page.locator('.t-pick__card', { hasText: 'Спарк' }).first().click()
+    await pickTutor(page, 'Спарк')
+    await expect(start).toHaveText('Выбрать Спарка')
     await start.click()
     await expect(page.locator('.t-lang__option').first()).toBeVisible()
 
@@ -188,10 +206,8 @@ test.describe('онбординг тьютора — интересы и сра�
   // пройденным, и только тогда «Назад» из звонка ведёт на дашборд.
   test('выбор → язык → подстройка → интересы → звонок; «Назад» — на дашборд', async ({ page }) => {
     await page.goto('/?screen=tutor-welcome')
-    const start = page.locator('.t-pick__start')
-    await start.click()
-    await page.locator('.t-pick__card', { hasText: 'Спарк' }).first().click()
-    await start.click()
+    await pickTutor(page, 'Спарк')
+    await page.locator('.t-pick__start').click()
     await page.locator('.t-lang__option', { hasText: 'Русский' }).click()
 
     // Подстройка сама уходит дальше — на интересы, а не на предложение теста.
@@ -203,9 +219,11 @@ test.describe('онбординг тьютора — интересы и сра�
     await expect(page).toHaveURL(/screen=tutor-voice-chat/)
     await expect(page.locator('.t-micperm')).toBeVisible()
 
-    // Опрос позади: «Назад» не возвращает в интересы. Кнопку накрывает окно
-    // запроса микрофона, поэтому нажатие — событием.
-    await page.locator('.t-back:visible').first().dispatchEvent('click')
+    // Опрос позади: раздел тьютора теперь открывается страницей тьютора, а не
+    // опросом. Своей «Назад» у звонка нет (макет 29.10.2026) — уходим разделом
+    // меню (на телефоне — вкладкой). Кнопку накрывает окно запроса микрофона,
+    // поэтому нажатие — событием.
+    await page.locator('[data-nav="tutor"]:visible, .mtab__item[data-tab="tutor"]:visible').first().dispatchEvent('click')
     await expect(page).toHaveURL(/screen=tutor-dashboard/)
     await expect(page.locator('.t-dash__orb')).toBeVisible()
   })

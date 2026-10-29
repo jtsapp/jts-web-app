@@ -2,14 +2,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
-// Переключатель «Рация | Свободно» в самом звонке. Живой комнаты здесь нет:
-// LiveKit подменён, а агент — это performRpc, который отвечает режимом. Главное,
-// что проверяется: кнопка микрофона меняет роль (тангента ↔ тумблер) только
-// после подтверждения агента, и выбор уезжает в настройку следующих звонков.
+// Полоса микрофона звонка по макету 29.10.2026. Живой комнаты здесь нет:
+// LiveKit подменён, а агент — это performRpc. Проверяется, что режим звонка —
+// тот, что ушёл в metadata (переключателя в самом звонке больше нет), что
+// тангента рации ведёт ход через RPC, а трубка кладёт разговор.
 
 const lk = vi.hoisted(() => ({
   va: { state: 'listening', agent: { identity: 'agent-1' }, audioTrack: null },
   lp: null,
+  room: null,
   mic: true,
 }))
 
@@ -21,7 +22,7 @@ vi.mock('@livekit/components-react', () => ({
   useLocalParticipant: () => ({ localParticipant: lk.lp, isMicrophoneEnabled: lk.mic }),
   useTranscriptions: () => [],
   useDataChannel: () => ({}),
-  useRoomContext: () => ({ localParticipant: lk.lp }),
+  useRoomContext: () => lk.room,
   useTrackVolume: () => 0,
 }))
 vi.mock('@livekit/components-styles', () => ({}))
@@ -30,14 +31,8 @@ vi.mock('livekit-client', () => ({
   Track: { Source: { Microphone: 'microphone' } },
   RpcError: { ErrorCode: { UNSUPPORTED_METHOD: 1400, UNSUPPORTED_SERVER: 1401, UNSUPPORTED_VERSION: 1404 } },
 }))
-vi.mock('../tutor/callSession.js', () => ({ useCallSession: () => () => {} }))
-
-// Подпись подбирает кегль по ширине бокса через ResizeObserver, а в jsdom его нет.
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
+const closeSession = vi.hoisted(() => vi.fn())
+vi.mock('../tutor/callSession.js', () => ({ useCallSession: () => closeSession }))
 
 const { CallStage } = await import('./TutorVoiceChatPage.jsx')
 
@@ -45,60 +40,40 @@ const t = (key) => key
 
 function stage(props = {}) {
   return render(
-    <CallStage onFinish={() => {}} t={t} ttl={600} holdRef={{ current: false }} pushToTalk {...props} />
+    <CallStage
+      onFinish={() => {}}
+      t={t}
+      tutor={{ key: 'dexter', name: 'Декстер', portrait: '/p.webp' }}
+      ttl={600}
+      holdRef={{ current: false }}
+      {...props}
+    />
   )
 }
 
-const radio = (key) => screen.getByRole('radio', { name: key })
-const mic = () => document.querySelector('.t-voice__mic')
-
-describe('CallStage — режим хода в звонке', () => {
+describe('CallStage — полоса микрофона', () => {
   beforeEach(() => {
-    window.localStorage.clear()
+    closeSession.mockClear()
+    lk.mic = true
+    lk.va = { state: 'listening', agent: { identity: 'agent-1' }, audioTrack: null }
     lk.lp = {
-      performRpc: vi.fn(async ({ method, payload }) => (method === 'set_turn_mode' ? payload : 'ok')),
+      performRpc: vi.fn(async () => 'ok'),
       setMicrophoneEnabled: vi.fn(async () => {}),
       getTrackPublication: () => undefined,
     }
+    lk.room = { localParticipant: lk.lp, disconnect: vi.fn(async () => {}) }
   })
 
-  it('переключатель стоит в звонке и показывает текущий режим', () => {
-    stage()
-    expect(radio('voice.modePtt').getAttribute('aria-checked')).toBe('true')
-    expect(radio('voice.modeFree').getAttribute('aria-checked')).toBe('false')
-    expect(mic().textContent).toContain('voice.pttHold')
+  it('рация — «Зажмите чтобы говорить», переключателя режима в звонке нет', () => {
+    stage({ pushToTalk: true })
+    expect(screen.getByText('voice.holdToTalk')).toBeTruthy()
+    expect(screen.queryByRole('radiogroup')).toBeNull()
+    expect(screen.queryByText('voice.modePtt')).toBeNull()
   })
 
-  it('«Свободно» — агент подтвердил, кнопка снова тумблер, выбор запомнен', async () => {
-    stage()
-    await act(async () => {
-      fireEvent.click(radio('voice.modeFree'))
-    })
-    expect(lk.lp.performRpc).toHaveBeenCalledWith(
-      expect.objectContaining({ method: 'set_turn_mode', payload: 'auto' })
-    )
-    expect(radio('voice.modeFree').getAttribute('aria-checked')).toBe('true')
-    expect(mic().className).not.toContain('is-ptt')
-    expect(mic().textContent).toContain('voice.micOn')
-    expect(window.localStorage.getItem('jts:tutor:pushToTalk')).toBe('0')
-  })
-
-  it('агент не умеет переключаться — экран не врёт и обещает следующий звонок', async () => {
-    lk.lp.performRpc = vi.fn(async () => {
-      throw Object.assign(new Error('unsupported'), { code: 1400 })
-    })
-    stage()
-    await act(async () => {
-      fireEvent.click(radio('voice.modeFree'))
-    })
-    expect(radio('voice.modePtt').getAttribute('aria-checked')).toBe('true')
-    expect(mic().className).toContain('is-ptt')
-    expect(screen.getByText('voice.modeLater')).toBeTruthy()
-  })
-
-  it('тап вместо удержания — подсказка «держи кнопку»', async () => {
-    stage()
-    const button = mic()
+  it('тап вместо удержания — подсказка «держи кнопку», ход отменён', async () => {
+    stage({ pushToTalk: true })
+    const button = document.querySelector('.tp-mic__hold')
     await act(async () => {
       fireEvent.pointerDown(button, { pointerId: 1 })
       fireEvent.pointerUp(button, { pointerId: 1 })
@@ -109,10 +84,57 @@ describe('CallStage — режим хода в звонке', () => {
     expect(methods).toEqual(['start_turn', 'cancel_turn'])
   })
 
-  it('пока тьютора в комнате нет, переключателя нет', () => {
-    lk.va = { state: 'disconnected', agent: null, audioTrack: null }
+  it('удержанный пробел не прокручивает страницу: автоповтор гасится', () => {
+    stage({ pushToTalk: true })
+    const first = new KeyboardEvent('keydown', { code: 'Space', key: ' ', cancelable: true })
+    const repeat = new KeyboardEvent('keydown', { code: 'Space', key: ' ', repeat: true, cancelable: true })
+    act(() => {
+      window.dispatchEvent(first)
+      window.dispatchEvent(repeat)
+    })
+    expect(first.defaultPrevented).toBe(true)
+    // Под звонком сетка ситуаций: без этого каждый повтор листал страницу вниз.
+    expect(repeat.defaultPrevented).toBe(true)
+    // Повтор хода заново не открывает.
+    const starts = lk.lp.performRpc.mock.calls.filter(([arg]) => arg.method === 'start_turn')
+    expect(starts).toHaveLength(1)
+  })
+
+  it('свободно — кнопка слева выключает микрофон', () => {
+    stage({ pushToTalk: false })
+    expect(document.querySelector('.tp-mic__hold')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'voice.micOn' }))
+    expect(lk.lp.setMicrophoneEnabled).toHaveBeenCalledWith(false)
+  })
+
+  it('красная трубка закрывает сессию учёта и кладёт комнату', () => {
+    stage({ pushToTalk: false })
+    fireEvent.click(screen.getByRole('button', { name: 'voice.end' }))
+    expect(closeSession).toHaveBeenCalled()
+    expect(lk.room.disconnect).toHaveBeenCalled()
+  })
+
+  it('таймер лимита: остаток звонка, у сцены со своими часами — её бюджет', () => {
+    const { unmount } = stage({ ttl: 600 })
+    expect(screen.getByRole('timer').textContent).toBe('10:00')
+    unmount()
+    stage({ ttl: 600, limitSec: 300 })
+    expect(screen.getByRole('timer').textContent).toBe('5:00')
+  })
+
+  it('пока ученик молчит, второй пузырь — «…»', () => {
     stage()
-    expect(screen.queryByRole('radiogroup')).toBeNull()
-    lk.va = { state: 'listening', agent: { identity: 'agent-1' }, audioTrack: null }
+    const bubbles = document.querySelectorAll('.tp-bubble')
+    expect(bubbles).toHaveLength(2)
+    expect(bubbles[0].textContent).toBe('voice.prompt')
+    expect(bubbles[1].textContent).toBe('voice.typing')
+  })
+
+  it('сетка ситуаций снаружи кладёт трубку через hangupRef', () => {
+    const hangupRef = { current: null }
+    stage({ hangupRef })
+    expect(typeof hangupRef.current).toBe('function')
+    act(() => hangupRef.current())
+    expect(lk.room.disconnect).toHaveBeenCalled()
   })
 })

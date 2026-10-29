@@ -17,11 +17,25 @@
 export function isPushToTalkKey(event) {
   if (!event) return false
   if (event.repeat) return false
-  const isSpace = event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar'
-  if (!isSpace) return false
+  if (!isSpaceKey(event)) return false
   const modified = event.ctrlKey || event.altKey || event.metaKey || event.shiftKey
   if (modified && event.type !== 'keyup') return false
   return !isEditableTarget(event.target)
+}
+
+/**
+ * Автоповтор пробела, пока его держат. Ход он не открывает (isPushToTalkKey его
+ * отсеивает), но прокрутку браузера гасить нужно и ему: под звонком стоит сетка
+ * ситуаций (макет 29.10.2026), и удержанный пробел листал страницу вниз —
+ * гасилось только первое нажатие.
+ */
+export function isPushToTalkRepeat(event) {
+  if (!event || !event.repeat) return false
+  return isSpaceKey(event) && !isEditableTarget(event.target)
+}
+
+function isSpaceKey(event) {
+  return event.code === 'Space' || event.key === ' ' || event.key === 'Spacebar'
 }
 
 /**
