@@ -1113,6 +1113,32 @@
   min-height: 280px;
   justify-content: center;
 }
+/* Таймер лимита — плашка 70×32 в правом нижнем углу шапки, в её полях 24
+   (дорисовка дизайнера к макету 29.10): белая 60% поверх шапки, текст и
+   секундомер приглушённо-фиолетовые (цвета сняты с кадра). Последние 30
+   секунд — красный. */
+.tp-call__timer {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #6d5ea1;
+}
+.tp-call__timer.is-low {
+  color: #d9363e;
+}
 .tp-call__hint {
   margin-top: -24px;
   font-size: 14px;
@@ -1322,6 +1348,11 @@
   }
   .tp-grid {
     padding: 32px 8px;
+  }
+  /* Полоса микрофона здесь почти во всю ширину шапки — таймеру в углу нужно
+     своё место под ней, иначе он налезет на трубку. */
+  .tp-hero--call {
+    padding-bottom: 68px;
   }
   .tp-grid__list {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

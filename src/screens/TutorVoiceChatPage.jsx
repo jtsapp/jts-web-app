@@ -24,7 +24,7 @@ import { micLevel } from '../tutor/micLevel.js'
 import { lastSentence } from '../tutor/captions.js'
 import { useLiveCaption } from '../tutor/useLiveCaption.js'
 import { useCallSession } from '../tutor/callSession.js'
-import { MicIcon, MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
+import { MicIcon, MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, CrossIcon, TimerIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import TutorLimitModal from '../components/TutorLimitModal.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -379,6 +379,14 @@ function useCountdown(ttl, running = true) {
   return left
 }
 
+// «4:59», как в макете таймера: минуты без ведущего нуля.
+function fmtClock(sec) {
+  if (sec === null) return ''
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 // Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Тег
 // приходит в начале реплики и держится всю реплику и ещё это окно. Потом лицо
 // возвращается к «слушаю»: иначе ученик не видит, что микрофон снова его.
@@ -478,11 +486,11 @@ function MicBar({ t, ptt, micOn, onToggleMic, holding, pointerHandlers, micTrack
 // Внутри LiveKitRoom: состояние агента → выражение лица, реплики, микрофон.
 // Экспорт — для теста полосы микрофона (TutorVoiceChatPage.test.jsx).
 //
-// Таймера, расшифровки, шпаргалки ситуации и переключателя «Рация | Свободно»
-// в звонке нет — их нет в макете 29.10.2026 (решение владельца «пока строго по
-// макету»). Режим выбирается до звонка, в карточке настроек страницы тьютора.
-// Часы сцены при этом идут по-прежнему: по ним обрывается линия у сцен со
-// своим бюджетом (cutAtSec).
+// Расшифровки, шпаргалки ситуации и переключателя «Рация | Свободно» в звонке
+// нет — их нет в макете 29.10.2026 (решение владельца «пока строго по макету»).
+// Режим выбирается до звонка, в карточке настроек страницы тьютора. Таймер
+// лимита вернули тем же днём — дизайнер дорисовал его плашкой в правом нижнем
+// углу шапки (.tp-call__timer).
 export function CallStage({
   onFinish,
   t,
@@ -523,8 +531,9 @@ export function CallStage({
     agentIdentity: va.agent?.identity || '',
   })
 
-  // У сцены со своими часами идёт её бюджет, а не остаток дневного лимита.
-  // На экране часов нет, но обрыв линии считается по ним.
+  // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
+  // лимита: ученику обещали пять минут — он и должен видеть пять минут. По этим
+  // же часам обрывается линия (cutAtSec).
   const left = useCountdown(limitSec > 0 ? limitSec : ttl, agentPresent)
 
   // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
@@ -736,6 +745,19 @@ export function CallStage({
 
   return (
     <div className="tp-call">
+      {/* Плашка стоит в углу шапки (position от .tp-hero), а не в потоке: так
+          раскладка звонка остаётся кадром макета. */}
+      {left !== null && (
+        <span
+          className={'tp-call__timer' + (left <= 30 ? ' is-low' : '')}
+          role="timer"
+          aria-label={t('voice.timeLeft')}
+          title={t('voice.timeLeft')}
+        >
+          <TimerIcon size={16} />
+          {fmtClock(left)}
+        </span>
+      )}
       <div className="tp-call__row">
         <TutorPortrait tutor={tutor} emotion={emotion} speaking={speaking} />
         <div className="tp-call__bubbles" aria-live="polite">
