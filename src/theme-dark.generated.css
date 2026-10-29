@@ -24085,6 +24085,15 @@ html[data-theme="dark"] .legal-error {
 html[data-theme="dark"] .catalog-old {
     color: var(--dk-muted)
 }
+html[data-theme="dark"] .footer .legal-links a {
+    color: #fff
+}
+html[data-theme="dark"] .footer .legal-links a:focus-visible {
+    outline: 2px solid var(--dk-line)
+}
+html[data-theme="dark"] .footer .footer-copy {
+    color: #fff
+}
 /*  services.css  */
 @media (max-width: 560px) {
     html[data-theme="dark"] .learn__main:has(.svc) {

@@ -7,7 +7,9 @@ export default function Footer() {
   return (
     <footer className="footer">
       <Logo variant="light" />
-      <LegalDocumentsLinks />
+      <nav className="footer-documents" aria-label={t('legal.title')}>
+        <LegalDocumentsLinks />
+      </nav>
       <span className="footer-copy">{t('footer.rights')}</span>
     </footer>
   )
