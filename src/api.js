@@ -100,6 +100,7 @@ async function authGet(path, token, options = {}) {
     if (res.status === 403) err.serverMessage = await rejectionText(res, err)
     throw err
   }
+  if (res.status === 204) return null
   return res.json()
 }
 
@@ -2839,3 +2840,13 @@ export async function markFeedbackReportOpened(linkToken) {
 // Explicit account-bound acknowledgement of the immutable legal PDF bundle.
 export const getLegalAcknowledgement = (token) => authGet('/user/legal-documents', token)
 export const acceptLegalDocuments = (token, body) => authPut('/user/legal-documents', token, body)
+
+// Post-lesson survey: 204 means there is no eligible lesson.
+export async function getPendingLessonFeedback(token, signal) {
+  const deadline = AbortSignal.timeout(15000)
+  return authGet('/mobile/lesson-feedback/pending', token, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline })
+}
+
+export function submitLessonFeedback(token, lessonId, answers) {
+  return authPost(`/mobile/lesson-feedback/${encodeURIComponent(lessonId)}`, token, answers)
+}

@@ -51,5 +51,5 @@
 .legal-panel .legal-links a:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
 .legal-panel .legal-links a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .legal-panel .legal-link-icon { flex: none; opacity: .8; }
-.legal-panel .legal-link-label { min-width: 0; overflow-wrap: anywhere; }
+.legal-panel .legal-link-label { min-width: 0; overflow-wrap: break-word; }
 .legal-panel .legal-link-arrow { flex: none; margin-left: auto; opacity: .65; }

@@ -1,4 +1,5 @@
 'use client'
+import LessonFeedbackPrompt from './components/LessonFeedbackPrompt.jsx'
 import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
 import { isLegalDocumentsScreen } from './lib/legalDocuments.js'
 
@@ -2087,6 +2088,7 @@ export default function App() {
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !isTeacher(token) && <PlatformPresence token={token} />}
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
+      {token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}
       {token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
