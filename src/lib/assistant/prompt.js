@@ -154,6 +154,7 @@ const rulesFor = (persona) => `Ты — ${persona.name}, преподавате�
 - _NOW — только по прямой просьбе или согласию ученика. Если твой ответ кончается вопросом («Открыть?»), метка — без _NOW: решает ученик. И наоборот: пишешь «открываю» / «ашып беремін» / «opening» — метка обязательно с _NOW, иначе ничего не откроется.
 - Пример. Ученик: «открой словарь» → «Открываю Словарь — начните с «Основной лексики» своего уровня.» и последней строкой [[OPEN_NOW vocab]]. Ученик: «где потренировать произношение?» → «Произношение тренирует шэдоуинг: повторяете за диктором, сайт оценивает. Открыть?» и [[OPEN shadowing]].
 - Если ученик уже в этом разделе (смотри «Открытый раздел» и его «id для метки»), не предлагай его открыть — объясни по снимку экрана, где нажать.
+- Конкретный урок курса, тему, текст, ситуацию, урок шэдоуинга, сцену слов, воркбук, домашку или урок с преподавателем ты открываешь, только когда в <контекст> есть список «Что можно открыть»: меткой с адресом из него — [[OPEN_NOW course.B1.L5]] на просьбу открыть, [[OPEN course.B1.L5]] на вопрос «где». Адрес — ровно как в списке, со всеми точками; своих не придумывай. «Урок 5» — строка «урок 5 …», «следующий урок» — строка с пометкой «следующий». Пометка «закрыт» — не открывай и метку не ставь: скажи, что этот урок пока закрыт, и предложи урок с пометкой «следующий» (его метка — [[OPEN …]]). Нужного в списке нет — так и скажи и предложи раздел.
 - Формат метки строго такой: [[OPEN practice-speaking]] — две квадратные скобки, слово, пробел и id ровно из списка. Без кавычек, «id=» и двоеточий; своих id не придумывай.
 - Одна метка на ответ, только последней строкой, без [[REPORT_BUG]] в том же ответе. Метку ученик не видит: не упоминай её и не пиши id в тексте — называй разделы по-человечески.
 - Не ставь метку в разборе ошибки и в объяснении правила, если ученик о навигации не спрашивал, и во время тестов и экзаменов. Совет, чем заняться (план, первая реплика по пометке ${OPENING_MARK}), — можно: одна метка без _NOW на самый важный пункт.
@@ -304,7 +305,7 @@ export function parseChatRequest(body) {
  * последнем сообщении ученика — то есть модель видит только СВЕЖИЙ экран, а
  * снимки прошлых ходов в историю не копятся (и не раздувают каждый запрос).
  */
-export function buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl, today }) {
+export function buildContextBlock({ user, screen, lang, studentContext, errors, pageUrl, today, items }) {
   const lines = []
   const name = clipText(user?.name, 60)
   if (name) lines.push(`Имя ученика: ${name}`)
@@ -335,14 +336,23 @@ export function buildContextBlock({ user, screen, lang, studentContext, errors, 
     lines.push('Профиль ученика (для плана и советов; чего здесь нет, того не знаешь):')
     lines.push(studentContext)
   }
+  // Каталог под просьбу «открой урок 5 / тему …» (items/catalog.js): адрес — для метки.
+  if (items) {
+    lines.push('Что можно открыть (адрес — для метки [[OPEN адрес]] / [[OPEN_NOW адрес]]):')
+    lines.push(items)
+  }
   return `<контекст>\n${lines.join('\n')}\n</контекст>`
 }
+
+// Указание к вопросу с приложенным каталогом (items/catalog.js).
+export const ITEMS_HINT =
+  'Ученик просит открыть конкретное. Возьми строку из списка «Что можно открыть» и последней строкой поставь метку с её адресом (просит открыть — [[OPEN_NOW адрес]], спрашивает где — [[OPEN адрес]]). Пометка «закрыт» — не открывай: скажи, что пока закрыт, и предложи «следующий».'
 
 // Эталон задания в снимке (screenSnapshot.js, data-assistant-expected): сайт показал ответ.
 const SHOWN_ANSWER = /\[верный ответ по заданию:/
 
 /** Разговор для модели: к последнему вопросу ученика приклеен контекст. */
-export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today }) {
+export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
   const opening = isOpeningTurn(last.content)
@@ -406,8 +416,11 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
         : unchecked
           ? `Вопрос ученика: ${last.content}\n\nЗадание на экране ещё не проверено: не оценивай выбор или ввод ученика и не называй правильный ответ — только подсказка или нажатие кнопки, о которой он просит.`
           : `Вопрос ученика: ${last.content}`
+  // Каталог «Что можно открыть» приложен — ученик просит конкретное: указание рядом с
+  // вопросом, как у всех правил экрана (в RULES модель их пропускает, замеры 15–21.10).
+  const askItems = items && !opening ? `${ask}\n\n${ITEMS_HINT}` : ask
   const context = focus.task || wake || stuck ? withoutAdvice(studentContext) : studentContext
-  last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today })}\n\n${ask}${voice ? `\n\n${VOICE_MARK}` : ''}`
+  last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today, items })}\n\n${askItems}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns
 }
 

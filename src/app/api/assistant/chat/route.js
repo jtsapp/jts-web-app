@@ -45,6 +45,8 @@ import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
+import { itemIntent } from '@/lib/assistant/items/intent.js'
+import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
 
 export const runtime = 'nodejs'
 
@@ -118,6 +120,7 @@ export async function POST(request) {
   const stuck = stuckReason(parsed.messages[parsed.messages.length - 1].content)
   if (stuck) console.info('[assistant]', JSON.stringify({ kind: 'stuck', reason: stuck }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
+  const lastText = parsed.messages[parsed.messages.length - 1].content
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
@@ -133,6 +136,12 @@ export async function POST(request) {
     .finally(() => {
       marks.ctx = since(ctxAt)
     })
+  // «Открой урок 5 / тему Present Perfect» (lib/assistant/items/): каталог — только под
+  // такую просьбу, видов и уровня, о которых речь, и тоже параллельно с остальным.
+  const intent = opening ? null : itemIntent(lastText, { userLevel: auth.user.languageLevel })
+  const itemsReady = intent
+    ? buildItemCatalog({ ...intent, token: bearer, lang: parsed.lang }).catch(() => null)
+    : Promise.resolve(null)
   const callAt = performance.now()
   const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
   marks.call = since(callAt)
@@ -144,12 +153,18 @@ export async function POST(request) {
     })
   }
 
-  const studentContext = await contextReady
+  const [studentContext, itemCatalog] = await Promise.all([contextReady, itemsReady])
 
   const modelAt = performance.now()
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang)),
-    messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
+    messages: buildTurns({
+      ...parsed,
+      user: auth.user,
+      studentContext,
+      items: itemCatalog?.text || null,
+      today: new Date().toISOString().slice(0, 10),
+    }),
     model: MODEL,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     task: 'site_assistant',
@@ -210,7 +225,8 @@ export async function POST(request) {
   // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
   // Снимок запроса — чтобы сверить номер кнопки метки нажатия ([[CLICK_NOW 7]]).
-  const actions = createActionFilter({ screenText: parsed.screen.text })
+  // Каталог запроса — чтобы сверить адрес метки «открой урок 5» ([[OPEN_NOW course.B1.L5]]).
+  const actions = createActionFilter({ screenText: parsed.screen.text, items: itemCatalog?.items || null })
   // Видимый ответ целиком — из него трекер берёт совет одной строкой (saveNote).
   let shown = ''
   const keep = (out) => {
@@ -229,17 +245,22 @@ export async function POST(request) {
   // Нажатие кнопки (clickPolicy.js): не в первой реплике — ученик ни о чём не просил, —
   // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
   // его же репликой: RULES это просят, но держит их модель через раз.
-  const lastText = parsed.messages[parsed.messages.length - 1].content
-  const finalAction = () => {
+  const finalAction = async () => {
     if (focusTask || wake || stuck) return null
     const action = actions.action()
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
     }
+    // Адрес вещи без каталога в запросе — «да» на её «Открыть урок 5?»: сверяем по
+    // каталогу своего вида. Не нашлась или закрыта — не действие (текст модели уже ушёл).
+    if (action?.unresolved) {
+      const it = await resolveItem(action.target, { token: bearer, lang: parsed.lang }).catch(() => null)
+      return it && !it.locked ? { kind: 'open', target: action.target, now: action.now, item: true, label: it.label } : null
+    }
     return action || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {
-    const action = finalAction()
+    const action = await finalAction()
     await saveNote(action)
     return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
   }
@@ -250,7 +271,8 @@ export async function POST(request) {
   // там пишем и то, что модель ошибочно пометила _NOW. Переписка не сохраняется:
   // в строку идёт только сам совет (adviceText).
   const saveNote = async (action) => {
-    if (action?.kind !== 'open' || (action.now && !opening)) return
+    // Конкретная вещь (урок, тема) — не совет раздела: трекер сверяет советы по разделам.
+    if (action?.kind !== 'open' || action.item || (action.now && !opening)) return
     await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
   }
   const first = visible(head) + (finished ? visibleTail() : '')

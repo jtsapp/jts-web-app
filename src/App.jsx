@@ -141,6 +141,8 @@ import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
+import { isItemRef, itemNav } from './lib/assistant/items/refs.js'
+import { readSituationsDone } from './practice/situations/situationsProgress.js'
 import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
@@ -835,6 +837,9 @@ export default function App() {
     }
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
+  // Урок, который тропа откроет сама по загрузке (Луна: «открой урок 5», lib/assistant/items/):
+  // { code, at } — at различает две одинаковые просьбы подряд.
+  const [courseLessonTarget, setCourseLessonTarget] = useState(null)
   // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
@@ -1782,6 +1787,8 @@ export default function App() {
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
     else if (key === 'course') {
       const k = KINGDOMS.find((x) => x.level === String(payload?.level || userLevel || '').toUpperCase())
+      // Цель СБРАСЫВАЕТСЯ переходом без урока — иначе вчерашняя просьба открыла бы урок снова.
+      setCourseLessonTarget(payload?.lesson ? { code: String(payload.lesson), at: Date.now() } : null)
       if (k) {
         setKingdom(k)
         setScreen('kingdom-interior')
@@ -1900,6 +1907,17 @@ export default function App() {
   useEffect(
     () =>
       onAssistantNavigate((target) => {
+        // Конкретная вещь по адресу (урок 5, тема, текст — lib/assistant/items/): экран
+        // открывается заново с целью, даже если ученик уже на нём. Квота «Ситуаций» —
+        // по уровням, уже открытым на этом устройстве (как у карточки Практики).
+        if (isItemRef(target)) {
+          const to = itemNav(target, { situationsOpened: readSituationsDone() })
+          if (!to) return
+          setResume(null)
+          setScreenNonce((n) => n + 1)
+          handleNavRef.current?.(to.nav, to.payload)
+          return
+        }
         const dest = destinationOf(target)
         if (!dest) return
         if (dest.screen === screenRef.current) {
@@ -2928,6 +2946,7 @@ export default function App() {
           userLevel={userLevel}
           token={token}
           unlockAll={devUnlock}
+          lessonTarget={courseLessonTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           // Тропу открывают и с карты, и из плана дня («Урок курса»): назад — туда же.

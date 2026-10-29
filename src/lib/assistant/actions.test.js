@@ -142,3 +142,46 @@ describe('метка нажатия', () => {
     expect(f.action).toEqual(action)
   })
 })
+
+// «Открой урок 5» (items/): метка с адресом вещи. С каталогом запроса — подпись оттуда,
+// закрытый урок действием не становится; без каталога (ученик сказал «да») — адрес
+// уходит роуту на сверку (unresolved).
+describe('метка с адресом вещи', () => {
+  const items = new Map([
+    ['course.B1.L2', { ref: 'course.B1.L2', label: 'урок 2 “Why we spend”', locked: false }],
+    ['course.B1.L3', { ref: 'course.B1.L3', label: 'урок 3 “In my opinion”', locked: true }],
+  ])
+  const runItems = (text) => {
+    const f = createActionFilter({ items })
+    const out = f.push(text) + f.flush()
+    return { out, action: f.action() }
+  }
+
+  it('адрес из каталога — действие с подписью, метка вырезана', () => {
+    const { out, action } = runItems('Открываю урок 2.\n[[OPEN_NOW course.B1.L2]]')
+    expect(out).toBe('Открываю урок 2.\n')
+    expect(action).toEqual({ kind: 'open', target: 'course.B1.L2', now: true, item: true, label: 'урок 2 “Why we spend”' })
+  })
+
+  it('закрытый урок — метка вырезана, действия нет', () => {
+    const { out, action } = runItems('Урок 3 пока закрыт.\n[[OPEN_NOW course.B1.L3]]')
+    expect(out).toBe('Урок 3 пока закрыт.\n')
+    expect(action).toBe(null)
+  })
+
+  it('адреса нет в каталоге запроса — роут сверит его сам', () => {
+    expect(runItems('Открываю.\n[[OPEN_NOW grammar.b1.7]]').action).toEqual({ kind: 'open', target: 'grammar.b1.7', now: true, item: true, unresolved: true })
+    expect(run('Открываю.\n[[OPEN_NOW course.B1.L5]]').action).toEqual({ kind: 'open', target: 'course.B1.L5', now: true, item: true, unresolved: true })
+  })
+
+  it('хвост с адресом и подписью — клиент разбирает его обратно; маркер истории — с адресом', () => {
+    const action = { kind: 'open', target: 'course.B1.L2', now: false, item: true, label: 'урок 2 “Why we spend”' }
+    const tail = actionTail(action)
+    expect(tail).toBe('[[ASST_ACTION open course.B1.L2 offer «урок 2 “Why we spend”»]]')
+    const f = createServiceTailFilter()
+    f.push(`Это урок 2. Открыть?\n${tail}`)
+    f.flush()
+    expect(f.action).toEqual(action)
+    expect(actionMarker(action)).toBe('[[OPEN course.B1.L2]]')
+  })
+})

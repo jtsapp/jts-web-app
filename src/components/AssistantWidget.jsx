@@ -4,6 +4,7 @@ import { OPEN_EVENT, navigateTo, setAssistantAvailable } from '../lib/assistant/
 import { actionMarker } from '../lib/assistant/actions.js'
 import { AssistantError, askAssistant } from '../lib/assistant/client.js'
 import { destinationName, destinationOf } from '../lib/assistant/destinations.js'
+import { isItemRef } from '../lib/assistant/items/refs.js'
 import { installErrorLog, recentErrors } from '../lib/assistant/errorLog.js'
 import { OPENING_MARK, WAKE_MARK, screenStateKey, stuckMark } from '../lib/assistant/opening.js'
 import { snapshotScreen, snapshotWithRefs } from '../lib/assistant/screenSnapshot.js'
@@ -276,7 +277,13 @@ const viewportNow = () => ({ w: window.innerWidth, h: window.innerHeight })
 // Подпись действия, когда в ответе нет своего текста (и для озвучки).
 function actionCaption(action, lang, t) {
   if (action.kind === 'click') return t(action.now ? 'assistant.action.clicking' : 'assistant.action.offerClick', { label: action.label })
-  return t(action.now ? 'assistant.action.opening' : 'assistant.action.offerOpen', { name: destinationName(action.target, lang) })
+  return t(action.now ? 'assistant.action.opening' : 'assistant.action.offerOpen', { name: openName(action, lang) })
+}
+
+// Что открываем — словами: у раздела имя из destinations.js, у конкретной вещи (урок 5,
+// тема) — подпись, которую собрал сервер на языке ученика (items/catalog.js).
+function openName(action, lang) {
+  return action.label || destinationName(action.target, lang)
 }
 
 const SCREEN_ROOT = '.scr-in'
@@ -606,8 +613,15 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
       if (gesture) unlockSpeech()
       return press(action)
     }
-    const dest = destinationOf(action?.target)
     const cur = stateRef.current
+    // Конкретная вещь по адресу (урок 5, тема) — переход строит App (items/refs.js).
+    if (action?.kind === 'open' && isItemRef(action.target)) {
+      if (!cur?.enabled) return
+      navigateTo(action.target)
+      if (isPhone()) setOpen(false)
+      return
+    }
+    const dest = destinationOf(action?.target)
     if (action?.kind !== 'open' || !dest || !cur?.enabled) return
     if (dest.screen !== cur.screen || dest.payload) navigateTo(dest.id)
     if (isPhone()) setOpen(false)
@@ -1825,7 +1839,7 @@ export default function AssistantWidget({ token, screen, enabled = true, greetOn
                     >
                       {m.action.kind === 'click'
                         ? t('assistant.action.click', { label: m.action.label })
-                        : t('assistant.action.open', { name: destinationName(m.action.target, lang) })}
+                        : t('assistant.action.open', { name: openName(m.action, lang) })}
                     </button>
                   )}
                   {m.reported && <p className="asst__reported">{t('assistant.reported')}</p>}
