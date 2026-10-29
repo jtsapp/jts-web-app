@@ -901,67 +901,217 @@ html[data-theme="dark"] .lp-node.is-locked .lp-node__label {
 html[data-theme="dark"] .lp-node__lock {
     background: color-mix(in oklab, var(--dk-acc) 40%, transparent)
 }
+html[data-theme="dark"] .pk-c--listening {
+    --pk-from: var(--dk-blue);
+    --pk-to: var(--dk-blue);
+    --pk-acc: var(--dk-blue);
+    --pk-tint: var(--dk-acc-tint);
+    --pk-ink: var(--dk-blue);
+    --pk-on: var(--dk-card);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-c--reading {
+    --pk-from: var(--dk-orange);
+    --pk-to: var(--dk-orange);
+    --pk-acc: var(--dk-orange);
+    --pk-tint: var(--dk-orange-tint);
+    --pk-ink: var(--dk-orange);
+    --pk-on: var(--dk-card);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-c--writing {
+    --pk-from: var(--dk-red);
+    --pk-to: var(--dk-red);
+    --pk-acc: var(--dk-red);
+    --pk-tint: var(--dk-red-tint);
+    --pk-ink: var(--dk-red);
+    --pk-on: var(--dk-card);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-c--speaking {
+    --pk-from: var(--dk-green);
+    --pk-to: var(--dk-green);
+    --pk-acc: var(--dk-green);
+    --pk-tint: var(--dk-green-tint);
+    --pk-ink: var(--dk-green);
+    --pk-on: var(--dk-card);
+    --pk-mark: rgba(255, 255, 255, 0.22)
+}
+html[data-theme="dark"] .pk-c--grammarGames {
+    --pk-from: var(--dk-yellow);
+    --pk-to: var(--dk-yellow);
+    --pk-acc: var(--dk-yellow);
+    --pk-tint: var(--dk-yellow-tint);
+    --pk-ink: var(--dk-yellow);
+    --pk-on: var(--dk-yellow-deep);
+    --pk-mark: rgba(255, 255, 255, 0.4)
+}
+html[data-theme="dark"] .pk-ico {
+    background: currentColor
+}
+@media (min-width: 761px) {
+    html[data-theme="dark"] .learn__main:has(.pk) .tour-help, html[data-theme="dark"] .learn__main:has(.pk) .nbell__btn {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+}
 html[data-theme="dark"] .pk-head__title {
     color: var(--dk-text)
 }
-html[data-theme="dark"] .pk-levels {
-    background: var(--dk-page)
+html[data-theme="dark"] .pk-skill {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--pk-acc)
+}
+html[data-theme="dark"] .pk-skill:hover {
+    border-color: var(--dk-line)
+}
+html[data-theme="dark"] .pk-skill.is-on {
+    border-color: transparent;
+    background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 18%, transparent);
+    color: #ffffff
+}
+html[data-theme="dark"] .pk-skill:focus-visible {
+    outline: 2px solid var(--dk-acc)
+}
+html[data-theme="dark"] .pk-skill__ico {
+    background: var(--pk-tint)
+}
+html[data-theme="dark"] .pk-skill.is-on .pk-skill__ico {
+    background: var(--pk-mark)
+}
+html[data-theme="dark"] .pk-skill__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pk-skill__count {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-skill.is-on .pk-skill__title {
+    color: #ffffff
+}
+html[data-theme="dark"] .pk-skill.is-on .pk-skill__count {
+    color: rgba(255, 255, 255, 0.88)
+}
+html[data-theme="dark"] .pk-cap .pk-note {
+    color: var(--dk-text-2)
 }
 html[data-theme="dark"] .pk-levels__btn {
-    border: 0;
-    background: none;
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
     color: var(--dk-text)
 }
 html[data-theme="dark"] .pk-levels__btn:hover {
-    background: var(--dk-chip)
+    border-color: var(--dk-acc-line)
 }
 html[data-theme="dark"] .pk-levels__btn.is-on {
+    border-color: var(--dk-acc);
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
 html[data-theme="dark"] .pk-levels__btn:focus-visible {
     outline: 2px solid var(--dk-acc)
 }
-html[data-theme="dark"] .pk-skill {
-    border: 0;
-    background: var(--sk-bg) var(--sk-art) center / cover no-repeat
-}
-html[data-theme="dark"] .pk-skill.is-on::after {
-    border: solid var(--sk-line)
-}
-html[data-theme="dark"] .pk-skill:focus-visible {
-    outline: 2px solid var(--dk-acc)
-}
-html[data-theme="dark"] .pk-skill__title {
+html[data-theme="dark"] .pk-group__title {
     color: var(--dk-text)
 }
-html[data-theme="dark"] .pk-skill__count {
-    color: var(--sk-ink)
+html[data-theme="dark"] .pk-group__sub {
+    color: var(--dk-text-2)
 }
-html[data-theme="dark"] .pk-skill--listening {
-    --sk-bg: var(--dk-page);
-    --sk-ink: var(--dk-blue);
-    --sk-line: var(--dk-line)
+html[data-theme="dark"] .pk-card {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: inherit
 }
-html[data-theme="dark"] .pk-skill--reading {
-    --sk-bg: var(--dk-yellow-tint);
-    --sk-ink: var(--dk-yellow);
-    --sk-line: var(--dk-yellow-line)
+html[data-theme="dark"] .pk-card:hover {
+    border-color: transparent;
+    box-shadow: 0 8px 24px color-mix(in oklab, var(--dk-acc) 10%, transparent)
 }
-html[data-theme="dark"] .pk-skill--writing {
-    --sk-bg: var(--dk-page);
-    --sk-ink: var(--dk-acc-text);
-    --sk-line: var(--dk-acc)
+html[data-theme="dark"] .pk-card:focus-visible {
+    outline: 2px solid var(--pk-acc)
 }
-html[data-theme="dark"] .pk-skill--speaking {
-    --sk-bg: var(--dk-page);
-    --sk-ink: var(--dk-green);
-    --sk-line: var(--dk-green)
+html[data-theme="dark"] .pk-card__cover {
+    background: var(--pk-tint)
 }
-html[data-theme="dark"] .pk-skill--grammarGames {
-    --sk-bg: var(--dk-yellow-tint);
-    --sk-ink: var(--dk-yellow);
-    --sk-line: var(--dk-yellow-line)
+html[data-theme="dark"] .pk-card--tile .pk-card__cover {
+    background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
+    color: var(--pk-on)
+}
+html[data-theme="dark"] .pk-card--tile .pk-card__cover::before {
+    background: rgba(255, 255, 255, 0.1)
+}
+html[data-theme="dark"] .pk-card--tile .pk-card__cover::after {
+    background: rgba(255, 255, 255, 0.08)
+}
+html[data-theme="dark"] .pk-card--collage .pk-card__cover::before {
+    background: color-mix(in srgb, var(--pk-acc) 10%, transparent)
+}
+html[data-theme="dark"] .pk-card--collage .pk-card__cover::after {
+    background: color-mix(in srgb, var(--pk-acc) 8%, transparent)
+}
+html[data-theme="dark"] .pk-card__mark {
+    background: var(--pk-mark)
+}
+html[data-theme="dark"] .pk-card__badge {
+    background: var(--dk-card);
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 12%, transparent);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pk-card__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pk-card__desc {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-card__chip {
+    background: var(--pk-tint);
+    color: var(--pk-ink)
+}
+html[data-theme="dark"] .pk-card__go {
+    background: var(--pk-tint);
+    color: var(--pk-ink)
+}
+html[data-theme="dark"] .pk-acc {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .pk-acc__head {
+    border: 0;
+    background: none;
+    color: inherit
+}
+html[data-theme="dark"] .pk-acc__head:focus-visible {
+    outline: 2px solid var(--pk-acc)
+}
+html[data-theme="dark"] .pk-acc__ico {
+    background: var(--pk-tint);
+    color: var(--pk-acc)
+}
+html[data-theme="dark"] .pk-acc__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pk-acc__count {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-acc__chev {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-acc__table th {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-acc__table td:first-child {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pk-acc__table td:nth-child(2) {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pk-acc__table td:last-child {
+    color: var(--pk-ink)
+}
+html[data-theme="dark"] .pk-acc__table tbody tr:nth-child(odd) td {
+    background: var(--dk-page)
 }
 html[data-theme="dark"] .pk-sec__title {
     color: var(--dk-text)
@@ -1006,7 +1156,7 @@ html[data-theme="dark"] .pk-chip {
 html[data-theme="dark"] .pk-chip b {
     color: var(--dk-acc-text)
 }
-html[data-theme="dark"] .pk-video, html[data-theme="dark"] .pk-song, html[data-theme="dark"] .pk-meme, html[data-theme="dark"] .pk-book, html[data-theme="dark"] .pk-tile, html[data-theme="dark"] .pk-wb, html[data-theme="dark"] .pk-situ {
+html[data-theme="dark"] .pk-video, html[data-theme="dark"] .pk-song, html[data-theme="dark"] .pk-meme, html[data-theme="dark"] .pk-book, html[data-theme="dark"] .pk-wb, html[data-theme="dark"] .pk-situ {
     color: inherit
 }
 html[data-theme="dark"] .pk-video, html[data-theme="dark"] .pk-song, html[data-theme="dark"] .pk-book, html[data-theme="dark"] .pk-situ {
@@ -1054,20 +1204,6 @@ html[data-theme="dark"] .pk-book__audio {
     background: rgba(20, 19, 28, 0.72);
     color: #fff
 }
-html[data-theme="dark"] .pk-tile {
-    border: 2px solid var(--dk-line);
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .pk-tile:hover {
-    border-color: var(--dk-acc-line)
-}
-html[data-theme="dark"] .pk-tile__badge {
-    background: var(--dk-acc-tint);
-    color: var(--dk-acc-text)
-}
-html[data-theme="dark"] .pk-tile__title {
-    color: var(--dk-text)
-}
 html[data-theme="dark"] .pk-meta {
     color: var(--dk-muted)
 }
@@ -1098,97 +1234,9 @@ html[data-theme="dark"] .pk-situ__check {
 html[data-theme="dark"] .pk-situ__title {
     color: var(--dk-text)
 }
-html[data-theme="dark"] .pk-banner {
-    color: #fff
-}
-html[data-theme="dark"] .pk-banner__title {
-    color: #fff
-}
-html[data-theme="dark"] .pk-banner__desc {
-    color: rgba(255, 255, 255, 0.5)
-}
-html[data-theme="dark"] .pk-banner__cta {
-    border: 0;
-    background: var(--dk-card);
-    color: var(--dk-acc-text)
-}
-html[data-theme="dark"] .pk-banner__cta:hover {
-    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 18%, transparent)
-}
-html[data-theme="dark"] .pk-banner__cta:focus-visible {
-    outline: 2px solid var(--dk-line)
-}
-html[data-theme="dark"] .pk-banner--listening {
-    background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc-strong) 94.2%)
-}
-html[data-theme="dark"] .pk-banner--lc {
-    background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc-strong) 94.2%)
-}
-html[data-theme="dark"] .pk-banner--writing {
-    background: linear-gradient(110.8deg, var(--dk-blue) 15.5%, var(--dk-acc-strong) 94.2%)
-}
-html[data-theme="dark"] .pk-banner--verbs {
-    background: linear-gradient(110.8deg, var(--dk-acc) 15.5%, var(--dk-acc) 94.2%)
-}
-html[data-theme="dark"] .pk-banner--reading {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-blue) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--words {
-    background: linear-gradient(99.4deg, var(--dk-green) 17%, var(--dk-blue) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--speakspin {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--numbers {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--listen {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--prepositions {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--pronunciation {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-blue) 95.5%)
-}
 html[data-theme="dark"] .ggp-sound {
     border: 1px solid var(--dk-line);
     background: var(--dk-card)
-}
-html[data-theme="dark"] .pk-banner--speed-reading {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-red) 95.5%)
-}
-html[data-theme="dark"] .pk-banner__tag {
-    background: var(--dk-card);
-    color: var(--dk-acc-text)
-}
-html[data-theme="dark"] .pk-banner--cartoons {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc) 95.5%)
-}
-html[data-theme="dark"] .pk-banner--wordhunt {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-blue) 95.5%)
-}
-html[data-theme="dark"] .pk-arcade {
-    color: #fff;
-    background: radial-gradient(ellipse at 88% 18%, color-mix(in oklab, var(--dk-yellow-soft) 35%, transparent) 0, transparent 34%),
-    linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-deep) 95.5%)
-}
-html[data-theme="dark"] .pk-arcade__desc {
-    color: rgba(255, 255, 255, 0.75)
-}
-html[data-theme="dark"] .pk-arcade__game {
-    border: 0;
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff
-}
-html[data-theme="dark"] .pk-arcade__game:hover {
-    background: rgba(255, 255, 255, 0.22)
-}
-html[data-theme="dark"] .pk-arcade__game:focus-visible {
-    outline: 3px solid var(--dk-line)
-}
-html[data-theme="dark"] .pk-arcade__game span {
-    color: rgba(255, 255, 255, 0.8)
 }
 html[data-theme="dark"] .pk-skel__thumb, html[data-theme="dark"] .pk-skel__line {
     background: var(--dk-chip)
@@ -17625,9 +17673,6 @@ html[data-theme="dark"] .jl {
     --jl-shadow: 0 8px 28px color-mix(in oklab, var(--dk-acc) 6%, transparent);
     color: var(--jl-text)
 }
-html[data-theme="dark"][data-theme="dark"] .pk-banner--listen {
-    background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%)
-}
 html[data-theme="dark"] .jl-i {
     fill: none;
     stroke: currentColor
@@ -27460,41 +27505,38 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .learn__main:has(.pk) {
         background: var(--dk-page)
     }
-    html[data-theme="dark"] .pk-head__title {
-        color: var(--dk-text)
-    }
     html[data-theme="dark"] .pk-skills {
         background: linear-gradient(var(--dk-chip), var(--dk-chip)) 16px 100% / calc(100% - 32px) 1px no-repeat
     }
-    html[data-theme="dark"] .pk-skill, html[data-theme="dark"] .pk-skill:hover {
+    html[data-theme="dark"] .pk-skill, html[data-theme="dark"] .pk-skill:hover, html[data-theme="dark"] .pk-skill.is-on {
+        border: 0;
         background: none;
+        box-shadow: none;
         color: var(--dk-text-2)
     }
-    html[data-theme="dark"] .pk-skill::before {
-        background: currentColor
+    html[data-theme="dark"] .pk-skill__ico, html[data-theme="dark"] .pk-skill.is-on .pk-skill__ico {
+        background: none
     }
-    html[data-theme="dark"] .pk-skill__title {
+    html[data-theme="dark"] .pk-skill__title, html[data-theme="dark"] .pk-skill.is-on .pk-skill__title {
         color: inherit
     }
     html[data-theme="dark"] .pk-skill.is-on {
-        color: var(--dk-acc-text)
+        color: var(--pk-acc)
     }
     html[data-theme="dark"] .pk-skill.is-on::after {
-        border: 0;
-        background: var(--dk-acc)
-    }
-    html[data-theme="dark"] .pk-levels {
-        background: none
+        background: currentColor
     }
     html[data-theme="dark"] .pk-levels__btn, html[data-theme="dark"] .pk-levels__btn:hover {
-        border: 1px solid var(--dk-line);
-        background: var(--dk-card);
         color: var(--dk-text-2)
     }
     html[data-theme="dark"] .pk-levels__btn.is-on {
-        border-color: var(--dk-acc);
-        background: var(--dk-acc);
-        color: var(--dk-on-acc)
+        color: #fff
+    }
+    html[data-theme="dark"] .pk-acc__table tbody tr:nth-child(odd) {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .pk-acc__table tbody tr:nth-child(odd) td {
+        background: none
     }
     html[data-theme="dark"] .pk .pk-all, html[data-theme="dark"] .pk .pk-all:hover {
         border: 0;
@@ -27503,113 +27545,19 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .pk .pk-all::after {
         background: currentColor
     }
-    html[data-theme="dark"] .pk .pk-banner {
-        background: var(--bn-bg);
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pk .pk-banner::before {
-        background: var(--bn-circle)
-    }
-    html[data-theme="dark"] .pk .pk-banner::after {
-        border: 26px solid var(--bn-arc)
-    }
-    html[data-theme="dark"] .pk-banner__kicker {
-        color: var(--bn-ink)
-    }
-    html[data-theme="dark"] .pk-banner__ico {
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .pk-banner__ico::after {
-        background: var(--bn-ink)
-    }
-    html[data-theme="dark"] .pk .pk-banner__title {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pk .pk-banner__desc {
-        color: color-mix(in oklab, var(--dk-text) 70%, transparent)
-    }
-    html[data-theme="dark"] .pk .pk-banner__tag {
-        background: var(--dk-card);
-        color: var(--bn-ink)
-    }
-    html[data-theme="dark"] .pk .pk-banner > .pk-banner__cta, html[data-theme="dark"] .pk .pk-banner > .pk-banner__cta:hover {
-        border: 0;
-        background: none;
-        box-shadow: none;
-        color: transparent
-    }
-    html[data-theme="dark"] .pk .pk-banner > .pk-banner__cta::before {
-        background: var(--dk-ink-bg)
-    }
-    html[data-theme="dark"] .pk .pk-banner > .pk-banner__cta::after {
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .pk .pk-banner > .pk-banner__cta:focus-visible {
-        outline: 2px solid var(--dk-acc)
-    }
-    html[data-theme="dark"] .pk .pk-banner__badge {
-        background: color-mix(in oklab, var(--dk-card) 70%, transparent)
-    }
-    html[data-theme="dark"] .pk .pk-banner__badge-cap, html[data-theme="dark"] .pk .pk-banner__badge-lvl {
-        background: none
-    }
-    html[data-theme="dark"] .pk .pk-banner__badge-cap {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"] .pk .pk-banner__badge-lvl {
-        color: var(--bn-ink)
-    }
-    html[data-theme="dark"] .pk-banner {
-        --bn-bg: var(--dk-acc-tint);
-        --bn-circle: var(--dk-acc-tint);
-        --bn-arc: var(--dk-acc-soft);
-        --bn-ink: var(--dk-acc-text)
-    }
-    html[data-theme="dark"] .pk-banner--lc, html[data-theme="dark"] .pk-banner--prepositions {
-        --bn-bg: var(--dk-acc-tint);
-        --bn-circle: var(--dk-acc-tint);
-        --bn-arc: var(--dk-acc-soft);
-        --bn-ink: var(--dk-acc-text)
-    }
-    html[data-theme="dark"] .pk-banner--words, html[data-theme="dark"] .pk-banner--wordhunt, html[data-theme="dark"] .pk-banner--speed-reading {
-        --bn-bg: var(--dk-green-tint);
-        --bn-circle: var(--dk-green-tint);
-        --bn-arc: var(--dk-green-soft);
-        --bn-ink: var(--dk-green)
-    }
-    html[data-theme="dark"] .pk-banner--reading, html[data-theme="dark"] .pk-banner--listen {
-        --bn-bg: var(--dk-orange-tint);
-        --bn-circle: var(--dk-orange-tint);
-        --bn-arc: var(--dk-orange-soft);
-        --bn-ink: var(--dk-orange)
-    }
-    html[data-theme="dark"] .pk-banner--writing, html[data-theme="dark"] .pk-banner--cartoons {
-        --bn-bg: var(--dk-blue-tint);
-        --bn-circle: var(--dk-page);
-        --bn-arc: var(--dk-blue-soft);
-        --bn-ink: var(--dk-blue)
-    }
-    html[data-theme="dark"] .pk-banner--speakspin, html[data-theme="dark"] .pk-banner--numbers {
-        --bn-bg: var(--dk-yellow-tint);
-        --bn-circle: var(--dk-yellow-tint);
-        --bn-arc: var(--dk-yellow-tint);
-        --bn-ink: var(--dk-yellow)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-head__title, html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__title {
+    html[data-theme="dark"][data-theme='dark'] .pk .pk-head__title {
         color: var(--dk-text)
     }
     html[data-theme="dark"][data-theme='dark'] .pk .pk-skills {
         background-image: linear-gradient(var(--dk-line), var(--dk-line))
     }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-skill {
+    html[data-theme="dark"][data-theme='dark'] .pk .pk-skill, html[data-theme="dark"][data-theme='dark'] .pk .pk-skill.is-on {
         background: none;
+        box-shadow: none;
         color: var(--dk-muted)
     }
     html[data-theme="dark"][data-theme='dark'] .pk .pk-skill.is-on {
-        color: var(--dk-acc-text)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-skill.is-on::after {
-        background: var(--dk-acc-text)
+        color: var(--pk-acc)
     }
     html[data-theme="dark"][data-theme='dark'] .pk .pk-levels__btn {
         border-color: var(--dk-line);
@@ -27621,38 +27569,15 @@ html[data-theme="dark"] .rg-done__avatar {
         background: var(--dk-acc);
         color: var(--dk-on-acc)
     }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner {
-        background: var(--bn-bg)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner > .pk-banner__cta, html[data-theme="dark"][data-theme='dark'] .pk .pk-banner > .pk-banner__cta:hover {
-        background: none;
-        box-shadow: none;
-        color: transparent
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner::before {
-        background: var(--bn-circle)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-levels, html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__badge-lvl {
+    html[data-theme="dark"][data-theme='dark'] .pk .pk-levels {
         background: none
+    }
+    html[data-theme="dark"][data-theme='dark'] .pk .pk-acc__table tbody tr:nth-child(odd) {
+        background: var(--dk-chip)
     }
     html[data-theme="dark"][data-theme='dark'] .pk .pk-all, html[data-theme="dark"][data-theme='dark'] .pk .pk-all:hover {
         border: 0;
         background: none
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__desc {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__ico, html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__tag {
-        background: var(--dk-chip)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner > .pk-banner__cta::before {
-        background: var(--dk-ink-bg)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__badge {
-        background: var(--dk-chip)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-banner__badge-cap {
-        color: var(--dk-text-2)
     }
     html[data-theme="dark"] .pk-video__count {
         color: var(--dk-muted)
@@ -27698,12 +27623,6 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .pk-comic .pk-book__cover:not(:has(img))::after {
         background: var(--dk-card) url(/assets/home-v2/ico/menu_book.svg) center / 32px no-repeat
     }
-    html[data-theme="dark"] .pk-tile {
-        border: 1px solid var(--dk-line)
-    }
-    html[data-theme="dark"] .pk-tile__badge {
-        background: none
-    }
     html[data-theme="dark"] .pk-wb {
         border-color: var(--dk-line)
     }
@@ -27720,43 +27639,7 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .pk-wb__sum {
         color: var(--dk-muted)
     }
-    html[data-theme="dark"] .pk-arcade {
-        background: var(--dk-ink-bg)
-    }
-    html[data-theme="dark"] .pk-arcade::before {
-        border: 26px solid var(--dk-line-strong)
-    }
-    html[data-theme="dark"] .pk-arcade__tagline {
-        color: #ff9a3d
-    }
-    html[data-theme="dark"] .pk-arcade__tagline::before {
-        background: var(--dk-ink-bg) url(/assets/m/practice/ico/bolt.svg) center / 22px no-repeat
-    }
-    html[data-theme="dark"] .pk-arcade__title .ar-beta {
-        background: var(--dk-ink-bg);
-        color: #ff9a3d
-    }
-    html[data-theme="dark"] .pk-arcade__desc {
-        color: rgba(255, 255, 255, 0.7)
-    }
-    html[data-theme="dark"] .pk-arcade__game {
-        background: rgba(255, 255, 255, 0.08)
-    }
-    html[data-theme="dark"] .pk-arcade__game::before {
-        background: var(--dk-ink-bg) url(/assets/m/practice/ico/mic-orange.svg) center / 20px no-repeat
-    }
-    html[data-theme="dark"] .pk-arcade__game + .pk-arcade__game::before {
-        background-image: url(/assets/m/practice/ico/bolt.svg)
-    }
-    html[data-theme="dark"] .pk-arcade__game span {
-        color: rgba(255, 255, 255, 0.6)
-    }
-    html[data-theme="dark"] .pk-arcade__foot .pk-banner__cta, html[data-theme="dark"] .pk-arcade__foot .pk-banner__cta:hover {
-        background: none;
-        box-shadow: none;
-        color: #ff9a3d
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-tile, html[data-theme="dark"][data-theme='dark'] .pk .pk-wb {
+    html[data-theme="dark"][data-theme='dark'] .pk .pk-wb {
         border-color: var(--dk-line);
         background: var(--dk-card)
     }
@@ -27785,15 +27668,6 @@ html[data-theme="dark"] .rg-done__avatar {
     }
     html[data-theme="dark"][data-theme='dark'] .pk .pk-comic .pk-book__cover:not(:has(img))::after {
         background-color: var(--dk-chip)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-arcade {
-        background: var(--dk-chip)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-arcade::before {
-        border-color: var(--dk-raised)
-    }
-    html[data-theme="dark"][data-theme='dark'] .pk .pk-arcade__tagline::before, html[data-theme="dark"][data-theme='dark'] .pk .pk-arcade__game::before, html[data-theme="dark"][data-theme='dark'] .pk .pk-arcade__title .ar-beta {
-        background-color: var(--dk-raised)
     }
     html[data-theme="dark"] .pk-tale {
         border: 1px solid var(--dk-line);
