@@ -2972,9 +2972,17 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          // Из «Управления» — обратно туда; иначе — откуда открыли тьютора
-          // (Главная, Практика, план дня), а не всегда на «Главную».
-          onBack={() => (tutorEditFrom === 'manage' ? goAfterTutorEdit('home') : goBack(() => setScreen('home')))}
+          // «Назад» — только при смене тьютора (из «Управления» или «Другие
+          // тьюторы» на странице тьютора): туда, откуда пришли. Первый выбор —
+          // корень раздела, как в макете 29.10.2026: своей «назад» у него нет.
+          onBack={
+            tutorEditFrom === 'manage'
+              ? () => {
+                  setTutorEditFrom(null)
+                  goBack(() => setScreen('tutor-manage'))
+                }
+              : undefined
+          }
           tempers={tempers}
           selected={tutorEditFrom === 'manage' ? tutorKey : ''}
           onChoose={(key, chosenTemper = null) => {
@@ -3066,6 +3074,19 @@ export default function App() {
           // (voice-intro), достижимую диплинком.
           onBack={() => goBack(() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro'))}
           onTopUpMinutes={() => setScreen('minutes')}
+          // Шапка звонка — шапка страницы тьютора: те же две кнопки.
+          onChangeTutor={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-choose')
+          }}
+          onManage={() => setScreen('tutor-manage')}
+          // Сцена из сетки под звонком: прежний звонок уже положен, экран
+          // открываем заново (счётчик в ключе обёртки) — иначе комната осталась
+          // бы прежней, а сцена новой только на бумаге.
+          onScenario={(id) => {
+            setScenario(id || null)
+            setScreenNonce((n) => n + 1)
+          }}
           tutor={tutor}
           temper={temper}
           scenario={scenario}
@@ -3170,6 +3191,11 @@ export default function App() {
           onTourDone={() => setShowTutorTour(false)}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
+          // «Другие тьюторы» — тот же путь, что «Сменить» в «Управлении».
+          onChangeTutor={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-choose')
+          }}
           onTalk={() => {
             setScenario(null)
             setScreen('tutor-voice-chat')

@@ -10,6 +10,17 @@
 // frame 5316:1238). Это экспорт из Figma как есть, а не avatar: у аватарки свой
 // круглый фон под маленькие места (шапка звонка, дашборд), а на выборе персонаж
 // стоит на карточке и частью выступает над ней.
+//
+// Страница тьютора по макету 29.10.2026 (Figma «pitch JTS (Copy)»: «Mobile» →
+// «AI-тьютор» и «АВАТАР ТЬЮТОРА» → Section 1) — свои картинки, экспорт узлов
+// макета в public/tutor/v2/:
+//  card     — фигурка карточки выбора (узел Avatar 195×260, ×3);
+//  stage    — фон сцены карточки (у каждого свой тон);
+//  portrait — лицо в рамке на странице тьютора (TutorPortrait). У Декстера это
+//             его «Dexter Flat» в кадре рамки, и эмоций у него четыре
+//             (portraits — по ключу эмоции TutorPortrait); остальным макет лица
+//             не нарисовал — вырезано из той же фигурки с тем же кадром;
+//  tint     — фон под лицом: в рамке и в кружке «Другие тьюторы».
 import { JARVIS_ENABLED } from '../config.js'
 
 // Нрав (ось 18+) — второй характер у того же тьютора: тот же голос, тот же язык,
@@ -27,6 +38,10 @@ const BASE_TUTORS = [
     name: 'Луна',
     avatar: '/tutor/tutor-luna.png',
     figure: '/tutor/pick/luna.webp',
+    card: '/tutor/v2/card-luna.webp',
+    stage: '#ffebe0',
+    portrait: '/tutor/v2/portrait-luna.webp',
+    tint: '#ffd9c7',
     traitColors: ['#ba29e2', '#21b398', '#c3c032'],
     mood: 'idle', // спокойная
   },
@@ -35,6 +50,15 @@ const BASE_TUTORS = [
     name: 'Декстер',
     avatar: '/tutor/tutor-dexter.png',
     figure: '/tutor/pick/dexter.webp',
+    card: '/tutor/v2/card-dexter.webp',
+    stage: '#efe7ff',
+    portrait: '/tutor/v2/portrait-dexter.webp',
+    portraits: {
+      happy: '/tutor/v2/dexter-happy.webp',
+      surprised: '/tutor/v2/dexter-surprised.webp',
+      thinking: '/tutor/v2/dexter-thinking.webp',
+    },
+    tint: '#ceccff',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],
     mood: 'angry', // злой
     // Кнопка 18+ вернулась 29.10.2026: без неё Декстер — «свой пацан», с ней —
@@ -49,6 +73,10 @@ const BASE_TUTORS = [
     name: 'Спарк',
     avatar: '/tutor/tutor-spark.png',
     figure: '/tutor/pick/spark.webp',
+    card: '/tutor/v2/card-spark.webp',
+    stage: '#dff0ff',
+    portrait: '/tutor/v2/portrait-spark.webp',
+    tint: '#c9e4ff',
     traitColors: ['#ffa200', '#f12929', '#51a41e'],
     mood: 'happy', // радостный
     tempers: TEMPERS,
@@ -77,6 +105,10 @@ const JARVIS = {
   name: 'Луна тест',
   avatar: '/tutor/tutor-luna.png',
   figure: '/tutor/pick/luna.webp',
+  card: '/tutor/v2/card-luna.webp',
+  stage: '#ffebe0',
+  portrait: '/tutor/v2/portrait-luna.webp',
+  tint: '#ffd9c7',
   traitColors: ['#ba29e2', '#21b398', '#c3c032'],
   mood: 'idle',
 }
@@ -95,6 +127,10 @@ const AIZERE = {
   name: 'Айзере',
   avatar: '/tutor/tutor-aizere.png',
   figure: '/tutor/pick/aizere.webp',
+  card: '/tutor/v2/card-aizere.webp',
+  stage: '#ffdcdc',
+  portrait: '/tutor/v2/portrait-aizere.webp',
+  tint: '#ffd0d2',
   traitColors: ['#2f6fd6', '#3aa66b'],
   mood: 'idle', // спокойная
 }
@@ -115,6 +151,10 @@ const SPARK_TEST = {
   name: 'Спарк тест',
   avatar: '/tutor/tutor-spark.png',
   figure: '/tutor/pick/spark.webp',
+  card: '/tutor/v2/card-spark.webp',
+  stage: '#dff0ff',
+  portrait: '/tutor/v2/portrait-spark.webp',
+  tint: '#c9e4ff',
   traitColors: ['#ffa200', '#f12929', '#51a41e'],
   mood: 'happy',
 }

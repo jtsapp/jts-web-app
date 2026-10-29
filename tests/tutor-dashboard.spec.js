@@ -1,88 +1,90 @@
 import { test, expect } from '@playwright/test'
+import { loginAsStudent } from './helpers/login.js'
 
-// Дашборд тьютора: виджет «План уроков» (хардкод-заглушка) убран, остались
-// герой (орб-лицо + кнопка «Начать разговор») и превью сценариев. На мобилке
-// раньше десктопные две колонки сжимались в кашу — контракт ниже фиксирует
-// вертикальную раскладку.
+// Страница тьютора по макету 29.10.2026 (компьютер — «АВАТАР ТЬЮТОРА» →
+// Section 1, телефон — «Mobile» → «AI-тьютор»): фиолетовая шапка с лицом и
+// карточкой настроек разговора, под ней сетка ситуаций. Витрины эмоций на
+// странице больше нет — в рамке сам персонаж.
 
-test.describe('дашборд тьютора — контент', () => {
-  test('плана уроков нет, сценарии на месте', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
+  await loginAsStudent(page)
+})
+
+test.describe('страница тьютора — содержимое', () => {
+  test('шапка, лицо, «Начать разговор» и сетка ситуаций', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
 
-    // Герой: микрофон и подсказка занятия.
-    await expect(page.locator('.t-dash__orb')).toBeVisible()
+    await expect(page.locator('.tp-hero h1')).toBeVisible()
+    await expect(page.locator('.tp-hero__others')).toBeVisible()
+    await expect(page.locator('.tp-hero__manage')).toBeVisible()
+    await expect(page.locator('.t-dash__orb .tp-portrait')).toBeVisible()
     await expect(page.locator('.t-dash__talk')).toBeVisible()
 
-    // Секция в панели ровно одна — «Сценарии»; от плана уроков не осталось следов.
-    await expect(page.locator('.t-panel__section')).toHaveCount(1)
-    await expect(page.locator('.t-lessons')).toHaveCount(0)
-    await expect(page.locator('.t-progress')).toHaveCount(0)
+    // Старой правой панели и «Советуем сегодня» нет — сцены в сетке.
+    await expect(page.locator('.t-dash__panel')).toHaveCount(0)
     await expect(page.locator('.t-scenarios .t-scenario').first()).toBeAttached()
   })
 
-  test('совет дня — реальный сценарий, а не хардкод', async ({ page }) => {
+  test('ситуация из карточки уходит в звонок', async ({ page, viewport }) => {
     await page.goto('/?screen=tutor-dashboard')
-    // Без прогресса предлагается первая сцена сюжетной цепочки.
-    await expect(page.locator('.t-dash__suggesttext b')).toHaveText('U.S. Visa Interview')
+    // На телефоне ситуации — своя вкладка карточки.
+    if ((viewport?.width ?? 0) <= 560) await page.locator('.tp-seg--tabs .tp-seg__opt', { hasText: 'Ситуации' }).click()
+    const none = page.locator('.tp-chip', { hasText: 'Без ситуации' })
+    await expect(none).toHaveAttribute('aria-pressed', 'true')
+    const visa = page.locator('.tp-chip', { hasText: 'U.S. Visa Interview' })
+    await visa.click()
+    await expect(visa).toHaveAttribute('aria-pressed', 'true')
+    await expect(none).toHaveAttribute('aria-pressed', 'false')
+    await page.locator('.t-dash__talk').click()
+    await expect(page).toHaveURL(/screen=tutor-voice-chat/)
+  })
+
+  test('«Другие тьюторы» открывает выбор с «Назад»', async ({ page }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    await page.locator('.tp-hero__others').click()
+    await expect(page).toHaveURL(/screen=tutor-choose/)
+    await expect(page.locator('.t-pick__start')).toBeVisible()
+    await page.locator('.t-back:visible').first().click()
+    await expect(page).toHaveURL(/screen=tutor-dashboard/)
   })
 })
 
-test.describe('дашборд тьютора — мобилка', () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
+test.describe('страница тьютора — компьютер', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) <= 560, 'только широкий вьюпорт')
 
-  test('вертикальная раскладка без горизонтального скролла', async ({ page, viewport }) => {
+  test('режим микрофона переключается до звонка и запоминается', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
-    await expect(page.locator('.t-dash__orb')).toBeVisible()
-    await expect(page.locator('.t-dash__talk')).toBeVisible()
+    const free = page.locator('.tp-seg--mode .tp-seg__opt', { hasText: 'Свободно' })
+    await free.click()
+    await expect(free).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('.tp-composer__hint')).toHaveText('Вкл/выкл микрофона нажатием одной кнопки')
+    expect(await page.evaluate(() => localStorage.getItem('jts:tutor:pushToTalk'))).toBe('0')
+  })
 
-    // Страница не расползается вширь (раньше десктопная сетка давала overflow).
+  test('карточка настроек заходит на лицо и лежит поверх', async ({ page }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    const frame = await page.locator('.tp-dash__frame').boundingBox()
+    const card = await page.locator('.tp-composer').boundingBox()
+    // gap −32 в кадре: верх карточки на 32 выше низа лица.
+    expect(Math.round(frame.y + frame.height - card.y)).toBe(32)
+  })
+})
+
+test.describe('страница тьютора — телефон', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) > 560, 'только узкий вьюпорт')
+
+  test('вкладки карточки, без горизонтального скролла, сетка ниже', async ({ page, viewport }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    await expect(page.locator('.tp-composer--tabs')).toBeVisible()
+    await expect(page.locator('.tp-check', { hasText: 'Режим рация' })).toBeVisible()
+    await page.locator('.tp-seg--tabs .tp-seg__opt', { hasText: 'Ситуации' }).click()
+    await expect(page.locator('.tp-chip', { hasText: 'Без ситуации' })).toBeVisible()
+
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(scrollWidth).toBeLessThanOrEqual(viewport.width + 1)
 
-    // Панель сценариев встаёт под героем и доступна по вертикальному скроллу.
     const scenarios = page.locator('.t-scenarios')
     await scenarios.scrollIntoViewIfNeeded()
     await expect(scenarios).toBeInViewport()
-  })
-})
-
-test.describe('дашборд тьютора — витрина эмоций', () => {
-  // Видимая эмоция — ключ из класса t-face--<ключ> у набора с is-on.
-  const shownEmotion = (page) =>
-    page
-      .locator('.t-dash__face .t-face__stack.is-on')
-      .evaluate((el) => [...el.classList].find((c) => c.startsWith('t-face--')).slice(8))
-
-  test('лицо в орбе листает эмоции по кругу', async ({ page }) => {
-    await page.goto('/?screen=tutor-dashboard')
-    const first = await shownEmotion(page)
-    // Смена раз в 2 с; запас — на подгрузку картинок следующего набора.
-    await expect.poll(() => shownEmotion(page), { timeout: 10_000 }).not.toBe(first)
-  })
-
-  test('смена плавная: уходящее гаснет, новое — неподвижный кадр до конца смены', async ({ page }) => {
-    await page.goto('/?screen=tutor-dashboard')
-    await expect(page.locator('.t-dash__face')).toHaveClass(/is-morph/)
-    // Смена держится ~0.6 с на каждом шаге круга — за пару шагов она обязана
-    // попасться.
-    const entering = page.locator('.t-dash__face .t-face__stack.is-entering')
-    await expect(entering).toHaveCount(1, { timeout: 6_000 })
-    await expect(page.locator('.t-dash__face .t-face__stack.is-leaving')).toHaveCount(1)
-    // Собственное движение нового стоит на паузе, пока идёт смена: иначе его
-    // прыжок или петля рисовали бы второй контур из-под общей позы.
-    const states = await entering.evaluate((el) =>
-      el.querySelector('.t-face__rig').getAnimations().map((a) => a.playState)
-    )
-    expect(states.length).toBeGreaterThan(0)
-    expect(states.every((s) => s === 'paused')).toBe(true)
-  })
-
-  test('при «уменьшить движение» лицо стоит на родной эмоции', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.goto('/?screen=tutor-dashboard')
-    const first = await shownEmotion(page)
-    // Дольше одного шага круга: будь витрина включена, лицо бы уже сменилось.
-    await page.waitForTimeout(4_000)
-    expect(await shownEmotion(page)).toBe(first)
   })
 })

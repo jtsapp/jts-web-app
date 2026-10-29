@@ -1,31 +1,30 @@
 import { useRef, useState } from 'react'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
-import { VolumeIcon } from '../tutor/TutorIcons.jsx'
+import TutorCarousel from '../tutor/TutorCarousel.jsx'
+import { PlayIcon } from '../tutor/TutorIcons.jsx'
 import { PICK_TUTORS, TUTOR_GREETING, sampleKey, temperFor } from '../tutor/tutors.js'
 import { playTutorSample } from '../lib/ielts-audio.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
 // Имя раздела — из словаря приложения: там оно «Speaking Buddy», как во вкладке и меню.
 import { useI18n } from '../i18n.jsx'
-// Что есть только на телефоне — разметка, а не только стили, поэтому порог
+// Карусель и ряд — разная разметка, а не только стили, поэтому порог
 // мобильного слоя нужен и в JS (до гидратации — десктоп, см. useMediaQuery).
 import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 
-// Приветствие и выбор тьютора — один экран (макет «Speaking Buddy», Figma
-// 5316:1238 — никто не выбран, 5316:1427 — выбрана Айзере). Раньше это были два
-// экрана с выбором языка между ними; теперь сверху баннер-приветствие, под ним
-// ряд фигурок, клик по фигурке выделяет тьютора, а «Начать обучение» в баннере
-// ведёт дальше с выделенным.
+// Выбор тьютора по макету 29.10.2026 (Figma «pitch JTS (Copy)» → «Mobile» →
+// «AI-тьютор», кадры 7248:17411 — Декстер, 7248:17705 — Декстер с 18+,
+// 7248:18891 — Луна). На телефоне — карусель карточек: фигурка на цветной
+// сцене, имя и «Послушать», подпись, черты, описание; внизу «Выбрать <имя>».
+// Компьютерного кадра нет — та же карточка рядом из четырёх (раскладка узла
+// 7248:18479 «Tutor carousel» 1324×564), выбранная в фиолетовой рамке.
 //
-// На телефоне (≤560) — тот же экран по кадру мобильного приложения (Figma
-// «pitch JTS (Copy)», страница «Mobile», 6132:5848, 27.10.2026): заголовок
-// раздела, баннер и сетка карточек 2×2 с подписью под именем. Двух шагов
-// «баннер → карусель» (макет «Web Адаптивка») больше нет. Карусель давала то,
-// чего у карточки нет, — описание и «Послушать голос»; в кадре их нет, но
-// описание Декстера и есть его «контракт характера» (см. dict.js), поэтому на
-// телефоне оба живут под сеткой у выделенного тьютора. Кнопки 18+ нет ни там,
-// ни там: нрав переключается в «Управлении тьютором», а отсюда уходит тот, что у
-// ученика уже сохранён для этого тьютора, иначе дефолтный (temperFor).
+// Баннер-приветствие прежнего макета («Speaking Buddy», сентябрь 2026) ушёл:
+// в новом его нет ни на телефоне, ни в раскладке ряда.
+//
+// Кнопка 18+ вернулась на карточку (в макете переключатель на сцене у Декстера
+// и Спарка). Нрав, выбранный здесь, уходит вместе с тьютором; без выбора — тот,
+// что у ученика уже сохранён для этого тьютора, иначе дефолтный (temperFor).
 export default function TutorChoosePage({
   user,
   onNavigate,
@@ -35,19 +34,23 @@ export default function TutorChoosePage({
   // Нрав каждого тьютора ({ dexter: 'harsh' }) — чтобы смена тьютора
   // туда-обратно не сбрасывала выбранный ранее характер.
   tempers = {},
-  // Кого выделить сразу. Пусто при первом проходе (макет 5316:1238: ряд без
-  // выделения); при смене тьютора из «Управления» — текущий.
+  // Кого выделить сразу. Пусто при первом проходе — тогда первый из ряда
+  // (Декстер, как в кадре); при смене тьютора — текущий.
   selected = '',
 }) {
   const { t } = useLang()
   const { t: tApp } = useI18n()
-  const [picked, setPicked] = useState(selected)
   const phone = useMediaQuery(MOBILE_QUERY)
-  const rowRef = useRef(null)
-  const current = PICK_TUTORS.find((tt) => tt.key === picked) || null
-  const soon = Boolean(current?.comingSoon)
+  const [picked, setPicked] = useState(() => (PICK_TUTORS.some((tt) => tt.key === selected) ? selected : PICK_TUTORS[0].key))
+  // Нрав, переключённый на карточке, — только этого экрана, пока не нажали «Выбрать».
+  const [localTempers, setLocalTempers] = useState(tempers)
+  const ctaRef = useRef(null)
+  const current = PICK_TUTORS.find((tt) => tt.key === picked) || PICK_TUTORS[0]
+  const soon = Boolean(current.comingSoon)
 
-  const temperOf = (tt) => temperFor(tt.key, tempers[tt.key])
+  const temperOf = (tt) => temperFor(tt.key, localTempers[tt.key])
+  const toggleTemper = (tt) =>
+    setLocalTempers((prev) => ({ ...prev, [tt.key]: temperOf(tt) === 'harsh' ? 'calm' : 'harsh' }))
 
   // Строка словаря, которой может не быть: у dev-only тьюторов подписи и
   // описания нет, и сырой ключ на экране хуже пустого места.
@@ -56,116 +59,143 @@ export default function TutorChoosePage({
     return s === key ? '' : s
   }
 
-  function choose(tt) {
-    if (!tt || tt.comingSoon) return
-    onChoose && onChoose(tt.key, temperOf(tt))
+  function choose() {
+    if (soon) return
+    onChoose && onChoose(current.key, temperOf(current))
   }
 
-  function start() {
-    // Кнопка в баннере выше ряда, и нажать её можно, никого не выбрав. Молча
-    // ничего не делать нельзя — показываем ряд, где выбирать.
-    if (!current) {
-      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      rowRef.current?.querySelector('button')?.focus({ preventScroll: true })
-      return
-    }
-    choose(current)
+  function pickOnDesktop(tt) {
+    setPicked(tt.key)
+    // Кнопка под рядом; на низком окне её может не быть видно — показываем.
+    ctaRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
   }
 
-  // Описание и визитка выделенного — только телефону (см. шапку). Описание — по
-  // нраву, как было в карусели; визитка — готовый файл public/tutor/voice/<ключ>.mp3,
-  // его источник TUTOR_GREETING: нет строки — нет и файла (Айзере).
-  const about = phone && current
-  const desc = about
-    ? tOpt(temperOf(current) === 'harsh' ? `tutor.${current.key}.desc18` : `tutor.${current.key}.desc`)
-    : ''
-  const sample = about ? sampleKey(current.key, temperOf(current)) : ''
-  const listenable = Boolean(sample && TUTOR_GREETING[sample])
+  const renderCard = (tt, on) => (
+    <TutorCard
+      tutor={tt}
+      on={on}
+      temper={temperOf(tt)}
+      onToggleTemper={() => toggleTemper(tt)}
+      tOpt={tOpt}
+      t={t}
+    />
+  )
 
   return (
-    <TutorShell
-      active="tutor"
-      user={user}
-      onNavigate={onNavigate}
-      onProfile={onProfile}
-      onBack={onBack}
-      layout="flow"
-    >
+    <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow">
       <div className="t-pick">
-        {/* Заголовок раздела из кадра — только телефону: на компьютере раздел назван в сайдбаре. */}
-        {phone && <div className="t-pick__page">{tApp('nav.tutor')}</div>}
+        <h1 className="t-pick__title">{phone ? tApp('nav.tutor') : t('choose.title')}</h1>
 
-        <section className="t-pick__hero">
-          <img className="t-pick__art" src="/tutor/pick/banner.webp" alt="" />
-          <div className="t-pick__intro">
-            <div className="t-pick__text">
-              <h1 className="t-pick__title">{t('welcome.title')}</h1>
-              <p className="t-pick__sub">{t('welcome.sub')}</p>
-            </div>
-            <button className="t-pick__start" type="button" onClick={start} disabled={soon}>
-              {soon ? t('choose.soon') : t('welcome.start')}
-            </button>
-          </div>
-        </section>
-
-        <h2 className="t-pick__heading">{t('choose.title')}</h2>
-
-        <div
-          className={'t-pick__row' + (current ? ' has-pick' : '')}
-          ref={rowRef}
-          role="radiogroup"
-          aria-label={t('choose.title')}
-        >
-          {PICK_TUTORS.map((tt) => {
-            const on = tt.key === picked
-            const tag = phone ? tOpt(`tutor.${tt.key}.tagline`) : ''
-            return (
-              <button
-                key={tt.key}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                className={'t-pick__card' + (on ? ' is-picked' : '')}
-                onClick={() => setPicked(tt.key)}
-              >
-                {tt.figure ? (
-                  <img className="t-pick__figure" src={tt.figure} alt="" />
-                ) : (
-                  // Фигурки нет только у KZ-теста (dev-only): у него орб вместо лица.
-                  <TutorThumb tutor={tt} className="t-pick__figure t-pick__figure--orb" />
-                )}
-                <span className="t-pick__plate">
-                  <span className="t-pick__name">{tt.name}</span>
-                  {/* Черты — десктопу; на телефоне в кадре одна строка подписи. */}
-                  {on && !phone && (
-                    <span className="t-pick__chips">
-                      {tt.traitColors.map((color, i) => (
-                        <span className="t-pick__chip" key={color} style={{ background: color }}>
-                          {t(`tutor.${tt.key}.trait${i + 1}`)}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                  {tag && <span className="t-pick__tag">{tag}</span>}
-                </span>
-                {on && phone && <span className="t-pick__check" aria-hidden="true" />}
-              </button>
-            )
-          })}
-        </div>
-
-        {about && (desc || listenable) && (
-          <div className="t-pick__about">
-            {desc && <p className="t-pick__desc">{desc}</p>}
-            {listenable && (
-              <button className="t-pick__listen" type="button" onClick={() => playTutorSample(sample)}>
-                {t(`tutor.${current.key}.listen`)}
-                <VolumeIcon size={20} />
-              </button>
-            )}
+        {phone ? (
+          <TutorCarousel tutors={PICK_TUTORS} startKey={picked} onActive={setPicked} renderCard={renderCard} />
+        ) : (
+          <div className="t-pick__row" role="radiogroup" aria-label={t('choose.title')}>
+            {PICK_TUTORS.map((tt) => {
+              const on = tt.key === picked
+              return (
+                <div
+                  key={tt.key}
+                  className={'t-pick__slot' + (on ? ' is-picked' : '')}
+                  role="radio"
+                  aria-checked={on}
+                  aria-label={tt.name}
+                  tabIndex={0}
+                  onClick={() => pickOnDesktop(tt)}
+                  onKeyDown={(e) => {
+                    if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return
+                    e.preventDefault()
+                    pickOnDesktop(tt)
+                  }}
+                >
+                  {renderCard(tt, true)}
+                </div>
+              )
+            })}
           </div>
         )}
+
+        <button ref={ctaRef} className="t-pick__start" type="button" onClick={choose} disabled={soon}>
+          {soon ? t('choose.soon') : tOpt(`tutor.${current.key}.choose`) || current.name}
+        </button>
       </div>
     </TutorShell>
+  )
+}
+
+// Карточка тьютора (узел «Tutor Декстер» 322×564): сцена с фигуркой и 18+,
+// имя с «Послушать», подпись, черты, описание. on — карточка в фокусе: только
+// у неё живые кнопки (у соседей в карусели они под прозрачностью и не жмутся).
+function TutorCard({ tutor: tt, on, temper, onToggleTemper, tOpt, t }) {
+  const harsh = temper === 'harsh'
+  const desc = tOpt(harsh ? `tutor.${tt.key}.desc18` : `tutor.${tt.key}.desc`)
+  const tag = tOpt(`tutor.${tt.key}.tagline`)
+  const traits = (tt.traitColors || []).map((_, i) => tOpt(`tutor.${tt.key}.trait${i + 1}`)).filter(Boolean)
+  // Визитка — готовый файл public/tutor/voice/<ключ>.mp3, его источник
+  // TUTOR_GREETING: нет строки — нет и файла (Айзере, dev-only тьюторы).
+  const sample = sampleKey(tt.key, temper)
+  const listenable = Boolean(TUTOR_GREETING[sample])
+  const tab = on ? 0 : -1
+  const art = tt.card || tt.figure
+  return (
+    <div className={'t-pick__card' + (on ? ' is-picked' : '') + (harsh ? ' is-harsh' : '')}>
+      <div className="t-pick__stage" style={tt.stage ? { background: tt.stage } : undefined}>
+        <span className="t-pick__glow" aria-hidden="true" />
+        {art ? (
+          <img className="t-pick__figure" src={art} alt="" draggable={false} />
+        ) : (
+          // Картинки нет только у тьютора с орбом вместо лица (dev-only).
+          <TutorThumb tutor={tt} className="t-pick__figure t-pick__figure--orb" />
+        )}
+        {tt.tempers && (
+          <button
+            className={'t-pick__adult' + (harsh ? ' is-on' : '')}
+            type="button"
+            tabIndex={tab}
+            aria-pressed={harsh}
+            title={t(harsh ? 'tutor.adultHint' : 'tutor.adultHintOff')}
+            onClick={(e) => {
+              // Кнопка живёт внутри выбираемой карточки — свой клик наверх не пускаем.
+              e.stopPropagation()
+              onToggleTemper()
+            }}
+          >
+            {t('tutor.adult')}
+            <span className="t-pick__switch" aria-hidden="true" />
+          </button>
+        )}
+        {tt.comingSoon && <span className="t-pick__soon">{t('choose.soon')}</span>}
+      </div>
+      <div className="t-pick__head">
+        <div className="t-pick__namerow">
+          <span className="t-pick__name">{tt.name}</span>
+          {listenable && (
+            <button
+              className="t-pick__listen"
+              type="button"
+              tabIndex={tab}
+              aria-label={tOpt(`tutor.${tt.key}.listen`) || t('choose.listen')}
+              onClick={(e) => {
+                e.stopPropagation()
+                playTutorSample(sample)
+              }}
+            >
+              <PlayIcon size={20} />
+              {t('choose.listen')}
+            </button>
+          )}
+        </div>
+        {tag && <span className="t-pick__tag">{tag}</span>}
+      </div>
+      {traits.length > 0 && (
+        <div className="t-pick__traits">
+          {traits.map((trait) => (
+            <span className="t-pick__trait" key={trait}>
+              {trait}
+            </span>
+          ))}
+        </div>
+      )}
+      {desc && <p className="t-pick__desc">{desc}</p>}
+    </div>
   )
 }

@@ -5,8 +5,9 @@ import { test, expect } from '@playwright/test'
 // Карточка итога сценария (TutorVoiceChatPage → CallStage, ветка `if (verdict)`).
 // До звонка её не доехать без живой LiveKit-комнаты, поэтому проверяем контракт
 // вёрстки: та же разметка + настоящий tutor.css. Регрессия, которую тест ловит —
-// фиксированная высота .t-voice__card: длинный разбор выдавливал «Готово» за
-// нижний край карточки, а медальон — на аватар тьютора над ней.
+// фиксированная высота карточки: длинный разбор выдавливал «Готово» за нижний
+// край, а медальон — на имя тьютора над ней. С макета 29.10.2026 карточка
+// стоит в шапке страницы тьютора (.tp-call__card), под именем.
 
 const CSS = readFileSync(join(__dirname, '../src/tutor.css'), 'utf-8')
 
@@ -21,21 +22,23 @@ const SUMMARY =
 
 const renderVerdict = async (page, { passed = true } = {}) => {
   await page.setContent(`
-    <div class="t-app"><div class="t-body"><main class="t-main"><div class="t-content t-content--flow"><div class="t-voice">
-      <div class="t-status__head">
-        <img class="t-status__avatar" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
-        <div class="t-status__meta"><span class="t-status__name">Декстер</span><span class="t-status__role">Тьютор</span></div>
-      </div>
-      <div class="t-voice__card t-verdict ${passed ? 'is-pass' : 'is-fail'}" role="status">
-        <span class="t-verdict__badge"><svg width="44" height="44" viewBox="0 0 24 24"></svg></span>
-        <h2 class="t-verdict__title">${passed ? 'Задача пройдена' : 'Задача не пройдена'}</h2>
-        <p class="t-verdict__summary">${SUMMARY}</p>
-        <div class="t-verdict__advice">
-          <span class="t-verdict__eyebrow">Что улучшить</span>
-          <ul class="t-verdict__tips">${TIPS.map((tip) => `<li>${tip}</li>`).join('')}</ul>
+    <div class="t-app"><div class="t-body"><main class="t-main"><div class="t-content t-content--flow"><div class="t-voice tp-page">
+      <section class="tp-hero tp-hero--call">
+        <div class="tp-hero__top"><button class="tp-hero__others" type="button">Другие тьюторы</button><button class="tp-hero__manage" type="button">Управление тьютором</button></div>
+        <div class="tp-hero__name"><h1>Декстер</h1><span class="tp-hero__level">Уровень A1</span></div>
+        <div class="tp-hero__body">
+          <div class="tp-call__card t-verdict ${passed ? 'is-pass' : 'is-fail'}" role="status">
+            <span class="t-verdict__badge"><svg width="44" height="44" viewBox="0 0 24 24"></svg></span>
+            <h2 class="t-verdict__title">${passed ? 'Задача пройдена' : 'Задача не пройдена'}</h2>
+            <p class="t-verdict__summary">${SUMMARY}</p>
+            <div class="t-verdict__advice">
+              <span class="t-verdict__eyebrow">Что улучшить</span>
+              <ul class="t-verdict__tips">${TIPS.map((tip) => `<li>${tip}</li>`).join('')}</ul>
+            </div>
+            <button class="t-pill t-pill--primary t-verdict__done" type="button">Готово</button>
+          </div>
         </div>
-        <button class="t-pill t-pill--primary t-verdict__done" type="button">Готово</button>
-      </div>
+      </section>
     </div></div></main></div></div>
   `)
   // styles.css в приложении сбрасывает поля body; здесь его не подключаем,
@@ -63,9 +66,9 @@ test.describe('Итог сценария — карточка вердикта',
     expect(done.y).toBeGreaterThanOrEqual(card.y)
   })
 
-  test('медальон не наезжает на аватар тьютора', async ({ page }) => {
+  test('медальон не наезжает на имя тьютора', async ({ page }) => {
     await renderVerdict(page)
-    const head = await box(page, '.t-status__head')
+    const head = await box(page, '.tp-hero__name')
     const badge = await box(page, '.t-verdict__badge')
     expect(badge.y).toBeGreaterThanOrEqual(head.y + head.height)
   })
