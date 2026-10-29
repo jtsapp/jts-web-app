@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RpcError } from 'livekit-client'
-import { HOLD_MIN_MS, holdVerdict, isPushToTalkKey } from './pushToTalk.js'
+import { HOLD_MIN_MS, holdVerdict, isPushToTalkKey, isPushToTalkRepeat } from './pushToTalk.js'
 
 // Сколько висит подсказка «держи кнопку» после промаха тапом.
 const TAP_HINT_MS = 2200
@@ -126,6 +126,11 @@ export function usePushToTalk({ enabled, room, agentIdentity }) {
   useEffect(() => {
     if (!enabled) return undefined
     const onKeyDown = (e) => {
+      // Повтор зажатого пробела — не новый ход, но и не прокрутка страницы.
+      if (isPushToTalkRepeat(e)) {
+        e.preventDefault()
+        return
+      }
       if (!isPushToTalkKey(e)) return
       // Без этого пробел скроллит страницу и заодно «кликает» сфокусированную
       // кнопку — то есть одно нажатие срабатывало бы дважды.
