@@ -23,9 +23,24 @@ import { recordSkill } from '../practice/skillStats.js'
 import { playUrl } from '../lib/speech.js'
 import { usePrepositionsData } from './prepositions/usePrepositionsData.js'
 
-export default function PrepositionsPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
+// Урок, который открыла Луна (initialTarget = { lesson: '<id урока из course.cats[].lessons[]>' }), — страница его
+// объяснения. Только она: практику непрочитанного урока движок всё равно вернул бы к списку, а объяснение открыто
+// всем. Урока нет в курсе (методист перезалил, ссылка устарела) — обычная главная курса, без ошибки: движок на
+// чужой id тоже рисует главную, но оставил бы в адресе #/learn/<чужой>.
+function targetRoute(target, bundle) {
+  const id = target && target.lesson
+  if (typeof id !== 'string' || !id) return null
+  const known = (bundle?.course?.cats || []).some((c) => (c.lessons || []).some((l) => l.id === id))
+  return known ? `#/learn/${id}` : null
+}
+
+export default function PrepositionsPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel, initialTarget = null }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
+  // Цель Луны — на один заход (App пересоздаёт экран на каждый её переход). Пересоздание движка внутри захода
+  // (StrictMode, вход, новый релиз курса) возвращает к цели, только пока ученик на ней и стоит, — ушёл дальше по
+  // курсу, и цель забыта.
+  const targetRef = useRef(initialTarget)
   const { status, bundle, retry } = usePrepositionsData(token)
   const owner = ownerOf(token)
   // Язык интерфейса — только язык перевода ПО УМОЛЧАНИЮ при монтировании: смена языка
@@ -71,7 +86,13 @@ export default function PrepositionsPage({ userName, userLevel, token, onNav, on
       if (h === '#/' || h === '#/practice') api.go(h)
     }
     window.addEventListener(PREPOSITIONS_PROGRESS_EVENT, onProgress)
+    // Данные уже есть (эффект ждёт бандл), движок нарисовал главную — переходим, как по ссылке урока: «назад» из
+    // урока — главная курса, как обычно.
+    const want = targetRoute(targetRef.current, bundle)
+    if (want) api.go(want)
+    else targetRef.current = null
     return () => {
+      if (want && api.snapshot().hash !== want) targetRef.current = null
       window.removeEventListener(PREPOSITIONS_PROGRESS_EVENT, onProgress)
       api.destroy()
       shadow.innerHTML = ''

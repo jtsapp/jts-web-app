@@ -753,6 +753,30 @@ export default function PracticePage({
   // проверка на клиенте.
   const tryOpenBook = (book) => setOpenBook(book)
 
+  // Вещь по просьбе Луне («открой Питера Пэна», «включи караоке Believer»): переход
+  // несёт её id (lib/assistant/items/refs.js), а открываем её, когда доедет каталог, —
+  // тем же обработчиком, что и клик по карточке: у сказки он же спросит квоту, комикс
+  // берётся из уже отфильтрованного по возрасту списка. Один раз по ключу, как у юнита
+  // грамматики: «Назад» из книги — в список, а не снова в неё. Не нашлась — остаётся
+  // развёрнутый список раздела.
+  const openedItemRef = useRef(null)
+  useEffect(() => {
+    const want = [
+      ['bookId', books, (b, id) => String(b.id) === id, tryOpenBook],
+      ['comicId', comics, (c, id) => c.slug === id || String(c.id) === id, setOpenComic],
+      ['karaokeId', karaoke, (k, id) => k.slug === id || String(k.id) === id, setOpenKaraoke],
+      ['taleId', TALES, (tl, id) => tl.id === id, tryOpenTale],
+    ].find(([key]) => openTarget?.[key] != null)
+    if (!want) return
+    const [key, list, match, open] = want
+    const id = String(openTarget[key])
+    if (openedItemRef.current === `${key}:${id}`) return
+    const it = list.find((x) => match(x, id))
+    if (!it) return
+    openedItemRef.current = `${key}:${id}`
+    open(it)
+  }, [openTarget, books, comics, karaoke])   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Воркбуки. Все уровни A0–B2 живут на нативном экране (?screen=workbook):
   // свой плеер, прогресс по заданиям и разбор ошибок.
   const openWorkbookLevel = (code) => {

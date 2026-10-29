@@ -863,6 +863,11 @@ export default function App() {
   const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just to Listen
   const [grammarGamesTarget, setGrammarGamesTarget] = useState(null) // { topic? } — тема «Грамматики · игр» по ссылке
   const [speedReadingTarget, setSpeedReadingTarget] = useState(null) // { text? } — текст «Скорочтения» по ссылке
+  // Вещь внутри движка раздела по просьбе Луне (lib/assistant/items/refs.js): урок
+  // предлогов { lesson }, тема произношения { topic }, мультфильм { videoId }.
+  const [prepositionsTarget, setPrepositionsTarget] = useState(null)
+  const [pronunciationTarget, setPronunciationTarget] = useState(null)
+  const [cartoonsTarget, setCartoonsTarget] = useState(null)
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -1782,11 +1787,11 @@ export default function App() {
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
-    else if (key === 'prepositions') setScreen('prepositions')
-    else if (key === 'pronunciation') setScreen('pronunciation')
+    else if (key === 'prepositions') { setPrepositionsTarget(payload || null); setScreen('prepositions') }
+    else if (key === 'pronunciation') { setPronunciationTarget(payload || null); setScreen('pronunciation') }
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
-    else if (key === 'cartoons') setScreen('cartoons')
+    else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
     else if (key === 'wordhunt') setScreen('wordhunt')
     // Уровень приносит карточка Практики — она же и списала квоту.
     // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
@@ -2539,6 +2544,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={prepositionsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2550,6 +2556,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={pronunciationTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2585,6 +2592,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={cartoonsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

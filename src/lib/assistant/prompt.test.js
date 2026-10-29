@@ -19,6 +19,8 @@ import {
   STUCK_ERRORS_MARK,
   STUCK_IDLE_MARK,
   ITEMS_HINT,
+  ITEMS_GUESS_HINT,
+  ITEMS_FOLLOWUP_HINT,
 } from './prompt.js'
 import { KNOWLEDGE, KNOWLEDGE_MAX_CHARS, knowledgeText } from './knowledge.js'
 
@@ -504,6 +506,14 @@ describe('каталог «Что можно открыть»', () => {
     expect(last).toContain(items)
     expect(last).toContain('Вопрос ученика: открой урок 5')
     expect(last).toContain(ITEMS_HINT)
+  })
+  it('двусмысленное — переспросить; по одному названию — искать по смыслу; ответ на уточнение — открыть выбранное', () => {
+    const turn = (mode) => buildTurns({ ...parseChatRequest(ask('включи Пеппу')), user: null, items, itemsMode: mode }).at(-1).content
+    expect(turn('ask')).toContain('не угадывай: одним коротким вопросом переспроси')
+    expect(turn('guess')).toContain(ITEMS_GUESS_HINT)
+    expect(turn('guess')).toContain('не угадывай')
+    expect(turn('followUp')).toContain(ITEMS_FOLLOWUP_HINT)
+    expect(turn('followUp')).not.toContain(ITEMS_GUESS_HINT)
   })
   it('без каталога — ни списка, ни указания', () => {
     const last = buildTurns({ ...parseChatRequest(ask('что такое Present Perfect?')), user: null }).at(-1).content

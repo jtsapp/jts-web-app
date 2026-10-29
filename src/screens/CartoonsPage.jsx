@@ -26,9 +26,29 @@ import { useCartoonsData } from './cartoons/useCartoonsData.js'
 
 const FALLBACK_FONT = "'Manrope', sans-serif"
 
-export default function CartoonsPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
+// Мультфильм, который открыла Луна (initialTarget = { videoId: '<id из library.entries[]>' }), — страница просмотра
+// с миссией. Нерабочее видео (index.unavailable) и неизвестный id — обычная библиотека: движок на чужой id рисует
+// «Видео не найдено», и на месте цели Луны это выглядело бы поломкой. Есть ли видео, знает только движок (каталог он
+// сводит из четырёх источников), поэтому открываем и сверяем, что открылось; нет — сразу назад в библиотеку, в том
+// же такте, до отрисовки.
+function openTarget(api, target, index) {
+  const id = target && target.videoId
+  if (typeof id !== 'string' || !id) return null
+  if ((index.unavailable || []).some((v) => v && v.id === id)) return null
+  const want = `#watch/${encodeURIComponent(id)}`
+  api.go(want)
+  if (api.snapshot().ep === id) return want
+  api.go('')
+  return null
+}
+
+export default function CartoonsPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel, initialTarget = null }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
+  // Цель Луны — на один заход (App пересоздаёт экран на каждый её переход). Пересоздание движка внутри захода
+  // (StrictMode, вход, новый релиз, смена языка) возвращает к видео, только пока ученик на нём и стоит, — ушёл в
+  // библиотеку или к другому видео, и цель забыта.
+  const targetRef = useRef(initialTarget)
   const { status, index, retry } = useCartoonsData(token)
   const owner = ownerOf(token)
   // Миссия догружается позже монтирования — берём свежий токен, а не тот, что был при входе.
@@ -67,7 +87,12 @@ export default function CartoonsPage({ userName, userLevel, token, onNav, onProf
       if (!api.snapshot().hash) api.go('')
     }
     window.addEventListener(CARTOONS_PROGRESS_EVENT, onProgress)
+    // Каталог уже есть (эффект ждёт его), движок нарисовал библиотеку — переходим, как по карточке: «назад» из
+    // просмотра ведёт в библиотеку, как обычно.
+    const want = openTarget(api, targetRef.current, index)
+    if (!want) targetRef.current = null
     return () => {
+      if (want && api.snapshot().hash !== want) targetRef.current = null
       window.removeEventListener(CARTOONS_PROGRESS_EVENT, onProgress)
       api.destroy()
       shadow.innerHTML = ''

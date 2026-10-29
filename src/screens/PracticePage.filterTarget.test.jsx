@@ -15,6 +15,7 @@ vi.mock('../api.js', async (importOriginal) => {
 })
 
 import PracticePage from './PracticePage.jsx'
+import * as api from '../api.js'
 
 beforeEach(() => {
   sessionStorage.clear()
@@ -71,6 +72,30 @@ describe('PracticePage — фильтр из перехода', () => {
     expect(onNav).toHaveBeenLastCalledWith('arcade', { game: 'runner', skill: 'speaking' })
     fireEvent.click(getByRole('button', { name: /все игры/i }))
     expect(onNav).toHaveBeenLastCalledWith('arcade', { game: null, skill: 'speaking' })
+  })
+
+  // Луна: «открой Питера Пэна» — переход несёт bookId (lib/assistant/items/refs.js).
+  it('bookId открывает книгу, когда доехал каталог; «Назад» — в список книжек', async () => {
+    api.getAudiobooks.mockResolvedValue([
+      { id: 7, title: 'Peter Pan', level: 'A2', tracks: [] },
+      { id: 8, title: 'Treasure Island', level: 'A2', tracks: [] },
+    ])
+    const { container } = renderWith({ filter: 'books', bookId: '8' })
+    await waitFor(() => expect(container.querySelector('#sec-books')).toBeNull())
+    await waitFor(() => expect(container.querySelector('.vd__back')).toBeTruthy())
+    expect(container.textContent).toMatch(/Treasure Island/)
+    fireEvent.click(container.querySelector('.vd__back'))
+    await waitFor(() => expect(container.querySelector('#sec-books')).toBeTruthy())
+    expect(container.querySelector('#sec-books .pk-all')?.textContent).toMatch(/свернуть/i)
+    api.getAudiobooks.mockResolvedValue([])
+  })
+
+  it('книги из bookId нет в каталоге — остаётся список книжек', async () => {
+    api.getAudiobooks.mockResolvedValue([{ id: 7, title: 'Peter Pan', level: 'A2', tracks: [] }])
+    const { container, findAllByText } = renderWith({ filter: 'books', bookId: '999' })
+    expect((await findAllByText('Peter Pan')).length).toBeGreaterThan(0)
+    expect(container.querySelector('#sec-books')).toBeTruthy()
+    api.getAudiobooks.mockResolvedValue([])
   })
 
   it('незнакомый фильтр игнорируется', async () => {
