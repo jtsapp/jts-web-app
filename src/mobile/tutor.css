@@ -762,6 +762,19 @@
   .tp-bubble.is-wait {
     min-width: 37px;
   }
+  /* Под кнопкой «Другие тьюторы» (16 + 32 + 8). */
+  .tp-call__timer {
+    top: 56px;
+    left: 16px;
+    height: 28px;
+    padding: 0 10px 0 8px;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .tp-call__timer svg {
+    width: 16px;
+    height: 16px;
+  }
   .tp-call__card {
     padding: 28px 20px;
     border-radius: 24px;

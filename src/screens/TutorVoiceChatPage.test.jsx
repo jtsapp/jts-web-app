@@ -114,6 +114,14 @@ describe('CallStage — полоса микрофона', () => {
     expect(lk.room.disconnect).toHaveBeenCalled()
   })
 
+  it('таймер лимита: остаток звонка, у сцены со своими часами — её бюджет', () => {
+    const { unmount } = stage({ ttl: 600 })
+    expect(screen.getByRole('timer').textContent).toBe('10:00')
+    unmount()
+    stage({ ttl: 600, limitSec: 300 })
+    expect(screen.getByRole('timer').textContent).toBe('05:00')
+  })
+
   it('пока ученик молчит, второй пузырь — «…»', () => {
     stage()
     const bubbles = document.querySelectorAll('.tp-bubble')
