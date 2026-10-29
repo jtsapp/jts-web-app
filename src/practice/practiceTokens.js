@@ -13,9 +13,18 @@ const RULE_NAMES = {
   karaoke: 'Караоке — песня целиком',
   memes: 'Мемы и рилсы — 5 штук',
   trainer: 'Тренажёр аудирования / чтения / письма / говорения',
+  // Свои правила игр (backend V415, «полный каталог практики»): у мини-игры Listening и «Услышь детали» — секция
+  // «Практика Listening».
+  listeningGame: 'Listening мини-игра',
+  listenchoose: 'Услышь детали — найди свою картинку',
+  words: 'Слушай слово и находи на картинке',
+  numbers: 'Мир чисел Декстера — уровень',
 }
 
-// Секции практики, где действие реально начисляет токены.
+// Карточки практики, где действие реально начисляет токены, — по ключу `tokens` карточки (practiceCatalog.js).
+// Правил бывает несколько: первое, что нашлось в ответе сервера. У мини-игры Listening своё правило появилось с
+// V415, а до него она шла общим «Тренажёром» — стенд со старым бэкендом не должен потерять чип.
+// `listenPair` / `writePair` — ключи плиток «Главной».
 const SECTION_RULE = {
   grammar: 'grammar',
   shadowing: 'shadowing',
@@ -25,7 +34,12 @@ const SECTION_RULE = {
   listenPair: 'trainer',
   reading: 'trainer',
   writePair: 'trainer',
+  writing: 'trainer',
   situations: 'trainer',
+  listening: ['listeningGame', 'trainer'],
+  listenchoose: 'listenchoose',
+  words: 'words',
+  numbers: 'numbers',
 }
 
 // Задачи плана дня («Сегодня» на главной): что из них реально начисляет токены — по тем же правилам, что и сервер.
@@ -39,11 +53,14 @@ const norm = (value) => String(value || '').trim().toLowerCase()
 
 /** Сколько токенов даёт секция; 0 — ничего не обещаем (правила не пришли, выключено или секция не начисляет). */
 export function sectionTokenPoints(rules, sectionId) {
-  const name = RULE_NAMES[SECTION_RULE[sectionId]]
-  if (!name || !Array.isArray(rules)) return 0
-  const rule = rules.find((item) => norm(item?.name) === norm(name))
-  const points = Number(rule?.points)
-  return Number.isFinite(points) && points > 0 ? Math.floor(points) : 0
+  if (!Array.isArray(rules)) return 0
+  for (const key of [].concat(SECTION_RULE[sectionId] || [])) {
+    const name = RULE_NAMES[key]
+    const rule = rules.find((item) => norm(item?.name) === norm(name))
+    const points = Number(rule?.points)
+    if (Number.isFinite(points) && points > 0) return Math.floor(points)
+  }
+  return 0
 }
 
 /**

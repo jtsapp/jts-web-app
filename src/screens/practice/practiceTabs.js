@@ -1,134 +1,57 @@
-// Раскладка «Практики» по навыкам — макет Figma «Макеты» (5316:1548), по
-// экрану на вкладку, и таблица модулей по навыкам (секция «Практика»,
-// 5316:1727).
+// Раскладка «Практики» — редизайн 29.10.2026 (Figma «pitch JTS (Copy)», секция «Практика · редизайн» 7393:14225;
+// спека docs/superpowers/specs/2026-10-29-practice-cards-redesign-design.md). Вкладка — группы, группа — карточки
+// одного вида; чем карточки отличаются, описывает practiceCatalog.js. Порядок карточек — с экранов макета.
 //
-// Порядок секций и их оформление взяты с экранов макета как есть, включая
-// то, что выглядит непоследовательно: «Посмотреть все» у одной и той же
-// секции бывает рамкой-пилюлей (`pill`) или простой ссылкой (`link`) в разных
-// вкладках, а заголовки «Караоке» и «Ситуации» — 18px вместо 24px. Это
-// сверено по узлам, а не на глаз; править надо макет, а не здесь.
+// Ключи вкладок прежние: на них стоят сессия, «назад» (navStack), переходы Луны и плитки «Главной». Пятая вкладка
+// так и осталась `grammarGames`, хотя называется теперь «Грамматика»: кроме тем, в ней собраны игры из других
+// вкладок и «Скорочтение» (карта переноса макета, 7404:4427). Подпись под ней — `sub`, а не «N тренажёров».
 //
-// Одно отступление от макета — по решению владельца (27.09.2026): в макете
-// сказки открывают вкладку, у нас они последняя секция везде, где есть. Не
-// возвращать наверх при следующей сверке с макетом.
-//
-// `modules` — какие тренажёры секция выводит (пара баннеров — два), по ним
-// считается подпись «N тренажёров» на карточке навыка.
+// Сказки — последняя карточка везде, где они есть (решение владельца 27.09.2026); макет это соблюдает.
+
+import { cardOf } from './practiceCatalog.js'
 
 export const SKILLS = [
-  {
-    key: 'listening',
-    sections: [
-      { id: 'listenPair', modules: ['listening', 'listenchoose'] },
-      // «Слов в картинках» на экране макета нет, хотя в таблице модулей они
-      // стоят в Аудировании. Без баннера раздел пропал бы из Практики вовсе,
-      // поэтому он здесь — во всю ширину, как баннер «Чтения».
-      { id: 'words' },
-      // «Числа» (13.10.2026) — в макете их нет; широкий баннер под «Словами в
-      // картинках»: тоже игра на слух.
-      { id: 'numbers' },
-      // Just to Listen (21.10.2026) — диктант слова и предложения; в макете
-      // его нет, широкий баннер после «Чисел»: тоже на слух.
-      { id: 'justListen', modules: ['listen'] },
-      // «Скорочтение» (25.10.2026, Д5) — читать вслух за телесуфлёром после образца озвучки; в макете его нет.
-      // Широкий баннер сразу после Just to Listen, с бейджем «Новое».
-      { id: 'speedReading' },
-      // Cartoon World (22.10.2026) — мультфильмы с письменными миссиями; в макете его нет. Широкий баннер после
-      // Just to Listen: смотрят и слушают, миссия — продолжение просмотра.
-      { id: 'cartoons' },
-      { id: 'shadowing', all: 'link' },
-      { id: 'karaoke', all: 'pill', small: true },
-      { id: 'memes', all: 'pill' },
-      { id: 'tales', all: 'pill' },
-    ],
-  },
-  {
-    key: 'reading',
-    sections: [
-      { id: 'reading' },
-      { id: 'books', all: 'pill' },
-      { id: 'comics', all: 'pill' },
-      // Word Hunt (25.10.2026) — кроссворд и поиск слов над словарём курса; в макете его нет. Широкий баннер
-      // перед «Аркадой»: сказки остаются последними.
-      { id: 'wordhunt' },
-      // «Аркада» и здесь: вторая её игра (Word Rush) — на слова, а не на
-      // говорение. Перед сказками — по правилу «сказки последние».
-      { id: 'arcade' },
-      { id: 'tales', all: 'pill' },
-    ],
-  },
-  {
-    key: 'writing',
-    sections: [
-      { id: 'grammar', all: 'pill' },
-      // Prepositions World (22.10.2026) — курс предлогов; в макете его нет. Широкий баннер сразу после
-      // «Грамматики»: предлоги — грамматика.
-      { id: 'prepositions' },
-      { id: 'writePair', modules: ['writing', 'verbs'] },
-      { id: 'workbooks', all: 'pill' },
-    ],
-  },
-  {
-    key: 'speaking',
-    sections: [
-      { id: 'shadowing', all: 'link' },
-      // Pronunciation World (28.10.2026) — курс произношения A0–C1: объяснение звука со схемами и игра на слух
-      // Echo Gates; в макете его нет. Широкий баннер сразу после «Шэдоуинга» (решение владельца).
-      { id: 'pronunciation' },
-      { id: 'situations', all: 'pill', small: true },
-      // SpeakSpin (02.10.2026) — в макете его нет; широкий баннер после
-      // «Ситуаций», как «Слова в картинках» в Аудировании.
-      { id: 'speakspin' },
-      { id: 'karaoke', all: 'pill', small: true },
-      // «Аркада» — зал мини-игр (Speak or Die, Word Rush). В макете её нет;
-      // стоит последней перед сказками, чтобы правило «сказки — последняя
-      // секция» (см. выше) не нарушать.
-      { id: 'arcade' },
-      { id: 'tales', all: 'link' },
-    ],
-  },
-  // «Грамматика · игры» (25.10.2026) — пятый навык, а не баннер в «Письме» (решение владельца 28.10.2026): вкладка
-  // и есть раздел — хаб тем движка прямо под карточками (GrammarGamesView), без экрана-посредника. Старая
-  // «Грамматика» (507 юнитов) остаётся в «Письме», как решил заказчик. В макете навыков четыре, карточка — после
-  // «Говорения»; вместо «N тренажёров» под заголовком — темы раздела (`sub`).
+  { key: 'listening', groups: [{ cards: ['listenchoose', 'justListen', 'cartoons', 'shadowing', 'karaoke', 'memes', 'tales'] }] },
+  { key: 'reading', groups: [{ cards: ['reading', 'books', 'comics', 'tales'] }] },
+  { key: 'writing', groups: [{ cards: ['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'] }] },
+  { key: 'speaking', groups: [{ cards: ['pronunciation', 'situations', 'speakspin', 'shadowing', 'karaoke', 'tales'] }] },
   {
     key: 'grammarGames',
     sub: 'practice.skillSub.grammarGames',
-    sections: [{ id: 'grammarGames' }],
+    groups: [
+      { title: 'practice.group.trainers', cards: ['topics', 'speedReading'] },
+      {
+        title: 'practice.group.games',
+        sub: 'practice.group.gamesSub',
+        cards: ['listening', 'words', 'numbers', 'wordhunt', 'speak', 'runner'],
+      },
+    ],
   },
 ]
 
 export const SKILL_KEYS = SKILLS.map((s) => s.key)
 
-const modulesOf = (section) => section.modules || [section.id]
-
-/** Тренажёры навыка — для подписи на карточке. */
-export function skillModules(key) {
+/** Карточки вкладки по порядку. */
+export function skillCards(key) {
   const skill = SKILLS.find((s) => s.key === key)
-  return skill ? skill.sections.flatMap(modulesOf) : []
+  return skill ? skill.groups.flatMap((g) => g.cards) : []
+}
+
+/** Тренажёры вкладки — для подписи «N тренажёров»; две карточки «Аркады» — один тренажёр. */
+export function skillModules(key) {
+  return [...new Set(skillCards(key).map((id) => cardOf(id).module))]
 }
 
 /**
- * Вкладка, где живёт модуль: для перехода «с фильтром» (плитка «Книги» на
- * Главной, выдача из домашней работы). Модуль в нескольких вкладках (сказки,
- * шэдоуинг, караоке) открывается в первой — там, где он стоит в таблице
- * модулей первым.
+ * Вкладка, где живёт модуль: для перехода «с фильтром» (плитка «Книги» на Главной, выдача из домашней работы,
+ * Луна). Модуль в нескольких вкладках (сказки, шэдоуинг, караоке) открывается в первой.
  */
 export function skillOfModule(module) {
-  const skill = SKILLS.find((s) => s.sections.some((sec) => modulesOf(sec).includes(module)))
+  const skill = SKILLS.find((s) => skillModules(s.key).includes(module))
   return skill ? skill.key : null
 }
 
-// Секции, у которых есть полный список по «Посмотреть все». Баннеры ведут на
-// свой экран и развернуть их не во что.
-export const EXPANDABLE = new Set([
-  'tales',
-  'shadowing',
-  'karaoke',
-  'memes',
-  'books',
-  'comics',
-  'grammar',
-  'workbooks',
-  'situations',
-])
+// Карточки-каталоги: открывают полный список раздела. Остальные ведут на свой экран, разворачивать их не во что.
+export const EXPANDABLE = new Set(
+  SKILLS.flatMap((s) => skillCards(s.key)).filter((id) => cardOf(id).list),
+)

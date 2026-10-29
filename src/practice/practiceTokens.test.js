@@ -25,6 +25,28 @@ describe('sectionTokenPoints', () => {
   it('имя сравнивается без учёта регистра и пробелов по краям', () => {
     expect(sectionTokenPoints([{ name: '  юнит ГРАММАТИКИ ', points: 5 }], 'grammar')).toBe(5)
   })
+
+  it('игры — по своим правилам каталога V415', () => {
+    const rules = [
+      ...RULES,
+      { name: 'Listening мини-игра', points: 4 },
+      { name: 'Услышь детали — найди свою картинку', points: 4 },
+      { name: 'Слушай слово и находи на картинке', points: 3 },
+      { name: 'Мир чисел Декстера — уровень', points: 3 },
+    ]
+    expect(sectionTokenPoints(rules, 'listening')).toBe(4)
+    expect(sectionTokenPoints(rules, 'listenchoose')).toBe(4)
+    expect(sectionTokenPoints(rules, 'words')).toBe(3)
+    expect(sectionTokenPoints(rules, 'numbers')).toBe(3)
+    expect(sectionTokenPoints(rules, 'writing')).toBe(4)
+    expect(sectionTokenPoints(rules, 'cartoons')).toBe(0)
+    expect(sectionTokenPoints(rules, 'wordhunt')).toBe(0)
+  })
+
+  it('мини-игра Listening на старом бэкенде (без своего правила) — по общему «Тренажёру»', () => {
+    expect(sectionTokenPoints(RULES, 'listening')).toBe(4)
+    expect(sectionTokenPoints(RULES, 'listenchoose')).toBe(0)
+  })
 })
 
 
