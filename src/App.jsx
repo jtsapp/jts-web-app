@@ -1,5 +1,6 @@
 'use client'
 import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
+import { isLegalDocumentsScreen } from './lib/legalDocuments.js'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
@@ -2077,7 +2078,7 @@ export default function App() {
     : renderScreen(view)
   return (
     <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
-      required={!!token && !boothAccount && !isTeacher(token) && !['set-password', 'success'].includes(view)}
+      required={!!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}
       onLogout={handleLogout}>
     <MobileTabContext.Provider value={setMobileTab}>
       {page && (

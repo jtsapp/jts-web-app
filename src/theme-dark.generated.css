@@ -24060,7 +24060,12 @@ html[data-theme="dark"] .legal-card .legal-links a {
 html[data-theme="dark"] .legal-language select {
     color: inherit;
     background: var(--dk-card);
-    border: 1px solid var(--dk-acc-line)
+    border: 1px solid var(--dk-acc-line);
+    outline: none
+}
+html[data-theme="dark"] .legal-language select:focus-visible {
+    border-color: var(--purple);
+    outline: 2px solid var(--purple)
 }
 html[data-theme="dark"] .legal-check input {
     accent-color: var(--dk-acc-text)

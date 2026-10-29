@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import LegalDocumentsGate from './LegalDocumentsGate.jsx'
-import { LEGAL_VERSION } from '../lib/legalDocuments.js'
+import { LEGAL_VERSION, isLegalDocumentsScreen } from '../lib/legalDocuments.js'
 import { getLegalAcknowledgement, acceptLegalDocuments } from '../api.js'
 vi.mock('../api.js', () => ({ getLegalAcknowledgement: vi.fn(), acceptLegalDocuments: vi.fn() }))
 
@@ -68,6 +68,14 @@ describe('one-time account agreement', () => {
     fireEvent.change(screen.getByRole('combobox', { name: 'Язык документов' }), { target: { value: 'kk' } })
     expect(screen.getByRole('checkbox').checked).toBe(false)
     expect(screen.getAllByRole('link').every((x) => x.href.endsWith('-kk.pdf'))).toBe(true)
+  })
+  it('waits for Google profile completion before showing documents on entry to the cabinet', async () => {
+    const { rerender } = render(view('one', isLegalDocumentsScreen('reg-google')))
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(getLegalAcknowledgement).not.toHaveBeenCalled()
+    rerender(view('one', isLegalDocumentsScreen('home')))
+    await screen.findByRole('checkbox')
+    expect(getLegalAcknowledgement).toHaveBeenCalledTimes(1)
   })
   it('leaves teachers and guests unaffected', () => {
     render(view(null, false))

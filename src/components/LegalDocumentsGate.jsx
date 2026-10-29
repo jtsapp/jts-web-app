@@ -51,9 +51,11 @@ export default function LegalDocumentsGate({ token, required, onLogout, children
       <h1 id="legal-title">{t('legal.title')}</h1>
       <p>{t('legal.intro')}</p>
       <label className="legal-language">{t('legal.language')}
-        <select value={language} onChange={(e) => { setLanguage(e.target.value); setChecked(false) }} disabled={busy}>
+        <span className="legal-select"><select value={language} onChange={(e) => { setLanguage(e.target.value); setChecked(false) }} disabled={busy}>
           <option value="ru">Русский</option><option value="kk">Қазақша</option>
         </select>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </span>
       </label>
       <LegalDocumentsLinks language={language} />
       {lang === 'en' && <p>{t('legal.englishNote')}</p>}

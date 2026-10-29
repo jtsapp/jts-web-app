@@ -9,7 +9,11 @@
 .legal-links a { color: #7834db; text-decoration: underline; text-underline-offset: 3px; line-height: 1.5; }
 .legal-card .legal-links a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 1px solid #eee8f8; border-radius: 12px; }
 .legal-language { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
-.legal-language select { font: inherit; color: inherit; background: #fff; border: 1px solid #e6e0ef; border-radius: 10px; padding: 10px 12px; }
+.legal-select { position: relative; display: inline-flex; flex: 0 0 auto; width: 154px; }
+.legal-language select { appearance: none; -webkit-appearance: none; width: 100%; min-height: 48px; margin: 0; font: inherit; font-size: 16px; line-height: 24px; color: inherit; background: #fff; border: 1px solid #e6e0ef; border-radius: 12px; padding: 11px 42px 11px 14px; outline: none; cursor: pointer; }
+.legal-language select:focus-visible { border-color: var(--purple); outline: 2px solid var(--purple); outline-offset: 2px; }
+.legal-language select:disabled { opacity: .5; cursor: default; }
+.legal-select svg { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); pointer-events: none; }
 .legal-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.5; cursor: pointer; margin-top: 24px; }
 .legal-check input { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 2px; accent-color: #9144ff; }
 .legal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
