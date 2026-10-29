@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { LEGAL_VERSION } from '../src/lib/legalDocuments.js'
 
 // Луна открывает раздел — целиком в браузере: ответ чата с действием (служебный
 // хвост стрима, lib/assistant/actions.js) → переход App. Модель и синтез
@@ -34,6 +35,10 @@ async function setup(page, replies) {
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )
+  // Документы платформы приняты, разделы тарифа не заданы — иначе экраны согласия и
+  // проверки доступа перекрывают приложение (LegalDocumentsGate, StudentSectionGate).
+  await page.route('**/user/legal-documents**', (r) => r.fulfill(json({ version: LEGAL_VERSION, acceptedAt: '2026-10-29T10:00:00Z' })))
+  await page.route('**/cabinet/my-sections', (r) => r.fulfill(json({ known: false, allowed: [] })))
   const calls = { chat: [], speak: [] }
   await page.route('**/api/assistant/chat', async (r) => {
     const body = JSON.parse(r.request().postData())

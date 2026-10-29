@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { LEGAL_VERSION } from '../src/lib/legalDocuments.js'
 
 // «Луна, открой урок 1» (lib/assistant/items/): ответ чата с адресом урока курса →
 // App переходит на тропу A1 с целью → тропа открывает урок сама. Закрытый урок она не
@@ -15,6 +16,11 @@ async function setup(page, reply) {
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })),
   )
+  // Согласие с документами платформы (LegalDocumentsGate) уже дано — иначе экран
+  // согласия перекрывает приложение и кнопки Луны нет.
+  await page.route('**/user/legal-documents**', (r) => r.fulfill(json({ version: LEGAL_VERSION, acceptedAt: '2026-10-29T10:00:00Z' })))
+  // Разделы тарифа не заданы — открыто всё (StudentSectionGate), иначе Практика за замком.
+  await page.route('**/cabinet/my-sections', (r) => r.fulfill(json({ known: false, allowed: [] })))
   const chat = []
   await page.route('**/api/assistant/chat', async (r) => {
     const body = JSON.parse(r.request().postData())

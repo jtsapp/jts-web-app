@@ -512,7 +512,10 @@ export async function buildItemCatalog({ kinds, level, token, lang = 'ru', deps 
 /** Вещь по адресу — когда каталога в этом запросе нет (ученик ответил «да» на её «Открыть?»). */
 export async function resolveItem(ref, { token, lang = 'ru', deps = defaultDeps, now } = {}) {
   const parsed = parseItemRef(ref)
-  if (!parsed) return null
-  const { items } = await buildItemCatalog({ kinds: [parsed.kind], level: parsed.level, token, lang, deps, now })
-  return items.get(ref) || null
+  if (!parsed || !BUILDERS[parsed.kind]) return null
+  // По полному списку вида, а не по каталогу запроса: тот режется до MAX_LINES, и
+  // мультфильм дальше 160-й строки на «да» уже не нашёлся бы.
+  const list = await BUILDERS[parsed.kind](parsed.level, { token, deps, now, lang }).catch(() => [])
+  const it = list.find((x) => x.ref === ref)
+  return it ? { ...it, label: labelOf(it, lang) } : null
 }
