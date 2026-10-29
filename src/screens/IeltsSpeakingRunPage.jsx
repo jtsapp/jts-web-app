@@ -8,8 +8,9 @@ import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { CueCard } from '../ielts/speaking/SpeakingTaskView.jsx'
+import GradeErrorNote from '../ielts/speaking/GradeErrorNote.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
-import { TIMING, formatSec, speakingQuestions } from '../ielts/speaking/speaking.js'
+import { TIMING, formatSec, gradeErrorKey, speakingQuestions } from '../ielts/speaking/speaking.js'
 import { useLiveAcoustics } from '../ielts/speaking/liveAcoustics.js'
 import { CheckIcon, CloseIcon, EditIcon, MicIcon, Replay5Icon } from '../ielts/icons.jsx'
 
@@ -30,6 +31,10 @@ function writeLast(kind, sec) {
     /* без хранилища метрика просто начнётся с прочерка */
   }
 }
+
+// Потолок чтения реплики экзаменатора: поток синтеза может встать посреди фразы, и без потолка запись не начиналась
+// никогда. Запас щедрый — ~15 символов в секунду речи плюс 15 с на первый звук.
+const speakMaxMs = (text) => 15000 + String(text || '').length * 120
 
 // Волна под кольцом: последние кадры громкости; кадры с голосом — зелёные, тишина — бледная (Figma 11)
 function Wave({ levels }) {
@@ -86,6 +91,8 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   const [models, setModels] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // работа, чья оценка упала: «Отправить ещё раз» шлёт те же записи на неё же (retryAttemptId), а не заводит новую
+  const [failedAttempt, setFailedAttempt] = useState(null)
   const alive = useRef(true)
 
   useEffect(() => {
@@ -125,9 +132,15 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
     if (kind) setPrevDur(readLast(kind))
   }, [kind])
 
+  // время секции mock вышло — дальше не спрашиваем, часть сдаётся с тем, что записано
+  const timeUp = useRef(false)
+  // запись не запустилась (микрофон) — что повторить по кнопке; без неё экзамен стоял без записи и без выхода
+  const [recFailed, setRecFailed] = useState(null)
+
   const record = useCallback(
     (itemId, maxSec, next) => {
-      rec.start({
+      setRecFailed(null)
+      Promise.resolve(rec.start({
         maxSec,
         onDone: (take) => {
           if (!alive.current) return
@@ -142,15 +155,18 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
           }
           next?.(take)
         },
+      })).then((ok) => {
+        if (ok === false && alive.current) setRecFailed({ itemId, maxSec, next })
       })
     },
     [rec, kind],
   )
 
   const goNext = useCallback(() => {
+    if (timeUp.current) return setPhase('done')
     if (part2 && q?.followUp && phase !== 'followup') {
       setPhase('followup')
-      speakTts(q.followUp, { voice: VOICE.gb }).then(() => alive.current && record(`${q.id}-fu`, TIMING.part2.followUpSec, () => setPhase('done')))
+      speakTts(q.followUp, { voice: VOICE.gb, maxMs: speakMaxMs(q.followUp) }).then(() => alive.current && !timeUp.current && record(`${q.id}-fu`, TIMING.part2.followUpSec, () => setPhase('done')))
       return
     }
     if (idx + 1 < qs.length) {
@@ -159,22 +175,29 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
     } else setPhase('done')
   }, [idx, qs.length, part2, q, phase, record])
 
-  // Вопрос: экзаменатор читает, затем запись (в «Экзамене» — сама, в «Тренировке» — по кнопке)
+  // Вопрос: экзаменатор читает, затем запись (в «Экзамене» — сама, в «Тренировке» — по кнопке). askToken — чей вопрос
+  // ещё в силе: «Ответить» и «Повторить вопрос» отменяют прежнее чтение, и его промис (он теперь завершается всегда)
+  // не должен запустить вторую запись.
+  const askToken = useRef(0)
+  const [askNonce, setAskNonce] = useState(0)
   useEffect(() => {
     if (phase !== 'ask' || !q || part2) return
-    let cancelled = false
-    speakTts(q.question, { voice: VOICE.gb }).then(() => {
-      if (cancelled || !alive.current) return
+    const my = ++askToken.current
+    speakTts(q.question, { voice: VOICE.gb, maxMs: speakMaxMs(q.question) }).then(() => {
+      if (my !== askToken.current || !alive.current || timeUp.current) return
       if (mode === 'exam') {
         setPhase('answer')
         record(q.id, timing.answerSec, () => alive.current && goNextRef.current())
       }
     })
     return () => {
-      cancelled = true
+      askToken.current++
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, idx])
+  }, [phase, idx, askNonce])
+
+  // «Повторить вопрос»: пока ответ не начат — вопрос задаётся заново целиком (чтение, потом запись), иначе просто звучит
+  const repeatQuestion = () => (phase === 'ask' ? setAskNonce((n) => n + 1) : speakTts(q.question, { voice: VOICE.gb, maxMs: speakMaxMs(q.question) }))
 
   const goNextRef = useRef(goNext)
   goNextRef.current = goNext
@@ -202,6 +225,8 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
 
   const begin = () => {
     unlockSpeech()
+    // новые записи — прежняя ошибка о них уже не говорит; упавшая работа остаётся: оценка возьмёт её же
+    setError(null)
     setTakes({})
     setIdx(0)
     if (part2) {
@@ -211,10 +236,32 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   }
 
   const answerNow = () => {
+    askToken.current++
     stopTts()
     setPhase('answer')
     record(q.id, timing.answerSec, () => alive.current && (mode === 'exam' ? goNextRef.current() : setPhase('review')))
   }
+
+  // mock: часы секции по серверу. Раньше Speaking их не показывал вовсе, а по концу времени ничего не делал
+  const [now, setNow] = useState(() => Date.now())
+  const deadline = mock?.deadline || null
+  useEffect(() => {
+    if (!deadline) return undefined
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [deadline])
+  const left = deadline ? Math.max(0, Math.ceil((deadline - now) / 1000)) : undefined
+  useEffect(() => {
+    if (left !== 0 || timeUp.current) return
+    // время вышло: идущая запись дописывается и уходит (её onDone → goNext → done), иначе часть закрывается сразу;
+    // следующая часть mock откроется с тем же нулём и закроется так же — секция сдаётся с тем, что успели
+    timeUp.current = true
+    askToken.current++
+    stopTts()
+    if (rec.state === 'recording') rec.stop()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- конец часов приходит тиком, не событием экрана
+    else if (rec.state === 'idle') setPhase('done') // processing: запись допишется и сама уведёт в done
+  }, [left]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // mock: часть записана — ответы уходят наружу один раз, экран mock переходит дальше сам
   const handedOver = useRef(false)
@@ -234,10 +281,13 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
     setError(null)
     try {
       const answers = qs.filter((x) => takes[x.id]).map((x) => ({ itemId: x.id, durationSec: takes[x.id].durationSec, wav: takes[x.id].wav }))
-      const view = await assessIeltsSpeaking(authToken, { testId, mode, uiLang: lang, answers })
+      const view = await assessIeltsSpeaking(authToken, { testId, mode, uiLang: lang, answers, retryAttemptId: failedAttempt })
       onDone?.(view.attempt.id)
     } catch (e) {
-      setError(t(`ieltsSpeaking.gradeError.${['quota', 'grading_unavailable', 'no_speech', 'too_large'].includes(e?.code) ? e.code : 'other'}`))
+      // повтор опоздал: ту же работу уже оценил другой запрос (вторая вкладка) — ведём к разбору, а не к ошибке
+      if (e?.code === 'already_graded' && failedAttempt) return onDone?.(failedAttempt)
+      if (e?.attemptId) setFailedAttempt(e.attemptId)
+      setError({ text: t(`ieltsSpeaking.gradeError.${gradeErrorKey(e?.code)}`), code: e?.code || (e?.status ? `HTTP ${e.status}` : null), debugId: e?.debugId || null })
       setBusy(false)
     }
   }
@@ -267,7 +317,7 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   return (
     <div className="ih-run ih-srun" data-mode={mode}>
       {mock ? (
-        <MockRunHeader mock={mock} section="Speaking" part={`Part ${doc.kind.slice(4)}`} onExit={() => { rec.stop(); stopTts(); mock.onExit() }}>
+        <MockRunHeader mock={mock} section="Speaking" part={`Part ${doc.kind.slice(4)}`} left={left} onExit={mock.onExit}>
           {phase !== 'intro' && phase !== 'done' && !steps && <span className="ih-run__clock">{t('ieltsSpeaking.qOf', { n: String(idx + 1), total: String(qs.length) })}</span>}
         </MockRunHeader>
       ) : (
@@ -323,7 +373,7 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
               <section className="ih-card ih-srun__q" lang="en">
                 <span className="ih-chip ih-chip--green ih-chip--md"><span>{t('ieltsSpeaking.examiner')}</span></span>
                 <h3>{q?.question}</h3>
-                <button type="button" className="ih-btn ih-btn--soft-violet" onClick={() => speakTts(q.question, { voice: VOICE.gb })}><Replay5Icon size={16} />{t('ieltsSpeaking.repeatQ')}</button>
+                <button type="button" className="ih-btn ih-btn--soft-violet" onClick={repeatQuestion}><Replay5Icon size={16} />{t('ieltsSpeaking.repeatQ')}</button>
               </section>
             )}
             {phase === 'followup' && (
@@ -412,10 +462,15 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
                     </div>
                   </div>
                 ) : (
-                  mode === 'practice' && phase === 'ask' && <button type="button" className="ih-btn ih-btn--dark ih-srec__main" onClick={answerNow}><MicIcon size={18} />{t('ieltsSpeaking.answer')}</button>
+                  phase === 'ask' && <button type="button" className="ih-btn ih-btn--dark ih-srec__main" onClick={answerNow}><MicIcon size={18} />{t('ieltsSpeaking.answer')}</button>
                 )}
                 <p className="ih-muted">{t(part2 && phase === 'answer' ? 'ieltsSpeaking.autoStopP2' : 'ieltsSpeaking.autoStop', { time: formatSec(maxSec) })}</p>
                 {rec.error && <p className="ih-run__error" role="alert">{t(`ieltsSpeaking.micError.${rec.error}`)}</p>}
+                {recFailed && !recording && (
+                  <button type="button" className="ih-btn ih-btn--outline" onClick={() => record(recFailed.itemId, recFailed.maxSec, recFailed.next)}>
+                    <MicIcon size={16} />{t('ieltsSpeaking.retake')}
+                  </button>
+                )}
               </>
             )}
             {/* метрики Figma 11: прошлый ответ, доля речи, паузы дольше 2 с, слова в минуту — считаются на устройстве */}
@@ -451,10 +506,17 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
                 </div>
               )
             })}
-            {error && <p className="ih-run__error" role="alert">{error}</p>}
+            {error && (
+              <div className="ih-run__error" role="alert">
+                <p>{error.text}</p>
+                {/* в тех же записях не слышно речи — повтор не поможет, подсказку «отправьте ещё раз» не даём */}
+                {failedAttempt && error.code !== 'no_speech' && <p>{t('ieltsSpeaking.resendHint')}</p>}
+                <GradeErrorNote code={error.code} debugId={error.debugId} />
+              </div>
+            )}
             <div className="ih-srec__row">
               <button type="button" className="ih-btn ih-btn--outline" onClick={begin} disabled={busy}>{t('ieltsSpeaking.again')}</button>
-              <button type="button" className="ih-btn ih-btn--primary" onClick={grade} disabled={busy || !answered}>{busy ? t('ieltsSpeaking.grading') : t('ieltsWriting.gradeNow')}</button>
+              <button type="button" className="ih-btn ih-btn--primary" onClick={grade} disabled={busy || !answered}>{busy ? t('ieltsSpeaking.grading') : error && failedAttempt && error.code !== 'no_speech' ? t('ieltsSpeaking.resend') : t('ieltsWriting.gradeNow')}</button>
             </div>
             <p className="ih-muted">{t('ieltsSpeaking.privacy')}</p>
           </section>

@@ -2810,6 +2810,18 @@
   font-size: 14px;
   color: var(--ih-red);
 }
+.ih-run__error > p {
+  margin: 0;
+}
+.ih-run__error > p + p {
+  margin-top: 6px;
+}
+/* код сбоя оценки и id запроса — ученик копирует его в поддержку, поэтому текст выделяется */
+.ih-errcode {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
 .ih-passage {
   position: relative;
   flex: 1;

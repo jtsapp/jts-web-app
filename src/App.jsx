@@ -2409,6 +2409,7 @@ export default function App() {
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount}
+          ieltsTab={examTabs.ielts}
           onLevelTest={token ? () => openPlacement('profile') : undefined}
           // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
           onBack={popNav(navStack, screen) ? () => goBack() : undefined}
