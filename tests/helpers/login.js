@@ -19,6 +19,12 @@ export function gateReply(url) {
   return null
 }
 
+// Только замки — для спеков со своим входом и своими моками бэкенда, где бэкенд целиком не подменён. Общий
+// перехват бэкенда, поставленный в спеке позже, этот маршрут перекроет: в Playwright выигрывает последний.
+export async function mockGates(page) {
+  await page.route(/\/(user\/legal-documents|cabinet\/my-sections)/, (r) => r.fulfill(json(gateReply(r.request().url()))))
+}
+
 export async function loginAsStudent(page, { level = 'A1', ...user } = {}) {
   const me = { ...STUDENT, languageLevel: level, ...user }
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))

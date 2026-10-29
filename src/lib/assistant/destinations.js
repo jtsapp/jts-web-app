@@ -39,12 +39,12 @@ export const DESTINATIONS = [
   {
     id: 'practice-listening', nav: 'practice', payload: { skill: 'listening' }, screen: 'practice',
     name: { ru: 'Практика → Аудирование', kk: 'Тәжірибе → Тыңдалым', en: 'Practice → Listening' },
-    about: 'аудирование, «Слушай и выбирай», слова в картинках, числа, Just to Listen, шэдоуинг, караоке',
+    about: '«Услышь детали» (картинка по описанию), Just to Listen, Cartoon World, шэдоуинг, караоке, мемы, сказки',
   },
   {
     id: 'practice-reading', nav: 'practice', payload: { skill: 'reading' }, screen: 'practice',
     name: { ru: 'Практика → Чтение', kk: 'Тәжірибе → Оқылым', en: 'Practice → Reading' },
-    about: 'тексты с заданиями, книжки, комиксы, Word Hunt (кроссворд и поиск слов), Word Rush',
+    about: 'тексты с заданиями, книжки, комиксы, сказки',
   },
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
@@ -54,7 +54,7 @@ export const DESTINATIONS = [
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
     name: { ru: 'Практика → Говорение', kk: 'Тәжірибе → Айтылым', en: 'Practice → Speaking' },
-    about: 'шэдоуинг, Pronunciation World (произношение), ситуации, SpeakSpin, караоке, Speak or Die',
+    about: 'Pronunciation World (произношение), ситуации, SpeakSpin, шэдоуинг, караоке, сказки',
   },
 
   // Тренажёры, которые карточка Практики открывает сразу (без квоты).
@@ -97,7 +97,7 @@ export const DESTINATIONS = [
   {
     id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
     name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
-    about: '125 тем грамматики A0–C1 (своя, пятая вкладка Практики): правило с формулами и примерами, потом игры по теме и финальный бой',
+    about: '125 тем грамматики A0–C1 (карточка «Темы по уровням» вкладки «Грамматика» Практики; там же скорочтение и все мини-игры): правило с формулами и примерами, потом игры по теме и финальный бой',
   },
   {
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',

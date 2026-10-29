@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // Pronunciation World (?screen=pronunciation) без бэкенда: /mobile/pronunciation отдаёт бандл урезанной копии
 // прототипа (src/practice/pronunciation/__fixtures__/bundle.json — A0, темы A0.1 и A0.3), медиа /__pron-media/* —
@@ -32,6 +33,8 @@ async function mockBackend(page, { bundleStatus = 200, token = 'test-token' } = 
     if (toursOff) localStorage.setItem('jts_tours_off', toursOff)
     if (tk) localStorage.setItem('jts_access_token', tk)
   }, token)
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 1, name: 'Асель', phone: '77010001122', role: 'STUDENT', languageLevel: 'A2' } })))
   // к адресам бэкенда дописывается query (?jts_app=student) — глоб со ** на конце
@@ -71,7 +74,8 @@ test('Практика → Говорение → тема → объяснен�
   const speaking = page.locator('.pk-skill', { hasText: 'Говорение' })
   await expect(speaking).toBeVisible({ timeout: 60_000 })
   await speaking.click()
-  await page.locator('.pk-banner--pronunciation .pk-banner__cta').click()
+  // Вся карточка — кнопка перехода (редизайн 29.10.2026, баннера с кнопкой больше нет).
+  await page.locator('#sec-pronunciation').click()
   await expect(page).toHaveURL(/screen=pronunciation/)
 
   const host = shadow(page)

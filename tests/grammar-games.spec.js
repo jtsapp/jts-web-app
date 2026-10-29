@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // «Грамматика · игры» (?screen=grammar-games) без бэкенда: ручки /mobile/grammar-games/**
 // отдают урезанную копию прототипа (src/practice/grammar-games/__fixtures__/bundle.json —
@@ -30,6 +31,8 @@ async function mockBackend(page, { indexStatus = 200, token = 'test-token' } = {
     if (toursOff) localStorage.setItem('jts_tours_off', toursOff)
     if (tk) localStorage.setItem('jts_access_token', tk)
   }, token)
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 1, name: 'Асель', phone: '77010001122', role: 'STUDENT', languageLevel: 'A2' } })))
   await page.route('**/mobile/grammar-games', (r) => r.fulfill(indexStatus === 200 ? json(BUNDLE.index) : json({ messages: ['нет'] }, indexStatus)))
@@ -82,22 +85,24 @@ async function answerPick(page) {
   }
 }
 
-test('Практика → вкладка «Грамматика · игры» → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
+test('Практика → вкладка «Грамматика» → «Темы по уровням» → тема → правило → «Выбери форму» до результата; звёзды переживают перезагрузку', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = watchErrors(page)
   const server = await mockBackend(page)
   await page.goto('/?screen=practice')
-  // Раздел — пятая вкладка Практики (28.10.2026): хаб тем прямо под карточками, без перехода на свой экран.
+  // Раздел — пятая вкладка Практики. С редизайна 29.10.2026 хаб тем во вкладку не встроен: карточка «Темы по
+  // уровням» открывает его своим экраном (?screen=grammar-games).
   const tab = page.locator('.pk-skill--grammarGames')
   await expect(tab).toBeVisible({ timeout: 60_000 })
   await expect(tab).toContainText('125 тем')
   await tab.click()
   await expect(tab).toHaveAttribute('aria-selected', 'true')
-  await expect(page).not.toHaveURL(/screen=grammar-games/)
-  // в «Письме» баннера раздела больше нет, а у вкладки нет общего переключателя уровня — уровни свои
+  // у вкладки нет общего переключателя уровня — уровни у тем свои
   await expect(page.locator('.pk-levels')).toHaveCount(0)
-  await expect(page.locator('.pk-head .ggp-sound')).toBeVisible()
-  const h = page.locator('#sec-grammar-games .ggp-host')
+  await page.locator('#sec-topics').click()
+  await expect(page).toHaveURL(/screen=grammar-games/)
+  await expect(page.locator('.ggp-top .ggp-sound')).toBeVisible({ timeout: 30_000 })
+  const h = host(page)
   await expect(h).toHaveAttribute('data-topics', '6', { timeout: 30_000 })
   await expect(h).toHaveAttribute('data-source', 'api')
   // уровень профиля A2 → L3 (Д11)
@@ -130,7 +135,7 @@ test('Практика → вкладка «Грамматика · игры» �
   await h.locator('.gtop .back').click()
   await expect(h.locator('.gcard.g-pick .stars .y')).toHaveCount(3)
 
-  // перезагрузка возвращает на ту же вкладку
+  // перезагрузка возвращает на тот же экран
   await page.reload()
   await expect(h).toHaveAttribute('data-topics', '6', { timeout: 60_000 })
   await h.locator('.lvcard').first().click()
@@ -148,7 +153,7 @@ test('в «Письме» раздела больше нет, переключа
   await page.goto('/?screen=practice')
   await page.locator('.pk-skill', { hasText: 'Письмо' }).click({ timeout: 60_000 })
   await expect(page.locator('#sec-grammar')).toBeVisible()
-  await expect(page.locator('#sec-grammar-games')).toHaveCount(0)
+  await expect(page.locator('#sec-topics')).toHaveCount(0)
   await expect(page.locator('.pk-levels')).toBeVisible()
 })
 
@@ -158,7 +163,8 @@ test('«назад» с экрана темы (ссылка из админки)
   await expect(host(page).locator('.thead h1')).toBeVisible({ timeout: 60_000 })
   await page.locator('.ggp-top .nmb-back').click()
   await expect(page.locator('.pk-skill--grammarGames')).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
-  await expect(page.locator('#sec-grammar-games .ggp-host')).toHaveAttribute('data-topics', '6', { timeout: 30_000 })
+  // Хаб тем во вкладке больше не встроен — на месте карточка «Темы по уровням».
+  await expect(page.locator('#sec-topics')).toBeVisible()
 })
 
 test('ссылка на тему открывает её сразу', async ({ page }) => {

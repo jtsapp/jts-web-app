@@ -37,7 +37,7 @@ beforeEach(() => {
 })
 
 // `target` — куда открыть Практику: книги разворачиваются отдельным списком, а
-// комиксы живут рядом с ними на вкладке «Чтение» в обзоре.
+// комиксы в обзоре вкладки «Чтение» — карточкой рядом с ними.
 function renderPage(token, target = { filter: 'books' }) {
   return render(
     <I18nProvider>
@@ -98,9 +98,14 @@ describe('PracticePage — каталог комиксов не загрузил
   it('сбой не прячет раздел: «комиксов нет» и «не загрузились» — разное', async () => {
     loadComicsIndex.mockRejectedValue(new Error('сеть'))
 
-    const { container } = renderPage('T', { skill: 'reading' })
+    // Карточка в обзоре остаётся, а в её списке — сбой, а не «комиксов нет».
+    const overview = renderPage('T', { skill: 'reading' })
+    await waitFor(() => expect(loadComicsIndex).toHaveBeenCalled())
+    expect(overview.container.querySelector('#sec-comics.pk-card')).toBeTruthy()
+    overview.unmount()
 
-    await waitFor(() => expect(container.querySelector('#sec-comics')).toBeTruthy())
+    const { container } = renderPage('T', { filter: 'comics' })
+    await waitFor(() => expect(container.querySelector('#sec-comics .pp-empty__retry')).toBeTruthy())
     expect(container.querySelector('#sec-comics').textContent).toMatch(/Не удалось загрузить каталог/i)
   })
 })
@@ -114,6 +119,7 @@ describe('PracticePage — каталог комиксов загрузился'
     const { container } = renderPage('T', { skill: 'reading' })
 
     await waitFor(() => expect(container.querySelector('#sec-books')).toBeTruthy())
-    expect(container.querySelector('#sec-comics')).toBeNull()
+    // Пока каталог не ответил, карточка стоит (иначе сетка прыгала бы); пустой ответ её убирает.
+    await waitFor(() => expect(container.querySelector('#sec-comics')).toBeNull())
   })
 })

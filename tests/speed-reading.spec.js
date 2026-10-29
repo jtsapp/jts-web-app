@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
 import { FLAGS, silentWav } from './helpers/assistant-wake.js'
+import { mockGates } from './helpers/login.js'
 
 // «Скорочтение» (?screen=speed-reading) без бэкенда: ручки /mobile/speed-reading/** подменены, образец — роут
 // сайта подменён и отдаёт тихий WAV с разметкой слов, распознавание (/api/transcribe) отвечает первыми 15 словами
@@ -42,6 +43,8 @@ async function mockBackend(page, { token = 'test-token', texts = TEXTS } = {}) {
     localStorage.setItem('lang', 'ru')
     if (tk) localStorage.setItem('jts_access_token', tk)
   }, token)
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 1, name: 'Асель', phone: '77010001122', role: 'STUDENT', languageLevel: 'A2' } })))
   await page.route('**/mobile/speed-reading/texts**', (r) => r.fulfill(json(texts)))
@@ -82,17 +85,19 @@ function watchErrors(page) {
 
 const host = (page) => page.locator('.srp-host')
 
-test('Практика → Аудирование → Скорочтение: образец, запись, итог по серверу, попытка и «Мои попытки»', async ({ page }) => {
+test('Практика → Грамматика → Скорочтение: образец, запись, итог по серверу, попытка и «Мои попытки»', async ({ page }) => {
   test.setTimeout(120_000)
   const errors = watchErrors(page)
   const server = await mockBackend(page)
   await page.goto('/?screen=practice')
-  const listening = page.locator('.pk-skill', { hasText: 'Аудирование' })
-  await expect(listening).toBeVisible({ timeout: 60_000 })
-  await listening.click()
-  const banner = page.locator('.pk-banner--speed-reading')
-  await expect(banner.locator('.pk-banner__tag')).toHaveText('Новое')
-  await banner.locator('.pk-banner__cta').click()
+  // С редизайна 29.10.2026 «Скорочтение» — тренажёр вкладки «Грамматика», а не баннер «Аудирования»;
+  // вся карточка — кнопка перехода, бейдж «Новое» — на обложке.
+  const grammar = page.locator('.pk-skill--grammarGames')
+  await expect(grammar).toBeVisible({ timeout: 60_000 })
+  await grammar.click()
+  const card = page.locator('#sec-speed-reading')
+  await expect(card.locator('.pk-card__badge')).toHaveText('Новое')
+  await card.click()
   await expect(page).toHaveURL(/screen=speed-reading/)
   const h = host(page)
   await expect(h).toHaveAttribute('data-texts', '2', { timeout: 30_000 })

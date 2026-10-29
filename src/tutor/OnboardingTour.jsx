@@ -46,7 +46,19 @@ function isDisplayNone(el) {
 function isOffscreen(el) {
   const r = el.getBoundingClientRect()
   if (!r.width && !r.height) return false
+  if (inScrollStrip(el)) return false
   return r.right <= 0 || r.left >= window.innerWidth
+}
+
+// За краем экрана, но внутри ленты с прокруткой вбок (вкладки «Практики» на телефоне) — элемент не спрятан, его
+// просто не долистали: scrollIntoView шага доведёт до него и ленту. Без этого шаг про последнюю вкладку молча
+// пропадал из тура.
+function inScrollStrip(el) {
+  for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+    const { overflowX } = getComputedStyle(node)
+    if ((overflowX === 'auto' || overflowX === 'scroll') && node.scrollWidth > node.clientWidth) return true
+  }
+  return false
 }
 
 // Цель шага — один селектор или несколько: макет «Первый заход» подсвечивает

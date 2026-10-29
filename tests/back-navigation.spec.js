@@ -1,11 +1,16 @@
 import { test, expect } from '@playwright/test'
+import { loginAsStudent } from './helpers/login.js'
 
 // «Назад» ведёт туда, откуда пришли (src/lib/navStack.js). Раньше каждый
 // «назад» был захардкожен: «Аудирование» с «Главной» возвращало в Практику,
 // раздел из «Посмотреть все» — на свёрнутую Практику другой вкладки, а у
 // «Мира чисел» на экране было две кнопки «назад» в разные места.
+// С редизайна 29.10.2026 «Посмотреть все» — это клик по карточке-каталогу (шэдоуинг,
+// ситуации, книжки…): список раскрывается на месте обзора, «Свернуть» — в его шапке.
 //
-// Тесты гостевые: «Главная», Практика и её разделы гостю открыты.
+// Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому тесты идут учеником.
+
+test.beforeEach(({ page }) => loginAsStudent(page))
 
 const tabOn = (page) => page.locator('.pk-skill[aria-selected="true"]')
 
@@ -30,7 +35,7 @@ test('Практика после «назад» — та же вкладка и
   const speaking = page.locator('.pk-skill', { hasText: 'Говорение' })
   await expect(speaking).toBeVisible({ timeout: 60_000 })
   await speaking.click()
-  await page.getByRole('button', { name: 'Посмотреть все' }).first().click()
+  await page.locator('#sec-shadowing').click()
   await expect(page.getByRole('button', { name: 'Свернуть' }).first()).toBeVisible()
 
   await page.getByRole('button', { name: /Steve Jobs/ }).first().click()
@@ -51,7 +56,7 @@ test('вкладка, открытая целью перехода, не тер�
   await books.click()
   await expect(tabOn(page)).toContainText('Чтение', { timeout: 30_000 })
   await page.getByRole('button', { name: 'Свернуть' }).first().click()
-  await page.getByRole('button', { name: 'Перейти к чтению' }).click()
+  await page.locator('#sec-reading').click()
   await expect(page).toHaveURL(/screen=reading/)
   await page.locator('.rd-back').click()
   await expect(tabOn(page)).toContainText('Чтение')
@@ -60,9 +65,11 @@ test('вкладка, открытая целью перехода, не тер�
 test('«Мир чисел»: одна кнопка «назад», шагом — раунд → урок → карта → Практика', async ({ page }) => {
   await page.addInitScript(() => { window.__NUMBERS_FAST = true })
   await page.goto('/?screen=practice')
-  const play = page.getByRole('button', { name: 'Играть', exact: true })
-  await expect(play).toBeVisible({ timeout: 60_000 })
-  await play.click()
+  // «Мир чисел» с редизайна 29.10.2026 — карточка игр вкладки «Грамматика».
+  const grammar = page.locator('.pk-skill--grammarGames')
+  await expect(grammar).toBeVisible({ timeout: 60_000 })
+  await grammar.click()
+  await page.locator('#sec-numbers').click()
   await expect(page.locator('.nmb-host .card')).toHaveCount(16, { timeout: 30_000 })
 
   const back = page.locator('.nmb-back')
@@ -84,7 +91,7 @@ test('«Мир чисел»: одна кнопка «назад», шагом �
   await expect(back).toContainText('В Практику')
   await back.click()
   await expect(page).toHaveURL(/screen=practice/)
-  await expect(tabOn(page)).toContainText('Аудирование')
+  await expect(tabOn(page)).toContainText('Грамматика')
 })
 
 test('ситуация, открытая с карточки, ведёт назад в Практику, а не в список уровня', async ({ page }) => {
@@ -92,6 +99,8 @@ test('ситуация, открытая с карточки, ведёт наз�
   const speaking = page.locator('.pk-skill', { hasText: 'Говорение' })
   await expect(speaking).toBeVisible({ timeout: 60_000 })
   await speaking.click()
+  // Сценарии — в списке раздела: карточка «Ситуации» в обзоре — вход в каталог.
+  await page.locator('#sec-situations').click()
   await page.getByRole('button', { name: /Заказ кофе/ }).first().click()
   const back = page.locator('.sit-back')
   await expect(back).toContainText('В Практику', { timeout: 30_000 })

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // Раздел «Караоке» в Практике. Бэкенд подставной: проверяем то, что зависит от
 // клиента — раздел появляется только с контентом, разметка доспрашивается
@@ -59,12 +60,26 @@ const LYRICS = {
 }
 
 async function signIn(page, tracks, lyrics = LYRICS) {
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 1, name: 'Асель', role: 'STUDENT', languageLevel: 'A2', phone: '77001234567' } })))
   await page.route('**/mobile/karaoke', (r) => r.fulfill(json(tracks)))
   // Карточка каталога разметку не несёт — она приезжает только по одному треку.
   await page.route('**/mobile/karaoke/1', (r) => r.fulfill(json({ ...TRACK, lyrics })))
+}
+
+// Песни — в полном списке раздела: карточка «Караоке» в обзоре с редизайна 29.10.2026 — вход в каталог, треков
+// на ней нет. Клик по карточке разворачивает список на месте обзора.
+async function openList(page) {
+  await page.locator('#sec-karaoke').click()
+  return page.locator('section#sec-karaoke')
+}
+
+async function openSong(page) {
+  const list = await openList(page)
+  await list.getByText('Rainy Monday').click()
 }
 
 test.beforeEach(async ({ page }) => {
@@ -90,8 +105,8 @@ test('трек из каталога открывает сцену сразу, �
   await signIn(page, [TRACK])
   await page.goto('/?screen=practice')
 
-  const section = page.locator('#sec-karaoke')
-  await expect(section).toBeVisible()
+  await expect(page.locator('#sec-karaoke')).toBeVisible()
+  const section = await openList(page)
   await expect(section.getByText('Rainy Monday')).toBeVisible()
   await expect(section.getByText('JTS Originals')).toBeVisible()
 
@@ -122,7 +137,7 @@ test('битая разметка не роняет экран', async ({ page }
     ],
   })
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
 
   await expect(page.locator('.kk-play__msg')).toContainText('битая разметка')
   // Выйти со сломанного трека можно — сцена не запирает студента.
@@ -142,7 +157,7 @@ test('в исполнении нет перевода — ни кнопки, н�
       contentType: 'audio/mpeg',
     }))
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
   // «Микрофон» выключен — петь без оценки, разрешение не спрашивается.
   await page.getByRole('switch', { name: 'Микрофон' }).click()
   await expect(page.locator('.kk-live')).toContainText('Без оценки')
@@ -161,7 +176,7 @@ test('пауза: окно с прогрессом, выход без резул
   await signIn(page, [TRACK])
   await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
   await page.getByRole('switch', { name: 'Микрофон' }).click()
   await page.getByRole('button', { name: 'Играть' }).click()
   await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run')
@@ -187,7 +202,7 @@ test('режим без оценки не трогает микрофон и н�
     navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error('no'))
   })
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
 
   const free = page.getByRole('switch', { name: 'Без оценки' })
   await expect(free).toHaveAttribute('aria-checked', 'false')
@@ -209,7 +224,7 @@ test('скорость переключается ступенями и пере
   await signIn(page, [{ ...TRACK, instrumentalUrl: 'https://files.example/rainy-minus.mp3' }])
   await page.route(/rainy(-minus)?\.mp3/, (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
 
   const speed = page.locator('.kk-speed')
   await expect(speed).toHaveText('1×')
@@ -230,7 +245,7 @@ test('скорость переключается ступенями и пере
 test('трек без разметки помечается недоступным, а не грузится вечно', async ({ page }) => {
   await signIn(page, [TRACK], null)
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
 
   await expect(page.locator('.kk-play__msg')).toContainText('битая разметка')
 })
@@ -255,7 +270,7 @@ test('двойной ▶, пока браузер спрашивает микр�
     }
   })
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
 
   const play = page.getByRole('button', { name: 'Играть' })
   await play.evaluate((el) => {
@@ -297,7 +312,7 @@ test('«Считаем…»: распознавание не отвечает �
     }
   })
   await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await openSong(page)
   await page.getByRole('button', { name: 'Играть' }).click()
   await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'scoring', { timeout: 20000 })
   await expect(page.getByText('Считаем результат…').first()).toBeVisible()

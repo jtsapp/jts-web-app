@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // a real (small) mp3 clip to serve for any audio request so load()/currentSrc work.
 // Playwright runs from the project root, so resolve from cwd.
 // Копия клипа из public/practice/listening — статику раздела удалят после переноса в админку.
 const SAMPLE_MP3 = path.resolve(process.cwd(), 'tests/fixtures/listening-sample.mp3')
 
-// E2E for the native Аудирование trainer: routing from the banner, the intro
+// E2E for the native Аудирование trainer: routing from the practice card, the intro
 // synced to the user's level, and a full answer→feedback→coin cycle with the
 // single requeue on a wrong answer. Content is mocked for determinism.
 
@@ -21,6 +22,8 @@ const CHOICE = {
 }
 
 async function boot(page, { level = 'A1', content = [CHOICE], remote = null } = {}) {
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.route('**/api/auth/me', (r) =>
     r.fulfill({
       status: 200,
@@ -53,11 +56,12 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect.poll(async () => page.locator('.lt-audio audio').evaluate((el) => el.currentSrc)).toBe(url)
   })
 
-  test('кнопка баннера открывает интро тренажёра', async ({ page }) => {
+  test('карточка игры во вкладке «Грамматика» открывает интро тренажёра', async ({ page }) => {
     await boot(page)
     await page.goto('/?screen=practice')
-    await page.locator('#sec-listening').waitFor({ state: 'visible', timeout: 15000 })
-    await page.locator('#sec-listening .pk-banner__cta').click()
+    // С редизайна 29.10.2026 мини-игра живёт во вкладке «Грамматика», а вся карточка — кнопка перехода.
+    await page.locator('.pk-skill--grammarGames').click({ timeout: 15000 })
+    await page.locator('#sec-listening').click()
     await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10000 })
   })
 

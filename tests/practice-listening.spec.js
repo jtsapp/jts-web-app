@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
-// Баннер «Аудирование» на странице Практики: промо мини-игры listening.
-// Проверяем, что баннер рендерится во вкладке «Аудирование», а переключатель
-// уровня в шапке синхронизирован с уровнем пользователя (languageLevel из
-// /api/auth/me).
+// Карточка мини-игры «Тренируй Listening» на странице Практики. С редизайна 29.10.2026 игра — карточка вкладки
+// «Грамматика» (там собраны все игры), а не баннер «Аудирования». Проверяем, где она живёт, и что переключатель
+// уровня под вкладками синхронизирован с уровнем пользователя (languageLevel из /api/auth/me).
 
-function mockAuth(page, languageLevel) {
+async function mockAuth(page, languageLevel) {
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   return page.route('**/api/auth/me', (route) =>
     route.fulfill({
       status: 200,
@@ -17,8 +19,8 @@ function mockAuth(page, languageLevel) {
   )
 }
 
-test.describe('Практика — баннер «Аудирование»', () => {
-  test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'баннер — десктопный дизайн')
+test.describe('Практика — карточка мини-игры «Listening»', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'десктопный дизайн')
 
   const level = (page) => page.locator('.pk-levels__btn[aria-checked="true"]')
 
@@ -28,31 +30,31 @@ test.describe('Практика — баннер «Аудирование»', ()
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const banner = page.locator('#sec-listening')
-    await expect(banner).toBeVisible({ timeout: 15000 })
-
-    // Заголовок, описание, CTA — контент баннера.
-    await expect(banner.locator('.pk-banner__title')).toContainText('Тренируй Listening')
-    await expect(banner.locator('.pk-banner__cta')).toHaveText('Перейти к тренировке')
+    await expect(page.locator('.pk-skills')).toBeVisible({ timeout: 15000 })
 
     // Уровень синхронизирован с пользователем (B1, не дефолтный A1).
     await expect(level(page)).toHaveText('B1')
   })
 
-  test('баннер только во вкладке «Аудирование»: во «Письме» скрыт', async ({ page }) => {
+  test('карточка игры только во вкладке «Грамматика»: в «Аудировании» её нет', async ({ page }) => {
     await mockAuth(page, 'A2')
     await page.goto('/')
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const banner = page.locator('#sec-listening')
-    await expect(banner).toBeVisible({ timeout: 15000 })
+    // По умолчанию открыто «Аудирование» — игра оттуда уехала в «Грамматику».
+    const card = page.locator('#sec-listening')
+    await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 15000 })
+    await expect(card).toHaveCount(0)
 
-    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
-    await expect(banner).toHaveCount(0)
+    await page.locator('.pk-skill--grammarGames').click()
+    await expect(card).toBeVisible()
+    await expect(card.locator('.pk-card__title')).toHaveText('Тренируй Listening в мини-игре')
+    // У «Грамматики» уровня нет: темы со своими уровнями, игры их не знают.
+    await expect(page.locator('.pk-levels')).toHaveCount(0)
 
     await page.locator('.pk-skill', { hasText: 'Аудирование' }).click()
-    await expect(banner).toBeVisible()
+    await expect(card).toHaveCount(0)
   })
 
   test('дефолт A1, если уровень пользователя не задан', async ({ page }) => {

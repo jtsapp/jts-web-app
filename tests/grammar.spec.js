@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { loginAsStudent } from './helpers/login.js'
 
 // Раздел «Грамматика» в Практике: каталог (уровни/поиск/секции), урок
 // (Теория → Примеры → Практика) и движок упражнений.
@@ -8,11 +9,14 @@ import { test, expect } from '@playwright/test'
 // правильные ответы берём из тех же данных — тест ломается, если порт движка
 // разойдётся с источником.
 
+// Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
+test.beforeEach(({ page }) => loginAsStudent(page))
+
 const openCatalog = async (page) => {
   await page.goto('/?screen=practice')
-  // Грамматика живёт во вкладке «Письмо»; полный каталог — по «Посмотреть все».
+  // Грамматика живёт во вкладке «Письмо»; полный каталог — по карточке-каталогу (редизайн 29.10.2026).
   await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
-  await page.locator('#sec-grammar .pk-all').click()
+  await page.locator('#sec-grammar').click()
   await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
 }
 
@@ -164,12 +168,13 @@ test.describe('Грамматика — каталог', () => {
     await expect(page.locator('.gr-act')).toBeVisible()
   })
 
-  test('лента юнитов во вкладке «Письмо» ведёт в каталог', async ({ page }) => {
+  // Ленты юнитов в обзоре с редизайна 29.10.2026 нет: «Грамматика» — карточка-каталог, юниты — в каталоге.
+  test('карточка «Грамматика» во вкладке «Письмо» ведёт в каталог', async ({ page }) => {
     await page.goto('/?screen=practice')
     await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
-    const rail = page.locator('#sec-grammar')
-    await expect(rail.locator('.pk-tile').first()).toContainText('Unit 1')
-    await rail.locator('.pk-all').click()
+    const card = page.locator('#sec-grammar')
+    await expect(card.locator('.pk-card__title')).toHaveText('Грамматика')
+    await card.click()
     await expect(page.locator('.gr-catalog .gr-levels')).toBeVisible()
   })
 })

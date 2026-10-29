@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { buildQueue, formsOf, pattern } from '../src/practice/verbs/engine.js'
+import { loginAsStudent } from './helpers/login.js'
 
 // Раздел «Неправильные глаголы» (?screen=verbs): урок → таблица → тренажёр.
 // Тесты гостевые (без токена): раздел бесплатный, прогресс живёт в
@@ -351,13 +352,16 @@ test.describe('практика: раскладка', () => {
 })
 
 test.describe('хаб Практики', () => {
-  test('баннер во вкладке «Письмо» ведёт в раздел', async ({ page }) => {
+  test('карточка во вкладке «Письмо» ведёт в раздел', async ({ page }) => {
+    // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
+    await loginAsStudent(page)
     await page.goto('/?screen=practice')
     await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
-    const banner = page.locator('#sec-verbs')
-    await expect(banner).toBeVisible({ timeout: 15000 })
-    await expect(banner).toContainText('Три формы глагола')
-    await banner.locator('.pk-banner__cta').click()
+    // С редизайна 29.10.2026 баннера с кнопкой нет: вся карточка — кнопка перехода.
+    const card = page.locator('#sec-verbs')
+    await expect(card).toBeVisible({ timeout: 15000 })
+    await expect(card).toContainText('Три формы глагола')
+    await card.click()
     await expect(page.locator('.vb-head h1')).toHaveText('Неправильные глаголы')
   })
 })
