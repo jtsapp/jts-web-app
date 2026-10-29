@@ -1,23 +1,32 @@
 // Оценка ответов Speaking из банка: multipart { testId, mode, uiLang, items: JSON [{ itemId, durationSec }],
-// audio_<i>: WAV 16 кГц на каждый ответ } с токеном ученика.
+// audio_<i>: WAV 16 кГц на каждый ответ, retryAttemptId? } с токеном ученика.
 //
 // 1. квота IELTS (Speaking — платная секция) — ДО платных вызовов;
 // 2. бэкенд создаёт работу «в оценке» (токен + служебный ключ): вопросы берутся из задания, а не от клиента;
 // 3. по каждому ответу параллельно — текст (Azure Fast → Soniox) и произношение (Azure, кусками по минуте), как в
 //    «Ситуациях»: прод за Cloudflare рвёт запрос после 100 с молчания, последовательно четыре ответа не уложатся;
-// 4. Sonnet → три критерия по стенограммам; 5. результат на бэкенд, общий band считает он.
+// 4. Sonnet → три критерия по стенограммам (не ответил — запасная модель, см. gradeSpeaking); 5. результат на
+//    бэкенд, общий band считает он.
+// Невнятный ответ (тишина, обрывок, не английский, файл не собрался) пропускается и в оценку не идёт; ошибка
+// ученику — только если пропущены все.
 //
-// Записи никуда не сохраняются: после оценки остаются только стенограммы. Поэтому повторной оценки нет — упала
-// модель, ученик переписывает ответ (работа помечается failed).
+// Записи на сервере не сохраняются: после оценки остаются только стенограммы. Повтор — те же записи с устройства
+// ученика (src/ielts/speaking/pendingTakes.js) и `retryAttemptId`: бэкенд берёт ту же упавшую работу, а не заводит
+// новую, поэтому в списке работ и в полном mock не копятся «проверка не удалась».
+//
+// Отладка: у каждого запроса свой debugId (lib/ielts/assessTrace.js) — в ответе, заголовке x-ielts-debug-id, в строке
+// лога `ielts_speaking_assess` (этапы, распознавание по ответам, попытки модели) и в failReason работы на бэкенде.
+// `GET` без входа показывает, какие движки на стенде подключены.
 
 import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic.js'
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
 import { checkIeltsQuota } from '@/lib/ielts/quota.js'
-import { assessPronunciationChunked, isAzureSpeechConfigured, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
-import { isSonioxConfigured, transcribeWavSoniox } from '@/lib/soniox-stt.js'
 import { isDbConfigured, recordIeltsSpeaking } from '@/lib/db/ielts.js'
-import { SPEAKING_SCHEMA, buildSystemPrompt, normalizeSpeaking, userMessage } from '@/lib/ielts/speakingGrader.js'
-import { pronunciationBand, wordsPerMinute } from '@/ielts/speaking/speaking.js'
+import { gradeSpeaking } from '@/lib/ielts/speakingGrader.js'
+import { answersDebug, answersPronunciation, savedItems, transcribeAnswers } from '@/lib/ielts/speakingAnswers.js'
+import { createAssessTrace } from '@/lib/ielts/assessTrace.js'
+import { isAzureSpeechConfigured } from '@/lib/ielts/azure-pronunciation.js'
+import { isSonioxConfigured } from '@/lib/soniox-stt.js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -30,18 +39,10 @@ const MAX_ITEMS = 8
 const TEST_ID_RE = /^[\w-]{1,64}$/
 
 // Прод за Cloudflare рвёт молчащий запрос через 100 с (см. «Аркаду»). Весь роут — не дольше 90 с: распознавание
-// не ждём дольше STT_DEADLINE_MS, модели отдаём остаток, но не меньше MIN_MODEL_MS — иначе честнее сразу fail,
-// чем 524 с оценкой, которую сервер всё равно допишет и оплатит.
+// не ждём дольше STT_DEADLINE_MS, модели отдаём остаток; попытку, на которую времени не осталось, gradeSpeaking не
+// начинает — честнее fail, чем 524 с оценкой, которую сервер всё равно допишет и оплатит.
 const TOTAL_BUDGET_MS = 90_000
 const STT_DEADLINE_MS = 40_000
-const MODEL_TIMEOUT_MS = 60_000
-const MIN_MODEL_MS = 20_000
-
-// Обещание с потолком: по истечении — fallback. Сама работа не отменяется, но роут её больше не ждёт.
-function withDeadline(promise, ms, fallback) {
-  let timer
-  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() => clearTimeout(timer))
-}
 
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
 
@@ -55,127 +56,157 @@ async function backend(path, token, init = {}) {
   return { ok: res.ok, status: res.status, body }
 }
 
-// Текст ответа: быстрый путь Azure, без него — текст самой оценки произношения, затем Soniox (как в «Ситуациях»).
-async function transcribe(buf, pronP) {
-  if (isAzureSpeechConfigured()) {
-    const fast = await transcribeWavFast(buf, { timeoutMs: STT_DEADLINE_MS }).catch(() => null)
-    if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
-    const pron = await pronP
-    const text = String(pron?.transcript || '').trim()
-    if (text) return { text, stt: 'azure' }
-  }
-  if (isSonioxConfigured()) {
-    const text = await transcribeWavSoniox(buf, { lang: 'en', timeoutMs: STT_DEADLINE_MS }).catch(() => '')
-    return { text: String(text || '').trim(), stt: 'soniox' }
-  }
-  return { text: '', stt: null }
+const backendError = (r) => ({ status: r.status, message: String(r.body?.messages?.[0] || r.body?.message || '').slice(0, 160) })
+
+/** Что подключено на стенде — без входа и без секретов: первый шаг разбора «оценка не работает». */
+export function GET() {
+  return Response.json({ grader: !!graderKey(), model: hasAnthropicKey() ? IELTS_REVIEW_MODEL : null, azure: isAzureSpeechConfigured(), soniox: isSonioxConfigured() })
 }
 
 export async function POST(request) {
-  const startedAt = Date.now()
+  const trace = createAssessTrace('speaking')
+  const reply = (body, status) => trace.respond(body, status)
   const token = bearerFromRequest(request)
-  if (!token) return Response.json({ error: 'auth_required' }, { status: 401 })
-  if (!graderKey() || !hasAnthropicKey()) return Response.json({ error: 'grading_unavailable' }, { status: 503 })
+  if (!token) return reply({ error: 'auth_required' }, 401)
+  if (!graderKey() || !hasAnthropicKey()) {
+    trace.set('missing', [!graderKey() && 'IELTS_GRADER_KEY', !hasAnthropicKey() && 'ANTHROPIC_API_KEY'].filter(Boolean))
+    return reply({ error: 'grading_unavailable' }, 503)
+  }
   // Заведомо большое тело отсекаем до formData(): иначе до 20+ МБ читаются в память контейнера по любому «Bearer x»
   const declared = Number(request.headers.get('content-length') || 0)
-  if (declared > MAX_TOTAL_BYTES + 64 * 1024) return Response.json({ error: 'too_large' }, { status: 413 })
+  if (declared > MAX_TOTAL_BYTES + 64 * 1024) return reply({ error: 'too_large' }, 413)
 
   let form
   try {
     form = await request.formData()
-  } catch {
-    return Response.json({ error: 'bad_form' }, { status: 400 })
+  } catch (e) {
+    trace.set('detail', String(e?.message || e).slice(0, 120))
+    return reply({ error: 'bad_form' }, 400)
   }
+  trace.mark('upload')
   const testId = String(form.get('testId') || '')
   const mode = form.get('mode') === 'practice' ? 'practice' : 'exam'
   const uiLang = ['ru', 'kk', 'en'].includes(form.get('uiLang')) ? form.get('uiLang') : 'ru'
+  const retryOf = Number(form.get('retryAttemptId'))
+  const retryAttemptId = Number.isInteger(retryOf) && retryOf > 0 ? retryOf : null
+  trace.set('testId', testId)
+  trace.set('mode', mode)
+  if (retryAttemptId) trace.set('retryOf', retryAttemptId)
   let meta = []
   try {
     meta = JSON.parse(String(form.get('items') || '[]'))
   } catch {
     /* проверка ниже */
   }
-  if (!TEST_ID_RE.test(testId) || !Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS || meta.some((m) => !m || typeof m !== 'object')) return Response.json({ error: 'bad_items' }, { status: 400 })
+  if (!TEST_ID_RE.test(testId) || !Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS || meta.some((m) => !m || typeof m !== 'object')) return reply({ error: 'bad_items' }, 400)
+  // Файла ответа нет или он пустой (запись не собралась на устройстве) — этот ответ пропускается, а не роняет оценку
+  // остальных; ни одного файла — отказ сразу, работа не создаётся.
   const audio = []
   let total = 0
   for (let i = 0; i < meta.length; i++) {
     const f = form.get(`audio_${i}`)
-    if (!(f instanceof File) || !f.size) return Response.json({ error: 'missing_audio' }, { status: 400 })
+    if (!(f instanceof File) || !f.size) {
+      audio.push(null)
+      continue
+    }
     total += f.size
-    if (total > MAX_TOTAL_BYTES) return Response.json({ error: 'too_large' }, { status: 413 })
+    if (total > MAX_TOTAL_BYTES) return reply({ error: 'too_large' }, 413)
     audio.push(Buffer.from(await f.arrayBuffer()))
+  }
+  trace.set('bytes', total)
+  if (!audio.some(Boolean)) {
+    trace.set('stage', 'upload')
+    return reply({ error: 'no_speech' }, 422)
   }
 
   const quota = await checkIeltsQuota(request, null, 'speaking')
-  if (quota.blocked) return Response.json({ error: 'quota' }, { status: 429 })
+  if (quota.blocked) return reply({ error: 'quota' }, 429)
 
   const items = meta.map((m) => ({ itemId: String(m.itemId), durationSec: Math.max(0, Math.min(600, Number(m.durationSec) || 0)) }))
   const start = await backend(`/mobile/ielts/tests/${encodeURIComponent(testId)}/speaking`, token, {
     method: 'POST',
-    body: JSON.stringify({ mode, items, timeSec: Math.round(items.reduce((a, x) => a + x.durationSec, 0)), device: 'web' }),
+    body: JSON.stringify({ mode, items, timeSec: Math.round(items.reduce((a, x) => a + x.durationSec, 0)), device: 'web', ...(retryAttemptId ? { retryAttemptId } : {}) }),
   })
-  if (!start.ok) return Response.json({ error: 'start_failed' }, { status: start.status === 400 || start.status === 404 ? start.status : 502 })
+  trace.mark('start')
+  if (!start.ok) {
+    // Раньше любой отказ бэкенда уходил «start_failed» → экран писал общее «Оценка не удалась. Попробуйте ещё раз»,
+    // хотя повтор тут не поможет: 401 — истёк вход, 403/503 — ключ грейдера стенда не совпал с бэкендом (так
+    // выглядит локальный веб с чужим IELTS_GRADER_KEY). 409 на повторе — работа уже оценена (повтор из другой вкладки).
+    trace.set('stage', 'start')
+    trace.set('backend', backendError(start))
+    if (start.status === 401) return reply({ error: 'auth_required' }, 401)
+    if (start.status === 403 || start.status === 503) return reply({ error: 'grading_unavailable' }, 503)
+    if (start.status === 409 && retryAttemptId) return reply({ error: 'already_graded', attemptId: retryAttemptId }, 409)
+    return reply({ error: 'start_failed' }, start.status === 400 || start.status === 404 ? start.status : 502)
+  }
   const job = start.body
+  trace.set('attemptId', job.attemptId)
   // attemptId в ответе об ошибке: работа уже создана и помечена failed — полный mock закрывает ею секцию («проверка не
-  // удалась», а не дыра в экзамене); вне mock экран его не читает
-  const fail = (reason) => backend(`/mobile/ielts/attempts/${job.attemptId}/grading/fail`, token, { method: 'POST', body: JSON.stringify({ reason }) })
+  // удалась», а не дыра в экзамене), а экран повторяет оценку той же работы с теми же записями
+  const fail = (code, detail) => backend(`/mobile/ielts/attempts/${job.attemptId}/grading/fail`, token, { method: 'POST', body: JSON.stringify({ reason: trace.reason(code, detail) }) })
 
-  const per = await Promise.all(
-    audio.map(async (buf, i) => {
-      const pronP = isAzureSpeechConfigured() ? withDeadline(assessPronunciationChunked(buf).catch(() => null), STT_DEADLINE_MS, null) : Promise.resolve(null)
-      const [{ text, stt }, pron] = await Promise.all([transcribe(buf, pronP), pronP])
-      return { ...items[i], transcript: text, stt, wpm: wordsPerMinute(text, items[i].durationSec), accuracy: pron && !pron.mock ? pron.accuracy : null }
-    }),
-  )
-  if (!per.some((a) => a.transcript)) {
-    await fail('no_speech')
-    return Response.json({ error: 'no_speech', attemptId: job.attemptId }, { status: 422 })
-  }
-
-  const modelMs = Math.min(MODEL_TIMEOUT_MS, TOTAL_BUDGET_MS - (Date.now() - startedAt))
-  if (modelMs < MIN_MODEL_MS) {
-    console.error('ielts/speaking/assess: no time left for the model after STT,', Date.now() - startedAt, 'ms')
-    await fail('timeout')
-    return Response.json({ error: 'timeout', attemptId: job.attemptId }, { status: 504 })
-  }
-
+  // Дальше работа уже создана: любой сбой обязан пометить её failed и ответить JSON-ом — не HTML-страницей 500,
+  // из которой экран не достанет ни кода, ни attemptId для полного mock.
+  let per
   let graded
+  let saved
   try {
-    const raw = await structured({ systemPrompt: buildSystemPrompt(job.task?.part, uiLang), userMessage: userMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: modelMs, maxRetries: 0 })
-    graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
-  } catch (e) {
-    console.error('ielts/speaking/assess model failed:', e?.message || e)
-    await fail('model')
-    return Response.json({ error: 'model_failed', attemptId: job.attemptId }, { status: 502 })
-  }
+    trace.set('stage', 'stt')
+    per = await transcribeAnswers(items, audio, { deadlineMs: STT_DEADLINE_MS })
+    trace.mark('stt')
+    trace.set('answers', answersDebug(per))
+    if (per.every((a) => a.skipped)) {
+      await fail('no_speech', per.map((a) => a.reason).join(','))
+      return reply({ error: 'no_speech', attemptId: job.attemptId }, 422)
+    }
 
-  const engines = { stt: per.find((a) => a.stt)?.stt || null, pronunciation: per.some((a) => a.accuracy != null) ? 'azure' : null }
-  console.log(JSON.stringify({ kind: 'ielts_speaking_assess', ...engines, items: per.length, ms: Date.now() - startedAt }))
-  const saved = await backend(`/mobile/ielts/attempts/${job.attemptId}/grading`, token, {
-    method: 'PUT',
-    body: JSON.stringify({
-      criteria: graded.criteria,
-      feedback: graded.feedback,
-      strengths: graded.strengths,
-      improvements: graded.improvements,
-      items: per.map(({ itemId, durationSec, transcript, wpm, accuracy }) => ({ itemId, durationSec, transcript, wpm, accuracy })),
-      engines,
-      provider: 'anthropic',
-      feedbackLanguage: uiLang,
-    }),
-  })
-  if (!saved.ok) {
-    await fail('save')
-    return Response.json({ error: 'save_failed', attemptId: job.attemptId }, { status: 502 })
+    trace.set('stage', 'model')
+    try {
+      graded = await gradeSpeaking({ run: structured, model: IELTS_REVIEW_MODEL, job, answers: per, uiLang, pronunciation: answersPronunciation(per), deadline: trace.startedAt + TOTAL_BUDGET_MS })
+    } catch (e) {
+      trace.mark('model')
+      trace.set('model', { errors: e?.attempts || [String(e?.message || e).slice(0, 200)] })
+      await fail('model', (e?.attempts || []).join(' | ') || e?.message)
+      return reply({ error: 'model_failed', attemptId: job.attemptId }, 502)
+    }
+    trace.mark('model')
+    trace.set('model', { model: graded.model, attempt: graded.attempt, ...(graded.errors?.length ? { errors: graded.errors } : {}) })
+
+    const engines = { stt: per.find((a) => a.stt)?.stt || null, pronunciation: per.some((a) => !a.skipped && a.accuracy != null) ? 'azure' : null, model: graded.model }
+    trace.set('stage', 'save')
+    saved = await backend(`/mobile/ielts/attempts/${job.attemptId}/grading`, token, {
+      method: 'PUT',
+      body: JSON.stringify({
+        criteria: graded.criteria,
+        feedback: graded.feedback,
+        strengths: graded.strengths,
+        improvements: graded.improvements,
+        items: savedItems(per),
+        engines,
+        provider: 'anthropic',
+        feedbackLanguage: uiLang,
+      }),
+    })
+    trace.mark('save')
+    if (!saved.ok) {
+      trace.set('backend', backendError(saved))
+      await fail('save', `backend ${saved.status}`)
+      return reply({ error: 'save_failed', attemptId: job.attemptId }, 502)
+    }
+  } catch (e) {
+    trace.set('detail', String(e?.message || e).slice(0, 200))
+    await fail('error', e?.message).catch(() => null)
+    return reply({ error: 'failed', attemptId: job.attemptId }, 500)
   }
+  trace.set('stage', 'done')
 
   // квота IELTS считается по своей таблице (lib/db/ielts.js) — без этой строки оценка Speaking её не тратила бы
   if (isDbConfigured() && !('error' in quota.resolved)) {
     try {
-      await recordIeltsSpeaking({ profileId: quota.resolved.id, taskId: testId, answers: per.map((a) => ({ question: a.itemId, transcript: a.transcript })), assessment: { overallBand: saved.body?.attempt?.band, criteria: graded.criteria }, provider: 'anthropic' })
+      await recordIeltsSpeaking({ profileId: quota.resolved.id, taskId: testId, answers: per.filter((a) => !a.skipped).map((a) => ({ question: a.itemId, transcript: a.transcript })), assessment: { overallBand: saved.body?.attempt?.band, criteria: graded.criteria }, provider: 'anthropic' })
     } catch (e) {
       console.error('ielts/speaking/assess quota record failed (non-fatal):', e?.message || e)
     }
   }
-  return Response.json(saved.body)
+  return reply(saved.body)
 }

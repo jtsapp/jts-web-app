@@ -12,7 +12,7 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
+import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -76,6 +76,11 @@ export default function ProfilePage({
   // userLevel тогда — стартовый 'A1' из стейта App, а не измерение.
   levelUnknown = false,
   onLevelTest,
+  // Ученик IELTS (useStudentExams: признак из админки): теста уровня General English у него нет — строку
+  // «Тест на уровень · Не пройден» без уровня не показываем, вместо неё — диагностика и план IELTS.
+  ieltsAccount = false,
+  // вкладка IELTS открыта (useStudentExams) — тогда в профиле и блок «IELTS»: то же правило, что у меню
+  ieltsTab = false,
   // «Назад» туда, откуда открыли профиль (App, lib/navStack.js).
   onBack,
   backLabel,
@@ -99,6 +104,23 @@ export default function ProfilePage({
   const [levelProg, setLevelProg] = useState(null)
   const [toast, setToast] = useState('')
   const [skillStats, setSkillStats] = useState(null)
+  // IELTS: { me, overall } — блок «IELTS» профиля. Раньше его не было вовсе, и ученица IELTS видела в профиле только
+  // «Тест на уровень · Не пройден» (жалоба 27.10.2026: «нет раздела, пишет, что нужно снова сдать тест»).
+  const [ielts, setIelts] = useState(null)
+  useEffect(() => {
+    if (!token || !ieltsTab) return undefined
+    let alive = true
+    getIeltsMe(token)
+      .then(async (me) => {
+        const p = me.diagnosticDone ? await getIeltsProfile(token).catch(() => null) : null
+        return { me, overall: p?.bands?.overall ?? null }
+      })
+      .then((v) => alive && setIelts(v))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token, ieltsTab])
 
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
@@ -319,6 +341,25 @@ export default function ProfilePage({
     },
   ]
 
+  const ieltsRows = ielts && ieltsTab
+    ? [
+        {
+          key: 'ielts-diagnostic',
+          icon: <PfTestIcon />,
+          title: t('profile.ieltsDiagnostic'),
+          trailing: ielts.me.diagnosticDone ? (ielts.overall != null ? `Band ${Number(ielts.overall).toFixed(1)}` : t('profile.ieltsDone')) : t('profile.levelTestNone'),
+          onClick: () => onNav?.(ielts.me.diagnosticDone ? 'ielts-diagnostic-result' : ielts.me.onboarded ? 'ielts-diagnostic' : 'ielts-onboarding'),
+        },
+        {
+          key: 'ielts-plan',
+          icon: <PfTestIcon />,
+          title: t('profile.ieltsPlan'),
+          trailing: ielts.me.programmeName || (ielts.me.track === 'general' ? 'General Training' : 'Academic'),
+          onClick: () => onNav?.('ielts'),
+        },
+      ]
+    : []
+
   const personalization = [
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
@@ -421,7 +462,18 @@ export default function ProfilePage({
 
         <SkillRatings stats={skillStats} loading={skillStats === null} />
 
-        {onLevelTest && (
+        {ieltsRows.length > 0 && (
+          <>
+            <div className="pf-label">IELTS</div>
+            <div className="pf-card" data-section="ielts">
+              {ieltsRows.map((it, i) => (
+                <SettingRow key={it.key} item={it} chip last={i === ieltsRows.length - 1} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {onLevelTest && !(ieltsAccount && levelUnknown) && (
           <>
             <div className="pf-label">{t('profile.sectionLevel')}</div>
             <div className="pf-card">

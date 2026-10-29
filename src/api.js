@@ -8,6 +8,7 @@ import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
 import { API_BASE } from './lib/apiBase.js'
+import { attemptKey, deletePendingTakes, savePendingTakes } from './ielts/speaking/pendingTakes.js'
 
 const BASE = API_BASE
 
@@ -2105,22 +2106,70 @@ export function getIeltsSpeakingWorks(token) {
 // Записи ответов Speaking — сразу нашему серверному роуту (распознавание, произношение и модель — там); бэкенд
 // получает только стенограммы и баллы. answers: [{ itemId, durationSec, wav: Blob }].
 // оценка меняет баллы и прогресс — кэш IELTS сбрасывается и при отказе (работа к тому времени уже создана)
+//
+// Сбой после создания работы (есть attemptId) — записи остаются на устройстве (ielts/speaking/pendingTakes.js), и
+// «Отправить ещё раз» из экрана или из упавшей работы шлёт их же с retryAttemptId. Оценили — записи удаляются.
 export function assessIeltsSpeaking(token, opts) {
-  return ieltsChanged(assessIeltsSpeakingRaw(token, opts))
+  return ieltsChanged(
+    assessIeltsSpeakingRaw(token, opts).then(
+      (view) => {
+        forgetSpeakingTakes(opts.retryAttemptId, view?.attempt?.id)
+        return view
+      },
+      async (e) => {
+        logAssessFailure('speaking', e)
+        if (e?.code === 'already_graded') forgetSpeakingTakes(opts.retryAttemptId)
+        else if (e?.attemptId) await savePendingTakes(attemptKey(e.attemptId), { testId: opts.testId, mode: opts.mode, answers: opts.answers }).catch(() => {})
+        throw e
+      },
+    ),
+  )
 }
 
-async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers }) {
+function forgetSpeakingTakes(...ids) {
+  for (const id of ids) if (id) deletePendingTakes(attemptKey(id)).catch(() => {})
+}
+
+// Код, id запроса и разбор роута — в консоль: на экране причины сведены к нескольким фразам, а по debugId строка
+// `ielts_speaking_assess` находится в логе стенда.
+function logAssessFailure(route, e) {
+  console.warn(`ielts ${route} grading failed:`, e?.code || e?.status || e?.message, e?.debugId ? `debugId=${e.debugId}` : '', e?.debug || '')
+}
+
+async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers, retryAttemptId }) {
   const form = new FormData()
   form.append('testId', testId)
   form.append('mode', mode)
   form.append('uiLang', uiLang)
+  if (retryAttemptId) form.append('retryAttemptId', String(retryAttemptId))
   form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
   answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
-  const res = await fetch('/api/ielts/speaking/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  return readAssess(await assessFetch('/api/ielts/speaking/assess', token, form))
+}
+
+// Обрыв сети (телефон ушёл в сон, Wi-Fi пропал посреди 10 МБ записей) — свой код: раньше он падал TypeError-ом в
+// общую «Оценка не удалась», и в консоли не было даже статуса.
+async function assessFetch(url, token, form) {
+  try {
+    return await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  } catch (e) {
+    throw Object.assign(new Error('network'), { code: 'network', detail: String(e?.message || e) })
+  }
+}
+
+async function readAssess(res) {
   const body = await res.json().catch(() => null)
-  // 413 от nginx приходит HTML-страницей без JSON — без этого экран показал бы общую ошибку, а не «слишком длинно»
-  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
-  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code, attemptId: body?.attemptId ?? null })
+  // 413 от nginx приходит HTML-страницей без JSON — без этого экран показал бы общую ошибку, а не «слишком длинно»;
+  // 502/504 прокси без JSON — сервер не успел (Cloudflare 524 после 100 с)
+  const code = body?.error || (res.status === 413 ? 'too_large' : res.status === 504 || res.status === 524 ? 'timeout' : undefined)
+  if (!res.ok)
+    throw Object.assign(new Error(code || `HTTP ${res.status}`), {
+      status: res.status,
+      code,
+      attemptId: body?.attemptId ?? null,
+      debugId: body?.debugId || res.headers?.get?.('x-ielts-debug-id') || null,
+      debug: body?.debug || null,
+    })
   return body
 }
 
@@ -2164,11 +2213,10 @@ async function assessIeltsDiagnosticRaw(token, { attemptId, skill, uiLang, answe
     form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
     answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
   }
-  const res = await fetch('/api/ielts/diagnostic/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
-  const body = await res.json().catch(() => null)
-  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
-  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code })
-  return body
+  return readAssess(await assessFetch('/api/ielts/diagnostic/assess', token, form)).catch((e) => {
+    logAssessFailure(`diagnostic ${skill}`, e)
+    throw e
+  })
 }
 
 export function submitIeltsWriting(token, id, body) {

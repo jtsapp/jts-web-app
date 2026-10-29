@@ -10,6 +10,7 @@ import { formatDate, formatDuration, formatMonths } from '../ielts/format.js'
 import { ArrowForwardIcon, CheckIcon, CloseIcon, DescriptionIcon, InfoIcon, TimerIcon, TrendingUpIcon } from '../ielts/icons.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 import { gradeDiagnostic, isGrading } from '../ielts/onboarding/diagGrading.js'
+import GradeErrorNote from '../ielts/speaking/GradeErrorNote.jsx'
 import { DiagSpeakingReview, DiagWritingReview } from '../ielts/onboarding/DiagAiReview.jsx'
 
 const SKILLS = ['listening', 'reading', 'writing', 'speaking']
@@ -170,24 +171,31 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
   // Состояние секции на экране: run — идёт оценка, err — не удалась (повторить можно кнопкой)
   const [grading, setGrading] = useState({})
   const attemptId = state.v?.attempt?.id
-  const runGrade = (k) => {
+  // код и id запроса упавшей оценки — под кнопкой повтора (по id строка находится в логе стенда)
+  const [gradeErr, setGradeErr] = useState({})
+  const runGrade = (k, { auto = false } = {}) => {
     const p = gradeDiagnostic(authToken, attemptId, k, lang)
-    if (!p) return false
     setGrading((g) => ({ ...g, [k]: 'run' }))
+    setGradeErr((g) => ({ ...g, [k]: null }))
     p.then(() => getIeltsAttempt(authToken, attemptId))
       .then((v) => {
         setState((cur) => (cur.v?.attempt?.id === attemptId ? { ...cur, v } : cur))
         setGrading((g) => ({ ...g, [k]: null }))
       })
-      .catch(() => setGrading((g) => ({ ...g, [k]: 'err' })))
-    return true
+      .catch((e) => {
+        // записей нет ни в памяти, ни на устройстве: сам по себе повтор не поможет
+        setGrading((g) => ({ ...g, [k]: e?.code === 'lost' ? (auto ? null : 'lost') : 'err' }))
+        setGradeErr((g) => ({ ...g, [k]: e?.code === 'lost' ? null : { code: e?.code || (e?.status ? `HTTP ${e.status}` : null), debugId: e?.debugId || null } }))
+      })
   }
   useEffect(() => {
     if (state.status !== 'ready' || !attemptId) return
     for (const k of AI_SKILLS) {
       const st = state.v.result?.[k]?.status
       if (grading[k] || (st !== 'pending_ai' && !(st === 'grading' && isGrading(attemptId, k)))) continue
-      runGrade(k)
+      // ждущий Speaking после перезагрузки: оцениваем, только если записи сохранились на устройстве — иначе молча
+      // «ждёт ИИ», как раньше, а не красная ошибка без вины ученика
+      runGrade(k, { auto: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status, attemptId])
@@ -289,11 +297,12 @@ export default function IeltsDiagnosticResultPage({ token, target, onRoute, user
                         : t('ieltsOb.speakingSaved', { n: String(pending?.answers ?? 0), sec: String(pending?.seconds ?? 0) })}
                   </span>
                   {b[k] == null && pending && pending.status !== 'skipped' && grading[k] !== 'run' && (grading[k] === 'err' || pending.status === 'failed') && (
-                    <button type="button" className="ih-btn ih-btn--outline ih-dres__retry" onClick={() => runGrade(k) || setGrading((g) => ({ ...g, [k]: 'lost' }))}>
+                    <button type="button" className="ih-btn ih-btn--outline ih-dres__retry" onClick={() => runGrade(k)}>
                       {t('ieltsOb.gradeRetry')}
                     </button>
                   )}
                   {grading[k] === 'lost' && <small className="ih-muted">{t('ieltsOb.gradeLost')}</small>}
+                  {grading[k] === 'err' && gradeErr[k] && <GradeErrorNote code={gradeErr[k].code} debugId={gradeErr[k].debugId} />}
                   {pending?.status === 'done' && pending.criteria && (
                     <div className="ih-dres__crit">
                       {/* порядок критериев — экзаменационный: jsonb в базе ключи переставляет */}
