@@ -1114,8 +1114,9 @@
   justify-content: center;
 }
 /* Таймер лимита — плашка 70×32 в правом нижнем углу шапки, в её полях 24
-   (дорисовка дизайнера к макету 29.10): светлая полупрозрачная, текст и
-   секундомер серые. Последние 30 секунд — красный. */
+   (дорисовка дизайнера к макету 29.10): белая 60% поверх шапки, текст и
+   секундомер приглушённо-фиолетовые (цвета сняты с кадра). Последние 30
+   секунд — красный. */
 .tp-call__timer {
   position: absolute;
   right: 24px;
@@ -1128,12 +1129,12 @@
   box-sizing: border-box;
   padding: 0 12px 0 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: #5a5a66;
+  color: #6d5ea1;
 }
 .tp-call__timer.is-low {
   color: #d9363e;
