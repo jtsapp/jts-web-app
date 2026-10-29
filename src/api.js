@@ -80,10 +80,10 @@ export function getInkScenarios(level) {
   return get('/ink/practice' + q)
 }
 
-async function authGet(path, token) {
+async function authGet(path, token, options = {}) {
   let res
   try {
-    res = await fetch(BASE + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    res = await fetch(BASE + path, { ...options, headers: token ? { Authorization: `Bearer ${token}` } : {} })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
@@ -110,21 +110,20 @@ export function getMyTokens(token) {
 }
 
 // Разделы кабинета, открытые ученику по тарифу и формату (ТЗ кабинетов, 14е): { known, tariff, format, allowed }.
-// Любая осечка (нет ручки на стенде, сеть) — null: меню остаётся полным, ученика из-за сети не закрываем.
-const _mySections = new Map()
-export function getMySections(token) {
+// Готовые права не кэшируем: тариф или настройки координатора могут измениться без смены токена.
+// Одновременные запросы меню и экрана совмещает studentSectionStore.
+export function getMySections(token, options = {}) {
   if (!token) return Promise.resolve(null)
-  if (_mySections.has(token)) return _mySections.get(token)
-  const p = authGet('/cabinet/my-sections', token)
-    .then((d) => (d && Array.isArray(d.allowed) ? d : null))
-    .catch(() => {
-      _mySections.delete(token)
-      return null
+  return authGet('/cabinet/my-sections', token, options)
+    .then((d) => {
+      if (!d || typeof d.known !== 'boolean' || !Array.isArray(d.allowed) || !d.allowed.every((key) => typeof key === 'string')) {
+        throw new Error('Invalid section access')
+      }
+      // Новый тариф или решение координатора должны перепроверить и отдельный оплаченный доступ к экзаменам.
+      _ieltsMe.delete(token)
+      _satMe.delete(token)
+      return d
     })
-  _mySections.set(token, p)
-  // Тариф меняет менеджер: помним ответ недолго, чтобы новый раздел появился без перелогина.
-  setTimeout(() => _mySections.get(token) === p && _mySections.delete(token), 5 * 60 * 1000)
-  return p
 }
 
 export function getCabinetFeedback(token) {

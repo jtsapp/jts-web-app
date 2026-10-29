@@ -8,6 +8,7 @@ import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { groupNum } from '../lib/groupNum.js'
 import { useMenuItems } from './useMenuItems.js'
+import SectionAccessNotice from './SectionAccessNotice.jsx'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
 
 const NEW_ITEMS = new Set(['speed-reading', 'prizes', 'feedback'])
@@ -47,7 +48,7 @@ export default function Sidebar({
   }, [token])
 
   // Роль, аккаунт IELTS и подписки на экзамены — в общем хуке меню (тот же список у панели телефона и «Сервисов»).
-  const { items: nav, teacher, ieltsAccount, badges } = useMenuItems(token)
+  const { items: nav, teacher, ieltsAccount, badges, sections, retrySections } = useMenuItems(token)
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -117,6 +118,7 @@ export default function Sidebar({
           </span>
         </button>
 
+        {!teacher && <SectionAccessNotice access={sections} onRetry={retrySections} />}
         <nav className="sb__nav">
           {nav.map(({ key, label, ico }) => (
             <button

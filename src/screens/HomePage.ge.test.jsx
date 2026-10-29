@@ -10,6 +10,7 @@ import { getGePlan } from '../api.js'
 // приглашение, следующий шаг и блок цели.
 
 vi.mock('../api.js', () => ({
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   // Карточка «Новый отчёт о прогрессе» спрашивает список отчётов.
   getFeedbackReports: vi.fn(async () => []),
   getUnreadNotificationCount: vi.fn(async () => 0),

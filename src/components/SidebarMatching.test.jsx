@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import Sidebar from './Sidebar.jsx'
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getBalance: vi.fn().mockResolvedValue({ coins: 0, streak: 0, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, purchased: false })),
@@ -23,10 +24,10 @@ const items = () => [...document.querySelectorAll('.sb__nav [data-nav]')].map((b
 
 // «Мой учитель» (ТЗ 08 §1): под «Главной», с бейджем, когда ждут действия ученика; без подбора на стенде — нет пункта.
 describe('Sidebar — «Мой учитель»', () => {
-  it('stands right after «Главная» with an action badge', () => {
+  it('stands right after «Главная» with an action badge', async () => {
     useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
     render(<I18nProvider><Sidebar token={tokenFor('STUDENT')} onNav={() => {}} /></I18nProvider>)
-    expect(items().slice(0, 2)).toEqual(['home', 'my-teacher'])
+    await waitFor(() => expect(items().slice(0, 2)).toEqual(['home', 'my-teacher']))
     expect(document.querySelector('[data-nav="my-teacher"] .sb__badge').textContent).toBe('1')
   })
 

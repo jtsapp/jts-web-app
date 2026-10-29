@@ -17,6 +17,11 @@ export const LANGS = [
 // чтобы веб совпадал с мобильным приложением. Лендинг-специфичные — свои.
 const dict = {
   ru: {
+    'section.access.loading.title': 'Проверяем доступные разделы…',
+    'section.access.loading.text': 'Подождите, пока загрузятся настройки вашего тарифа.',
+    'section.access.error.title': 'Не удалось проверить доступ к разделам',
+    'section.access.error.text': 'Проверьте соединение и повторите попытку. Главная, уведомления и документы остаются доступны.',
+    'section.access.retry': 'Повторить проверку',
     'welcome.title': 'Обучайся английскому\nс личным тьютором',
     'welcome.subtitle': 'Комфорт и лучшие методики обучения английского языка',
     'common.register': 'Регистрация',
@@ -7260,6 +7265,11 @@ const dict = {
     'shadowing.dev.fitDone': 'Растянуто ×{k} — теперь подправь тайминги по фразам.',
   },
   en: {
+    'section.access.loading.title': 'Checking available sections…',
+    'section.access.loading.text': 'Please wait while we load access settings for your plan.',
+    'section.access.error.title': 'Could not check section access',
+    'section.access.error.text': 'Check your connection and try again. Home, notifications and documents remain available.',
+    'section.access.retry': 'Try again',
     'welcome.title': 'Learn English\nwith a personal tutor',
     'welcome.subtitle': 'Comfort and the best methods of learning English',
     'common.register': 'Sign up',
@@ -14460,6 +14470,11 @@ const dict = {
     'shadowing.dev.fitDone': 'Stretched x{k} - now fine-tune timings per phrase.',
   },
   kk: {
+    'section.access.loading.title': 'Қолжетімді бөлімдер тексерілуде…',
+    'section.access.loading.text': 'Тарифіңіздің қолжетімділік баптаулары жүктелгенше күтіңіз.',
+    'section.access.error.title': 'Бөлімдерге қолжетімділікті тексеру мүмкін болмады',
+    'section.access.error.text': 'Интернет байланысын тексеріп, қайталап көріңіз. Басты бет, хабарландырулар және құжаттар қолжетімді болып қалады.',
+    'section.access.retry': 'Қайта тексеру',
     'welcome.title': 'Жеке ұстазбен\nағылшын тілін үйрен',
     'welcome.subtitle': 'Жайлылық және ағылшын тілін үйренудің үздік әдістемелері',
     'common.register': 'Тіркелу',

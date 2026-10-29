@@ -8,6 +8,7 @@ const demo = { value: { isDemo: false, expiresAt: null } }
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getBalance: vi.fn().mockResolvedValue({ coins: 0, streak: 0, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => demo.value),
   getSatMeCached: vi.fn(async () => null),
@@ -49,7 +50,7 @@ describe('Sidebar — демо-аккаунт', () => {
   it('демо-ученику добавляет «Главную» первым пунктом', async () => {
     demo.value = { isDemo: true, expiresAt: null }
     const { container } = renderSidebar()
-    await waitFor(() => expect(screen.getByText('Главная')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Повторение')).toBeTruthy())
     const items = [...container.querySelectorAll('.sb__item')].map((el) => el.textContent)
     expect(items[0]).toBe('Главная')
     expect(items).toContain('Повторение')

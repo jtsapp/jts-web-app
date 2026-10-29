@@ -6,6 +6,7 @@ import { I18nProvider } from '../i18n.jsx'
 const me = { ielts: { ieltsAccount: false }, sat: null }
 
 vi.mock('../api.js', () => ({
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getIeltsMe: vi.fn(async () => me.ielts),

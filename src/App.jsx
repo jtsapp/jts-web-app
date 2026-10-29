@@ -130,9 +130,10 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { syncTourMarks, tourMarksReady, useTourMarks } from './lib/tourMarks.js'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { isSectionOpen, useStudentSections } from './lib/studentSections.js'
-import SectionClosedPage from './screens/SectionClosedPage.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
+import { useStudentSections, refreshStudentSections } from './lib/studentSections.js'
+import StudentSectionGate from './components/StudentSectionGate.jsx'
+import { useStudentExams } from './lib/useStudentExams.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
@@ -627,39 +628,9 @@ export default function App() {
   const [token, setToken] = useState(null)
   // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
   // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
-  const [ieltsAccount, setIeltsAccount] = useState(false)
-  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false, ready: false })
-  useEffect(() => {
-    if (!token) {
-      setIeltsAccount(false)
-      setExamTabs({ ielts: false, sat: false, ready: false })
-      return
-    }
-    setExamTabs({ ielts: false, sat: false, ready: false })
-    let alive = true
-    const next = { ielts: false, sat: false }
-    let pending = 2
-    const done = () => {
-      pending -= 1
-      if (alive && pending === 0) setExamTabs({ ...next, ready: true })
-    }
-    getIeltsMe(token).then((m) => {
-      if (!alive) return
-      setIeltsAccount(!!m.ieltsAccount)
-      next.ielts = !!(m.purchased || m.ieltsAccount)
-    }).finally(done)
-    getSatMeCached(token).then((m) => {
-      if (alive) next.sat = !!m?.purchased
-    }).finally(done)
-    return () => {
-      alive = false
-    }
-  }, [token])
-  useEffect(() => {
-    if (!token || !examTabs.ready) return
-    const exam = screen === 'ielts' || screen.startsWith('ielts-') ? 'ielts' : screen === 'sat' || screen.startsWith('sat-') ? 'sat' : null
-    if (exam && !examTabs[exam]) setScreen('home')
-  }, [token, examTabs, screen, setScreen])
+  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null, screen)
+  const examTabs = useStudentExams(token && !isTeacher(token) ? token : null, sectionAccess)
+  const ieltsAccount = examTabs.ieltsAccount
   useEffect(() => {
     // «Повторение» (kingdom*) у ученика IELTS / SAT больше не уводит в IELTS — пункт вернулся в меню (SAT-SYNC-PLAN E3).
     // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
@@ -668,9 +639,6 @@ export default function App() {
     const to = ieltsAccountRedirect(ieltsAccount, screen)
     if (to) setScreen(to)
   }, [ieltsAccount, screen, setScreen])
-  // Разделы кабинета ученика по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел по прямой ссылке показывает
-  // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
-  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав (ось 18+) у каждого тьютора свой (29.10.2026): кнопка 18+ у Декстера не
   // трогает Спарка. temper — нрав выбранного тьютора: 'calm' | 'harsh' | null
@@ -2072,10 +2040,10 @@ export default function App() {
     : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
-  const sectionClosed = !!token && !boothAccount && !isTeacher(token) && !isSectionOpen(sectionAccess, view)
-  const page = sectionClosed
-    ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
-    : renderScreen(view)
+  const page = <StudentSectionGate required={!!token && !boothAccount && !isTeacher(token)}
+    access={sectionAccess} exams={examTabs} render={() => renderScreen(view)}
+    onRetry={() => refreshStudentSections(token)} active={view} userLevel={userLevel} userName={name}
+    token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
   return (
     <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
       required={!!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}

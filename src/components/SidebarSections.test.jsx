@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment-options {"url":"https://dev-tutor.justtostudy.kz/"}
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import Sidebar from './Sidebar.jsx'
 import SectionClosedPage from '../screens/SectionClosedPage.jsx'
@@ -35,7 +35,7 @@ describe('Sidebar — разделы по тарифу и формату', () =>
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
-    await waitFor(() => expect(labels()).not.toContain('Уроки'))
+    await waitFor(() => expect(labels()).toContain('Практика'))
     expect(labels()).not.toContain('Домашняя работа')
     expect(labels()).not.toContain('Speaking Buddy')
     expect(labels()).toEqual(expect.arrayContaining(['Главная', 'Повторение', 'Практика', 'Грамматика', 'Скорочтение', 'Словарь', 'Призы', 'Feedback']))
@@ -80,7 +80,8 @@ describe('Sidebar — разделы по тарифу и формату', () =>
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
-    await waitFor(() => expect(labels()).not.toContain('Грамматика'))
+    await waitFor(() => expect(labels()).toContain('Скорочтение'))
+    expect(labels()).not.toContain('Грамматика')
     expect(labels()).toContain('Скорочтение')
   })
 
@@ -97,14 +98,23 @@ describe('Sidebar — разделы по тарифу и формату', () =>
     expect(labels()).toContain('Выбрать группу')
   })
 
-  it('ошибка ручки не закрывает меню', async () => {
-    getMySections.mockResolvedValue(null)
+  it('ошибка ручки оставляет общие разделы; повтор загружает разрешённые вкладки', async () => {
+    getMySections.mockRejectedValue(new Error('offline'))
     render(
       <I18nProvider>
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
+    await waitFor(() => expect(screen.getByTestId('section-access-notice').textContent).toContain('Не удалось'))
+    expect(labels()).not.toContain('Уроки')
+    expect(labels()).not.toContain('Speaking Buddy')
+    expect(labels()).toContain('Главная')
+    expect(labels()).toContain('Договоры')
+    getMySections.mockResolvedValue({ known: true, allowed: ['lessons'] })
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить проверку' }))
     await waitFor(() => expect(labels()).toContain('Уроки'))
+    expect(screen.queryByTestId('section-access-notice')).toBeNull()
+    expect(labels()).not.toContain('Speaking Buddy')
   })
 })
 
@@ -140,7 +150,8 @@ describe('Sidebar — «Выбрать группу» по формату', () =
         <Sidebar userName="Аружан" userLevel="B1" token={tokenFor('STUDENT')} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>
     )
-    await waitFor(() => expect(labels()).not.toContain('Выбрать группу'))
+    await waitFor(() => expect(labels()).toContain('Уроки'))
+    expect(labels()).not.toContain('Выбрать группу')
     expect(labels()).toContain('Уроки')
   })
 

@@ -8,6 +8,7 @@ import { getIeltsMe, getSatMeCached } from '../api.js'
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getBalance: vi.fn().mockResolvedValue({ coins: 7, streak: 2, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   // аккаунт IELTS ставит админка (V304) — сайдбар узнаёт о нём ручкой /mobile/ielts/plan/me

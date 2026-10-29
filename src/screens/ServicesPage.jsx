@@ -5,6 +5,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx'
 import AssetImage from '../components/AssetImage.jsx'
 import { ChevronRightIcon, UserIcon } from '../components/icons.jsx'
 import { useMenuItems } from '../components/useMenuItems.js'
+import SectionAccessNotice from '../components/SectionAccessNotice.jsx'
 import { serviceItems } from '../lib/navSections.js'
 import { groupNum } from '../lib/groupNum.js'
 import { loadToken } from '../lib/session.js'
@@ -32,7 +33,7 @@ const TILE_ICO = {
 // (на «Главной» в этом случае «?»).
 export default function ServicesPage({ userName, userLevel, levelUnknown = false, token, onNav, onProfile }) {
   const { t } = useI18n()
-  const { items, teacher, ieltsAccount, badges } = useMenuItems(token)
+  const { items, teacher, ieltsAccount, badges, sections, retrySections } = useMenuItems(token)
   const [demo, setDemo] = useState(false)
   const [balance, setBalance] = useState(null)
   useEffect(() => {
@@ -58,6 +59,7 @@ export default function ServicesPage({ userName, userLevel, levelUnknown = false
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="services" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="svc">
+        {!teacher && <SectionAccessNotice access={sections} onRetry={retrySections} />}
         <button type="button" className="svc-hero" onClick={onProfile}>
           <AssetImage className="svc-hero__mascot" src="/assets/m/services/mascot.webp" alt="" />
           <span className="svc-hero__who">
