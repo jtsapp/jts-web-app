@@ -657,6 +657,10 @@ html[data-theme="dark"] .sb__item--active, html[data-theme="dark"] .sb__item--ac
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
+html[data-theme="dark"] .sb__badge--new {
+    background: var(--dk-yellow-tint);
+    color: var(--dk-yellow)
+}
 html[data-theme="dark"] .sb__badge {
     background: var(--dk-red);
     color: var(--dk-on-bright)
@@ -3642,41 +3646,255 @@ html[data-theme="dark"] .t-footer__link {
 html[data-theme="dark"] .t-footer__copy {
     color: #ffffff
 }
-html[data-theme="dark"] .t-pick__hero {
-    background: var(--dk-card)
-}
 html[data-theme="dark"] .t-pick__title {
     color: var(--t-ink)
 }
-html[data-theme="dark"] .t-pick__sub {
-    color: var(--dk-muted)
-}
-html[data-theme="dark"] .t-pick__start {
-    border: none;
-    background: var(--t-purple);
-    color: var(--dk-on-acc)
-}
-html[data-theme="dark"] .t-pick__heading {
-    color: var(--t-ink)
-}
-html[data-theme="dark"] .t-pick__card {
-    border: none;
-    background: none;
-    color: inherit
-}
-html[data-theme="dark"] .t-pick__card:focus-visible {
+html[data-theme="dark"] .t-pick__slot {
     outline: none
 }
-html[data-theme="dark"] .t-pick__card:focus-visible .t-pick__plate {
-    outline: 2px solid var(--t-purple)
+html[data-theme="dark"] .t-pick__slot:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--dk-acc) 35%, transparent)
 }
-html[data-theme="dark"] .t-pick__plate {
+html[data-theme="dark"] .t-pick__card {
+    background: var(--dk-card);
+    border: 1px solid var(--dk-line)
+}
+html[data-theme="dark"] .t-pick__slot:hover .t-pick__card {
+    border-color: var(--dk-acc-line)
+}
+html[data-theme="dark"] .t-pick__slot.is-picked .t-pick__card {
+    border-color: var(--dk-acc);
+    box-shadow: 0 0 0 1px var(--dk-acc), 0 12px 32px color-mix(in oklab, var(--dk-acc) 16%, transparent)
+}
+html[data-theme="dark"] .t-pick__stage {
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .t-pick__glow {
+    background: rgba(255, 255, 255, 0.55)
+}
+html[data-theme="dark"] .t-pick__adult {
+    border: 1px solid var(--dk-line);
+    background: color-mix(in oklab, var(--dk-card) 90%, transparent);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .t-pick__switch {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .t-pick__switch::after {
     background: var(--dk-card)
 }
-html[data-theme="dark"] .t-pick__name {
-    color: var(--t-ink)
+html[data-theme="dark"] .t-pick__adult.is-on {
+    border-color: var(--dk-red);
+    background: var(--dk-red-tint);
+    color: var(--dk-red)
 }
-html[data-theme="dark"] .t-pick__chip {
+html[data-theme="dark"] .t-pick__adult.is-on .t-pick__switch {
+    background: var(--dk-red)
+}
+html[data-theme="dark"] .t-pick__soon {
+    background: color-mix(in oklab, var(--dk-card) 90%, transparent);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .t-pick__name {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .t-pick__listen {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .t-pick__listen svg {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .t-pick__listen:hover {
+    border-color: var(--dk-acc-line)
+}
+html[data-theme="dark"] .t-pick__tag {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .t-pick__trait {
+    background: var(--dk-page);
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .t-pick__desc {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .t-pick__start {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .t-pick__start:hover {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .t-pick__start:disabled {
+    background: var(--dk-acc-soft)
+}
+html[data-theme="dark"] .tp-hero {
+    background: linear-gradient(170deg, var(--dk-acc) 0%, var(--dk-acc) 100%)
+}
+html[data-theme="dark"] .tp-hero__others, html[data-theme="dark"] .tp-hero__manage {
+    border: 0;
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-hero__others:hover, html[data-theme="dark"] .tp-hero__manage:hover {
+    box-shadow: 0 6px 18px color-mix(in oklab, var(--dk-acc) 18%, transparent)
+}
+html[data-theme="dark"] .tp-hero__face {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-acc-tint)
+}
+html[data-theme="dark"] .tp-hero__name h1 {
+    color: #ffffff
+}
+html[data-theme="dark"] .tp-hero__level {
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-portrait {
+    border: var(--tp-border) solid var(--dk-acc-line);
+    background: var(--tp-tint, #ceccff)
+}
+html[data-theme="dark"] .tp-dash__frame {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .tp-dash__frame:focus-visible {
+    outline: 3px solid var(--dk-line)
+}
+html[data-theme="dark"] .tp-composer {
+    background: var(--dk-page);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24)
+}
+html[data-theme="dark"] .tp-composer__pane {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .tp-composer h3 {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-composer__hint {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .tp-check {
+    border: 0;
+    background: none
+}
+html[data-theme="dark"] .tp-check__box {
+    border: 2px solid var(--dk-line);
+    color: #ffffff
+}
+html[data-theme="dark"] .tp-check.is-on .tp-check__box {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg)
+}
+html[data-theme="dark"] .tp-check__text b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-check__text small {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .tp-seg {
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .tp-seg__opt {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .tp-seg__opt.is-on {
+    background: var(--dk-card);
+    color: var(--dk-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16)
+}
+html[data-theme="dark"] .tp-chip {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-chip:hover {
+    border-color: var(--dk-acc-line)
+}
+html[data-theme="dark"] .tp-chip.is-on {
+    border-color: var(--dk-line-strong);
+    background: var(--dk-ink-bg);
+    color: #ffffff
+}
+html[data-theme="dark"] .tp-chip--all {
+    border-color: transparent;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .tp-chip--all svg {
+    color: var(--dk-muted)
+}
+html[data-theme="dark"] .tp-talk {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .tp-talk:hover {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .tp-bubble {
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-bubble.is-user {
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .tp-call__card {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .tp-call__hint {
+    color: #ffffff
+}
+html[data-theme="dark"] .tp-mic {
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .tp-mic__toggle, html[data-theme="dark"] .tp-mic__end, html[data-theme="dark"] .tp-mic__hold {
+    border: 0
+}
+html[data-theme="dark"] .tp-mic__toggle {
+    background: color-mix(in oklab, var(--dk-red) 10%, transparent);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .tp-mic__toggle.is-muted {
+    background: color-mix(in oklab, var(--dk-acc) 10%, transparent);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .tp-mic__end {
+    background: var(--dk-red);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .tp-mic__end:hover {
+    background: var(--dk-red)
+}
+html[data-theme="dark"] .tp-mic__hold {
+    background: color-mix(in oklab, var(--dk-acc) 10%, transparent);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .tp-mic__hold.is-holding {
+    background: color-mix(in oklab, var(--dk-acc) 20%, transparent);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .tp-wave span {
+    background: var(--dk-acc)
+}
+html[data-theme="dark"] .tp-grid__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .tp-scen {
+    border: 0;
+    background: var(--dk-chip)
+}
+html[data-theme="dark"] .tp-scen::after {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(24, 24, 24, 0.8) 100%)
+}
+html[data-theme="dark"] .tp-scen__level {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
+html[data-theme="dark"] .tp-scen__text {
     color: #ffffff
 }
 html[data-theme="dark"] .t-adult {
@@ -3747,9 +3965,6 @@ html[data-theme="dark"] .t-pill--blue {
     background: var(--dk-blue-tint);
     color: var(--t-purple)
 }
-html[data-theme="dark"] .t-voice__card {
-    background: var(--dk-card)
-}
 html[data-theme="dark"] .t-verdict {
     --t-verdict-accent: var(--dk-green);
     --t-verdict-tint: color-mix(in oklab, var(--dk-green) 10%, transparent);
@@ -3783,69 +3998,11 @@ html[data-theme="dark"] .t-verdict__tips {
 html[data-theme="dark"] .t-verdict__tips li + li {
     border-top: 1px solid var(--t-border)
 }
-html[data-theme="dark"] .t-voice__timer {
-    color: var(--dk-acc-text);
-    background: var(--dk-page)
-}
-html[data-theme="dark"] .t-voice__timer.is-low {
-    color: var(--dk-red);
-    background: var(--dk-red-tint)
-}
 html[data-theme="dark"] .t-voice__cap {
     color: var(--t-ink)
 }
 html[data-theme="dark"] .t-voice__cap.is-user {
     color: var(--t-purple)
-}
-html[data-theme="dark"] .t-voice__mic {
-    border: none;
-    background: var(--dk-blue-tint);
-    color: var(--t-purple)
-}
-html[data-theme="dark"] .t-voice__mic.is-hearing {
-    box-shadow: 0 0 0 calc(4px + 8px * var(--mic-level, 0)) color-mix(in oklab, var(--dk-blue) 45%, transparent)
-}
-@media (prefers-reduced-motion: reduce) {
-    html[data-theme="dark"] .t-voice__mic.is-hearing {
-        box-shadow: 0 0 0 6px color-mix(in oklab, var(--dk-blue) 45%, transparent)
-    }
-}
-html[data-theme="dark"] .t-voice__mic.is-ptt.is-holding {
-    background: var(--dk-blue-soft)
-}
-html[data-theme="dark"] .t-voice__ptthint {
-    color: var(--t-muted)
-}
-html[data-theme="dark"] .t-voice__mode {
-    background: var(--dk-acc-tint)
-}
-html[data-theme="dark"] .t-voice__modeopt {
-    border: none;
-    background: transparent;
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .t-voice__modeopt.is-on {
-    background: var(--dk-card);
-    color: var(--t-purple);
-    box-shadow: 0 1px 4px color-mix(in oklab, var(--dk-acc) 18%, transparent)
-}
-html[data-theme="dark"] .t-voice__modeopt:focus-visible {
-    outline: 2px solid var(--t-purple)
-}
-html[data-theme="dark"] .t-voice__modenote, html[data-theme="dark"] .t-voice__taphint {
-    color: var(--dk-text-2)
-}
-html[data-theme="dark"] .t-voice__taphint {
-    color: var(--t-purple)
-}
-html[data-theme="dark"] .t-voice__end {
-    border: 1.5px solid color-mix(in oklab, var(--dk-red) 45%, transparent);
-    background: transparent;
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .t-voice__end:hover {
-    background: color-mix(in oklab, var(--dk-red) 8%, transparent);
-    border-color: var(--dk-red)
 }
 html[data-theme="dark"] .t-micperm {
     background: var(--dk-card);
@@ -3950,110 +4107,6 @@ html[data-theme="dark"] .t-analysis__item.is-done .t-radio {
 html[data-theme="dark"] .t-analysis__item.is-done .t-radio::after {
     border: solid var(--dk-line)
 }
-html[data-theme="dark"] .t-dash {
-    --d-accent-deep: var(--dk-acc);
-    --d-tint: var(--dk-acc-tint);
-    --d-tint-strong: var(--dk-acc-tint);
-    --d-surface: var(--dk-card);
-    --d-ink: var(--dk-text);
-    --d-ink-soft: var(--dk-acc-text);
-    --d-ink-faint: var(--dk-muted);
-    background: radial-gradient(
-    720px 560px at 42% 34%,
-    color-mix(in oklab, var(--dk-acc) 18%, transparent),
-    color-mix(in oklab, var(--dk-acc) 0%, transparent) 66%
-  )
-}
-html[data-theme="dark"] .t-dash__tutormeta b {
-    color: var(--d-ink)
-}
-html[data-theme="dark"] .t-dash__tutormeta span {
-    background: var(--d-tint-strong);
-    color: var(--d-accent-deep)
-}
-html[data-theme="dark"] .t-dash__manage {
-    border: none;
-    background: var(--d-tint);
-    color: var(--d-accent-deep)
-}
-html[data-theme="dark"] .t-dash__manage:hover {
-    background: var(--d-tint-strong)
-}
-html[data-theme="dark"] .t-dash__orb {
-    border: none;
-    background: transparent
-}
-html[data-theme="dark"] .t-dash__orb::before {
-    background: radial-gradient(circle, color-mix(in oklab, var(--dk-acc) 22%, transparent), color-mix(in oklab, var(--dk-acc) 0%, transparent) 64%)
-}
-html[data-theme="dark"] .t-dash__talk {
-    border: none;
-    background: var(--d-accent);
-    color: #ffffff;
-    box-shadow: 0 10px 24px color-mix(in oklab, var(--dk-acc) 26%, transparent)
-}
-html[data-theme="dark"] .t-dash__talk:hover {
-    background: var(--d-accent-deep);
-    box-shadow: 0 14px 30px color-mix(in oklab, var(--dk-acc) 32%, transparent)
-}
-html[data-theme="dark"] .t-dash__talk:active {
-    box-shadow: 0 6px 16px color-mix(in oklab, var(--dk-acc) 26%, transparent)
-}
-html[data-theme="dark"] .t-dash__suggest {
-    border: none;
-    background: var(--d-surface);
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12)
-}
-html[data-theme="dark"] .t-dash__suggest:hover {
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2)
-}
-html[data-theme="dark"] .t-dash__suggestthumb {
-    background-color: var(--d-tint)
-}
-html[data-theme="dark"] .t-dash__suggesttext small {
-    color: var(--d-accent)
-}
-html[data-theme="dark"] .t-dash__suggesttext b {
-    color: var(--d-ink)
-}
-html[data-theme="dark"] .t-dash__suggestarrow {
-    background: var(--d-tint);
-    color: var(--d-accent)
-}
-html[data-theme="dark"] .t-dash__suggest:hover .t-dash__suggestarrow {
-    background: var(--d-tint-strong)
-}
-html[data-theme="dark"] .t-dash__engonly {
-    border: none;
-    background: var(--d-tint)
-}
-html[data-theme="dark"] .t-dash__engonly:hover, html[data-theme="dark"] .t-dash__engonly.is-on {
-    background: var(--d-tint-strong)
-}
-html[data-theme="dark"] .t-dash__engonlytext b {
-    color: var(--d-accent-deep)
-}
-html[data-theme="dark"] .t-dash__engonlytext small {
-    color: var(--d-ink-soft)
-}
-html[data-theme="dark"] .t-dash__switch {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .t-dash__switch::after {
-    background: var(--d-ink-faint)
-}
-html[data-theme="dark"] .t-dash__engonly.is-on .t-dash__switch {
-    background: var(--d-accent)
-}
-html[data-theme="dark"] .t-dash__engonly.is-on .t-dash__switch::after {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .t-dash__panel {
-    background: var(--dk-card)
-}
-html[data-theme="dark"] .t-panel__head h2 {
-    color: var(--t-ink)
-}
 html[data-theme="dark"] .t-seeall {
     border: none;
     background: color-mix(in oklab, var(--dk-acc) 8%, transparent);
@@ -4087,18 +4140,8 @@ html[data-theme="dark"] .t-lesson__title {
 html[data-theme="dark"] .t-lesson__desc {
     color: var(--dk-muted)
 }
-html[data-theme="dark"] .t-panel__sub {
-    color: var(--dk-muted)
-}
-html[data-theme="dark"] .t-scenario {
-    border: none;
-    background: transparent
-}
 html[data-theme="dark"] .t-scenario__badge {
     background: var(--dk-card)
-}
-html[data-theme="dark"] .t-scenario__label {
-    color: var(--t-purple)
 }
 html[data-theme="dark"] .t-plan__progress {
     background: var(--dk-blue-tint)
@@ -4503,29 +4546,6 @@ html[data-theme="dark"] .t-placetest__rec-hint {
     html[data-theme="dark"] .t-status__heading {
         color: var(--t-purple)
     }
-    html[data-theme="dark"] .t-dash {
-        background: none
-    }
-    html[data-theme="dark"] .t-dash__center {
-        background: linear-gradient(180deg, var(--dk-page) 0%, color-mix(in oklab, var(--dk-acc-tint) 97%, transparent) 100%)
-    }
-    html[data-theme="dark"] .t-dash__tutormeta span {
-        background: none;
-        color: var(--dk-acc-text)
-    }
-    html[data-theme="dark"] .t-dash__engonly {
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .t-dash__engonlytext b {
-        color: var(--d-ink)
-    }
-    html[data-theme="dark"] .t-dash__engonlytext small {
-        color: var(--dk-muted)
-    }
-    html[data-theme="dark"] .t-dash__manage {
-        background: var(--dk-blue-tint);
-        color: var(--dk-acc-text)
-    }
     html[data-theme="dark"] .t-seeall {
         background: transparent;
         border: 1px solid var(--dk-acc-line)
@@ -4541,58 +4561,11 @@ html[data-theme="dark"] .t-brief__eyebrow {
 html[data-theme="dark"] .t-brief__list {
     color: var(--dk-acc-text)
 }
-html[data-theme="dark"] .t-voice__peek {
-    color: var(--dk-acc-text);
-    background: var(--dk-page);
-    border: none
-}
-html[data-theme="dark"] .t-voice__script {
-    color: var(--dk-acc-text);
-    background: var(--dk-page);
-    border: none
-}
-html[data-theme="dark"] .t-voice__scriptpanel {
-    background: var(--dk-card);
-    box-shadow: 0 18px 50px color-mix(in oklab, var(--dk-acc) 18%, transparent)
-}
-html[data-theme="dark"] .t-voice__scriptempty {
-    color: var(--t-muted)
-}
 html[data-theme="dark"] .t-linedead__title {
     color: var(--dk-text-2)
 }
 html[data-theme="dark"] .t-orb {
     background: radial-gradient(circle, var(--dk-ink-bg) 0%, #150c05 62%, rgba(255, 255, 255, 0) 100%)
-}
-html[data-theme="dark"] .t-dash__cta--solo {
-    --j-void: var(--dk-text);
-    --j-field: var(--dk-text);
-    --j-pool: var(--dk-text);
-    --j-line: color-mix(in oklab, var(--dk-orange) 5.5%, transparent);
-    background: radial-gradient(46% 40% at 50% 50%, var(--j-pool) 0%, rgba(255, 255, 255, 0) 72%),
-    radial-gradient(120% 95% at 50% 50%, var(--j-field) 0%, var(--j-void) 100%)
-}
-html[data-theme="dark"] .t-dash__cta--solo::before {
-    background: repeating-radial-gradient(
-    circle at 50% 50%,
-    color-mix(in oklab, var(--dk-orange) 0%, transparent) 0 44px,
-    var(--j-line) 44px 45px
-  )
-}
-html[data-theme="dark"] .t-dash__cta--solo .t-dash__orb::before {
-    background: radial-gradient(circle, color-mix(in oklab, var(--dk-orange) 26%, transparent), color-mix(in oklab, var(--dk-orange) 0%, transparent) 64%)
-}
-html[data-theme="dark"] .t-dash__cta--solo .t-orb {
-    background: radial-gradient(circle, rgba(62, 39, 23, 0.85) 0%, rgba(255, 255, 255, 0) 70%)
-}
-@media (max-width: 560px) {
-    html[data-theme="dark"] .t-dash__cta--solo::before {
-        background: repeating-radial-gradient(
-      circle at 50% 50%,
-      color-mix(in oklab, var(--dk-orange) 0%, transparent) 0 34px,
-      var(--j-line) 34px 35px
-    )
-    }
 }
 /*  ielts.css  */
 html[data-theme="dark"] .ie {
@@ -24770,6 +24743,12 @@ html[data-theme="dark"] .mt-sec--why {
 html[data-theme="dark"] .mt-sec--why h3 {
     color: var(--mt-ok)
 }
+html[data-theme="dark"] .mt-res img, html[data-theme="dark"] .mt-res__ph {
+    background: var(--mt-soft)
+}
+html[data-theme="dark"] .mt-video {
+    background: #000
+}
 html[data-theme="dark"] .mt-tl {
     border-left: 2px solid var(--mt-soft)
 }
@@ -26473,112 +26452,6 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .t-app {
         --t-bg: var(--dk-page)
     }
-    html[data-theme="dark"] .t-pick__page {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-pick__hero {
-        border: 1px solid var(--dk-line)
-    }
-    html[data-theme="dark"] .t-pick__title {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-pick__sub {
-        color: var(--dk-muted)
-    }
-    html[data-theme="dark"] .t-pick__heading {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-pick__card {
-        border: 1px solid var(--dk-line);
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .t-pick__card.is-picked {
-        border-color: var(--dk-acc);
-        background: var(--dk-acc-tint);
-        box-shadow: 0 0 0 1px var(--dk-acc)
-    }
-    html[data-theme="dark"] .t-pick__card:focus-visible {
-        outline: 2px solid var(--t-purple)
-    }
-    html[data-theme="dark"] .t-pick__card:focus-visible .t-pick__plate {
-        outline: none
-    }
-    html[data-theme="dark"] .t-pick__plate, html[data-theme="dark"] .t-pick__card.is-picked .t-pick__plate {
-        background: none
-    }
-    html[data-theme="dark"] .t-pick__tag {
-        color: var(--dk-muted)
-    }
-    html[data-theme="dark"] .t-pick__check {
-        background: url(/assets/m/tutor/check.svg) center / 24px 24px no-repeat
-    }
-    html[data-theme="dark"] .t-pick__about {
-        border: 1px solid var(--dk-line);
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .t-pick__desc {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"] .t-pick__listen {
-        border: none;
-        background: var(--dk-acc-tint);
-        color: var(--dk-acc-text)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__page, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__title, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__heading, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__name {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__sub, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__tag {
-        color: var(--dk-muted)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__desc {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__hero, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__about, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__card {
-        border: 1px solid var(--dk-line);
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__plate, html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__card.is-picked .t-pick__plate {
-        background: none
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__card.is-picked {
-        border-color: var(--dk-acc);
-        background: var(--dk-acc-soft);
-        box-shadow: 0 0 0 1px var(--dk-acc)
-    }
-    html[data-theme="dark"][data-theme='dark'] .t-pick .t-pick__listen {
-        background: var(--dk-acc-soft);
-        color: var(--dk-acc-text)
-    }
-    html[data-theme="dark"] .t-app:has(.t-car) {
-        background: var(--dk-card)
-    }
-    html[data-theme="dark"] .t-car__slot {
-        border: none;
-        background: var(--t-purple)
-    }
-    html[data-theme="dark"] .t-car__slot:focus-visible {
-        outline: 3px solid var(--t-purple)
-    }
-    html[data-theme="dark"] .t-car__name {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-car__chip {
-        color: #ffffff
-    }
-    html[data-theme="dark"] .t-car__desc {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-car__listen, html[data-theme="dark"] .t-car__choose {
-        border: none
-    }
-    html[data-theme="dark"] .t-car__listen {
-        background: var(--dk-acc-tint);
-        color: var(--t-purple)
-    }
-    html[data-theme="dark"] .t-car__choose {
-        background: var(--t-purple);
-        color: var(--dk-on-acc)
-    }
     html[data-theme="dark"] .t-topic {
         box-shadow: none
     }
@@ -26591,57 +26464,8 @@ html[data-theme="dark"] .rg-done__avatar {
     html[data-theme="dark"] .t-analysis__item.is-done .t-radio {
         background: url(/assets/m/tutor/check.svg) center / 24px 24px no-repeat border-box
     }
-    html[data-theme="dark"] .t-voice__card:not(.t-verdict):not(.t-linedead) {
-        background: transparent
-    }
     html[data-theme="dark"] .t-micperm {
         box-shadow: 0 14px 16px rgba(0, 0, 0, 0.1)
-    }
-    html[data-theme="dark"] .t-dash__tutormeta b {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-dash__manage {
-        background: var(--dk-blue-tint) url(/assets/m/tutor/settings.svg) center / 20px 20px no-repeat
-    }
-    html[data-theme="dark"] .t-dash__talk {
-        box-shadow: none
-    }
-    html[data-theme="dark"] .t-dash__talk:hover, html[data-theme="dark"] .t-dash__talk:active {
-        box-shadow: none
-    }
-    html[data-theme="dark"] .t-dash__suggest {
-        box-shadow: none
-    }
-    html[data-theme="dark"] .t-dash__suggest:hover {
-        box-shadow: none
-    }
-    html[data-theme="dark"] .t-dash__suggestthumb {
-        background-color: var(--dk-chip)
-    }
-    html[data-theme="dark"] .t-dash__suggesttext b {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-dash__suggestarrow {
-        background: var(--dk-page)
-    }
-    html[data-theme="dark"] .t-dash__engonlytext b {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .t-dash__switch {
-        border: 2px solid var(--dk-line);
-        background: transparent
-    }
-    html[data-theme="dark"] .t-dash__switch::after {
-        background: var(--dk-raised)
-    }
-    html[data-theme="dark"] .t-dash__engonly.is-on .t-dash__switch {
-        border-color: var(--t-purple)
-    }
-    html[data-theme="dark"] .t-panel__sub {
-        color: var(--dk-muted)
-    }
-    html[data-theme="dark"] .t-scenario__img {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1)
     }
     html[data-theme="dark"] .t-tour__veil {
         background: rgba(17, 17, 17, 0.6)
@@ -26660,6 +26484,26 @@ html[data-theme="dark"] .rg-done__avatar {
     }
     html[data-theme="dark"] .t-tour__count {
         color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .t-car__slot {
+        outline: none
+    }
+    html[data-theme="dark"] .t-car .t-pick__card {
+        border: 0
+    }
+    html[data-theme="dark"] .tp-composer--tabs {
+        background: var(--dk-card);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .tp-seg--tabs {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .tp-composer__rule {
+        border: 0;
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .tp-grid {
+        background: var(--dk-card)
     }
 }
 /*  mobile/learning.css  */

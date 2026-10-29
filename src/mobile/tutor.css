@@ -110,400 +110,6 @@
     font-size: 18px;
     line-height: 20px;
   }
-
-  /* ---------- Приветствие + выбор тьютора (кадр «Mobile» 6132:5848) ----------
-     Один экран, как в приложении (27.10.2026): заголовок раздела, белая
-     карточка баннера (r28, рамка #ececf1, p12, между частями 14) — картинка
-     344×200 r20 (экспорт узла 6132:5893: та же сцена, что на компьютере, но
-     кадрирована под телефон), текст и кнопка; ниже «Выбери подходящего
-     тьютора» и сетка карточек 2×2 (r24, p12, фигурка 120×136, имя Bold 16,
-     подпись Medium 12). Выбранная — #efe7ff с рамкой 2 #9047ff и галочкой 24 в
-     углу; соседи не гаснут. Между блоками колонки — 16, как в кадре. Числа сняты
-     мостом Figma. */
-  .t-pick {
-    padding-top: 4px;
-    gap: 16px;
-  }
-  .t-pick__page {
-    font-size: 32px;
-    font-weight: 800;
-    line-height: 44px;
-    letter-spacing: -0.01em;
-    color: #181818;
-  }
-  .t-pick__hero {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding: 12px;
-    border: 1px solid #ececf1;
-    border-radius: 28px;
-  }
-  .t-pick__art {
-    content: url(/assets/m/tutor/hero.webp);
-    width: 100%;
-    aspect-ratio: 344 / 200;
-    object-fit: cover;
-    border-radius: 20px;
-  }
-  .t-pick__intro {
-    gap: 14px;
-    align-items: stretch;
-  }
-  .t-pick__text {
-    gap: 8px;
-    padding: 0 4px;
-  }
-  /* Переносы словаря (\n) — десктопные: в 336 они дали бы четыре строки вместо
-     трёх из кадра. */
-  .t-pick__title {
-    white-space: normal;
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 28px;
-    color: #181818;
-  }
-  .t-pick__sub {
-    font-size: 14px;
-    line-height: 20px;
-    color: #8a8a8a;
-  }
-  .t-pick__start {
-    height: 52px;
-  }
-  .t-pick__start:hover:not(:disabled) {
-    transform: none;
-  }
-  .t-pick__heading {
-    font-size: 20px;
-    font-weight: 800;
-    line-height: 27px;
-    letter-spacing: -0.004em;
-    text-align: left;
-    color: #181818;
-  }
-  .t-pick__row {
-    gap: 12px;
-  }
-  .t-pick__row.has-pick .t-pick__card:not(.is-picked) {
-    opacity: 1;
-  }
-  .t-pick__card {
-    position: relative;
-    gap: 4px;
-    padding: 12px;
-    border: 1px solid #ececf1;
-    border-radius: 24px;
-    background: #ffffff;
-  }
-  /* Рамка выбранной — 2px наружу (кадр: 180×210 против 178×208 у соседей):
-     вторым пикселем — тень, иначе карточка раздвигала бы свою строку. */
-  .t-pick__card.is-picked {
-    padding-top: 12px;
-    border-color: #9047ff;
-    background: #efe7ff;
-    box-shadow: 0 0 0 1px #9047ff;
-  }
-  .t-pick__card:focus-visible {
-    outline: 2px solid var(--t-purple);
-    outline-offset: 2px;
-  }
-  .t-pick__card:focus-visible .t-pick__plate {
-    outline: none;
-  }
-  .t-pick__figure {
-    width: 120px;
-    height: 136px;
-  }
-  .t-pick__figure--orb {
-    width: 116px;
-    height: 116px;
-    margin: 10px 0;
-  }
-  .t-pick__plate,
-  .t-pick__card.is-picked .t-pick__plate {
-    margin-top: 0;
-    min-height: 0;
-    gap: 4px;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-  }
-  .t-pick__name,
-  .t-pick__card.is-picked .t-pick__name {
-    font-size: 16px;
-    line-height: 22px;
-  }
-  .t-pick__tag {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 16px;
-    text-align: center;
-    color: #8a8a8a;
-  }
-  .t-pick__check {
-    position: absolute;
-    top: 9px;
-    right: 27px;
-    width: 24px;
-    height: 24px;
-    background: url(/assets/m/tutor/check.svg) center / 24px 24px no-repeat;
-  }
-
-  /* Описание и визитка выделенного — в кадре их нет (в карусели «Web Адаптивка»
-     были): карточкой того же вида, что баннер. */
-  .t-pick__about {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    border: 1px solid #ececf1;
-    border-radius: 24px;
-    background: #ffffff;
-  }
-  .t-pick__desc {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #4a4a55;
-  }
-  .t-pick__listen {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    height: 44px;
-    padding: 0 16px;
-    border: none;
-    border-radius: 999px;
-    background: #efe7ff;
-    color: #9047ff;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 20px;
-    cursor: pointer;
-  }
-
-  /* Тёмная: правила сгенерированного слоя (theme-dark.generated.css) идут позже — у
-     этих лишний класс .t-pick, иначе их фон и рамка карточек перебивались. */
-  html[data-theme='dark'] .t-pick .t-pick__page,
-  html[data-theme='dark'] .t-pick .t-pick__title,
-  html[data-theme='dark'] .t-pick .t-pick__heading,
-  html[data-theme='dark'] .t-pick .t-pick__name {
-    color: var(--dk-text);
-  }
-  html[data-theme='dark'] .t-pick .t-pick__sub,
-  html[data-theme='dark'] .t-pick .t-pick__tag {
-    color: var(--dk-muted);
-  }
-  html[data-theme='dark'] .t-pick .t-pick__desc {
-    color: var(--dk-text-2);
-  }
-  html[data-theme='dark'] .t-pick .t-pick__hero,
-  html[data-theme='dark'] .t-pick .t-pick__about,
-  html[data-theme='dark'] .t-pick .t-pick__card {
-    border: 1px solid var(--dk-line);
-    background: var(--dk-card);
-  }
-  html[data-theme='dark'] .t-pick .t-pick__plate,
-  html[data-theme='dark'] .t-pick .t-pick__card.is-picked .t-pick__plate {
-    background: none;
-  }
-  html[data-theme='dark'] .t-pick .t-pick__card.is-picked {
-    border-color: var(--dk-acc);
-    background: var(--dk-acc-soft);
-    box-shadow: 0 0 0 1px var(--dk-acc);
-  }
-  html[data-theme='dark'] .t-pick .t-pick__listen {
-    background: var(--dk-acc-soft);
-    color: var(--dk-acc-text);
-  }
-
-  /* Карусель «Web Адаптивка» (кадр 4338:1568) — экран выбора её больше не
-     зовёт (выбор по кадру «Mobile» выше), компонент TutorCarousel оставлен.
-     Фон у кадра белый, у остальных экранов раздела — #f8f8f8. Колонка тянется до низа экрана: кнопки прижаты к низу,
-     блок «аватар + подписи» — по центру между ними и шапкой, с полями 40, как
-     в кадре. */
-  .t-app:has(.t-car) {
-    background: #ffffff;
-  }
-  .t-pick--car {
-    flex: 1;
-    padding-top: 0;
-    gap: 0;
-  }
-  .t-car {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  .t-car__main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 32px;
-    padding: 40px 0;
-  }
-  /* Кадр высотой 956; на телефоне пониже (360×740) поля 40 уводили «Выбрать»
-     за нижний край — там их сжимаем. */
-  @media (max-height: 800px) {
-    .t-car__main {
-      gap: 24px;
-      padding: 16px 0;
-    }
-  }
-  /* Сцена во всю ширину экрана (поля контента 16 снимаем) — соседи срезаются
-     краем экрана, как в кадре. Дальние слоты цикла уезжают за сцену и
-     обрезаются ею, а не раздувают ширину страницы. clip, а не hidden: сцену
-     с hidden браузер сам прокручивает к сфокусированному соседу (тап по нему
-     = фокус), и вся лента съезжала на 28px. pan-y: горизонталь забирает
-     свайп, вертикаль остаётся прокрутке. */
-  .t-car__stage {
-    position: relative;
-    height: 200px;
-    margin: 0 -16px;
-    overflow: hidden;
-    overflow: clip;
-    touch-action: pan-y;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  /* Круг 200, соседи — scale 0.62 (124) из JS; позиция, прозрачность и
-     отключение перехода на время свайпа — инлайном. Подложка — нижний эллипс
-     кадра, видна, пока картинка не загрузилась. */
-  .t-car__slot {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 200px;
-    height: 200px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--t-purple);
-    cursor: pointer;
-    transition:
-      transform 0.34s cubic-bezier(0.3, 0.8, 0.3, 1),
-      opacity 0.34s ease;
-    will-change: transform;
-  }
-  .t-car__slot.is-center {
-    z-index: 1;
-    cursor: default;
-  }
-  .t-car__slot:focus-visible {
-    outline: 3px solid var(--t-purple);
-    outline-offset: 3px;
-  }
-  .t-car__img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-  }
-  /* Подписи всех тьюторов в одной ячейке: высота — по самой длинной, и при
-     листании центр блока (а с ним аватар) стоит на месте. */
-  .t-car__infos {
-    display: grid;
-  }
-  .t-car__info {
-    grid-area: 1 / 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    visibility: hidden;
-  }
-  .t-car__info.is-current {
-    visibility: visible;
-  }
-  .t-car__head {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  .t-car__name {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 26px;
-    text-align: center;
-    color: #181818;
-  }
-  .t-car__chips {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 2px;
-  }
-  .t-car__chip {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    white-space: nowrap;
-    color: #ffffff;
-  }
-  .t-car__desc {
-    font-size: 16px;
-    line-height: 22px;
-    text-align: center;
-    color: #181818;
-  }
-  .t-car__actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 16px;
-    margin-bottom: calc(var(--safe-bottom) - 16px);
-  }
-  .t-car__listen,
-  .t-car__choose {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 16px;
-    border: none;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 17px;
-    cursor: pointer;
-  }
-  .t-car__listen {
-    gap: 13px;
-    height: 44px;
-    border-radius: 30px;
-    background: #ebdeff;
-    color: var(--t-purple);
-  }
-  /* Нет визитки — кнопка выключена и спрятана, но держит место */
-  .t-car__listen:disabled {
-    visibility: hidden;
-  }
-  .t-car__choose {
-    height: 48px;
-    border-radius: 80px;
-    background: var(--t-purple);
-    color: #ffffff;
-  }
-  /* Тьютор без голоса (comingSoon) — как у кнопки баннера на десктопе. */
-  .t-car__choose:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .t-car__slot {
-      transition: none;
-    }
-  }
-
   /* ---------- Выбор языка (кадр 4338:1515) ----------
      Белая карточка r30: сверху фиолетовая панель 400 с группой маскотов,
      под ней заголовок и три пилюли. Карусель тьюторов на её месте —
@@ -748,44 +354,11 @@
   .t-analysis__item.is-done .t-radio::after {
     display: none;
   }
-
-  /* ---------- Голосовой разговор (кадры 4338:2111, 4338:2175) ----------
-     В кадре без белой карточки: аватар-шапка, лицо, реплика 28/700, кнопка
-     микрофона. Лицо — готовые рендеры (TutorFace), размер подобран так, чтобы
-     тело было 160, как круг в кадре (тело — 57.5% бокса, см. tutor.css). */
-  .t-voice {
-    padding-top: 16px;
-  }
-  .t-voice__card:not(.t-verdict):not(.t-linedead) {
-    min-height: 0;
-    margin-top: 32px;
-    gap: 24px;
-    padding: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-  /* В звонке в углах карточки таймер и «Расшифровка» — без поля сверху они
-     легли бы на лицо. */
-  .t-voice__card:has(.t-voice__script) {
-    padding-top: 52px;
-  }
   .t-voice__face.t-face {
     --face: 278px;
   }
-  .t-voice__text {
-    --t-cap-max: 28px;
-    --t-cap-pad: 0px;
-    height: 62px;
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 22px;
-    text-align: center;
-  }
   .t-voice__cap {
     line-height: 1.1;
-  }
-  .t-voice__mic {
-    margin-top: 16px;
   }
 
   /* Плашка «дайте доступ к микрофону» (кадр 4338:1953) — сверху, в 8 под
@@ -834,160 +407,6 @@
     font-weight: 500;
     line-height: 28px;
   }
-
-  /* ---------- Дашборд (кадр 4339:3362) ---------- */
-  .t-dash__center {
-    padding: 16px 16px 48px;
-  }
-  .t-dash__topbar {
-    min-height: 40px;
-    gap: 12px;
-  }
-  .t-dash__tutor {
-    gap: 12px;
-  }
-  .t-dash__tutor img,
-  .t-dash__tutor .t-orb {
-    width: 40px;
-    height: 40px;
-  }
-  .t-dash__tutormeta {
-    gap: 0;
-  }
-  .t-dash__tutormeta b {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 22px;
-    color: #181818;
-  }
-  .t-dash__tutormeta span {
-    line-height: 15px;
-  }
-  /* «Управление тьютором» — шестерёнка из макета (экспорт узла 4339:3683)
-     вместо бургера: бургер в той же строке уже есть у шапки .mtop. */
-  .t-dash__manage {
-    background: #b7f0ff url(/assets/m/tutor/settings.svg) center / 20px 20px no-repeat;
-  }
-  .t-dash__manage svg {
-    display: none;
-  }
-  .t-dash__cta {
-    padding-top: 40px;
-  }
-  .t-dash__face.t-face {
-    --face: 209px;
-  }
-  .t-dash__talk,
-  .t-dash__suggest,
-  .t-dash__engonly {
-    width: 100%;
-    max-width: none;
-  }
-  .t-dash__talk {
-    margin-top: 24px;
-    height: 60px;
-    border-radius: 80px;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 20px;
-    letter-spacing: 0;
-    box-shadow: none;
-  }
-  .t-dash__talk:hover,
-  .t-dash__talk:active {
-    transform: none;
-    box-shadow: none;
-  }
-  .t-dash__suggest {
-    margin-top: 24px;
-    gap: 12px;
-    padding: 16px;
-    border-radius: 20px;
-    box-shadow: none;
-  }
-  .t-dash__suggest:hover {
-    transform: none;
-    box-shadow: none;
-  }
-  .t-dash__suggestthumb {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    background-color: #eaeaea;
-  }
-  .t-dash__suggesttext {
-    gap: 4px;
-  }
-  .t-dash__suggesttext small {
-    line-height: 15px;
-  }
-  .t-dash__suggesttext b {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 22px;
-    color: #181818;
-  }
-  .t-dash__suggestarrow {
-    width: 32px;
-    height: 32px;
-    background: #f6f6f6;
-  }
-  .t-dash__engonly {
-    margin-top: 12px;
-    gap: 12px;
-    padding: 12px 16px;
-  }
-  .t-dash__engonlytext {
-    gap: 4px;
-  }
-  .t-dash__engonlytext b {
-    line-height: 22px;
-    color: #181818;
-  }
-  .t-dash__engonlytext small {
-    font-weight: 500;
-    line-height: 15px;
-  }
-  /* Тумблер 40×24: обводка 2 #e6e6e6, серый кружок 16. */
-  .t-dash__switch {
-    width: 40px;
-    height: 24px;
-    border: 2px solid #e6e6e6;
-    border-radius: 16px;
-    background: transparent;
-  }
-  .t-dash__switch::after {
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    background: #b3b3b3;
-  }
-  .t-dash__engonly.is-on .t-dash__switch {
-    border-color: var(--t-purple);
-  }
-  .t-dash__engonly.is-on .t-dash__switch::after {
-    transform: translateX(16px);
-  }
-
-  /* Белый лист сценариев заходит на градиент героя на 24 (gap −24 в кадре). */
-  .t-dash__panel {
-    position: relative;
-    z-index: 1;
-    margin-top: -24px;
-    gap: 0;
-    padding: 16px;
-    border-radius: 16px 16px 0 0;
-  }
-  /* Заголовок 28 стоит по низу ряда 32 (как в кадре), а не по центру. */
-  .t-panel__head {
-    align-items: flex-end;
-    gap: 8px;
-  }
-  .t-panel__head h2 {
-    font-size: 20px;
-    line-height: 28px;
-  }
   .t-seeall {
     flex: none;
     height: 32px;
@@ -995,32 +414,10 @@
     padding: 0 11px;
     line-height: 15px;
   }
-  .t-panel__sub {
-    margin-top: 8px;
-    line-height: 17px;
-    color: #898989;
-  }
-  /* Сетка 2×N плиток 198×240 (+подпись), как в кадре. Одна колонка была
-     догадкой для длинных названий — они переносятся, а не режутся. */
-  .t-scenarios {
-    margin-top: 16px;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px 12px;
-  }
-  .t-scenario {
-    gap: 12px;
-  }
-  .t-scenario__img {
-    border-radius: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  }
   .t-scenario__badge {
     top: 6px;
     left: 6px;
     font-size: 18px;
-  }
-  .t-scenario__label {
-    line-height: 18px;
   }
 
   /* ---------- Тур по дашборду (кадры 4339:3950, 4339:4061) ----------
@@ -1140,5 +537,265 @@
   .t-tour__intro--cast .t-tour__intro-art--top2 {
     left: calc(50% + 8px);
     right: auto;
+  }
+
+  /* ---------- Выбор тьютора (кадр «Mobile» 7248:17411, 29.10.2026) ----------
+     Заголовок раздела 32, под ним карусель карточек (карточка 322×564, соседи
+     280 с прозрачностью 0.5 — их сдвиг и масштаб считает TutorCarousel), ниже
+     «Выбрать <имя>» во всю ширину. Кегли карточки — кадра (28 имя, 13 черты). */
+  .t-pick {
+    gap: 0;
+    padding-top: 10px;
+  }
+  .t-car {
+    position: relative;
+    height: 564px;
+    margin: 10px -16px 0;
+    overflow: hidden;
+    overflow: clip;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .t-car__slot {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 322px;
+    height: 564px;
+    transform-origin: 50% 50%;
+    transition: transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.34s ease;
+    outline: none;
+  }
+  .t-car__slot:not(.is-center) {
+    cursor: pointer;
+  }
+  /* У соседей кнопки карточки не жмутся: тап по ним — шаг карусели. */
+  .t-car__slot:not(.is-center) .t-pick__card * {
+    pointer-events: none;
+  }
+  .t-car .t-pick__card {
+    gap: 12px;
+    padding: 16px;
+    border: 0;
+    border-radius: 28px;
+    overflow: hidden;
+  }
+  .t-car .t-pick__stage {
+    aspect-ratio: auto;
+    height: 260px;
+    border-radius: 20px;
+  }
+  .t-car .t-pick__adult {
+    top: 12px;
+    right: 12px;
+    gap: 6px;
+    height: 32px;
+    padding: 0 6px 0 12px;
+    font-size: 13px;
+  }
+  .t-car .t-pick__switch {
+    width: 36px;
+    height: 20px;
+  }
+  .t-car .t-pick__switch::after {
+    width: 16px;
+    height: 16px;
+  }
+  .t-car .t-pick__adult.is-on .t-pick__switch::after {
+    transform: translateX(16px);
+  }
+  .t-car .t-pick__head {
+    gap: 4px;
+  }
+  .t-car .t-pick__name {
+    font-size: 28px;
+    line-height: 38px;
+  }
+  .t-car .t-pick__listen {
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px 0 10px;
+    font-size: 13px;
+  }
+  .t-car .t-pick__listen svg {
+    width: 20px;
+    height: 20px;
+  }
+  .t-car .t-pick__tag {
+    font-size: 14px;
+    line-height: 19px;
+  }
+  .t-car .t-pick__traits {
+    gap: 8px;
+  }
+  .t-car .t-pick__trait {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .t-car .t-pick__desc {
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-line-clamp: 5;
+  }
+  .t-pick__start {
+    align-self: stretch;
+    min-width: 0;
+    margin-top: 36px;
+  }
+
+  /* ---------- Страница тьютора (кадры 7248:19558, 7248:20554, 7413:13378) ----------
+     Фиолетовая шапка во всю ширину без скругления, белый лист ситуаций
+     заходит на неё на 16 (в звонке — встык). Кнопки шапки по 32: у «Другие
+     тьюторы» только кружки и стрелка, подпись спрятана. */
+  .tp-page {
+    padding: 0;
+  }
+  .tp-hero {
+    gap: 16px;
+    padding: 16px 16px 56px;
+    border-radius: 0;
+  }
+  .tp-hero--call {
+    min-height: calc(100dvh - var(--mtab-h, 0px));
+    box-sizing: border-box;
+    padding-bottom: 40px;
+  }
+  .tp-hero__others,
+  .tp-hero__manage {
+    height: 32px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .tp-hero__others {
+    gap: 2px;
+    padding: 0 8px 0 0;
+    border-radius: 16px;
+  }
+  .tp-hero__others svg {
+    width: 16px;
+    height: 16px;
+  }
+  .tp-hero__manage {
+    gap: 8px;
+    padding: 8px 16px;
+  }
+  .tp-hero__manage svg {
+    width: 16px;
+    height: 16px;
+  }
+  .tp-hero__name h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .tp-hero__body {
+    margin-top: 24px;
+  }
+  /* Звонок: имя, лицо с репликами и полоса — одной группой по центру шапки,
+     как в кадре (кнопки шапки остаются сверху). */
+  .tp-hero--call .tp-hero__name {
+    margin-top: auto;
+  }
+  .tp-hero--call .tp-hero__body {
+    margin-bottom: auto;
+  }
+  .tp-portrait {
+    --tp-border: 6px;
+    width: 200px;
+    height: 200px;
+    border-radius: 64px;
+  }
+  .tp-dash__frame {
+    border-radius: 64px;
+  }
+
+  /* Карточка настроек — вкладки «Настройки | Ситуации». */
+  .tp-composer--tabs {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: none;
+  }
+  .tp-seg--tabs {
+    gap: 4px;
+    padding: 2px;
+    background: #ececf2;
+  }
+  .tp-seg--tabs .tp-seg__opt {
+    min-height: 36px;
+  }
+  .tp-composer__rule {
+    margin: 0;
+    height: 1px;
+    border: 0;
+    background: #f3f3f3;
+  }
+  .tp-talk {
+    align-self: stretch;
+  }
+
+  .tp-call {
+    gap: 40px;
+  }
+  .tp-call__row {
+    gap: 20px;
+  }
+  .tp-call .tp-portrait {
+    --tp-border: 4.8px;
+    width: 160px;
+    height: 160px;
+    border-radius: 51px;
+  }
+  .tp-call__bubbles {
+    max-width: calc(100vw - 32px - 160px - 20px);
+  }
+  .tp-bubble {
+    padding: 12px;
+    border-radius: 4px 12px 12px 12px;
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .tp-bubble.is-wait {
+    min-width: 37px;
+  }
+  .tp-call__card {
+    padding: 28px 20px;
+    border-radius: 24px;
+  }
+  .tp-mic,
+  .tp-mic--ptt {
+    width: 100%;
+  }
+  .tp-mic__row {
+    gap: 16px;
+  }
+
+  .tp-grid {
+    position: relative;
+    z-index: 1;
+    gap: 0;
+    margin-top: -16px;
+    padding: 16px 0 24px;
+    border-radius: 16px 16px 0 0;
+    background: #ffffff;
+  }
+  .tp-hero--call + .tp-grid {
+    margin-top: 0;
+  }
+  .tp-grid__title {
+    padding: 0 16px 12px;
+  }
+  .tp-grid__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0 16px;
+  }
+  .tp-scen {
+    aspect-ratio: 179 / 216;
+    border-radius: 16px;
   }
 }

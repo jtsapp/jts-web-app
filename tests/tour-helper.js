@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { gateReply } from './helpers/login.js'
 
 // Прогон целиком идёт с погашенными турами (storageState в playwright.config.js):
 // тур — модалка и перехватывает клики у тестов про другое. Тестам самого тура
@@ -15,6 +16,9 @@ export async function signIn(page) {
   await page.addInitScript((token) => localStorage.setItem('jts_access_token', token), jwt)
   await page.route(/justtostudy\.kz/, (route) => {
     const url = route.request().url()
+    // Замки develop с 29.10.2026 (см. helpers/login.js): документы приняты, ограничений разделов нет.
+    const gate = gateReply(url)
+    if (gate) return route.fulfill(json(gate))
     if (url.includes('/user/language-level')) return route.fulfill(json({ languageLevel: 'A1' }))
     if (url.includes('/user/me')) return route.fulfill(json(me))
     if (url.includes('/admin/lessons/occurrences') || url.includes('/admin/homework/my')) return route.fulfill(json([]))

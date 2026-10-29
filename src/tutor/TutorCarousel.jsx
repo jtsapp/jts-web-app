@@ -1,35 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import TutorThumb from './TutorThumb.jsx'
-import { VolumeIcon } from './TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 
-// Выбор тьютора на телефоне — карусель по кадру Figma «Web Адаптивка» 4338:1568:
-// аватар 200 по центру, соседи 124 (scale 0.62) с прозрачностью 0.5 выглядывают
-// из-за краёв экрана, под ним имя, черты, описание, внизу «Послушать голос» и
-// «Выбрать <имя>». Листается свайпом и тапом по соседу; точек и стрелок в кадре
-// нет — их роль играют выглядывающие соседи.
+// Выбор тьютора на телефоне — карусель карточек по кадру Figma «Mobile» →
+// «AI-тьютор» (7248:17411, 29.10.2026): карточка 322 по центру, соседи 280 с
+// прозрачностью 0.5 выглядывают из-за краёв экрана. Листается свайпом и тапом
+// по соседу; точек и стрелок в кадре нет — их роль играют выглядывающие соседи.
 //
-// Здесь только показ и листание: какой нрав уходит дальше, есть ли у тьютора
-// визитка и что значит «выбрать» — решает экран выбора, тем же кодом, что и для
-// десктопного ряда (иначе два вида одного выбора разъехались бы).
+// Здесь только листание: что нарисовано на карточке, решает экран выбора
+// (renderCard) — та же карточка стоит и в десктопном ряду, и два вида одного
+// выбора не разъедутся.
 //
 // Цикл бесконечный: три копии списка, индекс после перехода тихо
 // возвращается в среднюю (та же картинка на том же месте — шва не видно).
-// Так было и в прошлой мобильной карусели (до сентября 2026), подход проверен.
-const SLOT = 186 // центр-к-центру соседних аватаров в кадре
-const SIDE_SCALE = 0.62 // 124 / 200
+// Так было и в прошлых мобильных каруселях, подход проверен.
+const SLOT = 309 // центр-к-центру соседних карточек в кадре: 322/2 + 8 + 280/2
+const SIDE_SCALE = 280 / 322
 const SWIPE_MIN = 40 // короче — это тап или дрожь пальца, а не листание
 const TAP_SLOP = 6
 const EASE_MS = 340
 
-export default function TutorCarousel({
-  tutors,
-  startKey = '',
-  temperOf,
-  canListen,
-  onListen,
-  onChoose,
-}) {
+export default function TutorCarousel({ tutors, startKey = '', onActive, renderCard }) {
   const { t } = useLang()
   const n = tutors.length
   const slides = [...tutors, ...tutors, ...tutors]
@@ -42,14 +32,12 @@ export default function TutorCarousel({
   const swallowClick = useRef(false)
 
   const active = ((idx % n) + n) % n
-  const cur = tutors[active]
-
-  // Строка словаря, которой может не быть: у Айзере (dev-only) описания нет, и
-  // сырой ключ на экране хуже пустого места.
-  const tOpt = (key) => {
-    const s = t(key)
-    return s === key ? '' : s
-  }
+  const activeKey = tutors[active]?.key
+  useEffect(() => {
+    if (activeKey) onActive?.(activeKey)
+    // onActive — новая функция на каждый рендер экрана; важен только сам ключ.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKey])
 
   const go = (step) => {
     setAnim(true)
@@ -58,7 +46,9 @@ export default function TutorCarousel({
 
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    drag.current = { x0: e.clientX, d: 0 }
+    // Кнопки на самой карточке (18+, «Послушать») — не начало свайпа.
+    if (e.target.closest('button')) return
+    drag.current = { x0: e.clientX, y0: e.clientY, d: 0 }
     swallowClick.current = false
     setAnim(false)
   }
@@ -108,107 +98,62 @@ export default function TutorCarousel({
     return () => cancelAnimationFrame(raf)
   }, [anim, idx])
 
-  const listenable = canListen(cur)
-  const soon = Boolean(cur.comingSoon)
-
   return (
-    <div className="t-car">
-      <div className="t-car__main">
-        <div
-          className="t-car__stage"
-          role="group"
-          aria-roledescription="carousel"
-          aria-label={t('choose.title')}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
-          onPointerLeave={onPointerEnd}
-          onKeyDown={onKeyDown}
-          // Картинку мышью браузер тащит как файл и съедает pointermove.
-          onDragStart={(e) => e.preventDefault()}
-          // Страховка для браузеров без overflow: clip — там сцену прокручивает
-          // к сфокусированному соседу сам браузер (см. src/mobile/tutor.css).
-          onScroll={(e) => {
-            e.currentTarget.scrollLeft = 0
-          }}
-        >
-          {slides.map((tt, i) => {
-            const off = i - idx
-            const near = Math.abs(off) <= 1
-            const side = near && off !== 0
-            // Орб — живая канва с rAF, а слотов втрое больше, чем тьюторов:
-            // монтируем его только в видимых. Картинки — с запасом в слот, чтобы
-            // въезжающий сосед не появлялся пустым кругом.
-            const thumb = tt.face === 'orb' ? near : Math.abs(off) <= 2
-            return (
-              <button
-                key={i}
-                type="button"
-                className={'t-car__slot' + (off === 0 ? ' is-center' : '')}
-                style={{
-                  transform: `translateX(calc(-50% + ${off * SLOT + dx}px)) scale(${off === 0 ? 1 : SIDE_SCALE})`,
-                  opacity: off === 0 ? 1 : side ? 0.5 : 0,
-                  transition: anim ? undefined : 'none',
-                }}
-                tabIndex={side ? 0 : -1}
-                aria-hidden={!side}
-                aria-label={side ? tt.name : undefined}
-                onClick={() => {
-                  if (swallowClick.current || !side) return
-                  go(off)
-                }}
-              >
-                {thumb && <TutorThumb tutor={tt} className="t-car__img" />}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Подписи всех тьюторов лежат в одной ячейке сетки, видна только
-            текущая. Высота блока — по самой длинной, поэтому при листании
-            аватар (блок стоит по центру экрана) не прыгает вверх-вниз. */}
-        <div className="t-car__infos" aria-live="polite">
-          {tutors.map((tt, i) => {
-            const desc = tOpt(
-              temperOf(tt) === 'harsh' ? `tutor.${tt.key}.desc18` : `tutor.${tt.key}.desc`,
-            )
-            const on = i === active
-            return (
-              <div className={'t-car__info' + (on ? ' is-current' : '')} key={tt.key} aria-hidden={!on}>
-                <div className="t-car__head">
-                  <div className="t-car__name">{tt.name}</div>
-                  <div className="t-car__chips">
-                    {tt.traitColors.map((color, k) => (
-                      <span className="t-car__chip" key={color} style={{ background: color }}>
-                        {t(`tutor.${tt.key}.trait${k + 1}`)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                {desc && <p className="t-car__desc">{desc}</p>}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="t-car__actions">
-        {/* Визитки нет (Айзере) — кнопка не рисуется, но место держит: иначе
-            блок над ней съезжал бы на каждом таком тьюторе. */}
-        <button
-          className={'t-car__listen' + (listenable ? '' : ' is-none')}
-          type="button"
-          disabled={!listenable}
-          onClick={() => onListen(cur)}
-        >
-          {listenable ? t(`tutor.${cur.key}.listen`) : ''}
-          <VolumeIcon size={20} />
-        </button>
-        <button className="t-car__choose" type="button" disabled={soon} onClick={() => onChoose(cur)}>
-          {soon ? t('choose.soon') : t(`tutor.${cur.key}.choose`)}
-        </button>
-      </div>
+    <div
+      className="t-car"
+      role="radiogroup"
+      aria-roledescription="carousel"
+      aria-label={t('choose.title')}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onPointerLeave={onPointerEnd}
+      onKeyDown={onKeyDown}
+      // Картинку мышью браузер тащит как файл и съедает pointermove.
+      onDragStart={(e) => e.preventDefault()}
+      // Страховка для браузеров без overflow: clip — там ленту прокручивает к
+      // сфокусированному соседу сам браузер.
+      onScroll={(e) => {
+        e.currentTarget.scrollLeft = 0
+      }}
+    >
+      {slides.map((tt, i) => {
+        const off = i - idx
+        const near = Math.abs(off) <= 1
+        const side = near && off !== 0
+        // Карточек втрое больше, чем тьюторов: рисуем только те, что на экране
+        // или въедут следующими.
+        if (Math.abs(off) > 2) return null
+        return (
+          <div
+            key={i}
+            className={'t-car__slot' + (off === 0 ? ' is-center' : '')}
+            style={{
+              transform: `translateX(calc(-50% + ${off * SLOT + dx}px)) scale(${off === 0 ? 1 : SIDE_SCALE})`,
+              opacity: off === 0 ? 1 : side ? 0.5 : 0,
+              transition: anim ? undefined : 'none',
+            }}
+            role="radio"
+            aria-checked={off === 0}
+            aria-hidden={!near}
+            aria-label={tt.name}
+            tabIndex={side ? 0 : -1}
+            onClick={() => {
+              if (swallowClick.current || !side) return
+              go(off)
+            }}
+            onKeyDown={(e) => {
+              if (side && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault()
+                go(off)
+              }
+            }}
+          >
+            {renderCard(tt, off === 0)}
+          </div>
+        )
+      })}
     </div>
   )
 }
