@@ -3757,15 +3757,17 @@ def _stand_key(p: LearnerProfile) -> str:
 
 
 def _dexter_temper_persona(temper: str) -> str:
-    """Персона живого Декстера по нраву звонка. calm — «свой пацан», harsh и
-    пустой — хулиган: агент один на дев и прод, а веб до 29.10.2026 нрав Декстера
-    не слал вовсе, и такой звонок должен звучать как раньше, злым. Дефолт «свой
-    пацан» задаёт сайт (defaultTemper в src/tutor/tutors.js) и шлёт его явно.
+    """Персона живого Декстера по нраву звонка. Хулиган — ТОЛЬКО по явному harsh
+    (кнопка 18+); всё остальное — «свой пацан»: и calm, и пустой нрав. Пустой шлёт
+    любой клиент, который про нрав Декстера не знает (вкладка, открытая до
+    релиза, другое приложение), — решение владельца 29.10.2026: такой звонок
+    звучит по умолчанию, спокойно, а не хулиганом без предупреждения. Тот же
+    дефолт у сайта (defaultTemper в src/tutor/tutors.js).
     Секрет DEXTER_TEMPER=off — оба нрава на клиентского Декстера v3.5, без деплоя.
     Нрав, чьё ядро не собралось или файла нет, тоже уходит на v3.5."""
     if (os.getenv("DEXTER_TEMPER") or "").strip().lower() in ("off", "0", "false", "legacy"):
         return BUDDY_TEST_PERSONA
-    want = "dexter_calm" if (temper or "").strip().lower() == "calm" else "dexter_hooligan"
+    want = "dexter_hooligan" if (temper or "").strip().lower() == "harsh" else "dexter_calm"
     if want in BUDDY_PERSONAS and want in BUDDY_CORE_VARIANTS:
         return want
     return BUDDY_TEST_PERSONA
