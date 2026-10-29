@@ -24,7 +24,7 @@ import { micLevel } from '../tutor/micLevel.js'
 import { lastSentence } from '../tutor/captions.js'
 import { useLiveCaption } from '../tutor/useLiveCaption.js'
 import { useCallSession } from '../tutor/callSession.js'
-import { MicIcon, MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, ClockIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
+import { MicIcon, MicLineIcon, MicOffIcon, CallEndIcon, CheckIcon, CrossIcon, TimerIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import TutorLimitModal from '../components/TutorLimitModal.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -379,11 +379,12 @@ function useCountdown(ttl, running = true) {
   return left
 }
 
+// «4:59», как в макете таймера: минуты без ведущего нуля.
 function fmtClock(sec) {
   if (sec === null) return ''
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 // Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Тег
@@ -488,8 +489,8 @@ function MicBar({ t, ptt, micOn, onToggleMic, holding, pointerHandlers, micTrack
 // Расшифровки, шпаргалки ситуации и переключателя «Рация | Свободно» в звонке
 // нет — их нет в макете 29.10.2026 (решение владельца «пока строго по макету»).
 // Режим выбирается до звонка, в карточке настроек страницы тьютора. Таймер
-// лимита владелец вернул тем же днём — плашкой слева вверху шапки, где макет
-// ничего не рисует (.tp-call__timer).
+// лимита вернули тем же днём — дизайнер дорисовал его плашкой в правом нижнем
+// углу шапки (.tp-call__timer).
 export function CallStage({
   onFinish,
   t,
@@ -753,7 +754,7 @@ export function CallStage({
           aria-label={t('voice.timeLeft')}
           title={t('voice.timeLeft')}
         >
-          <ClockIcon size={18} />
+          <TimerIcon size={16} />
           {fmtClock(left)}
         </span>
       )}
