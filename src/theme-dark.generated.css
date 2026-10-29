@@ -657,10 +657,6 @@ html[data-theme="dark"] .sb__item--active, html[data-theme="dark"] .sb__item--ac
     background: var(--dk-acc);
     color: var(--dk-on-acc)
 }
-html[data-theme="dark"] .sb__badge--new {
-    background: var(--dk-yellow-tint);
-    color: var(--dk-yellow)
-}
 html[data-theme="dark"] .sb__badge {
     background: var(--dk-red);
     color: var(--dk-on-bright)
@@ -24722,12 +24718,6 @@ html[data-theme="dark"] .mt-sec--why {
 }
 html[data-theme="dark"] .mt-sec--why h3 {
     color: var(--mt-ok)
-}
-html[data-theme="dark"] .mt-res img, html[data-theme="dark"] .mt-res__ph {
-    background: var(--mt-soft)
-}
-html[data-theme="dark"] .mt-video {
-    background: #000
 }
 html[data-theme="dark"] .mt-tl {
     border-left: 2px solid var(--mt-soft)
