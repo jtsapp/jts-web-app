@@ -24094,6 +24094,26 @@ html[data-theme="dark"] .footer .legal-links a:focus-visible {
 html[data-theme="dark"] .footer .footer-copy {
     color: #fff
 }
+html[data-theme="dark"] .legal-panel {
+    background: var(--dk-ink-bg);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #fff
+}
+html[data-theme="dark"] .legal-panel h2 {
+    color: #fff
+}
+html[data-theme="dark"] .legal-panel .legal-links a {
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.04);
+    color: #fff
+}
+html[data-theme="dark"] .legal-panel .legal-links a:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.4)
+}
+html[data-theme="dark"] .legal-panel .legal-links a:focus-visible {
+    outline: 2px solid var(--dk-line)
+}
 /*  services.css  */
 @media (max-width: 560px) {
     html[data-theme="dark"] .learn__main:has(.svc) {

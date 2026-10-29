@@ -1,4 +1,4 @@
-import LegalDocumentsLinks from '../components/LegalDocumentsLinks.jsx'
+import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
@@ -449,7 +449,7 @@ export default function ProfilePage({
           ))}
         </div>
 
-        <section className="pf-card legal-profile"><h2>{t('legal.title')}</h2><LegalDocumentsLinks /></section>
+        <LegalDocumentsPanel className="legal-profile" />
         <button className="pf-logout" onClick={onLogout}>
           <PfLogoutIcon />
           <span>{t('profile.logout')}</span>

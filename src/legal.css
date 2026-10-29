@@ -21,19 +21,18 @@
 .legal-primary:disabled, .legal-signout:disabled { opacity: .5; cursor: default; }
 .legal-actions .legal-signout { background: transparent; color: #726b83; }
 .legal-error { color: #ba2947; }
-.legal-profile { padding: 20px; margin-top: 24px; }
-.legal-profile h2 { font-size: 18px; }
+.legal-profile { margin-top: 24px; }
 .catalog-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
 .catalog-old { color: #8e889a; font-size: 14px; display: block; margin: 8px 0 4px; }
 .pr-tile h3 { margin: 0; }
 .exam-pr > .pr-sec { margin-bottom: 20px; }
 
-/* Document links on the dark footer: independent of the purple links in content cards. */
+/* Document links on the dark footer: independent of the panels and agreement screen. */
 .footer-documents { min-width: 0; }
 .footer .legal-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 28px; row-gap: 4px; margin: 0; }
 .footer .legal-links li { min-width: 0; }
 .footer .legal-links a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 0; color: #fff; font-size: 14px; font-weight: 500; line-height: 1.5; text-decoration: none; text-wrap: balance; }
-.footer .legal-links a span { opacity: .65; font-size: 12px; flex: none; }
+.footer .legal-links a .legal-link-arrow { opacity: .65; font-size: 12px; flex: none; }
 .footer .legal-links a:hover { text-decoration: underline; text-underline-offset: 5px; }
 .footer .legal-links a:focus-visible { outline: 2px solid #fff; outline-offset: 5px; border-radius: 2px; }
 .footer .footer-copy { font-size: 12px; font-weight: 400; line-height: 1.5; color: #fff; }
@@ -42,3 +41,15 @@
   .footer-documents { grid-column: 1 / -1; grid-row: 2; }
   .footer .legal-links { justify-content: flex-start; }
 }
+
+/* Shared document panel for the profile and all pricing pages. */
+.legal-panel { min-width: 0; margin-top: 24px; padding: 26px; background: #1d1826; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; color: #fff; }
+.legal-panel h2 { margin: 0 0 18px; color: #fff; font-size: 20px; font-weight: 700; line-height: 1.35; }
+.legal-panel .legal-links { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin: 0; }
+.legal-panel .legal-links li { display: flex; min-width: 0; }
+.legal-panel .legal-links a { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 84px; padding: 18px 16px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(255,255,255,.04); color: #fff; font-size: 15px; font-weight: 500; line-height: 1.5; text-decoration: none; transition: background .15s, border-color .15s; }
+.legal-panel .legal-links a:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
+.legal-panel .legal-links a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.legal-panel .legal-link-icon { flex: none; opacity: .8; }
+.legal-panel .legal-link-label { min-width: 0; overflow-wrap: anywhere; }
+.legal-panel .legal-link-arrow { flex: none; margin-left: auto; opacity: .65; }
