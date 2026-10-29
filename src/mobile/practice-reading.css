@@ -1280,6 +1280,9 @@
   .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-head__title {
     display: none;
   }
+  /* Уровни с редизайна (29.10.2026) стоят в строке под вкладками (.pk-cap): раскрываем её, чтобы чипы встали
+     на своё место в колонке экрана, как раньше из шапки. */
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) > .pk-cap,
   .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) > :is(#sec-books, #sec-comics),
   .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__head,
   .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__tools {

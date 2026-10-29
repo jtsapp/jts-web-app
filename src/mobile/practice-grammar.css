@@ -251,7 +251,8 @@
      «Свернуть» — круглой «назад» слева. Стрелка и шеврон — Material
      arrow_back / chevron_right, как инстансы кадра (мост Figma был занят). */
   .pk:has(> #sec-grammar .gr-catalog) > .pk-head,
-  .pk:has(> #sec-grammar .gr-catalog) > .pk-skills {
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-skills,
+  .pk:has(> #sec-grammar .gr-catalog) > .pk-cap .pk-levels {
     display: none;
   }
   /* Заголовок в макете по центру, но справа на телефоне стоит группа «?,

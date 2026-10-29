@@ -100,53 +100,46 @@ html[data-theme="dark"] ::selection {
 
 /* ---------- Правки поверх генератора ---------- */
 
-/* Карточки навыков в «Практике»: рисунок — SVG с пастельными фигурами,
-   генератор до цветов внутри файла не достаёт. Поэтому у каждого SVG тёмная
-   копия (*-dark.svg): подложка прозрачная — её даёт --sk-bg, то есть тинт
-   семейства, — а фигуры цветом бренда с прозрачностью 0.09 (при 0.13
-   оранжевая уже бурела). Так рисунок следует за токенами и не уходит в
-   бурый, как первая копия (#2c1f12).
-   Копии сделаны из светлых SVG заменой цветов, рисунок тот же.
-   Невыбранная карточка в светлой теме — полупрозрачная (opacity 0.6), и
-   полупрозрачный тинт на графите мутнел. Здесь она нейтральная и
-   непрозрачная, а тинт и цветная рамка — только у выбранной. */
-html[data-theme="dark"] .pk-skill {
-  --sk-bg: var(--dk-card);
-  opacity: 1;
+/* «Практика» (редизайн 29.10.2026, макет 7393:14225): цвет раздела — переменные --pk-* (styles.css), генератор до
+   них не достаёт. На графите каждый раздел берёт свою семью брендбука: Аудирование — голубой, Чтение — оранжевый,
+   Письмо — фиолетовый (розового в брендбуке нет, ближайший — фиолетовый), Говорение — зелёный, Грамматика —
+   жёлтый. Градиент — от цвета семьи в её глубокую ступень, тинт чипа — мягкая ступень, текст чипа — сам цвет.
+   На жёлтом белое не читается — значок и текст тёмные, как в светлой теме. */
+html[data-theme="dark"] .pk-c--listening {
+  --pk-from: var(--dk-blue);
+  --pk-to: var(--dk-blue-deep);
+  --pk-acc: var(--dk-blue);
+  --pk-tint: var(--dk-blue-soft);
+  --pk-ink: var(--dk-blue);
 }
-html[data-theme="dark"] .pk-skill:not(.is-on) .pk-skill__title {
-  color: var(--dk-muted);
+html[data-theme="dark"] .pk-c--reading {
+  --pk-from: var(--dk-orange);
+  --pk-to: var(--dk-orange-deep);
+  --pk-acc: var(--dk-orange);
+  --pk-tint: var(--dk-orange-soft);
+  --pk-ink: var(--dk-orange);
 }
-html[data-theme="dark"] .pk-skill:not(.is-on):hover .pk-skill__title {
-  color: var(--dk-text-2);
+html[data-theme="dark"] .pk-c--writing {
+  --pk-from: var(--dk-acc);
+  --pk-to: var(--dk-acc-deep);
+  --pk-acc: var(--dk-acc-text);
+  --pk-tint: var(--dk-acc-soft);
+  --pk-ink: var(--dk-acc-text);
 }
-html[data-theme="dark"] .pk-skill--listening {
-  --sk-tint: var(--dk-blue-tint);
-  --sk-art: url('/practice/skills/listening-dark.svg');
-  --sk-line: var(--dk-blue-line);
+html[data-theme="dark"] .pk-c--speaking {
+  --pk-from: var(--dk-green);
+  --pk-to: var(--dk-green-deep);
+  --pk-acc: var(--dk-green);
+  --pk-tint: var(--dk-green-soft);
+  --pk-ink: var(--dk-green);
 }
-html[data-theme="dark"] .pk-skill--reading {
-  --sk-tint: var(--dk-orange-tint);
-  --sk-art: url('/practice/skills/reading-dark.svg');
-  --sk-line: var(--dk-orange-line);
-}
-html[data-theme="dark"] .pk-skill--writing {
-  --sk-tint: var(--dk-acc-tint);
-  --sk-art: url('/practice/skills/writing-dark.svg');
-  --sk-line: var(--dk-acc-line);
-}
-html[data-theme="dark"] .pk-skill--speaking {
-  --sk-tint: var(--dk-green-tint);
-  --sk-art: url('/practice/skills/speaking-dark.svg');
-  --sk-line: var(--dk-green-line);
-}
-html[data-theme="dark"] .pk-skill--grammarGames {
-  --sk-tint: var(--dk-yellow-tint);
-  --sk-art: url('/practice/skills/grammarGames-dark.svg');
-  --sk-line: var(--dk-yellow-line);
-}
-html[data-theme="dark"] .pk-skill.is-on {
-  --sk-bg: var(--sk-tint);
+html[data-theme="dark"] .pk-c--grammarGames {
+  --pk-from: var(--dk-yellow);
+  --pk-to: var(--dk-yellow-deep);
+  --pk-acc: var(--dk-yellow);
+  --pk-tint: var(--dk-yellow-soft);
+  --pk-ink: var(--dk-yellow);
+  --pk-on: var(--dk-on-bright);
 }
 
 /* Плитки «Сервисов» (services.css): фон и значок — переменными модификатора, генератор до них не достаёт. На графите
