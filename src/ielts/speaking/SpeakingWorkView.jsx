@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import Breadcrumbs from '../ui/Breadcrumbs.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
 import PillButton from '../ui/PillButton.jsx'
-import { getIeltsAttempt, getIeltsWritingModel } from '../../api.js'
+import { assessIeltsSpeaking, getIeltsAttempt, getIeltsWritingModel } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { formatDate } from '../format.js'
 import { InfoIcon, MicIcon } from '../icons.jsx'
-import { SPEAKING_CRITERIA, formatSec, speakingQuestions } from './speaking.js'
+import { SPEAKING_CRITERIA, formatSec, gradeErrorKey, speakingQuestions } from './speaking.js'
+import { attemptKey, loadPendingTakes } from './pendingTakes.js'
+import GradeErrorNote from './GradeErrorNote.jsx'
 import { useI18n } from '../../i18n.jsx'
 
 const CRIT_KEY = { fluencyCoherence: 'fc', lexicalResource: 'lr', grammaticalRange: 'gra', pronunciation: 'p' }
@@ -14,7 +16,8 @@ const CRIT_KEY = { fluencyCoherence: 'fc', lexicalResource: 'lr', grammaticalRan
 /**
  * Оценка ответов Speaking: band по четырём критериям (произношение — по звуку, Azure; если его не было — band по
  * трём и об этом сказано), что получилось и над чем работать, по каждому вопросу — стенограмма, длительность и
- * темп, рядом модельный ответ с разбором. Записей здесь нет: они не хранятся.
+ * темп, рядом модельный ответ с разбором. Записей на сервере нет: они не хранятся. Упавшая оценка — исключение: её
+ * записи лежат на устройстве (pendingTakes.js), и отсюда их можно отправить на ту же работу ещё раз.
  */
 // embedded — внутри разбора полного mock (MockReview): без хлебных крошек раздела и без «Записать ещё раз»
 export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWorks, onRetry, embedded = false }) {
@@ -23,6 +26,10 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
   const [state, setState] = useState({ status: 'loading' })
   const [models, setModels] = useState(null)
+  // записи упавшей оценки с этого устройства: есть — оценку можно повторить без перезаписи
+  const [pending, setPending] = useState(null)
+  const [resend, setResend] = useState({ busy: false, error: null })
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -36,7 +43,33 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
     return () => {
       alive = false
     }
-  }, [authToken, attemptId])
+  }, [authToken, attemptId, reloadKey])
+
+  const failed = state.status === 'ready' && state.view.result?.status === 'failed'
+  useEffect(() => {
+    if (!failed) return undefined
+    let alive = true
+    loadPendingTakes(attemptKey(attemptId)).then((rec) => alive && setPending(rec)).catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [failed, attemptId])
+
+  const resendTakes = async () => {
+    if (!pending) return
+    setResend({ busy: true, error: null })
+    try {
+      await assessIeltsSpeaking(authToken, { testId: pending.testId || state.view.testId, mode: pending.mode || state.view.attempt?.mode || 'exam', uiLang: lang, answers: pending.answers, retryAttemptId: attemptId })
+    } catch (e) {
+      if (e?.code !== 'already_graded') {
+        setResend({ busy: false, error: { text: t(`ieltsSpeaking.gradeError.${gradeErrorKey(e?.code)}`), code: e?.code || null, debugId: e?.debugId || null } })
+        return
+      }
+    }
+    setPending(null)
+    setResend({ busy: false, error: null })
+    setReloadKey((k) => k + 1)
+  }
 
   const crumbs = [{ label: t('ieltsHub.tab.learn'), onClick: onBackToLearn }, { label: 'Speaking', onClick: onBackToLearn }, { label: t('ieltsSpeaking.works'), onClick: onWorks }]
   if (state.status !== 'ready')
@@ -53,6 +86,8 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
   const part2 = doc.kind === 'part2'
   const byId = Object.fromEntries((r.items || []).map((x) => [x.itemId, x]))
   const qs = speakingQuestions(doc).filter((q) => byId[q.id])
+  // в записях не услышали речи — повтор тех же записей ничего не даст, остаётся «Записать ещё раз»
+  const canResend = !!pending && !String(r.failReason || '').startsWith('no_speech')
 
   return (
     <div className="ih-wwork">
@@ -84,9 +119,17 @@ export default function SpeakingWorkView({ token, attemptId, onBackToLearn, onWo
           <span className="ih-wstatus__icon"><MicIcon size={22} /></span>
           <div>
             <b>{t(r.status === 'grading' ? 'ieltsWriting.gradingTitle' : 'ieltsSpeaking.failedTitle')}</b>
-            <p>{t(r.status === 'grading' ? 'ieltsWriting.gradingText' : 'ieltsSpeaking.failedText')}</p>
+            <p>{t(r.status === 'grading' ? 'ieltsWriting.gradingText' : canResend ? 'ieltsSpeaking.failedTextResend' : 'ieltsSpeaking.failedText')}</p>
+            {resend.error && <p className="ih-run__error" role="alert">{resend.error.text}</p>}
+            {/* failReason бэкенда — «код · id запроса · подробность»; ученику — первые два, их ищут в логе стенда */}
+            {r.status === 'failed' && <GradeErrorNote code={resend.error?.code || String(r.failReason || '').split(' · ')[0] || null} debugId={resend.error?.debugId || String(r.failReason || '').split(' · ')[1] || null} />}
           </div>
-          {!embedded && <button type="button" className="ih-btn ih-btn--dark" onClick={() => onRetry(v.testId)}>{t('ieltsSpeaking.again')}</button>}
+          {canResend && (
+            <button type="button" className="ih-btn ih-btn--primary" onClick={resendTakes} disabled={resend.busy}>
+              {resend.busy ? t('ieltsSpeaking.grading') : t('ieltsSpeaking.resend')}
+            </button>
+          )}
+          {!embedded && <button type="button" className="ih-btn ih-btn--dark" onClick={() => onRetry(v.testId)} disabled={resend.busy}>{t('ieltsSpeaking.again')}</button>}
         </section>
       )}
 

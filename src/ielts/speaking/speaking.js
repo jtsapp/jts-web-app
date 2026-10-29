@@ -55,7 +55,7 @@ export function pronunciationBand(results) {
  * помогает, поэтому своя фраза; вход истёк — повтор не поможет, нужно войти заново. Остальное — общая фраза.
  */
 export function gradeErrorKey(code) {
-  if (['quota', 'grading_unavailable', 'no_speech', 'too_large', 'auth_required'].includes(code)) return code
+  if (['quota', 'grading_unavailable', 'no_speech', 'too_large', 'auth_required', 'network'].includes(code)) return code
   if (code === 'model_failed' || code === 'timeout') return 'busy'
   return 'other'
 }

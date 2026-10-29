@@ -8,6 +8,7 @@ import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { setIeltsParams } from '../ielts/urlParams.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { CueCard } from '../ielts/speaking/SpeakingTaskView.jsx'
+import GradeErrorNote from '../ielts/speaking/GradeErrorNote.jsx'
 import { useRecorder } from '../ielts/speaking/useRecorder.js'
 import { TIMING, formatSec, gradeErrorKey, speakingQuestions } from '../ielts/speaking/speaking.js'
 import { useLiveAcoustics } from '../ielts/speaking/liveAcoustics.js'
@@ -86,6 +87,8 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
   const [models, setModels] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // работа, чья оценка упала: «Отправить ещё раз» шлёт те же записи на неё же (retryAttemptId), а не заводит новую
+  const [failedAttempt, setFailedAttempt] = useState(null)
   const alive = useRef(true)
 
   useEffect(() => {
@@ -202,6 +205,8 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
 
   const begin = () => {
     unlockSpeech()
+    // новые записи — прежняя ошибка о них уже не говорит; упавшая работа остаётся: оценка возьмёт её же
+    setError(null)
     setTakes({})
     setIdx(0)
     if (part2) {
@@ -234,12 +239,13 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
     setError(null)
     try {
       const answers = qs.filter((x) => takes[x.id]).map((x) => ({ itemId: x.id, durationSec: takes[x.id].durationSec, wav: takes[x.id].wav }))
-      const view = await assessIeltsSpeaking(authToken, { testId, mode, uiLang: lang, answers })
+      const view = await assessIeltsSpeaking(authToken, { testId, mode, uiLang: lang, answers, retryAttemptId: failedAttempt })
       onDone?.(view.attempt.id)
     } catch (e) {
-      // код ошибки — в консоль: на экране причины сведены к нескольким фразам, а «other» иначе не разобрать
-      console.warn('ielts speaking grading failed:', e?.code || e?.status || e?.message)
-      setError(t(`ieltsSpeaking.gradeError.${gradeErrorKey(e?.code)}`))
+      // повтор опоздал: ту же работу уже оценил другой запрос (вторая вкладка) — ведём к разбору, а не к ошибке
+      if (e?.code === 'already_graded' && failedAttempt) return onDone?.(failedAttempt)
+      if (e?.attemptId) setFailedAttempt(e.attemptId)
+      setError({ text: t(`ieltsSpeaking.gradeError.${gradeErrorKey(e?.code)}`), code: e?.code || (e?.status ? `HTTP ${e.status}` : null), debugId: e?.debugId || null })
       setBusy(false)
     }
   }
@@ -453,10 +459,17 @@ export default function IeltsSpeakingRunPage({ token, target, onExit, onDone, mo
                 </div>
               )
             })}
-            {error && <p className="ih-run__error" role="alert">{error}</p>}
+            {error && (
+              <div className="ih-run__error" role="alert">
+                <p>{error.text}</p>
+                {/* в тех же записях не слышно речи — повтор не поможет, подсказку «отправьте ещё раз» не даём */}
+                {failedAttempt && error.code !== 'no_speech' && <p>{t('ieltsSpeaking.resendHint')}</p>}
+                <GradeErrorNote code={error.code} debugId={error.debugId} />
+              </div>
+            )}
             <div className="ih-srec__row">
               <button type="button" className="ih-btn ih-btn--outline" onClick={begin} disabled={busy}>{t('ieltsSpeaking.again')}</button>
-              <button type="button" className="ih-btn ih-btn--primary" onClick={grade} disabled={busy || !answered}>{busy ? t('ieltsSpeaking.grading') : t('ieltsWriting.gradeNow')}</button>
+              <button type="button" className="ih-btn ih-btn--primary" onClick={grade} disabled={busy || !answered}>{busy ? t('ieltsSpeaking.grading') : error && failedAttempt && error.code !== 'no_speech' ? t('ieltsSpeaking.resend') : t('ieltsWriting.gradeNow')}</button>
             </div>
             <p className="ih-muted">{t('ieltsSpeaking.privacy')}</p>
           </section>

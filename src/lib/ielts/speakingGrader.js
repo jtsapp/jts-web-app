@@ -31,6 +31,15 @@ export function isUsableAnswer(transcript) {
   return english.length >= MIN_ANSWER_WORDS && english.length * 2 >= words.length
 }
 
+/** Почему ответ не вошёл в оценку — для разбора сбоя: пусто, обрывок или не английский. null — ответ внятный. */
+export function skipReason(transcript) {
+  const words = String(transcript || '').trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w))
+  if (!words.length) return 'empty'
+  const english = words.filter((w) => /[a-z]/i.test(w))
+  if (english.length * 2 < words.length) return 'not_english'
+  return english.length < MIN_ANSWER_WORDS ? 'too_short' : null
+}
+
 const FEEDBACK_LANG = { en: 'English', kk: 'Kazakh', ru: 'Russian' }
 
 export function buildSystemPrompt(part, uiLang) {
@@ -138,7 +147,8 @@ export async function gradeSpeaking({ run, model, fallbackModel = SPEAKING_FALLB
     const { model: m, effort } = attempts[i]
     try {
       const raw = await run({ systemPrompt, userMessage: message, schema: SPEAKING_SCHEMA, model: m, ...(effort ? { effort } : {}), maxOutputTokens: 900, timeoutMs, maxRetries: 0 })
-      return { ...normalizeSpeaking(raw, pronunciation), model: m, attempt: i + 1 }
+      // errors — сбои прошлых попыток: оценка пришла запасной моделью, и в логе видно, почему основная не ответила
+      return { ...normalizeSpeaking(raw, pronunciation), model: m, attempt: i + 1, errors }
     } catch (e) {
       errors.push(`${m}${effort ? `/${effort}` : ''}: ${String(e?.message || e).slice(0, 200)}`)
     }

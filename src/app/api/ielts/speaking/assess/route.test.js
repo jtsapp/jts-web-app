@@ -24,8 +24,9 @@ const IDS = ['S-P1-T01-01', 'S-P1-T01-02', 'S-P1-T01-03', 'S-P1-T01-04', 'S-P1-T
 const wav = (i) => new File([new Uint8Array(44 + 32000 * (10 + i))], `${IDS[i]}.wav`, { type: 'audio/wav' })
 const answerOf = (buf) => Math.round((buf.length - 44) / 32000) - 10
 
-function req(files, { token = 'TOK' } = {}) {
+function req(files, { token = 'TOK', retryAttemptId } = {}) {
   const form = new FormData()
+  if (retryAttemptId) form.append('retryAttemptId', String(retryAttemptId))
   form.append('testId', 'S-P1-T01')
   form.append('mode', 'exam')
   form.append('uiLang', 'ru')
@@ -64,7 +65,9 @@ describe('/api/ielts/speaking/assess', () => {
     structured.mockRejectedValueOnce(new Error('529 overloaded'))
     const res = await POST(req([wav(0), wav(1), wav(2), wav(3), null]))
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ attempt: { id: 7, band: 6 } })
+    const body = await res.json()
+    expect(body).toMatchObject({ attempt: { id: 7, band: 6 }, debugId: expect.stringMatching(/^[0-9a-f]{10}$/) })
+    expect(res.headers.get('x-ielts-debug-id')).toBe(body.debugId)
 
     // запасная модель ответила со второй попытки
     expect(structured.mock.calls.map((c) => c[0].model)).toEqual(['main-model', 'claude-haiku-4-5-20251001'])
@@ -83,9 +86,13 @@ describe('/api/ielts/speaking/assess', () => {
     transcribeWavFast.mockResolvedValue('')
     const res = await POST(req([wav(0), wav(1)]))
     expect(res.status).toBe(422)
-    expect(await res.json()).toEqual({ error: 'no_speech', attemptId: 7 })
+    const body = await res.json()
+    expect(body).toMatchObject({ error: 'no_speech', attemptId: 7, debug: { stage: 'stt' } })
+    // по каждому ответу видно, почему он не вошёл: пустой текст без ошибки распознавателя — тишина, а не сбой
+    expect(body.debug.answers.map((a) => a.skipped)).toEqual(['empty', 'empty', 'no_file', 'no_file', 'no_file'])
     expect(structured).not.toHaveBeenCalled()
-    expect(calls.find((c) => c.url.endsWith('/grading/fail')).body).toEqual({ reason: 'no_speech' })
+    // в failReason работы — код и тот же id запроса: по нему строка находится в логе стенда
+    expect(calls.find((c) => c.url.endsWith('/grading/fail')).body.reason).toBe(`no_speech · ${body.debugId} · empty,empty,no_file,no_file,no_file`)
   })
 
   it('ни одного файла — no_speech сразу, без работы на бэкенде', async () => {
@@ -98,14 +105,37 @@ describe('/api/ielts/speaking/assess', () => {
     structured.mockRejectedValue(new Error('down'))
     const res = await POST(req([wav(0)]))
     expect(res.status).toBe(502)
-    expect(await res.json()).toEqual({ error: 'model_failed', attemptId: 7 })
+    const body = await res.json()
+    expect(body).toMatchObject({ error: 'model_failed', attemptId: 7, debug: { stage: 'model' } })
+    expect(body.debug.model.errors).toHaveLength(3)
     expect(structured).toHaveBeenCalledTimes(3)
+    expect(calls.find((c) => c.url.endsWith('/grading/fail')).body.reason).toMatch(new RegExp(`^model · ${body.debugId} · main-model/medium: down`))
+  })
+
+  it('повтор теми же записями уходит на ту же работу; уже оценённая — already_graded', async () => {
+    const res = await POST(req([wav(0)], { retryAttemptId: 7 }))
+    expect(res.status).toBe(200)
+    expect(calls.find((c) => c.url.endsWith('/speaking')).body.retryAttemptId).toBe(7)
+
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ messages: ['Работа уже оценена'] }, { status: 409 })))
+    const again = await POST(req([wav(0)], { retryAttemptId: 7 }))
+    expect(again.status).toBe(409)
+    expect(await again.json()).toMatchObject({ error: 'already_graded', attemptId: 7, debug: { stage: 'start' } })
+  })
+
+  it('распознаватель упал на ответе — причина stt_failed и текст ошибки в разборе', async () => {
+    transcribeWavFast.mockRejectedValue(new Error('azure 429'))
+    assessPronunciationChunked.mockResolvedValue(null)
+    const body = await (await POST(req([wav(0)]))).json()
+    expect(body.error).toBe('no_speech')
+    expect(body.debug.answers[0]).toMatchObject({ skipped: 'stt_failed', errors: ['azure-fast: azure 429'] })
   })
 
   it('отказ бэкенда при создании работы — код по причине, а не общее «не удалось»', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ messages: ['Нет доступа к оценке'] }, { status: 403 })))
-    expect(await (await POST(req([wav(0)]))).json()).toEqual({ error: 'grading_unavailable' })
+    const denied = await (await POST(req([wav(0)]))).json()
+    expect(denied).toMatchObject({ error: 'grading_unavailable', debug: { stage: 'start' } })
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({}, { status: 401 })))
-    expect(await (await POST(req([wav(0)]))).json()).toEqual({ error: 'auth_required' })
+    expect(await (await POST(req([wav(0)]))).json()).toMatchObject({ error: 'auth_required' })
   })
 })
