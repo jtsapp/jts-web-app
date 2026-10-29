@@ -66,7 +66,14 @@ except Exception:  # pragma: no cover - plugin missing in some envs
 import noise_guard
 import assistant_call
 # Ядро Speaking Buddy под нрав Декстера (свой пацан / хулиган 18+), 29.10.2026.
-from dexter_tempers import CALM_CORE_PATCHES, HOOLIGAN_CORE_PATCHES, HOOLIGAN_TIER_BLOCK, patch_core
+from dexter_tempers import (
+    CALM_CORE_PATCHES,
+    HOOLIGAN_ADULT_EXTRA,
+    HOOLIGAN_CORE_PATCHES,
+    HOOLIGAN_MINOR_EXTRA,
+    HOOLIGAN_TIER_BLOCK,
+    patch_core,
+)
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
@@ -4195,10 +4202,15 @@ def _buddy_has_profanity(persona: str) -> bool:
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     """Блок ступени — только персоне с матом и ростингом. У взрослого он держит
     злость, у остальных — границу между мягкими словами и крепкими."""
-    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): возраст
-    # слова не меняет, детский блок ему не положен.
+    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): мат и
+    # оскорбления возраст не меняет. Единственное, что идёт по дате рождения, —
+    # внешность, голос и «твоя мамка»: только взрослому (решение 30.10.2026).
     if persona == "dexter_hooligan":
-        return "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n" + HOOLIGAN_TIER_BLOCK
+        extra = HOOLIGAN_ADULT_EXTRA if _buddy_age_group(p) == "adult" else HOOLIGAN_MINOR_EXTRA
+        return (
+            "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n"
+            + HOOLIGAN_TIER_BLOCK + " " + extra
+        )
     if not _buddy_has_profanity(persona):
         return ""
     group = _buddy_age_group(p)

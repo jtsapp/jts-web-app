@@ -44,9 +44,15 @@ for gone in ("under 18 or unknown — same Dexter", "never the person", "mocks i
              "stop-insults opt-out", "adult roast rating", "adult rating"):
     assert gone not in hool, gone
 assert "**Dexter's hooligan rating.**" in hool and "- **hooligan — full attack.**" in hool
-# Слова-ярлыки про инвалидность и мать остаются под запретом.
-for kept in ("“дебил”", "“даун”", "“твою мать”", "“retard”"):
+# Слова-ярлыки про инвалидность остаются под запретом, ненависть по признаку —
+# тоже; «ёб твою мать» — только междометием, не про настоящую мать (30.10).
+for kept in ("“дебил”", "“даун”", "“retard”", "“пидор”", "“чурка”",
+             "no insults about ethnicity, nationality, religion, gender, sexual orientation",
+             "aimed at the learner's real mother", "suicide, self-harm"):
     assert kept in hool, kept
+# Внешность — только взрослому (блок ступени), обычные отмазки — можно.
+assert "only where Dexter's word-rating block says the learner is an adult" in hool
+assert "Plain tiredness, lack of sleep, a busy day" in hool
 assert "**Distress.** Distress includes:" in hool
 
 print("test_dexter_tempers: ok")

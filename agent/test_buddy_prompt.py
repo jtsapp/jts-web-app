@@ -435,6 +435,12 @@ for grp in ("adult", "teen", "child", ""):
     # Детский фильтр примеров к хулигану не применяется: персона — как в файле.
     assert BUDDY_PERSONAS["dexter_hooligan"] in h, grp
     assert h.index(TIER) < h.index(LIMITS), grp
+    # Внешность, голос и «твоя мамка» — только взрослому по дате рождения (30.10).
+    adult_only = "you may also roast their looks, voice, style"
+    if grp == "adult":
+        assert adult_only in tail and "not a verified adult" not in tail, grp
+    else:
+        assert adult_only not in tail and "not a verified adult" in tail, grp
 assert buddy_default_mood("dexter_hooligan") == ("anger", 2)
 # Клиентский Декстер v3.5 (откат) собирается по-прежнему, со ступенями.
 assert "the same angry Dexter with mild words" in build_buddy_instructions(profile(age_group="child"), "dexter")
