@@ -35,7 +35,8 @@ export default function WordHuntPage({ userName, userLevel, token, onNav, onProf
   const { status, bundle, retry } = useWordHuntData(token)
   const owner = ownerOf(token)
   const langRef = useRef(lang)
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'reading' }))
+  // Без истории — во вкладку «Грамматика»: карточка Word Hunt там с редизайна 29.10.2026.
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
 
   // Смена языка приложения — перерисовка текущего вида движком, без пересоздания: кроссворд посреди партии
   // не сбрасывается. Эффект объявлен РАНЬШЕ монтирующего: на первом кадре движок видит актуальный язык.

@@ -3678,11 +3678,13 @@ textarea {
 }
 .pk-note .pk-ico { width: 18px; height: 18px; }
 
-/* Уровни — отдельные пилюли 36 через 8, выбранная — фиолетовая. */
+/* Уровни — отдельные пилюли 36 через 8, выбранная — фиолетовая. Справа и тогда, когда подписи о токенах нет
+   (правила не пришли). */
 .pk-levels {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-left: auto;
 }
 .pk-levels__btn {
   height: 36px;
