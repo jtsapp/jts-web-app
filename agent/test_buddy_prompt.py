@@ -456,5 +456,12 @@ anon = build_buddy_greeting(profile(user_name=""))
 assert "unknown" in anon and "Айгерим" not in anon
 for w in ("warm", "Great to see you"):
     assert w not in g, w
+# Хулиган не взрослому: в приветствии ни слова про лицо. Запрет в блоке ступени
+# Haiku 5.5 пропускал — «I'm already bored of your face» в 4 из 6 (замер 30.10).
+NO_FACE = "never their face or looks"
+for grp in ("teen", "child", ""):
+    assert NO_FACE in build_buddy_greeting(profile(temper="harsh", age_group=grp)), grp
+assert NO_FACE not in build_buddy_greeting(profile(temper="harsh", age_group="adult"))
+assert NO_FACE not in build_buddy_greeting(profile(temper="calm", age_group="child"))
 
 print("test_buddy_prompt: ok")

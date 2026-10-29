@@ -4353,10 +4353,19 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
         if name
         else "Their name is unknown: do not ask for it. "
     )
+    # Хулиган не взрослому: внешность ему нельзя (решение 30.10.2026), а Haiku 5.5
+    # открывал звонок «I'm already bored of your face» в 4 из 6 приветствий, хотя
+    # запрет стоял в блоке ступени. Правило рядом с самим событием он слушает.
+    face_rule = (
+        "Hit the English that's coming or the lesson, never their face or looks. "
+        if buddy_persona_for(p) == "dexter_hooligan" and _buddy_age_group(p) != "adult"
+        else ""
+    )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
         "in character and in English, with one accessible invitation at the learner's level. "
         + name_rule
+        + face_rule
         + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
     )
