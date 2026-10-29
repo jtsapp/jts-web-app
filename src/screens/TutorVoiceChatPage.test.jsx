@@ -84,6 +84,22 @@ describe('CallStage — полоса микрофона', () => {
     expect(methods).toEqual(['start_turn', 'cancel_turn'])
   })
 
+  it('удержанный пробел не прокручивает страницу: автоповтор гасится', () => {
+    stage({ pushToTalk: true })
+    const first = new KeyboardEvent('keydown', { code: 'Space', key: ' ', cancelable: true })
+    const repeat = new KeyboardEvent('keydown', { code: 'Space', key: ' ', repeat: true, cancelable: true })
+    act(() => {
+      window.dispatchEvent(first)
+      window.dispatchEvent(repeat)
+    })
+    expect(first.defaultPrevented).toBe(true)
+    // Под звонком сетка ситуаций: без этого каждый повтор листал страницу вниз.
+    expect(repeat.defaultPrevented).toBe(true)
+    // Повтор хода заново не открывает.
+    const starts = lk.lp.performRpc.mock.calls.filter(([arg]) => arg.method === 'start_turn')
+    expect(starts).toHaveLength(1)
+  })
+
   it('свободно — кнопка слева выключает микрофон', () => {
     stage({ pushToTalk: false })
     expect(document.querySelector('.tp-mic__hold')).toBeNull()
