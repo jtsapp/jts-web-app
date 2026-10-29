@@ -45,7 +45,7 @@ import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
-import { itemIntent } from '@/lib/assistant/items/intent.js'
+import { itemIntentForTurns } from '@/lib/assistant/items/intent.js'
 import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
 
 export const runtime = 'nodejs'
@@ -137,8 +137,9 @@ export async function POST(request) {
       marks.ctx = since(ctxAt)
     })
   // «Открой урок 5 / тему Present Perfect» (lib/assistant/items/): каталог — только под
-  // такую просьбу, видов и уровня, о которых речь, и тоже параллельно с остальным.
-  const intent = opening ? null : itemIntent(lastText, { userLevel: auth.user.languageLevel })
+  // такую просьбу, видов и уровня, о которых речь, и тоже параллельно с остальным. Ответ
+  // на её уточняющий вопрос («какую серию?» → «про лужи») берёт каталог прошлой просьбы.
+  const intent = opening ? null : itemIntentForTurns(parsed.messages, { userLevel: auth.user.languageLevel })
   const itemsReady = intent
     ? buildItemCatalog({ ...intent, token: bearer, lang: parsed.lang }).catch(() => null)
     : Promise.resolve(null)
@@ -163,7 +164,7 @@ export async function POST(request) {
       user: auth.user,
       studentContext,
       items: itemCatalog?.text || null,
-      itemsGuess: Boolean(intent?.guess),
+      itemsMode: intent?.followUp ? 'followUp' : intent?.guess ? 'guess' : 'ask',
       today: new Date().toISOString().slice(0, 10),
     }),
     model: MODEL,

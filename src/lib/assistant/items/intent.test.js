@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GUESS_KINDS, itemIntent } from './intent.js'
+import { GUESS_KINDS, itemIntent, itemIntentForTurns } from './intent.js'
 
 const kinds = (text, opts) => itemIntent(text, opts)?.kinds ?? null
 
@@ -63,9 +63,28 @@ describe('просьба открыть конкретное', () => {
       expect(itemIntent(q)).toMatchObject({ kinds: GUESS_KINDS, guess: true })
     }
     // Раздел, кнопка экрана, «следующее», вопрос или пустое «открой это» — не вещь.
-    for (const q of ['открой словарь', 'открой практику', 'открой Speaking Buddy', 'открой', 'открой это, пожалуйста', 'открой следующее задание', 'включи запись', 'включи звук', 'покажи, как это сделать', 'хочу отдохнуть']) {
+    for (const q of ['открой словарь', 'открой практику', 'открой Speaking Buddy', 'открой', 'открой это, пожалуйста', 'открой ту штуку, ну эту', 'открой следующее задание', 'включи запись', 'включи звук', 'покажи, как это сделать', 'хочу отдохнуть']) {
       expect(itemIntent(q)).toBe(null)
     }
+  })
+
+  // «Включи Пеппу» → «Какую серию: Swimming или Muddy Puddles?» → «про лужи».
+  it('ответ на уточняющий вопрос Луны берёт намерение прошлой просьбы', () => {
+    const turns = (reply, answer) => [
+      { role: 'user', content: 'включи мультик про Пеппу' },
+      { role: 'assistant', content: reply },
+      { role: 'user', content: answer },
+    ]
+    expect(itemIntentForTurns(turns('Какую серию: «Swimming» или «Muddy Puddles»?', 'про лужи'))).toMatchObject({ kinds: ['cartoon'], followUp: true })
+    // Своё намерение у ответа — оно и главное.
+    expect(itemIntentForTurns(turns('Какую серию?', 'открой книжку Питер Пэн'))).toEqual(itemIntent('открой книжку Питер Пэн'))
+    // Было «Открыть?» с меткой — это «да» на предложение, его разбирает resolveItem.
+    expect(itemIntentForTurns(turns('Это «Swimming». Открыть?\n[[OPEN cartoon.peppa-swimming]]', 'да'))).toBe(null)
+    // Луна не спрашивала — ответ не уточнение.
+    expect(itemIntentForTurns(turns('Открываю Cartoon World.', 'про лужи'))).toBe(null)
+    // Прошлая реплика не была просьбой открыть.
+    expect(itemIntentForTurns([{ role: 'user', content: 'привет' }, { role: 'assistant', content: 'Чем помочь?' }, { role: 'user', content: 'про лужи' }])).toBe(null)
+    expect(itemIntentForTurns([{ role: 'user', content: 'открой урок 5' }])).toEqual(itemIntent('открой урок 5'))
   })
 
   it('вопрос без просьбы открыть — не просьба', () => {

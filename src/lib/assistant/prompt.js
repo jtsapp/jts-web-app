@@ -181,6 +181,7 @@ const rulesFor = (persona) => `Ты — ${persona.name}, преподавате�
 Как отвечать:
 - Язык ответа — язык вопроса ученика (русский, казахский или английский). Если по вопросу непонятно — язык интерфейса ученика.
 - Обращайся на «вы», пока ученик сам не перешёл на «ты».
+- Вопрос невнятный — обрывок фразы, голос распознался криво, непонятно, о чём речь или что именно открыть, — не отвечай наугад: одним коротким вопросом уточни, что ученик имеет в виду, можно с 2–3 вариантами. Понятный вопрос не переспрашивай.
 - Не здоровайся в ответах — сразу по делу.
 - О себе говори в женском роде: «поняла», «передала», «посмотрела».
 - ${PERSONA_TONE[persona.id] || PERSONA_TONE.luna}
@@ -353,11 +354,24 @@ export const ITEMS_HINT =
 export const ITEMS_GUESS_HINT =
   'Ученик назвал что-то по имени. Найди это в списке «Что можно открыть» по смыслу: название там бывает по-английски, а ученик говорит по-русски или по-казахски («Остров сокровищ» — «Treasure Island», «Снежная королева» — «The Snow Queen»). Нашлось — последней строкой метка с адресом этой строки ([[OPEN_NOW адрес]]). Не нашлось — это, может быть, раздел или кнопка на экране: поступи по обычным правилам, а вещь не выдумывай.'
 
+// Двусмысленная просьба («включи Пеппу» — серий несколько): правило одно на оба
+// указания выше, чтобы рядом с вопросом оно стояло всегда, — в RULES модель такое
+// пропускает (замеры 15–21.10).
+const AMBIGUOUS =
+  ' Ученик назвал вещь, но ей одинаково подходят несколько строк (несколько серий «Peppa Pig», два урока «in / on / at» — про место и про время), или непонятно, что он называет, — не угадывай: одним коротким вопросом переспроси, назови 2–3 варианта по-человечески и метку не ставь. Одна строка подходит явно лучше — открывай её, не переспрашивая. «Какой-нибудь», «любой» — это не двусмысленность: открывай весь список раздела, как сказано выше.'
+
+// Ученик отвечает на её уточняющий вопрос (items/intent.js, followUp): каталог тот же,
+// что у прошлой просьбы.
+export const ITEMS_FOLLOWUP_HINT =
+  'Ученик отвечает на твой уточняющий вопрос из прошлого ответа. Открой то, что он выбрал («вторую», «про лужи», «да, эту»), — последней строкой метка [[OPEN_NOW адрес]] с адресом из списка «Что можно открыть». Ответ всё ещё не однозначен — переспроси ещё раз, коротко, без метки.'
+
+const ITEMS_HINTS = { ask: ITEMS_HINT + AMBIGUOUS, guess: ITEMS_GUESS_HINT + AMBIGUOUS, followUp: ITEMS_FOLLOWUP_HINT }
+
 // Эталон задания в снимке (screenSnapshot.js, data-assistant-expected): сайт показал ответ.
 const SHOWN_ANSWER = /\[верный ответ по заданию:/
 
 /** Разговор для модели: к последнему вопросу ученика приклеен контекст. */
-export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsGuess }) {
+export function buildTurns({ messages, user, screen, lang, studentContext, errors, pageUrl, voice, today, items, itemsMode = 'ask' }) {
   const turns = messages.map((m) => ({ role: m.role, content: m.content }))
   const last = turns[turns.length - 1]
   const opening = isOpeningTurn(last.content)
@@ -423,7 +437,7 @@ export function buildTurns({ messages, user, screen, lang, studentContext, error
           : `Вопрос ученика: ${last.content}`
   // Каталог «Что можно открыть» приложен — ученик просит конкретное: указание рядом с
   // вопросом, как у всех правил экрана (в RULES модель их пропускает, замеры 15–21.10).
-  const askItems = items && !opening ? `${ask}\n\n${itemsGuess ? ITEMS_GUESS_HINT : ITEMS_HINT}` : ask
+  const askItems = items && !opening ? `${ask}\n\n${ITEMS_HINTS[itemsMode] || ITEMS_HINTS.ask}` : ask
   const context = focus.task || wake || stuck ? withoutAdvice(studentContext) : studentContext
   last.content = `${buildContextBlock({ user, screen, lang, studentContext: context, errors, pageUrl, today, items })}\n\n${askItems}${voice ? `\n\n${VOICE_MARK}` : ''}`
   return turns

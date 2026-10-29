@@ -106,7 +106,7 @@ const SECTION_WORDS = [
 const QUESTION = w(`${NOT_LETTER_BEFORE}(?:как|почему|зачем|что|сколько|how|why|what|қалай|неге|не үшін)${NOT_LETTER_AFTER}`)
 // Что остаётся от «открой мне это, пожалуйста» — не название.
 const FILLER_SRC =
-  `${NOT_LETTER_BEFORE}(?:это|его|её|ее|их|там|тут|здесь|мне|нам|пожалуйста|плиз|да|ну|сам|сама|сейчас|снова|ещё|еще|` +
+  `${NOT_LETTER_BEFORE}(?:это|эту|этот|эта|ту|тот|та|его|её|ее|их|там|тут|здесь|мне|нам|пожалуйста|плиз|да|ну|вот|сам|сама|сейчас|снова|ещё|еще|штук[ауи]?|вещь|` +
   `луна|айзере|please|it|this|that|me|now|again|мұны|осыны|соны|оны|маған|бер|беріңізші|берші|қазір)${NOT_LETTER_AFTER}`
 
 const SECTION_NAMES = [
@@ -165,4 +165,31 @@ export function itemIntent(text, { userLevel } = {}) {
     return { kinds: GUESS_KINDS, level: levelOf(t, userLevel), guess: true }
   }
   return null
+}
+
+// Метка действия в ответе Луны из истории (AssistantWidget возвращает её туда).
+const ACTION_MARK = /\[\[[A-Z_]+ [^\]]+\]\]/
+
+/**
+ * Намерение последнего хода разговора. Ответ на уточняющий вопрос Луны («Какую серию —
+ * Swimming или Muddy Puddles?» → «про лужи», «вторую») сам на просьбу не похож: ни глагола,
+ * ни вида, — и без этого каталога в запросе бы не было, открыть выбранное было бы нечем.
+ * Поэтому: последний ход без намерения, прошлый ответ Луны — вопрос без метки действия
+ * (с меткой — это «Открыть?», его «да» разбирает resolveItem), а реплика перед ним была
+ * просьбой открыть — берём её намерение с пометкой followUp. Только на шаг назад: дальше
+ * разговор уже о другом.
+ */
+export function itemIntentForTurns(messages, opts = {}) {
+  const list = Array.isArray(messages) ? messages : []
+  const last = list[list.length - 1]
+  if (last?.role !== 'user') return null
+  const own = itemIntent(last.content, opts)
+  if (own) return own
+  const reply = list[list.length - 2]
+  const before = list[list.length - 3]
+  if (reply?.role !== 'assistant' || before?.role !== 'user') return null
+  const asked = String(reply.content ?? '')
+  if (ACTION_MARK.test(asked) || !asked.includes('?')) return null
+  const prev = itemIntent(before.content, opts)
+  return prev ? { ...prev, followUp: true } : null
 }
