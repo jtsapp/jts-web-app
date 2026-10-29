@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import { useI18n } from '../i18n.jsx'
 import { coinLegend, nextPrizeOf, useStudentTokens } from '../practice/practiceTokens.js'
+import { plural } from '../lib/plural.js'
+import { PkIco } from '../screens/practice/PracticeIcons.jsx'
 import './tokenBlocks.css'
 
 const number = (value) => new Intl.NumberFormat().format(Number(value) || 0)
@@ -114,39 +117,58 @@ export default function TokenBlocks({ token, onNav }) {
   )
 }
 
-/** «Все начисления за практику»: где, за что, сколько токенов; последней строкой — урок с преподавателем. */
+/**
+ * «Все начисления за практику»: где, за что, сколько токенов; последней строкой — урок с преподавателем. На «Практике»
+ * свёрнута (редизайн 29.10.2026, макет 7393:14225): 16 строк внизу каждой вкладки растягивали страницу, а нужны редко.
+ * В шапке — число строк, цифры токенов — цветом текущего раздела (переменные `--pk-*` Практики).
+ */
 export function PracticeTokenTable({ data }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const [open, setOpen] = useState(false)
   const rules = Array.isArray(data?.practiceRules) ? data.practiceRules : []
   if (!rules.length) return null
   const lessons = data.lessonPoints || {}
   return (
-    <section className="tb-table" data-testid="practice-token-table">
-      <h3>{t('practice.tokens.table')}</h3>
-      <table>
-        <thead>
-          <tr><th>{t('practice.tokens.where')}</th><th>{t('practice.tokens.what')}</th><th>{t('practice.tokens.amount')}</th></tr>
-        </thead>
-        <tbody>
-          {rules.map((rule) => (
-            <tr key={`${rule.section}|${rule.name}`}>
-              <td>{rule.section}</td><td>{rule.name}</td><td>+{number(rule.points)}</td>
+    <section className={`pk-acc${open ? ' is-open' : ''}`} data-testid="practice-token-table">
+      <button type="button" className="pk-acc__head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className="pk-acc__ico">
+          <PkIco name="receipt-long" />
+        </span>
+        <span className="pk-acc__title">{t('practice.tokens.table')}</span>
+        <span className="pk-acc__count">{plural(t, lang, 'practice.tokens.count', rules.length + 1)}</span>
+        <PkIco name={open ? 'expand-less' : 'expand-more'} className="pk-acc__chev" />
+      </button>
+      {open && (
+        <table className="pk-acc__table">
+          <thead>
+            <tr><th>{t('practice.tokens.where')}</th><th>{t('practice.tokens.what')}</th><th>{t('practice.tokens.amount')}</th></tr>
+          </thead>
+          <tbody>
+            {rules.map((rule) => (
+              <tr key={`${rule.section}|${rule.name}`}>
+                <td>{rule.section}</td><td>{rule.name}</td><td>+{number(rule.points)}</td>
+              </tr>
+            ))}
+            <tr>
+              <td>{t('practice.tokens.lessons')}</td><td>{t('practice.tokens.lessonRow')}</td>
+              <td>+{number(lessons.gen)} / +{number(lessons.prem)}</td>
             </tr>
-          ))}
-          <tr>
-            <td>{t('practice.tokens.lessons')}</td><td>{t('practice.tokens.lessonRow')}</td>
-            <td>+{number(lessons.gen)} / +{number(lessons.prem)}</td>
-          </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      )}
     </section>
   )
 }
 
-/** Подпись под заголовком «Практики»: монеты рядом с разделами и пределы. */
+/** Подпись под вкладками «Практики»: значок и пределы токенов за выполнение. */
 export function PracticeTokenSub({ data }) {
   const { t } = useI18n()
   if (!Array.isArray(data?.practiceRules) || !data.practiceRules.length) return null
   const cap = Number(data.dailyCap) || 0
-  return <p className="tb-sub">{cap > 0 ? t('practice.tokens.sub', { cap: number(cap) }) : t('practice.tokens.subNoCap')}</p>
+  return (
+    <p className="tb-sub pk-note">
+      <PkIco name="info" />
+      {cap > 0 ? t('practice.tokens.sub', { cap: number(cap) }) : t('practice.tokens.subNoCap')}
+    </p>
+  )
 }

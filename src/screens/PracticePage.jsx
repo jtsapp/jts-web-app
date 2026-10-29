@@ -27,33 +27,29 @@ import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
-import { normLevel as listeningLevel } from './ListeningPage.jsx'
 import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
 import BooksAudioFilter from './practice/BooksAudioFilter.jsx'
 import { unitToPayload } from './practice/assignPractice.js'
 import { SKILLS, SKILL_KEYS, skillModules, skillOfModule, EXPANDABLE } from './practice/practiceTabs.js'
-import GrammarGamesView from './grammar-games/GrammarGamesView.jsx'
+import { cardOf } from './practice/practiceCatalog.js'
 import {
   LevelSwitch,
   SkillCard,
   SectionHead,
   Rail,
-  Banner,
+  PracticeTile,
   TaleCard,
   ShadowCard,
   KaraokeCard,
   MemeCard,
   BookCard,
   ComicCard,
-  GrammarTile,
   WorkbookTile,
   SituationCard,
-  ArcadeCard,
 } from './practice/PracticeCards.jsx'
 import { isTeacher } from '../lib/jwt.js'
-import { plural } from '../lib/plural.js'
 import { sectionTokenPoints, useStudentTokens } from '../practice/practiceTokens.js'
 import { PracticeTokenSub, PracticeTokenTable } from '../components/TokenBlocks.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -191,6 +187,8 @@ export default function PracticePage({
   // пустеет и от поиска: иначе неудачный запрос прятал бы раздел вместе с
   // собственной строкой поиска, и стереть её было бы негде.
   const [hasComics, setHasComics] = useState(false)
+  // Каталог комиксов хоть раз ответил (или упал): до этого карточку не прячем — пустой он или нет, ещё неизвестно.
+  const [comicsKnown, setComicsKnown] = useState(false)
   // Караоке — тот же принцип, что у комиксов: каталог только из API, пустой
   // список = раздела на экране нет вовсе. Поиск здесь клиентский (серверного
   // эндпоинта в контракте нет — библиотека штучная, десятки треков, а не сотни).
@@ -258,9 +256,6 @@ export default function PracticePage({
     if (resumed) return EXPANDABLE.has(resumed.expanded) ? resumed.expanded : null
     return EXPANDABLE.has(openTarget?.filter) ? openTarget.filter : null
   })
-  // Место в шапке вкладки-раздела («Грамматика · игры») под его тумблер звука — узел, а не ref: портал раздела
-  // должен перерисоваться, когда узел появится.
-  const [headTools, setHeadTools] = useState(null)
   // Вкладка, открытая целью перехода (книги с «Главной», ситуации из домашки),
   // тоже запоминается: раньше в сессию писал только клик по вкладке, и раздел,
   // открытый с такой вкладки, возвращал на прошлую — на «Аудирование».
@@ -384,17 +379,24 @@ export default function PracticePage({
         : loadComicsIndex(apiToken, (fresh) => {
             if (!alive) return
             setHasComics(fresh.length > 0)
+            setComicsKnown(true)
             setComics(visibleComics(fresh, profile))
           })
       )
         .then((list) => {
           if (!alive) return
-          if (!q) setHasComics(list.length > 0)
+          if (!q) {
+            setHasComics(list.length > 0)
+            setComicsKnown(true)
+          }
           setComics(visibleComics(list, profile))
         })
         .catch(() => {
           // Поиск, не нашедший ничего, — не отказ; отказ каталога — отказ.
-          if (alive && !q) setCatalogIssue((i) => i ?? 'failed')
+          if (alive && !q) {
+            setCatalogIssue((i) => i ?? 'failed')
+            setComicsKnown(true)
+          }
         })
     if (!q) {
       run()
@@ -475,11 +477,6 @@ export default function PracticePage({
   const tokenData = useStudentTokens(apiToken)
   const tokenRules = Array.isArray(tokenData?.practiceRules) ? tokenData.practiceRules : []
   const tokensOf = (sectionId) => sectionTokenPoints(tokenRules, sectionId)
-  const tokenTag = (sectionId) => {
-    const points = tokensOf(sectionId)
-    return points > 0 ? plural(t, lang, 'practice.tokenBadge', points) : undefined
-  }
-
   // Отмеченное хранится ВМЕСТЕ с уровнем, а не рядом с ним. Уровень входит в
   // адрес юнита, а не только в его показ: «Unit 3» уровня A2 и «Unit 3» уровня
   // B1 — разные задания, и при смене уровня выбор обязан обнулиться. Сброс
@@ -593,11 +590,11 @@ export default function PracticePage({
   // Сценарии «Ситуаций» выбранного уровня — карточками, как в макете, а не
   // одной карточкой уровня. Данные — тот же JSON уровня, что читает экран
   // раздела, и тот же кэш вкладки (situationsData.js): после Практики он
-  // открывается уже без загрузки. Тянем, только когда секция на экране.
+  // открывается уже без загрузки. Тянем, только когда открыт список: в обзоре у «Ситуаций» одна карточка.
   // У C2 своей программы нет — берём ближайший уровень, как грамматика.
   const situLevel = nearestLevelCode(level, SITUATION_CODES)
   const [situ, setSitu] = useState({ level: null, items: [] })
-  const wantSitu = tab === 'speaking' || expanded === 'situations'
+  const wantSitu = expanded === 'situations'
   useEffect(() => {
     if (!wantSitu || !situLevel) return undefined
     let alive = true
@@ -616,21 +613,22 @@ export default function PracticePage({
   const levelSituativki = situativkiAll.filter((s) => !s.locked && (level == null || cefrOf(s.level) === level))
 
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в
-  // мобильной шапке (в углу десктопа её на этом экране нет — там по макету
-  // переключатель уровня). Шаги идут сверху вниз по вкладке «Аудирование»;
-  // секций других навыков на экране нет, их тур пропускает сам.
+  // углу (с редизайна 29.10.2026 угол виден и на десктопе: переключатель уровня
+  // уехал под вкладки). Шаги идут сверху вниз по обзору «Аудирования».
   // Тур — ученический: преподаватель пользуется экраном как витриной заданий
   // для выдачи на дом (AssignPracticeBar), и объяснения ему не про него.
   const tour = useScreenTour(teacher ? null : tourKey)
   // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  // Шаги — по устройству страницы, а не по разделам (редизайн 29.10.2026): вкладки → уровни → карточка тренажёра →
+  // карточка-каталог → начисления → «Грамматика», куда уехали все игры. Аккордеона без правил токенов нет — его шаг
+  // тур пропустит сам.
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
-    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
-    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
-    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: tourMascot('aizere-book'), ...TOUR_COACH_CARD },
-    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
+    { selector: '#sec-listenchoose', title: t('tour.practice.card.title'), text: t('tour.practice.card.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
+    { selector: '#sec-shadowing', title: t('tour.practice.catalog.title'), text: t('tour.practice.catalog.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
+    { selector: '.pk-acc', title: t('tour.practice.tokens.title'), text: t('tour.practice.tokens.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
+    { selector: '.pk-skill--grammarGames', title: t('tour.practice.grammar.title'), text: t('tour.practice.grammar.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
   const tourIntro = {
     title: t('tour.intro.title'),
@@ -855,7 +853,13 @@ export default function PracticePage({
 
   // ── Секции навыка ────────────────────────────────────────────────────────
   const grid = expanded !== null
-  const toggle = (id) => () => setExpanded((cur) => (cur === id ? null : id))
+  // Нажатая кнопка при открытии и закрытии списка пропадает из разметки — фокус клавиатуры уехал бы в body. Ведём его
+  // на «Свернуть» открытого списка и обратно на карточку, с которой его открыли.
+  const focusLater = (selector) => requestAnimationFrame(() => document.querySelector(selector)?.focus({ preventScroll: true }))
+  const toggle = (id) => () => {
+    setExpanded((cur) => (cur === id ? null : id))
+    focusLater(`.pk-card[data-card="${id}"]`)
+  }
   const head = (sec, title, children) => (
     <SectionHead
       title={title}
@@ -882,199 +886,6 @@ export default function PracticePage({
               ))}
             </Rail>
           </section>
-        )
-
-      case 'listenPair':
-        return (
-          <div key={sec.id} className="pk-pair">
-            <Banner
-              id="sec-listening"
-              variant="listening"
-              title={t('practice.listening.heading')}
-              desc={t('practice.listening.desc')}
-              cta={t('practice.listening.cta')}
-              onStart={() => onNav?.('listening')}
-              tag={tokenTag('listenPair')}
-              badge={{ caption: t('practice.listening.byLevel'), level: listeningLevel(userLevel).toUpperCase() }}
-            />
-            <Banner
-              id="sec-listenchoose"
-              variant="lc"
-              title={t('practice.listenchoose.heading')}
-              desc={t('practice.listenchoose.desc')}
-              cta={t('practice.listenchoose.cta')}
-              onStart={() => onNav?.('listenchoose')}
-            />
-          </div>
-        )
-
-      case 'words':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-words"
-            variant="words"
-            wide
-            title={t('practice.words.heading')}
-            desc={t('practice.words.desc')}
-            cta={t('practice.words.cta')}
-            onStart={() => onNav?.('words')}
-          />
-        )
-
-      case 'numbers':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-numbers"
-            variant="numbers"
-            wide
-            title={t('practice.numbers.heading')}
-            desc={t('practice.numbers.desc')}
-            cta={t('practice.numbers.cta')}
-            onStart={() => onNav?.('numbers')}
-          />
-        )
-
-      // Своя вкладка: под карточками сразу хаб тем, а не баннер с переходом на экран раздела.
-      case 'grammarGames':
-        return <GrammarGamesView key={sec.id} embedded toolsSlot={headTools} token={token} userLevel={userLevel} />
-
-      case 'prepositions':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-prepositions"
-            variant="prepositions"
-            wide
-            title={t('practice.prepositions.heading')}
-            desc={t('practice.prepositions.desc')}
-            cta={t('practice.prepositions.cta')}
-            onStart={() => onNav?.('prepositions')}
-          />
-        )
-
-      case 'pronunciation':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-pronunciation"
-            variant="pronunciation"
-            wide
-            title={t('practice.pronunciation.heading')}
-            desc={t('practice.pronunciation.desc')}
-            cta={t('practice.pronunciation.cta')}
-            onStart={() => onNav?.('pronunciation')}
-          />
-        )
-
-      case 'wordhunt':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-wordhunt"
-            variant="wordhunt"
-            wide
-            title={t('practice.wordhunt.heading')}
-            desc={t('practice.wordhunt.desc')}
-            cta={t('practice.wordhunt.cta')}
-            onStart={() => onNav?.('wordhunt')}
-          />
-        )
-
-      case 'justListen':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-listen"
-            variant="listen"
-            wide
-            title={t('practice.listen.heading')}
-            desc={t('practice.listen.desc')}
-            cta={t('practice.listen.cta')}
-            onStart={() => onNav?.('listen')}
-          />
-        )
-
-      case 'speedReading':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-speed-reading"
-            variant="speed-reading"
-            wide
-            title={t('practice.speedReading.heading')}
-            desc={t('practice.speedReading.desc')}
-            cta={t('practice.speedReading.cta')}
-            tag={t('practice.speedReading.tag')}
-            onStart={() => onNav?.('speed-reading')}
-          />
-        )
-
-      case 'cartoons':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-cartoons"
-            variant="cartoons"
-            wide
-            title={t('practice.cartoons.heading')}
-            desc={t('practice.cartoons.desc')}
-            cta={t('practice.cartoons.cta')}
-            onStart={() => onNav?.('cartoons')}
-          />
-        )
-
-      case 'speakspin':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-speakspin"
-            variant="speakspin"
-            wide
-            title={t('practice.speakspin.heading')}
-            desc={t('practice.speakspin.desc')}
-            cta={t('practice.speakspin.cta')}
-            onStart={() => onNav?.('speakspin')}
-          />
-        )
-
-      case 'reading':
-        return (
-          <Banner
-            key={sec.id}
-            id="sec-reading"
-            variant="reading"
-            wide
-            title={t('practice.reading.heading')}
-            desc={t('practice.reading.desc')}
-            cta={t('practice.reading.cta')}
-            onStart={() => onNav?.('reading')}
-            tag={tokenTag('reading')}
-          />
-        )
-
-      case 'writePair':
-        return (
-          <div key={sec.id} className="pk-pair">
-            <Banner
-              id="sec-writing"
-              variant="writing"
-              title={t('practice.writing.heading')}
-              desc={t('practice.writing.desc')}
-              cta={t('practice.writing.cta')}
-              onStart={() => onNav?.('writing')}
-              tag={tokenTag('writePair')}
-            />
-            <Banner
-              id="sec-verbs"
-              variant="verbs"
-              title={t('practice.verbs.heading')}
-              desc={t('practice.verbs.desc')}
-              cta={t('practice.verbs.cta')}
-              onStart={() => onNav?.('verbs')}
-            />
-          </div>
         )
 
       case 'shadowing':
@@ -1213,47 +1024,29 @@ export default function PracticePage({
           </section>
         )
 
-      case 'grammar': {
-        if (expanded === 'grammar') {
-          return (
-            <section key={sec.id} id="sec-grammar" className="pk-sec">
-              {head(sec, t('practice.chip.grammar'))}
-              {tokensOf('grammar') > 0 && <p className="tb-sub">{t('grammar.tokens.sub', { n: tokensOf('grammar') })}</p>}
-              {grammarIndex ? (
-                <GrammarCatalog
-                  index={grammarIndex}
-                  cmsUnits={cmsGrammarUnits}
-                  activeLevel={grammarLevel}
-                  onLevel={setGrammarLevel}
-                  search={grammarSearch}
-                  onSearch={setGrammarSearch}
-                  onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
-                  pickMode={teacher}
-                  pickedIds={pickedIds}
-                  onTogglePick={togglePickedUnit}
-                />
-              ) : (
-                <div className="gr-loading">{t('practice.loading')}</div>
-              )}
-            </section>
-          )
-        }
-        const units = grammarIndex?.[grammarLevel]?.units.slice(0, 12) || []
+      case 'grammar':
         return (
           <section key={sec.id} id="sec-grammar" className="pk-sec">
             {head(sec, t('practice.chip.grammar'))}
-            {units.length === 0 ? (
-              <Empty loading={!grammarIndex} />
+            {tokensOf('grammar') > 0 && <p className="tb-sub">{t('grammar.tokens.sub', { n: tokensOf('grammar') })}</p>}
+            {grammarIndex ? (
+              <GrammarCatalog
+                index={grammarIndex}
+                cmsUnits={cmsGrammarUnits}
+                activeLevel={grammarLevel}
+                onLevel={setGrammarLevel}
+                search={grammarSearch}
+                onSearch={setGrammarSearch}
+                onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+                pickMode={teacher}
+                pickedIds={pickedIds}
+                onTogglePick={togglePickedUnit}
+              />
             ) : (
-              <Rail className="pk-rail--tiles">
-                {units.map((u) => (
-                  <GrammarTile key={u.id} unit={u} tokens={tokensOf('grammar')} onOpen={(unit) => setOpenUnit({ level: grammarLevel, unit })} />
-                ))}
-              </Rail>
+              <div className="gr-loading">{t('practice.loading')}</div>
             )}
           </section>
         )
-      }
 
       case 'workbooks':
         return (
@@ -1264,17 +1057,6 @@ export default function PracticePage({
                 <WorkbookTile key={l.code} level={l} index={i} onOpen={openWorkbookLevel} />
               ))}
             </Rail>
-          </section>
-        )
-
-      case 'arcade':
-        // Игр две и без уровней, поэтому ни «Посмотреть все», ни фильтра по
-        // уровню у секции нет. Вкладка едет с переходом: «Назад» из зала
-        // возвращает туда, откуда пришли (секция есть в двух вкладках).
-        return (
-          <section key={sec.id} id="sec-arcade" className="pk-sec">
-            {head(sec, t('practice.chip.arcade'))}
-            <ArcadeCard onOpen={(game) => onNav?.('arcade', { game, skill: tab })} />
           </section>
         )
 
@@ -1320,21 +1102,35 @@ export default function PracticePage({
   }
 
   const skill = SKILLS.find((s) => s.key === tab) || SKILLS[0]
-  // Вкладка-раздел («Грамматика · игры»): под карточками целое приложение со своими уровнями и экранами игр —
-  // общий переключатель уровня и таблица токенов под игрой были бы чужими.
-  const ownScreen = skill.key === 'grammarGames'
-  const sections = expanded
-    ? skill.sections.filter((sec) => sec.id === expanded)
-    : skill.sections
+  // У «Грамматики» нет каталогов, которые уровень мог бы отфильтровать: темы ведут на экран тем со своими
+  // уровнями, игры уровней не знают. Чипы там ничего бы не меняли — их нет (макет 7402:7133).
+  const levelsOff = skill.key === 'grammarGames'
+
+  // Карточка, которой сейчас на экране не место: каталоги караоке и комиксов, пока они пусты (материал заводит
+  // методист — пустая витрина выглядела бы поломкой), как и прежние секции. Пока каталог грузится, карточка
+  // стоит — иначе сетка прыгала бы, когда он доедет; комиксы со сбоем загрузки остаются (список скажет о сбое).
+  const shownCard = (card) => {
+    if (card.id === 'karaoke') return state.loading || karaoke.length > 0
+    if (card.id === 'comics') return !comicsKnown || hasComics || Boolean(catalogIssue)
+    return true
+  }
+  // Каталог открывается списком на месте обзора; переход сверху — карточка могла стоять внизу экрана.
+  const openCard = (card) => {
+    if (card.list) {
+      setExpanded(card.id)
+      document.querySelector('.learn__main')?.scrollTo?.(0, 0)
+      window.scrollTo(0, 0)
+      focusLater('.pk-sec .pk-all')
+      return
+    }
+    onNav?.(card.nav, card.nav === 'arcade' ? { ...card.payload, skill: tab } : card.payload || undefined)
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={teacher ? undefined : startTour}>
-      <div className="pk pp--enter">
+      <div className={`pk pk-c--${skill.key} pp--enter`}>
         <header className="pk-head">
           <h1 className="pk-head__title">{t('practice.title')}</h1>
-          {/* У «Грамматики · игр» уровни свои — карточки уровней в хабе раздела; общий переключатель там ничего
-              бы не фильтровал. */}
-          {ownScreen ? <div className="pk-head__tools" ref={setHeadTools} /> : <LevelSwitch value={pickedLevel} onChange={pickLevel} />}
         </header>
 
         <div className="pk-skills" role="tablist">
@@ -1350,13 +1146,37 @@ export default function PracticePage({
           ))}
         </div>
 
-        <PracticeTokenSub data={tokenData} />
+        <div className="pk-cap">
+          <PracticeTokenSub data={tokenData} />
+          {!levelsOff && <LevelSwitch value={pickedLevel} onChange={pickLevel} />}
+        </div>
 
         {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
 
-        {sections.map(renderSection)}
+        {expanded
+          ? renderSection({ id: expanded, all: 'pill' })
+          : skill.groups.map((group, i) => (
+              <section key={group.title || i} className="pk-group">
+                {group.title && (
+                  <div className="pk-group__head">
+                    <h2 className="pk-group__title">{t(group.title)}</h2>
+                    {group.sub && <p className="pk-group__sub">{t(group.sub)}</p>}
+                  </div>
+                )}
+                <div className="pk-grid">
+                  {group.cards.map(cardOf).filter(shownCard).map((card) => (
+                    <PracticeTile
+                      key={card.id}
+                      card={card}
+                      tokens={card.tokens ? tokensOf(card.tokens) : 0}
+                      onOpen={() => openCard(card)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
 
-        {expanded === null && !ownScreen && <PracticeTokenTable data={tokenData} />}
+        {expanded === null && <PracticeTokenTable data={tokenData} />}
       </div>
 
       {openSituation && (

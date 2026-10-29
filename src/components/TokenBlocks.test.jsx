@@ -79,6 +79,13 @@ describe('остальные блоки', () => {
 
   it('таблица «Все начисления за практику» со строкой урока; без правил её нет', () => {
     const { unmount } = wrap(<PracticeTokenTable data={DATA} />)
+    // Свёрнута по умолчанию (редизайн 29.10.2026): в шапке — число строк, включая строку урока.
+    const head = screen.getByRole('button', { name: /все начисления за практику/i })
+    expect(head.getAttribute('aria-expanded')).toBe('false')
+    expect(head.textContent).toContain('2 пункта')
+    expect(screen.getByTestId('practice-token-table').querySelector('table')).toBeNull()
+    fireEvent.click(head)
+    expect(head.getAttribute('aria-expanded')).toBe('true')
     const text = screen.getByTestId('practice-token-table').textContent
     expect(text).toContain('Юнит грамматики')
     expect(text).toContain('+5')

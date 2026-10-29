@@ -43,8 +43,9 @@ const AREA_NAMES = {
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
 // «сделал». Вкладка навыка — любой её тренажёр, который пишет прогресс.
 const TARGET_AREAS = {
-  'practice-listening': ['listening', 'listenchoose', 'listen'],
-  'practice-reading': ['reading', 'wordhunt'],
+  // Состав вкладок — с редизайна 29.10.2026: мини-игра Listening и Word Hunt уехали во вкладку «Грамматика».
+  'practice-listening': ['listenchoose', 'listen', 'cartoons'],
+  'practice-reading': ['reading'],
   'practice-writing': ['writing', 'prepositions'],
   'practice-speaking': ['shadowing', 'situations', 'pronunciation'],
   listening: ['listening'],

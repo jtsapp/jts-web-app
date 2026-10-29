@@ -59,7 +59,8 @@ export default function NumbersPage({ userName, userLevel, token, onNav, onProfi
   const goBack = () => {
     if (gameRef.current?.back()) return
     if (onBack) onBack()
-    else onNav?.('practice', { skill: 'listening' })
+    // Без истории — во вкладку, где карточка игры стоит с редизайна 29.10.2026.
+    else onNav?.('practice', { skill: 'grammarGames' })
   }
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)

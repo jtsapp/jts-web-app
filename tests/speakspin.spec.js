@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // SpeakSpin (?screen=speakspin): барабан → подготовка → запись → разбор.
 //
@@ -65,6 +66,8 @@ const fakeMicrophone = (page) =>
   })
 
 const asStudent = async (page) => {
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', phone: '77001234567', languageLevel: 'B1' } })),
@@ -113,13 +116,14 @@ const recordTake = async (page) => {
   await expect(page.locator('#jts-review')).toBeVisible()
 }
 
-test('баннер в «Говорении» ведёт на экран', async ({ page }) => {
+test('карточка в «Говорении» ведёт на экран', async ({ page }) => {
   await asStudent(page)
   await page.goto('/?screen=practice')
-  const banner = page.locator('#sec-speakspin')
+  // С редизайна 29.10.2026 баннера с кнопкой нет: вся карточка — кнопка перехода.
+  const card = page.locator('#sec-speakspin')
   await page.locator('.pk-skill--speaking').click({ timeout: 20000 })
-  await expect(banner).toBeVisible({ timeout: 20000 })
-  await banner.locator('.pk-banner__cta').click()
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await card.click()
   await expect(page.locator('#jts-spin')).toBeVisible({ timeout: 20000 })
 })
 

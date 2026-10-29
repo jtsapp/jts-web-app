@@ -3,7 +3,7 @@ import { TUTOR_ONLY } from '../src/config.js'
 
 // Регрессия разгейта TUTOR_ONLY_SECTIONS: на проде (TUTOR_ONLY=true) помимо
 // тьютора открыты Практика и Словарь — они видны в сайдбаре и открываются
-// кликом, включая внутренний экран «Аудирование» (баннер в Практике).
+// кликом, включая внутренний экран «Аудирование» (карточка мини-игры в Практике).
 // Скрытые разделы (Обучение, Уроки, IELTS) в сайдбаре отсутствуют.
 // Бэкенд замокан: интересует только видимость пунктов и маршрутизация.
 
@@ -64,17 +64,19 @@ test('сайдбар: только Практика, Тьютор и Слова�
   await expect(items.nth(2)).toHaveText('Словарь')
 })
 
-test('Практика открывается из сайдбара, баннер ведёт в Аудирование', async ({ page }) => {
+test('Практика открывается из сайдбара, карточка ведёт в Аудирование', async ({ page }) => {
   await loginToTutorZone(page)
   await openSidebar(page)
 
   await page.locator('.sb__nav .sb__item', { hasText: 'Практика' }).click()
-  // Хаб практики: секции на месте, включая новый баннер «Аудирование».
-  await expect(page.locator('#sec-listening')).toBeVisible({ timeout: 10_000 })
+  // Хаб практики: карточки «Аудирования» на месте.
+  await expect(page.locator('#sec-listenchoose')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('#sec-tales')).toBeVisible()
 
-  // Баннер уводит на внутренний экран тренажёра (case 'listening' в App.jsx).
-  await page.locator('#sec-listening .pk-banner__cta').click()
+  // Мини-игра «Listening» с редизайна 29.10.2026 — во вкладке «Грамматика»; карточка уводит на внутренний экран
+  // тренажёра (case 'listening' в App.jsx).
+  await page.locator('.pk-skill--grammarGames').click()
+  await page.locator('#sec-listening').click()
   await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10_000 })
 })
 

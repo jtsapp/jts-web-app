@@ -42,11 +42,12 @@ describe('PracticePage — фильтр из перехода', () => {
     expect(container.querySelector('#sec-books .pk-all')?.textContent).toMatch(/свернуть/i)
   })
 
-  it('без фильтра — «Аудирование»', async () => {
+  it('без фильтра — «Аудирование»: карточки тренажёров, мини-игра Listening уехала в «Грамматику»', async () => {
     const { container } = renderWith(null)
     await waitFor(() => expect(activeSkill(container)).toMatch(/аудирование/i))
-    expect(container.querySelector('#sec-tales')).toBeTruthy()
-    expect(container.querySelector('#sec-listening')).toBeTruthy()
+    expect(container.querySelector('#sec-tales.pk-card')).toBeTruthy()
+    expect(container.querySelector('#sec-listenchoose.pk-card')).toBeTruthy()
+    expect(container.querySelector('#sec-listening')).toBeNull()
   })
 
   it('возврат из «Ситуаций» — на «Говорение»', async () => {
@@ -55,23 +56,28 @@ describe('PracticePage — фильтр из перехода', () => {
     expect(container.querySelector('#sec-situations')).toBeTruthy()
   })
 
-  it('«Говорение» заканчивается «Аркадой» перед сказками, и карточка ведёт в игру и в зал', async () => {
+  it('«Говорение» кончается сказками; игры «Аркады» — карточками «Грамматики», каждая ведёт в свою игру', async () => {
     const onNav = vi.fn()
-    const { container, getByRole } = render(
+    const { container, getByRole, getByText } = render(
       <I18nProvider>
         <PracticePage userLevel="A1" userName="Тест" token="T" openTarget={{ skill: 'speaking' }} onNav={onNav} onProfile={() => {}} />
       </I18nProvider>,
     )
     await waitFor(() => expect(activeSkill(container)).toMatch(/говорение/i))
-    const ids = [...container.querySelectorAll('.pk > section[id]')].map((s) => s.id)
-    expect(ids.slice(-2)).toEqual(['sec-arcade', 'sec-tales'])
-    expect(container.querySelector('#sec-arcade .pk-sec__title')?.textContent).toBe('Аркада')
-    // Кнопка игры открывает её сразу, «Все игры» — зал; вкладка едет с
-    // переходом, чтобы «Назад» вернул сюда же.
+    const ids = [...container.querySelectorAll('.pk-card')].map((c) => c.id)
+    expect(ids.at(-1)).toBe('sec-tales')
+    expect(container.querySelector('[id^="sec-arcade"]')).toBeNull()
+
+    fireEvent.click(getByText('Грамматика'))
+    // Уровни на «Грамматике» ничего не фильтруют — чипов нет.
+    expect(container.querySelector('.pk-levels')).toBeNull()
+    // Вкладка едет с переходом, чтобы «Назад» из игры вернул сюда же.
     fireEvent.click(getByRole('button', { name: /word rush/i }))
-    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: 'runner', skill: 'speaking' })
-    fireEvent.click(getByRole('button', { name: /все игры/i }))
-    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: null, skill: 'speaking' })
+    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: 'runner', skill: 'grammarGames' })
+    fireEvent.click(getByRole('button', { name: /speak or die/i }))
+    expect(onNav).toHaveBeenLastCalledWith('arcade', { game: 'speak', skill: 'grammarGames' })
+    fireEvent.click(getByRole('button', { name: /темы по уровням/i }))
+    expect(onNav).toHaveBeenLastCalledWith('grammar-games', undefined)
   })
 
   // Луна: «открой Питера Пэна» — переход несёт bookId (lib/assistant/items/refs.js).
@@ -105,15 +111,17 @@ describe('PracticePage — фильтр из перехода', () => {
 })
 
 describe('PracticePage — навыки и уровень', () => {
-  it('вкладка переключает секции, «Посмотреть все» разворачивает и сворачивает', async () => {
+  it('вкладка меняет карточки, карточка-каталог открывает полный список, «Свернуть» — обратно', async () => {
     const { container, getByText } = renderWith(null)
     fireEvent.click(getByText('Письмо'))
-    await waitFor(() => expect(container.querySelector('#sec-workbooks')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('#sec-workbooks.pk-card')).toBeTruthy())
     expect(container.querySelector('#sec-tales')).toBeNull()
     expect(container.querySelector('#sec-writing')).toBeTruthy()
 
-    fireEvent.click(container.querySelector('#sec-workbooks .pk-all'))
+    fireEvent.click(container.querySelector('#sec-workbooks.pk-card'))
+    expect(container.querySelector('#sec-workbooks .pk-all')?.textContent).toMatch(/свернуть/i)
     expect(container.querySelector('#sec-writing')).toBeNull()
+    expect(container.querySelector('[data-testid="practice-token-table"]')).toBeNull()
     fireEvent.click(container.querySelector('#sec-workbooks .pk-all'))
     expect(container.querySelector('#sec-writing')).toBeTruthy()
   })
@@ -139,10 +147,7 @@ describe('PracticePage — навыки и уровень', () => {
   it('карточка навыка считает тренажёры с правильным окончанием', () => {
     const { container } = renderWith(null)
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
-    // У «Чтения» шесть: + Word Hunt и «Аркада»; у «Говорения» семь: + SpeakSpin и Pronunciation World; у
-    // «Аудирования» одиннадцать: + «Числа», Just to Listen, «Скорочтение» и Cartoon World;
-    // у «Письма» пять: + Prepositions World («Грамматика · игры» с 28.10.2026 — своя вкладка,
-    // под ней не тренажёры, а темы раздела).
-    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '5 тренажеров', '7 тренажеров', '125 тем'])
+    // Как в макете редизайна (29.10.2026): игры и «Скорочтение» уехали в «Грамматику», под ней — своя подпись.
+    expect(counts).toEqual(['7 тренажеров', '4 тренажера', '5 тренажеров', '6 тренажеров', '125 тем и игры'])
   })
 })

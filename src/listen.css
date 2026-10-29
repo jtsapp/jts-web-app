@@ -48,10 +48,6 @@ html[data-theme="dark"] .jl {
   --jl-bad-bg: var(--dk-red-tint);
   --jl-shadow: none;
 }
-html[data-theme="dark"] .pk-banner--listen {
-  background: linear-gradient(99.4deg, var(--dk-acc) 17%, var(--dk-acc-strong) 95.5%);
-}
-
 .jl-i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .jl-muted { color: var(--jl-muted); font-size: 14px; margin: 0; }
 .jl-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }

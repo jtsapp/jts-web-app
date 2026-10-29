@@ -446,8 +446,7 @@
 /* Движение — только там, где оно даёт игре характер; при просьбе системы
    его нет вовсе (пила при этом всё равно едет — это сама игра). */
 @media (prefers-reduced-motion: reduce) {
-  .ar *,
-  .pk-arcade * {
+  .ar * {
     animation: none !important;
     transition: none !important;
   }

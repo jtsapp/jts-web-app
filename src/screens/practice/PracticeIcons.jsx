@@ -48,3 +48,9 @@ export function PkClock() {
     </svg>
   )
 }
+
+// Значки макета (Material Symbols, экспорт Figma в public/practice/cards/ico/) рисуются маской: цвет задаёт CSS
+// раздела, а не файл — один значок служит и белым на градиенте, и цветным на тинте.
+export function PkIco({ name, className = '' }) {
+  return <i className={`pk-ico ${className}`} style={{ '--ico': `url(/practice/cards/ico/${name}.svg)` }} aria-hidden="true" />
+}

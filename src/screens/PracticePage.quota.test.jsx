@@ -35,6 +35,9 @@ import PracticePage from './PracticePage.jsx'
 // проверки остались прежними.
 vi.setConfig({ testTimeout: 30_000 })
 
+// С редизайна (29.10.2026) на обзоре у каталога одна карточка, а сказки и ролики — в его полном списке: тест
+// открывает «Практику» сразу на нём (переход с фильтром, как с «Главной»).
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
@@ -45,7 +48,7 @@ describe('PracticePage — квота сказок проверяется в м�
   it('лимит 1: первая сказка открывается, вторая — экран лимита, первая снова — можно', async () => {
     const { container } = render(
       <I18nProvider>
-        <PracticePage userLevel="A1" userName="Тест" token="T" onNav={() => {}} onProfile={() => {}} />
+        <PracticePage userLevel="A1" userName="Тест" token="T" openTarget={{ filter: 'tales' }} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>,
     )
     const cards = await waitFor(() => {
@@ -66,7 +69,7 @@ describe('PracticePage — квота сказок проверяется в м�
   it('уже открытая сказка лимит не тратит', async () => {
     const { container } = render(
       <I18nProvider>
-        <PracticePage userLevel="A1" userName="Тест" token="T" onNav={() => {}} onProfile={() => {}} />
+        <PracticePage userLevel="A1" userName="Тест" token="T" openTarget={{ filter: 'tales' }} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>,
     )
     const card = await waitFor(() => {
@@ -122,7 +125,7 @@ describe('PracticePage — квота мемов на каждый ролик л
   async function openFirstMeme() {
     const view = render(
       <I18nProvider>
-        <PracticePage userLevel="A1" userName="Тест" token="T" onNav={() => {}} onProfile={() => {}} />
+        <PracticePage userLevel="A1" userName="Тест" token="T" openTarget={{ filter: 'memes' }} onNav={() => {}} onProfile={() => {}} />
       </I18nProvider>,
     )
     const cards = await waitFor(() => {
