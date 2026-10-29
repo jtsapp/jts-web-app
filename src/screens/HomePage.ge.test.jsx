@@ -76,7 +76,9 @@ describe('HomePage — General English', () => {
       const onGeStart = vi.fn()
       const { unmount } = renderHome({ geProfile: { onboarded: false }, levelUnknown, onGeStart })
       await waitFor(() => expect(screen.getByText('Здесь будет ваш маршрут')).toBeTruthy())
-      expect(document.querySelector('.hm-level')).toBe(null)
+      expect(document.querySelector('.hm-level:not(.hm-level--phone)')).toBe(null)
+      // телефон: карточка уровня замещает скрытый там блок GE (дизайн приложения)
+      expect(document.querySelector('.hm-level--phone')).toBeTruthy()
       // класс ge-locked — якорь шага тура про закрытый маршрут
       expect(document.querySelector('.ge-start.ge-locked')).toBeTruthy()
       fireEvent.click(within(document.querySelector('.ge-start')).getByRole('button', { name: 'Пройти тест уровня' }))
@@ -135,6 +137,17 @@ describe('HomePage — General English', () => {
     expect([...document.querySelectorAll('.ge-goal .ih-gb__track li span')].map((n) => n.textContent)).toEqual(['A2', 'A2', 'Сейчас · 40%', 'B2'])
     fireEvent.click(screen.getByRole('button', { name: /Указать срок/ }))
     expect(onGeEdit).toHaveBeenCalled()
+  })
+
+  // Телефон (дизайн приложения): блока цели там нет, цель правится «Изменить» в карточке уровня — тем же экраном.
+  it('телефон: «Изменить» в карточке уровня ведёт в правку цели', async () => {
+    const onGeEdit = vi.fn()
+    renderHome({ geProfile: goal, onGeEdit })
+    await waitFor(() => expect(document.querySelector('.hm-level--phone .hm-level__goal')).toBeTruthy())
+    // Цель — из профиля GE (B2), а не прежнего level_goal: его зеркало снято 13.10, и он отстаёт.
+    expect(document.querySelector('.hm-level--phone .hm-level__goal').textContent).toContain('Цель — B2')
+    fireEvent.click(document.querySelector('.hm-level--phone .hm-level__goal'))
+    expect(onGeEdit).toHaveBeenCalledTimes(1)
   })
   it('план собран — «Сегодня» вместо «Что сделать сегодня», «Начать» ведёт в раздел', async () => {
     getGePlan.mockResolvedValueOnce({

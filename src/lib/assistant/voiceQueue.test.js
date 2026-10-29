@@ -74,6 +74,32 @@ describe('очередь озвучки', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:2')
   })
 
+  // Поток: роут отвечает адресом билета, и <audio> играет его сам с первых
+  // байт — без blob и без ожидания записи целиком.
+  it('адрес потока играется как есть, без blob', async () => {
+    let n = 0
+    fetchMock = vi.fn(async () => Response.json({ url: `/api/assistant/speak?s=id-${++n}` }))
+    const q = queue()
+    q.say('Первая фраза.')
+    q.say('Вторая фраза.')
+    q.end()
+    await settle()
+    expect(played).toEqual(['/api/assistant/speak?s=id-1'])
+    play.finish()
+    await settle()
+    expect(played).toEqual(['/api/assistant/speak?s=id-1', '/api/assistant/speak?s=id-2'])
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('чужой адрес в ответе роута не играется — запасной голос', async () => {
+    fetchMock = vi.fn(async () => Response.json({ url: 'https://evil.example/x.mp3' }))
+    const q = queue()
+    q.say('Фраза.')
+    await settle()
+    expect(played).toHaveLength(1)
+    expect(isStream(played[0])).toBe(true)
+  })
+
   // Синтез Gemini медленнее, чем кажется (190 символов — 8–10 с): с одной
   // фразой вперёд длинная фраза после короткой не успевала, и ответ замолкал.
   it(`готовит ${LOOKAHEAD} фразы вперёд, не больше`, async () => {
@@ -293,6 +319,30 @@ describe('очередь озвучки', () => {
     expect(onPhrase).not.toHaveBeenCalled()
     start()
     expect(onPhrase).toHaveBeenCalledWith(0)
+  })
+
+  // По onSound окно меряет, через сколько Луна заговорила (voiceTiming.js):
+  // пропущенная фраза звуком не считается.
+  it('onSound — один раз, на первой фразе, что зазвучала по-настоящему', async () => {
+    const starts = []
+    play = vi.fn((src, handlers) => {
+      played.push(src)
+      starts.push(handlers)
+      return true
+    })
+    const onSound = vi.fn()
+    const q = queue({ onSound })
+    q.say('Первая.')
+    q.say('Вторая.')
+    q.end()
+    await settle()
+    starts[0].onFail('error')
+    await settle()
+    expect(onSound).not.toHaveBeenCalled()
+    starts.at(-1).onStart()
+    expect(onSound).toHaveBeenCalledWith(1)
+    starts.at(-1).onStart()
+    expect(onSound).toHaveBeenCalledTimes(1)
   })
 
   it('чужой звук оборвал фразу — onInterrupt (виджет покажет весь текст), onFinish — нет', async () => {

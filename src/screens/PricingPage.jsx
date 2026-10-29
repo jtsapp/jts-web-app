@@ -1,21 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
-import { plural } from '../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { useOffers } from '../lib/useOffers.js'
 import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
 import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
-import {
-  BONUSES,
-  CURRENCY,
-  INCLUDED,
-  durationsOf,
-  formatPrice,
-  pricePerLesson,
-  splitOffers,
-} from '../data/pricing.js'
+import OfferCatalog from '../components/OfferCatalog.jsx'
+import { PricingIncluded } from '../components/PricingDecorations.jsx'
+import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
+import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
 
 
@@ -40,59 +34,23 @@ function newOrderKey() {
 export default function PricingPage({ token, onBack, onDone }) {
   const { t, lang } = useI18n()
   const { offers, failed, reload } = useOffers()
-  const [duration, setDuration] = useState(null)
   const [items, setItems] = useState([])
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
   // Окно закрыли — плашка в корзине остаётся, второй раз окно не всплывает.
   const [hidNote, setHidNote] = useState(false)
 
-  const groups = useMemo(() => splitOffers(offers || []), [offers])
-  const durations = useMemo(() => durationsOf(groups.individual), [groups.individual])
-
-  // Первая длительность из каталога — как только он приехал. Держать её в
-  // состоянии, а не выводить каждый раз, надо ради переключателя.
-  useEffect(() => {
-    if (duration === null && durations.length) setDuration(durations[0])
-  }, [duration, durations])
-
-  const individual = groups.individual.filter((o) => o.durationMinutes === duration)
   const total = cartTotal(items)
   const count = cartCount(items)
-
-  const lessonsLabel = (n) => plural(t, lang, 'pricing.lessons', n)
-
-  // Название плитки: строим из состава предложения, чтобы оно переводилось.
-  // Серверный title — запасной вариант для видов, которые мы разобрать не умеем
-  // (групповой курс: «12 уроков · 1 курс» одной строкой).
-  const offerLabel = (offer) => {
-    if (offer.kind === 'SELF_STUDY' && offer.levels) {
-      const key = `pricing.self.n${offer.levels}`
-      const label = t(key)
-      if (label !== key) return label
-    }
-    if (offer.kind === 'INDIVIDUAL' && offer.lessons) return lessonsLabel(offer.lessons)
-    return offer.title
-  }
-
-  const add = (offer, kind) => setItems((prev) => addItem(prev, cartLine(offer, kind)))
-  const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
-
-
-  const cartLine = (offer, kind) => ({
+  const cartLine = (offer) => ({
     id: offer.code,
-    kind,
-    title:
-      kind === 'ind' ? t('pricing.cart.ind') : kind === 'group' ? t('pricing.cart.group') : t('pricing.self'),
-    subtitle:
-      kind === 'ind'
-        ? t('pricing.cart.indSub', {
-            lessons: lessonsLabel(offer.lessons),
-            min: String(offer.durationMinutes),
-          })
-        : offerLabel(offer),
+    kind: offer.kind === 'SELF_STUDY' ? 'self' : offer.kind === 'GROUP' ? 'group' : 'ind',
+    title: t(`catalog.${offerCategory(offer)}`),
+    subtitle: [offerTitle(offer, t, lang), offerDetails(offer, t, lang)].filter(Boolean).join(' · '),
     price: offer.price,
   })
+  const add = (offer) => setItems((prev) => addItem(prev, cartLine(offer)))
+  const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
   // Ключ идемпотентности живёт, пока не изменилась корзина: повторный клик по
   // «Перейти к оплате» вернёт тот же заказ, а не создаст второй платёж. Меняется
@@ -177,134 +135,9 @@ export default function PricingPage({ token, onBack, onDone }) {
       ) : (
         <div className="pr__grid">
           <div className="pr__cols">
-            {/* ——— Self Study ——— */}
-            {groups.self.length > 0 && (
-              <section className="pr-sec pr-sec--self">
-                <h2 className="pr-sec__title">
-                  <SecIcon kind="self" />
-                  {t('pricing.self')}
-                </h2>
-                <div className="pr-tiles pr-tiles--4">
-                  {groups.self.map((offer) => (
-                    <PlanTile
-                      key={offer.code}
-                      title={offerLabel(offer)}
-                      price={offer.price}
-                      note={offer.tutorMinutes ? t('pricing.self.minutes', { n: String(offer.tutorMinutes) }) : ''}
-                      qty={qtyOf(items, offer.code)}
-                      onAdd={() => add(offer, 'self')}
-                      onBump={(d) => bump(offer.code, d)}
-                      t={t}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* ——— Индивидуальные ——— */}
-            {groups.individual.length > 0 && (
-              <section className="pr-sec pr-sec--ind">
-                <div className="pr-sec__head">
-                  <h2 className="pr-sec__title">
-                    <SecIcon kind="ind" />
-                    {t('pricing.ind')}
-                  </h2>
-                  {/* Переключатель длительности меняет и цену, и то, что попадёт
-                      в корзину, поэтому стоит в заголовке раздела, а не у каждой
-                      плитки — иначе выбор пришлось бы повторять шесть раз. */}
-                  {durations.length > 1 && (
-                    <div className="pr-toggle" role="group" aria-label={t('pricing.ind')}>
-                      {durations.map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          className={`pr-toggle__btn${d === duration ? ' is-on' : ''}`}
-                          aria-pressed={d === duration}
-                          onClick={() => setDuration(d)}
-                        >
-                          {t('pricing.ind.duration', { n: String(d) })}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pr-tiles pr-tiles--3">
-                  {individual.map((offer) => (
-                    <PlanTile
-                      key={offer.code}
-                      title={offerLabel(offer)}
-                      price={offer.price}
-                      note={t('pricing.perLesson', { price: formatPrice(pricePerLesson(offer)) })}
-                      qty={qtyOf(items, offer.code)}
-                      onAdd={() => add(offer, 'ind')}
-                      onBump={(d) => bump(offer.code, d)}
-                      t={t}
-                    />
-                  ))}
-                </div>
-
-                <div className="pr-extras">
-                  <ul className="pr-feats">
-                    <li><FeatIcon kind="teacher" />{t('pricing.ind.f1')}</li>
-                    <li><FeatIcon kind="calendar" />{t('pricing.ind.f2')}</li>
-                    <li><FeatIcon kind="mic" />{t('pricing.ind.f3')}</li>
-                  </ul>
-                  <Bonuses list={BONUSES.individual} t={t} />
-                </div>
-              </section>
-            )}
-
-            {/* ——— Групповые ——— */}
-            {groups.group.length > 0 && (
-              <section className="pr-sec pr-sec--group">
-                <h2 className="pr-sec__title">
-                  <SecIcon kind="group" />
-                  {t('pricing.group')}
-                </h2>
-                <div className="pr-tiles pr-tiles--3">
-                  {groups.group.map((offer) => (
-                    <PlanTile
-                      key={offer.code}
-                      accent
-                      title={offerLabel(offer)}
-                      price={offer.price}
-                      note={t('pricing.perLesson', { price: formatPrice(pricePerLesson(offer)) })}
-                      qty={qtyOf(items, offer.code)}
-                      onAdd={() => add(offer, 'group')}
-                      onBump={(d) => bump(offer.code, d)}
-                      t={t}
-                    />
-                  ))}
-                </div>
-                <div className="pr-extras">
-                  <ul className="pr-feats">
-                    <li><FeatIcon kind="mic" />{t('pricing.group.f1')}</li>
-                    <li><FeatIcon kind="gift" />{t('pricing.group.f2')}</li>
-                  </ul>
-                  <Bonuses list={BONUSES.group} t={t} />
-                </div>
-              </section>
-            )}
-
-            {/* ——— Входит в любой тариф ——— */}
-            <section className="pr-inc">
-              <h2 className="pr-inc__title">
-                <CheckMark />
-                {t('pricing.included')}
-              </h2>
-              <div className="pr-inc__grid">
-                {INCLUDED.map((f) => (
-                  <div className="pr-inc__cell" key={f.id}>
-                    <FeatIcon kind={f.icon} />
-                    <span>
-                      <b>{t(f.title)}</b>
-                      <i>{t(f.sub)}</i>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <OfferCatalog offers={offers} onSelect={add} quantity={(id) => qtyOf(items, id)} onBump={bump} />
+            <PricingIncluded />
+            <LegalDocumentsPanel />
           </div>
 
           {/* ——— Корзина ——— */}
@@ -389,30 +222,6 @@ export default function PricingPage({ token, onBack, onDone }) {
   )
 }
 
-// Плитка тарифа. Пока пакет не в заказе — «+»; после добавления на его месте
-// счётчик «− n +», чтобы не приходилось искать количество в корзине.
-function PlanTile({ title, price, note, qty, onAdd, onBump, accent = false, t }) {
-  const chosen = qty > 0
-  return (
-    <div className={`pr-tile${chosen ? ' is-chosen' : ''}${accent ? ' pr-tile--accent' : ''}`}>
-      <div className="pr-tile__head">
-        <b className="pr-tile__title">{title}</b>
-        {chosen ? (
-          <Stepper qty={qty} onBump={onBump} t={t} />
-        ) : (
-          <button type="button" className="pr-tile__add" onClick={onAdd} aria-label={t('pricing.add')}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-            </svg>
-          </button>
-        )}
-      </div>
-      <div className="pr-tile__price">{formatPrice(price)} {CURRENCY}</div>
-      {note && <div className="pr-tile__note">{note}</div>}
-    </div>
-  )
-}
-
 function Stepper({ qty, onBump, t }) {
   return (
     <span className="pr-step">
@@ -431,35 +240,6 @@ function Stepper({ qty, onBump, t }) {
   )
 }
 
-function Bonuses({ list, t }) {
-  return (
-    <div className="pr-bonus">
-      <div className="pr-bonus__body">
-        <div className="pr-bonus__title">
-          <GiftMark />
-          {t('pricing.bonus')}
-        </div>
-        <ul>
-          {list.map((b) => (
-            <li key={b.id}>{b.label}</li>
-          ))}
-        </ul>
-      </div>
-      {/* Логотипы — украшение блока, а не список: подписи уже слева, и второй
-          раз называть их скринридеру незачем. */}
-      <div className="pr-bonus__art" aria-hidden="true">
-        {list.map((b) => (
-          <img key={b.id} src={b.icon} alt="" />
-        ))}
-        <img className="pr-bonus__gift" src="/assets/demo/gift.png" alt="" />
-      </div>
-    </div>
-  )
-}
-
-/* ——— Иконки. Локальные, как в SkillRatings: раздувать общий icons.jsx ради
-   одного экрана незачем. ——— */
-
 function SecIcon({ kind }) {
   const p = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }
   if (kind === 'self') return <svg {...p}><path d="M12 6c-2-1.3-4.5-1.3-7-1v13c2.5-.3 5-.3 7 1 2-1.3 4.5-1.3 7-1V5c-2.5-.3-5-.3-7 1Z" /><path d="M12 6v13" /></svg>
@@ -467,45 +247,7 @@ function SecIcon({ kind }) {
   return <svg {...p}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" /></svg>
 }
 
-function FeatIcon({ kind }) {
-  const p = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
-  switch (kind) {
-    case 'teacher':
-    case 'manager':
-      return <svg {...p}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" /></svg>
-    case 'calendar':
-      return <svg {...p}><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3.5v3M16 3.5v3" /></svg>
-    case 'mic':
-      return <svg {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
-    case 'gift':
-      return <svg {...p}><rect x="3.5" y="9" width="17" height="11" rx="2" /><path d="M3.5 13.5h17M12 9v11" /><path d="M12 9S10.5 4.5 8 4.5a2.2 2.2 0 0 0 0 4.5M12 9s1.5-4.5 4-4.5a2.2 2.2 0 0 1 0 4.5" /></svg>
-    case 'program':
-      return <svg {...p}><rect x="4" y="3.5" width="16" height="17" rx="2.5" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
-    case 'practice':
-      return <svg {...p}><path d="M4 12a8 8 0 1 1 3 6.2" /><path d="M4 19v-5h5" /></svg>
-    case 'vocab':
-      return <svg {...p}><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z" /><path d="M5 17a3 3 0 0 1 3-3h11" /></svg>
-    case 'dialogs':
-      return <svg {...p}><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v6A1.5 1.5 0 0 1 14.5 13H8l-4 3z" /><path d="M18 9h.5A1.5 1.5 0 0 1 20 10.5v6A1.5 1.5 0 0 1 18.5 18H14l-2 2v-2" /></svg>
-    case 'selfstudy':
-      return <svg {...p}><path d="M12 6c-2-1.3-4.5-1.3-7-1v13c2.5-.3 5-.3 7 1 2-1.3 4.5-1.3 7-1V5c-2.5-.3-5-.3-7 1Z" /><path d="M12 6v13" /></svg>
-    default:
-      return <svg {...p}><circle cx="12" cy="12" r="8.5" /></svg>
-  }
-}
 
-function CheckMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.9" />
-      <path d="m8 12.3 2.7 2.7L16 9.7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function GiftMark() {
-  return <FeatIcon kind="gift" />
-}
 
 function CartIcon() {
   return (

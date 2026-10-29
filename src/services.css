@@ -1,0 +1,285 @@
+/* ======================================================================
+   «Сервисы» — пятая вкладка нижней панели телефона (Figma «Mobile», кадр
+   6419:6295; спека docs/superpowers/specs/2026-10-26-mobile-app-nav-home-design.md).
+   Размеры и цвета сняты с макета. На компьютере экран открывается тем же
+   адресом и стоит колонкой 402 — пункта в сайдбаре у него нет, там разделы
+   и так видны.
+   ====================================================================== */
+
+.svc {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 402px;
+  padding: 16px 16px 24px;
+}
+/* Фон экрана в кадре — #f8f8f8, как у «Главной» телефона. */
+@media (max-width: 560px) {
+  .learn__main:has(.svc) {
+    background: #f8f8f8;
+  }
+}
+/* Кнопка темы у заголовка — замена сайдбару, которого на телефоне нет. На планшете и компьютере сайдбар со своей
+   кнопкой на месте, а две кнопки одной настройки расходились бы значками. */
+@media (min-width: 561px) {
+  .svc-head .sb__theme {
+    display: none;
+  }
+}
+
+/* ---------- профиль (ProfileHero 370×144, r28, p16) ---------- */
+.svc-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 144px;
+  padding: 16px;
+  border: 0;
+  border-radius: 28px;
+  background: linear-gradient(106deg, #7b3fe4 0%, #b37bff 100%);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Два полупрозрачных круга макета (200 и 120) — под содержимым. */
+.svc-hero::before,
+.svc-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.svc-hero::before {
+  top: -70px;
+  left: 210px;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.svc-hero::after {
+  top: 100px;
+  left: -40px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.svc-hero__mascot {
+  position: absolute;
+  top: 13px;
+  left: 194px;
+  width: 176px;
+  height: 234px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.svc-hero__who,
+.svc-hero__chips {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+.svc-hero__who {
+  gap: 12px;
+}
+.svc-hero__avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #fff;
+  color: #9047ff;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+}
+.svc-hero__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.svc-hero__name b {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 800;
+}
+.svc-hero__name span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #f0e8ff;
+}
+.svc-hero__chips {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.svc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+.svc-chip img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+.svc-chip__ico {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url(/assets/home-v2/ico/school.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/school.svg) center / contain no-repeat;
+}
+
+/* ---------- заголовок и плитки (Tile 179×128, r28, p16) ---------- */
+.svc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+}
+.svc-head__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #181818;
+}
+.svc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+/* Фон плитки и цвет значка — у каждого раздела свои (кадр 6419:6295); тёмная тема перекрашивает их в theme-dark.css. */
+.svc-tile--learning {
+  --svc-bg: #e6dcfc;
+  --svc-ink: #7b3fe4;
+}
+.svc-tile--homework {
+  --svc-bg: #ffe3cf;
+  --svc-ink: #e57a12;
+}
+.svc-tile--ielts {
+  --svc-bg: #d6edfb;
+  --svc-ink: #2f7bf5;
+}
+.svc-tile--sat {
+  --svc-bg: #d6dcff;
+  --svc-ink: #5b4bdb;
+}
+.svc-tile--vocab {
+  --svc-bg: #cff0e5;
+  --svc-ink: #1f9d55;
+}
+.svc-tile {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 128px;
+  padding: 16px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--svc-bg, #efe7ff);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Белый круг 112 в правом верхнем углу (45%). */
+.svc-tile::before {
+  content: '';
+  position: absolute;
+  top: -36px;
+  left: 91px;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+.svc-tile__top {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.svc-tile__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--svc-ink, #7b3fe4);
+}
+.svc-tile__badge {
+  position: absolute;
+  top: -6px;
+  left: 40px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+.svc-tile__plate i {
+  display: block;
+  width: 32px;
+  height: 32px;
+  background: currentColor;
+  -webkit-mask: var(--svc-ico) center / contain no-repeat;
+  mask: var(--svc-ico) center / contain no-repeat;
+}
+.svc-tile__go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #181818;
+}
+.svc-tile__go::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  -webkit-mask: url(/assets/home-v2/ico/north_east.svg) center / contain no-repeat;
+  mask: url(/assets/home-v2/ico/north_east.svg) center / contain no-repeat;
+}
+.svc-tile__name {
+  position: relative;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 800;
+  color: #181818;
+}

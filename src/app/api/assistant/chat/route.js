@@ -27,6 +27,7 @@ import {
   isOpeningTurn,
   isWakeTurn,
   openingFocus,
+  stuckReason,
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
@@ -38,12 +39,14 @@ import {
   fallbackBugSummary,
   shouldAutoReportBug,
 } from '@/lib/assistant/report.js'
-import { actionTail, createActionFilter, offeredTourTarget, preferTour } from '@/lib/assistant/actions.js'
+import { actionTail, createActionFilter } from '@/lib/assistant/actions.js'
 import { clickAllowed } from '@/lib/assistant/clickPolicy.js'
 import { saveAssistantErrorReport } from '@/lib/db/assistantErrorReports.js'
 import { saveAdviceNote } from '@/lib/db/assistantTracker.js'
 import { adviceText, inferAdviceOffer } from '@/lib/assistant/tracker.js'
 import { isLiveAssistantCall } from '@/lib/assistant/callUsage.js'
+import { itemIntent } from '@/lib/assistant/items/intent.js'
+import { buildItemCatalog, resolveItem } from '@/lib/assistant/items/catalog.js'
 
 export const runtime = 'nodejs'
 
@@ -112,7 +115,12 @@ export async function POST(request) {
   // Позывной (opening.js): Луна здоровается и спрашивает, чем помочь, — без кнопки
   // раздела и без заметки трекера, даже если модель всё же поставила метку.
   const wake = isWakeTurn(parsed.messages[parsed.messages.length - 1].content)
+  // «Подсказать?» (lib/assistant/stuck.js): ученик застрял и нажал облачко — Луна разбирает
+  // задание, раздел не предлагает. Строка лога — сколько раз облачко нажимали, без текста.
+  const stuck = stuckReason(parsed.messages[parsed.messages.length - 1].content)
+  if (stuck) console.info('[assistant]', JSON.stringify({ kind: 'stuck', reason: stuck }))
   const studentTurns = parsed.messages.filter((m) => !(m.role === 'user' && isOpeningTurn(m.content)))
+  const lastText = parsed.messages[parsed.messages.length - 1].content
   const pause = offtopic.blockedFor(key)
   if (pause > 0) {
     return json(429, { error: 'offtopic_cooldown', retryAfterSec: pause }, { 'retry-after': String(pause) })
@@ -128,6 +136,12 @@ export async function POST(request) {
     .finally(() => {
       marks.ctx = since(ctxAt)
     })
+  // «Открой урок 5 / тему Present Perfect» (lib/assistant/items/): каталог — только под
+  // такую просьбу, видов и уровня, о которых речь, и тоже параллельно с остальным.
+  const intent = opening ? null : itemIntent(lastText, { userLevel: auth.user.languageLevel })
+  const itemsReady = intent
+    ? buildItemCatalog({ ...intent, token: bearer, lang: parsed.lang }).catch(() => null)
+    : Promise.resolve(null)
   const callAt = performance.now()
   const inCall = parsed.call ? await isLiveAssistantCall(parsed.call, auth.user.userId) : false
   marks.call = since(callAt)
@@ -139,12 +153,18 @@ export async function POST(request) {
     })
   }
 
-  const studentContext = await contextReady
+  const [studentContext, itemCatalog] = await Promise.all([contextReady, itemsReady])
 
   const modelAt = performance.now()
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(assistantPersona(parsed.lang)),
-    messages: buildTurns({ ...parsed, user: auth.user, studentContext, today: new Date().toISOString().slice(0, 10) }),
+    messages: buildTurns({
+      ...parsed,
+      user: auth.user,
+      studentContext,
+      items: itemCatalog?.text || null,
+      today: new Date().toISOString().slice(0, 10),
+    }),
     model: MODEL,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     task: 'site_assistant',
@@ -201,11 +221,12 @@ export async function POST(request) {
   }
 
   // Две метки в конце ответа: поломка ([[REPORT_BUG]] и отчёт после неё — ученику
-  // не показываем) и действие («открыть раздел», «тур» — actions.js). Метка
+  // не показываем) и действие («открыть раздел», «нажать» — actions.js). Метка
   // действия стоит до отчёта, поэтому её ищем уже в видимой части.
   const filter = createReportFilter()
   // Снимок запроса — чтобы сверить номер кнопки метки нажатия ([[CLICK_NOW 7]]).
-  const actions = createActionFilter({ screenText: parsed.screen.text })
+  // Каталог запроса — чтобы сверить адрес метки «открой урок 5» ([[OPEN_NOW course.B1.L5]]).
+  const actions = createActionFilter({ screenText: parsed.screen.text, items: itemCatalog?.items || null })
   // Видимый ответ целиком — из него трекер берёт совет одной строкой (saveNote).
   let shown = ''
   const keep = (out) => {
@@ -221,39 +242,37 @@ export async function POST(request) {
   // Первая реплика на экране задания — без кнопки вовсе: ученик посреди урока, и
   // уводить его оттуда нельзя, даже если модель всё же позвала (openingFocus).
   const focusTask = opening && openingFocus(parsed.screen.text).task
-  // Ученик просил тур, а модель поставила «открыть» — тур (preferTour).
-  const askedTour = (action) =>
-    opening
-      ? action
-      : preferTour(action, {
-          userText: parsed.messages[parsed.messages.length - 1].content,
-          offeredTour: offeredTourTarget(parsed.messages.slice(0, -1)),
-        })
   // Нажатие кнопки (clickPolicy.js): не в первой реплике — ученик ни о чём не просил, —
   // не опасное и не ответ за ученика на непроверенном задании. Метку модели сверяем с
   // его же репликой: RULES это просят, но держит их модель через раз.
-  const lastText = parsed.messages[parsed.messages.length - 1].content
-  const finalAction = () => {
-    if (focusTask || wake) return null
-    const action = askedTour(actions.action())
+  const finalAction = async () => {
+    if (focusTask || wake || stuck) return null
+    const action = actions.action()
     if (action?.kind === 'click') {
       return !opening && clickAllowed(action.label, { screenText: parsed.screen.text, userText: lastText }) ? action : null
+    }
+    // Адрес вещи без каталога в запросе — «да» на её «Открыть урок 5?»: сверяем по
+    // каталогу своего вида. Не нашлась или закрыта — не действие (текст модели уже ушёл).
+    if (action?.unresolved) {
+      const it = await resolveItem(action.target, { token: bearer, lang: parsed.lang }).catch(() => null)
+      return it && !it.locked ? { kind: 'open', target: action.target, now: action.now, item: true, label: it.label } : null
     }
     return action || (opening ? inferAdviceOffer(shown, studentContext) : null)
   }
   const serviceTail = async () => {
-    const action = finalAction()
+    const action = await finalAction()
     await saveNote(action)
     return actionTail(action) + ((await saveReport()) ? REPORTED_STREAM_MARKER : '')
   }
   // Заметка Луны-трекера (lib/db/assistantTracker.js): совет — это её предложение
   // открыть раздел, то есть метка [[OPEN id]] без _NOW. «Открой» по прямой просьбе
-  // ученика — уже не совет, а исполнение, тур — объяснение экрана; их не пишем. В
+  // ученика — уже не совет, а исполнение; его не пишем. В
   // первой реплике переход всегда только предложение (виджет снимает _NOW), поэтому
   // там пишем и то, что модель ошибочно пометила _NOW. Переписка не сохраняется:
   // в строку идёт только сам совет (adviceText).
   const saveNote = async (action) => {
-    if (action?.kind !== 'open' || (action.now && !opening)) return
+    // Конкретная вещь (урок, тема) — не совет раздела: трекер сверяет советы по разделам.
+    if (action?.kind !== 'open' || action.item || (action.now && !opening)) return
     await saveAdviceNote(key, { target: action.target, advice: adviceText(shown) }).catch(() => false)
   }
   const first = visible(head) + (finished ? visibleTail() : '')

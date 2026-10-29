@@ -9,6 +9,7 @@ import InterestsPicker from './InterestsPicker.jsx'
 import TimezoneModal, { zoneTitle } from './TimezoneModal.jsx'
 import { errorText, useToast } from './ui.jsx'
 import { useMatchingT } from './texts.js'
+import { useTeacher } from './useTeacher.js'
 
 const HIDDEN = new Set(['idle', 'loading', 'unavailable', 'no_subscription'])
 
@@ -20,6 +21,8 @@ export default function ProfileBlocks({ token, onNav, onOpenNotifications }) {
   const view = matchingView(snap)
   const [toastNode, toast] = useToast()
   const [tzOpen, setTzOpen] = useState(false)
+  // имя — как в профиле учителя (из резюме), а не имя аккаунта из карточки подбора
+  const teacher = useTeacher(token, view.assignment?.teacherId)
   if (HIDDEN.has(view.status)) return null
   const tz = studentTimezone(snap.card)
   const a = view.assignment
@@ -48,11 +51,11 @@ export default function ProfileBlocks({ token, onNav, onOpenNotifications }) {
         {a ? (
           <div className="mt-lst">
             <div className="mt-li">
-              <TeacherPhoto token={token} teacherId={a.teacherId} name={a.teacherName} />
+              <TeacherPhoto token={token} teacherId={a.teacherId} name={teacher?.card?.name || a.teacherName} hasPhoto={teacher?.card?.hasPhoto ?? true} />
               <div className="mt-li__grow">
-                <b>{a.teacherName}</b>
+                <b>{teacher?.card?.name || a.teacherName}</b>
                 <p className="mt-small mt-muted">
-                  {t('format.' + (a.format || 'platform'))}
+                  {view.needsFormatStep ? (a.format ? t('format.' + a.format) : t('assigned.formatNone')) : t('format.platform')}
                   {next && ' · ' + t('pb.next', { date: lessonDateLabel(next, tz, lang) })}
                 </p>
               </div>

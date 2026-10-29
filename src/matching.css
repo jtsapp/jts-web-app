@@ -408,18 +408,27 @@
   font-weight: 800;
 }
 
-/* сетка времени: скролл — внутри блока, страница вбок не уезжает (ТЗ §7.3, 360 px) */
+/* сетка времени: скролл — внутри блока, страница вбок не уезжает (ТЗ §7.3, 360 px).
+   Вниз тоже внутри блока: у урока 30 мин в сетке 31 строка, и при прокрутке страницы строка дней уезжала —
+   докрутив до вечера, ученик не видел, где пн, а где ср (замечание проверяющей 27.10.2026). Прилипнуть к окну она
+   не может: .learn__main — контейнер прокрутки без своей высоты (см. .mt-bar ниже), поэтому прилипает к блоку. */
 .mt-gridwrap {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: max(320px, min(560px, calc(100dvh - 300px)));
+  /* прокрутка к ячейке (Tab, scrollIntoView) не прячет её под прилипшими днями и временем — размеры ниже */
+  scroll-padding: 34px 0 0 58px;
   border: 1px solid var(--mt-line);
   border-radius: 16px;
   background: var(--mt-surface);
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
+/* Зазоры между ячейками — паддингом ячеек, а не border-spacing: в зазоре border-spacing прилипшую строку дней
+   просвечивали бы уезжающие под неё ячейки. */
 .mt-slots {
   border-collapse: separate;
-  border-spacing: 4px;
+  border-spacing: 0;
+  padding: 2px;
   width: 100%;
   min-width: 600px;
   user-select: none;
@@ -429,9 +438,30 @@
   color: var(--mt-fg-2);
   font-weight: 700;
   padding: 6px;
+  background: var(--mt-surface);
+}
+.mt-slots thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 32px;
+}
+/* время — слева при прокрутке вбок (360 px) */
+.mt-slots tbody th,
+.mt-slots thead th:first-child {
+  width: 56px;
+}
+.mt-slots tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+.mt-slots thead th:first-child {
+  left: 0;
+  z-index: 3;
 }
 .mt-slots td {
-  padding: 0;
+  padding: 2px;
 }
 .mt-slot {
   width: 100%;

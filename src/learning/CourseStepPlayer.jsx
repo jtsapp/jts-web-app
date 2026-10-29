@@ -324,7 +324,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   if (!step) return null
 
   return (
-    <div className="cp">
+    // Тест юнита (exam): облачка «Подсказать?» нет — подсказка была бы шпаргалкой (useStuckWatch.js).
+    <div className="cp" data-assistant-test={exam ? '' : undefined}>
       <div className="cp-bar">
         {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
             Раньше оба висели справа, и «Выйти ✕» читалось как «закрыть эту

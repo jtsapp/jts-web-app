@@ -272,6 +272,19 @@ describe('prefetchTts', () => {
     speech.prefetchTts('Next  line ', { voice: 'Oliver' })
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe('/api/tts?v=Oliver&l=en&s=1&t=Next%20line')
+    expect(fetchMock.mock.calls[0][1]).toBeUndefined()
+  })
+})
+
+describe('prefetchUrl', () => {
+  // Записи Pronunciation World лежат в бакете без CORS: обычный fetch падал бы с ошибкой в консоли на каждую.
+  it('чужой адрес — запросом no-cors, свой — как есть', () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: false, type: 'opaque' }))
+    vi.stubGlobal('fetch', fetchMock)
+    speech.prefetchUrl('https://files.example.kz/practice/pronunciation/abc.mp3')
+    speech.prefetchUrl('/practice/numbers/audio/abc.mp3')
+    expect(fetchMock.mock.calls[0]).toEqual(['https://files.example.kz/practice/pronunciation/abc.mp3', { mode: 'no-cors' }])
+    expect(fetchMock.mock.calls[1]).toEqual(['/practice/numbers/audio/abc.mp3', undefined])
   })
 })
 

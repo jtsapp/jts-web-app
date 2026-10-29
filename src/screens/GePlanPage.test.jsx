@@ -99,6 +99,9 @@ describe('GePlanPage', () => {
     localStorage.removeItem('jts_tours_off')
     renderPage({ tourKey: 'jts_tour_ge-plan:user-7' })
     const next = (d) => fireEvent.click(within(d).getByRole('button', { name: /ОК|Далее|Готово/ }))
+    // Тур вида «Главной» начинается приветствием — шаги после «Показать».
+    const intro = await screen.findByRole('dialog', { name: 'Это раздел' })
+    fireEvent.click(within(intro).getByRole('button', { name: /Показать/ }))
     next(await screen.findByRole('dialog', { name: 'Три вида плана' }))
     next(await screen.findByRole('dialog', { name: 'Дорога по дням' }))
     next(await screen.findByRole('dialog', { name: 'Задачи дня' }))

@@ -47,8 +47,11 @@ kz_test = profile(tutor="jarvis")
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(dexter)
-assert buddy_persona_for(dexter) == "dexter"
-# Тумблера 18+ в пакете нет: оба нрава — один Декстер v3.
+# 29.10.2026 кнопка 18+ вернулась: calm — «свой пацан», harsh — хулиган; пустой
+# нрав (веб до этой правки) — хулиган, как звучал прежний злой Декстер.
+assert buddy_persona_for(dexter) == "dexter_hooligan"
+assert buddy_persona_for(profile(temper="calm")) == "dexter_calm"
+assert buddy_persona_for(profile(temper="harsh")) == "dexter_hooligan"
 for temper in ("", "calm", "harsh"):
     assert buddy_test_on(profile(temper=temper)), temper
 # Сценарий и проверка уровня — свои сборки, как и раньше.

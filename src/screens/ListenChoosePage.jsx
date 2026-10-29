@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
+import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 import { loadListenChoose } from '../practice/listenchoose/data.js'
 import { LEVELS } from '../practice/listenchoose/engine.js'
 import { readSeen, writeSeen } from '../practice/listenchoose/listenchooseProgress.js'
@@ -26,6 +27,7 @@ const PROGRESS = { readSeen, writeSeen }
 
 export default function ListenChoosePage({ userName, userLevel, token, onNav, onProfile, initialTarget, onBack, backLabel }) {
   const { t } = useI18n()
+  const phone = usePhoneWidth()
   const [data, setData] = useState(null)
   const [failed, setFailed] = useState(false)
   const [session, setSession] = useState(null)
@@ -84,7 +86,8 @@ export default function ListenChoosePage({ userName, userLevel, token, onNav, on
             </h1>
             <p className="lc-sub">{t('listenchoose.subtitle')}</p>
           </div>
-          {session && <LcDifficulty session={session} t={t} />}
+          {/* На телефоне сложность — в окне «Настройка подхода» (LcMain). */}
+          {session && !phone && <LcDifficulty session={session} t={t} />}
         </header>
 
         {failed && <div className="lc-notice lc-notice--err">{t('listenchoose.loadError')}</div>}

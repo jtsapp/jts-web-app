@@ -89,7 +89,8 @@ export function LevelSwitch({ value, onChange }) {
 // Карточка навыка. Арт фона — экспорт фигур из макета (public/practice/skills/),
 // обводка активной карточки рисуется поверх (::after), как внутренняя обводка
 // Figma: иначе рамка 0/4/6/4 сдвигала бы текст на 3px вверх.
-export function SkillCard({ skill, count, active, onClick }) {
+// sub — подпись вместо «N тренажёров» у вкладки-раздела («Грамматика · игры» — один тренажёр, но 125 тем).
+export function SkillCard({ skill, count, sub, active, onClick }) {
   const { t, lang } = useI18n()
   return (
     <button
@@ -100,7 +101,7 @@ export function SkillCard({ skill, count, active, onClick }) {
       onClick={onClick}
     >
       <span className="pk-skill__title">{t(`practice.skill.${skill}`)}</span>
-      <span className="pk-skill__count">{plural(t, lang, 'practice.trainers', count)}</span>
+      <span className="pk-skill__count">{sub ? t(sub) : plural(t, lang, 'practice.trainers', count)}</span>
     </button>
   )
 }
@@ -155,9 +156,35 @@ export function Rail({ grid, className, children }) {
 // Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
 // с артом — в макете заголовок в одну строку, перенос делает ширина.
 // tag — короткая пометка у заголовка («Новое» у свежего тренажёра).
+// Надпись над заголовком (значок + «ЧТЕНИЕ») есть только на телефоне — в
+// дизайне приложения (Figma «Mobile», баннеры 6605:16630); на компьютере её
+// прячет src/mobile/practice.css. Значок рисует CSS по варианту баннера.
+const BANNER_KICKER = {
+  listening: 'practice.kicker.game',
+  numbers: 'practice.kicker.game',
+  lc: 'practice.skill.listening',
+  listen: 'practice.skill.listening',
+  cartoons: 'practice.skill.listening',
+  words: 'nav.vocab',
+  wordhunt: 'nav.vocab',
+  reading: 'practice.skill.reading',
+  'speed-reading': 'practice.skill.reading',
+  writing: 'practice.skill.writing',
+  verbs: 'practice.chip.grammar',
+  prepositions: 'practice.chip.grammar',
+  speakspin: 'practice.skill.speaking',
+}
 export function Banner({ id, variant, wide, title, desc, cta, onStart, badge, tag }) {
+  const { t } = useI18n()
+  const kicker = BANNER_KICKER[variant]
   return (
     <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
+      {kicker && (
+        <span className="pk-banner__kicker" aria-hidden="true">
+          <i className="pk-banner__ico" />
+          {t(kicker)}
+        </span>
+      )}
       <div className="pk-banner__text">
         <h3 className="pk-banner__title">
           {title.replace(/\n/g, ' ')}

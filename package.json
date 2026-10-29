@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
+    "@breezystack/lamejs": "1.2.7",
     "@livekit/components-react": "^2.9.9",
     "@livekit/components-styles": "^1.1.6",
     "@stomp/stompjs": "^7.3.0",

@@ -9,12 +9,13 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { LEVELS } from '../../practice/listenchoose/engine.js'
 import { isDeviceStorageBroken } from '../../practice/listenchoose/listenchooseSettings.js'
 import LcFeedback from './LcFeedback.jsx'
-import { LcHelpDialog, LcZoomDialog } from './LcDialogs.jsx'
+import { LcHelpDialog, LcSettingsDialog, LcZoomDialog } from './LcDialogs.jsx'
 import { LcIcon } from './LcIcons.jsx'
 import LcPictures from './LcPictures.jsx'
 import LcPlayer from './LcPlayer.jsx'
 import LcResult from './LcResult.jsx'
 import LcSetup from './LcSetup.jsx'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 // Названия сложностей — язык упражнения, как в прототипе; переводится только
 // подсказка под ними.
@@ -44,6 +45,8 @@ export function LcDifficulty({ session, t }) {
 export default function LcMain({ session, data, t }) {
   const snap = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const phone = usePhoneWidth()
   const [zoom, setZoom] = useState(null)
   const playRef = useRef(null)
   const replayRef = useRef(null)
@@ -143,7 +146,21 @@ export default function LcMain({ session, data, t }) {
 
   return (
     <>
-      <LcSetup key={snap.level} snap={snap} t={t} onCount={(n) => session.setCount(n)} onNewSet={() => session.startNewSet()} />
+      {phone ? (
+        // Телефон: «?» и «Настройка подхода» стоят в строке шапки (CSS), сами
+        // настройки — в окне; новый набор заодно закрывает окно. Справка снизу
+        // на телефоне не рисуется — одна кнопка «Как заниматься», а не две.
+        <>
+          <button type="button" className="lc-help-btn" aria-label={t('listenchoose.help')} onClick={() => setHelpOpen(true)}>
+            <LcIcon name="help" />
+          </button>
+          <button type="button" className="lc-settings-btn" aria-label={t('listenchoose.settings')} onClick={() => setSettingsOpen(true)}>
+            <LcIcon name="tune" />
+          </button>
+        </>
+      ) : (
+        <LcSetup key={snap.level} snap={snap} t={t} onCount={(n) => session.setCount(n)} onNewSet={() => session.startNewSet()} />
+      )}
 
       <section className="lc-bench" aria-label="Listening exercise">
         {complete ? (
@@ -211,14 +228,32 @@ export default function LcMain({ session, data, t }) {
 
       <div className="lc-bottom">
         <span>{t('listenchoose.sessionNote')}</span>
-        <button type="button" className="lc-quiet" onClick={() => setHelpOpen(true)}>
-          <LcIcon name="help" />
-          <span>{t('listenchoose.help')}</span>
-        </button>
+        {!phone && (
+          <button type="button" className="lc-quiet" onClick={() => setHelpOpen(true)}>
+            <LcIcon name="help" />
+            <span>{t('listenchoose.help')}</span>
+          </button>
+        )}
       </div>
       {isDeviceStorageBroken() && <p className="lc-storage">{t('listenchoose.storageError')}</p>}
 
       <LcHelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} t={t} />
+      {phone && (
+        <LcSettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} t={t}>
+          <p className="lc-dialog__label-sm">{t('listenchoose.levelLabel')}</p>
+          <LcDifficulty session={session} t={t} />
+          <LcSetup
+            key={snap.level}
+            snap={snap}
+            t={t}
+            onCount={(n) => session.setCount(n)}
+            onNewSet={() => {
+              session.startNewSet()
+              setSettingsOpen(false)
+            }}
+          />
+        </LcSettingsDialog>
+      )}
       <LcZoomDialog
         index={zoom}
         onIndex={setZoom}

@@ -1,14 +1,18 @@
+import { isStudentSectionHidden } from '../config.js'
+import { isTeacher } from '../lib/jwt.js'
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
+import { useMobileTab } from './mobileTab.js'
 import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import LangSelector from './LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
-import { useTourRequest } from '../lib/tourBus.js'
 
-// Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
-// на мобилке — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом.
+// Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал; на
+// планшете — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом; на
+// телефоне (≤560) — нижняя панель вкладок приложения (MobileTabBar), шапки и
+// подвала нет.
 export default function LearningLayout({
   userName,
   userLevel,
@@ -30,9 +34,10 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
-  // Тур просит Луна — нажимаем ту же «?»: у экрана свой старт тура (вкладка,
-  // с которой тур начинается), и повторять его в помощнике незачем.
-  useTourRequest(onHelp)
+  const notificationsEnabled = isTeacher(token) || !isStudentSectionHidden('notifications')
+  // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
+  // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
+  useMobileTab(active)
   const help = onHelp ? (
     <button className="tour-help" type="button" onClick={onHelp} title={t('tour.help')} aria-label={t('tour.help')}>
       ?
@@ -40,7 +45,7 @@ export default function LearningLayout({
   ) : null
 
   return (
-    <NotificationProvider token={token} onNavigate={onNav}>
+    <NotificationProvider enabled={notificationsEnabled} token={token} onNavigate={onNav}>
     <div className={`learn ${rail ? 'learn--rail' : ''}`}>
       <MobileTopBar
         userName={userName}
@@ -48,7 +53,7 @@ export default function LearningLayout({
         menuLabel={t('nav.learning')}
         onMenu={() => setDrawer(true)}
         onProfile={onProfile}
-        right={<>{help}<LangSelector compact /><NotificationBell /></>}
+        right={<>{help}<LangSelector compact />{notificationsEnabled && <NotificationBell />}</>}
       />
       <div className="learn__body">
         <Sidebar
@@ -68,7 +73,7 @@ export default function LearningLayout({
           <div className="learn__bell">
             {help}
             <LangSelector compact />
-            <NotificationBell />
+            {notificationsEnabled && <NotificationBell />}
           </div>
           {children}
         </main>

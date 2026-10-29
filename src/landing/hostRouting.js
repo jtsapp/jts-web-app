@@ -9,7 +9,7 @@
 // иконка вкладки (/assets/dexter.png из общего layout), шрифты и ручки самого
 // лендинга — POST формы, уведённый редиректом на другой домен, браузер не
 // повторит (CORS), и заявка тихо пропала бы.
-const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/fonts/', '/api/landing/']
+const PASS_PREFIXES = ['/_next/', '/landing/', '/assets/', '/legal/', '/fonts/', '/api/landing/']
 const PASS_FILES = new Set(['/favicon.ico', '/robots.txt', '/sitemap.xml'])
 
 // Локальная разработка видит /landing всегда — иначе страницу не посмотреть.

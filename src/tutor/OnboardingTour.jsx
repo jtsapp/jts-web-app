@@ -1,10 +1,32 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
-import { emitTourEnd, emitTourStep, toggleTourNarrationMute, useTourNarration, useToursHeld } from '../lib/tourBus.js'
-import { unlockSpeech } from '../lib/speech.js'
+import { useToursHeld } from '../lib/tourBus.js'
+import { isTourSeen, markTourSeen } from '../lib/tourMarks.js'
 
-const LUNA_AVATAR = '/assets/luna-assistant.webp'
+// Места маскотов вокруг карточки приветствия: двое сверху, по одному сбоку.
+const INTRO_SLOTS = ['top1', 'top2', 'left', 'right']
+
+// Вид coach на экранах без своего макета (все, кроме «Главной»): маскоты — целые
+// фигуры из public/assets/mascots. Шаг: фигура головой от верха карточки, w — её
+// ширина; карточка и колонка текста одного размера на всех экранах. Шире 212
+// фигура упирается в конец строки текста (560 − 24 − 320 + 12 − зазор) — потолок
+// держит сам помощник.
+const TOUR_ART_MAX_W = 212
+export const tourMascot = (name, w = TOUR_ART_MAX_W) => ({
+  src: `/assets/mascots/${name}.webp`,
+  w: Math.min(w, TOUR_ART_MAX_W),
+  top: 20,
+  right: -12,
+})
+export const TOUR_COACH_CARD = { width: 560, textWidth: 320 }
+// Приветствие: только пара сверху, прямые позы лицом к ученику — наклонённые и
+// вверх ногами рядом с ровной карточкой смотрелись криво, а боковых владелец
+// убрал (28.10.2026).
+export const tourIntroArt = (top1, top2) => ({
+  top1: `/assets/mascots/${top1}.webp`,
+  top2: `/assets/mascots/${top2}.webp`,
+})
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 
@@ -82,6 +104,18 @@ function placePopover(rect, popW, popH) {
 // Раскладка карточки «Главной» (макет «Первый заход и подсказки»): под блоком
 // карточка встаёт по его левому краю, а не по центру; у блока справа — слева от
 // него вровень с верхом; у прижатого к левому краю (сайдбар) — справа.
+// Встаёт ли карточка сбоку от цели: справа от прижатой к левому краю (сайдбар) или
+// слева от прижатой к правому. Одно правило на раскладку и на обрезку прожектора —
+// иначе цель «узкая» по одному и «без места сбоку» по другому, и карточка ложилась
+// на подсветку («Дорога по дням» «Плана»).
+function coachBeside(rect, popW) {
+  const vw = window.innerWidth
+  const right = rect.left + rect.width
+  if (right < vw * 0.3 && vw - right > popW + 28 + 16) return 'right'
+  if (rect.left > vw * 0.55 && rect.left > popW + 16 * 2) return 'left'
+  return null
+}
+
 function placeCoach(rect, popW, popH) {
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -89,11 +123,12 @@ function placeCoach(rect, popW, popH) {
   if (!rect) return { left: (vw - popW) / 2, top: Math.max(m, (vh - popH) / 2) }
   const right = rect.left + rect.width
   const bottom = rect.top + rect.height
-  if (right < vw * 0.3 && vw - right > popW + 28 + m) {
+  const side = coachBeside(rect, popW)
+  if (side === 'right') {
     // 40 от верха самого элемента: rect — уже прожектор с полем 8 вокруг.
     return { left: right + 28, top: clamp(rect.top + 48, m, vh - popH - m) }
   }
-  if (rect.left > vw * 0.55 && rect.left > popW + m * 2) {
+  if (side === 'left') {
     return { left: rect.left - popW - m, top: clamp(rect.top, m, vh - popH - m) }
   }
   const left = clamp(rect.left, m, vw - popW - m)
@@ -108,29 +143,14 @@ const ArrowIcon = () => (
   </svg>
 )
 
-// Ключ отметки «тур уже показан» и её чтение живут рядом с тем, кто её пишет
-// (finish ниже). Раньше storageKey никто не передавал, отметка не писалась
-// и читать её было некому — тур выходил заново после каждой смены тьютора, потому
-// что смена гоняет ту же онбординг-цепочку, а его включение висит на её конце.
-//
-// Ключ включает id профиля (`user-<id>` у залогиненного, device-id у анонима) —
-// именно из-за этого браузерный флаг когда-то и убрали: он был один на
-// устройство, и второй аккаунт на том же браузере тура не видел.
-//
-// scope разводит туры разных экранов; у дашборда он остался 'dash', поэтому
-// старые отметки в силе и второй раз тьюторский тур никому не выпадет.
-export function tourKeyFor(profileId, scope = 'dash') {
-  return `jts_tour_${scope}:${profileId || 'anon'}`
-}
-
-/** Показывали ли уже тур. localStorage недоступен → false: лучше лишний тур, чем молча пропущенный. */
-export function isTourSeen(key) {
-  try {
-    return localStorage.getItem(key) === '1'
-  } catch {
-    return false
-  }
-}
+// Ключ отметки «тур уже показан» включает владельца (`user-<id>` у аккаунта,
+// device-id у гостя) — браузерный флаг когда-то убрали именно потому, что он
+// был один на устройство, и второй аккаунт на том же браузере тура не видел.
+// Сами отметки аккаунта с 28.10.2026 лежат на сервере (lib/tourMarks.js), а
+// ключ и его разбор — в lib/tourName.js. Отсюда реэкспорт: экраны и моки
+// тестов берут их у тура.
+export { tourKeyFor } from '../lib/tourName.js'
+export { isTourSeen } from '../lib/tourMarks.js'
 
 /**
  * Тумблер «туры не показывать сами». Ключ отметки о показе включает id профиля,
@@ -175,7 +195,7 @@ export function useScreenTour(storageKey) {
 
 // Гайд-тур: затемняет экран, «прожигает» дырку на текущем элементе (по CSS-селектору),
 // рядом рисует поповер с текстом, прогрессом и кнопкой «ОК». По шагам вперёд; в конце
-// ставит флаг в localStorage и вызывает onFinish.
+// ставит отметку (markTourSeen: браузер и сервер) и вызывает onFinish.
 //
 // Шаг может нести свой интерактив: `content` рисуется под текстом (список
 // разделов на «Главной»), а `canNext: false` держит «Далее», пока выбор не сделан. Кликать
@@ -184,10 +204,11 @@ export function useScreenTour(storageKey) {
 //
 // look="coach" — вид «Главной» по макету «Первый заход и подсказки» (21.10.2026):
 // приветствие с именем (intro) перед шагами, точки вместо счётчика, маскот в
-// карточке (step.art), белая рамка прожектора. Остальные экраны пока на прежнем
-// виде: макет нарисован только для «Главной». Шаг с optional: true без цели на
-// экране не пропускается, а встаёт по центру — список разделов на телефоне, где
-// сайдбар спрятан в drawer.
+// карточке (step.art), белая рамка прожектора. С 28.10.2026 этот вид берут и
+// другие экраны (первой — «Практика»): макета у них нет, маскоты — целые фигуры
+// из public/assets/mascots (intro.art, step.art с top/right), а не нарезка
+// макета «Главной». Шаг с optional: true без цели на экране не пропускается, а
+// встаёт по центру — список разделов на телефоне, где сайдбар спрятан в drawer.
 //
 // Пока App держит своё окно (holdTours в tourBus.js), тура нет вовсе — ни
 // затемнения, ни запертой прокрутки, ни Escape, который закрыл бы его вместе с
@@ -218,31 +239,9 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
   const selector = step?.selector
   // Ключ эффекта: массив селекторов каждый рендер новый.
   const selectorKey = Array.isArray(selector) ? selector.join('|') : selector
-  // Тур ведёт Луна: шаги она читает вслух (tourBus.js, AssistantWidget), а в
-  // карточке — её строка и кнопка звука.
-  const narration = useTourNarration()
-
-  // Конец тура — Луне замолчать. По размонтированию, а не только в finish:
-  // ушли с экрана посреди тура — тоже конец. Отложенно и со сверкой: в dev
-  // StrictMode гоняет эффект «смонтировать — снять — смонтировать», и без
-  // сверки озвучка гасла бы на первом же шаге.
-  const mountedRef = useRef(false)
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      setTimeout(() => {
-        if (!mountedRef.current) emitTourEnd()
-      }, 0)
-    }
-  }, [])
 
   const finish = () => {
-    try {
-      if (storageKey && shownRef.current) localStorage.setItem(storageKey, '1')
-    } catch {
-      /* localStorage недоступен — просто закрываем */
-    }
+    if (storageKey && shownRef.current) markTourSeen(storageKey)
     onFinish?.()
   }
   // Приветствие — тоже показ: пропустивший его увидел тур и второй раз его не ждёт.
@@ -265,21 +264,17 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
       return undefined
     }
     shownRef.current = true
-    // Шаг показан — сообщаем Луне (озвучит, если тур ведёт она). Только
-    // показанный: пропущенный шаг без элемента рассказывать не о чем. next —
-    // чтобы она успела синтезировать следующий шаг, пока звучит этот.
-    const after = steps[i + 1]
-    emitTourStep({
-      index: i,
-      total: steps.length,
-      title: step.title,
-      text: step.text,
-      next: after ? { title: after.title, text: after.text } : null,
-    })
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
-    // Несколько целей — к началу первой, чтобы рамка влезла целиком.
-    els[0]?.scrollIntoView({ block: els.length > 1 ? 'start' : 'center', behavior: 'auto' })
+    // Несколько целей — к началу первой, чтобы рамка влезла целиком, и с отступом сверху: вплотную к краю верх
+    // рамки уходил за экран (лицо тьютора с «Начать разговор» на телефоне).
+    const first = els[0]
+    if (first) {
+      const prevMargin = first.style.scrollMarginTop
+      if (els.length > 1) first.style.scrollMarginTop = '24px'
+      first.scrollIntoView({ block: els.length > 1 ? 'start' : 'center', behavior: 'auto' })
+      first.style.scrollMarginTop = prevMargin
+    }
     const prevOverflow = document.documentElement.style.overflow
     document.documentElement.style.overflow = 'hidden'
     // Меряем цель не один раз, а следим за ней. Замер на монтировании врёт,
@@ -329,17 +324,39 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
     return () => ro.disconnect()
   }, [phase])
 
+  // Цель вместе с карточкой под ней помещается в экран, но scrollIntoView поставил её по центру, и карточке не
+  // хватило места ни под ней, ни над ней: докручиваем так, чтобы под целью встала карточка. Иначе прожектор пришлось
+  // бы резать посреди содержимого (подпись «День 1» на дороге «Плана»). Цель выше экрана по-прежнему режется при
+  // раскладке ниже; там, где карточка встаёт сбоку, крутить незачем.
+  useEffect(() => {
+    if (!rect || !popSize || !selector) return
+    const vh = window.innerHeight
+    const pad = coach ? 8 : 10
+    const room = popSize.h + 12 + 16
+    const hole = { left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }
+    if (coach && window.innerWidth > 560 && coachBeside(hole, popSize.w)) return
+    if (vh - (hole.top + hole.height) >= room || hole.top >= room) return
+    if (hole.height + room + 16 > vh) return
+    // Нижняя из целей: у шага бывает несколько, рамка — общая.
+    const el = targetsOf(selector).reduce(
+      (a, b) => (!a || b.getBoundingClientRect().bottom > a.getBoundingClientRect().bottom ? b : a),
+      null,
+    )
+    if (!el) return
+    const prev = el.style.scrollMarginBottom
+    el.style.scrollMarginBottom = `${room + pad}px`
+    el.scrollIntoView({ block: 'end', behavior: 'auto' })
+    el.style.scrollMarginBottom = prev
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectorKey и есть selector, только стабильный
+  }, [rect, popSize, selectorKey, coach])
+
   const blocked = step?.canNext === false
   const next = () => {
     if (phase === 'intro') {
-      if (narration.on && !narration.muted) unlockSpeech()
       setPhase('steps')
       return
     }
     if (blocked) return
-    // Нажатие «Далее» — жест: iPhone разрешит сыграть Луне следующий шаг,
-    // который придёт после синтеза, уже без жеста.
-    if (narration.on && !narration.muted) unlockSpeech()
     if (i + 1 < steps.length) setI(i + 1)
     else finish()
   }
@@ -359,16 +376,25 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
 
   if (phase === 'intro') {
     // Приветствие (макет: «Демо · приглашение в тур»): карточка по центру, маскоты
-    // выглядывают из-за её краёв. Картинки — готовый рендер Figma, обрезанный
-    // ровно так, как он виден в макете.
+    // выглядывают из-за её краёв. У «Главной» картинки — готовый рендер Figma,
+    // обрезанный ровно так, как он виден в макете. Другие экраны отдают свои фигуры
+    // в intro.art ({ top1, top2, left, right }) целиком: обрезает их сама карточка —
+    // она выше по слою и непрозрачна (.t-tour__intro--cast в tutor.css).
+    const cast = intro.art
     return createPortal(
       <div className="t-tour t-tour--coach" role="dialog" aria-modal="true" aria-label={intro.title}>
         <div className="t-tour__veil t-tour__veil--intro" />
-        <div className="t-tour__intro">
-          <img className="t-tour__intro-art t-tour__intro-art--top1" src="/assets/first-login/welcome-top1.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--top2" src="/assets/first-login/welcome-top2.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--left" src="/assets/first-login/welcome-left.webp" alt="" />
-          <img className="t-tour__intro-art t-tour__intro-art--right" src="/assets/first-login/welcome-right.webp" alt="" />
+        <div className={`t-tour__intro${cast ? ' t-tour__intro--cast' : ''}`}>
+          {INTRO_SLOTS.map((slot) =>
+            cast && !cast[slot] ? null : (
+              <img
+                key={slot}
+                className={`t-tour__intro-art t-tour__intro-art--${slot}`}
+                src={cast ? cast[slot] : `/assets/first-login/welcome-${slot}.webp`}
+                alt=""
+              />
+            ),
+          )}
           <div className="t-tour__intro-card">
             <div className="t-tour__intro-copy">
               <h2 className="t-tour__intro-title">
@@ -405,52 +431,43 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
       }
     : null
   // У карточки «Главной» на десктопе высокие цели (сайдбар, колонка расписания) стоят сбоку от карточки, и резать
-  // прожектор незачем — он обрезал сайдбар до верхних двух пунктов.
-  if (hole && popSize && (!coach || window.innerWidth <= 560)) {
+  // прожектор незачем — он обрезал сайдбар до верхних двух пунктов. Цели, рядом с которой карточке не встать
+  // (карта уровней «Повторения», дорога «Плана»), режем, как в прежнем виде, иначе карточка ложится на подсветку.
+  const sideFits = coach && window.innerWidth > 560 && hole && popSize && coachBeside(hole, popSize.w)
+  if (hole && popSize && !sideFits) {
     // Элемент выше, чем остаток экрана под карточку (на телефоне это почти любая
     // секция ленты): раньше в таком случае поповер прибивался к низу и ложился
     // прямо на подсветку. Обрезаем прожектор сверху экрана и оставляем внизу
     // полосу под карточку — подсвечено начало элемента, а не «всё сразу».
-    const maxH = window.innerHeight - popSize.h - 16 * 3
+    const vh = window.innerHeight
+    const maxH = vh - popSize.h - 16 * 3
     if (hole.height > maxH) {
       hole = { ...hole, top: Math.max(16, hole.top), height: Math.max(80, maxH) }
+    }
+    // Элемент ниже экрана не вышел, но стоит так, что карточке нет места ни под ним, ни над ним (дорога «Плана»
+    // посреди экрана): режем низ прожектора под карточку — иначе её прибивало к низу экрана поверх подсветки.
+    const room = popSize.h + 12 + 16
+    if (vh - (hole.top + hole.height) < room && hole.top < room) {
+      hole = { ...hole, height: Math.max(80, vh - room - hole.top) }
     }
   }
   const pos = popSize ? (coach ? placeCoach : placePopover)(hole, popSize.w, popSize.h) : { left: 0, top: 0 }
   const last = i + 1 === steps.length
 
-  const luna = narration.on && (
-    <div className="t-tour__luna">
-      <img src={narration.avatar || LUNA_AVATAR} alt="" width="24" height="24" />
-      <span>{t('tour.luna')}</span>
-      <button
-        type="button"
-        className={`t-tour__luna-sound${narration.muted ? ' is-muted' : ''}`}
-        aria-pressed={!narration.muted}
-        aria-label={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
-        title={t(narration.muted ? 'tour.luna.unmute' : 'tour.luna.mute')}
-        onClick={() => {
-          if (narration.muted) unlockSpeech()
-          toggleTourNarrationMute()
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-          {narration.muted ? (
-            <path d="m17 9 4 6m0-6-4 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          ) : (
-            <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          )}
-        </svg>
-      </button>
-    </div>
-  )
-
   if (coach) {
     // Карточка «Главной»: точки прогресса, заголовок, текст, «Далее» и
     // «Пропустить» слева; на последнем шаге — одна «Готово» справа. Маскот
     // справа снизу, под текстом (ширина колонки текста — из макета шага).
+    // Целая фигура (art.top) стоит головой от верха карточки, а ноги уходят за
+    // её низ: высота карточки зависит от длины текста, и прижатая к низу фигура
+    // то упиралась бы головой в край, то висела в пустоте.
     const art = step.art
+    const artStyle = art && {
+      width: art.w,
+      height: art.h,
+      right: art.right,
+      ...(art.top != null ? { top: art.top, bottom: 'auto' } : null),
+    }
     return createPortal(
       <div className="t-tour t-tour--coach" role="dialog" aria-modal="true" aria-label={step.title}>
         {hole ? <div className="t-tour__hole" style={hole} /> : <div className="t-tour__veil" />}
@@ -475,7 +492,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
               {step.text && <p className="t-tour__text">{step.text}</p>}
             </div>
             {step.content && <div className="t-tour__content">{step.content}</div>}
-            {luna}
             <div className={`t-tour__acts${last ? ' is-last' : ''}`}>
               <button className="t-tour__ok" type="button" onClick={next} disabled={blocked}>
                 {last ? t('tour.done') : t('tour.coach.next')}
@@ -487,7 +503,7 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
               )}
             </div>
           </div>
-          {art && <img className="t-tour__art" src={art.src} alt="" style={{ width: art.w, height: art.h }} />}
+          {art && <img className="t-tour__art" src={art.src} alt="" style={artStyle} />}
         </div>
       </div>,
       document.body,
@@ -515,8 +531,6 @@ function TourOverlay({ steps, onFinish, storageKey, look, intro }) {
         <b className="t-tour__title">{step.title}</b>
         <p className="t-tour__text">{step.text}</p>
         {step.content && <div className="t-tour__content">{step.content}</div>}
-
-        {luna}
 
         <div className="t-tour__bar">
           <span style={{ width: `${((i + 1) / steps.length) * 100}%` }} />

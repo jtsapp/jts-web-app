@@ -65,6 +65,8 @@ except Exception:  # pragma: no cover - plugin missing in some envs
 # (близкий фон BVC пропускает, и Soniox пишет его в реплику ученика).
 import noise_guard
 import assistant_call
+# Ядро Speaking Buddy под нрав Декстера (свой пацан / хулиган 18+), 29.10.2026.
+from dexter_tempers import CALM_CORE_PATCHES, HOOLIGAN_CORE_PATCHES, HOOLIGAN_TIER_BLOCK, patch_core
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
@@ -3634,6 +3636,10 @@ _BUDDY_DIR = "buddy-v3"
 _BUDDY_LEVELS = ("A0", "A1", "A2", "B1", "B2")
 _BUDDY_PERSONA_FILES = {
     "dexter": "Dexter.md",
+    # Два нрава живого Декстера (29.10.2026): «свой пацан» без кнопки 18+ и
+    # хулиган с ней. Клиентский Dexter.md v3.5 остаётся для отката DEXTER_TEMPER.
+    "dexter_calm": "Dexter_Calm.md",
+    "dexter_hooligan": "Dexter_Hooligan.md",
     "luna": "Luna.md",
     "spark": "Spark.md",
     "aizere": "Aizere.md",
@@ -3663,6 +3669,26 @@ for _pid, _fname in _BUDDY_PERSONA_FILES.items():
     _text = _load_buddy_file(f"03_Personas/{_fname}")
     if _text:
         BUDDY_PERSONAS[_pid] = _text
+
+# Ядро под нрав Декстера (agent/dexter_tempers.py). Подмена не нашлась — этот
+# нрав недоступен, и buddy_persona_for вернёт звонок на Декстера v3.5: упасть
+# на старте значило бы уронить звонки всех тьюторов, а test_dexter_tempers.py
+# и так красный.
+_BUDDY_CORE_PATCHES = {
+    "dexter_calm": CALM_CORE_PATCHES,
+    "dexter_hooligan": HOOLIGAN_CORE_PATCHES,
+}
+BUDDY_CORE_VARIANTS: dict[str, str] = {}
+for _pid, _patches in _BUDDY_CORE_PATCHES.items():
+    try:
+        BUDDY_CORE_VARIANTS[_pid] = patch_core(BUDDY_CORE, _patches)
+    except ValueError as _e:
+        logger.error("Dexter temper %s unavailable: %s", _pid, _e)
+
+
+def _buddy_core_for(persona: str) -> str:
+    """Ядро для персоны: у нравов Декстера — с подменами, у остальных — как есть."""
+    return BUDDY_CORE_VARIANTS.get(persona, BUDDY_CORE)
 
 
 @dataclass(frozen=True)
@@ -3730,8 +3756,26 @@ def _stand_key(p: LearnerProfile) -> str:
     return (p.tutor or "").strip().lower()
 
 
+def _dexter_temper_persona(temper: str) -> str:
+    """Персона живого Декстера по нраву звонка. calm — «свой пацан», harsh и
+    пустой — хулиган: агент один на дев и прод, а веб до 29.10.2026 нрав Декстера
+    не слал вовсе, и такой звонок должен звучать как раньше, злым. Дефолт «свой
+    пацан» задаёт сайт (defaultTemper в src/tutor/tutors.js) и шлёт его явно.
+    Секрет DEXTER_TEMPER=off — оба нрава на клиентского Декстера v3.5, без деплоя.
+    Нрав, чьё ядро не собралось или файла нет, тоже уходит на v3.5."""
+    if (os.getenv("DEXTER_TEMPER") or "").strip().lower() in ("off", "0", "false", "legacy"):
+        return BUDDY_TEST_PERSONA
+    want = "dexter_calm" if (temper or "").strip().lower() == "calm" else "dexter_hooligan"
+    if want in BUDDY_PERSONAS and want in BUDDY_CORE_VARIANTS:
+        return want
+    return BUDDY_TEST_PERSONA
+
+
 def buddy_persona_for(p: LearnerProfile) -> str:
-    """Персона пакета для звонка со стендом (у KZ TEST — Декстер)."""
+    """Персона пакета для звонка со стендом (у KZ TEST — Луна, у живого Декстера —
+    по нраву звонка)."""
+    if _stand_key(p) == BUDDY_VOICE_TUTOR:
+        return _dexter_temper_persona(p.temper)
     return BUDDY_STANDS.get(_stand_key(p), (BUDDY_TEST_PERSONA, ""))[0]
 
 
@@ -4149,6 +4193,10 @@ def _buddy_has_profanity(persona: str) -> bool:
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     """Блок ступени — только персоне с матом и ростингом. У взрослого он держит
     злость, у остальных — границу между мягкими словами и крепкими."""
+    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): возраст
+    # слова не меняет, детский блок ему не положен.
+    if persona == "dexter_hooligan":
+        return "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n" + HOOLIGAN_TIER_BLOCK
     if not _buddy_has_profanity(persona):
         return ""
     group = _buddy_age_group(p)
@@ -4179,7 +4227,10 @@ _ADULT_ROTATION_RE = _re.compile(r"rotate [^()]+ \(adult\) or ([^()]+) \(under 1
 def _buddy_persona_text(p: LearnerProfile, persona: str) -> str:
     """Файл персоны для этого звонка: ученику младше 18 — без взрослых примеров."""
     text = BUDDY_PERSONAS.get(persona, "")
-    if not _buddy_has_profanity(persona) or _buddy_age_group(p) == "adult":
+    # Детский фильтр — только у персоны со ступенями по возрасту: у хулигана
+    # ступень одна, и его примеры для всех.
+    if (not _buddy_has_profanity(persona) or persona == "dexter_hooligan"
+            or _buddy_age_group(p) == "adult"):
         return text
     text = "\n".join(line for line in text.split("\n") if not line.startswith("- Adult"))
     text = _ADULT_ROTATION_RE.sub(r"rotate \1", _ADULT_INLINE_RE.sub("", text))
@@ -4253,7 +4304,7 @@ def build_buddy_instructions(p: LearnerProfile, persona: str = BUDDY_TEST_PERSON
     return (
         _BUDDY_HEAD
         + "\n==== SHARED CORE ====\n"
-        + BUDDY_CORE
+        + _buddy_core_for(persona)
         + f"\n\n==== LEVEL PROFILE — {lvl}{level_note} ====\n"
         + BUDDY_LEVEL_PROFILES.get(lvl, "")
         + "\n"

@@ -86,14 +86,14 @@ wrapper, _, persona = text.partition(PERSONA_HEADER)
 # ── Файлы пакета на месте ────────────────────────────────────────────────────
 assert BUDDY_CORE.startswith("# JTS SPEAKING BUDDY — SHARED CORE v3.5")
 assert set(BUDDY_LEVEL_PROFILES) == {"A0", "A1", "A2", "B1", "B2"}
-assert set(BUDDY_PERSONAS) == {"dexter", "luna", "spark", "aizere"}
+assert set(BUDDY_PERSONAS) == {"dexter", "dexter_calm", "dexter_hooligan", "luna", "spark", "aizere"}
 # Заметки о правках (HTML-комментарии) в промпт не попадают.
 for block in [BUDDY_CORE, *BUDDY_LEVEL_PROFILES.values(), *BUDDY_PERSONAS.values()]:
     assert "<!--" not in block and "Правки JTS" not in block
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(p)
-assert buddy_test_on(profile(temper="harsh")), "тумблера 18+ нет: оба нрава — Декстер v3"
+assert buddy_test_on(profile(temper="harsh")), "оба нрава Декстера — на пакете v3.5"
 for other in ("gentle", "hype", "aizere"):
     assert not buddy_test_on(profile(tutor=other)), other
 # В сценарии характер выключен — там своя сборка, стенд туда не лезет.
@@ -383,6 +383,59 @@ os.environ.pop("ANTHROPIC_BRAIN_EFFORT")
 assert _brain_supports_prefill("jts-voice-router") and _brain_supports_prefill("claude-haiku-4-5")
 for m in ("claude-sonnet-5", "claude-sonnet-5-5", "claude-haiku-5-5", "gpt-6-sol", ""):
     assert not _brain_supports_prefill(m), m
+
+# ── Два нрава живого Декстера (29.10.2026): свой пацан ──────────────────────
+from agent import BUDDY_CORE_VARIANTS, buddy_default_mood, buddy_persona_for  # noqa: E402
+
+CORE_HEADER = "==== SHARED CORE ====\n"
+calm_p = profile(temper="calm")
+assert buddy_persona_for(calm_p) == "dexter_calm"
+calm = build_buddy_instructions(calm_p, "dexter_calm")
+calm_core = calm.partition(CORE_HEADER)[2].partition("==== LEVEL PROFILE")[0]
+assert calm_core.strip() == BUDDY_CORE_VARIANTS["dexter_calm"].strip()
+# Ядро не спорит с персоной: ни «всегда злой», ни ступеней, ни мата в каждой реплике.
+for gone in ("always angry", "Do not water him down", "word ratings", "swears in every ordinary turn",
+             "full roast", "- Frequency:", "adult rating", "adult roast rating", "Dexter's constant anger",
+             "stop-insults opt-out"):
+    assert gone not in calm_core, gone
+assert "calm mode" in calm_core and "18+ mode is off" in calm_core
+assert "# DEXTER — CALM MODE" in calm.partition(PERSONA_HEADER)[2]
+assert TIER not in calm, "у своего пацана нет ступени мата"
+assert LIMITS in calm, "лимиты реплики — и у него"
+assert context_of(calm)["selection"]["persona_id"] == "dexter_calm"
+assert context_of(calm)["language"]["support_language"] == "ru"
+assert buddy_default_mood("dexter_calm") is None, "базовая эмоция ровная"
+# Другие стенды нрав Декстера не трогает.
+assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark"
+# Откат без деплоя — оба нрава на клиентского Декстера v3.5.
+os.environ["DEXTER_TEMPER"] = "off"
+assert buddy_persona_for(calm_p) == "dexter"
+os.environ.pop("DEXTER_TEMPER")
+# ── Хулиган: кнопка 18+ (и пустой нрав старого веба) ───────────────────────
+for temper in ("harsh", "", "HARSH", "nonsense"):
+    assert buddy_persona_for(profile(temper=temper)) == "dexter_hooligan", temper
+for grp in ("adult", "teen", "child", ""):
+    h = build_buddy_instructions(profile(temper="harsh", age_group=grp), "dexter_hooligan")
+    h_core = h.partition(CORE_HEADER)[2].partition("==== LEVEL PROFILE")[0]
+    assert h_core.strip() == BUDDY_CORE_VARIANTS["dexter_hooligan"].strip()
+    # Одна ступень для всех: нет детской, нет запрета бить по человеку.
+    for gone in ("under 18 or unknown — same Dexter", "never the person", "mocks intelligence only",
+                 "stop-insults opt-out", "only the application can raise Dexter's rating",
+                 "adult roast rating", "adult rating"):
+        assert gone not in h_core, (grp, gone)
+    assert "hooligan" in h_core and "**Hard limits in every rating.**" in h_core, grp
+    assert "**Distress.** Distress includes:" in h_core, grp
+    shown = h.partition(PERSONA_HEADER)[2]
+    assert "# DEXTER — 18+ HOOLIGAN MODE" in shown, grp
+    tail = shown.partition(TIER)[2]
+    assert "Hooligan mode, the same for every learner" in tail, grp
+    assert "the same angry Dexter with mild words" not in tail, grp
+    # Детский фильтр примеров к хулигану не применяется: персона — как в файле.
+    assert BUDDY_PERSONAS["dexter_hooligan"] in h, grp
+    assert h.index(TIER) < h.index(LIMITS), grp
+assert buddy_default_mood("dexter_hooligan") == ("anger", 2)
+# Клиентский Декстер v3.5 (откат) собирается по-прежнему, со ступенями.
+assert "the same angry Dexter with mild words" in build_buddy_instructions(profile(age_group="child"), "dexter")
 
 # ── Приветствие — событие ядра, текста не диктуем ────────────────────────────
 g = build_buddy_greeting(p)

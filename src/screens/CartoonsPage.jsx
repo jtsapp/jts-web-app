@@ -38,7 +38,7 @@ export default function CartoonsPage({ userName, userLevel, token, onNav, onProf
   }, [token])
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))
 
-  // Шрифт сайта внутрь тени (--cw-font): Manrope, на телефоне PT Root UI, в kk — Inter.
+  // Шрифт сайта внутрь тени (--cw-font): Manrope, в kk — Inter.
   useEffect(() => {
     const host = hostRef.current
     if (host) host.style.setProperty('--cw-font', getComputedStyle(host).fontFamily || FALLBACK_FONT)

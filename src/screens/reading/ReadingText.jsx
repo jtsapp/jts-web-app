@@ -9,6 +9,7 @@ import ReadingArticle from './ReadingArticle.jsx'
 import ReadingKeywords from './ReadingKeywords.jsx'
 import ReadingTasks, { checkUnchecked } from './ReadingTasks.jsx'
 import useReadingVoice from './useReadingVoice.js'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
 
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
 // экране две панели превращаются в вкладки — на телефоне читать текст в
@@ -16,6 +17,12 @@ import useReadingVoice from './useReadingVoice.js'
 export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish, initialTab, focusEx }) {
   const { t, lang } = useI18n()
   const [tab, setTab] = useState(initialTab === 'ex' ? 'ex' : 'text')
+  // Телефон показывает задания по одному (кадры «Задания» макета приложения);
+  // «Открыть» из итогов ставит сразу нужное.
+  const [step, setStep] = useState(() => (focusEx == null ? 0 : focusEx))
+  // На телефоне значки «Ваша задача» и «Ключевые слова» — из макета (флажок и
+  // лампочка рисует мобильный слой), у слов — счётчик справа, как в кадре.
+  const phone = usePhoneWidth()
 
   // «Открыть» из итогов ведёт к конкретному заданию, как data-goto прототипа
   // (:1115): вкладка заданий + прокрутка. Раньше вкладка не передавалась, и на
@@ -61,13 +68,13 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
             type="button" role="tab" id="rd-tab-text" aria-controls="rd-pane-text"
             aria-selected={tab === 'text'} onClick={() => setTab('text')}
           >
-            📖 {t('reading.text')}
+            <span className="rd-ico" aria-hidden="true">📖</span> {t('reading.text')}
           </button>
           <button
             type="button" role="tab" id="rd-tab-ex" aria-controls="rd-pane-ex"
             aria-selected={tab === 'ex'} onClick={() => setTab('ex')}
           >
-            ✏️ {t('reading.tasks')} ({text.exercises.length})
+            <span className="rd-ico" aria-hidden="true">✏️</span> {t('reading.tasks')} ({text.exercises.length})
           </button>
         </div>
         <div className="rd-tb">
@@ -89,20 +96,25 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
       <div className="rd-grid2" data-tab={tab}>
         <aside className="rd-pane rd-pane--text" id="rd-pane-text" role="tabpanel" aria-labelledby="rd-tab-text">
           <div className={`rd-texthero rd-g-${text.genre}`}>
-            <span className="rd-texthero__emoji" aria-hidden="true">{text.cover.emoji}</span>
+            <span className="rd-texthero__emoji" aria-hidden="true">
+              {phone ? <i className={`rd-gico rd-gico--${text.genre}`} /> : text.cover.emoji}
+            </span>
             <h1 lang="en">{text.title}</h1>
             <div className="rd-texthero__meta">
               <span>{text.level} · {t('reading.levelName.' + text.level.toLowerCase())}</span>
-              <span>{g.emoji} {t('reading.genre.' + text.genre)}</span>
-              <span>⏱ {readMin(text.text)} {t('reading.min')}</span>
-              <span>📝 {wordCount(text.text)} {t('reading.words')}</span>
+              <span><span className="rd-ico" aria-hidden="true">{g.emoji}</span> {t('reading.genre.' + text.genre)}</span>
+              <span><span className="rd-ico" aria-hidden="true">⏱</span> {readMin(text.text)} {t('reading.min')}</span>
+              <span><span className="rd-ico" aria-hidden="true">📝</span> {wordCount(text.text)} {t('reading.words')}</span>
             </div>
           </div>
 
-          <div className="rd-task"><b>🎯 {t('reading.task')}</b> {loc(text.task, lang)}</div>
+          <div className="rd-task"><b>{phone ? '' : '🎯 '}{t('reading.task')}</b> {loc(text.task, lang)}</div>
 
           <section className="rd-panel">
-            <h2 className="rd-label">🔑 {t('reading.keyWords')}</h2>
+            <h2 className="rd-label">
+              {phone ? '' : '🔑 '}{t('reading.keyWords')}
+              {phone && <span className="rd-label__count">{text.words.length}</span>}
+            </h2>
             <ReadingKeywords words={text.words} token={token} source={text.title} />
           </section>
 
@@ -127,8 +139,36 @@ export default function ReadingText({ text, dict, ensureDict, token, onFont, onS
         </aside>
 
         <section className="rd-pane rd-pane--ex" id="rd-pane-ex" role="tabpanel" aria-labelledby="rd-tab-ex">
-          <ReadingTasks text={text} unchecked={unchecked} />
-          <div className="rd-finish">
+          {/* Полоса «N / M» и «Назад · Далее» — только для телефона: на компьютере
+              задания идут списком, и hidden прячет их без правки reading.css;
+              мобильный слой открывает их обратно. */}
+          <div className="rd-stepper" hidden>
+            <div className="rd-stepper__bar" aria-hidden="true">
+              <i style={{ width: `${((step + 1) / text.exercises.length) * 100}%` }} />
+            </div>
+            <span className="rd-stepper__count">{step + 1} / {text.exercises.length}</span>
+          </div>
+          <ReadingTasks text={text} unchecked={unchecked} step={step} />
+          <div className="rd-stepper-nav" hidden>
+            <button
+              type="button"
+              className="rd-btn rd-btn--secondary"
+              disabled={step === 0}
+              onClick={() => { setStep((n) => Math.max(0, n - 1)); window.scrollTo({ top: 0, behavior: 'auto' }) }}
+            >
+              ← {t('common.back')}
+            </button>
+            {step < text.exercises.length - 1 && (
+              <button
+                type="button"
+                className="rd-btn rd-btn--primary"
+                onClick={() => { setStep((n) => Math.min(text.exercises.length - 1, n + 1)); window.scrollTo({ top: 0, behavior: 'auto' }) }}
+              >
+                {t('reading.step.next')} →
+              </button>
+            )}
+          </div>
+          <div className={`rd-finish${step === text.exercises.length - 1 ? ' is-last' : ''}`}>
             <p>🏁 {t('reading.finishHint')}</p>
             <button
               type="button"

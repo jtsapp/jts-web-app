@@ -318,7 +318,9 @@ export default function SpeakingRecorder({ level, situation, task, token, onReco
         <p className="sit-rec__guest">{t('situations.assess.guest')}</p>
       )}
 
-      {error && <p className="sit-rec__error">{t(`situations.error.${error}`)}</p>}
+      {/* Модификатор с ключом — для цвета на телефоне (кадр 6605:16597): нет микрофона — красный, тишина и
+          короткая запись — оранжевый, дневной лимит — сиреневый. */}
+      {error && <p className={`sit-rec__error sit-rec__error--${error}`}>{t(`situations.error.${error}`)}</p>}
 
       {result && <SituationFeedback result={result} />}
     </section>

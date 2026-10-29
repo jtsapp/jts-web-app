@@ -1,3 +1,5 @@
+import { plural } from '../lib/plural.js'
+
 // Витрина: то, что НЕ является ценой.
 //
 // Сами предложения и их цены живут на бэкенде (таблица sales_offers, эндпоинт
@@ -103,4 +105,27 @@ export const RETRY_OFFER = { was: 7000, now: 900 }
 /** 84000 → «84 000» (узкий пробел, как в макете). */
 export function formatPrice(n) {
   return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
+
+// Category is display metadata. kind retains its existing fulfillment meaning.
+export const CATALOG_CATEGORIES = ['SELF', 'GENERAL', 'BUSINESS', 'GENERAL_GROUP', 'GUARANTEED', 'IELTS_MONTHLY', 'IELTS_BAND', 'SAT_MONTHLY', 'SAT_PACKAGE']
+export function offerCategory(offer) {
+  return offer.category || ({ SELF_STUDY: 'SELF', INDIVIDUAL: 'GENERAL', GROUP: 'GENERAL_GROUP' }[offer.kind])
+}
+export function offerTitle(offer, t, lang = 'ru') {
+  if (offerCategory(offer) === 'GENERAL_GROUP') return offer.title
+  if (offer.target) return offerCategory(offer) === 'IELTS_BAND' ? `${offer.target} band` : offer.target
+  if (offer.lessons) return plural(t, lang, 'pricing.lessons', offer.lessons)
+  if (offer.months) return t('catalog.months', { n: offer.months })
+  return offer.title
+}
+export function offerDetails(offer, t, lang = 'ru') {
+  const parts = []
+  if (offer.target && offer.lessons) parts.push(plural(t, lang, 'pricing.lessons', offer.lessons))
+  if (offer.durationMinutes) parts.push(t('catalog.minutes', { n: offer.durationMinutes }))
+  if (offer.months && offer.lessons) parts.push(t('catalog.months', { n: offer.months }))
+  if (offer.kind === 'GROUP') parts.push(t('catalog.group'))
+  else if (offer.kind === 'INDIVIDUAL') parts.push(t('catalog.individual'))
+  if (offer.maxStudents) parts.push(t('catalog.maxStudents', { n: offer.maxStudents }))
+  return parts.join(' · ')
 }

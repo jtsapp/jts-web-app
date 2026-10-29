@@ -1,3 +1,4 @@
+import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -6,7 +7,7 @@ import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import ReportsTab from '../feedback/ReportsTab.jsx'
 import MatchingLinkCard from '../matching/MatchingLinkCard.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 import { rememberPlace } from '../lib/navStack.js'
 import { getSelfStudyAccess } from '../api.js'
@@ -46,7 +47,7 @@ const STUDENT_TAB = { key: 'reports', label: 'lessons.tabReports' }
  * `initialReportId` — отчёт о прогрессе, открытый сразу: уведомление «Новый
  * отчёт» и карточка «Главной» ведут прямо в него, а не в список.
  */
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab, initialReportId = null, tourKey }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab, initialReportId = null, tourKey }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
@@ -121,11 +122,20 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const tourSteps = [
     // Одна вкладка — рассказывать про «две» не о чем: Self Study ученику не открыт.
     ...(showSelf
-      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text') }]
+      ? [{ selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD }]
       : []),
-    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text') },
-    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text') },
+    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text'), art: tourMascot('dexter-laptop'), ...TOUR_COACH_CARD },
+    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text'), art: tourMascot('artist-stand'), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.lessons'),
+    text: t('tour.lessons.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('artist-coffee', 'dexter-cool'),
+  }
   const startTour = () => {
     selectTab('online')
     tour.start()
@@ -167,14 +177,14 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
           // Расписание — широкая раскладка: календарь и карточка урока занимают
           // всю страницу, в отличие от узкой заглушки «клубов» по центру.
           <div className="ls__body ls__body--wide">
-            {!teacher && <MatchingLinkCard token={token} onOpen={() => onNav?.('my-teacher')} />}
+            {!teacher && !isStudentSectionHidden('my-teacher') && <MatchingLinkCard token={token} onOpen={() => onNav?.('my-teacher')} />}
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
           </div>
         )}
 
         {tab === 'self' && (
           <div className="ls__body ls__body--wide">
-            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} onOpenPricing={onOpenPricing} />
+            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} />
           </div>
         )}
 
@@ -194,7 +204,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         )}
 
         {tour.open && (
-          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+          <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
         )}
       </div>
     </LearningLayout>

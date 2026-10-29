@@ -49,6 +49,9 @@ import { mergeReadingState } from './readingState.js'
 // планетам, кометы, награды, дни). Replace; клиент сводит с серверным (wordhunt/progress.js merge): собранное
 // остаётся собранным. Недорешённые сетки сюда не идут — только устройство. Area 'wordhunt' бэкенду неизвестна —
 // в домашнюю работу раздел не отчитывается.
+// 'pronunciation' — стейт-объект Pronunciation World {learned, rounds, tutorial, level, last} (прочитанные темы,
+// раунды Echo Gates с лучшим результатом). Replace; клиент сводит с серверным (pronunciation/progress.js merge):
+// пройденное остаётся пройденным. Area 'pronunciation' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 // 'vocabLearned' / 'vocabMisses' — «изучено» и «хуже запомненные» «Словаря»
 // ({scopes} и {words}, см. practiceKeys.js). Replace: снятая отметка и снятая
 // ошибка не должны воскресать от объединения.
@@ -70,6 +73,7 @@ export const PRACTICE_MODULES = [
   'prepositions',
   'cartoons',
   'wordhunt',
+  'pronunciation',
   'vocabLearned',
   'vocabMisses',
 ]

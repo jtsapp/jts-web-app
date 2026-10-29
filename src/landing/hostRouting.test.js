@@ -28,7 +28,7 @@ describe('домен лендинга', () => {
     expect(on('justtostudy-english.kz', '/landing', '?lang=kz')).toEqual({ action: 'redirect', to: '/?lang=kz' })
   })
   it('картинки, шрифты и бандл отдаются как есть', () => {
-    for (const p of ['/_next/static/chunks/a.js', '/landing/img/dexter.webp', '/assets/dexter.png', '/fonts/x.woff2', '/favicon.ico', '/api/landing/lead'])
+    for (const p of ['/_next/static/chunks/a.js', '/landing/img/dexter.webp', '/assets/dexter.png', '/legal/2026-10-29/offer-ru.pdf', '/fonts/x.woff2', '/favicon.ico', '/api/landing/lead'])
       expect(on('justtostudy-english.kz', p)).toEqual({ action: 'next' })
   })
   it('экраны приложения уводятся на домен приложения', () => {

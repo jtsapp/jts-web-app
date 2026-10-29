@@ -18,7 +18,7 @@ const COVERED = {
   'styles.css | .screen': "html[data-ui-lang='kk'] .screen",
   'mobile/registration.css | .rg': "html[data-ui-lang='kk'] .rg",
   'mobile/base.css | body': "html[data-ui-lang='kk'] body",
-  'mobile/home.css | .hm': "html[data-ui-lang='kk'] .hm",
+  'mobile/base.css | .screen': "html[data-ui-lang='kk'] .screen",
   'trial.css | .trial': "html[data-ui-lang='kk'] .trial",
   'landing.css | .ld': ".ld[lang='kk']",
   'landing.css | .ld-tear': ".ld[lang='kk'] .ld-tear",
@@ -80,6 +80,8 @@ const ENGINES = {
   speakspin: (css) => expect(css).toMatch(/font-family:Inter\b/),
   // Курс английский; казахский — только перевод с lang="kk" (как у «Чисел»).
   prepositions: (css) => expect(css).toContain(`.pw [lang="kk"]{font-family:'Inter'`),
+  // Интерфейс английский, гарнитура — сайта через --pron-font; казахский перевод с lang="kk" — на Inter.
+  pronunciation: (css) => expect(css).toContain(`.pron [lang="kk"]{font-family:'Inter'`),
   // Интерфейс раздела — на языке приложения, гарнитура — сайта через --cw-font (в kk экран отдаёт Inter).
   cartoons: (css) => expect(css).toContain('--ct-font-text: var(--cw-font, inherit);'),
   // Интерфейс — на языке приложения, гарнитура — сайта через --gg-font (в kk экран отдаёт Inter).

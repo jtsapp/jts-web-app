@@ -30,13 +30,13 @@ vi.mock('../api.js', () => ({
   }),
 }))
 
-/** Ровно тот каталог, что засеян миграцией V225. */
+/** Representative published offers; other product categories are covered by OfferCatalog tests. */
 const CATALOG = [
-  { code: 'self-1', kind: 'SELF_STUDY', title: '1 уровень', price: 35000, currency: 'KZT', levels: 1, tutorMinutes: 500 },
-  { code: 'self-2', kind: 'SELF_STUDY', title: '2 уровня', price: 60000, currency: 'KZT', levels: 2, tutorMinutes: 1000 },
-  { code: 'ind-60-8', kind: 'INDIVIDUAL', title: '8 уроков', price: 56000, currency: 'KZT', lessons: 8, durationMinutes: 60 },
-  { code: 'ind-60-12', kind: 'INDIVIDUAL', title: '12 уроков', price: 84000, currency: 'KZT', lessons: 12, durationMinutes: 60 },
-  { code: 'ind-30-12', kind: 'INDIVIDUAL', title: '12 уроков', price: 48000, currency: 'KZT', lessons: 12, durationMinutes: 30 },
+  { code: 'self-months-1', kind: 'SELF_STUDY', title: 'SELF · 1 мес.', price: 16500, currency: 'KZT', months: 1, category: 'SELF' },
+  { code: 'self-months-3', kind: 'SELF_STUDY', title: 'SELF · 3 мес.', price: 40000, currency: 'KZT', months: 3, category: 'SELF' },
+  { code: 'ind-60-8', kind: 'INDIVIDUAL', title: '8 уроков', price: 60000, currency: 'KZT', lessons: 8, durationMinutes: 60 },
+  { code: 'ind-60-12', kind: 'INDIVIDUAL', title: '12 уроков', price: 90000, currency: 'KZT', lessons: 12, durationMinutes: 60 },
+  { code: 'ind-30-12', kind: 'INDIVIDUAL', title: '12 уроков', price: 54000, currency: 'KZT', lessons: 12, durationMinutes: 30 },
   { code: 'group-12', kind: 'GROUP', title: '12 уроков · 1 курс', price: 29990, currency: 'KZT', lessons: 12 },
 ]
 
@@ -90,9 +90,9 @@ beforeEach(() => {
 describe('Витрина тарифов', () => {
   it('рисует разделы по тому, что прислал сервер', async () => {
     const { container } = await renderLoaded()
-    expect(screen.getByText('Self Study')).toBeTruthy()
-    expect(screen.getByText('Индивидуальные уроки')).toBeTruthy()
-    expect(screen.getByText('Групповые уроки')).toBeTruthy()
+    expect(screen.getByText('SELF · самостоятельное обучение')).toBeTruthy()
+    expect(screen.getByText('Английский с преподавателем')).toBeTruthy()
+    expect(screen.getByText('Групповой курс')).toBeTruthy()
     // 2 Self Study + 2 индивидуальных по 60 минут + 1 групповой
     await waitFor(() => expect(container.querySelectorAll('.pr-tile')).toHaveLength(5))
   })
@@ -101,15 +101,15 @@ describe('Витрина тарифов', () => {
   it('пустой раздел не рисуется', async () => {
     backend.offers = CATALOG.filter((o) => o.kind !== 'GROUP')
     await renderLoaded()
-    expect(screen.queryByText('Групповые уроки')).toBeNull()
+    expect(screen.queryByText('Групповой курс')).toBeNull()
   })
 
   it('цены и подписи берутся из ответа сервера', async () => {
     const { container } = await renderLoaded()
     await waitFor(() => expect(tile(container, '12 уроков')).toBeTruthy())
     const t12 = tile(container, '12 уроков')
-    expect(t12.querySelector('.pr-tile__price').textContent).toBe('84 000 ₸')
-    expect(t12.querySelector('.pr-tile__note').textContent).toBe('7 000 ₸ за урок')
+    expect(t12.querySelector('.pr-tile__price').textContent).toBe('90 000 ₸')
+    expect(t12.querySelector('.pr-tile__note').textContent).toBe('60 минут · Индивидуально')
   })
 
   it('пустая корзина: подсказка вместо строк, оплата недоступна', async () => {
@@ -118,25 +118,25 @@ describe('Витрина тарифов', () => {
     expect(container.querySelector('.pr-cart__pay').disabled).toBe(true)
   })
 
-  // Числа с макета: 12 индивидуальных по 60 минут — 84 000, групповой — 29 990.
+  // Числа с макета: 12 индивидуальных по 60 минут — 90 000, групповой — 29 990.
   it('заказ из макета даёт его же итог', async () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     await addTile(container, '12 уроков · 1 курс')
     expect(container.querySelectorAll('.pr-line')).toHaveLength(2)
     expect(container.querySelector('.pr-cart__count').textContent).toBe('2')
-    expect(container.querySelector('.pr-cart__total b').textContent).toBe('113 990 ₸')
+    expect(container.querySelector('.pr-cart__total b').textContent).toBe('119 990 ₸')
     expect(container.querySelector('.pr-cart__pay').disabled).toBe(false)
   })
 
   it('переключатель длительности строится по каталогу и меняет цены', async () => {
     const { container } = await renderLoaded()
     await waitFor(() =>
-      expect(tile(container, '12 уроков')?.querySelector('.pr-tile__price').textContent).toBe('84 000 ₸'),
+      expect(tile(container, '12 уроков')?.querySelector('.pr-tile__price').textContent).toBe('90 000 ₸'),
     )
     fireEvent.click(screen.getByText('30 минут'))
     await waitFor(() =>
-      expect(tile(container, '12 уроков').querySelector('.pr-tile__price').textContent).toBe('48 000 ₸'),
+      expect(tile(container, '12 уроков').querySelector('.pr-tile__price').textContent).toBe('54 000 ₸'),
     )
   })
 
@@ -144,7 +144,7 @@ describe('Витрина тарифов', () => {
     const { container } = await renderLoaded()
     await addTile(container, '8 уроков')
     fireEvent.click(within(container.querySelector('.pr-line')).getByLabelText('Добавить ещё один'))
-    expect(container.querySelector('.pr-cart__total b').textContent).toBe('112 000 ₸')
+    expect(container.querySelector('.pr-cart__total b').textContent).toBe('120 000 ₸')
     fireEvent.click(within(container.querySelector('.pr-line')).getByLabelText('Убрать один'))
     fireEvent.click(within(container.querySelector('.pr-line')).getByLabelText('Убрать один'))
     expect(container.querySelectorAll('.pr-line')).toHaveLength(0)
@@ -152,7 +152,7 @@ describe('Витрина тарифов', () => {
 
   it('корзину можно очистить корзиной строки', async () => {
     const { container } = await renderLoaded()
-    await addTile(container, '1 уровень')
+    await addTile(container, '1 мес.')
     fireEvent.click(screen.getByLabelText('Убрать из заказа'))
     expect(container.querySelectorAll('.pr-line')).toHaveLength(0)
   })
@@ -182,7 +182,7 @@ describe('Витрина тарифов', () => {
     await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
     const sent = backend.orderCalls[0]
     expect(sent.items).toEqual([{ offerCode: 'ind-60-12', quantity: 1 }])
-    expect(JSON.stringify(sent)).not.toContain('84000')
+    expect(JSON.stringify(sent)).not.toContain('90000')
     expect(sent.idempotencyKey).toBeTruthy()
   })
 
@@ -219,7 +219,7 @@ describe('Витрина тарифов', () => {
 
   it('в заявку едет и состав заказа, и его сумма', async () => {
     const { container } = await renderLoaded()
-    await addTile(container, '12 уроков')          // 84 000
+    await addTile(container, '12 уроков')          // 90 000
     await addTile(container, '12 уроков · 1 курс') // 29 990
     fireEvent.click(container.querySelector('.pr-cart__pay'))
     fireEvent.click(screen.getByText('Связаться с менеджером'))
@@ -230,7 +230,7 @@ describe('Витрина тарифов', () => {
     expect(lead.comment).toContain('12 уроков')
     // Сумма — отдельным числом: она станет бюджетом сделки. Достать её из
     // текста примечания в amoCRM нечем, и без неё воронка продаж считает ₸0.
-    expect(lead.amount).toBe(113990)
+    expect(lead.amount).toBe(119990)
   })
 
   it('«Связаться со мной» оставляет заявку и показывает подтверждение', async () => {

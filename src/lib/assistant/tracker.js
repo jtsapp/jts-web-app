@@ -37,6 +37,7 @@ const AREA_NAMES = {
   listen: 'Just to Listen',
   prepositions: 'Prepositions World',
   wordhunt: 'Word Hunt',
+  pronunciation: 'Pronunciation World',
 }
 
 // Куда звала Луна (destinations.js) → разделы Практики, заход в которые и есть
@@ -45,7 +46,7 @@ const TARGET_AREAS = {
   'practice-listening': ['listening', 'listenchoose', 'listen'],
   'practice-reading': ['reading', 'wordhunt'],
   'practice-writing': ['writing', 'prepositions'],
-  'practice-speaking': ['shadowing', 'situations'],
+  'practice-speaking': ['shadowing', 'situations', 'pronunciation'],
   listening: ['listening'],
   listenchoose: ['listenchoose'],
   cartoons: ['cartoons'],
@@ -53,6 +54,7 @@ const TARGET_AREAS = {
   numbers: ['numbers'],
   listen: ['listen'],
   prepositions: ['prepositions'],
+  pronunciation: ['pronunciation'],
   reading: ['reading'],
   wordhunt: ['wordhunt'],
   writing: ['writing'],

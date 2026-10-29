@@ -4,6 +4,9 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
+  // Оспаривание пропуска: расписание запрашивает его, но здесь оспаривать нечего.
+  getMyNoShowDisputes: vi.fn(async () => ({ disputable: [], items: [] })),
+  disputeNoShow: vi.fn(async () => ({})),
   // Оболочка теперь рисует колокольчик уведомлений (LearningLayout →
   // NotificationBell), и он ходит в api.js — без заглушки падает весь экран.
   getUnreadNotificationCount: vi.fn(async () => 0),

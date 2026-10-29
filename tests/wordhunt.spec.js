@@ -129,10 +129,13 @@ test('казахский интерфейс приложения — разде�
   await expect(host.locator('.wh')).toHaveAttribute('lang', 'kk')
 })
 
-test('гость видит просьбу войти, без заливки — «Раздел готовится»', async ({ page }) => {
+// Гостя приложение до экрана раздела не пускает: ?screen= без входа ведёт на приветствие с «Войти». Статус guest
+// раздела тест ловил только вспышкой кадра до этого перехода и падал, когда переход успевал раньше отрисовки.
+test('гость попадает на вход, без заливки — «Раздел готовится»', async ({ page }) => {
   await mockBackend(page, { token: null })
   await page.goto('/?screen=wordhunt')
-  await expect(page.locator('.whp-state[data-status="guest"]')).toBeVisible({ timeout: 30000 })
+  await expect(page.getByRole('button', { name: 'Войти' })).toBeVisible({ timeout: 30000 })
+  await expect(page.locator('.whp-host')).toHaveCount(0)
 
   const page2 = await page.context().newPage()
   await mockBackend(page2, { bundleStatus: 404 })

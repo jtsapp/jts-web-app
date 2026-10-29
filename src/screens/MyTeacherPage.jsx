@@ -166,7 +166,7 @@ export default function MyTeacherPage({ token, userName, userLevel, onNav, onPro
       {modal?.kind === 'format' && (
         <ChangeFormatModal
           token={token}
-          current={view.assignment?.format || 'platform'}
+          current={view.assignment?.format || null}
           teacherFormats={assignedTeacher?.card?.formats || null}
           onClose={() => setModal(null)}
           onDone={(text) => {

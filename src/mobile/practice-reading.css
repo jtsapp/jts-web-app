@@ -1,0 +1,1872 @@
+/* ======================================================================
+   Телефон (≤560px) по дизайну мобильного приложения: Figma «pitch JTS (Copy)»,
+   страница «Mobile» → «Практика» → «Чтение»: «Читай по-английски», «Книжки», «Комиксы».
+   Файл заведён заранее и подключён в layout.jsx, чтобы параллельные ветки
+   разделов Практики не спорили за строку импорта.
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* ---------- «Читай по-английски» (.rd) ----------
+     Палитра макета приложения: фиолетовый #9047ff, лавандовая плашка #efe7ff,
+     рамки #ececf1. Токены раздела переопределены на корне, поэтому за ними
+     подтягиваются и задания, и настройки, и итог. */
+  .rd {
+    --rd-purple: #9047ff;
+    --rd-purple-dark: #9047ff;
+    --rd-soft: #efe7ff;
+    --rd-line: #ececf1;
+    --rd-ink-2: #5a5a66;
+    --rd-ink-3: #8e8e99;
+    --rd-field: #f7f7f8;
+    position: relative;
+    padding: 0 16px 32px;
+    color: #181818;
+  }
+  /* Кнопки угла (?, колокольчик, язык) — у внутренних экранов приложения их нет:
+     полосу занимает навбар раздела, как у урока и книжки. */
+  .learn__main:has(.rd) .learn__bell {
+    display: none;
+  }
+  /* Фон экрана — серый #f7f7f8, карточки на нём белые; им же залиты липкие полосы. */
+  .learn__main:has(.rd) {
+    background: #f7f7f8;
+  }
+
+  /* Навбар: стрелка 48 слева, название по центру. Подпись «← Практика» у
+     кнопки остаётся в разметке (aria), на экране — только стрелка. */
+  .rd-top {
+    position: relative;
+    justify-content: center;
+    min-height: 52px;
+    margin: 0;
+    padding: 0 40px;
+    gap: 0;
+  }
+  .rd-back {
+    position: absolute;
+    left: -12px;
+    top: 2px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    font-size: 0;
+  }
+  .rd-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .rd-crumb {
+    align-items: center;
+    max-width: 100%;
+    text-align: center;
+  }
+  .rd-crumb b {
+    display: none;
+  }
+  .rd-crumb span {
+    max-width: 100%;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .rd-ico {
+    display: none;
+  }
+
+  /* ---------- 1 · Библиотека ---------- */
+  .rd-hero {
+    margin: 12px 0 16px;
+  }
+  /* Заголовок «Библиотека» стоит в навбаре. */
+  .rd-hero h1 {
+    display: none;
+  }
+  .rd-hero p {
+    color: #5a5a66;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .rd-hero ~ .rd-label {
+    margin: 0 0 8px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  /* Жанры не переносятся, а листаются строкой — до края экрана. */
+  .rd-hero ~ .rd-chips {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rd-hero ~ .rd-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .rd-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 16px;
+    border: 1px solid #ececf1;
+    color: #181818;
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip {
+    color: #5a5a66;
+  }
+  .rd-chip > span[aria-hidden] {
+    font-size: 14px;
+  }
+  .rd-chip[aria-pressed='true'] {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip[aria-pressed='true'] {
+    color: #fff;
+  }
+
+  .rd-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+    margin-top: 0;
+    align-items: start;
+  }
+  .rd-card {
+    padding: 8px;
+    border: 1px solid #ececf1;
+    border-radius: 24px;
+  }
+  .rd-card__cover {
+    height: 96px;
+    border-radius: 16px;
+  }
+  .rd-card__emoji {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 26px;
+  }
+  .rd-card__lvl,
+  .rd-card__done {
+    top: 8px;
+    height: 24px;
+    padding: 4px 12px;
+    background: #fff;
+    color: #181818;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-card__lvl {
+    left: 8px;
+  }
+  .rd-card__done {
+    right: 8px;
+    padding: 4px 8px;
+    background: #e6fbec;
+    color: #03832c;
+  }
+  .rd-card__body {
+    gap: 0;
+    padding: 8px 0 0;
+  }
+  .rd-card__title {
+    padding: 0 4px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+  }
+  /* Жанр — строкой, ниже «1 мин · 98 слов». */
+  .rd-card__meta {
+    display: block;
+    margin-top: 2px;
+    padding: 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .rd-card__meta > span:first-child {
+    display: block;
+    margin-bottom: 2px;
+  }
+  .rd-card__meta > span:nth-child(3)::before {
+    content: ' · ';
+  }
+  .rd-card__bar {
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-bar {
+    height: 8px;
+    background: #e4daf8;
+  }
+  .rd-bar i {
+    min-width: 10px;
+    background: #9047ff;
+  }
+  .rd-card__body .rd-btn {
+    height: 40px;
+    margin-top: 8px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-g-science { --rd-g1: #d6edfb; --rd-g2: #d6edfb; }
+  .rd-g-adventure { --rd-g1: #ffe3cf; --rd-g2: #ffe3cf; }
+  .rd-g-mystery { --rd-g1: #e6dcfc; --rd-g2: #e6dcfc; }
+  .rd-g-history { --rd-g1: #fdefc4; --rd-g2: #fdefc4; }
+  .rd-g-technology { --rd-g1: #d9ddfc; --rd-g2: #d9ddfc; }
+  .rd-g-nature { --rd-g1: #d3f0e1; --rd-g2: #d3f0e1; }
+  .rd-g-people { --rd-g1: #fde0ea; --rd-g2: #fde0ea; }
+  .rd-g-culture { --rd-g1: #dde8fc; --rd-g2: #dde8fc; }
+
+  /* ---------- 2 · Текст ----------
+     Навбар и переключатель «Текст | Задания» липнут вместе, как Nav макета. */
+  .rd-top {
+    position: sticky;
+    top: 0;
+    z-index: 21;
+    margin: 0 -16px;
+    padding: 0 56px;
+    background: #f7f7f8;
+  }
+  .rd-back {
+    left: 4px;
+  }
+  /* Выше навбара: кнопка настроек из панели стоит на его полосе. */
+  .rd-toolbar {
+    z-index: 22;
+    top: 52px;
+    margin: 0 -16px 12px;
+    padding: 0 16px 8px;
+    background: #f7f7f8;
+  }
+  .rd-tabs {
+    flex: 1;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .rd-tabs button {
+    flex: 1;
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 12px;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .rd-tabs button[aria-selected='true'] {
+    background: #fff;
+    color: #181818;
+    box-shadow: none;
+  }
+  /* Из панели в навбар уходит только «Настройки» (значок tune справа). A−/A+
+     живут в настройках («Размер»), «Озвучить» — кнопкой над текстом. */
+  .rd-tb {
+    position: absolute;
+    top: -52px;
+    right: 4px;
+  }
+  .rd-toolbar .rd-tb__btn:not(:last-child) {
+    display: none;
+  }
+  .rd-toolbar .rd-tb__btn:last-child {
+    width: 48px;
+    min-width: 0;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    font-size: 0;
+  }
+  .rd-toolbar .rd-tb__btn:last-child::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 24px;
+    margin: auto;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/tune.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/tune.svg') center / 24px no-repeat;
+  }
+
+  .rd-texthero {
+    margin-bottom: 16px;
+    padding: 20px;
+    border-radius: 24px;
+  }
+  .rd-texthero__emoji {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 30px;
+  }
+  .rd-texthero h1 {
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+  }
+  .rd-texthero__meta {
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .rd-texthero__meta > span {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #fff;
+    color: #181818;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .rd-task {
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 20px;
+    background: #fff0c2;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .rd-task b {
+    margin-bottom: 4px;
+    font-weight: 800;
+  }
+
+  /* Ключевые слова и текст в макете — без общей рамки: заголовок строкой,
+     под ним карточки слов. */
+  .rd-pane--text .rd-panel {
+    margin-bottom: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .rd-pane--text .rd-panel > .rd-label {
+    margin: 0 0 16px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 24px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .rd-words {
+    gap: 16px;
+  }
+  /* Карточка слова: слово и озвучка в строку, «В словарь» — во всю ширину внизу. */
+  .rd-word {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-areas: 'main say' 'save save';
+    gap: 8px 8px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .rd-word__main {
+    grid-area: main;
+  }
+  .rd-word__acts {
+    display: contents;
+  }
+  .rd-word__top {
+    align-items: baseline;
+    min-height: 40px;
+    padding-top: 6px;
+  }
+  .rd-word__en {
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .rd-word__tr {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .rd-word__row {
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .rd-flag {
+    min-width: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .rd-word__ex {
+    margin-top: 8px;
+    color: #5a5a66;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .rd-say {
+    grid-area: say;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 0;
+  }
+  .rd-say::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/practice/volume.svg') center / 20px no-repeat;
+    mask: url('/assets/m/practice/volume.svg') center / 20px no-repeat;
+  }
+  .rd-save {
+    grid-area: save;
+    height: 40px;
+    margin-top: 8px;
+    border-radius: 12px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .rd-save svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* «Озвучить текст» — контурная кнопка, подсказка про тап — лавандовой плашкой. */
+  .rd-listen .rd-btn {
+    height: 48px;
+    padding: 0 24px;
+    border: 2px solid #9047ff;
+    border-radius: 16px;
+    background: transparent;
+    color: #9047ff;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .rd-listen .rd-btn--ghost {
+    border-color: #ececf1;
+    color: #5a5a66;
+  }
+  .rd-hint {
+    margin: 16px 0;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #f3edff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .rd-article {
+    color: #181818;
+  }
+
+  /* ---------- 5–11 · Задания ----------
+     Как в макете — по одному на экран: полоса «N / M» сверху, «Назад · Далее»
+     снизу, «Завершить» — на последнем. Остальные задания смонтированы (держат
+     ответы для «Завершить»), здесь они только спрятаны. Полоса и «Назад · Далее»
+     в разметке с hidden — на компьютере их нет. Вид карточки по кадрам: тип —
+     лавандовой пилюлей, вопрос 24/32, варианты 56 r16, «Проверить» во всю ширину,
+     «Показать ответ» — ссылкой. */
+  .rd-pane--ex .rd-ex:not(.is-step),
+  .rd-pane--ex .rd-finish:not(.is-last) {
+    display: none;
+  }
+  .rd-stepper[hidden] {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .rd-stepper__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: #e4daf8;
+    overflow: hidden;
+  }
+  .rd-stepper__bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #9047ff;
+    transition: width 0.2s ease;
+  }
+  .rd-stepper__count {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .rd-stepper-nav[hidden] {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+  }
+  .rd-stepper-nav .rd-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+  .rd-stepper-nav .rd-btn:disabled {
+    visibility: hidden;
+  }
+  /* Задание лежит прямо на сером фоне экрана — белые здесь варианты и карточки
+     утверждений, а не рамка всего задания. */
+  .rd-ex {
+    margin-bottom: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .rd-ex__head {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .rd-ex__num {
+    display: none;
+  }
+  .rd-ex__type {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .rd-ex__inst {
+    margin-bottom: 8px;
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+  }
+  .rd-ex__hint {
+    margin-bottom: 16px;
+    color: #5a5a66;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  .rd-q__text {
+    margin-bottom: 12px;
+    color: #181818;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+  }
+  .rd-opts {
+    gap: 12px;
+  }
+  .rd-opt,
+  .rd-mt,
+  .rd-ord__item {
+    min-height: 56px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+  }
+  .rd-opt {
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .rd-opt[aria-checked='true'] {
+    border-color: #9047ff;
+    background: #f3edff;
+  }
+  /* 8 · Правда или ложь: утверждение — белой карточкой, «Правда | Ложь» в строку
+     контурными кнопками. */
+  .rd-q:has(> .rd-opts--row) {
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .rd-q:has(> .rd-opts--row) .rd-q__text {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .rd-opts--row {
+    grid-auto-flow: column;
+    gap: 8px;
+  }
+  .rd-opts--row .rd-opt {
+    min-height: 40px;
+    padding: 8px;
+    border: 1.5px solid #9047ff;
+    border-radius: 12px;
+    color: #9047ff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .rd-opts--row .rd-opt[aria-checked='true'] {
+    border-color: #efe7ff;
+    background: #efe7ff;
+  }
+  /* 9 · Соедини: слова слева, картинки справа, как в кадре. */
+  .rd-match {
+    gap: 12px;
+  }
+  .rd-match__row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .rd-mt {
+    padding: 12px 16px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+  }
+  .rd-mt--emoji {
+    font-size: 28px;
+    text-align: center;
+  }
+  .rd-mt.is-sel {
+    border-color: #9047ff;
+    background: #efe7ff;
+  }
+  .rd-ord__item {
+    padding: 12px;
+    background: #fff;
+  }
+  .rd-ex__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .rd-ex__foot .rd-btn {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .rd-ex__foot .rd-btn--ghost {
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: #9047ff;
+    font-size: 14px;
+  }
+  .rd-expl {
+    border-radius: 16px;
+    background: #f3edff;
+    color: #181818;
+  }
+  .rd-gap {
+    border-bottom-color: #9047ff;
+    color: #9047ff;
+  }
+  .rd-bank {
+    border-radius: 16px;
+    background: #f7f7f8;
+  }
+  .rd-chipw {
+    border-color: #ececf1;
+    font-size: 14px;
+  }
+  .rd-ord__num {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .rd-finish {
+    padding: 20px 16px;
+    border-radius: 24px;
+    background: #efe7ff;
+  }
+  .rd-finish .rd-btn {
+    width: 100%;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  /* ---------- 12 · Результат ---------- */
+  .rd-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .rd-stat {
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+  }
+  .rd-stat b {
+    color: #9047ff;
+  }
+  .rd-result .rd-panel {
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+  }
+  .rd-review li {
+    border-radius: 16px;
+    background: #f7f7f8;
+  }
+  .rd-actions .rd-btn {
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  /* ---------- 3 · Перевод слова ----------
+     Карточка перевода — шторкой снизу, как в кадре. Позицию у слова ставит
+     ReadingArticle inline-стилем; на телефоне шторка от неё не зависит. Закрывать
+     её на скролле не нужно: шторка не привязана к строке текста. */
+  .rd-pop {
+    position: fixed !important;
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    z-index: 75;
+    min-width: 0;
+    max-width: none;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(24, 24, 24, 0.16);
+  }
+  .rd-pop__close {
+    display: none;
+  }
+  .rd-pop__head {
+    justify-content: space-between;
+    padding-right: 0;
+  }
+  .rd-pop__en {
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 32px;
+  }
+  .rd-pop__row {
+    align-items: center;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .rd-pop__save {
+    height: 48px;
+    margin-top: 16px;
+    border-radius: 16px;
+    background: #9047ff;
+    font-size: 14px;
+  }
+
+  /* ---------- 4 · Настройки чтения ----------
+     Боковая панель становится шторкой снизу. */
+  .rd-drawer {
+    top: auto;
+    left: 0;
+    width: auto;
+    max-height: 88vh;
+    gap: 16px;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(24, 24, 24, 0.16);
+  }
+  .rd-drawer__head h2 {
+    color: #181818;
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .rd-drawer__head .rd-tb__btn {
+    width: 40px;
+    min-width: 0;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #8e8e99;
+    font-size: 18px;
+  }
+  .rd-set__lbl {
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .rd-seg {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .rd-seg button {
+    height: 40px;
+    border-radius: 12px;
+    color: #5a5a66;
+    font-size: 14px;
+  }
+  .rd-seg button[aria-pressed='true'] {
+    color: #181818;
+    box-shadow: none;
+  }
+  .rd-switch {
+    padding: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #f3edff;
+    font-size: 16px;
+  }
+  .rd-switch__knob {
+    background: #d9d9e0;
+  }
+  .rd-preview {
+    border-radius: 16px;
+    background: #f3edff;
+  }
+
+  /* ---------- Книжки · 2 · Книга ----------
+     Кадр 6605:10519: обложка 120 слева, справа название, автор и чипы; ниже
+     «Главы» карточками, «Начать чтение» прибита к низу экрана. Прежняя раскладка
+     «Web Адаптивки» (флекс-столбец с order) — в practice.css; здесь сетка поверх:
+     обе колонки разметки раскрыты (display: contents) прямо в неё. */
+  .learn__main:has(.bk-ov) {
+    background: #f7f7f8;
+  }
+  .bk:has(> .bk-ov) {
+    padding: 0 16px calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+  .bk:has(> .bk-ov) > .vd__head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 52px;
+    margin: 0 -16px 8px;
+    padding: 0 56px;
+    background: transparent;
+  }
+  .bk:has(> .bk-ov) .vd__back {
+    position: absolute;
+    left: 4px;
+    top: 2px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    font-size: 0;
+  }
+  .bk:has(> .bk-ov) .vd__back svg {
+    display: none;
+  }
+  .bk:has(> .bk-ov) .vd__back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .bk:has(> .bk-ov) .vd__headtitle {
+    align-items: center;
+    text-align: center;
+  }
+  .bk:has(> .bk-ov) .vd__headtitle b {
+    display: none;
+  }
+  .bk:has(> .bk-ov) .vd__headtitle span {
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .bk-ov {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    grid-auto-rows: auto;
+    align-items: start;
+    gap: 0 16px;
+  }
+  .bk-ov__left,
+  .bk-ov__body {
+    display: contents;
+  }
+  .bk-ov__cover {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    width: 120px;
+    height: 180px;
+    border-radius: 16px;
+    object-fit: cover;
+    order: 0;
+  }
+  .bk-ov__title {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    text-align: left;
+  }
+  .bk-ov__author {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 4px 0 0;
+    color: #5a5a66;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-align: left;
+  }
+  .bk-ov__diff {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: start;
+    height: 24px;
+    margin: 8px 0 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+  }
+  .bk-ov__body > .bk-ov__label,
+  .bk-ov__desc,
+  .bk-ov__progress,
+  .bk-ov__contents {
+    grid-column: 1 / -1;
+  }
+  .bk-ov__body > .bk-ov__label {
+    margin: 20px 0 4px;
+    color: #5a5a66;
+  }
+  .bk-ov__desc {
+    margin: 0;
+    color: #181818;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .bk-ov__progress {
+    margin: 20px 0 0;
+    padding: 16px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .bk-ov__contents {
+    margin-top: 24px;
+  }
+  .bk-ov__contents-head .bk-ov__label {
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .bk-ov__count {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .bk-ov__preview {
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .bk-chapters {
+    gap: 12px;
+  }
+  .bk-chapter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 12px 16px;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .bk-chapter__idx {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .bk-chapter__title {
+    flex: 1;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: left;
+  }
+  .bk-chapter--locked .bk-chapter__title {
+    color: #8e8e99;
+    font-weight: 500;
+  }
+  .bk-chapter--locked .bk-chapter__idx {
+    background: #f0f0f4;
+    color: #8e8e99;
+  }
+  .bk-chapter:not(.bk-chapter--locked)::after {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: #8e8e99;
+    -webkit-mask: url('/assets/m/lessons/join-chev.svg') center / 20px no-repeat;
+    mask: url('/assets/m/lessons/join-chev.svg') center / 20px no-repeat;
+  }
+  /* «Начать чтение» (и «Аудио», если есть) — полосой у низа экрана. */
+  .bk-ov__actions {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 16px;
+    z-index: 30;
+    display: flex;
+    gap: 8px;
+    margin: 0;
+  }
+  .bk-ov__actions .bk-btn {
+    flex: 1;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  /* ---------- Книжки · 3 · Чтение главы ----------
+     Кадр 6605:10587: навбар как у раздела — стрелка без круга, глава по центру
+     чёрным 16, книга серым 12 под ней; значок оглавления справа без плашки. */
+  .bk:has(> .bk-read) {
+    background: #f7f7f8;
+  }
+  .bk:has(> .bk-read) > .vd__head {
+    background: #f7f7f8;
+  }
+  .bk:has(> .bk-read) .vd__back {
+    border: 0;
+    background: transparent;
+    color: #181818;
+  }
+  .bk:has(> .bk-read) .vd__back svg {
+    display: none;
+  }
+  .bk:has(> .bk-read) .vd__back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .bk:has(> .bk-read) .vd__headtitle {
+    align-items: center;
+    text-align: center;
+  }
+  .bk:has(> .bk-read) .bk-head__chapter {
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  .bk:has(> .bk-read) .vd__headtitle span {
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .bk:has(> .bk-read) .bk-head__toc {
+    background-color: transparent;
+  }
+  .bk-read__title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .bk-read__text {
+    color: #181818;
+    font-size: 20px;
+    line-height: 32px;
+  }
+
+  /* ---------- Комиксы · 2 · Чтение комикса ----------
+     Кадр 6605:10737: читалка на тёмном фоне в любой теме (страница — белый
+     лист), навбар: стрелка, название и «N / M» по центру, «на весь экран» справа.
+     Кнопки угла (язык, колокольчик) у читалки не нужны, как у книжки. */
+  .learn__main:has(.cr) {
+    background: #121212;
+  }
+  .learn__main:has(.cr) .learn__bell {
+    display: none;
+  }
+  .cr {
+    gap: 12px;
+    padding: 0 16px 16px;
+    color: #fff;
+  }
+  .cr__progress {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .cr__bar {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 0;
+    min-height: 52px;
+    margin: 0 -12px;
+  }
+  .cr__back,
+  .cr__full {
+    grid-row: 1 / span 2;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+  }
+  .cr__back {
+    grid-column: 1;
+    font-size: 0;
+  }
+  .cr__back svg {
+    display: none;
+  }
+  .cr__back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  .cr__full {
+    grid-column: 3;
+  }
+  .cr__fullLabel {
+    display: none;
+  }
+  .cr__title {
+    grid-column: 2;
+    grid-row: 1;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: center;
+  }
+  .cr__author {
+    display: none;
+  }
+  .cr__count {
+    grid-column: 2;
+    grid-row: 2;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: center;
+  }
+  .cr__page {
+    padding: 8px;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .cr__text {
+    border: 0;
+    border-radius: 20px;
+    background: #1f1f22;
+    color: #fff;
+  }
+  .cr__textTitle {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .cr__en {
+    color: #fff;
+  }
+  .cr__hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* ---------- Книжки · 1 и Комиксы · 1 · Каталог ----------
+     Каталог — это развёрнутая секция хаба («Все»). Кадры 6605:10431 и 6605:10679:
+     навбар «← Книжки», поиск, чипы уровня, сетка обложек в две колонки. Секция,
+     её шапка и инструменты раскрыты (display: contents) в столбец страницы, чтобы
+     порядок кадра собрать order'ом, не трогая разметку хаба. */
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 0;
+  }
+  /* :has() не вкладывается — для кнопок угла условие своё. */
+  .learn__main:has(:is(#sec-books, #sec-comics) .pk-rail--grid) .learn__bell,
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) > .pk-skills,
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-head__title {
+    display: none;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) > :is(#sec-books, #sec-comics),
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__head,
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__tools {
+    display: contents;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__title {
+    order: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 52px;
+    margin: 0;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+  /* «Свернуть» — стрелкой навбара слева. */
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back {
+    position: absolute;
+    top: 2px;
+    left: -12px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    font-size: 0;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back > svg,
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back::after {
+    display: none;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+    mask: url('/assets/m/reading/back.svg') center / 24px no-repeat;
+  }
+  /* flex-basis: 100% из styles.css в столбце сжимал поиск до 22px. */
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search {
+    order: 2;
+    flex-basis: auto;
+    width: 100%;
+    height: 48px;
+    margin: 0;
+    border: 1px solid #ececf1;
+    border-radius: 16px;
+    background: #fff;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-levels {
+    order: 3;
+    margin: 0;
+  }
+  /* Столбец страницы ограничен по высоте — без этого поиск и чипы сжимались. */
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) :is(.pk-sec__title, .pp-search, .pk-levels, .pk-rail--grid, .pk-seg, .pk-sec__tools > *) {
+    flex-shrink: 0;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) > :is(#sec-books, #sec-comics) > :not(.pk-sec__head) {
+    order: 4;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid {
+    order: 5;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid .pk-book {
+    width: auto;
+    min-width: 0;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid .pk-book__cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    border-radius: 16px;
+  }
+  .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid :is(.pk-book__title, .pk-comic__title) {
+    color: #181818;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+  }
+
+  /* ---------- Комиксы · 4 · Ошибка загрузки ----------
+     Кадр 6605:10781: экран светлый (тёмная — только у самой читалки), в навбаре
+     «Комиксы», по центру знак ошибки в розовом круге 96, текст 20/28 и
+     «Повторить» во всю ширину со значком restart_alt (экспорт Figma). */
+  .learn__main:has(.cr__retry) {
+    background: #f7f7f8;
+  }
+  .cr:has(.cr__retry) {
+    min-height: calc(100dvh - 32px);
+    color: #181818;
+  }
+  .cr:has(.cr__retry) :is(.cr__back, .cr__full, .cr__title) {
+    color: #181818;
+  }
+  .cr:has(.cr__retry) .cr__full {
+    visibility: hidden;
+  }
+  /* Без строки «N / M» название одно — по центру всей высоты навбара. */
+  .cr__bar > .cr__title:last-child {
+    grid-row: 1 / span 2;
+  }
+  .cr__empty:has(.cr__retry) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 0 0 64px;
+    border: 0;
+    background: transparent;
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+    text-align: center;
+  }
+  .cr__empty:has(.cr__retry)::before {
+    content: '';
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #fdebec url('/assets/m/reading/error.svg') center / 48px no-repeat;
+  }
+  .cr__retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 56px;
+    margin: 0;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .cr__retry::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    background: url('/assets/m/reading/restart.svg') center / 24px no-repeat;
+  }
+
+  /* ---------- Книжки · 4 · Перевод слова ----------
+     Кадр 6605:10625: шторка снизу поверх затемнённого текста — слово 20/28,
+     перевод с чипом RU, «Сохранить в словарь» во всю ширину. Позицию у слова
+     ставит BookRead inline-стилем; на телефоне шторка от неё не зависит (как у
+     «Чтения»). Затемнение — тенью самой шторки: закрывает её прежний тап мимо. */
+  .bk-pop {
+    position: fixed !important;
+    top: auto !important;
+    right: 0;
+    bottom: 0;
+    left: 0 !important;
+    z-index: 75;
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 24px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    box-shadow: 0 0 0 100vmax rgba(24, 24, 24, 0.4);
+  }
+  .bk-pop__word {
+    color: #181818;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 28px;
+  }
+  .bk-pop__tr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .bk-pop__tr::before {
+    content: 'RU';
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #f0f0f4;
+    color: #5a5a66;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .bk-pop__alts {
+    margin-top: 6px;
+    color: #8e8e99;
+    font-size: 14px;
+  }
+  .bk-pop__save,
+  .bk-pop__save:disabled {
+    display: block;
+    width: 100%;
+    height: 48px;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    -webkit-mask: none;
+    mask: none;
+  }
+  .bk-pop__save:disabled:not(.bk-pop__save--on) {
+    opacity: 0.55;
+  }
+  .bk-pop__save--on:disabled {
+    background: #e6fbec;
+    color: #03832c;
+  }
+  .bk-pop__hint {
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 12px;
+  }
+
+  /* ---------- 2 · Текст: значки и счётчик (разметка по usePhoneWidth) ----------
+     Флажок у «Ваша задача», лампочка и число слов у «Ключевые слова» — экспорт
+     Figma вместо эмодзи 🎯 / 🔑, которые на телефоне не рисуются. */
+  .rd-task b {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rd-task b::before,
+  .rd-pane--text .rd-panel > .rd-label::before {
+    content: '';
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: url('/assets/m/reading/flag.svg') center / 20px no-repeat;
+  }
+  .rd-pane--text .rd-panel > .rd-label:has(.rd-label__count) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rd-pane--text .rd-panel > .rd-label::before {
+    display: none;
+  }
+  .rd-pane--text .rd-panel > .rd-label:has(.rd-label__count)::before {
+    display: block;
+    background-image: url('/assets/m/reading/lightbulb.svg');
+  }
+  .rd-label__count {
+    margin-left: auto;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+
+  /* ---------- Книжки · 3 · полоса «Прочитано из главы» ----------
+     Подпись кадра берётся из aria-label самой полосы (i18n) — ::after встаёт
+     между дорожкой и процентом через order, разметку не трогаем. */
+  .bk-readbar {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 16px;
+  }
+  .bk-readbar__track {
+    height: 8px;
+  }
+  .bk-readbar::after {
+    content: attr(aria-label) ' ·';
+    order: 1;
+    flex: none;
+    color: #8e8e99;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .bk-readbar__pct {
+    order: 2;
+    min-width: 0;
+    color: #8e8e99;
+    font-size: 12px;
+  }
+
+  /* ---------- Значки жанров (разметка по usePhoneWidth) ----------
+     Контурные значки макета вместо эмодзи: в чипе 16, на обложке карточки 28,
+     в плашке текста 32. Маской — цвет от currentColor (белый на активном чипе). */
+  .rd-gico {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: var(--rd-gico) center / contain no-repeat;
+    mask: var(--rd-gico) center / contain no-repeat;
+  }
+  .rd-chip .rd-gico {
+    color: #9047ff;
+  }
+  .rd-chip[aria-pressed='true'] .rd-gico {
+    color: #fff;
+  }
+  .rd-card__emoji .rd-gico {
+    width: 28px;
+    height: 28px;
+    color: #9047ff;
+  }
+  .rd-texthero__emoji .rd-gico {
+    width: 32px;
+    height: 32px;
+    color: #9047ff;
+  }
+  .rd-gico--science { --rd-gico: url('/assets/m/reading/genre/science.svg'); }
+  .rd-gico--adventure { --rd-gico: url('/assets/m/reading/genre/adventure.svg'); }
+  .rd-gico--mystery { --rd-gico: url('/assets/m/reading/genre/mystery.svg'); }
+  .rd-gico--history { --rd-gico: url('/assets/m/reading/genre/history.svg'); }
+  .rd-gico--technology { --rd-gico: url('/assets/m/reading/genre/technology.svg'); }
+  .rd-gico--nature { --rd-gico: url('/assets/m/reading/genre/nature.svg'); }
+  .rd-gico--people { --rd-gico: url('/assets/m/reading/genre/people.svg'); }
+  .rd-gico--culture { --rd-gico: url('/assets/m/reading/genre/culture.svg'); }
+
+  /* ---------- Тёмная тема ----------
+     Цвета выше заданы литералами макета — в тёмной их сменяют токены --dk-*
+     (генератор theme-dark.generated.css этот файл не знает). */
+  html[data-theme='dark'] .learn__main:has(.rd),
+  html[data-theme='dark'] .rd .rd-top,
+  html[data-theme='dark'] .rd .rd-toolbar {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .rd {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-back,
+  html[data-theme='dark'] .rd .rd-toolbar .rd-tb__btn:last-child {
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-crumb span,
+  html[data-theme='dark'] .rd .rd-chip,
+  html[data-theme='dark'] .rd .rd-card__title,
+  html[data-theme='dark'] .rd .rd-texthero h1,
+  html[data-theme='dark'] .rd .rd-task,
+  html[data-theme='dark'] .rd .rd-pane--text .rd-panel > .rd-label,
+  html[data-theme='dark'] .rd .rd-word__en,
+  html[data-theme='dark'] .rd .rd-word__row,
+  html[data-theme='dark'] .rd .rd-article,
+  html[data-theme='dark'] .rd .rd-ex__inst,
+  html[data-theme='dark'] .rd .rd-q__text,
+  html[data-theme='dark'] .rd .rd-opt,
+  html[data-theme='dark'] .rd .rd-mt,
+  html[data-theme='dark'] .rd .rd-ord__txt,
+  html[data-theme='dark'] .rd .rd-pop__en,
+  html[data-theme='dark'] .rd .rd-pop__row,
+  html[data-theme='dark'] .rd .rd-drawer__head h2,
+  html[data-theme='dark'] .rd .rd-expl,
+  html[data-theme='dark'] .rd .rd-card__lvl,
+  html[data-theme='dark'] .rd .rd-texthero__meta > span,
+  html[data-theme='dark'] .rd .rd-tabs button[aria-selected='true'],
+  html[data-theme='dark'] .rd .rd-seg button[aria-pressed='true'] {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .rd .rd-hero p,
+  html[data-theme='dark'] .rd .rd-hero ~ .rd-label,
+  html[data-theme='dark'] .rd .rd-chips[aria-labelledby='rd-lbl-level'] .rd-chip,
+  html[data-theme='dark'] .rd .rd-card__meta,
+  html[data-theme='dark'] .rd .rd-card__bar,
+  html[data-theme='dark'] .rd .rd-word__tr,
+  html[data-theme='dark'] .rd .rd-word__ex,
+  html[data-theme='dark'] .rd .rd-flag,
+  html[data-theme='dark'] .rd .rd-ex__hint,
+  html[data-theme='dark'] .rd .rd-tabs button,
+  html[data-theme='dark'] .rd .rd-seg button,
+  html[data-theme='dark'] .rd .rd-set__lbl {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-chip,
+  html[data-theme='dark'] .rd .rd-card,
+  html[data-theme='dark'] .rd .rd-word,
+  html[data-theme='dark'] .rd .rd-opt,
+  html[data-theme='dark'] .rd .rd-mt,
+  html[data-theme='dark'] .rd .rd-ord__item,
+  html[data-theme='dark'] .rd .rd-q:has(> .rd-opts--row),
+  html[data-theme='dark'] .rd .rd-pop,
+  html[data-theme='dark'] .rd .rd-drawer,
+  html[data-theme='dark'] .rd .rd-stat,
+  html[data-theme='dark'] .rd .rd-result .rd-panel {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .rd .rd-chip[aria-pressed='true'] {
+    border-color: var(--dk-acc);
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  html[data-theme='dark'] .rd .rd-card__emoji,
+  html[data-theme='dark'] .rd .rd-texthero__emoji,
+  html[data-theme='dark'] .rd .rd-card__lvl,
+  html[data-theme='dark'] .rd .rd-texthero__meta > span,
+  html[data-theme='dark'] .rd .rd-tabs button[aria-selected='true'],
+  html[data-theme='dark'] .rd .rd-seg button[aria-pressed='true'],
+  html[data-theme='dark'] .rd .rd-switch__knob {
+    background: var(--dk-raised);
+  }
+  html[data-theme='dark'] .rd .rd-tabs,
+  html[data-theme='dark'] .rd .rd-seg,
+  html[data-theme='dark'] .rd .rd-flag,
+  html[data-theme='dark'] .rd .rd-bank,
+  html[data-theme='dark'] .rd .rd-review li {
+    background: var(--dk-chip);
+  }
+  html[data-theme='dark'] .rd .rd-card__body .rd-btn,
+  html[data-theme='dark'] .rd .rd-say,
+  html[data-theme='dark'] .rd .rd-save,
+  html[data-theme='dark'] .rd .rd-hint,
+  html[data-theme='dark'] .rd .rd-ex__type,
+  html[data-theme='dark'] .rd .rd-switch,
+  html[data-theme='dark'] .rd .rd-preview,
+  html[data-theme='dark'] .rd .rd-finish,
+  html[data-theme='dark'] .rd .rd-expl,
+  html[data-theme='dark'] .rd .rd-opt[aria-checked='true'],
+  html[data-theme='dark'] .rd .rd-mt.is-sel,
+  html[data-theme='dark'] .rd .rd-ord__num {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-opt[aria-checked='true'],
+  html[data-theme='dark'] .rd .rd-mt.is-sel {
+    border-color: var(--dk-acc);
+  }
+  html[data-theme='dark'] .rd .rd-bar {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-task {
+    background: var(--dk-yellow-soft);
+  }
+  html[data-theme='dark'] .rd .rd-pane--text .rd-panel,
+  html[data-theme='dark'] .rd .rd-ex {
+    border: 0;
+    background: transparent;
+  }
+  html[data-theme='dark'] .rd .rd-listen .rd-btn {
+    border: 2px solid var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-listen .rd-btn--ghost {
+    border-color: var(--dk-line);
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-opts--row .rd-opt {
+    border-color: var(--dk-acc);
+    background: transparent;
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .rd .rd-opts--row .rd-opt[aria-checked='true'] {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-ex__foot .rd-btn--ghost {
+    background: transparent;
+    border: 0;
+    color: var(--dk-acc-text);
+  }
+
+  /* Книжки в тёмной. */
+  html[data-theme='dark'] .learn__main:has(.bk-ov),
+  html[data-theme='dark'] .bk:has(> .bk-read),
+  html[data-theme='dark'] .bk:has(> .bk-read) > .vd__head {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .bk .vd__back,
+  html[data-theme='dark'] .bk .vd__headtitle span,
+  html[data-theme='dark'] .bk .bk-head__chapter,
+  html[data-theme='dark'] .bk .bk-ov__title,
+  html[data-theme='dark'] .bk .bk-ov__desc,
+  html[data-theme='dark'] .bk .bk-ov__contents-head .bk-ov__label,
+  html[data-theme='dark'] .bk .bk-chapter__title,
+  html[data-theme='dark'] .bk .bk-read__text {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-ov__author,
+  html[data-theme='dark'] .bk:has(> .bk-read) .vd__headtitle span,
+  html[data-theme='dark'] .bk .bk-chapter--locked .bk-chapter__title {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .bk .bk-ov__progress,
+  html[data-theme='dark'] .bk .bk-chapter {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .bk .bk-ov__diff,
+  html[data-theme='dark'] .bk .bk-chapter__idx {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  html[data-theme='dark'] .bk .bk-chapter--locked .bk-chapter__idx {
+    background: var(--dk-chip);
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .bk .vd__back {
+    background: transparent;
+  }
+  html[data-theme='dark'] .rd .rd-stepper__bar {
+    background: var(--dk-acc-soft);
+  }
+  html[data-theme='dark'] .rd .rd-stepper__count {
+    color: var(--dk-muted);
+  }
+  html[data-theme='dark'] .rd .rd-stepper-nav .rd-btn--secondary {
+    background: var(--dk-acc-soft);
+    color: var(--dk-acc-text);
+  }
+  /* Каталоги книжек и комиксов в тёмной. */
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-sec__title,
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-all.is-back,
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pk-rail--grid :is(.pk-book__title, .pk-comic__title) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search {
+    border-color: var(--dk-line);
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .pk:has(> :is(#sec-books, #sec-comics) .pk-rail--grid) .pp-search input {
+    color: var(--dk-text);
+  }
+  /* Ошибка комикса и шторка книги в тёмной. */
+  html[data-theme='dark'] .learn__main:has(.cr__retry) {
+    background: var(--dk-page);
+  }
+  html[data-theme='dark'] .cr:has(.cr__retry),
+  html[data-theme='dark'] .cr:has(.cr__retry) :is(.cr__back, .cr__title),
+  html[data-theme='dark'] .cr__empty:has(.cr__retry) {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .cr__empty:has(.cr__retry)::before {
+    background-color: var(--dk-red-soft);
+  }
+  html[data-theme='dark'] .bk .bk-pop {
+    background: var(--dk-card);
+  }
+  html[data-theme='dark'] .bk .bk-pop__word,
+  html[data-theme='dark'] .bk .bk-pop__tr {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-pop__tr::before {
+    background: var(--dk-chip);
+    color: var(--dk-muted);
+  }
+  /* Навбары книжки и комикса в тёмной: генерированный слой красит стрелку
+     плашкой и главу фиолетовым — тут селекторы сильнее. */
+  html[data-theme='dark'] .bk:has(> :is(.bk-ov, .bk-read)) .vd__back,
+  html[data-theme='dark'] .cr .cr__back,
+  html[data-theme='dark'] .cr .cr__full {
+    border: 0;
+    background: transparent;
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk:has(> .bk-read) .vd__headtitle b,
+  html[data-theme='dark'] .bk:has(> .bk-ov) .vd__headtitle span {
+    color: var(--dk-text);
+  }
+  html[data-theme='dark'] .bk .bk-pop__save:not(:disabled),
+  html[data-theme='dark'] .bk .bk-pop__save:disabled:not(.bk-pop__save--on) {
+    background: var(--dk-acc);
+    color: var(--dk-on-acc);
+  }
+  /* Генерированный слой рисует в ::before крестик фоном — возвращаем стрелку-маску. */
+  html[data-theme='dark'] .bk:has(> :is(.bk-ov, .bk-read)) .vd__back::before {
+    background: currentColor;
+  }
+}

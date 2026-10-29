@@ -344,6 +344,7 @@ export const kzText = {
     whatsapp: 'WhatsApp',
     instagram: 'Instagram',
     copy: '© 2026 Just To Study',
+    paymentSecurity: 'Онлайн төлемдердің қауіпсіздігі',
     privacy: 'Құпиялылық саясаты',
     offer: 'Жария оферта',
   },

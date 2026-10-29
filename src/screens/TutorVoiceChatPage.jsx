@@ -225,7 +225,8 @@ export default function TutorVoiceChatPage({
   const connected = Boolean(tokenData?.token && tokenData?.url)
 
   return (
-    <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow">
+    // tabs={false}: в звонке нижней панели телефона нет — случайное касание вкладки увело бы из разговора.
+    <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow" tabs={false}>
       {/* Пока висит гейт со ситуацией, просьбы про микрофон быть не должно:
           иначе ученик жмёт «разрешить», следом «я готов» — и это два звонка. */}
       {perm !== 'granted' && !error && !(briefId && !briefAck) && (

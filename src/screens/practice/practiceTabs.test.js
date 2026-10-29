@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { SKILLS, skillModules, skillOfModule, EXPANDABLE } from './practiceTabs.js'
 
 describe('practiceTabs', () => {
-  it('четыре навыка в порядке макета', () => {
-    expect(SKILLS.map((s) => s.key)).toEqual(['listening', 'reading', 'writing', 'speaking'])
+  it('четыре навыка в порядке макета и пятым — «Грамматика · игры»', () => {
+    expect(SKILLS.map((s) => s.key)).toEqual(['listening', 'reading', 'writing', 'speaking', 'grammarGames'])
   })
 
   it('сказки — последней секцией в каждой вкладке, где они есть', () => {
@@ -15,10 +15,10 @@ describe('practiceTabs', () => {
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
     // Word Hunt (25.10.2026) — перед «Аркадой».
     expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'wordhunt', 'arcade', 'tales'])
-    // «Грамматика · игры» (25.10.2026) — сразу после «Грамматики», Prepositions World (22.10.2026) — за ней.
-    expect(skillModules('writing')).toEqual(['grammar', 'grammarGames', 'prepositions', 'writing', 'verbs', 'workbooks'])
-    // SpeakSpin (02.10.2026) — шестой у «Говорения».
-    expect(skillModules('speaking')).toHaveLength(6)
+    // Prepositions World (22.10.2026) — сразу после «Грамматики».
+    expect(skillModules('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
+    // SpeakSpin (02.10.2026) — шестой у «Говорения», Pronunciation World (28.10.2026) — седьмой.
+    expect(skillModules('speaking')).toHaveLength(7)
     expect(skillModules('speaking')).toContain('speakspin')
     expect(skillModules('listening')).toContain('words')
     expect(skillModules('nope')).toEqual([])
@@ -60,19 +60,28 @@ describe('practiceTabs', () => {
     expect(EXPANDABLE.has('speedReading')).toBe(false)
   })
 
-  it('«Грамматика · игры» — в «Письме» сразу после «Грамматики» (Д4), своим экраном', () => {
-    const ids = SKILLS.find((s) => s.key === 'writing').sections.map((sec) => sec.id)
-    expect(ids.indexOf('grammarGames')).toBe(ids.indexOf('grammar') + 1)
-    expect(skillOfModule('grammarGames')).toBe('writing')
+  it('«Грамматика · игры» — своя вкладка из одного раздела, а в «Письме» её больше нет (28.10.2026)', () => {
+    const skill = SKILLS.find((s) => s.key === 'grammarGames')
+    expect(skill.sections.map((sec) => sec.id)).toEqual(['grammarGames'])
+    expect(skill.sub).toBe('practice.skillSub.grammarGames')
+    expect(skillOfModule('grammarGames')).toBe('grammarGames')
+    expect(skillModules('writing')).not.toContain('grammarGames')
     expect(EXPANDABLE.has('grammarGames')).toBe(false)
   })
 
-  it('Prepositions World — во вкладке «Письмо» сразу после «Грамматики · игр», широким баннером', () => {
+  it('Prepositions World — во вкладке «Письмо» сразу после «Грамматики», широким баннером', () => {
     const ids = SKILLS.find((s) => s.key === 'writing').sections.map((sec) => sec.id)
-    expect(ids.indexOf('prepositions')).toBe(ids.indexOf('grammarGames') + 1)
+    expect(ids.indexOf('prepositions')).toBe(ids.indexOf('grammar') + 1)
     expect(skillOfModule('prepositions')).toBe('writing')
     // Курс открывается своим экраном, «Посмотреть все» у него нет.
     expect(EXPANDABLE.has('prepositions')).toBe(false)
+  })
+
+  it('Pronunciation World — во вкладке «Говорение» сразу после «Шэдоуинга», широким баннером', () => {
+    const ids = SKILLS.find((s) => s.key === 'speaking').sections.map((sec) => sec.id)
+    expect(ids.indexOf('pronunciation')).toBe(ids.indexOf('shadowing') + 1)
+    expect(skillOfModule('pronunciation')).toBe('speaking')
+    expect(EXPANDABLE.has('pronunciation')).toBe(false)
   })
 
   it('Word Hunt — во вкладке «Чтение» сразу перед «Аркадой», широким баннером', () => {

@@ -7,4 +7,4 @@ export const SUPPORT_WHATSAPP_URL = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`
 
 // Политика конфиденциальности: ссылка в профиле, подвал экранов входа и
 // согласие под кнопкой на шагах регистрации.
-export const PRIVACY_URL = 'https://justtostudy.kz/privacy'
+export const PRIVACY_URL = '/legal/2026-10-29/privacy-ru.pdf'

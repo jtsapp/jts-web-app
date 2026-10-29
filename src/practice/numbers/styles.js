@@ -2,12 +2,15 @@
 // прототипа data/jtsnumbers.html. Отличия: :root → :host (переменные видны
 // внутри тени), правило body — на корне .nw, фоны миров — файлами
 // /practice/numbers/img/. Шрифты прототипа (Baloo 2, Nunito, Literata, Golos
-// Text) сняты: игра на шрифте сайта (Manrope, на телефоне PT Root UI, в
+// Text) сняты: игра на шрифте сайта (Manrope, в
 // казахском интерфейсе Inter) — каждая гарнитура здесь inherit, и корень .nw
 // берёт её у хоста тени, то есть у страницы. Так игра не выпадает из приложения
 // и не качает четыре своих шрифта. Отступы плашек с цифрами (.tab, .pill,
 // .o.glass/.phone/.tag) поэтому симметричные: в прототипе верхний был больше —
 // поправка на метрики Baloo 2, на шрифте сайта цифры с ней садились низко.
+// Липкая полоса старта (.ls-start) на телефоне стоит над нижней панелью вкладок
+// приложения: --mtab-h (src/mobile/nav.css) проходит сквозь тень. Это отличие
+// приложения, в прототип его не переносим.
 // Остальные правки оформления — здесь и в прототипе одновременно.
 
 export const NUMBERS_CSS = `:host{
@@ -285,7 +288,7 @@ svg.ic{width:20px;height:20px;flex:none}
 .qc-fb.ok b{color:var(--l-good)}.qc-fb.no b{color:var(--l-bad)}
 
 /* start bar + sources */
-.ls-start{position:sticky;bottom:12px;margin-top:20px;display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(60,30,140,.18);z-index:5;font-family:inherit}
+.ls-start{position:sticky;bottom:calc(12px + var(--mtab-h, 0px));margin-top:20px;display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(60,30,140,.18);z-index:5;font-family:inherit}
 .ls-start .btn{font-size:18px;padding:14px 26px}
 .ls-start span{font-size:14px;color:var(--l-ink2)}
 .ls-src{margin-top:18px;font-size:14px;color:var(--l-ink2)}

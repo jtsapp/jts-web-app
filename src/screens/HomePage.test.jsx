@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
 
@@ -151,7 +151,8 @@ describe('Главная демо-аккаунта', () => {
     const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
 
     expect(screen.getByText('Прогресс вашего обучения недоступен')).toBeTruthy()
-    expect(container.querySelector('.hm-level')).toBeNull()
+    // На компьютере карточки уровня нет; телефонная (скрыта на компьютере CSS) — с «?» и кнопкой теста.
+    expect(container.querySelector('.hm-level:not(.hm-level--phone)')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Начать тестирование сейчас' }))
     expect(onStartLevelTest).toHaveBeenCalledTimes(1)
@@ -453,5 +454,68 @@ describe('Карточка «Что сделать сегодня»', () => {
     }
     renderHome({ isDemoAccount: false })
     expect(document.querySelector('.hm-recommend__cta')).toBeNull()
+  })
+})
+
+// Телефон по дизайну приложения (спека 2026-10-26): разметка общая с компьютером, телефонные элементы скрыты CSS.
+describe('«Главная» телефона', () => {
+  it('без теста — карточка уровня телефона с «?» и кнопкой теста', () => {
+    const onStartLevelTest = vi.fn()
+    const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
+    const card = container.querySelector('.hm-level--phone')
+    expect(card).not.toBeNull()
+    expect(card.querySelector('.hm-level__name').textContent).toBe('?')
+    fireEvent.click(within(card).getByRole('button', { name: 'Пройти тест уровня' }))
+    expect(onStartLevelTest).toHaveBeenCalledTimes(1)
+  })
+
+  it('подписи ступеней для телефона — коды уровней', () => {
+    const { container } = renderHome()
+    expect([...container.querySelectorAll('.hm-level__lbl[data-short]')].map((n) => n.dataset.short)).toEqual(['B2', 'C1', 'Финиш'])
+  })
+
+  it('строка цели — с «Изменить», открывает выбор цели', () => {
+    const { container } = renderHome()
+    const goal = container.querySelector('.hm-level__goal')
+    expect(goal.textContent).toContain('Изменить')
+    fireEvent.click(goal)
+    expect(screen.getByText('Ваша цель')).toBeTruthy()
+  })
+
+  it('расписание: семь дней, точка у дня с уроком, нажатие выбирает день', async () => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    const pad = (n) => String(n).padStart(2, '0')
+    occurrences.value = [{
+      lessonId: 7, teacherName: 'Айгерим', durationMinutes: 60,
+      scheduledAt: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00:00`,
+    }]
+    const { container } = renderHome({ token: 'T', isDemoAccount: false })
+    await waitFor(() => expect(container.querySelectorAll('.hm-sched__wday.is-busy')).toHaveLength(1))
+    const days = [...container.querySelectorAll('.hm-sched__wday')]
+    expect(days).toHaveLength(7)
+    expect(days[0].classList.contains('is-picked')).toBe(true)
+    expect(days[1].classList.contains('is-busy')).toBe(true)
+    fireEvent.click(days[1])
+    const picked = container.querySelector('.hm-sched__day.is-picked')
+    expect(picked.textContent).toContain('Айгерим')
+    expect(picked.querySelector('.hm-sched__when').textContent).toBe('Завтра · ')
+    occurrences.value = []
+  })
+
+  it('домашка: «Все» ведёт в раздел', async () => {
+    homework.value = [{ id: 1, title: 'Present Perfect', status: 'ASSIGNED' }]
+    const onNav = vi.fn()
+    const { container } = renderHome({ token: 'T', isDemoAccount: false, onNav })
+    await screen.findByText('Present Perfect')
+    fireEvent.click(container.querySelector('.hm-hw .hm-card__all'))
+    expect(onNav).toHaveBeenCalledWith('homework')
+    homework.value = []
+  })
+
+  it('навыки: ниже 45% — красная полоса, под строками одна строка вывода', () => {
+    const { container } = renderHome()
+    expect(container.querySelectorAll('.hm-skill__fill.is-bad').length).toBeGreaterThan(0)
+    expect(container.querySelector('.hm-skills__sum').textContent).toBe('Сильнее всего — Говорение · Стоит подтянуть — Письмо')
   })
 })

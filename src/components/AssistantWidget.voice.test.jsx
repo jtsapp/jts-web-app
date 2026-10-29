@@ -51,20 +51,7 @@ vi.mock('../lib/speech.js', () => ({
   playUrl: () => true,
 }))
 
-// Голос тура — свой модуль; здесь важно только, КОГДА Луна начинает шаг.
-const tour = vi.hoisted(() => ({ said: [] }))
-vi.mock('../lib/assistant/tourVoice.js', async (importOriginal) => ({
-  ...(await importOriginal()),
-  createTourVoice: () => ({
-    say: (phrases) => tour.said.push(phrases.join(' ')),
-    prefetch: () => {},
-    stop: () => {},
-    dispose: () => {},
-  }),
-}))
-
 const { default: AssistantWidget } = await import('./AssistantWidget.jsx')
-const { cancelTourRequest, emitTourStep, emitTourEnd, tourRequestPending } = await import('../lib/tourBus.js')
 const { NAVIGATE_EVENT } = await import('../lib/assistant/assistantBus.js')
 
 function streamResponse(chunks) {
@@ -114,30 +101,23 @@ describe('голос в помощнике', () => {
   })
 
   // Живой прогон 15.10.2026: раздел открывался раньше, чем Луна заговорила.
-  // Тур (и переход) — когда она договорила «начинаю тур».
-  it('тур голосом: начинается, когда Луна договорила «начинаю тур»; шаги — по «Далее»', async () => {
-    tour.said.length = 0
-    fetchMock.mockImplementationOnce(async () =>
-      streamResponse(['Хорошо, провожу тур по этой странице.\n', '[[ASST_ACTION tour homework now]]']),
-    )
+  // Переход — когда она договорила «открываю».
+  it('«открываю» голосом: раздел открывается, когда Луна договорила', async () => {
+    const navigations = []
+    const onNavigate = (e) => navigations.push(e.detail.target)
+    window.addEventListener(NAVIGATE_EVENT, onNavigate)
+    fetchMock.mockImplementationOnce(async () => streamResponse(['Открываю Словарь.\n', '[[ASST_ACTION open vocab now]]']))
     renderWidget()
     openPanel()
-    await askByVoice('покажи, что тут где')
+    await askByVoice('открой словарь')
     await waitFor(() => expect(queue.ended).toBe(true), WAIT)
-    // Луна ещё говорит — окно на месте, тура нет.
-    await screen.findByText(/провожу тур/, {}, WAIT)
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(tourRequestPending()).toBe(false)
+    // Луна ещё говорит — перехода нет.
+    await screen.findByText(/Открываю Словарь/, {}, WAIT)
+    expect(navigations).toEqual([])
 
     act(() => queue.opts.onFinish({ played: 1, failed: 0 }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), WAIT)
-    expect(tourRequestPending()).toBe(true)
-    act(() => emitTourStep({ index: 0, total: 2, title: 'Список работ', text: 'Здесь все задания.' }))
-    expect(tour.said).toEqual(['Список работ. Здесь все задания.'])
-    act(() => emitTourStep({ index: 1, total: 2, title: 'Сдать', text: 'Кнопка отправки.' }))
-    expect(tour.said).toEqual(['Список работ. Здесь все задания.', 'Сдать. Кнопка отправки.'])
-    act(() => emitTourEnd())
-    cancelTourRequest()
+    await waitFor(() => expect(navigations).toEqual(['vocab']), WAIT)
+    window.removeEventListener(NAVIGATE_EVENT, onNavigate)
   })
 
   it('окно — Луна; микрофон разрешает звук в том же нажатии и включает запись', () => {

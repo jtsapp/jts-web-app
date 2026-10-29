@@ -811,6 +811,11 @@ export const askMatchingManager = (token, preferences) => authPost('/student/mat
 export const sendMatchingRequests = (token, teacherIds) => authPost('/student/matching/requests', token, {teacherIds})
 export const confirmMatchingSchedule = token => authPost('/student/matching/confirm', token, {})
 export const requestTeacherChange = (token, reason, text) => authPost('/student/matching/change', token, {reason, text})
+
+// Оспаривание отметки «не пришёл» (ТЗ «Кабинеты», раздел 11): что ещё можно оспорить (со сроком) и свои заявки.
+export const getMyNoShowDisputes = (token) => authGet('/cabinet/no-show-disputes/mine', token)
+export const disputeNoShow = (token, lessonId, reason) =>
+  authPost(`/cabinet/no-show-disputes/mine/lessons/${lessonId}`, token, { reason })
 export const getMatchingHandoffs = token => authGet('/student/matching/handoffs', token)
 export const chooseMatchingHandoff = (token, id, choice) => authPost('/student/matching/handoffs/'+id+'/choice', token, {choice})
 
@@ -2255,6 +2260,13 @@ export function getPrepositions(token, onFresh) {
   return cachedAuthGet('/mobile/prepositions', token, onFresh)
 }
 
+// Pronunciation World: весь курс одним бандлом (~2.2 МБ, форма прототипа, записи и картинки — ссылки MinIO; спека
+// 2026-10-28-pronunciation-world-design.md). Тот же путь, что у Prepositions World: столько cachedAuthGet держит
+// только в памяти вкладки. 404 — раздел ещё не залит через админку.
+export function getPronunciation(token, onFresh) {
+  return cachedAuthGet('/mobile/pronunciation', token, onFresh)
+}
+
 // «Грамматика · игры»: список тем (шапки и набор игр), тема целиком, общий словарь кликабельных слов, звёзды
 // ученика и сдача игры (контракт — backend docs/practice/GRAMMAR_GAMES.md). Без cachedAuthGet: его копия в
 // localStorage вытесняла бы прогресс других разделов (словарь ~120 КБ), а звёзды должны быть свежими. Темы и
@@ -2776,3 +2788,7 @@ export async function markFeedbackReportOpened(linkToken) {
     throw err
   }
 }
+
+// Explicit account-bound acknowledgement of the immutable legal PDF bundle.
+export const getLegalAcknowledgement = (token) => authGet('/user/legal-documents', token)
+export const acceptLegalDocuments = (token, body) => authPut('/user/legal-documents', token, body)

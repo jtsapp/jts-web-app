@@ -13,6 +13,9 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
   const teacher = useTeacher(token, a?.teacherId)
   if (!a) return null
   const c = teacher?.card
+  // Имя — как в профиле учителя (из резюме): в карточке подбора имя аккаунта, и живая проверка 27.10 показала
+  // «QA Teacher» в карточке и «test tes» в профиле одного и того же человека.
+  const name = c?.name || a.teacherName
   // прошедший срок matchingView уже отбросил — здесь только действующая блокировка
   const lockedUntil = schoolTimeToDate(view.limits.formatChangeAvailableAt)
   // Гарантия, IELTS и SAT учатся только по программе платформы (ТЗ §3) — сменить формат им нечего.
@@ -22,9 +25,9 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
     <div className="mt-grid2">
       <div className="mt-card mt-stack">
         <div className="mt-row">
-          <TeacherPhoto token={token} teacherId={a.teacherId} name={a.teacherName} hasPhoto={c?.hasPhoto ?? true} className="mt-ava mt-ava--lg" />
+          <TeacherPhoto token={token} teacherId={a.teacherId} name={name} hasPhoto={c?.hasPhoto ?? true} className="mt-ava mt-ava--lg" />
           <div>
-            <h2 className="mt-h2">{a.teacherName}</h2>
+            <h2 className="mt-h2">{name}</h2>
             {meta.length > 0 && <p className="mt-small mt-muted">{meta.join(' · ')}</p>}
           </div>
         </div>
@@ -43,6 +46,8 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
       <div className="mt-stack">
         <div className="mt-card mt-stack">
           <h3 className="mt-h3">{t('assigned.lessons')}</h3>
+          {/* Ученику, назначенному до подбора v2, бэкенд постоянных слотов может не знать — тогда честно об этом. */}
+          {a.slots.length === 0 && <p className="mt-small mt-muted">{t('assigned.noSlots')}</p>}
           {sortSlots(a.slots, tz).map((s) => (
             <div key={s.weekday + s.start} className="mt-row mt-between">
               <b>{slotLabel(s, tz, lang)}</b>
@@ -56,7 +61,7 @@ export default function AssignedTeacher({ token, view, tz, onProfile, onChangeFo
             <h3 className="mt-h3">{t('assigned.format')}</h3>
             {view.tariff.guarantee && <span className="mt-pill mt-pill--gray">{t('assigned.guaranteeChip')}</span>}
           </div>
-          <p><b>{t('format.' + (a.format || 'platform'))}</b></p>
+          <p><b>{fixedFormat ? t('format.platform') : a.format ? t('format.' + a.format) : t('assigned.formatNone')}</b></p>
           {fixedFormat ? (
             view.tariff.guarantee && <p className="mt-small mt-muted">{t('assigned.guaranteeText')}</p>
           ) : (

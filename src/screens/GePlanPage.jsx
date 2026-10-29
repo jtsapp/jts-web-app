@@ -8,7 +8,7 @@ import { useGePlan } from '../ge/plan/useGePlan.js'
 import { courseTitles, mondayOf } from '../ge/plan/planModel.js'
 import { useGeTaskStart } from '../ge/plan/useGeTaskStart.js'
 import { MonthView, RoadmapView, WeekView } from '../ge/plan/GePlanViews.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 // Экран «План» общего курса (?screen=ge-plan, спека 2026-10-13, секция 4): три вида над одними задачами бэкенда. Вид и
 // выбранная неделя/месяц живут в адресе (?gePlanView=, &gePlanAt=), как у плана IELTS: F5 и «Назад» возвращают туда же.
@@ -78,12 +78,21 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
   // дорогу — только в её виде; открыли неделю по ссылке — тур его пропустит.
   const tour = useScreenTour(status === 'ready' && plan?.state === 'ready' ? tourKey : null)
   const tourSteps = [
-    { selector: '.ge-plan .ih-seg2', title: t('tour.plan.views.title'), text: t('tour.plan.views.text') },
+    { selector: '.ge-plan .ih-seg2', title: t('tour.plan.views.title'), text: t('tour.plan.views.text'), art: tourMascot('artist-stand'), ...TOUR_COACH_CARD },
     // дорога есть только в своём виде, панель дня — в дороге и месяце (по ссылке могли открыть неделю)
-    ...(view === 'road' ? [{ selector: '.ge-plan .ih-road2', title: t('tour.plan.road.title'), text: t('tour.plan.road.text') }] : []),
-    ...(view !== 'week' ? [{ selector: '.ge-plan .ih-dp', title: t('tour.plan.day.title'), text: t('tour.plan.day.text') }] : []),
-    { selector: '.ge-plan .ih-seg2 [role="tab"]:nth-child(2)', title: t('tour.plan.move.title'), text: t('tour.plan.move.text') },
+    ...(view === 'road' ? [{ selector: '.ge-plan .ih-road2', title: t('tour.plan.road.title'), text: t('tour.plan.road.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD }] : []),
+    ...(view !== 'week' ? [{ selector: '.ge-plan .ih-dp', title: t('tour.plan.day.title'), text: t('tour.plan.day.text'), art: tourMascot('aizere-cheer'), ...TOUR_COACH_CARD }] : []),
+    { selector: '.ge-plan .ih-seg2 [role="tab"]:nth-child(2)', title: t('tour.plan.move.title'), text: t('tour.plan.move.text'), art: tourMascot('dexter-laptop'), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('gePlan.title'),
+    text: t('tour.plan.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('dexter-ball', 'sport-stand'),
+  }
 
   const pick = (v, a = null) => {
     setView(v)
@@ -165,7 +174,7 @@ export default function GePlanPage({ token, userName, userLevel, onNav, onProfil
         )}
         {body}
       </div>
-      {tour.open && <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />}
+      {tour.open && <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />}
     </LearningLayout>
   )
 }

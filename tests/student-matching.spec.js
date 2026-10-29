@@ -135,6 +135,14 @@ test('тариф не подтверждён: выбрать нельзя, а п
 test('пункт «Мой учитель» в меню с цифрой, когда ждут действия', async ({ page }) => {
   await setup(page, proposedCard())
   await page.goto('/?screen=lessons')
+  // На телефоне (≤560) меню — «Сервисы» нижней панели: точка на вкладке и цифра на плитке. «Сервисы» — адресом, а не
+  // кликом: вкладку перекрывает окно «Подтвердите расписание» того же подбора.
+  if ((page.viewportSize()?.width ?? 0) <= 560) {
+    await expect(page.locator('.mtab [data-tab="services"] .mtab__dot')).toBeVisible()
+    await page.goto('/?screen=services')
+    await expect(page.locator('.svc-tile--my-teacher .svc-tile__badge')).toHaveText('1')
+    return
+  }
   const item = page.locator('.sb__nav [data-nav="my-teacher"]')
   await expect(item).toBeVisible()
   await expect(item.locator('.sb__badge')).toHaveText('1')
@@ -148,6 +156,38 @@ test('360 px: сетка времени скроллится внутри бло
   await expect(page.getByRole('button', { name: 'Пн 19:00: свободно 2' })).toBeVisible()
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(0)
+})
+
+// Замечание проверяющей (27.10.2026): «пн вт ср должны быть видны при скроллинге». У урока 30 мин в сетке 31 строка —
+// докрутив до вечера, ученик видит одни цифры и не знает, какой столбец какой день.
+test('дни недели видны, когда сетка докручена до вечера', async ({ page }) => {
+  await setup(page, { format: 'platform', lessonDuration: 30 })
+  await page.goto('/?screen=teacher-wizard')
+  await page.getByRole('button', { name: 'Дальше: время →' }).click()
+  // по столбцу за раз: на телефоне все семь дней в ширину не помещаются, и сетка уезжает ещё и вбок
+  for (const day of ['Пн', 'Ср', 'Вс']) {
+    const late = page.getByRole('button', { name: new RegExp(`^${day} 22:00`) })
+    await late.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }))
+    await expect(late).toBeInViewport()
+    const head = page.getByRole('columnheader', { name: day, exact: true })
+    await expect(head).toBeInViewport()
+    // не только в окне, но и сверху всего прочего: прокрученные ячейки не наезжают на подпись
+    const onTop = await head.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))
+    })
+    expect(onTop).toBe(true)
+  }
+})
+
+test('сетка открывается на первом времени со свободными учителями, а не на пустом утре', async ({ page }) => {
+  await setup(page, { format: 'platform', lessonDuration: 30 })
+  await page.goto('/?screen=teacher-wizard')
+  await page.getByRole('button', { name: 'Дальше: время →' }).click()
+  // самое раннее свободное в GRID — пт 18:00 по Алматы; утро 07:00 при этом уезжает вверх
+  await expect(page.getByRole('button', { name: 'Пт 18:00: свободно 1' })).toBeInViewport()
+  await expect(page.getByRole('button', { name: /^Пн 07:00/ })).not.toBeInViewport()
+  await expect(page.getByRole('columnheader', { name: 'Пт', exact: true })).toBeInViewport()
 })
 
 // У .learn__main своих полей нет: до 1160 px (колонка подбора — 1120) заголовок и карточки ложились к краю окна.

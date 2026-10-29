@@ -1,4 +1,9 @@
-// Куда Луна умеет вести ученика: открыть раздел и провести тур по экрану.
+// Куда Луна умеет вести ученика: открыть раздел сайта.
+//
+// Туров Луна не водит (решение владельца 28.10.2026): тур экрана — новый, вида
+// coach, — выходит сам при первом заходе и по кнопке «?». Прежний тур «от Луны»
+// (она запускала тур экрана и читала шаги вслух, 15.10) убран вместе с метками
+// [[TOUR …]].
 //
 // Это белый список, а не «любой экран из App»: модель называет раздел своим
 // id из этой таблицы, и только его сайт и откроет. Чего здесь нет (экзамены,
@@ -12,23 +17,22 @@
 // карточки списал бы уровень из квоты, а карточка сначала спрашивает квоту.
 //
 // screen — экран, который откроется: по нему виджет понимает, что ученик уже
-// здесь (тур — сразу, без перехода), а App — что тот же экран надо открыть
-// заново с новой целью (вкладка Практики). tour — у экрана есть тур
-// (кнопка «?»); без него метку тура модель не ставит, а виджет её отбрасывает.
+// здесь (переход не нужен), а App — что тот же экран надо открыть заново с
+// новой целью (вкладка Практики).
 
 export const DESTINATIONS = [
   {
-    id: 'home', nav: 'home', screen: 'home', tour: true,
+    id: 'home', nav: 'home', screen: 'home',
     name: { ru: 'Главная', kk: 'Басты бет', en: 'Home' },
     about: 'уровень, план на сегодня, сильные и слабые навыки, расписание, домашка',
   },
   {
-    id: 'learning', nav: 'learning', screen: 'kingdom', tour: true,
+    id: 'learning', nav: 'learning', screen: 'kingdom',
     name: { ru: 'Повторение (карта курса)', kk: 'Қайталау (курс картасы)', en: 'Review (course map)' },
     about: 'уроки курса A0–C1 по уровням — в базе знаний это раздел «Обучение»',
   },
   {
-    id: 'practice', nav: 'practice', screen: 'practice', tour: true,
+    id: 'practice', nav: 'practice', screen: 'practice',
     name: { ru: 'Практика', kk: 'Тәжірибе', en: 'Practice' },
     about: 'все тренажёры, по вкладкам навыков',
   },
@@ -45,12 +49,12 @@ export const DESTINATIONS = [
   {
     id: 'practice-writing', nav: 'practice', payload: { skill: 'writing' }, screen: 'practice',
     name: { ru: 'Практика → Письмо', kk: 'Тәжірибе → Жазылым', en: 'Practice → Writing' },
-    about: 'грамматика, «Грамматика · игры», Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
+    about: 'грамматика, Prepositions World (предлоги), письмо по шагам, неправильные глаголы, воркбуки',
   },
   {
     id: 'practice-speaking', nav: 'practice', payload: { skill: 'speaking' }, screen: 'practice',
     name: { ru: 'Практика → Говорение', kk: 'Тәжірибе → Айтылым', en: 'Practice → Speaking' },
-    about: 'шэдоуинг, ситуации, SpeakSpin, караоке, Speak or Die',
+    about: 'шэдоуинг, Pronunciation World (произношение), ситуации, SpeakSpin, караоке, Speak or Die',
   },
 
   // Тренажёры, которые карточка Практики открывает сразу (без квоты).
@@ -93,12 +97,18 @@ export const DESTINATIONS = [
   {
     id: 'grammar-games', nav: 'grammar-games', screen: 'grammar-games',
     name: { ru: 'Грамматика · игры', kk: 'Грамматика · ойындар', en: 'Grammar · games' },
-    about: '125 тем грамматики A0–C1 (вкладка «Письмо»): правило с формулами и примерами, потом игры по теме и финальный бой',
+    about: '125 тем грамматики A0–C1 (своя, пятая вкладка Практики): правило с формулами и примерами, потом игры по теме и финальный бой',
   },
   {
     id: 'prepositions', nav: 'prepositions', screen: 'prepositions',
     name: { ru: 'Prepositions World (предлоги)', kk: 'Prepositions World', en: 'Prepositions World' },
     about: 'курс английских предлогов: уроки с картинками и переводом, практика на сценах',
+  },
+  // Курс Pronunciation World тоже с бэкенда; без входа экран сам просит войти.
+  {
+    id: 'pronunciation', nav: 'pronunciation', screen: 'pronunciation',
+    name: { ru: 'Pronunciation World (произношение)', kk: 'Pronunciation World', en: 'Pronunciation World' },
+    about: 'курс английского произношения A0–C1 (вкладка «Говорение»): объяснение звука со схемами рта и губ, запись своего голоса для сравнения, игра на слух Echo Gates',
   },
   {
     id: 'reading', nav: 'reading', screen: 'reading',
@@ -166,21 +176,21 @@ export const DESTINATIONS = [
   },
 
   {
-    id: 'tutor', nav: 'tutor', screen: 'tutor-dashboard', tour: true,
+    id: 'tutor', nav: 'tutor', screen: 'tutor-dashboard',
     name: { ru: 'Speaking Buddy', kk: 'Speaking Buddy', en: 'Speaking Buddy' },
     about: 'разговор голосом с AI-тьютором, сценарии',
   },
   {
-    id: 'vocab', nav: 'vocab', screen: 'vocab', tour: true,
+    id: 'vocab', nav: 'vocab', screen: 'vocab',
     name: { ru: 'Словарь', kk: 'Сөздік', en: 'Vocabulary' },
   },
   {
-    id: 'lessons', nav: 'lessons', screen: 'lessons', tour: true,
+    id: 'lessons', nav: 'lessons', screen: 'lessons',
     name: { ru: 'Уроки', kk: 'Сабақтар', en: 'Lessons' },
     about: 'расписание занятий с преподавателем, самостоятельные уроки',
   },
   {
-    id: 'homework', nav: 'homework', screen: 'homework', tour: true,
+    id: 'homework', nav: 'homework', screen: 'homework',
     name: { ru: 'Домашняя работа', kk: 'Үй жұмысы', en: 'Homework' },
   },
   {
@@ -222,24 +232,21 @@ export function destinationName(id, lang = 'ru') {
 }
 
 /**
- * Действие, которое виджет может выполнить: открыть раздел или провести тур.
- * Тур — только у экрана, где он есть; иначе null, и метка просто пропадает.
- * @returns {{ kind: 'open'|'tour', target: string, now: boolean } | null}
+ * Действие, которое виджет может выполнить: открыть раздел. Раздела нет в
+ * списке — null, и метка просто пропадает.
+ * @returns {{ kind: 'open', target: string, now: boolean } | null}
  */
 export function validAction(kind, target, now = false) {
   const d = destinationOf(target)
-  if (!d) return null
-  if (kind === 'tour' && !d.tour) return null
-  if (kind !== 'open' && kind !== 'tour') return null
+  if (!d || kind !== 'open') return null
   return { kind, target: d.id, now: Boolean(now) }
 }
 
-/** Список разделов для системного промпта: id, имя, что там и есть ли тур. */
+/** Список разделов для системного промпта: id, имя и что там. */
 export function destinationsText() {
   return DESTINATIONS.map((d) => {
     const parts = [`- ${d.id} — ${d.name.ru}`]
     if (d.about) parts.push(`: ${d.about}`)
-    if (d.tour) parts.push(' (есть тур)')
     return parts.join('')
   }).join('\n')
 }

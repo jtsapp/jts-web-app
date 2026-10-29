@@ -23,6 +23,18 @@ function renderCal(props) {
 }
 
 describe('MonthCalendar', () => {
+  // Телефон (src/mobile/lessons.css): неделя выбранного дня, заголовок — её месяц, а не просматриваемый.
+  it('week mode renders only the week of the selected day, titled by its month', () => {
+    const { container } = renderCal({ week: true, year: 2026, month: 6, selectedDayKey: '2026-09-02' })
+    const days = [...container.querySelectorAll('.cal__day')]
+    expect(days).toHaveLength(7)
+    expect(days.map((d) => d.textContent)).toEqual(['31', '1', '2', '3', '4', '5', '6'])
+    expect(container.querySelector('.cal--week')).not.toBeNull()
+    expect(container.querySelector('.cal__day--out')).toBeNull()
+    expect(screen.getByText('Сентябрь 2026')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Следующая неделя' })).toBeTruthy()
+  })
+
   it('renders 42 day cells', () => {
     const { container } = renderCal()
     expect(container.querySelectorAll('.cal__day')).toHaveLength(42)

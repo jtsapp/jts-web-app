@@ -1,11 +1,14 @@
 // CSS Prepositions World для Shadow DOM — перенесён из прототипа. Отличия:
 // :root → :host (переменные видны внутри тени), body → .pw (корень раздела),
 // шрифт — сайта: --sans берёт --pw-font, который экран ставит из вычисленного
-// шрифта страницы (Manrope, на телефоне PT Root UI, в казахском — Inter).
+// шрифта страницы (Manrope, в казахском — Inter).
 // Golos Text прототипа не переносится: свой шрифт выбил бы раздел из
 // приложения. Правки оформления — здесь и в прототипе одновременно.
 // Класс слова-предлога .pw прототипа записан как «.pw .pw»: корень раздела
 // теперь тоже .pw, и без этого цвет и жирность слова легли бы на весь раздел.
+// Липкая полоса старта (.ls-start) на телефоне — над нижней панелью вкладок
+// приложения (--mtab-h из src/mobile/nav.css проходит сквозь тень); отличие
+// приложения, не прототипа.
 
 export const PREPOSITIONS_CSS = `
 :host{--bg:#f4f0fb;--ink:#1d1538;--ink2:#4f4869;--ink3:#676085;--v:#5a2fc8;--vt:#f2edff;--line:#e7e1f4;--paper:#fff;--tr:#0b6158;--trbg:#eef7f5;--trl:#c9e5df;--good:#0f7a4a;--goodbg:#e3f6ec;--bad:#b3261e;--badbg:#fdecea;--note:#8a5a00;--notebg:#fff7e0;
@@ -56,7 +59,7 @@ h2.sec{font-size:24px;margin:26px 0 12px}
 .ls-trs{display:block;font-size:16px;color:var(--tr);margin-top:6px;font-weight:600}
 .ls-note{border-left:3px solid #f0b429;background:var(--notebg);border-radius:0 10px 10px 0;padding:10px 14px;margin:12px 0 10px;font-size:16px;max-width:40em}.ls-note>span{font-weight:700;color:var(--note);margin-right:6px}
 .ls-tr{border:1px solid var(--trl);background:var(--trbg);border-radius:12px;padding:12px 16px 4px;margin:10px 0 8px;max-width:44em}.ls-tr .trh{display:block;font-size:13px;font-weight:650;color:var(--tr);margin-bottom:6px}.ls-tr p{margin:0 0 9px;font-size:16px;line-height:1.55;color:#173b37}.ls-tr .trt{font-weight:700;font-size:19px;color:#0b4d46}
-.ls-start{position:sticky;bottom:12px;margin-top:18px;display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(60,30,140,.18);z-index:5}
+.ls-start{position:sticky;bottom:calc(12px + var(--mtab-h, 0px));margin-top:18px;display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(60,30,140,.18);z-index:5}
 .ls-src{margin-top:16px;font-size:14.5px;color:var(--ink2)}.ls-src summary{cursor:pointer;font-weight:600;padding:6px 0}.ls-src a{color:var(--v)}
 .speak{display:inline-grid;place-items:center;width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--v);flex:none}
 /* scene */

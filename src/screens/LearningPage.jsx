@@ -1,9 +1,46 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, kingdomAvatar } from '../kingdoms.js'
+import { getCourseIndex, courseTrail } from '../learning/courseData.js'
+import { getLevelLessons } from '../learning/lessonData.js'
+import { loadDone } from '../learning/lessonProgress.js'
+import { loadLevelExam } from '../learning/levelExam.js'
+
+// «Пройдено N/M» своего уровня для плашки «Текущий уровень» (телефон, макет
+// «Mobile» 6609:21780). Считаем, как тропа (KingdomInteriorPage): уроки курса
+// плюс экзамен последним узлом. Пройденное — только локальное зеркало
+// прогресса, без бэкенда: тропа сама кладёт туда серверные отметки при каждом
+// заходе, а карте ради одной цифры ходить за модулем, токеном практики и
+// прогрессом незачем. Ошибка — плашка без полосы.
+function useLevelProgress(level) {
+  const [prog, setProg] = useState(null)
+  useEffect(() => {
+    if (!level) return undefined
+    let alive = true
+    ;(async () => {
+      try {
+        const [index, exam, done] = await Promise.all([
+          getCourseIndex(level),
+          loadLevelExam(level),
+          loadDone(level, null, null),
+        ])
+        const lessons = index ? courseTrail(index) : await getLevelLessons(level).catch(() => [])
+        const total = lessons.length + (exam && lessons.length ? 1 : 0)
+        const doneCount = lessons.filter((l) => done.has(l.code)).length
+        if (alive && total) setProg({ done: Math.min(doneCount, total), total })
+      } catch {
+        /* без полосы */
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [level])
+  return prog
+}
 
 // Карта уровней (макет Figma «Обучение», Screen 2060:2401 / 2062:2883).
 //
@@ -26,6 +63,8 @@ export default function LearningPage({
   // unlockAll — режим просмотра контента (?unlock=1, только dev): замки на
   // карте сняты, гейтинг по уровню не применяется.
   const kingdoms = computeKingdoms(userLevel).map((k) => (unlockAll ? { ...k, unlocked: true } : k))
+  const current = kingdoms.find((k) => k.current)
+  const prog = useLevelProgress(current?.level)
 
   // Остров выше экрана и нарисован снизу вверх: в самом верху — C1, до
   // которого ещё расти. Открываем карту на своём уровне, иначе первое, что
@@ -55,10 +94,20 @@ export default function LearningPage({
     // подписью из макета убран, и подсветка шапки — это светящаяся полоса без
     // содержимого. Остров выше экрана, поэтому прожектор его обрежет (см.
     // OnboardingTour), зато видно, о чём речь.
-    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text') },
-    { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text') },
-    { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text') },
+    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
+    // С подписью «Уровень …»: она стоит под кружком, вне его бокса, и на телефоне уходила под карточку.
+    { selector: ['.lp-node.is-current', '.lp-node.is-current .lp-node__label'], title: t('tour.learn.current.title'), text: t('tour.learn.current.text'), art: tourMascot('aizere-cheer'), ...TOUR_COACH_CARD },
+    { selector: ['.lp-node.is-locked', '.lp-node.is-locked .lp-node__label'], title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text'), art: tourMascot('artist-coffee', 170), ...TOUR_COACH_CARD },
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.learning'),
+    text: t('tour.learn.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('aizere-book', 'dexter-book'),
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile} onHelp={tour.start}>
@@ -113,10 +162,31 @@ export default function LearningPage({
             })}
           </div>
         </div>
+
+        {/* Плашка своего уровня внизу карты — только на телефоне (макет
+            приложения), на компьютере скрыта: там тропа открывается с острова. */}
+        {current && (
+          <button type="button" className="lp-cur" style={{ '--ring': current.ring }} onClick={() => onOpenKingdom?.(current)}>
+            <span className="lp-cur__av">
+              <AssetImage src={`/assets/world/nodes/${kingdomAvatar(current)}.webp`} alt="" />
+            </span>
+            <span className="lp-cur__body">
+              <span className="lp-cur__title">{t('learn.currentLevel', { label: current.level })}</span>
+              {prog && (
+                <span className="lp-cur__prog">
+                  <span className="lp-cur__bar">
+                    <span style={{ width: `${Math.round((prog.done / prog.total) * 100)}%` }} />
+                  </span>
+                  <span className="lp-cur__num">{prog.done}/{prog.total}</span>
+                </span>
+              )}
+            </span>
+          </button>
+        )}
       </div>
 
       {tour.open && (
-        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </LearningLayout>
   )

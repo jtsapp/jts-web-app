@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { openSection } from './helpers/nav.js'
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -37,30 +38,35 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
 
   await page.goto('/')
 
-  // On narrow viewports the sidebar (and its «Уроки» nav item) is off-canvas
-  // behind a hamburger drawer (see tests/mobile-shell.spec.js) — open it first
-  // so the nav item is actually actionable. On desktop `.mtop` stays hidden via
-  // CSS, so the wait below times out and we just proceed to the static sidebar.
-  // Session restore renders a spinner first, so `.mtop__menu` isn't mounted
-  // immediately after goto() — an un-awaited isVisible() check would race it.
-  const menuButton = page.locator('.mtop__menu')
-  await menuButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-  if (await menuButton.isVisible()) {
-    await menuButton.click()
+  // Раздел «Уроки» — как человек на этой ширине: на телефоне вкладкой нижней панели, на планшете через
+  // бургер, на компьютере пунктом сайдбара (tests/helpers/nav.js).
+  await openSection(page, 'Уроки')
+
+  // Телефон — дизайн мобильного приложения: неделя и карточки уроков дня, без «Мой график» и счётчиков
+  // (src/mobile/lessons.css). Вход в класс — кнопкой в карточке урока сегодняшнего дня.
+  const phone = (page.viewportSize()?.width ?? 1440) <= 560
+  if (phone) {
+    await expect(page.locator('.cal--week')).toBeVisible()
+    await expect(page.getByText('Мой график')).toBeHidden()
+    await expect(page.locator('.sch-row').getByText('Test Teacher DEV')).toBeVisible()
+    await expect(page.locator('.sch-row .sch-badge--inProgress')).toBeVisible()
+    await expect(page.locator('.sch-row').getByRole('link', { name: 'Google Meet' })).toHaveAttribute('href', MEET)
+    // Стрелка листает неделю: следующая неделя без уроков сегодняшнего дня.
+    await page.getByRole('button', { name: 'Следующая неделя' }).click()
+    await expect(page.getByText('В этот день занятий нет')).toBeVisible()
+    await page.getByRole('button', { name: 'Предыдущая неделя' }).click()
+    await page.locator('.sch-row').getByRole('button', { name: 'Войти в класс' }).click()
+  } else {
+    // Обе секции экрана: карточка идущего урока и календарь под ней.
+    await expect(page.getByText('Мой график')).toBeVisible()
+    await expect(page.getByText('Расписание')).toBeVisible()
+    await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
+    await expect(page.getByText('Урок начался')).toBeVisible()
+    await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
+
+    // Идущий урок открывается прямо из карточки «Мой график», а не только из дня в календаре.
+    await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
   }
-
-  // Open the «Уроки» section from the nav.
-  await page.getByText('Уроки', { exact: true }).first().click()
-
-  // Обе секции экрана: карточка идущего урока и календарь под ней.
-  await expect(page.getByText('Мой график')).toBeVisible()
-  await expect(page.getByText('Расписание')).toBeVisible()
-  await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
-  await expect(page.getByText('Урок начался')).toBeVisible()
-  await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
-
-  // Идущий урок открывается прямо из карточки «Мой график», а не только из дня в календаре.
-  await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 })

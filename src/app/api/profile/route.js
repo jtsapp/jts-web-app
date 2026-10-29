@@ -5,6 +5,7 @@
 
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { loadProfile, upsertProfile } from '@/lib/db/profile.js'
+import { parseTutorTempers, saveTutorTempers } from '@/lib/db/tutorTempers.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
@@ -103,6 +104,8 @@ export async function POST(request) {
       ? body.tutorTemper
       : null
   }
+  // Нрав по тьютору (29.10.2026) — своей таблицей, см. lib/db/tutorTempers.js.
+  const tutorTempers = 'tutorTempers' in body ? parseTutorTempers(body.tutorTempers) : {}
   if ('profession' in body) {
     const p = typeof body.profession === 'string' ? body.profession.trim() : ''
     patch.profession = p ? p.slice(0, 120) : null
@@ -125,6 +128,7 @@ export async function POST(request) {
 
   try {
     await upsertProfile(resolved.id, patch)
+    if (Object.keys(tutorTempers).length) await saveTutorTempers(resolved.id, tutorTempers)
     return Response.json({ configured: true, ok: true })
   } catch (err) {
     console.error('[profile.POST] failed', err)

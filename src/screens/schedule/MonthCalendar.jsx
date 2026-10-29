@@ -1,33 +1,44 @@
 import { useI18n } from '../../i18n.jsx'
-import { buildMonthMatrix, dayKey, lessonStateKey } from './lessonFormat.js'
+import { buildMonthMatrix, dayKey, dateFromKey, lessonStateKey } from './lessonFormat.js'
 
 const MAX_DOTS = 3
 // 2024-01-01 is a Monday — a fixed anchor for Monday-first weekday labels.
 const MONDAY_ANCHOR = new Date(2024, 0, 1)
 
+/**
+ * `week` — телефонный вид (дизайн приложения, кадр «Онлайн-уроки» 6425:6395):
+ * одна неделя выбранного дня вместо месяца, стрелки листают неделями
+ * (их подставляет LessonSchedule). Заголовок — месяц выбранного дня: неделя на
+ * стыке месяцев иначе подписывалась бы месяцем, которого на ней почти нет.
+ */
 export default function MonthCalendar({
   year, month, selectedDayKey, occByDay,
-  onSelectDay, onPrevMonth, onNextMonth,
+  onSelectDay, onPrevMonth, onNextMonth, week = false,
 }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
-  const weeks = buildMonthMatrix(year, month)
+  const sel = week ? dateFromKey(selectedDayKey) : null
+  const shownYear = sel ? sel.getFullYear() : year
+  const shownMonth = sel ? sel.getMonth() : month
+  const weeks = sel
+    ? buildMonthMatrix(shownYear, shownMonth).filter((row) => row.some(({ date }) => dayKey(date) === selectedDayKey))
+    : buildMonthMatrix(shownYear, shownMonth)
   // Месяц и год складываем сами: локаль отдаёт «август 2026 г.», а CSS-овский
   // capitalize делает из хвоста «Г.» — заголовок с бессмысленной буквой.
-  const monthName = new Date(year, month, 1).toLocaleDateString(locale, { month: 'long' })
-  const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${year}`
+  const monthName = new Date(shownYear, shownMonth, 1).toLocaleDateString(locale, { month: 'long' })
+  const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${shownYear}`
   const todayKey = dayKey(new Date())
   const weekdayNames = Array.from({ length: 7 }, (_, i) =>
     new Date(MONDAY_ANCHOR.getFullYear(), 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
   )
 
   return (
-    <div className="cal">
+    <div className={week ? 'cal cal--week' : 'cal'}>
       <div className="cal__head">
         <div className="cal__title">{monthLabel}</div>
         <div className="cal__navs">
-          <button className="cal__nav" type="button" aria-label={t('schedule.prevMonth')} onClick={onPrevMonth}>‹</button>
-          <button className="cal__nav" type="button" aria-label={t('schedule.nextMonth')} onClick={onNextMonth}>›</button>
+          <button className="cal__nav" type="button" aria-label={t(week ? 'schedule.prevWeek' : 'schedule.prevMonth')} onClick={onPrevMonth}>‹</button>
+          <button className="cal__nav" type="button" aria-label={t(week ? 'schedule.nextWeek' : 'schedule.nextMonth')} onClick={onNextMonth}>›</button>
         </div>
       </div>
       <div className="cal__grid cal__grid--head">
@@ -39,7 +50,7 @@ export default function MonthCalendar({
           const items = occByDay.get(k) || []
           const cls = [
             'cal__day',
-            inMonth ? '' : 'cal__day--out',
+            inMonth || week ? '' : 'cal__day--out',
             k === todayKey ? 'cal__day--today' : '',
             k === selectedDayKey ? 'cal__day--sel' : '',
           ].filter(Boolean).join(' ')
