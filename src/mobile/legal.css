@@ -1,0 +1,13 @@
+@media (max-width: 560px) {
+  .screen > .footer { display: grid; grid-template-columns: 1fr; min-height: 0; gap: 16px; padding: 28px 24px; }
+  .screen > .footer .legal-links { display: grid; justify-content: start; gap: 4px; }
+  .screen > .footer .footer-copy { justify-self: start; font-size: 12px; font-weight: 400; }
+
+  .legal-gate { padding: 20px 12px; }
+  .legal-card { padding: 24px 18px; border-radius: 18px; }
+  .legal-card h1 { font-size: 24px; }
+  .legal-language { align-items: flex-start; flex-direction: column; }
+  .pr-sec__head { flex-wrap: wrap; gap: 14px; }
+  .catalog-toggles { width: 100%; }
+  .catalog-toggles .pr-toggle { max-width: 100%; flex-wrap: wrap; }
+}

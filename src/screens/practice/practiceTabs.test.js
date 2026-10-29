@@ -17,8 +17,8 @@ describe('practiceTabs', () => {
     expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'wordhunt', 'arcade', 'tales'])
     // Prepositions World (22.10.2026) — сразу после «Грамматики».
     expect(skillModules('writing')).toEqual(['grammar', 'prepositions', 'writing', 'verbs', 'workbooks'])
-    // SpeakSpin (02.10.2026) — шестой у «Говорения».
-    expect(skillModules('speaking')).toHaveLength(6)
+    // SpeakSpin (02.10.2026) — шестой у «Говорения», Pronunciation World (28.10.2026) — седьмой.
+    expect(skillModules('speaking')).toHaveLength(7)
     expect(skillModules('speaking')).toContain('speakspin')
     expect(skillModules('listening')).toContain('words')
     expect(skillModules('nope')).toEqual([])
@@ -75,6 +75,13 @@ describe('practiceTabs', () => {
     expect(skillOfModule('prepositions')).toBe('writing')
     // Курс открывается своим экраном, «Посмотреть все» у него нет.
     expect(EXPANDABLE.has('prepositions')).toBe(false)
+  })
+
+  it('Pronunciation World — во вкладке «Говорение» сразу после «Шэдоуинга», широким баннером', () => {
+    const ids = SKILLS.find((s) => s.key === 'speaking').sections.map((sec) => sec.id)
+    expect(ids.indexOf('pronunciation')).toBe(ids.indexOf('shadowing') + 1)
+    expect(skillOfModule('pronunciation')).toBe('speaking')
+    expect(EXPANDABLE.has('pronunciation')).toBe(false)
   })
 
   it('Word Hunt — во вкладке «Чтение» сразу перед «Аркадой», широким баннером', () => {

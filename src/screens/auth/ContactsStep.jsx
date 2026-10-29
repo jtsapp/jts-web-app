@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { isEmailIdentifier } from '../../api.js'
 import { isNationalComplete } from '../../data/countries.js'
-import { PRIVACY_URL } from '../../lib/support.js'
+import { legalDocumentUrl } from '../../lib/legalDocuments.js'
 import AuthLayout, { AuthHeading } from './AuthLayout.jsx'
 import {
   Field,
@@ -40,7 +40,7 @@ export default function ContactsStep({
   busy,
   serverError,
 }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [email, setEmail] = useState(initialEmail)
   const [phone, setPhone] = useState(() => splitPhone(initialPhone))
   const [tried, setTried] = useState(false)
@@ -103,7 +103,7 @@ export default function ContactsStep({
           )}
           <p className="rg-consent">
             {t('rg.consent')}
-            <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+            <a href={legalDocumentUrl('privacy', lang)} target="_blank" rel="noopener noreferrer">
               {t('rg.privacy')}
             </a>
           </p>

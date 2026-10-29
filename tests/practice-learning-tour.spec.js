@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FRESH_PROFILE, walkTour } from './tour-helper.js'
+import { FRESH_PROFILE, signIn, walkTour } from './tour-helper.js'
 
 // Онбординг-тур «Практики» и «Обучения»: тот же движок, что у дашборда тьютора
 // (src/tutor/OnboardingTour.jsx), но шаги свои и отметка «показан» — своя на
@@ -12,6 +12,7 @@ import { FRESH_PROFILE, walkTour } from './tour-helper.js'
 
 // Тур должен выйти — значит, профиль чистый (прогон целиком идёт с погашенными).
 test.use(FRESH_PROFILE)
+test.beforeEach(({ page }) => signIn(page))
 
 test.describe('онбординг-тур «Практики»', () => {
   test('выходит сам, проходится целиком и второй раз не выходит', async ({ page, viewport }) => {
@@ -33,8 +34,9 @@ test.describe('онбординг-тур «Практики»', () => {
     test.skip((viewport?.width ?? 0) > 760, 'на десктопе «?» на этом экране нет')
     await page.goto('/?screen=practice')
     await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
-    await page.locator('.t-tour__skip').click()
-    await expect(page.locator('.t-tour__pop')).toHaveCount(0)
+    // С 28.10.2026 тур «Практики» — вида «Главной»: начинается приветствием.
+    await page.locator('.t-tour__intro-skip').click()
+    await expect(page.locator('.t-tour__intro')).toHaveCount(0)
 
     // Под другой вкладкой шагов тура в DOM нет — «?» обязан вернуть
     // «Аудирование», иначе тур свёлся бы к двум шагам.
@@ -42,7 +44,7 @@ test.describe('онбординг-тур «Практики»', () => {
     await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Письмо')
 
     await page.locator('.tour-help:visible').click()
-    await expect(page.locator('.t-tour__pop')).toBeVisible()
+    await expect(page.locator('.t-tour__intro')).toBeVisible()
     await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Аудирование')
   })
 
@@ -53,7 +55,7 @@ test.describe('онбординг-тур «Практики»', () => {
     test.skip((viewport?.width ?? 0) <= 760, 'угол «? / язык» — только десктоп')
     await page.goto('/?screen=practice')
     await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
-    await page.locator('.t-tour__skip').click()
+    await page.locator('.t-tour__intro-skip').click()
     await expect(page.locator('.learn__bell')).toBeHidden()
     await page.locator('.pk-levels__btn', { hasText: 'C2' }).click()
     await expect(page.locator('.pk-levels__btn[aria-checked="true"]')).toHaveText('C2')
@@ -70,6 +72,8 @@ test.describe('онбординг-тур «Обучения»', () => {
       await route.continue()
     })
     await page.goto('/?screen=kingdom')
+    // Тур вида «Главной» начинается приветствием — шаги после «Показать».
+    await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
     await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
     await page.waitForTimeout(2200)
 

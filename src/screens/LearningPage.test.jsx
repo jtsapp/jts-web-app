@@ -14,6 +14,9 @@ vi.mock('../api.js', () => ({
 vi.mock('../tutor/OnboardingTour.jsx', () => ({
   default: () => null,
   useScreenTour: () => ({ open: false, start: () => {}, finish: () => {} }),
+  tourMascot: () => null,
+  tourIntroArt: () => null,
+  TOUR_COACH_CARD: {},
 }))
 
 import LearningPage from './LearningPage.jsx'

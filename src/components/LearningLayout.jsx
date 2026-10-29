@@ -8,7 +8,6 @@ import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import LangSelector from './LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
-import { useTourRequest } from '../lib/tourBus.js'
 
 // Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал; на
 // планшете — верхняя шапка с гамбургером, а сайдбар выезжает drawer'ом; на
@@ -39,9 +38,6 @@ export default function LearningLayout({
   // Телефон (≤560): вместо бургера шапки — нижняя панель приложения, одна на всё приложение (App, mobileTab.js);
   // оболочка сообщает, какая вкладка горит. Шапка с бургером остаётся планшету 561–760.
   useMobileTab(active)
-  // Тур просит Луна — нажимаем ту же «?»: у экрана свой старт тура (вкладка,
-  // с которой тур начинается), и повторять его в помощнике незачем.
-  useTourRequest(onHelp)
   const help = onHelp ? (
     <button className="tour-help" type="button" onClick={onHelp} title={t('tour.help')} aria-label={t('tour.help')}>
       ?

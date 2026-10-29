@@ -286,13 +286,24 @@ export function prefetchTts(text, opts = {}) {
   prefetchUrl(ttsUrl({ text, ...opts }))
 }
 
-/** Прогреть HTTP-кэш готовой записи (следующее задание), один раз на адрес. */
+/**
+ * Прогреть HTTP-кэш готовой записи (следующее задание), один раз на адрес.
+ * Запись с чужого адреса (бакет MinIO, у него нет CORS) — запросом no-cors: обычный fetch браузер отклонил бы с
+ * ошибкой в консоли на каждую запись, а непрозрачный ответ ложится в кэш так же, и <audio> его потом берёт.
+ */
 export function prefetchUrl(url) {
   if (typeof window === 'undefined' || typeof fetch !== 'function') return
   if (!url || prefetched.has(url)) return
   prefetched.add(url)
   if (prefetched.size > 300) prefetched.delete(prefetched.values().next().value)
-  fetch(url)
+  let foreign = false
+  try {
+    const u = new URL(url, window.location.href)
+    foreign = /^https?:$/.test(u.protocol) && u.origin !== window.location.origin
+  } catch {
+    /* кривой адрес — как раньше */
+  }
+  fetch(url, foreign ? { mode: 'no-cors' } : undefined)
     .then((r) => (r.ok ? r.arrayBuffer() : null))
     .catch(() => {
       prefetched.delete(url)

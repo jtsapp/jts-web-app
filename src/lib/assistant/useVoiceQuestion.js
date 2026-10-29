@@ -48,8 +48,8 @@ const AudioCtx = () => globalThis.AudioContext || globalThis.webkitAudioContext 
  * @returns {{ supported: boolean, state: 'idle'|'starting'|'recording'|'transcribing', elapsed: number,
  *   error: null|'denied'|'not_heard'|'stt_failed'|'rate'|'auth', retryAfterSec: number|null,
  *   toggle: () => void, cancel: () => void, clearError: () => void,
- *   listen: (opts: { noVoiceMs?: number, onText?: (t: string) => void, onNoVoice?: () => void }) => void,
- *   transcribeAudio: (wav: Blob, opts?: { onText?: (t: string) => void }) => Promise<void>|undefined }}
+ *   listen: (opts: { noVoiceMs?: number, onText?: (t: string, meta: { sttMs: number }) => void, onNoVoice?: () => void }) => void,
+ *   transcribeAudio: (wav: Blob, opts?: { onText?: (t: string, meta: { sttMs: number }) => void }) => Promise<void>|undefined }}
  */
 export function useVoiceQuestion({ token, lang, screenId, onText }) {
   const { state: recState, error: recError, elapsed, stream, start: recStart, stop: recStop, release, drop } = useRecorder()
@@ -132,6 +132,7 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
       const abort = new AbortController()
       sttAbortRef.current = abort
       setBusy(true)
+      const startedAt = performance.now()
       try {
         const fd = new FormData()
         fd.append('audio', new File([out.wav], 'question.wav', { type: 'audio/wav' }))
@@ -157,7 +158,8 @@ export function useVoiceQuestion({ token, lang, screenId, onText }) {
         if (cancelledRef.current) return
         const clean = String(text || '').trim()
         if (!clean) return setOwnError('not_heard')
-        cb?.(clean)
+        // Сколько шло распознавание — для замера ответа (voiceTiming.js).
+        cb?.(clean, { sttMs: Math.round(performance.now() - startedAt) })
       } catch (e) {
         if (e?.name !== 'AbortError' && !cancelledRef.current) setOwnError('stt_failed')
       } finally {

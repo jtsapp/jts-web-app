@@ -97,3 +97,23 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     }
   })
 })
+
+describe('нрав Декстера и по тьюторам (29.10.2026)', () => {
+  it('у Декстера снова кнопка 18+, по умолчанию свой пацан', async () => {
+    const { getTutor, temperFor, AXIS_TUTOR_KEYS } = await load(false)
+    expect(getTutor('dexter').tempers).toEqual(['calm', 'harsh'])
+    expect(temperFor('dexter', undefined)).toBe('calm')
+    expect(temperFor('dexter', 'harsh')).toBe('harsh')
+    expect(AXIS_TUTOR_KEYS).toEqual(['dexter', 'spark'])
+  })
+  it('нрав из профиля: новый словарь, иначе старое поле — только Спарку', async () => {
+    const { tempersFromProfile } = await load(false)
+    expect(tempersFromProfile({ tutorTempers: { dexter: 'harsh' }, tutorTemper: 'harsh' })).toEqual({ dexter: 'harsh' })
+    expect(tempersFromProfile({ tutorTemper: 'harsh' })).toEqual({ spark: 'harsh' })
+    expect(tempersFromProfile(null)).toEqual({})
+  })
+  it('окно «Жёсткий режим» включает нрав всем тьюторам с осью', async () => {
+    const { tempersForAll } = await load(false)
+    expect(tempersForAll('harsh')).toEqual({ dexter: 'harsh', spark: 'harsh' })
+  })
+})

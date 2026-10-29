@@ -51,6 +51,8 @@ COPY noise_guard.py .
 # и прода. Новый модуль рядом с agent.py — строка COPY здесь; сторожит
 # test_dockerfile.py.
 COPY assistant_call.py .
+# Подмены ядра Speaking Buddy под нрав Декстера — agent.py импортирует на старте.
+COPY dexter_tempers.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is
 # fast instead of stalling on a model download.

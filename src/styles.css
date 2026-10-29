@@ -1552,10 +1552,11 @@ textarea {
 
 .footer {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  padding: 0 34px;
-  height: 62px;
+  gap: 24px;
+  padding: 20px 34px;
+  min-height: 100px;
   background: var(--footer-bg);
   border-radius: 0;
 }
@@ -1585,8 +1586,8 @@ textarea {
    #1d1826, знак-логотип, белые 16px. Подвалы кабинета и тьютора не трогаем —
    у них свои макеты. */
 .screen > .footer {
-  height: 100px;
-  padding: 0 62px 0 60px;
+  min-height: 100px;
+  padding: 22px 60px;
   background: #1d1826;
 }
 .screen > .footer .footer-link {
@@ -4253,6 +4254,24 @@ textarea {
 .prp-host[hidden] { display: none; }
 @media (max-width: 560px) {
   .prp-top { padding: 8px 16px 0; }
+}
+/* Pronunciation World в макете тоже нет — фиолетовый бренда прототипа (#874bf8) в его голубой (#0aafff). */
+.pk-banner--pronunciation { background: linear-gradient(99.4deg, #874bf8 17%, #0aafff 95.5%); }
+/* Pronunciation World: оболочка как у Prepositions World. overflow: visible — липкие шапка и полоса «Next»
+   прототипа липнут к окну, а не к .learn__main (с overflow: auto она стала бы их прокруткой, а сама не
+   прокручивается). */
+.prn-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
+.prn-host { display: block; }
+.prn-host[hidden] { display: none; }
+.learn__main:has(.prn-host) { overflow: visible; }
+/* Раунд Echo Gates — игра на время во всю колонку, а плавающая кнопка Луны ложилась на ворота (на телефоне — на
+   кнопку звука правых ворот). Пока идёт раунд (data-game ставит экран), кнопки Луны и её облачков нет; окно,
+   открытое учеником, остаётся. */
+body:has(.prn-host[data-game='1']) .asst__launcher,
+body:has(.prn-host[data-game='1']) .asst__hint,
+body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
+@media (max-width: 560px) {
+  .prn-top { padding: 8px 16px 0; }
 }
 /* «Грамматика · игры» своим экраном — оболочка как у Prepositions World; тумблер звука стоит слева, у кнопки
    «назад»: правый верхний угол занят группой .learn__bell. Во вкладке Практики «назад» нет, а тумблер уходит в

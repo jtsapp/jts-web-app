@@ -114,10 +114,10 @@ describe('PracticePage — навыки и уровень', () => {
   it('карточка навыка считает тренажёры с правильным окончанием', () => {
     const { container } = renderWith(null)
     const counts = [...container.querySelectorAll('.pk-skill__count')].map((n) => n.textContent)
-    // У «Чтения» шесть: + Word Hunt и «Аркада»; у «Говорения» шесть: + SpeakSpin; у
+    // У «Чтения» шесть: + Word Hunt и «Аркада»; у «Говорения» семь: + SpeakSpin и Pronunciation World; у
     // «Аудирования» одиннадцать: + «Числа», Just to Listen, «Скорочтение» и Cartoon World;
     // у «Письма» пять: + Prepositions World («Грамматика · игры» с 28.10.2026 — своя вкладка,
     // под ней не тренажёры, а темы раздела).
-    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '5 тренажеров', '6 тренажеров', '125 тем'])
+    expect(counts).toEqual(['11 тренажеров', '6 тренажеров', '5 тренажеров', '7 тренажеров', '125 тем'])
   })
 })

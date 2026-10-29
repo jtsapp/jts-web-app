@@ -30,7 +30,7 @@ vi.mock('../api.js', () => ({
 }))
 vi.mock('../components/LearningLayout.jsx', () => ({ default: ({ children }) => <div>{children}</div> }))
 vi.mock('../practice/usePracticeEntitlement.js', () => ({ usePracticeEntitlement: () => ({ loading: false, allowed: true }) }))
-vi.mock('../tutor/OnboardingTour.jsx', () => ({ default: () => null, useScreenTour: () => ({ open: false }) }))
+vi.mock('../tutor/OnboardingTour.jsx', () => ({ default: () => null, useScreenTour: () => ({ open: false }), tourMascot: () => null, tourIntroArt: () => null, TOUR_COACH_CARD: {} }))
 
 import VocabularyPage from './VocabularyPage.jsx'
 

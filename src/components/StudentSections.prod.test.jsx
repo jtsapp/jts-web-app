@@ -18,7 +18,8 @@ it('убирает разделы на компьютере и в Сервиса
   const items = menuItems({ rewards: true, myTeacher: true })
   for (const list of [items, serviceItems(items)]) {
     expect(list.map(i => i.key)).not.toEqual(expect.arrayContaining(['tokens']))
-    for (const key of ['tokens', 'prizes', 'feedback', 'notifications', 'contracts', 'my-teacher']) {
+    expect(list.some(i => i.key === 'feedback')).toBe(true)
+    for (const key of ['tokens', 'prizes', 'notifications', 'contracts', 'my-teacher']) {
       expect(list.some(i => i.key === key)).toBe(false)
     }
   }

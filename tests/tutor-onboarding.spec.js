@@ -1,9 +1,16 @@
 import { test, expect } from '@playwright/test'
-import { FRESH_PROFILE } from './tour-helper.js'
+import { FRESH_PROFILE, signIn } from './tour-helper.js'
 
 // Здесь проверяется в том числе сам тур дашборда — значит, профиль чистый:
 // прогон целиком идёт с погашенными турами (storageState в playwright.config.js).
 test.use(FRESH_PROFILE)
+
+// С 23.10.2026 гостя с любого экрана кабинета уводит на вход (lib/guestLogin.js),
+// и диплинк ?screen=tutor-… без входа открывал лендинг. Онбординг тьютора теперь
+// видит только вошедший — входим учеником во всех тестах файла.
+test.beforeEach(async ({ page }) => {
+  await signIn(page)
+})
 
 // Онбординг тьютора на мобиле — регрессии на баги с реального телефона:
 // маскоты вылезали из панели на кнопки выбора языка, карусель тьюторов не
@@ -97,6 +104,8 @@ test.describe('онбординг-тур по дашборду', () => {
     await page.goto('/?screen=tutor-profession')
     // «Пропустить вопрос» ведёт через экран анализа на дашборд с туром.
     await page.locator('button', { hasText: 'Пропустить' }).first().click()
+    // Тур вида «Главной» начинается приветствием — шаги после «Показать».
+    await page.locator('.t-tour__intro-go').click({ timeout: 20000 })
     await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
 
     for (let step = 0; ; step++) {
@@ -130,7 +139,7 @@ test.describe('онбординг-тур по дашборду', () => {
       await page.waitForTimeout(250)
       expect(await page.evaluate(() => scrollY)).toBe(y0)
 
-      const isLast = (await page.locator('.t-tour__count').textContent()).startsWith('2/')
+      const isLast = (await page.locator('.t-tour__acts.is-last').count()) > 0
       await page.locator('.t-tour__ok').click()
       if (isLast) break
     }

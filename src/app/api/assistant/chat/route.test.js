@@ -51,6 +51,14 @@ vi.mock('@/lib/assistant/callUsage.js', () => ({
   isLiveAssistantCall: vi.fn(async (room, userId) => liveCalls.has(`${room}:${userId}`)),
 }))
 
+// Каталог «Что можно открыть» (items/catalog.js) — подменён: сам он проверен своим тестом.
+const items = vi.hoisted(() => ({ catalog: null, resolved: null }))
+vi.mock('@/lib/assistant/items/catalog.js', () => ({
+  buildItemCatalog: vi.fn(async () => items.catalog),
+  resolveItem: vi.fn(async () => items.resolved),
+}))
+const { buildItemCatalog, resolveItem } = await import('@/lib/assistant/items/catalog.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -390,11 +398,11 @@ describe('POST /api/assistant/chat', () => {
     expect(text.endsWith('[[ASST_ACTION open practice-speaking offer]]')).toBe(true)
   })
 
-  it('«открой сейчас» и тур — свой вид хвоста; раздел не из списка не уходит вовсе', async () => {
+  it('«открой сейчас» — свой вид хвоста; раздел не из списка не уходит вовсе', async () => {
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Начинаю тур по Практике.\n[[TOUR_NOW practice]]' }
+      yield { type: 'text', text: 'Открываю Практику.\n[[OPEN_NOW practice]]' }
     }
-    expect(await (await post(question(402))).text()).toBe('Начинаю тур по Практике.\n[[ASST_ACTION tour practice now]]')
+    expect(await (await post(question(402))).text()).toBe('Открываю Практику.\n[[ASST_ACTION open practice now]]')
 
     streamImpl = async function* () {
       yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW ielts-mock]]' }
@@ -402,28 +410,19 @@ describe('POST /api/assistant/chat', () => {
     expect(await (await post(question(403))).text()).toBe('Открываю.\n')
   })
 
-  // Живой прогон 15.10.2026: на «проведи тур» Haiku 5.5 поставила OPEN_NOW — раздел
-  // открылся, а тур нет. Что просили тур, код видит по словам ученика.
-  it('просили тур, а модель поставила «открыть» — уходит тур', async () => {
+  // Тур «от Луны» убран 28.10.2026: ни метка тура модели, ни слово «тур» у ученика
+  // тура не дают — раздел просто открывается, а тур там выходит сам или по «?».
+  it('тура нет: метка тура — открыть раздел, «проведи тур» — как решила модель', async () => {
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Конечно, открываю Практику и проведу по ней.\n[[OPEN_NOW practice]]' }
+      yield { type: 'text', text: 'Начинаю.\n[[TOUR_NOW practice]]' }
     }
-    const body = { ...question(406), messages: [{ role: 'user', content: 'Привет, можешь провести для меня тур по практике?' }] }
-    expect(await (await post(body)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+    expect(await (await post(question(406))).text()).toBe('Начинаю.\n[[ASST_ACTION open practice now]]')
 
-    // «Да» на её же предложение тура — тоже тур.
     streamImpl = async function* () {
-      yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW practice]]' }
+      yield { type: 'text', text: 'Открываю Практику.\n[[OPEN_NOW practice]]' }
     }
-    const agreed = {
-      ...question(407),
-      messages: [
-        { role: 'user', content: 'как тут всё устроено?' },
-        { role: 'assistant', content: 'Провести тур по Практике?\n[[TOUR practice]]' },
-        { role: 'user', content: 'да' },
-      ],
-    }
-    expect(await (await post(agreed)).text()).toMatch(/\[\[ASST_ACTION tour practice now\]\]$/)
+    const body = { ...question(407), messages: [{ role: 'user', content: 'Привет, можешь провести для меня тур по практике?' }] }
+    expect(await (await post(body)).text()).toMatch(/\[\[ASST_ACTION open practice now\]\]$/)
   })
 
   it('метка действия и запись поломки в одном ответе — оба хвоста, действие первым', async () => {
@@ -440,7 +439,8 @@ describe('POST /api/assistant/chat', () => {
     await (await post(question(405))).text()
     expect(calls[0].systemPrompt).toContain('## Разделы, которые ты умеешь открывать')
     expect(calls[0].systemPrompt).toContain('- practice-speaking — Практика → Говорение')
-    expect(calls[0].systemPrompt).toContain('[[TOUR_NOW id]]')
+    expect(calls[0].systemPrompt).toContain('[[OPEN_NOW id]]')
+    expect(calls[0].systemPrompt).not.toContain('[[TOUR')
   })
 
   // Ученик открыл окно, и Луна заговаривает первой (lib/assistant/opening.js).
@@ -532,6 +532,89 @@ describe('POST /api/assistant/chat', () => {
     })
   })
 
+  // «Подсказать?» (lib/assistant/stuck.js): Луна разбирает задание — без кнопки раздела и заметки.
+  // «Открой урок 2» (lib/assistant/items/): каталог — только под просьбу; адрес метки
+  // сверяется с ним, закрытый урок не действие; «да» без каталога — по адресу.
+  describe('открыть конкретное', () => {
+    const ask = (content, userId) => {
+      authResult = { status: 'ok', user: { userId, name: 'Толик', languageLevel: 'A1' } }
+      return { messages: [{ role: 'user', content }], screen: { id: 'home', text: 'Главная' }, lang: 'ru' }
+    }
+    const L2 = { ref: 'course.A1.L2', label: 'урок 2 “My family”', locked: false }
+
+    it('просьба — каталог в контексте модели, метка из него — переход с подписью', async () => {
+      items.catalog = { text: '- course.A1.L2 — урок 2 «My family» · следующий', items: new Map([[L2.ref, L2]]) }
+      buildItemCatalog.mockClear()
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Открываю урок 2.\n[[OPEN_NOW course.A1.L2]]' }
+      }
+      const text = await (await post(ask('открой урок 2', 811))).text()
+      expect(buildItemCatalog).toHaveBeenCalledWith(expect.objectContaining({ kinds: ['course'], level: 'A1', token: 'student-token', lang: 'ru' }))
+      expect(calls[0].messages.at(-1).content).toContain('- course.A1.L2 — урок 2 «My family» · следующий')
+      expect(text).toBe('Открываю урок 2.\n[[ASST_ACTION open course.A1.L2 now «урок 2 “My family”»]]')
+    })
+
+    it('закрытый урок — без перехода', async () => {
+      items.catalog = { text: '- course.A1.L9 — урок 9 · закрыт', items: new Map([['course.A1.L9', { ref: 'course.A1.L9', label: 'урок 9', locked: true }]]) }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Урок 9 пока закрыт.\n[[OPEN_NOW course.A1.L9]]' }
+      }
+      const text = await (await post(ask('открой урок 9', 812))).text()
+      expect(text).toBe('Урок 9 пока закрыт.\n')
+    })
+
+    it('«да» без каталога — адрес сверяется по своему виду; не нашёлся — без перехода', async () => {
+      buildItemCatalog.mockClear()
+      items.resolved = L2
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Открываю.\n[[OPEN_NOW course.A1.L2]]' }
+      }
+      const yes = await (await post(ask('да', 813))).text()
+      expect(buildItemCatalog).not.toHaveBeenCalled()
+      expect(resolveItem).toHaveBeenCalledWith('course.A1.L2', expect.objectContaining({ token: 'student-token', lang: 'ru' }))
+      expect(yes).toContain('[[ASST_ACTION open course.A1.L2 now «урок 2 “My family”»]]')
+      items.resolved = null
+      const gone = await (await post(ask('да', 814))).text()
+      expect(gone).toBe('Открываю.\n')
+    })
+
+    it('вопрос не о том, чтобы открыть, — каталог не собирается', async () => {
+      buildItemCatalog.mockClear()
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Потому что he — третье лицо.' }
+      }
+      await (await post(ask('почему мой ответ в этом уроке неверный?', 815))).text()
+      expect(buildItemCatalog).not.toHaveBeenCalled()
+      expect(calls.at(-1).messages.at(-1).content).not.toContain('Что можно открыть')
+    })
+  })
+
+  describe('ученик застрял', () => {
+    it('пометка уходит в модель; метку раздела роут не отдаёт; в лог — причина без текста', async () => {
+      authResult = { status: 'ok', user: { userId: 711, name: 'Толик' } }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'Толик, посмотрите на подлежащее. Открыть Грамматику?\n[[OPEN grammar]]' }
+      }
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      try {
+        const text = await (
+          await post({
+            messages: [{ role: 'user', content: '[ученик застрял: две ошибки подряд]' }],
+            screen: { id: 'kingdom-interior', text: 'He ___ football. [кнопка «play» (отмечено как неверное)]' },
+            lang: 'ru',
+          })
+        ).text()
+        expect(text).not.toContain('[[ASST_ACTION')
+        expect(saveAdviceNote).not.toHaveBeenCalled()
+        expect(calls[0].messages.at(-1).content).toContain('[ученик застрял: две ошибки подряд]\nЯзык ответа: русский')
+        const row = info.mock.calls.find((c) => c[0] === '[assistant]')
+        expect(JSON.parse(row[1])).toEqual({ kind: 'stuck', reason: 'errors' })
+      } finally {
+        info.mockRestore()
+      }
+    })
+  })
+
   // Трекер: совет Луны — её предложение открыть раздел — ложится одной строкой (lib/db/assistantTracker.js).
   describe('заметка о совете', () => {
     // «Главная»: не экран задания — первая реплика там может предлагать раздел.
@@ -552,10 +635,8 @@ describe('POST /api/assistant/chat', () => {
       })
     })
 
-    it('«открой» по просьбе ученика, тур и ответ без метки — не советы', async () => {
+    it('«открой» по просьбе ученика и ответ без метки — не советы', async () => {
       offer('Открываю Словарь.\n[[OPEN_NOW vocab]]')
-      await (await post(question(602))).text()
-      offer('Начинаю тур по Главной.\n[[TOUR_NOW home]]')
       await (await post(question(602))).text()
       await (await post(question(602))).text()
       expect(saveAdviceNote).not.toHaveBeenCalled()

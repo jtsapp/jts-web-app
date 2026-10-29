@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FRESH_PROFILE, walkTour } from './tour-helper.js'
+import { FRESH_PROFILE, signIn, walkTour } from './tour-helper.js'
 
 // Онбординг-тур «Уроков», «Домашней работы» и «Словаря» — движок общий с
 // «Практикой» (см. practice-learning-tour.spec.js), проверяем своё:
@@ -31,7 +31,8 @@ test.use(FRESH_PROFILE)
 
 test.describe('онбординг-тур «Уроков»', () => {
   test('у ученика выходит сам, у преподавателя его нет', async ({ page, viewport }) => {
-    await auth(page, 'USER')
+    // Бэкенд подменён: без него стенд отвечает 401, расписания нет, и шагам тура не на что встать.
+    await signIn(page)
     await page.goto('/?screen=lessons')
     await expect(page.locator('.ls__tabs')).toBeVisible({ timeout: 15000 })
     await walkTour(page, viewport)
@@ -102,8 +103,8 @@ test.describe('онбординг-тур «Словаря»', () => {
     await expect(page.locator('#vsec-levels')).toBeVisible({ timeout: 15000 })
     await walkTour(page, viewport)
 
-    // «?» открывает заново.
+    // «?» открывает заново — с приветствия (тур вида «Главной»).
     await page.locator('.tour-help:visible').click()
-    await expect(page.locator('.t-tour__pop')).toBeVisible()
+    await expect(page.locator('.t-tour__intro')).toBeVisible()
   })
 })

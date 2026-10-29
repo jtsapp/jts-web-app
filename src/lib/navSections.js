@@ -44,6 +44,8 @@ const NAV_FULL = [
 // Тьютор-онли (прод, main): в меню остаются только разделы из TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) —
 // остальные скрыты от обычных пользователей (доступны диплинком ?screen=… для отладки).
 const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
+// Значок пункта по ключу — для списков разделов вне меню (тур «Главной»).
+export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_ITEM, ...NAV_FULL].map((i) => [i.key, i.ico]))
 
 // Разделы преподавателя. Остальное в списке — его собственное обучение, которого у него нет: Тьютор, IELTS и
 // Словарь ученические (design-spec §4.2).
@@ -119,7 +121,7 @@ export function serviceItems(items) {
 const INNER_SCREENS = new Set([
   // разделы Практики — у каждого «← В Практику» или своя полоса с крестиком
   'reading', 'writing', 'workbook', 'listening', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen',
-  'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
+  'prepositions', 'pronunciation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'situations', 'shadowing',
   // план по дням и маршрут General English, каталог курса — экраны со своей «назад»
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё

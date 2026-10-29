@@ -72,6 +72,9 @@ export const SKILLS = [
     key: 'speaking',
     sections: [
       { id: 'shadowing', all: 'link' },
+      // Pronunciation World (28.10.2026) — курс произношения A0–C1: объяснение звука со схемами и игра на слух
+      // Echo Gates; в макете его нет. Широкий баннер сразу после «Шэдоуинга» (решение владельца).
+      { id: 'pronunciation' },
       { id: 'situations', all: 'pill', small: true },
       // SpeakSpin (02.10.2026) — в макете его нет; широкий баннер после
       // «Ситуаций», как «Слова в картинках» в Аудировании.

@@ -29,7 +29,26 @@ function silentWav() {
   return b
 }
 
-async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ', speakStatus = 200, speakDelayMs = 0 } = {}) {
+// 0.3 с тишины MP3 — билет играется через MediaSource, а ей нужны настоящие
+// кадры MP3 (WAV она не примет). Кодер — тот же, что у роута; динамическим
+// импортом: спеку Playwright грузит как CommonJS, а под require у lamejs только
+// IIFE-сборка без экспортов.
+async function silentMp3() {
+  const { Mp3Encoder } = await import('@breezystack/lamejs')
+  const enc = new Mp3Encoder(1, 24000, 64)
+  return Buffer.concat([Buffer.from(enc.encodeBuffer(new Int16Array(7200))), Buffer.from(enc.flush())])
+}
+
+async function setup(
+  page,
+  {
+    sttText = 'Үй жұмысы қайда?',
+    reply = 'Үй жұмысы — сол жақ мәзірдегі «Үй жұмысы» бөлімінде. ',
+    speakStatus = 200,
+    speakDelayMs = 0,
+    ticket = false,
+  } = {},
+) {
   await page.addInitScript(() => {
     localStorage.setItem('jts_access_token', 'test-token')
     // Что реально заиграло: адрес и состояние play().
@@ -49,7 +68,7 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 7, name: 'Айгерім', role: 'STUDENT', phone: '77001234567', languageLevel: 'A2' } })),
   )
-  const calls = { stt: [], chat: [], speak: [], tts: [] }
+  const calls = { stt: [], chat: [], speak: [], tts: [], ticket: [] }
   await page.route('**/api/assistant/transcribe', async (r) => {
     const req = r.request()
     calls.stt.push({ auth: req.headers().authorization, size: req.postDataBuffer()?.length || 0, body: req.postDataBuffer()?.toString('latin1') || '' })
@@ -68,7 +87,13 @@ async function setup(page, { sttText = 'Үй жұмысы қайда?', reply = 
     // Синтез Gemini не потоковый — фраза приходит через секунды.
     if (speakDelayMs) await new Promise((res) => setTimeout(res, speakDelayMs))
     if (speakStatus !== 200) return r.fulfill(json({ error: 'tts_failed' }, speakStatus))
+    // Поток: роут отвечает адресом билета, звук <audio> забирает по GET.
+    if (ticket) return r.fulfill(json({ url: `/api/assistant/speak?s=00000000-0000-4000-8000-00000000000${calls.speak.length}` }))
     await r.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() })
+  })
+  await page.route('**/api/assistant/speak?**', async (r) => {
+    calls.ticket.push({ url: new URL(r.request().url()).search, auth: r.request().headers().authorization })
+    await r.fulfill({ status: 200, contentType: 'audio/mpeg', body: await silentMp3() })
   })
   // Потоковый Soniox — казахский ответ и запасной голос.
   await page.route('**/api/tts?**', async (r) => {
@@ -128,7 +153,43 @@ test('русский ответ — голос Луны (/api/assistant/speak)',
   })
   await askByVoice(page)
   await expect.poll(() => calls.speak.length).toBe(1)
-  expect(calls.speak[0]).toEqual({ text: 'Домашняя работа — в меню слева, раздел «Домашняя работа».', lang: 'ru', persona: 'luna' })
+  // Chrome умеет MediaSource для MP3 — голос просится потоком (streamSource.js).
+  expect(calls.speak[0]).toEqual({
+    text: 'Домашняя работа — в меню слева, раздел «Домашняя работа».',
+    lang: 'ru',
+    persona: 'luna',
+    stream: true,
+  })
+  await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
+  expect(calls.tts).toHaveLength(0)
+  // Замер — только на деве и по флагу; ученику на локалке и проде подписи нет.
+  await expect(page.locator('.asst__msg--bot').last()).toContainText('в меню слева')
+  await expect(page.locator('.asst__timing')).toHaveCount(0)
+})
+
+// Замер голосового ответа (voiceTiming.js): с флагом jts_luna_timing под ответом
+// подпись — сколько шло распознавание, через сколько пришёл текст и голос.
+test('флаг jts_luna_timing — под голосовым ответом подпись замера', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('jts_luna_timing', '1'))
+  await setup(page, { sttText: 'Где моя домашка?', reply: 'Домашняя работа — в меню слева. ', ticket: true })
+  await askByVoice(page)
+  const caption = page.locator('.asst__msg--bot .asst__timing').last()
+  await expect(caption).toContainText(/распознано за \d+\.\d с · текст через \d+\.\d с · голос через \d+\.\d с/)
+})
+
+// Голос потоком: адрес билета забирает MediaSource (streamSource.js) — без
+// заголовка входа (его проверил POST), и <audio> играет её blob-адрес с первых
+// кадров MP3.
+test('русский ответ потоком — билет играется через MediaSource', async ({ page }) => {
+  const calls = await setup(page, {
+    sttText: 'Где моя домашка?',
+    reply: 'Домашняя работа — в меню слева, раздел «Домашняя работа». ',
+    ticket: true,
+  })
+  await askByVoice(page)
+  await expect.poll(() => calls.ticket.length).toBe(1)
+  expect(calls.ticket[0].url).toBe('?s=00000000-0000-4000-8000-000000000001')
+  expect(calls.ticket[0].auth).toBeUndefined()
   await expect.poll(() => playedStates(page, 'blob:')).toContain('playing')
   expect(calls.tts).toHaveLength(0)
 })

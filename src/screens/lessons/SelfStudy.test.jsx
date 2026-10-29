@@ -55,16 +55,17 @@ const CATALOG = [
   },
 ]
 
-// Тот же каталог, но у закрытого B2 сервер разметил витрину: первые два
-// материала открыты, третий — за подпиской.
+// Тот же каталог, но у закрытого B2 сервер по старой памяти пометил материалы
+// бесплатными. Живые уроки открывает только выдача менеджера — пометка ничего
+// не открывает.
 const WITH_PREVIEW = CATALOG.map((level) => (level.code !== 'B2' ? level : {
   ...level,
+  locked: true,
   units: [{
     id: 3,
     name: 'Unit 3',
     lessons: [
       { id: 30, title: 'Витрина раз', mode: 'SELF_STUDY', preview: true },
-      { id: 31, title: 'Витрина два', mode: 'SELF_STUDY', preview: true },
       { id: 32, title: 'За подпиской', mode: 'SELF_STUDY', preview: false },
     ],
   }],
@@ -144,68 +145,29 @@ describe('Самостоятельное обучение', () => {
     expect(localStorage.getItem('self-study-level')).toBe('1')
   })
 
-  it('закрытый уровень без витрины объясняет, что делать', async () => {
-    // Старый бэкенд витрину не размечает. Уровень, где не открыть ни одного
-    // материала, — это стена замков, и одной фразой она читается лучше, чем
-    // россыпью недоступных карточек.
+  it('закрытый уровень объясняет, что его открывает менеджер', async () => {
+    // Живые уроки выдаются только в админке: ни подписка, ни тариф уровень не
+    // открывают, и совет «обновите тариф» был бы неправдой.
     draw()
     fireEvent.click(await screen.findByText('B2'))
 
     expect(screen.queryByText('Далёкий уровень')).toBeNull()
     expect(await screen.findByText(/Уровень B2 пока закрыт/)).toBeTruthy()
-    expect(screen.getByText(/обновите тариф/)).toBeTruthy()
+    expect(screen.getByText(/Уровни открывает менеджер/)).toBeTruthy()
+    expect(screen.queryByText(/тариф|подписк/)).toBeNull()
   })
 
-  it('на закрытом уровне первые материалы открыты, остальные — за подпиской', async () => {
-    // Заглушка «уровень закрыт» сообщала ровно то, что ученик и так видел по
-    // замку на чипе. Продать закрытое можно, только показав, что внутри.
+  it('на закрытом уровне не открыт ни один материал, даже помеченный бесплатным', async () => {
     catalog.value = WITH_PREVIEW
     const { container, onOpenLesson } = draw()
     fireEvent.click(await screen.findByText('B2'))
 
-    expect(await screen.findByText('Витрина раз')).toBeTruthy()
-    expect(screen.getByText('За подпиской')).toBeTruthy()
-    expect(container.querySelectorAll('.ss-paywall')).toHaveLength(1)
-
-    fireEvent.click(screen.getByText('Витрина раз'))
-    expect(onOpenLesson).toHaveBeenCalledWith(30)
-  })
-
-  it('материал за подпиской ведёт в тарифы, а не в урок', async () => {
-    catalog.value = WITH_PREVIEW
-    const onOpenPricing = vi.fn()
-    const { onOpenLesson } = draw({ onOpenPricing })
-    fireEvent.click(await screen.findByText('B2'))
-
-    fireEvent.click(await screen.findByText('За подпиской'))
-
-    // Открыть его всё равно нельзя — сервер откажет. Единственное осмысленное
-    // действие здесь одно, и карточка ведёт именно туда.
-    expect(onOpenPricing).toHaveBeenCalled()
+    expect(await screen.findByText(/Уровень B2 пока закрыт/)).toBeTruthy()
+    expect(screen.queryByText('Витрина раз')).toBeNull()
+    expect(screen.queryByText('За подпиской')).toBeNull()
+    expect(container.querySelector('.ss-card')).toBeNull()
+    expect(screen.queryByRole('button', { name: /тариф/i })).toBeNull()
     expect(onOpenLesson).not.toHaveBeenCalled()
-  })
-
-  it('над витриной сказано, сколько открыто и чем открывается остальное', async () => {
-    catalog.value = WITH_PREVIEW
-    const onOpenPricing = vi.fn()
-    draw({ onOpenPricing })
-    fireEvent.click(await screen.findByText('B2'))
-
-    // Один раз на уровень, а не подписью на каждой из карточек.
-    expect(await screen.findByText('Уровень B2 открыт частично')).toBeTruthy()
-    expect(screen.getByText(/Первые 2 материала можно пройти бесплатно/)).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Смотреть тарифы' }))
-    expect(onOpenPricing).toHaveBeenCalled()
-  })
-
-  it('на своём уровне витрины нет: там открыто всё', async () => {
-    catalog.value = WITH_PREVIEW
-    const { container } = draw()
-
-    await screen.findByText('Changing direction')
-    expect(container.querySelector('.ss-preview')).toBeNull()
-    expect(container.querySelectorAll('.ss-paywall')).toHaveLength(0)
   })
 
   it('замок ставит сервер, а не клиент', async () => {
@@ -303,8 +265,7 @@ const TWO_B2 = [
   MEDIA,
   GENERAL_B2,
 ]
-// Business закрыт, но витрину сервер размечает и ему: первые материалы
-// открыты у любого закрытого курса, отдельный он или нет.
+// Отдельный курс закрыт; пометка «бесплатно» на первом материале его не открывает.
 const MEDIA_PREVIEW = {
   ...MEDIA,
   locked: true,
@@ -395,57 +356,16 @@ describe('Два курса одного уровня', () => {
     expect(screen.queryByText(/обновите тариф/)).toBeNull()
   })
 
-  it('отдельный курс с витриной не ведёт в тарифы — остальное открывает менеджер', async () => {
-    // Витрину сервер отдаёт любому закрытому курсу, в том числе отдельному, а
-    // тот тарифом не открывается: только выдачей. «Смотреть тарифы» и «откроются
-    // с подпиской» вели бы ученика туда, где этого курса нет.
+  it('закрытый отдельный курс с пометкой «бесплатно» всё равно закрыт целиком', async () => {
     catalog.value = TWO_B2.map((c) => (c.id === MEDIA.id ? MEDIA_PREVIEW : c))
-    const onOpenPricing = vi.fn()
-    const { container, onOpenLesson } = draw({ userLevel: 'B2', onOpenPricing })
+    const { container, onOpenLesson } = draw({ userLevel: 'B2' })
     await screen.findByText('Далёкий уровень')
     fireEvent.click(chipByText(container, 'B2 English for Media & Marketing'))
 
-    expect(await screen.findByText('Курс «English for Media & Marketing» открыт частично')).toBeTruthy()
-    expect(screen.getByText(/бесплатно.*Остальные открывает менеджер/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Смотреть тарифы' })).toBeNull()
-    expect(screen.queryByText(/подписк/)).toBeNull()
-
-    // Закрытый материал — не кнопка: нажатие никуда не ведёт, и обещать его
-    // карточка не должна.
-    const locked = screen.getByText('Brand voice')
-    expect(locked.closest('button')).toBeNull()
-    expect(screen.getByText('Открывает менеджер')).toBeTruthy()
-    fireEvent.click(locked)
-    expect(onOpenPricing).not.toHaveBeenCalled()
-    expect(onOpenLesson).not.toHaveBeenCalled()
-
-    // Витрина при этом открывается как у любого курса.
-    fireEvent.click(screen.getByText('Press release'))
-    expect(onOpenLesson).toHaveBeenCalledWith(400)
-  })
-
-  it('общий закрытый уровень рядом с отдельным курсом по-прежнему ведёт в тарифы', async () => {
-    // Ученик B1: общий B2 выше его уровня и продаётся подпиской. Правка для
-    // отдельного курса не должна снять дорогу в тарифы с обычного.
-    catalog.value = [
-      { ...CATALOG[0], locked: false },
-      MEDIA_PREVIEW,
-      { ...GENERAL_B2, locked: true, units: WITH_PREVIEW.find((l) => l.code === 'B2').units },
-    ]
-    const onOpenPricing = vi.fn()
-    const { container, onOpenLesson } = draw({ userLevel: 'B1', onOpenPricing })
-    await screen.findByText('My biography')
-    fireEvent.click(chipByText(container, 'B2'))
-
-    expect(await screen.findByText('Уровень B2 открыт частично')).toBeTruthy()
-    expect(screen.getByText(/Остальные откроются с подпиской/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Смотреть тарифы' }))
-    expect(onOpenPricing).toHaveBeenCalledTimes(1)
-
-    const paid = screen.getByText('За подпиской')
-    expect(paid.closest('button')).toBeTruthy()
-    fireEvent.click(paid)
-    expect(onOpenPricing).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('Курс «English for Media & Marketing» пока закрыт')).toBeTruthy()
+    expect(screen.getByText(/Напишите менеджеру/)).toBeTruthy()
+    expect(screen.queryByText('Press release')).toBeNull()
+    expect(screen.queryByText('Brand voice')).toBeNull()
     expect(onOpenLesson).not.toHaveBeenCalled()
   })
 
@@ -458,71 +378,6 @@ describe('Два курса одного уровня', () => {
 
     expect([...container.querySelectorAll('.gr-levelchip.is-locked')].map((b) => b.textContent))
       .toEqual(['B2 English for Media & Marketing'])
-  })
-})
-
-// Число витрины стоит прямо во фразе, а фраза раньше была одна на все числа:
-// «Первые 1 материала», «The first 1 materials». Витрина — от одного до трёх
-// материалов (PREVIEW_LESSONS на бэкенде); пятёрка — чтобы задеть русскую
-// форму «материалов», которую три не дают, но даст любая правка лимита.
-describe('Число в полосе витрины', () => {
-  beforeEach(() => { progress.value = []; localStorage.clear() })
-
-  const previewUnits = (n) => [{
-    id: 60,
-    name: 'Preview Unit',
-    lessons: [
-      ...Array.from({ length: n }, (_, i) => ({ id: 600 + i, title: `Витрина ${i + 1}`, mode: 'SELF_STUDY', preview: true })),
-      { id: 699, title: 'За замком', mode: 'SELF_STUDY', preview: false },
-    ],
-  }]
-
-  const CASES = [
-    { lang: 'ru', n: 1, level: /^1 материал в начале уровня можно пройти бесплатно/, course: /^1 материал в начале курса можно пройти бесплатно/ },
-    { lang: 'ru', n: 2, level: /^Первые 2 материала можно пройти бесплатно/, course: /^Первые 2 материала можно пройти бесплатно/ },
-    { lang: 'ru', n: 3, level: /^Первые 3 материала можно пройти бесплатно/, course: /^Первые 3 материала можно пройти бесплатно/ },
-    { lang: 'ru', n: 5, level: /^Первые 5 материалов можно пройти бесплатно/, course: /^Первые 5 материалов можно пройти бесплатно/ },
-    { lang: 'en', n: 1, level: /^The first material is free/, course: /^The first material is free/ },
-    { lang: 'en', n: 2, level: /^The first 2 materials are free/, course: /^The first 2 materials are free/ },
-    { lang: 'en', n: 3, level: /^The first 3 materials are free/, course: /^The first 3 materials are free/ },
-    { lang: 'kk', n: 1, level: /^Алғашқы материалды тегін/, course: /^Алғашқы материалды тегін/ },
-    { lang: 'kk', n: 2, level: /^Алғашқы 2 материалды тегін/, course: /^Алғашқы 2 материалды тегін/ },
-  ]
-
-  async function stripText(container) {
-    await waitFor(() => expect(container.querySelector('.ss-preview__text')).toBeTruthy())
-    return container.querySelector('.ss-preview__text').textContent
-  }
-
-  it.each(CASES)('$lang, $n: общий закрытый уровень', async ({ lang, n, level }) => {
-    localStorage.setItem('lang', lang)
-    catalog.value = [
-      { ...CATALOG[0], locked: false },
-      { ...GENERAL_B2, locked: true, units: previewUnits(n) },
-    ]
-    const { container } = draw({ userLevel: 'B1', onOpenPricing: vi.fn() })
-    await screen.findByText('My biography')
-    fireEvent.click(chipByText(container, 'B2'))
-
-    const text = await stripText(container)
-    expect(text).toMatch(level)
-    expect(text).not.toContain('{n}')
-  })
-
-  it.each(CASES)('$lang, $n: закрытый отдельный курс', async ({ lang, n, course }) => {
-    localStorage.setItem('lang', lang)
-    catalog.value = [
-      { ...CATALOG[0], locked: false },
-      { ...GENERAL_B2, locked: false },
-      { ...MEDIA, locked: true, units: previewUnits(n) },
-    ]
-    const { container } = draw({ userLevel: 'B2' })
-    await screen.findByText('Далёкий уровень')
-    fireEvent.click(chipByText(container, 'B2 English for Media & Marketing'))
-
-    const text = await stripText(container)
-    expect(text).toMatch(course)
-    expect(text).not.toContain('{n}')
   })
 })
 

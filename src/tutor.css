@@ -3811,48 +3811,6 @@
 .t-tour__pop:has(.t-tour__content) {
   width: min(380px, calc(100vw - 32px));
 }
-/* Тур ведёт Луна (AssistantWidget): кто говорит и кнопка звука — прямо в
-   карточке. Окно чата на время тура закрыто, и выключить голос иначе было бы
-   негде. */
-.t-tour__luna {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 6px 6px 8px;
-  border-radius: 12px;
-  background: #f5f0ff;
-  font-size: 13px;
-  font-weight: 600;
-  color: #5b3fa8;
-}
-.t-tour__luna img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex: none;
-}
-.t-tour__luna span {
-  flex: 1;
-  min-width: 0;
-}
-.t-tour__luna-sound {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: none;
-  border: none;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--t-purple);
-  cursor: pointer;
-}
-.t-tour__luna-sound.is-muted {
-  color: var(--t-muted);
-}
-
 /* --- Тур «Главной» (look="coach") — макет «Первый заход и подсказки», 21.10.2026.
    Затемнение #181818 (62 % под подсказкой, 55 % под приветствием), прожектор r32
    с белой рамкой 4 px, карточка r28 p24 с тенью 0 12 48. Шрифт — Manrope, как у
@@ -3929,9 +3887,6 @@
 .t-tour--coach .t-tour__content {
   margin-top: 0;
 }
-.t-tour--coach .t-tour__luna {
-  margin-top: 0;
-}
 .t-tour__acts {
   display: flex;
   align-items: center;
@@ -3939,6 +3894,10 @@
 }
 .t-tour__acts.is-last {
   justify-content: flex-end;
+}
+/* С маскотом справа «Готово» встаёт к краю колонки текста — прямо на ноги фигуры. */
+.t-tour__pop--art .t-tour__acts.is-last {
+  justify-content: flex-start;
 }
 .t-tour--coach .t-tour__ok {
   height: 40px;
@@ -4089,6 +4048,43 @@
   top: 136px;
   width: 160px;
   height: 212px;
+}
+/* Приветствие других экранов (intro.art): целые фигуры, а не нарезка макета. Низ
+   фигуры уходит под карточку — она выше по слою и непрозрачна, — так фигура и
+   «выглядывает». Размер — по ВЫСОТЕ, ширина по пропорции: позы разной ширины, и при
+   общей ширине фигуры выходили разного роста и выглядывали на разную величину
+   («стоят криво», владелец 28.10.2026). Пары симметричны, боковые — по центру
+   карточки и целиком в её высоту, чтобы ноги не торчали из-под низа. */
+.t-tour__intro--cast .t-tour__intro-art {
+  width: auto;
+}
+.t-tour__intro--cast .t-tour__intro-art--top1,
+.t-tour__intro--cast .t-tour__intro-art--top2 {
+  bottom: calc(100% - 64px);
+  height: 170px;
+}
+/* Верхняя пара — зеркально от центра карточки (как в макете «Главной»): от краёв
+   фигуры разной ширины стояли бы не по центру. */
+.t-tour__intro--cast .t-tour__intro-art--top1 {
+  left: auto;
+  right: calc(50% + 12px);
+}
+.t-tour__intro--cast .t-tour__intro-art--top2 {
+  left: calc(50% + 12px);
+  right: auto;
+}
+.t-tour__intro--cast .t-tour__intro-art--left,
+.t-tour__intro--cast .t-tour__intro-art--right {
+  top: calc(50% - 105px);
+  height: 210px;
+}
+/* За карточку боковые заходят только краем: Айзере узкая, и при заходе 64 px у
+   неё пряталась половина лица («слишком закрыта», владелец 28.10.2026). */
+.t-tour__intro--cast .t-tour__intro-art--left {
+  right: calc(100% - 24px);
+}
+.t-tour__intro--cast .t-tour__intro-art--right {
+  left: calc(100% - 24px);
 }
 
 @media (prefers-reduced-motion: reduce) {

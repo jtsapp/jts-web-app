@@ -16,6 +16,7 @@ import { isStepLevel, tasksToSteps, stripStageTail, groupBinary } from '../learn
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 import LevelExam from '../learning/LevelExam.jsx'
 import { EXAM_CODE, loadLevelExam } from '../learning/levelExam.js'
+import { lessonUnlocked } from '../learning/courseLock.js'
 import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -84,7 +85,7 @@ const KT_OFFSET = [50, 0, 100, 50]
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
 // backLabel — куда ведёт «назад» с тропы (карта, «Главная», план дня — App, lib/navStack.js).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, lessonTarget = null, onNav, onProfile, onBack, backLabel, isDemoAccount }) {
   const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -241,11 +242,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   //
   // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ ограничения админа: блокировку
   // модуля и квоту не обходит даже просмотр контента.
+  // Само правило — learning/courseLock.js: по нему же Луна говорит ученику «урок закрыт».
   const isUnlocked = useCallback(
-    (i) =>
-      !moduleLocked &&
-      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
-      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    (i) => lessonUnlocked(i, { trail: lessons, done, moduleLocked, moduleQuota, unlockAll }),
     [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
@@ -342,6 +341,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     },
     [level, moduleLocked, lessons, isUnlocked, course, lang, exam, t, showTrailHint],
   )
+
+  // Урок, который просили открыть (Луна: «открой урок 5» — App, lessonTarget): когда тропа
+  // и прогресс загрузились, — тем же openLesson, что и нажатие на узел: закрытый урок он
+  // не откроет и покажет подсказку «урок закрыт». Один раз на просьбу (at).
+  const handledTargetRef = useRef(null)
+  useEffect(() => {
+    if (!lessonTarget || state.loading || handledTargetRef.current === lessonTarget.at) return
+    handledTargetRef.current = lessonTarget.at
+    if (lessons.some((l) => l.code === lessonTarget.code)) openLesson(lessonTarget.code)
+  }, [lessonTarget, state.loading, lessons, openLesson])
 
   const retry = () => {
     setEnd(null)

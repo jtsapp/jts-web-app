@@ -2862,6 +2862,13 @@ button.hm-level__goal:focus-visible {
   background: #efe7ff;
   color: #9047ff;
 }
+.hm-tour-sections__mask {
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: var(--tour-ico) center / contain no-repeat;
+  mask: var(--tour-ico) center / contain no-repeat;
+}
 .hm-tour-sections__text {
   display: flex;
   flex-direction: column;

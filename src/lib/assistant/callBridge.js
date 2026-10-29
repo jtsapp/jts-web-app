@@ -8,7 +8,7 @@
 //   агент → браузер  luna.commit {id}                 черновик стал ходом
 //   браузер → агент  luna.reply  {id, text[, t]} … {id, end: true[, silent: true]}
 //   агент → браузер  luna.cancel {id[, drop]}         ученик перебил; drop — ход не начался
-//   браузер → агент  luna.say    {text}               шаг тура (пусто — замолчать)
+//   браузер → агент  luna.say    {text}               сказать текст (пусто — замолчать)
 //
 // pending — упреждающая генерация (16.10.2026, «скорость как в Speaking
 // Buddy»): агент спрашивает, ещё не решив, что ученик договорил. Ответ надо
@@ -127,7 +127,9 @@ export function createReplySender(room, agent, id) {
   }
 }
 
-/** Сказать в звонке (шаг тура) или, с пустым текстом, замолчать. */
+/** Сказать в звонке или, с пустым текстом, замолчать (кнопка «Перебить», «Новый чат»).
+ *  С текстом её звал прежний тур «от Луны» — шаги вслух (убран 28.10.2026); агент текст
+ *  по-прежнему произносит. */
 export function sayInCall(room, agent, text) {
   if (!room || !agent) return Promise.resolve()
   return room.localParticipant
@@ -138,22 +140,4 @@ export function sayInCall(room, agent, text) {
       responseTimeout: RPC_TIMEOUT_MS,
     })
     .catch(() => {})
-}
-
-/** Озвучка тура в звонке — тот же интерфейс, что у createTourVoice (tourVoice.js),
- *  только шаг читает агент: второй голос через <audio> поверх звонка звучал бы
- *  одновременно с ним и попадал бы в микрофон. Предзагрузки нет — агент
- *  синтезирует потоком. */
-export function createCallTourVoice(say) {
-  return {
-    say(phrases) {
-      const text = (phrases || []).map(callSpeech).filter(Boolean).join(' ')
-      if (text) say(text)
-    },
-    prefetch() {},
-    stop() {
-      say('')
-    },
-    dispose() {},
-  }
 }

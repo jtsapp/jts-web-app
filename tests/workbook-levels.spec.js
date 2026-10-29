@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { optOrder, slotCount, transTiles } from '../src/practice/workbook/engine.js'
+import { loginAsStudent } from './helpers/login.js'
 
 // Воркбуки A1–B2 (?screen=workbook&level=<код>). У A0 своя спека
 // (workbook.spec.js): она проверяет общую механику раздела. Здесь — то, чем
@@ -71,6 +72,9 @@ const openScreen = async (page, level, n, i) => {
   }
   await expect(page.locator('.wb-railmeta__t span')).toContainText(String(i + 1))
 }
+
+// Гостю кабинет не рисуется — его встречает экран входа (helpers/login.js).
+test.beforeEach(({ page }) => loginAsStudent(page))
 
 test.describe('Воркбук — каталоги уровней', () => {
   for (const level of LEVELS) {

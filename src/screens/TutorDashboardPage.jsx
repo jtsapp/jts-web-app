@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
 import { useMobileTab } from '../components/mobileTab.js'
 import Footer from '../components/Footer.jsx'
-import OnboardingTour from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot } from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { useEmotionShowcase } from '../tutor/useEmotionShowcase.js'
 import TutorThumb from '../tutor/TutorThumb.jsx'
@@ -58,11 +58,23 @@ export default function TutorDashboardPage({
   // элемент по селектору, и подсветка несуществующего .t-scenarios сломала бы
   // тур на первом же ассистенте.
   const tourSteps = [
-    { selector: '.t-dash__orb', title: t('tour.mic.title'), text: t('tour.mic.text') },
+    // Лицо, а не сама кнопка: картинка квадратная и вылезает из кнопки сверху и снизу — прожектор по кнопке резал
+    // её пополам, а низ уходил под карточку. Вместе с «Начать разговор»: лицо заходит на неё, и рамка резала кнопку.
+    { selector: ['.t-dash__orb .t-dash__face', '.t-dash__talk'], title: t('tour.mic.title'), text: t('tour.mic.text'), art: tourMascot('aizere-cheer'), ...TOUR_COACH_CARD },
     ...(isAssistant
       ? []
-      : [{ selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text') }]),
+      : [{ selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD }]),
   ]
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
+  // Тьюторы Speaking Buddy и есть маскоты — сверху Айзере и Декстер.
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('tour.tutor.intro.name'),
+    text: t('tour.tutor.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.skip'),
+    art: tourIntroArt('aizere-thumbs', 'dexter-cool'),
+  }
 
   return (
     <div className="t-app">
@@ -220,7 +232,7 @@ export default function TutorDashboardPage({
       <Footer />
 
       {showTour && (
-        <OnboardingTour steps={tourSteps} storageKey={tourStorageKey} onFinish={onTourDone} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourStorageKey} onFinish={onTourDone} />
       )}
     </div>
   )

@@ -1,4 +1,6 @@
 'use client'
+import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
+import { isLegalDocumentsScreen } from './lib/legalDocuments.js'
 
 import { useCallback, useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
@@ -31,6 +33,7 @@ import VerbsPage from './screens/VerbsPage.jsx'
 import SpeakSpinPage from './screens/SpeakSpinPage.jsx'
 import NumbersPage from './screens/NumbersPage.jsx'
 import PrepositionsPage from './screens/PrepositionsPage.jsx'
+import PronunciationPage from './screens/PronunciationPage.jsx'
 import GrammarGamesPage from './screens/GrammarGamesPage.jsx'
 import SpeedReadingPage from './screens/SpeedReadingPage.jsx'
 import CartoonsPage from './screens/CartoonsPage.jsx'
@@ -118,7 +121,7 @@ import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import BoothEntryPage from './screens/BoothEntryPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
-import { getTutor, temperFor } from './tutor/tutors.js'
+import { getTutor, temperFor, tempersForAll, tempersFromProfile } from './tutor/tutors.js'
 // Звук трансляции учителя разрешается ЗАРАНЕЕ, на жесте входа в урок: на iOS
 // сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
@@ -140,7 +143,9 @@ import PlatformPresence from './components/PlatformPresence.jsx'
 import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { onAssistantNavigate } from './lib/assistant/assistantBus.js'
 import { destinationOf } from './lib/assistant/destinations.js'
-import { holdTours, useTourRequest } from './lib/tourBus.js'
+import { isItemRef, itemNav } from './lib/assistant/items/refs.js'
+import { readSituationsDone } from './practice/situations/situationsProgress.js'
+import { holdTours } from './lib/tourBus.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { openLandingHandoff } from './landing/handoffClient.js'
@@ -186,7 +191,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
+  'home', 'services', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'speakspin', 'numbers', 'listen', 'prepositions', 'pronunciation', 'grammar-games', 'speed-reading', 'cartoons', 'wordhunt', 'arcade', 'homework', 'lessons',
   'ielts', 'vocab', 'tokens', 'prizes', 'course-catalog', 'profile', 'feedback',
   // Подбор учителя (ТЗ 08): шаг мастера и черновик живут в localStorage ученика, адресу хватает экрана
   'my-teacher', 'teacher-wizard', 'teacher-pick',
@@ -542,7 +547,7 @@ export default function App() {
         if (profile) {
           if (profile.tutor) {
             setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
+            setTempers(tempersFromProfile(profile))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -667,10 +672,11 @@ export default function App() {
   // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
   const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
-  // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
-  // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
-  // tutorKey, потому что это ровно то же самое решение ученика: кого слушать.
-  const [temper, setTemper] = useState(null)
+  // Нрав (ось 18+) у каждого тьютора свой (29.10.2026): кнопка 18+ у Декстера не
+  // трогает Спарка. temper — нрав выбранного тьютора: 'calm' | 'harsh' | null
+  // (null — у тьютора оси нет). В звонок уходит только он.
+  const [tempers, setTempers] = useState({})
+  const temper = temperFor(tutorKey, tempers[tutorKey])
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
@@ -833,6 +839,9 @@ export default function App() {
     }
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
+  // Урок, который тропа откроет сама по загрузке (Луна: «открой урок 5», lib/assistant/items/):
+  // { code, at } — at различает две одинаковые просьбы подряд.
+  const [courseLessonTarget, setCourseLessonTarget] = useState(null)
   // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
@@ -1056,7 +1065,7 @@ export default function App() {
       // юзера этого браузера (merge анкету тоже не переносит — см. merge.js).
       if (mode === 'register') {
         setTutorKey('spark')
-        setTemper(null)
+        setTempers({})
         setTutorOnboarded(false)
         setInterestIds([])
         setProfession('')
@@ -1083,7 +1092,7 @@ export default function App() {
             }
             if (profile.tutor) {
               setTutorKey(profile.tutor)
-              setTemper(temperFor(profile.tutor, profile.tutorTemper))
+              setTempers(tempersFromProfile(profile))
               setTutorOnboarded(true)
             }
             setInterestIds(enToInterestIds(profile.interests))
@@ -1178,7 +1187,7 @@ export default function App() {
           }
           if (profile.tutor) {
             setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
+            setTempers(tempersFromProfile(profile))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -1222,7 +1231,7 @@ export default function App() {
         }
         if (profile.tutor) {
           setTutorKey(profile.tutor)
-          setTemper(temperFor(profile.tutor, profile.tutorTemper))
+          setTempers(tempersFromProfile(profile))
           setTutorOnboarded(true)
         }
         setInterestIds(enToInterestIds(profile.interests))
@@ -1579,7 +1588,7 @@ export default function App() {
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
-    setTemper(null)
+    setTempers({})
     setTutorOnboarded(false)
     setProfileId(null)
     setInterestIds([])
@@ -1780,6 +1789,8 @@ export default function App() {
     // «Урок курса» из плана по дням — сразу в тропу уровня, который ученик проходит, а не на карту королевств
     else if (key === 'course') {
       const k = KINGDOMS.find((x) => x.level === String(payload?.level || userLevel || '').toUpperCase())
+      // Цель СБРАСЫВАЕТСЯ переходом без урока — иначе вчерашняя просьба открыла бы урок снова.
+      setCourseLessonTarget(payload?.lesson ? { code: String(payload.lesson), at: Date.now() } : null)
       if (k) {
         setKingdom(k)
         setScreen('kingdom-interior')
@@ -1804,6 +1815,7 @@ export default function App() {
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
     else if (key === 'prepositions') setScreen('prepositions')
+    else if (key === 'pronunciation') setScreen('pronunciation')
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
     else if (key === 'cartoons') setScreen('cartoons')
@@ -1897,6 +1909,17 @@ export default function App() {
   useEffect(
     () =>
       onAssistantNavigate((target) => {
+        // Конкретная вещь по адресу (урок 5, тема, текст — lib/assistant/items/): экран
+        // открывается заново с целью, даже если ученик уже на нём. Квота «Ситуаций» —
+        // по уровням, уже открытым на этом устройстве (как у карточки Практики).
+        if (isItemRef(target)) {
+          const to = itemNav(target, { situationsOpened: readSituationsDone() })
+          if (!to) return
+          setResume(null)
+          setScreenNonce((n) => n + 1)
+          handleNavRef.current?.(to.nav, to.payload)
+          return
+        }
         const dest = destinationOf(target)
         if (!dest) return
         if (dest.screen === screenRef.current) {
@@ -1908,9 +1931,6 @@ export default function App() {
       }),
     [],
   )
-  // Тур Speaking Buddy живёт не в экране, а здесь (showTutorTour), поэтому
-  // заявку Луны на него забирает App, пока открыт дашборд тьютора.
-  useTourRequest(screen === 'tutor-dashboard' ? () => setShowTutorTour(true) : null)
 
   function restoreAppPlace(to, place) {
     // Цель перехода в Практику (книги с «Главной», юнит домашки) уже отыграла:
@@ -2057,6 +2077,9 @@ export default function App() {
     ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     : renderScreen(view)
   return (
+    <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
+      required={!!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}
+      onLogout={handleLogout}>
     <MobileTabContext.Provider value={setMobileTab}>
       {page && (
         <div key={`${view}#${screenNonce}`} className="scr-in">
@@ -2096,6 +2119,7 @@ export default function App() {
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
       )}
     </MobileTabContext.Provider>
+    </LegalDocumentsGate>
   )
 
   function renderScreen(view) {
@@ -2349,11 +2373,12 @@ export default function App() {
           // и запись идёт через него же — тем самым WhatsApp, куда ведут все
           // остальные демо-призывы (src/lib/support.js).
           onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
-          // Окно «Жёсткий режим общения» после тура: та же настройка, что кнопка «18+» у тьютора. Тьютор ещё не выбран —
-          // нрав всё равно пишется в профиль и встанет, когда ученик выберет тьютора с осью нрава (temperFor).
+          // Окно «Жёсткий режим общения» после тура: включает 18+ всем тьюторам с
+          // осью нрава (Декстеру и Спарку); дальше у каждого свой тумблер.
           onTemperChoice={(next) => {
-            setTemper(temperFor(tutorKey, next) ?? temper)
-            saveTutorPrefs(token, { tutorTemper: next })
+            const patch = tempersForAll(next)
+            setTempers((prev) => ({ ...prev, ...patch }))
+            saveTutorPrefs(token, { tutorTempers: patch })
           }}
         />
       )
@@ -2549,6 +2574,17 @@ export default function App() {
           onProfile={() => setScreen('profile')}
         />
       )
+    case 'pronunciation':
+      return (
+        <PronunciationPage
+          {...sectionBack('speaking')}
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'grammar-games':
       return (
         <GrammarGamesPage
@@ -2668,7 +2704,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage key={lessonsTarget?.at ?? 'lessons'} userLevel={userLevel} userName={name} token={token} initialTab={lessonsTarget?.tab ?? resumeOf('lessons')?.tab} initialReportId={lessonsTarget?.reportId ?? null}onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} initialId={homeworkTarget} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'tokens':
@@ -2916,6 +2952,7 @@ export default function App() {
           userLevel={userLevel}
           token={token}
           unlockAll={devUnlock}
+          lessonTarget={courseLessonTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           // Тропу открывают и с карты, и из плана дня («Урок курса»): назад — туда же.
@@ -2938,17 +2975,19 @@ export default function App() {
           // Из «Управления» — обратно туда; иначе — откуда открыли тьютора
           // (Главная, Практика, план дня), а не всегда на «Главную».
           onBack={() => (tutorEditFrom === 'manage' ? goAfterTutorEdit('home') : goBack(() => setScreen('home')))}
-          tutorKey={tutorKey}
-          temper={temper}
+          tempers={tempers}
           selected={tutorEditFrom === 'manage' ? tutorKey : ''}
           onChoose={(key, chosenTemper = null) => {
             setTutorKey(key)
-            setTemper(chosenTemper)
+            if (chosenTemper) setTempers((prev) => ({ ...prev, [key]: chosenTemper }))
             // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
             setTutorOnboarded(true)
             // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
             // в профиле останется тьютор с чужим характером.
-            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
+            saveTutorPrefs(token, {
+              tutor: key,
+              ...(chosenTemper ? { tutorTempers: { [key]: chosenTemper } } : {}),
+            })
             // Язык спрашиваем только в первый проход. Смена тьютора из
             // «Управления» идёт сразу в загрузку: язык уже выбран, а флаг
             // tutorEditFrom должен дожить до конца цепочки (goAfterTutorEdit).
@@ -3250,8 +3289,8 @@ export default function App() {
           temper={temper}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
-            setTemper(next)
-            saveTutorPrefs(token, { tutorTemper: next })
+            setTempers((prev) => ({ ...prev, [tutorKey]: next }))
+            saveTutorPrefs(token, { tutorTempers: { [tutorKey]: next } })
           }}
           calls={callHistory}
           onOpenCall={(call) => {

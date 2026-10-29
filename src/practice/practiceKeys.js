@@ -86,6 +86,11 @@ export const WORDHUNT_KEY = 'jts_lexiverse_v1'
 // Недорешённые сетки кроссворда { <планета:шаг | comet>: { seed, keys, v, r, h } } — только устройство (wip
 // прототипа): недописанные буквы на другое устройство не везём, но чистим вместе с прогрессом.
 export const WORDHUNT_WIP_KEY = 'jts_lexiverse_wip'
+// Прогресс Pronunciation World: { learned: { <id темы>: true }, rounds: { <id темы>: [{ done?, best?, plays? } ×3] },
+// tutorial, level, last } — форма и ключ прототипа (jts-pron-v2), без tr: перевод живёт только во вкладке
+// (sessionStorage jts-pron-tr движка). Replace со сведением merge (pronunciation/progress.js): прочитанная тема и
+// пройденный раунд не «распроходятся», лучший результат — с любого устройства.
+export const PRONUNCIATION_KEY = 'jts-pron-v2'
 // «Грамматика · игры»: звук ответов вкл/выкл ('0' — выключен) — настройка устройства, как громкость; не синкается и
 // при выходе не чистится. Звёзды раздела живут на бэкенде (/mobile/grammar-games/progress), ключа в хранилище нет.
 export const GRAMMAR_GAMES_SOUND_KEY = 'jts_grammar_games_sound'
@@ -113,6 +118,7 @@ export const LISTEN_PROGRESS_EVENT = 'listen-progress'
 export const PREPOSITIONS_PROGRESS_EVENT = 'prepositions-progress'
 export const CARTOONS_PROGRESS_EVENT = 'cartoons-progress'
 export const WORDHUNT_PROGRESS_EVENT = 'wordhunt-progress'
+export const PRONUNCIATION_PROGRESS_EVENT = 'pronunciation-progress'
 export const VOCAB_LEARNED_EVENT = 'vocab-learned-progress'
 export const VOCAB_MISSES_EVENT = 'vocab-misses-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }

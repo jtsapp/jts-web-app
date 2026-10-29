@@ -69,7 +69,7 @@ import { PRACTICE_LEVELS, matchesLevel, nearestLevelCode, cefrOf } from '../prac
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { canOpenSeen, markSeen } from '../practice/overlaySeen.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
-import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
+import OnboardingTour, { TOUR_COACH_CARD, tourIntroArt, tourMascot, useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { loadModule } from '../lib/lazyModule.js'
 import { rememberPlace, resumeOf } from '../lib/navStack.js'
 
@@ -622,15 +622,24 @@ export default function PracticePage({
   // Тур — ученический: преподаватель пользуется экраном как витриной заданий
   // для выдачи на дом (AssignPracticeBar), и объяснения ему не про него.
   const tour = useScreenTour(teacher ? null : tourKey)
+  // Вид тура — как у «Главной» (look="coach"): приветствие и маскот в каждой карточке.
   const tourSteps = [
-    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text') },
-    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text') },
-    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
-    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text') },
-    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
-    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
+    { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text'), art: tourMascot('sport-wave'), ...TOUR_COACH_CARD },
+    { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text'), art: tourMascot('dexter-cool', 200), ...TOUR_COACH_CARD },
+    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text'), art: tourMascot('aizere-thumbs'), ...TOUR_COACH_CARD },
+    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text'), art: tourMascot('artist-paint'), ...TOUR_COACH_CARD },
+    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text'), art: tourMascot('aizere-book'), ...TOUR_COACH_CARD },
+    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text'), art: tourMascot('sport-fly'), ...TOUR_COACH_CARD },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text'), art: tourMascot('dexter-book'), ...TOUR_COACH_CARD },
   ]
+  const tourIntro = {
+    title: t('tour.intro.title'),
+    name: t('nav.practice'),
+    text: t('tour.practice.intro.text'),
+    cta: t('tour.intro.cta'),
+    skip: t('tour.intro.skip'),
+    art: tourIntroArt('artist-stand', 'sport-stand'),
+  }
   // Перед стартом возвращаем обзор «Аудирования»: под развёрнутым разделом или
   // другой вкладкой шагов в DOM нет, и тур свёлся бы к двум.
   const startTour = () => {
@@ -918,6 +927,20 @@ export default function PracticePage({
             desc={t('practice.prepositions.desc')}
             cta={t('practice.prepositions.cta')}
             onStart={() => onNav?.('prepositions')}
+          />
+        )
+
+      case 'pronunciation':
+        return (
+          <Banner
+            key={sec.id}
+            id="sec-pronunciation"
+            variant="pronunciation"
+            wide
+            title={t('practice.pronunciation.heading')}
+            desc={t('practice.pronunciation.desc')}
+            cta={t('practice.pronunciation.cta')}
+            onStart={() => onNav?.('pronunciation')}
           />
         )
 
@@ -1338,7 +1361,7 @@ export default function PracticePage({
       )}
 
       {tour.open && (
-        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        <OnboardingTour look="coach" intro={tourIntro} steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </LearningLayout>
   )
