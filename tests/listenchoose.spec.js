@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { loginAsStudent } from './helpers/login.js'
 
 // Раздел «Слушай и выбирай» (?screen=listenchoose). Тесты гостевые (без токена):
 // раздел бесплатный, прогресс живёт в localStorage, данные и картинки — статика.
@@ -407,12 +408,15 @@ test.describe('раскладка', () => {
 })
 
 test.describe('хаб Практики', () => {
-  test('баннер во вкладке «Аудирование» ведёт в раздел', async ({ page }) => {
+  test('карточка во вкладке «Аудирование» ведёт в раздел', async ({ page }) => {
+    // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
+    await loginAsStudent(page)
     await page.goto('/?screen=practice')
-    const banner = page.locator('#sec-listenchoose')
-    await expect(banner).toBeVisible({ timeout: 30000 })
-    await expect(banner).toContainText('Услышь детали')
-    await banner.locator('.pk-banner__cta').click()
+    // С редизайна 29.10.2026 баннера с кнопкой нет: вся карточка — кнопка перехода.
+    const card = page.locator('#sec-listenchoose')
+    await expect(card).toBeVisible({ timeout: 30000 })
+    await expect(card).toContainText('Услышь детали')
+    await card.click()
     await expect(page.locator('.lc-head h1')).toContainText('Слушай и выбирай')
   })
 })

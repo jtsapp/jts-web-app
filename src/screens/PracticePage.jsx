@@ -50,7 +50,6 @@ import {
   SituationCard,
 } from './practice/PracticeCards.jsx'
 import { isTeacher } from '../lib/jwt.js'
-import { plural } from '../lib/plural.js'
 import { sectionTokenPoints, useStudentTokens } from '../practice/practiceTokens.js'
 import { PracticeTokenSub, PracticeTokenTable } from '../components/TokenBlocks.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -478,11 +477,6 @@ export default function PracticePage({
   const tokenData = useStudentTokens(apiToken)
   const tokenRules = Array.isArray(tokenData?.practiceRules) ? tokenData.practiceRules : []
   const tokensOf = (sectionId) => sectionTokenPoints(tokenRules, sectionId)
-  const tokenTag = (sectionId) => {
-    const points = tokensOf(sectionId)
-    return points > 0 ? plural(t, lang, 'practice.tokenBadge', points) : undefined
-  }
-
   // Отмеченное хранится ВМЕСТЕ с уровнем, а не рядом с ним. Уровень входит в
   // адрес юнита, а не только в его показ: «Unit 3» уровня A2 и «Unit 3» уровня
   // B1 — разные задания, и при смене уровня выбор обязан обнулиться. Сброс
@@ -596,11 +590,11 @@ export default function PracticePage({
   // Сценарии «Ситуаций» выбранного уровня — карточками, как в макете, а не
   // одной карточкой уровня. Данные — тот же JSON уровня, что читает экран
   // раздела, и тот же кэш вкладки (situationsData.js): после Практики он
-  // открывается уже без загрузки. Тянем, только когда секция на экране.
+  // открывается уже без загрузки. Тянем, только когда открыт список: в обзоре у «Ситуаций» одна карточка.
   // У C2 своей программы нет — берём ближайший уровень, как грамматика.
   const situLevel = nearestLevelCode(level, SITUATION_CODES)
   const [situ, setSitu] = useState({ level: null, items: [] })
-  const wantSitu = tab === 'speaking' || expanded === 'situations'
+  const wantSitu = expanded === 'situations'
   useEffect(() => {
     if (!wantSitu || !situLevel) return undefined
     let alive = true
@@ -859,7 +853,13 @@ export default function PracticePage({
 
   // ── Секции навыка ────────────────────────────────────────────────────────
   const grid = expanded !== null
-  const toggle = (id) => () => setExpanded((cur) => (cur === id ? null : id))
+  // Нажатая кнопка при открытии и закрытии списка пропадает из разметки — фокус клавиатуры уехал бы в body. Ведём его
+  // на «Свернуть» открытого списка и обратно на карточку, с которой его открыли.
+  const focusLater = (selector) => requestAnimationFrame(() => document.querySelector(selector)?.focus({ preventScroll: true }))
+  const toggle = (id) => () => {
+    setExpanded((cur) => (cur === id ? null : id))
+    focusLater(`.pk-card[data-card="${id}"]`)
+  }
   const head = (sec, title, children) => (
     <SectionHead
       title={title}
@@ -1120,6 +1120,7 @@ export default function PracticePage({
       setExpanded(card.id)
       document.querySelector('.learn__main')?.scrollTo?.(0, 0)
       window.scrollTo(0, 0)
+      focusLater('.pk-sec .pk-all')
       return
     }
     onNav?.(card.nav, card.nav === 'arcade' ? { ...card.payload, skill: tab } : card.payload || undefined)

@@ -1954,6 +1954,8 @@ export default function App() {
   // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
+  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
+  // мини-игра Listening, «Слова в картинках», «Числа», «Скорочтение», Word Hunt и «Аркада» — во вкладке «Грамматика».
   function sectionBack(skill) {
     return {
       onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
@@ -2455,7 +2457,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2507,7 +2509,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2531,7 +2533,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2578,7 +2580,7 @@ export default function App() {
     case 'speed-reading':
       return (
         <SpeedReadingPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2602,7 +2604,7 @@ export default function App() {
     case 'wordhunt':
       return (
         <WordHuntPage
-          {...sectionBack('reading')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2660,7 +2662,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
-          {...sectionBack(arcadeTarget?.skill || 'speaking')}
+          {...sectionBack(arcadeTarget?.skill || 'grammarGames')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}

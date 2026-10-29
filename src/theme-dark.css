@@ -502,22 +502,18 @@ html[data-theme="dark"] .tb-idle button {
   background: var(--dk-acc);
   color: var(--dk-on-acc);
 }
-html[data-theme="dark"] .tb-card,
-html[data-theme="dark"] .tb-table {
+html[data-theme="dark"] .tb-card {
   border-color: var(--dk-line);
   background: var(--dk-card);
 }
 html[data-theme="dark"] .tb-card h3,
-html[data-theme="dark"] .tb-table h3,
 html[data-theme="dark"] .tb-legend__max {
   color: var(--dk-text);
 }
-html[data-theme="dark"] .tb-card strong,
-html[data-theme="dark"] .tb-table td:last-child {
+html[data-theme="dark"] .tb-card strong {
   color: var(--dk-yellow);
 }
-html[data-theme="dark"] .tb-card small,
-html[data-theme="dark"] .tb-table td:first-child {
+html[data-theme="dark"] .tb-card small {
   color: var(--dk-muted);
 }
 html[data-theme="dark"] .tb-link {

@@ -54,11 +54,12 @@ const norm = (value) => String(value || '').trim().toLowerCase()
 /** Сколько токенов даёт секция; 0 — ничего не обещаем (правила не пришли, выключено или секция не начисляет). */
 export function sectionTokenPoints(rules, sectionId) {
   if (!Array.isArray(rules)) return 0
+  // Запасное правило — только когда своего нет вовсе: своё с нулём значит «выключено», а не «спроси общее».
   for (const key of [].concat(SECTION_RULE[sectionId] || [])) {
-    const name = RULE_NAMES[key]
-    const rule = rules.find((item) => norm(item?.name) === norm(name))
-    const points = Number(rule?.points)
-    if (Number.isFinite(points) && points > 0) return Math.floor(points)
+    const rule = rules.find((item) => norm(item?.name) === norm(RULE_NAMES[key]))
+    if (!rule) continue
+    const points = Number(rule.points)
+    return Number.isFinite(points) && points > 0 ? Math.floor(points) : 0
   }
   return 0
 }

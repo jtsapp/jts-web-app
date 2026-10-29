@@ -3984,7 +3984,6 @@ textarea {
   vertical-align: middle;
   white-space: nowrap;
 }
-.pk-tokens--tile { align-self: flex-start; margin: 4px 0 0; }
 .pk-sec__tools {
   display: flex;
   align-items: center;

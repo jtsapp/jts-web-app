@@ -47,6 +47,10 @@ describe('sectionTokenPoints', () => {
     expect(sectionTokenPoints(RULES, 'listening')).toBe(4)
     expect(sectionTokenPoints(RULES, 'listenchoose')).toBe(0)
   })
+
+  it('своё правило с нулём — токенов нет, общий «Тренажёр» не подставляется', () => {
+    expect(sectionTokenPoints([...RULES, { name: 'Listening мини-игра', points: 0 }], 'listening')).toBe(0)
+  })
 })
 
 

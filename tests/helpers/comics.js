@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { mockGates } from './login.js'
 
 // Читалка комикса без бэкенда: каталог из одного комикса на три страницы и
 // сами страницы картинками-заглушками. Общий файл для спек зума пальцами и
@@ -23,6 +24,8 @@ export async function mockComics(page) {
     if (toursOff) localStorage.setItem('jts_tours_off', toursOff)
     localStorage.setItem('jts_access_token', 'test-token')
   })
+  // Замки develop с 29.10.2026 (документы платформы, разделы тарифа) — иначе вместо Практики их экран.
+  await mockGates(page)
   // Без телефона приложение с 07.10 уводит на экран «Укажите номер» вместо
   // Практики — профиль отдаём полным.
   await page.route('**/api/auth/me', (r) =>
@@ -38,9 +41,11 @@ export async function mockComics(page) {
 
 export async function openReader(page) {
   await page.goto('/?screen=practice')
-  // Комиксы — во вкладке «Чтение», по умолчанию открыто «Аудирование».
+  // Комиксы — во вкладке «Чтение», по умолчанию открыто «Аудирование». Карточка «Комиксы» с редизайна
+  // 29.10.2026 — вход в каталог: сам комикс выбирают в раскрывшемся списке.
   await page.locator('.pk-skills').getByRole('tab', { name: /Чтение/ }).click()
-  await page.locator('#sec-comics').getByText('Yellow').first().click()
+  await page.locator('#sec-comics').click()
+  await page.locator('section#sec-comics').getByText('Yellow').first().click()
   const img = page.locator('.cr__img:not(.cr__img--off)')
   await expect(img).toBeVisible()
   await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true)

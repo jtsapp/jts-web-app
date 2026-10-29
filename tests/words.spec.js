@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { poolFor } from '../src/practice/words/session.js'
+import { loginAsStudent } from './helpers/login.js'
 
 // Раздел «Слова в картинках» (?screen=words): каталог → превью сцены → игра →
 // результат. Тесты гостевые (без токена): раздел бесплатный, а прогресс живёт
@@ -305,11 +306,15 @@ test.describe('звук', () => {
 })
 
 test.describe('вход из Практики', () => {
-  test('баннер раздела ведёт на его каталог', async ({ page }) => {
+  test('карточка раздела во вкладке «Грамматика» ведёт на его каталог', async ({ page }) => {
+    // Гостю кабинет с 23.10.2026 не рисуется (лендинг «Войти»), поэтому Практику открываем учеником.
+    await loginAsStudent(page)
     await page.goto('/?screen=practice')
-    const banner = page.locator('#sec-words')
-    await expect(banner).toBeVisible({ timeout: 15000 })
-    await banner.locator('.pk-banner__cta').click()
+    // С редизайна 29.10.2026 игры собраны во вкладке «Грамматика», и вся карточка — кнопка перехода.
+    await page.locator('.pk-skill--grammarGames').click({ timeout: 15000 })
+    const card = page.locator('#sec-words')
+    await expect(card).toBeVisible()
+    await card.click()
     await expect(page.locator('.wd-hero h1')).toHaveText('Слова в картинках')
   })
 })
