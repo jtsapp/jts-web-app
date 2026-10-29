@@ -411,9 +411,11 @@ assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark"
 os.environ["DEXTER_TEMPER"] = "off"
 assert buddy_persona_for(calm_p) == "dexter"
 os.environ.pop("DEXTER_TEMPER")
-# ── Хулиган: кнопка 18+ (и пустой нрав старого веба) ───────────────────────
-for temper in ("harsh", "", "HARSH", "nonsense"):
+# ── Хулиган — только по кнопке 18+; без нрава — свой пацан (решение 29.10) ──
+for temper in ("harsh", "HARSH", " harsh "):
     assert buddy_persona_for(profile(temper=temper)) == "dexter_hooligan", temper
+for temper in ("", "nonsense", "calm"):
+    assert buddy_persona_for(profile(temper=temper)) == "dexter_calm", temper
 for grp in ("adult", "teen", "child", ""):
     h = build_buddy_instructions(profile(temper="harsh", age_group=grp), "dexter_hooligan")
     h_core = h.partition(CORE_HEADER)[2].partition("==== LEVEL PROFILE")[0]
