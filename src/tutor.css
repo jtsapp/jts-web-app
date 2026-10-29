@@ -1113,32 +1113,29 @@
   min-height: 280px;
   justify-content: center;
 }
-/* Таймер лимита — слева вверху шапки, под «Другие тьюторы» (24 поля шапки +
-   48 кнопки + 12). Цвета — как у кнопок шапки; последние 30 секунд — красный. */
+/* Таймер лимита — плашка 70×32 в правом нижнем углу шапки, в её полях 24
+   (дорисовка дизайнера к макету 29.10): светлая полупрозрачная, текст и
+   секундомер серые. Последние 30 секунд — красный. */
 .tp-call__timer {
   position: absolute;
-  top: 84px;
-  left: 24px;
+  right: 24px;
+  bottom: 24px;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px 0 10px;
+  gap: 4px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 12px 0 10px;
   border-radius: 999px;
-  background: #ffffff;
-  font-size: 15px;
-  font-weight: 700;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: #181818;
-}
-.tp-call__timer svg {
-  color: #9047ff;
+  color: #5a5a66;
 }
 .tp-call__timer.is-low {
-  color: #d9363e;
-}
-.tp-call__timer.is-low svg {
   color: #d9363e;
 }
 .tp-call__hint {
@@ -1350,6 +1347,11 @@
   }
   .tp-grid {
     padding: 32px 8px;
+  }
+  /* Полоса микрофона здесь почти во всю ширину шапки — таймеру в углу нужно
+     своё место под ней, иначе он налезет на трубку. */
+  .tp-hero--call {
+    padding-bottom: 68px;
   }
   .tp-grid__list {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

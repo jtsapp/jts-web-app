@@ -660,7 +660,8 @@
   .tp-hero--call {
     min-height: calc(100dvh - var(--mtab-h, 0px));
     box-sizing: border-box;
-    padding-bottom: 40px;
+    /* 40 кадра + место под таймером в углу (16 + 32), если группа дойдёт до низа. */
+    padding-bottom: 60px;
   }
   .tp-hero__others,
   .tp-hero__manage {
@@ -762,18 +763,10 @@
   .tp-bubble.is-wait {
     min-width: 37px;
   }
-  /* Под кнопкой «Другие тьюторы» (16 + 32 + 8). */
+  /* Поля шапки на телефоне — 16. */
   .tp-call__timer {
-    top: 56px;
-    left: 16px;
-    height: 28px;
-    padding: 0 10px 0 8px;
-    gap: 4px;
-    font-size: 13px;
-  }
-  .tp-call__timer svg {
-    width: 16px;
-    height: 16px;
+    right: 16px;
+    bottom: 16px;
   }
   .tp-call__card {
     padding: 28px 20px;
