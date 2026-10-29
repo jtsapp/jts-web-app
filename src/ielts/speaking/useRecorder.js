@@ -59,6 +59,9 @@ export function useRecorder() {
       setError('unsupported')
       return false
     }
+    // микрофон отвалился за визит (сняли гарнитуру, его забрала другая программа) — дорожка ended, и MediaRecorder на
+    // ней не запустится: открываем заново, а не падаем
+    if (streamRef.current && !streamRef.current.getAudioTracks().some((t) => t.readyState === 'live')) release()
     try {
       if (!streamRef.current) {
         const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
@@ -76,7 +79,15 @@ export function useRecorder() {
     }
     setError(null)
     const mime = pickMime()
-    const rec = new MediaRecorder(streamRef.current, mime ? { mimeType: mime } : undefined)
+    let rec
+    try {
+      rec = new MediaRecorder(streamRef.current, mime ? { mimeType: mime } : undefined)
+    } catch {
+      // исключение здесь уходило в отклонённый промис, которого никто не ждёт: экран стоял без записи и без ошибки
+      setError('failed')
+      release()
+      return false
+    }
     const chunks = []
     const t0 = Date.now()
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
@@ -98,7 +109,13 @@ export function useRecorder() {
       onDone?.(out)
     }
     recRef.current = rec
-    rec.start()
+    try {
+      rec.start()
+    } catch {
+      setError('failed')
+      release()
+      return false
+    }
     setElapsed(0)
     setState('recording')
     timerRef.current = setInterval(() => {
