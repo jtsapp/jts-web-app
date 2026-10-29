@@ -1113,6 +1113,34 @@
   min-height: 280px;
   justify-content: center;
 }
+/* Таймер лимита — слева вверху шапки, под «Другие тьюторы» (24 поля шапки +
+   48 кнопки + 12). Цвета — как у кнопок шапки; последние 30 секунд — красный. */
+.tp-call__timer {
+  position: absolute;
+  top: 84px;
+  left: 24px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px 0 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #181818;
+}
+.tp-call__timer svg {
+  color: #9047ff;
+}
+.tp-call__timer.is-low {
+  color: #d9363e;
+}
+.tp-call__timer.is-low svg {
+  color: #d9363e;
+}
 .tp-call__hint {
   margin-top: -24px;
   font-size: 14px;
