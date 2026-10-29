@@ -3842,8 +3842,8 @@ html[data-theme="dark"] .tp-call__card {
     background: var(--dk-card)
 }
 html[data-theme="dark"] .tp-call__timer {
-    background: color-mix(in oklab, var(--dk-card) 70%, transparent);
-    color: var(--dk-text-2)
+    background: color-mix(in oklab, var(--dk-card) 60%, transparent);
+    color: var(--dk-acc-text)
 }
 html[data-theme="dark"] .tp-call__timer.is-low {
     color: var(--dk-red)
