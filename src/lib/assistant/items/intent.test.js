@@ -33,6 +33,16 @@ describe('просьба открыть конкретное', () => {
     expect(kinds('үй жұмысымды аш')).toEqual(['homework'])
   })
 
+  it('книжка: по-русски, по-казахски, по-английски; «чтение» — только место', () => {
+    expect(kinds('открой какую-нибудь книжку в практике чтение')).toEqual(['book', 'reading'])
+    expect(kinds('открой книгу Питер Пэн')).toEqual(['book'])
+    expect(kinds('Питер Пэн кітабын ашып бер')).toEqual(['book'])
+    expect(kinds('open the book Treasure Island')).toEqual(['book'])
+    expect(kinds('хочу аудиокнигу')).toEqual(['book'])
+    // Воркбук — не книжка.
+    expect(kinds('открой workbook')).toEqual(['workbook'])
+  })
+
   it('вопрос без просьбы открыть — не просьба', () => {
     expect(itemIntent('почему мой ответ в этом уроке неверный?')).toBe(null)
     expect(itemIntent('объясни правило этой темы')).toBe(null)

@@ -106,6 +106,25 @@ describe('каталог для Луны', () => {
     expect(text).not.toContain('live.44')
   })
 
+  it('книжки: все уровни, автор, уровень и озвучка; ученический токен; скрытая — нет', async () => {
+    const backend = {
+      '/mobile/audio-lessons': [
+        { id: 7, title: 'Peter Pan', author: 'J. M. Barrie', level: 'A2', tracks: [{ audioUrl: 'x.mp3' }] },
+        { id: 8, title: 'Rich Dad Poor Dad', author: 'Robert T. Kiyosaki', level: 'B1', tracks: [] },
+        { id: 9, title: 'Draft', level: 'A1', isActive: false },
+      ],
+    }
+    const deps = fakeDeps({ backend })
+    const { text, items } = await buildItemCatalog({ kinds: ['book'], level: 'A1', token: 't', deps })
+    expect(text).toContain('[[OPEN_NOW books]]')
+    expect(text).toContain('- book.7 — «Peter Pan» (J. M. Barrie, A2, есть аудио)')
+    expect(text).toContain('- book.8 — «Rich Dad Poor Dad» (Robert T. Kiyosaki, B1)')
+    expect(text).not.toContain('book.9')
+    expect(items.get('book.7').label).toBe('книга “Peter Pan”')
+    expect(deps.asked).toEqual([{ p: '/mobile/audio-lessons', token: 't' }])
+    expect((await resolveItem('book.8', { token: 't', lang: 'kk', deps })).label).toBe('кітап “Rich Dad Poor Dad”')
+  })
+
   it('ничего не собралось — текста нет', async () => {
     const { text, items } = await buildItemCatalog({ kinds: ['ggame', 'homework'], level: 'B1', token: 't', deps: fakeDeps() })
     expect(text).toBe(null)

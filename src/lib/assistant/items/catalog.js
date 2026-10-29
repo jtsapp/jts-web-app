@@ -20,6 +20,7 @@ import { courseTrail } from '../../../learning/courseData.js'
 import { pickLevelModule } from '../../../learning/lessonModule.js'
 import { lessonUnlocked } from '../../../learning/courseLock.js'
 import { LESSONS as SHADOWING_LESSONS } from '../../../practice/shadowing/lessons.js'
+import { hasAudio } from '../../../practice/books/audioFilter.js'
 import { parseItemRef } from './refs.js'
 
 // Грамматика B1 — 145 тем: даже названиями это ~2 тыс. токенов, дальше незачем.
@@ -75,6 +76,7 @@ const WORD = {
   grammar: { ru: 'тема', kk: 'тақырып', en: 'topic' },
   ggame: { ru: 'игра', kk: 'ойын', en: 'game' },
   reading: { ru: 'текст', kk: 'мәтін', en: 'text' },
+  book: { ru: 'книга', kk: 'кітап', en: 'book' },
   situation: { ru: 'ситуация', kk: 'жағдай', en: 'situation' },
   shadowing: { ru: 'шэдоуинг', kk: 'шэдоуинг', en: 'shadowing' },
   words: { ru: 'слова', kk: 'сөздер', en: 'words' },
@@ -196,6 +198,20 @@ async function readingItems(level, { deps }) {
   return lists.flat().filter((t) => t?.id).map((t) => item(`reading.${t.id}`, 'reading', quote(t.title), t.genre ? ` (${t.genre})` : '', { name: t.title }))
 }
 
+// Книжки — каталог Практики (/mobile/audio-lessons, только kind BOOK): все уровни, а не
+// уровень ученика — книгу просят по названию, и уровень на обложке ученик не помнит.
+// Автор и уровень — модели, чтобы «Питер Пэн» и «книжку Барри» сошлись с Peter Pan.
+async function bookItems(_level, { token, deps }) {
+  const data = await deps.getJson('/mobile/audio-lessons', token)
+  const list = Array.isArray(data) ? data : data?.content || data?.items || []
+  return list
+    .filter((b) => b?.id != null && strip(b.title) && b.isActive !== false)
+    .map((b) => {
+      const about = [strip(b.author), String(b.level || '').toUpperCase(), hasAudio(b) ? 'есть аудио' : ''].filter(Boolean).join(', ')
+      return item(`book.${b.id}`, 'book', quote(b.title), about ? ` (${about})` : '', { name: b.title })
+    })
+}
+
 async function situationItems(level, { deps, lang = 'ru' }) {
   const lvl = String(level || '').toLowerCase() === 'a0' ? 'a1' : String(level || '').toLowerCase()
   const levels = PRACTICE_LEVELS.includes(lvl) ? [lvl] : PRACTICE_LEVELS
@@ -262,6 +278,7 @@ const BUILDERS = {
   grammar: grammarItems,
   ggame: ggameItems,
   reading: readingItems,
+  book: bookItems,
   situation: situationItems,
   shadowing: shadowingItems,
   words: wordsItems,
@@ -275,6 +292,9 @@ const HEADERS = {
   grammar: () => 'Темы грамматики (Практика)',
   ggame: () => '«Грамматика · игры»',
   reading: () => 'Тексты «Чтения»',
+  // Книгу не назвали («какую-нибудь книжку», «книжки») — не выбирать за ученика, а
+  // открыть весь список: просьба «открой книжку» — это просьба о выборе.
+  book: () => 'Книжки (Практика → Чтение; книгу не назвали — открой весь список книжек: [[OPEN_NOW books]])',
   situation: () => 'Ситуации (разговорная практика)',
   shadowing: () => 'Уроки шэдоуинга',
   words: () => 'Сцены «Слов в картинках»',

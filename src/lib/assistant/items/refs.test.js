@@ -15,6 +15,7 @@ describe('адрес вещи', () => {
     expect(parseItemRef('workbook.a1')).toEqual({ kind: 'workbook', level: 'a1', id: 'a1' })
     expect(parseItemRef('homework.m-7')).toEqual({ kind: 'homework', level: null, id: 'm-7' })
     expect(parseItemRef('live.45')).toEqual({ kind: 'live', level: null, id: '45' })
+    expect(parseItemRef('book.12')).toEqual({ kind: 'book', level: null, id: '12' })
   })
 
   it('мусор — не адрес', () => {
@@ -40,6 +41,11 @@ describe('переход по адресу', () => {
     expect(itemNav('homework.123')).toEqual({ nav: 'homework', payload: { id: '123' } })
     expect(itemNav('live.45')).toEqual({ nav: 'lessons', payload: { lessonId: '45' } })
     expect(itemNav('practice')).toBe(null)
+  })
+
+  // Книжка — в Практике: список книжек развёрнут, книгу экран откроет по bookId.
+  it('книжка: Практика, список книжек и bookId', () => {
+    expect(itemNav('book.12')).toEqual({ nav: 'practice', payload: { filter: 'books', bookId: '12' } })
   })
 
   // Квота «Ситуаций» считается уровнями: уже открытый уровень — сразу сценарий,

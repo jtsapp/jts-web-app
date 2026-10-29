@@ -34,6 +34,9 @@ const KIND = {
   situation: w('ситуаци|situation|жағда'),
   shadowing: w('ш[эе]доуинг|shadowing'),
   words: w('картинк|сцен[уаыое]|picture|сурет'),
+  // «book» — отдельным словом: иначе «workbook» был бы книжкой. «Кітап» перед гласной —
+  // «кітабын»: п переходит в б.
+  book: w(`книг|книж|кіта[пб]|${NOT_LETTER_BEFORE}(?:audio)?books?${NOT_LETTER_AFTER}`),
   reading: w(`текст|чтени|статью|reading|${NOT_LETTER_BEFORE}text${NOT_LETTER_AFTER}|мәтін|оқылым`),
   grammar: w(
     `грамматик|${NOT_LETTER_BEFORE}тем[уаые]?${NOT_LETTER_AFTER}|правил[оау]|grammar|topic|тақырып|` +
@@ -76,6 +79,9 @@ export function itemIntent(text, { userLevel } = {}) {
   if (has('situation')) kinds.push('situation')
   if (has('shadowing')) kinds.push('shadowing')
   if (has('words')) kinds.push('words')
+  // Книжка — раньше текстов: «открой книжку в Практике чтения» — про книжку, а «чтение»
+  // там только место.
+  if (has('book')) kinds.push('book')
   if (has('reading')) kinds.push('reading')
   // Тема грамматики может оказаться и игрой «Грамматика · игры» — каталог обоих; про
   // игру сказано прямо — она первая.

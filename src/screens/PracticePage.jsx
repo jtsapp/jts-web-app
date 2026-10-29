@@ -753,6 +753,20 @@ export default function PracticePage({
   // проверка на клиенте.
   const tryOpenBook = (book) => setOpenBook(book)
 
+  // Книга по просьбе Луне («открой Питера Пэна»): переход несёт bookId, а книгу
+  // открываем, когда доедет каталог, — тем же tryOpenBook, что и клик по обложке.
+  // Один раз по ключу, как у юнита грамматики: «Назад» из книги — в список
+  // книжек, а не снова в неё. Не нашлась — остаётся развёрнутый список.
+  const openedBookRef = useRef(null)
+  useEffect(() => {
+    const id = openTarget?.bookId
+    if (id == null || openedBookRef.current === String(id)) return
+    const book = books.find((b) => String(b.id) === String(id))
+    if (!book) return
+    openedBookRef.current = String(id)
+    tryOpenBook(book)
+  }, [openTarget, books])   // eslint-disable-line react-hooks/exhaustive-deps
+
   // Воркбуки. Все уровни A0–B2 живут на нативном экране (?screen=workbook):
   // свой плеер, прогресс по заданиям и разбор ошибок.
   const openWorkbookLevel = (code) => {
