@@ -362,3 +362,42 @@ describe('playUrl onTime', () => {
     expect(onTime).not.toHaveBeenCalled()
   })
 })
+
+describe('speakTts — промис завершается всегда (зависший Speaking в mock, 29.10.2026)', () => {
+  const settle = async (p) => {
+    let v = 'pending'
+    p.then((x) => {
+      v = x
+    })
+    await vi.advanceTimersByTimeAsync(60_000)
+    return v
+  }
+
+  it('новая реплика до первого звука — прежняя завершается как cancelled', async () => {
+    const first = speech.speakTts('Why do people travel?')
+    speech.speakTts('Why do people travel?')
+    expect(await settle(first)).toBe('cancelled')
+  })
+
+  it('поток встал после старта — maxMs обрывает реплику и завершает промис', async () => {
+    const p = speech.speakTts('Why do people travel?', { maxMs: 20_000 })
+    elements[0].onplaying()
+    expect(await settle(p)).toBe('timeout')
+    expect(speech.isTtsActive()).toBe(false)
+  })
+
+  it('maxMs не обрывает чужую реплику, начатую позже', async () => {
+    const first = speech.speakTts('one', { maxMs: 5_000 })
+    speech.playTts('two')
+    elements[0].onplaying()
+    expect(await settle(first)).toBe('cancelled')
+    expect(speech.isTtsActive()).toBe(true)
+  })
+
+  it('без maxMs дозвучавшая реплика — played', async () => {
+    const p = speech.speakTts('hi')
+    elements[0].onplaying()
+    elements[0].onended()
+    expect(await settle(p)).toBe('played')
+  })
+})

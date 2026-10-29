@@ -228,20 +228,44 @@ function playSrc(url, opts) {
   return true
 }
 
-/** Промис-обёртка: 'played' (реплика дозвучала или её оборвали), 'failed'. */
+/**
+ * Промис-обёртка: 'played' (реплика дозвучала или её оборвали), 'failed', 'cancelled' (новая реплика или stopTts
+ * до первого звука), 'timeout' (сработал maxMs). Промис завершается всегда: экзамен Speaking ждёт его, чтобы начать
+ * запись, и висящий промис оставлял ученика перед экраном без записи и без выхода (жалоба 29.10.2026).
+ * maxMs — потолок всей реплики: поток /api/tts может встать после первого звука, и тогда ни ended, ни error не придут.
+ */
 export function speakTts(text, opts = {}) {
   return new Promise((resolve) => {
+    let guard = null
+    let timedOut = false
+    const done = (v) => {
+      clearTimeout(guard)
+      resolve(v)
+    }
     playTts(text, {
       ...opts,
       onEnd: (reason) => {
         opts.onEnd?.(reason)
-        resolve('played')
+        done(timedOut ? 'timeout' : 'played')
+      },
+      onCancel: () => {
+        opts.onCancel?.()
+        done(timedOut ? 'timeout' : 'cancelled')
       },
       onFail: (reason) => {
         opts.onFail?.(reason)
-        resolve('failed')
+        done('failed')
       },
     })
+    if (opts.maxMs > 0) {
+      const mine = seq
+      guard = setTimeout(() => {
+        timedOut = true
+        // обрываем только свою реплику: после неё могла зазвучать другая
+        if (mine === seq) stopTts()
+        resolve('timeout')
+      }, opts.maxMs)
+    }
   })
 }
 
