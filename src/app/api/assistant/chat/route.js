@@ -163,6 +163,7 @@ export async function POST(request) {
       user: auth.user,
       studentContext,
       items: itemCatalog?.text || null,
+      itemsGuess: Boolean(intent?.guess),
       today: new Date().toISOString().slice(0, 10),
     }),
     model: MODEL,

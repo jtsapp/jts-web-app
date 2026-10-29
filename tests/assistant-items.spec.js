@@ -51,6 +51,41 @@ test('закрытый урок — не открывается, тропа по
   await expect(page.locator('.cp-step')).toHaveCount(0)
 })
 
+// «Открой книжку Питер Пэн» (29.10.2026): Практика открывается списком книжек, а книгу
+// экран открывает сам, когда доедет каталог. «Назад» из книги — в этот список.
+test('«открой книжку Питер Пэн» — открыта сама книга, «Назад» — список книжек', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, 'Открываю «Peter Pan».\n[[ASST_ACTION open book.104 now «книга “Peter Pan”»]]')
+  await page.route('**/mobile/audio-lessons', (r) =>
+    r.fulfill(json([
+      { id: 103, title: 'The Jungle Book', level: 'A2', tracks: [] },
+      { id: 104, title: 'Peter Pan', author: 'J. M. Barrie', level: 'A2', tracks: [] },
+    ])),
+  )
+  await ask(page, 'открой книжку Питер Пэн')
+  await expect(page.locator('.vd__back')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('Peter Pan').first()).toBeVisible()
+  await expect(page.locator('#sec-books')).toHaveCount(0)
+  await page.locator('.vd__back').click()
+  await expect(page.locator('#sec-books')).toBeVisible()
+  await expect(page.locator('#sec-books').getByText('The Jungle Book')).toBeVisible()
+})
+
+test('предложение «Открыть: караоке “…”» — сразу сцена песни', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, 'Это «Rainy Monday». Открыть?\n[[ASST_ACTION open karaoke.rainy-monday offer «караоке “Rainy Monday”»]]')
+  const track = { id: 1, slug: 'rainy-monday', title: 'Rainy Monday', artist: 'JTS Originals', level: 'A2', audioUrl: 'https://files.example/rainy.mp3' }
+  await page.route('**/mobile/karaoke', (r) => r.fulfill(json([track])))
+  await page.route('**/mobile/karaoke/1', (r) =>
+    r.fulfill(json({ ...track, lyrics: { version: 1, duration: 10, lines: [{ id: 1, start: 1, end: 4, text: 'I woke up on a rainy Monday' }] } })),
+  )
+  await ask(page, 'где караоке Rainy Monday?')
+  const open = page.getByRole('button', { name: 'Открыть: караоке “Rainy Monday”' })
+  await expect(open).toBeVisible()
+  await open.click()
+  await expect(page.locator('.kk-play .kk-top__title')).toHaveText('Rainy Monday', { timeout: 20_000 })
+})
+
 test('предложение — кнопка «Открыть: урок 1 “…”» ведёт в урок', async ({ page }) => {
   test.setTimeout(60_000)
   await setup(page, 'Это урок 1 «My biography». Открыть?\n[[ASST_ACTION open course.A1.L1 offer «урок 1 “My biography”»]]')

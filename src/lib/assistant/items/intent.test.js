@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { itemIntent } from './intent.js'
+import { GUESS_KINDS, itemIntent } from './intent.js'
 
 const kinds = (text, opts) => itemIntent(text, opts)?.kinds ?? null
 
@@ -41,6 +41,31 @@ describe('просьба открыть конкретное', () => {
     expect(kinds('хочу аудиокнигу')).toEqual(['book'])
     // Воркбук — не книжка.
     expect(kinds('открой workbook')).toEqual(['workbook'])
+  })
+
+  it('комикс, караоке, сказка, мультфильм, предлоги, произношение, письмо, аркада, урок воркбука', () => {
+    expect(kinds('открой комикс Maus')).toEqual(['comic'])
+    expect(kinds('включи караоке Believer')).toEqual(['karaoke'])
+    expect(kinds('открой сказку Снежная королева')).toEqual(['tale'])
+    expect(kinds('включи мультик про Пеппу')).toEqual(['cartoon'])
+    expect(kinds('открой урок предлогов in on at')).toEqual(['prep'])
+    expect(kinds('открой произношение звука th')).toEqual(['pron'])
+    expect(kinds('хочу письмо-жалобу')).toEqual(['writing'])
+    expect(kinds('открой Word Rush')).toEqual(['arcade'])
+    expect(kinds('открой скорочтение')).toEqual(['speedread'])
+    expect(kinds('открой Just to Listen медицина')).toEqual(['listen'])
+    expect(kinds('открой урок 5 воркбука')).toEqual(['workbook'])
+  })
+
+  // «Открой Остров сокровищ»: вид не назван, раздела нет — значит, вещь по имени.
+  it('вещь по одному названию — guess со всеми видами с названиями', () => {
+    for (const q of ['открой Остров сокровищ', 'включи Believer', 'Алиса в стране чудес ашып бер', 'open Peter Pan']) {
+      expect(itemIntent(q)).toMatchObject({ kinds: GUESS_KINDS, guess: true })
+    }
+    // Раздел, кнопка экрана, «следующее», вопрос или пустое «открой это» — не вещь.
+    for (const q of ['открой словарь', 'открой практику', 'открой Speaking Buddy', 'открой', 'открой это, пожалуйста', 'открой следующее задание', 'включи запись', 'включи звук', 'покажи, как это сделать', 'хочу отдохнуть']) {
+      expect(itemIntent(q)).toBe(null)
+    }
   })
 
   it('вопрос без просьбы открыть — не просьба', () => {

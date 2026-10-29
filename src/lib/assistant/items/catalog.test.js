@@ -125,6 +125,54 @@ describe('каталог для Луны', () => {
     expect((await resolveItem('book.8', { token: 't', lang: 'kk', deps })).label).toBe('кітап “Rich Dad Poor Dad”')
   })
 
+  it('комиксы, караоке, сказки, скорочтение, Just to Listen, предлоги, произношение, мультфильмы, аркада', async () => {
+    const backend = {
+      '/mobile/comics': [{ id: 3, slug: 'maus', title: 'Maus', author: 'Art Spiegelman' }, { id: 4, title: 'Adult', adultOnly: true }],
+      '/mobile/karaoke': [{ id: 1, slug: 'believer', title: 'Believer', artist: 'Imagine Dragons', level: 'b1', audioUrl: 'x.mp3' }, { id: 2, title: 'Без фонограммы' }],
+      '/mobile/speed-reading/texts': [{ id: 42, level: 'B1', title: { ru: 'Кофе', en: 'Coffee' } }],
+      '/mobile/listen': { levels: [{ id: 'A1', name: 'A1' }], fields: [{ id: 'medicine', name: { ru: 'Медицина', en: 'Medicine' } }] },
+      '/mobile/prepositions': { course: { cats: [{ id: 'place', title: { ru: 'Место' }, lessons: [{ id: 'in-on-at', title: { en: 'in / on / at', ru: 'в / на' } }] }] } },
+      '/mobile/pronunciation': { levels: [{ id: 'A1', modules: [{ id: 'A1.3', title: 'The TH sound' }] }, { id: 'B1', modules: [{ id: 'B1.1', title: 'Stress' }] }] },
+      '/mobile/cartoons': {
+        library: { entries: [{ id: 'peppa-swimming', level: 'A1', series: 'Peppa Pig', title: 'Swimming' }, { id: 'gone-1', level: 'A1', series: 'X', title: 'Y' }] },
+        catalog: { rows: [['A2', 'AbC123', 'Bluey', 'Keepy Uppy']] },
+        unavailable: [{ id: 'gone-1' }],
+      },
+    }
+    const kinds = ['comic', 'karaoke', 'tale', 'speedread', 'listen', 'prep', 'pron', 'cartoon', 'arcade']
+    const { text, items } = await buildItemCatalog({ kinds, level: 'A1', token: 't', deps: fakeDeps({ backend }) })
+    expect(text).toContain('- comic.maus — «Maus» (Art Spiegelman)')
+    expect(text).not.toContain('Adult')
+    expect(text).toContain('- karaoke.believer — «Believer» (Imagine Dragons, B1)')
+    expect(text).not.toContain('Без фонограммы')
+    expect(text).toContain('- tale.snow_queen — «The Snow Queen»')
+    expect(text).toContain('- speedread.42 — «Кофе» (B1)')
+    expect(text).toContain('- listen.medicine — «Медицина» (профессия)')
+    expect(text).toContain('- prep.in-on-at — «in / on / at / в / на» (Место)')
+    // Произношение — темы уровня ученика.
+    expect(text).toContain('- pron.A1.3 — «The TH sound» (A1)')
+    expect(text).not.toContain('pron.B1.1')
+    expect(text).toContain('- cartoon.peppa-swimming — «Peppa Pig — Swimming» (A1)')
+    expect(text).toContain('- cartoon.cat-AbC123 — «Bluey — Keepy Uppy» (A2)')
+    expect(text).not.toContain('gone-1')
+    expect(text).toContain('- arcade.runner — «Word Rush»')
+    expect(items.get('karaoke.believer').label).toBe('караоке “Believer”')
+  })
+
+  it('письмо по шагам и уроки воркбука уровня', async () => {
+    const files = {
+      ...FILES,
+      'practice/writing/b1.json': { seeds: [{ id: 'b1-complaint', title: 'A letter of complaint', sub: 'How to demand a solution politely' }] },
+      'practice/workbook/b1/index.json': { lessons: { 5: { title: 'Why we spend', unit: 2 } } },
+    }
+    const { text, items } = await buildItemCatalog({ kinds: ['writing', 'workbook'], level: 'B1', deps: fakeDeps({ files }) })
+    expect(text).toContain('- writing.b1.b1-complaint — «A letter of complaint»: How to demand a solution politely')
+    expect(text).toContain('- workbook.b1 — воркбук B1')
+    expect(text).toContain('- workbook.b1.5 — урок 5 «Why we spend» воркбука B1 (юнит 2)')
+    expect(items.has('workbook.a1')).toBe(true)
+    expect((await resolveItem('workbook.b1.5', { deps: fakeDeps({ files }) })).label).toBe('урок 5 “Why we spend”')
+  })
+
   it('ничего не собралось — текста нет', async () => {
     const { text, items } = await buildItemCatalog({ kinds: ['ggame', 'homework'], level: 'B1', token: 't', deps: fakeDeps() })
     expect(text).toBe(null)

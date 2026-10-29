@@ -21,6 +21,8 @@ import { pickLevelModule } from '../../../learning/lessonModule.js'
 import { lessonUnlocked } from '../../../learning/courseLock.js'
 import { LESSONS as SHADOWING_LESSONS } from '../../../practice/shadowing/lessons.js'
 import { hasAudio } from '../../../practice/books/audioFilter.js'
+import { normalizeTracks } from '../../../practice/karaoke/karaokeShape.js'
+import { TALES } from '../../../data/practiceLibrary.js'
 import { parseItemRef } from './refs.js'
 
 // Грамматика B1 — 145 тем: даже названиями это ~2 тыс. токенов, дальше незачем.
@@ -33,6 +35,18 @@ const HOMEWORK_DONE = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
 const GGAME_STEP = { A0: 'L1', A1: 'L1', A2: 'L2', B1: 'L3', B2: 'L4', C1: 'L5' }
 
 const fileCache = new Map()
+
+// Каталоги материала одни на всех учеников (книжки, комиксы, бандлы предлогов и
+// произношения…): на «открой Остров сокровищ» роут собирает их все разом, а бандлы
+// тяжёлые — поэтому 5 минут держим в памяти по адресу, без токена. Личное (домашка,
+// расписание, прогресс курса) сюда не попадает. Пустой ответ не кэшируется: «бэкенд не
+// ответил» не должно залипать.
+const SHARED_TTL_MS = 5 * 60_000
+const SHARED_PATHS = new Set([
+  '/mobile/audio-lessons', '/mobile/comics', '/mobile/karaoke', '/mobile/speed-reading/texts', '/mobile/listen',
+  '/mobile/cartoons', '/mobile/prepositions', '/mobile/pronunciation', '/mobile/grammar-games', '/mobile/shadowing',
+])
+const sharedCache = new Map()
 
 /** Доступ к данным — параметром: тесту — подмена, роуту — диск и бэкенд. */
 export const defaultDeps = {
@@ -50,6 +64,16 @@ export const defaultDeps = {
   },
   // null — бэкенд не ответил или ответил не то: «не знаем», а не «пусто».
   async getJson(p, token) {
+    if (SHARED_PATHS.has(p)) {
+      const hit = sharedCache.get(p)
+      if (hit && Date.now() - hit.at < SHARED_TTL_MS) return hit.data
+      const data = await defaultDeps.fetchJson(p, token)
+      if (data != null) sharedCache.set(p, { at: Date.now(), data })
+      return data
+    }
+    return defaultDeps.fetchJson(p, token)
+  },
+  async fetchJson(p, token) {
     try {
       const res = await fetch(`${BACKEND_URL}${p}`, {
         headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -77,6 +101,16 @@ const WORD = {
   ggame: { ru: 'игра', kk: 'ойын', en: 'game' },
   reading: { ru: 'текст', kk: 'мәтін', en: 'text' },
   book: { ru: 'книга', kk: 'кітап', en: 'book' },
+  comic: { ru: 'комикс', kk: 'комикс', en: 'comic' },
+  karaoke: { ru: 'караоке', kk: 'караоке', en: 'karaoke' },
+  tale: { ru: 'сказка', kk: 'ертегі', en: 'fairy tale' },
+  speedread: { ru: 'скорочтение', kk: 'жылдам оқу', en: 'speed reading' },
+  listen: { ru: 'Just to Listen', kk: 'Just to Listen', en: 'Just to Listen' },
+  writing: { ru: 'письмо', kk: 'жазу', en: 'writing' },
+  arcade: { ru: 'игра', kk: 'ойын', en: 'game' },
+  cartoon: { ru: 'мультфильм', kk: 'мультфильм', en: 'cartoon' },
+  prep: { ru: 'предлоги', kk: 'предлогтар', en: 'prepositions' },
+  pron: { ru: 'произношение', kk: 'айтылым', en: 'pronunciation' },
   situation: { ru: 'ситуация', kk: 'жағдай', en: 'situation' },
   shadowing: { ru: 'шэдоуинг', kk: 'шэдоуинг', en: 'shadowing' },
   words: { ru: 'слова', kk: 'сөздер', en: 'words' },
@@ -212,6 +246,130 @@ async function bookItems(_level, { token, deps }) {
     })
 }
 
+const listOf = (data) => (Array.isArray(data) ? data : data?.content || data?.items || [])
+// Название на языке ученика из { ru, kk, en } или строки; для модели — русское.
+const titleIn = (t, lang = 'ru') => (t && typeof t === 'object' ? t[lang] || t.ru || t.en || t.kk || '' : String(t ?? ''))
+const lvl2 = (level) => {
+  const l = String(level || '').toLowerCase()
+  return l === 'a0' ? 'a1' : l
+}
+
+// Комиксы — каталог Практики (/mobile/comics). Адрес — slug: закладка чтения держится
+// за него, id при перезаливке меняется (comicsShape.js). Помеченные «18+» экран сейчас
+// прячет от всех (visibleComics без профиля) — их и здесь нет.
+async function comicItems(_level, { token, deps }) {
+  const list = listOf(await deps.getJson('/mobile/comics', token))
+  return list
+    .filter((c) => c && strip(c.title || c.name) && !(c.adultOnly || c.isAdult || c.adult))
+    .map((c) => {
+      const key = /^[A-Za-z0-9_-]{1,48}$/.test(String(c.slug || '')) ? String(c.slug) : c.id != null ? String(c.id) : ''
+      const title = c.title || c.name
+      return key ? item(`comic.${key}`, 'comic', quote(title), c.author ? ` (${strip(c.author)})` : '', { name: title }) : null
+    })
+    .filter(Boolean)
+}
+
+// Караоке (/mobile/karaoke) — разбор тот же, что у экрана: трек без фонограммы не играет
+// и в каталоге не нужен. Адрес — slug (ключ прогресса), как и у карточки.
+async function karaokeItems(_level, { token, deps }) {
+  return normalizeTracks(await deps.getJson('/mobile/karaoke', token))
+    .filter((k) => k.slug && /^[A-Za-z0-9_-]{1,48}$/.test(k.slug))
+    .map((k) => item(`karaoke.${k.slug}`, 'karaoke', quote(k.title), ` (${[k.artist, k.level].filter(Boolean).join(', ')})`.replace(' ()', ''), { name: k.title }))
+}
+
+// Сказки — десять, статикой (practiceLibrary.js), как и карточки в Практике.
+async function taleItems() {
+  return TALES.map((tl) => item(`tale.${tl.id}`, 'tale', quote(tl.title), '', { name: tl.title }))
+}
+
+async function speedreadItems(level, { token, deps, lang = 'ru' }) {
+  const list = listOf(await deps.getJson('/mobile/speed-reading/texts', token))
+  return list
+    .filter((t) => t?.id != null && /^[A-Za-z0-9_-]{1,48}$/.test(String(t.id)) && strip(titleIn(t.title)))
+    .map((t) => item(`speedread.${t.id}`, 'speedread', quote(titleIn(t.title)), t.level ? ` (${String(t.level).toUpperCase()})` : '', { name: titleIn(t.title, lang) }))
+}
+
+// Just to Listen: наборы уровней и профессий (/mobile/listen).
+async function listenItems(_level, { token, deps, lang = 'ru' }) {
+  const data = await deps.getJson('/mobile/listen', token)
+  const sets = [...(data?.levels || []).map((s) => [s, 'уровень']), ...(data?.fields || []).map((s) => [s, 'профессия'])]
+  return sets
+    .filter(([s]) => s?.id != null && /^[A-Za-z0-9_-]{1,48}$/.test(String(s.id)))
+    .map(([s, what]) => {
+      const name = titleIn(s.name, 'ru') || String(s.id)
+      return item(`listen.${s.id}`, 'listen', quote(name), ` (${what})`, { name: titleIn(s.name, lang) || String(s.id) })
+    })
+}
+
+// Письмо по шагам: жанры уровня (30 на уровень), у A2 — ещё A2+.
+async function writingItems(level, { deps }) {
+  const l = lvl2(level)
+  const levels = l === 'a2' ? ['a2', 'a2p'] : ['a1', 'a2', 'b1', 'b2', 'c1'].includes(l) ? [l] : ['b1']
+  const lists = await Promise.all(levels.map((code) => deps.readJson(`practice/writing/${code}.json`).catch(() => null)))
+  return lists.flatMap((data, i) =>
+    (data?.seeds || [])
+      .filter((s) => s?.id && /^[A-Za-z0-9_-]{1,48}$/.test(s.id))
+      .map((s) => item(`writing.${levels[i]}.${s.id}`, 'writing', quote(s.title), s.sub ? `: ${strip(s.sub)}` : '', { name: s.title })),
+  )
+}
+
+async function arcadeItems() {
+  return [
+    item('arcade.speak', 'arcade', '«Speak or Die»', ': говори без пауз, пока бензопила не догнала', { name: 'Speak or Die' }),
+    item('arcade.runner', 'arcade', '«Word Rush»', ': бегун по дорожкам, вбегай в перевод слова', { name: 'Word Rush' }),
+  ]
+}
+
+// Cartoon World (/mobile/cartoons): четыре источника каталога, id — как у движка
+// (cartoons/engine.js: library и фильмы — свой id, строки каталога — cat-<yt>, добавленные —
+// ext-<yt>). Удалённые с YouTube (unavailable) не предлагаем. Видео сотни — длинный список
+// режется уровнем ученика.
+async function cartoonItems(level, { token, deps }) {
+  const data = await deps.getJson('/mobile/cartoons', token)
+  if (!data) return []
+  const gone = new Set((data.unavailable || []).map((v) => v?.id).filter(Boolean))
+  const all = [
+    ...(data.library?.entries || []).map((e) => ({ id: e.id, level: e.level, series: e.series, title: e.title })),
+    ...(data.data?.episodes || []).map((e) => ({ id: e.id, level: e.level, series: '', title: e.title })),
+    ...(data.catalog?.rows || []).map((r) => ({ id: `cat-${r[1]}`, level: r[0], series: r[2], title: r[3] })),
+    ...(data.extra?.rows || []).map((e) => ({ id: `ext-${e.yt}`, level: e.level, series: e.series, title: e.title })),
+  ].filter((v) => v.id && !gone.has(v.id) && /^[A-Za-z0-9_-]{1,48}$/.test(String(v.id)) && strip(v.title))
+  const L = String(level || '').toUpperCase()
+  const pool = all.length > MAX_LINES && L ? all.filter((v) => String(v.level).toUpperCase() === L) : all
+  return pool.map((v) => {
+    const name = v.series ? `${v.series} — ${v.title}` : v.title
+    return item(`cartoon.${v.id}`, 'cartoon', quote(name), v.level ? ` (${v.level})` : '', { name })
+  })
+}
+
+// Prepositions World: уроки категорий (/mobile/prepositions, course.cats[].lessons[]).
+async function prepItems(_level, { token, deps, lang = 'ru' }) {
+  const data = await deps.getJson('/mobile/prepositions', token)
+  return (data?.course?.cats || []).flatMap((c) =>
+    (c.lessons || [])
+      .filter((l) => l?.id && /^[A-Za-z0-9_-]{1,48}$/.test(String(l.id)))
+      .map((l) => {
+        const en = titleIn(l.title, 'en')
+        const ru = titleIn(l.title, 'ru')
+        const name = en && ru && en !== ru ? `${en} / ${ru}` : en || ru || String(l.id)
+        return item(`prep.${l.id}`, 'prep', quote(name), c.title ? ` (${strip(titleIn(c.title))})` : '', { name: titleIn(l.title, lang) || name })
+      }),
+  )
+}
+
+// Pronunciation World: темы уровней (/mobile/pronunciation, levels[].modules[], id «A1.3»).
+async function pronItems(level, { token, deps, lang = 'ru' }) {
+  const data = await deps.getJson('/mobile/pronunciation', token)
+  const L = String(level || '').toUpperCase()
+  const levels = data?.levels || []
+  const own = levels.filter((l) => String(l.id).toUpperCase() === L)
+  return (own.length ? own : levels).flatMap((l) =>
+    (l.modules || [])
+      .filter((m) => /^[A-C]\d\.\d{1,3}$/.test(String(m?.id || '')))
+      .map((m) => item(`pron.${m.id}`, 'pron', quote(titleIn(m.title)), ` (${l.id})`, { name: titleIn(m.title_t || m.title, lang) || titleIn(m.title) })),
+  )
+}
+
 async function situationItems(level, { deps, lang = 'ru' }) {
   const lvl = String(level || '').toLowerCase() === 'a0' ? 'a1' : String(level || '').toLowerCase()
   const levels = PRACTICE_LEVELS.includes(lvl) ? [lvl] : PRACTICE_LEVELS
@@ -245,9 +403,19 @@ async function wordsItems(_level, { deps }) {
   )
 }
 
-async function workbookItems(_level, { deps }) {
-  const dirs = await deps.listDirs('practice/workbook').catch(() => [])
-  return dirs.filter((d) => /^(a0|a1|a2|b1|b2|c1)$/.test(d)).map((d) => item(`workbook.${d}`, 'workbook', `воркбук ${d.toUpperCase()}`, '', { n: d.toUpperCase() }))
+// Воркбуки уровнями, а у уровня, о котором речь, — ещё и уроками: «открой урок 5 воркбука».
+async function workbookItems(level, { deps }) {
+  const dirs = (await deps.listDirs('practice/workbook').catch(() => [])).filter((d) => /^(a0|a1|a2|b1|b2|c1)$/.test(d))
+  const levels = dirs.map((d) => item(`workbook.${d}`, 'workbook', `воркбук ${d.toUpperCase()}`, '', { n: d.toUpperCase() }))
+  const own = String(level || '').toLowerCase()
+  if (!dirs.includes(own)) return levels
+  const index = await deps.readJson(`practice/workbook/${own}/index.json`).catch(() => null)
+  const lessons = Object.entries(index?.lessons || {})
+    .filter(([n]) => /^\d{1,3}$/.test(n))
+    .map(([n, l]) =>
+      item(`workbook.${own}.${n}`, 'workbook', `урок ${n} ${quote(l.title)} воркбука ${own.toUpperCase()}`, l.unit ? ` (юнит ${l.unit})` : '', { word: 'lesson', n, name: l.title }),
+    )
+  return [...levels, ...lessons]
 }
 
 const fmtDate = (iso) => {
@@ -279,6 +447,16 @@ const BUILDERS = {
   ggame: ggameItems,
   reading: readingItems,
   book: bookItems,
+  comic: comicItems,
+  karaoke: karaokeItems,
+  tale: taleItems,
+  speedread: speedreadItems,
+  listen: listenItems,
+  writing: writingItems,
+  arcade: arcadeItems,
+  cartoon: cartoonItems,
+  prep: prepItems,
+  pron: pronItems,
   situation: situationItems,
   shadowing: shadowingItems,
   words: wordsItems,
@@ -295,6 +473,16 @@ const HEADERS = {
   // Книгу не назвали («какую-нибудь книжку», «книжки») — не выбирать за ученика, а
   // открыть весь список: просьба «открой книжку» — это просьба о выборе.
   book: () => 'Книжки (Практика → Чтение; книгу не назвали — открой весь список книжек: [[OPEN_NOW books]])',
+  comic: () => 'Комиксы (Практика → Чтение; комикс не назвали — весь список: [[OPEN_NOW comics]])',
+  karaoke: () => 'Караоке (песню не назвали — весь список: [[OPEN_NOW karaoke]])',
+  tale: () => 'Сказки (сказку не назвали — весь список: [[OPEN_NOW tales]])',
+  speedread: () => '«Скорочтение» — тексты',
+  listen: () => 'Just to Listen — наборы для диктанта',
+  writing: (level) => `«Письмо по шагам» — жанры ${String(level || '').toUpperCase()}`.trim(),
+  arcade: () => '«Аркада» — игры',
+  cartoon: () => 'Cartoon World — мультфильмы (мультфильм не назвали — весь раздел: [[OPEN_NOW cartoons]])',
+  prep: () => 'Prepositions World — уроки предлогов',
+  pron: () => 'Pronunciation World — темы произношения',
   situation: () => 'Ситуации (разговорная практика)',
   shadowing: () => 'Уроки шэдоуинга',
   words: () => 'Сцены «Слов в картинках»',

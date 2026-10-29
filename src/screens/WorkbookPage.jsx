@@ -152,6 +152,19 @@ export default function WorkbookPage({
     [loadLesson, level]
   )
 
+  // «Открой урок 5 воркбука» (Луна, lib/assistant/items/refs.js): урок по цели
+  // открывается, когда доехал индекс уровня, — тем же openLesson, что и клик в
+  // каталоге, с первого непройденного шага. Один раз: «назад» из урока — в каталог
+  // юнитов, а не снова в урок. Квоту по-прежнему держит экран целиком (body).
+  // Номера нет в индексе — остаётся каталог.
+  const openedLessonRef = useRef(false)
+  useEffect(() => {
+    const n = initialTarget?.lesson
+    if (n == null || !index || openedLessonRef.current || !index.lessons?.[n]) return
+    openedLessonRef.current = true
+    openLesson(Number(n))
+  }, [initialTarget, index, openLesson])
+
   // Номер раунда разбора — часть ключа экрана. Если после раунда на том же
   // экране остались промахи, он открывается снова с теми же n и i: без раунда
   // в ключе React не перемонтировал его, и состояние прошлого раунда (поле

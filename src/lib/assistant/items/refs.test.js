@@ -16,10 +16,15 @@ describe('адрес вещи', () => {
     expect(parseItemRef('homework.m-7')).toEqual({ kind: 'homework', level: null, id: 'm-7' })
     expect(parseItemRef('live.45')).toEqual({ kind: 'live', level: null, id: '45' })
     expect(parseItemRef('book.12')).toEqual({ kind: 'book', level: null, id: '12' })
+    expect(parseItemRef('workbook.a1.5')).toEqual({ kind: 'workbook', level: 'a1', id: 'a1.5', lesson: 5 })
+    expect(parseItemRef('writing.a2p.a2p-review')).toEqual({ kind: 'writing', level: 'a2p', id: 'a2p-review' })
+    expect(parseItemRef('pron.a1.3')).toEqual({ kind: 'pron', level: 'A1', id: 'A1.3' })
+    expect(parseItemRef('arcade.runner')).toEqual({ kind: 'arcade', level: null, id: 'runner' })
+    expect(parseItemRef('cartoon.cat-AbC_1-x')).toEqual({ kind: 'cartoon', level: null, id: 'cat-AbC_1-x' })
   })
 
   it('мусор — не адрес', () => {
-    for (const bad of ['course.Z9.L5', 'course.B1.Q5', 'grammar.b1.x', 'situation.a2.x', 'workbook.z9', 'foo.1', 'practice', '', null]) {
+    for (const bad of ['course.Z9.L5', 'course.B1.Q5', 'grammar.b1.x', 'situation.a2.x', 'workbook.z9', 'workbook.a1.x', 'writing.z9.x', 'pron.A1', 'arcade.chess', 'foo.1', 'practice', '', null]) {
       expect(parseItemRef(bad)).toBe(null)
       expect(isItemRef(bad)).toBe(false)
     }
@@ -46,6 +51,21 @@ describe('переход по адресу', () => {
   // Книжка — в Практике: список книжек развёрнут, книгу экран откроет по bookId.
   it('книжка: Практика, список книжек и bookId', () => {
     expect(itemNav('book.12')).toEqual({ nav: 'practice', payload: { filter: 'books', bookId: '12' } })
+  })
+
+  it('комикс, караоке, сказка — через список в Практике; остальные — целью своего экрана', () => {
+    expect(itemNav('comic.maus')).toEqual({ nav: 'practice', payload: { filter: 'comics', comicId: 'maus' } })
+    expect(itemNav('karaoke.believer')).toEqual({ nav: 'practice', payload: { filter: 'karaoke', karaokeId: 'believer' } })
+    expect(itemNav('tale.snow_queen')).toEqual({ nav: 'practice', payload: { filter: 'tales', taleId: 'snow_queen' } })
+    expect(itemNav('speedread.42')).toEqual({ nav: 'speed-reading', payload: { text: '42' } })
+    expect(itemNav('listen.A1')).toEqual({ nav: 'listen', payload: { set: 'A1' } })
+    expect(itemNav('writing.b1.b1-complaint')).toEqual({ nav: 'writing', payload: { level: 'b1', genreId: 'b1-complaint' } })
+    expect(itemNav('arcade.speak')).toEqual({ nav: 'arcade', payload: { game: 'speak' } })
+    expect(itemNav('cartoon.peppa-swimming')).toEqual({ nav: 'cartoons', payload: { videoId: 'peppa-swimming' } })
+    expect(itemNav('prep.in-on-at')).toEqual({ nav: 'prepositions', payload: { lesson: 'in-on-at' } })
+    expect(itemNav('pron.A1.3')).toEqual({ nav: 'pronunciation', payload: { topic: 'A1.3' } })
+    expect(itemNav('workbook.a1.5')).toEqual({ nav: 'workbook', payload: { level: 'a1', lesson: 5 } })
+    expect(itemNav('workbook.a1')).toEqual({ nav: 'workbook', payload: { level: 'a1' } })
   })
 
   // Квота «Ситуаций» считается уровнями: уже открытый уровень — сразу сценарий,

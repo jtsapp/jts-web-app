@@ -12,6 +12,8 @@
 // словом — «начало или не буква», а не lookbehind: его не разбирает Safari до 16.4, и
 // сторож safariSyntax.test.js запрещает его во всех исходниках, серверных тоже.
 
+import { DESTINATIONS } from '../destinations.js'
+
 const w = (src) => new RegExp(src, 'iu')
 const NOT_LETTER_BEFORE = '(?:^|[^\\p{L}])'
 const NOT_LETTER_AFTER = '(?!\\p{L})'
@@ -21,6 +23,16 @@ const ASK = w(
     'откр', 'покаж', 'показ', 'включ', 'запуст', 'перейд', 'хочу', 'давай', 'начн', 'начать', 'продолж', 'найд', 'где\\s',
     `${NOT_LETTER_BEFORE}аш(?:ып|ыңыз|шы)?${NOT_LETTER_AFTER}`, 'ашып', 'көрсет', 'қос', 'бастай',
     `${NOT_LETTER_BEFORE}(?:open|show|start|play|continue|find|where|take me|go to)${NOT_LETTER_AFTER}`,
+  ].join('|'),
+)
+// Глагол «открой» в чистом виде — для просьбы по одному названию, без слова-вида («открой
+// Остров сокровищ»). «Хочу», «давай», «где» сюда не входят: «хочу понять правило» и «где
+// кнопка?» — не просьбы открыть вещь.
+const OPEN_VERB = w(
+  [
+    'откр', 'покаж', 'включ', 'запуст',
+    `${NOT_LETTER_BEFORE}аш(?:ып|ыңыз|шы)?${NOT_LETTER_AFTER}`, 'көрсет', `${NOT_LETTER_BEFORE}қос`,
+    `${NOT_LETTER_BEFORE}(?:open|show|play|start)${NOT_LETTER_AFTER}`,
   ].join('|'),
 )
 const NEXT = w('следующ|келесі|next')
@@ -37,6 +49,17 @@ const KIND = {
   // «book» — отдельным словом: иначе «workbook» был бы книжкой. «Кітап» перед гласной —
   // «кітабын»: п переходит в б.
   book: w(`книг|книж|кіта[пб]|${NOT_LETTER_BEFORE}(?:audio)?books?${NOT_LETTER_AFTER}`),
+  comic: w('комикс|comic'),
+  karaoke: w(`караоке|karaoke|песн|${NOT_LETTER_BEFORE}songs?${NOT_LETTER_AFTER}|${NOT_LETTER_BEFORE}ән(?:ді|ін|ге|дер)?${NOT_LETTER_AFTER}`),
+  tale: w(`сказк|ертег|fairy\\s?tales?|${NOT_LETTER_BEFORE}tales?${NOT_LETTER_AFTER}`),
+  speedread: w('скорочтени|быстр\\p{L}* чтени|speed\\s?reading|жылдам оқ'),
+  listen: w('just to listen|диктант|dictation'),
+  writing: w(`эссе|essay|сочинени|письм|жалоб|${NOT_LETTER_BEFORE}writing${NOT_LETTER_AFTER}|жазылым|${NOT_LETTER_BEFORE}жазу`),
+  arcade: w('аркад|arcade|word rush|speak or die|бегун|runner'),
+  cartoon: w('мульт|cartoon|сериал|серию'),
+  prep: w('предлог|preposition|септеулік|шылау'),
+  // «Звук» сюда не входит: «включи звук» — кнопка, а не тема произношения.
+  pron: w('произнош|pronunciation|произнес|айтылу'),
   reading: w(`текст|чтени|статью|reading|${NOT_LETTER_BEFORE}text${NOT_LETTER_AFTER}|мәтін|оқылым`),
   grammar: w(
     `грамматик|${NOT_LETTER_BEFORE}тем[уаые]?${NOT_LETTER_AFTER}|правил[оау]|grammar|topic|тақырып|` +
@@ -62,9 +85,50 @@ function levelOf(text, userLevel) {
   return LEVELS.has(own) ? own : null
 }
 
+// «Открой Остров сокровищ», «включи Frozen»: вид не назван, но и раздела в реплике нет —
+// значит, ученик назвал вещь. Тогда каталог всех видов с названиями (GUESS_KINDS), и модель
+// ищет по смыслу: название бывает переведено («Остров сокровищ» — Treasure Island), так что
+// сверка строк в коде тут не годится. Грамматики, курса и мультфильмов здесь нет: темы и
+// уроки без слова «тема» / «урок» не просят, а их списки (и сотни мультфильмов) длинные.
+export const GUESS_KINDS = ['book', 'comic', 'karaoke', 'tale', 'reading', 'speedread', 'listen', 'situation', 'shadowing', 'words', 'ggame', 'prep', 'pron', 'arcade']
+
+// Слова разделов (имена destinations.js и вкладки): «открой словарь», «открой Word Hunt» —
+// раздел, а не вещь, и каталог ему не нужен. Основа — первые 5 букв слова.
+const SECTION_WORDS = [
+  'главн', 'практик', 'профил', 'настро', 'тариф', 'минут', 'тьютор', 'словар', 'аудир', 'письм', 'говор', 'чтени',
+  'расписан', 'игры', 'тест', 'экзам', 'ielts', 'buddy', 'speaking', 'сөздік', 'тыңда', 'жазыл', 'айтыл', 'оқылым',
+  // Кнопки и части экрана: «открой следующее задание», «включи запись» — нажатие, не вещь.
+  'задани', 'упражн', 'вопрос', 'ответ', 'кнопк', 'запис', 'микрофон', 'звук', 'подсказ', 'тапсырм', 'жауап',
+  'task', 'exercise', 'question', 'answer', 'button', 'record', 'hint',
+]
+const QUESTION = w(`${NOT_LETTER_BEFORE}(?:как|почему|зачем|что|сколько|how|why|what|қалай|неге|не үшін)${NOT_LETTER_AFTER}`)
+// Что остаётся от «открой мне это, пожалуйста» — не название.
+const FILLER_SRC =
+  `${NOT_LETTER_BEFORE}(?:это|его|её|ее|их|там|тут|здесь|мне|нам|пожалуйста|плиз|да|ну|сам|сама|сейчас|снова|ещё|еще|` +
+  `луна|айзере|please|it|this|that|me|now|again|мұны|осыны|соны|оны|маған|бер|беріңізші|берші|қазір)${NOT_LETTER_AFTER}`
+
+const SECTION_NAMES = [
+  ...new Set(
+    DESTINATIONS.flatMap((d) => Object.values(d.name))
+      .flatMap((name) => name.toLowerCase().match(/\p{L}{4,}/gu) || [])
+      .map((word) => word.slice(0, 5)),
+  ),
+]
+
+function namesSection(t, sectionNames) {
+  const low = t.toLowerCase()
+  return SECTION_WORDS.some((s) => low.includes(s)) || sectionNames.some((s) => low.includes(s))
+}
+
+function namesThing(t) {
+  const rest = t.replace(new RegExp(`(?:${OPEN_VERB.source})\\p{L}*`, 'giu'), ' ').replace(new RegExp(FILLER_SRC, 'giu'), ' ')
+  return (rest.match(/\p{L}{3,}/gu) || []).length > 0
+}
+
 /**
  * { kinds, level } — что приложить к вопросу, или null, если ученик ни о чём таком не просит.
- * Порядок kinds — от главного: первым идёт то, о чём просят прямо.
+ * Порядок kinds — от главного: первым идёт то, о чём просят прямо. guess — вид не назван,
+ * а вещь — да: каталог всех видов с названиями, искать по смыслу.
  */
 export function itemIntent(text, { userLevel } = {}) {
   const t = String(text ?? '').trim()
@@ -82,13 +146,21 @@ export function itemIntent(text, { userLevel } = {}) {
   // Книжка — раньше текстов: «открой книжку в Практике чтения» — про книжку, а «чтение»
   // там только место.
   if (has('book')) kinds.push('book')
-  if (has('reading')) kinds.push('reading')
+  for (const k of ['comic', 'karaoke', 'tale', 'cartoon', 'speedread', 'listen', 'prep', 'pron', 'writing', 'arcade']) {
+    if (has(k)) kinds.push(k)
+  }
+  // «Скорочтение» — тоже «чтение», но тексты у него свои.
+  if (has('reading') && !kinds.includes('speedread')) kinds.push('reading')
   // Тема грамматики может оказаться и игрой «Грамматика · игры» — каталог обоих; про
   // игру сказано прямо — она первая.
   if (has('grammar')) kinds.push(...(has('game') ? ['ggame', 'grammar'] : ['grammar', 'ggame']))
-  // «Урок» — урок курса, если это не урок с преподавателем, не воркбук и не шэдоуинг.
-  if (has('lesson') && !kinds.some((k) => k === 'live' || k === 'workbook' || k === 'shadowing' || k === 'situation')) {
-    kinds.unshift('course')
+  // «Урок» — урок курса, если это не урок раздела со своими уроками: с преподавателем,
+  // воркбука, шэдоуинга, предлогов, произношения.
+  const OWN_LESSONS = ['live', 'workbook', 'shadowing', 'situation', 'prep', 'pron', 'writing']
+  if (has('lesson') && !kinds.some((k) => OWN_LESSONS.includes(k))) kinds.unshift('course')
+  if (kinds.length) return { kinds, level: levelOf(t, userLevel) }
+  if (OPEN_VERB.test(t) && !QUESTION.test(t) && !NEXT.test(t) && !namesSection(t, SECTION_NAMES) && namesThing(t)) {
+    return { kinds: GUESS_KINDS, level: levelOf(t, userLevel), guess: true }
   }
-  return kinds.length ? { kinds, level: levelOf(t, userLevel) } : null
+  return null
 }
