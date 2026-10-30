@@ -12,7 +12,7 @@ import { loadLevelGoal, readCachedGoal, saveLevelGoal } from '../lib/levelGoal.j
 import { GoalDialog } from './home/GoalPicker.jsx'
 import IeltsHomeCard from './home/IeltsHomeCard.jsx'
 import GeGoalBanner from './home/GeGoalBanner.jsx'
-import GeStartHero, { StartHereCard } from './home/GeStartHero.jsx'
+import GeStartHero, { GeFinishHero, StartHereCard } from './home/GeStartHero.jsx'
 import { PlacementNext, PlacementResults, usePlacementReport } from './home/PlacementReport.jsx'
 import GeTodayCard from './home/GeTodayCard.jsx'
 import TourSections from './home/TourSections.jsx'
@@ -152,7 +152,9 @@ export default function HomePage({
 
   // Верхний блок General English. У IELTS-аккаунта свой (IeltsHomeCard) — профиль General English ему не показываем.
   const geTop = ieltsAccount ? 'legacy' : homeTopState({ geProfile, levelUnknown, level: userLevel, existing: existingStudent })
-  const geMode = geTop !== 'legacy'
+  // Путь анкеты GE (тест, формат, цель). Финиш курса в него не входит: анкеты у такого ученика нет и не будет, поэтому
+  // «Сегодня», тест в карточке навыков и отметка тура у него прежние — меняется только верхний баннер.
+  const geMode = geTop !== 'legacy' && geTop !== 'finish'
   // План по дням (спека 2026-10-13): есть блок цели — есть и план; его «Сегодня» встаёт вместо «Что сделать сегодня».
   // Нет ручки (старый бэкенд) или план не собран — карточка прежняя.
   const gePlan = useGePlan(token, { enabled: geTop === 'goal', level: summary.level || userLevel })
@@ -195,9 +197,11 @@ export default function HomePage({
         ? { selector: ['.ge-goal', '.hm-level--phone'], title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
         : geTop === 'locked'
           ? { selector: ['.ge-locked', '.hm-level--phone'], title: t('tour.home.locked.title'), text: t('tour.home.locked.text') }
-          : geMode
-            ? { selector: ['.ge-invite', '.hm-level--phone'], title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
-            : { selector: '.hm-level', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
+          : geTop === 'finish'
+            ? { selector: ['.ge-finish', '.hm-level--phone'], title: t('tour.home.finish.title'), text: t('tour.home.finish.text') }
+            : geMode
+              ? { selector: ['.ge-invite', '.hm-level--phone'], title: t('tour.home.invite.title'), text: t('tour.home.invite.text') }
+              : { selector: '.hm-level', title: t('tour.home.progress.title'), text: t('tour.home.progress.text') }
     return [
       { ...top, art: { src: '/assets/first-login/coach-progress.webp', w: 252, h: 236 }, width: 576, textWidth: 330 },
       isDemoAccount
@@ -497,6 +501,8 @@ export default function HomePage({
                 onOpenRoute={() => onGeRoute?.()}
                 onBuy={() => onOpenPricing?.()}
               />
+            ) : geTop === 'finish' ? (
+              <GeFinishHero level={summary.level || userLevel} onPractice={() => onNav?.('practice')} />
             ) : geMode ? (
               <GeStartHero state={geTop} onStart={onGeStart} onTest={onGeTest} onRoute={onGeRoute} />
             ) : levelUnknown ? (
@@ -508,7 +514,7 @@ export default function HomePage({
                 </button>
               </section>
             ) : null}
-            {renderLevel(geMode || levelUnknown)}
+            {renderLevel(geMode || levelUnknown || geTop === 'finish')}
           </>
         )}
 
