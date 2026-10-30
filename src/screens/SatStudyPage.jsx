@@ -16,7 +16,7 @@ import { pick } from '../sat/model/profile.js'
 import { parse } from '../sat/model/plan.js'
 import { domainName, skillName } from '../sat/names.js'
 import { lessonByCode } from '../sat/model/course.js'
-import { BookOpenIcon } from '../sat/icons.jsx'
+import { BookOpenIcon, NoCircleIcon, OkCircleIcon } from '../sat/icons.jsx'
 import { ChevronLeftIcon, CloseIcon } from '../ielts/icons.jsx'
 
 function param(name) {
@@ -40,7 +40,7 @@ function setParams(patch) {
   }
 }
 
-/** Итог проверки под вопросом (Figma 23–24): верно / неверно, ключ, тип ошибки и когда вопрос вернётся. */
+/** Итог проверки под вопросом (Figma 23–24; значок слева — «NEW 2», 17:3869): верно / неверно, ключ, тип ошибки и когда вопрос вернётся. */
 function VerdictBox({ res, loc }) {
   const { t } = useI18n()
   const answer = Array.isArray(res.answer) ? res.answer.join(' · ') : res.answer
@@ -49,19 +49,25 @@ function VerdictBox({ res, loc }) {
     const helped = res.helpType && res.helpType !== 'none'
     return (
       <div className="st-verdict is-right">
-        <b>{t('sat.study.right')}</b>
-        <span>{t(helped ? 'sat.study.rightHelped' : 'sat.study.rightOwn')}</span>
+        <OkCircleIcon size={20} />
+        <div>
+          <b>{t('sat.study.right')}</b>
+          <span>{t(helped ? 'sat.study.rightHelped' : 'sat.study.rightOwn')}</span>
+        </div>
       </div>
     )
   }
   return (
     <div className="st-verdict is-wrong">
-      <b>{t('sat.study.wrong', { a: String(answer) })}</b>
-      <span>
-        {res.errorType
-          ? t('sat.study.wrongTyped', { type: t(`sat.etype.${res.errorType}`).toLowerCase(), date: due || '' })
-          : t('sat.study.wrongPick', { g: String(res.given ?? '—') })}
-      </span>
+      <NoCircleIcon size={20} />
+      <div>
+        <b>{t('sat.study.wrong', { a: String(answer) })}</b>
+        <span>
+          {res.errorType
+            ? t('sat.study.wrongTyped', { type: t(`sat.etype.${res.errorType}`).toLowerCase(), date: due || '' })
+            : t('sat.study.wrongPick', { g: String(res.given ?? '—') })}
+        </span>
+      </div>
     </div>
   )
 }
@@ -183,15 +189,17 @@ function StudyRun({ data, setData, explainLang, onExit, onFinished }) {
   ) : null
 
   const names = data.skillIds.map((s) => skillName(s, lang)).join(' · ')
+  // имя набора и в окне всех вопросов: «Учебный режим · Риторический синтез · 10 вопросов» («NEW 2», 17:7551)
+  const unitTitle = data.unitCode ? pick(lessonByCode(data.unitCode)?.t, lang) || names : null
   return (
     <>
       <QuestionScreen
         session={session}
         onChange={update}
         docs={docs}
-        title={data.unitCode ? `${data.unitCode} · ${pick(lessonByCode(data.unitCode)?.t, lang) || names}` : t('sat.study.title', { skills: names })}
+        title={data.unitCode ? `${data.unitCode} · ${unitTitle}` : t('sat.study.title', { skills: names })}
         subtitle={t('sat.sample.studySub', { n: String(session.index + 1), total: String(session.questions.length) })}
-        setLabel={t('sat.study.setLabel')}
+        setLabel={t('sat.study.setLabel', { name: unitTitle || names })}
         onExit={onExit}
         onFinish={finish}
         footerExtra={footerExtra}

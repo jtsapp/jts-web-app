@@ -20,30 +20,56 @@ export function matchesFilters(filters, difficulty, lastCorrect) {
 /**
  * Фильтры практики в два блока (ТЗ SAT 21.10, задача 5): «Сложность» и «Ответы». Раньше всё лежало одним списком,
  * и «сложные, где я ошибся» отфильтровать было нельзя. Счётчик подходящих — у вызывающего (он знает, что считать).
+ *
+ * Вид «Практики» по макету NEW 2 (17:2184) — по желанию, чтобы «Ошибки» не поменялись заодно:
+ *  - variant='counted' — чипы без рамки (выбранный чёрный), «Сбросить» в строке заголовка «Сложность»;
+ *  - counts — { difficulty: {1, 2, 3}, status: {right, wrong, new} }: число справа на чипе;
+ *  - hint — пояснение под блоками («Внутри блока выбор складывается…»).
  */
-export default function FilterBlocks({ value, onChange, count }) {
+export default function FilterBlocks({ value, onChange, count, counts, variant = 'default', hint }) {
   const { t } = useI18n()
   const any = value.difficulty.length > 0 || value.status.length > 0
+  const counted = variant === 'counted'
+  const reset = any && (
+    <button type="button" className={counted ? 'st-filters__reset' : 'st-link'} onClick={() => onChange(EMPTY_FILTERS)}>
+      {t(counted ? 'sat.filters.resetShort' : 'sat.filters.reset')}
+    </button>
+  )
+  const chip = (key, on, label, n, onClick) => (
+    <button key={key} type="button" aria-pressed={on} className={on ? 'is-on' : ''} onClick={onClick}>
+      {label}
+      {/* пробел — чтобы читалка называла «Medium 252», а не «Medium252» */}
+      {n != null && <>{' '}<span className="st-filters__n">{n}</span></>}
+    </button>
+  )
   return (
-    <div className="st-filters">
-      <span className="st-sess__label">{t('sat.filters.difficulty')}</span>
+    <div className={`st-filters ${counted ? 'st-filters--counted' : ''}`}>
+      {counted ? (
+        <div className="st-filters__head">
+          <span className="st-sess__label">{t('sat.filters.difficulty')}</span>
+          {reset}
+        </div>
+      ) : <span className="st-sess__label">{t('sat.filters.difficulty')}</span>}
       <div className="st-sess__filters">
         {DIFFICULTIES.map(([d, label]) => (
-          <button key={d} type="button" aria-pressed={value.difficulty.includes(d)} className={value.difficulty.includes(d) ? 'is-on' : ''}
-            onClick={() => onChange({ ...value, difficulty: toggleIn(value.difficulty, d) })}>{label}</button>
+          chip(d, value.difficulty.includes(d), label, counts?.difficulty?.[d],
+            () => onChange({ ...value, difficulty: toggleIn(value.difficulty, d) }))
         ))}
       </div>
       <span className="st-sess__label">{t('sat.filters.answers')}</span>
       <div className="st-sess__filters">
         {ANSWERS.map((a) => (
-          <button key={a} type="button" aria-pressed={value.status.includes(a)} className={value.status.includes(a) ? 'is-on' : ''}
-            onClick={() => onChange({ ...value, status: toggleIn(value.status, a) })}>{t(`sat.filters.${a}`)}</button>
+          chip(a, value.status.includes(a), t(`sat.filters.${a}`), counts?.status?.[a],
+            () => onChange({ ...value, status: toggleIn(value.status, a) }))
         ))}
       </div>
-      <div className="st-filters__foot">
-        {count != null && <span className="st-muted">{t('sat.filters.count', { n: String(count) })}</span>}
-        {any && <button type="button" className="st-link" onClick={() => onChange(EMPTY_FILTERS)}>{t('sat.filters.reset')}</button>}
-      </div>
+      {hint && <p className="st-filters__hint">{hint}</p>}
+      {(count != null || (!counted && any)) && (
+        <div className="st-filters__foot">
+          {count != null && <span className="st-muted">{t('sat.filters.count', { n: String(count) })}</span>}
+          {!counted && reset}
+        </div>
+      )}
     </div>
   )
 }

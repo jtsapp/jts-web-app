@@ -47,6 +47,15 @@ export function mid(range) {
 }
 
 /**
+ * Подпись оценки (Figma «NEW 2», 17:4708): диапазон «1150–1230», а не середина — главное число итога и секций говорит
+ * «это оценка», без «/ 1600», которое читалось как балл экзамена. Схлопнутый диапазон — одно число; нет оценки — «—».
+ */
+export function rangeText(range, fallback = null) {
+  if (range && range.low != null && range.high != null) return range.low === range.high ? String(range.low) : `${range.low}–${range.high}`
+  return fallback != null ? String(fallback) : '—'
+}
+
+/**
  * Изменение к прошлой сданной симуляции (столбец Δ, Figma 16) — по середине диапазона. runs — новые первыми, как
  * отдаёт бэкенд; у самой старой — null.
  */

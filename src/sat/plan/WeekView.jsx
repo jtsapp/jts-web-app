@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { plural } from '../../lib/plural.js'
+import { pluralForm } from '../../lib/plural.js'
 import { ChevronLeftIcon, ChevronRightIcon, InfoIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
 import { addDays, iso, parse, shownStatus } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
+import PhaseStrip from './PhaseStrip.jsx'
 
 const STATUS = ['done', 'next', 'planned', 'skipped', 'moved']
 
 /**
- * Неделя плана (Figma SAT 13): полоса фаз с прогрессом курса, семь дней недели с занятиями группы (статус цветом и
- * словом) и легенда. Фазы и счётчик «X из N» — с сервера (roadmap), занятия — из расписания группы.
+ * Неделя плана (Figma «NEW 2», 17:1583): полоса фаз с прогрессом курса, семь дней недели с занятиями группы (статус
+ * цветом и словом) и легенда. Фазы и счётчик «X из N» — с сервера (data — ответ /mobile/sat/roadmap), занятия — из
+ * расписания группы (schedule — им же заполняется отрезок текущей фазы).
  */
-export default function WeekView({ plan, roadmap, next, todayIso, onStart }) {
+export default function WeekView({ plan, data, schedule, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
+  const roadmap = data.roadmap
   const weeks = plan.weeks
   const todayWeek = Math.max(0, weeks.findIndex((w) => w.monday === iso(addDays(parse(todayIso), -((parse(todayIso).getDay() + 6) % 7)))))
   const [wi, setWi] = useState(todayWeek)
@@ -21,27 +24,19 @@ export default function WeekView({ plan, roadmap, next, todayIso, onStart }) {
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
   const mon = parse(week.monday)
-  const phases = roadmap.phases.filter((p) => p.kind !== 'exam' && p.kind !== 'self')
   const pct = roadmap.lessonCount ? Math.round((roadmap.attended * 100) / roadmap.lessonCount) : 0
-  const curPhase = roadmap.active
-  const hours = Math.round((week.lessons.reduce((a, l) => a + (l.minutes || 0), 0) / 60) * 10) / 10
+  // длина занятия у всех одна (90 минут), но берём из данных — строка не соврёт, если школа её поменяет
+  const minutes = week.lessons[0]?.minutes || 90
+  const count = week.lessons.length
 
   return (
     <div className="st-week">
-      <div className="st-card st-phases">
-        <div className="st-phases__row">
-          {phases.map((p) => {
-            const state = p.n === curPhase ? 'is-here' : p.status === 'done' ? 'is-done' : p.n < curPhase ? 'is-past' : ''
-            return (
-              <span key={p.n} className={`st-phases__tile ${state}`}>
-                <b>{p.status === 'done' && <CheckCircleIcon size={16} />}{t(`sat.phase.${p.key}`)}</b>
-                <small>{p.weekFrom == null ? '·' : p.weekFrom === p.weekTo ? t('sat.week.wN', { n: String(p.weekFrom) }) : t('sat.week.wRange', { a: String(p.weekFrom), b: String(p.weekTo) })}</small>
-              </span>
-            )
-          })}
+      <div className="st-card st-week__phases">
+        <div className="st-road__strip">
+          <PhaseStrip roadmap={data} schedule={schedule} size="L" />
         </div>
-        <div className="st-phases__prog">
-          <span className="st-rep__bar"><i style={{ width: `${Math.max(2, pct)}%` }} /></span>
+        <div className="st-week__prog">
+          <span className="st-road__bar"><i style={{ width: `${Math.max(2, pct)}%` }} /></span>
           <b>{t('sat.week.progress', { d: String(roadmap.attended), n: String(roadmap.lessonCount), p: String(pct) })}</b>
         </div>
       </div>
@@ -50,7 +45,7 @@ export default function WeekView({ plan, roadmap, next, todayIso, onStart }) {
         <div className="st-week__head">
           <div>
             <h2>{t('sat.week.title', { n: String(week.index + 1), from: fmt(mon, { day: 'numeric', month: 'short' }), to: fmt(addDays(mon, 6), { day: 'numeric', month: 'short' }) })}</h2>
-            <span className="st-muted">{plural(t, lang, 'sat.week.lessons', week.lessons.length)} · {t('sat.week.hours', { h: String(hours) })}</span>
+            <span className="st-muted">{t(`sat.week.sub.${pluralForm(count, lang)}`, { n: String(count), m: String(minutes) })}</span>
           </div>
           <span className="st-spacer" />
           <button type="button" className="ih-round st-week__nav" disabled={wi <= 0} aria-label={t('sat.week.prev')} onClick={() => { setWi(wi - 1) }}><ChevronLeftIcon size={18} /></button>
@@ -75,9 +70,10 @@ export default function WeekView({ plan, roadmap, next, todayIso, onStart }) {
                   return (
                     <div key={l.id} className="st-week__slot">
                       <button type="button" className={`st-lesson is-${st}`} onClick={() => onStart(l.id)}>
-                        <span className="st-lesson__sec"><i className={`st-dot is-${l.section}`} />{l.section === 'math' ? 'Math' : l.section === 'rw' ? 'R&W' : 'SAT'} · {l.time}</span>
+                        <span className="st-lesson__sec"><i className={`st-dot is-${l.section}`} />{l.section === 'math' ? 'Math' : l.section === 'rw' ? 'R&W' : 'SAT'}</span>
                         <b>{l.topic}</b>
-                        <span className="st-lesson__acts">{t('sat.lesson.number', { n: String(l.number) })}</span>
+                        {/* шаги занятия у всех одинаковые (Figma W5) — строка постоянная, пока сервер не отдаёт свои */}
+                        <span className="st-lesson__acts">{t('sat.lesson.steps')}</span>
                         <span className="st-lesson__st">{st === 'done' && <CheckCircleIcon size={14} />}{t(`sat.status.${st}`)}</span>
                       </button>
                     </div>

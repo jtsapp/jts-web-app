@@ -3,12 +3,13 @@ import satInfo from '../data/satInfo.json'
 import taxonomy from '../data/taxonomy.json'
 import colleges from '../data/colleges.json'
 import examDates from '../data/examDates.json'
+import { byCountry, countriesIn, countryOf } from '../model/colleges.js'
 import { domainShares, pick, rankColleges, roundSection, splitLead, splitTotal, TARGET_PRESETS, upcomingDates } from '../model/profile.js'
 import { useI18n } from '../../i18n.jsx'
-import { BarChartIcon, CafeIcon, CalculateIcon, FactCheckIcon, KanbanIcon, KeyboardIcon, LockIcon, ReplayIcon, RouteIcon, SortIcon, SpeedIcon } from '../icons.jsx'
+import { BarChartIcon, BlockIcon, CafeIcon, CalculateIcon, FactCheckIcon, KanbanIcon, KeyboardIcon, LockIcon, ReplayIcon, RouteIcon, SortIcon, SpeedIcon } from '../icons.jsx'
 import { plural } from '../../lib/plural.js'
 import {
-  CheckCircleIcon, ChevronRightIcon, CloseIcon, EventIcon, ExpandMoreIcon, InfoIcon, MenuBookIcon, OpenInNewIcon, QuizIcon,
+  CheckCircleIcon, ChevronRightIcon, EventIcon, ExpandMoreIcon, InfoIcon, MenuBookIcon, OpenInNewIcon, QuizIcon,
   RadioOffIcon, ScheduleIcon, TimerIcon, TranslateIcon,
 } from '../../ielts/icons.jsx'
 import { fmtDate } from '../model/dates.js'
@@ -137,12 +138,17 @@ export function SectionChapter({ id }) {
   )
 }
 
+// чипы стран — из самих данных, а не из макета: пустой страны в фильтре не будет
+const COUNTRIES = countriesIn(colleges.rows)
+
 /** Глава 3 в онбординге (Figma 3): цель по секциям слева, справа — куда она попадает относительно middle-50% вузов. */
 export function GoalPicker({ rw, math, onChange }) {
   const { t, lang } = useI18n()
   const [more, setMore] = useState(false)
+  const [country, setCountry] = useState('all')
   const total = rw + math
-  const ranked = useMemo(() => rankColleges(total, colleges.rows), [total])
+  // фильтр по стране (17:366): «N из M в досягаемости» и список — по выбранной стране
+  const ranked = useMemo(() => rankColleges(total, byCountry(colleges.rows, country)), [total, country])
   const reach = ranked.filter((c) => c.band !== 'below')
   const shown = more ? ranked : reach.slice(0, Math.max(4, Math.min(reach.length, 4)))
   const hidden = ranked.length - shown.length
@@ -184,6 +190,14 @@ export function GoalPicker({ rw, math, onChange }) {
           <div><h3>{t('sat.goal.where')}</h3><span className="st-muted">{t('sat.goal.mid50')}</span></div>
           <span className="st-goal__reach"><CheckCircleIcon size={16} />{t('sat.goal.reach', { n: String(reach.length), total: String(ranked.length) })}</span>
         </div>
+        <div className="st-goal__countries" role="radiogroup" aria-label={t('sat.goal.country')}>
+          {['all', ...COUNTRIES].map((c) => (
+            <button key={c} type="button" role="radio" aria-checked={country === c} className={country === c ? 'is-on' : ''}
+              onClick={() => { setCountry(c); setMore(false) }}>
+              {t(c === 'all' ? 'sat.goal.countryAll' : `sat.country.${c}`)}
+            </button>
+          ))}
+        </div>
         {/* подписи шкалы стоят на той же оси, что и полосы вузов: та же колонка и та же функция x() */}
         <div className="st-goal__scale" aria-hidden="true">
           <span />
@@ -194,7 +208,7 @@ export function GoalPicker({ rw, math, onChange }) {
             <button key={c.id} type="button" className={`st-college ${c.band === 'in' && c === shown[0] ? 'is-top' : ''}`} title={t('sat.goal.pick')}
               onClick={() => onChange(splitTotal(Math.round((c.midSAT.total[0] + c.midSAT.total[1]) / 20) * 10))}>
               <span className="st-college__name">
-                <b>{c.name}</b>
+                <b>{c.name}{countryOf(c) && <small className="st-college__country">{t(`sat.country.${countryOf(c)}`)}</small>}</b>
                 <span>
                   <span className={`st-band st-band--${c.band}`}>{t(`sat.goal.band.${c.band}`)}</span>
                   {t('sat.goal.gap', { lo: String(c.midSAT.total[0]), hi: String(c.midSAT.total[1]), gap: `${c.gap >= 0 ? '+' : '−'}${Math.abs(c.gap)}` })}
@@ -232,7 +246,7 @@ export function ExamDayDetails() {
       <ol className="st-steps">{ch.steps.map((s, i) => <li key={i}><span dangerouslySetInnerHTML={html(pick(s, lang))} /></li>)}</ol>
       <div className="st-bring">
         <div className="st-bring__ok"><b><CheckCircleIcon size={18} />{t('sat.examday.bring')}</b><ul>{ch.bring.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
-        <div className="st-bring__no"><b><CloseIcon size={18} />{t('sat.examday.avoid')}</b><ul>{ch.avoid.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
+        <div className="st-bring__no"><b><BlockIcon size={18} />{t('sat.examday.avoid')}</b><ul>{ch.avoid.map((s, i) => <li key={i} dangerouslySetInnerHTML={html(pick(s, lang))} />)}</ul></div>
       </div>
       {ch.links?.length > 0 && (
         <div className="st-links">

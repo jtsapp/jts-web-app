@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
-import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon } from '../../ielts/icons.jsx'
-import { TrophyIcon } from '../icons.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, FlagIcon } from '../../ielts/icons.jsx'
 import { addDays, lessonsInMonth, monthGrid, parse, shownStatus } from '../model/plan.js'
+import { bluebookDays } from '../model/roadmap.js'
 import { fmtDate } from '../model/dates.js'
 
 /**
- * Месяц плана (Figma SAT 14): календарь с понедельника, над каждой строкой — неделя курса и её фаза, в днях —
- * занятия группы (точка секции, время и тема; сделанное зелёным), день экзамена — в своей клетке. Клик по занятию —
- * практика по его теме.
+ * Месяц плана (Figma «NEW 2», 17:1866): календарь с понедельника, над каждой строкой — неделя курса и её фаза (цвет
+ * полоски — фаза), в днях — занятия группы (точка секции и тема; сделанное зелёным), Bluebook-тест и день экзамена —
+ * чёрными чипами с флагом в своей клетке. Клик по занятию — практика по его теме.
  */
 export default function MonthView({ plan, roadmap, next, todayIso, onStart }) {
   const { t, lang } = useI18n()
@@ -25,6 +25,7 @@ export default function MonthView({ plan, roadmap, next, todayIso, onStart }) {
     const d = new Date(ym.y, ym.m + n, 1)
     setYm({ y: d.getFullYear(), m: d.getMonth() })
   }
+  const tests = bluebookDays(roadmap)
   const weekdays = Array.from({ length: 7 }, (_, i) => fmt(addDays(parse('2026-09-28'), i), { weekday: 'short' }))
 
   // Бейджи «Мини-тест», «Полные пробники», «День экзамена» под календарём убраны (ТЗ SAT 17.10, задача 3.3):
@@ -54,14 +55,15 @@ export default function MonthView({ plan, roadmap, next, todayIso, onStart }) {
                 {r.days.map((d, i) => (
                   <div key={d.date} className={`st-month__cell ${d.inMonth ? '' : 'is-out'} ${d.date === todayIso ? 'is-today' : ''} ${d.date < todayIso ? 'is-past' : ''}`}>
                     <span className="st-month__num">{d.day}{d.date === todayIso && <em>{t('sat.week.today')}</em>}</span>
-                    {plan.examDate === d.date && <span className="st-month__exam"><TrophyIcon size={14} />{t('sat.road.examDay')}</span>}
+                    {tests[d.date] != null && <span className="st-month__exam"><FlagIcon size={14} /><span>{t('sat.strip.test', { n: String(tests[d.date]) })}</span></span>}
+                    {plan.examDate === d.date && <span className="st-month__exam"><FlagIcon size={14} /><span>{t('sat.road.examDay')}</span></span>}
                     {d.lessons.map((l) => {
                       const st = shownStatus(l, next)
                       return (
                         <div key={l.id} className="st-month__slot">
                           <button type="button" className={`st-lesson st-mlesson is-${st}`} onClick={() => onStart(l.id)}>
                             {st === 'done' ? <CheckCircleIcon size={13} /> : <i className={`st-dot is-${l.section}`} />}
-                            <span>{l.time} · {l.topic}</span>
+                            <span>{l.topic}</span>
                           </button>
                         </div>
                       )

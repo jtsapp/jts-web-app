@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Язык разборов SAT переехал с удалённого экрана «Когда вы реально можете заниматься?» в настройки профиля
-// (ТЗ SAT 21.10, задача 3.1). Строка — только у тех, кто начал SAT.
+// (ТЗ SAT 21.10, задача 3.1). Блок — только у тех, кто начал SAT.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
@@ -32,20 +32,20 @@ const show = () => render(
 describe('ProfilePage — язык разборов SAT', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('у начавшего SAT — строка с текущим языком, выбор сохраняется в профиль SAT', async () => {
+  it('у начавшего SAT — три варианта на странице, текущий отмечен, выбор сохраняется в профиль SAT (17:10151)', async () => {
     api.getSatMeCached.mockResolvedValue({ onboarded: true })
     show()
-    const row = await screen.findByText('Язык разборов SAT')
-    expect(row.closest('button').textContent).toContain('Қазақша')
-    fireEvent.click(row)
-    fireEvent.click(screen.getByText('English'))
+    expect(await screen.findByText('Язык объяснений')).toBeTruthy()
+    expect(screen.getByRole('radio', { name: /Қазақша/ }).getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(screen.getByRole('radio', { name: /English/ }))
     await waitFor(() => expect(api.saveSatProfile).toHaveBeenCalledWith(TOKEN, { explainLang: 'en' }))
+    expect(screen.getByRole('radio', { name: /English/ }).getAttribute('aria-checked')).toBe('true')
   })
 
-  it('без SAT строки нет', async () => {
+  it('без SAT блока нет', async () => {
     api.getSatMeCached.mockResolvedValue(null)
     show()
     await waitFor(() => expect(api.getSatMeCached).toHaveBeenCalled())
-    expect(screen.queryByText('Язык разборов SAT')).toBeNull()
+    expect(screen.queryByText('Язык объяснений')).toBeNull()
   })
 })

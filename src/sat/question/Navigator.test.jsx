@@ -56,3 +56,25 @@ describe('NavDialog — раскраска по результату (ТЗ SAT 2
     expect(screen.queryByText(/Верно ·/)).toBeNull()
   })
 })
+
+describe('NavDialog — «Все вопросы» по макету NEW 2 (17:7551, 17:7351)', () => {
+  afterEach(cleanup)
+  it('учебный режим: непроверенные пунктиром, пояснение кодировки и «К вопросу N» — к первому непроверенному', () => {
+    const onGo = vi.fn()
+    const { container } = show({ results: { a: true }, onGo })
+    const cells = container.querySelectorAll('.st-navdlg__n')
+    // b выбран не был, c — отмечен: отметка главнее пунктира
+    expect(cells[1].className).toContain('is-none')
+    expect(cells[2].className).toContain('is-marked')
+    expect(screen.getByText('Без ответа · 2')).toBeTruthy()
+    expect(screen.getByText(/Цвет дублируется формой/)).toBeTruthy()
+    fireEvent.click(screen.getByText('К вопросу 2'))
+    expect(onGo).toHaveBeenCalledWith(1)
+  })
+
+  it('экзамен: пустой номер красным пунктиром уже в окне вопросов, без пояснения учебного режима', () => {
+    const { container } = show({ canFinish: true, onFinish: vi.fn() })
+    expect(container.querySelectorAll('.st-navdlg__n')[1].className).toContain('is-gap')
+    expect(screen.queryByText(/Цвет дублируется формой/)).toBeNull()
+  })
+})

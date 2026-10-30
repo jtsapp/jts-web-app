@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TOTAL_MINUTES, clock, deltas, hoursMinutes, moduleNo, onScale, reviewList, shortClock, trajectory } from './mock.js'
+import { TOTAL_MINUTES, clock, deltas, hoursMinutes, moduleNo, onScale, rangeText, reviewList, shortClock, trajectory } from './mock.js'
 
 const t = (k, v = {}) => (k === 'sat.mock.hm' ? `${v.h} ч ${v.m} мин` : k === 'sat.mock.h' ? `${v.h} ч` : `${v.m} мин`)
 
@@ -9,6 +9,13 @@ describe('mock model', () => {
     expect(hoursMinutes(t, TOTAL_MINUTES)).toBe('2 ч 24 мин')
     expect(hoursMinutes(t, 45)).toBe('45 мин')
     expect(hoursMinutes(t, 60)).toBe('1 ч')
+  })
+
+  it('оценка итога и секций — диапазоном, без «/ 1600» (Figma «NEW 2», 17:4708)', () => {
+    expect(rangeText({ low: 1150, high: 1230 })).toBe('1150–1230')
+    expect(rangeText({ low: 600, high: 600 })).toBe('600')
+    expect(rangeText(null, 1190)).toBe('1190')
+    expect(rangeText(undefined)).toBe('—')
   })
 
   it('clocks', () => {

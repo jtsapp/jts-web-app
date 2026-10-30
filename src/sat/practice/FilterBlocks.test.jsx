@@ -34,4 +34,23 @@ describe('фильтры практики', () => {
     expect(matchesFilters(EMPTY_FILTERS, 1, null)).toBe(true)
     expect(matchesFilters({ difficulty: [], status: ['new'] }, 1, null)).toBe(true)
   })
+
+  it('вид «Практики» NEW 2: числа на чипах, «Сбросить» в заголовке, пояснение; без «Подходит»', () => {
+    const onChange = vi.fn()
+    const counts = { difficulty: { 1: 214, 2: 252, 3: 129 }, status: { right: 124, wrong: 45, new: 426 } }
+    const { container } = render(
+      <I18nProvider>
+        <FilterBlocks value={{ difficulty: [2], status: [] }} onChange={onChange} counts={counts} variant="counted" hint="Пояснение" />
+      </I18nProvider>,
+    )
+    expect(screen.getByRole('button', { name: 'Medium 252' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Без ответа 426' })).toBeTruthy()
+    expect(screen.getByText('Пояснение')).toBeTruthy()
+    expect(screen.queryByText(/Подходит/)).toBeNull()
+    // сброс — в строке «Сложность», коротким словом
+    const reset = container.querySelector('.st-filters__head .st-filters__reset')
+    expect(reset.textContent).toBe('Сбросить')
+    fireEvent.click(reset)
+    expect(onChange).toHaveBeenLastCalledWith(EMPTY_FILTERS)
+  })
 })

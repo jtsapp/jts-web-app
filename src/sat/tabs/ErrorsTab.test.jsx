@@ -15,40 +15,72 @@ const show = (props = {}) => render(<I18nProvider><ErrorsTab {...props} /></I18n
 const page = {
   items: [
     { id: 1, questionId: 'q1', preview: 'Solve for x', section: 'math', domain: 'm.alg', skillId: 'm.alg.linear', difficulty: 3, reason: 'time', kind: 'wrong', source: 'practice', createdAt: '2026-11-10T10:00', reviewed: false },
-    { id: 2, questionId: 'q2', preview: 'Which word', section: 'rw', domain: 'rw.cs', skillId: 'rw.cs.words-in-context', difficulty: 1, reason: null, kind: 'unanswered', source: 'simulation', createdAt: '2026-11-11T10:00', reviewed: false },
+    { id: 2, questionId: 'q2', preview: 'Which word', section: 'rw', domain: 'rw.cs', skillId: 'rw.cs.words-in-context', difficulty: 1, reason: null, kind: 'unanswered', source: 'paper', createdAt: '2026-11-11T10:00', reviewed: true },
   ],
   stats: {
-    total: 2, reviewed: 0, unanswered: 1, byReason: { time: 1 }, bySection: { math: 1, rw: 1 },
+    total: 2, reviewed: 1, unanswered: 1, byReason: { time: 1 }, bySection: { math: 1, rw: 1 },
     topSkills: [{ skillId: 'm.alg.linear', n: 1 }], byDifficulty: { 3: 1, 1: 1 }, lastWeeks: [0, 0, 0, 2],
-    insights: [{ key: 'unanswered', skillId: null }],
+    insights: [{ key: 'time', skillId: null }],
   },
 }
 
-/** «Работа над ошибками» (ТЗ SAT 21.10, задача 9). */
+/** «Работа над ошибками» («NEW 2», 17:9002 / 17:9308 / 17:9658 / 17:9900). */
 describe('страница ошибок SAT', () => {
-  it('у нового студента — объяснение, а не пустая страница', async () => {
+  it('у нового студента — путь ошибки в журнал и выход в практику', async () => {
     api.getSatErrorLog.mockResolvedValueOnce({ items: [], stats: null })
-    show()
-    expect(await screen.findByText('Ошибок пока нет')).toBeTruthy()
+    const onOpenPractice = vi.fn()
+    show({ onOpenPractice })
+    expect(await screen.findByText('Здесь появятся ваши ошибки')).toBeTruthy()
+    expect(screen.getByText('Выбрали причину')).toBeTruthy()
+    fireEvent.click(screen.getByText('Перейти к практике'))
+    expect(onOpenPractice).toHaveBeenCalled()
   })
 
-  it('выводы над цифрами, неверные и неотвеченные раздельно, фильтр по навыку из «ошибок в очереди»', async () => {
+  it('журнал: счётчики по всему журналу, фильтр по навыку из «ошибок в очереди», «Сбросить»', async () => {
     api.getSatErrorLog.mockResolvedValueOnce(page)
     const { container } = show({ initialSkill: 'm.alg.linear' })
-    expect(await screen.findByText(/Много вопросов без ответа/)).toBeTruthy()
-    const rows = container.querySelectorAll('.st-el__table tr')
-    expect(rows).toHaveLength(1)
-    expect(rows[0].textContent).toContain('Нехватка времени')
-    fireEvent.click(screen.getByText('Сбросить фильтры'))
-    expect(container.querySelectorAll('.st-el__table tr')).toHaveLength(2)
-    expect(container.textContent).toContain('Не ответил')
+    expect(await screen.findByText('Разобрано 50%')).toBeTruthy()
+    const rows = () => container.querySelectorAll('.st-el__table tbody tr')
+    expect(rows()).toHaveLength(1)
+    expect(rows()[0].textContent).toContain('Время')
+    fireEvent.click(screen.getByText('Сбросить'))
+    expect(rows()).toHaveLength(2)
+    expect(rows()[1].textContent).toContain('Не ответил')
+    expect(rows()[1].textContent).toContain('Разобрана')
   })
 
-  it('клик по строке открывает разбор вопроса', async () => {
+  it('«Не ответил» — пункт фильтра «Причина»; Esc закрывает список', async () => {
     api.getSatErrorLog.mockResolvedValueOnce(page)
     const { container } = show()
     await screen.findByText('Solve for x')
-    fireEvent.click(container.querySelector('.st-el__table tr'))
+    fireEvent.click(screen.getByRole('button', { name: /^Причина/ }))
+    fireEvent.click(screen.getByRole('option', { name: 'Не ответил' }))
+    expect(container.querySelectorAll('.st-el__table tbody tr')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: /Причина.*Не ответил/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^Источник/ }))
+    expect(screen.getByRole('listbox')).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('статистика: выводы и причины с процентом от всех ошибок', async () => {
+    api.getSatErrorLog.mockResolvedValueOnce(page)
+    show()
+    await screen.findByText('Solve for x')
+    fireEvent.click(screen.getByRole('tab', { name: 'Статистика' }))
+    expect(screen.getByText(/из-за нехватки времени/)).toBeTruthy()
+    expect(screen.getByText('50%')).toBeTruthy()
+    expect(screen.getByText('Ещё 1 вопрос — без ответа')).toBeTruthy()
+  })
+
+  it('клик по строке открывает разбор справа, Esc закрывает', async () => {
+    api.getSatErrorLog.mockResolvedValueOnce(page)
+    const { container } = show()
+    await screen.findByText('Solve for x')
+    fireEvent.click(container.querySelector('.st-el__table tbody tr'))
     expect(api.getSatErrorReview).toHaveBeenCalledWith('tok', 1)
+    expect(container.querySelector('.st-drawer [role="dialog"]')).not.toBeNull()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(container.querySelector('.st-drawer')).toBeNull()
   })
 })

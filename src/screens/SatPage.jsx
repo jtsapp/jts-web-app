@@ -29,8 +29,8 @@ import { errorText } from '../lib/examQuota.js'
 // Вкладки хаба: из Figma (решение 1 доски) + «Материалы» и «Ошибки» (решение C плана). «Прогресс» вернулся по Figma 16
 // (15.10.2026), «Словаря» во вкладках больше нет — в макете его нет. Past papers — свой экран, вход — из «Пробников».
 // «Материалы» скрыты (вкладка и экран остаются в коде): адрес с satTab=materials открывает «Сегодня». «Ошибки» вернулись
-// в меню страницей «Работа над ошибками» (ТЗ 21.10, задача 9)
-export const SAT_TABS = ['today', 'plan', 'practice', 'errors', 'mocks', 'progress', 'guide']
+// в меню страницей «Работа над ошибками» (ТЗ 21.10, задача 9); «Пробники» перед ними — порядок макета «NEW 2» (30.10)
+export const SAT_TABS = ['today', 'plan', 'practice', 'mocks', 'errors', 'progress', 'guide']
 const SOON_ICON = {}
 
 function readTab() {
@@ -55,7 +55,7 @@ function writeTab(tab) {
 
 /**
  * Хаб SAT (Figma SAT 11–20): шапка «SAT · Digital · Bluebook» с целью и датой, вкладки раздела. Работают «Сегодня»,
- * «План», «Практика», «Пробники» (фаза 7), «Прогресс», «Словарь» (фаза 9), «Гайд» (с гидом по Desmos), «Материалы»
+ * «План», «Практика», «Пробники» (фаза 7), «Прогресс», «Гайд» (с гидом по Desmos), «Материалы»
  * (фаза 8) и «Ошибки» (docs/sat/PLAN.md).
  */
 export default function SatPage({ token, userName, userLevel, onNav, onProfile }) {
@@ -70,9 +70,10 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   const [roadmap, setRoadmap] = useState(null)
   const [schedule, setSchedule] = useState(null)
   const [bluebook, setBluebook] = useState(null)
-  const [reloadKey, setReloadKey] = useState(0)
   // «N ошибок в очереди» у навыка ведёт на страницу ошибок с фильтром по этому навыку (задача 9)
   const [errorSkill, setErrorSkill] = useState(null)
+  // режим, в котором открыть «Практику» (фаза 7 «Сегодня»: банк — «Все вопросы», слабые домены — «Слабые»)
+  const [practiceMode, setPracticeMode] = useState(null)
   const [error, setError] = useState(null)
   // шаги старта и доступ (V341): пока что-то не пройдено, вместо вкладок — экран старта
   const [me, setMe] = useState(null)
@@ -115,7 +116,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     return () => {
       alive = false
     }
-  }, [authToken, reloadKey])
+  }, [authToken])
 
   // «Сегодня» закрыто замком — спрашиваем, только когда доступ есть (иначе 403 на каждый заход)
   useEffect(() => {
@@ -138,6 +139,13 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     setMoved(true)
     setTab(next)
     writeTab(next)
+    // обычный переход на «Практику» (вкладкой) — в её режим по умолчанию, а не в оставшийся от «Сегодня»
+    setPracticeMode(null)
+  }
+
+  const openPractice = (mode) => {
+    go('practice')
+    setPracticeMode(mode)
   }
 
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
@@ -194,6 +202,30 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
     onNav?.(screen)
   }
 
+  // форма Bluebook-теста и сравнение 6 → 8 → 10 — свои экраны во всё окно (Figma «NEW 2», 17:8284, 17:8528). Вкладка
+  // остаётся в ?satTab=, а фаза карточки — в ?satPhase=: выйдя с экрана, студент вернётся туда же, откуда пришёл
+  const openBluebook = (test, phase) => {
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('satBluebook', String(test))
+      if (phase) url.searchParams.set('satPhase', String(phase))
+      window.history.replaceState(window.history.state, '', url)
+    } catch {
+      /* без адреса экран не узнает тест */
+    }
+    onNav?.('sat-bluebook')
+  }
+  const openCompare = (test) => {
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('satCompare', String(test))
+      window.history.replaceState(window.history.state, '', url)
+    } catch {
+      /* без адреса экран не узнает тест */
+    }
+    onNav?.('sat-compare')
+  }
+
   // юнит курса — свой экран во всё окно, код в ?satUnit=
   const openUnit = (code) => {
     try {
@@ -230,7 +262,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
   }
 
   let panel
-  if (tab === 'guide') panel = <GuideTab />
+  if (tab === 'guide') panel = <GuideTab explainLang={profile?.explainLang} />
   else if (tab === 'plan') {
     panel = !roadmap || !schedule ? null : (
       <PlanTab
@@ -238,14 +270,24 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         bluebook={bluebook}
         schedule={schedule}
         onLesson={practiceLesson}
-        onReload={() => setReloadKey((k) => k + 1)}
+        onToday={() => go('today')}
+        onBluebook={openBluebook}
+        onCompare={openCompare}
         selfPrepActions={selfPrepActions}
       />
     )
   } else if (tab === 'today') {
     panel = !profile || !diagnostic || !today || !roadmap || !schedule ? null : todayPanel()
   } else if (tab === 'practice') {
-    panel = <PracticeTab onStart={startPractice} explainLang={profile?.explainLang} onErrors={(skillId) => { setErrorSkill(skillId); go('errors') }} />
+    panel = (
+      <PracticeTab
+        key={practiceMode || 'default'}
+        initialMode={practiceMode || undefined}
+        onStart={startPractice}
+        explainLang={profile?.explainLang}
+        onErrors={(skillId) => { setErrorSkill(skillId); go('errors') }}
+      />
+    )
   } else if (tab === 'mocks') {
     panel = (
       <MocksTab
@@ -254,6 +296,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onReview={(id) => openMock(id, 'sat-mock-review')}
         onPapers={() => onNav?.('sat-papers')}
         onPricing={() => onNav?.('sat-pricing')}
+        onCompare={openCompare}
       />
     )
   } else if (tab === 'progress') {
@@ -267,6 +310,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         initialSkill={errorSkill}
         explainLang={profile?.explainLang}
         onPractice={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
+        onOpenPractice={() => go('practice')}
       />
     )
   } else {
@@ -308,6 +352,7 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         today={today}
         roadmap={roadmap}
         schedule={schedule}
+        bluebook={bluebook}
         onWords={() => onNav?.('vocab', { back: true })}
         onPracticeSkills={(skillIds) => startPractice({ mode: 'skills', skillIds, count: moduleSize(skillSection(skillIds[0])) }).catch((e) => setError(errorText(e, t)))}
         onMocks={() => go('mocks')}
@@ -316,7 +361,10 @@ export default function SatPage({ token, userName, userLevel, onNav, onProfile }
         onReview={review}
         onWeekly={() => onNav?.('sat-weekly')}
         onPlan={() => go('plan')}
+        onPracticeMode={openPractice}
+        // контакта менеджера и куратора на сервере пока нет — обе кнопки ведут на тарифы SAT («уточнит менеджер»)
         onManager={() => onNav?.('sat-pricing')}
+        onCurator={() => onNav?.('sat-pricing')}
       />
     )
   }

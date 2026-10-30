@@ -1518,16 +1518,21 @@ clone», страница SAT. Банк вопросов — в JTS-бэкенд
 Прохождение и его фаза живут на сервере (`SatMockService`, `TEST_FORMAT.md` §10): набор модуля 2 выбирается только по
 проверенному модулю 1, часы модуля и перерыва — стена часов сервера, и черновик устройства берёт конец модуля у него
 (`syncWallClock`). Итог — диапазон «внутренняя оценка JTS», не балл. Модули — на экране от 1024 px.
+Bluebook Test 6 / 8 / 10 (дизайн NEW 2, 30.10.2026): баллы — экран во всё окно `?screen=sat-bluebook&satBluebook=<n>`
+(`src/screens/SatBluebookPage.jsx`, сохранить можно, только когда Total = Math + R&W), сравнение после Test 8 / 10 —
+`?screen=sat-compare&satCompare=<n>` (`SatComparePage.jsx`); открываются из карточки теста в «Плане» и из строки
+таблицы «Результаты», выход — туда же (`satTab`, `satPhase` остаются в адресе). Правила (заголовок сравнения, статус
+домена, шкала графика) — `src/sat/model/compare.js` под тестами. Отклонённый куратором результат (`reviewStatus:
+REJECTED`) виден в таблице с пометкой, но в траекторию и «Примерный балл» не идёт; Δ берётся с сервера как есть.
 Курс «36 юнитов» (фаза 8): вкладка «Материалы» (`src/sat/tabs/MaterialsTab.jsx`) и юнит во всё окно
 `?screen=sat-unit&satUnit=U1` (`src/screens/SatUnitPage.jsx`: урок по частям, набор практики, доска `src/sat/course/`,
 Desmos). Тексты — статика из выгрузки прототипа: `node scripts/sat/export-sat.js && node scripts/sat/build-course.js`
 пишут `src/sat/data/course.json` и `public/sat/course/<код>.json`; руками их не править. Набор юнита — вопросы банка
 kind=lesson с кодом юнита (сессия kind=unit, `GET /mobile/sat/course`); все 360 вопросов наборов прототипа сейчас в
 списке проверки College Board, поэтому юниты пишут «набор готовится».
-Словарь (фаза 9): `src/sat/tabs/VocabTab.jsx` + `src/sat/vocab/`; колода и игры — статика `public/sat/vocab/`, гид по
-Desmos — `src/sat/data/desmosGuide.json` (`node scripts/sat/build-reference.js`). Расписание SM-2, свои слова и цель —
-`/mobile/sat/vocab` (`dueAt` — миллисекунды эпохи, не LocalDateTime); очередь дня считает `src/sat/model/vocab.js`.
-Игры расписание не трогают и на сервер не пишут.
+Своего словаря в SAT больше нет (дизайн NEW 2, 30.10.2026: «Словарь переедет в раздел словарь»): вкладка и
+`src/sat/vocab/` удалены, блок «Выучить слова» на «Сегодня» ведёт в общий «Словарь». Статика `public/sat/vocab/` и
+`/mobile/sat/vocab` бэкенда остались. Гид по Desmos — `src/sat/data/desmosGuide.json` (`node scripts/sat/build-reference.js`).
 Подписки на SAT пока нет: раздел открыт любому вошедшему, проверка продукта — перед продом.
 
 **Экосистема минут (Roadmap) — своей таблицы у сводки нет.** Недельная сводка

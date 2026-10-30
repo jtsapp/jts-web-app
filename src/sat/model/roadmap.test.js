@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ROAD_LENGTH, nextGroupLesson, nodeAt, phaseLessons, roadPoint, scheduleAsPlan } from './roadmap.js'
+import { bluebookDays, nextGroupLesson, phaseLessons, scheduleAsPlan } from './roadmap.js'
 
 const roadmap = {
   phases: [
@@ -42,10 +42,16 @@ describe('roadmap SAT', () => {
     expect(phaseLessons(roadmap.phases[0], { lessons: [] })).toBeNull()
   })
 
-  it('узлы дороги от старта до финиша при любом числе фаз', () => {
-    expect(roadPoint(nodeAt(0, 7))).toEqual({ x: 103, y: 310 })
-    expect(roadPoint(nodeAt(6, 7))).toEqual({ x: 943, y: 70 })
-    const mid = roadPoint(ROAD_LENGTH / 2)
-    expect(mid.y).toBe(190)
+  it('Bluebook-тест в календаре — в воскресенье перед фазой, с которой сервер его датирует', () => {
+    const days = bluebookDays({
+      phases: [
+        { n: 1, kind: 'test', start: '2026-10-05', bluebookTest: 6 },
+        { n: 2, kind: 'lessons', start: '2026-10-05' },
+        { n: 3, kind: 'test', start: '2026-11-02', bluebookTest: 8 },
+        { n: 5, kind: 'test', start: '2027-01-01', bluebookTest: 10 },
+        { n: 8, kind: 'exam', start: '2027-03-13' },
+      ],
+    })
+    expect(days).toEqual({ '2026-10-04': 6, '2026-11-01': 8, '2026-12-31': 10 })
   })
 })

@@ -1,12 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { counts, firstUnanswered, isAnswered, sectionGroups } from './session.js'
-import { ArrowBackIcon, BookmarkIcon, ExpandLessIcon, WarningIcon } from '../icons.jsx'
-import { CloseIcon } from '../../ielts/icons.jsx'
+import { ArrowBackIcon, BookmarkIcon, ExpandLessIcon, NoCircleIcon, OkCircleIcon, WarningIcon } from '../icons.jsx'
+import { CloseIcon, InfoIcon, RadioOffIcon } from '../../ielts/icons.jsx'
 import { useI18n } from '../../i18n.jsx'
 
-/** Цвет по результату — только в учебном режиме, где студент и так видит его сразу после ответа (ТЗ 21.10, задача 8). */
+/**
+ * Цвет по результату — только в учебном режиме, где студент и так видит его сразу после ответа (ТЗ 21.10, задача 8).
+ * Непроверенный там — is-none (пунктир, «NEW 2» 17:7551): форма дублирует цвет, сетку читают и без различения
+ * красного и зелёного. Выбранный, но не проверенный ответ — тоже пунктир: «отвечен» в учебном режиме значит «проверен».
+ */
 function resultClass(results, qid) {
-  if (!results || results[qid] == null) return ''
+  if (!results) return ''
+  if (results[qid] == null) return 'is-none'
   return results[qid] ? 'is-right' : 'is-wrong'
 }
 
@@ -15,8 +20,10 @@ function tileState(session, i, results) {
   const a = session.answers[q.id]
   const res = resultClass(results, q.id)
   if (i === session.index) return `is-here ${res}`
-  if (res) return res
+  // результат главнее отметки, отметка — главнее пунктира «ещё не проверен»
+  if (res && res !== 'is-none') return res
   if (a?.marked) return 'is-marked'
+  if (res) return res
   if (isAnswered(a)) return 'is-done'
   return ''
 }
@@ -30,6 +37,11 @@ export function resultCounts(session, results) {
     else if (results?.[q.id] === false) wrong++
   }
   return { right, wrong, none: session.questions.length - right - wrong }
+}
+
+/** «К вопросу N» учебного режима — первый непроверенный; -1, если проверено всё. */
+export function firstUnchecked(session, results) {
+  return session.questions.findIndex((q) => results?.[q.id] == null)
 }
 
 /**
@@ -91,7 +103,9 @@ export function NavRail({ session, onGo, onOpen, results }) {
  * макет рисует только проверку модуля. variant='nav' — просто перейти; variant='review' — проверка перед сдачей модуля:
  * пустые номера красной пунктирной рамкой, предупреждение, «К вопросу N» и «Завершить модуль». Esc и фон — закрыть.
  * canFinish — в 'nav' тоже показать предупреждение и «Завершить модуль» (экзамен: на Digital SAT модуль можно закрыть
- * досрочно в любой момент, а не только дойдя до последнего вопроса; ТЗ SAT 17.10, задача 12).
+ * досрочно в любой момент, а не только дойдя до последнего вопроса; ТЗ SAT 17.10, задача 12) — и пустые номера там
+ * тоже красным пунктиром («NEW 2», 17:7351). results — учебный режим (17:7551): «Верно · Неверно · Без ответа» со
+ * значками, пояснение кодировки и «К вопросу N» — к первому непроверенному.
  */
 export function NavDialog({ session, variant = 'nav', title, subtitle, finishLabel, warn, canFinish = false, onGo, onClose, onFinish, results }) {
   const { t } = useI18n()
@@ -100,6 +114,7 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
   const rc = resultCounts(session, results)
   const review = variant === 'review'
   const gap = firstUnanswered(session)
+  const studyGap = results ? firstUnchecked(session, results) : -1
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -123,9 +138,9 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
         <div className="st-navdlg__chips">
           {results ? (
             <>
-              <span className="st-chip st-chip--right"><i />{t('sat.run.rightN', { n: String(rc.right) })}</span>
-              <span className="st-chip st-chip--wrong"><i />{t('sat.run.wrongN', { n: String(rc.wrong) })}</span>
-              <span className="st-chip st-chip--empty"><i />{t('sat.run.unanswered', { n: String(rc.none) })}</span>
+              <span className="st-chip st-chip--right"><OkCircleIcon size={14} />{t('sat.run.rightN', { n: String(rc.right) })}</span>
+              <span className="st-chip st-chip--wrong"><NoCircleIcon size={14} />{t('sat.run.wrongN', { n: String(rc.wrong) })}</span>
+              <span className="st-chip st-chip--none"><RadioOffIcon size={14} />{t('sat.run.unanswered', { n: String(rc.none) })}</span>
             </>
           ) : (
             <>
@@ -139,15 +154,16 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
           {session.questions.map((q, i) => {
             const a = session.answers[q.id]
             const done = isAnswered(a)
-            let cls = done ? 'is-done' : review ? 'is-gap' : ''
+            let cls = done ? 'is-done' : review || canFinish ? 'is-gap' : ''
             if (a?.marked) cls = 'is-marked'
-            cls = resultClass(results, q.id) || cls
+            const res = resultClass(results, q.id)
+            if (res && (res !== 'is-none' || !a?.marked)) cls = res
             return (
               <button
                 key={q.id}
                 type="button"
                 className={`st-navdlg__n ${cls} ${i === session.index ? 'is-here' : ''}`}
-                aria-label={`${i + 1} · ${t(results?.[q.id] != null ? (results[q.id] ? 'sat.run.tileRight' : 'sat.run.tileWrong') : done ? 'sat.run.tileDone' : 'sat.run.tileEmpty')}${a?.marked ? ` · ${t('sat.run.marked')}` : ''}`}
+                aria-label={`${i + 1} · ${t(results?.[q.id] != null ? (results[q.id] ? 'sat.run.tileRight' : 'sat.run.tileWrong') : done && !results ? 'sat.run.tileDone' : 'sat.run.tileEmpty')}${a?.marked ? ` · ${t('sat.run.marked')}` : ''}`}
                 onClick={() => onGo(i)}
               >
                 <span>{i + 1}</span>
@@ -156,6 +172,21 @@ export function NavDialog({ session, variant = 'nav', title, subtitle, finishLab
             )
           })}
         </div>
+        {results && !review && !canFinish && (
+          <>
+            <p className="st-navdlg__note">
+              <InfoIcon size={16} />
+              <span>{t('sat.run.studyNote')}</span>
+            </p>
+            {studyGap >= 0 && (
+              <div className="st-navdlg__actions">
+                <button type="button" className="ih-btn ih-btn--outline st-navdlg__back" onClick={() => onGo(studyGap)}>
+                  <ArrowBackIcon size={18} />{t('sat.run.toQuestion', { n: String(studyGap + 1) })}
+                </button>
+              </div>
+            )}
+          </>
+        )}
         {(review || canFinish) && (
           <>
             <p className="st-navdlg__warn">

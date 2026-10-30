@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
 import SkillRatings from '../components/SkillRatings.jsx'
+import { CheckCircleIcon, RadioOffIcon } from '../ielts/icons.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
   computeKingdoms,
@@ -74,7 +75,13 @@ function nextRoleFor(level) {
 }
 
 // Языки разборов SAT: вопросы и варианты всегда на английском, как на экзамене
-const SAT_EXPLAIN = { ru: 'Русский', kk: 'Қазақша', en: 'English' }
+// Язык разборов SAT («NEW 2», 17:10151): название и подпись — на самом этом языке, при любом языке интерфейса,
+// как список языков приложения: ученик ищет глазами свой язык, а не его перевод.
+const SAT_EXPLAIN = [
+  { code: 'ru', label: 'Русский', sub: 'Объяснения на русском' },
+  { code: 'kk', label: 'Қазақша', sub: 'Түсіндірмелер қазақ тілінде' },
+  { code: 'en', label: 'English', sub: 'Explanations in English' },
+]
 
 export default function ProfilePage({
   userName,
@@ -200,7 +207,7 @@ export default function ProfilePage({
   }, [token])
 
   const pickSatLang = (code) => {
-    setSatLangOpen(false)
+    if (code === satLang) return
     const prev = satLang
     setSatLang(code)
     saveSatProfile(token, { explainLang: code }).catch(() => setSatLang(prev))

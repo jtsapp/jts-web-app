@@ -19,6 +19,23 @@ function readView() {
   }
 }
 
+/**
+ * Фаза, открытая ссылкой (`satPhase=1` — отчёт диагностики «Дальше: Bluebook Test 6»). Читается один раз и сразу
+ * убирается из адреса: иначе каждое возвращение на вкладку снова открывало бы ту же фазу вместо текущей.
+ */
+function takePhase() {
+  try {
+    const url = new URL(window.location.href)
+    const n = Number(url.searchParams.get('satPhase'))
+    if (!url.searchParams.has('satPhase')) return null
+    url.searchParams.delete('satPhase')
+    window.history.replaceState(window.history.state, '', url)
+    return Number.isInteger(n) && n > 0 ? n : null
+  } catch {
+    return null
+  }
+}
+
 function writeView(v) {
   try {
     const url = new URL(window.location.href)
@@ -47,15 +64,24 @@ export function HowItWorks({ onClose }) {
 }
 
 /**
- * Вкладка «План» (Figma SAT 12–14, фазы — ТЗ 21.10.2026): Роудмап · Неделя · Месяц. Фазы и счётчики — с сервера
- * (тот же источник, что у «Сегодня»), даты занятий — из расписания группы: студент дни не выбирает, их ставит школа.
- * Клик по занятию ведёт сразу в практику по его теме — меню занятия убрано (задача 3.4).
+ * Вкладка «План» (Figma «NEW 2» 17:1367, 17:1583, 17:1866; фазы — ТЗ 21.10.2026): Роудмап · Неделя · Месяц. Фазы и
+ * счётчики — с сервера (тот же источник, что у «Сегодня»), даты занятий — из расписания группы: студент дни не
+ * выбирает, их ставит школа. Клик по занятию ведёт сразу в практику по его теме — меню занятия убрано (задача 3.4).
+ * Счётчика «X из N занятий» в строке вкладок больше нет: макет держит его в полосе фаз «Недели» и в карточке фазы.
  */
-export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onReload, selfPrepActions }) {
+export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onToday, onBluebook, onCompare, selfPrepActions }) {
   const { t } = useI18n()
   const [view, setView] = useState('roadmap')
   const [how, setHow] = useState(false)
-  useEffect(() => setView(readView()), [])
+  const [phase, setPhase] = useState(null)
+  useEffect(() => {
+    const n = takePhase()
+    setView(n ? 'roadmap' : readView())
+    if (n) {
+      setPhase(n)
+      writeView('roadmap')
+    }
+  }, [])
   const go = (v) => {
     setView(v)
     writeView(v)
@@ -83,7 +109,6 @@ export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onReloa
           ))}
         </div>
         <span className="st-spacer" />
-        <span className="st-plan__count">{t('sat.plan.lessonsCount', { d: String(r.attended), n: String(r.lessonCount) })}</span>
         {view === 'roadmap' && (
           <button type="button" className="st-tool" onClick={() => setHow(true)}><HelpIcon size={16} />{t('sat.how.title')}</button>
         )}
@@ -91,11 +116,11 @@ export default function PlanTab({ roadmap, bluebook, schedule, onLesson, onReloa
       {r.provisional && <p className="st-plan__note">{t('sat.plan.provisional')}</p>}
       <div key={view} className="ih-enter">
         {view === 'roadmap' && (
-          <RoadmapView data={roadmap} bluebook={bluebook} schedule={schedule} onStartLesson={onLesson} onReload={onReload}
-            selfPrepActions={selfPrepActions} />
+          <RoadmapView data={roadmap} bluebook={bluebook} schedule={schedule} onToday={onToday} onBluebook={onBluebook}
+            onCompare={onCompare} selfPrepActions={selfPrepActions} initialPhase={phase} />
         )}
         {view !== 'roadmap' && !plan.weeks.length && <p className="st-plan__note">{t('sat.road.noGroup')}</p>}
-        {view === 'week' && plan.weeks.length > 0 && <WeekView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
+        {view === 'week' && plan.weeks.length > 0 && <WeekView plan={plan} data={roadmap} schedule={schedule} next={next} todayIso={todayIso} onStart={open} />}
         {view === 'month' && plan.weeks.length > 0 && <MonthView plan={plan} roadmap={r} next={next} todayIso={todayIso} onStart={open} />}
       </div>
       {how && <HowItWorks onClose={() => setHow(false)} />}

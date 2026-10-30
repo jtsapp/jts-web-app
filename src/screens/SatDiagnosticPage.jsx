@@ -139,11 +139,14 @@ export default function SatDiagnosticPage({ token, onNav }) {
     window.scrollTo(0, 0)
   }
 
-  const toPlan = () => {
+  // phase — фаза роудмапа, которую «План» откроет первой (satPhase читает PlanTab и сразу убирает из адреса)
+  const toPlan = (phase) => {
     writeStep(null)
     try {
       const url = new URL(window.location.href)
       url.searchParams.set('satTab', 'plan')
+      url.searchParams.delete('satPlanView')
+      if (phase) url.searchParams.set('satPhase', String(phase))
       window.history.replaceState(window.history.state, '', url)
     } catch {
       /* вкладку выберет хаб */
@@ -211,9 +214,11 @@ export default function SatDiagnosticPage({ token, onNav }) {
         startKey={startKey}
         timing={road?.timing}
         onManager={() => onNav?.('sat-pricing')}
-        onRoadmap={road ? () => setRoadmap(true) : null}
+        nextTest={road?.roadmap?.phases?.find((p) => p.n === 1)?.bluebookTest ?? 6}
+        // роудмап не загрузился — «Посмотреть план» ведёт во вкладку, а не в пустое окно
+        onRoadmap={road ? () => setRoadmap(true) : () => toPlan()}
         onRetake={() => goStep('intro')}
-        onPlan={toPlan}
+        onNext={() => toPlan(1)}
       />
     )
   }

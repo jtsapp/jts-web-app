@@ -1,21 +1,33 @@
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { ArrowForwardIcon } from '../../ielts/icons.jsx'
-import { PlayCircleIcon } from '../icons.jsx'
+import { PauseCircleIcon } from '../icons.jsx'
 import { iso, parse } from '../model/plan.js'
-import { phaseKeyOf, phaseLessons } from '../model/roadmap.js'
+import { phaseKeyOf } from '../model/roadmap.js'
 import { skillName, skillSection } from '../names.js'
 import { fmtDate } from '../model/dates.js'
 import WeeklyCard from '../weekly/WeeklyCard.jsx'
 import TimingBanner from '../plan/TimingBanner.jsx'
+import PhaseStrip from '../plan/PhaseStrip.jsx'
 import TodayTasksCard from '../today/TodayTasksCard.jsx'
+import TeacherLessonCard from '../today/TeacherLessonCard.jsx'
+import SelfPrepCard from '../today/SelfPrepCard.jsx'
+import { currentLesson } from '../today/todayTasks.js'
+
+// режим незавершённой сессии → его имя в «Практике»; повтора ошибок там нет — своё имя
+const MODE_KEY = { skills: 'sat.prac.mode.skills', weak: 'sat.prac.mode.weak', custom: 'sat.prac.mode.custom', module: 'sat.prac.mode.module', all: 'sat.prac.mode.all', review: 'sat.today.mode.review' }
 
 /**
- * «Сегодня» (Figma SAT 11; ТЗ 21.10, задачи 1, 4, 11): незавершённая сессия, баннер сроков, «Задания на сегодня» —
- * три задания самостоятельной работы, — где вы на дороге плана; справа — недельный тест, до экзамена, ошибки, которым
- * пора вернуться. Фазы и даты — с сервера (роудмап и расписание группы), старый план «по своим дням» сюда не ходит.
+ * «Сегодня» (Figma «NEW 2», 17:6244; ТЗ 21.10, задачи 1, 4, 11): баннер сроков, незавершённая сессия; слева — занятие
+ * с преподавателем и «Задания на сегодня», справа — до экзамена и ошибки, которым пора вернуться; внизу во всю ширину —
+ * «Где вы сейчас» с полосой фаз. В фазе 7 занятия и задания заменяет список дел самоподготовки (17:6902). Фазы и
+ * даты — с сервера (роудмап и расписание группы), старый план «по своим дням» сюда не ходит. Недельного теста в
+ * макете нет, но это задача ТЗ 17.10 — его карточка стоит в правой колонке под ошибками.
  */
-export default function TodayTab({ today, roadmap, schedule, onResume, onReview, onWeekly, onPlan, onManager, onWords, onPracticeSkills, onMocks, onErrors }) {
+export default function TodayTab({
+  today, roadmap, schedule, bluebook, onResume, onReview, onWeekly, onPlan, onManager, onWords, onPracticeSkills,
+  onPracticeMode, onMocks, onErrors, onCurator,
+}) {
   const { t, lang } = useI18n()
   const loc = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU'
   const fmt = (d, o) => fmtDate(loc, d, o)
@@ -23,74 +35,74 @@ export default function TodayTab({ today, roadmap, schedule, onResume, onReview,
   const open = today.openSession
   // фазы, неделя и шаг — с сервера (ТЗ 21.10, задача 1): тот же источник, что у вкладки «План»
   const r = roadmap.roadmap
-  const cur = r.active
-  const curPhase = r.phases.find((x) => x.n === cur)
-  const curKey = phaseKeyOf(r, cur)
-  const counted = r.phases.filter((x) => x.counted)
-  const curLessons = phaseLessons(curPhase, schedule)
-  const stars = curLessons && curLessons.total ? Math.min(3, Math.ceil((curLessons.done / curLessons.total) * 3)) : 0
-
-  // «Задания на сегодня» вместо «Следующего занятия» (ТЗ 21.10, задача 11): три задания самостоятельной работы
-  const lessonBlock = (
-    <TodayTasksCard
-      schedule={schedule}
-      roadmap={r}
-      todayIso={todayIso}
-      onWords={onWords}
-      onPractice={onPracticeSkills}
-      onMocks={onMocks}
-      onErrors={onErrors}
-    />
-  )
+  const curPhase = r.phases.find((x) => x.n === r.active)
+  const curKey = phaseKeyOf(r, r.active)
+  const selfPrep = curPhase?.kind === 'self'
+  const lesson = currentLesson(schedule, todayIso)
 
   const due = today.dueErrors || { count: 0, items: [] }
   const exam = today.exam
 
+  // «Незавершённая сессия · Слабые · Math»; у старых сессий режима нет — тогда, как раньше, по навыкам
+  const openTitle = open && (open.mode && MODE_KEY[open.mode]
+    ? [t(MODE_KEY[open.mode]), open.section === 'math' ? 'Math' : open.section === 'rw' ? 'Reading and Writing' : null].filter(Boolean).join(' · ')
+    : (open.skillIds || []).map((s) => skillName(s, lang)).slice(0, 2).join(' · '))
+
+  let whereSub
+  if (selfPrep) {
+    whereSub = exam
+      ? t('sat.today.whereSelf', { left: plural(t, lang, 'sat.time.weeksWord', exam.weeks) })
+      : t('sat.today.whereSelfNoExam')
+  } else if (r.currentWeek > 0) {
+    whereSub = t('sat.today.whereSub3', { w: String(r.currentWeek), total: String(r.totalWeeks), phase: t(`sat.phase.${curKey}`) })
+  } else {
+    whereSub = t('sat.today.beforeStart', { s: String(r.activeIndex), n: String(r.countedTotal) })
+  }
+
   return (
     <div className="st-today">
+      {/* постоянно, пока ситуация не решена (ТЗ 21.10, задача 4); решилась — сервер вернёт ok, и баннера нет */}
+      <TimingBanner timing={roadmap.timing} onManager={onManager} onPlan={onPlan} />
       {open && (
         <div className="st-resume">
-          <span className="st-resume__icon"><PlayCircleIcon size={22} /></span>
+          <span className="st-resume__icon"><PauseCircleIcon size={22} /></span>
           <div>
-            <b>{t('sat.today.openTitle', { skills: open.skillIds.map((s) => skillName(s, lang)).slice(0, 2).join(' · ') })}</b>
+            <b>{t('sat.today.openTitle', { skills: openTitle })}</b>
             <span>{t('sat.today.openSub', { n: String(open.answered), total: String(open.total) })}</span>
           </div>
           <span className="st-spacer" />
           <button type="button" className="st-resume__btn" onClick={() => onResume(open.id)}>{t('sat.today.resume')}</button>
         </div>
       )}
-      {/* постоянно, пока ситуация не решена (ТЗ 21.10, задача 4); решилась — сервер вернёт ok, и баннера нет */}
-      <TimingBanner timing={roadmap.timing} onManager={onManager} />
       <div className="st-today__grid">
         <div className="st-today__main">
-          {lessonBlock}
-          <article className="st-card st-where">
-            <div className="st-where__head">
-              <div>
-                <h2>{t('sat.today.where')}</h2>
-                <span className="st-muted">
-                  {r.currentWeek > 0
-                    ? t('sat.today.whereSub2', { w: String(r.currentWeek), total: String(r.totalWeeks), s: String(r.activeIndex), n: String(r.countedTotal) })
-                    : t('sat.today.beforeStart', { s: String(r.activeIndex), n: String(r.countedTotal) })}
-                </span>
-              </div>
-              <span className="st-spacer" />
-              <button type="button" className="ih-btn ih-btn--outline" onClick={onPlan}>{t('sat.today.openRoad')}<ArrowForwardIcon size={16} /></button>
-            </div>
-            <div className="st-where__bar">
-              {counted.map((ph) => (
-                <span key={ph.n} className={ph.status === 'done' ? 'is-done' : ph.n === cur ? 'is-here' : ''}>
-                  <i />
-                  <small>{t(`sat.phase.${ph.key}`)}</small>
-                  {ph.n === cur && curLessons && <em aria-label={t('sat.today.stars', { n: String(stars) })}>{[0, 1, 2].map((j) => <b key={j} className={j < stars ? 'is-on' : ''}>★</b>)}</em>}
-                </span>
-              ))}
-            </div>
-            <p>{t(`sat.phaseText.${curKey}.do`)}</p>
-          </article>
+          {selfPrep ? (
+            <SelfPrepCard
+              prep={roadmap.selfPrep}
+              exam={exam}
+              onErrors={onErrors}
+              onWeak={() => onPracticeMode?.('weak')}
+              onBank={() => onPracticeMode?.('all')}
+              onBluebook={onPlan}
+              onCurator={onCurator}
+            />
+          ) : (
+            <>
+              <TeacherLessonCard lesson={lesson} lessonCount={schedule?.lessonCount} todayIso={todayIso} />
+              <TodayTasksCard
+                schedule={schedule}
+                roadmap={r}
+                bluebook={bluebook}
+                todayIso={todayIso}
+                onWords={onWords}
+                onPractice={onPracticeSkills}
+                onMocks={onMocks}
+                onErrors={onErrors}
+              />
+            </>
+          )}
         </div>
         <aside className="st-today__side">
-          <WeeklyCard onOpen={onWeekly} />
           {exam && (
             <div className="st-exam">
               <span className="st-rep__eyebrow">{t('sat.today.toExam')}</span>
@@ -117,8 +129,22 @@ export default function TodayTab({ today, roadmap, schedule, onResume, onReview,
               <button type="button" className="st-hint__more" onClick={onReview}>{t('sat.today.reviewNow')}</button>
             </div>
           )}
+          <WeeklyCard onOpen={onWeekly} />
         </aside>
       </div>
+      <article className="st-card st-where">
+        <div className="st-where__head">
+          <div>
+            <h2>{t('sat.today.where')}</h2>
+            <span className="st-muted">{whereSub}</span>
+          </div>
+          <span className="st-spacer" />
+          <button type="button" className="st-where__open" onClick={onPlan}>{t('sat.today.openPlan')}<ArrowForwardIcon size={16} /></button>
+        </div>
+        <div className="st-road__strip">
+          <PhaseStrip roadmap={roadmap} schedule={schedule} size="S" />
+        </div>
+      </article>
     </div>
   )
 }

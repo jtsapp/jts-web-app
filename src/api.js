@@ -2060,29 +2060,6 @@ export function submitSatDaily(token, id, body) {
   return authPost(`/mobile/sat/daily/${encodeURIComponent(id)}/submit`, token, body)
 }
 
-/** Словарь SAT: дневная цель, оценено сегодня, расписание SM-2 по слову, свои слова (колода — public/sat/vocab). */
-export function getSatVocab(token) {
-  return authGet('/mobile/sat/vocab', token)
-}
-
-/** Оценить карточку: 0 «Снова», 3 «Трудно», 4 «Хорошо», 5 «Легко». */
-export function gradeSatVocab(token, wordId, grade) {
-  return authPost('/mobile/sat/vocab/grade', token, { wordId, grade })
-}
-
-export function setSatVocabGoal(token, goal) {
-  return authPut('/mobile/sat/vocab/goal', token, { goal })
-}
-
-/** Своё слово: { word, definition, example, ru }. */
-export function addSatVocabWord(token, body) {
-  return authPost('/mobile/sat/vocab/words', token, body)
-}
-
-export function deleteSatVocabWord(token, id) {
-  return authDelete(`/mobile/sat/vocab/words/${encodeURIComponent(id)}`, token)
-}
-
 /** Курс «36 юнитов»: размер набора каждого юнита и что ученик в нём сделал. */
 export function getSatCourse(token) {
   return authGet('/mobile/sat/course', token)

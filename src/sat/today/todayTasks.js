@@ -5,8 +5,8 @@ export const NONE = 'none'
 export const PARTIAL = 'partial'
 export const DONE = 'done'
 
-// Оценки времени блоков; сумма в карточке не фиксирована и с 90 минутами занятия не связана
-export const MINUTES = { words: 15, practice: 40, mock: 135, errors: 30, weak: 30 }
+// Оценки времени блоков (Figma «NEW 2», 17:6008); сумма в карточке не фиксирована и с 90 минутами занятия не связана
+export const MINUTES = { words: 15, practice: 40, mock: 135, errors: 15, weak: 20 }
 
 /** Занятие группы, к которому относятся задания: сегодняшнее, иначе ближайшее непроведённое. */
 export function currentLesson(schedule, todayIso) {
@@ -43,10 +43,35 @@ export function buildBlocks({ lesson, today, wordsState = NONE, practiceSize, to
   ].map((b) => ({ ...b, minutes: MINUTES[b.key] }))
 }
 
-/** Кнопка ведёт в первый невыполненный блок, а не всегда в первый по порядку. */
-export function firstOpen(blocks) {
-  const i = blocks.findIndex((b) => b.state !== DONE)
-  return i < 0 ? null : blocks[i]
+/**
+ * Кнопка под заданиями (Figma 17:6008): «Начать: выучить слова», пока ничего не тронуто; «Продолжить: …» — первый
+ * невыполненный блок; «Всё сделано на сегодня» — слова и практика выполнены, а третий блок — практика по слабому
+ * навыку: она «вместо разбора», не обязанность дня. Кнопка и тогда остаётся и ведёт в эту практику (block), если навык
+ * есть. kind — 'start' | 'continue' | 'done'.
+ */
+export function ctaOf(blocks) {
+  const open = blocks.find((b) => b.key !== 'weak' && b.state !== DONE)
+  if (!open) return { kind: 'done', block: blocks.find((b) => b.key === 'weak' && b.skillId) || null }
+  return { kind: blocks.some((b) => b.state !== NONE) ? 'continue' : 'start', block: open }
+}
+
+/** Вид третьего блока: симуляция (тёмная рамка и предупреждение), работа над ошибками, «все ошибки разобраны». */
+export function thirdVariant(block) {
+  if (block?.key === 'mock') return 'mock'
+  if (block?.key === 'errors') return 'errors'
+  return 'clear'
+}
+
+/** «ваш приоритет №2» — место домена занятия в фокусе последнего Bluebook-теста; null — домен не в фокусе. */
+export function priorityRank(domainId, focus) {
+  const i = domainId && Array.isArray(focus) ? focus.indexOf(domainId) : -1
+  return i < 0 ? null : i + 1
+}
+
+/** Чип «До экзамена · 6 недель»; за две недели и меньше счёт идёт днями («· 9 дней», Figma 17:7162). */
+export function examLeft(exam) {
+  if (!exam || exam.days == null) return null
+  return exam.weeks >= 2 ? { unit: 'weeks', n: exam.weeks } : { unit: 'days', n: Math.max(0, exam.days) }
 }
 
 // Слова учатся вне SAT, и сделанное там сюда не приходит: отметка дня хранится на устройстве (это удобство, не учёт)

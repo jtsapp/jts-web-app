@@ -1,5 +1,5 @@
 // Роудмап SAT по ТЗ 21.10.2026 (задача 1). Фазы, недели и счётчики считает сервер (SatRoadmap) — один источник для
-// дашборда, вкладки «План» и плиток. Здесь только показ: подписи фаз, раскладка узлов по дороге и перевод занятий
+// дашборда, вкладки «План» и плиток. Здесь только показ: подписи фаз, дни Bluebook-тестов и перевод занятий
 // группы в форму недель, которую рисуют «Неделя» и «Месяц».
 
 /** Статус занятия для студента (SatScheduleService) → статус клетки календаря. */
@@ -76,40 +76,17 @@ export function nextGroupLesson(plan) {
   return null
 }
 
-// Дорога роудмапа (Figma 12): три ряда, повороты полуокружностью r = 60. Узлы раскладываются по её длине — фаз
-// бывает от 3 до 8 (пакеты, дата экзамена), поэтому координаты не таблицей, а точкой на дороге.
-const R = 60
-const ARC = Math.PI * R
-const ROW1 = { x0: 103, x1: 878, y: 310 }
-const ROW2 = { x0: 878, x1: 208, y: 190 }
-const ROW3 = { x0: 208, x1: 943, y: 70 }
-const L1 = ROW1.x1 - ROW1.x0
-const L2 = ROW2.x0 - ROW2.x1
-const L3 = ROW3.x1 - ROW3.x0
-export const ROAD_LENGTH = L1 + ARC + L2 + ARC + L3
-export const ROAD = 'M103 310 H878 A60 60 0 0 0 878 190 H208 A60 60 0 0 1 208 70 H943'
-
-/** Точка дороги на расстоянии s от старта. */
-export function roadPoint(s) {
-  let d = Math.max(0, Math.min(ROAD_LENGTH, s))
-  if (d <= L1) return { x: ROW1.x0 + d, y: ROW1.y }
-  d -= L1
-  if (d <= ARC) {
-    const a = d / R
-    return { x: ROW1.x1 + R * Math.sin(a), y: ROW1.y - R + R * Math.cos(a) }
+/**
+ * Дни Bluebook-тестов для «Месяца»: { 'ГГГГ-ММ-ДД': номер теста }. Тест пишется в выходные перед следующей фазой
+ * (ТЗ 21.10: «между неделями, занятия не прерываются»), а сервер ставит точке дату понедельника этой фазы — поэтому
+ * в календаре чип стоит на воскресенье перед ним (Figma «NEW 2», Месяц: «Bluebook Test 8» в воскресенье недели 4).
+ */
+export function bluebookDays(roadmap) {
+  const days = {}
+  for (const p of roadmap?.phases || []) {
+    if (p.kind !== 'test' || !p.start || p.bluebookTest == null) continue
+    const [y, m, d] = p.start.split('-').map(Number)
+    days[new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10)] = p.bluebookTest
   }
-  d -= ARC
-  if (d <= L2) return { x: ROW2.x0 - d, y: ROW2.y }
-  d -= L2
-  if (d <= ARC) {
-    const a = d / R
-    return { x: ROW2.x1 - R * Math.sin(a), y: ROW2.y - R + R * Math.cos(a) }
-  }
-  d -= ARC
-  return { x: ROW3.x0 + d, y: ROW3.y }
-}
-
-/** Расстояние узла i из count: первый — у старта, последний — на финише (там день экзамена). */
-export function nodeAt(i, count) {
-  return count <= 1 ? 0 : (ROAD_LENGTH * i) / (count - 1)
+  return days
 }

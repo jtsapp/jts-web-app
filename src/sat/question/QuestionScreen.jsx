@@ -41,6 +41,8 @@ export default function QuestionScreen({
   const { t, lang } = useI18n()
   const [dialog, setDialog] = useState(null) // nav | review | ref | scratch | directions | exit
   const [expanded, setExpanded] = useState(false)
+  // { bucket, at, n } — новое выделение пальцем: под ним один раз мелькнёт «Клик по выделению — снять»
+  const [flash, setFlash] = useState(null)
   const passageRef = useRef(null)
   const stemRef = useRef(null)
   const topRef = useRef(null)
@@ -61,6 +63,7 @@ export default function QuestionScreen({
   const go = useCallback((i) => {
     update((s) => goTo(s, i))
     setDialog(null)
+    setFlash(null)
     // на телефоне страница прокручивается целиком (на десктопе — только колонка вопроса, она пересоздаётся с
     // вопросом): новый вопрос начинается с шапки, а не с середины прошлого
     const top = topRef.current
@@ -87,6 +90,8 @@ export default function QuestionScreen({
         if (!r) continue
         applied = true
         update((s) => setHighlights(s, current(s).id, bucket, merge([...answerOf(s).hl[bucket], r])))
+        // наведения у пальца нет — подсказку о снятии показываем сразу после выделения
+        if (e.type === 'touchend') setFlash((f) => ({ bucket, at: r.start, n: (f?.n || 0) + 1 }))
       }
       if (applied || (sel && !sel.isCollapsed)) sel?.removeAllRanges?.()
     }
@@ -173,8 +178,9 @@ export default function QuestionScreen({
       </div>
     )
     const stem = (
-      <HtmlBlock ref={stemRef} className="st-q__stem" html={doc.stem} ranges={a.hl.s} onMarkTap={unmark('s')} />
+      <HtmlBlock ref={stemRef} className="st-q__stem" html={doc.stem} ranges={a.hl.s} onMarkTap={unmark('s')} flash={flash?.bucket === 's' ? flash : null} />
     )
+    // restMark: разбор учебного режима («NEW 2», 17:3869) — у бледных вариантов серая иконка зачёркивания, как у пробника
     const answer = doc.type === 'spr' ? (
       <SprInput value={a.value} disabled={isChecked} onChange={(v) => update((s) => setValue(s, q.id, v))} />
     ) : (
@@ -183,6 +189,7 @@ export default function QuestionScreen({
         value={a.value}
         struck={a.struck}
         verdict={verdict}
+        restMark={isStudy}
         onSelect={(k) => update((s) => select(s, q.id, k))}
         onStrike={(k) => update((s) => toggleStrike(s, q.id, k))}
       />
@@ -191,7 +198,7 @@ export default function QuestionScreen({
     body = passage ? (
       <div className="st-q__split">
         <section className="st-q__passage">
-          <HtmlBlock ref={passageRef} className="st-q__text" html={passage} ranges={a.hl.p} onMarkTap={unmark('p')} />
+          <HtmlBlock ref={passageRef} className="st-q__text" html={passage} ranges={a.hl.p} onMarkTap={unmark('p')} flash={flash?.bucket === 'p' ? flash : null} />
         </section>
         <section className="st-q__pane">
           {head}

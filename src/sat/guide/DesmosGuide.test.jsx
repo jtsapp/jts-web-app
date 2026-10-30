@@ -25,7 +25,8 @@ describe('Гид по Desmos — уроки только видео', () => {
       expect(body.querySelector('.st-dg__video iframe')?.getAttribute('src')).not.toContain('autoplay')
       expect(body.querySelector('.st-dg__calc iframe')).not.toBeNull()
       expect(body.querySelector('.st-dg__note')).not.toBeNull()
-      expect(body.querySelector('.st-dg__ex')).not.toBeNull()
+      expect(container.querySelector('.st-dg__ex')).not.toBeNull()
+      expect(body.textContent).not.toMatch(/Урок \d/)
       expect(body.querySelector('ol.st-dg__steps')).toBeNull()
       expect(body.textContent).not.toContain('Смотреть видео урока')
     }

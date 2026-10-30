@@ -4,11 +4,12 @@ import { getSatProgress, getSatScores } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { plural } from '../../lib/plural.js'
 import { MenuBookIcon } from '../../ielts/icons.jsx'
-import { CalendarIcon, FireIcon, OkCircleIcon, SigmaIcon, TargetIcon, TrophyIcon } from '../icons.jsx'
+import { BulbIcon, FireIcon, OkCircleIcon, SigmaIcon, TrophyIcon } from '../icons.jsx'
 import { domainName, skillName, TAXONOMY } from '../names.js'
 import { parse } from '../model/plan.js'
 import { fmtDate } from '../model/dates.js'
-import { lastScore, percent } from '../model/tiles.js'
+import { lessonsTile, percent, scoreTile } from '../model/tiles.js'
+import { ReviewChip } from '../mock/ScoresPanel.jsx'
 
 const STATUSES = ['mastered', 'developing', 'learning', 'no-data']
 
@@ -37,8 +38,9 @@ export default function ProgressTab({ onPractice, roadmap }) {
 
   const practice = p.practice || { total: 0, correct: 0 }
   const practicePct = percent(practice.correct, practice.total)
-  const last = lastScore(scores || [])
-  const lessons = roadmap?.roadmap
+  const tileScore = scoreTile(scores || [])
+  const last = tileScore.entry
+  const lessons = lessonsTile(roadmap?.roadmap)
   const byId = Object.fromEntries(p.skills.map((s) => [s.id, s]))
   const domains = TAXONOMY.domains.slice().sort((a, b) => a.order - b.order)
   const max = Math.max(1, ...p.days.map((d) => d.count))
@@ -65,24 +67,31 @@ export default function ProgressTab({ onPractice, roadmap }) {
           <small>{practicePct == null ? t('sat.tiles.solvedNone') : t('sat.prog.right', { p: String(practicePct) })}</small>
         </div>
         <div className="st-card st-pstat">
-          <span className="st-stat__icon is-violet"><TargetIcon size={20} /></span><b>{t('sat.tiles.score')}</b>
-          <strong>{last ? last.total : '—'}</strong>
+          <span className="st-stat__icon is-gold"><BulbIcon size={20} /></span><b>{t('sat.tiles.score')}</b>
+          {/* Figma «NEW 2», 17:8454: ждёт куратора — число с чипом; отклонён — прошлый засчитанный серым, чип «отклонён» */}
+          <strong className={`st-pstat__score ${tileScore.rejected ? 'is-rejected' : ''}`}>
+            {last ? last.total : '—'}
+            {tileScore.rejected ? <span className="st-review is-rejected">{t('sat.tiles.rejected')}</span> : last?.reviewStatus === 'PENDING' && <ReviewChip status="PENDING" />}
+          </strong>
           <small>
-            {last
-              ? [last.label || t(`sat.scores.src.${last.source}`), last.delta != null ? `${last.delta > 0 ? '+' : ''}${last.delta}` : null, last.pending ? t('sat.bb.pending') : null].filter(Boolean).join(' · ')
-              : t('sat.tiles.scoreNone')}
+            {!last
+              ? t('sat.tiles.scoreNone')
+              : tileScore.rejected
+                ? t('sat.tiles.prevConfirmed', { date: fmtDate(loc, parse(last.takenOn), { day: 'numeric', month: 'short' }) })
+                : [t(`sat.scores.src.${last.source}`), fmtDate(loc, parse(last.takenOn), { day: 'numeric', month: 'short' }), last.delta != null ? `${last.delta > 0 ? '+' : ''}${last.delta}` : null].filter(Boolean).join(' · ')}
           </small>
         </div>
         <div className="st-card st-pstat">
           <span className="st-stat__icon is-orange"><FireIcon size={20} /></span><b>{t('sat.prog.streak')}</b>
           <strong>{plural(t, lang, 'sat.today.daysWord', p.streak.current)}</strong>
-          <small>{t('sat.prog.best', { n: String(p.streak.best) })}</small>
+          {/* серия с нуля — не «лучшая — N», а приглашение: ноль дней читается упрёком (17:10026) */}
+          <small>{p.streak.current ? t('sat.prog.best', { n: String(p.streak.best) }) : t('sat.tiles.streakNone')}</small>
         </div>
         <div className="st-card st-pstat">
-          <span className="st-stat__icon is-gold"><CalendarIcon size={20} /></span><b>{t('sat.tiles.lessons')}</b>
+          <span className="st-stat__icon is-violet"><TrophyIcon size={20} /></span><b>{t('sat.tiles.lessons')}</b>
           {/* N — из пакетов студента (24 или 36), тот же счётчик, что у «Плана» и дашборда */}
-          <strong>{lessons ? t('sat.plan.lessonsCount', { d: String(lessons.attended), n: String(lessons.lessonCount) }) : '—'}</strong>
-          <small>{t('sat.tiles.lessonsNote')}</small>
+          <strong>{lessons ? `${lessons.attended} / ${lessons.total}` : '—'}</strong>
+          <small>{lessons ? [t(`sat.tiles.pkg.${lessons.pkg}`), lessons.pct != null ? `${lessons.pct}%` : null].filter(Boolean).join(' · ') : t('sat.tiles.lessonsNote')}</small>
         </div>
       </div>
 
