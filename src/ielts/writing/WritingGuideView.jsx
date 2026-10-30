@@ -25,12 +25,13 @@ function Pattern({ text }) {
  * (правит методист импортом), подписи — словарь прототипа (ieltsWriting.p.*). Части чужого трека не показываются,
  * как и задания Task 1 (§14.1).
  */
-export default function WritingGuideView({ token, track, onBack }) {
+// section — глава из задачи плана: «t1ac.line» (часть.вид или часть.вкладка); часть чужого трека — оглавление
+export default function WritingGuideView({ token, track, section, onBack }) {
   const { t, lang } = useI18n()
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
   const [state, setState] = useState({ status: 'loading' })
-  const [partKey, setPartKey] = useState(null)
-  const [sub, setSub] = useState(null) // вид (kinds) или вкладка (blocks)
+  const [partKey, setPartKey] = useState(() => String(section || '').split('.')[0] || null)
+  const [sub, setSub] = useState(() => String(section || '').split('.')[1] || null) // вид (kinds) или вкладка (blocks)
 
   useEffect(() => {
     let alive = true

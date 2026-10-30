@@ -71,11 +71,13 @@ export function selfCheckFor(selfcheck, kind) {
 
 // Черновик держит браузер, как у Reading: работа сдаётся одним запросом, а сервер хранит уже сданное. Ключ — по
 // заданию: незаконченная работа ждёт на том же устройстве, пока её не сдадут или не сбросят.
-const DRAFT = (id) => `jts_ielts_wr_draft_${id}`
+// ns = 'mock' — черновик mock по типу (mockByType.js): свой ключ, чтобы недописанный mock не подхватывал черновик
+// тренировки того же задания (и наоборот), а в «Моих работах» не числился черновиком — mock продолжается с вкладки.
+const DRAFT = (id, ns) => (ns === 'mock' ? `jts_ielts_wr_mock_${id}` : `jts_ielts_wr_draft_${id}`)
 
-export function loadWritingDraft(testId) {
+export function loadWritingDraft(testId, ns) {
   try {
-    const raw = localStorage.getItem(DRAFT(testId))
+    const raw = localStorage.getItem(DRAFT(testId, ns))
     const d = raw ? JSON.parse(raw) : null
     return d && typeof d.text === 'string' ? d : null
   } catch {
@@ -83,9 +85,9 @@ export function loadWritingDraft(testId) {
   }
 }
 
-export function saveWritingDraft(testId, draft) {
+export function saveWritingDraft(testId, draft, ns) {
   try {
-    localStorage.setItem(DRAFT(testId), JSON.stringify({ ...draft, savedAt: Date.now() }))
+    localStorage.setItem(DRAFT(testId, ns), JSON.stringify({ ...draft, savedAt: Date.now() }))
     return true
   } catch {
     return false
@@ -110,12 +112,26 @@ export function listWritingDrafts() {
   return out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
 }
 
-export function dropWritingDraft(testId) {
+export function dropWritingDraft(testId, ns) {
   try {
-    localStorage.removeItem(DRAFT(testId))
+    localStorage.removeItem(DRAFT(testId, ns))
   } catch {
     /* нет хранилища — нечего чистить */
   }
+}
+
+/** id заданий с начатым mock по типу на этом устройстве — такой mock продолжается, а не сменяется другим заданием. */
+export function listMockDrafts() {
+  const out = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('jts_ielts_wr_mock_')) out.push(key.slice('jts_ielts_wr_mock_'.length))
+    }
+  } catch {
+    /* без хранилища начатых mock нет */
+  }
+  return out
 }
 
 // ---------------------------------------------------------------- каталог

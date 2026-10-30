@@ -1416,6 +1416,14 @@ IELTS `skill: vocab, kind: set` (backend `TEST_FORMAT.md` §12; стартовы
 (claim), модели отдаёт график ДАННЫМИ (`describeChart`, тот же источник, что рисует экран), результат пишет обратно со
 служебным ключом `IELTS_GRADER_KEY` (= `ielts.grader.key` бэкенда; без него оценка выключена — 503). Ключ только серверный:
 иначе ученик поставил бы себе band. Квота IELTS тратится только на оценку, вход в задания не заперт.
+Mock по типу (замечание владельца 10, 30.10.2026) — вкладка «Mock по типам» страницы Writing (`writing-mocks`): тип —
+категория каталога (график у Task 1 Academic, регистр письма у GT, жанр эссе у Task 2; трек — профиля), описание
+`?ieltsView=writing-mock&ieltsList=task2:opinion` (`writing/WritingMockView.jsx`), выбор и правила —
+`writing/mockByType.js`: начатый на устройстве mock продолжается, иначе ещё не написанное задание типа, иначе написанное
+давнее всех. Прохождение — тот же редактор с `mockType` (`&ieltsMockType=`): exam, без «Подсказок», свой черновик
+`jts_ielts_wr_mock_<id>`; сдаётся обычной работой (pending_ai → оценка ИИ, «Мои работы», факт плана `writing:taskN`).
+Своего банка нет: новое задание с `visual` / `register` / `essayType` само попадает в mock своего типа; тип без заданий —
+пустое состояние. Задача программы «на время» (`t1`/`t2` с `extra.timed`) ведёт в mock своего типа (`planModel.js`).
 
 **IELTS Speaking (часть 4) — записи не хранятся нигде.** Задания Part 1/2/3, стратегия (`SP-GUIDE`) и Shadowing —
 документы банка (`TEST_FORMAT.md` §8). Экраны: хаб `?ieltsView=speaking-part1|…|speaking-shadowing|speaking-guide|

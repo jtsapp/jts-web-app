@@ -462,7 +462,8 @@ export default function App() {
     // ?screen=ielts-listening-run&ieltsRun=<id>&ieltsMode=… и ?screen=ielts-dictation&ieltsRun=<id> — то же для Listening.
     if (deepLink === 'ielts-reading-run' || deepLink === 'ielts-listening-run' || deepLink === 'ielts-dictation' || deepLink === 'ielts-writing-run' || deepLink === 'ielts-speaking-run') {
       const id = searchParams.get('ieltsRun')
-      if (id) setIeltsRunTarget({ testId: id, mode: searchParams.get('ieltsMode') || null })
+      // &ieltsMockType=task2:opinion — mock Writing по типу (условия экзамена, свой черновик)
+      if (id) setIeltsRunTarget({ testId: id, mode: searchParams.get('ieltsMode') || null, mockType: searchParams.get('ieltsMockType') || null })
     }
     // ?screen=ielts-diagnostic-result&ieltsAttempt=<id> — итог диагностики; без id — последняя
     if (deepLink === 'ielts-diagnostic-result') {

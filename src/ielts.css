@@ -2794,6 +2794,8 @@
   display: none !important;
 }
 .ih-run__questions {
+  /* якорь меню маркера вопросов (.ih-selmenu — absolute внутри прокрутки, как у .ih-passage) */
+  position: relative;
   width: 50%;
   min-width: 0;
   overflow-y: auto;
@@ -2907,7 +2909,8 @@
 .ih-para__label {
   margin-right: 8px;
 }
-.ih-para mark {
+.ih-para mark,
+.ih-run__questions mark {
   border-radius: 4px;
   color: inherit;
   background: none;
@@ -3047,14 +3050,30 @@
   font-size: 14px;
   line-height: 24px;
 }
-.ih-qfigure {
+/* Схемы банка (Reading diagram, Writing Task 1 process/map) нарисованы на токенах ядра прототипа:
+   fill="var(--jts-bg-soft)", stroke="var(--jts-line-strong)". Сайт задаёт их только здесь, на обёртке схемы, — и
+   каждый, что встречается в банке: без значения fill не вычисляется и наследуется чёрный по умолчанию (схема
+   «Разобранного примера» в «Как писать» была чёрным прямоугольником). Сторож — src/ielts/figureTokens.test.js. */
+.ih-qfigure,
+.ih-wchart__figure {
   --jts-ink: #181818;
   --jts-muted: #8a8a8a;
   --jts-line: #dadae3;
+  --jts-line-strong: #8d95a3;
   --jts-bg: #ffffff;
   --jts-bg-soft: #f7f7fb;
   --jts-violet: #9047ff;
+  --jts-violet-soft: rgba(144, 71, 255, 0.1);
+  --jts-cyan: #0aafff;
+  --jts-cyan-soft: rgba(10, 175, 255, 0.12);
+  --jts-cyan-ink: #006ea4;
+  --jts-green: #00d441;
+  --jts-green-soft: rgba(0, 212, 65, 0.12);
+  --jts-green-ink: #007a25;
+  --jts-gold-soft: rgba(255, 173, 0, 0.14);
   --font: inherit;
+}
+.ih-qfigure {
   padding: 12px;
   border: 1px solid var(--ih-line);
   border-radius: 14px;
@@ -14303,4 +14322,117 @@
   .exam-pr__plans {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Короткие тренировки Writing (writing/drills/WritingDrillView.jsx): варианты, пропуски и пилюли — классы Reading
+   (ih-opt, ih-gap, ih-pill, ih-fb); здесь только раскладка и отметка верного / неверного после проверки. */
+.ih-wdrill {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ih-wdrill__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.ih-wdrill__head h2 {
+  margin: 0;
+}
+.ih-wdrill__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ih-wdrill__card,
+.ih-wdrill__round {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ih-wdrill__card p,
+.ih-wdrill__round h3,
+.ih-wdrill__card h3 {
+  margin: 0;
+}
+.ih-wdrill__text {
+  font-size: 15px;
+  line-height: 24px;
+}
+.ih-wdrill .ih-q__opts,
+.ih-wdrill .ih-q__pills {
+  padding-left: 0;
+}
+.ih-wdrill .ih-opt.is-ok,
+.ih-wdrill .ih-gap.is-ok {
+  border-color: var(--ih-green);
+}
+.ih-wdrill .ih-opt.is-wrong,
+.ih-wdrill .ih-gap.is-wrong {
+  border-color: var(--ih-red);
+}
+.ih-wdrill__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ih-wdrill__sort,
+.ih-wdrill__mistakes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ih-wdrill__sortrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+}
+.ih-wdrill__sortrow.is-ok {
+  border-color: var(--ih-green);
+}
+.ih-wdrill__sortrow.is-wrong {
+  border-color: var(--ih-red);
+}
+.ih-wdrill__fix {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ih-red);
+}
+.ih-wdrill__mistakes li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--ih-red);
+}
+.ih-wdrill__frame {
+  width: 100%;
+  border: 1px solid var(--ih-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* Mock Writing по типу (writing/WritingMockView.jsx): описание перед стартом — условия экзамена и «Начать»;
+   карточка и чипы — классы задания (ih-card, ih-rtask__chips), здесь только раскладка. */
+.ih-wmock {
+  gap: 16px;
+  align-items: flex-start;
+}
+.ih-wmock__rules {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+.ih-wmock > p {
+  margin: 0;
 }

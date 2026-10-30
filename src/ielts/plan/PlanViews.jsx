@@ -32,7 +32,7 @@ export function Legend() {
 }
 
 // Карточка задачи в панели дня: плашка навыка, название, минуты; кнопка во всю ширину (макет DayPanel)
-function PanelTask({ task, primary, onStart, onMark }) {
+function PanelTask({ task, primary, track, onStart, onMark }) {
   const { t } = useI18n()
   const done = task.status === 'completed'
   return (
@@ -40,7 +40,7 @@ function PanelTask({ task, primary, onStart, onMark }) {
       <div className="ih-dp__row">
         <SecPlate sec={task.sec} />
         <div className="ih-tt__body">
-          <b>{taskLabel(t, task)}</b>
+          <b>{taskLabel(t, task, track)}</b>
           <TeacherNote task={task} />
           <span className="ih-tt__meta">{t('ieltsHub.minutes', { n: String(task.minutes) })}{task.n > 1 ? ` · ${task.got}/${task.n}` : ''} <OriginChip task={task} /></span>
         </div>
@@ -62,7 +62,7 @@ function PanelTask({ task, primary, onStart, onMark }) {
 }
 
 /** Панель выбранного дня: задачи, минуты и контроль этой недели (тот же id, что на «Сегодня»). */
-export function DayPanel({ date, weekN, dayN, tasks, control, today, onPrev, onNext, onStart, onMark, events }) {
+export function DayPanel({ date, weekN, dayN, tasks, control, today, track, onPrev, onNext, onStart, onMark, events }) {
   const { t, lang } = useI18n()
   const work = (tasks || []).filter((x) => x.origin !== 'weekly_control')
   const firstOpen = work.findIndex((x) => x.status !== 'completed')
@@ -87,7 +87,7 @@ export function DayPanel({ date, weekN, dayN, tasks, control, today, onPrev, onN
             <ScheduleIcon size={14} /> {t('ieltsPlanV.dayLoad', { n: String(work.length), min: String(dayMinutes(work)) })}
           </span>
           <ul className="ih-dp__list">
-            {work.map((task, i) => <PanelTask key={task.id} task={task} primary={date <= today && i === firstOpen} onStart={onStart} onMark={onMark} />)}
+            {work.map((task, i) => <PanelTask key={task.id} task={task} primary={date <= today && i === firstOpen} track={track} onStart={onStart} onMark={onMark} />)}
           </ul>
         </>
       ) : (
@@ -172,7 +172,7 @@ function RoadWeek({ week, title, selected, onPick, flip, laneRef }) {
   )
 }
 
-export function RoadmapView({ data, onStart, onMark }) {
+export function RoadmapView({ data, track, onStart, onMark }) {
   const { t } = useI18n()
   const today = data.today
   const cur = data.currentWeek || 1
@@ -274,6 +274,7 @@ export function RoadmapView({ data, onStart, onMark }) {
         tasks={tasksOf[sel] || []}
         control={selWeek?.control}
         today={today}
+        track={track}
         onPrev={idx > 0 ? () => setSel(allDays[idx - 1]) : undefined}
         onNext={idx < allDays.length - 1 ? () => setSel(allDays[idx + 1]) : undefined}
         onStart={onStart}
@@ -285,7 +286,7 @@ export function RoadmapView({ data, onStart, onMark }) {
 
 // ---------------------------------------------------------------- неделя
 
-export function WeekView({ data, n, onWeek, onStart, onMove }) {
+export function WeekView({ data, n, track, onWeek, onStart, onMove }) {
   const { t, lang } = useI18n()
   const today = data.today
   const dates = weekDates(data.enrollment.startDate, n)
@@ -323,7 +324,7 @@ export function WeekView({ data, n, onWeek, onStart, onMove }) {
                       <button type="button" className={`ih-wcard is-${st}${sel?.id === task.id ? ' is-sel' : ''}${taskOrigin(task) ? ` is-${taskOrigin(task)}` : ''}`} onClick={() => { setSelId(task.id); setMoving(false) }}>
                         <span className="ih-wcard__st" aria-hidden="true">{st === 'done' ? <CheckIcon size={12} /> : st === 'control' ? <FlagIcon size={12} /> : null}</span>
                         <b>{task.sec === 'control' ? t('ieltsPlanV.control') : task.sec === 'vocab' ? t('ieltsPlan.sec.vocab') : cap(task.sec)}</b>
-                        <span className="ih-wcard__sub">{taskLabel(t, task).split(' · ').slice(1).join(' · ') || taskLabel(t, task)}</span>
+                        <span className="ih-wcard__sub">{taskLabel(t, task, track).split(' · ').slice(1).join(' · ') || taskLabel(t, task, track)}</span>
                         <span className="ih-wcard__min"><ScheduleIcon size={12} /> {t('ieltsHub.minutes', { n: String(task.minutes) })}</span>
                         {taskOrigin(task) ? <OriginChip task={task} short /> : <span className="ih-wcard__mode">{t(`ieltsToday.mode.${task.mode || 'self_study'}`)}</span>}
                       </button>
@@ -342,7 +343,7 @@ export function WeekView({ data, n, onWeek, onStart, onMove }) {
             <div className="ih-wsel__task">
               <span className={`ih-wsel__ring is-${sel.status}`} aria-hidden="true">{sel.status === 'completed' && <CheckIcon size={28} />}</span>
               <div>
-                <b>{taskLabel(t, sel)}</b>
+                <b>{taskLabel(t, sel, track)}</b>
                 <TeacherNote task={sel} />
                 {taskOrigin(sel) ? <OriginChip task={sel} /> : <span>{t(`ieltsToday.mode.${sel.mode || 'self_study'}`)}</span>}
                 <span><ScheduleIcon size={14} /> {t('ieltsPlanV.minutes', { n: String(sel.minutes) })}</span>
@@ -372,7 +373,7 @@ export function WeekView({ data, n, onWeek, onStart, onMove }) {
 
 // ---------------------------------------------------------------- месяц
 
-export function MonthView({ data, month, onMonth, onStart, onMark }) {
+export function MonthView({ data, month, track, onMonth, onStart, onMark }) {
   const { t, lang } = useI18n()
   const today = data.today
   const [sel, setSel] = useState(today)
@@ -434,7 +435,7 @@ export function MonthView({ data, month, onMonth, onStart, onMark }) {
         </div>
         <Legend />
       </div>
-      <DayPanel date={sel} tasks={tasksOf[sel] || []} control={null} today={today} onStart={onStart} onMark={onMark} events={events.length ? events : (control ? [control] : [])} />
+      <DayPanel date={sel} tasks={tasksOf[sel] || []} control={null} today={today} track={track} onStart={onStart} onMark={onMark} events={events.length ? events : (control ? [control] : [])} />
     </div>
     </div>
   )

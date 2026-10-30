@@ -7,7 +7,7 @@ import { useI18n } from '../../i18n.jsx'
 // «Сегодня» по дизайну «IELTS new» (Figma, раздел 1): заголовок с программой и форматом, блок цели с маскотом,
 // задачи программы и «Зона роста» рядом, ниже — контроль недели. Быстрых действий и ссылки на словарь нет (ТЗ v4);
 // подробный прогресс — по ссылке из блока цели. Live-ученик видит ближайший урок из расписания JTS.
-export default function TodayTab({ data, lesson, onStartPlanTask, onMarkPlanTask, onStartStep, onOpenPlan, onOpenProgress, onEditGoal, onTrain, onOpenLessons }) {
+export default function TodayTab({ data, lesson, track, onStartPlanTask, onMarkPlanTask, onStartStep, onOpenPlan, onOpenProgress, onEditGoal, onTrain, onOpenLessons }) {
   const { t } = useI18n()
   const prog = data.programme
   const e = prog?.enrollment
@@ -29,7 +29,7 @@ export default function TodayTab({ data, lesson, onStartPlanTask, onMarkPlanTask
         onDiagnostic={() => onStartStep?.('diagnostic')}
       />
       <div className="ih-today__row">
-        <TodayTasksCard programme={prog} live={live} lesson={lesson} onStartTask={onStartPlanTask} onMark={onMarkPlanTask} onOpenPlan={onOpenPlan} onOpenLessons={onOpenLessons} />
+        <TodayTasksCard programme={prog} live={live} lesson={lesson} track={track || data.profile?.track} onStartTask={onStartPlanTask} onMark={onMarkPlanTask} onOpenPlan={onOpenPlan} onOpenLessons={onOpenLessons} />
         <GrowthCard growth={data.growthZone} onTrain={onTrain} />
       </div>
       <WeeklyControlStrip control={prog?.weeklyControl} onStart={onStartPlanTask} />

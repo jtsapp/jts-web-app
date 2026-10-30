@@ -7,14 +7,16 @@ import { paragraphChoices } from './anchor.js'
 import { useI18n } from '../../i18n.jsx'
 import { plural } from '../../lib/plural.js'
 import { safeSvg } from '../safeSvg.js'
+import { MarkedText } from './marker.jsx'
 
 // Схема к вопросам (diagram label) приходит SVG-строкой из банка — чистит её общий safeSvg (DOMPurify).
 
 const numLabel = (numbers) => (numbers.length > 1 ? `${numbers[0]}–${numbers.at(-1)}` : String(numbers[0]))
 
 // Строка ответа в тексте вопроса: «… made of 1 ____» → поле на месте пропуска. onBlur — Listening проверяет
-// пропуск сразу после ответа (Figma 8: «Ответ проверяется сразу»), а не по кнопке.
-function GapPrompt({ prompt, value, onChange, onBlur, disabled, ariaLabel, state, inputMode }) {
+// пропуск сразу после ответа (Figma 8: «Ответ проверяется сразу»), а не по кнопке. hl(i, текст) — кусок фразы под
+// маркером; поле стоит вне этих кусков, иначе выделение в поле считалось бы выделением текста вопроса.
+function GapPrompt({ prompt, value, onChange, onBlur, disabled, ariaLabel, state, inputMode, hl = (i, text) => text }) {
   const parts = String(prompt || '').split(/\d*\s*_{3,}/)
   const input = (
     <input
@@ -35,15 +37,15 @@ function GapPrompt({ prompt, value, onChange, onBlur, disabled, ariaLabel, state
   if (parts.length < 2) {
     return (
       <span className="ih-q__prompt">
-        {prompt} {input}
+        {hl(0, prompt)} {input}
       </span>
     )
   }
   return (
     <span className="ih-q__prompt">
-      {parts[0]}
+      {hl(0, parts[0])}
       {input}
-      {parts.slice(1).join(' ____ ')}
+      {hl(1, parts.slice(1).join(' ____ '))}
     </span>
   )
 }
@@ -115,7 +117,10 @@ function PaperGroup({ group, entries, run, mode, onAnswer, onCheck, onFocus, sho
   )
 }
 
-export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer, onFlag, onCheck, onShowInText, onFocus, checking, paper }) {
+// marker — { highlights }: тексты вопросов под маркером, как текст теста (на компьютерном IELTS выделяются оба). Ключи —
+// «q:<группа|вопрос>:…», меню и сохранение — у страницы (useMarker на панели вопросов). Варианты-кнопки не выделяются:
+// протаскивание по кнопке выбирает ответ (styles.css снимает выделение с кнопок).
+export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer, onFlag, onCheck, onShowInText, onFocus, checking, paper, marker }) {
   const { t, lang } = useI18n()
   const mech = mechanicOf(group.type)
   const first = entries[0]?.numbers[0]
@@ -123,6 +128,8 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
   const list = group.headings || group.options || null
   const selectKeys = group.type === 'matching_information' ? paragraphChoices(doc, group.text) : (list || []).map((o) => o.key)
   const live = mode !== 'exam'
+  const gk = `q:${group.id || entries[0]?.id}`
+  const hl = (k, text) => (marker && text ? <MarkedText k={k} text={text} highlights={marker.highlights} /> : text)
 
   return (
     <section className="ih-qgroup">
@@ -130,7 +137,7 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
         <h3>{first === last ? `Question ${first}` : `Questions ${first}–${last}`}</h3>
         <Chip tone="orange" size="sm" className="ih-chip--reading">{typeLabel(group.type)}</Chip>
       </header>
-      {group.instruction && <p className="ih-qgroup__ins">{group.instruction.replace(/^Questions? [\d–-]+\.\s*/, '')}</p>}
+      {group.instruction && <p className="ih-qgroup__ins">{hl(`${gk}:ins`, group.instruction.replace(/^Questions? [\d–-]+\.\s*/, ''))}</p>}
 
       {paper && mech === 'gap' && (
         <PaperGroup group={group} entries={entries} run={run} mode={mode} onAnswer={onAnswer} onCheck={onCheck} onFocus={onFocus} showFeedback={mode === 'study'} />
@@ -139,14 +146,14 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
         <div className="ih-qlist">
           <b>{group.headings ? 'List of headings' : group.optionsTitle || t('ieltsReading.options')}</b>
           {list.map((o) => (
-            <p key={o.key}><i>{o.key}</i>{o.text}</p>
+            <p key={o.key}><i>{o.key}</i>{hl(`${gk}:o:${o.key}`, o.text)}</p>
           ))}
         </div>
       )}
       {group.summary && (
         <div className="ih-qlist ih-qlist--text">
           {group.title && <b>{group.title}</b>}
-          <p>{group.summary}</p>
+          <p>{hl(`${gk}:sum`, group.summary)}</p>
         </div>
       )}
       {group.table && (
@@ -160,7 +167,7 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
             )}
             <tbody>
               {(group.table.rows || []).map((row, i) => (
-                <tr key={i}>{row.map((c, j) => <td key={j}>{c}</td>)}</tr>
+                <tr key={i}>{row.map((c, j) => <td key={j}>{typeof c === 'string' ? hl(`${gk}:t:${i}:${j}`, c) : c}</td>)}</tr>
               ))}
             </tbody>
           </table>
@@ -168,7 +175,7 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
       )}
       {group.steps && (
         <ol className="ih-qsteps">
-          {group.steps.map((s, i) => <li key={i}>{s}</li>)}
+          {group.steps.map((s, i) => <li key={i}>{typeof s === 'string' ? hl(`${gk}:s:${i}`, s) : s}</li>)}
         </ol>
       )}
       {group.figure?.svg && <div className="ih-qfigure" dangerouslySetInnerHTML={{ __html: safeSvg(group.figure.svg) }} />}
@@ -234,7 +241,7 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
           mech === 'select' ? (
             <div className="ih-q__row">
               <span className="ih-q__num">{numLabel(e.numbers)}</span>
-              <span className="ih-q__prompt ih-q__prompt--strong">{it.prompt}</span>
+              <span className="ih-q__prompt ih-q__prompt--strong">{hl(`q:${e.id}`, it.prompt)}</span>
               <span className={`ih-select ${value ? 'is-set' : ''}`}>
                 <select value={value || ''} disabled={locked} onChange={(ev) => set(ev.target.value)} aria-label={`${t('ieltsReading.answer')} ${numLabel(e.numbers)}`}>
                   <option value="">{t('ieltsReading.choose')}</option>
@@ -248,9 +255,9 @@ export default function QuestionGroup({ group, entries, doc, run, mode, onAnswer
             <div className="ih-q__row ih-q__row--top">
               <span className="ih-q__num">{numLabel(e.numbers)}</span>
               {mech === 'gap' ? (
-                <GapPrompt prompt={it.prompt} value={value} onChange={set} disabled={locked} ariaLabel={`${t('ieltsReading.answer')} ${numLabel(e.numbers)}`} />
+                <GapPrompt prompt={it.prompt} value={value} onChange={set} disabled={locked} ariaLabel={`${t('ieltsReading.answer')} ${numLabel(e.numbers)}`} hl={(i, text) => hl(`q:${e.id}:${i}`, text)} />
               ) : (
-                <span className="ih-q__prompt">{it.prompt}</span>
+                <span className="ih-q__prompt">{hl(`q:${e.id}`, it.prompt)}</span>
               )}
               {flagBtn}
             </div>

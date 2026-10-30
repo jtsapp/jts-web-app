@@ -4,6 +4,9 @@
 import { CATEGORY_LABEL, DRILLS } from '../reading/meta.js'
 import { drills, forTrack, fullTests, singleTexts, typeTrainers } from '../reading/catalog.js'
 import { aggLevel, bandLabel } from '../model/levels.js'
+import { drillCatalog } from '../writing/drills/drillModel.js'
+import { SAMPLE_DRILLS } from '../writing/drills/sampleDrills.js'
+import { mockLimits, mockTasks, mockTypeName, mockTypes } from '../writing/mockByType.js'
 
 export const SKILLS = ['listening', 'reading', 'writing', 'speaking']
 
@@ -26,6 +29,11 @@ export const SKILL_TABS = {
   writing: [
     { key: 'task1', view: 'writing-task1' },
     { key: 'task2', view: 'writing-task2' },
+    // mock по типу: одно задание графика / письма / жанра эссе в условиях экзамена — writing/mockByType.js, замечание
+    // владельца 10 (30.10.2026)
+    { key: 'mock', view: 'writing-mocks' },
+    // короткие тренировки одного приёма (overview, связки, позиция, регистр) — writing/drills/, правка владельца 30.10.2026
+    { key: 'drills', view: 'writing-drills' },
   ],
   speaking: [
     { key: 'part1', view: 'speaking-part1' },
@@ -107,6 +115,8 @@ export function skillRows(skill, tab, lists, track) {
     return L.filter((t) => kind.includes(t.kind)).map((t) => testRow(t, skill, view))
   }
   if (skill === 'writing') {
+    if (tab === 'drills') return writingDrillRows(lists, track)
+    if (tab === 'mock') return writingMockRows(lists, track)
     return forTrack(L, track).filter((t) => t.kind === tab).map((t) => testRow(t, skill, `writing-${tab}`, 'ai'))
   }
   return L.filter((t) => t.kind === tab).map((t) => testRow(t, skill, `speaking-${tab}`, tab === 'shadowing' ? 'practice' : 'ai'))
@@ -122,33 +132,66 @@ export function drillRows(items, track) {
   })
 }
 
+/**
+ * Дриллы Writing — «Короткие тренировки»: каждый дрилл одной строкой, «Открыть» — сразу сам дрилл (вид
+ * writing-drills + testId). lists.writingDrills — каталог с прогрессом устройства (IeltsPage); без него — из банка
+ * (lists.writing, kind drill), а пока банк дриллов не отдаёт — пробные (sampleDrills.js).
+ */
+export function writingDrillRows(lists, track) {
+  const all = lists?.writingDrills || drillCatalog(lists?.writing, SAMPLE_DRILLS)
+  return forTrack(all, track).map((x) => ({
+    id: `wdrill:${x.id}`, skill: 'writing', title: x.title, minutes: x.minutes || minutesOf(x), mode: 'practice',
+    status: statusOf([x]), band: bandLabel(x), level: x.level, sample: !!x.sample,
+    open: { tab: 'learn', view: 'writing-drills', testId: x.id },
+  }))
+}
+
+/**
+ * Mock Writing по типу — строка на тип трека; «Открыть» ведёт на описание mock (вид writing-mock, ?ieltsList=task1:line):
+ * там условия экзамена и старт, задание выбирается при старте. Тип без заданий — «скоро» (страница навыка такие прячет).
+ * lists.writingMockDrafts — id заданий с начатым mock на устройстве: такой тип — «Продолжить».
+ */
+export function writingMockRows(lists, track) {
+  const drafts = lists?.writingMockDrafts || []
+  return mockTypes(track).map(({ kind, key }) => {
+    const tests = mockTasks(lists?.writing, key, track)
+    const started = tests.some((x) => drafts.includes(x.id))
+    return {
+      id: `wmock:${key}`, skill: 'writing', title: `Mock · ${mockTypeName(key)}`, minutes: mockLimits(kind).minutes, mode: 'exam',
+      count: tests.length, status: started ? 'started' : statusOf(tests), band: rangeLabel(tests), level: aggLevel(tests),
+      open: tests.length ? { tab: 'learn', view: 'writing-mock', list: key } : null,
+    }
+  })
+}
+
 /** Куда ведёт строка-набор: страница выбора заданий набора по уровню (вид хаба practice-list, ключ — ?ieltsList=). */
 const listOpen = (key) => ({ tab: 'learn', view: 'practice-list', list: key })
 
 /**
- * Тренировка-вид (диктовка, правописание, Task 1, Part 1, shadowing) одной строкой, как дриллы Reading: подпись
+ * Тренировка-вид (диктовка, правописание, Part 1, shadowing) одной строкой, как дриллы Reading: подпись
  * переведена, «Открыть» ведёт в выбор заданий вида по уровню, а не запускает первое (правка владельца в Figma).
  */
-function kindRow(L, skill, kind, track) {
-  const tests = (skill === 'writing' ? forTrack(L, track) : L).filter((t) => t.kind === kind)
+function kindRow(L, skill, kind) {
+  const tests = L.filter((t) => t.kind === kind)
   if (!tests.length) return []
   const first = tests.find((t) => !t.attemptCount) || tests[0]
   return [{
-    id: `short:${kind}`, skill, titleKey: `ieltsPractice.short.${kind}`, minutes: SHORT_MIN[kind] || minutesOf(first), mode: kind === 'task1' || kind === 'part1' ? 'ai' : 'practice',
+    id: `short:${kind}`, skill, titleKey: `ieltsPractice.short.${kind}`, minutes: SHORT_MIN[kind] || minutesOf(first), mode: kind === 'part1' ? 'ai' : 'practice',
     count: tests.length, status: statusOf(tests), band: rangeLabel(tests), level: aggLevel(tests), open: listOpen(`${skill}:${kind}`),
   }]
 }
 
-// «короткая» версия длинных видов: одно задание Task 1 или одна тема Part 1 — а не секция целиком
-const SHORT_MIN = { task1: 20, part1: 5, shadowing: 5, dictation: 8, spelling: 6 }
+// «короткая» версия длинных видов: одна тема Part 1 — а не секция целиком
+const SHORT_MIN = { part1: 5, shadowing: 5, dictation: 8, spelling: 6 }
 
 /** «Короткие тренировки» по навыку: один навык за раз, у каждого навыка — свои короткие дриллы. */
 export function shortRows(skill, lists, track) {
   if (skill === 'reading') return drillRows(lists.reading || [], track)
   if (skill === 'listening') return kindRow(lists.listening || [], 'listening', 'dictation').concat(kindRow(lists.listening || [], 'listening', 'spelling'))
   if (skill === 'speaking') return kindRow(lists.speaking || [], 'speaking', 'part1').concat(kindRow(lists.speaking || [], 'speaking', 'shadowing'))
-  // Writing: короткий дрилл — одно задание Task 1 (20 минут) и разбор приёмов по гиду «Как писать»
-  return kindRow(lists.writing || [], 'writing', 'task1', track)
+  // Writing: дриллы приёмов письма и гид «Как писать». Раньше здесь стояла строка «Task 1» — она открывала список
+  // полных заданий Task 1 на 20 минут вместо коротких тренировок (замечание владельца 30.10.2026)
+  return writingDrillRows(lists, track)
     .concat([{ id: 'writing-guide', skill: 'writing', titleKey: 'ieltsPractice.writingGuide', minutes: 10, mode: 'theory', status: 'new', open: { tab: 'learn', view: 'writing-guide' } }])
 }
 
@@ -179,6 +222,10 @@ export function listTitle(key, t) {
   const [skill, kind, category] = String(key || '').split(':')
   if (kind === 'drill' && category) return t(`ieltsReading.drill.${category}.name`)
   if (kind === 'types' && category) return CATEGORY_LABEL[category] || category
+  // вид задания из плана: жанр эссе, вид графика или регистр письма, вид карточки Part 2
+  const cat = skill === 'writing' && category ? `ieltsWriting.p.${kind === 'task2' ? 'essay' : /formal$/.test(category) ? 'register' : 'visual'}.${category}`
+    : skill === 'speaking' && category ? `ieltsSpeaking.p.cat.${category}` : null
+  if (cat && t(cat) && t(cat) !== cat) return `${skill === 'speaking' ? 'Part' : 'Task'} ${kind.slice(-1)} · ${t(cat)}`
   const k = `ieltsPractice.short.${kind}`
   const v = t(k)
   return v && v !== k ? v : `${skill[0].toUpperCase()}${skill.slice(1)}`

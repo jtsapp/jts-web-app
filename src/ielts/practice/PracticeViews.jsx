@@ -130,7 +130,9 @@ export function PracticeRow({ row, onOpen, compact = false }) {
   const title = row.title || t(row.titleKey)
   const soon = row.status === 'soon' || !row.open
   const added = row.added ? ` · ${t('ieltsPractice.added', { date: formatDate(row.added, lang, true) })}` : ''
-  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}${added}`
+  // пробное (тестовое) содержимое — дриллы Writing до первых дриллов методиста в банке
+  const sample = row.sample ? ` · ${t('ieltsWDrill.sample')}` : ''
+  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}${added}${sample}`
   if (compact) {
     return (
       <li>
@@ -138,7 +140,7 @@ export function PracticeRow({ row, onOpen, compact = false }) {
           <SecPlate sec={row.skill} size={36} />
           <span className="ih-prow__body">
             <b>{title}</b>
-            <span className="ih-prow__meta">{t('ieltsHub.minutes', { n: String(row.minutes) })} · <StatusChip status={row.status} /></span>
+            <span className="ih-prow__meta">{t('ieltsHub.minutes', { n: String(row.minutes) })}{sample} · <StatusChip status={row.status} /></span>
           </span>
           <ChevronRightIcon size={18} />
         </button>

@@ -9,6 +9,7 @@ import { setIeltsParams } from '../ielts/urlParams.js'
 import { formatClock } from '../ielts/reading/run.js'
 import { countWords, dropWritingDraft, kindKey, loadWritingDraft, minWords, saveWritingDraft, timeLimitSec } from '../ielts/writing/writing.js'
 import { useMockAutosave } from '../ielts/mock/mockSession.js'
+import { mockTypeName } from '../ielts/writing/mockByType.js'
 import MockRunHeader from '../ielts/mock/MockRunHeader.jsx'
 import { SparkleIcon, CheckCircleIcon, CheckIcon, CloseIcon, EditIcon, InfoIcon, TimerIcon } from '../ielts/icons.jsx'
 import { errorText, isQuotaError } from '../lib/examQuota.js'
@@ -22,14 +23,19 @@ const PLAN_STEPS = { t1ac: 4, t1gt: 5, t2: 4 }
  * mock — задание секции полного mock: часы общие на оба задания и идут по серверу (mock.deadline), черновик — на
  * сервере (mock.draft: { text, pasteBlocked } этого задания). Пустую работу сервер не примет, поэтому и в mock время не
  * обрывает текст: перерасход уходит в работу, как вне mock.
+ * target.mockType — mock Writing по типу (writing/mockByType.js, «task2:opinion»): одно задание в условиях экзамена —
+ * часы, без «Подсказок» и выбора режима; черновик — свой (ns 'mock'), сдаётся обычной работой (mode exam → pending_ai).
  */
 export default function IeltsWritingRunPage({ token, target, onExit, onDone, mock = null }) {
   const { t } = useI18n()
   const testId = target?.testId
+  // mock по типу — только вне полного mock: в полном свои часы и черновик на сервере
+  const typed = !mock && target?.mockType ? target.mockType : null
+  const ns = typed ? 'mock' : undefined
   const authToken = token || loadToken()
   const [state, setState] = useState({ status: 'loading' })
   const [text, setText] = useState('')
-  const [mode, setMode] = useState(target?.mode === 'practice' && !mock ? 'practice' : 'exam')
+  const [mode, setMode] = useState(target?.mode === 'practice' && !mock && !typed ? 'practice' : 'exam')
   const [startedAt, setStartedAt] = useState(null)
   const [elapsed, setElapsed] = useState(0)
   const [now, setNow] = useState(() => Date.now())
@@ -47,10 +53,10 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
     getIeltsTest(authToken, testId)
       .then((r) => {
         if (!alive) return
-        const d = mock ? mock.draft || null : loadWritingDraft(testId)
+        const d = mock ? mock.draft || null : loadWritingDraft(testId, ns)
         if (d) {
           setText(d.text)
-          if (d.mode) setMode(d.mode)
+          if (d.mode && !typed) setMode(d.mode)
           setPasteBlocked(d.pasteBlocked || 0)
           carried.current = d.elapsedSec || 0
         }
@@ -65,9 +71,10 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
 
   useEffect(() => {
     if (!testId || mock) return undefined
-    setIeltsParams({ ieltsRun: testId, ieltsMode: mode, ieltsSkill: 'writing' })
-    return () => setIeltsParams({ ieltsRun: null, ieltsMode: null, ieltsSkill: null })
-  }, [testId, mode])
+    // ?ieltsMockType= — F5 посреди mock по типу возвращает в mock, а не в тренировку с подсказками
+    setIeltsParams({ ieltsRun: testId, ieltsMode: mode, ieltsSkill: 'writing', ieltsMockType: typed })
+    return () => setIeltsParams({ ieltsRun: null, ieltsMode: null, ieltsSkill: null, ieltsMockType: null })
+  }, [testId, mode, typed])
 
   // часы: время в редакторе, а не с первого открытия — закрытая вкладка экзаменационное время не тратит
   useEffect(() => {
@@ -88,7 +95,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
   useEffect(() => {
     if (state.status !== 'ready' || mock) return undefined
     const id = setTimeout(() => {
-      if (saveWritingDraft(testId, { text, mode, words, startedAt, pasteBlocked, elapsedSec: elapsed })) setSavedAt(new Date())
+      if (saveWritingDraft(testId, { text, mode, words, startedAt, pasteBlocked, elapsedSec: elapsed }, ns)) setSavedAt(new Date())
     }, 1000)
     return () => clearTimeout(id)
     // elapsed намеренно не в зависимостях: тикающие часы не повод переписывать черновик
@@ -98,6 +105,8 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
   // Пишутся только Task 1 и Task 2. Гид «Как писать» и самопроверка — страницы хаба: диплинк сюда с их id рисовал
   // пустой редактор с таймером. Уводим в гид.
   const notRunnable = state.status === 'ready' && !['task1', 'task2'].includes(state.doc?.kind)
+  // выход из mock по типу — на его описание (после F5 цели возврата у App уже нет)
+  const exit = () => onExit?.(testId, typed ? { tab: 'learn', view: 'writing-mock', list: typed } : undefined)
   useEffect(() => {
     if (notRunnable && !mock) onExit?.(testId, { tab: 'learn', view: 'writing-guide' })
   }, [notRunnable]) // eslint-disable-line react-hooks/exhaustive-deps -- один раз, когда задание загрузилось
@@ -121,7 +130,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
 
   // «Сохранить черновик» — сразу, не дожидаясь секунды тишины автосохранения
   const saveNow = () => {
-    if (saveWritingDraft(testId, { text, mode, words, startedAt, pasteBlocked, elapsedSec: elapsed })) setSavedAt(new Date())
+    if (saveWritingDraft(testId, { text, mode, words, startedAt, pasteBlocked, elapsedSec: elapsed }, ns)) setSavedAt(new Date())
   }
 
   const onPaste = (e) => {
@@ -143,7 +152,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
         device: typeof window !== 'undefined' && window.innerWidth < 760 ? 'mobile' : 'desktop',
         pasteBlocked,
       })
-      dropWritingDraft(testId)
+      dropWritingDraft(testId, ns)
       if (mock) mock.onSubmitted([view.attempt.id])
       else onDone?.(view.attempt.id, testId)
     } catch (e) {
@@ -164,7 +173,8 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
       ) : (
       <header className="ih-wrun__top">
         <span className="ih-wrun__logo">just to study</span>
-        <span className="ih-wrun__pill">Writing {doc.kind === 'task2' ? 'Task 2' : 'Task 1'} · {state.test.title}</span>
+        {/* в mock по типу — тип, а не название задания: как на экзамене, задание — сюрприз */}
+        <span className="ih-wrun__pill">{typed ? `Mock · ${mockTypeName(typed)}` : `Writing ${doc.kind === 'task2' ? 'Task 2' : 'Task 1'} · ${state.test.title}`}</span>
         <span className="ih-run__spacer" />
         <span className={`ih-run__clock ${mode === 'exam' && left <= 300 ? 'is-low' : ''}`} role="timer" aria-live="off">
           <TimerIcon size={18} />
@@ -172,7 +182,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
           <small>{t('ieltsWriting.ofMin', { n: String(Math.round(limit / 60)) })}</small>
         </span>
         {savedAt && <span className="ih-wrun__saved"><CheckCircleIcon size={18} />{t('ieltsWriting.savedAt', { time: savedAt.toTimeString().slice(0, 5) })}</span>}
-        <button type="button" className="ih-wrun__back" onClick={() => onExit?.(testId)}>
+        <button type="button" className="ih-wrun__back" onClick={exit}>
           <CloseIcon size={18} /> {t('ieltsWriting.w2.back')}
         </button>
       </header>
@@ -193,7 +203,7 @@ export default function IeltsWritingRunPage({ token, target, onExit, onDone, moc
             <WritingTaskBody task={doc} />
           </section>
           {/* В полном mock — условия экзамена: подсказок по плану работы на настоящем IELTS нет (как и транскрипта в Listening) */}
-          {!mock && (
+          {!mock && !typed && (
           <section className="ih-wrun__hints">
             <h2>{t('ieltsWriting.w2.hints')}</h2>
             <ol className="ih-wrun__steps">

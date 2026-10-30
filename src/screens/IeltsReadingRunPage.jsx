@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { checkIeltsAnswer, getIeltsTest, submitIeltsAttempt } from '../api.js'
 import { loadToken } from '../lib/session.js'
-import { translateWord } from '../lib/wordTranslate.js'
-import { saveReadingKeyword } from '../practice/reading/saveKeyword.js'
+import { savePassageWord } from '../ielts/reading/saveWord.js'
 import { useI18n } from '../i18n.jsx'
 import PassagePane from '../ielts/reading/PassagePane.jsx'
 import QuestionGroup from '../ielts/reading/QuestionGroup.jsx'
 import ConfirmDialog from '../ielts/ui/ConfirmDialog.jsx'
 import EmptyState from '../ielts/ui/EmptyState.jsx'
 import { addHighlight, removeHighlight } from '../ielts/reading/highlights.js'
+import { useMarker } from '../ielts/reading/marker.jsx'
 import { locateAnswer, textIndex } from '../ielts/reading/anchor.js'
 import { mechanicOf } from '../ielts/reading/meta.js'
 import { partLabel } from '../ielts/reading/ReadingTaskView.jsx'
@@ -43,6 +43,7 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
   const [error, setError] = useState(null)
   const [big, setBig] = useState(false)
   const submittedRef = useRef(false)
+  const questionsRef = useRef(null)
   const authToken = token || loadToken()
 
   useEffect(() => {
@@ -142,6 +143,19 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
     if (currentEntry?.group?.text && state.doc) setTextTab(textIndex(state.doc, currentEntry.group.text))
   }, [currentEntry?.group?.text, state.doc])
 
+  // «В словарь» — во всех режимах, как в макете экзамена (Figma 6): слово уходит в общий «Словарь», не в ответ
+  const saveWord = (word) => savePassageWord(authToken, word)
+
+  // Маркер на вопросах справа — как на компьютерном IELTS, где выделяются и текст, и вопросы. Свой список
+  // (qHighlights): в попытку он не уходит (там маркер текста для разбора), а «Очистить» текста его не трогает.
+  const questionMarker = useMarker({
+    hostRef: questionsRef,
+    highlights: run?.qHighlights || [],
+    onHighlight: (h) => setRun((r) => ({ ...r, qHighlights: addHighlight(r.qHighlights || [], h) })),
+    onRemoveHighlight: (x) => setRun((r) => ({ ...r, qHighlights: removeHighlight(r.qHighlights || [], x) })),
+    onSaveWord: saveWord,
+  })
+
   if (!testId || state.status === 'missing' || state.status === 'error') {
     return (
       <div className="ih-run ih-run--empty">
@@ -198,11 +212,6 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
     setPane('questions')
   }
 
-  const saveWord = async (word) => {
-    const ru = await translateWord(word, 'ru').catch(() => null)
-    return saveReadingKeyword(authToken, { en: word, ru: typeof ru === 'string' ? ru : ru?.translation }, 'ielts-reading')
-  }
-
   const groups = (doc.groups || []).map((g, gi) => ({ g, entries: items.filter((x) => x.groupIndex === gi) }))
   const unanswered = markTotal(items) - done
 
@@ -257,14 +266,20 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
             onHighlight={(h) => setRun((r) => ({ ...r, highlights: addHighlight(r.highlights, h) }))}
             onRemoveHighlight={(x) => setRun((r) => ({ ...r, highlights: removeHighlight(r.highlights, x) }))}
             onClearAll={() => setRun((r) => ({ ...r, highlights: r.highlights.filter((h) => texts.length > 1 && !h.key.startsWith(`${textTab}:`)) }))}
-            // «В словарь» — во всех режимах, как в макете экзамена (Figma 6): слово уходит в общий «Словарь», не в ответ
             onSaveWord={saveWord}
             mark={focus}
             focusKey={focus?.key}
             noCopy={mode === 'exam'}
           />
         </div>
-        <div className="ih-run__questions">
+        <div
+          className="ih-run__questions"
+          ref={questionsRef}
+          data-selectable=""
+          onMouseUp={questionMarker.onMouseUp}
+          onContextMenu={questionMarker.onContextMenu}
+          onCopy={mode === 'exam' ? (e) => e.preventDefault() : undefined}
+        >
           {error && <p className="ih-run__error" role="alert">{error}</p>}
           {groups.map(({ g, entries }) => (
             <QuestionGroup
@@ -280,8 +295,10 @@ export default function IeltsReadingRunPage({ token, target, onExit, onReview, m
               onCheck={(id) => check(id)}
               onShowInText={(res) => showInText(res)}
               onFocus={(id) => setRun((r) => moveTo(r, id))}
+              marker={{ highlights: run.qHighlights || [] }}
             />
           ))}
+          {questionMarker.menu}
         </div>
       </div>
 

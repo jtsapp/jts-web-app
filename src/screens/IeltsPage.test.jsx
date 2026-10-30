@@ -4,7 +4,7 @@
 // бэкенда не рисует выдуманных чисел, а с данными макета (?ieltsSample=1)
 // показывает их. Карточки «Пробных тестов» проверяет MockTestsTab.test.jsx.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
@@ -45,6 +45,19 @@ vi.mock('../practice/usePracticeEntitlement.js', () => ({
 
 import IeltsPage from './IeltsPage.jsx'
 import * as api from '../api.js'
+import { getIeltsDashboard, getIeltsMe, getIeltsTests } from '../api.js'
+
+// «Сегодня» с двумя задачами программы: тип вопроса Reading и Task 1 (график у Academic, письмо у General Training)
+const TODAY = {
+  programme: {
+    enrollment: { status: 'active', studyMode: 'self_study', programmeName: 'IELTS 5.5–6.0' },
+    currentWeek: 1,
+    tasks: [
+      { id: 'a', sec: 'reading', kind: 'type', sub: 'tfng', n: 1, minutes: 7, status: 'available' },
+      { id: 'b', sec: 'writing', kind: 't1', sub: 'line', n: 1, minutes: 20, status: 'planned', extra: { gt: 'informal', timed: false } },
+    ],
+  },
+}
 
 function renderPage(props = {}) {
   return render(
@@ -56,6 +69,8 @@ function renderPage(props = {}) {
 
 beforeEach(() => {
   window.history.replaceState(null, '', '/?screen=ielts')
+  // jsdom прокрутки не умеет — хаб прокручивает к началу при каждом переходе
+  window.scrollTo = vi.fn()
 })
 
 
@@ -112,6 +127,74 @@ describe('IeltsPage — хаб по дизайну «IELTS new»', () => {
     expect(await screen.findByText('Ничего не найдено')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Очистить поиск' }))
     expect(screen.getByText('Каталог по навыкам')).toBeTruthy()
+  })
+
+  // «Reading · TFNG» на «Сегодня» открывал страницу всех типов Reading, и с середины: прокрутка «Сегодня» оставалась
+  it('задача «Сегодня» открывает свой тип вопроса, и экран — с начала', async () => {
+    getIeltsDashboard.mockResolvedValueOnce(TODAY)
+    renderPage()
+    expect(await screen.findByText(/Line graph/)).toBeTruthy()
+    window.scrollTo.mockClear()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Продолжить' })[0])
+    expect(window.location.search).toContain('ieltsView=practice-list')
+    expect(new URLSearchParams(window.location.search).get('ieltsList')).toBe('reading:types:tfng')
+    expect(await screen.findByRole('heading', { name: 'True / False / Not Given' })).toBeTruthy()
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('у General Training Task 1 — письмо: и в подписи, и в том, куда ведёт задача', async () => {
+    getIeltsMe.mockResolvedValueOnce({ ieltsAccount: true, access: true, track: 'general' })
+    getIeltsDashboard.mockResolvedValueOnce(TODAY)
+    renderPage()
+    const row = (await screen.findByText(/Informal letter/)).closest('li')
+    expect(screen.queryByText(/Line graph/)).toBeNull()
+    fireEvent.click(within(row).getByRole('button', { name: 'Начать' }))
+    expect(new URLSearchParams(window.location.search).get('ieltsList')).toBe('writing:task1:informal')
+  })
+
+  // замечание владельца 30.10.2026: «Short drills» → Writing открывали полные задания Task 1, а не короткие тренировки
+  it('«Короткие тренировки» → Writing: строки дриллов, и строка открывает сам дрилл', async () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('tab', { name: 'Практика IELTS' }))
+    fireEvent.click(await screen.findByRole('tab', { name: 'Writing' }))
+    expect(screen.queryByRole('button', { name: /Task 1: одно описание графика или письмо/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Task 1 · Overview sentence/ }))
+    const q = new URLSearchParams(window.location.search)
+    expect(q.get('ieltsView')).toBe('writing-drills')
+    expect(q.get('ieltsTest')).toBe('WD-SAMPLE-T1-OVERVIEW')
+    expect(await screen.findByRole('heading', { level: 2, name: 'Task 1: общий вывод (overview)' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    expect(screen.getByText('Выберите лучший overview')).toBeTruthy()
+    // «К тренировкам» через крошки — вкладка «Короткие тренировки» страницы Writing
+    fireEvent.click(screen.getAllByRole('button', { name: 'Короткие тренировки' })[0])
+    expect(await screen.findByRole('tab', { name: 'Короткие тренировки', selected: true })).toBeTruthy()
+    expect(screen.getByText('Linking words')).toBeTruthy()
+  })
+
+  // замечание владельца 10: mock Writing по типам — вкладка страницы Writing, описание mock, старт тем же редактором
+  it('Writing → «Mock по типам»: тип трека, описание mock и старт задания этого типа в режиме экзамена', async () => {
+    const writing = [
+      { id: 'W2-001', kind: 'task2', category: 'opinion', module: 'both', title: 'Remote work', attemptCount: 0 },
+      { id: 'W1-AC-001', kind: 'task1', category: 'line', module: 'academic', title: 'Cycling', attemptCount: 0 },
+    ]
+    const bank = getIeltsTests.getMockImplementation()
+    getIeltsTests.mockImplementation(async (_token, skill = 'reading') => (skill === 'writing' ? writing : []))
+    const onNav = vi.fn()
+    window.history.replaceState(null, '', '/?screen=ielts&ieltsTab=learn&ieltsView=writing-mocks')
+    renderPage({ onNav })
+    expect(await screen.findByRole('tab', { name: 'Mock по типам', selected: true })).toBeTruthy()
+    const row = (await screen.findByText('Mock · Task 2 · Opinion essay')).closest('li')
+    // тип без заданий не показывается
+    expect(screen.queryByText('Mock · Task 1 · Map')).toBeNull()
+    fireEvent.click(within(row).getByRole('button', { name: 'Открыть' }))
+    const q = new URLSearchParams(window.location.search)
+    expect(q.get('ieltsView')).toBe('writing-mock')
+    expect(q.get('ieltsList')).toBe('task2:opinion')
+    fireEvent.click(await screen.findByRole('button', { name: /Начать mock/ }))
+    expect(onNav).toHaveBeenCalledWith('ielts-writing-run', expect.objectContaining({
+      testId: 'W2-001', mode: 'exam', mockType: 'task2:opinion', back: { tab: 'learn', view: 'writing-mock', list: 'task2:opinion' },
+    }))
+    getIeltsTests.mockImplementation(bank)
   })
 
   it('?ieltsTab=progress — вложенный «Подробный прогресс», вкладка «Сегодня» остаётся выбранной', async () => {

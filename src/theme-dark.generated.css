@@ -5695,13 +5695,24 @@ html[data-theme="dark"] .ih-qsteps {
     border: 1px solid var(--ih-line);
     background: var(--dk-card)
 }
-html[data-theme="dark"] .ih-qfigure {
+html[data-theme="dark"] .ih-qfigure, html[data-theme="dark"] .ih-wchart__figure {
     --jts-ink: var(--dk-text);
     --jts-muted: var(--dk-muted);
     --jts-line: var(--dk-line);
+    --jts-line-strong: var(--dk-line-strong);
     --jts-bg: var(--dk-card);
     --jts-bg-soft: var(--dk-page);
     --jts-violet: var(--dk-acc);
+    --jts-violet-soft: color-mix(in oklab, var(--dk-acc) 10%, transparent);
+    --jts-cyan: var(--dk-blue);
+    --jts-cyan-soft: color-mix(in oklab, var(--dk-blue) 12%, transparent);
+    --jts-cyan-ink: var(--dk-blue);
+    --jts-green: var(--dk-green);
+    --jts-green-soft: color-mix(in oklab, var(--dk-green) 12%, transparent);
+    --jts-green-ink: var(--dk-green);
+    --jts-gold-soft: color-mix(in oklab, var(--dk-yellow) 14%, transparent)
+}
+html[data-theme="dark"] .ih-qfigure {
     border: 1px solid var(--ih-line);
     background: var(--dk-card)
 }
