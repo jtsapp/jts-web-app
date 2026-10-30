@@ -18,7 +18,9 @@ import {
   getVocabProgressWords,
   saveVocabProgress,
 } from '../api.js'
-import { IeltsSetScreen, IeltsShelf, isAwlSet } from './vocab/IeltsVocab.jsx'
+import { IeltsCatalog, IeltsSetScreen, IeltsShelf, isAwlSet } from './vocab/IeltsVocab.jsx'
+import PhoneBar, { lessonBarTitle } from './vocab/PhoneBar.jsx'
+import { usePhoneWidth } from '../lib/usePhoneWidth.js'
 import { ieltsScope, practiceCard, progressResults, sortIeltsSets } from './vocab/ieltsVocab.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { practiceCardsOf } from './vocab/practiceCards.js'
@@ -53,6 +55,20 @@ function exampleHtml(card, word = card.en || '') {
   return String(raw)
     .replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>')
     .replace(/___+/g, word ? `<mark>${word}</mark>` : '___')
+}
+
+/**
+ * Пример сохранённого слова с подсвеченным словом — для карточки «Моего словаря» на телефоне. Текст приходит из
+ * личного словаря, а не из каталога, поэтому сперва экранируем: в разметку попадает только наш <mark>.
+ */
+function savedExampleHtml(w) {
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+  const raw = esc(w.example || w.ex || '')
+  const word = esc(w.word || '')
+  if (/\{\{.+?\}\}|___+/.test(raw)) return raw.replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>').replace(/___+/g, `<mark>${word}</mark>`)
+  if (!word) return raw
+  const at = raw.toLowerCase().indexOf(word.toLowerCase())
+  return at < 0 ? raw : `${raw.slice(0, at)}<mark>${raw.slice(at, at + word.length)}</mark>${raw.slice(at + word.length)}`
 }
 
 // Бэкенд отдаёт сохранённые слова от старых к новым (findByUserIdOrderByIdAsc),
@@ -92,6 +108,9 @@ const CAT_ORDER = ['tech', 'biz', 'health', 'science']
 export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount, tourKey, onBack: onExit, backLabel }) {
   const { lang, t } = useI18n()
   const vlang = vocabLang(lang)
+  // Телефон рисует экраны по макету приложения: навбар со стрелкой, а у IELTS — свой список наборов с вкладкой AWL
+  // вместо прямого входа в первый набор (src/mobile/vocab.css).
+  const phone = usePhoneWidth()
   const [screen, setScreen] = useState('home')
   const [index, setIndex] = useState(null)
   const [indexError, setIndexError] = useState(false)
@@ -211,15 +230,20 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     }
   }, [token, refreshIeltsSummaries])
 
-  const openIeltsSet = (set) => {
+  // Откуда открыт набор: с главной или из списка наборов телефона — туда и ведёт «назад».
+  const [ieltsFrom, setIeltsFrom] = useState('home')
+  const [ieltsTab, setIeltsTab] = useState('topics')
+
+  const openIeltsSet = (set, from = 'home') => {
     if (!token) return
+    setIeltsFrom(from)
     setIeltsSet({ set, words: [], states: {}, loading: true })
     setScreen('ielts-set')
     Promise.all([getIeltsTest(token, set.id), getVocabProgressWords(token, set.scope).catch(() => ({}))])
       .then(([r, states]) => setIeltsSet({ set, words: Array.isArray(r?.document?.words) ? r.document.words : [], states: states || {}, loading: false }))
       .catch(() => {
         flash(t('vocab.lesson.error'))
-        setScreen('home')
+        setScreen(from)
       })
   }
 
@@ -387,6 +411,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         lesson={lesson}
         meta={scopeMeta}
         speak={speak}
+        phone={phone}
         onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'field-lessons' : 'levels')}
         onPractice={() => startPractice(practiceCardsOf(lesson), lesson.title, 'lesson', scopeMeta?.id || activeLevel || null)}
       />,
@@ -403,8 +428,25 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         states={ieltsSet.states}
         loading={ieltsSet.loading}
         speak={speak}
-        onBack={() => setScreen('home')}
+        phone={phone}
+        onBack={() => setScreen(ieltsFrom)}
         onPractice={(queue) => startPractice(queue.map(practiceCard), ieltsSet.set.title, 'ielts-set', ieltsSet.set.scope)}
+      />,
+    )
+  }
+
+  // Список наборов IELTS (Figma «Mobile» → «IELTS Vocabulary», кадры 1–2) — вход только с телефона, по «>» полки.
+  if (screen === 'ielts-list' && ieltsSets.length) {
+    return shell(
+      <IeltsCatalog
+        t={t}
+        lang={vlang}
+        sets={ieltsSets}
+        summaries={ieltsSummaries}
+        tab={ieltsTab}
+        onTab={setIeltsTab}
+        onBack={() => setScreen('home')}
+        onOpen={(s) => openIeltsSet(s, 'ielts-list')}
       />,
     )
   }
@@ -418,6 +460,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         token={token}
         speak={speak}
         flash={flash}
+        phone={phone}
         onBack={() => setScreen('home')}
         onChanged={(next) => setMine(newestFirst(next))}
         onPractice={practiceMine}
@@ -436,6 +479,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         meta={scopeMeta}
         activeLevel={activeLevel}
         userLevel={userLevel}
+        phone={phone}
         onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'fields' : 'home')}
         onLevel={(lv) => {
           if (!isVocabLevelOpen(lv, userLevel)) {
@@ -462,6 +506,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         t={t}
         lang={vlang}
         index={index}
+        phone={phone}
         onBack={() => setScreen('home')}
         onPick={(f) => loadScope(f.id || f.key, { ...f, kind: 'field' })}
       />,
@@ -487,16 +532,55 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     art: tourIntroArt('aizere-book', 'artist-stand'),
   }
 
+  const ieltsTopics = ieltsSets.filter((s) => !isAwlSet(s))
+  const ieltsAwl = ieltsSets.filter(isAwlSet)
+  // Телефон: «>» полки IELTS ведёт в список наборов, где AWL — вторая вкладка, поэтому отдельной полки AWL на главной
+  // нет (кадр «Словарь · главная»). Без тем полка AWL остаётся — иначе в список не попасть.
+  const openIeltsList = (tab) => {
+    setIeltsTab(tab)
+    setScreen('ielts-list')
+  }
+
   return shell(
-    <section className="vp-pad">
+    <section className="vp-pad vp-home">
+      {phone && (
+        // Главная словаря на телефоне открыта из «Сервисов» — стрелка ведёт туда, а из урока — обратно в урок.
+        <PhoneBar
+          title={t('vocab.home.title')}
+          onBack={onExit || (() => onNav?.('services'))}
+          backLabel={backLabel || t('vocab.back')}
+          right={(
+            <button type="button" className="tour-help" onClick={tour.start} title={t('tour.help')} aria-label={t('tour.help')}>
+              ?
+            </button>
+          )}
+        />
+      )}
       {onExit && <button type="button" className="vp-back" onClick={onExit}>← {backLabel || t('vocab.back')}</button>}
       <h1>{t('vocab.home.title')}</h1>
       <p className="vp-lead">{t('vocab.home.pickWay')}</p>
       {indexLoading && <p className="vp-state">…</p>}
       {indexError && !levels.length && !ieltsSets.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
 
-      <IeltsShelf t={t} lang={vlang} sets={ieltsSets.filter((s) => !isAwlSet(s))} summaries={ieltsSummaries} onOpen={openIeltsSet} />
-      <IeltsShelf t={t} lang={vlang} kind="awl" sets={ieltsSets.filter(isAwlSet)} summaries={ieltsSummaries} onOpen={openIeltsSet} />
+      <IeltsShelf
+        t={t}
+        lang={vlang}
+        sets={ieltsTopics}
+        summaries={ieltsSummaries}
+        onOpen={openIeltsSet}
+        onMore={phone ? () => openIeltsList('topics') : undefined}
+      />
+      {(!phone || !ieltsTopics.length) && (
+        <IeltsShelf
+          t={t}
+          lang={vlang}
+          kind="awl"
+          sets={ieltsAwl}
+          summaries={ieltsSummaries}
+          onOpen={openIeltsSet}
+          onMore={phone ? () => openIeltsList('awl') : undefined}
+        />
+      )}
 
       <div className="vp-sec" id="vsec-levels">
         <div className="vp-sec-hd">
@@ -550,7 +634,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         </div>
         <div className="vp-row">
           {fields.slice(0, 8).map((f) => (
-            <button type="button" key={f.id || f.key} className="vp-fld-card" onClick={() => loadScope(f.id || f.key, { ...f, kind: 'field' })}>
+            <button type="button" key={f.id || f.key} className="vp-fld-card" data-fld={f.id || f.key} onClick={() => loadScope(f.id || f.key, { ...f, kind: 'field' })}>
               <span className="ic">{f.ic || '◆'}</span>
               <b>{(vlang === 'kk' ? f.kk : f.ru) || f.en || f.key}</b>
               <span className="meta">{t('vocab.home.words', { n: f.cards || f.words || 0 })}</span>
@@ -643,7 +727,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 }
 
-function FieldsScreen({ t, lang, index, onBack, onPick }) {
+function FieldsScreen({ t, lang, index, phone, onBack, onPick }) {
   const fields = index?.fields || []
   const groups = useMemo(() => {
     const map = {}
@@ -659,6 +743,7 @@ function FieldsScreen({ t, lang, index, onBack, onPick }) {
 
   return (
     <section className="vp-pad">
+      {phone && <PhoneBar title={t('vocab.home.field')} onBack={onBack} backLabel={t('vocab.back')} />}
       <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
       <h1>{t('vocab.pickField')}</h1>
       <p className="vp-lead">{t('vocab.pickFieldLead')}</p>
@@ -667,7 +752,7 @@ function FieldsScreen({ t, lang, index, onBack, onPick }) {
           <h3>{t(`vocab.cat.${g.cat}`) === `vocab.cat.${g.cat}` ? g.cat : t(`vocab.cat.${g.cat}`)}</h3>
           <div className="vp-fld-grid">
             {g.items.map((f) => (
-              <button type="button" key={f.id || f.key} className="vp-fld-card" onClick={() => onPick(f)}>
+              <button type="button" key={f.id || f.key} className="vp-fld-card" data-fld={f.id || f.key} onClick={() => onPick(f)}>
                 <span className="ic">{f.ic || '◆'}</span>
                 <b>{nameOf(f)}</b>
                 <span className="meta">{t('vocab.home.words', { n: f.cards || f.words || 0 })}</span>
@@ -680,7 +765,7 @@ function FieldsScreen({ t, lang, index, onBack, onPick }) {
   )
 }
 
-function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLevel, onBack, onLevel, onOpen }) {
+function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLevel, phone, onBack, onLevel, onOpen }) {
   // Прогресс хранится множеством ключей на весь набор, поэтому «сколько
   // изучено в этом уроке» — это пересечение с его карточками. Раньше в кружке
   // стоял литерал 0: уровень показывал «7 изучено», а каждый его урок — ноль.
@@ -698,6 +783,7 @@ function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLe
 
   return (
     <section className="vp-pad">
+      {phone && <PhoneBar title={isField ? title : t('vocab.home.core')} onBack={onBack} backLabel={t('vocab.back')} />}
       <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
       <div className="vp-page-hd">
         <div>
@@ -731,16 +817,21 @@ function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLe
           <div className="vp-unit" key={unit.no || unit.title}>
             <h3>{unit.title}</h3>
             <div className="vp-lessons">
-              {items.map((item) => (
-                <button type="button" key={item.no} className="vp-lesson" onClick={() => onOpen(item)}>
-                  <div className="body">
-                    <div className="kicker">{t('vocab.lessonTag', { n: item.no })}</div>
-                    <b>{item.title}</b>
-                    <span className="cnt">{t('vocab.home.words', { n: cardsOf(item).length })}</span>
-                  </div>
-                  <span className="ring">{learnedInCards(learned, cardsOf(item))}</span>
-                </button>
-              ))}
+              {items.map((item) => {
+                const total = cardsOf(item).length
+                const n = learnedInCards(learned, cardsOf(item))
+                return (
+                  <button type="button" key={item.no} className="vp-lesson" onClick={() => onOpen(item)}>
+                    <div className="body">
+                      <div className="kicker">{t('vocab.lessonTag', { n: item.no })}</div>
+                      <b>{item.title}</b>
+                      <span className="cnt">{t('vocab.home.words', { n: total })}</span>
+                    </div>
+                    {/* Доля изученного — для дуги кольца на телефоне (макет: кольцо 40, дуга по прогрессу). */}
+                    <span className="ring" style={{ '--p': total ? Math.min(100, Math.round((n / total) * 100)) : 0 }}>{n}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         )
@@ -765,7 +856,7 @@ function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLe
 /* Экспортируется ради теста: экран чисто отрисовочный, и проверять его через
    весь VocabularyPage значит поднимать каталог, уровни и три клика навигации
    ради разметки одной карточки. */
-export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBack, onPractice }) {
+export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, phone, onBack, onPractice }) {
   const cards = cardsOf(lesson)
   const atomsById = useMemo(
     () => new Map((Array.isArray(lesson?.atoms) ? lesson.atoms : []).map((a) => [a.id, a])),
@@ -810,7 +901,8 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
   const level = meta?.id || meta?.key || ''
 
   return (
-    <section className="vp-pad">
+    <section className="vp-pad vp-lw">
+      {phone && <PhoneBar title={lessonBarTitle(t('vocab.lessonTag', { n: lesson.no }))} onBack={onBack} backLabel={t('vocab.back')} />}
       <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
       <div className="vp-page-hd">
         <div>
@@ -818,6 +910,7 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
             {t('vocab.lessonTag', { n: lesson.no })}
           </div>
           <h1>{lesson.title}</h1>
+          {phone && <p className="vp-lw__meta">{source} · {level} · {t('vocab.home.words', { n: cards.length })}</p>}
         </div>
         <div className="actions">
           <button type="button" className="vp-btn vp-practice-desk" onClick={onPractice} disabled={!cards.length}>
@@ -920,7 +1013,7 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
   )
 }
 
-function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, onPractice }) {
+function MineScreen({ t, lang, session, token, speak, flash, phone, onBack, onChanged, onPractice }) {
   const [openAdd, setOpenAdd] = useState(false)
   const [detail, setDetail] = useState(null)
   const [word, setWord] = useState('')
@@ -955,7 +1048,8 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
   }
 
   return (
-    <section className="vp-pad">
+    <section className="vp-pad vp-mine">
+      {phone && <PhoneBar title={t('vocab.home.mine')} onBack={onBack} backLabel={t('vocab.back')} />}
       <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
       <div className="vp-page-hd">
         <div>
@@ -985,6 +1079,8 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
               ><IconSpeaker /></span>
             </div>
             <div className="tr">{trOf(w, lang)}</div>
+            {/* Пример — на карточке телефона, как в макете; на компьютере он только в окне слова. */}
+            {phone && (w.example || w.ex) ? <div className="ex" dangerouslySetInnerHTML={{ __html: savedExampleHtml(w) }} /> : null}
             <div className="foot">{w.learned ? t('vocab.learnedBadge') : (w.source || t('vocab.home.mine'))}</div>
           </button>
         ))}
@@ -1003,6 +1099,10 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
           <div className="box" onClick={(e) => e.stopPropagation()}>
             <div className="mhd">
               <b>{detail.word}</b>
+              {/* Динамик слова в шапке шторки телефона: внизу у макета «Слушать пример» и «Слушать перевод». */}
+              {phone && (
+                <button type="button" className="icon-btn spk" onClick={() => speak(detail.word, { ipa: detail.ipa })} aria-label={t('vocab.listenWord')}><IconSpeaker /></button>
+              )}
               {detail.id != null && (
                 <button type="button" className="icon-btn danger" onClick={() => remove(detail.id)} aria-label="delete"><IconTrash /></button>
               )}
@@ -1017,9 +1117,15 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
               </>
             )}
             <div className="macts">
-              <button type="button" className="vp-btn ghost" onClick={() => speak(detail.word, { ipa: detail.ipa })}>
-                <IconSpeaker /> {t('vocab.listenWord')}
-              </button>
+              {!phone ? (
+                <button type="button" className="vp-btn ghost" onClick={() => speak(detail.word, { ipa: detail.ipa })}>
+                  <IconSpeaker /> {t('vocab.listenWord')}
+                </button>
+              ) : (detail.example || detail.ex) ? (
+                <button type="button" className="vp-btn ghost" onClick={() => speak(String(detail.example || detail.ex).replace(/\{\{(.+?)\}\}/g, '$1').replace(/___+/g, detail.word || ''))}>
+                  <IconSpeaker /> {t('vocab.listenExample')}
+                </button>
+              ) : null}
               <button type="button" className="vp-btn" onClick={() => speak(trOf(detail, lang))}>
                 <IconSpeaker /> {t('vocab.listenTr')}
               </button>
