@@ -2256,6 +2256,24 @@
   display: block;
 }
 
+.pay-logo--file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 54px;
+  height: 34px;
+  border: 1px solid #d9dce6;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.pay-logo--file img {
+  display: block;
+  width: 45px;
+  height: 32px;
+}
+
 /* ── страницы для покупателя /info/* (InfoContent.jsx) ─────────────────── */
 
 .ld-info {

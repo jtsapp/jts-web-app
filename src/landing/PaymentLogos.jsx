@@ -1,7 +1,7 @@
 // Знаки Visa и Mastercard — рекомендация Freedom Pay к сайту до подключения
-// оплаты. Рисуем сами, как KaspiMark в PaymentMethodModal: файлов брендов в
-// public/ нет, а тянуть картинку с чужого сервера CSP не пропустит. Будут
-// официальные файлы из брендбука (их выдаёт Freedom Pay) — заменить здесь.
+// оплаты. Mastercard — официальный файл в public/landing/icons. Visa пока
+// нарисована нами: её файлы выдают только после анкеты на globalclient.visa.com;
+// получим — положить рядом и сделать как MastercardMark.
 // Без хуков и состояния — годится и серверной странице, и подвалу приложения.
 
 export function VisaMark() {
@@ -18,15 +18,14 @@ export function VisaMark() {
   )
 }
 
+// Официальный символ Mastercard из Brand Center (mc_symbol_SVG.zip, «For
+// websites & apps», скачан 30.10.2026) — файл как есть, без правок: правила
+// бренда запрещают менять знак. Рамка-плашка — наша, вокруг файла.
 export function MastercardMark() {
   return (
-    <svg className="pay-logo" width="54" height="34" viewBox="0 0 54 34" role="img" aria-label="Mastercard">
-      <rect width="54" height="34" rx="5" fill="#fff" stroke="#d9dce6" />
-      <circle cx="21.5" cy="17" r="9.5" fill="#eb001b" />
-      <circle cx="32.5" cy="17" r="9.5" fill="#f79e1b" />
-      {/* Пересечение кругов: линза между ними, как в знаке. */}
-      <path d="M27 9.24a9.5 9.5 0 0 1 0 15.52 9.5 9.5 0 0 1 0-15.52Z" fill="#ff5f00" />
-    </svg>
+    <span className="pay-logo pay-logo--file">
+      <img src="/landing/icons/pay-mastercard.svg" width="45" height="32" alt="Mastercard" />
+    </span>
   )
 }
 
