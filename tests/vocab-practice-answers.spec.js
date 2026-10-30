@@ -270,7 +270,18 @@ test.describe('Словарь: верный ответ засчитываетс�
     await page.locator('#vsec-mine .vp-sec-arrow').click()
     await practiceButton(page).click()
     const know = knowledge(saved.map((w) => ({ en: w.word, ru: w.translationRu })))
-    const log = await passPractice(page, know)
+    // Вид задания у слова случайный (planCycle): «born» мог уйти в диктант, и проверка ввода перевода молча не
+    // случалась. Оставляем только «Написание» (диктант или перевод) и проходим заново, пока «born» не спросят
+    // переводом; «Все» — иначе после первого круга новых слов не остаётся и «Начать» ничего не делает.
+    await page.locator('.vp-setup__chip', { hasText: 'Выбор ответа' }).click()
+    await page.locator('.vp-setup__chip', { hasText: 'Сопоставить' }).click()
+    let log = []
+    for (let round = 0; round < 10; round++) {
+      await page.locator('.vp-setup__chip', { hasText: /^Все$/ }).first().click()
+      log = await passPractice(page, know)
+      if (log.some((l) => l.startsWith('write born'))) break
+      await page.locator('.vp-res-body .acts .vp-btn.ghost').click()
+    }
     expect(log.some((l) => l.startsWith('write born'))).toBe(true)
   })
 })
