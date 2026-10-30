@@ -2447,7 +2447,7 @@
 
 .ld-info__dl dd {
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* ── узкий десктоп и планшет ──────────────────────────────────────────── */
