@@ -2190,7 +2190,7 @@
 
 .ld-footer__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 48px;
 }
 
@@ -2243,6 +2243,193 @@
 
 .ld-mbar {
   display: none;
+}
+
+/* Знаки Visa и Mastercard (PaymentLogos.jsx) */
+.pay-logos {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.pay-logo {
+  display: block;
+}
+
+/* ── страницы для покупателя /info/* (InfoContent.jsx) ─────────────────── */
+
+.ld-info {
+  padding: 48px var(--ld-side) 96px;
+}
+
+.ld-info__wrap {
+  max-width: 880px;
+}
+
+.ld-info h1 {
+  margin: 16px 0 12px;
+  font-size: 44px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.ld-info h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.ld-info p,
+.ld-info li {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ld-ink2);
+}
+
+.ld-info p + p {
+  margin-top: 10px;
+}
+
+.ld-info a {
+  color: var(--ld-violet-text);
+}
+
+.ld-info__back {
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.ld-info__lead {
+  max-width: 720px;
+}
+
+.ld-info__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 28px 0 8px;
+}
+
+.ld-info__tabs a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ld-grey);
+  color: var(--ld-ink);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.ld-info__tabs a[aria-current='page'] {
+  background: var(--ld-violet);
+  color: #fff;
+}
+
+.ld-info__cards {
+  margin-top: 20px;
+}
+
+.ld-info__block {
+  margin-top: 40px;
+}
+
+.ld-info ol,
+.ld-info__list,
+.ld-info__notes,
+.ld-info__docs {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+}
+
+.ld-info ol {
+  list-style: decimal;
+}
+
+.ld-info__list,
+.ld-info__notes {
+  list-style: disc;
+}
+
+.ld-info__notes {
+  margin-top: 40px;
+}
+
+.ld-info__notes li {
+  font-size: 15px;
+  color: var(--ld-muted);
+}
+
+.ld-info__warn {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ld-lilac);
+}
+
+.ld-info__prices {
+  display: grid;
+  margin-top: 16px;
+  border-top: 1px solid #e6e3ee;
+}
+
+.ld-info__prices li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e6e3ee;
+}
+
+.ld-info__offer {
+  display: grid;
+  gap: 2px;
+}
+
+.ld-info__offer b {
+  font-weight: 500;
+  color: var(--ld-ink);
+}
+
+.ld-info__offer small {
+  font-size: 14px;
+  color: var(--ld-muted);
+}
+
+.ld-info__price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.ld-info__price b {
+  font-size: 19px;
+  color: var(--ld-ink);
+}
+
+.ld-info__price s {
+  font-size: 14px;
+  color: var(--ld-muted);
+}
+
+.ld-info__dl {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 10px 24px;
+  margin: 8px 0 16px;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.ld-info__dl dt {
+  color: var(--ld-muted);
+}
+
+.ld-info__dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── узкий десктоп и планшет ──────────────────────────────────────────── */
@@ -2973,6 +3160,27 @@
   .ld-footer__navcols {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+
+  .ld-info {
+    padding: 32px 16px calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .ld-info h1 {
+    font-size: 32px;
+  }
+
+  .ld-info__dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .ld-info__dl dd + dt {
+    margin-top: 10px;
+  }
+
+  .ld-info__prices li {
+    align-items: flex-start;
   }
 
   .ld-footer__navcols {
