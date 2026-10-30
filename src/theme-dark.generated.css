@@ -27500,6 +27500,770 @@ html[data-theme="dark"] .rg-done__avatar {
         background: transparent url(/assets/m/homework/close.svg) center / 20px 20px no-repeat
     }
 }
+/*  mobile/vocab.css  */
+@media (max-width: 560px) {
+    html[data-theme="dark"] .vp {
+        --vp-violet: var(--dk-acc);
+        --vp-violet-dk: var(--dk-acc);
+        --vp-violet-lt: var(--dk-acc-tint);
+        --vp-violet-xlt: var(--dk-page);
+        --vp-ink: var(--dk-text);
+        --vp-muted: var(--dk-text-2);
+        --vp-line: var(--dk-line);
+        --vp-green: var(--dk-green);
+        --vp-green-lt: var(--dk-green-tint);
+        --vp-red: var(--dk-red);
+        --vp-red-lt: var(--dk-chip);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .learn__main:has(.vp) {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-mbar__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-mbar__back {
+        border: 0;
+        background: transparent;
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-mbar__back::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-mbar__slot .tour-help {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp h1 {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-lead {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-state {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp .vp-spk {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp .vp-spk:hover {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp .vp-spk::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp .vp-btn {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp .vp-btn:hover {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp .vp-btn.ghost {
+        border: 0;
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp .vp-btn.wide:disabled, html[data-theme="dark"] .vp .vp-btn.wide.disabled, html[data-theme="dark"] .vp .vp-btn:disabled {
+        background: var(--dk-acc-soft);
+        color: #fff
+    }
+    html[data-theme="dark"] .vp .vp-btn .vp-play {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-sticky-cta {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-home .vp-sec {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12)
+    }
+    html[data-theme="dark"] .vp-home .vp-sec-hd h2 {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-home .vp-sec-hd p {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-home .vp-sec-arrow {
+        border: 0;
+        background: var(--dk-page);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-home .vp-sec-arrow::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-ielts-card {
+        border-color: var(--dk-line);
+        background: var(--dk-page);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-ielts-card:hover {
+        border-color: var(--dk-line);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-ielts-card .nm {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-ielts-card .meta {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-ielts-card .meta.is-progress, html[data-theme="dark"] .vp-ielts-card .meta.is-done {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-ielts-card .meta.is-due {
+        color: var(--dk-orange)
+    }
+    html[data-theme="dark"] .vp-home .vp-lvl-card {
+        border-color: var(--dk-line);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-lvl-card:hover {
+        border-color: var(--dk-line);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-lvl-card .nm {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-lvl-card .meta, html[data-theme="dark"] .vp-lvl-card.is-locked .meta {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-lvl-card .meta.is-zero, html[data-theme="dark"] .vp-lvl-card.is-locked .meta {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-lvl-card::after, html[data-theme="dark"] .vp-lvl-card[data-lv]::after {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .vp-home .vp-fld-card {
+        border-color: var(--dk-line);
+        background: var(--dk-page);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-fld-card:hover {
+        border-color: var(--dk-line);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-fld-card .meta {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-fld-card .ic {
+        background: var(--fld-bg, #efe7ff)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='it'] {
+        --fld-bg: var(--dk-blue-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='swe'] {
+        --fld-bg: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='data'] {
+        --fld-bg: var(--dk-green-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='cyber'] {
+        --fld-bg: var(--dk-yellow-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='business'] {
+        --fld-bg: var(--dk-orange-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='medicine'] {
+        --fld-bg: var(--dk-red-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card[data-fld='nursing'] {
+        --fld-bg: var(--dk-blue-tint)
+    }
+    html[data-theme="dark"] .vp-fld-card:is([data-fld='it'], [data-fld='swe'], [data-fld='data'], [data-fld='cyber'], [data-fld='business'], [data-fld='medicine'], [data-fld='nursing']) .ic::before {
+        background: var(--fld-ico) center / 24px no-repeat
+    }
+    html[data-theme="dark"] .vp-mine-chip {
+        border-color: var(--dk-line);
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-mine-chip:hover {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-mine-chip .tr {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-top3 {
+        border: 1px solid var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-top3-hd, html[data-theme="dark"] .vp-res-list h4 {
+        border-bottom: 1px solid var(--dk-line);
+        background: var(--dk-page);
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-top3-hd::before, html[data-theme="dark"] .vp-res-list h4::before {
+        background: url(/assets/m/vocab/replay.svg) center / contain no-repeat
+    }
+    html[data-theme="dark"] .vp-top3-row, html[data-theme="dark"] .vp-res-list .row {
+        border-top: 1px solid var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-top3-hd + .vp-top3-row, html[data-theme="dark"] .vp-res-list h4 + .row {
+        border-top: 0
+    }
+    html[data-theme="dark"] .vp-top3-row span {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-fld-grid .vp-fld-card {
+        border-color: var(--dk-line);
+        background: var(--dk-card);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-fld-grid .vp-fld-card::after {
+        background: currentColor;
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-tab {
+        border: 1px solid var(--dk-line);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-tab.on {
+        border-color: var(--dk-acc);
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp-tab .n {
+        background: var(--dk-page);
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-tab.on .n {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff
+    }
+    html[data-theme="dark"] .vp-lesson {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-lesson:hover {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-lesson .kicker {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-lesson .cnt {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-lesson .ring, html[data-theme="dark"] .vp-ring {
+        border: 0;
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-lesson .ring::before, html[data-theme="dark"] .vp-ring::before {
+        background: conic-gradient(var(--ring, #9047ff) calc(var(--p, 0) * 1%), var(--ring-track, #e4daf8) 0)
+    }
+    html[data-theme="dark"] .vp-lw .vp-page-hd .kicker {
+        color: var(--dk-acc-text) !important
+    }
+    html[data-theme="dark"] .vp-lw__meta {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-pcard {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-pcard:focus-visible {
+        outline: 2px solid var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp-pcard__tr, html[data-theme="dark"] .vp-pcard__tr.is-def {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-pcard__ex {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-pcard__ex mark, html[data-theme="dark"] .vp-wcard .ex mark, html[data-theme="dark"] .vp-iset__ex mark {
+        background: none;
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-pcard__foot {
+        border: 0;
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp .vp-pcard-spk, html[data-theme="dark"] .vp .vp-wcard .vp-spk, html[data-theme="dark"] .vp-iset__words .vp-spk {
+        background: var(--dk-acc-tint);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-pcard-mark {
+        background: var(--dk-page);
+        color: var(--dk-muted);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-pcard-mark:hover {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-pcard-mark.is-on {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp-pcard-mark::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-wcard {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-wcard:hover {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-wcard.is-learned {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-wcard .tr {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-wcard .ex {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-wcard .foot {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-wcard.is-learned .foot {
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp-modal {
+        background: rgba(0, 0, 0, 0.45)
+    }
+    html[data-theme="dark"] .vp-modal .box::before {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-modal .icon-btn {
+        background: var(--dk-page);
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-modal .icon-btn.spk {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-modal .icon-btn.danger {
+        background: var(--dk-chip);
+        color: var(--dk-red)
+    }
+    html[data-theme="dark"] .vp-modal .icon-btn::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-modal .mlbl {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-modal .mval {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-modal .macts .vp-btn::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-modal label {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-modal input {
+        border: 2px solid var(--dk-line);
+        outline: none
+    }
+    html[data-theme="dark"] .vp-modal input:focus {
+        border-color: var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp-seg {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-seg__btn {
+        border: 0;
+        background: transparent;
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-seg__btn.is-on {
+        background: var(--dk-card);
+        color: var(--dk-text);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16)
+    }
+    html[data-theme="dark"] .vp-irow {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        color: inherit
+    }
+    html[data-theme="dark"] .vp-irow__kick {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-irow.is-progress .vp-irow__kick {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-irow.is-due .vp-irow__kick {
+        color: var(--dk-orange)
+    }
+    html[data-theme="dark"] .vp-irow.is-done .vp-irow__kick {
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp-irow__sub {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-irow.is-done .vp-ring {
+        --ring: var(--dk-green);
+        --ring-track: var(--dk-green);
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp-irow.is-awl .vp-irow__kick {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-iset__kicker {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-iset__actions {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-iset__words li {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-iset__w .tr {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-iset__foot {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-iset__st.is-learned {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp-iset__st.is-learned::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-prac--run > .vp-state, html[data-theme="dark"] .vp-prac--res > .vp-state {
+        background: var(--dk-ink-bg);
+        color: #fff
+    }
+    html[data-theme="dark"] .vp-runbar__x {
+        border: 0;
+        background: transparent;
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-runbar__x::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-runbar__meter {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .vp-runbar__meter i {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp-runbar__lang {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card) url(/assets/m/vocab/expand_more.svg) right 8px center / 16px no-repeat;
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-runcount .ok, html[data-theme="dark"] .vp-runcount .no {
+        background: var(--dk-green-tint) url(/assets/m/vocab/check_circle.svg) 12px center / 16px no-repeat;
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp-runcount .no {
+        background: var(--dk-chip) url(/assets/m/vocab/cancel.svg) 12px center / 16px no-repeat;
+        color: var(--dk-red)
+    }
+    html[data-theme="dark"] .vp-runcount .q {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-howto {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-wordbox {
+        border-color: var(--dk-line);
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-wordbox .w {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-wordbox .ipa {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-opt {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-opt:hover:not(:disabled) {
+        border-color: var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-opt.dim {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-opt.ok, html[data-theme="dark"] .vp-opt.no {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-opt.ok {
+        border-color: var(--dk-green);
+        background: var(--dk-green-tint)
+    }
+    html[data-theme="dark"] .vp-opt.no {
+        border-color: var(--dk-red);
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-opt.ok::after, html[data-theme="dark"] .vp-opt.no::after {
+        background: url(/assets/m/vocab/check_circle.svg) center / 24px no-repeat
+    }
+    html[data-theme="dark"] .vp-opt.no::after {
+        background-image: url(/assets/m/vocab/cancel.svg)
+    }
+    html[data-theme="dark"] .vp-opts:has(.vp-opt.no) .vp-opt.ok {
+        border-color: var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-opts:has(.vp-opt.no) .vp-opt.dim {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-tip {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-tip::before, html[data-theme="dark"] .vp-meaning::before {
+        background: url(/assets/m/vocab/lightbulb.svg) center / contain no-repeat
+    }
+    html[data-theme="dark"] .vp-pair {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-pair.sel {
+        border-color: var(--dk-acc);
+        background: var(--dk-acc-tint);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-pair.ok {
+        border-color: var(--dk-green);
+        background: var(--dk-green-tint);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-pair.no {
+        border-color: var(--dk-red);
+        background: var(--dk-chip);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-listen-big {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 16px var(--dk-acc-tint);
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp-listen-big::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-slow {
+        background: var(--dk-acc-tint) url(/assets/m/vocab/speed.svg) 12px center / 16px no-repeat;
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-input {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-input::placeholder {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-input:focus {
+        border-color: var(--dk-acc)
+    }
+    html[data-theme="dark"] .vp-input.ok {
+        border-color: var(--dk-green);
+        background: var(--dk-green-tint)
+    }
+    html[data-theme="dark"] .vp-input.no {
+        border-color: var(--dk-red);
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-input:disabled {
+        color: var(--dk-text);
+        -webkit-text-fill-color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-letter {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-letter.empty {
+        border-color: transparent;
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-letter.on {
+        border-color: var(--dk-acc);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-letter.revealed {
+        border-color: var(--dk-line-strong);
+        background: var(--dk-ink-bg);
+        color: #fff
+    }
+    html[data-theme="dark"] .vp-letter.hint {
+        border-color: var(--dk-orange);
+        background: var(--dk-yellow-tint);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-letter.ok {
+        border-color: var(--dk-green);
+        background: var(--dk-green-tint);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-letters-word:first-child .vp-letter.ok:first-child {
+        background: var(--dk-green);
+        color: var(--dk-on-bright)
+    }
+    html[data-theme="dark"] .vp-letter.no {
+        border-color: var(--dk-red);
+        background: var(--dk-chip);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-letter:disabled {
+        -webkit-text-fill-color: currentColor
+    }
+    html[data-theme="dark"] .vp-meaning {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp .vp-fill-acts .vp-btn.ghost {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp .vp-fill-acts .vp-btn.ghost:disabled {
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-foot {
+        background: var(--dk-page)
+    }
+    html[data-theme="dark"] .vp-foot.is-ok, html[data-theme="dark"] .vp-foot.is-no {
+        background: var(--dk-green-tint)
+    }
+    html[data-theme="dark"] .vp-foot.is-no {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp .vp-foot.is-ok .vp-btn {
+        background: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp .vp-foot.is-no .vp-btn {
+        background: var(--dk-red)
+    }
+    html[data-theme="dark"] .vp-verdict__ico {
+        background: url(/assets/m/vocab/check_circle.svg) center / contain no-repeat
+    }
+    html[data-theme="dark"] .is-no .vp-verdict__ico {
+        background-image: url(/assets/m/vocab/cancel.svg)
+    }
+    html[data-theme="dark"] .vp-verdict__hd b {
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .is-no .vp-verdict__hd b {
+        color: var(--dk-red)
+    }
+    html[data-theme="dark"] .vp-verdict__save {
+        border: 0;
+        background: var(--dk-card);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-verdict__save.is-on {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp-verdict__save::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-verdict__ans {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-verdict__note {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-intro {
+        border: 0;
+        background: transparent
+    }
+    html[data-theme="dark"] .vp-intro__hero {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .vp-badge {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-intro p {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-setup__lbl {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-setup__chip {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-setup__chip.is-on {
+        border-color: var(--dk-acc);
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .vp-setup__check input {
+        accent-color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-intro__src {
+        color: var(--dk-muted) !important
+    }
+    html[data-theme="dark"] .vp-study {
+        border-color: var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-study__ipa {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .vp-study__tr {
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-res-card {
+        border: 0;
+        background: transparent;
+        box-shadow: none
+    }
+    html[data-theme="dark"] .vp-res-mhero {
+        background: var(--dk-green-tint)
+    }
+    html[data-theme="dark"] .vp-res-card.is-bad .vp-res-mhero {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-res-mstats > div {
+        border: 1px solid var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-res-mstats b {
+        color: var(--dk-green)
+    }
+    html[data-theme="dark"] .vp-res-mstats .no b {
+        color: var(--dk-red)
+    }
+    html[data-theme="dark"] .vp-res-mstats span {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-res-list {
+        border: 1px solid var(--dk-line)
+    }
+    html[data-theme="dark"] .vp-res-list .row span {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp .vp-res-body .acts .vp-btn.ghost {
+        border: 2px solid var(--dk-acc);
+        background: var(--dk-card);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .vp-res-body .acts .vp-btn.ghost::before {
+        background: currentColor
+    }
+    html[data-theme="dark"] .vp-sheet {
+        background: rgba(0, 0, 0, 0.45)
+    }
+    html[data-theme="dark"] .vp-sheet__box {
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .vp-sheet__grab {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .vp-sheet__box h2 {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .vp-sheet__box p {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .vp-sheet__leave {
+        border: 0;
+        background: transparent;
+        color: var(--dk-acc-text)
+    }
+}
 /*  mobile/practice.css  */
 @media (max-width: 560px) {
     html[data-theme="dark"] .learn__main:has(.pk) {

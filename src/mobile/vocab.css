@@ -1,0 +1,2255 @@
+/* ======================================================================
+   «Словарь» на телефоне — дизайн мобильного приложения (Figma «pitch JTS
+   (Copy)», страница «Mobile» → «Сервисы» → «Словарь» 6420:8725, кадры 402):
+   главная 7305:12087, «Основная лексика» 7305:12271, «Лексика по
+   специальности» 7305:12437, «Мой словарь» 7305:12634, IELTS Vocabulary
+   7306:12863, практика 7300:11254 · 7303:11396 · 7304:11870.
+
+   Разметка экранов общая с компьютером; то, чего у компьютера нет (навбар
+   со стрелкой, шапка практики с языком перевода, плашка вердикта, окно
+   выхода, список наборов IELTS), экраны рисуют только на телефонной ширине
+   (usePhoneWidth). Значки и талисманы — экспорт макета, /assets/m/vocab/.
+
+   Чего в макете нет, а на сайте есть, — оставлено в том же языке макета:
+   настройка практики (какие слова, сколько, формат), «Добавить слово»,
+   отметка «изучено» у слова урока, «Топ 3 хуже запомненных». Карточка слова
+   урока — текстом, как в кадре «Слова урока»: картинки и переворот остались
+   компьютеру.
+   ====================================================================== */
+@media (max-width: 560px) {
+  /* Палитра макета приложения поверх токенов раздела: за ними подтягиваются и
+     экраны, и практика. */
+  .vp {
+    --vp-violet: #9047ff;
+    --vp-violet-dk: #9047ff;
+    --vp-violet-lt: #efe7ff;
+    --vp-violet-xlt: #f8f8fb;
+    --vp-ink: #181818;
+    --vp-muted: #5a5a66;
+    --vp-line: #e8e8ee;
+    --vp-green: #1f9d55;
+    --vp-green-lt: #e3f6ea;
+    --vp-red: #d9363e;
+    --vp-red-lt: #fdebec;
+    color: #181818;
+  }
+  .learn__main:has(.vp) {
+    background: #f8f8f8;
+  }
+  /* Кнопки угла (?, колокольчик, язык) — у экранов раздела в приложении их нет:
+     полосу занимает навбар со стрелкой, как у «Чтения» и урока. */
+  .learn__main:has(.vp) .learn__bell {
+    display: none;
+  }
+  .vp-pad {
+    padding: 0 16px 24px;
+  }
+  /* «← Назад» компьютера: на телефоне его заменяет стрелка навбара. */
+  .vp-back {
+    display: none;
+  }
+
+  /* ---------- навбар: стрелка 48 слева, название по центру ---------- */
+  .vp-mbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    margin: 0 -16px 8px;
+    padding: 0 52px;
+  }
+  .vp-mbar__title {
+    min-width: 0;
+    overflow: hidden;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-mbar__back {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .vp-mbar__back::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/arrow_back.svg) center / 24px no-repeat;
+    mask: url(/assets/m/vocab/arrow_back.svg) center / 24px no-repeat;
+  }
+
+  /* Правый слот 48: «?» тура на главной — круг 40 с рамкой, как кнопки угла остальных экранов. */
+  .vp-mbar__slot {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+  }
+  .vp-mbar__slot .tour-help {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ececf1;
+    border-radius: 50%;
+    background: #fff;
+    color: #181818;
+  }
+
+  /* ---------- заголовки экранов ---------- */
+  .vp h1 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: #181818;
+  }
+  .vp-lead {
+    max-width: none;
+    margin: 4px 0 16px;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-page-hd {
+    margin-bottom: 0;
+  }
+  /* Кнопка практики в шапке — компьютера; на телефоне она в полосе внизу, а пустая строка под шапкой
+     добавляла бы зазор переноса. */
+  .vp-page-hd .actions {
+    display: none;
+  }
+  .vp-state {
+    padding: 12px 0;
+    color: #5a5a66;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  /* Общий динамик раздела — сиреневый круг со значком макета (32, на карточках слова — 40). */
+  .vp .vp-spk {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vp .vp-spk:hover {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vp .vp-spk svg {
+    display: none;
+  }
+  .vp .vp-spk::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+  }
+
+  /* Кнопки раздела — 56, скругление 16, как ButtonBar макета. */
+  .vp .vp-btn {
+    justify-content: center;
+    min-height: 56px;
+    padding: 0 24px;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp .vp-btn:hover {
+    background: #9047ff;
+  }
+  .vp .vp-btn.ghost {
+    border: 0;
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vp .vp-btn.wide {
+    padding: 0 24px;
+    font-size: 16px;
+  }
+  .vp .vp-btn.wide:disabled,
+  .vp .vp-btn.wide.disabled,
+  .vp .vp-btn:disabled {
+    background: #dccff9;
+    color: #fff;
+    opacity: 1;
+  }
+  /* «Начать практику ⏵»: значок — после подписи, play_circle макета. */
+  .vp .vp-btn .vp-play {
+    order: 2;
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/play_circle.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/play_circle.svg) center / contain no-repeat;
+  }
+  .vp .vp-btn .vp-play svg {
+    display: none;
+  }
+
+  /* Нижняя полоса с кнопкой (ButtonBar: фон экрана, 8 сверху и снизу) — над панелью вкладок. */
+  .vp-sticky-cta {
+    margin: 0 -16px;
+    padding: 8px 16px;
+    background: #f8f8f8;
+  }
+
+  /* ======================= Главная (7305:11899) ======================= */
+  .vp-home > h1 {
+    display: none;
+  }
+  .vp-home > .vp-lead {
+    margin: 0 0 16px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  /* Блок — белая карточка r28; справа без отступа: лента карточек уходит под край. */
+  .vp-home .vp-sec {
+    margin: 0 0 16px;
+    padding: 20px 0 20px 20px;
+    overflow: hidden;
+    border: 1px solid #efeff4;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  .vp-home .vp-sec-hd {
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding-right: 20px;
+  }
+  .vp-home .vp-sec-hd h2 {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .vp-home .vp-sec-hd p {
+    margin: 2px 0 0;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-home .vp-sec-arrow {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin-top: 3px;
+    border: 0;
+    background: #f4f4f8;
+    color: #181818;
+    font-size: 0;
+  }
+  .vp-home .vp-sec-arrow::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/chevron_right.svg) center / 24px no-repeat;
+    mask: url(/assets/m/vocab/chevron_right.svg) center / 24px no-repeat;
+  }
+  .vp-home .vp-row {
+    align-items: flex-start;
+    gap: 12px;
+    margin: 0;
+    padding: 0 20px 0 0;
+    scrollbar-width: none;
+  }
+  .vp-home .vp-row::-webkit-scrollbar {
+    display: none;
+  }
+  .vp-home .vp-row .vp-state {
+    padding: 0 20px 0 0;
+  }
+
+  /* IELTS: тема 200×110 — название и тема слева, картинка 48 справа, счёт под ними. */
+  .vp-ielts-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 0 4px;
+    width: 200px;
+    min-height: 110px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 20px;
+    background: #f8f8fb;
+    box-shadow: none;
+  }
+  .vp-ielts-card:hover {
+    border-color: #e8e8ee;
+    box-shadow: none;
+  }
+  .vp-ielts-card__txt {
+    display: contents;
+  }
+  .vp-ielts-card b {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-ielts-card .nm {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 2px 0 3px;
+    overflow: hidden;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-ielts-card .meta {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-ielts-card .meta.is-progress,
+  .vp-ielts-card .meta.is-done {
+    color: #9047ff;
+  }
+  .vp-ielts-card .meta.is-due {
+    color: #e57a12;
+  }
+  .vp-ielts-card img,
+  .vp-ielts-card__num {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 48px;
+    height: 48px;
+  }
+  .vp-ielts-card__num {
+    border-radius: 12px;
+    font-size: 22px;
+  }
+
+  /* Уровень 140×106: белая, код 28, сиреневый круг 72 срезан углом. */
+  .vp-home .vp-lvl-card {
+    width: 140px;
+    min-height: 106px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+  .vp-lvl-card:hover {
+    border-color: #e8e8ee;
+    box-shadow: none;
+  }
+  .vp-lvl-card .code {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+  }
+  .vp-lvl-card .nm {
+    margin-top: 2px;
+    overflow: hidden;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-lvl-card .meta,
+  .vp-lvl-card.is-locked .meta {
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-lvl-card .meta.is-zero,
+  .vp-lvl-card.is-locked .meta {
+    color: #8e8e99;
+  }
+  .vp-lvl-card::after,
+  .vp-lvl-card[data-lv]::after {
+    top: 95px;
+    left: 95px;
+    right: auto;
+    bottom: auto;
+    width: 72px;
+    height: 72px;
+    margin-top: -34px;
+    border-radius: 50%;
+    background: #efe7ff;
+    opacity: 1;
+    clip-path: none;
+  }
+
+  /* Специальность 184: плашка 40 со значком макета, название до трёх строк, число слов. */
+  .vp-home .vp-fld-card {
+    width: 184px;
+    min-height: 0;
+    gap: 12px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 20px;
+    background: #f8f8fb;
+    box-shadow: none;
+  }
+  .vp-fld-card:hover {
+    border-color: #e8e8ee;
+    box-shadow: none;
+  }
+  .vp-fld-card b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp-fld-card .meta {
+    margin-top: -8px;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-fld-card .ic {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--fld-bg, #efe7ff);
+  }
+  /* Значки специальностей — те, что нарисованы в макете; у остальных остаётся эмодзи каталога. */
+  .vp-fld-card[data-fld='it'] { --fld-bg: #e3eeff; --fld-ico: url(/assets/m/vocab/f-it.svg); }
+  .vp-fld-card[data-fld='swe'] { --fld-bg: #e6dcfc; --fld-ico: url(/assets/m/vocab/f-swe.svg); }
+  .vp-fld-card[data-fld='data'] { --fld-bg: #e3f6ea; --fld-ico: url(/assets/m/vocab/f-data.svg); }
+  .vp-fld-card[data-fld='cyber'] { --fld-bg: #fff4d6; --fld-ico: url(/assets/m/vocab/f-cyber.svg); }
+  .vp-fld-card[data-fld='business'] { --fld-bg: #ffe3cf; --fld-ico: url(/assets/m/vocab/f-business.svg); }
+  .vp-fld-card[data-fld='medicine'] { --fld-bg: #ffe8f2; --fld-ico: url(/assets/m/vocab/f-medicine.svg); }
+  .vp-fld-card[data-fld='nursing'] { --fld-bg: #d6edfb; --fld-ico: url(/assets/m/vocab/f-nursing.svg); }
+  .vp-fld-card:is([data-fld='it'], [data-fld='swe'], [data-fld='data'], [data-fld='cyber'], [data-fld='business'], [data-fld='medicine'], [data-fld='nursing']) .ic {
+    font-size: 0;
+  }
+  .vp-fld-card:is([data-fld='it'], [data-fld='swe'], [data-fld='data'], [data-fld='cyber'], [data-fld='business'], [data-fld='medicine'], [data-fld='nursing']) .ic::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--fld-ico) center / 24px no-repeat;
+  }
+
+  /* Слово «Моего словаря» 200×76: слово и перевод, динамик 32 справа. */
+  .vp-mine-chip {
+    grid-template-columns: minmax(0, 1fr) 32px;
+    gap: 2px 12px;
+    align-items: center;
+    min-width: 200px;
+    max-width: 200px;
+    min-height: 76px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 20px;
+    background: #f8f8fb;
+  }
+  .vp-mine-chip:hover {
+    border-color: #e8e8ee;
+  }
+  .vp-mine-chip b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp-mine-chip .tr {
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-mine-chip .vp-spk {
+    align-self: center;
+  }
+  /* «Практика по всем моим словам» — в блоке, у которого справа нет отступа. */
+  .vp-home .vp-sec > .vp-btn.wide {
+    width: calc(100% - 20px);
+    padding: 0 16px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  /* «Топ 3 хуже запомненных» — список в рамке, как «Стоит повторить» в итоге практики. */
+  .vp-top3 {
+    width: auto;
+    margin-right: 20px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-top3-hd,
+  .vp-res-list h4 {
+    gap: 8px;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8ee;
+    background: #f8f8fb;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+  .vp-top3-hd svg,
+  .vp-res-list h4 svg {
+    display: none;
+  }
+  .vp-top3-hd::before,
+  .vp-res-list h4::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    flex: none;
+    background: url(/assets/m/vocab/replay.svg) center / contain no-repeat;
+  }
+  .vp-top3-row,
+  .vp-res-list .row {
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid #e8e8ee;
+  }
+  .vp-top3-hd + .vp-top3-row,
+  .vp-res-list h4 + .row {
+    border-top: 0;
+  }
+  .vp-top3-row b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp-top3-row span {
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vp-top3 > .vp-btn.wide {
+    width: calc(100% - 32px);
+    margin: 4px 16px 16px !important;
+  }
+
+  /* ======================= Специальности (7306:11952) ======================= */
+  .vp-unit {
+    margin-bottom: 24px;
+  }
+  .vp-unit h3 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-fld-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  /* Строка 370: плашка 48, название и число слов, шеврон справа. */
+  .vp-fld-grid .vp-fld-card {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 24px;
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: 'ic . ch' 'ic nm ch' 'ic mt ch' 'ic . ch';
+    gap: 0 12px;
+    width: auto;
+    min-height: 74px;
+    padding: 12px 16px 12px 12px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+  }
+  .vp-fld-grid .vp-fld-card .ic {
+    grid-area: ic;
+    align-self: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+  }
+  .vp-fld-grid .vp-fld-card b {
+    grid-area: nm;
+  }
+  .vp-fld-grid .vp-fld-card .meta {
+    grid-area: mt;
+    margin-top: 2px;
+  }
+  .vp-fld-grid .vp-fld-card::after {
+    content: '';
+    grid-area: ch;
+    align-self: center;
+    width: 24px;
+    height: 24px;
+    background: currentColor;
+    color: #8e8e99;
+    -webkit-mask: url(/assets/m/vocab/chevron_right.svg) center / 24px no-repeat;
+    mask: url(/assets/m/vocab/chevron_right.svg) center / 24px no-repeat;
+  }
+  .vp-pad:has(> .vp-unit .vp-fld-grid) > .vp-lead {
+    margin-bottom: 24px;
+  }
+
+  /* ======================= Уровни и уроки (7305:12151, 7306:12047) ======================= */
+  .vp-tabs {
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+  }
+  .vp-tab {
+    height: 42px;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e8e8ee;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp-tab.on {
+    border-color: #9047ff;
+    background: #9047ff;
+  }
+  .vp-tab .n {
+    min-width: 0;
+    height: 20px;
+    padding: 2px 8px;
+    background: #f0f0f4;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-tab.on .n {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+  .vp-pad > h3 {
+    margin: 0 0 16px !important;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-lessons {
+    gap: 12px;
+  }
+  .vp-lesson {
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-lesson:hover {
+    border-color: #e8e8ee;
+  }
+  .vp-lesson .kicker {
+    margin-bottom: 4px;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .vp-lesson b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .vp-lesson .cnt {
+    margin-top: 4px;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  /* Кольцо 40: дорожка #e4daf8 толщиной 4, дуга — доля изученного (--p ставит разметка). */
+  .vp-lesson .ring,
+  .vp-ring {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-lesson .ring::before,
+  .vp-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(var(--ring, #9047ff) calc(var(--p, 0) * 1%), var(--ring-track, #e4daf8) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  }
+
+  /* ======================= Слова урока (7305:12209) ======================= */
+  .vp-lw .vp-page-hd .kicker {
+    margin-bottom: 4px !important;
+    font-size: 12px !important;
+    line-height: 16px;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    color: #9047ff !important;
+  }
+  .vp-lw__meta {
+    margin: 4px 0 0;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-lw .vp-page-hd {
+    margin-bottom: 16px;
+  }
+  .vp-words-hint {
+    display: none;
+  }
+  .vp-words,
+  .vp-words--pics {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 0 0 16px;
+  }
+  /* Карточка текстом, без переворота: слово, перевод, пример, источник. Лицо и
+     оборот рассыпаны в один столбец (display: contents), картинки нет. */
+  .vp-pcard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    text-align: left;
+    perspective: none;
+  }
+  .vp-pcard:focus-visible {
+    outline: 2px solid #9047ff;
+    outline-offset: 2px;
+  }
+  .vp-pcard__inner,
+  .vp-pcard__face,
+  .vp-pcard__bin,
+  .vp-pcard__strip {
+    display: contents;
+  }
+  .vp-pcard__pic,
+  .vp-pcard__bub,
+  .vp-pcard__strip i {
+    display: none;
+  }
+  .vp-pcard__strip b {
+    order: 1;
+    margin-right: 52px;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-pcard__tr,
+  .vp-pcard__tr.is-def,
+  .vp-pcard__ex {
+    text-align: left;
+  }
+  .vp-pcard__tr,
+  .vp-pcard__tr.is-def {
+    order: 2;
+    margin-right: 52px;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-pcard__ex {
+    order: 3;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-pcard__ex mark,
+  .vp-wcard .ex mark,
+  .vp-iset__ex mark {
+    background: none;
+    color: #9047ff;
+    font-weight: 500;
+  }
+  .vp-pcard__foot {
+    order: 4;
+    margin-top: 12px;
+    padding: 0 44px 0 0;
+    border: 0;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 32px;
+    font-weight: 500;
+  }
+  .vp-pcard-spk {
+    top: 22px;
+    right: 16px;
+  }
+  .vp .vp-pcard-spk,
+  .vp .vp-wcard .vp-spk,
+  .vp-iset__words .vp-spk {
+    width: 40px;
+    height: 40px;
+    background: #efe7ff;
+    box-shadow: none;
+  }
+  .vp .vp-pcard-spk::before,
+  .vp .vp-wcard .vp-spk::before,
+  .vp-iset__words .vp-spk::before {
+    width: 20px;
+    height: 20px;
+  }
+  /* «Изучено» — круг 32 в строке источника, как отметка слова набора IELTS. */
+  .vp-pcard-mark {
+    top: auto;
+    left: auto;
+    right: 16px;
+    bottom: 16px;
+    width: 32px;
+    height: 32px;
+    background: #f4f4f8;
+    color: #8e8e99;
+    box-shadow: none;
+  }
+  .vp-pcard-mark:hover {
+    color: #8e8e99;
+  }
+  .vp-pcard-mark.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+  .vp-pcard-mark svg {
+    display: none;
+  }
+  .vp-pcard-mark::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/check.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/check.svg) center / contain no-repeat;
+  }
+
+  /* ======================= Мой словарь (7305:12453, 7305:12534) ======================= */
+  .vp-mine .vp-page-hd h1 {
+    display: none;
+  }
+  .vp-mine .vp-lead {
+    margin: 0 0 16px;
+  }
+  .vp-mine-tools {
+    margin: 0 0 16px;
+  }
+  .vp .vp-mine-tools .vp-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .vp-wcard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    column-gap: 12px;
+    row-gap: 0;
+    min-height: 0;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-wcard:hover {
+    border-color: #e8e8ee;
+  }
+  .vp-wcard.is-learned {
+    border-color: #e8e8ee;
+  }
+  .vp-wcard .top {
+    display: contents;
+  }
+  .vp-wcard .top b {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-wcard .top .vp-spk {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .vp-wcard .tr {
+    grid-column: 1;
+    grid-row: 2;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-wcard .ex {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    -webkit-line-clamp: 4;
+  }
+  .vp-wcard .foot {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-wcard.is-learned .foot {
+    color: #1f9d55;
+    font-weight: 700;
+  }
+
+  /* Шторка снизу (окно слова и «Добавить слово»): скругление 32 сверху, ручка 40×4. */
+  .vp-modal {
+    place-items: end stretch;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .vp-modal .box {
+    width: 100%;
+    max-height: 90dvh;
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 32px 32px 0 0;
+  }
+  .vp-modal .box::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 20px;
+    border-radius: 2px;
+    background: #d8d8e0;
+  }
+  .vp-modal .mhd {
+    gap: 8px;
+    margin: 0;
+  }
+  .vp-modal .mhd b {
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+  }
+  .vp-modal .icon-btn {
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: #f4f4f8;
+    color: #5a5a66;
+  }
+  .vp-modal .icon-btn.spk {
+    background: #efe7ff;
+    color: #9047ff;
+  }
+  .vp-modal .icon-btn.danger {
+    width: 40px;
+    height: 40px;
+    background: #fdebec;
+    color: #d9363e;
+  }
+  .vp-modal .icon-btn svg {
+    display: none;
+  }
+  .vp-modal .icon-btn::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/close.svg) center / 20px no-repeat;
+    mask: url(/assets/m/vocab/close.svg) center / 20px no-repeat;
+  }
+  .vp-modal .icon-btn.spk::before {
+    -webkit-mask-image: url(/assets/m/vocab/volume_up.svg);
+    mask-image: url(/assets/m/vocab/volume_up.svg);
+  }
+  .vp-modal .icon-btn.danger::before {
+    -webkit-mask-image: url(/assets/m/vocab/delete.svg);
+    mask-image: url(/assets/m/vocab/delete.svg);
+  }
+  .vp-modal .mlbl {
+    margin: 16px 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .vp-modal .mval {
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-modal .mhd + .mlbl + .mval {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 700;
+  }
+  .vp-modal .macts {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .vp-modal .macts .vp-btn svg {
+    display: none;
+  }
+  .vp-modal .macts .vp-btn::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    flex: none;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+  }
+  .vp-modal .box > h2 {
+    font-size: 24px !important;
+    line-height: 32px;
+    font-weight: 800;
+  }
+  .vp-modal label {
+    margin: 12px 0 4px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-modal input {
+    height: 56px;
+    padding: 0 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    outline: none;
+  }
+  .vp-modal input:focus {
+    border-color: #9047ff;
+  }
+
+  /* ======================= IELTS Vocabulary (7306:12213 … 12477) ======================= */
+  /* Вкладки «Тематические наборы · 8 | Academic Word List · 10». */
+  .vp-seg {
+    display: flex;
+    gap: 4px;
+    margin: 0 0 16px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ececf2;
+  }
+  .vp-seg__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 32px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #5a5a66;
+    font: inherit;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .vp-seg__btn.is-on {
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  .vp-icat__h {
+    margin: 0 0 16px;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-icat__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  /* Строка набора 370×90: картинка 56, надпись состояния, название 20, тема; кольцо справа. */
+  .vp-irow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 90px;
+    padding: 12px 16px 12px 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .vp-irow img {
+    flex: none;
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+  }
+  .vp-irow__txt {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .vp-irow__kick {
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .vp-irow.is-progress .vp-irow__kick {
+    color: #9047ff;
+  }
+  .vp-irow.is-due .vp-irow__kick {
+    color: #e57a12;
+  }
+  .vp-irow.is-done .vp-irow__kick {
+    color: #1f9d55;
+  }
+  .vp-irow b {
+    overflow: hidden;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-irow__sub {
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-irow.is-done .vp-ring {
+    --ring: #1f9d55;
+    --ring-track: #1f9d55;
+    color: #1f9d55;
+  }
+  /* Подсписок AWL — как строка урока: без картинки, надпись сиреневая, название 16. */
+  .vp-irow.is-awl {
+    padding: 16px;
+  }
+  .vp-irow.is-awl .vp-irow__txt {
+    gap: 4px;
+  }
+  .vp-irow.is-awl .vp-irow__kick {
+    color: #9047ff;
+    letter-spacing: 0.01em;
+  }
+  .vp-irow.is-awl b {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+
+  /* Экран набора: надпись вида набора, название 28, строка «тема · изучено». Полоса прогресса и подсказка
+     про коробки — компьютеру; кнопки тренировки — полосой внизу, после слов. */
+  .vp-iset {
+    display: flex;
+    flex-direction: column;
+  }
+  .vp-iset__hd {
+    gap: 0;
+  }
+  .vp-iset__hd img,
+  .vp-iset__progress,
+  .vp-iset__hint {
+    display: none;
+  }
+  .vp-iset__kicker {
+    margin-bottom: 4px;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+  .vp-iset h1 {
+    font-size: 28px;
+    line-height: 36px;
+  }
+  .vp-iset .vp-lead {
+    margin: 4px 0 16px;
+  }
+  .vp-iset__actions {
+    position: sticky;
+    bottom: var(--mtab-h, 0px);
+    z-index: 5;
+    order: 10;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 -16px -24px;
+    padding: 8px 16px;
+    background: #f8f8f8;
+  }
+  .vp-iset__actions .vp-btn {
+    width: 100%;
+  }
+  .vp-iset__words {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .vp-iset__words li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 12px;
+    padding: 16px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-iset__words li > .vp-spk {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    justify-self: end;
+  }
+  .vp-iset__w {
+    display: contents;
+  }
+  .vp-iset__w b {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .vp-iset__w .ipa {
+    display: none;
+  }
+  .vp-iset__w .tr {
+    grid-column: 1;
+    grid-row: 2;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-iset__ex {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-iset__foot {
+    grid-column: 1;
+    margin-top: 12px;
+    overflow: hidden;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .vp-iset__st {
+    grid-column: 2;
+    justify-self: end;
+    margin-top: 12px;
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  /* Изученное слово — сиреневый круг с галочкой (кадр «Набор Environment»). */
+  .vp-iset__st.is-learned {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+    font-size: 0;
+  }
+  .vp-iset__st.is-learned::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/check.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/check.svg) center / contain no-repeat;
+  }
+
+  /* ======================= Практика (7300:11254, 7303:11396, 7304:11870) ======================= */
+  /* Практика — во весь экран, как в приложении: своя шапка с крестиком и своя нижняя полоса, панель вкладок
+     легла бы на кнопку «Продолжить» и плашку вердикта. */
+  :root:has(.mtab):has(.learn):has(.vp-prac) {
+    --mtab-h: 0px;
+  }
+  :root:has(.vp-prac) .mtab {
+    display: none;
+  }
+  .vp-prac,
+  .vp-prac--res {
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0 16px;
+  }
+  .vp-prac-top,
+  .vp-meter-row {
+    display: none;
+  }
+  /* Тост задания («Нет голоса для озвучки») стоит в разметке после нижней полосы — на телефоне он всплывает
+     плашкой под шапкой, а не прячется под полосой. */
+  .vp-prac--run > .vp-state,
+  .vp-prac--res > .vp-state {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    z-index: 30;
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: #181818;
+    color: #fff;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 700;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  /* Шапка заданий: крестик 48, полоса 8, плашка языка перевода. */
+  .vp-runbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 52px;
+    margin: 0 -12px;
+  }
+  .vp-runbar__x {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #181818;
+    cursor: pointer;
+  }
+  .vp-runbar__x::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/close.svg) center / 24px no-repeat;
+    mask: url(/assets/m/vocab/close.svg) center / 24px no-repeat;
+  }
+  .vp-runbar__meter {
+    flex: 1;
+    min-width: 0;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e4daf8;
+  }
+  .vp-runbar__meter i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #9047ff;
+  }
+  .vp-runbar__lang {
+    flex: none;
+    height: 26px;
+    margin: 0 12px 0 0;
+    padding: 4px 28px 4px 12px;
+    border: 1px solid #e8e8ee;
+    border-radius: 999px;
+    background: #fff url(/assets/m/vocab/expand_more.svg) right 8px center / 16px no-repeat;
+    color: #181818;
+    font: inherit;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+  }
+  /* Счёт: зелёная и красная плашки 32, номер вопроса справа. */
+  .vp-runcount {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 16px;
+  }
+  .vp-runcount .ok,
+  .vp-runcount .no {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    padding: 8px 12px 8px 32px;
+    border-radius: 999px;
+    background: #e3f6ea url(/assets/m/vocab/check_circle.svg) 12px center / 16px no-repeat;
+    color: #1f9d55;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-runcount .no {
+    background: #fdebec url(/assets/m/vocab/cancel.svg) 12px center / 16px no-repeat;
+    color: #d9363e;
+  }
+  .vp-runcount .q {
+    margin-left: auto;
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+
+  .vp-howto {
+    margin: 0 0 16px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+  .vp-wordbox {
+    margin-bottom: 16px;
+    padding: 24px 16px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+    box-shadow: none;
+  }
+  .vp-wordbox .w {
+    gap: 12px;
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 800;
+    color: #181818;
+  }
+  .vp-wordbox .w .vp-spk {
+    width: 40px;
+    height: 40px;
+  }
+  .vp-wordbox .w .vp-spk::before {
+    width: 20px;
+    height: 20px;
+  }
+  .vp-wordbox .ipa {
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+
+  /* Варианты 60: рамка 2, после ответа верный — зелёный со значком, выбранный неверный — красный. */
+  .vp-opts {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .vp-opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .vp-opt:hover:not(:disabled) {
+    border-color: #e8e8ee;
+    background: #fff;
+  }
+  .vp-opt.dim {
+    opacity: 1;
+    color: #8e8e99;
+  }
+  .vp-opt.ok,
+  .vp-opt.no {
+    color: #181818;
+    font-weight: 600;
+  }
+  .vp-opt.ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+  }
+  .vp-opt.no {
+    border-color: #d9363e;
+    background: #fdebec;
+  }
+  .vp-opt.ok::after,
+  .vp-opt.no::after {
+    content: '';
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
+    background: url(/assets/m/vocab/check_circle.svg) center / 24px no-repeat;
+  }
+  .vp-opt.no::after {
+    background-image: url(/assets/m/vocab/cancel.svg);
+  }
+  /* «Красным отмечен только выбранный ответ»: после ошибки верный вариант не подсвечен, остальные — обычным
+     цветом; верный ответ называет плашка вердикта. */
+  .vp-opts:has(.vp-opt.no) .vp-opt.ok {
+    border-color: #e8e8ee;
+    background: #fff;
+  }
+  .vp-opts:has(.vp-opt.no) .vp-opt.ok::after {
+    content: none;
+  }
+  .vp-opts:has(.vp-opt.no) .vp-opt.dim {
+    color: #181818;
+  }
+
+  /* «Соедините»: подсказка с лампочкой, клетки 56 в две колонки. */
+  .vp-tip {
+    gap: 4px;
+    margin: 0 auto 16px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-tip svg,
+  .vp-meaning svg {
+    display: none;
+  }
+  .vp-tip::before,
+  .vp-meaning::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    background: url(/assets/m/vocab/lightbulb.svg) center / contain no-repeat;
+  }
+  .vp-pairs {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .vp-pairs > div {
+    gap: 12px !important;
+  }
+  .vp-pair {
+    min-height: 56px;
+    padding: 0 12px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .vp-pair.sel {
+    border-color: #9047ff;
+    background: #efe7ff;
+    color: #181818;
+    font-weight: 600;
+  }
+  .vp-pair.ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .vp-pair.no {
+    border-color: #d9363e;
+    background: #fdebec;
+    color: #181818;
+  }
+  .vp-pair:disabled {
+    opacity: 1;
+  }
+
+  /* Диктант: кнопка 80 в ореоле 112, плашка «Прослушать медленно», поле 60. */
+  .vp-listen-big {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 16px auto 28px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 0 0 16px #efe7ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .vp-listen-big svg {
+    display: none;
+  }
+  .vp-listen-big::before {
+    content: '';
+    width: 32px;
+    height: 32px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/volume_up.svg) center / contain no-repeat;
+  }
+  .vp-slow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    height: 32px;
+    margin: 0 auto 16px;
+    padding: 8px 12px 8px 32px;
+    border-radius: 999px;
+    background: #efe7ff url(/assets/m/vocab/speed.svg) 12px center / 16px no-repeat;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-input {
+    height: 60px;
+    margin-bottom: 16px;
+    padding: 0 16px;
+    border: 2px solid #e8e8ee;
+    border-radius: 16px;
+    background: #fff;
+    color: #181818;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .vp-input::placeholder {
+    color: #8e8e99;
+  }
+  .vp-input:focus {
+    border-color: #9047ff;
+  }
+  .vp-input.ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+  }
+  .vp-input.no {
+    border-color: #d9363e;
+    background: #fdebec;
+  }
+  .vp-input:disabled {
+    color: #181818;
+    -webkit-text-fill-color: #181818;
+    opacity: 1;
+  }
+
+  /* «Заполни слово»: предложение 20 слева, клетки 40×48 — пустая серая, набранная белая, первая открытая —
+     чёрная, подсказка — оранжевая. */
+  .vp-wordbox:has(.vp-letters) {
+    align-items: stretch;
+    padding: 24px 16px 16px;
+  }
+  .vp-wordbox:has(.vp-letters) > p:first-child {
+    margin: 0 0 16px !important;
+    font-size: 20px !important;
+    line-height: 28px !important;
+    font-weight: 800 !important;
+    text-align: left;
+  }
+  .vp-letters {
+    gap: 8px 16px;
+  }
+  .vp-letters-word {
+    gap: 8px;
+  }
+  .vp-letter {
+    width: 40px;
+    height: 48px;
+    border: 2px solid #e8e8ee;
+    border-radius: 12px;
+    background: #fff;
+    color: #181818;
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .vp-letter.empty {
+    border-color: transparent;
+    background: #f0f0f4;
+  }
+  .vp-letter.on {
+    border-color: #9047ff;
+    background: #fff;
+  }
+  .vp-letter.revealed {
+    border-color: #181818;
+    background: #181818;
+    color: #fff;
+  }
+  .vp-letter.hint {
+    border-color: #e57a12;
+    background: #fff0dd;
+    color: #181818;
+  }
+  .vp-letter.ok {
+    border-color: #1f9d55;
+    background: #e3f6ea;
+    color: #181818;
+  }
+  .vp-letters-word:first-child .vp-letter.ok:first-child {
+    background: #1f9d55;
+    color: #fff;
+  }
+  .vp-letter.no {
+    border-color: #d9363e;
+    background: #fdebec;
+    color: #181818;
+  }
+  .vp-letter:disabled {
+    -webkit-text-fill-color: currentColor;
+  }
+  .vp-letter-sep {
+    height: 48px;
+    font-size: 24px;
+  }
+  .vp-wordbox:has(.vp-letters) > .vp-state {
+    margin: 16px 0 0;
+    padding: 0;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .vp-meaning {
+    gap: 4px;
+    margin: 16px auto 0;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+  }
+  .vp-fill-acts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .vp .vp-fill-acts .vp-btn.ghost {
+    min-height: 48px;
+    padding: 0 8px;
+    border: 2px solid #e8e8ee;
+    background: #fff;
+    color: #181818;
+  }
+  .vp .vp-fill-acts .vp-btn.ghost:disabled {
+    background: #fff;
+    color: #181818;
+    opacity: 1;
+  }
+
+  /* Нижняя полоса заданий: кнопка у низа экрана; после ответа полоса — плашка вердикта (зелёная / красная). */
+  .vp-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: auto -16px 0;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: #f8f8f8;
+  }
+  .vp-foot .vp-btn svg {
+    display: none;
+  }
+  .vp-foot.is-ok,
+  .vp-foot.is-no {
+    padding-top: 20px;
+    border-radius: 24px 24px 0 0;
+    background: #e3f6ea;
+  }
+  .vp-foot.is-no {
+    background: #fdebec;
+  }
+  .vp .vp-foot.is-ok .vp-btn {
+    background: #1f9d55;
+  }
+  .vp .vp-foot.is-no .vp-btn {
+    background: #d9363e;
+  }
+  .vp-verdict {
+    margin-bottom: 12px;
+  }
+  .vp-verdict__hd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+  }
+  .vp-verdict__ico {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    background: url(/assets/m/vocab/check_circle.svg) center / contain no-repeat;
+  }
+  .is-no .vp-verdict__ico {
+    background-image: url(/assets/m/vocab/cancel.svg);
+  }
+  .vp-verdict__hd b {
+    flex: 1;
+    min-width: 0;
+    color: #1f9d55;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
+  }
+  .is-no .vp-verdict__hd b {
+    color: #d9363e;
+  }
+  /* «В словарь» после ошибки: закладка в белом круге, сохранённое — сиреневым. */
+  .vp-verdict__save {
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin: -6px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: #9047ff;
+    cursor: pointer;
+  }
+  .vp-verdict__save.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+  /* Выключена, пока слово сохраняется и после: сохранённая — сиреневая, в полёте — бледная. */
+  .vp-verdict__save:disabled {
+    cursor: default;
+  }
+  .vp-verdict__save:disabled:not(.is-on) {
+    opacity: 0.6;
+  }
+  .vp-verdict__save::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/bookmark.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/bookmark.svg) center / contain no-repeat;
+  }
+  .vp-verdict__ans {
+    margin: 8px 0 0;
+    color: #181818;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-verdict__ans b {
+    font-weight: 700;
+  }
+  .vp-verdict__note {
+    margin: 8px 0 0;
+    color: #5a5a66;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+  }
+
+  /* Старт практики (7304:11881): талисман в круге 224, плашка «Проверка · 18 слов», заголовок 28. Настройка
+     практики (какие слова, сколько, формат) — сайта, макет её не знает; стоит под текстом в том же виде. */
+  .vp-intro {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    max-width: none;
+    margin: 0;
+    padding: 12px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .vp-intro__hero {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 224px;
+    height: 224px;
+    margin: 0 auto 16px;
+    padding-top: 4px;
+    border-radius: 50%;
+    background: #e6dcfc;
+  }
+  .vp-intro__hero img {
+    width: 192px;
+    height: 216px;
+  }
+  .vp-badge {
+    align-self: center;
+    height: 32px;
+    margin: 0 0 16px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7ff;
+    color: #9047ff;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .vp-intro .big {
+    display: none;
+  }
+  .vp-intro h2 {
+    margin: 0 0 16px;
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+  }
+  .vp-intro p {
+    margin: 0 0 24px;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-setup {
+    gap: 16px;
+    margin: 0 0 24px;
+  }
+  .vp-setup__lbl {
+    margin-bottom: 8px;
+    color: #8e8e99;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .vp-setup__row {
+    gap: 8px;
+  }
+  .vp-setup__chip {
+    height: 40px;
+    padding: 8px 16px;
+    border: 1px solid #e8e8ee;
+    background: #fff;
+    color: #181818;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 700;
+  }
+  .vp-setup__chip.is-on {
+    border-color: #9047ff;
+    background: #9047ff;
+    color: #fff;
+  }
+  .vp-setup__check {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .vp-setup__check input {
+    width: 20px;
+    height: 20px;
+    accent-color: #9047ff;
+  }
+  .vp-intro > .vp-btn.wide {
+    margin-top: auto;
+  }
+  .vp-intro__src {
+    margin: 8px 0 !important;
+    color: #8e8e99 !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    text-align: center;
+  }
+  .vp-prac--intro .vp-intro,
+  .vp-prac--study .vp-intro {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  /* Карточка «посмотреть перевод» перед заданиями — как карточка слова задания. */
+  .vp-study {
+    margin: 0 0 16px;
+    padding: 24px 16px;
+    border-color: #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-study__word {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 800;
+  }
+  .vp-study__ipa {
+    margin-top: 12px;
+    color: #8e8e99;
+    font-size: 16px;
+    line-height: 24px;
+    font-style: normal;
+  }
+  .vp-study__tr {
+    margin-top: 12px;
+    color: #9047ff;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 700;
+  }
+  .vp-study .vp-spk {
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+  }
+  .vp-study .vp-spk::before {
+    width: 20px;
+    height: 20px;
+  }
+  .vp-prac--study .vp-intro > .vp-btn.wide {
+    margin-top: auto;
+  }
+
+  /* Итог (7304:11913, 7304:11975): талисман в круге 160, два счётчика плитками, «Стоит повторить», кнопки внизу. */
+  .vp-res-card {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .vp-res-hero,
+  .vp-res-stats {
+    display: none;
+  }
+  .vp-res-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0;
+  }
+  .vp-res-mhero {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 12px;
+    padding-top: 8px;
+    border-radius: 50%;
+    background: #e3f6ea;
+  }
+  .vp-res-card.is-bad .vp-res-mhero {
+    background: #fdebec;
+  }
+  .vp-res-mhero img {
+    width: 108px;
+    height: 144px;
+  }
+  .vp-res-body h2 {
+    margin: 0 0 24px;
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-align: center;
+  }
+  .vp-res-mstats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 0 0 16px;
+  }
+  .vp-res-mstats > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid #e8e8ee;
+    border-radius: 20px;
+    background: #fff;
+  }
+  .vp-res-mstats b {
+    color: #1f9d55;
+    font-size: 28px;
+    line-height: 36px;
+    font-weight: 800;
+  }
+  .vp-res-mstats .no b {
+    color: #d9363e;
+  }
+  .vp-res-mstats span {
+    color: #5a5a66;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .vp-res-list {
+    margin: 0 0 16px;
+    overflow: hidden;
+    border: 1px solid #e8e8ee;
+    border-radius: 24px;
+  }
+  .vp-res-list .row {
+    flex-direction: row;
+    align-items: center;
+  }
+  .vp-res-list .row b {
+    gap: 12px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vp-res-list .row span {
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .vp-res-body .acts {
+    gap: 8px;
+    margin: auto -16px 0;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .vp .vp-res-body .acts .vp-btn.ghost {
+    border: 2px solid #9047ff;
+    background: #fff;
+    color: #9047ff;
+  }
+  .vp-res-body .acts .vp-btn svg {
+    display: none;
+  }
+  .vp-res-body .acts .vp-btn.ghost::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    flex: none;
+    background: currentColor;
+    -webkit-mask: url(/assets/m/vocab/replay.svg) center / contain no-repeat;
+    mask: url(/assets/m/vocab/replay.svg) center / contain no-repeat;
+  }
+
+  /* Окно выхода из практики (7304:12126): шторка снизу. */
+  .vp-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .vp-sheet__box {
+    width: 100%;
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 32px 32px 0 0;
+    background: #fff;
+  }
+  .vp-sheet__grab {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 20px;
+    border-radius: 2px;
+    background: #d8d8e0;
+  }
+  .vp-sheet__box h2 {
+    margin: 0 0 16px;
+    color: #181818;
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 800;
+  }
+  .vp-sheet__box p {
+    margin: 0 0 16px;
+    color: #5a5a66;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+  }
+  .vp-sheet__leave {
+    width: 100%;
+    min-height: 56px;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: #9047ff;
+    font: inherit;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}

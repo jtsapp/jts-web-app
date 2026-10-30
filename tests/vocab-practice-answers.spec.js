@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // Жалоба: «Словарь» засчитывает правильные ответы как ошибки.
 //
@@ -66,6 +67,8 @@ async function boot(page, { level = 'B2', saved = [] } = {}) {
       return Promise.resolve()
     }
   }, jwt())
+  // Замки кабинета («Документы платформы», разделы тарифа) с 29.10.2026 встают поверх Словаря — приняты.
+  await mockGates(page)
   // Настоящий Soniox тестам не нужен: он платный и с общим лимитом в минуту.
   await page.route('**/api/tts?**', (r) => r.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' }))
   await page.route('**/api/auth/me', (r) =>
@@ -196,6 +199,8 @@ function escapeRe(s) {
 
 /** Проходит всю практику «знающим учеником» и возвращает журнал экранов. */
 async function passPractice(page, know) {
+  // С 28.09.2026 перед заданиями по умолчанию идёт просмотр переводов — знающему ученику он не нужен.
+  await page.locator('.vp-setup__check input').uncheck()
   await page.locator('.vp-intro .vp-btn').click()
   const log = []
   for (let step = 0; step < 40; step++) {

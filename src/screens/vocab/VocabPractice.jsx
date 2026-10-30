@@ -1,5 +1,7 @@
 ﻿import { useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
+import { usePhoneWidth } from '../../lib/usePhoneWidth.js'
+import PhoneBar from './PhoneBar.jsx'
 import { initVoices, speak as ttsSpeak } from '../../practice/vocab/audio.js'
 import { useTimeOnTask } from '../../lib/useTimeOnTask.js'
 import {
@@ -119,17 +121,11 @@ function exampleHtml(word) {
   return raw.replace(new RegExp(`\\b(${escapeRe(w)})\\b`, 'i'), '<b>$1</b>')
 }
 
-/** Карточка «Правильный ответ» при ошибке (слово / IPA / перевод / пример). */
-function CorrectReveal({ word, lang, t, speak, token, note }) {
+/** «В словарь» после ошибки: одна логика у карточки ответа компьютера и у нижней панели телефона. */
+function useSaveWord(word, lang, token) {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const tr = translationOf(word, lang)
-  // Показываем значение, а сохраняем только перевод: определение B2 в поле
-  // translationRu личного словаря выдавало бы себя за перевод.
-  const meaning = meaningOf(word, lang)
-  const ipa = word.ipa ? `/${String(word.ipa).replace(/\//g, '')}/` : ''
-  const exHtml = exampleHtml(word)
-  const exSpeak = examplePlain(word)
 
   const save = () => {
     if (!token || saved || saving) return
@@ -150,6 +146,19 @@ function CorrectReveal({ word, lang, t, speak, token, note }) {
       .catch(() => {})
       .finally(() => setSaving(false))
   }
+
+  return { saved, saving, save }
+}
+
+/** Карточка «Правильный ответ» при ошибке (слово / IPA / перевод / пример). */
+function CorrectReveal({ word, lang, t, speak, token, note }) {
+  const { saved, saving, save } = useSaveWord(word, lang, token)
+  // Показываем значение, а сохраняем только перевод: определение B2 в поле
+  // translationRu личного словаря выдавало бы себя за перевод.
+  const meaning = meaningOf(word, lang)
+  const ipa = word.ipa ? `/${String(word.ipa).replace(/\//g, '')}/` : ''
+  const exHtml = exampleHtml(word)
+  const exSpeak = examplePlain(word)
 
   return (
     <div className="vp-reveal">
@@ -210,10 +219,50 @@ function AnswerFeedback({ ok, note, word, lang, t, speak, token }) {
   return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} note={note} />
 }
 
+/**
+ * Вердикт в нижней панели телефона (кадры «· верно» / «· неверно»): панель красится целиком, над «Продолжить» —
+ * «Верно!» или «Неверный ответ». После ошибки там же верный ответ и «В словарь» — карточку ответа компьютера
+ * телефон не рисует, а учить слово без верного ответа нечем.
+ */
+function FootVerdict({ ok, note, word, lang, t, token }) {
+  const { saved, saving, save } = useSaveWord(word, lang, token)
+  const meaning = meaningOf(word, lang)
+  return (
+    <div className="vp-verdict">
+      <div className="vp-verdict__hd">
+        <span className="vp-verdict__ico" aria-hidden="true" />
+        <b>{ok ? t('vocab.prac.correct') : t('vocab.prac.incorrect')}</b>
+        {!ok && token ? (
+          <button
+            type="button"
+            className={`vp-verdict__save${saved ? ' is-on' : ''}`}
+            onClick={save}
+            disabled={saved || saving}
+            aria-label={saved ? t('vocab.prac.saved') : t('vocab.prac.saveWord')}
+            title={saved ? t('vocab.prac.saved') : t('vocab.prac.saveWord')}
+          />
+        ) : null}
+      </div>
+      {!ok ? <p className="vp-verdict__ans"><b>{word.word}</b>{meaning ? ` — ${meaning}` : ''}</p> : null}
+      {note ? <p className="vp-verdict__note">{note}</p> : null}
+    </div>
+  )
+}
+
+/** Класс нижней панели по вердикту: на телефоне она зелёная или красная. */
+const footClass = (checked, ok) => `vp-foot${checked ? (ok ? ' is-ok' : ' is-no') : ''}`
+
 // onResults(answers) — каждый ответ тренировки ({ key, ok }): наборы IELTS Vocabulary двигают по ним коробки
 // повторения на сервере, а не только локальное «изучено»
-export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned, onResults }) {
+export default function VocabPractice({ cards, lang: uiLang, title, onExit, speak: speakProp, token, scopeId, onLearned, onResults }) {
   const { t } = useI18n()
+  const phone = usePhoneWidth()
+  // Язык перевода в заданиях. На телефоне его меняет плашка «RU / KZ» в шапке (макет приложения); компьютер
+  // переключателя не рисует и остаётся на языке интерфейса.
+  const [langPick, setLang] = useState(null)
+  const lang = langPick || uiLang
+  // Окно «Вы уверены, что хотите выйти?» — крестик шапки телефона во время заданий.
+  const [askExit, setAskExit] = useState(false)
   // Практика «Словаря» — «actual» модуля vocabulary_sr недельной сводки. Экран
   // смонтирован ровно пока идёт практика, поэтому считаем всё его время.
   useTimeOnTask('vocabulary_sr', { token })
@@ -323,14 +372,24 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     )
     const toggleFmt = (key) => setFmt((prev) => ({ ...prev, [key]: !prev[key] }))
     return (
-      <div className="vp-prac">
+      <div className="vp-prac vp-prac--intro">
+        {phone && <PhoneBar title={t('vocab.practiceTitle')} onBack={onExit} backLabel={t('vocab.prac.exit')} />}
         <div className="vp-prac-top">
           <button type="button" className="vp-exit" onClick={onExit}>
             <IconX /> <span className="vp-exit-lbl">{t('vocab.prac.exit')}</span>
           </button>
         </div>
         <div className="vp-intro">
-          <span className="vp-badge">{t('vocab.prac.check')}</span>
+          {phone && (
+            <div className="vp-intro__hero" aria-hidden="true">
+              <img src="/assets/m/vocab/mascot-start.webp" alt="" width="192" height="216" />
+            </div>
+          )}
+          {/* На телефоне число слов — в той же плашке («Проверка · 18 слов»), крупной строки нет. */}
+          <span className="vp-badge">
+            {t('vocab.prac.check')}
+            {phone ? ` · ${t('vocab.home.words', { n: words.length })}` : null}
+          </span>
           <div className="big">{t('vocab.home.words', { n: words.length })}</div>
           <h2>{t('vocab.prac.introTitle')}</h2>
           <p>{t('vocab.prac.setupLead')}</p>
@@ -370,6 +429,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
           <button type="button" className="vp-btn wide" onClick={begin}>
             {t('vocab.prac.start')}
           </button>
+          {phone && title ? <p className="vp-intro__src">{title}</p> : null}
         </div>
       </div>
     )
@@ -380,7 +440,8 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     const last = studyIdx + 1 >= studyWords.length
     const tr = translationOf(card, lang) || meaningOf(card, lang)
     return (
-      <div className="vp-prac">
+      <div className="vp-prac vp-prac--study">
+        {phone && <PhoneBar title={t('vocab.practiceTitle')} onBack={onExit} backLabel={t('vocab.prac.exit')} />}
         <div className="vp-prac-top">
           <button type="button" className="vp-exit" onClick={onExit}>
             <IconX /> <span className="vp-exit-lbl">{t('vocab.prac.exit')}</span>
@@ -451,6 +512,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
 
     return (
       <div className="vp-prac vp-prac--res">
+        {phone && <PhoneBar title={t('vocab.prac.resTitle')} />}
         <div className={`vp-res-card${good ? ' is-good' : ' is-bad'}`}>
           <div className="vp-res-hero" aria-hidden="true">
             <img
@@ -459,7 +521,20 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
             />
           </div>
           <div className="vp-res-body">
+            {/* Телефон по макету: талисман в круге (зелёный — результат хороший, розовый — можно улучшить) и два
+                счётчика плитками. Чипы компьютера остаются в разметке скрытыми — по ним сверяется итог в e2e. */}
+            {phone && (
+              <div className="vp-res-mhero" aria-hidden="true">
+                <img src={good ? '/assets/m/vocab/mascot-great.webp' : '/assets/m/vocab/mascot-try.webp'} alt="" width="108" height="144" />
+              </div>
+            )}
             <h2>{headline}</h2>
+            {phone && (
+              <div className="vp-res-mstats">
+                <div className="ok"><b>{correct}</b><span>{t('vocab.prac.statOk')}</span></div>
+                <div className="no"><b>{wrong}</b><span>{t('vocab.prac.statNo')}</span></div>
+              </div>
+            )}
             <div className="vp-res-stats">
               <span className="ok"><IconCheck /> {t('vocab.prac.correctN', { n: correct })}</span>
               <span className={`no${wrong > 0 && !good ? ' solid' : ''}`}>
@@ -526,7 +601,25 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   }
 
   return (
-    <div className="vp-prac">
+    <div className="vp-prac vp-prac--run">
+      {phone && (
+        // Шапка телефона (кадры практики): крестик, полоса прогресса, язык перевода; под ней счёт и номер вопроса.
+        <>
+          <div className="vp-runbar">
+            <button type="button" className="vp-runbar__x" onClick={() => setAskExit(true)} aria-label={t('vocab.prac.exit')} />
+            <div className="vp-runbar__meter"><i style={{ width: `${progress}%` }} /></div>
+            <select className="vp-runbar__lang" value={lang === 'kk' ? 'kk' : 'ru'} onChange={(e) => setLang(e.target.value)} aria-label={t('vocab.prac.trLang')}>
+              <option value="ru">RU</option>
+              <option value="kk">KZ</option>
+            </select>
+          </div>
+          <div className="vp-runcount">
+            <span className="ok">{correct}</span>
+            <span className="no">{wrong}</span>
+            <span className="q">{qLabel}</span>
+          </div>
+        </>
+      )}
       <div className="vp-prac-top">
         <button type="button" className="vp-exit" onClick={onExit}>
           <IconX /> <span className="vp-exit-lbl">{t('vocab.prac.exit')}</span>
@@ -545,21 +638,33 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       </div>
 
       {curTask?.type === 'choice' && itemWords[0] && (
-        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} phone={phone} onDone={onDone} />
       )}
       {curTask?.type === 'match' && itemWords.length >= 3 && (
         <MatchUI key={idx} words={itemWords} lang={lang} t={t} onDone={onDone} />
       )}
       {curTask?.type === 'match' && itemWords.length < 3 && itemWords[0] && (
-        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} phone={phone} onDone={onDone} />
       )}
       {curTask?.type === 'dictation' && itemWords[0] && (
-        <DictationUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+        <DictationUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} phone={phone} onDone={onDone} />
       )}
       {curTask?.type === 'write' && itemWords[0] && (
-        <WriteTask key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+        <WriteTask key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} phone={phone} onDone={onDone} />
       )}
       {toast ? <p className="vp-state">{toast}</p> : null}
+
+      {askExit && (
+        <div className="vp-sheet" onClick={() => setAskExit(false)}>
+          <div className="vp-sheet__box" role="dialog" aria-modal="true" aria-label={t('vocab.prac.exitTitle')} onClick={(e) => e.stopPropagation()}>
+            <span className="vp-sheet__grab" aria-hidden="true" />
+            <h2>{t('vocab.prac.exitTitle')}</h2>
+            <p>{t('vocab.prac.exitLead')}</p>
+            <button type="button" className="vp-btn wide" onClick={() => setAskExit(false)}>{t('vocab.prac.exitStay')}</button>
+            <button type="button" className="vp-sheet__leave" onClick={onExit}>{t('vocab.prac.exitLeave')}</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -577,10 +682,10 @@ function WriteTask(props) {
   return <DictationUI {...props} />
 }
 
-function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
+function ChoiceUI({ word, bank, lang, t, speak, token, phone, onDone }) {
   const options = useMemo(() => buildChoiceOptions(word, bank, lang), [word.key, lang, bank])
   const [picked, setPicked] = useState(null)
-  if (!options) return <WriteTask word={word} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+  if (!options) return <WriteTask word={word} lang={lang} t={t} speak={speak} token={token} phone={phone} onDone={onDone} />
   const byDefinition = !translationOf(word, lang)
 
   return (
@@ -621,10 +726,11 @@ function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
           )
         })}
       </div>
-      {picked && (
+      {picked && !phone && (
         <AnswerFeedback ok={!!picked.ok} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
-      <div className="vp-foot">
+      <div className={footClass(!!picked, !!picked?.ok)}>
+        {picked && phone && <FootVerdict ok={!!picked.ok} word={word} lang={lang} t={t} token={token} />}
         <button
           type="button"
           className="vp-btn wide"
@@ -718,7 +824,7 @@ export function MatchUI({ words, lang, t, onDone }) {
   )
 }
 
-function DictationUI({ word, lang, t, speak, token, onDone }) {
+function DictationUI({ word, lang, t, speak, token, phone, onDone }) {
   const [value, setValue] = useState('')
   const [checked, setChecked] = useState(null)
   const submit = () => {
@@ -747,10 +853,11 @@ function DictationUI({ word, lang, t, speak, token, onDone }) {
         autoCorrect="off"
         disabled={checked != null}
       />
-      {checked != null && (
+      {checked != null && !phone && (
         <AnswerFeedback ok={!!checked} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
-      <div className="vp-foot">
+      <div className={footClass(checked != null, !!checked)}>
+        {checked != null && phone && <FootVerdict ok={!!checked} word={word} lang={lang} t={t} token={token} />}
         {checked == null ? (
           <button type="button" className="vp-btn wide" disabled={!value.trim()} onClick={submit}>
             {t('vocab.lesson.check')}
@@ -765,7 +872,7 @@ function DictationUI({ word, lang, t, speak, token, onDone }) {
   )
 }
 
-function WriteUI({ word, lang, t, speak, token, onDone }) {
+function WriteUI({ word, lang, t, speak, token, phone, onDone }) {
   const [value, setValue] = useState('')
   const [checked, setChecked] = useState(null)
   const submit = () => {
@@ -796,10 +903,11 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
         placeholder={t('vocab.prac.typeTr')}
         disabled={checked != null}
       />
-      {checked != null && (
+      {checked != null && !phone && (
         <AnswerFeedback ok={!!checked} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
-      <div className="vp-foot">
+      <div className={footClass(checked != null, !!checked)}>
+        {checked != null && phone && <FootVerdict ok={!!checked} word={word} lang={lang} t={t} token={token} />}
         {checked == null ? (
           <button type="button" className="vp-btn wide" disabled={!value.trim()} onClick={submit}>
             {t('vocab.lesson.check')}
@@ -816,7 +924,7 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
 
 /** Набор слова по буквам. Экспортируется ради теста: живьём до него надо
  *  пройти три задания подряд, а проверяется здесь ровно он. */
-export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
+export function FillUI({ word, sentence, lang, t, speak, token, phone, onDone }) {
   const letters = [...word.word]
   // Половина каталога — фразы: «look at», «What's your name?». Прочерк под
   // пробелом или апострофом выглядел как ещё одна буква — ученик набирал
@@ -966,7 +1074,8 @@ export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
                 }
                 const shown = opened[i] ? L : chars[i]
                 const isActive = i === (active < 0 ? lastSlot : active)
-                let cls = 'vp-letter'
+                // empty — пустая клетка: на телефоне она серая, набранная — белая с рамкой (кадры «Заполни слово»).
+                let cls = shown ? 'vp-letter' : 'vp-letter empty'
                 if (opened[i] && checked == null) cls += i === firstSlot ? ' revealed' : ' hint'
                 if (checked === true) cls += ' ok'
                 if (checked === false) cls += ' no'
@@ -1003,7 +1112,7 @@ export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
           </button>
         </div>
       </div>
-      {checked != null && (
+      {checked != null && !phone && (
         <AnswerFeedback
           ok={ok}
           note={checked === true && helped ? t('vocab.prac.withHints') : ''}
@@ -1014,7 +1123,10 @@ export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
           token={token}
         />
       )}
-      <div className="vp-foot">
+      <div className={footClass(checked != null, ok)}>
+        {checked != null && phone && (
+          <FootVerdict ok={ok} note={checked === true && helped ? t('vocab.prac.withHints') : ''} word={word} lang={lang} t={t} token={token} />
+        )}
         {checked == null ? (
           <button type="button" className="vp-btn wide" disabled={!filled} onClick={submit}>
             {t('vocab.lesson.check')}
