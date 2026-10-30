@@ -6,6 +6,7 @@
 
   .screen > .footer { display: grid; grid-template-columns: 1fr; min-height: 0; gap: 16px; padding: 28px 24px; }
   .screen > .footer .legal-links { display: grid; justify-content: start; gap: 4px; }
+  .screen > .footer .footer-cards { justify-content: flex-start; }
   .screen > .footer .footer-copy { justify-self: start; font-size: 12px; font-weight: 400; }
 
   .legal-gate { padding: 20px 12px; }

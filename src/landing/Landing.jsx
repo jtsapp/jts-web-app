@@ -7,6 +7,9 @@
 // маскоты, фото, превью разделов и карта острова — растр рендера макета.
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
+import { COMPANY } from './company.js'
+import { INFO_PAGES, infoUrl, pickInfo } from './info.js'
+import PaymentLogos from './PaymentLogos.jsx'
 import LibraryTabs from './LibraryTabs.jsx'
 import TeachersCarousel from './TeachersCarousel.jsx'
 import TrialForm from './TrialForm.jsx'
@@ -21,11 +24,13 @@ function Icon({ src, size, className }) {
   return <img className={className} src={src} width={size} height={size} alt="" aria-hidden="true" />
 }
 
-function Header({ c, lang, links }) {
+// home — адрес лендинга для страниц /info: там якоря «#trial» и «#top»
+// ведут на главную, а не в никуда. На самом лендинге пусто — якоря свои.
+export function Header({ c, lang, links, home = '' }) {
   return (
     <header className="ld-header">
       <div className="ld-header__bar">
-        <a className="ld-header__logo" href="#top" aria-label="Just to Study">
+        <a className="ld-header__logo" href={home || '#top'} aria-label="Just to Study">
           <img src={IC + 'logo.svg'} width="168" height="34" alt="Just to Study" />
         </a>
         <div className="ld-header__right">
@@ -35,7 +40,7 @@ function Header({ c, lang, links }) {
           </nav>
           <div className="ld-header__btns">
             <a className="ld-btn ld-btn--ghost" href={links.login}>{c.nav.login}</a>
-            <a className="ld-btn ld-btn--primary" href="#trial">{c.nav.start}</a>
+            <a className="ld-btn ld-btn--primary" href={home + '#trial'}>{c.nav.start}</a>
           </div>
         </div>
       </div>
@@ -470,8 +475,11 @@ function Faq({ c }) {
   )
 }
 
-function Footer({ c, lang }) {
+// Колонка «Покупателям», e-mail и знаки карт — требования Freedom Pay к
+// публичному сайту до подключения оплаты (см. src/landing/info.js).
+export function Footer({ c, lang, home = '' }) {
   const f = c.footer
+  const info = pickInfo(lang)
   const phoneHref = 'tel:+' + f.phone.replace(/\D/g, '')
   return (
     <footer className="ld-footer">
@@ -482,15 +490,22 @@ function Footer({ c, lang }) {
           <div className="ld-footer__navcols">
             {f.nav.map((col, i) => (
               <ul key={i}>
-                {col.map((l) => <li key={l.label}><a href={l.href}>{l.label}</a></li>)}
+                {col.map((l) => <li key={l.label}><a href={home + l.href}>{l.label}</a></li>)}
               </ul>
             ))}
           </div>
+        </nav>
+        <nav className="ld-footer__info" aria-label={info.nav.title}>
+          <div className="ld-footer__label">{info.nav.title}</div>
+          <ul>
+            {INFO_PAGES.map((page) => <li key={page}><a href={infoUrl(page, lang)}>{info.nav[page]}</a></li>)}
+          </ul>
         </nav>
         <div className="ld-footer__contacts">
           <div className="ld-footer__label">{f.contactsTitle}</div>
           <ul>
             <li><a href={phoneHref}>{f.phone}</a></li>
+            <li><a href={'mailto:' + COMPANY.email}>{COMPANY.email}</a></li>
             <li><a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">{f.whatsapp}</a></li>
             <li>{INSTAGRAM_URL ? <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">{f.instagram}</a> : <span>{f.instagram}</span>}</li>
           </ul>
@@ -501,6 +516,7 @@ function Footer({ c, lang }) {
         <a href={legalDocumentUrl('privacy', lang)} target="_blank" rel="noopener noreferrer">{f.privacy}</a>
         <a href={legalDocumentUrl('offer', lang)} target="_blank" rel="noopener noreferrer">{f.offer}</a>
         <a href={legalDocumentUrl('payment-security', lang)} target="_blank" rel="noopener noreferrer">{f.paymentSecurity}</a>
+        <PaymentLogos label={info.cards} />
       </div>
     </footer>
   )
