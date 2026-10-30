@@ -5,7 +5,15 @@ import { getAudiobook } from '../api.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
-import { cleanWord, translateWord } from '../lib/wordTranslate.js'
+import {
+  cleanPhrase,
+  cleanWord,
+  isOversizedPhrase,
+  isPhraseSelection,
+  isTapSelection,
+  translateWord,
+} from '../lib/wordTranslate.js'
+import { speak } from '../practice/vocab/audio.js'
 import { canSaveWords, saveTappedWord } from '../lib/saveTappedWord.js'
 import { Dots } from './practice/PracticeCards.jsx'
 import { chapterProgress, splitSubtitles, subtitleAt, subtitleTextFor } from '../practice/books/readAlong.js'
@@ -403,35 +411,70 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
   // Отсекает ответы перевода/сохранения от уже закрытого или сменённого попапа.
   const seqRef = useRef(0)
 
-  const onWord = (e, raw) => {
-    const w = cleanWord(raw)
-    if (!w) return
+  // Карточка у `anchor`: у слова это его <span>, у выделения — Range. Rect у
+  // Range живой, поэтому карточка фразы, как и слова, остаётся у текста после
+  // прокрутки (позицию пересчитывает layout-эффект ниже).
+  const openPop = (text, anchor, { phrase = false, tooLong = false } = {}) => {
     const seq = ++seqRef.current
     setPopPos(null)
     const base = {
-      word: w,
+      word: text,
       alternates: [],
       loading: false,
       saving: false,
       saved: false,
-      anchor: e.currentTarget,
+      phrase,
+      anchor,
+    }
+    // Длиннее 100 знаков фразу не переводим — тот же потолок, что в уроке.
+    if (tooLong) {
+      setPop({ ...base, translation: '', tooLong: true })
+      return
     }
     // В словаре книги перевод берём на языке интерфейса; если для казахского
     // его там нет — не подменяем русским, а переводим сетью на казахский.
-    const hit = dict[w.toLowerCase()]
+    // Словарь книги пословный, фразу в нём не ищем.
+    const hit = phrase ? null : dict[text.toLowerCase()]
     const hitTr = tl === 'kk' ? hit?.kz : hit?.ru
     if (hitTr) {
       setPop({ ...base, translation: hitTr })
       return
     }
     setPop({ ...base, translation: '', loading: true })
-    translateWord(w, tl)
+    translateWord(text, tl)
       .then(
         (t) =>
           seqRef.current === seq &&
           setPop((p) => p && { ...p, translation: t.tr, alternates: t.alternates, loading: false }),
       )
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
+  }
+
+  const onWord = (e, raw) => {
+    const w = cleanWord(raw)
+    if (w) openPop(w, e.currentTarget)
+  }
+
+  // Выделение мышью или пальцем: фраза до 100 знаков переводится целиком,
+  // длиннее — карточка с потолком; одно слово (двойной клик, долгое нажатие
+  // на телефоне, где клика нет) — как тап. Перенос строки (выделили через
+  // абзац) — не фраза, карточку закрываем. Копирование при этом закрыто,
+  // как и везде: copy/contextmenu гасит NoCopyGuard.
+  const onSelection = (host) => {
+    const sel = window.getSelection?.()
+    const raw = sel?.toString() || ''
+    const tooLong = isOversizedPhrase(raw)
+    if (isTapSelection(raw) || tooLong) {
+      if (!sel.rangeCount || !host?.contains(sel.anchorNode)) return
+      const range = sel.getRangeAt(0).cloneRange()
+      const rect = range.getBoundingClientRect()
+      if (!rect.width && !rect.height) return
+      const phrase = tooLong || isPhraseSelection(raw)
+      const text = phrase ? cleanPhrase(raw) : cleanWord(raw)
+      if (text) openPop(text, range, { phrase, tooLong })
+      return
+    }
+    if (raw.trim()) setPop(null)
   }
 
   // Сохраняем только в свой словарь ученика, не токеном экрана (у гостя это
@@ -519,7 +562,28 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       <div className="bk-read" ref={hostRef}>
         {/* key={ch} ремоунтит статью при смене главы — CSS-анимация входа
             проигрывается заново (и отключена при prefers-reduced-motion). */}
-        <article key={ch} ref={articleRef} className="bk-read__text" onClick={() => setPop(null)}>
+        {/* data-selectable снимает общий запрет выделения (styles.css): без
+            него выделить фразу для перевода было нельзя. Клик после протяжки
+            мышью приходит на статью — он не должен закрыть только что
+            открытую карточку фразы. Пальцем: mouseup после долгого нажатия
+            Safari не шлёт, а выделение дорисовывает уже после touchend —
+            поэтому разбор отложен (как в живом уроке, LessonContent). */}
+        <article
+          key={ch}
+          ref={articleRef}
+          className="bk-read__text"
+          data-selectable=""
+          onClick={() => {
+            const raw = window.getSelection?.()?.toString() || ''
+            if (isTapSelection(raw) || isOversizedPhrase(raw)) return
+            setPop(null)
+          }}
+          onMouseUp={(e) => onSelection(e.currentTarget)}
+          onTouchEnd={(e) => {
+            const host = e.currentTarget
+            setTimeout(() => onSelection(host), 60)
+          }}
+        >
           {/* Название главы в кадре стоит над текстом крупной строкой — раньше
               его можно было увидеть только в шапке и в списке глав. */}
           <h1 className="bk-read__title">{chapter.title || `Глава ${ch + 1}`}</h1>
@@ -607,7 +671,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
         {pop && (
           <div
             ref={popRef}
-            className="bk-pop"
+            className={`bk-pop${pop.phrase ? ' bk-pop--phrase' : ''}`}
             style={{
               left: popPos?.left ?? 0,
               top: popPos?.top ?? 0,
@@ -615,25 +679,37 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bk-pop__word">{pop.word}</div>
-            <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
-            {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
-            {canSaveWords() ? (
-              <button
-                className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
-                onClick={onSave}
-                disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
-              >
-                {pop.saved
-                  ? '✓ В словаре'
-                  : pop.saving
-                    ? 'Сохраняем…'
-                    : pop.failed
-                      ? 'Не сохранилось — ещё раз'
-                      : 'Сохранить в словарь'}
-              </button>
+            {pop.tooLong ? (
+              <div className="bk-pop__tr bk-pop__limit">{t('lesson.phraseLimit')}</div>
             ) : (
-              <div className="bk-pop__hint">Войдите, чтобы сохранять слова в словарь</div>
+              <>
+                <div className="bk-pop__word">
+                  {/* Озвучка — Soniox, запасной — синтез устройства (speak). */}
+                  <button type="button" className="bk-pop__say" onClick={() => speak(pop.word)} aria-label="Произнести">
+                    🔊
+                  </button>
+                  <span>{pop.word}</span>
+                </div>
+                <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
+                {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
+                {canSaveWords() ? (
+                  <button
+                    className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
+                    onClick={onSave}
+                    disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+                  >
+                    {pop.saved
+                      ? '✓ В словаре'
+                      : pop.saving
+                        ? 'Сохраняем…'
+                        : pop.failed
+                          ? 'Не сохранилось — ещё раз'
+                          : 'Сохранить в словарь'}
+                  </button>
+                ) : (
+                  <div className="bk-pop__hint">Войдите, чтобы сохранять слова в словарь</div>
+                )}
+              </>
             )}
           </div>
         )}

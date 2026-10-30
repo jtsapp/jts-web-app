@@ -1880,6 +1880,10 @@ html[data-theme="dark"] .bk-pop {
 html[data-theme="dark"] .bk-pop__word {
     color: var(--ink)
 }
+html[data-theme="dark"] .bk-pop__say {
+    border: none;
+    background: var(--dk-page)
+}
 html[data-theme="dark"] .bk-pop__tr {
     color: var(--dk-text-2)
 }

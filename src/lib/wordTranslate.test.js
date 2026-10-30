@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { cleanWord, isOversizedPhrase, isPhraseSelection, isTapSelection, sentenceContaining, splitSentences, wordFromTap } from './wordTranslate.js'
+import { cleanPhrase, cleanWord, isOversizedPhrase, isPhraseSelection, isTapSelection, sentenceContaining, splitSentences, wordFromTap } from './wordTranslate.js'
+
+describe('cleanPhrase', () => {
+  it('цифры и пунктуация внутри фразы остаются', () => {
+    expect(cleanPhrase('born in 1879, in Dublin')).toBe('born in 1879, in Dublin')
+  })
+
+  it('кавычки и края, захваченные мышью, срезаются', () => {
+    expect(cleanPhrase('“Hello, my friend,” he said.')).toBe('Hello, my friend, he said')
+    expect(cleanPhrase(' — the old house… ')).toBe('the old house')
+  })
+
+  it('типографский апостроф — как с клавиатуры, пробелы схлопываются', () => {
+    expect(cleanPhrase('I’ll   be\nback')).toBe("I'll be back")
+  })
+})
 
 describe('splitSentences / sentenceContaining', () => {
   it('режет по концу предложения', () => {
