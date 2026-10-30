@@ -41,6 +41,35 @@ export default function GeStartHero({ state, onStart, onTest, onRoute }) {
 }
 
 /**
+ * Верх «Главной» у ученика на потолке курса (homeTopState → finish: уровень C1+, анкеты нет). Цель выше не поставить,
+ * поэтому ни маршрута, ни теста не предлагаем — тот же баннер говорит, что курс пройден, и ведёт в практику. Класс
+ * ge-start общий со стартовым баннером: телефон прячет его так же (src/mobile/home.css), там остаётся карточка уровня.
+ */
+export function GeFinishHero({ level, onPractice }) {
+  const { t } = useI18n()
+  return (
+    <div className="ge-skin">
+      <section className="ih-gb ge-start ge-finish" aria-labelledby="ge-finish-title">
+        <img className="ih-gb__bg" src="/ielts/mascot/goal-bg.webp" alt="" aria-hidden="true" />
+        <div className="ih-gb__mascot">
+          <p className="ih-gb__bubble">{t('geStart.finish.say')}</p>
+          <img src="/ielts/mascot/cheer.webp" alt="" aria-hidden="true" width="300" height="237" />
+        </div>
+        <div className="ih-gb__journey ge-start__body">
+          <h2 id="ge-finish-title" className="ge-start__title">
+            {t('geStart.finish.title')}
+          </h2>
+          <p className="ge-start__sub">{t('geStart.finish.sub', { level })}</p>
+          <button type="button" className="ge-start__cta" onClick={() => onPractice?.()}>
+            {t('geStart.finish.cta')}
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+/**
  * «Начните отсюда» на месте «Сегодня», пока плана нет (решение владельца 21.10.2026: у нового ученика вместо списка
  * заданий — приглашение; план по дням соберётся после теста и выбора формата).
  */

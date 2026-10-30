@@ -4,7 +4,9 @@
 import { canSetGoal } from './route.js'
 
 /**
- * Верхний блок: 'legacy' — прежняя карточка уровня (ручки профиля нет или цель ставить некуда), 'locked' — анкеты
+ * Верхний блок: 'legacy' — прежняя карточка уровня (ручки профиля нет), 'finish' — анкеты нет, а цель ставить некуда:
+ * уровень на потолке целей курса (C1, C2 владелец не даёт). До 31.10.2026 такой ученик получал прежнюю карточку уровня
+ * поверх нового макета, и менеджер принял это за старый дизайн «Главной». 'locked' — анкеты
  * нет: роадмап под блюром ждёт тест уровня v16 (его анкета заменила нашу, спека 2026-10-14; раньше здесь были
  * 'start' — ни уровня, ни анкеты — и 'invite' — уровень есть, анкеты нет), 'notTested' — то же, но у ученика, который
  * учился до теста v16 (existing): ему тест не навязываем, вместо блюра — обычная карточка «тест не пройден» (решение
@@ -13,7 +15,7 @@ import { canSetGoal } from './route.js'
 export function homeTopState({ geProfile, levelUnknown, level, existing = false }) {
   if (!geProfile) return 'legacy'
   if (!geProfile.onboarded) {
-    if (!levelUnknown && !canSetGoal(level)) return 'legacy'
+    if (!levelUnknown && !canSetGoal(level)) return 'finish'
     return existing ? 'notTested' : 'locked'
   }
   if (levelUnknown) return 'needTest'
