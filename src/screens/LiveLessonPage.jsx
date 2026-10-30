@@ -1252,6 +1252,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // отправил бы старый снимок answers/checkedSteps и незаметно откатил сброс.
     onAnswerReset: (evt) => {
       if (isStaff) return
+      // Файловый урок (материал в рамке): учитель сбросил ответы задания (tid) или всего материала.
+      // Сервер их уже забыл, но мост держит поток в памяти и сохраняет его целиком — без команды
+      // первый же мой ответ вернул бы сброшенное. Сначала мост забывает, потом рамку перечитываем:
+      // перезагрузка раньше времени отправила бы на выходе старый поток. Чужой материал не открыт —
+      // его рамка при открытии прочтёт с сервера уже сброшенное.
+      if (evt.materialId != null) {
+        if (activeMaterial?.materialId !== evt.materialId) return
+        const frame = materialFrameRef.current
+        Promise.resolve(frame?.forgetTask ? frame.forgetTask(evt.tid ?? null) : false)
+          .then(() => setReloadToken((n) => n + 1))
+        return
+      }
       const questionIds = evt.questionIds || []
       const checkedKeys = evt.checkedKeys || []
       const nextAnswers = { ...answersRef.current }
