@@ -1728,6 +1728,102 @@ html[data-theme="dark"] .pf-toast {
     color: #fff;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5)
 }
+html[data-theme="dark"] .pf-mi {
+    background: currentColor
+}
+html[data-theme="dark"] .pf-delete-link {
+    border: 0;
+    background: none;
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pf-delete-link:hover {
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .pf-modal__sheet--delete {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .pfd-warn, html[data-theme="dark"] .pfd-list {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card)
+}
+html[data-theme="dark"] .pfd-warn {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+}
+html[data-theme="dark"] .pfd-warn__plate {
+    background: var(--dk-red-tint);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .pfd-warn__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pfd-warn__text {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pfd-list__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pfd-row {
+    border: 2px solid var(--dk-line)
+}
+html[data-theme="dark"] .pfd-row--profile .pfd-row__plate {
+    background: var(--dk-acc-tint);
+    color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .pfd-row--lessons .pfd-row__plate {
+    background: var(--dk-blue-tint);
+    color: var(--dk-blue)
+}
+html[data-theme="dark"] .pfd-row--vocab .pfd-row__plate {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .pfd-row--tokens .pfd-row__plate {
+    background: var(--dk-yellow-tint);
+    color: #f08c00
+}
+html[data-theme="dark"] .pfd-row__txt b {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pfd-row__txt span {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pfd-err {
+    background: var(--dk-page);
+    color: var(--dk-red)
+}
+html[data-theme="dark"] .pfd-del {
+    border: 0;
+    background: var(--dk-red);
+    color: var(--dk-on-bright)
+}
+html[data-theme="dark"] .pfd-keep {
+    border: 2px solid var(--dk-line);
+    background: var(--dk-card);
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pfdone {
+    background: var(--dk-page)
+}
+html[data-theme="dark"] .pfdone__card {
+    border: 1px solid var(--dk-line);
+    background: var(--dk-card);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
+}
+html[data-theme="dark"] .pfdone__plate {
+    background: var(--dk-green-tint);
+    color: var(--dk-green)
+}
+html[data-theme="dark"] .pfdone__title {
+    color: var(--dk-text)
+}
+html[data-theme="dark"] .pfdone__text {
+    color: var(--dk-text-2)
+}
+html[data-theme="dark"] .pfdone__home {
+    border: 0;
+    background: var(--dk-acc);
+    color: var(--dk-on-acc)
+}
 html[data-theme="dark"] .pf-field > span {
     color: var(--dk-muted)
 }
@@ -25732,152 +25828,243 @@ html[data-theme="dark"] .rg-done__avatar {
 }
 /*  mobile/profile.css  */
 @media (max-width: 560px) {
-    html[data-theme="dark"] .learn__main:has(.pf) {
+    html[data-theme="dark"] .learn__main:has(.pfm) {
         background: var(--dk-page)
     }
-    html[data-theme="dark"] .pf-hero__sheet {
-        background: none;
-        box-shadow: none
-    }
-    html[data-theme="dark"] .pf-avatar {
-        background: none;
-        box-shadow: none
-    }
-    html[data-theme="dark"] .pf-avatar__cam, html[data-theme="dark"] .pf-avatar__cam:hover {
+    html[data-theme="dark"] .pfm-nav__btn {
         border: 0;
-        background: var(--dk-acc);
-        color: var(--dk-on-acc);
-        box-shadow: none
-    }
-    html[data-theme="dark"] .pf-name {
+        background: none;
         color: var(--dk-text)
     }
-    html[data-theme="dark"] .pf-phone {
+    html[data-theme="dark"] .pfm-nav__title {
         color: var(--dk-text)
     }
-    html[data-theme="dark"] .pf-rank {
-        border: 0;
+    html[data-theme="dark"] .pfm-card {
+        border: 1px solid var(--dk-line);
         background: var(--dk-card);
-        box-shadow: none
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08)
     }
-    html[data-theme="dark"] .pf-rank__text {
+    html[data-theme="dark"] .pfm-card__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-row {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-row__t b {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-row__t span {
         color: var(--dk-text-2)
     }
-    html[data-theme="dark"] .pf-rank__text b {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pf-progress {
-        border: 0;
-        background: var(--dk-card);
-        box-shadow: none
-    }
-    html[data-theme="dark"] .pf-progress__cap {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pf-progress__bar {
-        background: var(--dk-acc-tint)
-    }
-    html[data-theme="dark"] .pf-stat {
-        border: 0;
-        background: var(--dk-card);
-        box-shadow: none
-    }
-    html[data-theme="dark"] .pf-stat b {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pf-stat span:not(.pf-stat__glyph) {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"] .pf-stat__glyph {
+    html[data-theme="dark"] .pfm-row__chev {
         color: var(--dk-muted)
     }
-    html[data-theme="dark"] .pf-card {
-        box-shadow: none
+    html[data-theme="dark"] .pfm-tone--violet {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
     }
-    html[data-theme="dark"] .pf-skill {
-        border-bottom: 0
+    html[data-theme="dark"] .pfm-tone--blue {
+        background: var(--dk-blue-tint);
+        color: var(--dk-blue)
     }
-    html[data-theme="dark"] .pf-skill__ic {
-        background: var(--dk-acc-tint)
-    }
-    html[data-theme="dark"] .pf-skill__name {
-        color: var(--dk-text)
-    }
-    html[data-theme="dark"] .pf-skill__meta {
-        color: var(--dk-text-2)
-    }
-    html[data-theme="dark"] .pf-skill__seg {
-        background: var(--dk-acc-tint)
-    }
-    html[data-theme="dark"] .pf-skill__seg.is-on, html[data-theme="dark"] .pf-skill__seg.is-muted {
-        background: var(--dk-acc)
-    }
-    html[data-theme="dark"] .pf-row__ic, html[data-theme="dark"] .pf-row__ic--chip {
-        background: var(--dk-acc-tint)
-    }
-    html[data-theme="dark"] .pf-logout, html[data-theme="dark"] .pf-logout:hover {
-        border: 0;
-        background: color-mix(in oklab, var(--dk-red) 10%, transparent);
+    html[data-theme="dark"] .pfm-tone--pink {
+        background: var(--dk-red-tint);
         color: var(--dk-red)
     }
-}
-@media (max-width: 560px) {
-    html[data-theme="dark"] .pf-skill[data-skill='listening'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-listening.svg)
+    html[data-theme="dark"] .pfm-tone--orange {
+        background: var(--dk-orange-tint);
+        color: var(--dk-orange)
     }
-    html[data-theme="dark"] .pf-skill[data-skill='speaking'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-speaking.svg)
+    html[data-theme="dark"] .pfm-tone--green {
+        background: var(--dk-green-tint);
+        color: var(--dk-green)
     }
-    html[data-theme="dark"] .pf-skill[data-skill='reading'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-reading.svg)
+    html[data-theme="dark"] .pfm-tone--yellow {
+        background: var(--dk-yellow-tint);
+        color: #f08c00
     }
-    html[data-theme="dark"] .pf-skill[data-skill='writing'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-writing.svg)
+    html[data-theme="dark"] .pfm-tone--red {
+        background: var(--dk-red-tint);
+        color: var(--dk-red)
     }
-    html[data-theme="dark"] .pf-skill[data-skill='grammar'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-grammar.svg)
+    html[data-theme="dark"] .pfm-switch {
+        background: var(--dk-chip)
     }
-    html[data-theme="dark"] .pf-skill[data-skill='vocab'] .pf-skill__ic {
-        background-image: url(/assets/m/profile/skill-vocab.svg)
+    html[data-theme="dark"] .pfm-switch i {
+        background: var(--dk-card);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.36)
     }
-    html[data-theme="dark"] .pf-row[data-key='edit'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-edit.svg)
+    html[data-theme="dark"] .pfm-switch.is-on {
+        background: var(--dk-acc)
     }
-    html[data-theme="dark"] .pf-row[data-key='lang'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-lang.svg)
+    html[data-theme="dark"] .pfm-btn {
+        border: 0
     }
-    html[data-theme="dark"] .pf-row[data-key='custom'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-custom.svg)
+    html[data-theme="dark"] .pfm-btn--primary {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
     }
-    html[data-theme="dark"] .pf-row[data-key='notif'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-notif.svg)
+    html[data-theme="dark"] .pfm-btn--danger {
+        background: var(--dk-red);
+        color: var(--dk-on-bright)
     }
-    html[data-theme="dark"] .pf-row[data-key='share'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-share.svg)
+    html[data-theme="dark"] .pfm-btn--ghost {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
     }
-    html[data-theme="dark"] .pf-row[data-key='support'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-support.svg)
+    html[data-theme="dark"] .pfm-btn--danger-text {
+        color: var(--dk-red)
     }
-    html[data-theme="dark"] .pf-row[data-key='privacy'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-privacy.svg)
+    html[data-theme="dark"] .pfm-out__del {
+        border: 0;
+        background: none;
+        color: var(--dk-text-2)
     }
-    html[data-theme="dark"] .pf-row[data-key='terms'] .pf-row__ic {
-        background-image: url(/assets/m/profile/row-terms.svg)
+    html[data-theme="dark"] .pfm-bar, html[data-theme="dark"] .pfm .pfd-acts {
+        background: var(--dk-page)
     }
-    html[data-theme="dark"] .pf-row__chev {
-        background-image: url(/assets/m/profile/chev.svg)
+    html[data-theme="dark"] .pfm-hero__cam {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
     }
-    html[data-theme="dark"] .pf-avatar__cam, html[data-theme="dark"] .pf-avatar__cam:hover {
-        background-image: url(/assets/m/profile/cam.svg)
+    html[data-theme="dark"] .pfm-hero__edit {
+        border: 0;
+        background: none;
+        color: var(--dk-acc-on)
     }
-    html[data-theme="dark"] .pf-phone::before {
-        background: url(/assets/m/profile/phone.svg) center / 18px 18px no-repeat
+    html[data-theme="dark"] .pfm-hero__phone {
+        color: #fff
     }
-    html[data-theme="dark"] .pf-logout::before {
-        background: url(/assets/m/profile/door.svg) center / 16px 16px no-repeat
+    html[data-theme="dark"] .pfm-level__ht b {
+        color: var(--dk-text)
     }
-    html[data-theme="dark"] .pf-stat__glyph {
-        background-image: url(/assets/m/profile/school.svg)
+    html[data-theme="dark"] .pfm-level__ht span {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .pfm-level__chip {
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .pfm-coin {
+        background: var(--dk-red)
+    }
+    html[data-theme="dark"] .pfm-coin--unknown {
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .pfm-next {
+        border: 2px solid var(--dk-acc-line);
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-next__cap {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-next__track {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-next__track i {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .pfm-skill {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .pfm-skill.is-on {
+        border-color: var(--dk-acc-line);
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-skill__t b {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-skill__t > span:not(.pfm-skill__segs) {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .pfm-skill__segs i {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-skill.is-on .pfm-skill__segs i {
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-skill.is-on .pfm-skill__segs i.is-on {
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .pfm-edit__disc {
+        border: 0;
+        background: var(--dk-acc-tint);
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .pfm-edit__cam {
+        border: 3px solid var(--dk-line);
+        background: var(--dk-acc);
+        color: var(--dk-on-acc)
+    }
+    html[data-theme="dark"] .pfm-edit__photo {
+        border: 0;
+        background: none;
+        color: var(--dk-acc-text)
+    }
+    html[data-theme="dark"] .pfm-field > span, html[data-theme="dark"] .pfm-field > small {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .pfm-input {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-page);
+        color: var(--dk-text);
+        outline: none
+    }
+    html[data-theme="dark"] .pfm-input:focus {
+        border-color: var(--dk-acc-line)
+    }
+    html[data-theme="dark"] .pfm-input--ro {
+        background: var(--dk-page);
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .pfm-input--ro .pf-mi {
+        color: var(--dk-muted)
+    }
+    html[data-theme="dark"] .pfm-err {
+        color: var(--dk-red)
+    }
+    html[data-theme="dark"] .pfm-lang {
+        border: 2px solid var(--dk-line);
+        background: var(--dk-card);
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-lang.is-on {
+        border-color: var(--dk-acc-line);
+        background: var(--dk-acc-tint)
+    }
+    html[data-theme="dark"] .pfm-radio {
+        border: 2px solid var(--dk-line);
+        color: #fff
+    }
+    html[data-theme="dark"] .pfm-lang.is-on .pfm-radio {
+        border: 0;
+        background: var(--dk-acc)
+    }
+    html[data-theme="dark"] .pfm-sheet__dim {
+        background: rgba(0, 0, 0, 0.4)
+    }
+    html[data-theme="dark"] .pfm-sheet__body {
+        background: var(--dk-card)
+    }
+    html[data-theme="dark"] .pfm-sheet__grab {
+        background: var(--dk-chip)
+    }
+    html[data-theme="dark"] .pfm-sheet__title {
+        color: var(--dk-text)
+    }
+    html[data-theme="dark"] .pfm-sheet__text {
+        color: var(--dk-text-2)
+    }
+    html[data-theme="dark"] .pfdone__card {
+        border: 0;
+        background: none;
+        box-shadow: none
     }
 }
 /*  mobile/lessons.css  */

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { mockGates } from './helpers/login.js'
 
 // Регрессия на блок идентификации профиля у авторизованного пользователя без
 // имени. Раньше:
@@ -11,6 +12,8 @@ const json = (body, status = 200) => ({ status, contentType: 'application/json',
 
 // Кабинет без входа не рисуется (lib/guestLogin.js) — входим учеником без имени.
 test.beforeEach(async ({ page }) => {
+  // Замки 29.10 («Документы платформы», разделы тарифа) иначе встают поверх профиля.
+  await mockGates(page)
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { id: 116, name: '', role: 'STUDENT', phone: '77001234567', languageLevel: 'A1' } })),
@@ -22,22 +25,25 @@ test.describe('профиль / идентификация без имени —
 
   test('имя «Без имени», аватары — силуэт без букв, футер скрыт', async ({ page }) => {
     await page.goto('/?screen=profile')
-    await expect(page.locator('.pf')).toBeVisible({ timeout: 20_000 })
+    // Профиль телефона — экраны дизайна приложения (ProfilePhone): герой «Сервисов» со своей «назад».
+    await expect(page.locator('.pfm-hero')).toBeVisible({ timeout: 20_000 })
 
     // Заголовок имени — локализованный плейсхолдер, не «—».
-    const name = page.locator('.pf-name')
+    const name = page.locator('.pfm-hero .svc-hero__name b')
     await expect(name).toHaveText('Без имени')
 
-    // Большой аватар: силуэт (svg), без буквы «J».
-    const heroAvatar = page.locator('.pf-avatar__initial')
+    // Аватар героя: силуэт (svg), без буквы «J».
+    const heroAvatar = page.locator('.pfm-hero__ava')
     await expect(heroAvatar.locator('svg')).toHaveCount(1)
     await expect(heroAvatar).not.toContainText('J')
 
     // Чёрный футер на мобиле скрыт.
     await expect(page.locator('.footer')).toBeHidden()
 
-    // Профиль на телефоне — плашка «Сервисов» (вместо чипа шапки): тот же силуэт, без буквы «П».
-    await page.locator('.mtab [data-tab="services"]').click()
+    // Нижней панели на профиле нет (внутренний экран, как в приложении); «назад» без истории ведёт в «Сервисы» —
+    // там плашка профиля с тем же силуэтом, без буквы «П».
+    await expect(page.locator('.mtab')).toHaveCount(0)
+    await page.locator('.pfm-nav__btn').first().click()
     const topAvatar = page.locator('.svc-hero__avatar')
     await expect(topAvatar.locator('svg')).toHaveCount(1)
     await expect(topAvatar).not.toContainText('П')

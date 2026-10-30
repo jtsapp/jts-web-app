@@ -86,13 +86,13 @@ describe('нижняя панель телефона', () => {
 
 describe('где видна нижняя панель', () => {
   it('на корнях вкладок и экранах без своей «назад» — есть', () => {
-    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'profile', 'my-teacher']) {
+    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'my-teacher']) {
       expect(showsTabBar(s)).toBe(true)
     }
   })
 
   it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
-    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard']) {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard', 'profile']) {
       expect(showsTabBar(s)).toBe(false)
     }
   })
