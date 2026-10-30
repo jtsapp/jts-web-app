@@ -114,6 +114,7 @@ import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import ServicesPage from './screens/ServicesPage.jsx'
+import AccountDeletedPage from './screens/AccountDeletedPage.jsx'
 import MobileTabBar from './components/MobileTabBar.jsx'
 import { MobileTabContext } from './components/mobileTab.js'
 import { showsTabBar } from './lib/navSections.js'
@@ -1499,10 +1500,20 @@ export default function App() {
   }, [token])
 
   function handleLogout() {
+    leaveAccount('welcome')
+  }
+
+  // Аккаунт удалён (DELETE /user/me, профиль): очистка та же, что при выходе, — иначе следующий на этом устройстве
+  // унаследовал бы хвосты удалённого, — но экран не вход, а «Аккаунт удалён», и с него уже приветствие.
+  function handleAccountDeleted() {
+    leaveAccount('account-deleted', { deleted: true })
+  }
+
+  function leaveAccount(next, { deleted = false } = {}) {
     // Сначала экран входа и адрес без ?screen=: иначе кабинет остаётся открытым
     // (пустые «Уроки», SAT), а обновление страницы снова читает старый раздел.
     skipPushRef.current = true
-    setScreen('welcome')
+    setScreen(next)
     try {
       const url = new URL(window.location.href)
       url.searchParams.delete('screen')
@@ -1513,11 +1524,14 @@ export default function App() {
     } catch {
       /* адрес не обязателен: экран входа уже поставлен */
     }
-    endSessionOnServer()
-    // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
-    // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
-    // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
-    flushSkillStats()
+    // У удалённого аккаунта отмечать выход и досылать ответы некуда: запрос с его токеном получил бы 401.
+    if (!deleted) {
+      endSessionOnServer()
+      // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
+      // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
+      // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
+      flushSkillStats()
+    }
     clearToken()
     clearLocalPractice()
     // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
@@ -1570,7 +1584,7 @@ export default function App() {
     setNeedsLevelTest(false)
     setTestReturn(null)
     setAccountCreatedAt(null)
-    setScreen('welcome')
+    setScreen(next)
   }
 
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
@@ -2423,8 +2437,18 @@ export default function App() {
           // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
           onBack={popNav(navStack, screen) ? () => goBack() : undefined}
           backLabel={backLabel('home')}
+          tempers={tempers}
+          // Тот же выбор, что окно «Жёсткий режим общения» после тура на «Главной»: всем тьюторам с осью нрава.
+          onTemperChoice={(next) => {
+            const patch = tempersForAll(next)
+            setTempers((prev) => ({ ...prev, ...patch }))
+            saveTutorPrefs(token, { tutorTempers: patch })
+          }}
+          onAccountDeleted={handleAccountDeleted}
         />
       )
+    case 'account-deleted':
+      return <AccountDeletedPage onHome={() => setScreen('welcome')} />
     case 'contracts':
       return <ContractsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'notifications':

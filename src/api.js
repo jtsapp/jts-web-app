@@ -2626,6 +2626,27 @@ export async function updateUser(token, { name, email, city, gender, birthDate, 
   return data
 }
 
+// Удаление своего аккаунта (DELETE /user/me, Bearer) — требование App Store. Бэкенд удаляет мягко, как админка:
+// логины освобождаются, Sign in with Apple отзывается. Ошибка несёт status, экран различает по нему: 403 — аккаунт
+// сотрудника (его удаляет только администратор), 404 — стенд со старым бэкендом без ручки, 0 — нет связи.
+export async function deleteMyAccount(token) {
+  let res
+  try {
+    res = await fetch(`${BASE}/user/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  } catch {
+    const err = new Error('Нет связи с сервером.')
+    err.status = 0
+    throw err
+  }
+  if (!res.ok) {
+    if (res.status === 401) reportUnauthorized(token)
+    const err = new Error(`Не удалось удалить аккаунт (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+  return res.json().catch(() => ({}))
+}
+
 // Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
 export async function saveLanguageLevel(token, level) {
   const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`

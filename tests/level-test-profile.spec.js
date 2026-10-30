@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
+import { mockGates } from './helpers/login.js'
 
 // Тест на уровень из профиля и после входа.
 //
@@ -28,6 +29,8 @@ const УЧЕНИК = { id: 901, name: 'Ученик', role: 'STUDENT', phone: '7
  */
 async function бэкенд(page, { level }) {
   await page.route((url) => url.hostname !== 'localhost', (r) => r.fulfill(json({})))
+  // Поверх общей заглушки: на пустой ответ замки 29.10 («Документы платформы», разделы тарифа) встают поверх экрана.
+  await mockGates(page)
   await page.route('**/api/profile?**', (r) => r.fulfill(json({ configured: true, profile: null })))
   await page.route('**/api/profile/merge', (r) => r.fulfill(json({ ok: true })))
   await page.route('**/user/me', (r) => r.fulfill(json({ ...УЧЕНИК, languageLevel: level })))
@@ -62,7 +65,10 @@ async function войти(page) {
   await page.locator('.rg-btn').first().click()
 }
 
-const строкаТеста = (page) => page.locator('.pf-row', { hasText: 'Тест на уровень' })
+// На телефоне профиль — экраны дизайна приложения (ProfilePhone): строка теста в карточке уровня (.pfm-level).
+const строкаТеста = (page) => page.locator('.pf-row, .pfm-level .pfm-row', { hasText: 'Тест на уровень' })
+// Где видно «Не пройден»: на компьютере — в самой строке, на телефоне — в шапке карточки уровня над ней.
+const статусТеста = (page) => page.locator('.pf-row, .pfm-level__head', { hasText: /Тест на уровень|Уровень английского/ })
 
 const ENVELOPE = JSON.parse(fs.readFileSync(path.resolve('src/placement/__fixtures__/envelope-b1.json'), 'utf8'))
 
@@ -90,9 +96,9 @@ test('профиль без уровня: «Не пройден», тест от
   await вошедший(page, { level: null })
 
   await page.goto('/?screen=profile')
-  await expect(строкаТеста(page)).toContainText('Не пройден', { timeout: 20_000 })
+  await expect(статусТеста(page)).toContainText('Не пройден', { timeout: 20_000 })
   // Чип с CEFR рядом с рангом показывал бы стартовое «A1» и спорил со строкой.
-  await expect(page.locator('.pf-rank__cefr')).toHaveCount(0)
+  await expect(page.locator('.pf-rank__cefr, .pfm-level__chip')).toHaveCount(0)
 
   await строкаТеста(page).click()
   await expect(page.locator('.pl-page__frame')).toBeVisible()
