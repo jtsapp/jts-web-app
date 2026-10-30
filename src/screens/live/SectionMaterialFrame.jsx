@@ -15,6 +15,10 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // SectionMaterialFrame.hiddenBlocks.test.jsx).
 export const LOAD_SETTLE_MS = 350
 
+// Сколько ждать ответа моста на forget-task. Мост отвечает сразу; страница со старым мостом
+// (до 30.10.2026) не ответит вовсе — тогда рамку всё равно перечитываем, не зависая.
+export const FORGET_ACK_MS = 1500
+
 // Действия, которые мост пересылает только доверенными (isTrusted). Прокрутку
 // isTrusted от программной не отличает — её роняют и переходы, проигранные
 // мостом, — поэтому действием преподавателя она не считается.
@@ -106,6 +110,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // см. использование в setHiddenKeys ниже про то, зачем это разделение.
   const settledRef = useRef(false)
   const pendingRef = useRef([])
+  // Ждущие ответа моста на forget-task: ответ гасит все сразу — рамка одна, поток у неё один.
+  const forgetWaitersRef = useRef([])
   // Последний setHiddenKeys(keys), пришедший до загрузки — не очередь, а
   // «снимок» (подробности у самого метода ниже). null отдельно от 'нет
   // ключей': setHiddenKeys всегда зовут с массивом (LiveLessonPage передаёт
@@ -233,6 +239,22 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   }, [stage])
 
   useImperativeHandle(ref, () => ({
+    // Учитель сбросил ответы задания (tid) или всего материала (null): сервер их уже забыл, а мост
+    // держит поток в памяти и сохраняет его целиком поверх. Просим мост забыть и ждём ответа
+    // (true) или таймаута (false) — после этого рамку можно перечитать. Не загрузилась — в ней
+    // нечего забывать: новая страница прочтёт с сервера уже сброшенное.
+    forgetTask(tid) {
+      if (!loadedRef.current) return Promise.resolve(false)
+      return new Promise((resolve) => {
+        const waiter = { resolve, timer: null }
+        waiter.timer = setTimeout(() => {
+          forgetWaitersRef.current = forgetWaitersRef.current.filter((w) => w !== waiter)
+          resolve(false)
+        }, FORGET_ACK_MS)
+        forgetWaitersRef.current.push(waiter)
+        post({ type: 'forget-task', tid: tid ?? null })
+      })
+    },
     replay(events) {
       if (!events?.length) return
       if (loadedRef.current && (lessonNoRef.current == null || settledRef.current)) {
@@ -472,6 +494,12 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         return
       }
       if (!data || data.source !== BRIDGE) return
+      if (data.type === 'task-forgotten') {
+        const waiters = forgetWaitersRef.current
+        forgetWaitersRef.current = []
+        waiters.forEach((w) => { clearTimeout(w.timer); w.resolve(true) })
+        return
+      }
       if (data.type === 'replay') {
         handleReplayState(data)
         const deferred = deferredStageRef.current

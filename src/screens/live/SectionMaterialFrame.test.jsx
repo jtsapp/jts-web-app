@@ -7,7 +7,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { StrictMode, createRef, useEffect, useLayoutEffect } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
-import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
+import SectionMaterialFrame, { FORGET_ACK_MS, LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
 import { GOTO_LESSON_MS } from './lessonStages.js'
 
 const MATERIAL = { id: 1, materialId: 11, title: 'A0 · Урок 05', materialType: 'INTERACTIVE_HTML', fileUrl: 'https://files/L05.html' }
@@ -987,5 +987,72 @@ describe('SectionMaterialFrame — права рамки (allow)', () => {
     const { container } = render(frame({ material: video }))
 
     expect(allowOf(container.querySelector('iframe'))).toEqual(expect.arrayContaining(['autoplay', 'fullscreen']))
+  })
+})
+
+// «Сбросить упражнение» у учителя (30.10.2026): сервер ответы задания забыл, но мост рамки держит весь
+// поток в памяти и сохраняет его целиком поверх — без команды первый же ответ ученика вернул бы
+// сброшенное. forgetTask просит мост забыть задание и ждёт его ответа, чтобы рамку можно было перечитать.
+describe('SectionMaterialFrame — забыть задание по сбросу учителя', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('мосту уходит forget-task, обещание исполняется ответом task-forgotten', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    await settle(iframe)
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    let done
+    act(() => { done = ref.current.forgetTask('t5') })
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'forget-task', tid: 't5' }, '*')
+
+    await message({ source: 'jts-bridge', type: 'task-forgotten', tid: 't5' })
+    await expect(done).resolves.toBe(true)
+  })
+
+  it('без задания — забыть все ответы материала (tid null)', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    await settle(iframe)
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    act(() => { ref.current.forgetTask(null) })
+
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'forget-task', tid: null }, '*')
+  })
+
+  it('мост старый и не отвечает — обещание всё равно исполняется по таймауту', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    await settle(iframe)
+
+    let done
+    act(() => { done = ref.current.forgetTask('t5') })
+    await act(async () => { vi.advanceTimersByTime(FORGET_ACK_MS) })
+
+    await expect(done).resolves.toBe(false)
+  })
+
+  it('ответ чужого окна не принимается за ответ моста', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame()
+    await settle(iframe)
+
+    let resolved = false
+    act(() => { ref.current.forgetTask('t5').then(() => { resolved = true }) })
+    await message({ source: 'jts-bridge', type: 'task-forgotten', tid: 't5' }, window)
+
+    expect(resolved).toBe(false)
+  })
+
+  it('рамка ещё не загрузилась — забывать в ней нечего: сразу false, мосту ничего не уходит', async () => {
+    const { ref, iframe } = renderFrame()
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    let done
+    act(() => { done = ref.current.forgetTask('t5') })
+
+    await expect(done).resolves.toBe(false)
+    expect(post).not.toHaveBeenCalled()
   })
 })
