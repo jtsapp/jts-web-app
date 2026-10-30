@@ -39,6 +39,8 @@
 .footer .footer-cards { justify-content: center; margin-top: 6px; }
 .footer .pay-logos { display: flex; gap: 8px; }
 .footer .pay-logo { display: block; }
+.footer .pay-logo--file { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 54px; height: 34px; border: 1px solid #d9dce6; border-radius: 5px; background: #fff; }
+.footer .pay-logo--file img { display: block; width: 45px; height: 32px; }
 .footer .footer-copy { font-size: 12px; font-weight: 400; line-height: 1.5; color: #fff; }
 @media (min-width: 561px) and (max-width: 1100px) {
   .footer, .screen > .footer { grid-template-columns: 1fr auto; padding: 24px 32px; gap: 16px 24px; }
