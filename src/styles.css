@@ -6884,7 +6884,18 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18); padding: 12px 14px;
   min-width: 150px; max-width: 260px;
 }
-.bk-pop__word { font-size: 15px; font-weight: 800; color: var(--ink); }
+.bk-pop__word {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 800; color: var(--ink); overflow-wrap: break-word;
+}
+/* Произнести слово или выделенную фразу — как .lw-tap-pop__say в уроке. */
+.bk-pop__say {
+  flex: none; width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+  background: #f4f1fb; cursor: pointer; font-size: 14px; line-height: 1;
+}
+/* Фраза длиннее слова: карточка шире, подпись не жирнее перевода. */
+.bk-pop--phrase { max-width: 340px; }
+.bk-pop--phrase .bk-pop__word { font-weight: 700; }
 .bk-pop__tr { font-size: 14px; color: #4e4b5b; margin: 2px 0 0; }
 .bk-pop__alts { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .bk-pop__save {

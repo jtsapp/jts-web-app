@@ -126,6 +126,20 @@ export function isOversizedPhrase(raw) {
   return compact.includes(' ') && compact.length > PHRASE_MAX_CHARS
 }
 
+/** Выделенная фраза для читалки книг: в перевод, на карточку и в озвучку.
+ *  Не `cleanWord`: тот вырезает цифры, и «born in 1879» ушло бы как «born
+ *  in», а запятые и точки внутри фразы переводчику дают смысл. Срезаем
+ *  только кавычки (выделение рвёт пару и оставляет одну) и пунктуацию по
+ *  краям — её захватывает протяжка мыши. */
+export function cleanPhrase(raw) {
+  return String(raw || '')
+    .normalize('NFC')
+    .replace(/[‘’ʼ´`]/g, "'")
+    .replace(/["“”„«»]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')
+}
+
 /** Слово или предложение, с которым открываем тултип. Иначе выделение
  *  мусорное (абзац) — старый перевод надо закрыть, а не оставлять висеть. */
 export function isTapSelection(raw) {
