@@ -1489,6 +1489,20 @@
     font-weight: 700;
     line-height: 16px;
   }
+  /* Подсказка о лимите выделения — не перевод: чип языка ей не нужен, и
+     отступа под слово над ней нет. */
+  .bk-pop__tr.bk-pop__limit {
+    margin-top: 0;
+  }
+  .bk-pop__tr.bk-pop__limit::before {
+    content: none;
+  }
+  /* Выделенная фраза до 100 знаков: кеглем слова (20/28) она заняла бы
+     полшторки. */
+  .bk-pop--phrase .bk-pop__word {
+    font-size: 16px;
+    line-height: 24px;
+  }
   .bk-pop__alts {
     margin-top: 6px;
     color: #8e8e99;
