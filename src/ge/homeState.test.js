@@ -6,15 +6,16 @@ describe('homeTopState', () => {
   it('нет профиля — прежняя «Главная»', () => {
     expect(homeTopState({ geProfile: null, levelUnknown: false, level: 'A2' })).toBe('legacy')
   })
-  it('до анкеты роадмап закрыт до теста — и без уровня, и с уровнем; C1+ — прежняя', () => {
+  it('до анкеты роадмап закрыт до теста — и без уровня, и с уровнем; C1+ — финиш курса', () => {
     expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1' })).toBe('locked')
     expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2' })).toBe('locked')
-    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1' })).toBe('legacy')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1' })).toBe('finish')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C2' })).toBe('finish')
   })
   it('учившийся до теста v16: без блюра — карточка «тест не пройден»', () => {
     expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'A2', existing: true })).toBe('notTested')
     expect(homeTopState({ geProfile: p(), levelUnknown: true, level: 'A1', existing: true })).toBe('notTested')
-    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1', existing: true })).toBe('legacy')
+    expect(homeTopState({ geProfile: p(), levelUnknown: false, level: 'C1', existing: true })).toBe('finish')
     // анкета заполнена — его блок цели не трогаем
     expect(homeTopState({ geProfile: p({ onboarded: true, route: 'group' }), levelUnknown: false, level: 'A2', existing: true })).toBe('goal')
   })
