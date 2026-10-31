@@ -23,7 +23,6 @@ export default function DayPanel({ dayDate, items, cards, onOpenLesson, disputes
               dispute={disputes && {
                 deadline: disputes.disputable.get(String(o.lessonId)),
                 status: disputes.disputed.get(String(o.lessonId)),
-                onRaise: disputes.raise,
               }}
             />
           ))}

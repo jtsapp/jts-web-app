@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import DayPanel from './DayPanel.jsx'
 
@@ -17,41 +17,25 @@ function renderPanel(disputes) {
 
 const disputes = (over = {}) => ({ disputable: new Map(), disputed: new Map(), raise: vi.fn(() => Promise.resolve()), ...over })
 
-describe('Оспорить пропуск (ТЗ «Кабинеты», раздел 11)', () => {
-  it('кнопки нет, если отметки «не пришёл» нет или срок вышел (сервер не прислал урок)', () => {
-    const { queryByRole } = renderPanel(disputes())
+describe('Отметка «не пришёл»: ученик не оспаривает сам, а пишет менеджеру (ТЗ «Отметка уроков», версия 2)', () => {
+  it('ничего нет, если отметки «не пришёл» нет или срок вышел', () => {
+    const { queryByText, queryByRole } = renderPanel(disputes())
+    expect(queryByText(/Напишите менеджеру/)).toBeNull()
     expect(queryByRole('button', { name: 'Оспорить пропуск' })).toBeNull()
   })
 
-  it('причина обязательна; отправка уходит с причиной', async () => {
+  it('в течение 24 часов — подсказка «напишите менеджеру», кнопки «Оспорить» нет', () => {
     const d = disputes({ disputable: new Map([['7', '2026-10-27T11:00:00']]) })
-    const { getByRole, getByLabelText } = renderPanel(d)
+    const { getByText, queryByRole } = renderPanel(d)
 
-    fireEvent.click(getByRole('button', { name: 'Оспорить пропуск' }))
-    const send = getByRole('button', { name: 'Отправить координатору' })
-    fireEvent.change(getByLabelText(/Почему отметка/), { target: { value: 'был' } })
-    expect(send.disabled).toBe(true)
-    fireEvent.change(getByLabelText(/Почему отметка/), { target: { value: ' Я был на уроке, связь пропадала ' } })
-    fireEvent.click(send)
-
-    await waitFor(() => expect(d.raise).toHaveBeenCalledWith(7, 'Я был на уроке, связь пропадала'))
-  })
-
-  it('отказ сервера показывается его текстом', async () => {
-    const err = Object.assign(new Error('x'), { serverMessage: 'Срок оспаривания — 24 часа после отметки — истёк' })
-    const d = disputes({ disputable: new Map([['7', '2026-10-27T11:00:00']]), raise: vi.fn(() => Promise.reject(err)) })
-    const { getByRole, getByLabelText, findByRole } = renderPanel(d)
-
-    fireEvent.click(getByRole('button', { name: 'Оспорить пропуск' }))
-    fireEvent.change(getByLabelText(/Почему отметка/), { target: { value: 'Я был на уроке' } })
-    fireEvent.click(getByRole('button', { name: 'Отправить координатору' }))
-
-    expect((await findByRole('alert')).textContent).toContain('истёк')
-  })
-
-  it('после подачи — статус заявки вместо кнопки', () => {
-    const { getByText, queryByRole } = renderPanel(disputes({ disputed: new Map([['7', 'OVERTURNED']]) }))
-    expect(getByText('Отметка исправлена: вы были на уроке')).toBeTruthy()
+    expect(getByText(/Напишите менеджеру в течение 24 часов/)).toBeTruthy()
     expect(queryByRole('button', { name: 'Оспорить пропуск' })).toBeNull()
+    expect(d.raise).not.toHaveBeenCalled()
+  })
+
+  it('заявка менеджера — статус вместо подсказки', () => {
+    const { getByText, queryByText } = renderPanel(disputes({ disputed: new Map([['7', 'OVERTURNED']]) }))
+    expect(getByText('Отметка исправлена: вы были на уроке')).toBeTruthy()
+    expect(queryByText(/Напишите менеджеру/)).toBeNull()
   })
 })

@@ -41,9 +41,9 @@ export default function LessonRow({ occ, card, onOpenLesson, dispute }) {
             <span className={`sch-badge sch-badge--${stateKey}`}>{t(`schedule.status.${stateKey}`)}</span>
           )}
         </div>
-        {/* Учитель отметил «не пришёл»: 24 часа можно оспорить, потом — статус заявки (ТЗ «Кабинеты», раздел 11). */}
+        {/* Отметка «не пришёл»: 24 часа — подсказка «напишите менеджеру», потом — статус заявки менеджера (ТЗ «Отметка уроков», версия 2). */}
         {dispute && (dispute.deadline || dispute.status) && (
-          <NoShowDispute lessonId={occ.lessonId} deadline={dispute.deadline} status={dispute.status} onRaise={dispute.onRaise} />
+          <NoShowDispute deadline={dispute.deadline} status={dispute.status} />
         )}
       </div>
       {openable && (
