@@ -1,4 +1,4 @@
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentSectionHidden } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentMenuItemHidden } from '../config.js'
 import { isSectionOpen } from './studentSectionRules.js'
 
 // Меню ученика — одно на сайдбар (компьютер и планшет), нижнюю панель телефона и экран «Сервисы». Правила
@@ -83,7 +83,7 @@ export function menuItems({
       ? [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
       : [...head, ...NAV]
   return all.filter((item) => {
-    if (!teacher && isStudentSectionHidden(item.key)) return false
+    if (!teacher && isStudentMenuItemHidden(item.key)) return false
     if (!rewards && isRewardsScreen(item.key)) return false
     if (!teacher && !isSectionOpen(sections, item.key)) return false
     if (item.key === 'ielts') return exams.ielts

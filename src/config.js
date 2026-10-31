@@ -65,3 +65,9 @@ const STUDENT_HIDDEN_ON_PROD = new Set([
 export function isStudentSectionHidden(screen, hostname = typeof window === 'undefined' ? '' : window.location.hostname) {
   return isProdHost(hostname) && STUDENT_HIDDEN_ON_PROD.has(screen)
 }
+
+// Эти разделы на проде убраны только из меню ученика: экраны открыты, в них заходят карточками «Практики».
+const STUDENT_MENU_HIDDEN_ON_PROD = new Set(['grammar-games', 'speed-reading'])
+export function isStudentMenuItemHidden(key, hostname = typeof window === 'undefined' ? '' : window.location.hostname) {
+  return isStudentSectionHidden(key, hostname) || (isProdHost(hostname) && STUDENT_MENU_HIDDEN_ON_PROD.has(key))
+}
