@@ -50,6 +50,8 @@ export default function LessonFeedbackPrompt({ token, enabled = true }) {
     const previous = document.activeElement
     const node = dialog.current
     node?.showModal()
+    // showModal ставит фокус на «×», и кольцо фокуса горело на ней с самого открытия — фокус держит само окно
+    node?.focus()
     return () => { node?.close(); previous?.focus?.() }
   }, [pending, enabled])
 
@@ -70,7 +72,7 @@ export default function LessonFeedbackPrompt({ token, enabled = true }) {
     finally { sending.current = false; setBusy(false) }
   }
   if (!pending || !enabled) return null
-  return <dialog ref={dialog} className="lfp-dialog" aria-labelledby="lfp-title" onCancel={event => { event.preventDefault(); close() }}>
+  return <dialog ref={dialog} tabIndex={-1} className="lfp-dialog" aria-labelledby="lfp-title" onCancel={event => { event.preventDefault(); close() }}>
     <form onSubmit={send}>
       <div className="lfp-heading"><h2 id="lfp-title">{t.title}</h2><button type="button" className="lfp-button lfp-close" aria-label={t.close} onClick={close} disabled={busy}>×</button></div>
       <p>{t.teacher}: <strong>{pending.teacherName || '—'}</strong></p>
