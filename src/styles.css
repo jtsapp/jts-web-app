@@ -7612,6 +7612,7 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 .sch-row__join:hover { background: #7d34f5; }
 .sch-row__join:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* Оспорить «не пришёл»: тихая кнопка-ссылка под строкой, форма раскрывается на месте. */
+.sch-row__dispute-note { margin: 6px 0 0; font-size: 13px; color: var(--muted, #6b6880); }
 .sch-row__dispute { margin-top: 6px; background: none; border: 0; padding: 4px 0; color: var(--purple); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .sch-row__dispute:focus-visible, .sch-dispute button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .sch-dispute { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
