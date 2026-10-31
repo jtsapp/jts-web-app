@@ -28,9 +28,26 @@ import { usePronunciationData } from './pronunciation/usePronunciationData.js'
 
 const FALLBACK_FONT = "'Manrope', sans-serif"
 
-export default function PronunciationPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel }) {
+// Что открыла Луна (initialTarget): { topic: 'A1.3' } — объяснение темы, { level: 'A1' } — уровень на карте
+// (тема важнее, если пришло оба). Сверяем с курсом, который собрал сам движок из бандла (P.byId, P.topicsList):
+// темы нет или у уровня ни одной темы (методист перезалил, ссылка устарела) — обычная карта, без ошибки.
+function targetRoute(target, P) {
+  if (!target) return null
+  const norm = (v) => (typeof v === 'string' ? v.trim().toUpperCase() : '')
+  const topic = norm(target.topic)
+  if (topic && P.byId(topic)) return `#/learn/${topic}`
+  const level = norm(target.level)
+  if (level && P.topicsList().some((T) => T.level === level)) return `#/level/${level}`
+  return null
+}
+
+export default function PronunciationPage({ userName, userLevel, token, onNav, onProfile, onBack, backLabel, initialTarget = null }) {
   const { t, lang } = useI18n()
   const hostRef = useRef(null)
+  // Цель Луны — на один заход (App пересоздаёт экран на каждый её переход). Пересоздание движка внутри захода
+  // (StrictMode, вход, новый релиз курса) возвращает к цели, только пока ученик на ней и стоит, — ушёл дальше, и
+  // цель забыта.
+  const targetRef = useRef(initialTarget)
   const { status, bundle, retry } = usePronunciationData(token)
   const owner = ownerOf(token)
   const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'speaking' }))
@@ -93,7 +110,13 @@ export default function PronunciationPage({ userName, userLevel, token, onNav, o
       if (h === '#/' || h.startsWith('#/level/')) api.P.route()
     }
     window.addEventListener(PRONUNCIATION_PROGRESS_EVENT, onProgress)
+    // Данные уже есть (эффект ждёт бандл), движок нарисовал карту — переходим, как по ссылке карты: «назад» из
+    // объяснения ведёт на карту, как обычно.
+    const want = targetRoute(targetRef.current, api.P)
+    if (want) api.go(want)
+    else targetRef.current = null
     return () => {
+      if (want && api.snapshot().hash !== want) targetRef.current = null
       window.removeEventListener(PRONUNCIATION_PROGRESS_EVENT, onProgress)
       if (window.__pron === api) delete window.__pron
       api.destroy()

@@ -1,4 +1,5 @@
 'use client'
+import LessonFeedbackPrompt from './components/LessonFeedbackPrompt.jsx'
 import LegalDocumentsGate from './components/LegalDocumentsGate.jsx'
 import { isLegalDocumentsScreen } from './lib/legalDocuments.js'
 
@@ -113,6 +114,7 @@ import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import ServicesPage from './screens/ServicesPage.jsx'
+import AccountDeletedPage from './screens/AccountDeletedPage.jsx'
 import MobileTabBar from './components/MobileTabBar.jsx'
 import { MobileTabContext } from './components/mobileTab.js'
 import { showsTabBar } from './lib/navSections.js'
@@ -130,9 +132,10 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { syncTourMarks, tourMarksReady, useTourMarks } from './lib/tourMarks.js'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
-import { isSectionOpen, useStudentSections } from './lib/studentSections.js'
-import SectionClosedPage from './screens/SectionClosedPage.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getSatMeCached, getGeProfile, saveGeProfile } from './api.js'
+import { useStudentSections, refreshStudentSections } from './lib/studentSections.js'
+import StudentSectionGate from './components/StudentSectionGate.jsx'
+import { useStudentExams } from './lib/useStudentExams.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier, getIeltsMe, getGeProfile, saveGeProfile } from './api.js'
 import { saveToken, clearToken, loadToken, restoreSession, setSessionHooks, reportUnauthorized, endSessionOnServer, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor, testExitScreen } from './lib/homeScreen.js'
@@ -627,39 +630,9 @@ export default function App() {
   const [token, setToken] = useState(null)
   // Аккаунт IELTS (дизайн «IELTS new»): теста уровня General English на входе у такого ученика нет. «Повторение»
   // (тропа kingdom) с 13.10.2026 ему доступно — пункт есть в его меню (Sidebar.jsx, IELTS_SECTIONS).
-  const [ieltsAccount, setIeltsAccount] = useState(false)
-  const [examTabs, setExamTabs] = useState({ ielts: false, sat: false, ready: false })
-  useEffect(() => {
-    if (!token) {
-      setIeltsAccount(false)
-      setExamTabs({ ielts: false, sat: false, ready: false })
-      return
-    }
-    setExamTabs({ ielts: false, sat: false, ready: false })
-    let alive = true
-    const next = { ielts: false, sat: false }
-    let pending = 2
-    const done = () => {
-      pending -= 1
-      if (alive && pending === 0) setExamTabs({ ...next, ready: true })
-    }
-    getIeltsMe(token).then((m) => {
-      if (!alive) return
-      setIeltsAccount(!!m.ieltsAccount)
-      next.ielts = !!(m.purchased || m.ieltsAccount)
-    }).finally(done)
-    getSatMeCached(token).then((m) => {
-      if (alive) next.sat = !!m?.purchased
-    }).finally(done)
-    return () => {
-      alive = false
-    }
-  }, [token])
-  useEffect(() => {
-    if (!token || !examTabs.ready) return
-    const exam = screen === 'ielts' || screen.startsWith('ielts-') ? 'ielts' : screen === 'sat' || screen.startsWith('sat-') ? 'sat' : null
-    if (exam && !examTabs[exam]) setScreen('home')
-  }, [token, examTabs, screen, setScreen])
+  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null, screen)
+  const examTabs = useStudentExams(token && !isTeacher(token) ? token : null, sectionAccess)
+  const ieltsAccount = examTabs.ieltsAccount
   useEffect(() => {
     // «Повторение» (kingdom*) у ученика IELTS / SAT больше не уводит в IELTS — пункт вернулся в меню (SAT-SYNC-PLAN E3).
     // Без уровня CEFR вход ведёт на письменный тест уровня General English ('test-intro'). Ученику IELTS он не нужен:
@@ -668,9 +641,6 @@ export default function App() {
     const to = ieltsAccountRedirect(ieltsAccount, screen)
     if (to) setScreen(to)
   }, [ieltsAccount, screen, setScreen])
-  // Разделы кабинета ученика по тарифу и формату (ТЗ кабинетов, 14е): закрытый раздел по прямой ссылке показывает
-  // «не входит в ваш тариф». Только ученику: у преподавателя и аккаунта класса меню своё.
-  const sectionAccess = useStudentSections(token && !isTeacher(token) ? token : null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Нрав (ось 18+) у каждого тьютора свой (29.10.2026): кнопка 18+ у Декстера не
   // трогает Спарка. temper — нрав выбранного тьютора: 'calm' | 'harsh' | null
@@ -895,6 +865,11 @@ export default function App() {
   const [listenTarget, setListenTarget] = useState(null) // { set? } — уровень или направление Just to Listen
   const [grammarGamesTarget, setGrammarGamesTarget] = useState(null) // { topic? } — тема «Грамматики · игр» по ссылке
   const [speedReadingTarget, setSpeedReadingTarget] = useState(null) // { text? } — текст «Скорочтения» по ссылке
+  // Вещь внутри движка раздела по просьбе Луне (lib/assistant/items/refs.js): урок
+  // предлогов { lesson }, тема произношения { topic }, мультфильм { videoId }.
+  const [prepositionsTarget, setPrepositionsTarget] = useState(null)
+  const [pronunciationTarget, setPronunciationTarget] = useState(null)
+  const [cartoonsTarget, setCartoonsTarget] = useState(null)
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   // Игра «Аркады» из диплинка или карточки Практики (+ вкладка, куда
   // вернуться): { game: 'speak'|'runner'|null, skill }.
@@ -1525,10 +1500,20 @@ export default function App() {
   }, [token])
 
   function handleLogout() {
+    leaveAccount('welcome')
+  }
+
+  // Аккаунт удалён (DELETE /user/me, профиль): очистка та же, что при выходе, — иначе следующий на этом устройстве
+  // унаследовал бы хвосты удалённого, — но экран не вход, а «Аккаунт удалён», и с него уже приветствие.
+  function handleAccountDeleted() {
+    leaveAccount('account-deleted', { deleted: true })
+  }
+
+  function leaveAccount(next, { deleted = false } = {}) {
     // Сначала экран входа и адрес без ?screen=: иначе кабинет остаётся открытым
     // (пустые «Уроки», SAT), а обновление страницы снова читает старый раздел.
     skipPushRef.current = true
-    setScreen('welcome')
+    setScreen(next)
     try {
       const url = new URL(window.location.href)
       url.searchParams.delete('screen')
@@ -1539,11 +1524,14 @@ export default function App() {
     } catch {
       /* адрес не обязателен: экран входа уже поставлен */
     }
-    endSessionOnServer()
-    // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
-    // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
-    // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
-    flushSkillStats()
+    // У удалённого аккаунта отмечать выход и досылать ответы некуда: запрос с его токеном получил бы 401.
+    if (!deleted) {
+      endSessionOnServer()
+      // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
+      // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
+      // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
+      flushSkillStats()
+    }
     clearToken()
     clearLocalPractice()
     // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
@@ -1596,7 +1584,7 @@ export default function App() {
     setNeedsLevelTest(false)
     setTestReturn(null)
     setAccountCreatedAt(null)
-    setScreen('welcome')
+    setScreen(next)
   }
 
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
@@ -1814,11 +1802,11 @@ export default function App() {
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     else if (key === 'speakspin') setScreen('speakspin')
     else if (key === 'numbers') setScreen('numbers')
-    else if (key === 'prepositions') setScreen('prepositions')
-    else if (key === 'pronunciation') setScreen('pronunciation')
+    else if (key === 'prepositions') { setPrepositionsTarget(payload || null); setScreen('prepositions') }
+    else if (key === 'pronunciation') { setPronunciationTarget(payload || null); setScreen('pronunciation') }
     else if (key === 'grammar-games') { setGrammarGamesTarget(payload || null); setScreen('grammar-games') }
     else if (key === 'speed-reading') { setSpeedReadingTarget(payload || null); setScreen('speed-reading') }
-    else if (key === 'cartoons') setScreen('cartoons')
+    else if (key === 'cartoons') { setCartoonsTarget(payload || null); setScreen('cartoons') }
     else if (key === 'wordhunt') setScreen('wordhunt')
     // Уровень приносит карточка Практики — она же и списала квоту.
     // replace — Практика лишь переслала сюда цель из домашки: в стек её не кладём.
@@ -1980,6 +1968,8 @@ export default function App() {
   // Практики, где лежит карточка раздела. canReturn — есть ли откуда пришли:
   // экран, открытый сразу на сценарии или игре, по нему решает, выйти ли
   // назад целиком (пришли с карточки) или в список раздела (диплинк).
+  // `skill` — вкладка Практики, куда «назад» уводит без истории (диплинк, переход Луны). С редизайна 29.10.2026
+  // мини-игра Listening, «Слова в картинках», «Числа», «Скорочтение», Word Hunt и «Аркада» — во вкладке «Грамматика».
   function sectionBack(skill) {
     return {
       onBack: () => goBack(() => handleNav('practice', skill ? { skill } : undefined)),
@@ -2072,10 +2062,10 @@ export default function App() {
     : ((screen === 'booth' || (!rewardsEnabled && isRewardsScreen(screen)) || (!isTeacher(token) && isStudentSectionHidden(screen)) || (isTeacher(token) && isStudentOnlyScreen(screen)))
         ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
         : screen)
-  const sectionClosed = !!token && !boothAccount && !isTeacher(token) && !isSectionOpen(sectionAccess, view)
-  const page = sectionClosed
-    ? <SectionClosedPage active={view} userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
-    : renderScreen(view)
+  const page = <StudentSectionGate required={!!token && !boothAccount && !isTeacher(token)}
+    access={sectionAccess} exams={examTabs} render={() => renderScreen(view)}
+    onRetry={() => refreshStudentSections(token)} active={view} userLevel={userLevel} userName={name}
+    token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
   return (
     <LegalDocumentsGate key={userIdFromToken(token) || 'guest'} token={token}
       required={!!token && !boothAccount && !isTeacher(token) && isLegalDocumentsScreen(view)}
@@ -2114,6 +2104,7 @@ export default function App() {
           экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
       {token && !isTeacher(token) && <PlatformPresence token={token} />}
       {/* Окна подбора учителя при входе (ТЗ 08 §2.12) — вне обёртки с key по той же причине. */}
+      {token && !boothAccount && !isTeacher(token) && <LessonFeedbackPrompt key={userIdFromToken(token)} token={token} enabled={isLegalDocumentsScreen(view) && !['live-lesson', 'lesson-workspace'].includes(view)} />}
       {token && !boothAccount && !isTeacher(token) && !isStudentSectionHidden('my-teacher') && <MatchingPopups token={token} screen={view} onNav={handleNav} />}
       {token && !boothAccount && !isTeacher(token) && (
         <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} greetOnOpen />
@@ -2441,12 +2432,23 @@ export default function App() {
           // определению, а прогон без аккаунта ляжет на устройство.
           levelUnknown={needsLevelTest}
           ieltsAccount={ieltsAccount}
+          ieltsTab={examTabs.ielts}
           onLevelTest={token ? () => openPlacement('profile') : undefined}
           // Без истории (диплинк, F5) идти некуда — кнопки нет, остаётся меню.
           onBack={popNav(navStack, screen) ? () => goBack() : undefined}
           backLabel={backLabel('home')}
+          tempers={tempers}
+          // Тот же выбор, что окно «Жёсткий режим общения» после тура на «Главной»: всем тьюторам с осью нрава.
+          onTemperChoice={(next) => {
+            const patch = tempersForAll(next)
+            setTempers((prev) => ({ ...prev, ...patch }))
+            saveTutorPrefs(token, { tutorTempers: patch })
+          }}
+          onAccountDeleted={handleAccountDeleted}
         />
       )
+    case 'account-deleted':
+      return <AccountDeletedPage onHome={() => setScreen('welcome')} />
     case 'contracts':
       return <ContractsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'notifications':
@@ -2479,7 +2481,7 @@ export default function App() {
     case 'listening':
       return (
         <ListeningPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2531,7 +2533,7 @@ export default function App() {
     case 'words':
       return (
         <WordsPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2555,7 +2557,7 @@ export default function App() {
     case 'numbers':
       return (
         <NumbersPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2570,6 +2572,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={prepositionsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2581,6 +2584,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={pronunciationTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2600,7 +2604,7 @@ export default function App() {
     case 'speed-reading':
       return (
         <SpeedReadingPage
-          {...sectionBack('listening')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2616,6 +2620,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={cartoonsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2623,7 +2628,7 @@ export default function App() {
     case 'wordhunt':
       return (
         <WordHuntPage
-          {...sectionBack('reading')}
+          {...sectionBack('grammarGames')}
           userLevel={userLevel}
           userName={name}
           token={token}
@@ -2681,7 +2686,7 @@ export default function App() {
     case 'arcade':
       return (
         <ArcadePage
-          {...sectionBack(arcadeTarget?.skill || 'speaking')}
+          {...sectionBack(arcadeTarget?.skill || 'grammarGames')}
           initialTarget={arcadeTarget}
           userLevel={userLevel}
           userName={name}

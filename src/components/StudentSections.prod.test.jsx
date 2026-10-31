@@ -15,7 +15,7 @@ vi.mock('../api.js', async (load) => ({ ...await load(),
 }))
 const student = `e30.${btoa(JSON.stringify({ role: 'STUDENT', userId: 4 }))}.sig`
 it('убирает разделы на компьютере и в Сервисах телефона даже при открытых правах', () => {
-  const items = menuItems({ rewards: true, myTeacher: true })
+  const items = menuItems({ rewards: true, myTeacher: true, sections: { known: false, allowed: [] } })
   for (const list of [items, serviceItems(items)]) {
     expect(list.map(i => i.key)).not.toEqual(expect.arrayContaining(['tokens']))
     expect(list.some(i => i.key === 'feedback')).toBe(true)

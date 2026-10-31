@@ -26,13 +26,6 @@
 .tb-legend__item--purple i { background: #8a4be0; }
 .tb-legend__item--gold i { background: #e9b100; }
 .tb-legend__max { margin-left: auto; font-weight: 700; color: #181818; }
-.tb-table { margin: 18px 0 0; padding: 18px 20px; border: 1px solid #eeeaf5; border-radius: 18px; background: #fff; overflow-x: auto; }
-.tb-table h3 { margin: 0 0 10px; font-size: 17px; }
-.tb-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.tb-table th, .tb-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f0edf6; }
-.tb-table th:last-child, .tb-table td:last-child { text-align: right; white-space: nowrap; }
-.tb-table td:first-child { color: #817b91; }
-.tb-table td:last-child { color: #b9770e; font-weight: 700; }
 .tb-sub { margin: 0 0 14px; color: #6b6878; font-size: 14px; }
 @media (max-width: 760px) {
   .tb-cards { grid-template-columns: 1fr; }

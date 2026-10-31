@@ -1,372 +1,730 @@
 /* ======================================================================
-   Мобильный «Профиль» (Figma «Web Адаптивка» → «Профиль», кадр 4352:13735,
-   440×2442). Элементы лежат отдельными белыми карточками на #f8f8f8 —
-   общей белой подложки под шапкой профиля в макете нет.
+   Профиль телефона — дизайн мобильного приложения (Figma «pitch JTS (Copy)»,
+   страница «Mobile» → «Сервисы» → «Профиль», 6420:8726; кадры 402: профиль
+   7291:11321, настройки 7291:11521, жёсткий режим 7293:11291, правка
+   7293:11377, язык 7293:11420, выход 7293:11455, удаление 7419:13214,
+   «Аккаунт удалён» 7419:13541). Разметку рисует src/screens/profile/
+   ProfilePhone.jsx — на телефоне это стопка экранов, а не страница
+   компьютера, поэтому классы свои (pfm-*), а герой — классами «Сервисов»
+   (подпись кадра: «герой как в Сервисах»). Значки — экспорт кадров
+   маской (public/assets/m/profile/ico/, .pf-mi в styles.css).
    ====================================================================== */
 @media (max-width: 560px) {
-  .learn__main:has(.pf) {
+  .learn__main:has(.pfm) {
     background: #f8f8f8;
   }
-  .pf {
-    max-width: none;
-    padding: 16px 16px 16px;
+  /* У экранов профиля своя шапка с «назад» и шестерёнкой — кнопок угла в кадрах нет. */
+  .learn__main:has(.pfm) .learn__bell {
+    display: none;
   }
 
-  /* ---------- Герой: сцена 408×180 r30 и аватар 142 на её нижнем крае ---------- */
-  .pf-hero {
-    margin: 0;
-  }
-  .pf-hero__scene {
-    height: 180px;
-    border-radius: 30px;
-  }
-  .pf-hero__sheet {
-    margin-top: 0;
-    padding: 87px 0 0; /* нижняя половина аватара (71) + отступ 16 до имени */
-    background: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-  .pf-avatar {
-    top: -71px;
-    width: 142px;
-    height: 142px;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .pf-avatar__img,
-  .pf-avatar__initial {
-    width: 142px;
-    height: 142px;
-  }
-  .pf-avatar__cam,
-  .pf-avatar__cam:hover {
-    right: 0;
-    bottom: 0;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    background: #9047ff;
-    color: #fff;
-    box-shadow: none;
-  }
-  .pf-avatar__cam svg {
-    width: 24px;
-    height: 24px;
-  }
-  .pf-name {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 26px;
-    color: #181818;
-  }
-  .pf-phone {
-    gap: 7px;
-    margin-top: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 18px;
-    color: #181818;
-  }
-  .pf-phone svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  /* ---------- Звание: белая пилюля 62 (r50) ---------- */
-  .pf-rank {
-    gap: 12px;
-    margin-top: 16px;
-    padding: 12px;
-    border: 0;
-    border-radius: 50px;
-    background: #fff;
-    box-shadow: none;
-  }
-  .pf-rank__coin {
-    width: 38px;
-    height: 38px;
-  }
-  /* В макете подпись и звание — двумя строками: серым 14 и чёрным 18 */
-  .pf-rank__text {
+  .pfm-screen {
     display: flex;
     flex-direction: column;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 15px;
-    color: #777;
-  }
-  .pf-rank__text b {
-    font-size: 18px;
-    line-height: 20px;
-    color: #181818;
-  }
-  .pf-rank__cefr {
-    width: 38px;
-    height: 38px;
-    font-size: 16px;
-    font-weight: 700;
+    min-height: 100dvh;
   }
 
-  /* ---------- Прогресс к следующему званию ---------- */
-  .pf-progress {
-    margin-top: 16px;
-    padding: 16px;
-    border: 0;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: none;
-  }
-  .pf-progress__cap {
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 15px;
-    color: #181818;
-  }
-  .pf-progress__coin {
-    width: 62px;
-    height: 62px;
-  }
-  .pf-progress__bar {
-    height: 16px;
-    border-radius: 30px;
-    background: #ebdeff;
-  }
-  .pf-progress__fill {
-    border-radius: 30px;
-  }
-
-  /* ---------- Счётчики: значок и число строкой, подпись под ними ---------- */
-  .pf-stats {
-    gap: 6px;
-    margin-top: 16px;
-  }
-  /* Значок и число — строкой по центру, подпись переносится на всю ширину */
-  .pf-stat {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
+  /* ---------- Navbar 52: кнопка 48, заголовок 16/700 по центру, слот 48 ---------- */
+  .pfm-nav {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
     align-items: center;
-    gap: 8px 6px;
-    padding: 16px 10px;
-    border: 0;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: none;
+    height: 52px;
+    padding: 0 4px;
   }
-  .pf-stat b {
-    font-size: 24px;
+  .pfm-nav__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #181818;
+    cursor: pointer;
+  }
+  .pfm-nav__title {
+    margin: 0;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 24px;
     font-weight: 700;
-    line-height: 26px;
+    color: #181818;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .pfm-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 16px 24px;
+  }
+  .pfm-screen--fill .pfm-content {
+    padding-bottom: 16px;
+  }
+
+  /* ---------- Карточка 370: r28, рамка #efeff4, тень 0 4 16 / 4 % ---------- */
+  .pfm-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #efeff4;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+  .pfm-card__title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
     color: #181818;
   }
-  .pf-stat span:not(.pf-stat__glyph) {
-    flex-basis: 100%;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 15px;
-    color: #777;
-  }
-  .pf-stat__glyph {
-    color: #d4d4d4;
-  }
-  .pf-stat__glyph svg {
-    width: 24px;
-    height: 24px;
+  .pfm-card__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  /* ---------- Секции: заголовок 18, отступ между группами 36 ---------- */
-  .pf-label {
-    margin: 36px 0 12px;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 20px;
-  }
-  .pf-card {
-    border-radius: 16px;
-    box-shadow: none;
-  }
-
-  /* Навыки: строки 72 без разделителей, плитка 40 r12 */
-  .pf-skills {
-    padding: 0;
-  }
-  .pf-skill {
+  /* ---------- Ряд 60: плашка 40 r12, текст 16/600, шеврон 24 ---------- */
+  .pfm-row {
+    display: flex;
+    align-items: center;
     gap: 12px;
-    padding: 16px;
-    border-bottom: 0;
+    width: 100%;
+    min-height: 60px;
+    padding: 8px 12px;
+    border: 2px solid #efeff4;
+    border-radius: 20px;
+    background: #fff;
+    color: #181818;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
   }
-  .pf-skill__ic {
+  .pfm-row__t {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pfm-row__t b {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #181818;
+  }
+  .pfm-row__t span {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .pfm-row__chev {
+    color: #8a8a93;
+  }
+  .pfm-plate {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: #ebdeff;
   }
-  .pf-skill__ic svg {
+  .pfm-tone--violet { background: #e6dcfc; color: #9047ff; }
+  .pfm-tone--blue { background: #e3eeff; color: #2d7ff9; }
+  .pfm-tone--pink { background: #ffe8f2; color: #e5498a; }
+  .pfm-tone--orange { background: #ffe3cf; color: #f07a1a; }
+  .pfm-tone--green { background: #e3f6ea; color: #27a35b; }
+  .pfm-tone--yellow { background: #fff4d6; color: #f08c00; }
+  .pfm-tone--red { background: #ffe8e8; color: #e5383b; }
+
+  /* Переключатель «Жёсткий режим общения» 52×32, ручка 28 */
+  .pfm-switch {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 32px;
+    border-radius: 16px;
+    background: #e4e4ea;
+    transition: background 0.2s ease;
+  }
+  .pfm-switch i {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+    transition: transform 0.2s ease;
+  }
+  .pfm-switch.is-on {
+    background: #9047ff;
+  }
+  .pfm-switch.is-on i {
+    transform: translateX(20px);
+  }
+
+  /* ---------- Кнопки 52 r26 ---------- */
+  .pfm-btn {
+    width: 100%;
+    height: 52px;
+    border-radius: 26px;
+    border: 0;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .pfm-btn--primary {
+    background: #9047ff;
+    color: #fff;
+  }
+  .pfm-btn--danger {
+    background: #e5383b;
+    color: #fff;
+  }
+  .pfm-btn--ghost {
+    border: 2px solid #efeff4;
+    background: #fff;
+    color: #181818;
+  }
+  .pfm-btn--danger-text {
+    color: #e5383b;
+  }
+  .pfm-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .pfm-out {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pfm-out__del {
+    height: 43px;
+    padding: 12px 0;
+    border: 0;
+    background: none;
+    color: #767676;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  /* Кнопки у низа экрана (правка, удаление): прилипают, чтобы «Сохранить» не уезжала под клавиатуру. */
+  .pfm-bar,
+  .pfm .pfd-acts {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom, 0px));
+    background: #f8f8f8;
+  }
+
+  /* ---------- Герой: «Сервисы» (svc-hero) + телефон, камера и «Изменить» — 370×172 ---------- */
+  .pfm-hero {
+    cursor: default;
+  }
+  .pfm-hero__ava {
+    position: relative;
+  }
+  .pfm-hero__ava img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .pfm-hero__cam {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: 12px;
+    background: #7b3fe4;
+    color: #fff;
+    cursor: pointer;
+  }
+  .pfm-hero__cam .pf-mi {
+    width: 12px;
+    height: 12px;
+  }
+  .pfm-hero__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #f0e8ff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .pfm-hero__edit .pf-mi {
     width: 20px;
     height: 20px;
   }
-  .pf-skill__top {
+  .pfm-hero__phone {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #fff;
+  }
+  .pfm-hero__phone .pf-mi {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* ---------- Уровень: звание 48, плашка уровня, «До следующего уровня» ---------- */
+  .pfm-level__head {
+    display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 8px;
   }
-  .pf-skill__name {
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 18px;
+  .pfm-level__ht {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pfm-level__ht b {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 800;
     color: #181818;
   }
-  .pf-skill__meta {
+  .pfm-level__ht span {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .pfm-level__chip {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
     font-size: 14px;
-    font-weight: 400;
-    line-height: 15px;
-    color: #777;
+    font-weight: 800;
   }
-  .pf-skill__bars {
-    gap: 2px;
+  /* Звание в круге: в кадре картинка роли крупнее круга (68 в 48, 51 в 36) и срезана им. */
+  .pfm-coin {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #ff474a;
   }
-  .pf-skill__seg {
-    border-radius: 12px;
-    background: #ebdeff;
+  .pfm-coin img {
+    position: absolute;
+    max-width: none;
   }
-  .pf-skill__seg.is-on,
-  .pf-skill__seg.is-muted {
+  .pfm-coin--48 {
+    width: 48px;
+    height: 48px;
+  }
+  .pfm-coin--48 img {
+    top: -3px;
+    left: -10px;
+    width: 68px;
+    height: 68px;
+  }
+  .pfm-coin--36 {
+    width: 36px;
+    height: 36px;
+  }
+  .pfm-coin--36 img {
+    top: -2px;
+    left: -8px;
+    width: 51px;
+    height: 51px;
+  }
+  .pfm-coin--unknown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f0ff;
+    color: #9047ff;
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .pfm-next {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 2px solid #e3dafb;
+    border-radius: 20px;
+    background: #f4f0ff;
+  }
+  .pfm-next__cap {
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #181818;
+  }
+  .pfm-next__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pfm-next__track {
+    flex: 1;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: #e3dafb;
+  }
+  .pfm-next__track i {
+    display: block;
+    height: 100%;
+    border-radius: 5px;
     background: #9047ff;
   }
 
-  /* Строки настроек: 72, плитка 40 r12, шеврон 16 */
-  .pf-row {
+  /* ---------- Навыки: ряд 82, десять сегментов 6 ---------- */
+  .pfm-skill {
+    display: flex;
+    align-items: center;
     gap: 12px;
-    min-height: 72px;
-    padding: 16px;
+    min-height: 82px;
+    padding: 12px;
+    border: 2px solid #efeff4;
+    border-radius: 20px;
+    background: #fff;
   }
-  .pf-row__ic,
-  .pf-row__ic--chip {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: #ebdeff;
+  .pfm-skill.is-on {
+    border-color: #e3dafb;
+    background: #f4f0ff;
   }
-  .pf-row__ic svg {
+  .pfm-skill__t {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pfm-skill__t b {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #181818;
+  }
+  .pfm-skill__t > span:not(.pfm-skill__segs) {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .pfm-skill__segs {
+    display: flex;
+    gap: 4px;
+    padding-top: 6px;
+  }
+  .pfm-skill__segs i {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #efe7ff;
+  }
+  .pfm-skill.is-on .pfm-skill__segs i {
+    background: #e3dafb;
+  }
+  .pfm-skill.is-on .pfm-skill__segs i.is-on {
+    background: #9047ff;
+  }
+
+  /* ---------- Редактирование: аватар 104, поля 52 r16 ---------- */
+  .pfm-edit {
+    gap: 20px;
+  }
+  .pfm-edit__ava {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .pfm-edit__disc {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 104px;
+    height: 104px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #e6dcfc;
+    color: #9047ff;
+    font-family: inherit;
+    font-size: 44px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .pfm-edit__disc img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .pfm-edit__cam {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #fff;
+    border-radius: 16px;
+    background: #9047ff;
+    color: #fff;
+  }
+  .pfm-edit__cam .pf-mi {
+    width: 16px;
+    height: 16px;
+  }
+  .pfm-edit__photo {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9047ff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .pfm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pfm-field > span,
+  .pfm-field > small {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    color: #5a5a66;
+  }
+  .pfm-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    border: 2px solid #efeff4;
+    border-radius: 16px;
+    background: #f8f8f8;
+    color: #181818;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 500;
+    outline: none;
+  }
+  .pfm-input:focus {
+    border-color: #c9b2ff;
+  }
+  .pfm-input--ro {
+    justify-content: space-between;
+    background: #f4f4f8;
+    color: #8a8a93;
+  }
+  .pfm-input--ro .pf-mi {
     width: 20px;
     height: 20px;
+    color: #b3b3bc;
   }
-  .pf-row__title {
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 18px;
-  }
-  .pf-row__chev svg {
-    width: 16px;
-    height: 16px;
-  }
-  .pf-row__divider {
-    display: none;
+  .pfm-err {
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #c62828;
   }
 
-  /* Выход: заливка #ff474a 10%, без обводки */
-  .pf-logout,
-  .pf-logout:hover {
-    gap: 10px;
-    height: 56px;
-    margin-top: 36px;
-    padding: 0 16px;
-    border: 0;
+  /* ---------- Язык: ряды 60, радио 24 ---------- */
+  .pfm-lang {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 16px;
+    border: 2px solid #efeff4;
     border-radius: 20px;
-    background: rgba(255, 71, 74, 0.1);
-    color: #ea4f4f;
+    background: #fff;
+    color: #181818;
+    font-family: inherit;
     font-size: 16px;
-    font-weight: 700;
-    line-height: 18px;
+    line-height: 22px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
   }
-  .pf-logout svg {
-    width: 16px;
-    height: 16px;
+  .pfm-lang > span:first-child {
+    flex: 1;
   }
-}
-
-/* Иконки — экспорт макета (Material Symbols, залитые), а не линейные глифы
-   десктопа. Строки помечены data-key / data-skill. */
-@media (max-width: 560px) {
-  .pf-skill__ic svg,
-  .pf-row__ic svg,
-  .pf-row__chev svg,
-  .pf-avatar__cam svg,
-  .pf-phone svg,
-  .pf-logout svg,
-  .pf-stat__glyph svg {
-    display: none;
+  .pfm-lang.is-on {
+    border-color: #e3dafb;
+    background: #f4f0ff;
   }
-  .pf-skill__ic,
-  .pf-row__ic,
-  .pf-row__chev,
-  .pf-avatar__cam,
-  .pf-stat__glyph {
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  .pf-skill__ic,
-  .pf-row__ic {
-    background-size: 20px 20px;
-  }
-  .pf-skill[data-skill='listening'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-listening.svg); }
-  .pf-skill[data-skill='speaking'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-speaking.svg); }
-  .pf-skill[data-skill='reading'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-reading.svg); }
-  .pf-skill[data-skill='writing'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-writing.svg); }
-  .pf-skill[data-skill='grammar'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-grammar.svg); }
-  .pf-skill[data-skill='vocab'] .pf-skill__ic { background-image: url(/assets/m/profile/skill-vocab.svg); }
-  .pf-row[data-key='edit'] .pf-row__ic { background-image: url(/assets/m/profile/row-edit.svg); }
-  .pf-row[data-key='lang'] .pf-row__ic { background-image: url(/assets/m/profile/row-lang.svg); }
-  .pf-row[data-key='custom'] .pf-row__ic { background-image: url(/assets/m/profile/row-custom.svg); }
-  .pf-row[data-key='notif'] .pf-row__ic { background-image: url(/assets/m/profile/row-notif.svg); }
-  .pf-row[data-key='share'] .pf-row__ic { background-image: url(/assets/m/profile/row-share.svg); }
-  .pf-row[data-key='support'] .pf-row__ic { background-image: url(/assets/m/profile/row-support.svg); }
-  .pf-row[data-key='privacy'] .pf-row__ic { background-image: url(/assets/m/profile/row-privacy.svg); }
-  .pf-row[data-key='terms'] .pf-row__ic { background-image: url(/assets/m/profile/row-terms.svg); }
-  /* У «Теста на уровень» в макете строки нет — оставляем его глиф */
-  .pf-row[data-key='level-test'] .pf-row__ic svg {
-    display: block;
-  }
-  .pf-row__chev {
-    width: 16px;
-    height: 16px;
-    background-image: url(/assets/m/profile/chev.svg);
-    background-size: 16px 16px;
-  }
-  .pf-avatar__cam,
-  .pf-avatar__cam:hover {
-    background-image: url(/assets/m/profile/cam.svg);
-    background-size: 24px 24px;
-  }
-  .pf-phone::before {
-    content: '';
-    width: 18px;
-    height: 18px;
-    background: url(/assets/m/profile/phone.svg) center / 18px 18px no-repeat;
-  }
-  .pf-logout::before {
-    content: '';
-    width: 16px;
-    height: 16px;
-    background: url(/assets/m/profile/door.svg) center / 16px 16px no-repeat;
-  }
-  .pf-stat__ic {
-    content: url(/assets/m/profile/streak.svg);
-  }
-  .pf-stat__glyph {
+  .pfm-radio {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
     width: 24px;
     height: 24px;
-    background-image: url(/assets/m/profile/school.svg);
-    background-size: 24px 24px;
+    border: 2px solid #d9d9e0;
+    border-radius: 12px;
+    color: #fff;
   }
-}
+  .pfm-lang.is-on .pfm-radio {
+    border: 0;
+    background: #9047ff;
+  }
+  .pfm-radio .pf-mi {
+    width: 16px;
+    height: 16px;
+  }
 
-@media (max-width: 560px) {
-  /* Двоеточие после «Ваш уровень» — только для строки десктопа */
-  .pf-rank__text > span::after {
-    content: none;
+  /* ---------- Удаление: содержимое общее с окном десктопа (.pfd в styles.css), кнопки — у низа экрана ---------- */
+  .pfm .pfd {
+    flex: 1;
+  }
+  .pfm .pfd-acts {
+    margin-top: auto;
+  }
+
+  /* ---------- Шторка снизу: затемнение 40 %, лист r32, ручка 36×5 ---------- */
+  .pfm-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+  }
+  .pfm-sheet__dim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .pfm-sheet__body {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    padding: 8px 16px max(34px, env(safe-area-inset-bottom, 0px));
+    border-radius: 32px 32px 0 0;
+    background: #fff;
+  }
+  .pfm-sheet__grab {
+    align-self: center;
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: #d9d9e0;
+  }
+  .pfm-sheet__plate {
+    display: flex;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 24px;
+  }
+  .pfm-sheet__plate .pf-mi {
+    width: 32px;
+    height: 32px;
+  }
+  .pfm-sheet__art {
+    align-self: center;
+    width: 100%;
+    max-width: 338px;
+    height: auto;
+    border-radius: 24px;
+  }
+  .pfm-sheet__title {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 800;
+    color: #181818;
+    text-align: center;
+  }
+  /* В кадре заголовок и текст — одна группа с шагом 8, а не 16 шторки. */
+  .pfm-sheet__text {
+    margin: -8px 0 0;
+    padding: 0 4px;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #5a5a66;
+    text-align: center;
+  }
+  .pfm-sheet__acts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- «Аккаунт удалён»: без карточки, содержимое по центру, кнопка у низа ---------- */
+  .pfdone {
+    align-items: stretch;
+    padding: 0;
+  }
+  .pfdone__card {
+    justify-content: space-between;
+    max-width: none;
+    min-height: 100dvh;
+    padding: 52px 16px max(8px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .pfdone__body {
+    flex: 1;
+    justify-content: center;
+  }
+  .pfdone__bar {
+    padding: 8px 0;
   }
 }

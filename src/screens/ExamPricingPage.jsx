@@ -4,7 +4,7 @@ import { useOffers } from '../lib/useOffers.js'
 import { formatPrice, offerTitle, offerDetails } from '../data/pricing.js'
 import OfferCatalog from '../components/OfferCatalog.jsx'
 import CatalogError from '../components/CatalogError.jsx'
-import LegalDocumentsLinks from '../components/LegalDocumentsLinks.jsx'
+import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 
 export default function ExamPricingPage({ product = 'sat', onBack }) {
   const { t, lang } = useI18n()
@@ -25,6 +25,6 @@ export default function ExamPricingPage({ product = 'sat', onBack }) {
     <section className="exam-pr__how"><h2>{t('examPricing.how.title')}</h2><ol>
       {[1, 2, 3].map((n) => <li key={n}>{t(`examPricing.how.${n}`)}</li>)}
     </ol></section>
-    <section className="pr-inc"><h2 className="pr-inc__title">{t('legal.title')}</h2><LegalDocumentsLinks /></section>
+    <LegalDocumentsPanel />
   </div>
 }

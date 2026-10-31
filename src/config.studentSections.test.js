@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isStudentSectionHidden } from './config.js'
+import { isStudentSectionHidden, isStudentMenuItemHidden } from './config.js'
 
 const hidden = ['tokens', 'prizes', 'notifications', 'contracts', 'my-teacher', 'teacher-wizard', 'teacher-pick', 'group']
 describe('временное скрытие кабинетов ученика на проде', () => {
@@ -11,5 +11,19 @@ describe('временное скрытие кабинетов ученика н
   })
   it.each(['feedback', 'home', 'practice', 'lessons', 'homework', 'profile', 'ielts', 'sat', 'vocab'])('%s остаётся доступным', (screen) => {
     expect(isStudentSectionHidden(screen, 'ai-tutor.justtostudy.kz')).toBe(false)
+  })
+})
+
+describe('меню ученика на проде', () => {
+  it.each(['grammar-games', 'speed-reading'])('%s убран из меню, но экран открыт', (key) => {
+    expect(isStudentMenuItemHidden(key, 'ai-tutor.justtostudy.kz')).toBe(true)
+    expect(isStudentMenuItemHidden(key, 'dev-tutor.justtostudy.kz')).toBe(false)
+    expect(isStudentSectionHidden(key, 'ai-tutor.justtostudy.kz')).toBe(false)
+  })
+  it.each(['my-teacher', 'tokens', 'prizes', 'notifications', 'contracts'])('%s скрыт и в меню', (key) => {
+    expect(isStudentMenuItemHidden(key, 'ai-tutor.justtostudy.kz')).toBe(true)
+  })
+  it.each(['feedback', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'learning'])('%s остаётся в меню', (key) => {
+    expect(isStudentMenuItemHidden(key, 'ai-tutor.justtostudy.kz')).toBe(false)
   })
 })

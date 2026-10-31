@@ -7,8 +7,8 @@ import { FRESH_PROFILE, signIn, walkTour } from './tour-helper.js'
 //   — при первом заходе тур выходит сам, второй раз уже нет;
 //   — карточка целиком в экране и НЕ накрывает подсветку (высокие секции
 //     ленты обрезаются прожектором, иначе поповеру негде встать);
-//   — кнопка «?» открывает тур заново (у «Практики» — только в мобильной шапке:
-//     на десктопе угол занят переключателем уровня, см. .learn__bell).
+//   — кнопка «?» открывает тур заново (у «Практики» с редизайна 29.10.2026 — и
+//     на десктопе: переключатель уровня уехал под вкладки, угол .learn__bell свободен).
 
 // Тур должен выйти — значит, профиль чистый (прогон целиком идёт с погашенными).
 test.use(FRESH_PROFILE)
@@ -30,8 +30,7 @@ test.describe('онбординг-тур «Практики»', () => {
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
   })
 
-  test('«?» в мобильной шапке открывает тур заново и возвращает «Аудирование»', async ({ page, viewport }) => {
-    test.skip((viewport?.width ?? 0) > 760, 'на десктопе «?» на этом экране нет')
+  test('«?» открывает тур заново и возвращает «Аудирование»', async ({ page }) => {
     await page.goto('/?screen=practice')
     await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
     // С 28.10.2026 тур «Практики» — вида «Главной»: начинается приветствием.
@@ -49,14 +48,19 @@ test.describe('онбординг-тур «Практики»', () => {
   })
 
   // Регрессия-ловушка: группа «? / язык / колокольчик» висит абсолютом в правом
-  // верхнем углу кабинета и перехватывает клики у всего, что там стоит. На
-  // «Практике» там по макету переключатель уровня — группа обязана уйти.
-  test('на десктопе угол не перекрывает переключатель уровня', async ({ page, viewport }) => {
+  // верхнем углу кабинета и перехватывает клики у всего, что там стоит. До
+  // редизайна 29.10.2026 там стоял переключатель уровня и группу прятали; теперь
+  // он под вкладками, угол снова виден — и не должен налезать на чипы уровня.
+  test('на десктопе угол виден и не перекрывает переключатель уровня', async ({ page, viewport }) => {
     test.skip((viewport?.width ?? 0) <= 760, 'угол «? / язык» — только десктоп')
     await page.goto('/?screen=practice')
     await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
     await page.locator('.t-tour__intro-skip').click()
-    await expect(page.locator('.learn__bell')).toBeHidden()
+    const corner = page.locator('.learn__bell')
+    await expect(corner).toBeVisible()
+    await expect(corner.locator('.tour-help')).toBeVisible()
+    const [c, l] = await Promise.all([corner.boundingBox(), page.locator('.pk-levels').boundingBox()])
+    expect(c.y + c.height <= l.y || l.x + l.width <= c.x, 'угол налезает на чипы уровня').toBe(true)
     await page.locator('.pk-levels__btn', { hasText: 'C2' }).click()
     await expect(page.locator('.pk-levels__btn[aria-checked="true"]')).toHaveText('C2')
   })

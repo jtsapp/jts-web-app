@@ -277,6 +277,15 @@ export default function IeltsMockPage({ token, target, onExit, onHistory, onToda
 
   const leave = async () => {
     setExitAsk(false)
+    // Выход из Speaking не прерывает mock: секция сдаётся с уже записанными частями, остальные — «нет ответа». Прервать
+    // попытку здесь значило потерять итог за L, R и W — два часа экзамена (жалоба 29.10.2026): Speaking бывает последним
+    // местом, где экран встал, и «Выйти» оставалось единственной кнопкой.
+    if (session?.status === 'in_progress' && session.section === 'speaking') {
+      const from = uploads?.length || 0
+      for (let j = Math.max(from, multi.idx); j < ids.length; j++) sendPart(j, ids[j], [])
+      setStage('submitted')
+      return
+    }
     if (session?.status === 'in_progress') await abortIeltsMock(authToken, session.id).catch(() => {})
     onExit?.()
   }
@@ -356,7 +365,7 @@ export default function IeltsMockPage({ token, target, onExit, onHistory, onToda
       <div className="ih-mock ih-mock--run">
         {page}
         {error && <p className="ih-run__error ih-mock__float" role="alert">{error}</p>}
-        <ConfirmDialog open={exitAsk} title={t('ieltsMock.exitTitle')} text={t('ieltsMock.exitText')} confirmLabel={t('ieltsMock.exit')} cancelLabel={t('ieltsMock.stay')} onConfirm={leave} onCancel={() => setExitAsk(false)} />
+        <ConfirmDialog open={exitAsk} title={t(section === 'speaking' ? 'ieltsMock.exitSpeakingTitle' : 'ieltsMock.exitTitle')} text={t(section === 'speaking' ? 'ieltsMock.exitSpeakingText' : 'ieltsMock.exitText')} confirmLabel={t(section === 'speaking' ? 'ieltsMock.exitSpeaking' : 'ieltsMock.exit')} cancelLabel={t('ieltsMock.stay')} onConfirm={leave} onCancel={() => setExitAsk(false)} />
       </div>
     )
   }

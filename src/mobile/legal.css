@@ -1,4 +1,9 @@
 @media (max-width: 560px) {
+  .legal-panel { padding: 22px 18px; border-radius: 18px; }
+  .legal-panel h2 { font-size: 18px; }
+  .legal-panel .legal-links { grid-template-columns: 1fr; gap: 10px; }
+  .legal-panel .legal-links a { min-height: 72px; padding: 16px 14px; }
+
   .screen > .footer { display: grid; grid-template-columns: 1fr; min-height: 0; gap: 16px; padding: 28px 24px; }
   .screen > .footer .legal-links { display: grid; justify-content: start; gap: 4px; }
   .screen > .footer .footer-cards { justify-content: flex-start; }

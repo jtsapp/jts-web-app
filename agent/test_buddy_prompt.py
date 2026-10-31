@@ -411,9 +411,11 @@ assert buddy_persona_for(profile(tutor="sparktest", temper="calm")) == "spark"
 os.environ["DEXTER_TEMPER"] = "off"
 assert buddy_persona_for(calm_p) == "dexter"
 os.environ.pop("DEXTER_TEMPER")
-# ── Хулиган: кнопка 18+ (и пустой нрав старого веба) ───────────────────────
-for temper in ("harsh", "", "HARSH", "nonsense"):
+# ── Хулиган — только по кнопке 18+; без нрава — свой пацан (решение 29.10) ──
+for temper in ("harsh", "HARSH", " harsh "):
     assert buddy_persona_for(profile(temper=temper)) == "dexter_hooligan", temper
+for temper in ("", "nonsense", "calm"):
+    assert buddy_persona_for(profile(temper=temper)) == "dexter_calm", temper
 for grp in ("adult", "teen", "child", ""):
     h = build_buddy_instructions(profile(temper="harsh", age_group=grp), "dexter_hooligan")
     h_core = h.partition(CORE_HEADER)[2].partition("==== LEVEL PROFILE")[0]
@@ -433,6 +435,12 @@ for grp in ("adult", "teen", "child", ""):
     # Детский фильтр примеров к хулигану не применяется: персона — как в файле.
     assert BUDDY_PERSONAS["dexter_hooligan"] in h, grp
     assert h.index(TIER) < h.index(LIMITS), grp
+    # Внешность, голос и «твоя мамка» — только взрослому по дате рождения (30.10).
+    adult_only = "you may also roast their looks, voice, style"
+    if grp == "adult":
+        assert adult_only in tail and "not a verified adult" not in tail, grp
+    else:
+        assert adult_only not in tail and "not a verified adult" in tail, grp
 assert buddy_default_mood("dexter_hooligan") == ("anger", 2)
 # Клиентский Декстер v3.5 (откат) собирается по-прежнему, со ступенями.
 assert "the same angry Dexter with mild words" in build_buddy_instructions(profile(age_group="child"), "dexter")
@@ -448,5 +456,12 @@ anon = build_buddy_greeting(profile(user_name=""))
 assert "unknown" in anon and "Айгерим" not in anon
 for w in ("warm", "Great to see you"):
     assert w not in g, w
+# Хулиган не взрослому: в приветствии ни слова про лицо. Запрет в блоке ступени
+# Haiku 5.5 пропускал — «I'm already bored of your face» в 4 из 6 (замер 30.10).
+NO_FACE = "never their face or looks"
+for grp in ("teen", "child", ""):
+    assert NO_FACE in build_buddy_greeting(profile(temper="harsh", age_group=grp)), grp
+assert NO_FACE not in build_buddy_greeting(profile(temper="harsh", age_group="adult"))
+assert NO_FACE not in build_buddy_greeting(profile(temper="calm", age_group="child"))
 
 print("test_buddy_prompt: ok")

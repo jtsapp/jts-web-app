@@ -17,7 +17,7 @@
 //  card     — фигурка карточки выбора (узел Avatar 195×260, ×3);
 //  stage    — фон сцены карточки (у каждого свой тон);
 //  portrait — лицо в рамке на странице тьютора (TutorPortrait). У Декстера это
-//             его «Dexter Flat» в кадре рамки, и эмоций у него четыре
+//             его «Dexter Flat» в кадре рамки, и эмоций у него шесть
 //             (portraits — по ключу эмоции TutorPortrait); остальным анимаций
 //             пока нет — временно нейтральное лицо (картинки владельца
 //             29.10.2026, белый фон срезан, кадр как у Декстера);
@@ -58,6 +58,8 @@ const BASE_TUTORS = [
       happy: '/tutor/v2/dexter-happy.webp',
       surprised: '/tutor/v2/dexter-surprised.webp',
       thinking: '/tutor/v2/dexter-thinking.webp',
+      listening: '/tutor/v2/dexter-listening.webp',
+      angry: '/tutor/v2/dexter-angry.webp',
     },
     tint: '#ceccff',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],

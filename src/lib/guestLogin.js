@@ -18,6 +18,9 @@ export const AUTH_SCREENS = new Set([
   'complete-registration',
   'set-password',
   'success',
+  // «Аккаунт удалён»: сессию к этому экрану уже сняли (App.handleAccountDeleted), и без этой строки его тут же
+  // подменял бы экран входа — человек не увидел бы, что удаление прошло.
+  'account-deleted',
 ])
 
 /** Гостю кабинет не показываем: его место — экран входа. */

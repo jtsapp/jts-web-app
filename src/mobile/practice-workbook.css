@@ -819,7 +819,8 @@
      ниже плитка уровня 40 r12, название 16/800, «юниты, уроки · минуты» и
      шеврон. Разметка карточки общая с хабом — постер ставим по aria-label. */
   .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-head,
-  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-skills {
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-skills,
+  .pk:has(> #sec-workbooks .pk-all.is-back) > .pk-cap .pk-levels {
     display: none;
   }
   #sec-workbooks:has(.pk-all.is-back) > .pk-sec__head {

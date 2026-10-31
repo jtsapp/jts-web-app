@@ -8,7 +8,10 @@ import ThemeToggle from './ThemeToggle.jsx'
 import { loadToken } from '../lib/session.js'
 import { groupNum } from '../lib/groupNum.js'
 import { useMenuItems } from './useMenuItems.js'
+import SectionAccessNotice from './SectionAccessNotice.jsx'
 import { ChevronRightIcon, CloseIcon, UserIcon, SettingsIcon } from './icons.jsx'
+
+const NEW_ITEMS = new Set(['speed-reading', 'prizes', 'feedback'])
 
 // Состав меню по роли — lib/navSections.js: его же показывают нижняя панель телефона и «Сервисы».
 // Значки пунктов рисуются маской (.sb__ico), поэтому цвет берут от пункта: фиолетовый, у активного белый.
@@ -45,7 +48,7 @@ export default function Sidebar({
   }, [token])
 
   // Роль, аккаунт IELTS и подписки на экзамены — в общем хуке меню (тот же список у панели телефона и «Сервисов»).
-  const { items: nav, teacher, ieltsAccount, badges } = useMenuItems(token)
+  const { items: nav, teacher, ieltsAccount, badges, sections, retrySections } = useMenuItems(token)
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -115,6 +118,7 @@ export default function Sidebar({
           </span>
         </button>
 
+        {!teacher && <SectionAccessNotice access={sections} onRetry={retrySections} />}
         <nav className="sb__nav">
           {nav.map(({ key, label, ico }) => (
             <button
@@ -126,6 +130,7 @@ export default function Sidebar({
             >
               <i className="sb__ico" style={{ '--sb-ico': `url(/assets/home-v2/ico/${ico}.svg)` }} aria-hidden="true" />
               <span>{t(label)}</span>
+              {NEW_ITEMS.has(key) && <b className="sb__badge sb__badge--new">new</b>}
               {badges[key] > 0 && <b className="sb__badge">{badges[key]}</b>}
             </button>
           ))}

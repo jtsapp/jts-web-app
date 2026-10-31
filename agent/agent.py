@@ -66,7 +66,14 @@ except Exception:  # pragma: no cover - plugin missing in some envs
 import noise_guard
 import assistant_call
 # Ядро Speaking Buddy под нрав Декстера (свой пацан / хулиган 18+), 29.10.2026.
-from dexter_tempers import CALM_CORE_PATCHES, HOOLIGAN_CORE_PATCHES, HOOLIGAN_TIER_BLOCK, patch_core
+from dexter_tempers import (
+    CALM_CORE_PATCHES,
+    HOOLIGAN_ADULT_EXTRA,
+    HOOLIGAN_CORE_PATCHES,
+    HOOLIGAN_MINOR_EXTRA,
+    HOOLIGAN_TIER_BLOCK,
+    patch_core,
+)
 
 # Cascade-stack plugins (VOICE_STACK=cascade). Optional imports so the default
 # gemini-live path still starts without them installed. STT=Soniox, TTS=ElevenLabs
@@ -3757,15 +3764,17 @@ def _stand_key(p: LearnerProfile) -> str:
 
 
 def _dexter_temper_persona(temper: str) -> str:
-    """Персона живого Декстера по нраву звонка. calm — «свой пацан», harsh и
-    пустой — хулиган: агент один на дев и прод, а веб до 29.10.2026 нрав Декстера
-    не слал вовсе, и такой звонок должен звучать как раньше, злым. Дефолт «свой
-    пацан» задаёт сайт (defaultTemper в src/tutor/tutors.js) и шлёт его явно.
+    """Персона живого Декстера по нраву звонка. Хулиган — ТОЛЬКО по явному harsh
+    (кнопка 18+); всё остальное — «свой пацан»: и calm, и пустой нрав. Пустой шлёт
+    любой клиент, который про нрав Декстера не знает (вкладка, открытая до
+    релиза, другое приложение), — решение владельца 29.10.2026: такой звонок
+    звучит по умолчанию, спокойно, а не хулиганом без предупреждения. Тот же
+    дефолт у сайта (defaultTemper в src/tutor/tutors.js).
     Секрет DEXTER_TEMPER=off — оба нрава на клиентского Декстера v3.5, без деплоя.
     Нрав, чьё ядро не собралось или файла нет, тоже уходит на v3.5."""
     if (os.getenv("DEXTER_TEMPER") or "").strip().lower() in ("off", "0", "false", "legacy"):
         return BUDDY_TEST_PERSONA
-    want = "dexter_calm" if (temper or "").strip().lower() == "calm" else "dexter_hooligan"
+    want = "dexter_hooligan" if (temper or "").strip().lower() == "harsh" else "dexter_calm"
     if want in BUDDY_PERSONAS and want in BUDDY_CORE_VARIANTS:
         return want
     return BUDDY_TEST_PERSONA
@@ -4193,10 +4202,15 @@ def _buddy_has_profanity(persona: str) -> bool:
 def _buddy_tier_block(p: LearnerProfile, persona: str) -> str:
     """Блок ступени — только персоне с матом и ростингом. У взрослого он держит
     злость, у остальных — границу между мягкими словами и крепкими."""
-    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): возраст
-    # слова не меняет, детский блок ему не положен.
+    # Хулиган — одна ступень на всех (решение владельца 29.10.2026): мат и
+    # оскорбления возраст не меняет. Единственное, что идёт по дате рождения, —
+    # внешность, голос и «твоя мамка»: только взрослому (решение 30.10.2026).
     if persona == "dexter_hooligan":
-        return "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n" + HOOLIGAN_TIER_BLOCK
+        extra = HOOLIGAN_ADULT_EXTRA if _buddy_age_group(p) == "adult" else HOOLIGAN_MINOR_EXTRA
+        return (
+            "\n\n==== YOUR WORD RATING IN THIS CALL (core section 11) ====\n"
+            + HOOLIGAN_TIER_BLOCK + " " + extra
+        )
     if not _buddy_has_profanity(persona):
         return ""
     group = _buddy_age_group(p)
@@ -4339,10 +4353,19 @@ def build_buddy_greeting(p: LearnerProfile) -> str:
         if name
         else "Their name is unknown: do not ask for it. "
     )
+    # Хулиган не взрослому: внешность ему нельзя (решение 30.10.2026), а Haiku 5.5
+    # открывал звонок «I'm already bored of your face» в 4 из 6 приветствий, хотя
+    # запрет стоял в блоке ступени. Правило рядом с самим событием он слушает.
+    face_rule = (
+        "Hit the English that's coming or the lesson, never their face or looks. "
+        if buddy_persona_for(p) == "dexter_hooligan" and _buddy_age_group(p) != "adult"
+        else ""
+    )
     return (
         "Trusted application event: SESSION_START. Follow core section 10: greet once, "
         "in character and in English, with one accessible invitation at the learner's level. "
         + name_rule
+        + face_rule
         + "MEMORY may give the invitation a concrete hook. "
         "Start with your emotion tag. Then stop and wait for the learner."
     )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMatchingTeacher } from '../api.js'
 import TeacherPhoto from './TeacherPhoto.jsx'
 import TeacherResumeSheet from './TeacherResumeSheet.jsx'
+import TeacherExtras from './TeacherExtras.jsx'
 import { MtModal, CloseButton } from './ui.jsx'
 import { interestLabel } from './interests.js'
 import { slotLabel, sortSlots } from './slots.js'
@@ -9,8 +10,8 @@ import { useMatchingT } from './texts.js'
 import { LEVELS, levelsRange, years } from './teacherFormat.js'
 
 // Профиль учителя глазами ученика (ТЗ §2.5): вкладки «Профиль» / «Резюме (PDF)». Ни телефона, ни почты, ни «Написать
-// в чат» — их нет и в ответе бэкенда. Блоков видео, «результатов студентов» и «как проходят уроки» нет: данных у
-// бэкенда пока нет, а ТЗ показывает их только при наличии. «Почему вам подходит» — только в мастере.
+// в чат» — их нет и в ответе бэкенда. «Как проходят уроки», результаты учеников и видео-знакомство приходят отдельной ручкой
+// и показываются только если учитель их заполнил (TeacherExtras). «Почему вам подходит» — только в мастере.
 export default function TeacherProfileModal({ token, teacherId, mode = 'view', tz, myInterests = [], format, priority = -1, canPick, onPick, onUnpick, onClose }) {
   const { t, lang } = useMatchingT()
   const [data, setData] = useState(null)
@@ -110,6 +111,8 @@ export default function TeacherProfileModal({ token, teacherId, mode = 'view', t
               <p>{c.about}</p>
             </section>
           )}
+
+          <TeacherExtras token={token} teacherId={c.id} />
 
           {(c.interests || []).length > 0 && (
             <section className="mt-sec">

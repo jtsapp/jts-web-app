@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { MicIcon, VolumeIcon } from '../../components/icons.jsx'
+import { VolumeIcon } from '../../components/icons.jsx'
 import { plural } from '../../lib/plural.js'
-import { stripTags } from '../../practice/grammar/grammarData.js'
 import { PRACTICE_LEVELS } from '../../practice/practiceLevel.js'
-import { PkChevron, PkArrowCircle, PkEye, PkClock } from './PracticeIcons.jsx'
+import { PkChevron, PkArrowCircle, PkEye, PkClock, PkIco } from './PracticeIcons.jsx'
 
 // Карточки и блоки экрана «Практика» по макету Figma «Макеты» (5316:1548).
 // Размеры и цвета сняты с узлов макета; стили — .pk-* в styles.css. Шрифт в
@@ -86,10 +85,17 @@ export function LevelSwitch({ value, onChange }) {
   )
 }
 
-// Карточка навыка. Арт фона — экспорт фигур из макета (public/practice/skills/),
-// обводка активной карточки рисуется поверх (::after), как внутренняя обводка
-// Figma: иначе рамка 0/4/6/4 сдвигала бы текст на 3px вверх.
-// sub — подпись вместо «N тренажёров» у вкладки-раздела («Грамматика · игры» — один тренажёр, но 125 тем).
+const SKILL_ICON = {
+  listening: 'headphones',
+  reading: 'menu-book',
+  writing: 'edit-note',
+  speaking: 'mic',
+  grammarGames: 'text-fields',
+}
+
+// Вкладка раздела (макет «Практика · редизайн», 7393:14225): плитка значка в цвете своего раздела, название и
+// «N тренажёров». Выбранная залита градиентом раздела. Цвета — переменные `--pk-*` класса `pk-c--<раздел>`.
+// sub — подпись вместо «N тренажёров» («Грамматика»: темы и игры).
 export function SkillCard({ skill, count, sub, active, onClick }) {
   const { t, lang } = useI18n()
   return (
@@ -97,11 +103,72 @@ export function SkillCard({ skill, count, sub, active, onClick }) {
       type="button"
       role="tab"
       aria-selected={active}
-      className={`pk-skill pk-skill--${skill}${active ? ' is-on' : ''}`}
+      className={`pk-skill pk-skill--${skill} pk-c--${skill}${active ? ' is-on' : ''}`}
       onClick={onClick}
     >
-      <span className="pk-skill__title">{t(`practice.skill.${skill}`)}</span>
-      <span className="pk-skill__count">{sub ? t(sub) : plural(t, lang, 'practice.trainers', count)}</span>
+      <span className="pk-skill__ico">
+        <PkIco name={SKILL_ICON[skill]} />
+      </span>
+      <span className="pk-skill__text">
+        <span className="pk-skill__title">{t(`practice.skill.${skill}`)}</span>
+        <span className="pk-skill__count">{sub ? t(sub) : plural(t, lang, 'practice.trainers', count)}</span>
+      </span>
+    </button>
+  )
+}
+
+// Якорь карточки — прежний id секции: на них стоят шаги тура, e2e и переходы к разделу. Где карточка заменила
+// не одноимённую секцию, id прежний (Just to Listen был `sec-listen`), у двух игр «Аркады» — свой на каждую.
+const ANCHOR = { justListen: 'listen', speedReading: 'speed-reading', speak: 'arcade-speak', runner: 'arcade-runner' }
+
+// Карточка тренажёра — один шаблон на всё (система макета, 7405:4469): обложка → название → одна фраза → чип →
+// переход. Вся карточка — кнопка. Обложки: `tile` (градиент раздела, значок и он же крупно прозрачным), `collage`
+// и `photo` (картинка экспорта макета). Бейдж «Новое» / «Бета» — в правом верхнем углу обложки.
+// Чип — токены за прохождение (только если правило есть на сервере) или своя подпись карточки («125 тем»).
+export function PracticeTile({ card, tokens = 0, onOpen }) {
+  const { t, lang } = useI18n()
+  const chip = card.chip ? t(card.chip) : null
+  return (
+    <button
+      type="button"
+      id={`sec-${ANCHOR[card.id] || card.id}`}
+      className={`pk-card pk-card--${card.cover}`}
+      data-card={card.id}
+      onClick={onOpen}
+    >
+      <span className="pk-card__cover">
+        {card.cover === 'tile' ? (
+          <>
+            <PkIco name={card.icon} className="pk-card__glyph" />
+            <span className="pk-card__mark">
+              <PkIco name={card.icon} />
+            </span>
+          </>
+        ) : (
+          <img className="pk-card__img" src={card.image} alt="" loading="lazy" />
+        )}
+        {card.badge && <span className="pk-card__badge">{t(`practice.badge.${card.badge}`)}</span>}
+      </span>
+      <span className="pk-card__body">
+        <span className="pk-card__text">
+          <span className="pk-card__title">{t(card.title)}</span>
+          <span className="pk-card__desc">{t(card.desc)}</span>
+        </span>
+        <span className="pk-card__foot">
+          {chip ? (
+            <span className="pk-card__chip">{chip}</span>
+          ) : tokens > 0 ? (
+            <span className="pk-card__chip" data-testid="practice-token-badge">
+              {plural(t, lang, 'practice.tokenBadge', tokens)}
+            </span>
+          ) : (
+            <span />
+          )}
+          <span className="pk-card__go">
+            <PkIco name="arrow-forward" />
+          </span>
+        </span>
+      </span>
     </button>
   )
 }
@@ -150,106 +217,6 @@ export function SectionHead({ title, all, small, expanded, onAll, tokens = 0, ch
 // Лента карточек; в полном списке — сетка с переносом.
 export function Rail({ grid, className, children }) {
   return <div className={`pk-rail${grid ? ' pk-rail--grid' : ''} ${className || ''}`}>{children}</div>
-}
-
-// Промо-баннер тренажёра: градиент, заголовок, описание и белая кнопка.
-// Переносы строк в заголовках словаря (\n) рассчитаны на старый узкий баннер
-// с артом — в макете заголовок в одну строку, перенос делает ширина.
-// tag — короткая пометка у заголовка («Новое» у свежего тренажёра).
-// Надпись над заголовком (значок + «ЧТЕНИЕ») есть только на телефоне — в
-// дизайне приложения (Figma «Mobile», баннеры 6605:16630); на компьютере её
-// прячет src/mobile/practice.css. Значок рисует CSS по варианту баннера.
-const BANNER_KICKER = {
-  listening: 'practice.kicker.game',
-  numbers: 'practice.kicker.game',
-  lc: 'practice.skill.listening',
-  listen: 'practice.skill.listening',
-  cartoons: 'practice.skill.listening',
-  words: 'nav.vocab',
-  wordhunt: 'nav.vocab',
-  reading: 'practice.skill.reading',
-  'speed-reading': 'practice.skill.reading',
-  writing: 'practice.skill.writing',
-  verbs: 'practice.chip.grammar',
-  prepositions: 'practice.chip.grammar',
-  speakspin: 'practice.skill.speaking',
-}
-export function Banner({ id, variant, wide, title, desc, cta, onStart, badge, tag }) {
-  const { t } = useI18n()
-  const kicker = BANNER_KICKER[variant]
-  return (
-    <section id={id} className={`pk-banner pk-banner--${variant}${wide ? ' pk-banner--wide' : ''}`}>
-      {kicker && (
-        <span className="pk-banner__kicker" aria-hidden="true">
-          <i className="pk-banner__ico" />
-          {t(kicker)}
-        </span>
-      )}
-      <div className="pk-banner__text">
-        <h3 className="pk-banner__title">
-          {title.replace(/\n/g, ' ')}
-          {tag && <span className="pk-banner__tag">{tag}</span>}
-        </h3>
-        <p className="pk-banner__desc">{desc}</p>
-      </div>
-      <button type="button" className="pk-banner__cta" onClick={onStart}>
-        {cta}
-        <PkChevron size={18} />
-      </button>
-      {/* Звезда с уровнем есть только в мобильном макете (Figma «Web
-          Адаптивка», 4254:2213): на десктопе её прячет src/mobile/practice.css. */}
-      {badge && (
-        <span className="pk-banner__badge">
-          <span className="pk-banner__badge-cap">{badge.caption}</span>
-          <span className="pk-banner__badge-lvl">{badge.level}</span>
-        </span>
-      )}
-    </section>
-  )
-}
-
-// Карточка «Аркады» (вкладки «Говорение» и «Чтение»): зал мини-игр. Каждая
-// игра открывается своей кнопкой прямо из Практики, «Все игры» ведёт в зал.
-// Геометрия и кнопка — от широкого промо-баннера, картинка — Word Rush.
-export function ArcadeCard({ onOpen }) {
-  const { t } = useI18n()
-  const games = [
-    { key: 'speak', title: 'practice.arcade.speak.title', text: 'practice.arcade.speak.text', mic: true },
-    { key: 'runner', title: 'practice.arcade.runner.title', text: 'practice.arcade.runner.text' },
-  ]
-  return (
-    <div className="pk-arcade">
-      <div className="pk-arcade__text">
-        <h3 className="pk-arcade__title">
-          {t('practice.arcade.title')}
-          <span className="ar-beta ar-beta--light">{t('arcade.beta')}</span>
-        </h3>
-        <p className="pk-arcade__tagline">{t('practice.arcade.tagline')}</p>
-        <p className="pk-arcade__desc">{t('practice.arcade.desc')}</p>
-        <div className="pk-arcade__games">
-          {games.map((g) => (
-            <button key={g.key} type="button" className="pk-arcade__game" onClick={() => onOpen(g.key)}>
-              <b>{t(g.title)}</b>
-              <span>
-                {g.mic && <MicIcon size={13} />}
-                {t(g.text)}
-              </span>
-              <PkChevron size={16} />
-            </button>
-          ))}
-        </div>
-        <div className="pk-arcade__foot">
-          <button type="button" className="pk-banner__cta" onClick={() => onOpen(null)}>
-            {t('practice.arcade.cta')}
-            <PkChevron size={18} />
-          </button>
-        </div>
-      </div>
-      <div className="pk-arcade__art" aria-hidden="true">
-        <img className="pk-arcade__cover" src="/arcade/runner/card.webp" alt="" loading="lazy" />
-      </div>
-    </div>
-  )
 }
 
 // Обложка сказки: настоящий арт из библиотеки; при отсутствии — градиент + мотив.
@@ -412,23 +379,6 @@ export function ComicCard({ comic, status, onOpen }) {
           {status.started
             ? t('comics.continue', { n: status.page, total: status.total })
             : t('comics.pages', { total: status.total })}
-        </span>
-      </span>
-    </button>
-  )
-}
-
-export function GrammarTile({ unit, tokens = 0, onOpen }) {
-  const { t, lang } = useI18n()
-  return (
-    <button type="button" className="pk-tile" onClick={() => onOpen(unit)}>
-      <span className="pk-tile__badge">Unit {unit.id}</span>
-      {tokens > 0 && <span className="pk-tokens pk-tokens--tile">{plural(t, lang, 'practice.tokenBadge', tokens)}</span>}
-      <span className="pk-tile__text">
-        <span className="pk-tile__title">{stripTags(unit.title)}</span>
-        <span className="pk-meta">
-          <PkClock />
-          {t('practice.min', { n: unit.min })}
         </span>
       </span>
     </button>

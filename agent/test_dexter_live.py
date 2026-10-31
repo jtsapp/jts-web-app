@@ -47,9 +47,9 @@ kz_test = profile(tutor="jarvis")
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(dexter)
-# 29.10.2026 кнопка 18+ вернулась: calm — «свой пацан», harsh — хулиган; пустой
-# нрав (веб до этой правки) — хулиган, как звучал прежний злой Декстер.
-assert buddy_persona_for(dexter) == "dexter_hooligan"
+# 29.10.2026 кнопка 18+ вернулась: harsh — хулиган, всё остальное (calm, пустой
+# нрав клиента, который его не шлёт) — «свой пацан».
+assert buddy_persona_for(dexter) == "dexter_calm"
 assert buddy_persona_for(profile(temper="calm")) == "dexter_calm"
 assert buddy_persona_for(profile(temper="harsh")) == "dexter_hooligan"
 for temper in ("", "calm", "harsh"):

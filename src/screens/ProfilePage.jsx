@@ -1,4 +1,4 @@
-import LegalDocumentsLinks from '../components/LegalDocumentsLinks.jsx'
+import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { isStudentSectionHidden } from '../config.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
@@ -12,7 +12,7 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
+import { getProfileStats, getLearningPath, countProgress, updateUser, getCurrentUser, getIeltsMe, getIeltsProfile } from '../api.js'
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
@@ -21,7 +21,12 @@ import { shrinkImage } from '../lib/shrinkImage.js'
 import { legalDocumentUrl } from '../lib/legalDocuments.js'
 import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
 import { isTeacher } from '../lib/jwt.js'
+import { useMediaQuery, MOBILE_QUERY } from '../lib/useMediaQuery.js'
 import ProfileBlocks, { NotificationChannels } from '../matching/ProfileBlocks.jsx'
+import { AXIS_TUTOR_KEYS, temperFor } from '../tutor/tutors.js'
+import ProfilePhone from './profile/ProfilePhone.jsx'
+import DeleteAccount from './profile/DeleteAccount.jsx'
+import { useAccountDeletion } from './profile/useAccountDeletion.js'
 
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
 
@@ -76,12 +81,26 @@ export default function ProfilePage({
   // userLevel тогда — стартовый 'A1' из стейта App, а не измерение.
   levelUnknown = false,
   onLevelTest,
+  // Ученик IELTS (useStudentExams: признак из админки): теста уровня General English у него нет — строку
+  // «Тест на уровень · Не пройден» без уровня не показываем, вместо неё — диагностика и план IELTS.
+  ieltsAccount = false,
+  // вкладка IELTS открыта (useStudentExams) — тогда в профиле и блок «IELTS»: то же правило, что у меню
+  ieltsTab = false,
   // «Назад» туда, откуда открыли профиль (App, lib/navStack.js).
   onBack,
   backLabel,
+  // Нрав тьюторов и его смена — переключатель «Жёсткий режим общения» в настройках телефона (тот же выбор, что окно
+  // после тура на «Главной»: App.onTemperChoice ставит его всем тьюторам с осью нрава).
+  tempers,
+  onTemperChoice,
+  // Аккаунт удалён (DELETE /user/me прошёл): App чистит сессию, как при выходе, и показывает «Аккаунт удалён».
+  onAccountDeleted,
 }) {
   const { t, lang, setLang } = useI18n()
   const fileRef = useRef(null)
+  const phoneLayout = useMediaQuery(MOBILE_QUERY)
+  const deletion = useAccountDeletion(token, onAccountDeleted)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   // Имя держим в локальном состоянии, чтобы правка в «Редактировать профиль»
   // сразу отражалась в шапке; наружу отдаём через onUpdateName.
@@ -90,6 +109,8 @@ export default function ProfilePage({
 
   const [avatar, setAvatar] = useState(null)
   const [avatarBg, setAvatarBg] = useState(AVATAR_BGS[0])
+  // Выбирал ли ученик фон сам: в герое телефона аватар без выбора белый, как в кадре, а не лавандовый по умолчанию.
+  const [avatarBgPicked, setAvatarBgPicked] = useState(false)
   // «Уведомления» — звук сигналов кабинета (lib/notifySound.js, тот же, что
   // у колокольчика). Раньше тут был «Push-уведомления» со своим флагом,
   // который никто не читал: пушей у веба нет, переключатель ничего не менял.
@@ -99,6 +120,23 @@ export default function ProfilePage({
   const [levelProg, setLevelProg] = useState(null)
   const [toast, setToast] = useState('')
   const [skillStats, setSkillStats] = useState(null)
+  // IELTS: { me, overall } — блок «IELTS» профиля. Раньше его не было вовсе, и ученица IELTS видела в профиле только
+  // «Тест на уровень · Не пройден» (жалоба 27.10.2026: «нет раздела, пишет, что нужно снова сдать тест»).
+  const [ielts, setIelts] = useState(null)
+  useEffect(() => {
+    if (!token || !ieltsTab) return undefined
+    let alive = true
+    getIeltsMe(token)
+      .then(async (me) => {
+        const p = me.diagnosticDone ? await getIeltsProfile(token).catch(() => null) : null
+        return { me, overall: p?.bands?.overall ?? null }
+      })
+      .then((v) => alive && setIelts(v))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token, ieltsTab])
 
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
@@ -125,7 +163,9 @@ export default function ProfilePage({
   // сменился аккаунт — показываем его фото, а не оставшееся от прошлого.
   useEffect(() => {
     setAvatar(readAvatar(token))
-    setAvatarBg(readAvatarBg(token) || AVATAR_BGS[0])
+    const bg = readAvatarBg(token)
+    setAvatarBg(bg || AVATAR_BGS[0])
+    setAvatarBgPicked(!!bg)
   }, [token])
 
   useEffect(() => {
@@ -209,6 +249,7 @@ export default function ProfilePage({
 
   function chooseBg(c) {
     setAvatarBg(c)
+    setAvatarBgPicked(true)
     saveAvatarBg(token, c)
   }
 
@@ -250,11 +291,12 @@ export default function ProfilePage({
     }
   }
 
+  // true — сохранено: экран правки телефона по нему уходит назад, окно десктопа закрывается само.
   async function saveProfile() {
     const trimmed = form.name.trim()
     if (!trimmed) {
       setEditErr(t('profile.editNameRequired'))
-      return
+      return false
     }
     // Пустую дату пропускаем: у аккаунтов, заведённых до обязательного поля,
     // её нет, и правка имени не должна упираться в чужой пробел. Заполненная
@@ -262,7 +304,7 @@ export default function ProfilePage({
     const dobProblem = form.birthDate ? birthDateProblem(form.birthDate) : null
     if (dobProblem) {
       setEditErr(t(`regbirth.${dobProblem}`))
-      return
+      return false
     }
     setSaving(true)
     setEditErr('')
@@ -277,8 +319,10 @@ export default function ProfilePage({
       onUpdateName?.(trimmed)
       setEditOpen(false)
       showToast(t('profile.editSaved'))
+      return true
     } catch (e) {
       setEditErr(e.message || 'Ошибка')
+      return false
     } finally {
       setSaving(false)
     }
@@ -319,20 +363,140 @@ export default function ProfilePage({
     },
   ]
 
+  const ieltsRows = ielts && ieltsTab
+    ? [
+        {
+          key: 'ielts-diagnostic',
+          icon: <PfTestIcon />,
+          title: t('profile.ieltsDiagnostic'),
+          trailing: ielts.me.diagnosticDone ? (ielts.overall != null ? `Band ${Number(ielts.overall).toFixed(1)}` : t('profile.ieltsDone')) : t('profile.levelTestNone'),
+          onClick: () => onNav?.(ielts.me.diagnosticDone ? 'ielts-diagnostic-result' : ielts.me.onboarded ? 'ielts-diagnostic' : 'ielts-onboarding'),
+        },
+        {
+          key: 'ielts-plan',
+          icon: <PfTestIcon />,
+          title: t('profile.ieltsPlan'),
+          trailing: ielts.me.programmeName || (ielts.me.track === 'general' ? 'General Training' : 'Academic'),
+          onClick: () => onNav?.('ielts'),
+        },
+      ]
+    : []
+
   const personalization = [
     { key: 'edit', icon: <PfEditIcon />, title: t('profile.editProfile'), onClick: openEdit },
     { key: 'lang', icon: <PfGlobeIcon />, title: t('profile.language'), trailing: langLabel, onClick: () => setLangOpen(true) },
     { key: 'custom', icon: <PfGiftIcon />, title: t('profile.customization'), onClick: () => setCustomOpen(true) },
   ]
 
+  const openSupport = () => {
+    window.location.href = 'mailto:support@justtostudy.kz'
+  }
+  const openDoc = (kind) => window.open(legalDocumentUrl(kind, lang), '_blank')
+
   const settings = [
     ...(!isTeacher(token) && isStudentSectionHidden('notifications') ? [] : [{ key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif }]),
     ...(!isTeacher(token) && isStudentSectionHidden('feedback') ? [] : [{ key: 'feedback', icon: <PfSupportIcon />, title: 'Обратная связь', onClick: () => onNav?.('feedback') }]),
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
-    { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
-    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open(legalDocumentUrl('privacy', lang), '_blank') },
-    { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => window.open(legalDocumentUrl('offer', lang), '_blank') },
+    { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: openSupport },
+    { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => openDoc('privacy') },
+    { key: 'terms', icon: <PfDocIcon />, title: t('profile.terms'), onClick: () => openDoc('offer') },
   ]
+
+  // Окна «Кастомизация» и «Уведомления» — одно содержимое на обе раскладки: на компьютере окном, на телефоне шторкой.
+  const customContent = (
+    <>
+      <div className="pf-custom__preview">
+        {avatar ? (
+          <img className="pf-avatar__img" src={avatar} alt="" style={{ width: 80, height: 80 }} />
+        ) : (
+          <span className="pf-avatar__initial" style={{ width: 80, height: 80, background: avatarBg, fontSize: 32 }}>
+            {initial || <UserIcon size={38} />}
+          </span>
+        )}
+      </div>
+      <div className="pf-custom__label">{t('profile.customSubtitle')}</div>
+      <div className="pf-swatches">
+        {AVATAR_BGS.map((c) => (
+          <button
+            key={c}
+            className={`pf-swatch ${avatarBg === c ? 'pf-swatch--active' : ''}`}
+            style={{ background: c }}
+            onClick={() => chooseBg(c)}
+            aria-label={c}
+          />
+        ))}
+      </div>
+      {avatar && (
+        <button className="pf-custom__reset" onClick={resetAvatar}>
+          {t('profile.customReset')}
+        </button>
+      )}
+    </>
+  )
+  const notifContent = (
+    <>
+      <button className="pf-toggle-row" onClick={toggleNotif}>
+        <span>{t('profile.notifSound')}</span>
+        <span className={`pf-switch ${notifEnabled ? 'pf-switch--on' : ''}`}>
+          <span className="pf-switch__knob" />
+        </span>
+      </button>
+      {!isTeacher(token) && <NotificationChannels phone={phone} />}
+    </>
+  )
+  const blocks = !isTeacher(token) && !isStudentSectionHidden('my-teacher') ? <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} /> : null
+
+  if (phoneLayout) {
+    // Жёсткий режим «включён», когда он у всех тьюторов с осью нрава: окно после тура и этот переключатель ставят
+    // его всем сразу, а свой тумблер у тьютора может развести их — тогда переключатель предлагает включить снова.
+    const harshOn = AXIS_TUTOR_KEYS.length > 0 && AXIS_TUTOR_KEYS.every((k) => temperFor(k, tempers?.[k]) === 'harsh')
+    return (
+      <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
+        <ProfilePhone
+          name={trimmedName}
+          initial={initial}
+          phone={phone}
+          avatar={avatar}
+          avatarBg={avatarBgPicked ? avatarBg : null}
+          role={role}
+          nextRole={nextRole}
+          level={(userLevel || 'A1').toUpperCase()}
+          levelUnknown={levelUnknown}
+          // Плашка звания в герое — как в «Сервисах»: только у ученика General English с измеренным уровнем.
+          showChip={!levelUnknown && !isTeacher(token) && !ieltsAccount}
+          showLevel={!(ieltsAccount && levelUnknown)}
+          onLevelTest={onLevelTest}
+          progress={{ value, remaining }}
+          skillStats={skillStats}
+          ieltsRows={ieltsRows}
+          blocks={blocks}
+          // Без истории (диплинк, F5) «назад» ведёт во вкладку «Сервисы»: профиль открывается оттуда.
+          onBack={onBack || (() => onNav?.('services'))}
+          onPickPhoto={() => fileRef.current?.click()}
+          edit={{ form, setForm, saving, error: editErr, open: openEdit, save: saveProfile }}
+          langLabel={langLabel}
+          notif={{
+            visible: isTeacher(token) || !isStudentSectionHidden('notifications'),
+            enabled: notifEnabled,
+            open: openNotif,
+            render: () => notifContent,
+          }}
+          harsh={{ visible: !!onTemperChoice && !isTeacher(token), on: harshOn, choose: (temper) => onTemperChoice?.(temper) }}
+          help={{
+            support: openSupport,
+            privacy: () => openDoc('privacy'),
+            terms: () => openDoc('offer'),
+            paymentSecurity: () => openDoc('payment-security'),
+          }}
+          renderCustom={() => customContent}
+          onLogout={onLogout}
+          deletion={deletion}
+          toast={toast}
+        />
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickAvatar} />
+      </LearningLayout>
+    )
+  }
 
   return (
     <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
@@ -417,11 +581,22 @@ export default function ProfilePage({
         </section>
 
         {/* Подбор учителя (ТЗ 08 §2.10): «Мой учитель», «Мои интересы», «Настройки обучения» — сразу после плиток */}
-        {!isTeacher(token) && !isStudentSectionHidden('my-teacher') && <ProfileBlocks token={token} onNav={onNav} onOpenNotifications={openNotif} />}
+        {blocks}
 
         <SkillRatings stats={skillStats} loading={skillStats === null} />
 
-        {onLevelTest && (
+        {ieltsRows.length > 0 && (
+          <>
+            <div className="pf-label">IELTS</div>
+            <div className="pf-card" data-section="ielts">
+              {ieltsRows.map((it, i) => (
+                <SettingRow key={it.key} item={it} chip last={i === ieltsRows.length - 1} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {onLevelTest && !(ieltsAccount && levelUnknown) && (
           <>
             <div className="pf-label">{t('profile.sectionLevel')}</div>
             <div className="pf-card">
@@ -449,12 +624,39 @@ export default function ProfilePage({
           ))}
         </div>
 
-        <section className="pf-card legal-profile"><h2>{t('legal.title')}</h2><LegalDocumentsLinks /></section>
+        <LegalDocumentsPanel className="legal-profile" />
         <button className="pf-logout" onClick={onLogout}>
           <PfLogoutIcon />
           <span>{t('profile.logout')}</span>
         </button>
+        {/* Удаление аккаунта (App Store) — тихой ссылкой под выходом, как в кадре настроек телефона: действие
+            необратимое, и заметной кнопкой оно бы зазывало. */}
+        <button
+          type="button"
+          className="pf-delete-link"
+          onClick={() => {
+            deletion.reset()
+            setDeleteOpen(true)
+          }}
+        >
+          {t('profile.delete.link')}
+        </button>
       </div>
+
+      {/* ── Удаление аккаунта: своего кадра у десктопа нет — содержимое экрана телефона окном ── */}
+      {deleteOpen && (
+        <div className="pf-modal" onClick={() => !deletion.busy && setDeleteOpen(false)}>
+          <div
+            className="pf-modal__sheet pf-modal__sheet--delete"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('profile.delete.title')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DeleteAccount deletion={deletion} onKeep={() => setDeleteOpen(false)} />
+          </div>
+        </div>
+      )}
 
       {/* ── Модалка выбора языка ── */}
       {langOpen && (
@@ -530,45 +732,14 @@ export default function ProfilePage({
       {/* ── Модалка уведомлений ── */}
       {notifOpen && (
         <Modal onClose={() => setNotifOpen(false)} title={t('profile.notifTitle')}>
-          <button className="pf-toggle-row" onClick={toggleNotif}>
-            <span>{t('profile.notifSound')}</span>
-            <span className={`pf-switch ${notifEnabled ? 'pf-switch--on' : ''}`}>
-              <span className="pf-switch__knob" />
-            </span>
-          </button>
-          {!isTeacher(token) && <NotificationChannels phone={phone} />}
+          {notifContent}
         </Modal>
       )}
 
       {/* ── Модалка кастомизации ── */}
       {customOpen && (
         <Modal onClose={() => setCustomOpen(false)} title={t('profile.customTitle')}>
-          <div className="pf-custom__preview">
-            {avatar ? (
-              <img className="pf-avatar__img" src={avatar} alt="" style={{ width: 80, height: 80 }} />
-            ) : (
-              <span className="pf-avatar__initial" style={{ width: 80, height: 80, background: avatarBg, fontSize: 32 }}>
-                {initial || <UserIcon size={38} />}
-              </span>
-            )}
-          </div>
-          <div className="pf-custom__label">{t('profile.customSubtitle')}</div>
-          <div className="pf-swatches">
-            {AVATAR_BGS.map((c) => (
-              <button
-                key={c}
-                className={`pf-swatch ${avatarBg === c ? 'pf-swatch--active' : ''}`}
-                style={{ background: c }}
-                onClick={() => chooseBg(c)}
-                aria-label={c}
-              />
-            ))}
-          </div>
-          {avatar && (
-            <button className="pf-custom__reset" onClick={resetAvatar}>
-              {t('profile.customReset')}
-            </button>
-          )}
+          {customContent}
         </Modal>
       )}
 

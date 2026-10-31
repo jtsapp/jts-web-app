@@ -5,14 +5,17 @@
 // Конвейер тот же, что у банка (writing/assess, speaking/assess): claim со служебным ключом → модель → результат на
 // бэкенд, band и окончательный overall считает он. Квоту IELTS диагностика не тратит: она бесплатна, как и раньше
 // (стартовый уровень нужен до покупки), а лимит — одна оценка на секцию, повтор после «done» бэкенд отклоняет 409.
+// Упавшую секцию (failed) бэкенд отдаёт на оценку снова — экран итога повторяет её теми же записями с устройства.
+//
+// Отладка — как у speaking/assess: debugId в ответе, заголовке и строке лога `ielts_speaking_assess` (route
+// diagnostic), он же в failReason секции.
 
 import { hasAnthropicKey, IELTS_REVIEW_MODEL, structured } from '@/lib/anthropic.js'
 import { BACKEND_URL, bearerFromRequest } from '@/lib/auth-server.js'
-import { assessPronunciationChunked, isAzureSpeechConfigured, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
-import { isSonioxConfigured, transcribeWavSoniox } from '@/lib/soniox-stt.js'
 import { WRITING_SCHEMA, buildSystemPrompt as writingPrompt, normalizeAssessment, userMessage as writingMessage } from '@/lib/ielts/writingGrader.js'
-import { SPEAKING_SCHEMA, buildSystemPrompt as speakingPrompt, normalizeSpeaking, userMessage as speakingMessage } from '@/lib/ielts/speakingGrader.js'
-import { pronunciationBand, wordsPerMinute } from '@/ielts/speaking/speaking.js'
+import { gradeSpeaking } from '@/lib/ielts/speakingGrader.js'
+import { answersDebug, answersPronunciation, savedItems, transcribeAnswers } from '@/lib/ielts/speakingAnswers.js'
+import { createAssessTrace } from '@/lib/ielts/assessTrace.js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -23,15 +26,8 @@ const MAX_ITEMS = 8
 // Прод за Cloudflare рвёт молчащий запрос через 100 с — бюджет как у speaking/assess
 const TOTAL_BUDGET_MS = 90_000
 const STT_DEADLINE_MS = 40_000
-const MODEL_TIMEOUT_MS = 60_000
-const MIN_MODEL_MS = 20_000
 
 const graderKey = () => (process.env.IELTS_GRADER_KEY || '').replace(/^﻿/, '').trim()
-
-function withDeadline(promise, ms, fallback) {
-  let timer
-  return Promise.race([promise, new Promise((resolve) => (timer = setTimeout(() => resolve(fallback), ms)))]).finally(() => clearTimeout(timer))
-}
 
 async function backend(path, token, init = {}) {
   const res = await fetch(`${BACKEND_URL}${path}`, {
@@ -43,62 +39,74 @@ async function backend(path, token, init = {}) {
   return { ok: res.ok, status: res.status, body }
 }
 
-async function transcribe(buf, pronP) {
-  if (isAzureSpeechConfigured()) {
-    const fast = await transcribeWavFast(buf, { timeoutMs: STT_DEADLINE_MS }).catch(() => null)
-    if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
-    const pron = await pronP
-    const text = String(pron?.transcript || '').trim()
-    if (text) return { text, stt: 'azure' }
-  }
-  if (isSonioxConfigured()) {
-    const text = await transcribeWavSoniox(buf, { lang: 'en', timeoutMs: STT_DEADLINE_MS }).catch(() => '')
-    return { text: String(text || '').trim(), stt: 'soniox' }
-  }
-  return { text: '', stt: null }
+const backendError = (r) => ({ status: r.status, message: String(r.body?.messages?.[0] || r.body?.message || '').slice(0, 160) })
+const claimError = (trace, claim) => {
+  trace.set('stage', 'claim')
+  trace.set('backend', backendError(claim))
+  if (claim.status === 409) return { error: 'already', status: 409 }
+  return { error: 'claim_failed', status: claim.status === 400 || claim.status === 404 ? claim.status : 502 }
 }
 
 export async function POST(request) {
-  const startedAt = Date.now()
+  const trace = createAssessTrace('diagnostic')
+  const reply = (body, status) => trace.respond(body, status)
   const token = bearerFromRequest(request)
-  if (!token) return Response.json({ error: 'auth_required' }, { status: 401 })
-  if (!graderKey() || !hasAnthropicKey()) return Response.json({ error: 'grading_unavailable' }, { status: 503 })
+  if (!token) return reply({ error: 'auth_required' }, 401)
+  if (!graderKey() || !hasAnthropicKey()) {
+    trace.set('missing', [!graderKey() && 'IELTS_GRADER_KEY', !hasAnthropicKey() && 'ANTHROPIC_API_KEY'].filter(Boolean))
+    return reply({ error: 'grading_unavailable' }, 503)
+  }
   const declared = Number(request.headers.get('content-length') || 0)
-  if (declared > MAX_TOTAL_BYTES + 64 * 1024) return Response.json({ error: 'too_large' }, { status: 413 })
+  if (declared > MAX_TOTAL_BYTES + 64 * 1024) return reply({ error: 'too_large' }, 413)
 
   let form
   try {
     form = await request.formData()
-  } catch {
-    return Response.json({ error: 'bad_form' }, { status: 400 })
+  } catch (e) {
+    trace.set('detail', String(e?.message || e).slice(0, 120))
+    return reply({ error: 'bad_form' }, 400)
   }
+  trace.mark('upload')
   const attemptId = Number(form.get('attemptId'))
   const skill = form.get('skill')
   const uiLang = ['ru', 'kk', 'en'].includes(form.get('uiLang')) ? form.get('uiLang') : 'ru'
-  if (!Number.isInteger(attemptId) || attemptId <= 0) return Response.json({ error: 'attempt_required' }, { status: 400 })
-  if (skill !== 'writing' && skill !== 'speaking') return Response.json({ error: 'bad_skill' }, { status: 400 })
+  if (!Number.isInteger(attemptId) || attemptId <= 0) return reply({ error: 'attempt_required' }, 400)
+  if (skill !== 'writing' && skill !== 'speaking') return reply({ error: 'bad_skill' }, 400)
+  trace.set('attemptId', attemptId)
+  trace.set('skill', skill)
   const base = `/mobile/ielts/diagnostic/attempts/${attemptId}/grading/${skill}`
-  const fail = (reason) => backend(`${base}/fail`, token, { method: 'POST', body: JSON.stringify({ reason }) })
+  const fail = (code, detail) => backend(`${base}/fail`, token, { method: 'POST', body: JSON.stringify({ reason: trace.reason(code, detail) }) })
 
   if (skill === 'writing') {
     const claim = await backend(base, token, { method: 'POST' })
-    if (!claim.ok) return Response.json({ error: claim.status === 409 ? 'already' : 'claim_failed' }, { status: claim.status === 409 ? 409 : claim.status === 404 ? 404 : 502 })
+    trace.mark('claim')
+    if (!claim.ok) {
+      const { error, status } = claimError(trace, claim)
+      return reply({ error }, status)
+    }
     const job = claim.body
     let assessment
+    trace.set('stage', 'model')
     try {
       const raw = await structured({ systemPrompt: writingPrompt(job, uiLang), userMessage: writingMessage(job), schema: WRITING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', timeoutMs: 80_000, maxRetries: 0 })
       assessment = normalizeAssessment(raw, job.text)
     } catch (e) {
-      console.error('ielts/diagnostic/assess writing model failed:', e?.message || e)
-      await fail('model')
-      return Response.json({ error: 'model_failed' }, { status: 502 })
+      trace.mark('model')
+      trace.set('model', { errors: [String(e?.message || e).slice(0, 200)] })
+      await fail('model', e?.message)
+      return reply({ error: 'model_failed' }, 502)
     }
+    trace.mark('model')
+    trace.set('stage', 'save')
     const saved = await backend(base, token, { method: 'PUT', body: JSON.stringify({ ...assessment, provider: 'anthropic', feedbackLanguage: uiLang }) })
+    trace.mark('save')
     if (!saved.ok) {
-      await fail('save')
-      return Response.json({ error: 'save_failed' }, { status: 502 })
+      trace.set('backend', backendError(saved))
+      await fail('save', `backend ${saved.status}`)
+      return reply({ error: 'save_failed' }, 502)
     }
-    return Response.json(saved.body)
+    trace.set('stage', 'done')
+    return reply(saved.body)
   }
 
   let meta = []
@@ -107,61 +115,80 @@ export async function POST(request) {
   } catch {
     /* проверка ниже */
   }
-  if (!Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS || meta.some((m) => !m || typeof m !== 'object')) return Response.json({ error: 'bad_items' }, { status: 400 })
+  if (!Array.isArray(meta) || !meta.length || meta.length > MAX_ITEMS || meta.some((m) => !m || typeof m !== 'object')) return reply({ error: 'bad_items' }, 400)
   const audio = []
   let total = 0
   for (let i = 0; i < meta.length; i++) {
     const f = form.get(`audio_${i}`)
-    if (!(f instanceof File) || !f.size) return Response.json({ error: 'missing_audio' }, { status: 400 })
+    // запись не собралась — этот ответ пропускается, как невнятный (см. speaking/assess)
+    if (!(f instanceof File) || !f.size) {
+      audio.push(null)
+      continue
+    }
     total += f.size
-    if (total > MAX_TOTAL_BYTES) return Response.json({ error: 'too_large' }, { status: 413 })
+    if (total > MAX_TOTAL_BYTES) return reply({ error: 'too_large' }, 413)
     audio.push(Buffer.from(await f.arrayBuffer()))
+  }
+  trace.set('bytes', total)
+  if (!audio.some(Boolean)) {
+    trace.set('stage', 'upload')
+    return reply({ error: 'no_speech' }, 422)
   }
   const items = meta.map((m) => ({ itemId: String(m.itemId), durationSec: Math.max(0, Math.min(600, Number(m.durationSec) || 0)) }))
   const claim = await backend(base, token, { method: 'POST', body: JSON.stringify({ items }) })
-  if (!claim.ok) return Response.json({ error: claim.status === 409 ? 'already' : 'claim_failed' }, { status: claim.status === 409 ? 409 : claim.status === 400 || claim.status === 404 ? claim.status : 502 })
+  trace.mark('claim')
+  if (!claim.ok) {
+    const { error, status } = claimError(trace, claim)
+    return reply({ error }, status)
+  }
   const job = claim.body
 
-  const per = await Promise.all(
-    audio.map(async (buf, i) => {
-      const pronP = isAzureSpeechConfigured() ? withDeadline(assessPronunciationChunked(buf).catch(() => null), STT_DEADLINE_MS, null) : Promise.resolve(null)
-      const [{ text, stt }, pron] = await Promise.all([transcribe(buf, pronP), pronP])
-      return { ...items[i], transcript: text, stt, wpm: wordsPerMinute(text, items[i].durationSec), accuracy: pron && !pron.mock ? pron.accuracy : null }
-    }),
-  )
-  if (!per.some((a) => a.transcript)) {
-    await fail('no_speech')
-    return Response.json({ error: 'no_speech' }, { status: 422 })
-  }
-  const modelMs = Math.min(MODEL_TIMEOUT_MS, TOTAL_BUDGET_MS - (Date.now() - startedAt))
-  if (modelMs < MIN_MODEL_MS) {
-    await fail('timeout')
-    return Response.json({ error: 'timeout' }, { status: 504 })
-  }
-  let graded
+  // секция уже взята в оценку: любой сбой — fail и JSON, иначе она так и висела бы «в оценке»
   try {
-    const raw = await structured({ systemPrompt: speakingPrompt(job.task?.part, uiLang), userMessage: speakingMessage(job, per), schema: SPEAKING_SCHEMA, model: IELTS_REVIEW_MODEL, effort: 'medium', maxOutputTokens: 900, timeoutMs: modelMs, maxRetries: 0 })
-    graded = normalizeSpeaking(raw, pronunciationBand(per.map((a) => ({ accuracy: a.accuracy, durationSec: a.durationSec }))))
+    trace.set('stage', 'stt')
+    const per = await transcribeAnswers(items, audio, { deadlineMs: STT_DEADLINE_MS })
+    trace.mark('stt')
+    trace.set('answers', answersDebug(per))
+    if (per.every((x) => x.skipped)) {
+      await fail('no_speech', per.map((a) => a.reason).join(','))
+      return reply({ error: 'no_speech' }, 422)
+    }
+    let graded
+    trace.set('stage', 'model')
+    try {
+      graded = await gradeSpeaking({ run: structured, model: IELTS_REVIEW_MODEL, job, answers: per, uiLang, pronunciation: answersPronunciation(per), deadline: trace.startedAt + TOTAL_BUDGET_MS })
+    } catch (e) {
+      trace.mark('model')
+      trace.set('model', { errors: e?.attempts || [String(e?.message || e).slice(0, 200)] })
+      await fail('model', (e?.attempts || []).join(' | ') || e?.message)
+      return reply({ error: 'model_failed' }, 502)
+    }
+    trace.mark('model')
+    trace.set('model', { model: graded.model, attempt: graded.attempt, ...(graded.errors?.length ? { errors: graded.errors } : {}) })
+    trace.set('stage', 'save')
+    const saved = await backend(base, token, {
+      method: 'PUT',
+      body: JSON.stringify({
+        criteria: graded.criteria,
+        feedback: graded.feedback,
+        strengths: graded.strengths,
+        improvements: graded.improvements,
+        items: savedItems(per),
+        provider: 'anthropic',
+        feedbackLanguage: uiLang,
+      }),
+    })
+    trace.mark('save')
+    if (!saved.ok) {
+      trace.set('backend', backendError(saved))
+      await fail('save', `backend ${saved.status}`)
+      return reply({ error: 'save_failed' }, 502)
+    }
+    trace.set('stage', 'done')
+    return reply(saved.body)
   } catch (e) {
-    console.error('ielts/diagnostic/assess speaking model failed:', e?.message || e)
-    await fail('model')
-    return Response.json({ error: 'model_failed' }, { status: 502 })
+    trace.set('detail', String(e?.message || e).slice(0, 200))
+    await fail('error', e?.message).catch(() => null)
+    return reply({ error: 'failed' }, 500)
   }
-  const saved = await backend(base, token, {
-    method: 'PUT',
-    body: JSON.stringify({
-      criteria: graded.criteria,
-      feedback: graded.feedback,
-      strengths: graded.strengths,
-      improvements: graded.improvements,
-      items: per.map(({ itemId, durationSec, transcript, wpm, accuracy }) => ({ itemId, durationSec, transcript, wpm, accuracy })),
-      provider: 'anthropic',
-      feedbackLanguage: uiLang,
-    }),
-  })
-  if (!saved.ok) {
-    await fail('save')
-    return Response.json({ error: 'save_failed' }, { status: 502 })
-  }
-  return Response.json(saved.body)
 }

@@ -4,6 +4,9 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
+  getMatchingTeacherExtras: vi.fn(async () => null),
+  getMatchingTeacherResultPhoto: vi.fn(async () => null),
+  getMatchingTeacherVideo: vi.fn(async () => null),
   getMatchingTeacher: vi.fn(async () => null),
   getMatchingTeacherPhoto: vi.fn(async () => null),
   confirmMatchingSchedule: vi.fn(async () => ({ apiVersion: 2, matchStatus: 'done' })),

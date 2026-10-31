@@ -5,6 +5,7 @@ import { I18nProvider, useI18n } from '../i18n.jsx'
 import {contractText} from '../contracts/texts.js'
 
 vi.mock('../api.js', () => ({
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),

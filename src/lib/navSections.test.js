@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { menuItems, mobileTabs, serviceItems, tabFor, showsTabBar } from './navSections.js'
+import { menuItems as buildMenu, mobileTabs, serviceItems, tabFor, showsTabBar } from './navSections.js'
+
+// Явный ответ «абонемента пока нет»: обычное меню во время онбординга.
+const menuItems = (options = {}) => buildMenu({ sections: { known: false, allowed: [] }, ...options })
 
 const keys = (list) => list.map((i) => i.key)
 
 describe('меню ученика', () => {
   it('обычный ученик: Главная и разделы курса, без экзаменов и наград', () => {
     expect(keys(menuItems())).toEqual([
-      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'learning', 'practice', 'grammar-games', 'speed-reading', 'tutor', 'lessons', 'homework', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -18,7 +21,7 @@ describe('меню ученика', () => {
 
   it('экзамен появляется только при своей подписке', () => {
     expect(keys(menuItems({ exams: { ielts: true, sat: false } }))).toEqual([
-      'home', 'group', 'learning', 'practice', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback', 'notifications', 'contracts',
+      'home', 'group', 'learning', 'practice', 'grammar-games', 'speed-reading', 'tutor', 'lessons', 'homework', 'ielts', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
   })
 
@@ -26,9 +29,17 @@ describe('меню ученика', () => {
     expect(keys(menuItems({ rewards: true })).slice(-5)).toEqual(['tokens', 'prizes', 'feedback', 'notifications', 'contracts'])
   })
 
-  it('закрытый по тарифу раздел в меню не показываем, до ответа сервера меню полное', () => {
+  it('закрытый по тарифу раздел в меню не показываем; до ответа сервера и при ошибке доступ ограничен', () => {
     expect(keys(menuItems({ sections: { known: true, allowed: [] } }))).not.toContain('group')
-    expect(keys(menuItems({ sections: null }))).toContain('group')
+    expect(keys(menuItems({ sections: null }))).not.toContain('group')
+    expect(keys(menuItems({ sections: { status: 'error' } }))).not.toContain('lessons')
+  })
+
+  it('оплаченный экзамен также требует разрешения матрицы', () => {
+    const sections = { known: true, allowed: ['sat'] }
+    expect(keys(menuItems({ sections, exams: { ielts: true, sat: true } }))).toContain('sat')
+    expect(keys(menuItems({ sections, exams: { ielts: true, sat: true } }))).not.toContain('ielts')
+    expect(keys(menuItems({ sections, exams: { sat: false } }))).not.toContain('sat')
   })
 
   it('преподаватель: только Практика и Уроки', () => {
@@ -57,7 +68,7 @@ describe('нижняя панель телефона', () => {
 
   it('Сервисы — разделы, которые не стали вкладками, в порядке меню', () => {
     expect(keys(serviceItems(menuItems({ exams: { ielts: true, sat: true } })))).toEqual([
-      'group', 'learning', 'homework', 'ielts', 'sat', 'vocab', 'feedback', 'notifications', 'contracts',
+      'group', 'learning', 'grammar-games', 'speed-reading', 'homework', 'ielts', 'sat', 'vocab', 'feedback', 'notifications', 'contracts',
     ])
     expect(serviceItems(menuItems({ teacher: true }))).toEqual([])
   })
@@ -75,13 +86,13 @@ describe('нижняя панель телефона', () => {
 
 describe('где видна нижняя панель', () => {
   it('на корнях вкладок и экранах без своей «назад» — есть', () => {
-    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'profile', 'my-teacher']) {
+    for (const s of ['home', 'practice', 'lessons', 'services', 'tutor-dashboard', 'kingdom', 'homework', 'vocab', 'ielts', 'sat', 'my-teacher']) {
       expect(showsTabBar(s)).toBe(true)
     }
   })
 
   it('внутри разделов, как в приложении, — нет: там своя «назад»', () => {
-    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard']) {
+    for (const s of ['reading', 'workbook', 'writing', 'situations', 'wordhunt', 'prepositions', 'pronunciation', 'numbers', 'ge-plan', 'course-catalog', 'teacher-wizard', 'profile']) {
       expect(showsTabBar(s)).toBe(false)
     }
   })

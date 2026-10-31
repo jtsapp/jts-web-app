@@ -8,6 +8,7 @@ import ServicesPage from './ServicesPage.jsx'
 const demo = { value: false }
 
 vi.mock('../api.js', () => ({
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   // С токеном оболочка будит колокольчик уведомлений — без заглушки падает весь экран.
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 1253, streak: 4, streakActiveToday: true })),
@@ -46,19 +47,21 @@ describe('Сервисы', () => {
     expect(onProfile).toHaveBeenCalledTimes(1)
   })
 
-  it('плитки — разделы меню, которые не стали вкладками', () => {
+  it('плитки — разделы меню, которые не стали вкладками', async () => {
     const { container, onNav } = renderServices()
     const grid = container.querySelector('.svc-grid')
+    await waitFor(() => expect(within(grid).getByText('Словарь')).toBeTruthy())
     expect([...grid.querySelectorAll('.svc-tile__name')].map((n) => n.textContent)).toEqual([
-      'Выбрать группу', 'Повторение', 'Домашняя работа', 'Словарь', 'Feedback', 'Уведомления', 'Договоры',
+      'Выбрать группу', 'Повторение', 'Грамматика', 'Скорочтение', 'Домашняя работа', 'Словарь', 'Feedback', 'Уведомления', 'Договоры',
     ])
     fireEvent.click(within(grid).getByText('Словарь'))
     expect(onNav).toHaveBeenCalledWith('vocab')
   })
 
-  it('«Мой учитель» — первой плиткой и с бейджем, когда ждут действия ученика', () => {
+  it('«Мой учитель» — первой плиткой и с бейджем, когда ждут действия ученика', async () => {
     useMatching.mockReturnValue({ status: 'ready', card: { apiVersion: 2, matchStatus: 'self', tariffConfirmed: true, requests: [] }, handoffs: [] })
     const { container } = renderServices()
+    await waitFor(() => expect(container.querySelector('.svc-tile--my-teacher')).not.toBeNull())
     const first = container.querySelector('.svc-grid .svc-tile')
     expect(first.classList.contains('svc-tile--my-teacher')).toBe(true)
     expect(first.querySelector('.svc-tile__badge').textContent).toBe('1')

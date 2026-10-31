@@ -2482,6 +2482,11 @@ textarea {
   font-weight: 800;
 }
 /* Цифра «ждём действия» на пункте меню («Мой учитель», ТЗ 08 §2.12) — тем же красным, что у колокольчика */
+/* «new» у нового раздела — янтарная метка из макета кабинета студента, не красный счётчик очереди */
+.sb__badge--new {
+  background: #ffe7a8;
+  color: #7a5200;
+}
 .sb__badge {
   margin-left: auto;
   min-width: 20px;
@@ -3479,170 +3484,467 @@ textarea {
 }
 
 /* ═══════════════ Практика ═══════════════ */
-/* Экран «Практика» по макету Figma «Макеты» (5316:1548): шапка с уровнем,
-   четыре карточки навыков, секции навыка. Числа сняты с узлов макета, а не
-   на глаз: контент 1168 при окне 1440, поля 32/40/48/40, между блоками 40.
-   Шрифт в макете местами PT Root UI — здесь Manrope (общее решение
-   приложения, см. tutor.css), кегли, начертания и интерлиньяж из макета;
-   интерлиньяж — в целых px, как строки макета: Figma округляет строку до
-   пикселя (Manrope 14 «auto» = 19, 140% от 16 = 22), а line-height: normal
-   даёт дробные 19.1 и 22.4, и к низу экрана набегало 3px.
+/* Экран «Практика» — редизайн 29.10.2026 (Figma «pitch JTS (Copy)», секция «Практика · редизайн» 7393:14225;
+   система карточек 7405:4469). Колонка 1160 по центру, как у «Главной»; поля 24/32/56, между блоками 24. Числа
+   сняты с узлов макета, а не на глаз. Интерлиньяж — в целых px, как строки макета: Figma округляет строку до
+   пикселя (Manrope 14 «auto» = 19), а line-height: normal даёт дробные 19.1 и 22.4.
 
-   Обводки «внутрь» из Figma переведены с поправкой на border: у рамки 1px и
-   отступа 8/12 в макете здесь padding 7/11 — иначе элемент выходит на 2px
-   выше макета. */
+   Обводки «внутрь» из Figma переведены с поправкой на border: у рамки 1px и отступа 8/16 в макете здесь
+   padding 7/15 — иначе содержимое сдвигается на пиксель.
+
+   Цвет раздела — переменные --pk-* класса .pk-c--<вкладка>. На корне .pk он красит карточки, чипы и аккордеон
+   текущей вкладки, на каждой вкладке — её собственную плитку значка. Фиолетовый бренда остаётся у меню и чипа
+   уровня. */
 .pk {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  padding: 32px 40px 48px;
-  /* Ленты уходят в правое поле до края контента (как в макете, где рамка
-     обрезает их по краю экрана), поэтому горизонтальный вылет режем здесь. */
-  overflow: hidden;
-  overflow: clip;
+  gap: 24px;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px 32px 56px;
 }
-/* На этом экране угол «? / язык / колокольчик» стоял бы ровно на месте
-   переключателя уровня: в макете его нет, и на десктопе группу прячем.
-   В мобильной шапке она остаётся (MobileTopBar). */
+.pk-c--listening {
+  --pk-from: #4d87ff;
+  --pk-to: #1f4fd8;
+  --pk-acc: #2f6bf0;
+  --pk-tint: #e8efff;
+  --pk-ink: #1d47b8;
+  --pk-on: #ffffff;
+  --pk-mark: rgba(255, 255, 255, 0.22);
+}
+.pk-c--reading {
+  --pk-from: #ff9a4d;
+  --pk-to: #e8561a;
+  --pk-acc: #f2742e;
+  --pk-tint: #ffebdd;
+  --pk-ink: #b8480f;
+  --pk-on: #ffffff;
+  --pk-mark: rgba(255, 255, 255, 0.22);
+}
+.pk-c--writing {
+  --pk-from: #f062b8;
+  --pk-to: #b52c85;
+  --pk-acc: #d6409f;
+  --pk-tint: #ffe6f4;
+  --pk-ink: #9e1f72;
+  --pk-on: #ffffff;
+  --pk-mark: rgba(255, 255, 255, 0.22);
+}
+.pk-c--speaking {
+  --pk-from: #37c58a;
+  --pk-to: #13845a;
+  --pk-acc: #1fa56c;
+  --pk-tint: #e0f5eb;
+  --pk-ink: #127048;
+  --pk-on: #ffffff;
+  --pk-mark: rgba(255, 255, 255, 0.22);
+}
+/* Золотой: на светлом градиенте белый значок не читается — на обложках он тёмный (#3a2800), а плитка значка
+   плотнее (40 %). Подпись выбранной вкладки в макете белая. */
+.pk-c--grammarGames {
+  --pk-from: #f9cb45;
+  --pk-to: #e39a05;
+  --pk-acc: #e5a512;
+  --pk-tint: #fff3cc;
+  --pk-ink: #7a5400;
+  --pk-on: #3a2800;
+  --pk-mark: rgba(255, 255, 255, 0.4);
+}
+
+/* Значок макета маской: цвет — currentColor. */
+.pk-ico {
+  display: inline-block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: var(--ico) center / contain no-repeat;
+  mask: var(--ico) center / contain no-repeat;
+}
+
+/* Угол «? · колокольчик · язык» — в строку заголовка, как на «Главной»: «?» и колокольчик круглые 40 с рамкой.
+   До редизайна угол здесь прятали — на его месте стоял переключатель уровня; теперь уровни под вкладками. */
 @media (min-width: 761px) {
   .learn__main:has(.pk) .learn__bell {
-    display: none;
+    top: 24px;
+    right: max(32px, calc((100% - 1160px) / 2 + 32px));
+    gap: 12px;
+  }
+  .learn__main:has(.pk) .learn__bell > .tour-help { order: 1; }
+  .learn__main:has(.pk) .learn__bell > .nbell { order: 2; }
+  .learn__main:has(.pk) .learn__bell > :not(.tour-help):not(.nbell) { order: 3; }
+  .learn__main:has(.pk) .tour-help,
+  .learn__main:has(.pk) .nbell__btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e8e8ee;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #181818;
   }
 }
 
 .pk-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 44px;
+  min-height: 42px;
+  /* справа — кнопки угла (.learn__bell висит поверх абсолютом): заголовок под них не заезжает */
+  padding-right: 300px;
 }
 .pk-head__title {
   margin: 0;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 44px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 36px;
   color: #181818;
 }
 
-/* LevelSegmented: капсула #f4f4f4, пилюли 56×36 через 2px. */
-.pk-levels {
-  display: inline-flex;
-  flex: none;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  background: #f4f4f4;
-}
-.pk-levels__btn {
-  width: 56px;
-  height: 36px;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 19px;
-  color: #181818;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-.pk-levels__btn:hover { background: #e9e9e9; }
-.pk-levels__btn.is-on {
-  background: #9047ff;
-  color: #fff;
-  font-weight: 700;
-}
-.pk-levels__btn:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
-
-/* Карточки навыков 260×136, r20. Неактивная — вся карточка на 60%. Арт — экспорт
-   фигур из макета. Обводка активной — «внутрь» 0/4/6/4: рисуем её поверх
-   (::after), а не border самой кнопки, иначе нижние 6px сдвигали бы текст.
-   С 28.10.2026 карточек пять (пятая — «Грамматика · игры»), и в ряд они встают только от 1200px: уже «Аудирование»
-   не помещается и кеглем 20 (раскладка уже — ниже, в «Узких экранах»). Поля по бокам поэтому 12, а не 20 макета:
-   текст по центру, поле только режет строку. */
+/* Вкладки 208×72 через 14, r20: плитка значка 40 r12 в тинте своего раздела, название 16/800 и подпись 13/500.
+   Выбранная — градиент раздела с тенью, текст белый, плитка — белая полупрозрачная. */
 .pk-skills {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 .pk-skill {
-  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  gap: 12px;
   min-width: 0;
-  height: 136px;
-  padding: 16px 12px;
-  border: 0;
+  height: 72px;
+  padding: 0 11px 0 15px;
+  border: 1px solid #ececf1;
   border-radius: 20px;
-  overflow: hidden;
-  background: var(--sk-bg) var(--sk-art) center / cover no-repeat;
-  opacity: 0.6;
-  text-align: center;
+  background: #ffffff;
+  color: var(--pk-acc);
+  text-align: left;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.pk-skill:hover { opacity: 0.8; }
-.pk-skill.is-on { opacity: 1; }
-.pk-skill.is-on::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: solid var(--sk-line);
-  border-width: 0 4px 6px;
-  pointer-events: none;
+.pk-skill:hover { border-color: #dcdce4; }
+.pk-skill.is-on {
+  border-color: transparent;
+  background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
+  box-shadow: 0 6px 16px rgba(26, 13, 77, 0.18);
+  color: #ffffff;
 }
 .pk-skill:focus-visible { outline: 2px solid #b79cf5; outline-offset: 2px; }
+.pk-skill__ico {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--pk-tint);
+}
+.pk-skill.is-on .pk-skill__ico { background: var(--pk-mark); }
+.pk-skill__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .pk-skill__title,
 .pk-skill__count {
-  position: relative;
-  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.pk-skill__title { font-size: 16px; font-weight: 800; line-height: 22px; color: #181818; }
+.pk-skill__count { font-size: 13px; font-weight: 500; line-height: 18px; color: #7a7a86; }
+.pk-skill.is-on .pk-skill__title { color: #ffffff; }
+.pk-skill.is-on .pk-skill__count { color: rgba(255, 255, 255, 0.88); }
+
+/* Строка под вкладками: слева значок и лимит токенов, справа уровни. */
+.pk-cap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  min-height: 36px;
+}
+.pk-cap .pk-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  color: #7a7a86;
+}
+.pk-note .pk-ico { width: 18px; height: 18px; }
+
+/* Уровни — отдельные пилюли 36 через 8, выбранная — фиолетовая. Справа и тогда, когда подписи о токенах нет
+   (правила не пришли). */
+.pk-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.pk-levels__btn {
+  height: 36px;
+  padding: 0 15px;
+  border: 1px solid #ececf1;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 19px;
+  color: #181818;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
-.pk-skill__title { font-size: 24px; line-height: 33px; color: #181818; }
-/* «Грамматика · игры» в карточку в одну строку не встаёт ни при какой ширине ряда из пяти — две строки; между
-   словом и точкой в словаре неразрывный пробел, иначе перенос оставлял бы «· игры» отдельной строкой. */
-.pk-skill--grammarGames .pk-skill__title { white-space: normal; text-wrap: balance; }
-.pk-skill__count { font-size: 14px; line-height: 19px; color: var(--sk-ink); }
-.pk-skill--listening {
-  --sk-bg: #f4f8ff;
-  --sk-art: url('/practice/skills/listening.svg');
-  --sk-ink: #2f6fd6;
-  --sk-line: #bdcbe0;
+.pk-levels__btn:hover { border-color: #d6bcff; }
+.pk-levels__btn.is-on {
+  border-color: #9047ff;
+  background: #9047ff;
+  color: #ffffff;
 }
-.pk-skill--reading {
-  --sk-bg: #fff2e2;
-  --sk-art: url('/practice/skills/reading.svg');
-  --sk-ink: #c9750a;
-  --sk-line: #ddcaaa;
+.pk-levels__btn:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
+
+/* Группа карточек: у «Грамматики» — с заголовком 22/800 и подписью 14/500, у остальных вкладок — просто сетка.
+   Сетка — 4 колонки по 256 на ширине 1096: auto-fill с минимумом 220 даёт ровно их, а уже — меньше колонок. */
+.pk-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
-.pk-skill--writing {
-  --sk-bg: #faf6ff;
-  --sk-art: url('/practice/skills/writing.svg');
-  --sk-ink: #7a2ef0;
-  --sk-line: #ae9bce;
+.pk-group__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.pk-skill--speaking {
-  --sk-bg: #edf9f2;
-  --sk-art: url('/practice/skills/speaking.svg');
-  --sk-ink: #1e9e5a;
-  --sk-line: #8ebfa4;
+.pk-group__title { margin: 0; font-size: 22px; font-weight: 800; line-height: 30px; color: #181818; }
+.pk-group__sub { margin: 0; font-size: 14px; font-weight: 500; line-height: 19px; color: #7a7a86; }
+.pk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
 }
-/* Пятая карточка — «Грамматика · игры» (28.10.2026), в макете её нет. Цвет — жёлтый, пятый цвет бренда (четыре
-   других заняты навыками), арт — «кирпичики» формул раздела, нарисован в манере соседних карточек. */
-.pk-skill--grammarGames {
-  --sk-bg: #fff8e3;
-  --sk-art: url('/practice/skills/grammarGames.svg');
-  --sk-ink: #b07d00;
-  --sk-line: #dccb94;
+
+/* Карточка тренажёра: рамка 1 r20, поля 8, обложка 240×148 r14, до текста 12. Высоту ряда выравнивает сетка,
+   низ карточки (чип и стрелка) прижат книзу. */
+.pk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #ececf1;
+  border-radius: 20px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
+.pk-card:hover {
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(26, 13, 77, 0.1);
+  transform: translateY(-2px);
+}
+.pk-card:active { transform: translateY(0); }
+.pk-card:focus-visible { outline: 2px solid var(--pk-acc); outline-offset: 2px; }
+.pk-card__cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 240 / 148;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--pk-tint);
+}
+.pk-card--tile .pk-card__cover {
+  background: linear-gradient(to bottom right, var(--pk-from), var(--pk-to));
+  color: var(--pk-on);
+}
+/* Два круга обложки — в долях 240×148: у плитки белые (10 % справа сверху, 8 % слева снизу), у коллажа — цвета
+   раздела, в другом углу. */
+.pk-card__cover::before,
+.pk-card__cover::after {
+  content: '';
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.pk-card--tile .pk-card__cover::before { left: 62.5%; top: -40.5%; width: 75%; background: rgba(255, 255, 255, 0.1); }
+.pk-card--tile .pk-card__cover::after { left: -12.5%; top: 60.8%; width: 50%; background: rgba(255, 255, 255, 0.08); }
+.pk-card--collage .pk-card__cover::before { left: -16.7%; top: -33.8%; width: 62.5%; background: color-mix(in srgb, var(--pk-acc) 10%, transparent); }
+.pk-card--collage .pk-card__cover::after { left: 70.8%; top: 54%; width: 45.8%; background: color-mix(in srgb, var(--pk-acc) 8%, transparent); }
+.pk-card--photo .pk-card__cover::before,
+.pk-card--photo .pk-card__cover::after { content: none; }
+/* Значок крупно, прозрачностью 14 %, справа — тот же, что в плитке. */
+.pk-card__glyph {
+  position: absolute;
+  left: 52.5%;
+  top: 18.9%;
+  z-index: 1;
+  width: 53.3%;
+  height: auto;
+  aspect-ratio: 1;
+  opacity: 0.14;
+}
+.pk-card__mark {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--pk-mark);
+}
+.pk-card__mark .pk-ico { width: 32px; height: 32px; }
+.pk-card__img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pk-card__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(26, 13, 77, 0.12);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+  color: #181818;
+}
+.pk-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 8px 4px;
+}
+.pk-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pk-card__title { font-size: 16px; font-weight: 800; line-height: 22px; color: #181818; }
+.pk-card__desc { font-size: 13px; font-weight: 500; line-height: 18px; color: #7a7a86; }
+.pk-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pk-card__chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pk-tint);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--pk-ink);
+  white-space: nowrap;
+}
+.pk-card__go {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--pk-tint);
+  color: var(--pk-ink);
+}
+.pk-card__go .pk-ico { width: 18px; height: 18px; }
+
+/* «Все начисления за практику» — аккордеон внизу вкладки: шапка 40 (плитка значка, заголовок, число строк,
+   шеврон), раскрытый — таблица, строки через одну #fafafc r8, цифры цветом раздела. */
+.pk-acc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 11px 19px;
+  border: 1px solid #ececf1;
+  border-radius: 20px;
+  background: #ffffff;
+}
+.pk-acc__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pk-acc__head:focus-visible { outline: 2px solid var(--pk-acc); outline-offset: 4px; border-radius: 12px; }
+.pk-acc__ico {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--pk-tint);
+  color: var(--pk-acc);
+}
+.pk-acc__ico .pk-ico { width: 22px; height: 22px; }
+.pk-acc__title { font-size: 16px; font-weight: 800; line-height: 22px; color: #181818; }
+.pk-acc__count {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f3f6;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #7a7a86;
+  white-space: nowrap;
+}
+.pk-acc__chev { margin-left: auto; color: #7a7a86; }
+.pk-acc__table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+}
+.pk-acc__table th {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: #7a7a86;
+  text-align: left;
+}
+.pk-acc__table td {
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 19px;
+}
+.pk-acc__table th:first-child,
+.pk-acc__table td:first-child { width: 220px; }
+.pk-acc__table td:first-child { font-weight: 500; color: #7a7a86; }
+.pk-acc__table td:nth-child(2) { font-weight: 600; color: #181818; }
+.pk-acc__table th:last-child,
+.pk-acc__table td:last-child { width: 80px; text-align: right; white-space: nowrap; }
+.pk-acc__table td:last-child { font-weight: 800; color: var(--pk-ink); }
+.pk-acc__table tbody tr:nth-child(odd) td { background: #fafafc; }
+.pk-acc__table td:first-child { border-radius: 8px 0 0 8px; }
+.pk-acc__table td:last-child { border-radius: 0 8px 8px 0; }
 
 /* Секция: шапка 32 + 16 + лента. */
 .pk-sec {
@@ -3682,7 +3984,6 @@ textarea {
   vertical-align: middle;
   white-space: nowrap;
 }
-.pk-tokens--tile { align-self: flex-start; margin: 4px 0 0; }
 .pk-sec__tools {
   display: flex;
   align-items: center;
@@ -3836,7 +4137,6 @@ textarea {
 .pk-song,
 .pk-meme,
 .pk-book,
-.pk-tile,
 .pk-wb,
 .pk-situ {
   font-family: inherit;
@@ -4016,47 +4316,6 @@ textarea {
   gap: 4px;
 }
 
-/* Юнит грамматики 260×156: белая плитка r16 с обводкой 2px #f8f8f8,
-   поля 20 (18 + рамка), между бейджем и текстом 24, текст прижат вниз. */
-.pk-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 260px;
-  padding: 18px;
-  border: 2px solid #f8f8f8;
-  border-radius: 16px;
-  background: #fff;
-  transition: border-color 0.15s ease;
-}
-.pk-tile:hover { border-color: #efe4ff; }
-.pk-tile__badge {
-  align-self: flex-start;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: #f1ebff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  color: #9047ff;
-}
-.pk-tile__text {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 4px;
-}
-.pk-tile__title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  height: 44px;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 22px;
-  color: #181818;
-}
 /* Время: часы 16 #c1c1c1 + 12/700 #8a8a8a через 4. */
 .pk-meta {
   display: flex;
@@ -4169,84 +4428,6 @@ textarea {
   color: #181818;
 }
 
-/* Промо-баннеры: пара через 32 (528×195) или один во всю ширину (1088×176).
-   Поля 24, между текстом и кнопкой 24. Градиенты — ручки из макета,
-   пересчитанные в угол и позиции стопов CSS (у пары 110.8° 15.5–94.2%, у
-   широкого 99.4° 17–95.5%). */
-.pk-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px;
-}
-.pk-banner {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  min-width: 0;
-  padding: 24px;
-  border-radius: 20px;
-  color: #fff;
-}
-.pk-banner__text {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 100%;
-}
-.pk-banner__title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 33px;
-  color: #fff;
-}
-.pk-banner__desc {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 19px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.pk-banner__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 12px 0 20px;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 19px;
-  color: #9047ff;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.pk-banner__cta svg { flex: none; }
-.pk-banner__cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(20, 10, 60, 0.18);
-}
-.pk-banner__cta:active { transform: translateY(0); }
-.pk-banner__cta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.pk-banner--listening { background: linear-gradient(110.8deg, #9047ff 15.5%, #6932bb 94.2%); }
-.pk-banner--lc { background: linear-gradient(110.8deg, #4756ff 15.5%, #4a48aa 94.2%); }
-.pk-banner--writing { background: linear-gradient(110.8deg, #6990e9 15.5%, #7048aa 94.2%); }
-.pk-banner--verbs { background: linear-gradient(110.8deg, #9047ff 15.5%, #a732bb 94.2%); }
-.pk-banner--reading { background: linear-gradient(99.4deg, #8c45ff 17%, #1a94ff 95.5%); }
-/* «Слов в картинках» в макете нет — цвета их прежнего баннера, геометрия
-   широкого баннера «Чтения». */
-.pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
-/* SpeakSpin в макете тоже нет — фиолетовый прототипа (#6651d6 → #4e3bac). */
-.pk-banner--speakspin { background: linear-gradient(99.4deg, #6651d6 17%, #4e3bac 95.5%); }
-/* «Числа» в макете тоже нет — фиолетовый игры (#874bf8) в тёмный индиго её миров. */
-.pk-banner--numbers { background: linear-gradient(99.4deg, #874bf8 17%, #3b2a8f 95.5%); }
-/* Just to Listen в макете тоже нет — акцент раздела (#9047ff) в тёмный фиолетовый. */
-.pk-banner--listen { background: linear-gradient(99.4deg, #9047ff 17%, #4b2a9e 95.5%); }
-/* Prepositions World в макете тоже нет — фиолетовый прототипа (#5a2fc8) в тёмный индиго его героя. */
-.pk-banner--prepositions { background: linear-gradient(99.4deg, #6d3df0 17%, #3a1f94 95.5%); }
 /* Prepositions World: оболочка та же, что у «Чисел» (кнопка «назад», статусы загрузки). Поля у .prp-top
    такие же, как у .nmb-top (numbers.css): сама разметка курса стоит в Shadow DOM и своих полей у кнопки нет. */
 .prp-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
@@ -4255,8 +4436,6 @@ textarea {
 @media (max-width: 560px) {
   .prp-top { padding: 8px 16px 0; }
 }
-/* Pronunciation World в макете тоже нет — фиолетовый бренда прототипа (#874bf8) в его голубой (#0aafff). */
-.pk-banner--pronunciation { background: linear-gradient(99.4deg, #874bf8 17%, #0aafff 95.5%); }
 /* Pronunciation World: оболочка как у Prepositions World. overflow: visible — липкие шапка и полоса «Next»
    прототипа липнут к окну, а не к .learn__main (с overflow: auto она стала бы их прокруткой, а сама не
    прокручивается). */
@@ -4273,11 +4452,9 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .prn-top { padding: 8px 16px 0; }
 }
-/* «Грамматика · игры» своим экраном — оболочка как у Prepositions World; тумблер звука стоит слева, у кнопки
-   «назад»: правый верхний угол занят группой .learn__bell. Во вкладке Практики «назад» нет, а тумблер уходит в
-   шапку Практики (.pk-head__tools, на место переключателя уровня): угол .learn__bell на этом экране скрыт. */
+/* «Грамматика · игры» своим экраном (карточка «Темы по уровням») — оболочка как у Prepositions World; тумблер
+   звука стоит слева, у кнопки «назад»: правый верхний угол занят группой .learn__bell. */
 .ggp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }
-.pk-head__tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .ggp-sound { width: 40px; height: 40px; flex: none; border: 1px solid #efedf4; border-radius: 999px; background: #fff; font-size: 17px; line-height: 1; cursor: pointer; }
 .ggp-sound[aria-pressed='false'] { opacity: 0.55; }
 .ggp-host { display: block; }
@@ -4285,10 +4462,7 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .ggp-top { padding: 8px 16px 0; }
 }
-/* «Скорочтение» в макете тоже нет — фиолетовый в розовый бегущей строки прототипа (#ff5e7e). Бейдж «Новое» —
-   белая пилюля у заголовка (Д5). Оболочка — как у «Грамматики · игр»; поля у хоста свои: у движка в тени их нет. */
-.pk-banner--speed-reading { background: linear-gradient(99.4deg, #9047ff 17%, #e2508a 95.5%); }
-.pk-banner__tag { display: inline-block; margin-left: 10px; padding: 3px 10px; border-radius: 999px; background: #fff; color: #9047ff; font-size: 12px; font-weight: 800; line-height: 16px; vertical-align: 4px; white-space: nowrap; }
+/* «Скорочтение» своим экраном — оболочка как у «Грамматики · игр»; поля у хоста свои: у движка в тени их нет. */
 .srp-top { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 32px 0; }
 .srp-host { display: block; padding: 0 32px 32px; }
 .srp-host[hidden] { display: none; }
@@ -4296,10 +4470,6 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   .srp-top { padding: 8px 16px 0; }
   .srp-host { padding: 0 16px 24px; }
 }
-/* Cartoon World в макете тоже нет — фирменный фиолетовый прототипа (#6332ff) в розовый его акцента. */
-.pk-banner--cartoons { background: linear-gradient(99.4deg, #6332ff 17%, #b62ab8 95.5%); }
-/* Word Hunt в макете тоже нет — два цвета прототипа: фиолетовый кроссворда (#874bf8) в голубой поиска слов. */
-.pk-banner--wordhunt { background: linear-gradient(99.4deg, #874bf8 17%, #0aafff 95.5%); }
 /* Word Hunt: оболочка как у Prepositions World (кнопка «назад», статусы загрузки), свой корень тени. */
 .whp-top { display: flex; align-items: center; margin: 0 0 12px; padding: 12px 32px 0; }
 .whp-host { display: block; }
@@ -4310,97 +4480,6 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
 @media (max-width: 560px) {
   .whp-top { padding: 8px 16px 0; }
 }
-
-/* «Аркада» во вкладках «Говорение» и «Чтение» — зал из двух игр. В макете её
-   нет — геометрия и кнопка от широкого баннера (поля 24, r20, белая пилюля),
-   градиент — фиолетовый баннеров Практики, уходящий в сумеречное небо игр.
-   Справа — картинка Word Rush, под текстом — по кнопке на каждую игру. */
-.pk-arcade {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 24px;
-  min-height: 240px;
-  padding: 24px;
-  overflow: hidden;
-  border-radius: 20px;
-  color: #fff;
-  background:
-    radial-gradient(ellipse at 88% 18%, rgba(255, 215, 154, 0.35) 0, transparent 34%),
-    linear-gradient(99.4deg, #9047ff 17%, #3a1a86 95.5%);
-}
-.pk-arcade__text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-}
-.pk-arcade__title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 33px;
-}
-.pk-arcade__tagline {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 22px;
-}
-.pk-arcade__desc {
-  max-width: 56ch;
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 19px;
-  color: rgba(255, 255, 255, 0.75);
-}
-.pk-arcade__games {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
-  max-width: 520px;
-  margin: 8px 0 16px;
-}
-.pk-arcade__game {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 2px 8px;
-  padding: 10px 12px 10px 14px;
-  border: 0;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.pk-arcade__game:hover { background: rgba(255, 255, 255, 0.22); }
-.pk-arcade__game:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-.pk-arcade__game b { font-size: 15px; font-weight: 800; line-height: 20px; }
-.pk-arcade__game span {
-  grid-column: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
-  color: rgba(255, 255, 255, 0.8);
-}
-.pk-arcade__game > svg { grid-column: 2; grid-row: 1 / span 2; }
-.pk-arcade__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 16px;
-  margin-top: auto;
-}
-.pk-arcade__art { position: relative; min-height: 190px; overflow: hidden; border-radius: 16px; }
-.pk-arcade__cover { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* Скелетоны загрузки — в габаритах карточек макета. */
 .pk-skel__item {
@@ -4432,57 +4511,36 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   .pk-skel__line { animation: none; }
 }
 
-/* ── Узкие экраны. Отдельного макета нет — раскладка десктопа, сложенная в
-   колонку: карточки навыков 2×2, баннеры друг под другом, ленты от края до
-   края экрана. ── */
-@media (max-width: 1365px) {
-  .pk-skill__title { font-size: 20px; line-height: 27px; }
-}
-/* Пять карточек в ряд уже 1200px не помещаются — два ряда, 3 + 2, на всю ширину оба (сетка в шесть долей). */
-@media (min-width: 761px) and (max-width: 1199px) {
-  .pk-skills { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .pk-skill { grid-column: span 2; }
-  .pk-skill:nth-child(n + 4) { grid-column: span 3; }
+/* ── Узкие экраны. Отдельного макета нет: пять вкладок 208 в ряд встают только от 1200 — уже они идут лентой с
+   прокруткой вбок (тень выбранной не обрезается: под неё запас снизу), сетка карточек сама теряет колонки
+   (auto-fill). На телефоне (≤560) раскладку доводит src/mobile/practice.css. ── */
+@media (max-width: 1199px) {
+  .pk-skills {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(190px, 1fr);
+    margin: -4px 0 -22px;
+    padding: 4px 0 22px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .pk-skills::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 760px) {
   .pk {
-    gap: 28px;
+    gap: 20px;
     padding: 16px 16px 32px;
   }
   /* Заголовок раздела в мобильной оболочке уже стоит в шапке. */
-  .pk-head__title { display: none; }
-  .pk-levels {
-    display: flex;
-    width: 100%;
-  }
-  .pk-levels__btn { flex: 1; width: auto; }
+  .pk-head { display: none; }
   .pk-skills {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    margin: -4px -16px -22px;
+    padding: 4px 16px 22px;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x proximity;
   }
-  .pk-skill {
-    height: 96px;
-    padding: 12px;
-  }
-  /* Пятая карточка — на всю ширину, а не одна в последнем ряду. */
-  .pk-skill--grammarGames { grid-column: 1 / -1; }
-  .pk-skill__title { font-size: 18px; line-height: 25px; }
-  .pk-skill__count { font-size: 13px; line-height: 18px; }
-  .pk-pair {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-  .pk-banner { padding: 20px; }
-  .pk-banner__title { font-size: 21px; line-height: 29px; }
-  /* Арт «Аркады» — полосой над текстом, а не колонкой справа. */
-  .pk-arcade {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding: 20px;
-  }
-  .pk-arcade__art { order: -1; min-height: 150px; }
-  .pk-arcade__games { grid-template-columns: minmax(0, 1fr); }
-  .pk-arcade__title { font-size: 21px; line-height: 29px; }
+  .pk-skill { scroll-snap-align: start; }
   .pk-sec__title { font-size: 22px; line-height: 24px; }
   .pk-sec__title--sm { font-size: 18px; line-height: 20px; }
   .pk-rail {
@@ -6105,6 +6163,243 @@ body:has(.prn-host[data-game='1']) .asst__badge { display: none; }
   font-weight: 600;
   z-index: 120;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Удаление аккаунта (App Store) ──
+   Кадры «Удаление аккаунта» и «Аккаунт удалён» (Figma «Mobile» → «Профиль», 7419:13214 и 7419:13541). Здесь —
+   на всех ширинах: у десктопа своего кадра нет, он показывает то же содержимое окном; раскладку экрана телефона
+   (кнопки у низа, фон экрана) добавляет src/mobile/profile.css. */
+.pf-mi {
+  display: block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: var(--pf-mi) center / contain no-repeat;
+  mask: var(--pf-mi) center / contain no-repeat;
+}
+.pf-delete-link {
+  display: block;
+  margin: 8px auto 0;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: #767676;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pf-delete-link:hover {
+  color: #e5383b;
+}
+.pf-modal__sheet--delete {
+  width: 420px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 20px;
+  background: #f8f8f8;
+  border-radius: 28px;
+}
+.pfd {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pfd-warn,
+.pfd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #efeff4;
+  border-radius: 28px;
+  background: #fff;
+}
+.pfd-warn {
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+.pfd-warn__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: #ffe8e8;
+  color: #e5383b;
+}
+.pfd-warn__plate .pf-mi {
+  width: 32px;
+  height: 32px;
+}
+.pfd-warn__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  color: #181818;
+}
+.pfd-warn__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+.pfd-list__title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 800;
+  color: #181818;
+}
+.pfd-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: 2px solid #efeff4;
+  border-radius: 20px;
+}
+.pfd-row__plate {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.pfd-row--profile .pfd-row__plate { background: #e6dcfc; color: #9047ff; }
+.pfd-row--lessons .pfd-row__plate { background: #e3eeff; color: #2d7ff9; }
+.pfd-row--vocab .pfd-row__plate { background: #e3f6ea; color: #27a35b; }
+.pfd-row--tokens .pfd-row__plate { background: #fff4d6; color: #f08c00; }
+.pfd-row__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pfd-row__txt b {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #181818;
+}
+.pfd-row__txt span {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+.pfd-err {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #fff1f1;
+  color: #c62828;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+.pfd-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pfd-del,
+.pfd-keep,
+.pfdone__home {
+  width: 100%;
+  height: 52px;
+  border-radius: 26px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pfd-del {
+  border: 0;
+  background: #e5383b;
+  color: #fff;
+}
+.pfd-keep {
+  border: 2px solid #efeff4;
+  background: #fff;
+  color: #181818;
+}
+.pfd-del:disabled,
+.pfd-keep:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* «Аккаунт удалён»: сессии уже нет, оболочки кабинета нет — карточка по центру окна. */
+.pfdone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: #f8f8f8;
+}
+.pfdone__card {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 24px 24px;
+  border: 1px solid #efeff4;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+.pfdone__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.pfdone__plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 36px;
+  background: #e3f6ea;
+  color: #27a35b;
+}
+.pfdone__plate .pf-mi {
+  width: 56px;
+  height: 56px;
+}
+.pfdone__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 800;
+  color: #181818;
+}
+.pfdone__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #5a5a66;
+}
+.pfdone__home {
+  border: 0;
+  background: #9047ff;
+  color: #fff;
 }
 
 /* ── Профиль: модалки редактирования / уведомлений / кастомизации ── */

@@ -8,6 +8,7 @@ import { rememberDemoDeadline } from './lib/demoAccess.js'
 import { CATALOG_KEY_PREFIX, CATALOG_STORE_MAX_CHARS } from './lib/catalogCacheKeys.js'
 import { clearAttribution, readAttribution, registrationFields, safeStorage } from './lib/attribution.js'
 import { API_BASE } from './lib/apiBase.js'
+import { attemptKey, deletePendingTakes, savePendingTakes } from './ielts/speaking/pendingTakes.js'
 
 const BASE = API_BASE
 
@@ -80,10 +81,10 @@ export function getInkScenarios(level) {
   return get('/ink/practice' + q)
 }
 
-async function authGet(path, token) {
+async function authGet(path, token, options = {}) {
   let res
   try {
-    res = await fetch(BASE + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    res = await fetch(BASE + path, { ...options, headers: token ? { Authorization: `Bearer ${token}` } : {} })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
@@ -99,6 +100,7 @@ async function authGet(path, token) {
     if (res.status === 403) err.serverMessage = await rejectionText(res, err)
     throw err
   }
+  if (res.status === 204) return null
   return res.json()
 }
 
@@ -110,21 +112,20 @@ export function getMyTokens(token) {
 }
 
 // Разделы кабинета, открытые ученику по тарифу и формату (ТЗ кабинетов, 14е): { known, tariff, format, allowed }.
-// Любая осечка (нет ручки на стенде, сеть) — null: меню остаётся полным, ученика из-за сети не закрываем.
-const _mySections = new Map()
-export function getMySections(token) {
+// Готовые права не кэшируем: тариф или настройки координатора могут измениться без смены токена.
+// Одновременные запросы меню и экрана совмещает studentSectionStore.
+export function getMySections(token, options = {}) {
   if (!token) return Promise.resolve(null)
-  if (_mySections.has(token)) return _mySections.get(token)
-  const p = authGet('/cabinet/my-sections', token)
-    .then((d) => (d && Array.isArray(d.allowed) ? d : null))
-    .catch(() => {
-      _mySections.delete(token)
-      return null
+  return authGet('/cabinet/my-sections', token, options)
+    .then((d) => {
+      if (!d || typeof d.known !== 'boolean' || !Array.isArray(d.allowed) || !d.allowed.every((key) => typeof key === 'string')) {
+        throw new Error('Invalid section access')
+      }
+      // Новый тариф или решение координатора должны перепроверить и отдельный оплаченный доступ к экзаменам.
+      _ieltsMe.delete(token)
+      _satMe.delete(token)
+      return d
     })
-  _mySections.set(token, p)
-  // Тариф меняет менеджер: помним ответ недолго, чтобы новый раздел появился без перелогина.
-  setTimeout(() => _mySections.get(token) === p && _mySections.delete(token), 5 * 60 * 1000)
-  return p
 }
 
 export function getCabinetFeedback(token) {
@@ -847,6 +848,30 @@ export const getMatchingTeacher = (token, id) => authGet(`/student/matching/teac
 export async function getMatchingTeacherPhoto(token, id) {
   try {
     const res = await fetch(`${BASE}/student/matching/teachers/${id}/photo`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
+// Дополнение профиля учителя (тексты, одобренные фото результатов, наличие видео). На старом стенде ручки нет — тогда блоков просто нет.
+export async function getMatchingTeacherExtras(token, id) {
+  try {
+    return await authGet(`/student/matching/teachers/${id}/extras`, token)
+  } catch {
+    return null
+  }
+}
+export async function getMatchingTeacherResultPhoto(token, id, photoId) {
+  try {
+    const res = await fetch(`${BASE}/student/matching/teachers/${id}/results/${photoId}`, { headers: { Authorization: `Bearer ${token}` } })
+    return res.ok ? await res.blob() : null
+  } catch {
+    return null
+  }
+}
+export async function getMatchingTeacherVideo(token, id) {
+  try {
+    const res = await fetch(`${BASE}/student/matching/teachers/${id}/video`, { headers: { Authorization: `Bearer ${token}` } })
     return res.ok ? await res.blob() : null
   } catch {
     return null
@@ -2082,22 +2107,70 @@ export function getIeltsSpeakingWorks(token) {
 // Записи ответов Speaking — сразу нашему серверному роуту (распознавание, произношение и модель — там); бэкенд
 // получает только стенограммы и баллы. answers: [{ itemId, durationSec, wav: Blob }].
 // оценка меняет баллы и прогресс — кэш IELTS сбрасывается и при отказе (работа к тому времени уже создана)
+//
+// Сбой после создания работы (есть attemptId) — записи остаются на устройстве (ielts/speaking/pendingTakes.js), и
+// «Отправить ещё раз» из экрана или из упавшей работы шлёт их же с retryAttemptId. Оценили — записи удаляются.
 export function assessIeltsSpeaking(token, opts) {
-  return ieltsChanged(assessIeltsSpeakingRaw(token, opts))
+  return ieltsChanged(
+    assessIeltsSpeakingRaw(token, opts).then(
+      (view) => {
+        forgetSpeakingTakes(opts.retryAttemptId, view?.attempt?.id)
+        return view
+      },
+      async (e) => {
+        logAssessFailure('speaking', e)
+        if (e?.code === 'already_graded') forgetSpeakingTakes(opts.retryAttemptId)
+        else if (e?.attemptId) await savePendingTakes(attemptKey(e.attemptId), { testId: opts.testId, mode: opts.mode, answers: opts.answers }).catch(() => {})
+        throw e
+      },
+    ),
+  )
 }
 
-async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers }) {
+function forgetSpeakingTakes(...ids) {
+  for (const id of ids) if (id) deletePendingTakes(attemptKey(id)).catch(() => {})
+}
+
+// Код, id запроса и разбор роута — в консоль: на экране причины сведены к нескольким фразам, а по debugId строка
+// `ielts_speaking_assess` находится в логе стенда.
+function logAssessFailure(route, e) {
+  console.warn(`ielts ${route} grading failed:`, e?.code || e?.status || e?.message, e?.debugId ? `debugId=${e.debugId}` : '', e?.debug || '')
+}
+
+async function assessIeltsSpeakingRaw(token, { testId, mode, uiLang, answers, retryAttemptId }) {
   const form = new FormData()
   form.append('testId', testId)
   form.append('mode', mode)
   form.append('uiLang', uiLang)
+  if (retryAttemptId) form.append('retryAttemptId', String(retryAttemptId))
   form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
   answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
-  const res = await fetch('/api/ielts/speaking/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  return readAssess(await assessFetch('/api/ielts/speaking/assess', token, form))
+}
+
+// Обрыв сети (телефон ушёл в сон, Wi-Fi пропал посреди 10 МБ записей) — свой код: раньше он падал TypeError-ом в
+// общую «Оценка не удалась», и в консоли не было даже статуса.
+async function assessFetch(url, token, form) {
+  try {
+    return await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+  } catch (e) {
+    throw Object.assign(new Error('network'), { code: 'network', detail: String(e?.message || e) })
+  }
+}
+
+async function readAssess(res) {
   const body = await res.json().catch(() => null)
-  // 413 от nginx приходит HTML-страницей без JSON — без этого экран показал бы общую ошибку, а не «слишком длинно»
-  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
-  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code, attemptId: body?.attemptId ?? null })
+  // 413 от nginx приходит HTML-страницей без JSON — без этого экран показал бы общую ошибку, а не «слишком длинно»;
+  // 502/504 прокси без JSON — сервер не успел (Cloudflare 524 после 100 с)
+  const code = body?.error || (res.status === 413 ? 'too_large' : res.status === 504 || res.status === 524 ? 'timeout' : undefined)
+  if (!res.ok)
+    throw Object.assign(new Error(code || `HTTP ${res.status}`), {
+      status: res.status,
+      code,
+      attemptId: body?.attemptId ?? null,
+      debugId: body?.debugId || res.headers?.get?.('x-ielts-debug-id') || null,
+      debug: body?.debug || null,
+    })
   return body
 }
 
@@ -2141,11 +2214,10 @@ async function assessIeltsDiagnosticRaw(token, { attemptId, skill, uiLang, answe
     form.append('items', JSON.stringify(answers.map(({ itemId, durationSec }) => ({ itemId, durationSec }))))
     answers.forEach((a, i) => form.append(`audio_${i}`, a.wav, `${a.itemId}.wav`))
   }
-  const res = await fetch('/api/ielts/diagnostic/assess', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
-  const body = await res.json().catch(() => null)
-  const code = body?.error || (res.status === 413 ? 'too_large' : undefined)
-  if (!res.ok) throw Object.assign(new Error(code || `HTTP ${res.status}`), { status: res.status, code })
-  return body
+  return readAssess(await assessFetch('/api/ielts/diagnostic/assess', token, form)).catch((e) => {
+    logAssessFailure(`diagnostic ${skill}`, e)
+    throw e
+  })
 }
 
 export function submitIeltsWriting(token, id, body) {
@@ -2554,6 +2626,27 @@ export async function updateUser(token, { name, email, city, gender, birthDate, 
   return data
 }
 
+// Удаление своего аккаунта (DELETE /user/me, Bearer) — требование App Store. Бэкенд удаляет мягко, как админка:
+// логины освобождаются, Sign in with Apple отзывается. Ошибка несёт status, экран различает по нему: 403 — аккаунт
+// сотрудника (его удаляет только администратор), 404 — стенд со старым бэкендом без ручки, 0 — нет связи.
+export async function deleteMyAccount(token) {
+  let res
+  try {
+    res = await fetch(`${BASE}/user/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  } catch {
+    const err = new Error('Нет связи с сервером.')
+    err.status = 0
+    throw err
+  }
+  if (!res.ok) {
+    if (res.status === 401) reportUnauthorized(token)
+    const err = new Error(`Не удалось удалить аккаунт (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+  return res.json().catch(() => ({}))
+}
+
 // Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
 export async function saveLanguageLevel(token, level) {
   const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`
@@ -2768,3 +2861,13 @@ export async function markFeedbackReportOpened(linkToken) {
 // Explicit account-bound acknowledgement of the immutable legal PDF bundle.
 export const getLegalAcknowledgement = (token) => authGet('/user/legal-documents', token)
 export const acceptLegalDocuments = (token, body) => authPut('/user/legal-documents', token, body)
+
+// Post-lesson survey: 204 means there is no eligible lesson.
+export async function getPendingLessonFeedback(token, signal) {
+  const deadline = AbortSignal.timeout(15000)
+  return authGet('/mobile/lesson-feedback/pending', token, { signal: signal ? AbortSignal.any([signal, deadline]) : deadline })
+}
+
+export function submitLessonFeedback(token, lessonId, answers) {
+  return authPost(`/mobile/lesson-feedback/${encodeURIComponent(lessonId)}`, token, answers)
+}

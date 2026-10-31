@@ -8,7 +8,7 @@ import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
 import OfferCatalog from '../components/OfferCatalog.jsx'
 import { PricingIncluded } from '../components/PricingDecorations.jsx'
-import LegalDocumentsLinks from '../components/LegalDocumentsLinks.jsx'
+import LegalDocumentsPanel from '../components/LegalDocumentsPanel.jsx'
 import { CURRENCY, formatPrice, offerCategory, offerTitle, offerDetails } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
 
@@ -137,7 +137,7 @@ export default function PricingPage({ token, onBack, onDone }) {
           <div className="pr__cols">
             <OfferCatalog offers={offers} onSelect={add} quantity={(id) => qtyOf(items, id)} onBump={bump} />
             <PricingIncluded />
-            <section className="pr-inc"><h2 className="pr-inc__title">{t('legal.title')}</h2><LegalDocumentsLinks /></section>
+            <LegalDocumentsPanel />
           </div>
 
           {/* ——— Корзина ——— */}

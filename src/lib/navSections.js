@@ -1,5 +1,5 @@
-import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentSectionHidden } from '../config.js'
-import { isSectionOpen } from './studentSections.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS, isRewardsScreen, isStudentMenuItemHidden } from '../config.js'
+import { isSectionOpen } from './studentSectionRules.js'
 
 // Меню ученика — одно на сайдбар (компьютер и планшет), нижнюю панель телефона и экран «Сервисы». Правила
 // перенесены из Sidebar.jsx без изменений (26.10.2026): панель и «Сервисы» обязаны показывать ровно те разделы, что
@@ -24,6 +24,8 @@ const GROUP_ITEM = { key: 'group', label: 'nav.group', ico: 'groups' }
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', ico: 'map' },
   { key: 'practice', label: 'nav.practice', ico: 'auto_stories' },
+  { key: 'grammar-games', label: 'nav.grammar', ico: 'spellcheck' },
+  { key: 'speed-reading', label: 'nav.speedReading', ico: 'speed' },
   { key: 'tutor', label: 'nav.tutor', ico: 'auto_awesome' },
   { key: 'lessons', label: 'nav.lessons', ico: 'videocam' },
   { key: 'homework', label: 'nav.homework', ico: 'assignment' },
@@ -56,16 +58,14 @@ export const NAV_ICONS = Object.fromEntries([HOME_ITEM, MY_TEACHER_ITEM, GROUP_I
 const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // Аккаунт IELTS (дизайн «IELTS new», 08.10.2026): ровно эти разделы и в этом порядке, а внизу «Настройки». Игровых
-// счётчиков и плашки уровня в макете нет. С 13.10.2026 то же меню у ученика с открытым доступом к IELTS или SAT — и
-// в нём всегда ОБА экзамена: доступ к одному не прячет второй (решение владельца), «Повторение» (Review) остаётся в
-// меню — владелец, 13.10.2026.
+// счётчиков и плашки уровня в макете нет. Каждый экзамен ниже проверяется и по матрице, и по своему доступу.
 const IELTS_SECTIONS = ['learning', 'practice', 'tutor', 'lessons', 'homework', 'vocab', 'ielts', 'sat', 'tokens', 'prizes', 'feedback', 'notifications', 'contracts']
 
 /**
  * Пункты меню по роли. Награды (tokens, prizes) — только там, где они включены (rewards); вкладки экзаменов — только
  * при своей подписке, абонементе или тарифе (exams), пока ответа нет — спрятаны. «Мой учитель» — когда на стенде
  * есть подбор учителя (myTeacher). Разделы по тарифу и формату (sections, ТЗ кабинетов 14е): закрытый раздел в меню не
- * показываем; до ответа сервера и без абонемента (null) меню полное.
+ * показываем; при загрузке и ошибке остаются общие разделы, полное меню — только по явному ответу об онбординге.
  */
 export function menuItems({
   teacher = false,
@@ -83,11 +83,12 @@ export function menuItems({
       ? [...head, ...IELTS_SECTIONS.map((k) => NAV.find((i) => i.key === k)).filter(Boolean)]
       : [...head, ...NAV]
   return all.filter((item) => {
-    if (!teacher && isStudentSectionHidden(item.key)) return false
+    if (!teacher && isStudentMenuItemHidden(item.key)) return false
     if (!rewards && isRewardsScreen(item.key)) return false
+    if (!teacher && !isSectionOpen(sections, item.key)) return false
     if (item.key === 'ielts') return exams.ielts
     if (item.key === 'sat') return exams.sat
-    return isSectionOpen(sections, item.key)
+    return true
   })
 }
 
@@ -126,6 +127,9 @@ const INNER_SCREENS = new Set([
   'ge-plan', 'ge-route', 'course-catalog',
   // мастер подбора учителя: «← Назад» в шапке шага и своя закреплённая снизу панель (.mt-bar) — наша легла бы на неё
   'teacher-wizard',
+  // профиль и его настройки — стопка экранов со своей «назад» (кадры «Mobile» → «Профиль» без панели); без истории
+  // «назад» ведёт в «Сервисы», откуда профиль и открывают
+  'profile',
 ])
 
 /** Видна ли нижняя панель на этом экране (ключ screen App): на внутренних экранах разделов — нет. */

@@ -64,7 +64,8 @@ export default function SpeedReadingPage({ userName, userLevel, token, onNav, on
   useEffect(() => {
     live.current = { lang, text: initialTarget?.text || null }
   })
-  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'listening' }))
+  // Без истории — во вкладку «Грамматика»: карточка «Скорочтения» там с редизайна 29.10.2026.
+  const goBack = () => (onBack ? onBack() : onNav?.('practice', { skill: 'grammarGames' }))
 
   // Из «Практики» сюда приходят с прокрученной лентой, а App прокрутку между экранами не сбрасывает: без этого
   // экран открывался серединой — без кнопки «назад» и начала карточки.

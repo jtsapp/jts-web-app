@@ -14,6 +14,6 @@ vi.mock('../api.js', async original => ({
 it('keeps student Feedback available in tutor-only mode', async () => {
   const onNav = vi.fn()
   render(<I18nProvider><Sidebar token="fixture" userName="Student" onNav={onNav} /></I18nProvider>)
-  fireEvent.click(screen.getByRole('button', { name: 'Feedback' }))
+  fireEvent.click(screen.getByRole('button', { name: /^Feedback/ }))
   await waitFor(() => expect(onNav).toHaveBeenCalledWith('feedback'))
 })

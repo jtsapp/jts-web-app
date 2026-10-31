@@ -9,6 +9,7 @@ import Sidebar from './Sidebar.jsx'
 
 vi.mock('../api.js', async (importOriginal) => ({
   ...(await importOriginal()),
+  getMySections: vi.fn(async () => ({ known: false, allowed: [] })),
   getBalance: vi.fn().mockResolvedValue({ coins: 7, streak: 2, streakActiveToday: false }),
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getIeltsMe: vi.fn(async () => ({ ieltsAccount: false, access: false })),
