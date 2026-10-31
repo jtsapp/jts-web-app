@@ -44,6 +44,7 @@ vi.mock('../practice/usePracticeEntitlement.js', () => ({
 }))
 
 import IeltsPage from './IeltsPage.jsx'
+import * as api from '../api.js'
 
 function renderPage(props = {}) {
   return render(
@@ -93,6 +94,15 @@ describe('IeltsPage — хаб по дизайну «IELTS new»', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Тексты на время' }))
     expect(await screen.findByText('Counting the trees')).toBeTruthy()
     expect(window.location.search).toContain('ieltsView=texts')
+  })
+
+  it('ученице General Training и шапка, и Reading показывают GT, а не Academic', async () => {
+    api.getIeltsMe.mockResolvedValueOnce({ ieltsAccount: true, track: 'general' })
+    renderPage()
+    fireEvent.click(screen.getByRole('tab', { name: 'Практика IELTS' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Reading.*Тексты/ }))
+    expect(await screen.findByText(/Показаны упражнения формата General Training/)).toBeTruthy()
+    expect(screen.queryByText(/GT-тексты скрыты/)).toBeNull()
   })
 
   it('поиск без результатов предлагает сбросить фильтры', async () => {

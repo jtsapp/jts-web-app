@@ -101,9 +101,12 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   const listeningCatalog = useListeningCatalog(token)
   const writingCatalog = useIeltsCatalog(token, 'writing')
   const speakingCatalog = useIeltsCatalog(token, 'speaking')
-  const [track, setTrack] = useIeltsTrack()
+  const [savedTrack] = useIeltsTrack()
   // Трек в шапке — метка профиля (ТЗ v4), а не переключатель: берём из /mobile/ielts/plan/me, без ответа — выбор списков
   const [me, setMe] = useState(null)
+  // Тот же трек и у списков «Практики»: шапка ученицы General Training показывала GT, а Reading — Academic
+  // с «GT-тексты скрыты», потому что списки брали трек устройства (по умолчанию Academic).
+  const track = me?.track || savedTrack
   // Ближайший живой урок — только у live; источник — общее расписание JTS, IELTS его не копирует
   const [lesson, setLesson] = useState(null)
   useEffect(() => {
@@ -196,7 +199,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
         <div className="ih">
-          <IeltsHeader track={me?.track || track} />
+          <IeltsHeader track={track} />
           {/* демо-версия IELTS (SAT-SYNC-PLAN E2): набор ограничен демо-квотой, полный — через тариф */}
           <ExamDemoBanner exam="ielts" token={token} onPricing={() => onNav?.('ielts-pricing')} />
           <IeltsLockedView onboarded={!!me.onboarded} diagnosticDone={!!me.diagnosticDone} onOpenOnboarding={() => onNav?.('ielts-onboarding')} onOpenDiagnostic={() => onNav?.('ielts-diagnostic')} onOpenResult={() => onNav?.('ielts-diagnostic-result')} />
@@ -353,7 +356,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
     panel = (
       <MockTestsTab
         token={token}
-        track={me?.track || track}
+        track={track}
         onOpenMock={(mockId) => onNav?.('ielts-mock', { mockId })}
         onOpenSession={(sessionId, view) => onNav?.('ielts-mock', { sessionId: String(sessionId), view })}
       />
@@ -377,12 +380,12 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         }}
       />
     )
-  } else panel = <ExamGuide track={me?.track || track} onOpenSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })} />
+  } else panel = <ExamGuide track={track} onOpenSkill={(sk) => go({ tab: 'learn', view: `skill-${sk}` })} />
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ih">
-        <IeltsHeader track={me?.track || track} />
+        <IeltsHeader track={track} />
         <ExamDemoBanner exam="ielts" token={token} onPricing={() => onNav?.('ielts-pricing')} />
         <Tabs items={tabs} value={hub.tab === 'progress' ? 'today' : hub.tab} onChange={(tab) => go({ tab })} idBase="ih" label="IELTS" />
         {/* key — по вкладке и экрану внутри неё: новый экран монтируется заново и проигрывает короткое появление
