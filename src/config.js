@@ -60,7 +60,7 @@ export const isRewardsScreen = (screen) => screen === 'tokens' || screen === 'pr
 // Общий список нужен меню, прямым ссылкам и блокам на других экранах.
 const STUDENT_HIDDEN_ON_PROD = new Set([
   'tokens', 'prizes', 'notifications', 'contracts',
-  'my-teacher', 'teacher-wizard', 'teacher-pick',
+  'my-teacher', 'teacher-wizard', 'teacher-pick', 'group',
 ])
 export function isStudentSectionHidden(screen, hostname = typeof window === 'undefined' ? '' : window.location.hostname) {
   return isProdHost(hostname) && STUDENT_HIDDEN_ON_PROD.has(screen)
