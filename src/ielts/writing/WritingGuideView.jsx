@@ -4,9 +4,11 @@ import EmptyState from '../ui/EmptyState.jsx'
 import { getIeltsTest } from '../../api.js'
 import { loadToken } from '../../lib/session.js'
 import { ArrowForwardIcon, MenuBookIcon } from '../icons.jsx'
-import WritingChart from './WritingChart.jsx'
+import TaskVisual from './TaskVisual.jsx'
 import { categoryLabel } from './WritingListView.jsx'
 import { useI18n } from '../../i18n.jsx'
+import { pickLang } from './drills/drillModel.js'
+import { writingDrillsForType, writingTaskList } from '../practice/practiceModel.js'
 
 // Пропуски шаблона [в квадратных скобках] подсвечиваются — так в прототипе видно, что подставить своё.
 function Pattern({ text }) {
@@ -25,12 +27,33 @@ function Pattern({ text }) {
  * (правит методист импортом), подписи — словарь прототипа (ieltsWriting.p.*). Части чужого трека не показываются,
  * как и задания Task 1 (§14.1).
  */
-export default function WritingGuideView({ token, track, onBack }) {
+// section — глава из задачи плана: «t1ac.line» (часть.вид или часть.вкладка); часть чужого трека — оглавление.
+// Во вкладке «Как писать» страницы Writing (embedded) глава живёт в адресе: выбор зовёт onSection, и «Назад» браузера
+// возвращает на прошлую главу; без onSection (план, старые места) глава — своё состояние экрана.
+// На странице типа — «Задания этого типа (N) →» (catalog, onTasksOfType) и тренировки типа (drills, onStartDrill с ty).
+const PART_OF = { t1ac: 'T1', t1gt: 'GT', t2: 'T2' }
+
+export default function WritingGuideView({ token, track, section, onBack, onSection, embedded = false, catalog, drills, onTasksOfType, onStartDrill }) {
   const { t, lang } = useI18n()
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
   const [state, setState] = useState({ status: 'loading' })
-  const [partKey, setPartKey] = useState(null)
-  const [sub, setSub] = useState(null) // вид (kinds) или вкладка (blocks)
+  const [own, setOwn] = useState(section || null)
+  // глава из адреса меняется и без перемонтирования (popstate, «Теория этого типа» из того же вида)
+  const [seen, setSeen] = useState(section)
+  if (seen !== section) {
+    setSeen(section)
+    setOwn(section || null)
+  }
+  const cur = onSection ? section || null : own
+  const partKey = String(cur || '').split('.')[0] || null
+  const sub = String(cur || '').split('.')[1] || null // вид (kinds) или вкладка (blocks)
+  const go = (p, k) => {
+    const next = p ? (k ? `${p}.${k}` : p) : null
+    if (onSection) onSection(next)
+    else setOwn(next)
+  }
+  const setPartKey = (p) => go(p, null)
+  const setSub = (k) => go(partKey, k)
 
   useEffect(() => {
     let alive = true
@@ -46,7 +69,7 @@ export default function WritingGuideView({ token, track, onBack }) {
   if (state.status !== 'ready')
     return (
       <div className="ih-wguide">
-        <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title') }]} />
+        {!embedded && <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title') }]} />}
         {state.status === 'loading' ? <p className="ih-muted">{t('ieltsReading.loading')}</p> : <EmptyState icon={<MenuBookIcon size={28} />} title={t('ieltsReading.errorTitle')} text={t('ieltsReading.errorText')} />}
       </div>
     )
@@ -57,7 +80,7 @@ export default function WritingGuideView({ token, track, onBack }) {
   if (!part)
     return (
       <div className="ih-wguide">
-        <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title') }]} />
+        {!embedded && <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title') }]} />}
         <div className="ih-rlist__head">
           <div>
             <h2>{t('ieltsWriting.p.guide.title')}</h2>
@@ -66,7 +89,7 @@ export default function WritingGuideView({ token, track, onBack }) {
         </div>
         <div className="ih-wguide__cards">
           {parts.map((p) => (
-            <button key={p.key} type="button" className="ih-card ih-wguide__card" onClick={() => { setPartKey(p.key); setSub(null) }}>
+            <button key={p.key} type="button" className="ih-card ih-wguide__card" onClick={() => setPartKey(p.key)}>
               <b>{t(`ieltsWriting.p.guide.part.${p.key}.title`)}</b>
               <span>{t(`ieltsWriting.p.guide.part.${p.key}.text`)}</span>
               <span className="ih-wguide__open">{t('ieltsWriting.p.guide.open')}<ArrowForwardIcon size={16} /></span>
@@ -90,7 +113,11 @@ export default function WritingGuideView({ token, track, onBack }) {
 
   return (
     <div className="ih-wguide">
-      <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title'), onClick: () => setPartKey(null) }, { label: t(`ieltsWriting.p.guide.part.${part.key}.title`) }]} />
+      {embedded ? (
+        <button type="button" className="ih-back" onClick={() => setPartKey(null)}>← {t('ieltsWNav.guideToc')}</button>
+      ) : (
+        <Breadcrumbs items={[...crumbs, { label: t('ieltsWriting.p.guide.title'), onClick: () => setPartKey(null) }, { label: t(`ieltsWriting.p.guide.part.${part.key}.title`) }]} />
+      )}
       <h2>{t(`ieltsWriting.p.guide.part.${part.key}.title`)}</h2>
 
       {part.rules?.length > 0 && (
@@ -111,20 +138,52 @@ export default function WritingGuideView({ token, track, onBack }) {
         })}
       </div>
 
-      {kind && !extraBlock && <KindView kind={kind} pick={pick} t={t} />}
+      {kind && !extraBlock && (
+        <KindView kind={kind} pick={pick} t={t} lang={lang} part={PART_OF[part.key]} track={track} catalog={catalog} drills={drills}
+          onTasksOfType={onTasksOfType} onStartDrill={onStartDrill} />
+      )}
       {(extraBlock || block) && <BlockView block={extraBlock || block} pick={pick} t={t} />}
     </div>
   )
 }
 
-function KindView({ kind, pick, t }) {
+// Задания и тренировки этого типа — вверху страницы типа (ТЗ §6): из теории сразу в практику, тренировки — с ty
+function TypeLinks({ kind, part, track, catalog, drills, onTasksOfType, onStartDrill, t, lang }) {
+  const n = part ? writingTaskList(catalog?.items || (Array.isArray(catalog) ? catalog : []), part === 'T2' ? 'task2' : 'task1', track).filter((x) => x.category === kind.key).length : 0
+  const list = part && drills ? writingDrillsForType(drills, part, kind.key) : []
+  if (!onTasksOfType && !list.length) return null
+  return (
+    <section className="ih-card ih-wguide__links">
+      {onTasksOfType && n > 0 && (
+        <button type="button" className="ih-btn2 ih-btn2--outline" onClick={() => onTasksOfType(part, kind.key)}>
+          {t('ieltsWNav.tasksOfType', { n: String(n) })} <ArrowForwardIcon size={16} />
+        </button>
+      )}
+      {list.length > 0 && (
+        <>
+          <h3>{t('ieltsWNav.drillsOfType')}</h3>
+          <div className="ih-wcat__actions">
+            {list.map((d) => (
+              <button key={d.id} type="button" className="ih-btn2 ih-btn2--outline" onClick={() => onStartDrill?.(d, kind.key)}>
+                {pickLang(d.name, lang) || d.title}{d.minutes ? ` · ${t('ieltsHub.minutes', { n: String(d.minutes) })}` : ''}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
+function KindView({ kind, pick, t, lang, part, track, catalog, drills, onTasksOfType, onStartDrill }) {
   return (
     <>
+      <TypeLinks kind={kind} part={part} track={track} catalog={catalog} drills={drills} onTasksOfType={onTasksOfType} onStartDrill={onStartDrill} t={t} lang={lang} />
       {kind.sample && (
         <section className="ih-card ih-wguide__sample">
           <h3>{t('ieltsWriting.p.guide.block.sample')}</h3>
           <p lang="en" className="ih-wguide__q">{kind.sample.question}</p>
-          {kind.sample.chart && <WritingChart chart={kind.sample.chart} />}
+          {kind.sample.chart && <TaskVisual chart={kind.sample.chart} />}
           <h4>{t('ieltsWriting.p.guide.sampleAnswer')}</h4>
           {kind.sample.text.map((p, i) => (
             <div key={i} className="ih-wmodel__para">
@@ -191,6 +250,14 @@ function KindView({ kind, pick, t }) {
   )
 }
 
+// Название группы блока по ключу (прототип guide2.js, GL): у групп банка своего заголовка нет; ключа нет в словаре —
+// без заголовка, как раньше
+function groupLabel(t, key) {
+  const k = `ieltsWNav.gl.${key}`
+  const v = key ? t(k) : null
+  return v && v !== k ? v : null
+}
+
 // Строки блоков бывают разных видов: конструкция с примером, выражение с «когда уместно», замена «было → стало»,
 // затёртая фраза и её замена. Рисуем то, что есть в строке, — подписи колонок из словаря прототипа.
 function BlockView({ block, pick, t }) {
@@ -198,7 +265,7 @@ function BlockView({ block, pick, t }) {
     <>
       {block.groups.map((g) => (
         <section key={g.key} className="ih-card ih-wguide__group">
-          {g.title && <h3>{pick(g.title)}</h3>}
+          {(g.title || groupLabel(t, g.key)) && <h3>{g.title ? pick(g.title) : groupLabel(t, g.key)}</h3>}
           {g.note && <p className="ih-muted">{pick(g.note)}</p>}
           {g.rows.map((r, i) => (
             <div key={i} className="ih-wguide__row">

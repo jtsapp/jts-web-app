@@ -8,6 +8,7 @@ import {
 } from '../icons.jsx'
 import { SKILLS, SKILL_TABS, listRows, listTitle, searchRows, shortRows, skillCount, skillRows } from './practiceModel.js'
 import { groupByLevel, recommendedRange } from '../model/levels.js'
+import { WritingDrillsCatalog } from '../writing/WritingCatalog.jsx'
 
 // Экраны «Практики IELTS» по дизайну «IELTS new» (Figma, раздел 3): каталог (поиск, четыре навыка, короткие
 // тренировки, словарь) и страница навыка (хлебные крошки, поиск в навыке, вкладки, строки со статусом).
@@ -69,7 +70,7 @@ function LevelBar({ skill, levelInfo }) {
  * Список заданий по уровню: «Рекомендуемые», «Сложнее — на вырост», внизу — «Неподходящие для вашего уровня» (слишком
  * простые), приглушённо. Задание ниже уровня не прячется: повторить базу перед экзаменом — право ученика.
  */
-function LevelGroups({ rows, onOpen }) {
+export function LevelGroups({ rows, onOpen }) {
   const { t } = useI18n()
   // заголовки групп — всегда, во всех навыках: раньше «Рекомендуемые» пряталось, если других групп не было, и деление
   // по уровню было видно только там, где попадались задания сложнее
@@ -130,7 +131,9 @@ export function PracticeRow({ row, onOpen, compact = false }) {
   const title = row.title || t(row.titleKey)
   const soon = row.status === 'soon' || !row.open
   const added = row.added ? ` · ${t('ieltsPractice.added', { date: formatDate(row.added, lang, true) })}` : ''
-  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}${added}`
+  // пробное (тестовое) содержимое — дриллы Writing до первых дриллов методиста в банке
+  const sample = row.sample ? ` · ${t('ieltsWDrill.sample')}` : ''
+  const meta = `${t('ieltsHub.minutes', { n: String(row.minutes) })} · ${t(`ieltsPractice.mode.${row.mode}`)}${added}${sample}`
   if (compact) {
     return (
       <li>
@@ -138,7 +141,7 @@ export function PracticeRow({ row, onOpen, compact = false }) {
           <SecPlate sec={row.skill} size={36} />
           <span className="ih-prow__body">
             <b>{title}</b>
-            <span className="ih-prow__meta">{t('ieltsHub.minutes', { n: String(row.minutes) })} · <StatusChip status={row.status} /></span>
+            <span className="ih-prow__meta">{t('ieltsHub.minutes', { n: String(row.minutes) })}{sample} · <StatusChip status={row.status} /></span>
           </span>
           <ChevronRightIcon size={18} />
         </button>
@@ -198,7 +201,7 @@ function Seg({ items, value, onChange, label }) {
 }
 
 /** Каталог «Практики IELTS». */
-export function PracticeCatalog({ lists, track, onOpen, onOpenSkill, onOpenVocab }) {
+export function PracticeCatalog({ lists, track, token, onOpen, onOpenSkill, onOpenVocab }) {
   const { t } = useI18n()
   const [q, setQ] = useState('')
   const [shortSkill, setShortSkill] = useState('reading')
@@ -252,7 +255,12 @@ export function PracticeCatalog({ lists, track, onOpen, onOpenSkill, onOpenVocab
               </div>
               <span className="ih-psec__filter">{t('ieltsPractice.skill')} <Seg items={['reading', 'listening', 'writing', 'speaking'].map((s) => ({ key: s, label: SKILL_NAME[s] }))} value={shortSkill} onChange={setShortSkill} label={t('ieltsPractice.skill')} /></span>
             </header>
-            {shortRowsList.length ? (
+            {/* Writing — весь каталог тренировок, тот же компонент, что во вкладке страницы Writing (ТЗ §3.1) */}
+            {shortSkill === 'writing' ? (
+              <WritingDrillsCatalog lists={lists} track={track} token={token} compact
+                onStart={(d, ty) => onOpen({ tab: 'learn', view: 'writing-drills', testId: d.id, ty: ty || null })}
+                onReview={() => onOpen({ tab: 'learn', view: 'writing-drills', testId: 'review' })} />
+            ) : shortRowsList.length ? (
               <ul className="ih-shortgrid">{shortRowsList.map((r) => <PracticeRow key={r.id} row={r} onOpen={onOpen} compact />)}</ul>
             ) : (
               <EmptyBox icon={<TimerIcon size={26} />} tone="orange" title={t('ieltsPractice.emptySkill', { skill: SKILL_NAME[shortSkill] })} text={t('ieltsPractice.emptySkillText')} />

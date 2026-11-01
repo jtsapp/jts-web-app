@@ -1,6 +1,7 @@
 // Writing: чистые функции задания и работы. Порт кусков 30-writing.html прототипа:
 // describeChart / promptText — задание текстом для ИИ (§14.3: «[Visual]» с данными графика), countWords — слова как на
 // экзамене. Модуль общий для экрана и серверного роута оценки — поэтому без React и без window на импорте.
+import { normalizeChart } from './chartData.js'
 
 export const CRITERIA = ['taskResponse', 'coherenceCohesion', 'lexicalResource', 'grammaticalRange']
 
@@ -22,12 +23,45 @@ export function countWords(text) {
     .filter((t) => /[\p{L}\p{N}]/u.test(t)).length
 }
 
+// ---------------------------------------------------------------- скопировано из задания
+
+// Слова для сверки с заданием: нижний регистр, всё кроме a-z, 0-9 и апострофа — пробел. Один алгоритм с бэкендом
+// (IeltsDocument.copiedWords): общие тестовые примеры держат их одинаковыми (контракт §1).
+const copyTokens = (s) =>
+  String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+
+/** Текст задания для поиска копирования: вопрос и пункты письма через пробел (без [Visual] и служебных строк). */
+export function copyTaskText(task) {
+  return [task?.question, ...(Array.isArray(task?.bullets) ? task.bullets : [])].filter(Boolean).join(' ')
+}
+
+/**
+ * Сколько слов работы скопировано из задания: слово считается скопированным, если входит в 4-словие, которое
+ * дословно есть в задании. Экзаменатор такие слова не засчитывает — редактор показывает их сразу, бэкенд вычитает
+ * их из объёма (effectiveWords) при оценке.
+ */
+export function copiedWords(essay, taskText) {
+  const T = copyTokens(taskText)
+  const E = copyTokens(essay)
+  const grams = new Set()
+  for (let i = 0; i + 3 < T.length; i++) grams.add(T.slice(i, i + 4).join(' '))
+  const mark = new Array(E.length).fill(false)
+  for (let i = 0; i + 3 < E.length; i++) if (grams.has(E.slice(i, i + 4).join(' '))) mark.fill(true, i, i + 4)
+  return mark.filter(Boolean).length
+}
+
 function val(v, unit) {
   return unit === '%' ? `${v}%` : unit ? `${v} ${unit}` : String(v)
 }
 
 /** Данные графика текстом — для модели (у неё нет картинки) и для подписи SVG скринридеру. */
-export function describeChart(c) {
+export function describeChart(chart) {
+  // pie одной серией и table серией по x (оба формата банка) — к slices / columns; unit «undefined» — без единицы
+  const c = normalizeChart(chart)
   if (!c) return ''
   const unit = c.unit || ''
   if (c.type === 'multi') return (c.alt ? [`Charts: ${c.alt}`] : []).concat((c.charts || []).map(describeChart).filter(Boolean)).join('\n')
@@ -71,11 +105,13 @@ export function selfCheckFor(selfcheck, kind) {
 
 // Черновик держит браузер, как у Reading: работа сдаётся одним запросом, а сервер хранит уже сданное. Ключ — по
 // заданию: незаконченная работа ждёт на том же устройстве, пока её не сдадут или не сбросят.
-const DRAFT = (id) => `jts_ielts_wr_draft_${id}`
+// ns = 'mock' — черновик mock по типу (mockByType.js): свой ключ, чтобы недописанный mock не подхватывал черновик
+// тренировки того же задания (и наоборот), а в «Моих работах» не числился черновиком — mock продолжается с вкладки.
+const DRAFT = (id, ns) => (ns === 'mock' ? `jts_ielts_wr_mock_${id}` : `jts_ielts_wr_draft_${id}`)
 
-export function loadWritingDraft(testId) {
+export function loadWritingDraft(testId, ns) {
   try {
-    const raw = localStorage.getItem(DRAFT(testId))
+    const raw = localStorage.getItem(DRAFT(testId, ns))
     const d = raw ? JSON.parse(raw) : null
     return d && typeof d.text === 'string' ? d : null
   } catch {
@@ -83,9 +119,9 @@ export function loadWritingDraft(testId) {
   }
 }
 
-export function saveWritingDraft(testId, draft) {
+export function saveWritingDraft(testId, draft, ns) {
   try {
-    localStorage.setItem(DRAFT(testId), JSON.stringify({ ...draft, savedAt: Date.now() }))
+    localStorage.setItem(DRAFT(testId, ns), JSON.stringify({ ...draft, savedAt: Date.now() }))
     return true
   } catch {
     return false
@@ -110,12 +146,26 @@ export function listWritingDrafts() {
   return out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
 }
 
-export function dropWritingDraft(testId) {
+export function dropWritingDraft(testId, ns) {
   try {
-    localStorage.removeItem(DRAFT(testId))
+    localStorage.removeItem(DRAFT(testId, ns))
   } catch {
     /* нет хранилища — нечего чистить */
   }
+}
+
+/** id заданий с начатым mock по типу на этом устройстве — такой mock продолжается, а не сменяется другим заданием. */
+export function listMockDrafts() {
+  const out = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('jts_ielts_wr_mock_')) out.push(key.slice('jts_ielts_wr_mock_'.length))
+    }
+  } catch {
+    /* без хранилища начатых mock нет */
+  }
+  return out
 }
 
 // ---------------------------------------------------------------- каталог

@@ -12,6 +12,7 @@ import WritingTaskBody from './WritingTaskBody.jsx'
 import { WritingDevelop, WritingImprove } from './WritingCoach.jsx'
 import { CRITERIA, countWords, kindKey, selfCheckFor } from './writing.js'
 import { categoryLabel } from './WritingListView.jsx'
+import { CRIT_CODE, annotate, capBanners, errorView, taskCategory, weakDrills } from './writingReview.js'
 import { useI18n } from '../../i18n.jsx'
 
 const CRIT_KEY = { taskResponse: 'tr', coherenceCohesion: 'cc', lexicalResource: 'lr', grammaticalRange: 'gra' }
@@ -58,7 +59,48 @@ export function markQuotes(text, errors) {
   return out
 }
 
-export default function WritingWorkView({ token, attemptId, autoGrade, onBackToLearn, onWorks, onRetry, onGuide, embedded = false }) {
+/** Пометка ошибки в тексте: цвет критерия и номер карточки; клик или Enter — к карточке. */
+function ErrMark({ text, n, crit, title, onOpen }) {
+  return (
+    <mark
+      className={`ih-wrev__mark is-${crit}`}
+      role="button"
+      tabIndex={0}
+      title={title}
+      onClick={onOpen}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
+    >
+      {text}
+      <sup>{n}</sup>
+    </mark>
+  )
+}
+
+/** Карточка ошибки: номер, критерий, тип, абзац, ✗ цитата, ✓ исправление, что не так, правило. */
+function ErrCard({ e, n, found, hl, critName, t }) {
+  const v = errorView(e)
+  const code = CRIT_CODE[v.criterion]
+  return (
+    <article id={`ih-werr-${n}`} className={`ih-wrev__err is-${code} ${hl ? 'is-hl' : ''}`} tabIndex={-1}>
+      <header>
+        <span className="ih-wrev__num">{n}</span>
+        <span className="ih-chip ih-chip--neutral ih-chip--sm"><span>{critName(v.criterion)}</span></span>
+        {v.type && <span className="ih-chip ih-chip--muted ih-chip--sm"><span>{t(`ieltsWReview.type.${v.type}`)}</span></span>}
+        {v.para > 0 && <span className="ih-muted">{t('ieltsWReview.wherePara', { n: String(v.para) })}</span>}
+        {!found && <span className="ih-muted">{t('ieltsWReview.general')}</span>}
+      </header>
+      {found && <p className="ih-wrev__bad" lang="en">✗ {v.quote}</p>}
+      {v.fix && <p className="ih-wrev__good" lang="en">{found ? '✓' : '→'} {v.fix}</p>}
+      {v.why && <p><b>{t('ieltsWReview.whatWrong')}:</b> {v.why}</p>}
+      {v.rule && <p><b>{t('ieltsWReview.rule')}:</b> {v.rule}</p>}
+    </article>
+  )
+}
+
+// onPractice(attemptId) — «Закрепление» (упражнения по ошибкам в плеере тренировок), onDrill(testId, ty) —
+// тренировка под слабый критерий, onGuide(section?) — «Как писать» (глава типа задания). drills — строки каталога
+// Writing: тренировки, которых нет в банке, не предлагаются (без каталога — не предлагаются вовсе).
+export default function WritingWorkView({ token, attemptId, autoGrade, onBackToLearn, onWorks, onRetry, onGuide, onPractice, onDrill, drills = null, embedded = false }) {
   const { t, lang } = useI18n()
   const authToken = token || loadToken()
   const pick = useCallback((o) => (o && typeof o === 'object' ? o[lang] || o.ru || o.en : o), [lang])
@@ -69,7 +111,29 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
   const [modelOpen, setModelOpen] = useState(true)
   const [selfcheck, setSelfcheck] = useState(null)
   const [answers, setAnswers] = useState({})
+  const [critFilter, setCritFilter] = useState('all')
+  const [hl, setHl] = useState(null)
   const autoDone = useRef(false)
+  const hlTimer = useRef(null)
+  useEffect(() => () => clearTimeout(hlTimer.current), [])
+
+  // пометка в тексте → её карточка: фильтр снимается, карточка прокручивается в вид и мигает
+  const openError = useCallback((n) => {
+    setCritFilter('all')
+    setHl(n)
+    clearTimeout(hlTimer.current)
+    hlTimer.current = setTimeout(() => setHl(null), 2200)
+    setTimeout(() => {
+      const el = document.getElementById(`ih-werr-${n}`)
+      if (!el) return
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } catch {
+        /* jsdom */
+      }
+      el.focus?.({ preventScroll: true })
+    }, 0)
+  }, [])
 
   const load = useCallback(() => {
     return getIeltsAttempt(authToken, attemptId)
@@ -130,9 +194,27 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
   const text = String(v.answers?.text || '')
   const paras = text.split(/\n\s*\n+/).filter((p) => p.trim())
   const status = grading ? 'grading' : r.status
+  const done = status === 'done'
   const kind = kindKey(doc)
   const sc = selfCheckFor(selfcheck, kind)
   const scTotal = sc.reduce((a, c) => a + c.questions.length, 0)
+  const critName = (c) => t(`ieltsWriting.crit.${c}${c === 'taskResponse' && kind !== 't2' ? '1' : ''}`)
+
+  // разбор (ТЗ §9.4): пометки в тексте, ошибки по критериям, ограничения, закрепление и тренировки
+  const errors = done && Array.isArray(r.errors) ? r.errors : []
+  const { parts, placed } = annotate(paras, errors)
+  const errCount = (c) => errors.filter((e) => errorView(e).criterion === c).length
+  const caps = done ? capBanners(r.caps) : []
+  const exercises = done && Array.isArray(r.exercises) ? r.exercises : []
+  const ty = taskCategory(doc)
+  const drillRows = Array.isArray(drills) ? drills.filter((x) => x?.kind === 'drill') : null
+  const weak = done && drillRows ? weakDrills(r.criteria, kind, new Set(drillRows.map((x) => x.id))) : []
+  const drillTitle = (id) => {
+    const row = drillRows?.find((x) => x.id === id)
+    return pick(row?.name) || row?.title || id
+  }
+  const guideSection = ty ? `${kind}.${ty}` : kind
+  const notes = det?.criteriaNotes || []
 
   const answer = (key, val) => {
     const next = { ...answers, [key]: answers[key] === val ? undefined : val }
@@ -152,26 +234,38 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
         </div>
       </div>
 
-      {status === 'done' ? (
+      {/* 1. ограничения балла — коды бэкенда; у работ, оценённых до них, баннеров нет */}
+      {caps.map((c) => (
+        <p key={c} className={`ih-wrev__cap ${c === 'copied_intro' ? 'is-note' : ''}`} role="note">
+          <InfoIcon size={18} />
+          {t(`ieltsWReview.cap.${c}`, { crit: critName('taskResponse') })}
+        </p>
+      ))}
+
+      {done ? (
         <section className="ih-card ih-wscore">
           <div className="ih-wscore__band">
             <span>{t('ieltsWriting.band')}</span>
             <b>{v.attempt.band?.toFixed(1)}</b>
           </div>
-          <div className="ih-wscore__crit">
-            {CRITERIA.map((c) => (
-              <div key={c}>
-                <b>{Number(r.criteria?.[c]).toFixed(1)}</b>
-                <span>{t(`ieltsWriting.crit.${c}${c === 'taskResponse' && kind !== 't2' ? '1' : ''}`)}</span>
-              </div>
-            ))}
+          {/* 2. четыре полосы критериев: балл, число замечаний и цвет критерия — тот же, что у пометок в тексте */}
+          <div className="ih-wrev__bars">
+            {CRITERIA.map((c) => {
+              const band = Number(r.criteria?.[c])
+              return (
+                <div key={c} className={`ih-wrev__bar is-${CRIT_CODE[c]}`}>
+                  <div className="ih-wrev__barhead">
+                    <i className="ih-wrev__dot" aria-hidden="true" />
+                    <span>{critName(c)}</span>
+                    {errors.length > 0 && <small className="ih-muted">{t('ieltsWReview.issues', { n: String(errCount(c)) })}</small>}
+                    <b>{Number.isFinite(band) ? band.toFixed(1) : '—'}</b>
+                  </div>
+                  <div className="ih-wrev__track"><i className={band < 6 ? 'is-low' : ''} style={{ width: `${Math.max(0, Math.min(9, band || 0)) / 9 * 100}%` }} /></div>
+                </div>
+              )
+            })}
           </div>
           {r.feedback && <p className="ih-wscore__fb">{r.feedback}</p>}
-          {!embedded && (
-            <div className="ih-wscore__actions">
-              <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsWriting.p.work.again')}</PillButton>
-            </div>
-          )}
         </section>
       ) : (
         <section className={`ih-wstatus ${status === 'failed' || gradeError ? 'is-bad' : ''}`} role="status">
@@ -186,97 +280,52 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
         </section>
       )}
 
-      {status === 'done' && det && (det.criteriaNotes?.length > 0 || det.nextSteps?.length > 0) && (
-        <section className="ih-card ih-wdet">
-          <h3>{t('ieltsWriting.d.title')}</h3>
-          {det.criteriaNotes?.length > 0 && (
-            <div className="ih-wdet__crits">
-              {det.criteriaNotes.map((c) => (
-                <article key={c.criterion} className="ih-wdet__crit">
-                  <header>
-                    <b>{t(`ieltsWriting.crit.${c.criterion}${c.criterion === 'taskResponse' && kind !== 't2' ? '1' : ''}`)}</b>
-                    <span className="ih-wdet__band">{r.criteria?.[c.criterion] != null ? Number(r.criteria[c.criterion]).toFixed(1) : '—'}</span>
-                  </header>
-                  <p><small>{t('ieltsWriting.d.why')}</small>{c.why}</p>
-                  {c.nextBand && <p className="ih-wdet__next"><small>{t('ieltsWriting.d.next')}</small>{c.nextBand}</p>}
-                </article>
-              ))}
-            </div>
-          )}
-          {(det.strengths?.length > 0 || det.nextSteps?.length > 0) && (
-            <div className="ih-wdet__two">
-              {det.strengths?.length > 0 && (
-                <div className="ih-wdet__list is-good">
-                  <h4>{t('ieltsWriting.d.strengths')}</h4>
-                  <ul>{det.strengths.map((s, i) => <li key={i}><CheckCircleIcon size={16} />{s}</li>)}</ul>
-                </div>
-              )}
-              {det.nextSteps?.length > 0 && (
-                <div className="ih-wdet__list is-next">
-                  <h4>{t('ieltsWriting.d.steps')}</h4>
-                  <ol>{det.nextSteps.map((s, i) => <li key={i}><span>{i + 1}</span>{s}</li>)}</ol>
-                </div>
-              )}
-            </div>
-          )}
-          {det.vocabulary?.length > 0 && (
-            <div className="ih-wdet__vocab">
-              <h4>{t('ieltsWriting.d.vocab')}</h4>
-              {det.vocabulary.map((v, i) => (
-                <div key={i} className="ih-wdet__word">
-                  <s lang="en">{v.word}</s>
-                  <span lang="en">→ {v.better.join(' · ')}</span>
-                  {v.note && <small>{v.note}</small>}
-                </div>
-              ))}
-            </div>
-          )}
+      {/* 3. закрепление: упражнения по ошибкам этой работы — в плеере тренировок */}
+      {exercises.length > 0 && !embedded && onPractice && (
+        <section className="ih-card ih-wrev__practice">
+          <div>
+            <h3>{t('ieltsWReview.practiceTitle')}</h3>
+            <p className="ih-muted">{t('ieltsWReview.practiceSub', { n: String(exercises.length) })}</p>
+          </div>
+          <PillButton variant="primary" onClick={() => onPractice(attemptId)}>{t('ieltsWReview.practiceBtn', { n: String(exercises.length) })}</PillButton>
         </section>
       )}
 
-      {/* «наставник»: как развить это эссе и как улучшить его по предложениям или целиком (у старых работ — нет) */}
-      {status === 'done' && <WritingDevelop tips={det?.developmentTips} />}
-      {status === 'done' && <WritingImprove sentences={det?.sentences} essay={det?.improvedEssay} paragraphs={paras} kind={kind} />}
-
-      {status === 'done' && (r.errors?.length > 0 || r.rewrites?.length > 0) && (
-        <section className="ih-card ih-wfix">
-          <h3>{t('ieltsWriting.errorsTitle')}</h3>
-          {(r.errors || []).map((e, i) => (
-            <div key={i} className="ih-wfix__row">
-              <span className="ih-chip ih-chip--muted ih-chip--sm"><span>{t(`ieltsWriting.critShort.${e.criterion}`)}</span></span>
-              <p lang="en"><s>{e.quote}</s> → <b>{e.correction}</b></p>
-              <p className="ih-muted">{e.issue}</p>
-            </div>
-          ))}
-          {!det?.sentences?.length && (r.rewrites || []).length > 0 && <h3>{t('ieltsWriting.rewritesTitle')}</h3>}
-          {/* по предложениям (WritingImprove) уже переписан весь текст — 1–4 старых переписывания рядом его бы дублировали */}
-          {!det?.sentences?.length && (r.rewrites || []).map((w, i) => (
-            <div key={`w${i}`} className="ih-wfix__row" lang="en">
-              <p className="ih-muted">{w.original}</p>
-              <p><b>{w.improved}</b></p>
-            </div>
-          ))}
-        </section>
-      )}
-
+      {/* 4. ваш текст с пометками и образец рядом */}
       <div className="ih-wwork__grid">
         <section className="ih-card ih-wmine">
           <header>
-            <h3>{t('ieltsWriting.yourText')}</h3>
+            <h3>{errors.length ? t('ieltsWReview.annotated') : t('ieltsWriting.yourText')}</h3>
             <span className="ih-muted">{formatDate(v.attempt.finishedAt, lang)}</span>
           </header>
           <div className="ih-wmine__chips">
             <Chip tone={r.underLength ? 'orange' : 'green'} size="sm">{t('ieltsWriting.p.work.words', { words: t('ieltsWriting.wordsN', { n: String(r.words ?? countWords(text)) }), min: String(r.minWords ?? '') })}</Chip>
+            {r.copied > 0 && <Chip tone="orange" size="sm">{t('ieltsWReview.copied', { n: String(r.copied) })}</Chip>}
             <Chip tone="neutral" size="sm">{t('ieltsWriting.p.work.paragraphs', { n: String(paras.length) })}</Chip>
             {v.attempt.timeSec != null && <Chip tone="neutral" size="sm" icon={<TimerIcon size={14} />}>{t('ieltsWriting.timeOf', { time: formatClock(v.attempt.timeSec), n: String(Math.round((r.timeLimitSec || 2400) / 60)) })}</Chip>}
           </div>
+          {placed.size > 0 && (
+            <>
+              <p className="ih-muted ih-wrev__sub">{t('ieltsWReview.annotatedSub')}</p>
+              <div className="ih-wrev__legend">
+                {CRITERIA.map((c) => <span key={c} className={`is-${CRIT_CODE[c]}`}><i className="ih-wrev__dot" aria-hidden="true" />{critName(c)}</span>)}
+              </div>
+            </>
+          )}
           {paras.map((p, i) => {
             const note = det?.paragraphs?.find((x) => x.index === i + 1)
             return (
               <div key={i} className="ih-wmine__para">
                 <span>{t('ieltsWriting.p.work.paragraph', { n: String(i + 1), words: t('ieltsWriting.wordsN', { n: String(countWords(p)) }) })}{note?.role ? ` · ${note.role}` : ''}</span>
-                {/* места замечаний подсвечены прямо в тексте — видно, где именно ошибка */}
-                <p lang="en">{markQuotes(p, status === 'done' ? r.errors : null)}</p>
+                <p lang="en">
+                  {parts[i].map((s, k) =>
+                    s.i == null ? (
+                      s.text
+                    ) : (
+                      <ErrMark key={k} text={s.text} n={s.i + 1} crit={CRIT_CODE[errorView(errors[s.i]).criterion]} title={errorView(errors[s.i]).fix} onOpen={() => openError(s.i + 1)} />
+                    ),
+                  )}
+                </p>
                 {note?.comment && <p className="ih-wmine__note"><InfoIcon size={14} />{note.comment}</p>}
               </div>
             )
@@ -324,6 +373,111 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
         </section>
       </div>
 
+      {/* 5. разбор по критериям: фильтр, почему такой балл, что поднимет, карточки ошибок */}
+      {done && (notes.length > 0 || errors.length > 0) && (
+        <section className="ih-card ih-wrev__crit">
+          <h3>{t('ieltsWReview.byCrit')}</h3>
+          {errors.length > 0 && (
+            <div className="ih-wrev__chips" role="group" aria-label={t('ieltsWReview.byCrit')}>
+              {['all', ...CRITERIA].map((c) => (
+                <button key={c} type="button" className={`ih-wrev__chip ${c === 'all' ? '' : `is-${CRIT_CODE[c]}`}`} aria-pressed={critFilter === c} onClick={() => setCritFilter(c)}>
+                  {c !== 'all' && <i className="ih-wrev__dot" aria-hidden="true" />}
+                  {c === 'all' ? t('ieltsWReview.all') : critName(c)}
+                  <span>{c === 'all' ? errors.length : errCount(c)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {CRITERIA.filter((c) => critFilter === 'all' || critFilter === c).map((c) => {
+            const note = notes.find((x) => x.criterion === c)
+            const mine = errors.map((e, i) => [e, i]).filter(([e]) => errorView(e).criterion === c)
+            if (!note && !mine.length) return null
+            return (
+              <div key={c} className={`ih-wrev__block is-${CRIT_CODE[c]}`}>
+                <header>
+                  <b>{critName(c)}</b>
+                  <span className="ih-wdet__band">{r.criteria?.[c] != null ? Number(r.criteria[c]).toFixed(1) : '—'}</span>
+                </header>
+                {note?.why && <p><small>{t('ieltsWriting.d.why')}</small>{note.why}</p>}
+                {note?.nextBand && <p className="ih-wdet__next"><small>{t('ieltsWriting.d.next')}</small>{note.nextBand}</p>}
+                {mine.map(([e, i]) => <ErrCard key={i} e={e} n={i + 1} found={placed.has(i)} hl={hl === i + 1} critName={critName} t={t} />)}
+              </div>
+            )
+          })}
+        </section>
+      )}
+
+      {/* 6. тренировки под слабые места (критерии ниже 6.5) и теория этого типа */}
+      {done && !embedded && (weak.length > 0 || onGuide) && (
+        <section className="ih-card ih-wrev__drills">
+          <h3>{t('ieltsWReview.drillsFor')}</h3>
+          <div className="ih-wrev__drillrow">
+            {weak.map((id) => (
+              <button key={id} type="button" className="ih-btn ih-btn--outline" onClick={() => onDrill?.(id, ty)}>{drillTitle(id)}</button>
+            ))}
+            <button type="button" className="ih-linkbtn" onClick={() => onGuide?.(guideSection)}>{t('ieltsWReview.theory')}</button>
+          </div>
+        </section>
+      )}
+
+      {/* 7. что получилось · лексика · что делать дальше */}
+      {done && det && (det.strengths?.length > 0 || det.nextSteps?.length > 0 || det.vocabulary?.length > 0) && (
+        <section className="ih-card ih-wdet">
+          {(det.strengths?.length > 0 || det.nextSteps?.length > 0) && (
+            <div className="ih-wdet__two">
+              {det.strengths?.length > 0 && (
+                <div className="ih-wdet__list is-good">
+                  <h4>{t('ieltsWriting.d.strengths')}</h4>
+                  <ul>{det.strengths.map((s, i) => <li key={i}><CheckCircleIcon size={16} />{s}</li>)}</ul>
+                </div>
+              )}
+              {det.nextSteps?.length > 0 && (
+                <div className="ih-wdet__list is-next">
+                  <h4>{t('ieltsWriting.d.steps')}</h4>
+                  <ol>{det.nextSteps.map((s, i) => <li key={i}><span>{i + 1}</span>{s}</li>)}</ol>
+                </div>
+              )}
+            </div>
+          )}
+          {det.vocabulary?.length > 0 && (
+            <div className="ih-wdet__vocab">
+              <h4>{t('ieltsWriting.d.vocab')}</h4>
+              {det.vocabulary.map((w, i) => (
+                <div key={i} className="ih-wdet__word">
+                  <s lang="en">{w.word}</s>
+                  <span lang="en">→ {w.better.join(' · ')}</span>
+                  {w.note && <small>{w.note}</small>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* «наставник»: как развить это эссе и как улучшить его по предложениям или целиком (у старых работ — нет) */}
+      {done && <WritingDevelop tips={det?.developmentTips} />}
+      {done && <WritingImprove sentences={det?.sentences} essay={det?.improvedEssay} paragraphs={paras} kind={kind} />}
+
+      {/* по предложениям (WritingImprove) уже переписан весь текст — 1–4 старых переписывания рядом его бы дублировали */}
+      {done && !det?.sentences?.length && (r.rewrites || []).length > 0 && (
+        <section className="ih-card ih-wfix">
+          <h3>{t('ieltsWriting.rewritesTitle')}</h3>
+          {r.rewrites.map((w, i) => (
+            <div key={`w${i}`} className="ih-wfix__row" lang="en">
+              <p className="ih-muted">{w.original}</p>
+              <p><b>{w.improved}</b></p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {done && !embedded && (
+        <div className="ih-wrev__again">
+          <PillButton variant="primary" onClick={() => onRetry(v.testId)}>{t('ieltsWriting.p.work.again')}</PillButton>
+        </div>
+      )}
+
+      {/* 8. самопроверка */}
       {sc.length > 0 && (
         <section className="ih-card ih-wsc">
           <header>
@@ -352,7 +506,7 @@ export default function WritingWorkView({ token, attemptId, autoGrade, onBackToL
                       {(val === 'no' || val === 'unsure') && q.tip && (
                         <p className="ih-wsc__tip">
                           {pick(q.tip)}
-                          {q.guide && <button type="button" className="ih-linkbtn" onClick={onGuide}>{t('ieltsWriting.openGuide')}</button>}
+                          {q.guide && <button type="button" className="ih-linkbtn" onClick={() => onGuide?.()}>{t('ieltsWriting.openGuide')}</button>}
                         </p>
                       )}
                     </div>

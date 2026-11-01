@@ -73,13 +73,24 @@ describe('useLessonLiveSocket', () => {
 
   /* Догоняющий снимок преподаватель отвечает адресно (спека §5.2): ученик
      подписан на свой present/{id} и кладёт его туда же, куда общий показ. */
-  it('адресный показ ученик получает тем же обработчиком, что общий', () => {
+  // Адресный показ — только ответ на просьбу догнать класс: страница разбирает его иначе
+  // (в рамку, где показ уже шёл, — только место), поэтому он приходит с пометкой.
+  it('адресный показ ученик получает тем же обработчиком, с пометкой «догнать»', () => {
     const onPresent = vi.fn()
     renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onPresent }))
     expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/present/9')
 
     const evt = { senderUserId: 1, materialId: 912, events: [{ selector: '#a', eventType: 'click', value: null }] }
     act(() => { lastClient.subs['/topic/lesson/7/present/9']({ body: JSON.stringify(evt) }) })
+    expect(onPresent).toHaveBeenCalledWith(evt, { catchUp: true })
+  })
+
+  it('общий показ приходит без пометки «догнать»', () => {
+    const onPresent = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onPresent }))
+
+    const evt = { senderUserId: 1, materialId: 912, events: [{ selector: '#a', eventType: 'click', value: null }] }
+    act(() => { lastClient.subs['/topic/lesson/7/present']({ body: JSON.stringify(evt) }) })
     expect(onPresent).toHaveBeenCalledWith(evt)
   })
 

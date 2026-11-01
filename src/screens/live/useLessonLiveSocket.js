@@ -129,9 +129,13 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
         // сравнивать не с чем (учитель не путает себя с учеником), эхо-фильтр не нужен.
         if (!isStaff && selfUserId != null) {
           // Ответ преподавателя на мою просьбу догнать класс — снимок его рамки,
-          // адресованный только мне. Разбирается как общий показ: тот же буфер,
-          // тот же реплей в рамку.
-          client.subscribe(`/topic/lesson/${lessonId}/present/${selfUserId}`, onPresentMessage)
+          // адресованный только мне. Тот же буфер, что у общего показа, но с пометкой:
+          // в рамку, куда показ уже проигрывался, из него уходит только место.
+          client.subscribe(`/topic/lesson/${lessonId}/present/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (!evt || evt.senderUserId === selfUserId) return
+            handlersRef.current.onPresent?.(evt, { catchUp: true })
+          })
           client.subscribe(`/topic/lesson/${lessonId}/answer-correction/${selfUserId}`, (m) => {
             const evt = parse(m.body)
             if (evt) handlersRef.current.onAnswerCorrection?.(evt)

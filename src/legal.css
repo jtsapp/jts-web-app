@@ -59,3 +59,17 @@
 .legal-panel .legal-link-icon { flex: none; opacity: .8; }
 .legal-panel .legal-link-label { min-width: 0; overflow-wrap: break-word; }
 .legal-panel .legal-link-arrow { flex: none; margin-left: auto; opacity: .65; }
+
+/* В профиле страница светлая: блок без тёмной подложки, заголовок как .pf-label, список — карточка .pf-card со
+   строками .pf-row (плитка значка, разделитель с отступом). Плитками в ряд три документа в колонку профиля (592px)
+   не влезают, а 2 + 1 оставляли дыру. */
+.legal-panel.legal-profile { margin-top: 0; padding: 0; background: none; border: 0; border-radius: 0; color: #181818; }
+.legal-panel.legal-profile h2 { margin: 26px 4px 12px; color: #181818; font-size: 18px; line-height: 1.35; }
+.legal-panel.legal-profile .legal-links { grid-template-columns: 1fr; gap: 0; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
+.legal-panel.legal-profile .legal-links li + li { border-top: 1px solid #f0f0f3; margin-left: 56px; }
+.legal-panel.legal-profile .legal-links li + li a { margin-left: -56px; width: calc(100% + 56px); }
+.legal-panel.legal-profile .legal-links a { min-height: 0; padding: 14px; border: 0; border-radius: 0; background: none; color: #181818; font-size: 16px; line-height: 1.35; }
+.legal-panel.legal-profile .legal-links a:hover { background: #faf9ff; }
+.legal-panel.legal-profile .legal-links a:focus-visible { outline: 2px solid #9047ff; outline-offset: -2px; }
+.legal-panel.legal-profile .legal-link-icon { box-sizing: content-box; padding: 7px; border-radius: 10px; background: #f0ebff; color: #9047ff; opacity: 1; }
+.legal-panel.legal-profile .legal-link-arrow { color: #c4c2d0; opacity: 1; }

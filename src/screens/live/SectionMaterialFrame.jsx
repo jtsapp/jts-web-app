@@ -5,6 +5,7 @@ import { parseStageMessage, parseStageListMessage, gotoStageMessage, gotoLessonM
 import LiveLoader from './LiveLoader.jsx'
 import PdfViewer from './pdf/PdfViewer.jsx'
 import { isPdfMaterial } from './pdf/isPdfMaterial.js'
+import { changesPage, placeEvents } from './liveFollow.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -106,6 +107,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // см. использование в setHiddenKeys ниже про то, зачем это разделение.
   const settledRef = useRef(false)
   const pendingRef = useRef([])
+  // В этот документ уже проигрывались клики показа: снимок «догнать» повторил бы их поверх
+  // (catchUp ниже). Сбрасывается вместе с документом.
+  const showReplayedRef = useRef(false)
   // Последний setHiddenKeys(keys), пришедший до загрузки — не очередь, а
   // «снимок» (подробности у самого метода ниже). null отдельно от 'нет
   // ключей': setHiddenKeys всегда зовут с массивом (LiveLessonPage передаёт
@@ -204,6 +208,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       stageReportedRef.current = false
       pendingOwnGotoRef.current = null
       pendingRef.current = []
+      showReplayedRef.current = false
     }
     // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
@@ -232,14 +237,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     if (stage != null && settledRef.current) postStage(stage)
   }, [stage])
 
-  useImperativeHandle(ref, () => ({
-    replay(events) {
+  useImperativeHandle(ref, () => {
+    function replay(events) {
       if (!events?.length) return
+      if (events.some(changesPage)) showReplayedRef.current = true
       if (loadedRef.current && (lessonNoRef.current == null || settledRef.current)) {
         post({ type: 'present', events })
       } else {
         pendingRef.current.push(...events)
       }
+    }
+    return {
+    replay,
+    // Ответ на просьбу «догнать» (переподключение, вход, возврат к классу): весь поток рамки
+    // преподавателя. Раньше ради него рамку перезагружали; теперь в документ, куда показ уже
+    // проигрывался, уходит только место — стадия и прокрутка, а в нетронутый — весь поток.
+    catchUp(events) {
+      replay(showReplayedRef.current ? placeEvents(events) : events)
     },
     requestSnapshot() {
       if (settledRef.current) {
@@ -327,14 +341,16 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         pendingHiddenKeysRef.current = keys
       }
     },
-  }), [])
+    }
+  }, [])
 
   function post(payload) {
     iframeRef.current?.contentWindow?.postMessage({ source: BRIDGE_HOST, ...payload }, '*')
   }
 
+  // Стадия класса — не выбор ученика: тихо, без клика от его имени в ответах и у преподавателя.
   function postStage(index) {
-    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index, { silent: true }), '*')
   }
 
   // Наш goto-stage: мост ответит на него синтетическим кликом по рельсу, и этот
@@ -346,7 +362,8 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       ownStageAtRef.current = Date.now()
     }
     gotoEchoUntilRef.current = Date.now() + GOTO_ECHO_MS
-    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+    // Доводка (own=false) — тоже не выбор: тихо, как стадия класса.
+    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index, { silent: !own }), '*')
   }
 
   /** Отголосок goto-stage — первый клик в окне после него. */

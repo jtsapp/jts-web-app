@@ -193,6 +193,8 @@ async function loadFrame(container) {
 }
 
 const gotoStage = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
+// Стадия класса и доводка — не выбор: мост получает их тихими (без клика от имени ученика или преподавателя).
+const classGoto = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index, silent: true }, '*']
 
 /** Живое действие показа — клик по элементу рамки. */
 const click = (selector) => [{ selector, eventType: 'click', value: null }]
@@ -305,7 +307,7 @@ describe('LiveLessonPage — ученик следует за классом', (
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
     expect(frameMaterial(container)).toBe(12)
-    expect(post).not.toHaveBeenCalledWith(...gotoStage(2))
+    expect(post).not.toHaveBeenCalledWith(...classGoto(2))
 
     await push(leadingAt(3, 11, { version: 3, focusSeq: 2, stageIndex: 2 }))
     expect(frameMaterial(container)).toBe(11)
@@ -318,7 +320,7 @@ describe('LiveLessonPage — ученик следует за классом', (
     await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
 
     const post = await loadFrame(container)
-    expect(post).toHaveBeenCalledWith(...gotoStage(3))
+    expect(post).toHaveBeenCalledWith(...classGoto(3))
   })
 
   it('следующему смена стадии уходит в уже открытую рамку', async () => {
@@ -329,7 +331,7 @@ describe('LiveLessonPage — ученик следует за классом', (
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 4 }))
 
-    expect(post).toHaveBeenCalledWith(...gotoStage(4))
+    expect(post).toHaveBeenCalledWith(...classGoto(4))
   })
 
   // Переключатель «Идти за преподавателем» — явный «ушёл сам»: выключенный,
@@ -343,7 +345,7 @@ describe('LiveLessonPage — ученик следует за классом', (
     fireEvent.click(container.querySelector('.ls-follow'))
     await push(leadingAt(3, 11, { version: 2, stageIndex: 4 }))
 
-    expect(post).not.toHaveBeenCalledWith(...gotoStage(4))
+    expect(post).not.toHaveBeenCalledWith(...classGoto(4))
   })
 
   // Включил следование обратно, пока класс ведут, — сразу к классу, а не со
@@ -385,7 +387,7 @@ describe('LiveLessonPage — ученик следует за классом', (
     await push(liveState({ version: 3, focusSeq: 1, sectionId: 4, materialId: 12, stageIndex: 5 }))
 
     expect(frameMaterial(container)).toBe(12)
-    expect(post).not.toHaveBeenCalledWith(...gotoStage(5))
+    expect(post).not.toHaveBeenCalledWith(...classGoto(5))
   })
 })
 
@@ -660,31 +662,60 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     expect(sendCatchUp).not.toHaveBeenCalled()
   })
 
-  // Мост проигрывает снимок как поток кликов: на странице, где действия уже
-  // применены, они повторились бы. Поэтому просьба уходит только с чистой
-  // страницы следования, а ответ ждёт её загрузки.
-  it('после переподключения на том же материале рамка перезагружается чистой, и только потом уходит просьба', async () => {
+  // Переподключение (iPad ушёл в Meet и вернулся) рамку больше не перезагружает: ученик видел
+  // «Загружаем урок…» и прыжок на каждом обрыве связи (жалоба 28.10.2026).
+  it('после переподключения на том же материале рамка та же, просьба уходит сразу', async () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11))
     const oldFrame = frameOf(container)
     const oldSrc = oldFrame.getAttribute('src')
-    const oldPost = await loadFrame(container)
-    let frameAtRequest = null
+    await loadFrame(container)
     sendCatchUp.mockClear()
-    sendCatchUp.mockImplementation(() => { frameAtRequest = frameOf(container) })
 
     await connectWith(leadingAt(3, 11))
 
     expect(sendCatchUp).toHaveBeenCalledTimes(1)
     expect(sendCatchUp).toHaveBeenCalledWith(11)
-    expect(frameAtRequest).not.toBe(oldFrame)
-    expect(frameAtRequest.getAttribute('src')).not.toBe(oldSrc)
+    expect(frameOf(container)).toBe(oldFrame)
+    expect(frameOf(container).getAttribute('src')).toBe(oldSrc)
+  })
 
-    const events = [{ selector: '#a', eventType: 'click', value: null }]
-    await act(async () => { socketHandlers.onPresent({ materialId: 11, events }) })
-    expect(oldPost).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+  // Снимок — весь поток кликов преподавателя: в рамке, куда показ уже проигрывался, клики
+  // повторились бы поверх. Туда из ответа уходит только место — стадия и прокрутка.
+  it('в рамку, где показ уже шёл, из ответа «догнать» уходит только место', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
     const post = await loadFrame(container)
-    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+    await connectWith(leadingAt(3, 11))
+    post.mockClear()
+
+    const snapshot = [
+      ...click('#live'),
+      { selector: 'window', eventType: 'stage', value: '2' },
+      { selector: 'window', eventType: 'scroll', value: '500' },
+    ]
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: snapshot }, { catchUp: true }) })
+
+    const replayedTypes = post.mock.calls
+      .filter(([m]) => m.type === 'present')
+      .flatMap(([m]) => m.events.map((e) => e.eventType))
+    expect(replayedTypes).toEqual(['stage', 'scroll'])
+  })
+
+  // На входе рамка грузилась дважды: первый раз сама, второй — от долга по снимку.
+  it('вход при ведении — рамка грузится один раз, ответ «догнать» проигрывается целиком', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+
+    expect(frameOf(container).getAttribute('src')).toContain('_r=0')
+    expect(sendCatchUp).toHaveBeenCalledWith(11)
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#snapshot') }, { catchUp: true }) })
+    const post = await loadFrame(container)
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(replayedIn(post)).toEqual(['#snapshot'])
+    expect(frameOf(container).getAttribute('src')).toContain('_r=0')
   })
 
   // Снимок рамки преподавателя несёт весь поток до просьбы: живые события,
@@ -1077,7 +1108,7 @@ describe('LiveLessonPage — преподаватель', () => {
     await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
 
     const post = await loadFrame(container)
-    expect(post).toHaveBeenCalledWith(...gotoStage(3))
+    expect(post).toHaveBeenCalledWith(...classGoto(3))
     await frameStage(0)
     await frameStage(3)
     await bridge(presentEvent)
@@ -1144,7 +1175,7 @@ describe('LiveLessonPage — преподаватель', () => {
       const container = await focusAtStage(3, 5)
 
       const post = await loadFrame(container)
-      expect(post).toHaveBeenCalledWith(...gotoStage(5))
+      expect(post).toHaveBeenCalledWith(...classGoto(5))
       await frameStage(0)
       await frameStage(5)
 
@@ -1706,7 +1737,7 @@ describe('LiveLessonPage — ученик уходит сам', () => {
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
 
-    expect(post).toHaveBeenCalledWith(...gotoStage(2))
+    expect(post).toHaveBeenCalledWith(...classGoto(2))
   })
 
   // Своя же вкладка раздела (или тема маршрута) — тоже не уход.
@@ -1720,7 +1751,7 @@ describe('LiveLessonPage — ученик уходит сам', () => {
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
 
-    expect(post).toHaveBeenCalledWith(...gotoStage(2))
+    expect(post).toHaveBeenCalledWith(...classGoto(2))
   })
 
   // Указка на шаг урока каталога, пришедшая, когда материал уже разобран, ждёт

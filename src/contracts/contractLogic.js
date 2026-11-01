@@ -84,3 +84,22 @@ export function toSignCount(mine) {
 export function resendLeft(sentAtMs, nowMs, resendSeconds) {
   return Math.max(0, Math.ceil((sentAtMs + resendSeconds * 1000 - nowMs) / 1000))
 }
+
+// Скан бумажного договора: один PDF или несколько фото страниц (сервер склеит их в один PDF в этом порядке).
+// Фото добавляются к уже выбранным — так удобно снимать страницы по одной. При ошибке выбранное не теряется.
+export const SCAN_MAX_BYTES = 15 * 1024 * 1024, SCAN_MAX_FILES = 20, SCAN_MAX_TOTAL_BYTES = 80 * 1024 * 1024
+
+export function addScanFiles(current, picked) {
+  const keep = { files: current, error: '' }
+  if (!picked.length) return keep
+  if (picked.some(f => f.size > SCAN_MAX_BYTES || !/\.(pdf|jpe?g|png)$/i.test(f.name))) return { ...keep, error: 'paper.fileError' }
+  const pdf = picked.filter(isPdf)
+  if (pdf.length && picked.length > 1) return { ...keep, error: 'paper.pdfAlone' }
+  if (pdf.length) return { files: pdf, error: '' }
+  const files = [...current.filter(f => !isPdf(f)), ...picked]
+  if (files.length > SCAN_MAX_FILES) return { ...keep, error: 'paper.tooMany' }
+  if (files.reduce((sum, f) => sum + f.size, 0) > SCAN_MAX_TOTAL_BYTES) return { ...keep, error: 'paper.tooBig' }
+  return { files, error: '' }
+}
+
+export function isPdf(file) { return /\.pdf$/i.test(file.name) }

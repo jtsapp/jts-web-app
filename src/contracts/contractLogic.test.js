@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { TEXTS, contractText } from './texts.js'
 import {
-  cleanCode, cleanIin, codeReady, formFrom, isOffer, missingFields, requestBody, resendLeft, signable, toSignCount,
+  addScanFiles, cleanCode, cleanIin, codeReady, formFrom, isOffer, missingFields, requestBody, resendLeft, signable, toSignCount,
 } from './contractLogic.js'
 
 const filledStudent = () => ({
@@ -100,5 +100,30 @@ describe('тексты договоров', () => {
     }
     expect(contractText('ru', 'code.sent', { phone: '+7 *** *** 22 33' })).toBe('Код отправлен на +7 *** *** 22 33. Он действует 5 минут.')
     expect(contractText('de', 'title')).toBe('Договоры')
+  })
+})
+
+describe('файлы скана', () => {
+  const file = (name, size = 10) => { const f = new File(['x'], name); Object.defineProperty(f, 'size', { value: size }); return f }
+  const names = r => r.files.map(f => f.name)
+
+  it('фото добавляются к уже выбранным по порядку', () => {
+    expect(names(addScanFiles(addScanFiles([], [file('1.jpg'), file('2.jpg')]).files, [file('3.png')]))).toEqual(['1.jpg', '2.jpg', '3.png'])
+  })
+  it('PDF идёт одним файлом и заменяет фото, а фото заменяют PDF', () => {
+    const pdf = addScanFiles([file('1.jpg')], [file('signed.pdf')])
+    expect(names(pdf)).toEqual(['signed.pdf'])
+    expect(names(addScanFiles(pdf.files, [file('1.jpg')]))).toEqual(['1.jpg'])
+    expect(addScanFiles([], [file('a.pdf'), file('1.jpg')]).error).toBe('paper.pdfAlone')
+  })
+  it('при ошибке выбранное не теряется', () => {
+    const current = [file('1.jpg')]
+    expect(addScanFiles(current, [file('doc.heic')])).toEqual({ files: current, error: 'paper.fileError' })
+    expect(addScanFiles(current, [file('big.jpg', 16 * 1024 * 1024)]).error).toBe('paper.fileError')
+    expect(addScanFiles(current, Array.from({ length: 20 }, (_, i) => file(i + '.jpg'))).error).toBe('paper.tooMany')
+    expect(addScanFiles(current, Array.from({ length: 6 }, (_, i) => file(i + '.jpg', 14 * 1024 * 1024))).error).toBe('paper.tooBig')
+  })
+  it('у новых подсказок есть перевод на все языки', () => {
+    for (const key of ['paper.pdfAlone', 'paper.tooMany', 'paper.tooBig', 'paper.more', 'paper.remove']) for (const lang of Object.keys(TEXTS)) expect(TEXTS[lang][key], `${lang}:${key}`).toBeTruthy()
   })
 })
