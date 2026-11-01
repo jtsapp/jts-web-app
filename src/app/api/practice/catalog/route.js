@@ -28,20 +28,11 @@ import path from 'node:path'
 import { SITUATION_LEVELS } from '../../../../practice/situations/levels.js'
 import { LESSONS as SHADOWING_LESSONS } from '../../../../practice/shadowing/lessons.js'
 import { BACKEND_URL } from '../../../../lib/auth-server.js'
+import { PRACTICE_CORS } from '../practiceCors.js'
 
 export const runtime = 'nodejs'
 
-const CORS = {
-  // Каталог не персональный: в нём нет ни одного ученика и ни одного ответа —
-  // это оглавление учебника. Токен здесь не нужен, и запрещать его домену
-  // админки (их несколько: dev, prod, локальный) значило бы вести список хостов.
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  // Пять минут — как у публичных ручек бэкенда: разделы, переехавшие в
-  // админку, меняются без релиза, и скрытое там должно уйти из каталога скоро.
-  'Cache-Control': 'public, max-age=300',
-}
+const CORS = PRACTICE_CORS
 
 const PRACTICE_DIR = () => path.join(process.cwd(), 'public', 'practice')
 

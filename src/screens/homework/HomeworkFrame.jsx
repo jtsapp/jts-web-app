@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { CollapseIcon, ExpandIcon } from '../../components/icons.jsx'
+import usePracticeUnitCredit from '../../practice/usePracticeUnitCredit.js'
 
 /**
  * Рамка открытого задания в домашней работе — общая для отдельной выдачи
@@ -19,10 +20,17 @@ import { CollapseIcon, ExpandIcon } from '../../components/icons.jsx'
  *
  * `frameRef` — узел iframe для владельца: часть-материал слушает по нему мост
  * рамки (event.source === frame.contentWindow).
+ *
+ * Задания, перенесённые в урок из «Практики», засчитывают свой юнит и там
+ * (usePracticeUnitCredit): домашка — работа ученика, в том числе открытая уже
+ * сданной — её ответы тоже его.
  */
 export default function HomeworkFrame({ src, title, frameRef }) {
   const { t } = useI18n()
   const [full, setFull] = useState(false)
+  const ownRef = useRef(null)
+  const iframeRef = frameRef ?? ownRef
+  usePracticeUnitCredit(iframeRef)
 
   // Оверлей закрывает кабинет целиком: прокрутка страницы под ним только уводит
   // её туда, куда из-под оверлея не вернуться. Esc — привычный выход, пока фокус
@@ -65,7 +73,7 @@ export default function HomeworkFrame({ src, title, frameRef }) {
           для встроенных в задание активностей вроде Wordwall: их кнопка «на весь
           экран» работает, только если право выдано по всей цепочке рамок сверху
           вниз (своя кнопка «Во весь экран» от него не зависит). */}
-      <iframe ref={frameRef} src={src} title={title} className="hw-frame__iframe" allow="autoplay; fullscreen" />
+      <iframe ref={iframeRef} src={src} title={title} className="hw-frame__iframe" allow="autoplay; fullscreen" />
     </div>
   )
 }
