@@ -1181,12 +1181,12 @@
 .tp-mic__toggle {
   width: 56px;
   border-radius: 20px;
-  background: rgba(234, 86, 76, 0.1);
-  color: #ea564c;
-}
-.tp-mic__toggle.is-muted {
   background: rgba(144, 71, 255, 0.1);
   color: #9047ff;
+}
+.tp-mic__toggle.is-muted {
+  background: rgba(234, 86, 76, 0.1);
+  color: #ea564c;
 }
 .tp-mic__end {
   width: 56px;
