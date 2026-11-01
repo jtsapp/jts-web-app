@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { MicLineIcon, MicOffIcon } from '../tutor/TutorIcons.jsx'
 
 // Полоса микрофона звонка по макету 29.10.2026. Живой комнаты здесь нет:
 // LiveKit подменён, а агент — это performRpc. Проверяется, что режим звонка —
@@ -37,6 +41,21 @@ vi.mock('../tutor/callSession.js', () => ({ useCallSession: () => closeSession }
 const { CallStage } = await import('./TutorVoiceChatPage.jsx')
 
 const t = (key) => key
+
+const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+function iconPath(Icon) {
+  const { container, unmount } = render(<Icon size={24} />)
+  const d = container.querySelector('path').getAttribute('d')
+  unmount()
+  return d
+}
+
+function cssRule(file, selector) {
+  const css = fs.readFileSync(path.join(SRC, file), 'utf8')
+  const escaped = selector.replace(/[.[\]"=]/g, '\\$&')
+  return css.match(new RegExp(`(?:^|\\n)${escaped} \\{([^}]*)\\}`))?.[1] || ''
+}
 
 function stage(props = {}) {
   return render(
@@ -105,6 +124,32 @@ describe('CallStage — полоса микрофона', () => {
     expect(document.querySelector('.tp-mic__hold')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'voice.micOn' }))
     expect(lk.lp.setMicrophoneEnabled).toHaveBeenCalledWith(false)
+  })
+
+  // Кнопка показывает состояние, а не действие. 01.11.2026 студентка видела на
+  // включённом микрофоне красный зачёркнутый значок, а на выключенном — обычный
+  // фиолетовый, и её не было слышно, хотя всё на экране выглядело исправным.
+  it('свободно — включённый микрофон с обычным значком', () => {
+    stage({ pushToTalk: false })
+    const button = screen.getByRole('button', { name: 'voice.micOn' })
+    expect(button.classList.contains('is-muted')).toBe(false)
+    expect(button.querySelector('path').getAttribute('d')).toBe(iconPath(MicLineIcon))
+  })
+
+  it('свободно — выключенный микрофон с зачёркнутым значком', () => {
+    lk.mic = false
+    stage({ pushToTalk: false })
+    const button = screen.getByRole('button', { name: 'voice.micOff' })
+    expect(button.classList.contains('is-muted')).toBe(true)
+    expect(button.querySelector('path').getAttribute('d')).toBe(iconPath(MicOffIcon))
+  })
+
+  it('цвет кнопки: включён — фиолетовый, выключен — красный', () => {
+    expect(cssRule('tutor.css', '.tp-mic__toggle')).toContain('#9047ff')
+    expect(cssRule('tutor.css', '.tp-mic__toggle.is-muted')).toContain('#ea564c')
+    const dark = 'html[data-theme="dark"] '
+    expect(cssRule('theme-dark.generated.css', `${dark}.tp-mic__toggle`)).toContain('--dk-acc')
+    expect(cssRule('theme-dark.generated.css', `${dark}.tp-mic__toggle.is-muted`)).toContain('--dk-red')
   })
 
   it('красная трубка закрывает сессию учёта и кладёт комнату', () => {

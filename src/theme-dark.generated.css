@@ -4010,12 +4010,12 @@ html[data-theme="dark"] .tp-mic__toggle, html[data-theme="dark"] .tp-mic__end, h
     border: 0
 }
 html[data-theme="dark"] .tp-mic__toggle {
-    background: color-mix(in oklab, var(--dk-red) 10%, transparent);
-    color: var(--dk-red)
-}
-html[data-theme="dark"] .tp-mic__toggle.is-muted {
     background: color-mix(in oklab, var(--dk-acc) 10%, transparent);
     color: var(--dk-acc-text)
+}
+html[data-theme="dark"] .tp-mic__toggle.is-muted {
+    background: color-mix(in oklab, var(--dk-red) 10%, transparent);
+    color: var(--dk-red)
 }
 html[data-theme="dark"] .tp-mic__end {
     background: var(--dk-red);
