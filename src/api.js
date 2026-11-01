@@ -925,8 +925,8 @@ export async function getMyContracts(token) {
 export const getContractDetail = (token, id) => authGet(`/contracts/${id}`, token)
 export const getPaperContract = (token,id) => authGet(`/contracts/${id}/paper`,token)
 export const preparePaperContract = (token,id,fields) => authPut(`/contracts/${id}/paper`,token,fields)
-export async function submitContractScan(token,id,file,signedOn,confirmed){
-  const body=new FormData();body.append('file',file);body.append('signedOn',signedOn);body.append('confirmed',String(confirmed))
+export async function submitContractScan(token,id,files,signedOn,confirmed){
+  const body=new FormData();files.forEach(file=>body.append('file',file));body.append('signedOn',signedOn);body.append('confirmed',String(confirmed))
   const res=await fetch(`${BASE}/contracts/${id}/scan`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body})
   if(!res.ok){if(res.status===401)reportUnauthorized();const data=await res.json().catch(()=>({}));const message=data.messages?.[0]||data.message;const error=new Error(message||'Could not upload the scan');error.serverMessage=message;error.status=res.status;throw error}
   dropContractsCache();return res.json()

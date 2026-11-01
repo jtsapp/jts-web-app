@@ -97,7 +97,16 @@ describe('Договоры ученика', () => {
     api.submitContractScan.mockResolvedValue({id:8,version:1,fileName:'signed.pdf',status:'REVIEW',signedOn:'2026-10-27'});draw();fireEvent.click(await within('contract-INDIVIDUAL_STANDARD','Открыть договор'));
     const input=await screen.findByLabelText('Загрузить подписанный скан'),submit=screen.getByRole('button',{name:'Отправить скан на проверку'});expect(submit.disabled).toBe(true);
     const file=new File(['pdf'],'signed.pdf',{type:'application/pdf'});fireEvent.change(input,{target:{files:[file]}});expect(submit.disabled).toBe(true);fireEvent.click(screen.getByLabelText(/Загружены все страницы/));fireEvent.click(submit);
-    await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalledWith('TOK',2,file,expect.any(String),true));expect((await screen.findByTestId('scan-status')).textContent).toContain('Скан на проверке');expect(api.signContract).not.toHaveBeenCalled();
+    await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalledWith('TOK',2,[file],expect.any(String),true));expect((await screen.findByTestId('scan-status')).textContent).toContain('Скан на проверке');expect(api.signContract).not.toHaveBeenCalled();
+  });
+  it('collects several page photos in order and lets a wrong one be removed',async()=>{
+    api.getPaperContract.mockResolvedValue({prepared:true,contract:tariff({number:'JTS-2026-1'}),prefill:null,tariffVariants:[],scan:null});
+    api.submitContractScan.mockResolvedValue({id:9,version:1,fileName:'Фото договора (2 стр.).pdf',status:'REVIEW',signedOn:'2026-10-27'});draw();fireEvent.click(await within('contract-INDIVIDUAL_STANDARD','Открыть договор'));
+    const input=await screen.findByLabelText('Загрузить подписанный скан'),photo=name=>new File(['jpg'],name,{type:'image/jpeg'});
+    fireEvent.change(input,{target:{files:[photo('1.jpg'),photo('oops.jpg')]}});fireEvent.change(input,{target:{files:[photo('2.jpg')]}});
+    const list=await screen.findByTestId('scan-files');expect(list.querySelectorAll('li').length).toBe(3);fireEvent.click(list.querySelectorAll('li')[1].querySelector('button'));
+    fireEvent.click(screen.getByLabelText(/Загружены все страницы/));fireEvent.click(screen.getByRole('button',{name:'Отправить скан на проверку'}));
+    await waitFor(()=>expect(api.submitContractScan).toHaveBeenCalled());expect(api.submitContractScan.mock.calls[0][2].map(f=>f.name)).toEqual(['1.jpg','2.jpg']);
   });
   it('shows a returned scan reason and allows a corrected upload',async()=>{
     api.getPaperContract.mockResolvedValue({prepared:true,contract:tariff({status:'SCAN_REJECTED',number:'JTS-2026-1'}),prefill:{iin:'040101500123'},tariffVariants:[],scan:{id:7,version:1,fileName:'scan.pdf',status:'REJECTED',note:'Нет последней страницы',signedOn:'2026-10-27'}});draw();fireEvent.click(await within('contract-INDIVIDUAL_STANDARD','Открыть договор'));expect(await screen.findByText('Нет последней страницы')).toBeTruthy();expect(screen.getByLabelText('Загрузить подписанный скан')).toBeTruthy();
